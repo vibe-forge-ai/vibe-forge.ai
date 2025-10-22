@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+  },
+  "include": [
+    "../apps/*/__test__/**/*",
+    "../packages/*/__test__/**/*"
+  ]
+}

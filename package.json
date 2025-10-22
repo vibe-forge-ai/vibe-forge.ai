@@ -1,0 +1,35 @@
+{
+  "name": "vibe-forge-dev",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "NODE_OPTIONS='-C __vibe-forge__' npx vforge"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.12",
+    "@antfu/eslint-config": "^6.0.0",
+    "@vibe-forge/cli": "workspace:*",
+    "typescript": "^5.9.3",
+    "dprint": "^0.50.2",
+    "eslint": "^9.38.0",
+    "esbuild-register": "^3.6.0",
+    "vitest": "^2.0.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "array-includes": "npm:@nolyfill/array-includes@latest",
+      "array.prototype.flat": "npm:@nolyfill/array.prototype.flat@latest",
+      "array.prototype.flatmap": "npm:@nolyfill/array.prototype.flatmap@latest",
+      "array.prototype.tosorted": "npm:@nolyfill/array.prototype.tosorted@latest",
+      "es-iterator-helpers": "npm:@nolyfill/es-iterator-helpers@latest",
+      "function-bind": "npm:@nolyfill/function-bind@latest",
+      "object.assign": "npm:@nolyfill/object.assign@latest",
+      "object.entries": "npm:@nolyfill/object.entries@latest",
+      "object.fromentries": "npm:@nolyfill/object.fromentries@latest",
+      "object.hasown": "npm:@nolyfill/object.hasown@latest",
+      "object.values": "npm:@nolyfill/object.values@latest",
+      "string.prototype.matchall": "npm:@nolyfill/string.prototype.matchall@latest",
+      "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@vibe-forge/cli",
+  "version": "0.1.0",
+  "imports": {
+    "#~/*": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    }
+  },
+  "bin": {
+    "vibe-forge": "./cli.js",
+    "vforge": "./cli.js"
+  },
+  "dependencies": {
+    "@vibe-forge/core": "workspace:^"
+  }
+}

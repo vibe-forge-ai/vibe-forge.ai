@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfigs/tsconfig.bundler.json"
+    },
+    {
+      "path": "./tsconfigs/tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfigs/tsconfig.test.json"
+    }
+  ]
+}
