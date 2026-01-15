@@ -6,13 +6,15 @@
     "start": "NODE_OPTIONS='-C __vibe-forge__' npx vforge"
   },
   "devDependencies": {
-    "@types/node": "^22.18.12",
     "@antfu/eslint-config": "^6.0.0",
+    "@mizchi/lsmcp": "^0.10.0",
+    "@types/node": "^22.18.12",
+    "@typescript/native-preview": "7.0.0-dev.20260115.1",
     "@vibe-forge/cli": "workspace:*",
-    "typescript": "^5.9.3",
     "dprint": "^0.50.2",
-    "eslint": "^9.38.0",
     "esbuild-register": "^3.6.0",
+    "eslint": "^9.38.0",
+    "typescript": "^5.9.3",
     "vitest": "^2.0.5"
   },
   "pnpm": {
