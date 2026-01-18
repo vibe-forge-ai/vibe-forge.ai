@@ -6,7 +6,7 @@ export function registerUiCommand(program: Command) {
     .command('ui')
     .description('启动 Web UI 与 Server')
     .option('--cli-path <path>', 'Claude Code CLI 可执行路径')
-    .option('--config-path <path>', 'Claude Code CLI 配置文件路径')
+    .option('--cli-args <args>', 'Claude Code CLI 额外参数')
     .option('--server-port <port>', 'Server 端口', '8787')
     .option('--ws-path <path>', 'WebSocket 路径', '/ws')
     .option('--projects-root <dir>', '项目根目录', 'projects')
@@ -24,7 +24,7 @@ export function registerUiCommand(program: Command) {
         DATA_DIR: String(opts.dataDir),
         LOG_LEVEL: String(opts.logLevel),
         CLAUDE_CODE_CLI_PATH: opts.cliPath ?? process.env.CLAUDE_CODE_CLI_PATH,
-        CLAUDE_CODE_CONFIG_PATH: opts.configPath ?? process.env.CLAUDE_CODE_CONFIG_PATH
+        CLAUDE_CODE_CLI_ARGS: opts.cliArgs ?? process.env.CLAUDE_CODE_CLI_ARGS
       }
 
       const viteEnv = {

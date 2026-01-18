@@ -62,6 +62,13 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
   }
 
   const serverEnv = loadEnv()
+
+  // Add custom CLI args from env if present
+  if (serverEnv.CLAUDE_CODE_CLI_ARGS) {
+    const customArgs = serverEnv.CLAUDE_CODE_CLI_ARGS.split(/\s+/).filter(Boolean)
+    args.push(...customArgs)
+  }
+
   const logDir = isAbsolute(serverEnv.LOG_DIR)
     ? serverEnv.LOG_DIR
     : join(process.cwd(), serverEnv.LOG_DIR)

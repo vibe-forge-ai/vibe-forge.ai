@@ -8,14 +8,12 @@ export function configRouter(): Router {
 
   router.get('/', (ctx) => {
     const cliPath = env.CLAUDE_CODE_CLI_PATH
-    const configPath = env.CLAUDE_CODE_CONFIG_PATH
+    const cliArgs = env.CLAUDE_CODE_CLI_ARGS
     const cliExists = cliPath ? fs.existsSync(cliPath) : false
-    const configExists = configPath ? fs.existsSync(configPath) : false
     ctx.body = {
       CLAUDE_CODE_CLI_PATH: cliPath,
-      CLAUDE_CODE_CONFIG_PATH: configPath,
-      cliExists,
-      configExists
+      CLAUDE_CODE_CLI_ARGS: cliArgs,
+      cliExists
     }
   })
 
