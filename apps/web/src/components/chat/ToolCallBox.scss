@@ -90,7 +90,7 @@
   .tool-call-body {
     padding: 6px 10px;
     overflow: hidden;
-    transition: all 0.2s ease-in-out;
+    transition: all .2s ease-in-out;
 
     .tool-content {
       pre.shiki {
@@ -147,7 +147,8 @@
     }
   }
 
-  &.result-header-specific { // From line 744
+  &.result-header-specific {
+    // From line 744
     background-color: #ecfdf5;
     border-top: 1px solid #d1fae5;
     padding: 6px 12px;

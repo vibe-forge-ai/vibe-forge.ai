@@ -1,6 +1,7 @@
 .tool-group.bash-tool {
   .bash-command-preview {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-family:
+      'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 11px;
     color: #1f2937;
     overflow: hidden;
@@ -20,7 +21,7 @@
       color: inherit;
       background-color: transparent;
       padding: 0;
-      
+
       p {
         margin: 0 !important;
         padding: 0 !important;

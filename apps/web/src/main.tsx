@@ -1,12 +1,12 @@
 import './styles/global.scss'
 import './i18n'
 
-import React from 'react'
-import { createRoot } from 'react-dom/client'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import { SWRConfig } from 'swr'
+import React from 'react'
+import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { SWRConfig } from 'swr'
 
 import App from './App'
 
@@ -21,7 +21,7 @@ root.render(
             const serverPort = import.meta.env.VITE_SERVER_PORT || '8787'
             const baseUrl = `http://${serverHost}:${serverPort}`
             return fetch(`${baseUrl}${path}`).then((r) => r.json())
-          },
+          }
         }}
       >
         <BrowserRouter>
@@ -29,5 +29,5 @@ root.render(
         </BrowserRouter>
       </SWRConfig>
     </ConfigProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 )

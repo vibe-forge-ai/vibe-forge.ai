@@ -1,9 +1,9 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import i18n from 'i18next'
+import LanguageDetector from 'i18next-browser-languagedetector'
+import { initReactI18next } from 'react-i18next'
 
-import zh from './resources/locales/zh.json';
-import en from './resources/locales/en.json';
+import en from './resources/locales/en.json'
+import zh from './resources/locales/zh.json'
 
 i18n
   .use(LanguageDetector)
@@ -17,6 +17,6 @@ i18n
     interpolation: {
       escapeValue: false
     }
-  });
+  })
 
-export default i18n;
+export default i18n

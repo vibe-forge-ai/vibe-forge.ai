@@ -1,17 +1,17 @@
-import { resolve, isAbsolute, join } from 'node:path'
 import { spawn } from 'node:child_process'
-import { appendFileSync, mkdirSync, existsSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
+import { isAbsolute, join, resolve } from 'node:path'
 
 import { v4 as uuidv4 } from 'uuid'
 
-import { defineAdapter, type AdapterOptions, type AdapterEvent } from '#~/adapters/core.js'
+import { type AdapterEvent, type AdapterOptions, defineAdapter } from '#~/adapters/core.js'
 import { loadEnv } from '#~/env.js'
 
-import type { 
-  ClaudeCodeIncomingEvent, 
-  ClaudeCodeContentText, 
-  ClaudeCodeContentToolUse, 
+import type {
+  ClaudeCodeContentText,
   ClaudeCodeContentToolResult,
+  ClaudeCodeContentToolUse,
+  ClaudeCodeIncomingEvent,
   ClaudeCodeUserEvent
 } from './types.js'
 
@@ -24,7 +24,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
     type,
     systemPrompt,
     appendSystemPrompt = true,
-    onEvent,
+    onEvent
   } = options
 
   // Default ccr path if not provided in env
@@ -60,10 +60,10 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
       args.push('--system-prompt', systemPrompt)
     }
   }
-  
+
   const serverEnv = loadEnv()
-  const logDir = isAbsolute(serverEnv.LOG_DIR) 
-    ? serverEnv.LOG_DIR 
+  const logDir = isAbsolute(serverEnv.LOG_DIR)
+    ? serverEnv.LOG_DIR
     : join(process.cwd(), serverEnv.LOG_DIR)
   const sessionLogDir = join(logDir, sessionId)
   const spawnLogFile = join(sessionLogDir, 'claude.cli.spawn.log.jsonl')
@@ -84,11 +84,11 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
 
   const proc = spawn(ccrPath, args, {
     env: { ...env, FORCE_COLOR: '1' },
-    cwd,
+    cwd
   })
 
   let stdoutBuffer = ''
-  
+
   proc.stdout.on('data', (buf) => {
     const rawStr = String(buf)
     writeSpawnLog(rawStr)
@@ -147,7 +147,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
                 name: toolUsePart.name,
                 input: (toolUsePart.input || toolUsePart.args || {}) as Record<string, any>
               }
-              
+
               if (textContent) {
                 assistant.content = [
                   { type: 'text', text: textContent },

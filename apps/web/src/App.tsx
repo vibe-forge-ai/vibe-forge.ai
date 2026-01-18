@@ -1,11 +1,11 @@
-import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Layout, Empty, Button } from 'antd'
-import useSWR from 'swr'
+import { Button, Empty, Layout } from 'antd'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
+import useSWR from 'swr'
 
-import { Sidebar } from '#~/components/Sidebar'
 import { Chat } from '#~/components/Chat'
+import { Sidebar } from '#~/components/Sidebar'
 import type { Session } from '#~/types'
 
 const MIN_SIDEBAR_WIDTH = 200
@@ -34,7 +34,7 @@ export default function App() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth')
     return saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH
@@ -54,11 +54,11 @@ export default function App() {
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return
-    
+
     let newWidth = e.clientX
     if (newWidth < MIN_SIDEBAR_WIDTH) newWidth = MIN_SIDEBAR_WIDTH
     if (newWidth > MAX_SIDEBAR_WIDTH) newWidth = MAX_SIDEBAR_WIDTH
-    
+
     setSidebarWidth(newWidth)
     localStorage.setItem('sidebarWidth', newWidth.toString())
   }, [isResizing])
@@ -93,8 +93,8 @@ export default function App() {
 
   const toggleButton = (
     <Button
-      type="text"
-      size="small"
+      type='text'
+      size='small'
       onClick={toggleSidebar}
       style={{
         display: 'flex',
@@ -110,7 +110,10 @@ export default function App() {
       }}
       title={t('common.expand')}
     >
-      <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}>
+      <span
+        className='material-symbols-outlined'
+        style={{ fontSize: 18, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
+      >
         side_navigation
       </span>
     </Button>
@@ -133,7 +136,7 @@ export default function App() {
           }}
           onToggleCollapse={toggleSidebar}
         />
-        
+
         <div
           onMouseDown={handleMouseDown}
           style={{
@@ -154,9 +157,12 @@ export default function App() {
 
         <Layout.Content style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <Routes>
-            <Route path="/session/:sessionId" element={<ChatView renderLeftHeader={isSidebarCollapsed ? toggleButton : null} />} />
             <Route
-              path="/"
+              path='/session/:sessionId'
+              element={<ChatView renderLeftHeader={isSidebarCollapsed ? toggleButton : null} />}
+            />
+            <Route
+              path='/'
               element={
                 <div style={{ height: '100%', position: 'relative' }}>
                   {isSidebarCollapsed && (

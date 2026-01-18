@@ -1,7 +1,7 @@
-import React from 'react'
-import { List, Button, Popconfirm } from 'antd'
-import { useTranslation } from 'react-i18next'
 import type { Session } from '#~/types'
+import { Button, List, Popconfirm } from 'antd'
+import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { SessionItem } from './SessionItem'
 
 interface SessionListProps {
@@ -14,12 +14,12 @@ interface SessionListProps {
   onToggleSelect: (id: string) => void
 }
 
-export function SessionList({ 
-  sessions, 
-  activeId, 
-  isBatchMode, 
+export function SessionList({
+  sessions,
+  activeId,
+  isBatchMode,
   selectedIds,
-  onSelectSession, 
+  onSelectSession,
   onDeleteSession,
   onToggleSelect
 }: SessionListProps) {
@@ -28,9 +28,13 @@ export function SessionList({
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <List
-          className="session-list"
-          size="small"
-          locale={{ emptyText: <div style={{ padding: '20px', color: '#9ca3af', textAlign: 'center' }}>{t('common.noSessions')}</div> }}
+          className='session-list'
+          size='small'
+          locale={{
+            emptyText: <div style={{ padding: '20px', color: '#9ca3af', textAlign: 'center' }}>
+              {t('common.noSessions')}
+            </div>
+          }}
           dataSource={sessions}
           renderItem={(s: Session) => (
             <SessionItem

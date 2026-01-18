@@ -6,13 +6,17 @@
   flex-direction: column;
 
   &.empty {
-    opacity: 0.6;
+    opacity: .6;
     .todo-progress-bar {
       cursor: default;
       background: #f9fafb;
       box-shadow: none;
-      &:hover { border-color: #e5e7eb; }
-      .progress-info .material-symbols-outlined { color: #9ca3af; }
+      &:hover {
+        border-color: #e5e7eb;
+      }
+      .progress-info .material-symbols-outlined {
+        color: #9ca3af;
+      }
     }
   }
 
@@ -24,9 +28,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, .06);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all .2s ease;
 
     &:hover {
       border-color: #3b82f6;
@@ -60,7 +64,7 @@
       .progress-fill {
         height: 100%;
         background: #3b82f6;
-        transition: width 0.3s ease;
+        transition: width .3s ease;
       }
     }
 
@@ -87,8 +91,8 @@
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    animation: slideUp .3s cubic-bezier(.4, 0, .2, 1);
     overflow: hidden;
     z-index: 100;
 
@@ -102,7 +106,7 @@
         align-items: flex-start;
         gap: 10px;
         padding: 8px 16px;
-        transition: background-color 0.2s;
+        transition: background-color .2s;
 
         &:hover {
           background-color: #f9fafb;
@@ -115,19 +119,33 @@
         }
 
         &.status-completed {
-          opacity: 0.6;
-          .icon { color: #10b981; }
-          .text { text-decoration: line-through; }
+          opacity: .6;
+          .icon {
+            color: #10b981;
+          }
+          .text {
+            text-decoration: line-through;
+          }
         }
 
         &.status-in_progress {
-          .icon { color: #3b82f6; animation: spin 2s linear infinite; }
-          .text { color: #111827; font-weight: 500; }
+          .icon {
+            color: #3b82f6;
+            animation: spin 2s linear infinite;
+          }
+          .text {
+            color: #111827;
+            font-weight: 500;
+          }
         }
 
         &.status-pending {
-          .icon { color: #9ca3af; }
-          .text { color: #4b5563; }
+          .icon {
+            color: #9ca3af;
+          }
+          .text {
+            color: #4b5563;
+          }
         }
 
         .todo-content-wrapper {
@@ -148,9 +166,18 @@
             text-transform: uppercase;
             font-weight: 600;
 
-            &.high { background: #fee2e2; color: #ef4444; }
-            &.medium { background: #fef3c7; color: #d97706; }
-            &.low { background: #d1fae5; color: #10b981; }
+            &.high {
+              background: #fee2e2;
+              color: #ef4444;
+            }
+            &.medium {
+              background: #fef3c7;
+              color: #d97706;
+            }
+            &.low {
+              background: #d1fae5;
+              color: #10b981;
+            }
           }
         }
       }
@@ -159,16 +186,32 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

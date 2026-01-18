@@ -1,9 +1,9 @@
 import fs from 'node:fs'
-import path from 'node:path'
 import os from 'node:os'
+import path from 'node:path'
 
-import { v4 as uuidv4 } from 'uuid'
 import Database from 'better-sqlite3'
+import { v4 as uuidv4 } from 'uuid'
 
 import type { Session } from '#~/types.js'
 
@@ -92,7 +92,7 @@ export class SqliteDb {
     const session: Session = {
       id: id || uuidv4(),
       title: title || '新会话',
-      createdAt: Date.now(),
+      createdAt: Date.now()
     }
     const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt) VALUES (?, ?, ?)')
     stmt.run(session.id, session.title, session.createdAt)

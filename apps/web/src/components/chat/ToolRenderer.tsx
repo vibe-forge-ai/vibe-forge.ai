@@ -1,15 +1,18 @@
-import React from 'react'
-import { DefaultTool } from './tools/DefaultTool'
-import { BashTool } from './tools/BashTool'
-import { ReadTool } from './tools/ReadTool'
-import { WriteTool } from './tools/WriteTool'
-import { TodoTool } from './tools/TodoTool'
 import type { ChatMessageContent } from '#~/types'
+import React from 'react'
+import { BashTool } from './tools/BashTool'
+import { DefaultTool } from './tools/DefaultTool'
+import { ReadTool } from './tools/ReadTool'
+import { TodoTool } from './tools/TodoTool'
+import { WriteTool } from './tools/WriteTool'
 
-const TOOL_RENDERERS: Record<string, React.ComponentType<{
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>,
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}>> = {
+const TOOL_RENDERERS: Record<
+  string,
+  React.ComponentType<{
+    item: Extract<ChatMessageContent, { type: 'tool_use' }>
+    resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
+  }>
+> = {
   bash: BashTool,
   Bash: BashTool, // Support capitalized 'Bash'
   execute_command: BashTool,
@@ -18,14 +21,14 @@ const TOOL_RENDERERS: Record<string, React.ComponentType<{
   Write: WriteTool,
   write_file: WriteTool,
   TodoWrite: TodoTool,
-  todo_write: TodoTool,
+  todo_write: TodoTool
 }
 
-export function ToolRenderer({ 
-  item, 
-  resultItem 
-}: { 
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>,
+export function ToolRenderer({
+  item,
+  resultItem
+}: {
+  item: Extract<ChatMessageContent, { type: 'tool_use' }>
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const toolName = item.name

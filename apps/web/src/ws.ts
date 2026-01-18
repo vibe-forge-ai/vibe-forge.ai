@@ -30,4 +30,3 @@ export function createSocket(handlers: WSHandlers, params?: Record<string, strin
   ws.addEventListener('close', () => handlers.onClose?.())
   return ws
 }
-

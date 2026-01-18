@@ -1,7 +1,7 @@
-import React from 'react'
-import { Button, List, Popconfirm, Checkbox } from 'antd'
-import { useTranslation } from 'react-i18next'
 import type { Session } from '#~/types'
+import { Button, Checkbox, List, Popconfirm } from 'antd'
+import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface SessionItemProps {
   session: Session
@@ -13,20 +13,20 @@ interface SessionItemProps {
   onToggleSelect: (id: string) => void
 }
 
-export function SessionItem({ 
-  session, 
-  isActive, 
-  isBatchMode, 
-  isSelected, 
-  onSelect, 
+export function SessionItem({
+  session,
+  isActive,
+  isBatchMode,
+  isSelected,
+  onSelect,
   onDelete,
-  onToggleSelect 
+  onToggleSelect
 }: SessionItemProps) {
   const { t, i18n } = useTranslation()
   return (
     <List.Item
-      style={{ 
-        cursor: 'pointer', 
+      style={{
+        cursor: 'pointer',
         background: isActive ? '#f2f4f5' : undefined,
         padding: '12px 16px',
         position: 'relative'
@@ -36,15 +36,15 @@ export function SessionItem({
     >
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '12px' }}>
         {isBatchMode && (
-          <Checkbox 
-            checked={isSelected} 
+          <Checkbox
+            checked={isSelected}
             onChange={() => onToggleSelect(session.id)}
             onClick={(e) => e.stopPropagation()}
           />
         )}
         <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '32px' }}>
-          <div className="session-title" style={{ marginBottom: '4px' }}>
-            <span className="material-symbols-outlined">chat_bubble</span>
+          <div className='session-title' style={{ marginBottom: '4px' }}>
+            <span className='material-symbols-outlined'>chat_bubble</span>
             <span style={{ fontWeight: 500 }}>{session.title || t('common.newChat')}</span>
           </div>
           <div style={{ fontSize: '11px', color: '#9ca3af' }}>
@@ -55,7 +55,7 @@ export function SessionItem({
           </div>
         </div>
       </div>
-      
+
       {!isBatchMode && (
         <Popconfirm
           title={t('common.deleteSession')}
@@ -66,9 +66,9 @@ export function SessionItem({
           okButtonProps={{ danger: true }}
         >
           <Button
-            type="text"
-            size="small"
-            className="delete-session-btn"
+            type='text'
+            size='small'
+            className='delete-session-btn'
             onClick={(e) => {
               e.stopPropagation()
             }}
@@ -82,10 +82,10 @@ export function SessionItem({
               justifyContent: 'center',
               width: '28px',
               height: '28px',
-              padding: 0,
+              padding: 0
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
+            <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
               delete
             </span>
           </Button>

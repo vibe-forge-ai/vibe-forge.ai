@@ -1,22 +1,22 @@
 import './MessageItem.scss'
+import type { ChatMessage, ChatMessageContent } from '#~/types'
+import { message } from 'antd'
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useTranslation } from 'react-i18next'
-import { message } from 'antd'
-import type { ChatMessage, ChatMessageContent } from '#~/types'
 import { ToolRenderer } from './ToolRenderer'
 
-export function MessageItem({ 
-  msg, 
-  isFirstInGroup, 
-  allMessages, 
-  index 
-}: { 
-  msg: ChatMessage, 
-  isFirstInGroup: boolean, 
-  allMessages: ChatMessage[], 
-  index: number 
+export function MessageItem({
+  msg,
+  isFirstInGroup,
+  allMessages,
+  index
+}: {
+  msg: ChatMessage
+  isFirstInGroup: boolean
+  allMessages: ChatMessage[]
+  index: number
 }) {
   const { t } = useTranslation()
   const isUser = msg.role === 'user'
@@ -26,7 +26,7 @@ export function MessageItem({
 
     if (typeof msg.content === 'string') {
       return (
-        <div className="markdown-body">
+        <div className='markdown-body'>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {msg.content}
           </ReactMarkdown>
@@ -44,9 +44,11 @@ export function MessageItem({
         i++
         continue
       }
-      
+
       if (item.type === 'tool_use') {
-        let resultItem = msg.content.find((r, idx) => idx > i && r.type === 'tool_result' && r.tool_use_id === item.id) as Extract<ChatMessageContent, { type: 'tool_result' }> | undefined
+        let resultItem = msg.content.find((r, idx) =>
+          idx > i && r.type === 'tool_result' && r.tool_use_id === item.id
+        ) as Extract<ChatMessageContent, { type: 'tool_result' }> | undefined
 
         if (!resultItem && allMessages) {
           for (let j = index + 1; j < allMessages.length; j++) {
@@ -67,21 +69,29 @@ export function MessageItem({
         )
       } else if (item.type === 'text') {
         renderedItems.push(
-          <div key={i} className="markdown-body">
+          <div key={i} className='markdown-body'>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {item.text}
             </ReactMarkdown>
           </div>
         )
       } else if (item.type === 'tool_result') {
-        const hasCallInCurrent = msg.content.some((c, idx) => idx < i && c && c.type === 'tool_use' && c.id === item.tool_use_id)
-        const hasCallInPrevious = allMessages && allMessages.slice(0, index).some(prevMsg => 
-          prevMsg && Array.isArray(prevMsg.content) && prevMsg.content.some(c => c && c.type === 'tool_use' && c.id === item.tool_use_id)
+        const hasCallInCurrent = msg.content.some((c, idx) =>
+          idx < i && c && c.type === 'tool_use' && c.id === item.tool_use_id
         )
-        
+        const hasCallInPrevious = allMessages
+          && allMessages.slice(0, index).some(prevMsg =>
+            prevMsg && Array.isArray(prevMsg.content)
+            && prevMsg.content.some(c => c && c.type === 'tool_use' && c.id === item.tool_use_id)
+          )
+
         if (!hasCallInCurrent && !hasCallInPrevious) {
           renderedItems.push(
-            <ToolRenderer key={item.tool_use_id || i} item={{ type: 'tool_use', id: item.tool_use_id, name: t('chat.tools.unknown'), input: {} }} resultItem={item} />
+            <ToolRenderer
+              key={item.tool_use_id || i}
+              item={{ type: 'tool_use', id: item.tool_use_id, name: t('chat.tools.unknown'), input: {} }}
+              resultItem={item}
+            />
           )
         }
       }
@@ -91,22 +101,24 @@ export function MessageItem({
     if (renderedItems.length === 0) return null
 
     return (
-      <div className="message-contents">
+      <div className='message-contents'>
         {renderedItems}
         {msg.toolCall && (
-          <ToolRenderer 
-            item={{ 
-              type: 'tool_use', 
-              id: msg.toolCall.id || 'legacy', 
-              name: msg.toolCall.name, 
-              input: msg.toolCall.args 
-            }} 
-            resultItem={msg.toolCall.output ? {
-              type: 'tool_result',
-              tool_use_id: msg.toolCall.id || 'legacy',
-              content: msg.toolCall.output,
-              is_error: msg.toolCall.status === 'error'
-            } : undefined}
+          <ToolRenderer
+            item={{
+              type: 'tool_use',
+              id: msg.toolCall.id || 'legacy',
+              name: msg.toolCall.name,
+              input: msg.toolCall.args
+            }}
+            resultItem={msg.toolCall.output
+              ? {
+                type: 'tool_result',
+                tool_use_id: msg.toolCall.id || 'legacy',
+                content: msg.toolCall.output,
+                is_error: msg.toolCall.status === 'error'
+              }
+              : undefined}
           />
         )}
       </div>
@@ -121,30 +133,30 @@ export function MessageItem({
   if (!content) return null
 
   return (
-    <div 
+    <div
       className={`${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${!isFirstInGroup ? 'consecutive' : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="bubble">
+      <div className='bubble'>
         {content}
-        <div className="msg-footer">
+        <div className='msg-footer'>
           {isUser && msg.model && (
-            <span className="msg-model">
+            <span className='msg-model'>
               {msg.model.split(',').pop()}
             </span>
           )}
           {isUser && msg.usage && (
-            <span className="msg-usage">
+            <span className='msg-usage'>
               Tokens: {msg.usage.input_tokens + msg.usage.output_tokens}
             </span>
           )}
-          <span 
-            className="timestamp"
+          <span
+            className='timestamp'
             onDoubleClick={() => {
               navigator.clipboard.writeText(new Date(msg.createdAt).toISOString())
               message.success('ISO 时间已复制到剪贴板')
             }}
-            title="双击复制 ISO 时间"
+            title='双击复制 ISO 时间'
           >
             {new Date(msg.createdAt).toLocaleString('zh-CN', {
               year: 'numeric',

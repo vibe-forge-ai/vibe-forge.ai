@@ -11,7 +11,7 @@ export async function createProject(name?: string) {
   const res = await fetch(`${SERVER_URL}/api/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name })
   })
   return res.json()
 }
@@ -25,7 +25,7 @@ export async function createSession(title?: string) {
   const res = await fetch(`${SERVER_URL}/api/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title })
   })
   return res.json()
 }

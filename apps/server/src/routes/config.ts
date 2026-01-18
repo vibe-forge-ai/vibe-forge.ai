@@ -1,6 +1,6 @@
+import { loadEnv } from '#~/env.js'
 import Router from '@koa/router'
 import fs from 'node:fs'
-import { loadEnv } from '#~/env.js'
 
 export function configRouter(): Router {
   const router = new Router()
@@ -15,7 +15,7 @@ export function configRouter(): Router {
       CLAUDE_CODE_CLI_PATH: cliPath,
       CLAUDE_CODE_CONFIG_PATH: configPath,
       cliExists,
-      configExists,
+      configExists
     }
   })
 

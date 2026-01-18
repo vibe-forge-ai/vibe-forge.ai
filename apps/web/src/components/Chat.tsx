@@ -1,22 +1,22 @@
 import './Chat.scss'
 
-import React, { useEffect, useRef, useState } from 'react'
 import { message } from 'antd'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
 import type { ChatMessage, Session, SessionInfo } from '#~/types'
 import { createSocket } from '#~/ws'
 
 import { ChatHeader } from './chat/ChatHeader'
-import { Sender } from './chat/Sender'
-import { MessageItem } from './chat/MessageItem'
 import { CurrentTodoList } from './chat/CurrentTodoList'
+import { MessageItem } from './chat/MessageItem'
+import { Sender } from './chat/Sender'
 
-export function Chat({ 
+export function Chat({
   session,
   renderLeftHeader
-}: { 
-  session?: Session,
+}: {
+  session?: Session
   renderLeftHeader?: React.ReactNode
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -160,7 +160,7 @@ export function Chat({
 
   const send = (text: string) => {
     if (!wsRef.current || !text.trim() || isThinking) return
-    
+
     setIsThinking(true)
     wsRef.current.send(JSON.stringify({
       type: 'user_message',
@@ -177,11 +177,11 @@ export function Chat({
   }
 
   return (
-    <div className="chat-container">
-      <ChatHeader 
-        sessionInfo={sessionInfo} 
+    <div className='chat-container'>
+      <ChatHeader
+        sessionInfo={sessionInfo}
         sessionId={session?.id}
-        renderLeft={renderLeftHeader} 
+        renderLeft={renderLeftHeader}
       />
 
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
@@ -190,9 +190,9 @@ export function Chat({
           try {
             const isFirstInGroup = index === 0 || (messages[index - 1] && messages[index - 1].role !== msg.role)
             return (
-              <MessageItem 
-                key={msg.id || index} 
-                msg={msg} 
+              <MessageItem
+                key={msg.id || index}
+                msg={msg}
                 isFirstInGroup={isFirstInGroup}
                 allMessages={messages}
                 index={index}
@@ -204,19 +204,19 @@ export function Chat({
           }
         })}
         <div ref={messagesEndRef} />
-        
+
         {showScrollBottom && (
-          <div className="scroll-bottom-btn" onClick={() => scrollToBottom()}>
-            <span className="material-symbols-outlined">arrow_downward</span>
+          <div className='scroll-bottom-btn' onClick={() => scrollToBottom()}>
+            <span className='material-symbols-outlined'>arrow_downward</span>
           </div>
         )}
       </div>
-      
+
       <CurrentTodoList messages={messages} />
-      <Sender 
-        onSend={send} 
-        isThinking={isThinking} 
-        onInterrupt={interrupt} 
+      <Sender
+        onSend={send}
+        isThinking={isThinking}
+        onInterrupt={interrupt}
         sessionInfo={sessionInfo}
       />
     </div>

@@ -24,7 +24,7 @@ export function registerUiCommand(program: Command) {
         DATA_DIR: String(opts.dataDir),
         LOG_LEVEL: String(opts.logLevel),
         CLAUDE_CODE_CLI_PATH: opts.cliPath ?? process.env.CLAUDE_CODE_CLI_PATH,
-        CLAUDE_CODE_CONFIG_PATH: opts.configPath ?? process.env.CLAUDE_CODE_CONFIG_PATH,
+        CLAUDE_CODE_CONFIG_PATH: opts.configPath ?? process.env.CLAUDE_CODE_CONFIG_PATH
       }
 
       const viteEnv = {
@@ -32,17 +32,17 @@ export function registerUiCommand(program: Command) {
         VITE_PORT: String(opts.vitePort),
         VITE_SERVER_HOST: String(opts.host),
         VITE_SERVER_PORT: String(opts.serverPort),
-        VITE_SERVER_WS_PATH: String(opts.wsPath),
+        VITE_SERVER_WS_PATH: String(opts.wsPath)
       }
 
       const server = spawn('pnpm', ['--filter', '@vibe-forge/server', 'dev'], {
         env: serverEnv,
-        stdio: 'inherit',
+        stdio: 'inherit'
       })
 
       const web = spawn('pnpm', ['--filter', '@vibe-forge/web', 'dev'], {
         env: viteEnv,
-        stdio: 'inherit',
+        stdio: 'inherit'
       })
 
       function shutdown(code = 0) {
@@ -64,4 +64,3 @@ export function registerUiCommand(program: Command) {
       process.on('SIGTERM', () => shutdown(0))
     })
 }
-

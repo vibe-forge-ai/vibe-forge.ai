@@ -7,15 +7,11 @@ html, body, #root {
   box-sizing: border-box;
 }
 
-[class*="material-symbols"] {
+[class*='material-symbols'] {
   user-select: none;
 }
 
 .material-symbols-outlined {
   font-size: 20px;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 20;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }

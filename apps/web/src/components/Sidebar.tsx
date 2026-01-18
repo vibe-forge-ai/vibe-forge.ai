@@ -1,15 +1,15 @@
 import './Sidebar.scss'
 
-import React, { useState, useMemo } from 'react'
-import useSWR from 'swr'
-import { useTranslation } from 'react-i18next'
 import { Button, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
+import React, { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import useSWR from 'swr'
 
 import { createSession, deleteSession } from '#~/api'
 import type { Session } from '#~/types'
-import { SidebarHeader } from './sidebar/SidebarHeader'
 import { SessionList } from './sidebar/SessionList'
+import { SidebarHeader } from './sidebar/SidebarHeader'
 
 export function Sidebar({
   activeId,
@@ -32,16 +32,16 @@ export function Sidebar({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR(
-    `/api/sessions`,
+    `/api/sessions`
   )
   const sessions: Session[] = sessionsRes?.sessions ?? []
 
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions
     const query = searchQuery.toLowerCase()
-    return sessions.filter(s => 
-      (s.title || '').toLowerCase().includes(query) || 
-      s.id.toLowerCase().includes(query)
+    return sessions.filter(s =>
+      (s.title || '').toLowerCase().includes(query)
+      || s.id.toLowerCase().includes(query)
     )
   }, [sessions, searchQuery])
 
@@ -98,19 +98,19 @@ export function Sidebar({
     {
       key: 'zh',
       label: '简体中文',
-      onClick: () => i18n.changeLanguage('zh'),
+      onClick: () => i18n.changeLanguage('zh')
     },
     {
       key: 'en',
       label: 'English',
-      onClick: () => i18n.changeLanguage('en'),
-    },
-  ];
+      onClick: () => i18n.changeLanguage('en')
+    }
+  ]
 
   return (
-    <div 
+    <div
       className={`sidebar-container ${collapsed ? 'collapsed' : ''}`}
-      style={{ 
+      style={{
         width: collapsed ? 0 : width,
         minWidth: collapsed ? 0 : undefined,
         overflow: 'hidden',
@@ -122,16 +122,18 @@ export function Sidebar({
         flexShrink: 0
       }}
     >
-      <div style={{ 
-        width: width,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: collapsed ? `translateX(-${width}px)` : 'translateX(0)',
-      }}>
-        <SidebarHeader 
-          onCreateSession={handleCreateSession} 
+      <div
+        style={{
+          width: width,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: collapsed ? `translateX(-${width}px)` : 'translateX(0)'
+        }}
+      >
+        <SidebarHeader
+          onCreateSession={handleCreateSession}
           onToggleCollapse={onToggleCollapse}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -140,7 +142,7 @@ export function Sidebar({
           selectedCount={selectedIds.size}
           onBatchDelete={handleBatchDelete}
         />
-        <SessionList 
+        <SessionList
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}
@@ -149,17 +151,24 @@ export function Sidebar({
           onDeleteSession={handleDeleteSession}
           onToggleSelect={handleToggleSelect}
         />
-        <div className="sidebar-footer">
-          <Dropdown menu={{ items: langItems }} placement="topRight" trigger={['click']}>
-            <Button 
-              type="text" 
-              icon={<span className="material-symbols-outlined" style={{ fontSize: 18, lineHeight: '18px', display: 'block' }}>language</span>}
-              style={{ 
-                height: 32, 
+        <div className='sidebar-footer'>
+          <Dropdown menu={{ items: langItems }} placement='topRight' trigger={['click']}>
+            <Button
+              type='text'
+              icon={
+                <span
+                  className='material-symbols-outlined'
+                  style={{ fontSize: 18, lineHeight: '18px', display: 'block' }}
+                >
+                  language
+                </span>
+              }
+              style={{
+                height: 32,
                 width: 32,
                 padding: 0,
-                display: 'inline-flex', 
-                alignItems: 'center', 
+                display: 'inline-flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 color: '#6b7280',
                 borderRadius: 4,

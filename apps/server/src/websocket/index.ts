@@ -1,14 +1,14 @@
-import { WebSocketServer, type WebSocket } from 'ws'
-import { v4 as uuidv4 } from 'uuid'
 import { URL } from 'url'
+import { v4 as uuidv4 } from 'uuid'
+import { type WebSocket, WebSocketServer } from 'ws'
 
-import { query, type AdapterSession, type AdapterOutputEvent } from '#~/adapters/index.js'
-import type { ChatMessage } from '#~/types.js'
-import type { ServerEnv } from '#~/env.js'
+import { type AdapterOutputEvent, type AdapterSession, query } from '#~/adapters/index.js'
 import { getDb } from '#~/db.js'
+import type { ServerEnv } from '#~/env.js'
+import type { ChatMessage } from '#~/types.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
-type WSEvent = 
+type WSEvent =
   | { type: 'error'; message: string }
   | { type: 'message'; message: ChatMessage }
   | { type: 'session_info'; info: any }
@@ -28,8 +28,8 @@ export function setupWebSocket(server: any, env: ServerEnv) {
   // 记录 sessionId 对应的 process (adapter) 和相关的 sockets
   // 使用 Map 因为 sessionId 是字符串。如果需要自动清理，我们在 close 时手动处理。
   const adapterCache = new Map<string, {
-    session: AdapterSession,
-    sockets: Set<WebSocket>,
+    session: AdapterSession
+    sockets: Set<WebSocket>
     messages: WSEvent[]
   }>()
 
@@ -60,27 +60,27 @@ export function setupWebSocket(server: any, env: ServerEnv) {
 
     // 尝试复用已有的 adapter session
     let cached = adapterCache.get(sessionId)
-    
+
     // 如果已存在该 sessionId 的 session，则复用
     if (cached) {
       console.log(`[server] [${sessionId}] Reusing existing adapter process`)
       cached.sockets.add(ws)
       currentSession = cached.session
-      
+
       // 重放内存中的历史消息
       for (const msg of cached.messages) {
         sendToClient(ws, msg)
       }
     } else {
       console.log(`[server] [${sessionId}] Starting new adapter process (type: ${type})`)
-      
+
       // 确保数据库中有该 session
       const existing = db.getSession(sessionId)
       if (!existing) {
         console.log(`[server] [${sessionId}] Session not found in DB, creating new entry`)
         db.createSession(sessionId === 'default' ? '默认会话' : `会话 ${sessionId.slice(0, 8)}`, sessionId)
       }
-      
+
       // 重放从数据库加载的历史消息给当前 socket
       if (hasHistory) {
         console.log(`[server] [${sessionId}] Replaying ${historyMessages.length} messages from DB`)
@@ -91,7 +91,7 @@ export function setupWebSocket(server: any, env: ServerEnv) {
 
       const sockets = new Set<WebSocket>([ws])
       const messages = [...historyMessages]
-      
+
       try {
         const session = query('claude', {
           env: process.env as Record<string, string>,
@@ -163,7 +163,7 @@ export function setupWebSocket(server: any, env: ServerEnv) {
                 })
                 break
             }
-          },
+          }
         })
 
         currentSession = session
@@ -184,14 +184,14 @@ export function setupWebSocket(server: any, env: ServerEnv) {
             id: uuidv4(),
             role: 'user',
             content: userText,
-            createdAt: Date.now(),
+            createdAt: Date.now()
           }
-          
+
           // 存入历史并广播
           const ev: WSEvent = { type: 'message', message: userMessage }
           const db = getDb()
           db.saveMessage(sessionId, ev)
-          
+
           const cached = adapterCache.get(sessionId)
           if (cached) {
             cached.messages.push(ev)
@@ -204,17 +204,17 @@ export function setupWebSocket(server: any, env: ServerEnv) {
           }
 
           if (currentSession) {
-            const currentCached = adapterCache.get(sessionId);
-            const messageList = currentCached ? currentCached.messages : [];
-            
+            const currentCached = adapterCache.get(sessionId)
+            const messageList = currentCached ? currentCached.messages : []
+
             // 获取最后一条助手消息的 id (即 uuid) 作为 parentUuid
             const lastAssistantMessage = messageList
-              .filter((m: WSEvent): m is Extract<WSEvent, { type: 'message' }> => 
+              .filter((m: WSEvent): m is Extract<WSEvent, { type: 'message' }> =>
                 m.type === 'message' && m.message.role === 'assistant' && !!m.message.id
               )
-              .pop();
-            
-            const parentUuid = lastAssistantMessage ? lastAssistantMessage.message.id : undefined;
+              .pop()
+
+            const parentUuid = lastAssistantMessage ? lastAssistantMessage.message.id : undefined
 
             currentSession.emit({
               type: 'message',
@@ -243,7 +243,9 @@ export function setupWebSocket(server: any, env: ServerEnv) {
           cached.session.kill()
           adapterCache.delete(sessionId)
         } else {
-          console.log(`[server] Socket closed, but session ${sessionId} still has ${cached.sockets.size} active sockets`)
+          console.log(
+            `[server] Socket closed, but session ${sessionId} still has ${cached.sockets.size} active sockets`
+          )
         }
       } else if (currentSession) {
         // 对于不在缓存中的 session，直接 kill
