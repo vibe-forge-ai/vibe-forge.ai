@@ -1,12 +1,14 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "customConditions": [
-      "__vibe-forge__"
-    ]
   },
   "include": [
     "../apps/*/src/**/*",
     "../packages/*/src/**/*"
+  ],
+  "exclude": [
+    "../apps/cli/src/**/*",
+    "../apps/server/src/**/*",
+    "../apps/web/src/**/*"
   ]
 }

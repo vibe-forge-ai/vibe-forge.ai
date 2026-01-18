@@ -6,6 +6,8 @@
   },
   "include": [
     "../vitest.config.ts",
-    "../vitest.workspace.ts"
+    "../vitest.workspace.ts",
+    "../apps/cli/src/**/*",
+    "../apps/server/src/**/*"
   ]
 }

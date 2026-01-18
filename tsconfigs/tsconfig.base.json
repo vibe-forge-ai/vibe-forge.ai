@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
+    "rootDir": "..",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "customConditions": [
+      "__vibe-forge__"
+    ]
   }
 }

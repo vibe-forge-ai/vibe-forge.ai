@@ -5,6 +5,9 @@
       "path": "./tsconfigs/tsconfig.bundler.json"
     },
     {
+      "path": "./tsconfigs/tsconfig.bundler.web.json"
+    },
+    {
       "path": "./tsconfigs/tsconfig.node.json"
     },
     {
