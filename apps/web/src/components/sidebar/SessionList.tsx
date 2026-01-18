@@ -1,4 +1,4 @@
-import type { Session } from '#~/types'
+import type { Session } from '@vibe-forge/core'
 import { Button, List, Popconfirm } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'

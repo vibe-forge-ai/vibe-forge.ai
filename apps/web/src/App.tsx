@@ -6,7 +6,7 @@ import useSWR from 'swr'
 
 import { Chat } from '#~/components/Chat'
 import { Sidebar } from '#~/components/Sidebar'
-import type { Session } from '#~/types'
+import { type Session } from '@vibe-forge/core'
 
 const MIN_SIDEBAR_WIDTH = 200
 const MAX_SIDEBAR_WIDTH = 600

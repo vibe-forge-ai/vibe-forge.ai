@@ -45,16 +45,17 @@
 }
 
 .session-title {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
   overflow: hidden;
 
-  span:last-child {
+  .session-title-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
   }
 
   .material-symbols-outlined {

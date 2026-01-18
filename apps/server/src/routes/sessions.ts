@@ -12,6 +12,18 @@ export function sessionsRouter(): Router {
     ctx.body = { sessions: db.getSessions() }
   })
 
+  router.patch('/:id', (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { title } = ctx.request.body as { title: string }
+    if (!title) {
+      ctx.status = 400
+      ctx.body = { error: 'Title is required' }
+      return
+    }
+    db.updateSessionTitle(id, title)
+    ctx.body = { ok: true }
+  })
+
   router.post('/', (ctx) => {
     const { title } = ctx.request.body as { title?: string }
     const session = db.createSession(title)

@@ -1,4 +1,4 @@
-import type { ChatMessageContent } from '#~/types'
+import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { BashTool } from './tools/BashTool'
 import { DefaultTool } from './tools/DefaultTool'

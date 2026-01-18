@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const { TextArea } = Input
-import type { SessionInfo } from '#~/types'
+import type { SessionInfo } from '@vibe-forge/core'
 import { CompletionItem, CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
 
@@ -12,11 +12,13 @@ export function Sender({
   onSend,
   isThinking,
   onInterrupt,
+  onClear,
   sessionInfo
 }: {
   onSend: (text: string) => void
   isThinking: boolean
   onInterrupt: () => void
+  onClear?: () => void
   sessionInfo?: SessionInfo | null
 }) {
   const { t } = useTranslation()
@@ -40,17 +42,70 @@ export function Sender({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const [draft, setDraft] = useState('')
+
   const handleSend = () => {
     if (!input.trim() || isThinking) return
     onSend(input)
+
+    // Save to local storage history
+    try {
+      const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+      const newHistory = [input, ...history.filter((h: string) => h !== input)].slice(0, 50)
+      localStorage.setItem('vf_chat_history', JSON.stringify(newHistory))
+    } catch (e) {
+      console.error('Failed to save chat history', e)
+    }
+
     setInput('')
+    setDraft('')
     setShowCompletion(false)
+    setHistoryIndex(-1)
+  }
+
+  const handleHistoryNavigation = (direction: 'up' | 'down') => {
+    try {
+      const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+      if (history.length === 0) return
+
+      let nextIndex = historyIndex
+      if (direction === 'up') {
+        nextIndex = Math.min(historyIndex + 1, history.length - 1)
+      } else {
+        nextIndex = Math.max(historyIndex - 1, -1)
+      }
+
+      if (nextIndex !== historyIndex) {
+        // Save draft when leaving -1
+        if (historyIndex === -1) {
+          setDraft(input)
+        }
+
+        setHistoryIndex(nextIndex)
+        const nextValue = nextIndex === -1 ? draft : history[nextIndex]
+        setInput(nextValue)
+
+        // Set cursor to the end of the text
+        setTimeout(() => {
+          if (textareaRef.current?.resizableTextArea?.textArea) {
+            const textArea = textareaRef.current.resizableTextArea.textArea
+            const length = nextValue.length
+            textArea.setSelectionRange(length, length)
+            textArea.focus()
+          }
+        }, 0)
+      }
+    } catch (e) {
+      console.error('Failed to navigate chat history', e)
+    }
   }
 
   const handleSelectCompletion = (item: CompletionItem) => {
-    if (!triggerChar || !textareaRef.current) return
+    if (!triggerChar || !textareaRef.current?.resizableTextArea?.textArea) return
 
-    const cursorFallback = textareaRef.current.selectionStart
+    const textArea = textareaRef.current.resizableTextArea.textArea
+    const cursorFallback = textArea.selectionStart
     const textBeforeTrigger = input.slice(0, input.lastIndexOf(triggerChar, cursorFallback - 1))
     const textAfterCursor = input.slice(cursorFallback)
 
@@ -60,17 +115,19 @@ export function Sender({
 
     // Focus back and set cursor
     setTimeout(() => {
-      if (textareaRef.current) {
+      if (textareaRef.current?.resizableTextArea?.textArea) {
+        const textArea = textareaRef.current.resizableTextArea.textArea
         const newCursorPos = textBeforeTrigger.length + triggerChar.length + item.value.length + 1
-        textareaRef.current.focus()
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        textArea.focus()
+        textArea.setSelectionRange(newCursorPos, newCursorPos)
       }
     }, 0)
   }
 
   const handleTriggerClick = (char: string) => {
-    if (!textareaRef.current) return
-    const cursor = textareaRef.current.selectionStart
+    if (!textareaRef.current?.resizableTextArea?.textArea) return
+    const textArea = textareaRef.current.resizableTextArea.textArea
+    const cursor = textArea.selectionStart
     const textBefore = input.slice(0, cursor)
     const textAfter = input.slice(cursor)
 
@@ -82,13 +139,14 @@ export function Sender({
     setInput(newValue)
 
     setTimeout(() => {
-      if (textareaRef.current) {
+      if (textareaRef.current?.resizableTextArea?.textArea) {
+        const textArea = textareaRef.current.resizableTextArea.textArea
         const newPos = cursor + trigger.length
-        textareaRef.current.focus()
-        textareaRef.current.setSelectionRange(newPos, newPos)
+        textArea.focus()
+        textArea.setSelectionRange(newPos, newPos)
 
         // Trigger handleInputChange logic manually
-        const event = { target: textareaRef.current } as any
+        const event = { target: textArea } as any
         handleInputChange(event)
       }
     }, 0)
@@ -120,6 +178,68 @@ export function Sender({
       }
     }
 
+    // History navigation logic
+    if (e.key === 'ArrowUp') {
+      const textarea = e.target as HTMLTextAreaElement
+      const cursorPosition = textarea.selectionStart
+      const textBeforeCursor = textarea.value.substring(0, cursorPosition)
+
+      // Only navigate if cursor is at the first line
+      if (!textBeforeCursor.includes('\n')) {
+        const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+        const currentHistoryValue = historyIndex === -1 ? null : history[historyIndex]
+
+        // If content is empty OR content matches the current history entry, allow navigation
+        if (!input.trim() || input === currentHistoryValue) {
+          e.preventDefault()
+          handleHistoryNavigation('up')
+          return
+        }
+      }
+    }
+
+    if (e.key === 'ArrowDown') {
+      const textarea = e.target as HTMLTextAreaElement
+      const cursorPosition = textarea.selectionEnd
+      const textAfterCursor = textarea.value.substring(cursorPosition)
+
+      // Only navigate if cursor is at the last line
+      if (!textAfterCursor.includes('\n')) {
+        const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+        const currentHistoryValue = historyIndex === -1 ? null : history[historyIndex]
+
+        // If history navigation has started (index >= 0) OR content matches current history entry
+        if (historyIndex !== -1 || input === currentHistoryValue) {
+          e.preventDefault()
+          handleHistoryNavigation('down')
+          return
+        }
+      }
+    }
+
+    // More shortcuts
+    if (e.key === 'Escape') {
+      if (input) {
+        e.preventDefault()
+        setInput('')
+        setHistoryIndex(-1)
+      }
+      return
+    }
+
+    // Cmd/Ctrl + K to clear screen
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      setInput('')
+      setHistoryIndex(-1)
+      if (onClear) {
+        onClear()
+      } else {
+        message.info('Clear screen is not supported in this context')
+      }
+      return
+    }
+
     // Cmd/Ctrl + Enter to send
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
@@ -138,24 +258,27 @@ export function Sender({
       setTriggerChar(charBeforeCursor)
       let items: CompletionItem[] = []
 
-      if (charBeforeCursor === '/') {
-        items = (sessionInfo?.slashCommands || []).map(cmd => ({
-          label: `/${cmd}`,
-          value: cmd,
-          icon: 'terminal'
-        }))
-      } else if (charBeforeCursor === '@') {
-        items = (sessionInfo?.agents || []).map(agent => ({
-          label: `@${agent}`,
-          value: agent,
-          icon: 'smart_toy'
-        }))
-      } else if (charBeforeCursor === '#') {
-        items = (sessionInfo?.tools || []).map(tool => ({
-          label: `#${tool}`,
-          value: tool,
-          icon: 'check_box'
-        }))
+      if (sessionInfo?.type === 'init') {
+        const info = sessionInfo
+        if (charBeforeCursor === '/') {
+          items = (info.slashCommands || []).map(cmd => ({
+            label: `/${cmd}`,
+            value: cmd,
+            icon: 'terminal'
+          }))
+        } else if (charBeforeCursor === '@') {
+          items = (info.agents || []).map(agent => ({
+            label: `@${agent}`,
+            value: agent,
+            icon: 'smart_toy'
+          }))
+        } else if (charBeforeCursor === '#') {
+          items = (info.tools || []).map(tool => ({
+            label: `#${tool}`,
+            value: tool,
+            icon: 'check_box'
+          }))
+        }
       }
 
       if (items.length > 0) {
@@ -219,7 +342,7 @@ export function Sender({
               </div>
             </Tooltip>
 
-            {sessionInfo && (
+            {sessionInfo && sessionInfo.type === 'init' && (
               <div className='session-info-toolbar' ref={toolsRef}>
                 <div
                   className={`info-item ${showToolsList ? 'active' : ''}`}
@@ -232,14 +355,16 @@ export function Sender({
 
                 {showToolsList && (
                   <div className='tools-list-popup'>
-                    <div className='popup-header'>已激活工具</div>
+                    <div className='popup-header'>{t('chat.availableTools')}</div>
                     <div className='popup-content'>
-                      {sessionInfo.tools.map(tool => (
-                        <div key={tool} className='tool-item'>
-                          <span className='material-symbols-outlined'>check_box</span>
-                          <span className='tool-name'>{tool}</span>
-                        </div>
-                      ))}
+                      <div className='tools-list'>
+                        {sessionInfo.tools.map(tool => (
+                          <div key={tool} className='tool-item'>
+                            <span className='material-symbols-outlined'>check_circle</span>
+                            <span className='tool-name'>{tool}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -251,7 +376,9 @@ export function Sender({
             <Tooltip title='切换模型'>
               <div className='toolbar-btn model-switcher' onClick={() => message.info('模型切换功能尚不支持')}>
                 <span className='material-symbols-outlined'>variable_insert</span>
-                <span className='model-name'>{sessionInfo?.model || 'GPT-4o'}</span>
+                <span className='model-name'>
+                  {(sessionInfo?.type === 'init' ? sessionInfo.model : null) || 'GPT-4o'}
+                </span>
                 <span className='material-symbols-outlined arrow'>keyboard_arrow_down</span>
               </div>
             </Tooltip>

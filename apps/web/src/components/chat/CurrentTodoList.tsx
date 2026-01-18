@@ -1,5 +1,5 @@
 import './CurrentTodoList.scss'
-import type { ChatMessage } from '#~/types'
+import type { ChatMessage } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 

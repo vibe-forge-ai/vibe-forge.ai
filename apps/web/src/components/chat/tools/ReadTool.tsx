@@ -1,6 +1,6 @@
 import React from 'react'
 import './ReadTool.scss'
-import type { ChatMessageContent } from '#~/types'
+import type { ChatMessageContent } from '@vibe-forge/core'
 import { useTranslation } from 'react-i18next'
 import { CodeBlock } from '../CodeBlock'
 import { ToolCallBox } from '../ToolCallBox'

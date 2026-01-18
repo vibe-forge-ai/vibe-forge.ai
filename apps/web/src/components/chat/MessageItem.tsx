@@ -1,5 +1,5 @@
 import './MessageItem.scss'
-import type { ChatMessage, ChatMessageContent } from '#~/types'
+import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import { message } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'

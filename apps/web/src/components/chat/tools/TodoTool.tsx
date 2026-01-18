@@ -1,4 +1,4 @@
-import type { ChatMessageContent } from '#~/types'
+import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ToolCallBox } from '../ToolCallBox'

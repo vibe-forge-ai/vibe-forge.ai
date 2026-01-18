@@ -4,8 +4,8 @@ import { message } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
-import type { ChatMessage, Session, SessionInfo } from '#~/types'
 import { createSocket } from '#~/ws'
+import type { ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
@@ -87,7 +87,7 @@ export function Chat({
         onOpen() {
           // Connected
         },
-        onMessage(data) {
+        onMessage(data: WSEvent) {
           if (isDisposed) return
           console.log('[Chat] Received message:', data.type, data)
           if (data.type === 'error') {
@@ -176,11 +176,17 @@ export function Chat({
     setIsThinking(false)
   }
 
+  const clearMessages = () => {
+    setMessages([])
+    message.success('Messages cleared')
+  }
+
   return (
     <div className='chat-container'>
       <ChatHeader
         sessionInfo={sessionInfo}
         sessionId={session?.id}
+        sessionTitle={session?.title}
         renderLeft={renderLeftHeader}
       />
 
@@ -217,6 +223,7 @@ export function Chat({
         onSend={send}
         isThinking={isThinking}
         onInterrupt={interrupt}
+        onClear={clearMessages}
         sessionInfo={sessionInfo}
       />
     </div>

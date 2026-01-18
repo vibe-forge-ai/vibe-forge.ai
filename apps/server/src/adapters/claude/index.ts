@@ -4,8 +4,9 @@ import { isAbsolute, join, resolve } from 'node:path'
 
 import { v4 as uuidv4 } from 'uuid'
 
-import { type AdapterEvent, type AdapterOptions, defineAdapter } from '#~/adapters/core.js'
+import { defineAdapter } from '#~/adapters/core.js'
 import { loadEnv } from '#~/env.js'
+import { type AdapterEvent, type AdapterOptions, type AdapterOutputEvent } from '@vibe-forge/core'
 
 import type {
   ClaudeCodeContentText,
@@ -119,10 +120,10 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
                 data: {
                   model: data.model,
                   version: data.claude_code_version,
-                  tools: data.tools || [],
-                  slashCommands: data.slash_commands || [],
+                  tools: (data.tools || []) as string[],
+                  slashCommands: (data.slash_commands || []) as string[],
                   cwd: data.cwd,
-                  agents: data.agents || []
+                  agents: (data.agents || []) as string[]
                 }
               })
             }
@@ -138,7 +139,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
 
             const toolUsePart = contentParts.find((p): p is ClaudeCodeContentToolUse => p.type === 'tool_use')
 
-            const assistant = {
+            const assistant: any = {
               id: data.uuid,
               role: 'assistant',
               content: (textContent || (toolUsePart ? [] : '')) as string | any[],
@@ -172,7 +173,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
             const content = data.message.content
             const toolResultPart = content.find((p): p is ClaudeCodeContentToolResult => p.type === 'tool_result')
             if (toolResultPart) {
-              const resultMessage = {
+              const resultMessage: any = {
                 id: data.uuid,
                 role: 'assistant',
                 content: [{

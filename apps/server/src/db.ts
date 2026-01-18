@@ -5,7 +5,7 @@ import path from 'node:path'
 import Database from 'better-sqlite3'
 import { v4 as uuidv4 } from 'uuid'
 
-import type { Session } from '#~/types.js'
+import type { Project, Session, WSEvent } from '@vibe-forge/core'
 
 export class SqliteDb {
   private db: Database.Database
@@ -61,8 +61,37 @@ export class SqliteDb {
   }
 
   getSessions(): Session[] {
-    const stmt = this.db.prepare('SELECT * FROM sessions ORDER BY createdAt DESC')
-    return stmt.all() as Session[]
+    const stmt = this.db.prepare(`
+      SELECT s.*, 
+             (SELECT COUNT(*) FROM messages WHERE sessionId = s.id) as messageCount,
+             (SELECT data FROM messages WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) as lastMessageData
+      FROM sessions s 
+      ORDER BY createdAt DESC
+    `)
+    const rows = stmt.all() as any[]
+    return rows.map(row => {
+      let lastMessage = ''
+      if (row.lastMessageData) {
+        try {
+          const data = JSON.parse(row.lastMessageData)
+          if (data.role === 'user' || data.role === 'assistant') {
+            if (typeof data.content === 'string') {
+              lastMessage = data.content
+            } else if (Array.isArray(data.content)) {
+              const textContent = data.content.find((c: any) => c.type === 'text')
+              if (textContent) lastMessage = textContent.text
+            }
+          }
+        } catch (e) {}
+      }
+      return {
+        id: row.id,
+        title: row.title,
+        createdAt: row.createdAt,
+        messageCount: row.messageCount,
+        lastMessage
+      }
+    })
   }
 
   getSession(id: string): Session | undefined {

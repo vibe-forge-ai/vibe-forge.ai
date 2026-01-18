@@ -9,9 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:*",
     "@ant-design/icons": "^5.3.7",
+    "@vibe-forge/core": "workspace:*",
     "antd": "^5.20.0",
+    "dayjs": "^1.11.19",
     "i18next": "^25.7.4",
     "i18next-browser-languagedetector": "^8.2.0",
     "react": "^18.3.1",

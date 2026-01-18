@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { createSession, deleteSession } from '#~/api'
-import type { Session } from '#~/types'
+import type { Session } from '@vibe-forge/core'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 

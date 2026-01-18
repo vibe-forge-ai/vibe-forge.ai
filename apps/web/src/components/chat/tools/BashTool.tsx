@@ -1,5 +1,5 @@
 import './BashTool.scss'
-import type { ChatMessageContent } from '#~/types'
+import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'

@@ -1,7 +1,12 @@
-import type { Session } from '#~/types'
-import { Button, Checkbox, List, Popconfirm } from 'antd'
-import React from 'react'
+import type { Session } from '@vibe-forge/core'
+import { Badge, Button, Checkbox, List, Popconfirm, Tooltip } from 'antd'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import 'dayjs/locale/zh-cn'
+
+dayjs.extend(relativeTime)
 
 interface SessionItemProps {
   session: Session
@@ -23,6 +28,23 @@ export function SessionItem({
   onToggleSelect
 }: SessionItemProps) {
   const { t, i18n } = useTranslation()
+
+  const timeDisplay = useMemo(() => {
+    const d = dayjs(session.createdAt)
+    if (i18n.language === 'zh') {
+      d.locale('zh-cn')
+    } else {
+      d.locale('en')
+    }
+    return {
+      relative: d.fromNow(),
+      full: d.format('YYYY-MM-DD HH:mm:ss')
+    }
+  }, [session.createdAt, i18n.language])
+
+  const displayTitle = session.title || session.lastMessage || t('common.newChat')
+  const messageCount = session.messageCount || 0
+
   return (
     <List.Item
       style={{
@@ -44,14 +66,37 @@ export function SessionItem({
         )}
         <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '32px' }}>
           <div className='session-title' style={{ marginBottom: '4px' }}>
-            <span className='material-symbols-outlined'>chat_bubble</span>
-            <span style={{ fontWeight: 500 }}>{session.title || t('common.newChat')}</span>
+            <span className='material-symbols-outlined' style={{ color: isActive ? '#3b82f6' : '#9ca3af' }}>
+              chat_bubble
+            </span>
+            <span className='session-title-text' style={{ fontWeight: 500 }}>
+              {displayTitle}
+            </span>
+            {messageCount > 0 && (
+              <Badge
+                count={messageCount > 99 ? '99+' : messageCount}
+                style={{
+                  backgroundColor: isActive ? '#3b82f6' : '#f3f4f6',
+                  color: isActive ? '#fff' : '#6b7280',
+                  fontSize: '10px',
+                  height: '16px',
+                  lineHeight: '16px',
+                  minWidth: '16px',
+                  padding: '0 6px',
+                  boxShadow: 'none',
+                  flexShrink: 0,
+                  border: 'none'
+                }}
+              />
+            )}
           </div>
-          <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-            {new Date(session.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-CN' : 'en-US')}
-          </div>
+          <Tooltip title={timeDisplay.full}>
+            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+              {timeDisplay.relative}
+            </div>
+          </Tooltip>
           <div style={{ fontSize: '10px', color: '#d1d5db', marginTop: '2px', fontFamily: 'monospace' }}>
-            ID: {session.id.slice(0, 12)}...
+            ID: {session.id.slice(0, 8)}...
           </div>
         </div>
       </div>

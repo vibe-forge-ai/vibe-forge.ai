@@ -46,3 +46,12 @@ export async function deleteSession(id: string) {
   }
   return res.json()
 }
+
+export async function updateSessionTitle(id: string, title: string) {
+  const res = await fetch(`${SERVER_URL}/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title })
+  })
+  return res.json()
+}

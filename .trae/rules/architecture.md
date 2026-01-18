@@ -22,13 +22,17 @@ Vibe Forge 是一个基于 Monorepo 结构的 AI 辅助开发工具。
     - `Sidebar.tsx`: 侧边栏会话列表。
   - `src/api.ts`: 封装与后端的 HTTP 请求。
   - `src/ws.ts`: 封装 WebSocket 通信逻辑。
+- `packages/core`: 共享核心库 (TypeScript)
+  - `src/types.ts`: 前后端通用的实体类型定义 (Project, Session, ChatMessage 等)。
+  - `src/adapter.ts`: 适配器接口与相关事件类型。
+  - `src/ws.ts`: WebSocket 通信协议与事件类型定义。
 
 ## 核心技术栈
 
 - **前端**: React 18, Vite, Ant Design, SWR (数据请求), React Router 7, i18next (国际化).
 - **后端**: Koa 2, Koa Router, WebSocket (ws), tsx (开发运行)。
 - **存储**: 轻量级 SQLite 数据库 (位于 `~/.vf/db.sqlite`)。
-- **包管理**: pnpm Workspaces。
+- **包管理**: pnpm Workspaces，通过 `@vibe-forge/core` 共享通用代码。
 - **国际化**: 支持中英文切换，配置位于 `apps/web/src/i18n.ts`，资源文件位于 `apps/web/src/resources/locales/`。
 
 ## 关键流程

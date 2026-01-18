@@ -5,16 +5,8 @@ import { type WebSocket, WebSocketServer } from 'ws'
 import { type AdapterOutputEvent, type AdapterSession, query } from '#~/adapters/index.js'
 import { getDb } from '#~/db.js'
 import type { ServerEnv } from '#~/env.js'
-import type { ChatMessage } from '#~/types.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-
-type WSEvent =
-  | { type: 'error'; message: string }
-  | { type: 'message'; message: ChatMessage }
-  | { type: 'session_info'; info: any }
-  | { type: 'tool_result'; toolCallId: string; output: any; isError: boolean }
-  | { type: 'adapter_result'; result: any; usage?: any }
-  | { type: 'adapter_event'; data: any }
+import type { ChatMessage, WSEvent } from '@vibe-forge/core'
 
 function sendToClient(ws: WebSocket, event: WSEvent) {
   if (ws.readyState === ws.OPEN) {
@@ -119,7 +111,10 @@ export function setupWebSocket(server: any, env: ServerEnv) {
               case 'init':
                 broadcast({
                   type: 'session_info',
-                  info: data
+                  info: {
+                    type: 'init',
+                    ...data
+                  }
                 })
                 break
               case 'message':

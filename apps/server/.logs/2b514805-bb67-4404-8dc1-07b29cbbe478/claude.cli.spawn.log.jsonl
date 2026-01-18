@@ -1,0 +1,6 @@
+[SPAWN] command: /Users/bytedance/projects/vibe-forge.ai/apps/server/node_modules/.bin/ccr args: ["code","--print","--verbose","--debug","--output-format","stream-json","--input-format","stream-json","--resume","2b514805-bb67-4404-8dc1-07b29cbbe478"]
+[EXIT] code: null
+[SPAWN] command: /Users/bytedance/projects/vibe-forge.ai/apps/server/node_modules/.bin/ccr args: ["code","--print","--verbose","--debug","--output-format","stream-json","--input-format","stream-json","--resume","2b514805-bb67-4404-8dc1-07b29cbbe478"]
+[EXIT] code: null
+[SPAWN] command: /Users/bytedance/projects/vibe-forge.ai/apps/server/node_modules/.bin/ccr args: ["code","--print","--verbose","--debug","--output-format","stream-json","--input-format","stream-json","--resume","2b514805-bb67-4404-8dc1-07b29cbbe478"]
+[EXIT] code: null

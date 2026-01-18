@@ -8,6 +8,8 @@ export type Session = {
   id: string
   title?: string
   createdAt: number
+  messageCount?: number
+  lastMessage?: string
 }
 
 export type ChatMessageContent =
@@ -34,17 +36,4 @@ export type ChatMessage = {
     output?: unknown
   }
   createdAt: number
-}
-
-export type SessionInfo = {
-  model: string
-  version: string
-  tools: string[]
-  slashCommands: string[]
-  cwd: string
-  agents: string[]
-} | {
-  type: 'summary'
-  summary: string
-  leafUuid: string
 }
