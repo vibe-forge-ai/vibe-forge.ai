@@ -1,5 +1,6 @@
 .DS_Store
 .idea
+.logs
 
 ### Node template
 # Logs
