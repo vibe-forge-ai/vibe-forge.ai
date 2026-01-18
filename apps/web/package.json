@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vibe-forge/core": "workspace:*",
     "@ant-design/icons": "^5.3.7",
     "antd": "^5.20.0",
     "i18next": "^25.7.4",

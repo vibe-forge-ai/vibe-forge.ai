@@ -3,12 +3,7 @@
   "compilerOptions": {
   },
   "include": [
-    "../apps/*/src/**/*",
-    "../packages/*/src/**/*"
-  ],
-  "exclude": [
-    "../apps/cli/src/**/*",
-    "../apps/server/src/**/*",
-    "../apps/web/src/**/*"
+    "../packages/*/src/**/*",
+    "../packages/adapters/*/src/**/*"
   ]
 }
