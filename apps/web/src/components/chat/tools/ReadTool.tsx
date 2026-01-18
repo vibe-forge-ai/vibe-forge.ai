@@ -1,0 +1,91 @@
+import React from 'react'
+import './ReadTool.scss'
+import { useTranslation } from 'react-i18next'
+import { ToolCallBox } from '../ToolCallBox'
+import { CodeBlock } from '../CodeBlock'
+import type { ChatMessageContent } from '#~/types'
+
+export function ReadTool({ 
+  item, 
+  resultItem 
+}: { 
+  item: Extract<ChatMessageContent, { type: 'tool_use' }>,
+  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
+}) {
+  const { t } = useTranslation()
+  const input = (item.input || {}) as { file_path?: string };
+  const filePath = input.file_path || 'unknown file';
+  const fileName = filePath.split('/').pop() || filePath;
+  const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : '';
+
+  // Get language from file extension
+  const getLanguage = (path: string) => {
+    const ext = path.split('.').pop()?.toLowerCase();
+    const langMap: Record<string, string> = {
+      'js': 'javascript',
+      'jsx': 'jsx',
+      'ts': 'typescript',
+      'tsx': 'tsx',
+      'py': 'python',
+      'md': 'markdown',
+      'json': 'json',
+      'scss': 'scss',
+      'css': 'css',
+      'html': 'html',
+      'sh': 'bash',
+      'yml': 'yaml',
+      'yaml': 'yaml',
+      'sql': 'sql',
+    };
+    return langMap[ext || ''] || 'text';
+  };
+
+  const language = getLanguage(filePath);
+
+  // Clean content by removing line numbers and markers
+  const cleanContent = (content: any): string => {
+    if (typeof content !== 'string') return JSON.stringify(content, null, 2);
+    
+    // Only keep lines that start with the line number pattern (e.g., "  1→")
+    // This effectively removes <system-reminder> blocks and any surrounding whitespace
+    return content.split('\n')
+      .filter(line => /^\s*\d+→/.test(line))
+      .map(line => line.replace(/^\s*\d+→/, ''))
+      .join('\n');
+  };
+
+  return (
+    <div className="tool-group read-tool">
+      <ToolCallBox
+        defaultExpanded={false}
+        onDoubleClick={resultItem ? () => console.log('🛠️ Tool Result (Read):', resultItem) : undefined}
+        header={
+          <div className="tool-header-content">
+            <span className="material-symbols-outlined">visibility</span>
+            <span className="file-name">{fileName}</span>
+            {dirPath && <span className="file-path">{dirPath}</span>}
+          </div>
+        }
+        content={
+          <div className="tool-content">
+            {resultItem ? (
+              <div className="bash-content-scroll">
+                <div className="bash-code-wrapper">
+                  <CodeBlock 
+                    code={cleanContent(resultItem.content)} 
+                    lang={language} 
+                    showLineNumbers={true}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '8px', color: '#9ca3af', fontSize: 12 }}>
+                {t('chat.tools.reading')}
+              </div>
+            )}
+          </div>
+        }
+      />
+    </div>
+  )
+}

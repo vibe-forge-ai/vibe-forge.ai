@@ -1,0 +1,64 @@
+.chat-thinking-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: #9ca3af;
+  font-size: 12px;
+  animation: fadeIn 0.3s ease-in-out;
+
+  .dot-flashing {
+    position: relative;
+    width: 4px;
+    height: 4px;
+    border-radius: 5px;
+    background-color: #3b82f6;
+    color: #3b82f6;
+    animation: dotFlashing 1s infinite linear alternate;
+    animation-delay: .5s;
+    margin: 0 12px 0 10px;
+
+    &::before, &::after {
+      content: '';
+      display: inline-block;
+      position: absolute;
+      top: 0;
+    }
+
+    &::before {
+      left: -8px;
+      width: 4px;
+      height: 4px;
+      border-radius: 5px;
+      background-color: #3b82f6;
+      color: #3b82f6;
+      animation: dotFlashing 1s infinite linear alternate;
+      animation-delay: 0s;
+    }
+
+    &::after {
+      left: 8px;
+      width: 4px;
+      height: 4px;
+      border-radius: 5px;
+      background-color: #3b82f6;
+      color: #3b82f6;
+      animation: dotFlashing 1s infinite linear alternate;
+      animation-delay: 1s;
+    }
+  }
+}
+
+@keyframes dotFlashing {
+  0% {
+    background-color: #3b82f6;
+  }
+  50%, 100% {
+    background-color: #e5e7eb;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,56 @@
+.tool-group.bash-tool {
+  .bash-command-preview {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 11px;
+    color: #1f2937;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .tool-reason {
+    margin: 0 0 4px 0;
+    font-size: 12px;
+    color: #9ca3af;
+    line-height: 1.4;
+
+    &.markdown-body {
+      font-size: 12px;
+      color: inherit;
+      background-color: transparent;
+      padding: 0;
+      
+      p {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    }
+  }
+
+  .bash-content-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+
+    .bash-code-wrapper {
+      background-color: #f8fafc;
+      border: 1px solid #f1f5f9;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #e5e7eb;
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: #d1d5db;
+    }
+  }
+}

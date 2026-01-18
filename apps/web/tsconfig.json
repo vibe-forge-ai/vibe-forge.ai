@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfigs/tsconfig.bundler.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

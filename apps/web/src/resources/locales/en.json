@@ -1,0 +1,50 @@
+{
+  "common": {
+    "newChat": "New Chat",
+    "search": "Search title or ID...",
+    "settings": "Settings",
+    "language": "Language",
+    "delete": "Delete",
+    "deleteSession": "Delete Session",
+    "deleteSessionConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "noSessions": "No matching sessions found",
+    "sessionNotFound": "Session not found",
+    "expand": "Expand sidebar",
+    "dragResize": "Drag to resize",
+    "selectOrCreateSession": "Please select or create a session to start chatting",
+    "batchMode": "Batch Mode",
+    "cancelBatch": "Cancel Batch Mode",
+    "batchDelete": "Batch Delete",
+    "collapse": "Collapse sidebar",
+    "deleteConfirm": "Are you sure you want to delete the selected {{count}} chats?"
+  },
+  "chat": {
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "stop": "Stop",
+    "result": "Result",
+    "sessionActive": "Session Active",
+    "selectModel": "Select a model to start",
+    "toolsCount": "{{count}} tools",
+    "viewInitInfo": "Double click to view initialization info",
+    "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
+    "todo": {
+      "noTasks": "No tasks planned",
+      "progress": "Progress: {{completed}}/{{total}} completed"
+    },
+    "tools": {
+      "read": "Read File",
+      "write": "Write File",
+      "bash": "Bash",
+      "writeSuccess": "Write Success",
+      "writeFailed": "Write Failed",
+      "todo": "Task Planning",
+      "call": "call",
+      "reading": "Reading file...",
+      "unknown": "Unknown tool"
+    }
+  }
+}

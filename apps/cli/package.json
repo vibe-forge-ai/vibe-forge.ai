@@ -14,9 +14,12 @@
   },
   "bin": {
     "vibe-forge": "./cli.js",
-    "vforge": "./cli.js"
+    "vforge": "./cli.js",
+    "vf": "./cli.js"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:^"
+    "@vibe-forge/core": "workspace:^",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
   }
 }

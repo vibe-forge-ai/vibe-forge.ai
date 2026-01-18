@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "NODE_OPTIONS='-C __vibe-forge__' npx vforge"
+    "start": "NODE_OPTIONS='-C __vibe-forge__' npx vforge ui"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.0.0",
@@ -31,7 +31,13 @@
       "object.hasown": "npm:@nolyfill/object.hasown@latest",
       "object.values": "npm:@nolyfill/object.values@latest",
       "string.prototype.matchall": "npm:@nolyfill/string.prototype.matchall@latest",
-      "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest"
-    }
+      "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest",
+      "is-generator-function": "1.0.7",
+      "generator-function": "1.0.0"
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "better-sqlite3"
+    ]
   }
 }

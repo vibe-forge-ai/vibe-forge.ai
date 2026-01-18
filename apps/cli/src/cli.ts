@@ -1,3 +1,12 @@
-import { foo } from '@vibe-forge/core';
+import 'dotenv/config'
 
-console.log('vibe-forge cli', foo);
+import { Command } from 'commander'
+
+import { registerUiCommand } from './commands/ui'
+
+const program = new Command()
+program.name('vf').description('Vibe Forge CLI').version('0.1.0')
+
+registerUiCommand(program)
+
+program.parse()

@@ -1,0 +1,50 @@
+{
+  "common": {
+    "newChat": "新建会话",
+    "search": "搜索标题或 ID...",
+    "settings": "设置",
+    "language": "语言",
+    "delete": "删除",
+    "deleteSession": "删除会话",
+    "deleteSessionConfirm": "确定要删除这个会话吗？此操作不可撤销。",
+    "cancel": "取消",
+    "confirm": "确定",
+    "noSessions": "未找到匹配的会话",
+    "sessionNotFound": "会话不存在",
+    "expand": "展开侧边栏",
+    "dragResize": "拖动调整宽度",
+    "selectOrCreateSession": "请选择或新建会话开始对话",
+    "batchMode": "批量操作",
+    "cancelBatch": "取消批量操作",
+    "batchDelete": "批量删除",
+    "collapse": "收起侧边栏",
+    "deleteConfirm": "确定要删除选中的 {{count}} 个会话吗？"
+  },
+  "chat": {
+    "inputPlaceholder": "输入消息...",
+    "send": "发送",
+    "thinking": "思考中...",
+    "stop": "停止",
+    "result": "结果",
+    "sessionActive": "会话进行中",
+    "selectModel": "选择模型开始聊天",
+    "toolsCount": "{{count}} 个工具",
+    "viewInitInfo": "双击查看初始化信息",
+    "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
+    "todo": {
+      "noTasks": "未规划任务",
+      "progress": "任务进度: {{completed}}/{{total}} 已完成"
+    },
+    "tools": {
+      "read": "读取文件",
+      "write": "写入文件",
+      "bash": "Bash",
+      "writeSuccess": "写入成功",
+      "writeFailed": "写入失败",
+      "todo": "任务规划",
+      "call": "调用",
+      "reading": "正在读取文件...",
+      "unknown": "未知工具"
+    }
+  }
+}
