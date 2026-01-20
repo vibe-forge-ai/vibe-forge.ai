@@ -1,5 +1,7 @@
-import process from 'node:process'
 import { spawn } from 'node:child_process'
+import { resolve } from 'node:path'
+import process from 'node:process'
+
 import type { Command } from 'commander'
 
 interface UiOptions {
@@ -41,12 +43,14 @@ export function registerUiCommand(program: Command) {
         VITE_SERVER_PORT: String(opts.serverPort)
       }
 
-      const server = spawn('pnpm', ['--filter', '@vibe-forge/server', 'dev'], {
+      const server = spawn('npm', ['run', 'dev'], {
+        cwd: resolve(process.cwd(), 'apps/server'),
         env: serverEnv,
         stdio: 'inherit'
       })
 
-      const web = spawn('pnpm', ['--filter', '@vibe-forge/web', 'dev'], {
+      const web = spawn('npm', ['run', 'dev'], {
+        cwd: resolve(process.cwd(), 'apps/web'),
         env: viteEnv,
         stdio: 'inherit'
       })
