@@ -19,6 +19,96 @@ import type {
   ClaudeCodeUserEvent
 } from './types.js'
 
+function handleIncomingEvent(data: ClaudeCodeIncomingEvent, onEvent: AdapterOptions['onEvent']) {
+  // 1. Handle Init Event
+  if (data.type === 'system') {
+    if (data.subtype === 'init') {
+      onEvent({
+        type: 'init',
+        data: {
+          uuid: data.uuid,
+          model: data.model,
+          version: data.claude_code_version,
+          tools: (data.tools) as string[],
+          slashCommands: (data.slash_commands) as string[],
+          cwd: data.cwd,
+          agents: (data.agents) as string[]
+        }
+      })
+    }
+  }
+
+  // 2. Handle Assistant Message Event
+  if (data.type === 'assistant' && data.message != null) {
+    const contentParts = data.message.content
+    const textContent = contentParts
+      .filter((p): p is ClaudeCodeContentText => p.type === 'text')
+      .map(p => p.text)
+      .join('')
+
+    const toolUsePart = contentParts.find((p): p is ClaudeCodeContentToolUse => p.type === 'tool_use')
+
+    const assistant: ChatMessage = {
+      id: data.uuid,
+      role: 'assistant',
+      content: textContent,
+      createdAt: Date.now(),
+      model: data.message.model || data.model,
+      usage: data.message.usage
+    }
+
+    if (toolUsePart != null) {
+      const toolItem = {
+        type: 'tool_use' as const,
+        id: toolUsePart.id,
+        name: toolUsePart.name,
+        input: (toolUsePart.input ?? toolUsePart.args ?? {}) as Record<string, any>
+      }
+
+      if (textContent !== '') {
+        assistant.content = [
+          { type: 'text', text: textContent },
+          toolItem
+        ]
+      } else {
+        assistant.content = [toolItem]
+      }
+    }
+    onEvent({ type: 'message', data: assistant })
+  }
+
+  // 3. Handle Tool Result Event (from user message)
+  if (data.type === 'user' && data.message != null && Array.isArray(data.message.content)) {
+    const content = data.message.content
+    const toolResultPart = content.find((p): p is ClaudeCodeContentToolResult => p.type === 'tool_result')
+    if (toolResultPart != null) {
+      const resultMessage: ChatMessage = {
+        id: data.uuid,
+        role: 'assistant',
+        content: [{
+          type: 'tool_result' as const,
+          tool_use_id: toolResultPart.tool_use_id,
+          content: toolResultPart.content,
+          is_error: toolResultPart.is_error ?? false
+        }],
+        createdAt: Date.now()
+      }
+      onEvent({ type: 'message', data: resultMessage })
+    }
+  }
+
+  // 4. Handle Summary Event
+  if (data.type === 'summary') {
+    onEvent({
+      type: 'summary',
+      data: {
+        summary: data.summary,
+        leafUuid: data.leafUuid
+      }
+    })
+  }
+}
+
 export const adapter = defineAdapter((options: AdapterOptions) => {
   const {
     env,
@@ -111,96 +201,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
       const trimmed = line.trim()
       if (trimmed.endsWith('}')) {
         try {
-          const data = JSON.parse(trimmed) as ClaudeCodeIncomingEvent
-          // Always emit raw event for debugging/legacy
-          onEvent({ type: 'raw', data })
-
-          // 1. Handle Init Event
-          if (data.type === 'system') {
-            if (data.subtype === 'init') {
-              onEvent({
-                type: 'init',
-                data: {
-                  model: data.model,
-                  version: data.claude_code_version,
-                  tools: (data.tools) as string[],
-                  slashCommands: (data.slash_commands) as string[],
-                  cwd: data.cwd,
-                  agents: (data.agents) as string[]
-                }
-              })
-            }
-          }
-
-          // 2. Handle Assistant Message Event
-          if (data.type === 'assistant' && data.message != null) {
-            const contentParts = data.message.content
-            const textContent = contentParts
-              .filter((p): p is ClaudeCodeContentText => p.type === 'text')
-              .map(p => p.text)
-              .join('')
-
-            const toolUsePart = contentParts.find((p): p is ClaudeCodeContentToolUse => p.type === 'tool_use')
-
-            const assistant: ChatMessage = {
-              id: data.uuid,
-              role: 'assistant',
-              content: (textContent !== '' || toolUsePart != null ? [] : '') as string | any[],
-              createdAt: Date.now(),
-              model: data.message.model || data.model,
-              usage: data.message.usage
-            }
-
-            if (toolUsePart != null) {
-              const toolItem = {
-                type: 'tool_use' as const,
-                id: toolUsePart.id,
-                name: toolUsePart.name,
-                input: (toolUsePart.input ?? toolUsePart.args ?? {}) as Record<string, any>
-              }
-
-              if (textContent !== '') {
-                assistant.content = [
-                  { type: 'text', text: textContent },
-                  toolItem
-                ]
-              } else {
-                assistant.content = [toolItem]
-              }
-            }
-            onEvent({ type: 'message', data: assistant })
-          }
-
-          // 3. Handle Tool Result Event (from user message)
-          if (data.type === 'user' && data.message != null && Array.isArray(data.message.content)) {
-            const content = data.message.content
-            const toolResultPart = content.find((p): p is ClaudeCodeContentToolResult => p.type === 'tool_result')
-            if (toolResultPart != null) {
-              const resultMessage: ChatMessage = {
-                id: data.uuid,
-                role: 'assistant',
-                content: [{
-                  type: 'tool_result' as const,
-                  tool_use_id: toolResultPart.tool_use_id,
-                  content: toolResultPart.content,
-                  is_error: toolResultPart.is_error ?? false
-                }],
-                createdAt: Date.now()
-              }
-              onEvent({ type: 'message', data: resultMessage })
-            }
-          }
-
-          // 4. Handle Summary Event
-          if (data.type === 'summary') {
-            onEvent({
-              type: 'summary',
-              data: {
-                summary: data.summary,
-                leafUuid: data.leafUuid
-              }
-            })
-          }
+          handleIncomingEvent(JSON.parse(trimmed) as ClaudeCodeIncomingEvent, onEvent)
         } catch (err) {
           console.error('Failed to parse JSON:', trimmed, err)
         }

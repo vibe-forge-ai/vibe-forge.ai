@@ -23,8 +23,8 @@ export function createSocket(handlers: WSHandlers, params?: Record<string, strin
     try {
       const data = JSON.parse(String(ev.data)) as unknown
       handlers.onMessage?.(data as WSEvent)
-    } catch {
-      handlers.onMessage?.({ type: 'adapter_event', data: ev.data as unknown })
+    } catch (e) {
+      console.error(e)
     }
   })
   ws.addEventListener('error', (err) => handlers.onError?.(err))

@@ -148,10 +148,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
                 adapterCache.delete(sessionId)
                 break
               }
-              case 'raw':
-                // 可以选择是否发送 raw 事件给客户端，目前保留 adapter_event 类型
-                broadcast({ type: 'adapter_event', data: event.data as unknown })
-                break
               case 'summary': {
                 const summaryData = event.data as { summary: string; leafUuid: string }
                 // 更新数据库标题

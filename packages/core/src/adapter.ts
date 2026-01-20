@@ -18,7 +18,6 @@ export type AdapterOutputEvent =
   | { type: 'message'; data: ChatMessage }
   | { type: 'exit'; data: { exitCode: number | null; stderr?: string } }
   | { type: 'summary'; data: SessionSummaryInfo }
-  | { type: 'raw'; data: any }
 
 export type SessionInfo =
   | ({ type: 'init' } & SessionInitInfo)
