@@ -1,10 +1,10 @@
-export type Project = {
+export interface Project {
   id: string
   name: string
   path: string
 }
 
-export type Session = {
+export interface Session {
   id: string
   title?: string
   createdAt: number
@@ -17,7 +17,7 @@ export type ChatMessageContent =
   | { type: 'tool_use'; id: string; name: string; input: any }
   | { type: 'tool_result'; tool_use_id: string; content: any; is_error?: boolean }
 
-export type ChatMessage = {
+export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string | ChatMessageContent[]

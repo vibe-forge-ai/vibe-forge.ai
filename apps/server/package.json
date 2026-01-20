@@ -1,18 +1,21 @@
 {
   "name": "@vibe-forge/server",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "imports": {
+    "#~/*": "./src/*"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:*",
     "@anthropic-ai/claude-code": "2.0.31",
     "@koa/cors": "^5.0.0",
     "@koa/router": "^12.0.0",
     "@musistudio/claude-code-router": "1.0.43",
+    "@vibe-forge/core": "workspace:*",
     "better-sqlite3": "^12.6.0",
     "dotenv": "^16.4.5",
     "koa": "^2.15.0",
@@ -38,8 +41,5 @@
     "overrides": {
       "is-generator-function": "1.0.7"
     }
-  },
-  "imports": {
-    "#~/*": "./src/*"
   }
 }

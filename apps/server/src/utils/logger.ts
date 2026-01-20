@@ -1,12 +1,14 @@
-import { loadEnv } from '#~/env.js'
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
+import { cwd as processCwd } from 'node:process'
 import pino from 'pino'
+
+import { loadEnv } from '#~/env.js'
 
 const env = loadEnv()
 const LOG_DIR = path.isAbsolute(env.LOG_DIR)
   ? env.LOG_DIR
-  : path.join(process.cwd(), env.LOG_DIR)
+  : path.join(processCwd(), env.LOG_DIR)
 
 // Ensure base log directory exists
 if (!fs.existsSync(LOG_DIR)) {

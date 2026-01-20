@@ -1,10 +1,10 @@
 {
   "name": "@vibe-forge/core",
   "version": "0.1.0",
-  "exports": {
-    ".": {
+  "imports": {
+    "#~/*": {
       "__vibe-forge__": {
-        "default": "./src/index.ts"
+        "default": "./src/*.ts"
       },
       "default": {
         "import": "./dist/index.mjs",
@@ -12,10 +12,10 @@
       }
     }
   },
-  "imports": {
-    "#~/*": {
+  "exports": {
+    ".": {
       "__vibe-forge__": {
-        "default": "./src/*.ts"
+        "default": "./src/index.ts"
       },
       "default": {
         "import": "./dist/index.mjs",

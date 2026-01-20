@@ -1,14 +1,17 @@
 import { spawn } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
+import { cwd as processCwd } from 'node:process'
 
 import { v4 as uuidv4 } from 'uuid'
 
 import { defineAdapter } from '#~/adapters/core.js'
 import { loadEnv } from '#~/env.js'
-import { type AdapterEvent, type AdapterOptions, type AdapterOutputEvent } from '@vibe-forge/core'
+import { logger } from '#~/utils/logger.js'
+import type { AdapterEvent, AdapterOptions, ChatMessage } from '@vibe-forge/core'
 
 import type {
+  ClaudeCodeContent,
   ClaudeCodeContentText,
   ClaudeCodeContentToolResult,
   ClaudeCodeContentToolUse,
@@ -51,10 +54,10 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
   }
 
   // Add optional flags
-  if (model) args.push('--model', model)
+  if (model != null && model !== '') args.push('--model', model)
 
   // Handle system prompt logic
-  if (systemPrompt) {
+  if (systemPrompt != null && systemPrompt !== '') {
     if (appendSystemPrompt) {
       args.push('--append-system-prompt', systemPrompt)
     } else {
@@ -65,14 +68,14 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
   const serverEnv = loadEnv()
 
   // Add custom CLI args from env if present
-  if (serverEnv.CLAUDE_CODE_CLI_ARGS) {
+  if (serverEnv.CLAUDE_CODE_CLI_ARGS != null && serverEnv.CLAUDE_CODE_CLI_ARGS !== '') {
     const customArgs = serverEnv.CLAUDE_CODE_CLI_ARGS.split(/\s+/).filter(Boolean)
     args.push(...customArgs)
   }
 
   const logDir = isAbsolute(serverEnv.LOG_DIR)
     ? serverEnv.LOG_DIR
-    : join(process.cwd(), serverEnv.LOG_DIR)
+    : join(processCwd(), serverEnv.LOG_DIR)
   const sessionLogDir = join(logDir, sessionId)
   const spawnLogFile = join(sessionLogDir, 'claude.cli.spawn.log.jsonl')
 
@@ -100,10 +103,10 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
   proc.stdout.on('data', (buf) => {
     const rawStr = String(buf)
     writeSpawnLog(rawStr)
-    console.log({ sessionId, rawStr })
+    logger.debug({ sessionId, rawStr }, '[claude adapter] stdout')
     stdoutBuffer += rawStr
     const lines = stdoutBuffer.split('\n')
-    stdoutBuffer = lines.pop() || ''
+    stdoutBuffer = lines.pop() ?? ''
     for (const line of lines) {
       const trimmed = line.trim()
       if (trimmed.endsWith('}')) {
@@ -120,18 +123,18 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
                 data: {
                   model: data.model,
                   version: data.claude_code_version,
-                  tools: (data.tools || []) as string[],
-                  slashCommands: (data.slash_commands || []) as string[],
+                  tools: (data.tools) as string[],
+                  slashCommands: (data.slash_commands) as string[],
                   cwd: data.cwd,
-                  agents: (data.agents || []) as string[]
+                  agents: (data.agents) as string[]
                 }
               })
             }
           }
 
           // 2. Handle Assistant Message Event
-          if (data.type === 'assistant' && data.message) {
-            const contentParts = data.message.content || []
+          if (data.type === 'assistant' && data.message != null) {
+            const contentParts = data.message.content
             const textContent = contentParts
               .filter((p): p is ClaudeCodeContentText => p.type === 'text')
               .map(p => p.text)
@@ -139,49 +142,49 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
 
             const toolUsePart = contentParts.find((p): p is ClaudeCodeContentToolUse => p.type === 'tool_use')
 
-            const assistant: any = {
+            const assistant: ChatMessage = {
               id: data.uuid,
               role: 'assistant',
-              content: (textContent || (toolUsePart ? [] : '')) as string | any[],
+              content: (textContent !== '' || toolUsePart != null ? [] : '') as string | any[],
               createdAt: Date.now(),
               model: data.message.model || data.model,
               usage: data.message.usage
             }
 
-            if (toolUsePart) {
+            if (toolUsePart != null) {
               const toolItem = {
-                type: 'tool_use',
+                type: 'tool_use' as const,
                 id: toolUsePart.id,
                 name: toolUsePart.name,
-                input: (toolUsePart.input || toolUsePart.args || {}) as Record<string, any>
+                input: (toolUsePart.input ?? toolUsePart.args ?? {}) as Record<string, any>
               }
 
-              if (textContent) {
+              if (textContent !== '') {
                 assistant.content = [
                   { type: 'text', text: textContent },
                   toolItem
-                ] as any[]
+                ]
               } else {
-                assistant.content = [toolItem] as any[]
+                assistant.content = [toolItem]
               }
             }
             onEvent({ type: 'message', data: assistant })
           }
 
           // 3. Handle Tool Result Event (from user message)
-          if (data.type === 'user' && data.message && Array.isArray(data.message.content)) {
+          if (data.type === 'user' && data.message != null && Array.isArray(data.message.content)) {
             const content = data.message.content
             const toolResultPart = content.find((p): p is ClaudeCodeContentToolResult => p.type === 'tool_result')
-            if (toolResultPart) {
-              const resultMessage: any = {
+            if (toolResultPart != null) {
+              const resultMessage: ChatMessage = {
                 id: data.uuid,
                 role: 'assistant',
                 content: [{
-                  type: 'tool_result',
+                  type: 'tool_result' as const,
                   tool_use_id: toolResultPart.tool_use_id,
                   content: toolResultPart.content,
-                  is_error: toolResultPart.is_error || false
-                }] as any[],
+                  is_error: toolResultPart.is_error ?? false
+                }],
                 createdAt: Date.now()
               }
               onEvent({ type: 'message', data: resultMessage })
@@ -238,13 +241,13 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
             id: `msg_${Date.now()}`,
             type: 'message',
             role: 'user',
-            content: event.content as any,
+            content: event.content as string | ClaudeCodeContent[],
             uuid: uuidv4()
           }
         }
         const json = JSON.stringify(claudeEvent)
         writeSpawnLog(json)
-        proc.stdin.write(json + '\n')
+        proc.stdin.write(`${json}\n`)
       } else if (event.type === 'interrupt') {
         const interruptEvent: ClaudeCodeUserEvent = {
           type: 'user',
@@ -259,7 +262,7 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
         }
         const json = JSON.stringify(interruptEvent)
         writeSpawnLog(json)
-        proc.stdin.write(json + '\n')
+        proc.stdin.write(`${json}\n`)
       } else if (event.type === 'stop') {
         // 对于 stop 事件，如果 CLI 支持，可以发送特定信号或关闭 stdin
         writeSpawnLog('[STOP]')

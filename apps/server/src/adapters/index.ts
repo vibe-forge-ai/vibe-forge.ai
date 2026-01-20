@@ -9,7 +9,7 @@ export type AdapterType = keyof typeof adapters
 
 export function query(type: AdapterType, options: AdapterOptions) {
   const adapter = adapters[type]
-  if (!adapter) {
+  if (adapter == null) {
     throw new Error(`Adapter ${type} not found`)
   }
   return adapter.query(options)

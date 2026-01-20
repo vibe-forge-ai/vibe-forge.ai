@@ -4,8 +4,8 @@ import { message } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
-import { createSocket } from '#~/ws'
 import type { ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import { createSocket } from '../ws'
 
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
@@ -72,7 +72,7 @@ export function Chat({
   }, [messages])
 
   useEffect(() => {
-    if (!session?.id) return
+    if (session?.id == null || session.id === '') return
 
     setMessages([])
     setSessionInfo(null)
@@ -89,9 +89,8 @@ export function Chat({
         },
         onMessage(data: WSEvent) {
           if (isDisposed) return
-          console.log('[Chat] Received message:', data.type, data)
           if (data.type === 'error') {
-            message.error(data.message)
+            void message.error(data.message)
             setIsThinking(false)
           } else if (data.type === 'message') {
             if (data.message.role === 'assistant') {
@@ -99,17 +98,17 @@ export function Chat({
             }
             setMessages((m) => {
               const exists = m.find((msg) => msg.id === data.message.id)
-              if (exists) {
+              if (exists != null) {
                 return m.map((msg) => (msg.id === data.message.id ? data.message : msg))
               }
-              return [...m, data.message as ChatMessage]
+              return [...m, data.message]
             })
           } else if (data.type === 'session_info') {
-            if (data.info?.type === 'summary') {
+            if (data.info != null && data.info.type === 'summary') {
               // 触发 SWR 重新加载侧边栏会话列表，以显示最新标题
-              mutate('/api/sessions')
+              void mutate('/api/sessions')
             } else {
-              setSessionInfo(data.info)
+              setSessionInfo(data.info ?? null)
               // If it's a new session with no messages, ready it
               if (isInitialLoadRef.current) {
                 setTimeout(() => {
@@ -124,12 +123,12 @@ export function Chat({
             setIsThinking(false)
             setMessages((m) => {
               return m.map((msg) => {
-                if (msg.toolCall && msg.toolCall.id === data.toolCallId) {
+                if (msg.toolCall != null && msg.toolCall.id === data.toolCallId) {
                   return {
                     ...msg,
                     toolCall: {
                       ...msg.toolCall,
-                      status: data.isError ? 'error' : 'success',
+                      status: data.isError === true ? 'error' : 'success',
                       output: data.output
                     }
                   }
@@ -151,15 +150,15 @@ export function Chat({
     return () => {
       isDisposed = true
       clearTimeout(timer)
-      if (wsRef.current) {
+      if (wsRef.current != null) {
         wsRef.current.close()
         wsRef.current = null
       }
     }
-  }, [session?.id])
+  }, [session?.id, mutate])
 
   const send = (text: string) => {
-    if (!wsRef.current || !text.trim() || isThinking) return
+    if (wsRef.current == null || text.trim() === '' || isThinking) return
 
     setIsThinking(true)
     wsRef.current.send(JSON.stringify({
@@ -169,7 +168,7 @@ export function Chat({
   }
 
   const interrupt = () => {
-    if (!wsRef.current || !isThinking) return
+    if (wsRef.current == null || isThinking === false) return
     wsRef.current.send(JSON.stringify({
       type: 'interrupt'
     }))
@@ -178,7 +177,7 @@ export function Chat({
 
   const clearMessages = () => {
     setMessages([])
-    message.success('Messages cleared')
+    void message.success('Messages cleared')
   }
 
   return (
@@ -192,9 +191,10 @@ export function Chat({
 
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
         {messages.map((msg, index) => {
-          if (!msg) return null
+          if (msg == null) return null
           try {
-            const isFirstInGroup = index === 0 || (messages[index - 1] && messages[index - 1].role !== msg.role)
+            const prevMsg = messages[index - 1]
+            const isFirstInGroup = index === 0 || (prevMsg != null && prevMsg.role !== msg.role)
             return (
               <MessageItem
                 key={msg.id || index}

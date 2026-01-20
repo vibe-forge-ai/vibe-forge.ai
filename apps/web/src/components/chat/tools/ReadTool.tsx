@@ -13,14 +13,16 @@ export function ReadTool({
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const { t } = useTranslation()
-  const input = (item.input || {}) as { file_path?: string }
-  const filePath = input.file_path || 'unknown file'
-  const fileName = filePath.split('/').pop() || filePath
+  const input = (item.input != null ? item.input : {}) as { file_path?: string }
+  const filePath = (input.file_path != null && input.file_path !== '') ? input.file_path : 'unknown file'
+  const lastPart = filePath.split('/').pop()
+  const fileName = (lastPart != null && lastPart !== '') ? lastPart : filePath
   const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : ''
 
   // Get language from file extension
   const getLanguage = (path: string) => {
-    const ext = path.split('.').pop()?.toLowerCase()
+    const extPart = path.split('.').pop()
+    const ext = (extPart != null && extPart !== '') ? extPart.toLowerCase() : ''
     const langMap: Record<string, string> = {
       'js': 'javascript',
       'jsx': 'jsx',
@@ -37,7 +39,7 @@ export function ReadTool({
       'yaml': 'yaml',
       'sql': 'sql'
     }
-    return langMap[ext || ''] || 'text'
+    return langMap[ext] || 'text'
   }
 
   const language = getLanguage(filePath)
@@ -58,12 +60,11 @@ export function ReadTool({
     <div className='tool-group read-tool'>
       <ToolCallBox
         defaultExpanded={false}
-        onDoubleClick={resultItem ? () => console.log('🛠️ Tool Result (Read):', resultItem) : undefined}
         header={
           <div className='tool-header-content'>
             <span className='material-symbols-outlined'>visibility</span>
             <span className='file-name'>{fileName}</span>
-            {dirPath && <span className='file-path'>{dirPath}</span>}
+            {(dirPath != null && dirPath !== '') && <span className='file-path'>{dirPath}</span>}
           </div>
         }
         content={

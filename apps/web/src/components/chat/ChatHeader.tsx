@@ -22,18 +22,18 @@ export function ChatHeader({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
 
-  const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) || sessionTitle
+  const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) ?? sessionTitle
   const cwd = sessionInfo?.type === 'init' ? sessionInfo.cwd : null
-  const displayTitle = title || t('common.newChat')
+  const displayTitle = (title != null && title !== '') ? title : t('common.newChat')
 
   useEffect(() => {
-    if (title) {
+    if (title != null && title !== '') {
       setEditTitle(title)
     }
   }, [title])
 
   const handleTitleSubmit = async () => {
-    if (!sessionId || !editTitle.trim() || editTitle === title) {
+    if (sessionId == null || sessionId === '' || editTitle.trim() === '' || editTitle === title) {
       setIsEditing(false)
       return
     }
@@ -42,9 +42,9 @@ export function ChatHeader({
       await updateSessionTitle(sessionId, editTitle.trim())
       await mutate('/api/sessions')
       setIsEditing(false)
-      message.success(t('chat.titleUpdated'))
+      void message.success(t('chat.titleUpdated'))
     } catch (err) {
-      message.error(t('chat.titleUpdateFailed'))
+      void message.error(t('chat.titleUpdateFailed'))
     }
   }
 
@@ -61,8 +61,12 @@ export function ChatHeader({
               <Input
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
-                onBlur={handleTitleSubmit}
-                onPressEnter={handleTitleSubmit}
+                onBlur={() => {
+                  void handleTitleSubmit()
+                }}
+                onPressEnter={() => {
+                  void handleTitleSubmit()
+                }}
                 autoFocus
                 size='small'
                 style={{ fontSize: '16px', fontWeight: 600, width: '100%', maxWidth: '400px' }}
@@ -71,33 +75,27 @@ export function ChatHeader({
             : (
               <div
                 className='chat-header-title'
-                onClick={() => sessionId && setIsEditing(true)}
-                style={{ cursor: sessionId ? 'pointer' : 'default' }}
-                title={sessionId ? t('chat.clickToEditTitle') : undefined}
+                onClick={() => (sessionId != null && sessionId !== '') && setIsEditing(true)}
+                style={{ cursor: (sessionId != null && sessionId !== '') ? 'pointer' : 'default' }}
+                title={(sessionId != null && sessionId !== '') ? t('chat.clickToEditTitle') : undefined}
               >
                 {displayTitle}
               </div>
             )}
           <div className='chat-header-subtitle'>
-            {cwd || t('chat.selectModel')}
+            {cwd ?? t('chat.selectModel')}
           </div>
         </div>
       </div>
 
-      {sessionId && (
+      {(sessionId != null && sessionId !== '') && (
         <div
           className='chat-header-session-id'
           onDoubleClick={() => {
-            navigator.clipboard.writeText(sessionId)
-            message.success('Session ID 已复制到剪贴板')
-            console.log('[ChatHeader] Session Info:', {
-              id: sessionId,
-              title,
-              cwd,
-              sessionInfo
-            })
+            void navigator.clipboard.writeText(sessionId)
+            void message.success('Session ID 已复制到剪贴板')
           }}
-          title='双击复制 Session ID 并打印详情'
+          title='双击复制 Session ID'
         >
           {sessionId}
         </div>

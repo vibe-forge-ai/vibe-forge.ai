@@ -1,5 +1,16 @@
-import { Command } from 'commander'
+import process from 'node:process'
 import { spawn } from 'node:child_process'
+import type { Command } from 'commander'
+
+interface UiOptions {
+  cliPath?: string
+  cliArgs?: string
+  serverPort: string
+  dataDir: string
+  logLevel: string
+  port: string
+  host: string
+}
 
 export function registerUiCommand(program: Command) {
   program
@@ -12,7 +23,7 @@ export function registerUiCommand(program: Command) {
     .option('--log-level <level>', '日志级别', 'info')
     .option('--port <port>', 'Web 端口', '5173')
     .option('--host <host>', '绑定主机地址', 'localhost')
-    .action((opts) => {
+    .action((opts: UiOptions) => {
       const serverEnv = {
         ...process.env,
         SERVER_PORT: String(opts.serverPort),

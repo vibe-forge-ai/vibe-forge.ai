@@ -5,7 +5,7 @@ import { initReactI18next } from 'react-i18next'
 import en from './resources/locales/en.json'
 import zh from './resources/locales/zh.json'
 
-i18n
+void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({

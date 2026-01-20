@@ -22,7 +22,7 @@ export function MessageItem({
   const isUser = msg.role === 'user'
 
   const renderContent = () => {
-    if (!msg.content) return null
+    if (msg.content == null) return null
 
     if (typeof msg.content === 'string') {
       return (
@@ -40,27 +40,29 @@ export function MessageItem({
     let i = 0
     while (i < msg.content.length) {
       const item = msg.content[i]
-      if (!item) {
+      if (item == null) {
         i++
         continue
       }
 
       if (item.type === 'tool_use') {
         let resultItem = msg.content.find((r, idx) =>
-          idx > i && r.type === 'tool_result' && r.tool_use_id === item.id
+          idx > i && r != null && r.type === 'tool_result' && r.tool_use_id === item.id
         ) as Extract<ChatMessageContent, { type: 'tool_result' }> | undefined
 
-        if (!resultItem && allMessages) {
+        if (resultItem == null && allMessages != null) {
           for (let j = index + 1; j < allMessages.length; j++) {
             const nextMsg = allMessages[j]
-            if (nextMsg && Array.isArray(nextMsg.content)) {
-              const found = nextMsg.content.find(r => r && r.type === 'tool_result' && r.tool_use_id === item.id)
-              if (found) {
+            if (nextMsg != null && Array.isArray(nextMsg.content)) {
+              const found = nextMsg.content.find(r =>
+                r != null && r.type === 'tool_result' && r.tool_use_id === item.id
+              )
+              if (found != null) {
                 resultItem = found as Extract<ChatMessageContent, { type: 'tool_result' }>
                 break
               }
             }
-            if (nextMsg && nextMsg.role === 'assistant') break
+            if (nextMsg != null && nextMsg.role === 'assistant') break
           }
         }
 
@@ -77,15 +79,15 @@ export function MessageItem({
         )
       } else if (item.type === 'tool_result') {
         const hasCallInCurrent = msg.content.some((c, idx) =>
-          idx < i && c && c.type === 'tool_use' && c.id === item.tool_use_id
+          idx < i && c != null && c.type === 'tool_use' && c.id === item.tool_use_id
         )
-        const hasCallInPrevious = allMessages
+        const hasCallInPrevious = allMessages != null
           && allMessages.slice(0, index).some(prevMsg =>
-            prevMsg && Array.isArray(prevMsg.content)
-            && prevMsg.content.some(c => c && c.type === 'tool_use' && c.id === item.tool_use_id)
+            prevMsg != null && Array.isArray(prevMsg.content)
+            && prevMsg.content.some(c => c != null && c.type === 'tool_use' && c.id === item.tool_use_id)
           )
 
-        if (!hasCallInCurrent && !hasCallInPrevious) {
+        if (hasCallInCurrent === false && hasCallInPrevious === false) {
           renderedItems.push(
             <ToolRenderer
               key={item.tool_use_id || i}
@@ -103,18 +105,18 @@ export function MessageItem({
     return (
       <div className='message-contents'>
         {renderedItems}
-        {msg.toolCall && (
+        {msg.toolCall != null && (
           <ToolRenderer
             item={{
               type: 'tool_use',
-              id: msg.toolCall.id || 'legacy',
+              id: msg.toolCall.id ?? 'legacy',
               name: msg.toolCall.name,
               input: msg.toolCall.args
             }}
-            resultItem={msg.toolCall.output
+            resultItem={msg.toolCall.output != null
               ? {
                 type: 'tool_result',
-                tool_use_id: msg.toolCall.id || 'legacy',
+                tool_use_id: msg.toolCall.id ?? 'legacy',
                 content: msg.toolCall.output,
                 is_error: msg.toolCall.status === 'error'
               }
@@ -126,11 +128,11 @@ export function MessageItem({
   }
 
   const handleDoubleClick = () => {
-    console.log('[Message Data]:', msg)
+    // no-op
   }
 
   const content = renderContent()
-  if (!content) return null
+  if (content == null) return null
 
   return (
     <div
@@ -140,12 +142,12 @@ export function MessageItem({
       <div className='bubble'>
         {content}
         <div className='msg-footer'>
-          {isUser && msg.model && (
+          {isUser && msg.model != null && (
             <span className='msg-model'>
               {msg.model.split(',').pop()}
             </span>
           )}
-          {isUser && msg.usage && (
+          {isUser && msg.usage != null && (
             <span className='msg-usage'>
               Tokens: {msg.usage.input_tokens + msg.usage.output_tokens}
             </span>
@@ -153,8 +155,8 @@ export function MessageItem({
           <span
             className='timestamp'
             onDoubleClick={() => {
-              navigator.clipboard.writeText(new Date(msg.createdAt).toISOString())
-              message.success('ISO 时间已复制到剪贴板')
+              void navigator.clipboard.writeText(new Date(msg.createdAt).toISOString())
+              void message.success('ISO 时间已复制到剪贴板')
             }}
             title='双击复制 ISO 时间'
           >

@@ -53,7 +53,7 @@ export function sessionsRouter(): Router {
     }
 
     // 创建新会话
-    const newSession = db.createSession(title || `${original.title} (Fork)`)
+    const newSession = db.createSession((title != null && title !== '') ? title : `${original.title} (Fork)`)
 
     // 同步历史消息
     db.copyMessages(id, newSession.id)

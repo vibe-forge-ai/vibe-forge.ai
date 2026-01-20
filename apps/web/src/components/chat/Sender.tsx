@@ -1,12 +1,14 @@
 import './Sender.scss'
+import type { SessionInfo } from '@vibe-forge/core'
 import { Input, Tooltip, message } from 'antd'
+import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { CompletionItem } from './CompletionMenu'
+import { CompletionMenu } from './CompletionMenu'
+import { ThinkingStatus } from './ThinkingStatus'
 
 const { TextArea } = Input
-import type { SessionInfo } from '@vibe-forge/core'
-import { CompletionItem, CompletionMenu } from './CompletionMenu'
-import { ThinkingStatus } from './ThinkingStatus'
 
 export function Sender({
   onSend,
@@ -29,7 +31,7 @@ export function Sender({
   const [triggerChar, setTriggerChar] = useState<string | null>(null)
 
   const [showToolsList, setShowToolsList] = useState(false)
-  const textareaRef = useRef<any>(null)
+  const textareaRef = useRef<TextAreaRef>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -46,12 +48,12 @@ export function Sender({
   const [draft, setDraft] = useState('')
 
   const handleSend = () => {
-    if (!input.trim() || isThinking) return
+    if (input.trim() === '' || isThinking) return
     onSend(input)
 
     // Save to local storage history
     try {
-      const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+      const history = JSON.parse(localStorage.getItem('vf_chat_history') ?? '[]') as string[]
       const newHistory = [input, ...history.filter((h: string) => h !== input)].slice(0, 50)
       localStorage.setItem('vf_chat_history', JSON.stringify(newHistory))
     } catch (e) {
@@ -66,7 +68,7 @@ export function Sender({
 
   const handleHistoryNavigation = (direction: 'up' | 'down') => {
     try {
-      const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+      const history = JSON.parse(localStorage.getItem('vf_chat_history') ?? '[]') as string[]
       if (history.length === 0) return
 
       let nextIndex = historyIndex
@@ -88,7 +90,7 @@ export function Sender({
 
         // Set cursor to the end of the text
         setTimeout(() => {
-          if (textareaRef.current?.resizableTextArea?.textArea) {
+          if (textareaRef.current?.resizableTextArea?.textArea != null) {
             const textArea = textareaRef.current.resizableTextArea.textArea
             const length = nextValue.length
             textArea.setSelectionRange(length, length)
@@ -102,20 +104,20 @@ export function Sender({
   }
 
   const handleSelectCompletion = (item: CompletionItem) => {
-    if (!triggerChar || !textareaRef.current?.resizableTextArea?.textArea) return
+    if (triggerChar == null || textareaRef.current?.resizableTextArea?.textArea == null) return
 
     const textArea = textareaRef.current.resizableTextArea.textArea
     const cursorFallback = textArea.selectionStart
     const textBeforeTrigger = input.slice(0, input.lastIndexOf(triggerChar, cursorFallback - 1))
     const textAfterCursor = input.slice(cursorFallback)
 
-    const newValue = textBeforeTrigger + triggerChar + item.value + ' ' + textAfterCursor
+    const newValue = `${textBeforeTrigger}${triggerChar}${item.value} ${textAfterCursor}`
     setInput(newValue)
     setShowCompletion(false)
 
     // Focus back and set cursor
     setTimeout(() => {
-      if (textareaRef.current?.resizableTextArea?.textArea) {
+      if (textareaRef.current?.resizableTextArea?.textArea != null) {
         const textArea = textareaRef.current.resizableTextArea.textArea
         const newCursorPos = textBeforeTrigger.length + triggerChar.length + item.value.length + 1
         textArea.focus()
@@ -125,7 +127,7 @@ export function Sender({
   }
 
   const handleTriggerClick = (char: string) => {
-    if (!textareaRef.current?.resizableTextArea?.textArea) return
+    if (textareaRef.current?.resizableTextArea?.textArea == null) return
     const textArea = textareaRef.current.resizableTextArea.textArea
     const cursor = textArea.selectionStart
     const textBefore = input.slice(0, cursor)
@@ -139,14 +141,14 @@ export function Sender({
     setInput(newValue)
 
     setTimeout(() => {
-      if (textareaRef.current?.resizableTextArea?.textArea) {
+      if (textareaRef.current?.resizableTextArea?.textArea != null) {
         const textArea = textareaRef.current.resizableTextArea.textArea
         const newPos = cursor + trigger.length
         textArea.focus()
         textArea.setSelectionRange(newPos, newPos)
 
         // Trigger handleInputChange logic manually
-        const event = { target: textArea } as any
+        const event = { target: textArea } as unknown as React.ChangeEvent<HTMLTextAreaElement>
         handleInputChange(event)
       }
     }, 0)
@@ -166,8 +168,9 @@ export function Sender({
       }
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault()
-        if (completionItems[selectedIndex]) {
-          handleSelectCompletion(completionItems[selectedIndex])
+        const selectedItem = completionItems[selectedIndex]
+        if (selectedItem != null) {
+          handleSelectCompletion(selectedItem)
         }
         return
       }
@@ -186,11 +189,12 @@ export function Sender({
 
       // Only navigate if cursor is at the first line
       if (!textBeforeCursor.includes('\n')) {
-        const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+        const historyJson = localStorage.getItem('vf_chat_history')
+        const history = (historyJson != null ? JSON.parse(historyJson) : []) as string[]
         const currentHistoryValue = historyIndex === -1 ? null : history[historyIndex]
 
         // If content is empty OR content matches the current history entry, allow navigation
-        if (!input.trim() || input === currentHistoryValue) {
+        if (input.trim() === '' || input === currentHistoryValue) {
           e.preventDefault()
           handleHistoryNavigation('up')
           return
@@ -205,7 +209,8 @@ export function Sender({
 
       // Only navigate if cursor is at the last line
       if (!textAfterCursor.includes('\n')) {
-        const history = JSON.parse(localStorage.getItem('vf_chat_history') || '[]')
+        const historyJson = localStorage.getItem('vf_chat_history')
+        const history = (historyJson != null ? JSON.parse(historyJson) : []) as string[]
         const currentHistoryValue = historyIndex === -1 ? null : history[historyIndex]
 
         // If history navigation has started (index >= 0) OR content matches current history entry
@@ -219,7 +224,7 @@ export function Sender({
 
     // More shortcuts
     if (e.key === 'Escape') {
-      if (input) {
+      if (input !== '') {
         e.preventDefault()
         setInput('')
         setHistoryIndex(-1)
@@ -232,10 +237,10 @@ export function Sender({
       e.preventDefault()
       setInput('')
       setHistoryIndex(-1)
-      if (onClear) {
+      if (onClear != null) {
         onClear()
       } else {
-        message.info('Clear screen is not supported in this context')
+        void message.info('Clear screen is not supported in this context')
       }
       return
     }
@@ -261,19 +266,19 @@ export function Sender({
       if (sessionInfo?.type === 'init') {
         const info = sessionInfo
         if (charBeforeCursor === '/') {
-          items = (info.slashCommands || []).map(cmd => ({
+          items = (info.slashCommands != null ? info.slashCommands : []).map(cmd => ({
             label: `/${cmd}`,
             value: cmd,
             icon: 'terminal'
           }))
         } else if (charBeforeCursor === '@') {
-          items = (info.agents || []).map(agent => ({
+          items = (info.agents != null ? info.agents : []).map(agent => ({
             label: `@${agent}`,
             value: agent,
             icon: 'smart_toy'
           }))
         } else if (charBeforeCursor === '#') {
-          items = (info.tools || []).map(tool => ({
+          items = (info.tools != null ? info.tools : []).map(tool => ({
             label: `#${tool}`,
             value: tool,
             icon: 'check_box'
@@ -290,7 +295,7 @@ export function Sender({
       }
     } else if (showCompletion) {
       // Filter logic could go here if needed
-      if (!value.includes(triggerChar || '')) {
+      if (!value.includes(triggerChar ?? '')) {
         setShowCompletion(false)
       }
     }
@@ -337,12 +342,12 @@ export function Sender({
               </div>
             </Tooltip>
             <Tooltip title='上传图片'>
-              <div className='toolbar-btn' onClick={() => message.info('图片上传功能尚不支持')}>
+              <div className='toolbar-btn' onClick={() => void message.info('图片上传功能尚不支持')}>
                 <span className='material-symbols-outlined'>image</span>
               </div>
             </Tooltip>
 
-            {sessionInfo && sessionInfo.type === 'init' && (
+            {sessionInfo != null && sessionInfo.type === 'init' && (
               <div className='session-info-toolbar' ref={toolsRef}>
                 <div
                   className={`info-item ${showToolsList ? 'active' : ''}`}
@@ -374,17 +379,17 @@ export function Sender({
 
           <div className='toolbar-right'>
             <Tooltip title='切换模型'>
-              <div className='toolbar-btn model-switcher' onClick={() => message.info('模型切换功能尚不支持')}>
+              <div className='toolbar-btn model-switcher' onClick={() => void message.info('模型切换功能尚不支持')}>
                 <span className='material-symbols-outlined'>variable_insert</span>
                 <span className='model-name'>
-                  {(sessionInfo?.type === 'init' ? sessionInfo.model : null) || 'GPT-4o'}
+                  {(sessionInfo?.type === 'init' ? sessionInfo.model : null) ?? 'GPT-4o'}
                 </span>
                 <span className='material-symbols-outlined arrow'>keyboard_arrow_down</span>
               </div>
             </Tooltip>
 
             <div
-              className={`chat-send-btn ${input.trim() ? 'active' : ''} ${isThinking ? 'thinking' : ''}`}
+              className={`chat-send-btn ${input.trim() !== '' ? 'active' : ''} ${isThinking ? 'thinking' : ''}`}
               onClick={isThinking ? onInterrupt : handleSend}
             >
               <span className='material-symbols-outlined'>

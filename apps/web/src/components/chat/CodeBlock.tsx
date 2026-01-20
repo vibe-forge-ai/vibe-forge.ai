@@ -14,7 +14,7 @@ export function CodeBlock({
 
   useEffect(() => {
     let isMounted = true
-    codeToHtml(code, {
+    void codeToHtml(code, {
       lang,
       theme: 'github-light',
       transformers: showLineNumbers
@@ -44,7 +44,7 @@ export function CodeBlock({
     }
   }, [code, lang, showLineNumbers])
 
-  if (!html) {
+  if (html === '') {
     return (
       <pre style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
         <code>{code}</code>

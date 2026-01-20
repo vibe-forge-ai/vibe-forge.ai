@@ -21,9 +21,11 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
     const msg = messages[i]
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
       const todoUse = msg.content.find(c =>
-        c && c.type === 'tool_use' && (c.name === 'TodoWrite' || c.name === 'todo_write')
+        c != null && c.type === 'tool_use' && (c.name === 'TodoWrite' || c.name === 'todo_write')
       )
-      if (todoUse && todoUse.type === 'tool_use' && todoUse.input && typeof todoUse.input === 'object') {
+      if (
+        todoUse != null && todoUse.type === 'tool_use' && todoUse.input != null && typeof todoUse.input === 'object'
+      ) {
         const input = todoUse.input as { todos?: TodoItem[] }
         if (Array.isArray(input.todos)) {
           latestTodos = input.todos
@@ -88,7 +90,8 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
                 </span>
                 <div className='todo-content-wrapper'>
                   <span className='text'>{todo.content}</span>
-                  {todo.priority && <span className={`priority-tag ${todo.priority}`}>{todo.priority}</span>}
+                  {todo.priority != null && todo.priority !== ''
+                    && <span className={`priority-tag ${todo.priority}`}>{todo.priority}</span>}
                 </div>
               </div>
             ))}

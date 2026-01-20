@@ -8,6 +8,7 @@
     "../vitest.config.ts",
     "../vitest.workspace.ts",
     "../apps/cli/src/**/*",
-    "../apps/server/src/**/*"
+    "../apps/server/src/**/*",
+    "../apps/web/vite.config.ts"
   ]
 }

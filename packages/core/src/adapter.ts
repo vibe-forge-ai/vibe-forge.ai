@@ -25,6 +25,7 @@ export type SessionInfo =
   | ({ type: 'summary' } & SessionSummaryInfo)
 
 export interface SessionInitInfo {
+  uuid: string
   model: string
   version: string
   tools: string[]

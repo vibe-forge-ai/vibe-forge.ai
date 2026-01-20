@@ -1,5 +1,5 @@
 import type { Session } from '@vibe-forge/core'
-import { Button, List, Popconfirm } from 'antd'
+import { List } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { SessionItem } from './SessionItem'

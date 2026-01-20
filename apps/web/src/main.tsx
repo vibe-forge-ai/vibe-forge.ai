@@ -16,11 +16,11 @@ root.render(
     <ConfigProvider locale={zhCN} theme={{ token: { colorPrimary: '#000000' } }}>
       <SWRConfig
         value={{
-          fetcher: (path: string) => {
-            const serverHost = import.meta.env.VITE_SERVER_HOST || window.location.hostname
-            const serverPort = import.meta.env.VITE_SERVER_PORT || '8787'
+          fetcher: async (path: string) => {
+            const serverHost = (import.meta.env.VITE_SERVER_HOST != null && import.meta.env.VITE_SERVER_HOST !== '') ? import.meta.env.VITE_SERVER_HOST : window.location.hostname
+            const serverPort = (import.meta.env.VITE_SERVER_PORT != null && import.meta.env.VITE_SERVER_PORT !== '') ? import.meta.env.VITE_SERVER_PORT : '8787'
             const baseUrl = `http://${serverHost}:${serverPort}`
-            return fetch(`${baseUrl}${path}`).then((r) => r.json())
+            return fetch(`${baseUrl}${path}`).then(async (r) => r.json() as Promise<unknown>)
           }
         }}
       >

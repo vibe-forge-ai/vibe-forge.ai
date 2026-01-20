@@ -1,20 +1,25 @@
-import { URL } from 'url'
-import { v4 as uuidv4 } from 'uuid'
-import { type WebSocket, WebSocketServer } from 'ws'
+import type { Buffer } from 'node:buffer'
+import type { Server } from 'node:http'
+import { cwd as processCwd, env as processEnv } from 'node:process'
+import { URL } from 'node:url'
 
-import { type AdapterOutputEvent, type AdapterSession, query } from '#~/adapters/index.js'
+import { v4 as uuidv4 } from 'uuid'
+import { WebSocket, WebSocketServer } from 'ws'
+
+import { query } from '#~/adapters/index.js'
+import type { AdapterOutputEvent, AdapterSession } from '#~/adapters/index.js'
 import { getDb } from '#~/db.js'
 import type { ServerEnv } from '#~/env.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-import type { ChatMessage, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, SessionInfo, WSEvent } from '@vibe-forge/core'
 
 function sendToClient(ws: WebSocket, event: WSEvent) {
-  if (ws.readyState === ws.OPEN) {
+  if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(event))
   }
 }
 
-export function setupWebSocket(server: any, env: ServerEnv) {
+export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.WS_PATH })
 
   // 记录 sessionId 对应的 process (adapter) 和相关的 sockets
@@ -26,36 +31,34 @@ export function setupWebSocket(server: any, env: ServerEnv) {
   }>()
 
   wss.on('connection', (ws, req) => {
-    const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`)
+    const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
 
-    const sessionId = params.get('sessionId') || uuidv4()
-    const model = params.get('model') || undefined
+    const sessionId = params.get('sessionId') ?? uuidv4()
+    const model = params.get('model') ?? undefined
 
     // 自动判断 type: 如果 session 已经存在于数据库且有消息记录，则使用 resume，否则使用 create
     const db = getDb()
     const historyMessages = db.getMessages(sessionId) as WSEvent[]
     const hasHistory = historyMessages.length > 0
-    console.log(`[server] [${sessionId}] history count: ${historyMessages.length}, hasHistory: ${hasHistory}`)
+    const serverLogger = getSessionLogger(sessionId, 'server')
+    serverLogger.info({ sessionId, historyCount: historyMessages.length, hasHistory }, '[server] history check')
     const type = hasHistory ? 'resume' : 'create'
 
-    console.log(`[server] [${sessionId}] Connection established. Auto-detected type: ${type}`)
+    serverLogger.info({ sessionId, type }, '[server] Connection established')
 
-    const serverLogger = getSessionLogger(sessionId, 'server')
-    serverLogger.info({ event: 'connection', type, sessionId, model }, 'Connection established')
-
-    const systemPrompt = params.get('systemPrompt') || undefined
+    const systemPrompt = params.get('systemPrompt') ?? undefined
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
 
     // 用于当前 socket 闭包引用的 adapter session
     let currentSession: AdapterSession | null = null
 
     // 尝试复用已有的 adapter session
-    let cached = adapterCache.get(sessionId)
+    const cached = adapterCache.get(sessionId)
 
     // 如果已存在该 sessionId 的 session，则复用
-    if (cached) {
-      console.log(`[server] [${sessionId}] Reusing existing adapter process`)
+    if (cached != null) {
+      serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
       cached.sockets.add(ws)
       currentSession = cached.session
 
@@ -64,18 +67,18 @@ export function setupWebSocket(server: any, env: ServerEnv) {
         sendToClient(ws, msg)
       }
     } else {
-      console.log(`[server] [${sessionId}] Starting new adapter process (type: ${type})`)
+      serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
 
       // 确保数据库中有该 session
       const existing = db.getSession(sessionId)
-      if (!existing) {
-        console.log(`[server] [${sessionId}] Session not found in DB, creating new entry`)
+      if (existing == null) {
+        serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
         db.createSession(sessionId === 'default' ? '默认会话' : `会话 ${sessionId.slice(0, 8)}`, sessionId)
       }
 
-      // 重放从数据库加载的历史消息给当前 socket
+      // 重放从数据库加载历史消息给当前 socket
       if (hasHistory) {
-        console.log(`[server] [${sessionId}] Replaying ${historyMessages.length} messages from DB`)
+        serverLogger.info({ sessionId, historyCount: historyMessages.length }, '[server] Replaying messages from DB')
         for (const msg of historyMessages) {
           sendToClient(ws, msg)
         }
@@ -86,16 +89,15 @@ export function setupWebSocket(server: any, env: ServerEnv) {
 
       try {
         const session = query('claude', {
-          env: process.env as Record<string, string>,
-          cwd: process.cwd(),
-          type: type as 'create' | 'resume',
+          env: processEnv as Record<string, string>,
+          cwd: processCwd(),
+          type,
           sessionId,
           model,
           systemPrompt,
           appendSystemPrompt,
           onEvent: (event: AdapterOutputEvent) => {
-            const { type, data } = event
-            if (!data) return
+            if (event.data == null) return
 
             // 广播给所有关联的 sockets 并存入历史记录
             const broadcast = (ev: WSEvent) => {
@@ -107,24 +109,28 @@ export function setupWebSocket(server: any, env: ServerEnv) {
               }
             }
 
-            switch (type) {
+            switch (event.type) {
               case 'init':
-                broadcast({
-                  type: 'session_info',
-                  info: {
-                    type: 'init',
-                    ...data
-                  }
-                })
+                if ('model' in (event.data as any)) {
+                  broadcast({
+                    type: 'session_info',
+                    info: {
+                      type: 'init',
+                      ...(event.data as any)
+                    } as SessionInfo
+                  })
+                }
                 break
               case 'message':
-                broadcast({
-                  type: 'message',
-                  message: data
-                })
+                if ('role' in (event.data as any)) {
+                  broadcast({
+                    type: 'message',
+                    message: event.data
+                  })
+                }
                 break
-              case 'exit':
-                const { exitCode, stderr } = data
+              case 'exit': {
+                const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
                 const errorEvent: WSEvent = {
                   type: 'error',
                   message: exitCode !== 0
@@ -140,23 +146,26 @@ export function setupWebSocket(server: any, env: ServerEnv) {
                 // 从缓存中移除
                 adapterCache.delete(sessionId)
                 break
+              }
               case 'raw':
                 // 可以选择是否发送 raw 事件给客户端，目前保留 adapter_event 类型
-                broadcast({ type: 'adapter_event', data })
+                broadcast({ type: 'adapter_event', data: event.data as unknown })
                 break
-              case 'summary':
+              case 'summary': {
+                const summaryData = event.data as { summary: string; leafUuid: string }
                 // 更新数据库标题
-                getDb().updateSessionTitle(sessionId, data.summary)
+                getDb().updateSessionTitle(sessionId, summaryData.summary)
                 // 广播 summary 事件给前端
                 broadcast({
                   type: 'session_info',
                   info: {
                     type: 'summary',
-                    summary: data.summary,
-                    leafUuid: data.leafUuid
+                    summary: summaryData.summary,
+                    leafUuid: summaryData.leafUuid
                   }
                 })
                 break
+              }
             }
           }
         })
@@ -164,17 +173,17 @@ export function setupWebSocket(server: any, env: ServerEnv) {
         currentSession = session
         adapterCache.set(sessionId, { session, sockets, messages })
       } catch (err) {
-        console.error('[server] session init error:', err)
-        sendToClient(ws, { type: 'error', message: `${err}` })
+        serverLogger.error({ err, sessionId }, '[server] session init error')
+        sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
       }
     }
 
     ws.on('message', (raw: Buffer) => {
       try {
-        const msg = JSON.parse(String(raw)) as any
+        const msg = JSON.parse(String(raw)) as { type: string; text?: string }
         serverLogger.info({ event: 'user_input', data: msg }, 'Received user message')
         if (msg.type === 'user_message') {
-          const userText = String(msg.text || '')
+          const userText = String(msg.text ?? '')
           const userMessage: ChatMessage = {
             id: uuidv4(),
             role: 'user',
@@ -188,7 +197,7 @@ export function setupWebSocket(server: any, env: ServerEnv) {
           db.saveMessage(sessionId, ev)
 
           const cached = adapterCache.get(sessionId)
-          if (cached) {
+          if (cached != null) {
             cached.messages.push(ev)
             for (const socket of cached.sockets) {
               sendToClient(socket, ev)
@@ -198,18 +207,18 @@ export function setupWebSocket(server: any, env: ServerEnv) {
             sendToClient(ws, ev)
           }
 
-          if (currentSession) {
+          if (currentSession != null) {
             const currentCached = adapterCache.get(sessionId)
-            const messageList = currentCached ? currentCached.messages : []
+            const messageList = currentCached != null ? currentCached.messages : []
 
             // 获取最后一条助手消息的 id (即 uuid) 作为 parentUuid
             const lastAssistantMessage = messageList
               .filter((m: WSEvent): m is Extract<WSEvent, { type: 'message' }> =>
-                m.type === 'message' && m.message.role === 'assistant' && !!m.message.id
+                m.type === 'message' && m.message.role === 'assistant' && (m.message.id != null && m.message.id !== '')
               )
               .pop()
 
-            const parentUuid = lastAssistantMessage ? lastAssistantMessage.message.id : undefined
+            const parentUuid = lastAssistantMessage != null ? lastAssistantMessage.message.id : undefined
 
             currentSession.emit({
               type: 'message',
@@ -218,33 +227,34 @@ export function setupWebSocket(server: any, env: ServerEnv) {
             })
           }
         } else if (msg.type === 'interrupt') {
-          console.log(`[server] [${sessionId}] Received interrupt request`)
-          if (currentSession) {
+          serverLogger.info({ sessionId }, '[server] Received interrupt request')
+          if (currentSession != null) {
             currentSession.emit({ type: 'interrupt' })
           }
         }
       } catch (err) {
-        sendToClient(ws, { type: 'error', message: `${err}` })
+        sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
       }
     })
 
     ws.on('close', () => {
       const cached = adapterCache.get(sessionId)
-      if (cached) {
+      if (cached != null) {
         cached.sockets.delete(ws)
         // 只有当所有关联的 socket 都关闭时，才 kill session
         if (cached.sockets.size === 0) {
-          console.log(`[server] All sockets for session ${sessionId} closed, killing adapter process`)
+          serverLogger.info({ sessionId }, '[server] All sockets closed, killing adapter process')
           cached.session.kill()
           adapterCache.delete(sessionId)
         } else {
-          console.log(
-            `[server] Socket closed, but session ${sessionId} still has ${cached.sockets.size} active sockets`
+          serverLogger.info(
+            { sessionId, activeSockets: cached.sockets.size },
+            '[server] Socket closed, but session still has active sockets'
           )
         }
-      } else if (currentSession) {
+      } else if (currentSession != null) {
         // 对于不在缓存中的 session，直接 kill
-        console.log(`[server] Closing non-cached session ${sessionId}`)
+        serverLogger.info({ sessionId }, '[server] Closing non-cached session')
         currentSession.kill()
       }
     })

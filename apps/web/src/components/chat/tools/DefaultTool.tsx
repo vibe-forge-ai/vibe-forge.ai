@@ -27,21 +27,20 @@ export function DefaultTool({
         content={
           <div className='tool-content'>
             <CodeBlock
-              code={JSON.stringify(item.input || {}, null, 2)}
+              code={JSON.stringify(item.input != null ? item.input : {}, null, 2)}
               lang='json'
             />
           </div>
         }
       />
-      {resultItem && (
+      {resultItem != null && (
         <ToolCallBox
           type='result'
           isError={resultItem.is_error}
-          onDoubleClick={() => console.log(`🛠️ Tool Result (${item.name}):`, resultItem)}
           header={
             <>
               <span className='material-symbols-outlined' style={{ fontSize: 16 }}>
-                {resultItem.is_error ? 'error' : 'check_circle'}
+                {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
               <span>{t('chat.result')}</span>
             </>

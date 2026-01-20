@@ -15,9 +15,20 @@ export function BashTool({
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const { t } = useTranslation()
-  const input = (item.input || {}) as { command?: string; reason?: string; thought?: string; description?: string }
-  const command = input.command || ''
-  const reason = input.description || input.reason || input.thought || ''
+  const input = (item.input != null ? item.input : {}) as {
+    command?: string
+    reason?: string
+    thought?: string
+    description?: string
+  }
+  const command = input.command ?? ''
+  const reason = (input.description != null && input.description !== '')
+    ? input.description
+    : (input.reason != null && input.reason !== '')
+    ? input.reason
+    : (input.thought != null && input.thought !== '')
+    ? input.thought
+    : ''
 
   return (
     <div className='tool-group bash-tool'>
@@ -31,7 +42,7 @@ export function BashTool({
         }
         content={
           <div className='tool-content'>
-            {reason && (
+            {(reason != null && reason !== '') && (
               <div className='tool-reason markdown-body'>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{reason}</ReactMarkdown>
               </div>
@@ -45,15 +56,14 @@ export function BashTool({
         }
       />
 
-      {resultItem && (
+      {resultItem != null && (
         <ToolCallBox
           type='result'
           isError={resultItem.is_error}
-          onDoubleClick={() => console.log('🛠️ Tool Result (Bash):', resultItem)}
           header={
             <>
               <span className='material-symbols-outlined' style={{ fontSize: 16 }}>
-                {resultItem.is_error ? 'error' : 'check_circle'}
+                {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
               <span>{t('chat.result')}</span>
             </>

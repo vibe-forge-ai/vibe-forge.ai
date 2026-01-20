@@ -32,14 +32,19 @@ export function ToolRenderer({
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const toolName = item.name
-  const Renderer = TOOL_RENDERERS[toolName] || ToolRenderer.findRendererByInput(item) || DefaultTool
+  const foundRenderer = TOOL_RENDERERS[toolName] ?? ToolRenderer.findRendererByInput(item)
+  const Renderer = foundRenderer ?? DefaultTool
   return <Renderer item={item} resultItem={resultItem} />
 }
 
 ToolRenderer.findRendererByInput = (item: Extract<ChatMessageContent, { type: 'tool_use' }>) => {
   // If input has 'command' and 'description', it's likely a bash tool even if name is different
-  if (item.input && typeof item.input === 'object') {
-    if ('command' in item.input && ('description' in item.input || 'reason' in item.input)) {
+  const input = item.input as Record<string, unknown> | null
+  if (input != null && typeof input === 'object') {
+    if (
+      'command' in input
+      && (('description' in input && input.description != null) || ('reason' in input && input.reason != null))
+    ) {
       return BashTool
     }
   }

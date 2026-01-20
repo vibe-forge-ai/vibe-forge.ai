@@ -17,14 +17,13 @@ export function TodoTool({
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const { t } = useTranslation()
-  const input = (item.input || {}) as { todos?: TodoItem[] }
-  const todos = input.todos || []
+  const input = (item.input != null ? item.input : {}) as { todos?: TodoItem[] }
+  const todos = input.todos ?? []
 
   return (
     <div className='tool-group todo-tool'>
       <ToolCallBox
         defaultExpanded={true}
-        onDoubleClick={resultItem ? () => console.log('🛠️ Tool Result (Todo):', resultItem) : undefined}
         header={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className='material-symbols-outlined' style={{ fontSize: 18 }}>task_alt</span>
@@ -72,7 +71,7 @@ export function TodoTool({
                   >
                     {todo.content}
                   </span>
-                  {todo.activeForm && todo.status === 'in_progress' && (
+                  {(todo.activeForm != null && todo.activeForm !== '') && todo.status === 'in_progress' && (
                     <span style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>
                       {todo.activeForm}
                     </span>

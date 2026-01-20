@@ -6,7 +6,7 @@ import useSWR from 'swr'
 
 import { Chat } from '#~/components/Chat'
 import { Sidebar } from '#~/components/Sidebar'
-import { type Session } from '@vibe-forge/core'
+import type { Session } from '@vibe-forge/core'
 
 const MIN_SIDEBAR_WIDTH = 200
 const MAX_SIDEBAR_WIDTH = 600
@@ -15,11 +15,11 @@ const DEFAULT_SIDEBAR_WIDTH = 300
 function ChatView({ renderLeftHeader }: { renderLeftHeader?: React.ReactNode }) {
   const { t } = useTranslation()
   const { sessionId } = useParams()
-  const { data: sessionsRes } = useSWR('/api/sessions')
-  const sessions: Session[] = sessionsRes?.sessions ?? []
+  const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
+  const sessions = sessionsRes?.sessions ?? []
   const session = sessions.find(s => s.id === sessionId)
 
-  if (!session) {
+  if (session == null) {
     return (
       <div style={{ height: '100%', display: 'grid', placeItems: 'center' }}>
         <Empty description={t('common.sessionNotFound')} />
@@ -37,7 +37,7 @@ export default function App() {
 
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth')
-    return saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH
+    return saved != null ? Number.parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH
   })
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebarCollapsed') === 'true'
@@ -126,12 +126,12 @@ export default function App() {
           width={sidebarWidth}
           collapsed={isSidebarCollapsed}
           activeId={activeId}
-          onSelectSession={(s, isNew) => {
-            navigate(`/session/${encodeURIComponent(s.id)}`, { state: { isNew } })
+          onSelectSession={(s: Session, isNew?: boolean) => {
+            void navigate(`/session/${encodeURIComponent(s.id)}`, { state: { isNew } })
           }}
-          onDeletedSession={(id) => {
+          onDeletedSession={(id: string) => {
             if (activeId === id) {
-              navigate('/')
+              void navigate('/')
             }
           }}
           onToggleCollapse={toggleSidebar}

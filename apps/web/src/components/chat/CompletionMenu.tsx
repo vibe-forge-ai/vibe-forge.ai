@@ -1,5 +1,5 @@
 import './CompletionMenu.scss'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 export interface CompletionItem {
   label: string
@@ -43,10 +43,10 @@ export function CompletionMenu({
             className={`completion-item ${index === selectedIndex ? 'active' : ''}`}
             onClick={() => onSelect(item)}
           >
-            {item.icon && <span className='material-symbols-outlined icon'>{item.icon}</span>}
+            {item.icon != null && item.icon !== '' && <span className='material-symbols-outlined icon'>{item.icon}</span>}
             <div className='item-info'>
               <span className='label'>{item.label}</span>
-              {item.description && <span className='description'>{item.description}</span>}
+              {item.description != null && item.description !== '' && <span className='description'>{item.description}</span>}
             </div>
           </div>
         ))}

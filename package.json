@@ -25,15 +25,15 @@
       "array.prototype.tosorted": "npm:@nolyfill/array.prototype.tosorted@latest",
       "es-iterator-helpers": "npm:@nolyfill/es-iterator-helpers@latest",
       "function-bind": "npm:@nolyfill/function-bind@latest",
+      "generator-function": "1.0.0",
+      "is-generator-function": "1.0.7",
       "object.assign": "npm:@nolyfill/object.assign@latest",
       "object.entries": "npm:@nolyfill/object.entries@latest",
       "object.fromentries": "npm:@nolyfill/object.fromentries@latest",
       "object.hasown": "npm:@nolyfill/object.hasown@latest",
       "object.values": "npm:@nolyfill/object.values@latest",
       "string.prototype.matchall": "npm:@nolyfill/string.prototype.matchall@latest",
-      "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest",
-      "is-generator-function": "1.0.7",
-      "generator-function": "1.0.0"
+      "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",

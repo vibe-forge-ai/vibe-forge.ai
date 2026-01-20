@@ -1,8 +1,11 @@
 {
   "name": "@vibe-forge/web",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "imports": {
+    "#~/*": "./src/*"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -31,8 +34,5 @@
     "sass": "^1.97.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.8"
-  },
-  "imports": {
-    "#~/*": "./src/*"
   }
 }

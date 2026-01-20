@@ -4,7 +4,7 @@ const SERVER_HOST = import.meta.env.VITE_SERVER_HOST || window.location.hostname
 const SERVER_PORT = import.meta.env.VITE_SERVER_PORT || '8787'
 const WS_URL = `ws://${SERVER_HOST}:${SERVER_PORT}/ws`
 
-export type WSHandlers = {
+export interface WSHandlers {
   onOpen?: () => void
   onMessage?: (data: WSEvent) => void
   onError?: (err: Event) => void
@@ -21,10 +21,10 @@ export function createSocket(handlers: WSHandlers, params?: Record<string, strin
   ws.addEventListener('open', () => handlers.onOpen?.())
   ws.addEventListener('message', (ev) => {
     try {
-      const data = JSON.parse(String(ev.data))
+      const data = JSON.parse(String(ev.data)) as unknown
       handlers.onMessage?.(data as WSEvent)
     } catch {
-      handlers.onMessage?.({ type: 'adapter_event', data: ev.data })
+      handlers.onMessage?.({ type: 'adapter_event', data: ev.data as unknown })
     }
   })
   ws.addEventListener('error', (err) => handlers.onError?.(err))

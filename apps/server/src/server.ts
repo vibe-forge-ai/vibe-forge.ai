@@ -1,4 +1,5 @@
 import http from 'node:http'
+import { exit } from 'node:process'
 
 import cors from '@koa/cors'
 import Router from '@koa/router'
@@ -34,7 +35,10 @@ async function bootstrap() {
   app.use(api.routes()).use(api.allowedMethods())
 
   // HTTP & WebSocket Server
-  const server = http.createServer(app.callback())
+  const handler = app.callback()
+  const server = http.createServer((req, res) => {
+    void handler(req, res)
+  })
   setupWebSocket(server, env)
 
   server.listen(env.SERVER_PORT, () => {
@@ -47,5 +51,5 @@ async function bootstrap() {
 
 bootstrap().catch((err) => {
   console.error('[server] bootstrap failed:', err)
-  process.exit(1)
+  exit(1)
 })

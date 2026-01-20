@@ -1,11 +1,20 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { env as processEnv } from 'node:process'
 
 import Database from 'better-sqlite3'
 import { v4 as uuidv4 } from 'uuid'
 
-import type { Project, Session, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+
+interface SessionRow {
+  id: string
+  title: string
+  createdAt: number
+  messageCount: number
+  lastMessageData?: string
+}
 
 export class SqliteDb {
   private db: Database.Database
@@ -13,9 +22,9 @@ export class SqliteDb {
 
   constructor() {
     // Resolve DB path
-    let dbPath = process.env.DB_PATH
+    let dbPath = processEnv.DB_PATH
 
-    if (!dbPath) {
+    if (dbPath == null || dbPath === '') {
       const homeDir = os.homedir()
       const vfDir = path.join(homeDir, '.vf')
       if (!fs.existsSync(vfDir)) {
@@ -30,9 +39,6 @@ export class SqliteDb {
       // If dbPath is a directory, append default filename
       if (fs.existsSync(dbPath) && fs.statSync(dbPath).isDirectory()) {
         dbPath = path.join(dbPath, 'db.sqlite')
-      } else if (!dbPath.endsWith('.sqlite') && !dbPath.endsWith('.db')) {
-        // If it's a file path but doesn't have sqlite extension, we assume it's the full path the user wants
-        // but for consistency with previous logic, let's just make sure it's a file
       }
     }
 
@@ -68,18 +74,20 @@ export class SqliteDb {
       FROM sessions s 
       ORDER BY createdAt DESC
     `)
-    const rows = stmt.all() as any[]
+    const rows = stmt.all() as SessionRow[]
     return rows.map(row => {
       let lastMessage = ''
-      if (row.lastMessageData) {
+      if (row.lastMessageData != null && row.lastMessageData !== '') {
         try {
-          const data = JSON.parse(row.lastMessageData)
+          const data = JSON.parse(row.lastMessageData) as ChatMessage
           if (data.role === 'user' || data.role === 'assistant') {
             if (typeof data.content === 'string') {
               lastMessage = data.content
             } else if (Array.isArray(data.content)) {
-              const textContent = data.content.find((c: any) => c.type === 'text')
-              if (textContent) lastMessage = textContent.text
+              const textContent = data.content.find((c: ChatMessageContent) => c.type === 'text')
+              if (textContent != null && 'text' in textContent) {
+                lastMessage = textContent.text
+              }
             }
           }
         } catch (e) {}
@@ -99,15 +107,15 @@ export class SqliteDb {
     return stmt.get(id) as Session | undefined
   }
 
-  saveMessage(sessionId: string, data: any) {
+  saveMessage(sessionId: string, data: unknown) {
     const stmt = this.db.prepare('INSERT INTO messages (sessionId, data, createdAt) VALUES (?, ?, ?)')
     stmt.run(sessionId, JSON.stringify(data), Date.now())
   }
 
-  getMessages(sessionId: string): any[] {
+  getMessages(sessionId: string): unknown[] {
     const stmt = this.db.prepare('SELECT data FROM messages WHERE sessionId = ? ORDER BY id ASC')
     const rows = stmt.all(sessionId) as { data: string }[]
-    return rows.map(r => JSON.parse(r.data))
+    return rows.map(r => JSON.parse(r.data) as unknown)
   }
 
   copyMessages(fromSessionId: string, toSessionId: string) {
@@ -119,8 +127,8 @@ export class SqliteDb {
 
   createSession(title?: string, id?: string): Session {
     const session: Session = {
-      id: id || uuidv4(),
-      title: title || '新会话',
+      id: id ?? uuidv4(),
+      title: title ?? '新会话',
       createdAt: Date.now()
     }
     const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt) VALUES (?, ?, ?)')

@@ -6,8 +6,8 @@ import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import { createSession, deleteSession } from '#~/api'
 import type { Session } from '@vibe-forge/core'
+import { createSession, deleteSession } from '../api'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 
@@ -31,24 +31,25 @@ export function Sidebar({
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  const { data: sessionsRes, mutate: mutateSessions } = useSWR(
+  const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
   )
   const sessions: Session[] = sessionsRes?.sessions ?? []
 
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions
+    if (searchQuery.trim() === '') return sessions
     const query = searchQuery.toLowerCase()
     return sessions.filter(s =>
-      (s.title || '').toLowerCase().includes(query)
+      (s.title ?? '').toLowerCase().includes(query)
       || s.id.toLowerCase().includes(query)
     )
   }, [sessions, searchQuery])
 
   async function handleCreateSession() {
-    const { session } = await createSession()
+    const res = await createSession()
+    const session = res?.session
     await mutateSessions()
-    if (session) {
+    if (session != null) {
       onSelectSession(session, true)
     }
   }
@@ -77,7 +78,7 @@ export function Sidebar({
 
   const handleBatchDelete = async () => {
     try {
-      await Promise.all(Array.from(selectedIds).map(id => deleteSession(id)))
+      await Promise.all(Array.from(selectedIds).map(async id => deleteSession(id)))
       await mutateSessions()
       selectedIds.forEach(id => {
         if (activeId === id) onDeletedSession?.(id)
@@ -98,12 +99,16 @@ export function Sidebar({
     {
       key: 'zh',
       label: '简体中文',
-      onClick: () => i18n.changeLanguage('zh')
+      onClick: () => {
+        void i18n.changeLanguage('zh')
+      }
     },
     {
       key: 'en',
       label: 'English',
-      onClick: () => i18n.changeLanguage('en')
+      onClick: () => {
+        void i18n.changeLanguage('en')
+      }
     }
   ]
 
@@ -124,7 +129,7 @@ export function Sidebar({
     >
       <div
         style={{
-          width: width,
+          width,
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -133,14 +138,18 @@ export function Sidebar({
         }}
       >
         <SidebarHeader
-          onCreateSession={handleCreateSession}
+          onCreateSession={() => {
+            void handleCreateSession()
+          }}
           onToggleCollapse={onToggleCollapse}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
           selectedCount={selectedIds.size}
-          onBatchDelete={handleBatchDelete}
+          onBatchDelete={() => {
+            void handleBatchDelete()
+          }}
         />
         <SessionList
           sessions={filteredSessions}
@@ -148,7 +157,9 @@ export function Sidebar({
           isBatchMode={isBatchMode}
           selectedIds={selectedIds}
           onSelectSession={onSelectSession}
-          onDeleteSession={handleDeleteSession}
+          onDeleteSession={(id) => {
+            void handleDeleteSession(id)
+          }}
           onToggleSelect={handleToggleSelect}
         />
         <div className='sidebar-footer'>

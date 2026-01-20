@@ -42,8 +42,12 @@ export function SessionItem({
     }
   }, [session.createdAt, i18n.language])
 
-  const displayTitle = session.title || session.lastMessage || t('common.newChat')
-  const messageCount = session.messageCount || 0
+  const displayTitle = (session.title != null && session.title !== '')
+    ? session.title
+    : (session.lastMessage != null && session.lastMessage !== '')
+    ? session.lastMessage
+    : t('common.newChat')
+  const messageCount = session.messageCount ?? 0
 
   return (
     <List.Item
