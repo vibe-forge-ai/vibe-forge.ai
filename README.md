@@ -36,6 +36,17 @@ Vibe Forge 是一个基于 Monorepo 结构的 AI 辅助开发工具，旨在提�
    ```
    *注意：该命令会同时启动后端服务 (`apps/server`) 和前端应用 (`apps/web`)。*
 
+## 开发与维护工具
+
+为了保持代码质量，项目集成了以下检查工具：
+
+| 工具 | 指令 | 适用场景 |
+| :--- | :--- | :--- |
+| **ESLint** | `npx eslint .` | 检查代码规范、潜在 Bug 及类型安全隐患。建议在提交前必运行。 |
+| **Dprint** | `npx dprint fmt` | 快速格式化全量代码，保持风格统一。 |
+| **TypeScript** | `pnpm -r exec tsc --noEmit` | 全量类型检查，特别是在修改 `packages/core` 或 API 结构后。 |
+| **Vitest** | `pnpm test` | 运行单元测试，确保核心逻辑和适配器功能正常。 |
+
 ## 目录结构
 
 - `apps/server`: 后端 Koa 服务，处理 AI 逻辑、WebSocket 和数据库。
