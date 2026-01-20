@@ -48,7 +48,11 @@ export function SessionItem({
     }
   }, [session.createdAt, i18n.language])
 
-  const displayTitle = session.title || session.lastUserMessage || t('common.newChat')
+  const displayTitle = (session.title != null && session.title !== '')
+    ? session.title
+    : (session.lastUserMessage != null && session.lastUserMessage !== '')
+    ? session.lastUserMessage
+    : t('common.newChat')
   const messageCount = session.messageCount ?? 0
 
   const lastMessageSnippet = useMemo(() => {
@@ -67,13 +71,24 @@ export function SessionItem({
       onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
       className={`session-item ${isSelected ? 'selected' : ''} ${session.isStarred ? 'starred' : ''}`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
         {isBatchMode && (
-          <Checkbox
-            checked={isSelected}
-            onChange={() => onToggleSelect(session.id)}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <Checkbox
+              checked={isSelected}
+              onChange={() => onToggleSelect(session.id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
         <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '48px' }}>
           <div

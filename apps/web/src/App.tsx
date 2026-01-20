@@ -1,5 +1,6 @@
 import { Button, Empty, Layout } from 'antd'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useAtom } from 'jotai'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
@@ -10,10 +11,10 @@ import { NavRail } from '#~/components/NavRail'
 import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
 import type { Session } from '@vibe-forge/core'
+import { isSidebarCollapsedAtom, sidebarWidthAtom } from './store'
 
 const MIN_SIDEBAR_WIDTH = 200
 const MAX_SIDEBAR_WIDTH = 600
-const DEFAULT_SIDEBAR_WIDTH = 300
 
 function ChatView({ renderLeftHeader }: { renderLeftHeader?: React.ReactNode }) {
   const { t } = useTranslation()
@@ -38,15 +39,9 @@ export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem('sidebarWidth')
-    return saved != null ? Number.parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH
-  })
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('sidebarCollapsed') === 'true'
-  })
+  const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
   const [isResizing, setIsResizing] = useState(false)
-  const sidebarRef = useRef<HTMLDivElement>(null)
 
   const currentPath = location.pathname
   const activeId = currentPath.split('/session/')[1]
@@ -65,7 +60,7 @@ export default function App() {
 
     setSidebarWidth(newWidth)
     localStorage.setItem('sidebarWidth', newWidth.toString())
-  }, [isResizing])
+  }, [isResizing, setSidebarWidth])
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false)
@@ -88,7 +83,7 @@ export default function App() {
   }, [isResizing, handleMouseMove, handleMouseUp])
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => {
+    setIsSidebarCollapsed((prev: boolean) => {
       const newState = !prev
       localStorage.setItem('sidebarCollapsed', newState.toString())
       return newState

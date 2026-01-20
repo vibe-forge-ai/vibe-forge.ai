@@ -28,7 +28,7 @@ export function Sidebar({
   const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState(new Set<string>())
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
@@ -38,12 +38,12 @@ export function Sidebar({
   const filteredSessions = useMemo(() => {
     if (searchQuery.trim() === '') return sessions
     const query = searchQuery.toLowerCase()
-    return sessions.filter(s =>
+    return sessions.filter((s: Session) =>
       (s.title ?? '').toLowerCase().includes(query)
       || (s.lastMessage ?? '').toLowerCase().includes(query)
       || (s.lastUserMessage ?? '').toLowerCase().includes(query)
       || s.id.toLowerCase().includes(query)
-      || s.tags?.some(tag => tag.toLowerCase().includes(query))
+      || (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
     )
   }, [sessions, searchQuery])
 
@@ -85,7 +85,7 @@ export function Sidebar({
   }
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev: Set<string>) => {
       const next = new Set(prev)
       if (next.has(id)) {
         next.delete(id)
@@ -96,14 +96,22 @@ export function Sidebar({
     })
   }
 
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedIds(new Set(filteredSessions.map(s => s.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
   const handleBatchDelete = async () => {
     try {
-      await Promise.all(Array.from(selectedIds).map(async id => deleteSession(id)))
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => deleteSession(id)))
       await mutateSessions()
-      selectedIds.forEach(id => {
+      selectedIds.forEach((id: string) => {
         if (activeId === id) onDeletedSession?.(id)
       })
-      setSelectedIds(new Set())
+      setSelectedIds(new Set<string>())
       setIsBatchMode(false)
     } catch (err) {
       console.error('Failed to batch delete sessions:', err)
@@ -111,8 +119,8 @@ export function Sidebar({
   }
 
   const toggleBatchMode = () => {
-    setIsBatchMode(prev => !prev)
-    setSelectedIds(new Set())
+    setIsBatchMode((prev: boolean) => !prev)
+    setSelectedIds(new Set<string>())
   }
 
   return (
@@ -150,6 +158,8 @@ export function Sidebar({
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
           selectedCount={selectedIds.size}
+          totalCount={filteredSessions.length}
+          onSelectAll={handleSelectAll}
           onBatchDelete={() => {
             void handleBatchDelete()
           }}

@@ -161,6 +161,9 @@ importers:
       i18next-browser-languagedetector:
         specifier: ^8.2.0
         version: 8.2.0
+      jotai:
+        specifier: ^2.16.2
+        version: 2.16.2(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/react@18.3.27)(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -2649,6 +2652,24 @@ packages:
   jackspeak@4.1.1:
     resolution: {integrity: sha512-zptv57P3GpL+O0I7VdMJNBZCu+BPHVQUk55Ft8/QCJjTVxrnJHuVuX/0Bl2A6/+2oyR/ZMEuFKwmzqqZ/U5nPQ==, tarball: https://registry.npmjs.org/jackspeak/-/jackspeak-4.1.1.tgz}
     engines: {node: 20 || >=22}
+
+  jotai@2.16.2:
+    resolution: {integrity: sha512-DH0lBiTXvewsxtqqwjDW6Hg9JPTDnq9LcOsXSFWCAUEt+qj5ohl9iRVX9zQXPPHKLXCdH+5mGvM28fsXMl17/g==, tarball: https://registry.npmjs.org/jotai/-/jotai-2.16.2.tgz}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@babel/core': '>=7.0.0'
+      '@babel/template': '>=7.0.0'
+      '@types/react': '>=17.0.0'
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      '@babel/template':
+        optional: true
+      '@types/react':
+        optional: true
+      react:
+        optional: true
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==, tarball: https://registry.npmjs.org/joycon/-/joycon-3.1.1.tgz}
@@ -6683,6 +6704,13 @@ snapshots:
   jackspeak@4.1.1:
     dependencies:
       '@isaacs/cliui': 8.0.2
+
+  jotai@2.16.2(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/react@18.3.27)(react@18.3.1):
+    optionalDependencies:
+      '@babel/core': 7.28.6
+      '@babel/template': 7.28.6
+      '@types/react': 18.3.27
+      react: 18.3.1
 
   joycon@3.1.1: {}
 
