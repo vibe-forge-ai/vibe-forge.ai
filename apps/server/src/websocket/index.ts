@@ -74,7 +74,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const existing = db.getSession(sessionId)
       if (existing == null) {
         serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
-        db.createSession(sessionId === 'default' ? '默认会话' : `会话 ${sessionId.slice(0, 8)}`, sessionId)
+        db.createSession('', sessionId)
       }
 
       // 重放从数据库加载历史消息给当前 socket
@@ -150,9 +150,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
               }
               case 'summary': {
                 const summaryData = event.data as { summary: string; leafUuid: string }
-                // 更新数据库标题
-                getDb().updateSessionTitle(sessionId, summaryData.summary)
-                // 广播 summary 事件给前端
+                // 广播 summary 事件给前端，但不更新数据库
                 broadcast({
                   type: 'session_info',
                   info: {

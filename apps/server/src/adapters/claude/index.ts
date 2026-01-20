@@ -121,12 +121,14 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
     onEvent
   } = options
 
+  const serverEnv = loadEnv()
+
   // Default ccr path if not provided in env
-  const ccrPath = env.CLAUDE_CODE_CLI_PATH || resolve('./node_modules/.bin/ccr')
+  const ccrPath = env.CLAUDE_CODE_CLI_PATH || 'claude'
 
   // Arguments based on user request
   const args: string[] = [
-    'code',
+    ...(serverEnv.CLAUDE_CODE_CLI_ARGS?.split(/\s+/).filter(Boolean) as string[]),
     '--print',
     '--verbose',
     '--debug',
@@ -153,14 +155,6 @@ export const adapter = defineAdapter((options: AdapterOptions) => {
     } else {
       args.push('--system-prompt', systemPrompt)
     }
-  }
-
-  const serverEnv = loadEnv()
-
-  // Add custom CLI args from env if present
-  if (serverEnv.CLAUDE_CODE_CLI_ARGS != null && serverEnv.CLAUDE_CODE_CLI_ARGS !== '') {
-    const customArgs = serverEnv.CLAUDE_CODE_CLI_ARGS.split(/\s+/).filter(Boolean)
-    args.push(...customArgs)
   }
 
   const logDir = isAbsolute(serverEnv.LOG_DIR)

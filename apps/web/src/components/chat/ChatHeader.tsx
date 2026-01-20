@@ -10,11 +10,13 @@ export function ChatHeader({
   sessionInfo,
   sessionId,
   sessionTitle,
+  lastMessage,
   renderLeft
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
   sessionTitle?: string
+  lastMessage?: string
   renderLeft?: React.ReactNode
 }) {
   const { t } = useTranslation()
@@ -22,9 +24,16 @@ export function ChatHeader({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
 
+  const summary = sessionInfo?.type === 'summary' ? sessionInfo.summary : null
   const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) ?? sessionTitle
   const cwd = sessionInfo?.type === 'init' ? sessionInfo.cwd : null
-  const displayTitle = (title != null && title !== '') ? title : t('common.newChat')
+  const displayTitle = (title != null && title !== '')
+    ? title
+    : (summary != null && summary !== '')
+    ? summary
+    : (lastMessage != null && lastMessage !== '')
+    ? lastMessage
+    : t('common.newChat')
 
   useEffect(() => {
     if (title != null && title !== '') {
@@ -93,9 +102,9 @@ export function ChatHeader({
           className='chat-header-session-id'
           onDoubleClick={() => {
             void navigator.clipboard.writeText(sessionId)
-            void message.success('Session ID 已复制到剪贴板')
+            void message.success(t('common.sessionIdCopied'))
           }}
-          title='双击复制 Session ID'
+          title={t('common.doubleClickToCopy')}
         >
           {sessionId}
         </div>

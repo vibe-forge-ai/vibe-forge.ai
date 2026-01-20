@@ -40,7 +40,9 @@ export function Sidebar({
     const query = searchQuery.toLowerCase()
     return sessions.filter(s =>
       (s.title ?? '').toLowerCase().includes(query)
+      || (s.lastMessage ?? '').toLowerCase().includes(query)
       || s.id.toLowerCase().includes(query)
+      || s.tags?.some(tag => tag.toLowerCase().includes(query))
     )
   }, [sessions, searchQuery])
 

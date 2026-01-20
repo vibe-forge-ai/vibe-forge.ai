@@ -58,7 +58,7 @@ export function NavRail() {
     {
       key: 'archive',
       icon: 'archive',
-      label: t('common.archive'),
+      label: t('common.archivedSessions'),
       path: '/archive',
       active: currentPath === '/archive'
     }

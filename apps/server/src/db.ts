@@ -211,7 +211,7 @@ export class SqliteDb {
   createSession(title?: string, id?: string): Session {
     const session: Session = {
       id: id ?? uuidv4(),
-      title: title ?? '新会话',
+      title,
       createdAt: Date.now()
     }
     const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt) VALUES (?, ?, ?)')
