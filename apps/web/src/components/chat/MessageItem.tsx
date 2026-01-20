@@ -1,6 +1,6 @@
 import './MessageItem.scss'
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
-import { message } from 'antd'
+import { App } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
@@ -19,6 +19,7 @@ export function MessageItem({
   index: number
 }) {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const isUser = msg.role === 'user'
 
   const renderContent = () => {

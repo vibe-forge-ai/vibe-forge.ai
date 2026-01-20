@@ -111,9 +111,11 @@ export function SessionItem({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Tooltip title={timeDisplay.full}>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                {timeDisplay.relative}
-              </div>
+              <span>
+                <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                  {timeDisplay.relative}
+                </div>
+              </span>
             </Tooltip>
           </div>
           <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
@@ -190,60 +192,64 @@ export function SessionItem({
           }}
         >
           <Tooltip title={session.isStarred ? t('common.unstar', 'Unstar') : t('common.star', 'Star')}>
-            <Button
-              type='text'
-              size='small'
-              className={`action-btn star-btn ${session.isStarred ? 'active' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                void onStar(session.id, !session.isStarred)
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '24px',
-                height: '24px',
-                padding: 0,
-                color: session.isStarred ? '#f59e0b' : '#d1d5db'
-              }}
-            >
-              <span
-                className='material-symbols-outlined'
+            <span>
+              <Button
+                type='text'
+                size='small'
+                className={`action-btn star-btn ${session.isStarred ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void onStar(session.id, !session.isStarred)
+                }}
                 style={{
-                  fontSize: 18,
-                  display: 'block',
-                  lineHeight: 1,
-                  fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
+                  padding: 0,
+                  color: session.isStarred ? '#f59e0b' : '#d1d5db'
                 }}
               >
-                star
-              </span>
-            </Button>
+                <span
+                  className='material-symbols-outlined'
+                  style={{
+                    fontSize: 18,
+                    display: 'block',
+                    lineHeight: 1,
+                    fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
+                  }}
+                >
+                  star
+                </span>
+              </Button>
+            </span>
           </Tooltip>
           <Tooltip title={t('common.archive')}>
-            <Button
-              type='text'
-              size='small'
-              className='action-btn archive-btn'
-              onClick={(e) => {
-                e.stopPropagation()
-                void onArchive(session.id)
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '24px',
-                height: '24px',
-                padding: 0,
-                color: '#d1d5db'
-              }}
-            >
-              <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
-                archive
-              </span>
-            </Button>
+            <span>
+              <Button
+                type='text'
+                size='small'
+                className='action-btn archive-btn'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void onArchive(session.id)
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
+                  padding: 0,
+                  color: '#d1d5db'
+                }}
+              >
+                <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
+                  archive
+                </span>
+              </Button>
+            </span>
           </Tooltip>
         </div>
       )}

@@ -1,5 +1,5 @@
 import type { Session } from '@vibe-forge/core'
-import { Button, Checkbox, Empty, Input, List, Popconfirm, Space, Tag, Tooltip, message } from 'antd'
+import { App, Button, Checkbox, Empty, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { deleteSession, listSessions, updateSession } from '../api'
 
 export function ArchiveView() {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const { data: sessionsRes, mutate } = useSWR('/api/sessions/archived', async () => listSessions('archived'))
   const sessions = sessionsRes?.sessions ?? []
 
@@ -57,7 +58,7 @@ export function ArchiveView() {
 
   const handleBatchRestore = async () => {
     try {
-      await Promise.all(Array.from(selectedIds).map(id => updateSession(id, { isArchived: false })))
+      await Promise.all(Array.from(selectedIds).map(async (id) => updateSession(id, { isArchived: false })))
       void message.success(t('common.batchRestoreSuccess', 'Batch restored successfully'))
       setSelectedIds(new Set())
       setIsBatchMode(false)
@@ -69,7 +70,7 @@ export function ArchiveView() {
 
   const handleBatchDelete = async () => {
     try {
-      await Promise.all(Array.from(selectedIds).map(id => deleteSession(id)))
+      await Promise.all(Array.from(selectedIds).map(async (id) => deleteSession(id)))
       void message.success(t('common.batchDeleteSuccess', 'Batch deleted successfully'))
       setSelectedIds(new Set())
       setIsBatchMode(false)
@@ -106,14 +107,18 @@ export function ArchiveView() {
                 </Button>
                 <Button
                   type='primary'
-                  onClick={handleBatchRestore}
+                  onClick={() => {
+                    void handleBatchRestore()
+                  }}
                   disabled={selectedIds.size === 0}
                 >
                   {t('common.batchRestore')}
                 </Button>
                 <Popconfirm
                   title={t('common.deleteConfirm', { count: selectedIds.size })}
-                  onConfirm={handleBatchDelete}
+                  onConfirm={() => {
+                    void handleBatchDelete()
+                  }}
                   disabled={selectedIds.size === 0}
                 >
                   <Button
@@ -171,16 +176,18 @@ export function ArchiveView() {
                   actions={!isBatchMode
                     ? [
                       <Tooltip title={t('common.restore')} key='restore'>
-                        <Button
-                          type='text'
-                          icon={
-                            <span className='material-symbols-outlined' style={{ fontSize: '20px' }}>unarchive</span>
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void handleRestore(session.id)
-                          }}
-                        />
+                        <span>
+                          <Button
+                            type='text'
+                            icon={
+                              <span className='material-symbols-outlined' style={{ fontSize: '20px' }}>unarchive</span>
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void handleRestore(session.id)
+                            }}
+                          />
+                        </span>
                       </Tooltip>,
                       <Popconfirm
                         key='delete'
@@ -220,7 +227,11 @@ export function ArchiveView() {
                       }
                       title={
                         <span style={{ fontWeight: 500 }}>
-                          {session.title || session.lastMessage || t('common.newChat')}
+                          {(session.title != null && session.title !== '')
+                            ? session.title
+                            : (session.lastMessage != null && session.lastMessage !== '')
+                            ? session.lastMessage
+                            : t('common.newChat')}
                         </span>
                       }
                       description={

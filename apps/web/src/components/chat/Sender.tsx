@@ -1,6 +1,6 @@
 import './Sender.scss'
 import type { SessionInfo } from '@vibe-forge/core'
-import { Input, Tooltip, message } from 'antd'
+import { App, Input, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,7 @@ export function Sender({
   sessionInfo?: SessionInfo | null
 }) {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const [input, setInput] = useState('')
   const [showCompletion, setShowCompletion] = useState(false)
   const [completionItems, setCompletionItems] = useState<CompletionItem[]>([])
@@ -327,24 +328,32 @@ export function Sender({
         <div className='chat-input-toolbar'>
           <div className='toolbar-left'>
             <Tooltip title='快捷指令'>
-              <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
-                <span className='material-symbols-outlined'>terminal</span>
-              </div>
+              <span>
+                <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
+                  <span className='material-symbols-outlined'>terminal</span>
+                </div>
+              </span>
             </Tooltip>
             <Tooltip title='提及代理'>
-              <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
-                <span className='material-symbols-outlined'>smart_toy</span>
-              </div>
+              <span>
+                <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
+                  <span className='material-symbols-outlined'>smart_toy</span>
+                </div>
+              </span>
             </Tooltip>
             <Tooltip title='注入上下文'>
-              <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
-                <span className='material-symbols-outlined'>description</span>
-              </div>
+              <span>
+                <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
+                  <span className='material-symbols-outlined'>description</span>
+                </div>
+              </span>
             </Tooltip>
             <Tooltip title='上传图片'>
-              <div className='toolbar-btn' onClick={() => void message.info('图片上传功能尚不支持')}>
-                <span className='material-symbols-outlined'>image</span>
-              </div>
+              <span>
+                <div className='toolbar-btn' onClick={() => void message.info('图片上传功能尚不支持')}>
+                  <span className='material-symbols-outlined'>image</span>
+                </div>
+              </span>
             </Tooltip>
 
             {sessionInfo != null && sessionInfo.type === 'init' && (
@@ -379,13 +388,15 @@ export function Sender({
 
           <div className='toolbar-right'>
             <Tooltip title='切换模型'>
-              <div className='toolbar-btn model-switcher' onClick={() => void message.info('模型切换功能尚不支持')}>
-                <span className='material-symbols-outlined'>variable_insert</span>
-                <span className='model-name'>
-                  {(sessionInfo?.type === 'init' ? sessionInfo.model : null) ?? 'GPT-4o'}
-                </span>
-                <span className='material-symbols-outlined arrow'>keyboard_arrow_down</span>
-              </div>
+              <span>
+                <div className='toolbar-btn model-switcher' onClick={() => void message.info('模型切换功能尚不支持')}>
+                  <span className='material-symbols-outlined'>variable_insert</span>
+                  <span className='model-name'>
+                    {(sessionInfo?.type === 'init' ? sessionInfo.model : null) ?? 'GPT-4o'}
+                  </span>
+                  <span className='material-symbols-outlined arrow'>keyboard_arrow_down</span>
+                </div>
+              </span>
             </Tooltip>
 
             <div

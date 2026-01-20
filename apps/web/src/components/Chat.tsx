@@ -1,6 +1,6 @@
 import './Chat.scss'
 
-import { message } from 'antd'
+import { App } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
@@ -19,6 +19,7 @@ export function Chat({
   session?: Session
   renderLeftHeader?: React.ReactNode
 }) {
+  const { message } = App.useApp()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [isThinking, setIsThinking] = useState(false)

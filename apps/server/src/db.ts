@@ -10,7 +10,7 @@ import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 
 interface SessionRow {
   id: string
-  title: string
+  title: string | null
   createdAt: number
   messageCount: number
   lastMessageData?: string
@@ -54,7 +54,7 @@ export class SqliteDb {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
+        title TEXT,
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
         isArchived INTEGER DEFAULT 0
@@ -132,7 +132,7 @@ export class SqliteDb {
       }
       return {
         id: row.id,
-        title: row.title,
+        title: row.title ?? undefined,
         createdAt: row.createdAt,
         messageCount: row.messageCount,
         lastMessage,
@@ -153,7 +153,7 @@ export class SqliteDb {
     if (row == null) return undefined
     return {
       id: row.id,
-      title: row.title,
+      title: row.title ?? undefined,
       createdAt: row.createdAt,
       messageCount: row.messageCount,
       isStarred: row.isStarred === 1,

@@ -1,6 +1,6 @@
 import './ChatHeader.scss'
 import type { SessionInfo } from '@vibe-forge/core'
-import { Input, message } from 'antd'
+import { App, Input } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
@@ -20,6 +20,7 @@ export function ChatHeader({
   renderLeft?: React.ReactNode
 }) {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const { mutate } = useSWRConfig()
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -101,6 +102,10 @@ export function ChatHeader({
         <div
           className='chat-header-session-id'
           onDoubleClick={() => {
+            // eslint-disable-next-line no-console
+            console.log('Session Info:', sessionInfo)
+            // eslint-disable-next-line no-console
+            console.log('Session ID:', sessionId)
             void navigator.clipboard.writeText(sessionId)
             void message.success(t('common.sessionIdCopied'))
           }}

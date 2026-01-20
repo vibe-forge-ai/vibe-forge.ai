@@ -74,7 +74,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const existing = db.getSession(sessionId)
       if (existing == null) {
         serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
-        db.createSession('', sessionId)
+        db.createSession(undefined, sessionId)
       }
 
       // 重放从数据库加载历史消息给当前 socket

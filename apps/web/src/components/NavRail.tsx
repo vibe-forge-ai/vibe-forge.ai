@@ -69,44 +69,52 @@ export function NavRail() {
       <div className='nav-rail-top'>
         {navItems.map(item => (
           <Tooltip key={item.key} title={item.label} placement='right'>
-            <Button
-              type='text'
-              className={`nav-item ${item.active ? 'active' : ''}`}
-              onClick={() => void navigate(item.path)}
-              icon={<span className='material-symbols-outlined'>{item.icon}</span>}
-            />
+            <span>
+              <Button
+                type='text'
+                className={`nav-item ${item.active ? 'active' : ''}`}
+                onClick={() => void navigate(item.path)}
+                icon={<span className='material-symbols-outlined'>{item.icon}</span>}
+              />
+            </span>
           </Tooltip>
         ))}
       </div>
       <div className='nav-rail-bottom'>
         <Tooltip title={t('common.language')} placement='right'>
-          <Dropdown
-            menu={{
-              items: langItems
-            }}
-            placement='topRight'
-            trigger={['click']}
-          >
+          <span>
+            <Dropdown
+              menu={{
+                items: langItems
+              }}
+              placement='topRight'
+              trigger={['click']}
+            >
+              <Button
+                type='text'
+                className='nav-item'
+                icon={<span className='material-symbols-outlined'>language</span>}
+              />
+            </Dropdown>
+          </span>
+        </Tooltip>
+        <Tooltip title={t('common.theme')} placement='right'>
+          <span>
             <Button
               type='text'
               className='nav-item'
-              icon={<span className='material-symbols-outlined'>language</span>}
+              icon={<span className='material-symbols-outlined'>palette</span>}
             />
-          </Dropdown>
-        </Tooltip>
-        <Tooltip title={t('common.theme')} placement='right'>
-          <Button
-            type='text'
-            className='nav-item'
-            icon={<span className='material-symbols-outlined'>palette</span>}
-          />
+          </span>
         </Tooltip>
         <Tooltip title={t('common.settings')} placement='right'>
-          <Button
-            type='text'
-            className='nav-item'
-            icon={<span className='material-symbols-outlined'>settings</span>}
-          />
+          <span>
+            <Button
+              type='text'
+              className='nav-item'
+              icon={<span className='material-symbols-outlined'>settings</span>}
+            />
+          </span>
         </Tooltip>
       </div>
     </div>
