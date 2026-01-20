@@ -10,6 +10,9 @@ export interface Session {
   createdAt: number
   messageCount?: number
   lastMessage?: string
+  isStarred?: boolean
+  isArchived?: boolean
+  tags?: string[]
 }
 
 export type ChatMessageContent =

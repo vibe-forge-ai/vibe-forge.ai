@@ -6,21 +6,38 @@ export function sessionsRouter(): Router {
   const db = getDb()
 
   router.get('/', (ctx) => {
-    ctx.body = { sessions: db.getSessions() }
+    ctx.body = { sessions: db.getSessions('active') }
   })
   router.get('', (ctx) => {
-    ctx.body = { sessions: db.getSessions() }
+    ctx.body = { sessions: db.getSessions('active') }
+  })
+
+  router.get('/archived', (ctx) => {
+    ctx.body = { sessions: db.getSessions('archived') }
   })
 
   router.patch('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
-    const { title } = ctx.request.body as { title: string }
-    if (!title) {
-      ctx.status = 400
-      ctx.body = { error: 'Title is required' }
-      return
+    const { title, isStarred, isArchived, tags } = ctx.request.body as {
+      title?: string
+      isStarred?: boolean
+      isArchived?: boolean
+      tags?: string[]
     }
-    db.updateSessionTitle(id, title)
+
+    if (title !== undefined) {
+      db.updateSessionTitle(id, title)
+    }
+    if (isStarred !== undefined) {
+      db.updateSessionStarred(id, isStarred)
+    }
+    if (isArchived !== undefined) {
+      db.updateSessionArchived(id, isArchived)
+    }
+    if (tags !== undefined) {
+      db.updateSessionTags(id, tags)
+    }
+
     ctx.body = { ok: true }
   })
 

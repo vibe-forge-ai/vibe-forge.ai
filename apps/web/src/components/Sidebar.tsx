@@ -1,13 +1,12 @@
 import './Sidebar.scss'
 
-import { Button, Dropdown } from 'antd'
-import type { MenuProps } from 'antd'
+import { Button } from 'antd'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
-import { createSession, deleteSession } from '../api'
+import { createSession, deleteSession, updateSession } from '../api'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 
@@ -26,7 +25,7 @@ export function Sidebar({
   collapsed: boolean
   onToggleCollapse: () => void
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -54,13 +53,31 @@ export function Sidebar({
     }
   }
 
-  async function handleDeleteSession(id: string) {
+  async function handleArchiveSession(id: string) {
     try {
-      await deleteSession(id)
+      await updateSession(id, { isArchived: true })
       await mutateSessions()
       onDeletedSession?.(id)
     } catch (err) {
-      console.error('Failed to delete session:', err)
+      console.error('Failed to archive session:', err)
+    }
+  }
+
+  async function handleStarSession(id: string, isStarred: boolean) {
+    try {
+      await updateSession(id, { isStarred })
+      await mutateSessions()
+    } catch (err) {
+      console.error('Failed to star session:', err)
+    }
+  }
+
+  async function handleUpdateTags(id: string, tags: string[]) {
+    try {
+      await updateSession(id, { tags })
+      await mutateSessions()
+    } catch (err) {
+      console.error('Failed to update tags:', err)
     }
   }
 
@@ -94,23 +111,6 @@ export function Sidebar({
     setIsBatchMode(prev => !prev)
     setSelectedIds(new Set())
   }
-
-  const langItems: MenuProps['items'] = [
-    {
-      key: 'zh',
-      label: '简体中文',
-      onClick: () => {
-        void i18n.changeLanguage('zh')
-      }
-    },
-    {
-      key: 'en',
-      label: 'English',
-      onClick: () => {
-        void i18n.changeLanguage('en')
-      }
-    }
-  ]
 
   return (
     <div
@@ -157,37 +157,11 @@ export function Sidebar({
           isBatchMode={isBatchMode}
           selectedIds={selectedIds}
           onSelectSession={onSelectSession}
-          onDeleteSession={(id) => {
-            void handleDeleteSession(id)
-          }}
+          onArchiveSession={handleArchiveSession}
+          onStarSession={handleStarSession}
+          onUpdateTags={handleUpdateTags}
           onToggleSelect={handleToggleSelect}
         />
-        <div className='sidebar-footer'>
-          <Dropdown menu={{ items: langItems }} placement='topRight' trigger={['click']}>
-            <Button
-              type='text'
-              icon={
-                <span
-                  className='material-symbols-outlined'
-                  style={{ fontSize: 18, lineHeight: '18px', display: 'block' }}
-                >
-                  language
-                </span>
-              }
-              style={{
-                height: 32,
-                width: 32,
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6b7280',
-                borderRadius: 4,
-                margin: '8px'
-              }}
-            />
-          </Dropdown>
-        </div>
       </div>
     </div>
   )

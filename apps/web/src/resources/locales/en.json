@@ -2,6 +2,9 @@
   "common": {
     "newChat": "New Chat",
     "search": "Search title or ID...",
+    "sessions": "Sessions",
+    "archive": "Archived",
+    "theme": "Theme",
     "settings": "Settings",
     "language": "Language",
     "delete": "Delete",

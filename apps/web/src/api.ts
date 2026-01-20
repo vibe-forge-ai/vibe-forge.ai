@@ -18,8 +18,8 @@ export async function createProject(name?: string): Promise<any> {
   return res.json()
 }
 
-export async function listSessions(): Promise<{ sessions: Session[] }> {
-  const res = await fetch(`${SERVER_URL}/api/sessions`)
+export async function listSessions(filter: 'active' | 'archived' | 'all' = 'active'): Promise<{ sessions: Session[] }> {
+  const res = await fetch(`${SERVER_URL}/api/sessions${filter === 'archived' ? '/archived' : ''}`)
   return res.json() as Promise<{ sessions: Session[] }>
 }
 
@@ -46,6 +46,15 @@ export async function deleteSession(id: string): Promise<{ success: boolean }> {
     throw new Error(`Delete failed: ${res.status} ${text}`)
   }
   return res.json() as Promise<{ success: boolean }>
+}
+
+export async function updateSession(id: string, data: Partial<Session>): Promise<{ ok: boolean }> {
+  const res = await fetch(`${SERVER_URL}/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  return res.json() as Promise<{ ok: boolean }>
 }
 
 export async function updateSessionTitle(id: string, title: string): Promise<{ session: Session }> {

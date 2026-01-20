@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 
+import { ArchiveView } from '#~/components/ArchiveView'
 import { Chat } from '#~/components/Chat'
+import { NavRail } from '#~/components/NavRail'
+import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
 import type { Session } from '@vibe-forge/core'
 
@@ -45,7 +48,8 @@ export default function App() {
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
 
-  const activeId = location.pathname.split('/session/')[1]
+  const currentPath = location.pathname
+  const activeId = currentPath.split('/session/')[1]
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsResizing(true)
@@ -119,41 +123,48 @@ export default function App() {
     </Button>
   )
 
+  const showSidebar = currentPath === '/' || currentPath.startsWith('/session/')
+
   return (
     <Layout style={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
       <div style={{ display: 'flex', height: '100%', width: '100%' }}>
-        <Sidebar
-          width={sidebarWidth}
-          collapsed={isSidebarCollapsed}
-          activeId={activeId}
-          onSelectSession={(s: Session, isNew?: boolean) => {
-            void navigate(`/session/${encodeURIComponent(s.id)}`, { state: { isNew } })
-          }}
-          onDeletedSession={(id: string) => {
-            if (activeId === id) {
-              void navigate('/')
-            }
-          }}
-          onToggleCollapse={toggleSidebar}
-        />
+        <NavRail />
+        {showSidebar && (
+          <>
+            <Sidebar
+              width={sidebarWidth}
+              collapsed={isSidebarCollapsed}
+              activeId={activeId}
+              onSelectSession={(s: Session, isNew?: boolean) => {
+                void navigate(`/session/${encodeURIComponent(s.id)}`, { state: { isNew } })
+              }}
+              onDeletedSession={(id: string) => {
+                if (activeId === id) {
+                  void navigate('/')
+                }
+              }}
+              onToggleCollapse={toggleSidebar}
+            />
 
-        <div
-          onMouseDown={handleMouseDown}
-          style={{
-            width: isSidebarCollapsed ? 0 : '4px',
-            cursor: isSidebarCollapsed ? 'default' : 'col-resize',
-            backgroundColor: isResizing ? '#3b82f6' : 'transparent',
-            zIndex: 10,
-            transition: 'background-color 0.2s, width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            flexShrink: 0,
-            position: 'relative',
-            marginLeft: isSidebarCollapsed ? 0 : '-2px',
-            marginRight: isSidebarCollapsed ? 0 : '-2px',
-            pointerEvents: isSidebarCollapsed ? 'none' : 'auto',
-            overflow: 'hidden'
-          }}
-          title={t('common.dragResize')}
-        />
+            <div
+              onMouseDown={handleMouseDown}
+              style={{
+                width: isSidebarCollapsed ? 0 : '4px',
+                cursor: isSidebarCollapsed ? 'default' : 'col-resize',
+                backgroundColor: isResizing ? '#3b82f6' : 'transparent',
+                zIndex: 10,
+                transition: 'background-color 0.2s, width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                flexShrink: 0,
+                position: 'relative',
+                marginLeft: isSidebarCollapsed ? 0 : '-2px',
+                marginRight: isSidebarCollapsed ? 0 : '-2px',
+                pointerEvents: isSidebarCollapsed ? 'none' : 'auto',
+                overflow: 'hidden'
+              }}
+              title={t('common.dragResize')}
+            />
+          </>
+        )}
 
         <Layout.Content style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <Routes>
@@ -161,6 +172,8 @@ export default function App() {
               path='/session/:sessionId'
               element={<ChatView renderLeftHeader={isSidebarCollapsed ? toggleButton : null} />}
             />
+            <Route path='/archive' element={<ArchiveView />} />
+            <Route path='/search' element={<SearchView />} />
             <Route
               path='/'
               element={

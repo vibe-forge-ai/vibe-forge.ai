@@ -1,5 +1,5 @@
 import type { Session } from '@vibe-forge/core'
-import { Badge, Button, Checkbox, List, Popconfirm, Tooltip } from 'antd'
+import { Badge, Button, Checkbox, Input, List, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { useMemo } from 'react'
@@ -14,7 +14,9 @@ interface SessionItemProps {
   isBatchMode: boolean
   isSelected: boolean
   onSelect: (session: Session) => void
-  onDelete: (id: string) => void
+  onArchive: (id: string) => void | Promise<void>
+  onStar: (id: string, isStarred: boolean) => void | Promise<void>
+  onUpdateTags: (id: string, tags: string[]) => void | Promise<void>
   onToggleSelect: (id: string) => void
 }
 
@@ -24,10 +26,14 @@ export function SessionItem({
   isBatchMode,
   isSelected,
   onSelect,
-  onDelete,
+  onArchive,
+  onStar,
+  onUpdateTags,
   onToggleSelect
 }: SessionItemProps) {
   const { t, i18n } = useTranslation()
+  const [isAddingTag, setIsAddingTag] = React.useState(false)
+  const [newTag, setNewTag] = React.useState('')
 
   const timeDisplay = useMemo(() => {
     const d = dayjs(session.createdAt)
@@ -58,7 +64,7 @@ export function SessionItem({
         position: 'relative'
       }}
       onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
-      className={`session-item ${isSelected ? 'selected' : ''}`}
+      className={`session-item ${isSelected ? 'selected' : ''} ${session.isStarred ? 'starred' : ''}`}
     >
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '12px' }}>
         {isBatchMode && (
@@ -68,12 +74,21 @@ export function SessionItem({
             onClick={(e) => e.stopPropagation()}
           />
         )}
-        <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '32px' }}>
-          <div className='session-title' style={{ marginBottom: '4px' }}>
-            <span className='material-symbols-outlined' style={{ color: isActive ? '#3b82f6' : '#9ca3af' }}>
+        <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '48px' }}>
+          <div
+            className='session-title'
+            style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span
+              className='material-symbols-outlined'
+              style={{ color: isActive ? '#3b82f6' : '#9ca3af', fontSize: '18px' }}
+            >
               chat_bubble
             </span>
-            <span className='session-title-text' style={{ fontWeight: 500 }}>
+            <span
+              className='session-title-text'
+              style={{ fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
               {displayTitle}
             </span>
             {messageCount > 0 && (
@@ -94,51 +109,143 @@ export function SessionItem({
               />
             )}
           </div>
-          <Tooltip title={timeDisplay.full}>
-            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-              {timeDisplay.relative}
-            </div>
-          </Tooltip>
-          <div style={{ fontSize: '10px', color: '#d1d5db', marginTop: '2px', fontFamily: 'monospace' }}>
-            ID: {session.id.slice(0, 8)}...
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Tooltip title={timeDisplay.full}>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                {timeDisplay.relative}
+              </div>
+            </Tooltip>
+          </div>
+          <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+            {session.tags?.map(tag => (
+              <Tag
+                key={tag}
+                closable
+                onClose={(e) => {
+                  e.preventDefault()
+                  const nextTags = session.tags?.filter(t => t !== tag) ?? []
+                  void onUpdateTags(session.id, nextTags)
+                }}
+                style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '14px', borderRadius: '2px' }}
+              >
+                {tag}
+              </Tag>
+            ))}
+            {isAddingTag
+              ? (
+                <Input
+                  size='small'
+                  autoFocus
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onBlur={() => {
+                    setIsAddingTag(false)
+                    setNewTag('')
+                  }}
+                  onPressEnter={() => {
+                    if (newTag.trim() !== '') {
+                      const nextTags = Array.from(new Set([...(session.tags ?? []), newTag.trim()]))
+                      void onUpdateTags(session.id, nextTags)
+                    }
+                    setIsAddingTag(false)
+                    setNewTag('')
+                  }}
+                  style={{ width: '60px', fontSize: '10px', padding: '0 4px', height: '16px' }}
+                />
+              )
+              : (
+                <Tag
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsAddingTag(true)
+                  }}
+                  style={{
+                    fontSize: '10px',
+                    margin: 0,
+                    padding: '0 4px',
+                    lineHeight: '14px',
+                    borderRadius: '2px',
+                    borderStyle: 'dashed',
+                    cursor: 'pointer',
+                    background: 'transparent'
+                  }}
+                >
+                  + {t('common.addTag', 'Tag')}
+                </Tag>
+              )}
           </div>
         </div>
       </div>
 
       {!isBatchMode && (
-        <Popconfirm
-          title={t('common.deleteSession')}
-          description={t('common.deleteSessionConfirm')}
-          onConfirm={() => onDelete(session.id)}
-          okText={t('common.confirm')}
-          cancelText={t('common.cancel')}
-          okButtonProps={{ danger: true }}
+        <div
+          className='session-item-actions'
+          style={{
+            position: 'absolute',
+            right: '8px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            gap: '2px'
+          }}
         >
-          <Button
-            type='text'
-            size='small'
-            className='delete-session-btn'
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '28px',
-              height: '28px',
-              padding: 0
-            }}
-          >
-            <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
-              delete
-            </span>
-          </Button>
-        </Popconfirm>
+          <Tooltip title={session.isStarred ? t('common.unstar', 'Unstar') : t('common.star', 'Star')}>
+            <Button
+              type='text'
+              size='small'
+              className={`action-btn star-btn ${session.isStarred ? 'active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                void onStar(session.id, !session.isStarred)
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                padding: 0,
+                color: session.isStarred ? '#f59e0b' : '#d1d5db'
+              }}
+            >
+              <span
+                className='material-symbols-outlined'
+                style={{
+                  fontSize: 18,
+                  display: 'block',
+                  lineHeight: 1,
+                  fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
+                }}
+              >
+                star
+              </span>
+            </Button>
+          </Tooltip>
+          <Tooltip title={t('common.archive')}>
+            <Button
+              type='text'
+              size='small'
+              className='action-btn archive-btn'
+              onClick={(e) => {
+                e.stopPropagation()
+                void onArchive(session.id)
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                padding: 0,
+                color: '#d1d5db'
+              }}
+            >
+              <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
+                archive
+              </span>
+            </Button>
+          </Tooltip>
+        </div>
       )}
     </List.Item>
   )

@@ -10,7 +10,9 @@ interface SessionListProps {
   isBatchMode: boolean
   selectedIds: Set<string>
   onSelectSession: (session: Session) => void
-  onDeleteSession: (id: string) => void
+  onArchiveSession: (id: string) => void | Promise<void>
+  onStarSession: (id: string, isStarred: boolean) => void | Promise<void>
+  onUpdateTags: (id: string, tags: string[]) => void | Promise<void>
   onToggleSelect: (id: string) => void
 }
 
@@ -20,7 +22,9 @@ export function SessionList({
   isBatchMode,
   selectedIds,
   onSelectSession,
-  onDeleteSession,
+  onArchiveSession,
+  onStarSession,
+  onUpdateTags,
   onToggleSelect
 }: SessionListProps) {
   const { t } = useTranslation()
@@ -43,7 +47,9 @@ export function SessionList({
               isBatchMode={isBatchMode}
               isSelected={selectedIds.has(s.id)}
               onSelect={onSelectSession}
-              onDelete={onDeleteSession}
+              onArchive={onArchiveSession}
+              onStar={onStarSession}
+              onUpdateTags={onUpdateTags}
               onToggleSelect={onToggleSelect}
             />
           )}
