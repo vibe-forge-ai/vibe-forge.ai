@@ -11,12 +11,14 @@ export function ChatHeader({
   sessionId,
   sessionTitle,
   lastMessage,
+  lastUserMessage,
   renderLeft
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
   sessionTitle?: string
   lastMessage?: string
+  lastUserMessage?: string
   renderLeft?: React.ReactNode
 }) {
   const { t } = useTranslation()
@@ -32,6 +34,8 @@ export function ChatHeader({
     ? title
     : (summary != null && summary !== '')
     ? summary
+    : (lastUserMessage != null && lastUserMessage !== '')
+    ? lastUserMessage
     : (lastMessage != null && lastMessage !== '')
     ? lastMessage
     : t('common.newChat')

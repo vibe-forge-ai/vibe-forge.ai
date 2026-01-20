@@ -10,6 +10,7 @@ export interface Session {
   createdAt: number
   messageCount?: number
   lastMessage?: string
+  lastUserMessage?: string
   isStarred?: boolean
   isArchived?: boolean
   tags?: string[]

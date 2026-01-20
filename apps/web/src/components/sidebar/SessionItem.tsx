@@ -48,12 +48,13 @@ export function SessionItem({
     }
   }, [session.createdAt, i18n.language])
 
-  const displayTitle = (session.title != null && session.title !== '')
-    ? session.title
-    : (session.lastMessage != null && session.lastMessage !== '')
-    ? session.lastMessage
-    : t('common.newChat')
+  const displayTitle = session.title || session.lastUserMessage || t('common.newChat')
   const messageCount = session.messageCount ?? 0
+
+  const lastMessageSnippet = useMemo(() => {
+    if (session.lastMessage == null || session.lastMessage === '') return null
+    return session.lastMessage.length > 60 ? `${session.lastMessage.slice(0, 60)}...` : session.lastMessage
+  }, [session.lastMessage])
 
   return (
     <List.Item
@@ -109,6 +110,20 @@ export function SessionItem({
               />
             )}
           </div>
+          {lastMessageSnippet != null && (
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                marginBottom: '4px'
+              }}
+            >
+              {lastMessageSnippet}
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Tooltip title={timeDisplay.full}>
               <span>

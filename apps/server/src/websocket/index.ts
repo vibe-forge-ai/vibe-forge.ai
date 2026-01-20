@@ -14,6 +14,17 @@ import { getDb } from '#~/db.js'
 import type { ServerEnv } from '#~/env.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
+function extractTextFromMessage(message: ChatMessage): string | undefined {
+  if (typeof message.content === 'string') {
+    return message.content
+  }
+  if (Array.isArray(message.content)) {
+    const textContent = message.content.find((c: any) => c.type === 'text')
+    return (textContent as any)?.text
+  }
+  return undefined
+}
+
 function sendToClient(ws: WebSocket, event: WSEvent) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(event))
@@ -104,7 +115,17 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
             const broadcast = (ev: WSEvent) => {
               serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
               messages.push(ev)
-              getDb().saveMessage(sessionId, ev)
+              const db = getDb()
+              db.saveMessage(sessionId, ev)
+
+              // 更新会话的最后一条消息字段
+              if (ev.type === 'message') {
+                const text = extractTextFromMessage(ev.message)
+                if (text != null && text !== '') {
+                  db.updateSessionLastMessages(sessionId, text, ev.message.role === 'user' ? text : undefined)
+                }
+              }
+
               for (const socket of sockets) {
                 sendToClient(socket, ev)
               }
@@ -190,6 +211,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           const ev: WSEvent = { type: 'message', message: userMessage }
           const db = getDb()
           db.saveMessage(sessionId, ev)
+
+          // 记录最后一条用户消息和最后一条消息到数据库
+          db.updateSessionLastMessages(sessionId, userText, userText)
 
           const cached = adapterCache.get(sessionId)
           if (cached != null) {

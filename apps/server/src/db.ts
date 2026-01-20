@@ -11,9 +11,12 @@ import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 interface SessionRow {
   id: string
   title: string | null
+  lastMessage: string | null
+  lastUserMessage: string | null
   createdAt: number
   messageCount: number
   lastMessageData?: string
+  lastUserMessageData?: string
   isStarred: number
   isArchived: number
   tags?: string // JSON string array or comma separated
@@ -55,6 +58,8 @@ export class SqliteDb {
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         title TEXT,
+        lastMessage TEXT,
+        lastUserMessage TEXT,
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
         isArchived INTEGER DEFAULT 0
@@ -93,6 +98,12 @@ export class SqliteDb {
     if (!columns.includes('isArchived')) {
       this.db.exec('ALTER TABLE sessions ADD COLUMN isArchived INTEGER DEFAULT 0')
     }
+    if (!columns.includes('lastMessage')) {
+      this.db.exec('ALTER TABLE sessions ADD COLUMN lastMessage TEXT')
+    }
+    if (!columns.includes('lastUserMessage')) {
+      this.db.exec('ALTER TABLE sessions ADD COLUMN lastUserMessage TEXT')
+    }
   }
 
   getSessions(filter: 'active' | 'archived' | 'all' = 'active'): Session[] {
@@ -106,7 +117,6 @@ export class SqliteDb {
     const stmt = this.db.prepare(`
       SELECT s.*, 
              (SELECT COUNT(*) FROM messages WHERE sessionId = s.id) as messageCount,
-             (SELECT data FROM messages WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) as lastMessageData,
              (SELECT GROUP_CONCAT(t.name) FROM tags t JOIN session_tags st ON t.id = st.tagId WHERE st.sessionId = s.id) as tags
       FROM sessions s 
       ${whereClause}
@@ -114,28 +124,13 @@ export class SqliteDb {
     `)
     const rows = stmt.all() as SessionRow[]
     return rows.map(row => {
-      let lastMessage = ''
-      if (row.lastMessageData != null && row.lastMessageData !== '') {
-        try {
-          const data = JSON.parse(row.lastMessageData) as ChatMessage
-          if (data.role === 'user' || data.role === 'assistant') {
-            if (typeof data.content === 'string') {
-              lastMessage = data.content
-            } else if (Array.isArray(data.content)) {
-              const textContent = data.content.find((c: ChatMessageContent) => c.type === 'text')
-              if (textContent != null && 'text' in textContent) {
-                lastMessage = textContent.text
-              }
-            }
-          }
-        } catch (e) {}
-      }
       return {
         id: row.id,
         title: row.title ?? undefined,
         createdAt: row.createdAt,
         messageCount: row.messageCount,
-        lastMessage,
+        lastMessage: row.lastMessage ?? undefined,
+        lastUserMessage: row.lastUserMessage ?? undefined,
         isStarred: row.isStarred === 1,
         isArchived: row.isArchived === 1,
         tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : []
@@ -146,6 +141,7 @@ export class SqliteDb {
   getSession(id: string): Session | undefined {
     const stmt = this.db.prepare(`
       SELECT s.*,
+             (SELECT COUNT(*) FROM messages WHERE sessionId = s.id) as messageCount,
              (SELECT GROUP_CONCAT(t.name) FROM tags t JOIN session_tags st ON t.id = st.tagId WHERE st.sessionId = s.id) as tags
       FROM sessions s WHERE s.id = ?
     `)
@@ -156,10 +152,28 @@ export class SqliteDb {
       title: row.title ?? undefined,
       createdAt: row.createdAt,
       messageCount: row.messageCount,
+      lastMessage: row.lastMessage ?? undefined,
+      lastUserMessage: row.lastUserMessage ?? undefined,
       isStarred: row.isStarred === 1,
       isArchived: row.isArchived === 1,
       tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : []
     }
+  }
+
+  private extractTextFromMessageData(messageData?: string): string | undefined {
+    if (messageData == null || messageData === '') return undefined
+    try {
+      const data = JSON.parse(messageData) as ChatMessage
+      if (typeof data.content === 'string') {
+        return data.content
+      } else if (Array.isArray(data.content)) {
+        const textContent = data.content.find((c: ChatMessageContent) => c.type === 'text')
+        if (textContent != null && 'text' in textContent) {
+          return textContent.text
+        }
+      }
+    } catch (e) {}
+    return undefined
   }
 
   updateSessionStarred(id: string, isStarred: boolean) {
@@ -222,6 +236,28 @@ export class SqliteDb {
   updateSessionTitle(id: string, title: string) {
     const stmt = this.db.prepare('UPDATE sessions SET title = ? WHERE id = ?')
     stmt.run(title, id)
+  }
+
+  updateSessionLastMessages(id: string, lastMessage?: string, lastUserMessage?: string) {
+    if (lastMessage == null && lastUserMessage == null) return
+
+    const sets: string[] = []
+    const params: (string | number)[] = []
+
+    if (lastMessage != null) {
+      sets.push('lastMessage = ?')
+      params.push(lastMessage)
+    }
+    if (lastUserMessage != null) {
+      sets.push('lastUserMessage = ?')
+      params.push(lastUserMessage)
+    }
+
+    const queryStr = `UPDATE sessions SET ${sets.join(', ')} WHERE id = ?`
+    params.push(id)
+
+    const stmt = this.db.prepare(queryStr)
+    stmt.run(...params)
   }
 
   deleteSession(id: string): boolean {

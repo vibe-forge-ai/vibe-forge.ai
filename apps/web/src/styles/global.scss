@@ -1,6 +1,11 @@
-html, body, #root {
+html, body, #root, .ant-app {
   height: 100%;
   margin: 0;
+}
+
+.ant-app {
+  display: flex;
+  flex-direction: column;
 }
 
 * {

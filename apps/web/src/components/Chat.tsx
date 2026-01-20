@@ -188,6 +188,7 @@ export function Chat({
         sessionId={session?.id}
         sessionTitle={session?.title}
         lastMessage={session?.lastMessage}
+        lastUserMessage={session?.lastUserMessage}
         renderLeft={renderLeftHeader}
       />
 
