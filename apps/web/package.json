@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "private": true,
   "imports": {
-    "#~/*": "./src/*"
+    "#~/*": [
+      "./src/*",
+      "./src/*.tsx"
+    ]
   },
   "scripts": {
     "dev": "vite",
