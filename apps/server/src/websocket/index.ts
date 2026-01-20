@@ -6,7 +6,7 @@ import { URL } from 'node:url'
 import { v4 as uuidv4 } from 'uuid'
 import { WebSocket, WebSocketServer } from 'ws'
 
-import type { ChatMessage, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 
 import { query } from '#~/adapters/index.js'
 import type { AdapterOutputEvent, AdapterSession } from '#~/adapters/index.js'
@@ -19,8 +19,10 @@ function extractTextFromMessage(message: ChatMessage): string | undefined {
     return message.content
   }
   if (Array.isArray(message.content)) {
-    const textContent = message.content.find((c: any) => c.type === 'text')
-    return (textContent as any)?.text
+    const textContent = message.content.find((c: ChatMessageContent) => c.type === 'text')
+    if (textContent != null && 'text' in textContent) {
+      return textContent.text
+    }
   }
   return undefined
 }
@@ -31,18 +33,22 @@ function sendToClient(ws: WebSocket, event: WSEvent) {
   }
 }
 
+// 记录 sessionId 对应的 process (adapter) 和相关的 sockets
+// 使用 Map 因为 sessionId 是字符串。如果需要自动清理，我们在 close 时手动处理。
+const adapterCache = new Map<string, {
+  session: AdapterSession
+  sockets: Set<WebSocket>
+  messages: WSEvent[]
+}>()
+
+// Store all connected sockets globally to broadcast session updates
+const globalSockets = new Set<WebSocket>()
+
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.WS_PATH })
 
-  // 记录 sessionId 对应的 process (adapter) 和相关的 sockets
-  // 使用 Map 因为 sessionId 是字符串。如果需要自动清理，我们在 close 时手动处理。
-  const adapterCache = new Map<string, {
-    session: AdapterSession
-    sockets: Set<WebSocket>
-    messages: WSEvent[]
-  }>()
-
   wss.on('connection', (ws, req) => {
+    globalSockets.add(ws)
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
 
@@ -122,7 +128,10 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
               if (ev.type === 'message') {
                 const text = extractTextFromMessage(ev.message)
                 if (text != null && text !== '') {
-                  db.updateSessionLastMessages(sessionId, text, ev.message.role === 'user' ? text : undefined)
+                  updateAndNotifySession(sessionId, {
+                    lastMessage: text,
+                    lastUserMessage: ev.message.role === 'user' ? text : undefined
+                  })
                 }
               }
 
@@ -212,8 +221,23 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           const db = getDb()
           db.saveMessage(sessionId, ev)
 
-          // 记录最后一条用户消息和最后一条消息到数据库
-          db.updateSessionLastMessages(sessionId, userText, userText)
+          // 记录最后一条用户消息和最后一条消息到数据库，并同步更新标题（如果尚未设置）
+          const currentSessionData = db.getSession(sessionId)
+          const updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>> = {
+            lastMessage: userText,
+            lastUserMessage: userText
+          }
+
+          if (
+            currentSessionData?.title == null || currentSessionData.title === ''
+            || currentSessionData.title === 'New Session'
+          ) {
+            // 提取第一行或者前50个字符作为标题
+            const firstLine = userText.split('\n')[0].trim()
+            updates.title = firstLine.length > 50 ? `${firstLine.slice(0, 50)}...` : firstLine
+          }
+
+          updateAndNotifySession(sessionId, updates)
 
           const cached = adapterCache.get(sessionId)
           if (cached != null) {
@@ -257,6 +281,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     })
 
     ws.on('close', () => {
+      globalSockets.delete(ws)
       const cached = adapterCache.get(sessionId)
       if (cached != null) {
         cached.sockets.delete(ws)
@@ -280,4 +305,23 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
   })
 
   return wss
+}
+
+export function notifySessionUpdated(sessionId: string, session: Session | { id: string; isDeleted: boolean }) {
+  const event: WSEvent = { type: 'session_updated', session }
+  for (const socket of globalSockets) {
+    sendToClient(socket, event)
+  }
+}
+
+export function updateAndNotifySession(
+  id: string,
+  updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
+) {
+  const db = getDb()
+  db.updateSession(id, updates)
+  const updated = db.getSession(id)
+  if (updated) {
+    notifySessionUpdated(id, updated)
+  }
 }

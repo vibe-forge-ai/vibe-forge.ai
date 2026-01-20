@@ -93,6 +93,33 @@ export function Chat({
           if (data.type === 'error') {
             void message.error(data.message)
             setIsThinking(false)
+          } else if (data.type === 'session_updated') {
+            // 更新 SWR 缓存中的会话列表
+            void mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+              if (prev?.sessions == null) return prev
+              const updatedSession = data.session as Session | { id: string; isDeleted: boolean }
+
+              if ('isDeleted' in updatedSession && updatedSession.isDeleted) {
+                return {
+                  ...prev,
+                  sessions: prev.sessions.filter((s: Session) => s.id !== updatedSession.id)
+                }
+              }
+
+              const typedUpdatedSession = updatedSession as Session
+              const newSessions = prev.sessions.map((s: Session) =>
+                s.id === typedUpdatedSession.id ? { ...s, ...typedUpdatedSession } : s
+              )
+
+              // 如果是新会话（不在列表中），则添加进去
+              if (
+                !newSessions.some((s: Session) => s.id === typedUpdatedSession.id) && !('isDeleted' in updatedSession)
+              ) {
+                newSessions.unshift(typedUpdatedSession)
+              }
+
+              return { ...prev, sessions: newSessions }
+            }, false)
           } else if (data.type === 'message') {
             if (data.message.role === 'assistant') {
               setIsThinking(false)

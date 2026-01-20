@@ -176,14 +176,46 @@ export class SqliteDb {
     return undefined
   }
 
+  updateSession(id: string, updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>) {
+    const sets: string[] = []
+    const params: (string | number | null)[] = []
+
+    if (updates.title !== undefined) {
+      sets.push('title = ?')
+      params.push(updates.title)
+    }
+    if (updates.lastMessage !== undefined) {
+      sets.push('lastMessage = ?')
+      params.push(updates.lastMessage)
+    }
+    if (updates.lastUserMessage !== undefined) {
+      sets.push('lastUserMessage = ?')
+      params.push(updates.lastUserMessage)
+    }
+    if (updates.isStarred !== undefined) {
+      sets.push('isStarred = ?')
+      params.push(updates.isStarred ? 1 : 0)
+    }
+    if (updates.isArchived !== undefined) {
+      sets.push('isArchived = ?')
+      params.push(updates.isArchived ? 1 : 0)
+    }
+
+    if (sets.length === 0) return
+
+    const queryStr = `UPDATE sessions SET ${sets.join(', ')} WHERE id = ?`
+    params.push(id)
+
+    const stmt = this.db.prepare(queryStr)
+    stmt.run(...params)
+  }
+
   updateSessionStarred(id: string, isStarred: boolean) {
-    const stmt = this.db.prepare('UPDATE sessions SET isStarred = ? WHERE id = ?')
-    stmt.run(isStarred ? 1 : 0, id)
+    this.updateSession(id, { isStarred })
   }
 
   updateSessionArchived(id: string, isArchived: boolean) {
-    const stmt = this.db.prepare('UPDATE sessions SET isArchived = ? WHERE id = ?')
-    stmt.run(isArchived ? 1 : 0, id)
+    this.updateSession(id, { isArchived })
   }
 
   updateSessionTags(sessionId: string, tags: string[]) {
@@ -234,30 +266,11 @@ export class SqliteDb {
   }
 
   updateSessionTitle(id: string, title: string) {
-    const stmt = this.db.prepare('UPDATE sessions SET title = ? WHERE id = ?')
-    stmt.run(title, id)
+    this.updateSession(id, { title })
   }
 
   updateSessionLastMessages(id: string, lastMessage?: string, lastUserMessage?: string) {
-    if (lastMessage == null && lastUserMessage == null) return
-
-    const sets: string[] = []
-    const params: (string | number)[] = []
-
-    if (lastMessage != null) {
-      sets.push('lastMessage = ?')
-      params.push(lastMessage)
-    }
-    if (lastUserMessage != null) {
-      sets.push('lastUserMessage = ?')
-      params.push(lastUserMessage)
-    }
-
-    const queryStr = `UPDATE sessions SET ${sets.join(', ')} WHERE id = ?`
-    params.push(id)
-
-    const stmt = this.db.prepare(queryStr)
-    stmt.run(...params)
+    this.updateSession(id, { lastMessage, lastUserMessage })
   }
 
   deleteSession(id: string): boolean {

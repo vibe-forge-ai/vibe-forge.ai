@@ -8,3 +8,4 @@ export type WSEvent =
   | { type: 'tool_result'; toolCallId: string; output: any; isError: boolean }
   | { type: 'adapter_result'; result: any; usage?: any }
   | { type: 'adapter_event'; data: any }
+  | { type: 'session_updated'; session: any }

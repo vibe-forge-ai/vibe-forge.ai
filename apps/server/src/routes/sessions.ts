@@ -1,4 +1,5 @@
 import { getDb } from '#~/db.js'
+import { notifySessionUpdated, updateAndNotifySession } from '#~/websocket/index.js'
 import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
@@ -25,17 +26,16 @@ export function sessionsRouter(): Router {
       tags?: string[]
     }
 
-    if (title !== undefined) {
-      db.updateSessionTitle(id, title)
+    if (title !== undefined || isStarred !== undefined || isArchived !== undefined) {
+      updateAndNotifySession(id, { title, isStarred, isArchived })
     }
-    if (isStarred !== undefined) {
-      db.updateSessionStarred(id, isStarred)
-    }
-    if (isArchived !== undefined) {
-      db.updateSessionArchived(id, isArchived)
-    }
+
     if (tags !== undefined) {
       db.updateSessionTags(id, tags)
+      const updatedSession = db.getSession(id)
+      if (updatedSession != null) {
+        notifySessionUpdated(id, updatedSession)
+      }
     }
 
     ctx.body = { ok: true }
@@ -44,17 +44,22 @@ export function sessionsRouter(): Router {
   router.post('/', (ctx) => {
     const { title } = ctx.request.body as { title?: string }
     const session = db.createSession(title)
+    notifySessionUpdated(session.id, session)
     ctx.body = { session }
   })
   router.post('', (ctx) => {
     const { title } = ctx.request.body as { title?: string }
     const session = db.createSession(title)
+    notifySessionUpdated(session.id, session)
     ctx.body = { session }
   })
 
   router.delete('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
     const removed = db.deleteSession(id)
+    if (removed) {
+      notifySessionUpdated(id, { id, isDeleted: true })
+    }
     ctx.body = { ok: true, removed }
   })
 
@@ -74,6 +79,8 @@ export function sessionsRouter(): Router {
 
     // 同步历史消息
     db.copyMessages(id, newSession.id)
+
+    notifySessionUpdated(newSession.id, newSession)
 
     ctx.body = { session: newSession }
   })
