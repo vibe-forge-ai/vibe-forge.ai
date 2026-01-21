@@ -30,11 +30,21 @@ html, body, #root, .ant-app {
 :root {
   --bg-color: #ffffff;
   --text-color: #000000;
+  --sub-text-color: #6b7280;
   --border-color: #f0f0f0;
+  --tag-bg: #f9fafb;
+  --tag-hover-bg: #f3f4f6;
+  --code-bg: #f8fafc;
+  --code-border: #f1f5f9;
 }
 
 html.dark {
   --bg-color: #141414;
   --text-color: #ffffff;
+  --sub-text-color: #8c8c8c;
   --border-color: #303030;
+  --tag-bg: #1f1f1f;
+  --tag-hover-bg: #262626;
+  --code-bg: #1e293b;
+  --code-border: #334155;
 }

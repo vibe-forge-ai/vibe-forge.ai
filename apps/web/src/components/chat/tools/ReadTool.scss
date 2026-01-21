@@ -11,7 +11,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #9ca3af;
+      color: var(--sub-text-color);
       height: 20px;
       width: 18px;
       margin-right: 8px;
@@ -22,7 +22,7 @@
     .file-name {
       font-size: 13px;
       font-weight: 500;
-      color: #374151;
+      color: var(--text-color);
       white-space: nowrap;
       line-height: 20px;
       display: flex;
@@ -31,7 +31,7 @@
 
     .file-path {
       font-size: 12px;
-      color: #9ca3af;
+      color: var(--sub-text-color);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -44,7 +44,7 @@
       &::before {
         content: '—';
         margin: 0 8px;
-        color: #e5e7eb;
+        color: var(--border-color);
         font-weight: 300;
       }
     }

@@ -11,8 +11,7 @@
     border-radius: 0;
 
     &.result {
-      border-top: 1px dashed var(--border-color);
-      background-color: var(--tag-bg, #f9fafb);
+      background-color: var(--tag-bg);
     }
   }
 
@@ -28,14 +27,19 @@
     font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
+    background-color: var(--tag-bg);
 
     &:hover {
-      background-color: var(--tag-hover-bg, #f9fafb);
+      background-color: var(--tag-hover-bg);
     }
 
     .material-symbols-outlined {
       font-size: 18px;
-      color: var(--sub-text-color, #6b7280);
+      color: var(--sub-text-color);
+
+      &.expand-icon {
+        font-size: 16px;
+      }
     }
   }
 
@@ -52,9 +56,17 @@
     font-size: 13px;
     font-weight: 500;
     color: #059669;
+    background-color: var(--tag-bg);
+
+    &.error {
+      color: #dc2626;
+      .material-symbols-outlined {
+        color: #dc2626;
+      }
+    }
 
     &:hover {
-      background-color: var(--tag-hover-bg, #f3f4f6);
+      background-color: var(--tag-hover-bg);
     }
 
     .material-symbols-outlined {
@@ -91,6 +103,12 @@
     padding: 6px 10px;
     overflow: hidden;
     transition: all .2s ease-in-out;
+    background-color: var(--bg-color);
+
+    .tool-call-box.result & {
+      background-color: var(--tag-bg);
+      border-top: 1px dashed var(--border-color);
+    }
 
     .tool-content {
       pre.shiki {
@@ -104,58 +122,5 @@
         }
       }
     }
-  }
-}
-
-.tool-call-header {
-  background-color: #f9fafb;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.tool-call-body {
-  padding: 8px 12px;
-  background-color: white;
-}
-
-.tool-result-header {
-  background-color: #f9fafb;
-  padding: 4px 10px;
-  height: 26px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #059669;
-
-  .material-symbols-outlined {
-    font-size: 14px;
-    color: #059669;
-  }
-
-  &.error {
-    color: #dc2626;
-    .material-symbols-outlined {
-      color: #dc2626;
-    }
-  }
-
-  &.result-header-specific {
-    // From line 744
-    background-color: #ecfdf5;
-    border-top: 1px solid #d1fae5;
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #065f46;
   }
 }

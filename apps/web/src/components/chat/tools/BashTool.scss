@@ -3,7 +3,7 @@
     font-family:
       'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 11px;
-    color: #1f2937;
+    color: var(--text-color);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -13,7 +13,7 @@
   .tool-reason {
     margin: 0 0 4px 0;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--sub-text-color);
     line-height: 1.4;
 
     &.markdown-body {
@@ -34,8 +34,8 @@
     overflow-y: auto;
 
     .bash-code-wrapper {
-      background-color: #f8fafc;
-      border: 1px solid #f1f5f9;
+      background-color: var(--code-bg);
+      border: 1px solid var(--code-border);
       border-radius: 4px;
       padding: 4px 8px;
     }
@@ -47,11 +47,11 @@
       background: transparent;
     }
     &::-webkit-scrollbar-thumb {
-      background: #e5e7eb;
+      background: var(--border-color);
       border-radius: 4px;
     }
     &::-webkit-scrollbar-thumb:hover {
-      background: #d1d5db;
+      background: var(--sub-text-color);
     }
   }
 }

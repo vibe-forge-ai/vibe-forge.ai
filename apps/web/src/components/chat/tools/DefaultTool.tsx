@@ -21,7 +21,9 @@ export function DefaultTool({
           <>
             <span className='material-symbols-outlined' style={{ fontSize: 16 }}>build</span>
             <span>{item.name}</span>
-            <span style={{ color: '#9ca3af', fontSize: 11, fontWeight: 400 }}>{t('chat.tools.call')}</span>
+            <span style={{ color: 'var(--sub-text-color)', fontSize: 11, fontWeight: 400 }}>
+              {t('chat.tools.call')}
+            </span>
           </>
         }
         content={

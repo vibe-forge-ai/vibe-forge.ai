@@ -1,3 +1,4 @@
+import './TodoTool.scss'
 import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,54 +26,31 @@ export function TodoTool({
       <ToolCallBox
         defaultExpanded={true}
         header={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className='material-symbols-outlined' style={{ fontSize: 18 }}>task_alt</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{t('chat.tools.todo')}</span>
+          <div className='todo-header'>
+            <span className='material-symbols-outlined status-icon'>task_alt</span>
+            <span className='todo-title'>{t('chat.tools.todo')}</span>
           </div>
         }
         content={
-          <div className='tool-content' style={{ padding: '8px' }}>
+          <div className='tool-content'>
             {todos.map((todo, idx) => (
               <div
                 key={idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                  marginBottom: idx === todos.length - 1 ? 0 : '6px',
-                  opacity: todo.status === 'completed' ? 0.6 : 1
-                }}
+                className={`todo-item ${todo.status}`}
               >
-                <span
-                  className='material-symbols-outlined'
-                  style={{
-                    fontSize: 16,
-                    color: todo.status === 'completed'
-                      ? '#10b981'
-                      : todo.status === 'in_progress'
-                      ? '#3b82f6'
-                      : '#9ca3af',
-                    marginTop: '2px'
-                  }}
-                >
+                <span className='material-symbols-outlined status-icon'>
                   {todo.status === 'completed'
                     ? 'check_circle'
                     : todo.status === 'in_progress'
                     ? 'clock_loader_40'
                     : 'radio_button_unchecked'}
                 </span>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      textDecoration: todo.status === 'completed' ? 'line-through' : 'none',
-                      color: '#374151'
-                    }}
-                  >
+                <div className='todo-info'>
+                  <span className='todo-text'>
                     {todo.content}
                   </span>
                   {(todo.activeForm != null && todo.activeForm !== '') && todo.status === 'in_progress' && (
-                    <span style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>
+                    <span className='active-form'>
                       {todo.activeForm}
                     </span>
                   )}

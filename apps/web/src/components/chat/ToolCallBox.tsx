@@ -46,13 +46,13 @@ export function ToolCallBox({
           {header}
         </div>
         {collapsible && (
-          <span className='material-symbols-outlined' style={{ fontSize: 16, color: '#9ca3af' }}>
+          <span className='material-symbols-outlined expand-icon'>
             {isExpanded ? 'expand_less' : 'expand_more'}
           </span>
         )}
       </div>
       {isExpanded && (
-        <div className='tool-call-body' style={type === 'result' ? { backgroundColor: '#f9fafb' } : {}}>
+        <div className='tool-call-body'>
           {content}
         </div>
       )}

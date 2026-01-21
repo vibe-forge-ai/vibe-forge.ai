@@ -1,0 +1,76 @@
+.todo-tool {
+  .todo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .status-icon {
+      font-size: 18px;
+    }
+
+    .todo-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+
+  .tool-content {
+    padding: 8px;
+  }
+
+  .todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &.completed {
+      opacity: 0.6;
+
+      .todo-text {
+        text-decoration: line-through;
+      }
+
+      .status-icon {
+        color: #10b981;
+      }
+    }
+
+    &.in_progress {
+      .status-icon {
+        color: #3b82f6;
+      }
+    }
+
+    &.pending {
+      .status-icon {
+        color: var(--sub-text-color);
+      }
+    }
+
+    .status-icon {
+      font-size: 16px;
+      margin-top: 2px;
+    }
+
+    .todo-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .todo-text {
+      font-size: 13px;
+      color: var(--text-color);
+    }
+
+    .active-form {
+      font-size: 11px;
+      color: var(--sub-text-color);
+      font-style: italic;
+    }
+  }
+}
