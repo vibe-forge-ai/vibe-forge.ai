@@ -41,6 +41,7 @@
     "star": "收藏",
     "unstar": "取消收藏",
     "addTag": "标签",
+    "actions": "操作",
     "sessionIdCopied": "Session ID 已复制到剪贴板",
     "doubleClickToCopy": "双击复制 Session ID"
   },

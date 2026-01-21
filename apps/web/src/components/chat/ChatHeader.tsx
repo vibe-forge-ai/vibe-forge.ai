@@ -246,7 +246,10 @@ function SessionSettings({
   return (
     <div className='session-settings-drawer'>
       <div className='settings-section'>
-        <div className='section-header'>{t('chat.title')}</div>
+        <div className='section-header'>
+          <span className='material-symbols-outlined'>edit_note</span>
+          {t('chat.title')}
+        </div>
         <Input
           value={title}
           onChange={e => setTitle(e.target.value)}
@@ -259,11 +262,15 @@ function SessionSettings({
           placeholder={t('chat.enterTitle')}
           variant='filled'
           size='large'
+          className='settings-input'
         />
       </div>
 
       <div className='settings-section'>
-        <div className='section-header'>{t('chat.tags')}</div>
+        <div className='section-header'>
+          <span className='material-symbols-outlined'>sell</span>
+          {t('chat.tags')}
+        </div>
         <div className='tag-input-container'>
           <Input
             value={tagInput}
@@ -274,18 +281,19 @@ function SessionSettings({
             placeholder={t('chat.addTagPlaceholder')}
             variant='filled'
             size='large'
+            className='settings-input'
           />
           <Button
             type='primary'
-            ghost
             size='large'
-            icon={<span className='material-symbols-outlined' style={{ fontSize: '20px' }}>add</span>}
+            className='add-tag-btn'
+            icon={<span className='material-symbols-outlined'>add</span>}
             onClick={() => {
               void handleAddTag()
             }}
           />
         </div>
-        <div className='tags-list'>
+        <div className={`tags-list ${tags.length === 0 ? 'empty' : ''}`}>
           {tags.map(tag => (
             <Tag
               key={tag}
@@ -294,54 +302,63 @@ function SessionSettings({
                 e.preventDefault()
                 void handleRemoveTag(tag)
               }}
-              className='custom-tag'
+              className='settings-tag'
             >
               {tag}
             </Tag>
           ))}
           {tags.length === 0 && (
-            <div className='empty-tags'>{t('chat.noTags')}</div>
+            <div className='empty-text'>{t('chat.noTags')}</div>
           )}
         </div>
       </div>
 
       <div className='settings-footer'>
-        <div className='footer-actions'>
-          <Tooltip title={isArchived ? t('common.restore') : t('common.archive')}>
+        <div className='settings-section actions-section'>
+          <div className='section-header'>
+            <span className='material-symbols-outlined'>bolt</span>
+            {t('common.actions')}
+          </div>
+          <div className='actions-grid'>
             <Button
-              danger={isArchived}
-              className={`archive-btn ${isArchived ? 'action-active' : ''}`}
-              icon={<span className='material-symbols-outlined'>{isArchived ? 'unarchive' : 'archive'}</span>}
+              className={`action-card star-action ${isStarred ? 'active' : ''}`}
+              onClick={() => {
+                void (async () => {
+                  await updateSession(sessionId, { isStarred: !isStarred })
+                  void mutate(`/api/sessions`)
+                })()
+              }}
+            >
+              <span className='material-symbols-outlined'>
+                {isStarred ? 'star_half' : 'star'}
+              </span>
+              <span>{isStarred ? t('common.unstar') : t('common.star')}</span>
+            </Button>
+
+            <Button
+              className={`action-card archive-action ${isArchived ? 'active' : ''}`}
               onClick={() => {
                 void (async () => {
                   await updateSession(sessionId, { isArchived: !isArchived })
+                  void mutate(`/api/sessions`)
                   onClose()
                 })()
               }}
             >
-              {isArchived ? t('common.restore') : t('common.archive')}
+              <span className='material-symbols-outlined'>
+                {isArchived ? 'unarchive' : 'archive'}
+              </span>
+              <span>{isArchived ? t('common.restore') : t('common.archive')}</span>
             </Button>
-          </Tooltip>
-          <Tooltip title={isStarred ? t('common.unstar') : t('common.star')}>
-            <Button
-              type={isStarred ? 'primary' : 'default'}
-              className={`star-btn ${isStarred ? 'action-active' : ''}`}
-              icon={<span className='material-symbols-outlined'>{isStarred ? 'star_half' : 'star'}</span>}
-              onClick={() => {
-                void (async () => {
-                  await updateSession(sessionId, { isStarred: !isStarred })
-                })()
-              }}
-            >
-              {isStarred ? t('common.unstar') : t('common.star')}
-            </Button>
-          </Tooltip>
+          </div>
         </div>
+
         <div className='danger-zone'>
           <Button
             danger
             type='text'
             block
+            size='large'
             icon={<span className='material-symbols-outlined'>delete</span>}
             onClick={handleDelete}
             className='delete-btn'
