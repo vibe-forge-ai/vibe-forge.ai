@@ -140,8 +140,10 @@ export function MessageItem({
       className={`${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${!isFirstInGroup ? 'consecutive' : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      <div className='bubble'>
-        {content}
+      <div className='message-body-container'>
+        <div className='bubble'>
+          {content}
+        </div>
         <div className='msg-footer'>
           {isUser && msg.model != null && (
             <span className='msg-model'>
