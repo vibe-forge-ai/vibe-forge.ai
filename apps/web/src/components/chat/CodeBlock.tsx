@@ -1,3 +1,4 @@
+import './CodeBlock.scss'
 import { useAtomValue } from 'jotai'
 import React, { useEffect, useState } from 'react'
 import { codeToHtml } from 'shiki'

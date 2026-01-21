@@ -111,16 +111,7 @@
     }
 
     .tool-content {
-      pre.shiki {
-        margin: 0;
-        background-color: transparent !important;
-        padding: 0;
-
-        code {
-          font-size: 12px;
-          background-color: transparent;
-        }
-      }
+      // Styles moved to CodeBlock.scss
     }
   }
 }

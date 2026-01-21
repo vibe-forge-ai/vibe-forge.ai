@@ -34,10 +34,10 @@
     overflow-y: auto;
 
     .bash-code-wrapper {
-      background-color: var(--code-bg);
-      border: 1px solid var(--code-border);
-      border-radius: 4px;
-      padding: 4px 8px;
+      background-color: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
     }
 
     &::-webkit-scrollbar {
