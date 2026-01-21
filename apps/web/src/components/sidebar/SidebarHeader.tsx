@@ -1,3 +1,5 @@
+import './SidebarHeader.scss'
+
 import { Button, Checkbox, Input, Popconfirm, Tooltip } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -33,37 +35,18 @@ export function SidebarHeader({
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
 
   return (
-    <div
-      style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        flexShrink: 0
-      }}
-    >
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div className='sidebar-header'>
+      <div className='header-top'>
         <Tooltip title={t('common.newChat')}>
           <Button
+            className='new-chat-btn'
             type='primary'
             onClick={onCreateSession}
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '32px',
-              padding: 0
-            }}
           >
-            <span
-              className='material-symbols-outlined'
-              style={{ fontSize: 18, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-            >
+            <span className='material-symbols-outlined'>
               add_circle
             </span>
-            <span style={{ marginLeft: '8px', fontSize: '14px' }}>{t('common.newChat')}</span>
+            <span className='btn-text'>{t('common.newChat')}</span>
           </Button>
         </Tooltip>
         <Tooltip title={isCollapsed ? t('common.expand') : t('common.collapse')}>
@@ -71,34 +54,16 @@ export function SidebarHeader({
             className='sidebar-collapse-btn'
             type='text'
             onClick={onToggleCollapse}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              padding: 0,
-              color: '#6b7280'
-            }}
           >
-            <span className='material-symbols-outlined' style={{ fontSize: 20 }}>
+            <span className='material-symbols-outlined'>
               {isCollapsed ? 'menu' : 'menu_open'}
             </span>
           </Button>
         </Tooltip>
       </div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div className='header-bottom'>
         {isBatchMode && (
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
+          <div className='batch-select-wrapper'>
             <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
               <Checkbox
                 checked={isAllSelected}
@@ -109,40 +74,25 @@ export function SidebarHeader({
           </div>
         )}
         <Input
+          className='search-input'
           placeholder={t('common.search')}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           prefix={
-            <span
-              className='material-symbols-outlined'
-              style={{ fontSize: 18, color: '#9ca3af', display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-            >
+            <span className='material-symbols-outlined search-icon'>
               search
             </span>
           }
           allowClear
-          style={{ borderRadius: '6px', flex: 1 }}
         />
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className='batch-actions'>
           <Tooltip title={isBatchMode ? t('common.cancelBatch') : t('common.batchMode')}>
             <Button
+              className={`action-btn ${isBatchMode ? 'active' : ''}`}
               type={isBatchMode ? 'primary' : 'text'}
               onClick={onToggleBatchMode}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '32px',
-                height: '32px',
-                padding: 0,
-                color: isBatchMode ? undefined : '#6b7280',
-                flexShrink: 0
-              }}
             >
-              <span
-                className='material-symbols-outlined'
-                style={{ fontSize: 20, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-              >
+              <span className='material-symbols-outlined'>
                 {isBatchMode ? 'close' : 'checklist'}
               </span>
             </Button>
@@ -158,23 +108,12 @@ export function SidebarHeader({
             >
               <Tooltip title={t('common.batchDelete')}>
                 <Button
+                  className='action-btn'
                   type='text'
                   danger
                   disabled={selectedCount === 0}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '32px',
-                    height: '32px',
-                    padding: 0,
-                    flexShrink: 0
-                  }}
                 >
-                  <span
-                    className='material-symbols-outlined'
-                    style={{ fontSize: 20, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-                  >
+                  <span className='material-symbols-outlined'>
                     delete_sweep
                   </span>
                 </Button>

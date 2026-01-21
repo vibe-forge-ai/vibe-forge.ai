@@ -50,6 +50,35 @@
     }
   }
 
+  .write-result-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .status-icon {
+      font-size: 14px;
+    }
+
+    .status-text {
+      font-size: 12px;
+    }
+
+    &.error {
+      .status-icon, .status-text {
+        color: #ef4444;
+      }
+    }
+
+    &.success {
+      .status-icon {
+        color: #10b981;
+      }
+      .status-text {
+        color: #059669;
+      }
+    }
+  }
+
   .tool-content {
     display: flex;
     flex-direction: column;

@@ -35,10 +35,10 @@ export function BashTool({
       <ToolCallBox
         collapsible={false}
         header={
-          <>
-            <span className='material-symbols-outlined' style={{ fontSize: 16 }}>terminal</span>
-            <span style={{ fontWeight: 600 }}>{t('chat.tools.bash')}</span>
-          </>
+          <div className='bash-header'>
+            <span className='material-symbols-outlined status-icon'>terminal</span>
+            <span className='bash-title'>{t('chat.tools.bash')}</span>
+          </div>
         }
         content={
           <div className='tool-content'>
@@ -61,12 +61,12 @@ export function BashTool({
           type='result'
           isError={resultItem.is_error}
           header={
-            <>
-              <span className='material-symbols-outlined' style={{ fontSize: 16 }}>
+            <div className='result-header'>
+              <span className='material-symbols-outlined status-icon'>
                 {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
-              <span>{t('chat.result')}</span>
-            </>
+              <span className='result-title'>{t('chat.result')}</span>
+            </div>
           }
           content={
             <div className='tool-content'>

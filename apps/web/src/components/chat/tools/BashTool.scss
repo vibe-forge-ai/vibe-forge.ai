@@ -1,4 +1,18 @@
 .tool-group.bash-tool {
+  .bash-header, .result-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .status-icon {
+      font-size: 16px;
+    }
+
+    .bash-title, .result-title {
+      font-weight: 600;
+    }
+  }
+
   .bash-command-preview {
     font-family:
       'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;

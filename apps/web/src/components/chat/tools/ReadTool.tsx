@@ -82,7 +82,7 @@ export function ReadTool({
                 </div>
               )
               : (
-                <div style={{ padding: '8px', color: '#9ca3af', fontSize: 12 }}>
+                <div className='reading-placeholder'>
                   {t('chat.tools.reading')}
                 </div>
               )}

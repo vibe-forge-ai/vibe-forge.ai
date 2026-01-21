@@ -23,11 +23,24 @@
     user-select: none;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
     background-color: var(--tag-bg);
+
+    &.collapsed {
+      cursor: default;
+    }
+
+    .tool-call-header-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
 
     &:hover {
       background-color: var(--tag-hover-bg);

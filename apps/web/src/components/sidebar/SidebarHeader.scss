@@ -1,0 +1,105 @@
+.sidebar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+
+  .header-top {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    .new-chat-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0;
+
+      .material-symbols-outlined {
+        font-size: 18px;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
+
+      .btn-text {
+        margin-left: 8px;
+        font-size: 14px;
+      }
+    }
+
+    .sidebar-collapse-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      color: var(--sub-text-color);
+
+      .material-symbols-outlined {
+        font-size: 20px;
+      }
+    }
+  }
+
+  .header-bottom {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    .batch-select-wrapper {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      border-radius: 6px;
+      flex: 1;
+
+      .search-icon {
+        font-size: 18px;
+        color: var(--sub-text-color);
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
+    }
+
+    .batch-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        flex-shrink: 0;
+        color: var(--sub-text-color);
+
+        &.active {
+          color: var(--primary-color);
+        }
+
+        .material-symbols-outlined {
+          font-size: 20px;
+          display: inline-flex;
+          align-items: center;
+          line-height: 1;
+        }
+      }
+    }
+  }
+}

@@ -30,9 +30,9 @@ export function NavRail({
       label: '简体中文',
       icon: i18n.language.startsWith('zh')
         ? (
-          <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
+          <span className='material-symbols-outlined nav-menu-icon active'>check</span>
         )
-        : <div style={{ width: '18px' }} />,
+        : <div className='nav-menu-icon-placeholder' />,
       onClick: () => {
         void i18n.changeLanguage('zh')
       }
@@ -42,9 +42,9 @@ export function NavRail({
       label: 'English',
       icon: i18n.language.startsWith('en')
         ? (
-          <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
+          <span className='material-symbols-outlined nav-menu-icon active'>check</span>
         )
-        : <div style={{ width: '18px' }} />,
+        : <div className='nav-menu-icon-placeholder' />,
       onClick: () => {
         void i18n.changeLanguage('en')
       }
@@ -56,8 +56,8 @@ export function NavRail({
       key: 'light',
       label: t('common.themeLight'),
       icon: themeMode === 'light'
-        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
-        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>light_mode</span>,
+        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
+        : <span className='material-symbols-outlined nav-menu-icon'>light_mode</span>,
       onClick: () => {
         setThemeMode('light')
         localStorage.setItem('theme', 'light')
@@ -67,8 +67,8 @@ export function NavRail({
       key: 'dark',
       label: t('common.themeDark'),
       icon: themeMode === 'dark'
-        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
-        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>dark_mode</span>,
+        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
+        : <span className='material-symbols-outlined nav-menu-icon'>dark_mode</span>,
       onClick: () => {
         setThemeMode('dark')
         localStorage.setItem('theme', 'dark')
@@ -78,8 +78,8 @@ export function NavRail({
       key: 'system',
       label: t('common.themeSystem'),
       icon: themeMode === 'system'
-        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
-        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>desktop_windows</span>,
+        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
+        : <span className='material-symbols-outlined nav-menu-icon'>desktop_windows</span>,
       onClick: () => {
         setThemeMode('system')
         localStorage.setItem('theme', 'system')

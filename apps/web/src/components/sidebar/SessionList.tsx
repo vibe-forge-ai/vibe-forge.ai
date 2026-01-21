@@ -1,3 +1,5 @@
+import './SessionList.scss'
+
 import type { Session } from '@vibe-forge/core'
 import { List } from 'antd'
 import React from 'react'
@@ -31,13 +33,13 @@ export function SessionList({
 }: SessionListProps) {
   const { t } = useTranslation()
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+    <div className='session-list-container'>
+      <div className='session-list-scroll'>
         <List
           className='session-list'
           size='small'
           locale={{
-            emptyText: <div style={{ padding: '20px', color: '#9ca3af', textAlign: 'center' }}>
+            emptyText: <div className='empty-text'>
               {t('common.noSessions')}
             </div>
           }}

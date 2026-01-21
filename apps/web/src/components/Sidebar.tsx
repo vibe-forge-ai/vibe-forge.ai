@@ -143,19 +143,13 @@ export function Sidebar({
         width: collapsed ? 0 : width,
         minWidth: collapsed ? 0 : undefined,
         transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        height: '100%',
-        borderRight: collapsed ? 'none' : '1px solid var(--border-color)',
-        backgroundColor: 'var(--sidebar-bg)',
-        position: 'relative',
-        flexShrink: 0
+        borderRight: collapsed ? 'none' : undefined,
       }}
     >
       <div
+        className='sidebar-content'
         style={{
           width,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
           transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           transform: collapsed ? `translateX(-${width}px)` : 'translateX(0)'
         }}

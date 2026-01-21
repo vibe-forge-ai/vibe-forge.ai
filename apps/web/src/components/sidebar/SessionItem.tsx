@@ -1,3 +1,5 @@
+import './SessionItem.scss'
+
 import type { Session } from '@vibe-forge/core'
 import { Badge, Button, Checkbox, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
@@ -69,18 +71,9 @@ export function SessionItem({
         session.isStarred ? 'starred' : ''
       }`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
+      <div className='session-item-content'>
         {isBatchMode && (
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
+          <div className='batch-checkbox-wrapper'>
             <Checkbox
               checked={isSelected}
               onChange={() => onToggleSelect(session.id)}
@@ -88,52 +81,32 @@ export function SessionItem({
             />
           </div>
         )}
-        <div style={{ flex: 1, minWidth: 0, paddingRight: isBatchMode ? '0' : '48px' }}>
-          <div
-            className='session-title'
-            style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <span
-              className='material-symbols-outlined'
-              style={{ color: 'inherit', fontSize: '18px', opacity: isActive ? 1 : 0.6 }}
-            >
+        <div className={`session-info ${isBatchMode ? '' : 'with-actions'}`}>
+          <div className='session-title'>
+            <span className='material-symbols-outlined'>
               chat_bubble
             </span>
-            <span
-              className='session-title-text'
-              style={{ fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            >
+            <span className='session-title-text'>
               {displayTitle}
             </span>
           </div>
           {lastMessageSnippet != null && (
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#6b7280',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                marginBottom: '4px'
-              }}
-            >
+            <div className='last-message'>
               {lastMessageSnippet}
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className='session-meta'>
             <Tooltip title={timeDisplay.full}>
-              <span>
-                <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                  {timeDisplay.relative}
-                </div>
+              <span className='time-display'>
+                {timeDisplay.relative}
               </span>
             </Tooltip>
           </div>
-          <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+          <div className='tags-container'>
             {session.tags?.map(tag => (
               <Tag
                 key={tag}
-                style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '14px', borderRadius: '2px' }}
+                className='session-tag'
               >
                 {tag}
               </Tag>
@@ -143,35 +116,19 @@ export function SessionItem({
       </div>
 
       {!isBatchMode && (
-        <div
-          className='session-item-actions'
-          style={{
-            position: 'absolute',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            gap: '2px',
-            zIndex: 10
-          }}
-        >
+        <div className='session-item-actions'>
           <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
             <Button
               type='text'
               size='small'
-              className='action-btn'
+              className={`action-btn ${session.isStarred ? 'starred' : ''}`}
               onClick={(e) => {
                 e.stopPropagation()
                 void onStar(session.id, !session.isStarred)
               }}
               icon={
                 <span
-                  className='material-symbols-outlined'
-                  style={{
-                    fontSize: 18,
-                    color: session.isStarred ? '#f59e0b' : undefined,
-                    fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
-                  }}
+                  className={`material-symbols-outlined ${session.isStarred ? 'filled' : ''}`}
                 >
                   star
                 </span>
@@ -187,7 +144,7 @@ export function SessionItem({
                 e.stopPropagation()
                 void onArchive(session.id)
               }}
-              icon={<span className='material-symbols-outlined' style={{ fontSize: 18 }}>archive</span>}
+              icon={<span className='material-symbols-outlined'>archive</span>}
             />
           </Tooltip>
         </div>
@@ -195,21 +152,7 @@ export function SessionItem({
       {messageCount > 0 && (
         <Badge
           count={messageCount > 99 ? '99+' : messageCount}
-          style={{
-            position: 'absolute',
-            top: -43,
-            right: 0,
-            backgroundColor: '#f3f4f6',
-            color: '#6b7280',
-            fontSize: '10px',
-            height: '16px',
-            lineHeight: '16px',
-            minWidth: '16px',
-            padding: '0 6px',
-            boxShadow: 'none',
-            flexShrink: 0,
-            border: 'none'
-          }}
+          className='session-item-badge'
         />
       )}
     </List.Item>

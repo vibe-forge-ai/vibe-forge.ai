@@ -35,14 +35,8 @@ export function ToolCallBox({
       <div
         className={`tool-call-header ${type === 'result' && isError ? 'error' : ''}`}
         onClick={() => collapsible && setExpanded(!expanded)}
-        style={{
-          cursor: collapsible ? 'pointer' : 'default',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+        <div className='tool-call-header-main'>
           {header}
         </div>
         {collapsible && (

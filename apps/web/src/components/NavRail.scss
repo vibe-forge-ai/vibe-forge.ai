@@ -49,6 +49,21 @@
   }
 }
 
+.nav-menu-icon {
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+
+  &.active {
+    color: var(--primary-color, #2563eb);
+  }
+}
+
+.nav-menu-icon-placeholder {
+  width: 18px;
+}
+
 html.dark .nav-rail {
   --nav-bg: #1f1f1f;
   --nav-text: #8c8c8c;

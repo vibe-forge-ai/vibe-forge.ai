@@ -75,22 +75,11 @@ export function WriteTool({
           type='result'
           isError={resultItem.is_error}
           header={
-            <div className='write-result-status'>
-              <span
-                className='material-symbols-outlined'
-                style={{
-                  fontSize: 14,
-                  color: resultItem.is_error === true ? '#ef4444' : '#10b981'
-                }}
-              >
+            <div className={`write-result-status ${resultItem.is_error ? 'error' : 'success'}`}>
+              <span className='material-symbols-outlined status-icon'>
                 {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: resultItem.is_error === true ? '#ef4444' : '#059669'
-                }}
-              >
+              <span className='status-text'>
                 {resultItem.is_error === true ? t('chat.tools.writeFailed') : t('chat.tools.writeSuccess')}
               </span>
             </div>
