@@ -67,6 +67,10 @@ export function SessionItem({
   return (
     <List.Item
       onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
+      onDoubleClick={() => {
+        // eslint-disable-next-line no-console
+        console.log('Session Details:', session)
+      }}
       className={`session-item ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''} ${
         session.isStarred ? 'starred' : ''
       }`}

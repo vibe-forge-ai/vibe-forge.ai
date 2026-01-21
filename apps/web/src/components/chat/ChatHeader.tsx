@@ -109,7 +109,23 @@ export function ChatHeader({
             <span className='material-symbols-outlined'>route</span>
             {cwd ?? t('chat.selectModel')}
           </div>
-          <div className='chat-header-subtitle'>
+          <div
+            className='chat-header-subtitle'
+            onDoubleClick={() => {
+              // eslint-disable-next-line no-console
+              console.log('Session Full Info:', {
+                sessionId,
+                sessionTitle,
+                isStarred,
+                isArchived,
+                tags,
+                lastMessage,
+                lastUserMessage,
+                sessionInfo
+              })
+            }}
+            style={{ cursor: 'pointer', userSelect: 'all' }}
+          >
             {sessionId ?? t('chat.selectModel')}
           </div>
         </div>
