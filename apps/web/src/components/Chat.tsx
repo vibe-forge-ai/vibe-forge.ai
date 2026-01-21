@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
 import type { ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import { getSessionMessages } from '../api'
 import { createSocket } from '../ws'
 
 import { ChatHeader } from './chat/ChatHeader'
@@ -81,6 +82,62 @@ export function Chat({
     isInitialLoadRef.current = true
 
     let isDisposed = false
+
+    // 获取历史消息
+    const fetchHistory = async () => {
+      try {
+        const res = await getSessionMessages(session.id)
+        if (isDisposed) return
+        const events = res.messages as WSEvent[]
+
+        let currentMessages: ChatMessage[] = []
+        let currentSessionInfo: SessionInfo | null = null
+
+        for (const data of events) {
+          if (data.type === 'message') {
+            const exists = currentMessages.find((msg) => msg.id === data.message.id)
+            if (exists != null) {
+              currentMessages = currentMessages.map((msg) => (msg.id === data.message.id ? data.message : msg))
+            } else {
+              currentMessages.push(data.message)
+            }
+          } else if (data.type === 'session_info') {
+            if (data.info != null && data.info.type !== 'summary') {
+              currentSessionInfo = data.info
+            }
+          } else if (data.type === 'tool_result') {
+            currentMessages = currentMessages.map((msg) => {
+              if (msg.toolCall != null && msg.toolCall.id === data.toolCallId) {
+                return {
+                  ...msg,
+                  toolCall: {
+                    ...msg.toolCall,
+                    status: data.isError === true ? 'error' : 'success',
+                    output: data.output
+                  }
+                }
+              }
+              return msg
+            })
+          }
+        }
+
+        setMessages(currentMessages)
+        setSessionInfo(currentSessionInfo)
+
+        // 标记为就绪，允许显示界面
+        setTimeout(() => {
+          if (isDisposed) return
+          setIsReady(true)
+          isInitialLoadRef.current = false
+        }, 100)
+      } catch (err) {
+        console.error('Failed to fetch history messages:', err)
+      }
+    }
+
+    void fetchHistory()
+
     const timer = setTimeout(() => {
       if (isDisposed) return
 
@@ -140,6 +197,7 @@ export function Chat({
               // If it's a new session with no messages, ready it
               if (isInitialLoadRef.current) {
                 setTimeout(() => {
+                  if (isDisposed) return
                   if (isInitialLoadRef.current) {
                     setIsReady(true)
                     isInitialLoadRef.current = false
@@ -209,11 +267,14 @@ export function Chat({
   }
 
   return (
-    <div className='chat-container'>
+    <div className={`chat-container ${isReady ? 'ready' : ''}`}>
       <ChatHeader
         sessionInfo={sessionInfo}
         sessionId={session?.id}
         sessionTitle={session?.title}
+        isStarred={session?.isStarred}
+        isArchived={session?.isArchived}
+        tags={session?.tags}
         lastMessage={session?.lastMessage}
         lastUserMessage={session?.lastUserMessage}
         renderLeft={renderLeftHeader}

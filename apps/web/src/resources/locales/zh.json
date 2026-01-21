@@ -69,6 +69,12 @@
       "call": "调用",
       "reading": "正在读取文件...",
       "unknown": "未知工具"
-    }
+    },
+    "sessionSettings": "会话设置",
+    "enterTitle": "输入会话标题...",
+    "tags": "标签",
+    "addTagPlaceholder": "添加新标签并按回车...",
+    "noTags": "暂无标签",
+    "title": "标题"
   }
 }

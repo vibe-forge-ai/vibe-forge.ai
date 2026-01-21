@@ -152,59 +152,11 @@ export function SessionItem({
             {session.tags?.map(tag => (
               <Tag
                 key={tag}
-                closable
-                onClose={(e) => {
-                  e.preventDefault()
-                  const nextTags = session.tags?.filter(t => t !== tag) ?? []
-                  void onUpdateTags(session.id, nextTags)
-                }}
                 style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '14px', borderRadius: '2px' }}
               >
                 {tag}
               </Tag>
             ))}
-            {isAddingTag
-              ? (
-                <Input
-                  size='small'
-                  autoFocus
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onBlur={() => {
-                    setIsAddingTag(false)
-                    setNewTag('')
-                  }}
-                  onPressEnter={() => {
-                    if (newTag.trim() !== '') {
-                      const nextTags = Array.from(new Set([...(session.tags ?? []), newTag.trim()]))
-                      void onUpdateTags(session.id, nextTags)
-                    }
-                    setIsAddingTag(false)
-                    setNewTag('')
-                  }}
-                  style={{ width: '60px', fontSize: '10px', padding: '0 4px', height: '16px' }}
-                />
-              )
-              : (
-                <Tag
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setIsAddingTag(true)
-                  }}
-                  style={{
-                    fontSize: '10px',
-                    margin: 0,
-                    padding: '0 4px',
-                    lineHeight: '14px',
-                    borderRadius: '2px',
-                    borderStyle: 'dashed',
-                    cursor: 'pointer',
-                    background: 'transparent'
-                  }}
-                >
-                  + {t('common.addTag', 'Tag')}
-                </Tag>
-              )}
           </div>
         </div>
       </div>
@@ -221,66 +173,18 @@ export function SessionItem({
             gap: '2px'
           }}
         >
-          <Tooltip title={session.isStarred ? t('common.unstar', 'Unstar') : t('common.star', 'Star')}>
-            <span>
-              <Button
-                type='text'
-                size='small'
-                className={`action-btn star-btn ${session.isStarred ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  void onStar(session.id, !session.isStarred)
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                  padding: 0,
-                  color: session.isStarred ? '#f59e0b' : '#d1d5db'
-                }}
-              >
-                <span
-                  className='material-symbols-outlined'
-                  style={{
-                    fontSize: 18,
-                    display: 'block',
-                    lineHeight: 1,
-                    fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
-                  }}
-                >
-                  star
-                </span>
-              </Button>
+          {session.isStarred && (
+            <span
+              className='material-symbols-outlined'
+              style={{
+                fontSize: 18,
+                color: '#f59e0b',
+                fontVariationSettings: "'FILL' 1"
+              }}
+            >
+              star
             </span>
-          </Tooltip>
-          <Tooltip title={t('common.archive')}>
-            <span>
-              <Button
-                type='text'
-                size='small'
-                className='action-btn archive-btn'
-                onClick={(e) => {
-                  e.stopPropagation()
-                  void onArchive(session.id)
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                  padding: 0,
-                  color: '#d1d5db'
-                }}
-              >
-                <span className='material-symbols-outlined' style={{ fontSize: 18, display: 'block', lineHeight: 1 }}>
-                  archive
-                </span>
-              </Button>
-            </span>
-          </Tooltip>
+          )}
         </div>
       )}
     </List.Item>

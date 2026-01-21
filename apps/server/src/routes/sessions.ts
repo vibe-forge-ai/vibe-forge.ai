@@ -17,6 +17,22 @@ export function sessionsRouter(): Router {
     ctx.body = { sessions: db.getSessions('archived') }
   })
 
+  router.get('/:id/messages', (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { limit } = ctx.query as { limit?: string }
+    const messages = db.getMessages(id)
+
+    if (limit != null) {
+      const n = Number.parseInt(limit, 10)
+      if (!Number.isNaN(n)) {
+        ctx.body = { messages: messages.slice(-n) }
+        return
+      }
+    }
+
+    ctx.body = { messages }
+  })
+
   router.patch('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
     const { title, isStarred, isArchived, tags } = ctx.request.body as {

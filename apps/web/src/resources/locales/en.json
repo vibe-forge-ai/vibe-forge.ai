@@ -68,6 +68,12 @@
       "call": "call",
       "reading": "Reading file...",
       "unknown": "Unknown tool"
-    }
+    },
+    "sessionSettings": "Session Settings",
+    "enterTitle": "Enter session title...",
+    "tags": "Tags",
+    "addTagPlaceholder": "Add tag and press Enter...",
+    "noTags": "No tags",
+    "title": "Title"
   }
 }

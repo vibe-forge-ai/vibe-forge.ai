@@ -79,11 +79,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
       cached.sockets.add(ws)
       currentSession = cached.session
-
-      // 重放内存中的历史消息
-      for (const msg of cached.messages) {
-        sendToClient(ws, msg)
-      }
     } else {
       serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
 
@@ -94,16 +89,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         db.createSession(undefined, sessionId)
       }
 
-      // 重放从数据库加载历史消息给当前 socket
-      if (hasHistory) {
-        serverLogger.info({ sessionId, historyCount: historyMessages.length }, '[server] Replaying messages from DB')
-        for (const msg of historyMessages) {
-          sendToClient(ws, msg)
-        }
-      }
-
       const sockets = new Set<WebSocket>([ws])
-      const messages = [...historyMessages]
+      const messages: WSEvent[] = []
 
       try {
         const session = query('claude', {

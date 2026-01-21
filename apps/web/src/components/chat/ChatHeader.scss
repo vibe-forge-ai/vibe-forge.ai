@@ -38,6 +38,235 @@
   }
 }
 
+.session-settings-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  height: 100%;
+
+  .settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    .section-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &::before {
+        content: '';
+        display: block;
+        width: 3px;
+        height: 12px;
+        background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+        border-radius: 4px;
+      }
+    }
+
+    .tag-input-container {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+
+      .ant-input-filled {
+        flex: 1;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: all .2s;
+
+        &:hover, &:focus {
+          background-color: #fff;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, .1);
+        }
+      }
+
+      .ant-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        min-width: 40px;
+        padding: 0;
+        border-radius: 8px;
+      }
+    }
+
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px;
+      background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+
+      .custom-tag {
+        margin: 0;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background-color: #fff;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #475569;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+        transition: all .3s cubic-bezier(.4, 0, .2, 1);
+
+        &:hover {
+          transform: translateY(-1px);
+          border-color: #3b82f6;
+          color: #3b82f6;
+          box-shadow:
+            0 4px 6px -1px rgba(59, 130, 246, .1),
+            0 2px 4px -1px rgba(59, 130, 246, .06);
+        }
+
+        .ant-tag-close-icon {
+          font-size: 10px;
+          margin-left: 4px;
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          transition: all .2s;
+
+          &:hover {
+            background-color: #fee2e2;
+            color: #ef4444;
+          }
+        }
+      }
+
+      .empty-tags {
+        font-size: 12px;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: 6px;
+
+        &::before {
+          content: 'label_off';
+          font-family: 'Material Symbols Outlined';
+          font-size: 16px;
+        }
+      }
+    }
+  }
+
+  .settings-footer {
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .footer-actions {
+      display: flex;
+      gap: 16px;
+
+      .ant-btn {
+        flex: 1;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all .3s;
+        border-width: 2px; // 增加边框宽度
+
+        .material-symbols-outlined {
+          font-size: 20px;
+        }
+
+        // 归档按钮增强
+        &.archive-btn {
+          background-color: #fff;
+          border-color: #fee2e2;
+          color: #ef4444;
+
+          &:hover {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+          }
+
+          &.action-active {
+            background-color: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+
+            &:hover {
+              background-color: #dc2626;
+              border-color: #dc2626;
+            }
+          }
+        }
+
+        // 收藏按钮增强 (改为金黄色系)
+        &.star-btn {
+          background-color: #fff;
+          border-color: #fef3c7;
+          color: #d97706;
+
+          &:hover {
+            background-color: #fffbeb;
+            border-color: #fbbf24;
+          }
+
+          &.action-active {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, .2);
+
+            &:hover {
+              opacity: .9;
+              transform: translateY(-1px);
+              box-shadow: 0 6px 16px rgba(217, 119, 6, .3);
+            }
+          }
+        }
+      }
+    }
+
+    .danger-zone {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 16px;
+
+      .delete-btn {
+        height: 40px;
+        color: #94a3b8;
+        font-weight: 500;
+        border-radius: 8px;
+
+        &:hover {
+          color: #ef4444;
+          background-color: #fef2f2;
+        }
+      }
+    }
+  }
+}
+
 .session-info-badge {
   display: flex;
   gap: 8px;
