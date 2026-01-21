@@ -105,23 +105,6 @@ export function SessionItem({
             >
               {displayTitle}
             </span>
-            {messageCount > 0 && (
-              <Badge
-                count={messageCount > 99 ? '99+' : messageCount}
-                style={{
-                  backgroundColor: isActive ? '#3b82f6' : '#f3f4f6',
-                  color: isActive ? '#fff' : '#6b7280',
-                  fontSize: '10px',
-                  height: '16px',
-                  lineHeight: '16px',
-                  minWidth: '16px',
-                  padding: '0 6px',
-                  boxShadow: 'none',
-                  flexShrink: 0,
-                  border: 'none'
-                }}
-              />
-            )}
           </div>
           {lastMessageSnippet != null && (
             <div
@@ -208,6 +191,26 @@ export function SessionItem({
             />
           </Tooltip>
         </div>
+      )}
+      {messageCount > 0 && (
+        <Badge
+          count={messageCount > 99 ? '99+' : messageCount}
+          style={{
+            position: 'absolute',
+            top: -43,
+            right: 0,
+            backgroundColor: '#f3f4f6',
+            color: '#6b7280',
+            fontSize: '10px',
+            height: '16px',
+            lineHeight: '16px',
+            minWidth: '16px',
+            padding: '0 6px',
+            boxShadow: 'none',
+            flexShrink: 0,
+            border: 'none'
+          }}
+        />
       )}
     </List.Item>
   )

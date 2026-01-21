@@ -8,6 +8,12 @@ html, body, #root, .ant-app {
   flex-direction: column;
 }
 
+.ant-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 * {
   box-sizing: border-box;
 }
