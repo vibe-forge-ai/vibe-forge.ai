@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 interface SidebarHeaderProps {
   onCreateSession: () => void
   onToggleCollapse: () => void
+  isCollapsed?: boolean
   searchQuery: string
   onSearchChange: (query: string) => void
   isBatchMode: boolean
@@ -18,6 +19,7 @@ interface SidebarHeaderProps {
 export function SidebarHeader({
   onCreateSession,
   onToggleCollapse,
+  isCollapsed,
   searchQuery,
   onSearchChange,
   isBatchMode,
@@ -34,7 +36,7 @@ export function SidebarHeader({
     <div
       style={{
         padding: '12px 16px',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
@@ -61,10 +63,12 @@ export function SidebarHeader({
             >
               add_circle
             </span>
+            <span style={{ marginLeft: '8px', fontSize: '14px' }}>{t('common.newChat')}</span>
           </Button>
         </Tooltip>
-        <Tooltip title={t('common.collapse')}>
+        <Tooltip title={isCollapsed ? t('common.expand') : t('common.collapse')}>
           <Button
+            className='sidebar-collapse-btn'
             type='text'
             onClick={onToggleCollapse}
             style={{
@@ -77,11 +81,8 @@ export function SidebarHeader({
               color: '#6b7280'
             }}
           >
-            <span
-              className='material-symbols-outlined'
-              style={{ fontSize: 20, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-            >
-              keyboard_double_arrow_left
+            <span className='material-symbols-outlined' style={{ fontSize: 20 }}>
+              {isCollapsed ? 'menu' : 'menu_open'}
             </span>
           </Button>
         </Tooltip>

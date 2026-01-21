@@ -1,9 +1,9 @@
 .tool-group {
   margin: 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg-color);
 
   .tool-call-box {
     border: none;
@@ -11,8 +11,8 @@
     border-radius: 0;
 
     &.result {
-      border-top: 1px dashed #e5e7eb;
-      background-color: #f9fafb;
+      border-top: 1px dashed var(--border-color);
+      background-color: var(--tag-bg, #f9fafb);
     }
   }
 
@@ -27,15 +27,15 @@
     gap: 8px;
     font-size: 13px;
     font-weight: 500;
-    color: #374151;
+    color: var(--text-color);
 
     &:hover {
-      background-color: #f9fafb;
+      background-color: var(--tag-hover-bg, #f9fafb);
     }
 
     .material-symbols-outlined {
       font-size: 18px;
-      color: #6b7280;
+      color: var(--sub-text-color, #6b7280);
     }
   }
 
@@ -45,7 +45,7 @@
     box-sizing: border-box;
     cursor: pointer;
     user-select: none;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -54,7 +54,7 @@
     color: #059669;
 
     &:hover {
-      background-color: #f3f4f6;
+      background-color: var(--tag-hover-bg, #f3f4f6);
     }
 
     .material-symbols-outlined {
@@ -71,7 +71,7 @@
 
   .tool-call-box.expanded {
     .tool-call-header {
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid var(--border-color);
     }
     .tool-result-header {
       border-bottom: none;

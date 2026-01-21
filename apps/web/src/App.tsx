@@ -1,6 +1,6 @@
-import { Button, Empty, Layout } from 'antd'
-import { useAtom } from 'jotai'
-import React, { useCallback, useEffect, useState } from 'react'
+import { Button, ConfigProvider, Empty, Layout, theme } from 'antd'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import React, { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
@@ -11,12 +11,12 @@ import { NavRail } from '#~/components/NavRail'
 import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
 import type { Session } from '@vibe-forge/core'
-import { isSidebarCollapsedAtom, sidebarWidthAtom } from './store'
+import { isSidebarCollapsedAtom, isSidebarResizingAtom, sidebarWidthAtom, themeAtom } from './store/index'
 
 const MIN_SIDEBAR_WIDTH = 200
 const MAX_SIDEBAR_WIDTH = 600
 
-function ChatView({ renderLeftHeader }: { renderLeftHeader?: React.ReactNode }) {
+function ChatView() {
   const { t } = useTranslation()
   const { sessionId } = useParams()
   const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
@@ -31,17 +31,19 @@ function ChatView({ renderLeftHeader }: { renderLeftHeader?: React.ReactNode }) 
     )
   }
 
-  return <Chat session={session} renderLeftHeader={renderLeftHeader} />
+  return <Chat session={session} />
 }
 
 export default function App() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const [themeMode] = useAtom(themeAtom)
 
   const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
-  const [isResizing, setIsResizing] = useState(false)
+  const isResizing = useAtomValue(isSidebarResizingAtom)
+  const setIsResizing = useSetAtom(isSidebarResizingAtom)
 
   const currentPath = location.pathname
   const activeId = currentPath.split('/session/')[1]
@@ -54,17 +56,19 @@ export default function App() {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return
 
-    let newWidth = e.clientX
+    // 获取相对于容器左边缘的坐标
+    // 容器由 NavRail (56px) + Sidebar 组成
+    let newWidth = e.clientX - 56
     if (newWidth < MIN_SIDEBAR_WIDTH) newWidth = MIN_SIDEBAR_WIDTH
     if (newWidth > MAX_SIDEBAR_WIDTH) newWidth = MAX_SIDEBAR_WIDTH
 
     setSidebarWidth(newWidth)
-    localStorage.setItem('sidebarWidth', newWidth.toString())
   }, [isResizing, setSidebarWidth])
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false)
-  }, [])
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString())
+  }, [sidebarWidth])
 
   useEffect(() => {
     if (isResizing) {
@@ -90,105 +94,79 @@ export default function App() {
     })
   }
 
-  const toggleButton = (
-    <Button
-      type='text'
-      size='small'
-      onClick={toggleSidebar}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '24px',
-        height: '24px',
-        padding: 0,
-        color: '#6b7280',
-        backgroundColor: 'transparent',
-        border: '1px solid #e5e7eb',
-        borderRadius: '4px'
-      }}
-      title={t('common.expand')}
-    >
-      <span
-        className='material-symbols-outlined'
-        style={{ fontSize: 18, display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
-      >
-        side_navigation
-      </span>
-    </Button>
-  )
+  const isDarkMode = themeMode === 'dark'
+    || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const showSidebar = currentPath === '/' || currentPath.startsWith('/session/')
 
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDarkMode])
+
   return (
-    <Layout style={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', height: '100%', width: '100%' }}>
-        <NavRail />
+    <ConfigProvider
+      theme={{
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorPrimary: isDarkMode ? '#3b82f6' : '#000000'
+        }
+      }}
+    >
+      <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        <NavRail collapsed={isSidebarCollapsed} onToggleCollapse={toggleSidebar} />
         {showSidebar && (
           <>
             <Sidebar
               width={sidebarWidth}
               collapsed={isSidebarCollapsed}
-              activeId={activeId}
-              onSelectSession={(s: Session, isNew?: boolean) => {
-                void navigate(`/session/${encodeURIComponent(s.id)}`, { state: { isNew } })
-              }}
-              onDeletedSession={(id: string) => {
-                if (activeId === id) {
-                  void navigate('/')
-                }
-              }}
               onToggleCollapse={toggleSidebar}
-            />
-
-            <div
-              onMouseDown={handleMouseDown}
-              style={{
-                width: isSidebarCollapsed ? 0 : '4px',
-                cursor: isSidebarCollapsed ? 'default' : 'col-resize',
-                backgroundColor: isResizing ? '#3b82f6' : 'transparent',
-                zIndex: 10,
-                transition: 'background-color 0.2s, width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                flexShrink: 0,
-                position: 'relative',
-                marginLeft: isSidebarCollapsed ? 0 : '-2px',
-                marginRight: isSidebarCollapsed ? 0 : '-2px',
-                pointerEvents: isSidebarCollapsed ? 'none' : 'auto',
-                overflow: 'hidden'
+              activeId={activeId}
+              onSelectSession={(session: Session) => {
+                void navigate(`/session/${session.id}`)
               }}
-              title={t('common.dragResize')}
             />
+            {!isSidebarCollapsed && (
+              <div
+                onMouseDown={handleMouseDown}
+                style={{
+                  width: '4px',
+                  cursor: 'col-resize',
+                  backgroundColor: isResizing ? '#2563eb' : 'transparent',
+                  transition: 'background-color 0.2s',
+                  zIndex: 10,
+                  flexShrink: 0
+                }}
+              />
+            )}
           </>
         )}
-
-        <Layout.Content style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Layout.Content
+          style={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundColor: isDarkMode ? '#141414' : '#fff'
+          }}
+        >
           <Routes>
-            <Route
-              path='/session/:sessionId'
-              element={<ChatView renderLeftHeader={isSidebarCollapsed ? toggleButton : null} />}
-            />
-            <Route path='/archive' element={<ArchiveView />} />
-            <Route path='/search' element={<SearchView />} />
             <Route
               path='/'
               element={
-                <div style={{ height: '100%', position: 'relative' }}>
-                  {isSidebarCollapsed && (
-                    <div style={{ position: 'absolute', left: '16px', top: '16px', zIndex: 10 }}>
-                      {toggleButton}
-                    </div>
-                  )}
-                  <div style={{ height: '100%', display: 'grid', placeItems: 'center' }}>
-                    <Empty description={t('common.selectOrCreateSession')} />
-                  </div>
+                <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: '#6b7280' }}>
+                  {t('common.selectOrCreateSession')}
                 </div>
               }
             />
+            <Route path='/session/:sessionId' element={<ChatView />} />
+            <Route path='/archive' element={<ArchiveView />} />
+            <Route path='/search' element={<SearchView />} />
           </Routes>
         </Layout.Content>
-      </div>
-    </Layout>
+      </Layout>
+    </ConfigProvider>
   )
 }
-
-/* no-op */

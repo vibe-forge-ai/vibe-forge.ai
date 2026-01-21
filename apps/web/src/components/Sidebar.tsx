@@ -1,12 +1,14 @@
 import './Sidebar.scss'
 
 import { Button } from 'antd'
+import { useAtomValue } from 'jotai'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
 import { createSession, deleteSession, updateSession } from '../api'
+import { isSidebarResizingAtom } from '../store/index'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 
@@ -26,6 +28,7 @@ export function Sidebar({
   onToggleCollapse: () => void
 }) {
   const { t } = useTranslation()
+  const isResizing = useAtomValue(isSidebarResizingAtom)
   const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
@@ -63,6 +66,16 @@ export function Sidebar({
       onDeletedSession?.(id)
     } catch (err) {
       console.error('Failed to archive session:', err)
+    }
+  }
+
+  async function handleDeleteSession(id: string) {
+    try {
+      await deleteSession(id)
+      await mutateSessions()
+      if (activeId === id) onDeletedSession?.(id)
+    } catch (err) {
+      console.error('Failed to delete session:', err)
     }
   }
 
@@ -129,11 +142,10 @@ export function Sidebar({
       style={{
         width: collapsed ? 0 : width,
         minWidth: collapsed ? 0 : undefined,
-        overflow: 'hidden',
-        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         height: '100%',
-        borderRight: collapsed ? 'none' : '1px solid #f0f0f0',
-        backgroundColor: '#fff',
+        borderRight: collapsed ? 'none' : '1px solid var(--border-color)',
+        backgroundColor: 'var(--sidebar-bg)',
         position: 'relative',
         flexShrink: 0
       }}
@@ -144,7 +156,7 @@ export function Sidebar({
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           transform: collapsed ? `translateX(-${width}px)` : 'translateX(0)'
         }}
       >
@@ -153,6 +165,7 @@ export function Sidebar({
             void handleCreateSession()
           }}
           onToggleCollapse={onToggleCollapse}
+          isCollapsed={collapsed}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isBatchMode={isBatchMode}
@@ -171,6 +184,7 @@ export function Sidebar({
           selectedIds={selectedIds}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
+          onDeleteSession={handleDeleteSession}
           onStarSession={handleStarSession}
           onUpdateTags={handleUpdateTags}
           onToggleSelect={handleToggleSelect}

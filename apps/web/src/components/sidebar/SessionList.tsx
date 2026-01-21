@@ -11,6 +11,7 @@ interface SessionListProps {
   selectedIds: Set<string>
   onSelectSession: (session: Session) => void
   onArchiveSession: (id: string) => void | Promise<void>
+  onDeleteSession: (id: string) => void | Promise<void>
   onStarSession: (id: string, isStarred: boolean) => void | Promise<void>
   onUpdateTags: (id: string, tags: string[]) => void | Promise<void>
   onToggleSelect: (id: string) => void
@@ -23,6 +24,7 @@ export function SessionList({
   selectedIds,
   onSelectSession,
   onArchiveSession,
+  onDeleteSession,
   onStarSession,
   onUpdateTags,
   onToggleSelect
@@ -48,6 +50,7 @@ export function SessionList({
               isSelected={selectedIds.has(s.id)}
               onSelect={onSelectSession}
               onArchive={onArchiveSession}
+              onDelete={onDeleteSession}
               onStar={onStarSession}
               onUpdateTags={onUpdateTags}
               onToggleSelect={onToggleSelect}

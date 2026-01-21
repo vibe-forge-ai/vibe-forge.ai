@@ -2,12 +2,23 @@ import './NavRail.scss'
 
 import { Button, Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
+import { useAtom } from 'jotai'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-export function NavRail() {
+import { themeAtom } from '../store'
+import type { ThemeMode } from '../store'
+
+export function NavRail({
+  collapsed,
+  onToggleCollapse
+}: {
+  collapsed?: boolean
+  onToggleCollapse?: () => void
+}) {
   const { t, i18n } = useTranslation()
+  const [themeMode, setThemeMode] = useAtom(themeAtom)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -39,6 +50,42 @@ export function NavRail() {
       }
     }
   ], [i18n.language])
+
+  const themeItems: MenuProps['items'] = React.useMemo(() => [
+    {
+      key: 'light',
+      label: t('common.themeLight'),
+      icon: themeMode === 'light'
+        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
+        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>light_mode</span>,
+      onClick: () => {
+        setThemeMode('light')
+        localStorage.setItem('theme', 'light')
+      }
+    },
+    {
+      key: 'dark',
+      label: t('common.themeDark'),
+      icon: themeMode === 'dark'
+        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
+        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>dark_mode</span>,
+      onClick: () => {
+        setThemeMode('dark')
+        localStorage.setItem('theme', 'dark')
+      }
+    },
+    {
+      key: 'system',
+      label: t('common.themeSystem'),
+      icon: themeMode === 'system'
+        ? <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#2563eb' }}>check</span>
+        : <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>desktop_windows</span>,
+      onClick: () => {
+        setThemeMode('system')
+        localStorage.setItem('theme', 'system')
+      }
+    }
+  ], [themeMode, t, setThemeMode])
 
   const navItems = React.useMemo(() => [
     {
@@ -81,6 +128,27 @@ export function NavRail() {
         ))}
       </div>
       <div className='nav-rail-bottom'>
+        <Tooltip title={t('common.theme')} placement='right'>
+          <span>
+            <Dropdown
+              menu={{
+                items: themeItems
+              }}
+              placement='topRight'
+              trigger={['click']}
+            >
+              <Button
+                type='text'
+                className='nav-item'
+                icon={
+                  <span className='material-symbols-outlined'>
+                    {themeMode === 'light' ? 'light_mode' : themeMode === 'dark' ? 'dark_mode' : 'desktop_windows'}
+                  </span>
+                }
+              />
+            </Dropdown>
+          </span>
+        </Tooltip>
         <Tooltip title={t('common.language')} placement='right'>
           <span>
             <Dropdown
@@ -96,15 +164,6 @@ export function NavRail() {
                 icon={<span className='material-symbols-outlined'>language</span>}
               />
             </Dropdown>
-          </span>
-        </Tooltip>
-        <Tooltip title={t('common.theme')} placement='right'>
-          <span>
-            <Button
-              type='text'
-              className='nav-item'
-              icon={<span className='material-symbols-outlined'>palette</span>}
-            />
           </span>
         </Tooltip>
         <Tooltip title={t('common.settings')} placement='right'>

@@ -2,10 +2,12 @@ import './ChatHeader.scss'
 import type { SessionInfo } from '@vibe-forge/core'
 import { App, Button, Drawer, Dropdown, Input, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
+import { useAtomValue } from 'jotai'
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 import { deleteSession, updateSession } from '../../api'
+import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 
 export function ChatHeader({
   sessionInfo,
@@ -15,8 +17,7 @@ export function ChatHeader({
   isArchived,
   tags,
   lastMessage,
-  lastUserMessage,
-  renderLeft
+  lastUserMessage
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
@@ -26,11 +27,12 @@ export function ChatHeader({
   tags?: string[]
   lastMessage?: string
   lastUserMessage?: string
-  renderLeft?: React.ReactNode
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { mutate } = useSWRConfig()
+  const isSidebarCollapsed = useAtomValue(isSidebarCollapsedAtom)
+  const isResizing = useAtomValue(isSidebarResizingAtom)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
 
@@ -97,18 +99,18 @@ export function ChatHeader({
   ]
 
   return (
-    <div className='chat-header'>
+    <div className={`chat-header ${isSidebarCollapsed ? 'is-collapsed' : ''} ${isResizing ? 'is-resizing' : ''}`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-        {renderLeft}
-        <div
-          className='chat-header-info'
-          style={{ flex: 1, minWidth: 0 }}
-        >
+        <div className='chat-header-info'>
           <div className='chat-header-title'>
             {displayTitle}
           </div>
           <div className='chat-header-subtitle'>
+            <span className='material-symbols-outlined'>route</span>
             {cwd ?? t('chat.selectModel')}
+          </div>
+          <div className='chat-header-subtitle'>
+            {sessionId ?? t('chat.selectModel')}
           </div>
         </div>
       </div>

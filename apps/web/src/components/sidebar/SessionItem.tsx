@@ -1,5 +1,5 @@
 import type { Session } from '@vibe-forge/core'
-import { Badge, Button, Checkbox, Input, List, Space, Tag, Tooltip } from 'antd'
+import { Badge, Button, Checkbox, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { useMemo } from 'react'
@@ -15,6 +15,7 @@ interface SessionItemProps {
   isSelected: boolean
   onSelect: (session: Session) => void
   onArchive: (id: string) => void | Promise<void>
+  onDelete: (id: string) => void | Promise<void>
   onStar: (id: string, isStarred: boolean) => void | Promise<void>
   onUpdateTags: (id: string, tags: string[]) => void | Promise<void>
   onToggleSelect: (id: string) => void
@@ -27,6 +28,7 @@ export function SessionItem({
   isSelected,
   onSelect,
   onArchive,
+  onDelete,
   onStar,
   onUpdateTags,
   onToggleSelect
@@ -62,14 +64,10 @@ export function SessionItem({
 
   return (
     <List.Item
-      style={{
-        cursor: 'pointer',
-        background: isActive ? '#f2f4f5' : undefined,
-        padding: '12px 16px',
-        position: 'relative'
-      }}
       onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
-      className={`session-item ${isSelected ? 'selected' : ''} ${session.isStarred ? 'starred' : ''}`}
+      className={`session-item ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''} ${
+        session.isStarred ? 'starred' : ''
+      }`}
     >
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
         {isBatchMode && (
@@ -97,7 +95,7 @@ export function SessionItem({
           >
             <span
               className='material-symbols-outlined'
-              style={{ color: isActive ? '#3b82f6' : '#9ca3af', fontSize: '18px' }}
+              style={{ color: 'inherit', fontSize: '18px', opacity: isActive ? 1 : 0.6 }}
             >
               chat_bubble
             </span>
@@ -170,21 +168,45 @@ export function SessionItem({
             top: '50%',
             transform: 'translateY(-50%)',
             display: 'flex',
-            gap: '2px'
+            gap: '2px',
+            zIndex: 10
           }}
         >
-          {session.isStarred && (
-            <span
-              className='material-symbols-outlined'
-              style={{
-                fontSize: 18,
-                color: '#f59e0b',
-                fontVariationSettings: "'FILL' 1"
+          <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
+            <Button
+              type='text'
+              size='small'
+              className='action-btn'
+              onClick={(e) => {
+                e.stopPropagation()
+                void onStar(session.id, !session.isStarred)
               }}
-            >
-              star
-            </span>
-          )}
+              icon={
+                <span
+                  className='material-symbols-outlined'
+                  style={{
+                    fontSize: 18,
+                    color: session.isStarred ? '#f59e0b' : undefined,
+                    fontVariationSettings: session.isStarred ? "'FILL' 1" : undefined
+                  }}
+                >
+                  star
+                </span>
+              }
+            />
+          </Tooltip>
+          <Tooltip title={t('common.archive')}>
+            <Button
+              type='text'
+              size='small'
+              className='action-btn archive-btn'
+              onClick={(e) => {
+                e.stopPropagation()
+                void onArchive(session.id)
+              }}
+              icon={<span className='material-symbols-outlined' style={{ fontSize: 18 }}>archive</span>}
+            />
+          </Tooltip>
         </div>
       )}
     </List.Item>

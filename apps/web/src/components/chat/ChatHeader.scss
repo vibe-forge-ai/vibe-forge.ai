@@ -1,28 +1,48 @@
 .chat-header {
   padding: 12px 24px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: var(--bg-color);
+  transition: padding-left .3s cubic-bezier(.4, 0, .2, 1);
+
+  &.is-resizing {
+    transition: none !important;
+  }
+
+  &.is-collapsed {
+    padding-left: 48px;
+  }
+
+  &-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
   &-title {
     font-size: 18px;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-color);
+    line-height: 32px;
   }
 
   &-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--sub-text-color, #6b7280);
   }
 
   &-session-id {
     font-size: 12px;
-    color: #9ca3af;
-    background-color: #f9fafb;
+    color: var(--sub-text-color, #9ca3af);
+    background-color: var(--tag-bg, #f9fafb);
     padding: 2px 10px;
     border-radius: 12px;
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--border-color);
     cursor: pointer;
     user-select: none;
     transition: all .2s;
@@ -31,9 +51,9 @@
     flex-shrink: 0;
 
     &:hover {
-      background-color: #f3f4f6;
-      color: #6b7280;
-      border-color: #e5e7eb;
+      background-color: var(--tag-hover-bg, #f3f4f6);
+      color: var(--sub-text-color, #6b7280);
+      border-color: var(--border-color-hover, #e5e7eb);
     }
   }
 }
@@ -52,7 +72,7 @@
     .section-header {
       font-size: 13px;
       font-weight: 700;
-      color: #6b7280;
+      color: var(--sub-text-color, #6b7280);
       text-transform: uppercase;
       letter-spacing: .05em;
       display: flex;
@@ -76,12 +96,13 @@
 
       .ant-input-filled {
         flex: 1;
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background-color: var(--input-bg, #f8fafc);
+        border: 1px solid var(--border-color);
         transition: all .2s;
+        color: var(--text-color);
 
         &:hover, &:focus {
-          background-color: #fff;
+          background-color: var(--input-focus-bg, #fff);
           border-color: #3b82f6;
           box-shadow: 0 0 0 2px rgba(59, 130, 246, .1);
         }
@@ -98,173 +119,113 @@
       }
     }
 
-    .tags-list {
+    .tag-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      min-height: 48px;
+      gap: 8px;
       padding: 12px;
-      background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+      background-color: var(--tag-list-bg, #f8fafc);
       border-radius: 12px;
-      border: 1px solid #e2e8f0;
+      border: 1px dashed var(--border-color);
+      min-height: 48px;
 
-      .custom-tag {
+      &.empty {
+        align-items: center;
+        justify-content: center;
+        color: var(--sub-text-color, #94a3b8);
+        font-style: italic;
+        font-size: 13px;
+      }
+
+      .ant-tag {
         margin: 0;
-        padding: 6px 12px;
+        padding: 4px 12px;
         border-radius: 20px;
-        background-color: #fff;
-        border: 1px solid #e2e8f0;
+        border: none;
+        background: var(--tag-item-bg, #eff6ff);
+        color: var(--tag-item-text, #2563eb);
+        font-weight: 500;
+        font-size: 12px;
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        color: #475569;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-        transition: all .3s cubic-bezier(.4, 0, .2, 1);
+        transition: all .2s;
 
         &:hover {
+          background: var(--tag-item-hover-bg, #dbeafe);
           transform: translateY(-1px);
-          border-color: #3b82f6;
-          color: #3b82f6;
-          box-shadow:
-            0 4px 6px -1px rgba(59, 130, 246, .1),
-            0 2px 4px -1px rgba(59, 130, 246, .06);
+          box-shadow: 0 2px 4px rgba(37, 99, 235, .1);
         }
 
         .ant-tag-close-icon {
+          color: var(--tag-item-text, #2563eb);
           font-size: 10px;
-          margin-left: 4px;
-          color: #94a3b8;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          transition: all .2s;
-
           &:hover {
-            background-color: #fee2e2;
             color: #ef4444;
           }
         }
       }
-
-      .empty-tags {
-        font-size: 12px;
-        color: #94a3b8;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        gap: 6px;
-
-        &::before {
-          content: 'label_off';
-          font-family: 'Material Symbols Outlined';
-          font-size: 16px;
-        }
-      }
     }
   }
 
-  .settings-footer {
-    margin-top: auto;
-    padding-top: 24px;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    flex-direction: column;
+  .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
 
-    .footer-actions {
+    .ant-btn {
+      height: auto;
+      padding: 16px;
       display: flex;
-      gap: 16px;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+      transition: all .2s;
 
-      .ant-btn {
-        flex: 1;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all .3s;
-        border-width: 2px; // 增加边框宽度
-
-        .material-symbols-outlined {
-          font-size: 20px;
-        }
-
-        // 归档按钮增强
-        &.archive-btn {
-          background-color: #fff;
-          border-color: #fee2e2;
-          color: #ef4444;
-
-          &:hover {
-            background-color: #fef2f2;
-            border-color: #ef4444;
-          }
-
-          &.action-active {
-            background-color: #ef4444;
-            border-color: #ef4444;
-            color: #fff;
-
-            &:hover {
-              background-color: #dc2626;
-              border-color: #dc2626;
-            }
-          }
-        }
-
-        // 收藏按钮增强 (改为金黄色系)
-        &.star-btn {
-          background-color: #fff;
-          border-color: #fef3c7;
-          color: #d97706;
-
-          &:hover {
-            background-color: #fffbeb;
-            border-color: #fbbf24;
-          }
-
-          &.action-active {
-            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-            border-color: transparent;
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, .2);
-
-            &:hover {
-              opacity: .9;
-              transform: translateY(-1px);
-              box-shadow: 0 6px 16px rgba(217, 119, 6, .3);
-            }
-          }
-        }
+      .material-symbols-outlined {
+        font-size: 24px;
       }
-    }
 
-    .danger-zone {
-      border-top: 1px solid #f1f5f9;
-      padding-top: 16px;
+      span:not(.material-symbols-outlined) {
+        font-size: 12px;
+        font-weight: 600;
+      }
 
-      .delete-btn {
-        height: 40px;
-        color: #94a3b8;
-        font-weight: 500;
-        border-radius: 8px;
+      &:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background-color: var(--tag-item-bg, #eff6ff);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, .1);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border-color: #2563eb;
+        color: white;
 
         &:hover {
-          color: #ef4444;
-          background-color: #fef2f2;
+          box-shadow: 0 6px 16px rgba(37, 99, 235, .25);
         }
       }
     }
   }
+}
+
+html.dark {
+  --sub-text-color: #8c8c8c;
+  --tag-bg: #1f1f1f;
+  --tag-hover-bg: #262626;
+  --border-color-hover: #434343;
+  --input-bg: #1f1f1f;
+  --input-focus-bg: #141414;
+  --tag-list-bg: #1f1f1f;
+  --tag-item-bg: #111b26;
+  --tag-item-text: #3b82f6;
+  --tag-item-hover-bg: #152535;
 }
 
 .session-info-badge {

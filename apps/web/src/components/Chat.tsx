@@ -14,11 +14,9 @@ import { MessageItem } from './chat/MessageItem'
 import { Sender } from './chat/Sender'
 
 export function Chat({
-  session,
-  renderLeftHeader
+  session
 }: {
   session?: Session
-  renderLeftHeader?: React.ReactNode
 }) {
   const { message } = App.useApp()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -277,7 +275,6 @@ export function Chat({
         tags={session?.tags}
         lastMessage={session?.lastMessage}
         lastUserMessage={session?.lastUserMessage}
-        renderLeft={renderLeftHeader}
       />
 
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>

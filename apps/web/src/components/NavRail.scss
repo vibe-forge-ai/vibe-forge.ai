@@ -1,8 +1,9 @@
 .nav-rail {
   width: 56px;
   height: 100%;
-  background-color: #f9fafb;
-  border-right: 1px solid #e5e7eb;
+  --border-color: #f0f0f0;
+  background-color: var(--nav-bg, #f9fafb);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -25,17 +26,17 @@
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    color: #6b7280;
-    transition: all 0.2s;
+    color: var(--nav-text, #6b7280);
+    transition: all .2s;
 
     &:hover {
-      background-color: #f3f4f6;
-      color: #111827;
+      background-color: var(--nav-hover-bg, #f3f4f6);
+      color: var(--nav-hover-text, #111827);
     }
 
     &.active {
-      background-color: #eff6ff;
-      color: #2563eb;
+      background-color: var(--nav-active-bg, #eff6ff);
+      color: var(--nav-active-text, #2563eb);
 
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 1;
@@ -46,4 +47,14 @@
       font-size: 24px;
     }
   }
+}
+
+html.dark .nav-rail {
+  --nav-bg: #1f1f1f;
+  --nav-text: #8c8c8c;
+  --nav-hover-bg: #333333;
+  --nav-hover-text: #ffffff;
+  --nav-active-bg: #111b26;
+  --nav-active-text: #3b82f6;
+  --border-color: #303030;
 }

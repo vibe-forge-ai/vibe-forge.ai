@@ -5,6 +5,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { CodeBlock } from './CodeBlock'
 import { ToolRenderer } from './ToolRenderer'
 
 export function MessageItem({
@@ -28,7 +29,32 @@ export function MessageItem({
     if (typeof msg.content === 'string') {
       return (
         <div className='markdown-body'>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              pre({ children }) {
+                return <>{children}</>
+              },
+              code({ inline, className, children, ...props }: any) {
+                const langClass = typeof className === 'string' ? className : ''
+                const match = /language-(\w+)/.exec(langClass)
+                const isInline = inline === true
+                const codeContent = String(children).replace(/\n$/, '')
+                return !isInline && match != null
+                  ? (
+                    <CodeBlock
+                      code={codeContent}
+                      lang={match[1]}
+                    />
+                  )
+                  : (
+                    <code className={langClass} {...props}>
+                      {children}
+                    </code>
+                  )
+              }
+            }}
+          >
             {msg.content}
           </ReactMarkdown>
         </div>
@@ -73,7 +99,32 @@ export function MessageItem({
       } else if (item.type === 'text') {
         renderedItems.push(
           <div key={i} className='markdown-body'>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                pre({ children }) {
+                  return <>{children}</>
+                },
+                code({ inline, className, children, ...props }: any) {
+                  const langClass = typeof className === 'string' ? className : ''
+                  const match = /language-(\w+)/.exec(langClass)
+                  const isInline = inline === true
+                  const codeContent = String(children).replace(/\n$/, '')
+                  return !isInline && match != null
+                    ? (
+                      <CodeBlock
+                        code={codeContent}
+                        lang={match[1]}
+                      />
+                    )
+                    : (
+                      <code className={langClass} {...props}>
+                        {children}
+                      </code>
+                    )
+                }
+              }}
+            >
               {item.text}
             </ReactMarkdown>
           </div>
