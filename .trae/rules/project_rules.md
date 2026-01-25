@@ -8,6 +8,7 @@ This file serves as the entry point for all project-specific rules and guideline
 - **Maintenance**: Refer to [maintenance.md](./rules/maintenance.md) for dev environment setup, common tasks, and environment variables.
 - **Backend Standards**: Refer to [backend_standard.md](./rules/backend_standard.md) for routing, database, and error handling patterns.
 - **Frontend Standards**: Refer to [frontend_standard.md](./rules/frontend_standard.md) for component structure, SWR usage, and styling conventions.
+- **Coding Style**: Refer to [coding_style.md](./rules/coding_style.md) for import ordering and path mapping rules.
 
 ## Global Instructions
 

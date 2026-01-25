@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import http from 'node:http'
 import { exit } from 'node:process'
 
@@ -6,7 +7,8 @@ import Router from '@koa/router'
 import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 
-import { loadEnv } from '#~/env.js'
+import { loadEnv } from '@vibe-forge/core'
+
 import { configRouter } from '#~/routes/config.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
 import { setupWebSocket } from '#~/websocket/index.js'

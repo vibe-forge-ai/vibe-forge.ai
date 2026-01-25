@@ -2,13 +2,13 @@ import 'dotenv/config'
 
 import { program } from 'commander'
 
-import { registerUiCommand } from './commands/ui'
+import { registerMcpCommand } from './commands/mcp'
 
 program
   .name('vf')
   .description('Vibe Forge CLI')
   .version('0.1.0')
 
-registerUiCommand(program)
+registerMcpCommand(program)
 
 program.parse()

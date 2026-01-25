@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { cwd as processCwd } from 'node:process'
+
 import pino from 'pino'
 
-import { loadEnv } from '#~/env.js'
+import { loadEnv } from '@vibe-forge/core'
 
 const env = loadEnv()
 const LOG_DIR = path.isAbsolute(env.LOG_DIR)

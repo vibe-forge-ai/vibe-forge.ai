@@ -1,1 +1,16 @@
-{}
+{
+  "mcpServers": {
+  },
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Task"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(kill:*)",
+      "Bash(chmod:*)"
+    ]
+  },
+  "env": {}
+}

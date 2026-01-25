@@ -6,12 +6,19 @@ import { URL } from 'node:url'
 import { v4 as uuidv4 } from 'uuid'
 import { WebSocket, WebSocketServer } from 'ws'
 
-import type { ChatMessage, ChatMessageContent, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type {
+  AdapterOutputEvent,
+  AdapterSession,
+  ChatMessage,
+  ChatMessageContent,
+  ServerEnv,
+  Session,
+  SessionInfo,
+  WSEvent
+} from '@vibe-forge/core'
+import { run } from '@vibe-forge/core/controllers/task'
 
-import { query } from '#~/adapters/index.js'
-import type { AdapterOutputEvent, AdapterSession } from '#~/adapters/index.js'
 import { getDb } from '#~/db.js'
-import type { ServerEnv } from '#~/env.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 function extractTextFromMessage(message: ChatMessage): string | undefined {
@@ -47,7 +54,7 @@ const globalSockets = new Set<WebSocket>()
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.WS_PATH })
 
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', async (ws, req) => {
     globalSockets.add(ws)
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
@@ -93,9 +100,10 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const messages: WSEvent[] = []
 
       try {
-        const session = query('claude', {
+        const { session } = await run({
           env: processEnv as Record<string, string>,
-          cwd: processCwd(),
+          cwd: processCwd()
+        }, {
           type,
           sessionId,
           model,
@@ -216,8 +224,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           }
 
           if (
-            currentSessionData?.title == null || currentSessionData.title === ''
-            || currentSessionData.title === 'New Session'
+            currentSessionData?.title == null || currentSessionData.title === '' ||
+            currentSessionData.title === 'New Session'
           ) {
             // 提取第一行或者前50个字符作为标题
             const firstLine = userText.split('\n')[0].trim()

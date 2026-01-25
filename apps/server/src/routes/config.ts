@@ -1,6 +1,8 @@
-import { loadEnv } from '#~/env.js'
-import Router from '@koa/router'
 import fs from 'node:fs'
+
+import Router from '@koa/router'
+
+import { loadEnv } from '@vibe-forge/core'
 
 export function configRouter(): Router {
   const router = new Router()

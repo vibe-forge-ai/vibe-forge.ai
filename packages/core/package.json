@@ -2,7 +2,7 @@
   "name": "@vibe-forge/core",
   "version": "0.1.0",
   "imports": {
-    "#~/*": {
+    "#~/*.js": {
       "__vibe-forge__": {
         "default": "./src/*.ts"
       },
@@ -21,6 +21,27 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.js"
       }
+    },
+    "./utils/*": {
+      "__vibe-forge__": {
+        "default": "./src/utils/*.ts"
+      },
+      "default": {
+        "import": "./dist/utils/*.mjs",
+        "require": "./dist/utils/*.js"
+      }
+    },
+    "./controllers/task": {
+      "__vibe-forge__": {
+        "default": "./src/controllers/task/index.ts"
+      },
+      "default": {
+        "import": "./dist/controllers/task/index.mjs",
+        "require": "./dist/controllers/task/index.js"
+      }
     }
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
   }
 }

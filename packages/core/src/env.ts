@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import { env as processEnv } from 'node:process'
 
 export interface ServerEnv {
@@ -13,7 +12,7 @@ export interface ServerEnv {
 }
 
 export function loadEnv(): ServerEnv {
-  const env = processEnv
+  const env = processEnv || {}
   return {
     SERVER_PORT: Number(env.SERVER_PORT ?? 8787),
     WS_PATH: '/ws',

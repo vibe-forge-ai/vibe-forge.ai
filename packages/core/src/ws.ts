@@ -1,4 +1,4 @@
-import type { SessionInfo } from './adapter.js'
+import type { SessionInfo } from './adapter/index.js'
 import type { ChatMessage } from './types.js'
 
 export type WSEvent =
