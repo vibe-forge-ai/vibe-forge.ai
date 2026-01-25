@@ -4,7 +4,6 @@ export default config(
   {
     stylistic: false,
     typescript: {
-      tsconfigPath: 'tsconfig.json',
       overrides: {
         'ts/no-namespace': 'off',
         'ts/no-empty-object-type': 'off',
@@ -13,6 +12,7 @@ export default config(
         'ts/ban-ts-comment': 'off',
         'ts/no-wrapper-object-types': 'off',
         'ts/no-unsafe-function-type': 'off',
+        'ts/no-redeclare': 'off',
 
         'import/no-mutable-exports': 'off',
         'perfectionist/sort-imports': 'off',
