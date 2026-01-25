@@ -10,7 +10,7 @@
       "path": "./tsconfigs/tsconfig.node.json"
     },
     {
-      "path": "./tsconfigs/tsconfig.test.json"
+      "path": "./tsconfigs/tsconfig.node.test.json"
     }
   ],
   "files": []

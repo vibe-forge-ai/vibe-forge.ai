@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+  },
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ],
+  "include": [
+    "../apps/cli/__tests__/**/*",
+    "../apps/server/__tests__/**/*"
+  ]
+}

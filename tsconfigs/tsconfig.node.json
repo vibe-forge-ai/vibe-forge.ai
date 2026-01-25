@@ -5,10 +5,14 @@
     "moduleResolution": "nodenext"
   },
   "include": [
+    "../.ai.config.ts",
+    "../.ai.dev.config.ts",
     "../vitest.config.ts",
     "../vitest.workspace.ts",
+    "../apps/web/vite.config.ts",
     "../apps/cli/src/**/*",
     "../apps/server/src/**/*",
-    "../apps/web/vite.config.ts"
+    "../packages/adapters/claude-code/src/types.ts",
+    "../packages/core/src/controllers"
   ]
 }
