@@ -10,6 +10,7 @@ import { uuid } from '@vibe-forge/core/utils/uuid'
 import { getCliVersion } from '#~/utils'
 
 import { registerMcpCommand } from './commands/mcp'
+import { registerClearCommand } from './commands/clear'
 
 interface RunOptions {
   print: boolean
@@ -38,37 +39,34 @@ program
     const sessionId = opts.sessionId ?? uuid()
     const type = opts.resume ? 'resume' : 'create'
 
-    await new Promise<void>(async (resolve, reject) => {
-      try {
-        await run({
-          taskId,
-          taskAdapter: opts.adapter,
-          cwd: process.cwd(),
-          env: process.env,
-        }, {
-          type,
-          sessionId,
-          model: opts.model,
-          systemPrompt: opts.systemPrompt,
-          mode: opts.print ? 'stream' : 'direct',
-          onEvent: (event) => {
-             if (event.type === 'exit') {
-               resolve()
-               // Force exit to ensure we don't hang if there are lingering handles
-               process.exit(event.data.exitCode ?? 0)
-             }
-             
-             if (!opts.print) {
-               console.log(JSON.stringify(event))
-             }
-          }
-        })
-      } catch (e) {
-        reject(e)
-      }
+    await new Promise<void>((resolve, reject) => {
+      run({
+        taskId,
+        taskAdapter: opts.adapter,
+        cwd: process.cwd(),
+        env: process.env,
+      }, {
+        type,
+        sessionId,
+        model: opts.model,
+        systemPrompt: opts.systemPrompt,
+        mode: opts.print ? 'direct' : 'stream',
+        onEvent: (event) => {
+           if (event.type === 'exit') {
+             resolve()
+             // Force exit to ensure we don't hang if there are lingering handles
+             process.exit(event.data.exitCode ?? 0)
+           }
+           
+           if (!opts.print) {
+             console.log(JSON.stringify(event))
+           }
+        }
+      }).catch(reject)
     })
   })
 
 registerMcpCommand(program)
+registerClearCommand(program)
 
 program.parse()

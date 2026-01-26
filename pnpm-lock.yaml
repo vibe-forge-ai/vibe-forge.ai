@@ -76,6 +76,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       node-notifier:
         specifier: ^10.0.1
         version: 10.0.1
@@ -104,9 +107,6 @@ importers:
       '@musistudio/claude-code-router':
         specifier: 1.0.43
         version: 1.0.43(@modelcontextprotocol/sdk@1.25.3(hono@4.11.4)(zod@3.25.76))(ws@8.19.0)(zod@3.25.76)
-      '@vibe-forge/cli':
-        specifier: workspace:^
-        version: link:../cli
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
