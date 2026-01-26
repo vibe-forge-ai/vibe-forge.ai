@@ -1,3 +1,7 @@
+---
+alwaysApply: false
+globs: apps/server/src/**/*
+---
 # 后端开发规范 (Backend Development)
 
 ## 路由挂载

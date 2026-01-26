@@ -1,3 +1,7 @@
+---
+alwaysApply: false
+globs: apps/web/src/**/*
+---
 # 前端开发规范 (Frontend Development)
 
 ## 组件结构
