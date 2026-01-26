@@ -59,6 +59,7 @@ export interface AdapterQueryOptions {
   type: 'create' | 'resume'
   sessionId: string
   model?: string
+  mode?: 'stream' | 'direct'
 
   systemPrompt?: string
   appendSystemPrompt?: boolean
