@@ -2,12 +2,14 @@ import 'dotenv/config'
 
 import { program } from 'commander'
 
+import { getCliVersion } from '#~/utils'
+
 import { registerMcpCommand } from './commands/mcp'
 
 program
   .name('vf')
   .description('Vibe Forge CLI')
-  .version('0.1.0')
+  .version(getCliVersion())
 
 registerMcpCommand(program)
 

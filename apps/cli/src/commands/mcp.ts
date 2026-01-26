@@ -2,6 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Command } from 'commander'
 
+import { getCliVersion } from '#~/utils'
+
 import * as mcpTools from '../mcp-tools'
 import { createFilteredRegister, shouldEnableCategory } from '../mcp-tools/proxy'
 
@@ -33,7 +35,7 @@ export function registerMcpCommand(program: Command) {
 
       const server = new McpServer({
         name: 'vibe-forge',
-        version: '0.1.0'
+        version: getCliVersion()
       })
 
       const proxyServer = createFilteredRegister(server, {
