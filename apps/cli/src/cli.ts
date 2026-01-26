@@ -50,7 +50,7 @@ program
         sessionId,
         model: opts.model,
         systemPrompt: opts.systemPrompt,
-        mode: opts.print ? 'direct' : 'stream',
+        mode: opts.print ? 'stream' : 'direct',
         onEvent: (event) => {
            if (event.type === 'exit') {
              resolve()
