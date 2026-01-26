@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "TmarAITools": {
+      "command": "${WORKSPACE_FOLDER}/node_modules/.bin/vf",
+      "args": ["mcp"],
+      "env": {
+        "WORKSPACE_FOLDER": "${WORKSPACE_FOLDER}"
+      }
+    }
   },
   "permissions": {
     "allow": [],

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 
 import { defineAdapter, loadEnv } from '@vibe-forge/core'
+import { filterObject } from '@vibe-forge/core/utils/filter'
 import type { AdapterEvent, AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
@@ -15,6 +16,18 @@ import type {
 
 declare module '@vibe-forge/core' {
   interface AdapterMap {
+  }
+  interface Cache {
+    'adapter.claude-code.mcp': Record<string, unknown>
+    'adapter.claude-code.settings': Record<string, unknown>
+  }
+}
+
+const resolveSettings = (unresolvedSettings: Record<string, any>) => {
+  const { includeMcpServers, excludeMcpServers, ...rest } = unresolvedSettings
+  return {
+    ...rest,
+    plansDirectory: './.ai/works'
   }
 }
 
@@ -110,17 +123,56 @@ function handleIncomingEvent(data: ClaudeCodeIncomingEvent, onEvent: AdapterQuer
 
 export default defineAdapter({
   query: async (ctx, options) => {
-    const { env, cwd, logger, cache, settings } = ctx
+    const { env, cwd, cache, settings } = ctx
     const {
       sessionId,
       model,
       type,
       systemPrompt,
       appendSystemPrompt = true,
-      onEvent
+      onEvent,
+      mcpServers: inputMCPServersRule,
+      tools: inputToolsRule
     } = options
 
     const serverEnv = loadEnv()
+
+    // Logic for Settings and MCP
+    const { mcpServers, ...unresolvedSettings } = settings as any
+    unresolvedSettings.permissions = unresolvedSettings.permissions || {}
+    unresolvedSettings.permissions.allow = [
+      ...(unresolvedSettings.permissions.allow ?? []),
+      ...(inputToolsRule?.include ?? [])
+    ]
+    unresolvedSettings.permissions.deny = [
+      ...(unresolvedSettings.permissions.deny ?? []),
+      ...(inputToolsRule?.exclude ?? [])
+    ]
+
+    const resolvedSettings = resolveSettings(unresolvedSettings)
+
+    const includeMcpServers = [
+      ...(unresolvedSettings.includeMcpServers ?? []),
+      ...(inputMCPServersRule?.include ?? [])
+    ]
+    const excludeMcpServers = [
+      ...(unresolvedSettings.excludeMcpServers ?? []),
+      ...(inputMCPServersRule?.exclude ?? [])
+    ]
+
+    const filteredMcpServers = filterObject(mcpServers || {}, {
+      include: includeMcpServers,
+      exclude: excludeMcpServers
+    })
+
+    const { cachePath: mcpCachePath } = await cache.set(
+      'adapter.claude-code.mcp',
+      { mcpServers: filteredMcpServers }
+    )
+    const { cachePath: settingsCachePath } = await cache.set(
+      'adapter.claude-code.settings',
+      resolvedSettings
+    )
 
     // Default ccr path if not provided in env
     const ccrPath = env.CLAUDE_CODE_CLI_PATH || 'claude'
@@ -128,6 +180,12 @@ export default defineAdapter({
     // Arguments based on user request
     const args: string[] = [
       ...(serverEnv.CLAUDE_CODE_CLI_ARGS?.split(/\s+/).filter(Boolean) as string[]),
+      '--mcp-config',
+      mcpCachePath,
+      '--settings',
+      settingsCachePath,
+      '--permission-mode',
+      'bypassPermissions',
       '--print',
       '--verbose',
       '--debug',
@@ -165,7 +223,6 @@ export default defineAdapter({
 
     proc.stdout.on('data', (buf) => {
       const rawStr = String(buf)
-      logger.debug({ sessionId, rawStr }, '[claude adapter] stdout')
       stdoutBuffer += rawStr
       const lines = stdoutBuffer.split('\n')
       stdoutBuffer = lines.pop() ?? ''
