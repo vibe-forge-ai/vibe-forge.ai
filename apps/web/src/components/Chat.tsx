@@ -11,7 +11,9 @@ import { createSocket } from '../ws'
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
 import { MessageItem } from './chat/MessageItem'
+import { processMessages } from './chat/messageUtils'
 import { Sender } from './chat/Sender'
+import { ToolGroup } from './chat/ToolGroup'
 
 export function Chat({
   session
@@ -30,6 +32,8 @@ export function Chat({
   const isInitialLoadRef = useRef<boolean>(true)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const { mutate } = useSWRConfig()
+
+  const renderItems = React.useMemo(() => processMessages(messages), [messages])
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     setTimeout(() => {
@@ -278,24 +282,25 @@ export function Chat({
       />
 
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
-        {messages.map((msg, index) => {
-          if (msg == null) return null
-          try {
-            const prevMsg = messages[index - 1]
-            const isFirstInGroup = index === 0 || (prevMsg != null && prevMsg.role !== msg.role)
+        {renderItems.map((item, index) => {
+          if (item.type === 'message') {
             return (
               <MessageItem
-                key={msg.id || index}
-                msg={msg}
-                isFirstInGroup={isFirstInGroup}
-                allMessages={messages}
-                index={index}
+                key={item.message.id || index}
+                msg={item.message}
+                isFirstInGroup={item.isFirstInGroup}
               />
             )
-          } catch (err) {
-            console.error('[Chat] Error rendering message:', err, msg)
-            return null
+          } else if (item.type === 'tool-group') {
+            return (
+              <ToolGroup
+                key={item.id || `group-${index}`}
+                items={item.items}
+                footer={item.footer}
+              />
+            )
           }
+          return null
         })}
         <div ref={messagesEndRef} />
 

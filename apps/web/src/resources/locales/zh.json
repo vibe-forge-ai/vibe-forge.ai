@@ -57,6 +57,7 @@
     "sessionActive": "会话进行中",
     "selectModel": "选择模型开始聊天",
     "toolsCount": "{{count}} 个工具",
+    "usedTools": "使用了 {{count}} 个工具",
     "viewInitInfo": "双击查看初始化信息",
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
     "todo": {

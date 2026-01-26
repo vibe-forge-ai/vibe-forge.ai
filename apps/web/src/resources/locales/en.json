@@ -56,6 +56,7 @@
     "sessionActive": "Session Active",
     "selectModel": "Select a model to start",
     "toolsCount": "{{count}} tools",
+    "usedTools": "Used {{count}} tools",
     "viewInitInfo": "Double click to view initialization info",
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
     "todo": {

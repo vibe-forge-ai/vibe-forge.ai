@@ -1,0 +1,112 @@
+.tool-group-container {
+  margin: 12px 0;
+  max-width: 100%;
+
+  .tool-group-wrapper {
+    margin: 0;
+    
+    &.single-item {
+      // No special style for single item
+    }
+
+    &.card-style {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: var(--bg-color);
+      overflow: hidden;
+      
+      .tool-group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background-color: var(--tag-bg, #f9fafb);
+        border-bottom: 1px solid transparent;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color .2s;
+
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-color);
+          
+          .material-symbols-outlined {
+            font-size: 18px;
+            color: var(--sub-text-color);
+          }
+        }
+
+        .expand-icon {
+          font-size: 20px;
+          color: var(--sub-text-color);
+        }
+
+        &:hover {
+          background-color: var(--tag-hover-bg, #f3f4f6);
+        }
+      }
+
+      .tool-group-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--bg-color);
+      }
+
+      .tool-group-last-item {
+        padding: 12px;
+        background-color: var(--bg-color);
+        // Ensure the last item looks integrated
+        
+        // Remove margin from the tool box inside
+        .tool-call-box {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .tool-group-footer-wrapper {
+    opacity: 0;
+    transition: opacity .2s ease;
+    margin-top: 4px;
+    padding-left: 2px;
+    
+    .msg-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--sub-text-color, #9ca3af);
+
+      .timestamp {
+        user-select: none;
+        cursor: pointer;
+      }
+    }
+  }
+
+  &:hover .tool-group-footer-wrapper {
+    opacity: 1;
+  }
+}
+
+html.dark .tool-group-container .tool-group-wrapper.card-style {
+  background-color: #1f2937; // Darker bg for card
+  .tool-group-header {
+    background-color: #374151;
+    &:hover {
+      background-color: #4b5563;
+    }
+  }
+  .tool-group-list, .tool-group-last-item {
+    background-color: #1f2937;
+  }
+}
