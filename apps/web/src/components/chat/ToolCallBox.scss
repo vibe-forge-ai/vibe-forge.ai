@@ -11,7 +11,7 @@
     border-radius: 0;
 
     &.result {
-      background-color: var(--tag-bg);
+      background-color: transparent;
     }
   }
 
@@ -119,7 +119,7 @@
     background-color: var(--bg-color);
 
     .tool-call-box.result & {
-      background-color: var(--tag-bg);
+      background-color: var(--bg-color);
       border-top: 1px dashed var(--border-color);
     }
 

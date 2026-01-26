@@ -53,22 +53,77 @@
       .tool-group-list {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        padding: 12px;
+        gap: 0; 
+        padding: 0; 
         border-top: 1px solid var(--border-color);
-        border-bottom: 1px solid var(--border-color);
         background-color: var(--bg-color);
       }
 
       .tool-group-last-item {
-        padding: 12px;
         background-color: var(--bg-color);
-        // Ensure the last item looks integrated
-        
-        // Remove margin from the tool box inside
-        .tool-call-box {
+      }
+
+      // Shared style reset for all tool groups inside the card
+      .tool-group-list, .tool-group-last-item {
+        .tool-group {
           margin: 0;
+          border: none;
+          border-radius: 0;
+          background-color: transparent;
+          overflow: visible; // Allow timeline line to overflow
+          
+          .tool-call-box {
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            
+            .tool-call-header {
+              padding: 8px 12px;
+              background-color: transparent;
+              
+              &:hover {
+                background-color: var(--tag-hover-bg);
+              }
+            }
+
+            .tool-call-body {
+              padding: 0;
+              background-color: transparent;
+              
+              // Remove padding from internal content if needed
+              .tool-content {
+                padding: 0;
+                
+                // Override code block wrapper styles
+                .code-block-wrapper {
+                  margin: 0;
+                  border: none;
+                  border-radius: 0;
+                }
+              }
+            }
+          }
         }
+      }
+
+      // Timeline gap style
+      .tool-group-list .tool-group {
+         position: relative;
+         margin-bottom: 12px; // Increased gap between items
+         border-bottom: none; // Remove border as we use gap + line
+         
+         &::after {
+           content: '';
+           position: absolute;
+           left: 19px;
+           bottom: -11px; // Adjusted for larger margin
+           height: 10px; // Increased length for larger gap
+           width: 2px;
+           background-color: var(--sub-text-color);
+           z-index: 99;
+           border-radius: 4px;
+           opacity: 0.5;
+         }
       }
     }
   }
