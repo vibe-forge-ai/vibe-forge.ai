@@ -29,6 +29,7 @@
     font-weight: 500;
     color: var(--text-color);
     background-color: var(--tag-bg);
+    transition: text-shadow 0.4s ease;
 
     &.collapsed {
       cursor: default;
@@ -43,7 +44,7 @@
     }
 
     &:hover {
-      background-color: var(--tag-hover-bg);
+      text-shadow: 0 0 0.5px currentColor;
     }
 
     .material-symbols-outlined {
@@ -79,7 +80,7 @@
     }
 
     &:hover {
-      background-color: var(--tag-hover-bg);
+      opacity: 0.8;
     }
 
     .material-symbols-outlined {
@@ -113,7 +114,7 @@
   }
 
   .tool-call-body {
-    padding: 6px 10px;
+    padding: 0;
     overflow: hidden;
     transition: all .2s ease-in-out;
     background-color: var(--bg-color);
@@ -128,3 +129,4 @@
     }
   }
 }
+

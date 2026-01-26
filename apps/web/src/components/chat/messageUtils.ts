@@ -1,6 +1,6 @@
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 
-export type ToolGroupItem = {
+export interface ToolGroupItem {
   type: 'tool-group'
   id: string
   items: {
@@ -11,10 +11,11 @@ export type ToolGroupItem = {
     model?: string
     usage?: ChatMessage['usage']
     createdAt: number
+    originalMessage: ChatMessage
   }
 }
 
-export type MessageRenderItem = {
+export interface MessageRenderItem {
   type: 'message'
   message: ChatMessage
   isFirstInGroup: boolean
@@ -142,7 +143,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
           lastItem.footer = {
             model: msg.model,
             usage: msg.usage,
-            createdAt: msg.createdAt
+            createdAt: msg.createdAt,
+            originalMessage: msg
           }
         }
       }

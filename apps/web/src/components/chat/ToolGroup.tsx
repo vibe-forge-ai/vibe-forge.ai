@@ -17,6 +17,7 @@ export function ToolGroup({
     model?: string
     usage?: ChatMessage['usage']
     createdAt: number
+    originalMessage: ChatMessage
   }
 }) {
   const { t } = useTranslation()
@@ -36,7 +37,7 @@ export function ToolGroup({
         </div>
         {footer && (
           <div className='tool-group-footer-wrapper'>
-            <MessageFooter msg={footer} isUser={false} />
+            <MessageFooter msg={footer.originalMessage} isUser={false} />
           </div>
         )}
       </div>
@@ -91,7 +92,7 @@ export function ToolGroup({
 
       {footer && (
         <div className='tool-group-footer-wrapper'>
-          <MessageFooter msg={footer} isUser={false} />
+          <MessageFooter msg={footer.originalMessage} isUser={false} />
         </div>
       )}
     </div>

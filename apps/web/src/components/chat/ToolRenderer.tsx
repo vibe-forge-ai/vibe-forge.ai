@@ -2,6 +2,9 @@ import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { BashTool } from './tools/BashTool'
 import { DefaultTool } from './tools/DefaultTool'
+import { GlobTool } from './tools/GlobTool'
+import { GrepTool } from './tools/GrepTool'
+import { LsTool } from './tools/LsTool'
 import { ReadTool } from './tools/ReadTool'
 import { TodoTool } from './tools/TodoTool'
 import { WriteTool } from './tools/WriteTool'
@@ -13,15 +16,13 @@ const TOOL_RENDERERS: Record<
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
   }>
 > = {
-  bash: BashTool,
-  Bash: BashTool, // Support capitalized 'Bash'
-  execute_command: BashTool,
+  Bash: BashTool,
+  LS: LsTool,
+  Glob: GlobTool,
+  Grep: GrepTool,
   Read: ReadTool,
-  read_file: ReadTool,
   Write: WriteTool,
-  write_file: WriteTool,
-  TodoWrite: TodoTool,
-  todo_write: TodoTool
+  TodoWrite: TodoTool
 }
 
 export function ToolRenderer({
