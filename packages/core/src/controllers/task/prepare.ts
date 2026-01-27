@@ -87,7 +87,11 @@ export const prepare = async (
   for (const [, mcpServer] of Object.entries(mcpServers)) {
     mcpServer.env = {
       ...mcpServer.env,
-      __VF_PROJECT_AI_TASK_ID__: taskId
+      __VF_PROJECT_AI_TASK_ID__: taskId,
+      __VF_PROJECT_AI_SESSION_ID__: sessionId,
+      __VF_PROJECT_AI_SERVER_HOST__: env.SERVER_HOST ?? 'localhost',
+      __VF_PROJECT_AI_SERVER_PORT__: env.SERVER_PORT ?? '8787',
+      __VF_PROJECT_AI_RUN_TYPE__: adapterOptions.runtime
     }
   }
   return [

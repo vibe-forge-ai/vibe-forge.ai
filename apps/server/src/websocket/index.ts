@@ -9,6 +9,7 @@ import { WebSocket, WebSocketServer } from 'ws'
 import type {
   AdapterOutputEvent,
   AdapterSession,
+  AskUserQuestionParams,
   ChatMessage,
   ChatMessageContent,
   ServerEnv,
@@ -50,6 +51,44 @@ const adapterCache = new Map<string, {
 
 // Store all connected sockets globally to broadcast session updates
 const globalSockets = new Set<WebSocket>()
+
+// Store pending interactions
+const pendingInteractions = new Map<string, {
+  resolve: (data: string | string[]) => void
+  reject: (reason: any) => void
+  timer: NodeJS.Timeout
+}>()
+
+export function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
+  const { sessionId } = params
+  const cached = adapterCache.get(sessionId)
+
+  if (cached == null || cached.sockets.size === 0) {
+    return Promise.reject(new Error(`Session ${sessionId} is not active`))
+  }
+
+  const interactionId = uuidv4()
+  const event: WSEvent = {
+    type: 'interaction_request',
+    id: interactionId,
+    payload: params
+  }
+
+  // Broadcast request to all connected sockets for this session
+  for (const socket of cached.sockets) {
+    sendToClient(socket, event)
+  }
+
+  return new Promise((resolve, reject) => {
+    // 5 minutes timeout
+    const timer = setTimeout(() => {
+      pendingInteractions.delete(interactionId)
+      reject(new Error('Interaction timed out'))
+    }, 5 * 60 * 1000)
+
+    pendingInteractions.set(interactionId, { resolve, reject, timer })
+  })
+}
 
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.WS_PATH })
@@ -105,6 +144,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           cwd: processCwd()
         }, {
           type,
+          runtime: 'server',
           sessionId,
           model,
           systemPrompt,
@@ -200,7 +240,20 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
 
     ws.on('message', (raw: Buffer) => {
       try {
-        const msg = JSON.parse(String(raw)) as { type: string; text?: string }
+        const msg = JSON.parse(String(raw)) as any
+        
+        if (msg.type === 'interaction_response') {
+          const { id, data } = msg
+          const pending = pendingInteractions.get(id)
+          
+          if (pending) {
+            clearTimeout(pending.timer)
+            pending.resolve(data)
+            pendingInteractions.delete(id)
+          }
+          return
+        }
+
         serverLogger.info({ event: 'user_input', data: msg }, 'Received user message')
         if (msg.type === 'user_message') {
           const userText = String(msg.text ?? '')

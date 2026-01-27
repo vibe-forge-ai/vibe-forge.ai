@@ -1,6 +1,6 @@
 import type { Cache, Config, Settings } from '@vibe-forge/core'
 
-import type { Logger } from '#~/utils/create-logger'
+import type { Logger } from '#~/utils/create-logger.js'
 
 import type { ChatMessage, ChatMessageContent } from '../types'
 
@@ -57,6 +57,7 @@ export interface AdapterCtx {
 
 export interface AdapterQueryOptions {
   type: 'create' | 'resume'
+  runtime: 'server' | 'cli'
   sessionId: string
   model?: string
   mode?: 'stream' | 'direct'

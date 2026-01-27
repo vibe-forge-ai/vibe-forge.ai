@@ -125,7 +125,13 @@
     }
 
     .tool-content {
-      // Styles moved to CodeBlock.scss
+      padding: 0;
+      
+      // Override code block wrapper styles
+      .code-block-wrapper {
+        border: none;
+        border-radius: 0;
+      }
     }
   }
 }

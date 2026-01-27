@@ -1,4 +1,5 @@
 import type { SessionInfo } from './adapter/index.js'
+import type { AskUserQuestionParams } from './types.js'
 import type { ChatMessage } from './types.js'
 
 export type WSEvent =
@@ -9,3 +10,5 @@ export type WSEvent =
   | { type: 'adapter_result'; result: any; usage?: any }
   | { type: 'adapter_event'; data: any }
   | { type: 'session_updated'; session: any }
+  | { type: 'interaction_request'; id: string; payload: AskUserQuestionParams }
+  | { type: 'interaction_response'; id: string; data: string | string[] }

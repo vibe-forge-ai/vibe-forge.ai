@@ -4,7 +4,7 @@ import { App } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
-import type { ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 import { getSessionMessages } from '../api'
 import { createSocket } from '../ws'
 
@@ -23,6 +23,7 @@ export function Chat({
   const { message } = App.useApp()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
+  const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(null)
   const [isThinking, setIsThinking] = useState(false)
   const [isReady, setIsReady] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
@@ -224,6 +225,8 @@ export function Chat({
                 return msg
               })
             })
+          } else if (data.type === 'interaction_request') {
+            setInteractionRequest({ id: data.id, payload: data.payload })
           }
         },
         onClose() {
@@ -266,6 +269,16 @@ export function Chat({
   const clearMessages = () => {
     setMessages([])
     void message.success('Messages cleared')
+  }
+
+  const handleInteractionResponse = (id: string, data: string | string[]) => {
+    if (wsRef.current == null) return
+    wsRef.current.send(JSON.stringify({
+      type: 'interaction_response',
+      id,
+      data
+    }))
+    setInteractionRequest(null)
   }
 
   return (
@@ -318,6 +331,8 @@ export function Chat({
         onInterrupt={interrupt}
         onClear={clearMessages}
         sessionInfo={sessionInfo}
+        interactionRequest={interactionRequest}
+        onInteractionResponse={handleInteractionResponse}
       />
     </div>
   )

@@ -10,6 +10,7 @@ import bodyParser from 'koa-bodyparser'
 import { loadEnv } from '@vibe-forge/core'
 
 import { configRouter } from '#~/routes/config.js'
+import { interactRouter } from '#~/routes/interact.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
 import { setupWebSocket } from '#~/websocket/index.js'
 
@@ -27,7 +28,8 @@ async function bootstrap() {
   // Register routers
   const routers = [
     { prefix: '/api/sessions', router: sessionsRouter() },
-    { prefix: '/api/config', router: configRouter() }
+    { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/interact', router: interactRouter() }
   ]
 
   for (const { prefix, router } of routers) {

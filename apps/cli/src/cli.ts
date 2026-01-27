@@ -47,6 +47,7 @@ program
         env: process.env,
       }, {
         type,
+        runtime: 'cli',
         sessionId,
         model: opts.model,
         systemPrompt: opts.systemPrompt,

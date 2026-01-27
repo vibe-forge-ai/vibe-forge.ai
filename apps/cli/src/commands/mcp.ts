@@ -1,3 +1,5 @@
+import process from 'node:process'
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Command } from 'commander'
@@ -49,7 +51,13 @@ export function registerMcpCommand(program: Command) {
         exclude: parseList(opts.excludeCategory)
       }
 
+      const runType = process.env.__VF_PROJECT_AI_RUN_TYPE__ ?? 'cli'
+
       Object.entries(mcpTools.tools).forEach(([category, register]) => {
+        if (category === 'interaction' && runType !== 'server') {
+          return
+        }
+
         if (shouldEnableCategory(category, categoryFilter)) {
           register(proxyServer)
         }

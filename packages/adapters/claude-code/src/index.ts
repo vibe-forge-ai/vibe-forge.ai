@@ -210,6 +210,7 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
 
 export default defineAdapter({
   query: async (ctx, options) => {
+    const { logger } = ctx
     const { onEvent, mode = 'stream' } = options
     const { ccrPath, args, env, cwd, sessionId } = await prepareClaudeExecution(ctx, options)
 
@@ -223,6 +224,11 @@ export default defineAdapter({
         '--input-format', 'stream-json'
       )
 
+      logger.info('Claude Code CLI command:', {
+        ccrPath,
+        args,
+        mode,
+      })
       const proc = spawn(ccrPath, args, {
         env: { ...env, FORCE_COLOR: '1' },
         cwd,
@@ -238,7 +244,7 @@ export default defineAdapter({
         stdoutBuffer = lines.pop() ?? ''
         for (const line of lines) {
           const trimmed = line.trim()
-          if (trimmed.endsWith('}')) {
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             try {
               handleIncomingEvent(JSON.parse(trimmed) as ClaudeCodeIncomingEvent, onEvent)
             } catch (err) {
@@ -305,6 +311,11 @@ export default defineAdapter({
         }
       }
     } else {
+      logger.info('Claude Code CLI command:', {
+        ccrPath,
+        args,
+        mode,
+      })
       // Direct mode
       const proc = spawn(ccrPath, args, {
         env: { ...env, FORCE_COLOR: '1' },

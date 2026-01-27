@@ -1,6 +1,6 @@
 import './Sender.scss'
-import type { SessionInfo } from '@vibe-forge/core'
-import { App, Input, Tooltip } from 'antd'
+import type { AskUserQuestionParams, SessionInfo } from '@vibe-forge/core'
+import { App, Button, Input, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,13 +15,17 @@ export function Sender({
   isThinking,
   onInterrupt,
   onClear,
-  sessionInfo
+  sessionInfo,
+  interactionRequest,
+  onInteractionResponse
 }: {
   onSend: (text: string) => void
   isThinking: boolean
   onInterrupt: () => void
   onClear?: () => void
   sessionInfo?: SessionInfo | null
+  interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
+  onInteractionResponse?: (id: string, data: string | string[]) => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -50,6 +54,15 @@ export function Sender({
 
   const handleSend = () => {
     if (input.trim() === '' || isThinking) return
+
+    if (interactionRequest != null && onInteractionResponse != null) {
+      if (interactionRequest.payload.options == null || interactionRequest.payload.options.length === 0) {
+        onInteractionResponse(interactionRequest.id, input.trim())
+        setInput('')
+        return
+      }
+    }
+
     onSend(input)
 
     // Save to local storage history
@@ -304,6 +317,39 @@ export function Sender({
 
   return (
     <div className='chat-input-wrapper'>
+      {interactionRequest != null && (
+        <div className='interaction-panel' style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          maxHeight: '200px', 
+          overflowY: 'auto', 
+          marginBottom: '10px',
+          gap: '8px',
+          padding: '8px',
+          border: '1px solid var(--border-color)',
+          borderRadius: '8px',
+          backgroundColor: 'var(--bg-color)'
+        }}>
+          <div className='interaction-question' style={{ fontWeight: 'bold' }}>
+            {interactionRequest.payload.question}
+          </div>
+          {interactionRequest.payload.options?.map((option) => (
+            <Button 
+              key={option.label} 
+              block 
+              style={{ height: 'auto', textAlign: 'left', display: 'block', padding: '8px 12px' }}
+              onClick={() => onInteractionResponse?.(interactionRequest.id, option.label)}
+            >
+              <div style={{ fontWeight: 500 }}>{option.label}</div>
+              {option.description && (
+                <div style={{ fontSize: '12px', color: 'var(--sub-text-color)', marginTop: '4px' }}>
+                  {option.description}
+                </div>
+              )}
+            </Button>
+          ))}
+        </div>
+      )}
       {isThinking && <ThinkingStatus />}
       <div className='chat-input-container'>
         {showCompletion && (
@@ -317,7 +363,7 @@ export function Sender({
         <TextArea
           ref={textareaRef}
           className='chat-input-textarea'
-          placeholder={t('chat.inputPlaceholder')}
+          placeholder={interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}

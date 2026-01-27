@@ -1,5 +1,4 @@
 .tool-group-container {
-  margin: 12px 0;
   max-width: 100%;
 
   .tool-group-wrapper {
@@ -89,18 +88,6 @@
             .tool-call-body {
               padding: 0;
               background-color: transparent;
-              
-              // Remove padding from internal content if needed
-              .tool-content {
-                padding: 0;
-                
-                // Override code block wrapper styles
-                .code-block-wrapper {
-                  margin: 0;
-                  border: none;
-                  border-radius: 0;
-                }
-              }
             }
           }
         }

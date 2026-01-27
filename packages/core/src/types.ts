@@ -1,3 +1,6 @@
+import type { z } from 'zod'
+import type { AskUserQuestionParamsSchema, InteractionOptionSchema } from './schema.js'
+
 export interface Project {
   id: string
   name: string
@@ -41,3 +44,6 @@ export interface ChatMessage {
   }
   createdAt: number
 }
+
+export type InteractionOption = z.infer<typeof InteractionOptionSchema>
+export type AskUserQuestionParams = z.infer<typeof AskUserQuestionParamsSchema>
