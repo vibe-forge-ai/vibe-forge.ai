@@ -79,6 +79,8 @@ export function requestInteraction(params: AskUserQuestionParams): Promise<strin
     sendToClient(socket, event)
   }
 
+  updateAndNotifySession(sessionId, { status: 'waiting_input' })
+
   return new Promise((resolve, reject) => {
     // 5 minutes timeout
     const timer = setTimeout(() => {
@@ -336,6 +338,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           
           if (pending) {
             clearTimeout(pending.timer)
+            updateAndNotifySession(sessionId, { status: 'running' })
             pending.resolve(data)
             pendingInteractions.delete(id)
           }

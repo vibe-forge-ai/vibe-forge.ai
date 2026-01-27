@@ -60,11 +60,9 @@ export function Sender({
     if (input.trim() === '' || isThinking) return
 
     if (interactionRequest != null && onInteractionResponse != null) {
-      if (interactionRequest.payload.options == null || interactionRequest.payload.options.length === 0) {
-        onInteractionResponse(interactionRequest.id, input.trim())
-        setInput('')
-        return
-      }
+      onInteractionResponse(interactionRequest.id, input.trim())
+      setInput('')
+      return
     }
 
     onSend(input)
@@ -321,6 +319,7 @@ export function Sender({
 
   return (
     <div className='chat-input-wrapper'>
+      {isThinking && <ThinkingStatus />}
       {interactionRequest != null && (
         <div className='interaction-panel' style={{ 
           display: 'flex', 
@@ -354,7 +353,6 @@ export function Sender({
           ))}
         </div>
       )}
-      {isThinking && <ThinkingStatus />}
       <div className='chat-input-container'>
         {showCompletion && (
           <CompletionMenu
