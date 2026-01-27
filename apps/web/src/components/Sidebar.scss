@@ -1,16 +1,16 @@
 .sidebar-container {
   display: flex;
   flex-direction: column;
-  --sidebar-bg: #fff;
-  --sidebar-hover-bg: #f7f7f7;
+  --sidebar-bg: #f5f5f5;
+  --sidebar-hover-bg: #e5e5e5;
   --sidebar-active-bg: #eff6ff;
   --sidebar-active-text: #2563eb;
   --sidebar-btn-color: #9ca3af;
   --sidebar-btn-hover-bg: #fff1f0;
-  --border-color: #f0f0f0;
-
+  
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
+  box-shadow: 6px 0 16px rgba(0, 0, 0, 0.06);
   z-index: 5;
   box-sizing: border-box;
   height: 100%;
@@ -104,11 +104,10 @@
 }
 
 html.dark .sidebar-container {
-  --sidebar-bg: #141414;
+  --sidebar-bg: #0a0a0a;
   --sidebar-hover-bg: #1f1f1f;
   --sidebar-active-bg: #111b26;
   --sidebar-active-text: #3b82f6;
   --sidebar-btn-color: #595959;
   --sidebar-btn-hover-bg: #2a1215;
-  --border-color: #303030;
 }
