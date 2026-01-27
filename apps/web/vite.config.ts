@@ -8,5 +8,12 @@ export default defineConfig({
   root: '.',
   server: {
     port: Number(process.env.VITE_PORT ?? 5173)
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler'
+      }
+    }
   }
 })
