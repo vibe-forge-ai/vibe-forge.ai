@@ -34,6 +34,26 @@
       color: var(--nav-hover-text, #111827);
     }
 
+    &.new-chat-nav-item {
+      color: var(--nav-active-text, #2563eb);
+      background-color: var(--nav-active-bg, #eff6ff);
+      
+      &.active {
+        opacity: 0.6;
+        cursor: default;
+        
+        &:hover {
+          background-color: var(--nav-active-bg, #eff6ff);
+          color: var(--nav-active-text, #2563eb);
+        }
+      }
+
+      &:hover {
+        background-color: var(--nav-active-bg, #eff6ff);
+        opacity: 0.8;
+      }
+    }
+
     &.active {
       background-color: var(--nav-active-bg, #eff6ff);
       color: var(--nav-active-text, #2563eb);

@@ -1,8 +1,8 @@
 import './Sidebar.scss'
 
-import { Button } from 'antd'
+import { Button, Tooltip } from 'antd'
 import { useAtomValue } from 'jotai'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
@@ -22,7 +22,7 @@ export function Sidebar({
 }: {
   activeId?: string
   onSelectSession: (session: Session, isNew?: boolean) => void
-  onDeletedSession?: (id: string) => void
+  onDeletedSession?: (id: string, nextId?: string) => void
   width: number
   collapsed: boolean
   onToggleCollapse: () => void
@@ -51,29 +51,47 @@ export function Sidebar({
   }, [sessions, searchQuery])
 
   async function handleCreateSession() {
-    const res = await createSession()
-    const session = res?.session
-    await mutateSessions()
-    if (session != null) {
-      onSelectSession(session, true)
-    }
+    onSelectSession({ id: '' } as Session, true)
   }
 
   async function handleArchiveSession(id: string) {
+    // 先计算下一个要跳转的 ID
+    let nextId: string | undefined
+    const currentIndex = sessions.findIndex(s => s.id === id)
+    if (currentIndex !== -1) {
+      if (currentIndex + 1 < sessions.length) {
+        nextId = sessions[currentIndex + 1].id
+      } else if (currentIndex - 1 >= 0) {
+        nextId = sessions[currentIndex - 1].id
+      }
+    }
+
     try {
       await updateSession(id, { isArchived: true })
       await mutateSessions()
-      onDeletedSession?.(id)
+      // 传递 nextId 给 onDeletedSession
+      onDeletedSession?.(id, nextId)
     } catch (err) {
       console.error('Failed to archive session:', err)
     }
   }
 
   async function handleDeleteSession(id: string) {
+    // 先计算下一个要跳转的 ID
+    let nextId: string | undefined
+    const currentIndex = sessions.findIndex(s => s.id === id)
+    if (currentIndex !== -1) {
+      if (currentIndex + 1 < sessions.length) {
+        nextId = sessions[currentIndex + 1].id
+      } else if (currentIndex - 1 >= 0) {
+        nextId = sessions[currentIndex - 1].id
+      }
+    }
+
     try {
       await deleteSession(id)
       await mutateSessions()
-      if (activeId === id) onDeletedSession?.(id)
+      if (activeId === id) onDeletedSession?.(id, nextId)
     } catch (err) {
       console.error('Failed to delete session:', err)
     }
@@ -117,17 +135,26 @@ export function Sidebar({
     }
   }
 
-  const handleBatchDelete = async () => {
+  const handleBatchArchive = async () => {
     try {
-      await Promise.all(Array.from(selectedIds).map(async (id: string) => deleteSession(id)))
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => updateSession(id, { isArchived: true })))
       await mutateSessions()
-      selectedIds.forEach((id: string) => {
-        if (activeId === id) onDeletedSession?.(id)
-      })
+      
+      // Calculate nextId if active session is archived
+      if (activeId && selectedIds.has(activeId)) {
+        let nextId: string | undefined
+        // Find the first session that is NOT in the selectedIds list
+        const nextSession = sessions.find(s => !selectedIds.has(s.id))
+        if (nextSession) {
+          nextId = nextSession.id
+        }
+        onDeletedSession?.(activeId, nextId)
+      }
+      
       setSelectedIds(new Set<string>())
       setIsBatchMode(false)
     } catch (err) {
-      console.error('Failed to batch delete sessions:', err)
+      console.error('Failed to batch archive sessions:', err)
     }
   }
 
@@ -135,6 +162,33 @@ export function Sidebar({
     setIsBatchMode((prev: boolean) => !prev)
     setSelectedIds(new Set<string>())
   }
+
+  const isCreatingSession = activeId === undefined || activeId === ''
+
+  const createBtnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        
+        // 如果已经是激活状态，则不执行任何操作
+        if (isCreatingSession) return
+
+        // Trigger visual feedback
+        if (createBtnRef.current) {
+          createBtnRef.current.classList.add('active-scale')
+          setTimeout(() => {
+            createBtnRef.current?.classList.remove('active-scale')
+          }, 200)
+        }
+        void handleCreateSession()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sessions, isCreatingSession])
 
   return (
     <div
@@ -155,9 +209,6 @@ export function Sidebar({
         }}
       >
         <SidebarHeader
-          onCreateSession={() => {
-            void handleCreateSession()
-          }}
           onToggleCollapse={onToggleCollapse}
           isCollapsed={collapsed}
           searchQuery={searchQuery}
@@ -167,15 +218,40 @@ export function Sidebar({
           selectedCount={selectedIds.size}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
-          onBatchDelete={() => {
-            void handleBatchDelete()
+          onBatchArchive={() => {
+            void handleBatchArchive()
           }}
         />
+        <div className='sidebar-new-chat'>
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement="right">
+            <Button
+              ref={createBtnRef}
+              className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+              type={isCreatingSession ? 'default' : 'primary'}
+              block
+              disabled={!!isCreatingSession}
+              onClick={() => {
+                void handleCreateSession()
+              }}
+            >
+              <span className='btn-content'>
+                <span className={`material-symbols-outlined ${isCreatingSession ? 'filled' : ''}`}>
+                  {isCreatingSession ? 'chat_bubble' : 'send'}
+                </span>
+                <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
+              </span>
+              <span className='shortcut-tag'>
+                {navigator.platform.includes('Mac') ? '⌘K' : 'Ctrl+K'}
+              </span>
+            </Button>
+          </Tooltip>
+        </div>
         <SessionList
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}
           selectedIds={selectedIds}
+          searchQuery={searchQuery}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
           onDeleteSession={handleDeleteSession}

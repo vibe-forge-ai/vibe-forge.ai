@@ -76,6 +76,9 @@ export function SessionItem({
       }`}
     >
       <div className='session-item-content'>
+        {!isBatchMode && (
+          <div className={`status-dot ${isActive ? 'active' : ''}`} />
+        )}
         {isBatchMode && (
           <div className='batch-checkbox-wrapper'>
             <Checkbox
@@ -86,13 +89,46 @@ export function SessionItem({
           </div>
         )}
         <div className={`session-info ${isBatchMode ? '' : 'with-actions'}`}>
-          <div className='session-title'>
-            <span className='material-symbols-outlined'>
-              chat_bubble
-            </span>
-            <span className='session-title-text'>
-              {displayTitle}
-            </span>
+          <div className='session-header'>
+            <div className='session-title'>
+              <span className='session-title-text'>
+                {displayTitle}
+              </span>
+            </div>
+            {!isBatchMode && (
+              <div className='session-item-actions'>
+                <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
+                  <Button
+                    type='text'
+                    size='small'
+                    className={`action-btn ${session.isStarred ? 'starred' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void onStar(session.id, !session.isStarred)
+                    }}
+                    icon={
+                      <span
+                        className={`material-symbols-outlined ${session.isStarred ? 'filled' : ''}`}
+                      >
+                        star
+                      </span>
+                    }
+                  />
+                </Tooltip>
+                <Tooltip title={t('common.archive')}>
+                  <Button
+                    type='text'
+                    size='small'
+                    className='action-btn archive-btn'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void onArchive(session.id)
+                    }}
+                    icon={<span className='material-symbols-outlined'>archive</span>}
+                  />
+                </Tooltip>
+              </div>
+            )}
           </div>
           {lastMessageSnippet != null && (
             <div className='last-message'>
@@ -119,40 +155,6 @@ export function SessionItem({
         </div>
       </div>
 
-      {!isBatchMode && (
-        <div className='session-item-actions'>
-          <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
-            <Button
-              type='text'
-              size='small'
-              className={`action-btn ${session.isStarred ? 'starred' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                void onStar(session.id, !session.isStarred)
-              }}
-              icon={
-                <span
-                  className={`material-symbols-outlined ${session.isStarred ? 'filled' : ''}`}
-                >
-                  star
-                </span>
-              }
-            />
-          </Tooltip>
-          <Tooltip title={t('common.archive')}>
-            <Button
-              type='text'
-              size='small'
-              className='action-btn archive-btn'
-              onClick={(e) => {
-                e.stopPropagation()
-                void onArchive(session.id)
-              }}
-              icon={<span className='material-symbols-outlined'>archive</span>}
-            />
-          </Tooltip>
-        </div>
-      )}
       {messageCount > 0 && (
         <Badge
           count={messageCount > 99 ? '99+' : messageCount}

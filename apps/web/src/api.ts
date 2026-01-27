@@ -23,11 +23,11 @@ export async function listSessions(filter: 'active' | 'archived' | 'all' = 'acti
   return res.json() as Promise<{ sessions: Session[] }>
 }
 
-export async function createSession(title?: string): Promise<{ session: Session }> {
+export async function createSession(title?: string, initialMessage?: string): Promise<{ session: Session }> {
   const res = await fetch(`${SERVER_URL}/api/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title })
+    body: JSON.stringify({ title, initialMessage })
   })
   return res.json() as Promise<{ session: Session }>
 }

@@ -105,10 +105,6 @@ export function ChatHeader({
           <div className='chat-header-title'>
             {displayTitle}
           </div>
-          <div className='chat-header-subtitle'>
-            <span className='material-symbols-outlined'>route</span>
-            {cwd ?? t('chat.selectModel')}
-          </div>
           <div
             className='chat-header-subtitle'
             onDoubleClick={() => {

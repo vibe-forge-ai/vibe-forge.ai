@@ -1,13 +1,16 @@
 .session-item {
   color: var(--text-color);
   cursor: pointer;
-  padding: 12px 16px !important;
+  padding: 12px !important;
   position: relative;
-  border: none !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px;
   transition: all .2s ease;
+  background-color: var(--bg-color);
 
   &:hover {
     background-color: var(--sidebar-hover-bg);
+    border-color: var(--sidebar-hover-bg) !important;
 
     .session-item-actions {
       opacity: 1;
@@ -16,16 +19,12 @@
 
   &.active {
     background-color: var(--sidebar-active-bg) !important;
+    border-color: var(--sidebar-active-text) !important;
     color: var(--sidebar-active-text) !important;
 
+    // Remove old active indicator
     &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background-color: var(--sidebar-active-text);
+      display: none;
     }
 
     .session-item-actions {
@@ -35,13 +34,31 @@
 
   &.selected {
     background-color: var(--sidebar-active-bg) !important;
+    border-color: var(--sidebar-active-text) !important;
   }
 
   .session-item-content {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
-    gap: 8px;
+    gap: 12px;
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--sub-text-color); // Default gray
+      opacity: 0.3;
+      flex-shrink: 0;
+      margin-top: 5px;
+      margin-right: -4px; // Pull closer to the text
+      transition: all .2s;
+
+      &.active {
+        background-color: var(--sidebar-active-text); // Active blue
+        opacity: 1;
+      }
+    }
 
     .batch-checkbox-wrapper {
       width: 32px;
@@ -52,31 +69,41 @@
       flex-shrink: 0;
     }
 
+    .status-indicator {
+      display: none;
+    }
+
     .session-info {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
 
       &.with-actions {
-        padding-right: 48px;
+        padding-right: 0; // Remove padding as actions are positioned differently
       }
 
-      .session-title {
-        margin-bottom: 4px;
+      .session-header {
         display: flex;
-        align-items: center;
+        justify-content: space-between;
+        align-items: flex-start;
         gap: 8px;
 
-        .material-symbols-outlined {
-          color: inherit;
-          font-size: 18px;
-        }
-
-        .session-title-text {
-          font-weight: 500;
+        .session-title {
           flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+
+          .session-title-text {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 14px;
+          }
         }
       }
 
@@ -86,13 +113,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        margin-bottom: 4px;
+        line-height: 1.5;
       }
 
       .session-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-top: 4px;
 
         .time-display {
           font-size: 11px;
@@ -101,7 +129,6 @@
       }
 
       .tags-container {
-        margin-top: 4px;
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
@@ -120,36 +147,41 @@
 
   .session-item-badge {
     position: absolute;
-    top: 12px;
-    right: 16px;
+    top: -6px;
+    right: -6px;
+    z-index: 20;
+    
+    .ant-badge-count {
+      background-color: var(--sub-text-color) !important;
+      color: #fff;
+      box-shadow: none;
+    }
   }
 
   .session-item-actions {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
-    gap: 2px;
-    z-index: 10;
+    gap: 4px;
     opacity: 0;
     transition: opacity .2s ease;
-    background-color: inherit;
 
     .action-btn {
-      color: var(--sidebar-btn-color);
+      color: var(--sub-text-color);
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
 
       &:hover {
-        background-color: var(--sidebar-hover-bg);
-        color: var(--sidebar-active-text);
+        background-color: transparent;
+        color: #3b82f6; // Blue on hover
       }
 
       &.starred {
         .material-symbols-outlined {
-          color: var(--star-color);
+          color: #f59e0b; // Amber for starred
+          font-variation-settings: 'FILL' 1; // Always filled for starred state
 
           &.filled {
             font-variation-settings: 'FILL' 1;

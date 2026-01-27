@@ -11,6 +11,7 @@ interface SessionListProps {
   activeId?: string
   isBatchMode: boolean
   selectedIds: Set<string>
+  searchQuery?: string
   onSelectSession: (session: Session) => void
   onArchiveSession: (id: string) => void | Promise<void>
   onDeleteSession: (id: string) => void | Promise<void>
@@ -24,6 +25,7 @@ export function SessionList({
   activeId,
   isBatchMode,
   selectedIds,
+  searchQuery,
   onSelectSession,
   onArchiveSession,
   onDeleteSession,
@@ -40,7 +42,7 @@ export function SessionList({
           size='small'
           locale={{
             emptyText: <div className='empty-text'>
-              {t('common.noSessions')}
+              {searchQuery ? t('common.noSessions') : t('common.startNewChat')}
             </div>
           }}
           dataSource={sessions}

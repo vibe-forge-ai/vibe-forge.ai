@@ -1,48 +1,42 @@
 .sidebar-header {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
 
-  .header-top {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-
+  .header-new-chat {
     .new-chat-btn {
-      flex: 1;
+      height: 40px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      height: 32px;
-      padding: 0;
-
-      .material-symbols-outlined {
-        font-size: 18px;
-        display: inline-flex;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      .btn-content {
+        display: flex;
         align-items: center;
-        line-height: 1;
+        gap: 8px;
       }
-
-      .btn-text {
-        margin-left: 8px;
-        font-size: 14px;
-      }
-    }
-
-    .sidebar-collapse-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      color: var(--sub-text-color);
 
       .material-symbols-outlined {
         font-size: 20px;
+      }
+
+      .shortcut-tag {
+        font-size: 12px;
+        opacity: 0.8;
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        line-height: 1;
+      }
+
+      &.active-scale {
+        transform: scale(0.96);
       }
     }
   }
@@ -64,6 +58,7 @@
     .search-input {
       border-radius: 6px;
       flex: 1;
+      height: 36px;
 
       .search-icon {
         font-size: 18px;
@@ -99,6 +94,21 @@
           align-items: center;
           line-height: 1;
         }
+      }
+    }
+
+    .sidebar-collapse-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      color: var(--sub-text-color);
+      flex-shrink: 0;
+
+      .material-symbols-outlined {
+        font-size: 20px;
       }
     }
   }

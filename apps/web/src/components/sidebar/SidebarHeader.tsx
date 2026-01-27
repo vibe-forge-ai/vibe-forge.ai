@@ -1,11 +1,10 @@
 import './SidebarHeader.scss'
 
 import { Button, Checkbox, Input, Popconfirm, Tooltip } from 'antd'
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface SidebarHeaderProps {
-  onCreateSession: () => void
   onToggleCollapse: () => void
   isCollapsed?: boolean
   searchQuery: string
@@ -15,11 +14,10 @@ interface SidebarHeaderProps {
   selectedCount: number
   totalCount: number
   onSelectAll: (selected: boolean) => void
-  onBatchDelete: () => void
+  onBatchArchive: () => void
 }
 
 export function SidebarHeader({
-  onCreateSession,
   onToggleCollapse,
   isCollapsed,
   searchQuery,
@@ -29,38 +27,13 @@ export function SidebarHeader({
   selectedCount,
   totalCount,
   onSelectAll,
-  onBatchDelete
+  onBatchArchive
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
 
   return (
     <div className='sidebar-header'>
-      <div className='header-top'>
-        <Tooltip title={t('common.newChat')}>
-          <Button
-            className='new-chat-btn'
-            type='primary'
-            onClick={onCreateSession}
-          >
-            <span className='material-symbols-outlined'>
-              add_circle
-            </span>
-            <span className='btn-text'>{t('common.newChat')}</span>
-          </Button>
-        </Tooltip>
-        <Tooltip title={isCollapsed ? t('common.expand') : t('common.collapse')}>
-          <Button
-            className='sidebar-collapse-btn'
-            type='text'
-            onClick={onToggleCollapse}
-          >
-            <span className='material-symbols-outlined'>
-              {isCollapsed ? 'menu' : 'menu_open'}
-            </span>
-          </Button>
-        </Tooltip>
-      </div>
       <div className='header-bottom'>
         {isBatchMode && (
           <div className='batch-select-wrapper'>
@@ -99,28 +72,38 @@ export function SidebarHeader({
           </Tooltip>
           {isBatchMode && (
             <Popconfirm
-              title={t('common.deleteConfirm', { count: selectedCount })}
-              onConfirm={onBatchDelete}
+              title={t('common.archiveConfirm', { count: selectedCount })}
+              onConfirm={onBatchArchive}
               okText={t('common.confirm')}
               cancelText={t('common.cancel')}
-              okButtonProps={{ danger: true }}
+              okButtonProps={{ danger: false }}
               disabled={selectedCount === 0}
             >
-              <Tooltip title={t('common.batchDelete')}>
+              <Tooltip title={t('common.batchArchive')}>
                 <Button
                   className='action-btn'
                   type='text'
-                  danger
                   disabled={selectedCount === 0}
                 >
                   <span className='material-symbols-outlined'>
-                    delete_sweep
+                    archive
                   </span>
                 </Button>
               </Tooltip>
             </Popconfirm>
           )}
         </div>
+        <Tooltip title={isCollapsed ? t('common.expand') : t('common.collapse')}>
+          <Button
+            className='sidebar-collapse-btn'
+            type='text'
+            onClick={onToggleCollapse}
+          >
+            <span className='material-symbols-outlined'>
+              {isCollapsed ? 'menu' : 'menu_open'}
+            </span>
+          </Button>
+        </Tooltip>
       </div>
     </div>
   )

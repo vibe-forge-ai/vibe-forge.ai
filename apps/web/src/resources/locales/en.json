@@ -22,6 +22,8 @@
     "batchRestoreFailed": "Failed to restore some sessions",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "startNewChat": "No active sessions found. Start a new chat!",
+    "backToHome": "Back to Home",
     "noSessions": "No matching sessions found",
     "noArchivedSessions": "No archived sessions",
     "sessionNotFound": "Session not found",
@@ -30,6 +32,10 @@
     "selectOrCreateSession": "Please select or create a session to start chatting",
     "batchMode": "Batch Mode",
     "cancelBatch": "Cancel Batch Mode",
+    "batchArchive": "Batch Archive",
+    "archiveConfirm": "Are you sure you want to archive the selected {{count}} chats?",
+    "alreadyInNewChat": "You are already in a new chat",
+    "creatingChat": "New Chat",
     "batchDelete": "Batch Delete",
     "batchDeleteSuccess": "Batch deleted successfully",
     "batchDeleteFailed": "Failed to delete some sessions",
@@ -79,6 +85,7 @@
     "tags": "Tags",
     "addTagPlaceholder": "Add tag and press Enter...",
     "noTags": "No tags",
-    "title": "Title"
+    "title": "Title",
+    "newSessionPlaceholder": "Type a message to start a new chat..."
   }
 }

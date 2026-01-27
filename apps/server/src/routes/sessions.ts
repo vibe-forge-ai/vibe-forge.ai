@@ -1,5 +1,5 @@
 import { getDb } from '#~/db.js'
-import { notifySessionUpdated, updateAndNotifySession } from '#~/websocket/index.js'
+import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession } from '#~/websocket/index.js'
 import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
@@ -57,16 +57,38 @@ export function sessionsRouter(): Router {
     ctx.body = { ok: true }
   })
 
-  router.post('/', (ctx) => {
-    const { title } = ctx.request.body as { title?: string }
+  router.post('/', async (ctx) => {
+    const { title, initialMessage } = ctx.request.body as { title?: string; initialMessage?: string }
     const session = db.createSession(title)
     notifySessionUpdated(session.id, session)
+
+    if (initialMessage) {
+      // 启动进程并发送消息
+      try {
+        await startAdapterSession(session.id)
+        processUserMessage(session.id, initialMessage)
+      } catch (err) {
+        console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      }
+    }
+
     ctx.body = { session }
   })
-  router.post('', (ctx) => {
-    const { title } = ctx.request.body as { title?: string }
+  router.post('', async (ctx) => {
+    const { title, initialMessage } = ctx.request.body as { title?: string; initialMessage?: string }
     const session = db.createSession(title)
     notifySessionUpdated(session.id, session)
+
+    if (initialMessage) {
+      // 启动进程并发送消息
+      try {
+        await startAdapterSession(session.id)
+        processUserMessage(session.id, initialMessage)
+      } catch (err) {
+        console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      }
+    }
+
     ctx.body = { session }
   })
 

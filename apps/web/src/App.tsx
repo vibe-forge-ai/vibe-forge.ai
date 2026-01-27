@@ -19,14 +19,16 @@ const MAX_SIDEBAR_WIDTH = 600
 function ChatView() {
   const { t } = useTranslation()
   const { sessionId } = useParams()
+  const navigate = useNavigate()
   const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
   const sessions = sessionsRes?.sessions ?? []
   const session = sessions.find(s => s.id === sessionId)
 
   if (session == null) {
     return (
-      <div style={{ height: '100%', display: 'grid', placeItems: 'center' }}>
+      <div style={{ height: '100%', display: 'grid', placeItems: 'center', alignContent: 'center', gap: '16px' }}>
         <Empty description={t('common.sessionNotFound')} />
+        <Button type="primary" onClick={() => navigate('/')}>{t('common.backToHome')}</Button>
       </div>
     )
   }
@@ -40,13 +42,15 @@ export default function App() {
   const location = useLocation()
   const [themeMode] = useAtom(themeAtom)
 
+  const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
+
   const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
   const setIsResizing = useSetAtom(isSidebarResizingAtom)
 
   const currentPath = location.pathname
-  const activeId = currentPath.split('/session/')[1]
+  const activeId = currentPath === '/' ? undefined : currentPath.split('/session/')[1]
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsResizing(true)
@@ -99,6 +103,17 @@ export default function App() {
 
   const showSidebar = currentPath === '/' || currentPath.startsWith('/session/')
 
+  const handleDeletedSession = useCallback((deletedId: string, nextId?: string) => {
+    // 如果删除的不是当前激活的会话，不需要跳转
+    if (activeId !== deletedId) return
+
+    if (nextId) {
+       void navigate(`/session/${nextId}`)
+    } else {
+       void navigate('/')
+    }
+  }, [activeId, navigate])
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark')
@@ -125,9 +140,14 @@ export default function App() {
               collapsed={isSidebarCollapsed}
               onToggleCollapse={toggleSidebar}
               activeId={activeId}
-              onSelectSession={(session: Session) => {
-                void navigate(`/session/${session.id}`)
+              onSelectSession={(session: Session, isNew?: boolean) => {
+                if (session.id === '') {
+                  void navigate('/')
+                } else {
+                  void navigate(`/session/${session.id}`)
+                }
               }}
+              onDeletedSession={handleDeletedSession}
             />
             {!isSidebarCollapsed && (
               <div
@@ -155,11 +175,7 @@ export default function App() {
           <Routes>
             <Route
               path='/'
-              element={
-                <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: '#6b7280' }}>
-                  {t('common.selectOrCreateSession')}
-                </div>
-              }
+              element={<Chat />}
             />
             <Route path='/session/:sessionId' element={<ChatView />} />
             <Route path='/archive' element={<ArchiveView />} />

@@ -2,10 +2,12 @@ import './Chat.scss'
 
 import { App } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
-import { getSessionMessages } from '../api'
+import { createSession, getSessionMessages } from '../api'
 import { createSocket } from '../ws'
 
 import { ChatHeader } from './chat/ChatHeader'
@@ -21,6 +23,10 @@ export function Chat({
   session?: Session
 }) {
   const { message } = App.useApp()
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const initialMessageRef = useRef<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(null)
@@ -77,7 +83,12 @@ export function Chat({
   }, [messages])
 
   useEffect(() => {
-    if (session?.id == null || session.id === '') return
+    if (session?.id == null || session.id === '') {
+      setMessages([])
+      setSessionInfo(null)
+      setIsReady(true)
+      return
+    }
 
     setMessages([])
     setSessionInfo(null)
@@ -248,11 +259,33 @@ export function Chat({
     }
   }, [session?.id, mutate])
 
-  const send = (text: string) => {
-    if (wsRef.current == null || text.trim() === '' || isThinking) return
+  const send = async (text: string) => {
+    if (text.trim() === '' || isThinking) return
+
+    if (!session?.id) {
+      setIsThinking(true)
+      try {
+        const { session: newSession } = await createSession(undefined, text.trim())
+        
+        await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+          if (!prev?.sessions) return { sessions: [newSession] }
+          return {
+            ...prev,
+            sessions: [newSession, ...prev.sessions]
+          }
+        }, false)
+
+        void navigate(`/session/${newSession.id}`)
+      } catch (err) {
+        console.error(err)
+        setIsThinking(false)
+        void message.error('Failed to create session')
+      }
+      return
+    }
 
     setIsThinking(true)
-    wsRef.current.send(JSON.stringify({
+    wsRef.current?.send(JSON.stringify({
       type: 'user_message',
       text: text.trim()
     }))
@@ -282,17 +315,19 @@ export function Chat({
   }
 
   return (
-    <div className={`chat-container ${isReady ? 'ready' : ''}`}>
-      <ChatHeader
-        sessionInfo={sessionInfo}
-        sessionId={session?.id}
-        sessionTitle={session?.title}
-        isStarred={session?.isStarred}
-        isArchived={session?.isArchived}
-        tags={session?.tags}
-        lastMessage={session?.lastMessage}
-        lastUserMessage={session?.lastUserMessage}
-      />
+    <div className={`chat-container ${isReady ? 'ready' : ''} ${!session?.id ? 'is-new-session' : ''}`}>
+      {session?.id && (
+        <ChatHeader
+          sessionInfo={sessionInfo}
+          sessionId={session?.id}
+          sessionTitle={session?.title}
+          isStarred={session?.isStarred}
+          isArchived={session?.isArchived}
+          tags={session?.tags}
+          lastMessage={session?.lastMessage}
+          lastUserMessage={session?.lastUserMessage}
+        />
+      )}
 
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
         {renderItems.map((item, index) => {
@@ -325,15 +360,18 @@ export function Chat({
       </div>
 
       <CurrentTodoList messages={messages} />
-      <Sender
-        onSend={send}
-        isThinking={isThinking}
-        onInterrupt={interrupt}
-        onClear={clearMessages}
-        sessionInfo={sessionInfo}
-        interactionRequest={interactionRequest}
-        onInteractionResponse={handleInteractionResponse}
-      />
+      <div className='sender-container'>
+        <Sender
+          onSend={send}
+          isThinking={isThinking}
+          onInterrupt={interrupt}
+          onClear={clearMessages}
+          sessionInfo={sessionInfo}
+          interactionRequest={interactionRequest}
+          onInteractionResponse={handleInteractionResponse}
+          placeholder={!session?.id ? t('chat.newSessionPlaceholder') : undefined}
+        />
+      </div>
     </div>
   )
 }

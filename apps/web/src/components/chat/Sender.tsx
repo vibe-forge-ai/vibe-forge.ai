@@ -17,7 +17,8 @@ export function Sender({
   onClear,
   sessionInfo,
   interactionRequest,
-  onInteractionResponse
+  onInteractionResponse,
+  placeholder
 }: {
   onSend: (text: string) => void
   isThinking: boolean
@@ -26,6 +27,7 @@ export function Sender({
   sessionInfo?: SessionInfo | null
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void
+  placeholder?: string
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -246,8 +248,8 @@ export function Sender({
       return
     }
 
-    // Cmd/Ctrl + K to clear screen
-    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+    // Cmd/Ctrl + L to clear screen
+    if (e.key === 'l' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
       setInput('')
       setHistoryIndex(-1)
@@ -363,7 +365,7 @@ export function Sender({
         <TextArea
           ref={textareaRef}
           className='chat-input-textarea'
-          placeholder={interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
+          placeholder={placeholder ?? interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}

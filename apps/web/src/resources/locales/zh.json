@@ -22,6 +22,8 @@
     "batchRestoreFailed": "部分会话还原失败",
     "cancel": "取消",
     "confirm": "确定",
+    "startNewChat": "暂时没有未归档的历史会话，聊点什么吧",
+    "backToHome": "返回首页",
     "noSessions": "未找到匹配的会话",
     "noArchivedSessions": "暂无已归档会话",
     "sessionNotFound": "会话不存在",
@@ -30,6 +32,10 @@
     "selectOrCreateSession": "请选择或新建会话开始对话",
     "batchMode": "批量操作",
     "cancelBatch": "取消批量操作",
+    "batchArchive": "批量归档",
+    "archiveConfirm": "确定要归档选中的 {{count}} 个会话吗？",
+    "alreadyInNewChat": "当前已是新建会话",
+    "creatingChat": "正在新建会话",
     "batchDelete": "批量删除",
     "batchDeleteSuccess": "批量删除成功",
     "batchDeleteFailed": "部分会话删除失败",
@@ -80,6 +86,7 @@
     "tags": "标签",
     "addTagPlaceholder": "添加新标签并按回车...",
     "noTags": "暂无标签",
-    "title": "标题"
+    "title": "标题",
+    "newSessionPlaceholder": "输入消息以创建新会话..."
   }
 }
