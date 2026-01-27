@@ -48,7 +48,14 @@
     "unstar": "Unstar",
     "addTag": "Tag",
     "sessionIdCopied": "Session ID copied to clipboard",
-    "doubleClickToCopy": "Double click to copy Session ID"
+    "doubleClickToCopy": "Double click to copy Session ID",
+    "status": {
+      "running": "Running",
+      "completed": "Done",
+      "failed": "Failed",
+      "terminated": "Stopped",
+      "waiting_input": "Waiting"
+    }
   },
   "chat": {
     "titleUpdated": "Title updated",
@@ -61,6 +68,7 @@
     "result": "Result",
     "sessionActive": "Session Active",
     "selectModel": "Select a model to start",
+    "availableTools": "Available Tools",
     "toolsCount": "{{count}} tools",
     "usedTools": "Used {{count}} tools",
     "viewInitInfo": "Double click to view initialization info",

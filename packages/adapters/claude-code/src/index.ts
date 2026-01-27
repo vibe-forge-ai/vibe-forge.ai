@@ -119,6 +119,23 @@ function handleIncomingEvent(data: ClaudeCodeIncomingEvent, onEvent: AdapterQuer
       }
     })
   }
+
+  // 5. Handle Result Event
+  if (data.type === 'result') {
+    let messageData: ChatMessage | undefined
+    if (data.result != null && data.result !== '') {
+      messageData = {
+        id: data.uuid,
+        role: 'assistant',
+        content: data.result,
+        createdAt: Date.now(),
+        usage: data.usage
+      }
+    }
+    // 发送 stop 事件，告知当前任务结束，并附带结果数据（如果有）
+    // 如果有 result，说明任务正常完成
+    onEvent({ type: 'stop', data: messageData })
+  }
 }
 
 async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOptions) {

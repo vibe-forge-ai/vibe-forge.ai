@@ -59,6 +59,37 @@ const pendingInteractions = new Map<string, {
   timer: NodeJS.Timeout
 }>()
 
+export function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
+  const { sessionId } = params
+  const cached = adapterCache.get(sessionId)
+
+  if (cached == null || cached.sockets.size === 0) {
+    return Promise.reject(new Error(`Session ${sessionId} is not active`))
+  }
+
+  const interactionId = uuidv4()
+  const event: WSEvent = {
+    type: 'interaction_request',
+    id: interactionId,
+    payload: params
+  }
+
+  // Broadcast request to all connected sockets for this session
+  for (const socket of cached.sockets) {
+    sendToClient(socket, event)
+  }
+
+  return new Promise((resolve, reject) => {
+    // 5 minutes timeout
+    const timer = setTimeout(() => {
+      pendingInteractions.delete(interactionId)
+      reject(new Error('Interaction timed out'))
+    }, 5 * 60 * 1000)
+
+    pendingInteractions.set(interactionId, { resolve, reject, timer })
+  })
+}
+
 export async function startAdapterSession(
   sessionId: string,
   options: {
@@ -109,8 +140,6 @@ export async function startAdapterSession(
       systemPrompt: options.systemPrompt,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       onEvent: (event: AdapterOutputEvent) => {
-        if (event.data == null) return
-
         // 广播给所有关联的 sockets 并存入历史记录
         const broadcast = (ev: WSEvent) => {
           serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
@@ -124,7 +153,8 @@ export async function startAdapterSession(
             if (text != null && text !== '') {
               updateAndNotifySession(sessionId, {
                 lastMessage: text,
-                lastUserMessage: ev.message.role === 'user' ? text : undefined
+                lastUserMessage: ev.message.role === 'user' ? text : undefined,
+                status: 'running'
               })
             }
           }
@@ -163,6 +193,11 @@ export async function startAdapterSession(
                 : 'Process exited unexpectedly'
             }
 
+            // 更新会话状态
+            updateAndNotifySession(sessionId, {
+              status: exitCode === 0 ? 'completed' : 'failed'
+            })
+
             for (const socket of sockets) {
               sendToClient(socket, errorEvent)
             }
@@ -182,6 +217,10 @@ export async function startAdapterSession(
                 leafUuid: summaryData.leafUuid
               }
             })
+            break
+          }
+          case 'stop': {
+            updateAndNotifySession(sessionId, { status: 'completed' })
             break
           }
         }
@@ -216,7 +255,8 @@ export function processUserMessage(sessionId: string, text: string) {
   const currentSessionData = db.getSession(sessionId)
   const updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>> = {
     lastMessage: userText,
-    lastUserMessage: userText
+    lastUserMessage: userText,
+    status: 'running'
   }
 
   if (
@@ -366,5 +406,6 @@ export function killSession(sessionId: string) {
     getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
     cached.session.kill()
     adapterCache.delete(sessionId)
+    updateAndNotifySession(sessionId, { status: 'terminated' })
   }
 }

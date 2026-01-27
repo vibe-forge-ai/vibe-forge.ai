@@ -70,7 +70,40 @@
     }
 
     .status-indicator {
-      display: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+
+      .status-icon {
+        &.spin {
+          animation: spin 1.5s linear infinite;
+        }
+      }
+
+      .waiting-input-indicator {
+        width: 14px;
+        height: 14px;
+        background-color: #faad14;
+        border-radius: 50%;
+        position: relative;
+        animation: pulse-yellow 2s infinite;
+
+        &::after {
+          content: '';
+          position: absolute;
+          top: -4px;
+          left: -4px;
+          right: -4px;
+          bottom: -4px;
+          border: 1px dashed #faad14;
+          border-radius: 50%;
+          animation: spin 3s linear infinite;
+        }
+      }
     }
 
     .session-info {
@@ -193,5 +226,26 @@
         font-size: 18px;
       }
     }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-yellow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(250, 173, 20, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
   }
 }

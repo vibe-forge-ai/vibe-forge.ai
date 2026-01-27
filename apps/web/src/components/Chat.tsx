@@ -25,12 +25,10 @@ export function Chat({
   const { message } = App.useApp()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const location = useLocation()
-  const initialMessageRef = useRef<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(null)
-  const [isThinking, setIsThinking] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const [isReady, setIsReady] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -38,6 +36,8 @@ export function Chat({
   const isInitialLoadRef = useRef<boolean>(true)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const { mutate } = useSWRConfig()
+
+  const isThinking = isCreating || session?.status === 'running'
 
   const renderItems = React.useMemo(() => processMessages(messages), [messages])
 
@@ -103,6 +103,18 @@ export function Chat({
         if (isDisposed) return
         const events = res.messages as WSEvent[]
 
+        // 如果后端返回了最新的 session 状态，更新 SWR 缓存
+        if (res.session) {
+          const updatedSession = res.session
+          void mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+            if (prev?.sessions == null) return prev
+            const newSessions = prev.sessions.map((s: Session) =>
+              s.id === updatedSession.id ? { ...s, ...updatedSession } : s
+            )
+            return { ...prev, sessions: newSessions }
+          }, false)
+        }
+
         let currentMessages: ChatMessage[] = []
         let currentSessionInfo: SessionInfo | null = null
 
@@ -163,7 +175,6 @@ export function Chat({
           if (isDisposed) return
           if (data.type === 'error') {
             void message.error(data.message)
-            setIsThinking(false)
           } else if (data.type === 'session_updated') {
             // 更新 SWR 缓存中的会话列表
             void mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -192,9 +203,6 @@ export function Chat({
               return { ...prev, sessions: newSessions }
             }, false)
           } else if (data.type === 'message') {
-            if (data.message.role === 'assistant') {
-              setIsThinking(false)
-            }
             setMessages((m) => {
               const exists = m.find((msg) => msg.id === data.message.id)
               if (exists != null) {
@@ -220,7 +228,6 @@ export function Chat({
               }
             }
           } else if (data.type === 'tool_result') {
-            setIsThinking(false)
             setMessages((m) => {
               return m.map((msg) => {
                 if (msg.toolCall != null && msg.toolCall.id === data.toolCallId) {
@@ -241,8 +248,7 @@ export function Chat({
           }
         },
         onClose() {
-          if (isDisposed) return
-          setIsThinking(false)
+          // No-op
         }
       })
     }, 100)
@@ -258,7 +264,7 @@ export function Chat({
     if (text.trim() === '' || isThinking) return
 
     if (!session?.id) {
-      setIsThinking(true)
+      setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, text.trim())
         
@@ -273,13 +279,12 @@ export function Chat({
         void navigate(`/session/${newSession.id}`)
       } catch (err) {
         console.error(err)
-        setIsThinking(false)
+        setIsCreating(false)
         void message.error('Failed to create session')
       }
       return
     }
 
-    setIsThinking(true)
     connectionManager.send(session.id, {
       type: 'user_message',
       text: text.trim()
@@ -291,7 +296,6 @@ export function Chat({
     connectionManager.send(session.id, {
       type: 'interrupt'
     })
-    setIsThinking(false)
   }
 
   const clearMessages = () => {
@@ -358,7 +362,7 @@ export function Chat({
       <div className='sender-container'>
         <Sender
           onSend={send}
-          isThinking={isThinking}
+          sessionStatus={isCreating ? 'running' : session?.status}
           onInterrupt={interrupt}
           onClear={clearMessages}
           sessionInfo={sessionInfo}

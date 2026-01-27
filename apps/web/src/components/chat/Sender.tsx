@@ -1,5 +1,5 @@
 import './Sender.scss'
-import type { AskUserQuestionParams, SessionInfo } from '@vibe-forge/core'
+import type { AskUserQuestionParams, SessionInfo, SessionStatus } from '@vibe-forge/core'
 import { App, Button, Input, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
@@ -12,7 +12,7 @@ const { TextArea } = Input
 
 export function Sender({
   onSend,
-  isThinking,
+  sessionStatus,
   onInterrupt,
   onClear,
   sessionInfo,
@@ -21,7 +21,7 @@ export function Sender({
   placeholder
 }: {
   onSend: (text: string) => void
-  isThinking: boolean
+  sessionStatus?: SessionStatus
   onInterrupt: () => void
   onClear?: () => void
   sessionInfo?: SessionInfo | null
@@ -40,6 +40,8 @@ export function Sender({
   const [showToolsList, setShowToolsList] = useState(false)
   const textareaRef = useRef<TextAreaRef>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
+
+  const isThinking = sessionStatus === 'running'
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

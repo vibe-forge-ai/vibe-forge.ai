@@ -20,6 +20,7 @@ interface SessionRow {
   isStarred: number
   isArchived: number
   tags?: string // JSON string array or comma separated
+  status: string | null
 }
 
 export class SqliteDb {
@@ -62,7 +63,8 @@ export class SqliteDb {
         lastUserMessage TEXT,
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
-        isArchived INTEGER DEFAULT 0
+        isArchived INTEGER DEFAULT 0,
+        status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS messages (
@@ -104,6 +106,9 @@ export class SqliteDb {
     if (!columns.includes('lastUserMessage')) {
       this.db.exec('ALTER TABLE sessions ADD COLUMN lastUserMessage TEXT')
     }
+    if (!columns.includes('status')) {
+      this.db.exec('ALTER TABLE sessions ADD COLUMN status TEXT')
+    }
   }
 
   getSessions(filter: 'active' | 'archived' | 'all' = 'active'): Session[] {
@@ -133,7 +138,8 @@ export class SqliteDb {
         lastUserMessage: row.lastUserMessage ?? undefined,
         isStarred: row.isStarred === 1,
         isArchived: row.isArchived === 1,
-        tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : []
+        tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : [],
+        status: (row.status as any) ?? undefined
       }
     })
   }
@@ -156,7 +162,8 @@ export class SqliteDb {
       lastUserMessage: row.lastUserMessage ?? undefined,
       isStarred: row.isStarred === 1,
       isArchived: row.isArchived === 1,
-      tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : []
+      tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : [],
+      status: (row.status as any) ?? undefined
     }
   }
 
@@ -199,6 +206,10 @@ export class SqliteDb {
     if (updates.isArchived !== undefined) {
       sets.push('isArchived = ?')
       params.push(updates.isArchived ? 1 : 0)
+    }
+    if (updates.status !== undefined) {
+      sets.push('status = ?')
+      params.push(updates.status)
     }
 
     if (sets.length === 0) return
@@ -254,14 +265,15 @@ export class SqliteDb {
     }
   }
 
-  createSession(title?: string, id?: string): Session {
+  createSession(title?: string, id?: string, status?: string): Session {
     const session: Session = {
       id: id ?? uuidv4(),
       title,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      status: (status as any) ?? undefined
     }
-    const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt) VALUES (?, ?, ?)')
-    stmt.run(session.id, session.title, session.createdAt)
+    const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt, status) VALUES (?, ?, ?, ?)')
+    stmt.run(session.id, session.title, session.createdAt, session.status)
     return session
   }
 

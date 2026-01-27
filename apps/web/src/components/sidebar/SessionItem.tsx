@@ -1,6 +1,6 @@
 import './SessionItem.scss'
 
-import type { Session } from '@vibe-forge/core'
+import type { Session, SessionStatus } from '@vibe-forge/core'
 import { Badge, Button, Checkbox, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -64,6 +64,61 @@ export function SessionItem({
     return session.lastMessage.length > 60 ? `${session.lastMessage.slice(0, 60)}...` : session.lastMessage
   }, [session.lastMessage])
 
+  const getStatusIcon = (status?: SessionStatus) => {
+    if (!status) {
+      return <div className={`status-dot ${isActive ? 'active' : ''}`} />
+    }
+    
+    let icon = ''
+    let color = ''
+    const title = t(`common.status.${status}`)
+    
+    switch (status) {
+      case 'completed':
+        icon = 'check_circle'
+        color = '#52c41a' // Green
+        break
+      case 'terminated':
+        icon = 'remove_circle'
+        color = '#bfbfbf' // Grey
+        break
+      case 'failed':
+        icon = 'cancel'
+        color = '#ff4d4f' // Red
+        break
+      case 'running':
+        icon = 'sync'
+        color = '#1890ff' // Blue
+        break
+      case 'waiting_input':
+        return (
+          <Tooltip title={title}>
+            <div className='waiting-input-indicator' />
+          </Tooltip>
+        )
+      default:
+        return <div className={`status-dot ${isActive ? 'active' : ''}`} />
+    }
+    
+    return (
+      <Tooltip title={title}>
+        <span 
+          className={`material-symbols-rounded status-icon ${status === 'running' ? 'spin' : ''}`}
+          style={{ 
+            color, 
+            fontSize: '16px',
+            lineHeight: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {icon}
+        </span>
+      </Tooltip>
+    )
+  }
+
   return (
     <List.Item
       onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
@@ -77,7 +132,9 @@ export function SessionItem({
     >
       <div className='session-item-content'>
         {!isBatchMode && (
-          <div className={`status-dot ${isActive ? 'active' : ''}`} />
+          <div className='status-indicator'>
+            {getStatusIcon(session.status)}
+          </div>
         )}
         {isBatchMode && (
           <div className='batch-checkbox-wrapper'>
@@ -136,6 +193,11 @@ export function SessionItem({
             </div>
           )}
           <div className='session-meta'>
+            {session.status && (
+              <span className='status-text' style={{ fontSize: '11px', color: 'var(--sub-text-color)', marginRight: '8px' }}>
+                {t(`common.status.${session.status}`)}
+              </span>
+            )}
             <Tooltip title={timeDisplay.full}>
               <span className='time-display'>
                 {timeDisplay.relative}

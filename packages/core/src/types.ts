@@ -7,6 +7,8 @@ export interface Project {
   path: string
 }
 
+export type SessionStatus = 'running' | 'completed' | 'failed' | 'terminated' | 'waiting_input'
+
 export interface Session {
   id: string
   title?: string
@@ -17,6 +19,7 @@ export interface Session {
   isStarred?: boolean
   isArchived?: boolean
   tags?: string[]
+  status?: SessionStatus
 }
 
 export type ChatMessageContent =

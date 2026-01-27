@@ -11,6 +11,7 @@ export type AdapterOutputEvent =
   | { type: 'summary'; data: SessionSummaryInfo }
   | { type: 'message'; data: ChatMessage }
   | { type: 'exit'; data: { exitCode: number | null; stderr?: string } }
+  | { type: 'stop'; data?: ChatMessage }
 
 export type SessionInfo =
   | ({ type: 'init' } & SessionInitInfo)

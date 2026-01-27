@@ -49,7 +49,14 @@
     "addTag": "标签",
     "actions": "操作",
     "sessionIdCopied": "Session ID 已复制到剪贴板",
-    "doubleClickToCopy": "双击复制 Session ID"
+    "doubleClickToCopy": "双击复制 Session ID",
+    "status": {
+      "running": "进行中",
+      "completed": "已完成",
+      "failed": "失败",
+      "terminated": "已终止",
+      "waiting_input": "等待输入"
+    }
   },
   "chat": {
     "titleUpdated": "标题已更新",
@@ -62,6 +69,7 @@
     "result": "结果",
     "sessionActive": "会话进行中",
     "selectModel": "选择模型开始聊天",
+    "availableTools": "可用工具",
     "toolsCount": "{{count}} 个工具",
     "usedTools": "使用了 {{count}} 个工具",
     "viewInitInfo": "双击查看初始化信息",

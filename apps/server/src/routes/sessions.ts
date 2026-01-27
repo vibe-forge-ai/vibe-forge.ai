@@ -21,16 +21,17 @@ export function sessionsRouter(): Router {
     const { id } = ctx.params as { id: string }
     const { limit } = ctx.query as { limit?: string }
     const messages = db.getMessages(id)
+    const session = db.getSession(id)
 
     if (limit != null) {
       const n = Number.parseInt(limit, 10)
       if (!Number.isNaN(n)) {
-        ctx.body = { messages: messages.slice(-n) }
+        ctx.body = { messages: messages.slice(-n), session }
         return
       }
     }
 
-    ctx.body = { messages }
+    ctx.body = { messages, session }
   })
 
   router.patch('/:id', (ctx) => {
@@ -67,6 +68,12 @@ export function sessionsRouter(): Router {
       try {
         await startAdapterSession(session.id)
         processUserMessage(session.id, initialMessage)
+        
+        // 获取更新后的会话状态
+        const updated = db.getSession(session.id)
+        if (updated) {
+          Object.assign(session, updated)
+        }
       } catch (err) {
         console.error(`[sessions] Failed to start session ${session.id}:`, err)
       }
@@ -84,6 +91,12 @@ export function sessionsRouter(): Router {
       try {
         await startAdapterSession(session.id)
         processUserMessage(session.id, initialMessage)
+        
+        // 获取更新后的会话状态
+        const updated = db.getSession(session.id)
+        if (updated) {
+          Object.assign(session, updated)
+        }
       } catch (err) {
         console.error(`[sessions] Failed to start session ${session.id}:`, err)
       }
