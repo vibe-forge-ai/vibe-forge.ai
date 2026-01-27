@@ -10,6 +10,7 @@ export function registerClearCommand(program: Command) {
     .action(async () => {
       // Clean main logs and caches
       await Promise.all([
+        fs.rm('.logs', { force: true, recursive: true }),
         fs.rm('.ai/logs', { force: true, recursive: true }),
         fs.rm('.ai/caches', { force: true, recursive: true }),
         fs.rm('.ai/.mock/.claude/debug', { force: true, recursive: true }),
