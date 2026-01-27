@@ -115,6 +115,12 @@ export function Chat({
           }, false)
         }
 
+        if (res.interaction) {
+          setInteractionRequest(res.interaction)
+        } else {
+          setInteractionRequest(null)
+        }
+
         let currentMessages: ChatMessage[] = []
         let currentSessionInfo: SessionInfo | null = null
 

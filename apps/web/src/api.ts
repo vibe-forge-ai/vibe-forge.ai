@@ -66,11 +66,11 @@ export async function updateSessionTitle(id: string, title: string): Promise<{ s
   return res.json() as Promise<{ session: Session }>
 }
 
-export async function getSessionMessages(id: string, limit?: number): Promise<{ messages: any[]; session?: Session }> {
+export async function getSessionMessages(id: string, limit?: number): Promise<{ messages: any[]; session?: Session; interaction?: { id: string; payload: any } }> {
   const url = new URL(`${SERVER_URL}/api/sessions/${id}/messages`)
   if (limit != null) {
     url.searchParams.set('limit', limit.toString())
   }
   const res = await fetch(url.toString())
-  return res.json() as Promise<{ messages: any[]; session?: Session }>
+  return res.json() as Promise<{ messages: any[]; session?: Session; interaction?: { id: string; payload: any } }>
 }

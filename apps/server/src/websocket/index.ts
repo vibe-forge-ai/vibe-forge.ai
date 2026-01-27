@@ -47,6 +47,10 @@ const adapterCache = new Map<string, {
   session: AdapterSession
   sockets: Set<WebSocket>
   messages: WSEvent[]
+  currentInteraction?: {
+    id: string
+    payload: AskUserQuestionParams
+  }
 }>()
 
 // Store all connected sockets globally to broadcast session updates
@@ -58,6 +62,11 @@ const pendingInteractions = new Map<string, {
   reject: (reason: any) => void
   timer: NodeJS.Timeout
 }>()
+
+export function getSessionInteraction(sessionId: string) {
+  const cached = adapterCache.get(sessionId)
+  return cached?.currentInteraction
+}
 
 export function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
   const { sessionId } = params
@@ -74,6 +83,8 @@ export function requestInteraction(params: AskUserQuestionParams): Promise<strin
     payload: params
   }
 
+  cached.currentInteraction = { id: interactionId, payload: params }
+
   // Broadcast request to all connected sockets for this session
   for (const socket of cached.sockets) {
     sendToClient(socket, event)
@@ -85,6 +96,9 @@ export function requestInteraction(params: AskUserQuestionParams): Promise<strin
     // 5 minutes timeout
     const timer = setTimeout(() => {
       pendingInteractions.delete(interactionId)
+      if (cached.currentInteraction?.id === interactionId) {
+        cached.currentInteraction = undefined
+      }
       reject(new Error('Interaction timed out'))
     }, 5 * 60 * 1000)
 
@@ -338,6 +352,10 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           
           if (pending) {
             clearTimeout(pending.timer)
+            const cached = adapterCache.get(sessionId)
+            if (cached != null && cached.currentInteraction?.id === id) {
+              cached.currentInteraction = undefined
+            }
             updateAndNotifySession(sessionId, { status: 'running' })
             pending.resolve(data)
             pendingInteractions.delete(id)

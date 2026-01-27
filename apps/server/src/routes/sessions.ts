@@ -1,5 +1,5 @@
 import { getDb } from '#~/db.js'
-import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession, killSession } from '#~/websocket/index.js'
+import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession, killSession, getSessionInteraction } from '#~/websocket/index.js'
 import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
@@ -22,16 +22,17 @@ export function sessionsRouter(): Router {
     const { limit } = ctx.query as { limit?: string }
     const messages = db.getMessages(id)
     const session = db.getSession(id)
+    const interaction = getSessionInteraction(id)
 
     if (limit != null) {
       const n = Number.parseInt(limit, 10)
       if (!Number.isNaN(n)) {
-        ctx.body = { messages: messages.slice(-n), session }
+        ctx.body = { messages: messages.slice(-n), session, interaction }
         return
       }
     }
 
-    ctx.body = { messages, session }
+    ctx.body = { messages, session, interaction }
   })
 
   router.patch('/:id', (ctx) => {
