@@ -311,6 +311,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           if (cached != null) {
             cached.session.emit({ type: 'interrupt' })
           }
+        } else if (msg.type === 'terminate_session') {
+          serverLogger.info({ sessionId }, '[server] Received terminate_session request')
+          killSession(sessionId)
         }
       } catch (err) {
         sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
@@ -322,11 +325,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const cached = adapterCache.get(sessionId)
       if (cached != null) {
         cached.sockets.delete(ws)
-        // 只有当所有关联的 socket 都关闭时，才 kill session
+        // 只有当所有关联的 socket 都关闭时，记录日志，但不再自动 kill session
         if (cached.sockets.size === 0) {
-          serverLogger.info({ sessionId }, '[server] All sockets closed, killing adapter process')
-          cached.session.kill()
-          adapterCache.delete(sessionId)
+          serverLogger.info({ sessionId }, '[server] All sockets closed, but keeping adapter process alive')
         } else {
           serverLogger.info(
             { sessionId, activeSockets: cached.sockets.size },
@@ -356,5 +357,14 @@ export function updateAndNotifySession(
   const updated = db.getSession(id)
   if (updated) {
     notifySessionUpdated(id, updated)
+  }
+}
+
+export function killSession(sessionId: string) {
+  const cached = adapterCache.get(sessionId)
+  if (cached != null) {
+    getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
+    cached.session.kill()
+    adapterCache.delete(sessionId)
   }
 }

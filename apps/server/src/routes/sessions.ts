@@ -1,5 +1,5 @@
 import { getDb } from '#~/db.js'
-import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession } from '#~/websocket/index.js'
+import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession, killSession } from '#~/websocket/index.js'
 import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
@@ -96,6 +96,8 @@ export function sessionsRouter(): Router {
     const { id } = ctx.params as { id: string }
     const removed = db.deleteSession(id)
     if (removed) {
+      // 显式销毁会话进程
+      killSession(id)
       notifySessionUpdated(id, { id, isDeleted: true })
     }
     ctx.body = { ok: true, removed }
