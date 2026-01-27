@@ -111,28 +111,9 @@ export function NavRail({
     }
   ], [currentPath, t])
 
-  const activeId = currentPath === '/' ? undefined : currentPath.split('/session/')[1]
-  const isCreatingSession = activeId === undefined || activeId === ''
-
   return (
     <div className='nav-rail'>
       <div className='nav-rail-top'>
-        {collapsed && (
-          <Tooltip title={t('common.newChat')} placement='right'>
-            <span>
-              <Button
-                type='text'
-                className={`nav-item new-chat-nav-item ${isCreatingSession ? 'active' : ''}`}
-                onClick={() => {
-                  if (isCreatingSession) return
-                  void navigate('/')
-                }}
-                disabled={isCreatingSession}
-                icon={<span className='material-symbols-outlined'>send</span>}
-              />
-            </span>
-          </Tooltip>
-        )}
         {navItems.map(item => (
           <Tooltip key={item.key} title={item.label} placement='right'>
             <span>

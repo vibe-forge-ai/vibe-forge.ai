@@ -221,6 +221,10 @@ export function Sidebar({
           onBatchArchive={() => {
             void handleBatchArchive()
           }}
+          isCreatingSession={isCreatingSession}
+          onCreateSession={() => {
+            void handleCreateSession()
+          }}
         />
         <div className='sidebar-new-chat'>
           <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement="right">

@@ -89,7 +89,10 @@
   &.collapsed {
     border-right-width: 0 !important;
     .sidebar-collapse-btn {
-      margin-right: -55px;
+      margin-left: 20px;
+    }
+    .sidebar-new-chat-btn {
+      margin-right: -112px;
     }
   }
 }

@@ -15,6 +15,8 @@ interface SidebarHeaderProps {
   totalCount: number
   onSelectAll: (selected: boolean) => void
   onBatchArchive: () => void
+  isCreatingSession: boolean
+  onCreateSession: () => void
 }
 
 export function SidebarHeader({
@@ -27,7 +29,9 @@ export function SidebarHeader({
   selectedCount,
   totalCount,
   onSelectAll,
-  onBatchArchive
+  onBatchArchive,
+  isCreatingSession,
+  onCreateSession
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
@@ -104,6 +108,20 @@ export function SidebarHeader({
             </span>
           </Button>
         </Tooltip>
+        {isCollapsed && (
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement="right">
+            <Button
+              className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+              type='text'
+              disabled={!!isCreatingSession}
+              onClick={onCreateSession}
+            >
+              <span className={`material-symbols-outlined ${isCreatingSession ? 'filled' : ''}`}>
+                {isCreatingSession ? 'chat_bubble' : 'send'}
+              </span>
+            </Button>
+          </Tooltip>
+        )}
       </div>
     </div>
   )
