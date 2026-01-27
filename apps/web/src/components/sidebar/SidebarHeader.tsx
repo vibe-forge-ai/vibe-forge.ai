@@ -104,7 +104,7 @@ export function SidebarHeader({
             onClick={onToggleCollapse}
           >
             <span className='material-symbols-rounded'>
-              {isCollapsed ? 'menu' : 'menu_open'}
+              {isCollapsed ? 'dock_to_right' : 'left_panel_close'}
             </span>
           </Button>
         </Tooltip>
