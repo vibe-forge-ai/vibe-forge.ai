@@ -45,7 +45,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
       <div className='current-todo-container empty'>
         <div className='todo-progress-bar empty'>
           <div className='progress-info'>
-            <span className='material-symbols-outlined'>assignment_late</span>
+            <span className='material-symbols-rounded'>assignment_late</span>
             <span className='text'>{t('chat.todo.noTasks')}</span>
           </div>
         </div>
@@ -57,7 +57,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
     <div className={`current-todo-container ${isExpanded ? 'expanded' : ''}`}>
       <div className='todo-progress-bar' onClick={() => setIsExpanded(!isExpanded)}>
         <div className='progress-info'>
-          <span className='material-symbols-outlined'>assignment</span>
+          <span className='material-symbols-rounded'>assignment</span>
           <span className='text'>{t('chat.todo.progress', { completed: completedCount, total: totalCount })}</span>
         </div>
         <div className='progress-track'>
@@ -67,7 +67,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
           />
         </div>
         <button className='expand-btn'>
-          <span className='material-symbols-outlined'>
+          <span className='material-symbols-rounded'>
             {isExpanded ? 'expand_more' : 'expand_less'}
           </span>
         </button>
@@ -81,7 +81,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
                 key={todo.id || idx}
                 className={`todo-item-vertical status-${todo.status}`}
               >
-                <span className='material-symbols-outlined icon'>
+                <span className='material-symbols-rounded icon'>
                   {todo.status === 'completed'
                     ? 'check_circle'
                     : todo.status === 'in_progress'

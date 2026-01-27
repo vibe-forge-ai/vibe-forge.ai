@@ -19,7 +19,7 @@ export function DefaultTool({
       <ToolCallBox
         header={
           <>
-            <span className='material-symbols-outlined' style={{ fontSize: 16 }}>build</span>
+            <span className='material-symbols-rounded' style={{ fontSize: 16 }}>build</span>
             <span>{item.name}</span>
             <span style={{ color: 'var(--sub-text-color)', fontSize: 11, fontWeight: 400 }}>
               {t('chat.tools.call')}
@@ -41,7 +41,7 @@ export function DefaultTool({
           isError={resultItem.is_error}
           header={
             <>
-              <span className='material-symbols-outlined' style={{ fontSize: 16 }}>
+              <span className='material-symbols-rounded' style={{ fontSize: 16 }}>
                 {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
               <span>{t('chat.result')}</span>

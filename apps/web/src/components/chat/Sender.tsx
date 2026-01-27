@@ -378,28 +378,28 @@ export function Sender({
             <Tooltip title='快捷指令'>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
-                  <span className='material-symbols-outlined'>terminal</span>
+                  <span className='material-symbols-rounded'>terminal</span>
                 </div>
               </span>
             </Tooltip>
             <Tooltip title='提及代理'>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
-                  <span className='material-symbols-outlined'>smart_toy</span>
+                  <span className='material-symbols-rounded'>smart_toy</span>
                 </div>
               </span>
             </Tooltip>
             <Tooltip title='注入上下文'>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
-                  <span className='material-symbols-outlined'>description</span>
+                  <span className='material-symbols-rounded'>description</span>
                 </div>
               </span>
             </Tooltip>
             <Tooltip title='上传图片'>
               <span>
                 <div className='toolbar-btn' onClick={() => void message.info('图片上传功能尚不支持')}>
-                  <span className='material-symbols-outlined'>image</span>
+                  <span className='material-symbols-rounded'>image</span>
                 </div>
               </span>
             </Tooltip>
@@ -410,9 +410,9 @@ export function Sender({
                   className={`info-item ${showToolsList ? 'active' : ''}`}
                   onClick={() => setShowToolsList(!showToolsList)}
                 >
-                  <span className='material-symbols-outlined'>build</span>
+                  <span className='material-symbols-rounded'>build</span>
                   <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
-                  <span className='material-symbols-outlined arrow-icon'>keyboard_arrow_up</span>
+                  <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
                 </div>
 
                 {showToolsList && (
@@ -422,7 +422,7 @@ export function Sender({
                       <div className='tools-list'>
                         {sessionInfo.tools.map(tool => (
                           <div key={tool} className='tool-item'>
-                            <span className='material-symbols-outlined'>check_circle</span>
+                            <span className='material-symbols-rounded'>check_circle</span>
                             <span className='tool-name'>{tool}</span>
                           </div>
                         ))}
@@ -438,11 +438,11 @@ export function Sender({
             <Tooltip title='切换模型'>
               <span>
                 <div className='toolbar-btn model-switcher' onClick={() => void message.info('模型切换功能尚不支持')}>
-                  <span className='material-symbols-outlined'>variable_insert</span>
+                  <span className='material-symbols-rounded'>variable_insert</span>
                   <span className='model-name'>
                     {(sessionInfo?.type === 'init' ? sessionInfo.model : null) ?? 'GPT-4o'}
                   </span>
-                  <span className='material-symbols-outlined arrow'>keyboard_arrow_down</span>
+                  <span className='material-symbols-rounded arrow'>keyboard_arrow_down</span>
                 </div>
               </span>
             </Tooltip>
@@ -451,7 +451,7 @@ export function Sender({
               className={`chat-send-btn ${input.trim() !== '' ? 'active' : ''} ${isThinking ? 'thinking' : ''}`}
               onClick={isThinking ? onInterrupt : handleSend}
             >
-              <span className='material-symbols-outlined'>
+              <span className='material-symbols-rounded'>
                 {isThinking ? 'stop_circle' : 'send'}
               </span>
             </div>

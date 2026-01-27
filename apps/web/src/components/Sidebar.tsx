@@ -239,7 +239,7 @@ export function Sidebar({
               }}
             >
               <span className='btn-content'>
-                <span className={`material-symbols-outlined ${isCreatingSession ? 'filled' : ''}`}>
+                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
                   {isCreatingSession ? 'chat_bubble' : 'send'}
                 </span>
                 <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>

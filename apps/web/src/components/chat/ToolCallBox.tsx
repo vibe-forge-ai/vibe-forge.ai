@@ -40,7 +40,7 @@ export function ToolCallBox({
           {header}
         </div>
         {collapsible && (
-          <span className='material-symbols-outlined expand-icon'>
+          <span className='material-symbols-rounded expand-icon'>
             {isExpanded ? 'expand_less' : 'expand_more'}
           </span>
         )}

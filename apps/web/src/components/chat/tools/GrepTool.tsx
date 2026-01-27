@@ -55,7 +55,7 @@ export function GrepTool({
        <ToolCallBox
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-outlined'>find_in_page</span>
+            <span className='material-symbols-rounded'>find_in_page</span>
             <span className='command-name'>Grep</span>
             <span className='pattern'>{pattern}</span>
             {fileCount !== null && (

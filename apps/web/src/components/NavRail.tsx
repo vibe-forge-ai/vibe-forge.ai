@@ -30,7 +30,7 @@ export function NavRail({
       label: '简体中文',
       icon: i18n.language.startsWith('zh')
         ? (
-          <span className='material-symbols-outlined nav-menu-icon active'>check</span>
+          <span className='material-symbols-rounded nav-menu-icon active'>check</span>
         )
         : <div className='nav-menu-icon-placeholder' />,
       onClick: () => {
@@ -42,7 +42,7 @@ export function NavRail({
       label: 'English',
       icon: i18n.language.startsWith('en')
         ? (
-          <span className='material-symbols-outlined nav-menu-icon active'>check</span>
+          <span className='material-symbols-rounded nav-menu-icon active'>check</span>
         )
         : <div className='nav-menu-icon-placeholder' />,
       onClick: () => {
@@ -56,8 +56,8 @@ export function NavRail({
       key: 'light',
       label: t('common.themeLight'),
       icon: themeMode === 'light'
-        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
-        : <span className='material-symbols-outlined nav-menu-icon'>light_mode</span>,
+        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
+        : <span className='material-symbols-rounded nav-menu-icon'>light_mode</span>,
       onClick: () => {
         setThemeMode('light')
         localStorage.setItem('theme', 'light')
@@ -67,8 +67,8 @@ export function NavRail({
       key: 'dark',
       label: t('common.themeDark'),
       icon: themeMode === 'dark'
-        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
-        : <span className='material-symbols-outlined nav-menu-icon'>dark_mode</span>,
+        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
+        : <span className='material-symbols-rounded nav-menu-icon'>dark_mode</span>,
       onClick: () => {
         setThemeMode('dark')
         localStorage.setItem('theme', 'dark')
@@ -78,8 +78,8 @@ export function NavRail({
       key: 'system',
       label: t('common.themeSystem'),
       icon: themeMode === 'system'
-        ? <span className='material-symbols-outlined nav-menu-icon active'>check</span>
-        : <span className='material-symbols-outlined nav-menu-icon'>desktop_windows</span>,
+        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
+        : <span className='material-symbols-rounded nav-menu-icon'>desktop_windows</span>,
       onClick: () => {
         setThemeMode('system')
         localStorage.setItem('theme', 'system')
@@ -121,7 +121,7 @@ export function NavRail({
                 type='text'
                 className={`nav-item ${item.active ? 'active' : ''}`}
                 onClick={() => void navigate(item.path)}
-                icon={<span className='material-symbols-outlined'>{item.icon}</span>}
+                icon={<span className='material-symbols-rounded'>{item.icon}</span>}
               />
             </span>
           </Tooltip>
@@ -141,7 +141,7 @@ export function NavRail({
                 type='text'
                 className='nav-item'
                 icon={
-                  <span className='material-symbols-outlined'>
+                  <span className='material-symbols-rounded'>
                     {themeMode === 'light' ? 'light_mode' : themeMode === 'dark' ? 'dark_mode' : 'desktop_windows'}
                   </span>
                 }
@@ -161,7 +161,7 @@ export function NavRail({
               <Button
                 type='text'
                 className='nav-item'
-                icon={<span className='material-symbols-outlined'>language</span>}
+                icon={<span className='material-symbols-rounded'>language</span>}
               />
             </Dropdown>
           </span>
@@ -171,7 +171,7 @@ export function NavRail({
             <Button
               type='text'
               className='nav-item'
-              icon={<span className='material-symbols-outlined'>settings</span>}
+              icon={<span className='material-symbols-rounded'>settings</span>}
             />
           </span>
         </Tooltip>

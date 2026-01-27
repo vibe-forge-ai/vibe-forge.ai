@@ -179,7 +179,7 @@
       }
 
       &.starred {
-        .material-symbols-outlined {
+        .material-symbols-rounded {
           color: #f59e0b; // Amber for starred
           font-variation-settings: 'FILL' 1; // Always filled for starred state
 
@@ -189,7 +189,7 @@
         }
       }
 
-      .material-symbols-outlined {
+      .material-symbols-rounded {
         font-size: 18px;
       }
     }

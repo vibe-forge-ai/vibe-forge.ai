@@ -100,7 +100,7 @@ export function ArchiveView() {
     <div style={{ padding: '24px', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Space size={12}>
-          <span className='material-symbols-outlined' style={{ fontSize: '28px', color: '#6b7280' }}>
+          <span className='material-symbols-rounded' style={{ fontSize: '28px', color: '#6b7280' }}>
             archive
           </span>
           <h2 style={{ margin: 0 }}>{t('common.archivedSessions')}</h2>
@@ -117,7 +117,7 @@ export function ArchiveView() {
                   <Button
                     icon={
                       <span
-                        className='material-symbols-outlined'
+                        className='material-symbols-rounded'
                         style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         close
@@ -142,7 +142,7 @@ export function ArchiveView() {
                     type='primary'
                     icon={
                       <span
-                        className='material-symbols-outlined'
+                        className='material-symbols-rounded'
                         style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         unarchive
@@ -174,7 +174,7 @@ export function ArchiveView() {
                       danger
                       icon={
                         <span
-                          className='material-symbols-outlined'
+                          className='material-symbols-rounded'
                           style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           delete_sweep
@@ -199,7 +199,7 @@ export function ArchiveView() {
                 <Button
                   icon={
                     <span
-                      className='material-symbols-outlined'
+                      className='material-symbols-rounded'
                       style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       checklist
@@ -244,7 +244,7 @@ export function ArchiveView() {
         )}
         <Input
           prefix={
-            <span className='material-symbols-outlined' style={{ fontSize: '18px', color: '#9ca3af' }}>search</span>
+            <span className='material-symbols-rounded' style={{ fontSize: '18px', color: '#9ca3af' }}>search</span>
           }
           placeholder={t('common.search')}
           value={searchQuery}
@@ -296,7 +296,7 @@ export function ArchiveView() {
                       </div>
                     )}
                     <span
-                      className='material-symbols-outlined'
+                      className='material-symbols-rounded'
                       style={{ fontSize: '20px', color: '#9ca3af', flexShrink: 0 }}
                     >
                       chat_bubble
@@ -344,7 +344,7 @@ export function ArchiveView() {
                               padding: 0
                             }}
                             icon={
-                              <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>unarchive</span>
+                              <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>unarchive</span>
                             }
                             onClick={(e) => {
                               e.stopPropagation()
@@ -372,7 +372,7 @@ export function ArchiveView() {
                               padding: 0
                             }}
                             icon={
-                              <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>delete</span>
+                              <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>delete</span>
                             }
                             onClick={(e) => e.stopPropagation()}
                           />

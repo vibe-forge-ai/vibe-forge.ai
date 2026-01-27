@@ -36,7 +36,7 @@ export function BashTool({
         collapsible={false}
         header={
           <div className='bash-header'>
-            <span className='material-symbols-outlined status-icon'>terminal</span>
+            <span className='material-symbols-rounded status-icon'>terminal</span>
             <span className='bash-title'>{t('chat.tools.bash')}</span>
           </div>
         }
@@ -62,7 +62,7 @@ export function BashTool({
           isError={resultItem.is_error}
           header={
             <div className='result-header'>
-              <span className='material-symbols-outlined status-icon'>
+              <span className='material-symbols-rounded status-icon'>
                 {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
               <span className='result-title'>{t('chat.result')}</span>

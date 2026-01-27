@@ -108,7 +108,7 @@ export function SessionItem({
                     }}
                     icon={
                       <span
-                        className={`material-symbols-outlined ${session.isStarred ? 'filled' : ''}`}
+                        className={`material-symbols-rounded ${session.isStarred ? 'filled' : ''}`}
                       >
                         star
                       </span>
@@ -124,7 +124,7 @@ export function SessionItem({
                       e.stopPropagation()
                       void onArchive(session.id)
                     }}
-                    icon={<span className='material-symbols-outlined'>archive</span>}
+                    icon={<span className='material-symbols-rounded'>archive</span>}
                   />
                 </Tooltip>
               </div>

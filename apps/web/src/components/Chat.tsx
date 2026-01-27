@@ -354,7 +354,7 @@ export function Chat({
 
         {showScrollBottom && (
           <div className='scroll-bottom-btn' onClick={() => scrollToBottom()}>
-            <span className='material-symbols-outlined'>arrow_downward</span>
+            <span className='material-symbols-rounded'>arrow_downward</span>
           </div>
         )}
       </div>

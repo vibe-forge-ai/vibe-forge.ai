@@ -47,7 +47,7 @@
       text-shadow: 0 0 0.5px currentColor;
     }
 
-    .material-symbols-outlined {
+    .material-symbols-rounded {
       font-size: 18px;
       color: var(--sub-text-color);
 
@@ -74,7 +74,7 @@
 
     &.error {
       color: #dc2626;
-      .material-symbols-outlined {
+      .material-symbols-rounded {
         color: #dc2626;
       }
     }
@@ -83,7 +83,7 @@
       opacity: 0.8;
     }
 
-    .material-symbols-outlined {
+    .material-symbols-rounded {
       font-size: 18px;
       color: #059669;
     }

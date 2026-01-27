@@ -55,10 +55,10 @@ export function ToolGroup({
           onClick={() => setExpanded(!expanded)}
         >
           <div className='header-left'>
-            <span className='material-symbols-outlined'>dataset</span>
+            <span className='material-symbols-rounded'>dataset</span>
             <span>{t('chat.usedTools', { count: items.length })}</span>
           </div>
-          <span className='material-symbols-outlined expand-icon'>
+          <span className='material-symbols-rounded expand-icon'>
             {expanded ? 'expand_less' : 'expand_more'}
           </span>
         </div>

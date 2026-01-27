@@ -51,7 +51,7 @@ export function WriteTool({
         defaultExpanded={false}
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-outlined'>edit_note</span>
+            <span className='material-symbols-rounded'>edit_note</span>
             <span className='file-name'>{fileName}</span>
             {(dirPath != null && dirPath !== '') && <span className='file-path'>{dirPath}</span>}
           </div>
@@ -76,7 +76,7 @@ export function WriteTool({
           isError={resultItem.is_error}
           header={
             <div className={`write-result-status ${resultItem.is_error ? 'error' : 'success'}`}>
-              <span className='material-symbols-outlined status-icon'>
+              <span className='material-symbols-rounded status-icon'>
                 {resultItem.is_error === true ? 'error' : 'check_circle'}
               </span>
               <span className='status-text'>

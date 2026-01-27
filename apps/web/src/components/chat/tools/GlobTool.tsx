@@ -53,7 +53,7 @@ export function GlobTool({
        <ToolCallBox
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-outlined'>search</span>
+            <span className='material-symbols-rounded'>search</span>
             <span className='command-name'>Glob</span>
             <span className='pattern'>{pattern}</span>
             {fileCount !== null && (

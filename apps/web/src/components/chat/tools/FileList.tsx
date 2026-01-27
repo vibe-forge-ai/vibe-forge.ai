@@ -172,7 +172,7 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
                 {hasDirectories && (
                     <>
                         {node.isDir && (
-                            <span className="material-symbols-outlined toggle-icon">
+                            <span className="material-symbols-rounded toggle-icon">
                                 {isCollapsed ? 'arrow_right' : 'arrow_drop_down'}
                             </span>
                         )}
@@ -180,7 +180,7 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
                     </>
                 )}
                 
-                <span className={`material-symbols-outlined file-icon ${icon.className}`}>
+                <span className={`material-symbols-rounded file-icon ${icon.className}`}>
                     {icon.name}
                 </span>
                 <span className="file-path">{node.name}</span>

@@ -79,7 +79,7 @@ export function ChatHeader({
     {
       key: 'star',
       label: isStarred ? t('common.unstar') : t('common.star'),
-      icon: <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>
+      icon: <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>
         {isStarred ? 'star_half' : 'star'}
       </span>,
       onClick: () => {
@@ -89,7 +89,7 @@ export function ChatHeader({
     {
       key: 'archive',
       label: isArchived ? t('common.restore') : t('common.archive'),
-      icon: <span className='material-symbols-outlined' style={{ fontSize: '18px' }}>
+      icon: <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>
         {isArchived ? 'unarchive' : 'archive'}
       </span>,
       onClick: () => {
@@ -131,7 +131,7 @@ export function ChatHeader({
         <Tooltip title={t('common.settings')}>
           <Button
             type='text'
-            icon={<span className='material-symbols-outlined'>settings</span>}
+            icon={<span className='material-symbols-rounded'>settings</span>}
             onClick={() => setIsSettingsOpen(true)}
           />
         </Tooltip>
@@ -139,7 +139,7 @@ export function ChatHeader({
         <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
           <Button
             type='text'
-            icon={<span className='material-symbols-outlined'>more_vert</span>}
+            icon={<span className='material-symbols-rounded'>more_vert</span>}
           />
         </Dropdown>
       </div>
@@ -243,7 +243,7 @@ function SessionSettings({
     <div className='session-settings-drawer'>
       <div className='settings-section'>
         <div className='section-header'>
-          <span className='material-symbols-outlined'>edit_note</span>
+          <span className='material-symbols-rounded'>edit_note</span>
           {t('chat.title')}
         </div>
         <Input
@@ -264,7 +264,7 @@ function SessionSettings({
 
       <div className='settings-section'>
         <div className='section-header'>
-          <span className='material-symbols-outlined'>sell</span>
+          <span className='material-symbols-rounded'>sell</span>
           {t('chat.tags')}
         </div>
         <div className='tag-input-container'>
@@ -283,7 +283,7 @@ function SessionSettings({
             type='primary'
             size='large'
             className='add-tag-btn'
-            icon={<span className='material-symbols-outlined'>add</span>}
+            icon={<span className='material-symbols-rounded'>add</span>}
             onClick={() => {
               void handleAddTag()
             }}
@@ -312,7 +312,7 @@ function SessionSettings({
       <div className='settings-footer'>
         <div className='settings-section actions-section'>
           <div className='section-header'>
-            <span className='material-symbols-outlined'>bolt</span>
+            <span className='material-symbols-rounded'>bolt</span>
             {t('common.actions')}
           </div>
           <div className='actions-grid'>
@@ -325,7 +325,7 @@ function SessionSettings({
                 })()
               }}
             >
-              <span className='material-symbols-outlined'>
+              <span className='material-symbols-rounded'>
                 {isStarred ? 'star_half' : 'star'}
               </span>
               <span>{isStarred ? t('common.unstar') : t('common.star')}</span>
@@ -341,7 +341,7 @@ function SessionSettings({
                 })()
               }}
             >
-              <span className='material-symbols-outlined'>
+              <span className='material-symbols-rounded'>
                 {isArchived ? 'unarchive' : 'archive'}
               </span>
               <span>{isArchived ? t('common.restore') : t('common.archive')}</span>
@@ -355,7 +355,7 @@ function SessionSettings({
             type='text'
             block
             size='large'
-            icon={<span className='material-symbols-outlined'>delete</span>}
+            icon={<span className='material-symbols-rounded'>delete</span>}
             onClick={handleDelete}
             className='delete-btn'
           >

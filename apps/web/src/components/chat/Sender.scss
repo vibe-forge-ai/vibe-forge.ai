@@ -68,7 +68,7 @@
         cursor: pointer;
         transition: all .2s;
 
-        .material-symbols-outlined {
+        .material-symbols-rounded {
           font-size: 18px;
         }
 
@@ -134,7 +134,7 @@
             color: var(--text-color);
             transition: all .2s;
 
-            .material-symbols-outlined {
+            .material-symbols-rounded {
               font-size: 18px;
               color: #3b82f6;
             }
@@ -175,7 +175,7 @@
       color: #3b82f6;
     }
 
-    .material-symbols-outlined {
+    .material-symbols-rounded {
       font-size: 20px;
       line-height: 1;
       display: flex;
@@ -243,7 +243,7 @@ html.dark {
   color: #9ca3af;
   flex-shrink: 0;
 
-  .material-symbols-outlined {
+  .material-symbols-rounded {
     display: inline-flex;
     align-items: center;
     justify-content: center;

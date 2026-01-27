@@ -137,7 +137,7 @@ export function CodeBlock({
               void handleCopy()
             }}
           >
-            <span className='material-symbols-outlined'>
+            <span className='material-symbols-rounded'>
               {copied ? 'check' : 'content_copy'}
             </span>
           </button>
@@ -162,7 +162,7 @@ export function CodeBlock({
             void handleCopy()
           }}
         >
-          <span className='material-symbols-outlined'>
+          <span className='material-symbols-rounded'>
             {copied ? 'check' : 'content_copy'}
           </span>
         </button>

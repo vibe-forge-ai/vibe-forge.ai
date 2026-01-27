@@ -62,7 +62,7 @@ export function ReadTool({
         defaultExpanded={false}
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-outlined'>visibility</span>
+            <span className='material-symbols-rounded'>visibility</span>
             <span className='file-name'>{fileName}</span>
             {(dirPath != null && dirPath !== '') && <span className='file-path'>{dirPath}</span>}
           </div>

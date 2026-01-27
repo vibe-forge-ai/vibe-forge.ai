@@ -55,7 +55,7 @@ export function LsTool({
       <ToolCallBox
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-outlined'>folder_open</span>
+            <span className='material-symbols-rounded'>folder_open</span>
             <span className='command-name'>LS</span>
             <span className='path'>{path}</span>
             {fileCount !== null && (

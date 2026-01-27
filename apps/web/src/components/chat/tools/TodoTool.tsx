@@ -27,7 +27,7 @@ export function TodoTool({
         defaultExpanded={true}
         header={
           <div className='todo-header'>
-            <span className='material-symbols-outlined status-icon'>task_alt</span>
+            <span className='material-symbols-rounded status-icon'>task_alt</span>
             <span className='todo-title'>{t('chat.tools.todo')}</span>
           </div>
         }
@@ -38,7 +38,7 @@ export function TodoTool({
                 key={idx}
                 className={`todo-item ${todo.status}`}
               >
-                <span className='material-symbols-outlined status-icon'>
+                <span className='material-symbols-rounded status-icon'>
                   {todo.status === 'completed'
                     ? 'check_circle'
                     : todo.status === 'in_progress'

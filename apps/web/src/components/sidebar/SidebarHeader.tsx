@@ -56,7 +56,7 @@ export function SidebarHeader({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           prefix={
-            <span className='material-symbols-outlined search-icon'>
+            <span className='material-symbols-rounded search-icon'>
               search
             </span>
           }
@@ -69,7 +69,7 @@ export function SidebarHeader({
               type={isBatchMode ? 'primary' : 'text'}
               onClick={onToggleBatchMode}
             >
-              <span className='material-symbols-outlined'>
+              <span className='material-symbols-rounded'>
                 {isBatchMode ? 'close' : 'checklist'}
               </span>
             </Button>
@@ -89,7 +89,7 @@ export function SidebarHeader({
                   type='text'
                   disabled={selectedCount === 0}
                 >
-                  <span className='material-symbols-outlined'>
+                  <span className='material-symbols-rounded'>
                     archive
                   </span>
                 </Button>
@@ -103,7 +103,7 @@ export function SidebarHeader({
             type='text'
             onClick={onToggleCollapse}
           >
-            <span className='material-symbols-outlined'>
+            <span className='material-symbols-rounded'>
               {isCollapsed ? 'menu' : 'menu_open'}
             </span>
           </Button>
@@ -116,7 +116,7 @@ export function SidebarHeader({
               disabled={!!isCreatingSession}
               onClick={onCreateSession}
             >
-              <span className={`material-symbols-outlined ${isCreatingSession ? 'filled' : ''}`}>
+              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
                 {isCreatingSession ? 'chat_bubble' : 'send'}
               </span>
             </Button>
