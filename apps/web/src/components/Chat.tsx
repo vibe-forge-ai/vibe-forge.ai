@@ -7,8 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import { connectionManager } from '../connectionManager'
 import { createSession, getSessionMessages } from '../api'
-import { createSocket } from '../ws'
 
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
@@ -32,7 +32,6 @@ export function Chat({
   const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(null)
   const [isThinking, setIsThinking] = useState(false)
   const [isReady, setIsReady] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const wasAtBottom = useRef<boolean>(true)
@@ -152,10 +151,11 @@ export function Chat({
 
     void fetchHistory()
 
+    let cleanup: (() => void) | undefined
     const timer = setTimeout(() => {
       if (isDisposed) return
 
-      const ws = createSocket({
+      cleanup = connectionManager.connect(session.id, {
         onOpen() {
           // Connected
         },
@@ -244,18 +244,13 @@ export function Chat({
           if (isDisposed) return
           setIsThinking(false)
         }
-      }, { sessionId: session.id })
-
-      wsRef.current = ws
+      })
     }, 100)
 
     return () => {
       isDisposed = true
       clearTimeout(timer)
-      if (wsRef.current != null) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
+      cleanup?.()
     }
   }, [session?.id, mutate])
 
@@ -285,17 +280,17 @@ export function Chat({
     }
 
     setIsThinking(true)
-    wsRef.current?.send(JSON.stringify({
+    connectionManager.send(session.id, {
       type: 'user_message',
       text: text.trim()
-    }))
+    })
   }
 
   const interrupt = () => {
-    if (wsRef.current == null || isThinking === false) return
-    wsRef.current.send(JSON.stringify({
+    if (!session?.id || isThinking === false) return
+    connectionManager.send(session.id, {
       type: 'interrupt'
-    }))
+    })
     setIsThinking(false)
   }
 
@@ -305,12 +300,12 @@ export function Chat({
   }
 
   const handleInteractionResponse = (id: string, data: string | string[]) => {
-    if (wsRef.current == null) return
-    wsRef.current.send(JSON.stringify({
+    if (!session?.id) return
+    connectionManager.send(session.id, {
       type: 'interaction_response',
       id,
       data
-    }))
+    })
     setInteractionRequest(null)
   }
 
