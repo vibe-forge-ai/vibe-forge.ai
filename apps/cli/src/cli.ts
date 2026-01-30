@@ -4,13 +4,13 @@ import process from 'node:process'
 
 import { program } from 'commander'
 
-import { run } from '@vibe-forge/core/controllers/task'
+import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { getCliVersion } from '#~/utils'
 
-import { registerMcpCommand } from './commands/mcp'
 import { registerClearCommand } from './commands/clear'
+import { registerMcpCommand } from './commands/mcp'
 
 interface RunOptions {
   print: boolean
@@ -19,6 +19,8 @@ interface RunOptions {
   systemPrompt?: string
   sessionId?: string
   resume?: boolean
+  spec?: string
+  entity?: string
 }
 
 program
@@ -34,34 +36,54 @@ program
   .option('--system-prompt <prompt>', 'System prompt')
   .option('--session-id <id>', 'Session ID')
   .option('--resume', 'Resume existing session', false)
+  .option('--spec <spec>', 'Load spec definition')
+  .option('--entity <entity>', 'Load entity definition')
   .action(async (opts: RunOptions) => {
+    if (opts.spec && opts.entity) {
+      console.error('Error: --spec and --entity are mutually exclusive.')
+      process.exit(1)
+    }
+
     const taskId = uuid()
     const sessionId = opts.sessionId ?? uuid()
     const type = opts.resume ? 'resume' : 'create'
+
+    const resolvedConfig = await resolveTaskConfig(
+      opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined),
+      opts.spec || opts.entity,
+      process.cwd()
+    )
+
+    // Merge system prompt: CLI arg > Resolved Config
+    const finalSystemPrompt = opts.systemPrompt
+      ? (resolvedConfig.systemPrompt ? `${resolvedConfig.systemPrompt}\n\n${opts.systemPrompt}` : opts.systemPrompt)
+      : resolvedConfig.systemPrompt
 
     await new Promise<void>((resolve, reject) => {
       run({
         taskId,
         taskAdapter: opts.adapter,
         cwd: process.cwd(),
-        env: process.env,
+        env: process.env
       }, {
         type,
         runtime: 'cli',
         sessionId,
         model: opts.model,
-        systemPrompt: opts.systemPrompt,
+        systemPrompt: finalSystemPrompt,
         mode: opts.print ? 'stream' : 'direct',
+        tools: resolvedConfig.tools,
+        mcpServers: resolvedConfig.mcpServers,
         onEvent: (event) => {
-           if (event.type === 'exit') {
-             resolve()
-             // Force exit to ensure we don't hang if there are lingering handles
-             process.exit(event.data.exitCode ?? 0)
-           }
-           
-           if (!opts.print) {
-             console.log(JSON.stringify(event))
-           }
+          if (event.type === 'exit') {
+            resolve()
+            // Force exit to ensure we don't hang if there are lingering handles
+            process.exit(event.data.exitCode ?? 0)
+          }
+
+          if (!opts.print) {
+            console.log(JSON.stringify(event))
+          }
         }
       }).catch(reject)
     })

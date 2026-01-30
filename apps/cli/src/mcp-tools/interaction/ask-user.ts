@@ -24,7 +24,9 @@ export default defineRegister(({ registerTool }) => {
       const sessionId = process.env.__VF_PROJECT_AI_SESSION_ID__
 
       if (!sessionId) {
-        throw new Error('Session ID not found in environment variables. This tool can only be used within a Vibe Forge session.')
+        throw new Error(
+          'Session ID not found in environment variables. This tool can only be used within a Vibe Forge session.'
+        )
       }
 
       const host = process.env.__VF_PROJECT_AI_SERVER_HOST__ ?? 'localhost'
@@ -59,4 +61,3 @@ export default defineRegister(({ registerTool }) => {
     }
   )
 })
-

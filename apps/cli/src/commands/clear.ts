@@ -19,32 +19,30 @@ export function registerClearCommand(program: Command) {
         fs.rm('.ai/.mock/.claude/projects', { force: true, recursive: true }),
         fs.rm('.ai/.mock/.claude-core-router/logs', {
           force: true,
-          recursive: true,
-        }),
+          recursive: true
+        })
       ])
 
       // Clean all logs directories using fast-glob patterns
       const logsPatterns = [
         '.ai/benchmarks/specs/**/logs',
         '.ai/benchmarks/entities/**/logs',
-        '.ai/benchmarks/cases/**/logs',
+        '.ai/benchmarks/cases/**/logs'
       ]
 
       // Find all logs directories
       const logsDirs = await fg(logsPatterns, {
         onlyDirectories: true,
-        deep: 10,
+        deep: 10
       })
 
       // Remove all found logs directories (exclude main .ai/logs which we handle separately)
       const logsDirsToRemove = logsDirs.filter(
-        (dir) => dir !== '.ai/logs' && !dir.startsWith('.ai/logs/'),
+        (dir) => dir !== '.ai/logs' && !dir.startsWith('.ai/logs/')
       )
 
       await Promise.all(
-        logsDirsToRemove.map((logsDir) =>
-          fs.rm(logsDir, { force: true, recursive: true }),
-        ),
+        logsDirsToRemove.map((logsDir) => fs.rm(logsDir, { force: true, recursive: true }))
       )
 
       // Recreate main directories
@@ -56,7 +54,7 @@ export function registerClearCommand(program: Command) {
       // create .gitkeep files
       await Promise.all([
         fs.writeFile('.ai/logs/.gitkeep', ''),
-        fs.writeFile('.ai/caches/.gitkeep', ''),
+        fs.writeFile('.ai/caches/.gitkeep', '')
       ])
       console.log('Clear logs and cache successfully')
     })

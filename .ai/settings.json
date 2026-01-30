@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "TmarAITools": {
+    "VibeForge": {
       "command": "${WORKSPACE_FOLDER}/node_modules/.bin/vf",
       "args": ["mcp"],
       "env": {
