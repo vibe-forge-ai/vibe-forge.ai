@@ -18,11 +18,11 @@ root.render(
         <SWRConfig
           value={{
             fetcher: async (path: string) => {
-              const serverHost = (import.meta.env.VITE_SERVER_HOST != null && import.meta.env.VITE_SERVER_HOST !== '')
-                ? import.meta.env.VITE_SERVER_HOST
+              const serverHost = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ != null && import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ !== '')
+                ? import.meta.env.__VF_PROJECT_AI_SERVER_HOST__
                 : window.location.hostname
-              const serverPort = (import.meta.env.VITE_SERVER_PORT != null && import.meta.env.VITE_SERVER_PORT !== '')
-                ? import.meta.env.VITE_SERVER_PORT
+              const serverPort = (import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ != null && import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ !== '')
+                ? import.meta.env.__VF_PROJECT_AI_SERVER_PORT__
                 : '8787'
               const baseUrl = `http://${serverHost}:${serverPort}`
               return fetch(`${baseUrl}${path}`).then(async (r) => r.json() as Promise<unknown>)

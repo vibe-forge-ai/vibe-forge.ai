@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process'
 
-import { defineAdapter, loadEnv } from '@vibe-forge/core'
-import { filterObject } from '@vibe-forge/core/utils/filter'
+import { defineAdapter } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterEvent, AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import type {
+  ClaudeCodeBaseEvent,
   ClaudeCodeContent,
   ClaudeCodeContentText,
   ClaudeCodeContentToolResult,
@@ -16,18 +16,18 @@ import type {
 
 declare module '@vibe-forge/core' {
   interface AdapterMap {
+    'claude-code': {
+      ccrOptions?: {
+        LOG?: boolean
+        PORT?: string
+        HOST?: string
+      }
+      apiTimeout?: number
+    }
   }
   interface Cache {
     'adapter.claude-code.mcp': Record<string, unknown>
     'adapter.claude-code.settings': Record<string, unknown>
-  }
-}
-
-const resolveSettings = (unresolvedSettings: Record<string, any>) => {
-  const { includeMcpServers, excludeMcpServers, ...rest } = unresolvedSettings
-  return {
-    ...rest,
-    plansDirectory: './.ai/works'
   }
 }
 
@@ -139,8 +139,9 @@ function handleIncomingEvent(data: ClaudeCodeIncomingEvent, onEvent: AdapterQuer
 }
 
 async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOptions) {
-  const { env, cwd, cache, settings } = ctx
+  const { env, cwd, cache, configs: [config, userConfig] } = ctx
   const {
+    description,
     sessionId,
     model,
     type,
@@ -150,11 +151,53 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     tools: inputToolsRule
   } = options
 
-  const serverEnv = loadEnv()
-
   // Logic for Settings and MCP
-  const { mcpServers, ...unresolvedSettings } = settings as any
-  unresolvedSettings.permissions = unresolvedSettings.permissions || {}
+  const settings = {
+    mcpServers: {
+      ...config?.mcpServers,
+      ...userConfig?.mcpServers
+    },
+    permissions: {
+      allow: [
+        ...(config?.permissions?.allow ?? []),
+        ...(userConfig?.permissions?.allow ?? [])
+      ],
+      deny: [
+        ...(config?.permissions?.deny ?? []),
+        ...(userConfig?.permissions?.deny ?? [])
+      ],
+      ask: [
+        ...(config?.permissions?.ask ?? []),
+        ...(userConfig?.permissions?.ask ?? [])
+      ]
+    },
+    defaultIncludeMcpServers: [
+      ...(config?.defaultIncludeMcpServers ?? []),
+      ...(userConfig?.defaultIncludeMcpServers ?? [])
+    ],
+    defaultExcludeMcpServers: [
+      ...(config?.defaultExcludeMcpServers ?? []),
+      ...(userConfig?.defaultExcludeMcpServers ?? [])
+    ],
+    plansDirectory: './.ai/works',
+    env: {
+      ...(config?.env ?? {}),
+      ...(userConfig?.env ?? {})
+    },
+    companyAnnouncements: [
+      ...(config?.companyAnnouncements ?? []),
+      ...(userConfig?.companyAnnouncements ?? [])
+    ],
+    enabledPlugins: {
+      ...(config?.enabledPlugins ?? {}),
+      ...(userConfig?.enabledPlugins ?? {})
+    },
+    extraKnownMarketplaces: {
+      ...(config?.extraKnownMarketplaces ?? {}),
+      ...(userConfig?.extraKnownMarketplaces ?? {})
+    }
+  }
+  const { mcpServers, ...unresolvedSettings } = settings
   unresolvedSettings.permissions.allow = [
     ...(unresolvedSettings.permissions.allow ?? []),
     ...(inputToolsRule?.include ?? [])
@@ -164,44 +207,49 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     ...(inputToolsRule?.exclude ?? [])
   ]
 
-  const resolvedSettings = resolveSettings(unresolvedSettings)
-
-  const includeMcpServers = [
-    ...(unresolvedSettings.includeMcpServers ?? []),
-    ...(inputMCPServersRule?.include ?? [])
-  ]
-  const excludeMcpServers = [
-    ...(unresolvedSettings.excludeMcpServers ?? []),
-    ...(inputMCPServersRule?.exclude ?? [])
-  ]
-
-  const filteredMcpServers = filterObject(mcpServers || {}, {
-    include: includeMcpServers,
-    exclude: excludeMcpServers
-  })
+  const includeMcpServers = inputMCPServersRule?.include ?? settings.defaultIncludeMcpServers
+  const excludeMcpServers = inputMCPServersRule?.exclude ?? settings.defaultExcludeMcpServers
+  if ((includeMcpServers?.length ?? 0) > 0) {
+    Object.keys(mcpServers).forEach((key) => {
+      if (!includeMcpServers?.includes(key)) {
+        delete mcpServers[key]
+      }
+    })
+  }
+  if ((excludeMcpServers?.length ?? 0) > 0) {
+    Object.keys(mcpServers).forEach((key) => {
+      if (excludeMcpServers?.includes(key)) {
+        delete mcpServers[key]
+      }
+    })
+  }
 
   const { cachePath: mcpCachePath } = await cache.set(
     'adapter.claude-code.mcp',
-    { mcpServers: filteredMcpServers }
+    { mcpServers }
   )
   const { cachePath: settingsCachePath } = await cache.set(
     'adapter.claude-code.settings',
-    resolvedSettings
+    settings
   )
 
   // Default ccr path if not provided in env
-  const ccrPath = env.CLAUDE_CODE_CLI_PATH || 'claude'
+  const {
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath = 'claude',
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__: cliArgs = ''
+  } = env
 
   // Common Arguments
   const args: string[] = [
-    ...(serverEnv.CLAUDE_CODE_CLI_ARGS?.split(/\s+/).filter(Boolean) as string[]),
+    ...(cliArgs?.split(/\s+/).filter(Boolean) as string[]),
+    description,
     '--mcp-config',
     mcpCachePath,
     '--settings',
     settingsCachePath,
     '--permission-mode',
     'bypassPermissions'
-  ]
+  ].filter((a) => typeof a === 'string')
 
   // Handle session type logic
   if (type === 'create') {
@@ -222,14 +270,14 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     }
   }
 
-  return { ccrPath, args, env, cwd, sessionId }
+  return { cliPath: cliPath!, args, env, cwd, sessionId }
 }
 
 export default defineAdapter({
   query: async (ctx, options) => {
     const { logger } = ctx
-    const { onEvent, mode = 'stream' } = options
-    const { ccrPath, args, env, cwd, sessionId } = await prepareClaudeExecution(ctx, options)
+    const { onEvent, description, mode = 'stream' } = options
+    const { cliPath, args, env, cwd, sessionId } = await prepareClaudeExecution(ctx, options)
 
     if (mode === 'stream') {
       // Append stream-specific args
@@ -237,16 +285,18 @@ export default defineAdapter({
         '--print',
         '--verbose',
         '--debug',
-        '--output-format', 'stream-json',
-        '--input-format', 'stream-json'
+        '--output-format',
+        'stream-json',
+        '--input-format',
+        'stream-json'
       )
 
       logger.info('Claude Code CLI command:', {
-        ccrPath,
+        cliPath,
         args,
-        mode,
+        mode
       })
-      const proc = spawn(ccrPath, args, {
+      const proc = spawn(cliPath, args, {
         env: { ...env, FORCE_COLOR: '1' },
         cwd,
         stdio: 'pipe'
@@ -287,17 +337,19 @@ export default defineAdapter({
         })
       })
 
-      return {
-        kill: () => proc.kill(),
-        emit: (event: AdapterEvent) => {
-          if (event.type === 'message') {
-            const claudeEvent: ClaudeCodeUserEvent = {
+      const emit = (event: AdapterEvent) => {
+        let outputEvent: ClaudeCodeBaseEvent | ClaudeCodeUserEvent = {
+          uuid: uuid(),
+          timestamp: new Date().toISOString(),
+          sessionId,
+          cwd
+        }
+        switch (event.type) {
+          case 'message': {
+            outputEvent = {
+              ...outputEvent,
               type: 'user',
-              uuid: uuid(),
               parentUuid: event.parentUuid ?? null,
-              timestamp: new Date().toISOString(),
-              sessionId,
-              cwd,
               message: {
                 id: `msg_${Date.now()}`,
                 type: 'message',
@@ -306,35 +358,49 @@ export default defineAdapter({
                 uuid: uuid()
               }
             }
-            const json = JSON.stringify(claudeEvent)
-            proc.stdin.write(`${json}\n`)
-          } else if (event.type === 'interrupt') {
-            const interruptEvent: ClaudeCodeUserEvent = {
+            break
+          }
+          case 'interrupt': {
+            outputEvent = {
+              ...outputEvent,
               type: 'user',
-              uuid: uuid(),
-              timestamp: new Date().toISOString(),
-              sessionId,
-              cwd,
               message: {
                 role: 'user',
                 content: [{ type: 'text', text: '[Request interrupted by user]' }]
               }
             }
-            const json = JSON.stringify(interruptEvent)
-            proc.stdin.write(`${json}\n`)
-          } else if (event.type === 'stop') {
-            proc.stdin.end()
+            break
           }
+          case 'stop': {
+            proc.stdin.end()
+            return
+          }
+          default:
+            logger.warn('Unknown event:', event)
+            break
         }
+        proc.stdin.write(`${JSON.stringify(outputEvent)}\n`)
+      }
+
+      description && emit({
+        type: 'message',
+        content: [
+          { type: 'text', text: description }
+        ]
+      })
+
+      return {
+        kill: () => proc.kill(),
+        emit
       }
     } else {
       logger.info('Claude Code CLI command:', {
-        ccrPath,
+        cliPath,
         args,
-        mode,
+        mode
       })
       // Direct mode
-      const proc = spawn(ccrPath, args, {
+      const proc = spawn(cliPath, args, {
         env: { ...env, FORCE_COLOR: '1' },
         cwd,
         stdio: 'inherit'

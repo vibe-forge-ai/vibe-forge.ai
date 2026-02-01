@@ -1,26 +1,43 @@
 import { env as processEnv } from 'node:process'
 
 export interface ServerEnv {
-  SERVER_PORT: number
-  WS_PATH: string
-  DATA_DIR: string
-  LOG_DIR: string
-  LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error'
-  CLAUDE_CODE_CLI_PATH?: string
-  CLAUDE_CODE_CLI_ARGS?: string
-  ALLOW_CORS: boolean
+  __VF_PROJECT_AI_SERVER_HOST__: string
+  __VF_PROJECT_AI_SERVER_PORT__: number
+  __VF_PROJECT_AI_SERVER_WS_PATH__: string
+  __VF_PROJECT_AI_SERVER_DATA_DIR__: string
+  __VF_PROJECT_AI_SERVER_LOG_DIR__: string
+  __VF_PROJECT_AI_SERVER_LOG_LEVEL__: 'debug' | 'info' | 'warn' | 'error'
+  __VF_PROJECT_AI_SERVER_ALLOW_CORS__: boolean
+  __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__?: string
+  __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__?: string
 }
 
 export function loadEnv(): ServerEnv {
-  const env = processEnv || {}
+  const {
+    __VF_PROJECT_AI_SERVER_HOST__ = 'localhost',
+    __VF_PROJECT_AI_SERVER_PORT__ = '8787',
+    __VF_PROJECT_AI_SERVER_WS_PATH__ = '/ws',
+    __VF_PROJECT_AI_SERVER_DATA_DIR__ = '.data',
+    __VF_PROJECT_AI_SERVER_LOG_DIR__ = '.logs',
+    __VF_PROJECT_AI_SERVER_LOG_LEVEL__ = 'info',
+    __VF_PROJECT_AI_SERVER_ALLOW_CORS__,
+
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__,
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__
+  } = processEnv || {}
   return {
-    SERVER_PORT: Number(env.SERVER_PORT ?? 8787),
-    WS_PATH: '/ws',
-    DATA_DIR: env.DATA_DIR ?? '.data',
-    LOG_DIR: env.LOG_DIR ?? '.logs',
-    LOG_LEVEL: (env.LOG_LEVEL as ServerEnv['LOG_LEVEL']) ?? 'info',
-    CLAUDE_CODE_CLI_PATH: env.CLAUDE_CODE_CLI_PATH,
-    CLAUDE_CODE_CLI_ARGS: env.CLAUDE_CODE_CLI_ARGS,
-    ALLOW_CORS: env.ALLOW_CORS != null ? env.ALLOW_CORS === 'true' : true
+    __VF_PROJECT_AI_SERVER_HOST__,
+    __VF_PROJECT_AI_SERVER_PORT__: Number(__VF_PROJECT_AI_SERVER_PORT__),
+    __VF_PROJECT_AI_SERVER_WS_PATH__,
+    __VF_PROJECT_AI_SERVER_DATA_DIR__,
+    __VF_PROJECT_AI_SERVER_LOG_DIR__,
+    __VF_PROJECT_AI_SERVER_LOG_LEVEL__:
+      __VF_PROJECT_AI_SERVER_LOG_LEVEL__ as ServerEnv['__VF_PROJECT_AI_SERVER_LOG_LEVEL__'],
+    __VF_PROJECT_AI_SERVER_ALLOW_CORS__: __VF_PROJECT_AI_SERVER_ALLOW_CORS__ != null
+      ? __VF_PROJECT_AI_SERVER_ALLOW_CORS__ === 'true'
+      : true,
+
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__,
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__
   }
 }

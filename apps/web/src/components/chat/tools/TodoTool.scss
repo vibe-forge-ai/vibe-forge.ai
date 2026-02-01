@@ -15,21 +15,28 @@
   }
 
   .tool-content {
-    padding: 8px;
+    padding: 4px 0;
   }
 
   .todo-item {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
+    padding: 6px 12px;
+    border-radius: 0;
+    transition: background-color .2s;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, .04);
+    }
 
     &:last-child {
       margin-bottom: 0;
     }
 
     &.completed {
-      opacity: 0.6;
+      opacity: .6;
 
       .todo-text {
         text-decoration: line-through;
@@ -52,10 +59,7 @@
       }
     }
 
-    .status-icon {
-      font-size: 16px;
-      margin-top: 2px;
-    }
+    // .status-icon styles removed to use default size
 
     .todo-info {
       display: flex;

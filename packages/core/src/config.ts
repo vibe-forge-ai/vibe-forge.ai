@@ -53,6 +53,82 @@ export interface Config {
    * 默认模型名称
    */
   defaultModel?: string
+  /**
+   * MCP 服务器配置
+   */
+  mcpServers?: Record<
+    string,
+    & {
+      /**
+       * 是否启用
+       */
+      enabled?: boolean
+      /**
+       * 环境变量配置
+       */
+      env?: Record<string, string>
+    }
+    & (
+      | {
+        type?: undefined
+        command: string
+        args: string[]
+      }
+      | {
+        type: 'sse'
+        url: string
+        headers: Record<string, string>
+      }
+      | {
+        type: 'http'
+        url: string
+        headers?: Record<string, string>
+      }
+    )
+  >
+  /**
+   * 默认启用的 MCP 服务器列表
+   */
+  defaultIncludeMcpServers?: string[]
+  /**
+   * 默认禁用的 MCP 服务器列表
+   */
+  defaultExcludeMcpServers?: string[]
+  /**
+   * 权限配置
+   */
+  permissions?: {
+    allow?: string[]
+    deny?: string[]
+    ask?: string[]
+  }
+  /**
+   * 环境变量配置
+   */
+  env?: Record<string, string>
+  /**
+   * 公告配置
+   */
+  companyAnnouncements?: string[]
+  enabledPlugins?: Record<string, boolean>
+  extraKnownMarketplaces?: Record<
+    string,
+    {
+      source:
+        | {
+          source: 'github'
+          repo: string
+        }
+        | {
+          source: 'git'
+          url: string
+        }
+        | {
+          source: 'directory'
+          path: string
+        }
+    }
+  >
 }
 
 export const defineConfig = (config: Config) => config
@@ -72,7 +148,7 @@ const loadJSConfig = async (paths: string[]) => {
   }
 }
 
-const loadJSONConfig = async (paths: string[], jsonVariables: Record<string, string | undefined>) => {
+const loadJSONConfig = async (paths: string[], jsonVariables: Record<string, string | null | undefined>) => {
   for (const path of paths) {
     try {
       const configPath = resolve(process.cwd(), path)
@@ -90,7 +166,7 @@ const loadJSONConfig = async (paths: string[], jsonVariables: Record<string, str
 }
 
 export const loadConfig = async (options: {
-  jsonVariables?: Record<string, string | undefined>
+  jsonVariables?: Record<string, string | null | undefined>
 }) =>
   [
     await loadJSConfig([

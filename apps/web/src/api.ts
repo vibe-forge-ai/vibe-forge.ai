@@ -1,7 +1,7 @@
 import type { Session } from '@vibe-forge/core'
 
-const SERVER_HOST = (import.meta.env.VITE_SERVER_HOST as string | undefined) ?? window.location.hostname
-const SERVER_PORT = (import.meta.env.VITE_SERVER_PORT as string | undefined) ?? '8787'
+const SERVER_HOST = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ as string | undefined) ?? window.location.hostname
+const SERVER_PORT = (import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ as string | undefined) ?? '8787'
 const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`
 
 export async function listProjects(): Promise<any> {
@@ -66,7 +66,10 @@ export async function updateSessionTitle(id: string, title: string): Promise<{ s
   return res.json() as Promise<{ session: Session }>
 }
 
-export async function getSessionMessages(id: string, limit?: number): Promise<{ messages: any[]; session?: Session; interaction?: { id: string; payload: any } }> {
+export async function getSessionMessages(
+  id: string,
+  limit?: number
+): Promise<{ messages: any[]; session?: Session; interaction?: { id: string; payload: any } }> {
   const url = new URL(`${SERVER_URL}/api/sessions/${id}/messages`)
   if (limit != null) {
     url.searchParams.set('limit', limit.toString())

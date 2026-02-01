@@ -21,6 +21,7 @@ interface RunOptions {
   resume?: boolean
   spec?: string
   entity?: string
+  outputFormat?: 'json' | 'stream-json' | 'text'
 }
 
 program
@@ -30,21 +31,24 @@ program
 
 // Register default run options
 program
+  .argument('[description...]')
   .option('--print', 'Run in direct mode with printed output', false)
   .option('--model <model>', 'Model to use')
   .option('--adapter <adapter>', 'Adapter to use', 'claude-code')
   .option('--system-prompt <prompt>', 'System prompt')
   .option('--session-id <id>', 'Session ID')
   .option('--resume', 'Resume existing session', false)
+  .option('--output-format <format>', 'Output format', 'text')
   .option('--spec <spec>', 'Load spec definition')
   .option('--entity <entity>', 'Load entity definition')
-  .action(async (opts: RunOptions) => {
+  .action(async (descriptionArgs: string[], opts: RunOptions) => {
+    const description = descriptionArgs.join(' ')
+
     if (opts.spec && opts.entity) {
       console.error('Error: --spec and --entity are mutually exclusive.')
       process.exit(1)
     }
 
-    const taskId = uuid()
     const sessionId = opts.sessionId ?? uuid()
     const type = opts.resume ? 'resume' : 'create'
 
@@ -54,38 +58,53 @@ program
       process.cwd()
     )
 
-    // Merge system prompt: CLI arg > Resolved Config
-    const finalSystemPrompt = opts.systemPrompt
-      ? (resolvedConfig.systemPrompt ? `${resolvedConfig.systemPrompt}\n\n${opts.systemPrompt}` : opts.systemPrompt)
-      : resolvedConfig.systemPrompt
+    const finalSystemPrompt = [
+      resolvedConfig.systemPrompt,
+      opts.systemPrompt
+    ]
+      .filter(Boolean)
+      .join('\n\n')
 
-    await new Promise<void>((resolve, reject) => {
-      run({
-        taskId,
-        taskAdapter: opts.adapter,
-        cwd: process.cwd(),
-        env: process.env
-      }, {
-        type,
-        runtime: 'cli',
-        sessionId,
-        model: opts.model,
-        systemPrompt: finalSystemPrompt,
-        mode: opts.print ? 'stream' : 'direct',
-        tools: resolvedConfig.tools,
-        mcpServers: resolvedConfig.mcpServers,
-        onEvent: (event) => {
-          if (event.type === 'exit') {
-            resolve()
-            // Force exit to ensure we don't hang if there are lingering handles
-            process.exit(event.data.exitCode ?? 0)
-          }
-
-          if (!opts.print) {
-            console.log(JSON.stringify(event))
+    const { session } = await run({
+      adapter: opts.adapter,
+      cwd: process.cwd(),
+      env: process.env
+    }, {
+      type,
+      description,
+      runtime: 'cli',
+      sessionId,
+      model: opts.model,
+      systemPrompt: finalSystemPrompt,
+      mode: opts.print ? 'stream' : 'direct',
+      tools: resolvedConfig.tools,
+      mcpServers: resolvedConfig.mcpServers,
+      onEvent: (event) => {
+        if (opts.print) {
+          switch (opts.outputFormat) {
+            case 'stream-json':
+              console.log(JSON.stringify(event, null, 2))
+              break
+            case 'text':
+              if (event.type === 'stop') {
+                console.log(event.data?.content)
+                session.kill()
+                process.exit(0)
+              }
+              break
+            case 'json':
+              if (event.type === 'stop') {
+                console.log(JSON.stringify(event, null, 2))
+                session.kill()
+                process.exit(0)
+              }
+              break
           }
         }
-      }).catch(reject)
+        if (event.type === 'exit') {
+          process.exit(event.data.exitCode ?? 0)
+        }
+      }
     })
   })
 

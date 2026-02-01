@@ -51,9 +51,17 @@ export default defineRegister((server) => {
       let message = `Started ${tasks.length} tasks.\nTask IDs: ${startedTasks.join(', ')}`
 
       if (logs.length > 0) {
-        message += `\n\nExecution Logs:\n${
-          logs.map((l, i) => `--- Task ${startedTasks[i]} ---\n${l?.join('\n')}`).join('\n\n')
-        }`
+        // dprint-ignore
+        message += (
+          `\n\nExecution Logs:\n` +
+          `${
+            logs.map((l, i) => (
+              `--- Task ${startedTasks[i]} Start ---\n` +
+              `${l?.join('\n')}\n` +
+              `--- Task ${startedTasks[i]} End ---\n`
+            )).join('\n\n')
+          }`
+        )
       } else {
         message += `\n\nPlease use 'GetTaskStatus' to check progress (for background tasks).`
       }

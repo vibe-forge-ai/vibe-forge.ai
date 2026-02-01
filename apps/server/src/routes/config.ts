@@ -9,12 +9,12 @@ export function configRouter(): Router {
   const env = loadEnv()
 
   router.get('/', (ctx) => {
-    const cliPath = env.CLAUDE_CODE_CLI_PATH
-    const cliArgs = env.CLAUDE_CODE_CLI_ARGS
+    const cliPath = env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__
+    const cliArgs = env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__
     const cliExists = (cliPath != null && cliPath !== '') ? fs.existsSync(cliPath) : false
     ctx.body = {
-      CLAUDE_CODE_CLI_PATH: cliPath,
-      CLAUDE_CODE_CLI_ARGS: cliArgs,
+      __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath,
+      __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__: cliArgs,
       cliExists
     }
   })

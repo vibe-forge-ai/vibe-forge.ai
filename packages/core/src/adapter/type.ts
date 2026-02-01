@@ -1,4 +1,4 @@
-import type { Cache, Config, Settings } from '@vibe-forge/core'
+import type { Cache, Config } from '@vibe-forge/core'
 
 import type { Logger } from '#~/utils/create-logger.js'
 
@@ -39,10 +39,10 @@ export type AdapterEvent =
   | { type: 'stop' }
 
 export interface AdapterCtx {
-  taskId: string
+  ctxId: string
 
   cwd: string
-  env: Record<string, string | undefined>
+  env: Record<string, string | null | undefined>
 
   cache: {
     set: <K extends keyof Cache>(key: K, value: Cache[K]) => Promise<{
@@ -53,12 +53,13 @@ export interface AdapterCtx {
   logger: Logger
 
   configs: [Config?, Config?]
-  settings: Settings
 }
 
 export interface AdapterQueryOptions {
+  description?: string
+
   type: 'create' | 'resume'
-  runtime: 'server' | 'cli'
+  runtime: 'server' | 'cli' | 'mcp'
   sessionId: string
   model?: string
   mode?: 'stream' | 'direct'
@@ -73,6 +74,10 @@ export interface AdapterQueryOptions {
   tools?: {
     include: string[]
     exclude: string[]
+  }
+  skills?: {
+    include?: string[]
+    exclude?: string[]
   }
 
   onEvent: (event: AdapterOutputEvent) => void

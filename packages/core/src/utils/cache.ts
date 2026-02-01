@@ -5,7 +5,6 @@ import type { Cache } from '@vibe-forge/core'
 
 declare module '@vibe-forge/core' {
   interface Cache {
-    base: Record<string, unknown>
   }
 }
 

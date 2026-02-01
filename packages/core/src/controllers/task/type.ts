@@ -1,6 +1,6 @@
 export interface RunTaskOptions {
-  taskId?: string
-  taskAdapter?: string
+  ctxId?: string
+  adapter?: string
   env?: Record<string, string | undefined | null>
   cwd?: string
 }

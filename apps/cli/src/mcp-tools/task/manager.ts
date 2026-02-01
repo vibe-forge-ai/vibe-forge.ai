@@ -16,17 +16,7 @@ export interface TaskInfo {
 }
 
 class TaskManager {
-  private static instance: TaskManager
   private tasks: Map<string, TaskInfo> = new Map()
-
-  private constructor() {}
-
-  public static getInstance(): TaskManager {
-    if (!TaskManager.instance) {
-      TaskManager.instance = new TaskManager()
-    }
-    return TaskManager.instance
-  }
 
   public async startTask(options: {
     description: string
@@ -53,20 +43,19 @@ class TaskManager {
 
     // Start Task
     const runPromise = run({
-      taskId,
-      taskAdapter: adapter,
+      adapter,
       cwd: process.cwd(),
       env: process.env
     }, {
       type: 'create',
-      runtime: 'cli',
-      sessionId: taskId, // Use taskId as sessionId for simplicity in this context
-      model: undefined, // Let adapter choose default or from config
+      runtime: 'mcp',
+      mode: 'stream',
+      sessionId: taskId,
       systemPrompt: resolvedConfig.systemPrompt,
-      mode: 'direct', // CLI background tasks usually run in direct mode
       tools: resolvedConfig.tools,
+      skills: resolvedConfig.skills,
       mcpServers: resolvedConfig.mcpServers,
-      onEvent: (event: AdapterOutputEvent) => {
+      onEvent: (event) => {
         this.handleEvent(taskId, event)
       }
     }).then(({ session }) => {
@@ -161,4 +150,4 @@ class TaskManager {
   }
 }
 
-export const taskManager = TaskManager.getInstance()
+export const taskManager = new TaskManager()

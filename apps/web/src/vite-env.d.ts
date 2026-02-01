@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_SERVER_HOST: string
-  readonly VITE_SERVER_PORT: string
-  readonly VITE_PORT: string
+  readonly __VF_PROJECT_AI_SERVER_HOST__: string
+  readonly __VF_PROJECT_AI_SERVER_PORT__: string
+  readonly __VF_PROJECT_AI_CLIENT_HOST__: string
+  readonly __VF_PROJECT_AI_CLIENT_PORT__: string
 }
 
 interface ImportMeta {

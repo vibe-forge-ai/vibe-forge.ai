@@ -7,8 +7,12 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   server: {
-    port: Number(process.env.VITE_PORT ?? 5173)
+    host: process.env.__VF_PROJECT_AI_CLIENT_HOST__,
+    port: Number(process.env.__VF_PROJECT_AI_CLIENT_PORT__ ?? 5173)
   },
+  envPrefix: [
+    '__VF_PROJECT_AI_'
+  ],
   css: {
     preprocessorOptions: {
       scss: {

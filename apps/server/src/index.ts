@@ -1,4 +1,5 @@
 import 'dotenv/config'
+
 import http from 'node:http'
 import { exit } from 'node:process'
 
@@ -45,10 +46,14 @@ async function bootstrap() {
   })
   setupWebSocket(server, env)
 
-  server.listen(env.SERVER_PORT, () => {
+  const {
+    __VF_PROJECT_AI_SERVER_HOST__: serverHost,
+    __VF_PROJECT_AI_SERVER_PORT__: serverPort
+  } = env
+  server.listen(serverPort, serverHost, () => {
     // eslint-disable-next-line no-console
     console.log(
-      `[server] listening on http://localhost:${env.SERVER_PORT}, ws path ${env.WS_PATH}`
+      `[server] listening on http://${serverHost}:${serverPort}, ws path ${env.WS_PATH}`
     )
   })
 }
