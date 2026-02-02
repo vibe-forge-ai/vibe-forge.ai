@@ -391,7 +391,8 @@ export default defineAdapter({
 
       return {
         kill: () => proc.kill(),
-        emit
+        emit,
+        pid: proc.pid
       }
     } else {
       logger.info('Claude Code CLI command:', {
@@ -420,7 +421,8 @@ export default defineAdapter({
         emit: () => {
           // No-op for direct mode as we can't easily inject JSON events into a TTY process
           console.warn('emit() is not supported in direct mode')
-        }
+        },
+        pid: proc.pid
       }
     }
   }

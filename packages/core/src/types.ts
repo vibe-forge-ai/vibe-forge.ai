@@ -50,3 +50,16 @@ export interface ChatMessage {
 
 export type InteractionOption = z.infer<typeof InteractionOptionSchema>
 export type AskUserQuestionParams = z.infer<typeof AskUserQuestionParamsSchema>
+
+export interface TaskDetail {
+  ctxId: string
+  sessionId: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped'
+  pid?: number
+  startTime: number
+  endTime?: number
+  description?: string
+  adapter: string
+  model?: string
+  exitCode?: number
+}

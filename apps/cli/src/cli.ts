@@ -10,7 +10,10 @@ import { uuid } from '@vibe-forge/core/utils/uuid'
 import { getCliVersion } from '#~/utils'
 
 import { registerClearCommand } from './commands/clear'
+import { registerKillCommand } from './commands/kill'
+import { registerListCommand } from './commands/list'
 import { registerMcpCommand } from './commands/mcp'
+import { registerStopCommand } from './commands/stop'
 
 interface RunOptions {
   print: boolean
@@ -22,6 +25,12 @@ interface RunOptions {
   spec?: string
   entity?: string
   outputFormat?: 'json' | 'stream-json' | 'text'
+  includeMcpServer?: string[]
+  excludeMcpServer?: string[]
+  includeTool?: string[]
+  excludeTool?: string[]
+  includeSkill?: string[]
+  excludeSkill?: string[]
 }
 
 program
@@ -41,6 +50,12 @@ program
   .option('--output-format <format>', 'Output format', 'text')
   .option('--spec <spec>', 'Load spec definition')
   .option('--entity <entity>', 'Load entity definition')
+  .option('--include-mcp-server <server...>', 'Include MCP server')
+  .option('--exclude-mcp-server <server...>', 'Exclude MCP server')
+  .option('--include-tool <tool...>', 'Include tool')
+  .option('--exclude-tool <tool...>', 'Exclude tool')
+  .option('--include-skill <skill...>', 'Include skill')
+  .option('--exclude-skill <skill...>', 'Exclude skill')
   .action(async (descriptionArgs: string[], opts: RunOptions) => {
     const description = descriptionArgs.join(' ')
 
@@ -77,8 +92,36 @@ program
       model: opts.model,
       systemPrompt: finalSystemPrompt,
       mode: opts.print ? 'stream' : 'direct',
-      tools: resolvedConfig.tools,
-      mcpServers: resolvedConfig.mcpServers,
+      tools: {
+        include: [
+          ...(resolvedConfig.tools?.include ?? []),
+          ...(opts.includeTool ?? [])
+        ],
+        exclude: [
+          ...(resolvedConfig.tools?.exclude ?? []),
+          ...(opts.excludeTool ?? [])
+        ]
+      },
+      mcpServers: {
+        include: [
+          ...(resolvedConfig.mcpServers?.include ?? []),
+          ...(opts.includeMcpServer ?? [])
+        ],
+        exclude: [
+          ...(resolvedConfig.mcpServers?.exclude ?? []),
+          ...(opts.excludeMcpServer ?? [])
+        ]
+      },
+      skills: {
+        include: [
+          ...(resolvedConfig.skills?.include ?? []),
+          ...(opts.includeSkill ?? [])
+        ],
+        exclude: [
+          ...(resolvedConfig.skills?.exclude ?? []),
+          ...(opts.excludeSkill ?? [])
+        ]
+      },
       onEvent: (event) => {
         if (opts.print) {
           switch (opts.outputFormat) {
@@ -110,5 +153,8 @@ program
 
 registerMcpCommand(program)
 registerClearCommand(program)
+registerListCommand(program)
+registerStopCommand(program)
+registerKillCommand(program)
 
 program.parse()

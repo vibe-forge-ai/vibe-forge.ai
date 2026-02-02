@@ -1,5 +1,6 @@
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, TaskDetail } from '@vibe-forge/core'
 import { loadAdapter } from '@vibe-forge/core'
+import { setCache } from '@vibe-forge/core/utils/cache'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
@@ -7,6 +8,7 @@ import type { RunTaskOptions } from './type'
 declare module '@vibe-forge/core' {
   interface Cache {
     base: Omit<AdapterCtx, 'logger' | 'cache'>
+    detail: TaskDetail
   }
 }
 
@@ -49,10 +51,48 @@ export const run = async (
       }
       return adapterNames[0]
     })()
+
+  const detail: TaskDetail = {
+    ctxId: ctx.ctxId,
+    sessionId: adapterOptions.sessionId,
+    status: 'running',
+    startTime,
+    description: adapterOptions.description,
+    adapter: adapterType,
+    model: adapterOptions.model
+  }
+
+  const saveDetail = async (d: TaskDetail) => {
+    // Save to caches/ctxId/detail.json (ignoring sessionId)
+    await setCache(ctx.cwd, ctx.ctxId, undefined, 'detail', d)
+  }
+
+  await saveDetail(detail)
+
+  const originalOnEvent = adapterOptions.onEvent
+  const wrappedOnEvent = (event: AdapterOutputEvent) => {
+    if (event.type === 'exit') {
+      detail.status = event.data.exitCode === 0 ? 'completed' : 'failed'
+      detail.endTime = Date.now()
+      detail.exitCode = event.data.exitCode ?? undefined
+      saveDetail(detail).catch(console.error)
+    }
+    originalOnEvent(event)
+  }
+
   const adapter = await loadAdapter(adapterType)
   const session = await adapter.query(
     ctx,
-    adapterOptions
+    {
+      ...adapterOptions,
+      onEvent: wrappedOnEvent
+    }
   )
+
+  if (session.pid) {
+    detail.pid = session.pid
+    await saveDetail(detail)
+  }
+
   return { session, ctx }
 }

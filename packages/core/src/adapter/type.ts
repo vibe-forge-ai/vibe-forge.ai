@@ -86,6 +86,7 @@ export interface AdapterQueryOptions {
 export interface AdapterSession {
   kill: () => void
   emit: (event: AdapterEvent) => void
+  pid?: number
 }
 
 export interface Adapter {
