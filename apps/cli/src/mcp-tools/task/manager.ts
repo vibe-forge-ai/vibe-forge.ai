@@ -12,7 +12,7 @@ export interface TaskInfo {
   logs: string[]
   session?: AdapterSession
   createdAt: number
-  onExit?: () => void
+  onStop?: () => void
 }
 
 class TaskManager {
@@ -38,27 +38,28 @@ class TaskManager {
     }
     this.tasks.set(taskId, taskInfo)
 
-    // Resolve Config
-    const resolvedConfig = await resolveTaskConfig(type, name, process.cwd())
+    try {
+      // Resolve Config
+      const resolvedConfig = await resolveTaskConfig(type, name, process.cwd())
 
-    // Start Task
-    const runPromise = run({
-      adapter,
-      cwd: process.cwd(),
-      env: process.env
-    }, {
-      type: 'create',
-      runtime: 'mcp',
-      mode: 'stream',
-      sessionId: taskId,
-      systemPrompt: resolvedConfig.systemPrompt,
-      tools: resolvedConfig.tools,
-      skills: resolvedConfig.skills,
-      mcpServers: resolvedConfig.mcpServers,
-      onEvent: (event) => {
-        this.handleEvent(taskId, event)
-      }
-    }).then(({ session }) => {
+      // Start Task
+      const { session } = await run({
+        adapter,
+        cwd: process.cwd(),
+        env: process.env
+      }, {
+        type: 'create',
+        runtime: 'mcp',
+        mode: 'stream',
+        sessionId: taskId,
+        systemPrompt: resolvedConfig.systemPrompt,
+        tools: resolvedConfig.tools,
+        skills: resolvedConfig.skills,
+        mcpServers: resolvedConfig.mcpServers,
+        onEvent: (event) => {
+          this.handleEvent(taskId, event)
+        }
+      })
       // Store session for control
       const task = this.tasks.get(taskId)
       if (task) {
@@ -69,34 +70,33 @@ class TaskManager {
           content: [{ type: 'text', text: description }]
         })
       }
-      return session
-    }).catch((err) => {
+
+      if (!background) {
+        // Wait for completion
+        await new Promise<void>((resolve) => {
+          const task = this.tasks.get(taskId)
+          if (!task) {
+            resolve()
+            return
+          }
+          // Check if already finished
+          if (task.status !== 'running') {
+            resolve()
+            return
+          }
+          // Register callback
+          task.onStop = resolve
+        })
+        return { taskId, logs: taskInfo.logs }
+      }
+    } catch (err) {
       const task = this.tasks.get(taskId)
       if (task) {
         task.status = 'failed'
-        task.logs.push(`Failed to start task: ${err.message}`)
-        if (task.onExit) task.onExit()
+        task.logs.push(`Failed to start task: ${err instanceof Error ? err.message : String(err)}`)
+        task.onStop?.()
       }
       throw err
-    })
-
-    if (!background) {
-      // Wait for completion
-      await new Promise<void>((resolve) => {
-        const task = this.tasks.get(taskId)
-        if (!task) {
-          resolve()
-          return
-        }
-        // Check if already finished
-        if (task.status !== 'running') {
-          resolve()
-          return
-        }
-        // Register callback
-        task.onExit = resolve
-      })
-      return { taskId, logs: taskInfo.logs }
     }
 
     return { taskId }
@@ -120,11 +120,17 @@ class TaskManager {
         }
         break
       }
+      case 'stop': {
+        task.status = 'completed'
+        task.logs.push(JSON.stringify(event.data?.content))
+        task.onStop?.()
+        break
+      }
       case 'exit':
         task.status = event.data.exitCode === 0 ? 'completed' : 'failed'
         task.exitCode = event.data.exitCode ?? undefined
         task.logs.push(`Process exited with code ${event.data.exitCode}`)
-        if (task.onExit) task.onExit()
+        task.onStop?.()
         break
     }
   }
@@ -143,7 +149,7 @@ class TaskManager {
       task.session.kill()
       task.logs.push('Task stopped by user')
       task.status = 'failed' // or 'stopped' if we had that status
-      if (task.onExit) task.onExit()
+      if (task.onStop) task.onStop()
       return true
     }
     return false
