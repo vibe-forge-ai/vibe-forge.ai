@@ -1,5 +1,7 @@
 import process from 'node:process'
-import { type Command } from 'commander'
+
+import type { Command } from 'commander'
+
 import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
