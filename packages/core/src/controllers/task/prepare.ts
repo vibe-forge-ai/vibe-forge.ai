@@ -21,7 +21,10 @@ export const prepare = async (
     ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? sessionId,
     env: envFromOptions
   } = options
-  const prevEnv = {
+  const {
+    __IS_LOADER_CLI__: _0,
+    ...prevEnv
+  } = {
     ...process.env,
     ...envFromOptions
   }
