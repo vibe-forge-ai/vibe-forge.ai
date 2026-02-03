@@ -1,155 +1,23 @@
 import 'dotenv/config'
 
-import process from 'node:process'
-
 import { program } from 'commander'
 
-import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
-import { uuid } from '@vibe-forge/core/utils/uuid'
-
-import { getCliVersion } from '#~/utils'
+import { getCliDescription, getCliVersion } from '#~/utils'
 
 import { registerClearCommand } from './commands/clear'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
 import { registerMcpCommand } from './commands/mcp'
+import { registerRunCommand } from './commands/run'
 import { registerStopCommand } from './commands/stop'
-
-interface RunOptions {
-  print: boolean
-  model?: string
-  adapter: string
-  systemPrompt?: string
-  sessionId?: string
-  resume?: boolean
-  spec?: string
-  entity?: string
-  outputFormat?: 'json' | 'stream-json' | 'text'
-  includeMcpServer?: string[]
-  excludeMcpServer?: string[]
-  includeTool?: string[]
-  excludeTool?: string[]
-  includeSkill?: string[]
-  excludeSkill?: string[]
-}
 
 program
   .name('vf')
-  .description('Vibe Forge CLI')
+  .description(getCliDescription())
   .version(getCliVersion())
 
 // Register default run options
-program
-  .argument('[description...]')
-  .option('--print', 'Run in direct mode with printed output', false)
-  .option('--model <model>', 'Model to use')
-  .option('--adapter <adapter>', 'Adapter to use', 'claude-code')
-  .option('--system-prompt <prompt>', 'System prompt')
-  .option('--session-id <id>', 'Session ID')
-  .option('--resume', 'Resume existing session', false)
-  .option('--output-format <format>', 'Output format', 'text')
-  .option('--spec <spec>', 'Load spec definition')
-  .option('--entity <entity>', 'Load entity definition')
-  .option('--include-mcp-server <server...>', 'Include MCP server')
-  .option('--exclude-mcp-server <server...>', 'Exclude MCP server')
-  .option('--include-tool <tool...>', 'Include tool')
-  .option('--exclude-tool <tool...>', 'Exclude tool')
-  .option('--include-skill <skill...>', 'Include skill')
-  .option('--exclude-skill <skill...>', 'Exclude skill')
-  .action(async (descriptionArgs: string[], opts: RunOptions) => {
-    const description = descriptionArgs.join(' ')
-
-    if (opts.spec && opts.entity) {
-      console.error('Error: --spec and --entity are mutually exclusive.')
-      process.exit(1)
-    }
-
-    const sessionId = opts.sessionId ?? uuid()
-    const type = opts.resume ? 'resume' : 'create'
-
-    const resolvedConfig = await resolveTaskConfig(
-      opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined),
-      opts.spec || opts.entity,
-      process.cwd()
-    )
-
-    const finalSystemPrompt = [
-      resolvedConfig.systemPrompt,
-      opts.systemPrompt
-    ]
-      .filter(Boolean)
-      .join('\n\n')
-
-    const { session } = await run({
-      adapter: opts.adapter,
-      cwd: process.cwd(),
-      env: process.env
-    }, {
-      type,
-      description,
-      runtime: 'cli',
-      sessionId,
-      model: opts.model,
-      systemPrompt: finalSystemPrompt,
-      mode: opts.print ? 'stream' : 'direct',
-      tools: {
-        include: [
-          ...(resolvedConfig.tools?.include ?? []),
-          ...(opts.includeTool ?? [])
-        ],
-        exclude: [
-          ...(resolvedConfig.tools?.exclude ?? []),
-          ...(opts.excludeTool ?? [])
-        ]
-      },
-      mcpServers: {
-        include: [
-          ...(resolvedConfig.mcpServers?.include ?? []),
-          ...(opts.includeMcpServer ?? [])
-        ],
-        exclude: [
-          ...(resolvedConfig.mcpServers?.exclude ?? []),
-          ...(opts.excludeMcpServer ?? [])
-        ]
-      },
-      skills: {
-        include: [
-          ...(resolvedConfig.skills?.include ?? []),
-          ...(opts.includeSkill ?? [])
-        ],
-        exclude: [
-          ...(resolvedConfig.skills?.exclude ?? []),
-          ...(opts.excludeSkill ?? [])
-        ]
-      },
-      onEvent: (event) => {
-        if (opts.print) {
-          switch (opts.outputFormat) {
-            case 'stream-json':
-              console.log(JSON.stringify(event, null, 2))
-              break
-            case 'text':
-              if (event.type === 'stop') {
-                console.log(event.data?.content)
-                session.kill()
-                process.exit(0)
-              }
-              break
-            case 'json':
-              if (event.type === 'stop') {
-                console.log(JSON.stringify(event, null, 2))
-                session.kill()
-                process.exit(0)
-              }
-              break
-          }
-        }
-        if (event.type === 'exit') {
-          process.exit(event.data.exitCode ?? 0)
-        }
-      }
-    })
-  })
+registerRunCommand(program)
 
 registerMcpCommand(program)
 registerClearCommand(program)

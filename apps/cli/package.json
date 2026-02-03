@@ -1,5 +1,6 @@
 {
   "name": "@vibe-forge/cli",
+  "description": "Vibe Forge CLI",
   "version": "0.1.0",
   "imports": {
     "#~/*": {
