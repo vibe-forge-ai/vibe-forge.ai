@@ -1,4 +1,4 @@
-export WORKSPACE_FOLDER=`realpath .`
+export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
 export HOME=`realpath ./.ai/.mock`
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__=`realpath ./apps/server/node_modules/.bin/ccr`
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"

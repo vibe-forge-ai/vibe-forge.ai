@@ -48,6 +48,15 @@
         "import": "./dist/schema.mjs",
         "require": "./dist/schema.js"
       }
+    },
+    "./hooks": {
+      "__vibe-forge__": {
+        "default": "./src/hooks/index.ts"
+      },
+      "default": {
+        "import": "./dist/hooks/index.mjs",
+        "require": "./dist/hooks/index.js"
+      }
     }
   },
   "dependencies": {

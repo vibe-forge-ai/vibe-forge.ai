@@ -24,7 +24,8 @@
   "bin": {
     "vibe-forge": "./cli.js",
     "vforge": "./cli.js",
-    "vf": "./cli.js"
+    "vf": "./cli.js",
+    "vf-call-hook": "./call-hook.js"
   },
   "scripts": {
     "test": "vitest run"

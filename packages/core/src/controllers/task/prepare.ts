@@ -12,7 +12,7 @@ export const prepare = async (
   options: RunTaskOptions,
   adapterOptions: AdapterQueryOptions
 ) => {
-  const cwd = options.cwd ?? process.env.WORKSPACE_FOLDER ?? process.cwd()
+  const cwd = options.cwd ?? process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
 
   const {
     sessionId = uuid()
@@ -40,7 +40,8 @@ export const prepare = async (
 
   const jsonVariables: Record<string, string | null | undefined> = {
     ...env,
-    WORKSPACE_FOLDER: cwd
+    WORKSPACE_FOLDER: cwd,
+    __VF_PROJECT_WORKSPACE_FOLDER__: cwd
   }
   const [config, userConfig] = await loadConfig({ jsonVariables })
   return [

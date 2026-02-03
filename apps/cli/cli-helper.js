@@ -20,7 +20,7 @@ if (!process.env.__IS_LOADER_CLI__) {
     }
   })
 } else {
-  process.env.WORKSPACE_FOLDER = process.env.WORKSPACE_FOLDER ?? process.cwd()
-  process.env.CLI_PACKAGE_DIR = __dirname
-  require(process.env.CLI_BIN_SOURCE_ENTRY)
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+  process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = __dirname
+  require(process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__)
 }
