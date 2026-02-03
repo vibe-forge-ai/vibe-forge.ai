@@ -5,6 +5,8 @@ import type { Command } from 'commander'
 import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
+import { extraOptions } from './@core/extra-options'
+
 interface RunOptions {
   print: boolean
   model?: string
@@ -107,6 +109,7 @@ export function registerRunCommand(program: Command) {
             ...(opts.excludeSkill ?? [])
           ]
         },
+        extraOptions,
         onEvent: (event) => {
           if (opts.print) {
             switch (opts.outputFormat) {

@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import './commands/@core/extra-options'
 
 import { program } from 'commander'
 

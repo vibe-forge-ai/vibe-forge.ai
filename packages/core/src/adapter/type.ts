@@ -80,6 +80,8 @@ export interface AdapterQueryOptions {
     exclude?: string[]
   }
 
+  extraOptions?: string[]
+
   onEvent: (event: AdapterOutputEvent) => void
 }
 
