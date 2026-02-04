@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import { load } from 'js-yaml'
+
 import type { PluginConfig } from './hooks'
 
 export interface AdapterMap {}
@@ -171,53 +173,98 @@ const loadJSONConfig = async (paths: string[], jsonVariables: Record<string, str
   }
 }
 
-export const loadConfig = async (options: {
+const loadYAMLConfig = async (paths: string[], jsonVariables: Record<string, string | null | undefined>) => {
+  for (const path of paths) {
+    try {
+      const configPath = resolve(process.cwd(), path)
+      if (!existsSync(configPath)) {
+        continue
+      }
+      const configContent = await readFile(configPath, 'utf-8')
+      const configResolvedContent = configContent
+        .replace(/\$\{(\w+)\}/g, (_, key) => jsonVariables[key] ?? `$\{${key}}`)
+      return load(configResolvedContent) as Config
+    } catch (e) {
+      console.error(`Failed to load config file ${path}: ${e}`)
+    }
+  }
+}
+
+let configCache: Promise<readonly [Config | undefined, Config | undefined]> | null = null
+
+export const loadConfig = (options: {
   jsonVariables?: Record<string, string | null | undefined>
-}) =>
-  [
-    await loadJSConfig([
-      './.ai.config.js',
-      './.ai.config.mjs',
-      './.ai.config.cjs',
-      './.ai.config.ts',
-      './.ai.config.mts',
-      './.ai.config.cts',
-      './infra/.ai.config.js',
-      './infra/.ai.config.mjs',
-      './infra/.ai.config.cjs',
-      './infra/.ai.config.ts',
-      './infra/.ai.config.mts',
-      './infra/.ai.config.cts'
-    ]) ??
-      await loadJSONConfig(
-        [
-          './.ai.config.json',
-          './infra/.ai.config.json'
-        ],
-        options.jsonVariables ?? {}
-      ),
-    await loadJSConfig([
-      './.ai.dev.config.js',
-      './.ai.dev.config.mjs',
-      './.ai.dev.config.cjs',
-      './.ai.dev.config.ts',
-      './.ai.dev.config.mts',
-      './.ai.dev.config.cts',
-      './infra/.ai.dev.config.js',
-      './infra/.ai.dev.config.mjs',
-      './infra/.ai.dev.config.cjs',
-      './infra/.ai.dev.config.ts',
-      './infra/.ai.dev.config.mts',
-      './infra/.ai.dev.config.cts'
-    ]) ??
-      await loadJSONConfig(
-        [
-          './.ai.dev.config.json',
-          './infra/.ai.dev.config.json'
-        ],
-        options.jsonVariables ?? {}
-      )
-  ] as const
+}) => {
+  if (configCache) {
+    return configCache
+  }
+
+  configCache = (async () => {
+    return [
+      await loadJSConfig([
+        './.ai.config.js',
+        './.ai.config.mjs',
+        './.ai.config.cjs',
+        './.ai.config.ts',
+        './.ai.config.mts',
+        './.ai.config.cts',
+        './infra/.ai.config.js',
+        './infra/.ai.config.mjs',
+        './infra/.ai.config.cjs',
+        './infra/.ai.config.ts',
+        './infra/.ai.config.mts',
+        './infra/.ai.config.cts'
+      ]) ??
+        await loadJSONConfig(
+          [
+            './.ai.config.json',
+            './infra/.ai.config.json'
+          ],
+          options.jsonVariables ?? {}
+        ) ??
+        await loadYAMLConfig(
+          [
+            './.ai.config.yaml',
+            './.ai.config.yml',
+            './infra/.ai.config.yaml',
+            './infra/.ai.config.yml'
+          ],
+          options.jsonVariables ?? {}
+        ),
+      await loadJSConfig([
+        './.ai.dev.config.js',
+        './.ai.dev.config.mjs',
+        './.ai.dev.config.cjs',
+        './.ai.dev.config.ts',
+        './.ai.dev.config.mts',
+        './.ai.dev.config.cts',
+        './infra/.ai.dev.config.js',
+        './infra/.ai.dev.config.mjs',
+        './infra/.ai.dev.config.cjs',
+        './infra/.ai.dev.config.ts',
+        './infra/.ai.dev.config.mts',
+        './infra/.ai.dev.config.cts'
+      ]) ??
+        await loadJSONConfig(
+          [
+            './.ai.dev.config.json',
+            './infra/.ai.dev.config.json'
+          ],
+          options.jsonVariables ?? {}
+        ) ??
+        await loadYAMLConfig(
+          [
+            './.ai.dev.config.yaml',
+            './.ai.dev.config.yml',
+            './infra/.ai.dev.config.yaml',
+            './infra/.ai.dev.config.yml'
+          ],
+          options.jsonVariables ?? {}
+        )
+    ] as const
+  })()
+  return configCache
+}
 
 export const loadAdapterConfig = async <
   K extends keyof AdapterMap,
