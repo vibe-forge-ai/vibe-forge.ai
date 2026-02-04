@@ -1,0 +1,38 @@
+{
+  "name": "@vibe-forge/plugin-logger",
+  "version": "0.1.0",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./hooks": {
+      "__vibe-forge__": {
+        "default": "./src/hooks.ts"
+      },
+      "default": {
+        "import": "./dist/hooks.mjs",
+        "require": "./dist/hooks.js"
+      }
+    }
+  },
+  "dependencies": {
+    "@vibe-forge/core": "workspace:*"
+  }
+}

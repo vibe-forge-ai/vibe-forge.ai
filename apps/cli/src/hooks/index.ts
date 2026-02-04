@@ -1,6 +1,8 @@
 import process from 'node:process'
 
+import { loadConfig } from '@vibe-forge/core'
 import type { HookOutputCore } from '@vibe-forge/core/hooks'
+import { resolvePlugins } from '@vibe-forge/core/hooks'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 
 import { hookInput, setHookInput } from './hook-input'
@@ -27,10 +29,18 @@ void (async function main() {
       debug: (...args) => _logger.debug(`[${hookEventName}]`, ...args),
       error: (...args) => _logger.error(`[${hookEventName}]`, ...args)
     }
+
+    const [config, userConfig] = await loadConfig({})
+    const plugins = [
+      ...await resolvePlugins(config?.plugins ?? []),
+      ...await resolvePlugins(userConfig?.plugins ?? [])
+    ]
+
     const res = await callPluginHook(
       hookInput.hookEventName,
       { logger },
-      hookInput
+      hookInput,
+      plugins
     )
     console.log(JSON.stringify(res))
   } catch (e) {

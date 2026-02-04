@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import type { PluginConfig } from './hooks'
+
 export interface AdapterMap {}
 
 export interface ModelServiceConfig {
@@ -110,6 +112,10 @@ export interface Config {
    * 公告配置
    */
   companyAnnouncements?: string[]
+  /**
+   * 插件配置
+   */
+  plugins?: PluginConfig
   enabledPlugins?: Record<string, boolean>
   extraKnownMarketplaces?: Record<
     string,
@@ -171,16 +177,16 @@ export const loadConfig = async (options: {
   [
     await loadJSConfig([
       './.ai.config.js',
-      './infra/.ai.config.js',
       './.ai.config.mjs',
-      './infra/.ai.config.mjs',
       './.ai.config.cjs',
-      './infra/.ai.config.cjs',
       './.ai.config.ts',
-      './infra/.ai.config.ts',
       './.ai.config.mts',
-      './infra/.ai.config.mts',
       './.ai.config.cts',
+      './infra/.ai.config.js',
+      './infra/.ai.config.mjs',
+      './infra/.ai.config.cjs',
+      './infra/.ai.config.ts',
+      './infra/.ai.config.mts',
       './infra/.ai.config.cts'
     ]) ??
       await loadJSONConfig(
@@ -191,17 +197,17 @@ export const loadConfig = async (options: {
         options.jsonVariables ?? {}
       ),
     await loadJSConfig([
-      './.ai.config.js',
-      './infra/.ai.config.js',
-      './.ai.config.mjs',
-      './infra/.ai.config.mjs',
-      './.ai.config.cjs',
-      './infra/.ai.config.cjs',
+      './.ai.dev.config.js',
+      './.ai.dev.config.mjs',
+      './.ai.dev.config.cjs',
       './.ai.dev.config.ts',
-      './infra/.ai.dev.config.ts',
       './.ai.dev.config.mts',
-      './infra/.ai.dev.config.mts',
       './.ai.dev.config.cts',
+      './infra/.ai.dev.config.js',
+      './infra/.ai.dev.config.mjs',
+      './infra/.ai.dev.config.cjs',
+      './infra/.ai.dev.config.ts',
+      './infra/.ai.dev.config.mts',
       './infra/.ai.dev.config.cts'
     ]) ??
       await loadJSONConfig(

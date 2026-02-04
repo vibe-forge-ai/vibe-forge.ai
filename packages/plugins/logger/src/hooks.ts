@@ -1,6 +1,6 @@
 import { definePlugin } from '@vibe-forge/core/hooks'
 
-export const logger = definePlugin({
+export default definePlugin({
   name: 'logger',
   SessionStart: ({ logger }, input, next) => {
     logger.info(input)

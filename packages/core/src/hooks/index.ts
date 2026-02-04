@@ -26,4 +26,12 @@ export type Plugin =
 
 export const definePlugin = (plugin: Partial<Plugin>) => plugin
 
+export interface PluginMap {}
+
+export type PluginConfig =
+  | (Partial<Plugin> | (() => Partial<Plugin>))[]
+  | Record<string, Record<string, unknown>>
+  | Partial<PluginMap>
+
+export * from './loader'
 export * from './type'

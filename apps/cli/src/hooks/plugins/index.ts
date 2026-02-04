@@ -1,15 +1,10 @@
 import type { HookContext, HookInputs, HookOutputs, Plugin } from '@vibe-forge/core/hooks'
 
-import { logger } from './logger'
-
-const plugins: Partial<Plugin>[] = [
-  logger
-]
-
 export const callPluginHook = async <K extends keyof HookInputs>(
   eventName: K,
   context: HookContext,
-  input: HookInputs[K]
+  input: HookInputs[K],
+  plugins: Partial<Plugin>[] = []
 ): Promise<HookOutputs[K]> => {
   const { logger } = context
   const filterPlugins = plugins.filter(
@@ -33,7 +28,11 @@ export const callPluginHook = async <K extends keyof HookInputs>(
       return { continue: true }
     }
 
-    const { name = '<anonymous>', [eventName]: hook } = filterPlugins[index++]
+    const currentPlugin = filterPlugins[index]
+    const { name = '<anonymous>', [eventName]: hook } = currentPlugin
+    
+    // 增加索引，防止重复调用导致死循环或错误逻辑
+    index++
 
     const withNameLogger = {
       ...logger,

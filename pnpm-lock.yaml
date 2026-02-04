@@ -43,6 +43,9 @@ importers:
       '@vibe-forge/cli':
         specifier: workspace:*
         version: link:apps/cli
+      '@vibe-forge/plugin-logger':
+        specifier: workspace:*
+        version: link:packages/plugins/logger
       '@vibe-forge/server':
         specifier: workspace:*
         version: link:apps/server
@@ -244,6 +247,12 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/plugins/logger:
+    dependencies:
+      '@vibe-forge/core':
+        specifier: workspace:*
+        version: link:../../core
 
 packages:
 

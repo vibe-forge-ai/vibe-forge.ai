@@ -1,7 +1,7 @@
 {
   "name": "@vibe-forge/cli",
-  "description": "Vibe Forge CLI",
   "version": "0.1.0",
+  "description": "Vibe Forge CLI",
   "imports": {
     "#~/*": {
       "__vibe-forge__": {

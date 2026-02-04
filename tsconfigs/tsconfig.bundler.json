@@ -4,6 +4,7 @@
   },
   "include": [
     "../packages/*/src/**/*",
-    "../packages/adapters/*/src/**/*"
+    "../packages/adapters/*/src/**/*",
+    "../packages/plugins/*/src/**/*"
   ]
 }
