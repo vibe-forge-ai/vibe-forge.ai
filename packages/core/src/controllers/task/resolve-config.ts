@@ -1,8 +1,9 @@
+/* eslint-disable no-labels */
 import process from 'node:process'
 
 import type { AdapterQueryOptions } from '#~/adapter/type.js'
 import { DefinitionLoader } from '#~/utils/definition-loader.js'
-import type { Entity, Spec } from '#~/utils/definition-loader.js'
+import type { Definition, Filter, Skill } from '#~/utils/definition-loader.js'
 
 export async function resolveTaskConfig(
   type: 'spec' | 'entity' | undefined,
@@ -11,67 +12,76 @@ export async function resolveTaskConfig(
 ): Promise<Partial<AdapterQueryOptions>> {
   const loader = new DefinitionLoader(cwd)
   const options: Partial<AdapterQueryOptions> = {}
-
-  // 1. Load Rules (always load 'always: true' rules unless overridden, or just load all for now as context)
-  const rules = await loader.loadRules()
-  const activeRules = rules.filter(r => r.attributes.always !== false)
-
   const systemPromptParts: string[] = []
 
-  if (activeRules.length > 0) {
-    systemPromptParts.push('## Global Rules')
-    activeRules.forEach(rule => {
-      if (rule.body.trim()) {
-        systemPromptParts.push(rule.body.trim())
-      }
-    })
-  }
+  // 1. 获取数据
+  // 1.1 获取默认数据
+  const entities = type !== 'entity'
+    ? await loader.loadDefaultEntities()
+    : []
+  const skills = await loader.loadDefaultSkills()
+  const rules = await loader.loadDefaultRules()
+  const specs = await loader.loadDefaultSpecs()
 
-  // 2. Load Spec or Entity if specified
+  // 1.2 获取指定数据
+  const targetSkills: Definition<Skill>[] = []
+  let targetBody = ''
+  let targetToolsFilter: Filter | undefined
+  let targetMcpServersFilter: Filter | undefined
   if (type && name) {
-    let def: { body: string; attributes: Spec | Entity } | undefined
-
-    if (type === 'spec') {
-      def = await loader.loadSpec(name)
-    } else if (type === 'entity') {
-      def = await loader.loadEntity(name)
+    const data = {
+      spec: await loader.loadSpec(name),
+      entity: await loader.loadEntity(name)
+    }[type]
+    if (!data) {
+      throw new Error(`Failed to load ${type} ${name}`)
+    }
+    const { attributes, body } = data
+    if (
+      attributes.rules
+    ) {
+      // always load spec or entity tagged rules
+      rules.push(
+        ...(
+          await loader.loadRules(attributes.rules)
+        ).map((rule) => ({
+          ...rule,
+          attributes: {
+            ...rule.attributes,
+            // 实体或流程中的规则为默认加载
+            always: true
+          }
+        }))
+      )
+    }
+    if (
+      attributes.skills
+    ) {
+      targetSkills.push(...await loader.loadSkills(attributes.skills))
     }
 
-    if (def) {
-      // Merge Options
-      const { attributes, body } = def
-
-      if (attributes.mcpServers) {
-        options.mcpServers = {
-          include: attributes.mcpServers.include || [],
-          exclude: attributes.mcpServers.exclude || []
-        }
-      }
-
-      if (attributes.tools) {
-        options.tools = {
-          include: attributes.tools.include || [],
-          exclude: attributes.tools.exclude || []
-        }
-      }
-
-      // Add Definition to System Prompt
-      systemPromptParts.push(`## Active ${type === 'spec' ? 'Specification' : 'Entity'}: ${name}`)
-      if (attributes.description) {
-        systemPromptParts.push(`Description: ${attributes.description}`)
-      }
-      if (body.trim()) {
-        systemPromptParts.push(body.trim())
-      }
-    } else {
-      // Fallback or warning? For now, just warn in logs if we had a logger, but here we just proceed.
-      systemPromptParts.push(`WARN: Requested ${type} "${name}" not found.`)
-    }
+    targetBody = body
+    targetToolsFilter = attributes.tools
+    targetMcpServersFilter = attributes.mcpServers
   }
 
-  if (systemPromptParts.length > 0) {
-    options.systemPrompt = systemPromptParts.join('\n\n')
-  }
+  // 2. 基于数据生成上下文
+  // 2.1 加载关联上下文
+  systemPromptParts.push(loader.generateRulesPrompt(rules))
+  systemPromptParts.push(loader.generateSkillsPrompt(targetSkills))
+  // 2.2 加载上下文路由
+  systemPromptParts.push(loader.generateEntitiesRoutePrompt(entities))
+  systemPromptParts.push(loader.generateSkillsRoutePrompt(skills))
+  systemPromptParts.push(loader.generateSpecRoutePrompt(specs))
+  // 2.3 加载目标上下文与配置
+  systemPromptParts.push(targetBody)
+  targetToolsFilter && (
+    options.tools = targetToolsFilter
+  )
+  targetMcpServersFilter && (
+    options.mcpServers = targetMcpServersFilter
+  )
 
+  options.systemPrompt = systemPromptParts.join('\n\n')
   return options
 }

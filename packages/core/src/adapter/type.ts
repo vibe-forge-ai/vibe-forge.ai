@@ -68,12 +68,12 @@ export interface AdapterQueryOptions {
   appendSystemPrompt?: boolean
 
   mcpServers?: {
-    include: string[]
-    exclude: string[]
+    include?: string[]
+    exclude?: string[]
   }
   tools?: {
-    include: string[]
-    exclude: string[]
+    include?: string[]
+    exclude?: string[]
   }
   skills?: {
     include?: string[]
