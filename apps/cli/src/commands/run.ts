@@ -67,42 +67,18 @@ export function registerRunCommand(program: Command) {
         .filter(Boolean)
         .join('\n\n')
 
-      const toolsInclude = resolvedConfig.tools?.include || opts.includeTool
-        ? [
-          ...(resolvedConfig.tools?.include ?? []),
-          ...(opts.includeTool ?? [])
-        ]
-        : undefined
-      const toolsExclude = resolvedConfig.tools?.exclude || opts.excludeTool
-        ? [
-          ...(resolvedConfig.tools?.exclude ?? []),
-          ...(opts.excludeTool ?? [])
-        ]
-        : undefined
-      const tools = toolsInclude || toolsExclude
-        ? {
-          include: toolsInclude,
-          exclude: toolsExclude
-        }
-        : undefined
-      const mcpServersInclude = resolvedConfig.mcpServers?.include || opts.includeMcpServer
-        ? [
-          ...(resolvedConfig.mcpServers?.include ?? []),
-          ...(opts.includeMcpServer ?? [])
-        ]
-        : undefined
-      const mcpServersExclude = resolvedConfig.mcpServers?.exclude || opts.excludeMcpServer
-        ? [
-          ...(resolvedConfig.mcpServers?.exclude ?? []),
-          ...(opts.excludeMcpServer ?? [])
-        ]
-        : undefined
-      const mcpServers = mcpServersInclude || mcpServersExclude
-        ? {
-          include: mcpServersInclude,
-          exclude: mcpServersExclude
-        }
-        : undefined
+      const tools = mergeListConfig(
+        resolvedConfig.tools,
+        opts.includeTool,
+        opts.excludeTool
+      )
+
+      const mcpServers = mergeListConfig(
+        resolvedConfig.mcpServers,
+        opts.includeMcpServer,
+        opts.excludeMcpServer
+      )
+
       const { session } = await run({
         adapter: opts.adapter,
         cwd: process.cwd(),
@@ -152,4 +128,31 @@ export function registerRunCommand(program: Command) {
         }
       })
     })
+}
+
+function mergeListConfig(
+  config: { include?: string[]; exclude?: string[] } | undefined,
+  includeOpts: string[] | undefined,
+  excludeOpts: string[] | undefined
+) {
+  const include = config?.include || includeOpts
+    ? [
+      ...(config?.include ?? []),
+      ...(includeOpts ?? [])
+    ]
+    : undefined
+
+  const exclude = config?.exclude || excludeOpts
+    ? [
+      ...(config?.exclude ?? []),
+      ...(excludeOpts ?? [])
+    ]
+    : undefined
+
+  return include || exclude
+    ? {
+      include,
+      exclude
+    }
+    : undefined
 }
