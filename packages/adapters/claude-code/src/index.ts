@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { resolve } from 'node:path'
 
 import { defineAdapter } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterEvent, AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
@@ -234,15 +235,29 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
   )
 
   // Default ccr path if not provided in env
-  const {
-    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath = 'claude',
+  let {
+    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath,
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__: cliArgs = ''
   } = env
+  if (!cliPath) {
+    cliPath = 'claude'
+  }
+  if (cliPath?.startsWith('.')) {
+    cliPath = resolve(cwd, cliPath)
+  }
 
   // Common Arguments
   const args: string[] = [
     ...(cliArgs?.split(/\s+/).filter(Boolean) as string[]),
-    description,
+    ...(description
+      ? [JSON.stringify(
+        `${(
+          description?.trimStart().startsWith('-') ? '\0' : ''
+        )}${(
+          description.replace(/`/g, "'")
+        )}`
+      )]
+      : []),
     '--mcp-config',
     mcpCachePath,
     '--settings',
@@ -263,11 +278,10 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
 
   // Handle system prompt logic
   if (systemPrompt != null && systemPrompt !== '') {
-    if (appendSystemPrompt) {
-      args.push('--append-system-prompt', systemPrompt)
-    } else {
-      args.push('--system-prompt', systemPrompt)
-    }
+    args.push(
+      appendSystemPrompt ? '--append-system-prompt' : '--system-prompt',
+      systemPrompt.replace(/`/g, "'")
+    )
   }
 
   return { cliPath: cliPath!, args, env, cwd, sessionId }
