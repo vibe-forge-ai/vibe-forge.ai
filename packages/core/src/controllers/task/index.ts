@@ -1,2 +1,2 @@
-export { resolveTaskConfig } from './resolve-config'
+export { generateAdapterQueryOptions } from './generate-adapter-query-options'
 export { run } from './run'

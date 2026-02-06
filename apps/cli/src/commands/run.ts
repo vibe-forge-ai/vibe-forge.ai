@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import type { Command } from 'commander'
 
-import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
+import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extraOptions } from './@core/extra-options'
@@ -54,7 +54,7 @@ export function registerRunCommand(program: Command) {
       const sessionId = opts.sessionId ?? uuid()
       const type = opts.resume ? 'resume' : 'create'
 
-      const resolvedConfig = await resolveTaskConfig(
+      const resolvedConfig = await generateAdapterQueryOptions(
         opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined),
         opts.spec || opts.entity,
         process.cwd()

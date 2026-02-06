@@ -1,7 +1,7 @@
 import process from 'node:process'
 
 import type { AdapterOutputEvent, AdapterSession } from '@vibe-forge/core'
-import { resolveTaskConfig, run } from '@vibe-forge/core/controllers/task'
+import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 export interface TaskInfo {
@@ -40,7 +40,7 @@ class TaskManager {
 
     try {
       // Resolve Config
-      const resolvedConfig = await resolveTaskConfig(type, name, process.cwd())
+      const resolvedConfig = await generateAdapterQueryOptions(type, name, process.cwd())
 
       // Start Task
       const { session } = await run({

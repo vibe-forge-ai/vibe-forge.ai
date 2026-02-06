@@ -5,7 +5,7 @@ import type { AdapterQueryOptions } from '#~/adapter/type.js'
 import { DefinitionLoader } from '#~/utils/definition-loader.js'
 import type { Definition, Filter, Skill } from '#~/utils/definition-loader.js'
 
-export async function resolveTaskConfig(
+export async function generateAdapterQueryOptions(
   type: 'spec' | 'entity' | undefined,
   name?: string,
   cwd: string = process.cwd()
