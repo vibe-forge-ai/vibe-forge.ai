@@ -20,7 +20,7 @@ class TaskManager {
 
   public async startTask(options: {
     description: string
-    type?: 'spec' | 'entity'
+    type?: 'default' | 'spec' | 'entity'
     name?: string
     adapter?: string
     background?: boolean
@@ -40,7 +40,11 @@ class TaskManager {
 
     try {
       // Resolve Config
-      const resolvedConfig = await generateAdapterQueryOptions(type, name, process.cwd())
+      const resolvedConfig = await generateAdapterQueryOptions(
+        type !== 'default' ? type : undefined,
+        name,
+        process.cwd()
+      )
 
       // Start Task
       const { session } = await run({

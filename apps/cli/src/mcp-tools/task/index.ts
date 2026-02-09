@@ -18,11 +18,11 @@ export default defineRegister((server) => {
                 .describe('The description or prompt for the task'),
               type: z
                 .enum([
+                  'default',
                   'spec',
                   'entity'
                 ])
-                .describe('The type of definition to load (spec or entity)')
-                .optional(),
+                .describe('The type of definition to load (default, spec or entity)'),
               name: z
                 .string()
                 .describe('The name of the spec or entity to load')
