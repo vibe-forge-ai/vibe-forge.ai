@@ -1,5 +1,12 @@
 import { getDb } from '#~/db.js'
-import { notifySessionUpdated, processUserMessage, startAdapterSession, updateAndNotifySession, killSession, getSessionInteraction } from '#~/websocket/index.js'
+import {
+  getSessionInteraction,
+  killSession,
+  notifySessionUpdated,
+  processUserMessage,
+  startAdapterSession,
+  updateAndNotifySession
+} from '#~/websocket/index.js'
 import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
@@ -69,7 +76,7 @@ export function sessionsRouter(): Router {
       try {
         await startAdapterSession(session.id)
         processUserMessage(session.id, initialMessage)
-        
+
         // 获取更新后的会话状态
         const updated = db.getSession(session.id)
         if (updated) {
@@ -92,7 +99,7 @@ export function sessionsRouter(): Router {
       try {
         await startAdapterSession(session.id)
         processUserMessage(session.id, initialMessage)
-        
+
         // 获取更新后的会话状态
         const updated = db.getSession(session.id)
         if (updated) {

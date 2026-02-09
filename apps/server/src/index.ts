@@ -10,7 +10,6 @@ import bodyParser from 'koa-bodyparser'
 
 import { loadEnv } from '@vibe-forge/core'
 
-import { configRouter } from '#~/routes/config.js'
 import { interactRouter } from '#~/routes/interact.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
 import { setupWebSocket } from '#~/websocket/index.js'
@@ -29,7 +28,6 @@ async function bootstrap() {
   // Register routers
   const routers = [
     { prefix: '/api/sessions', router: sessionsRouter() },
-    { prefix: '/api/config', router: configRouter() },
     { prefix: '/api/interact', router: interactRouter() }
   ]
 
@@ -48,12 +46,13 @@ async function bootstrap() {
 
   const {
     __VF_PROJECT_AI_SERVER_HOST__: serverHost,
-    __VF_PROJECT_AI_SERVER_PORT__: serverPort
+    __VF_PROJECT_AI_SERVER_PORT__: serverPort,
+    __VF_PROJECT_AI_SERVER_WS_PATH__: serverWSPath
   } = env
   server.listen(serverPort, serverHost, () => {
     // eslint-disable-next-line no-console
     console.log(
-      `[server] listening on http://${serverHost}:${serverPort}, ws path ${env.WS_PATH}`
+      `[server] listening on http://${serverHost}:${serverPort}, ws path ${serverWSPath}`
     )
   })
 }

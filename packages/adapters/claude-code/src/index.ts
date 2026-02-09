@@ -325,7 +325,11 @@ export default defineAdapter({
         const lines = stdoutBuffer.split('\n')
         stdoutBuffer = lines.pop() ?? ''
         for (const line of lines) {
-          const trimmed = line.trim()
+          logger.debug('Claude Code CLI stdout:', { line })
+          // 去除 \u001b[31m\u001b[39m 颜色编码
+          // eslint-disable-next-line no-control-regex
+          const cleanedLine = line.replace(/\u001B\[[0-9;]*[a-z]/gi, '')
+          const trimmed = cleanedLine.trim()
           if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             try {
               handleIncomingEvent(JSON.parse(trimmed) as ClaudeCodeIncomingEvent, onEvent)

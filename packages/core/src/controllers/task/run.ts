@@ -75,7 +75,7 @@ export const run = async (
       detail.status = event.data.exitCode === 0 ? 'completed' : 'failed'
       detail.endTime = Date.now()
       detail.exitCode = event.data.exitCode ?? undefined
-      saveDetail(detail).catch(console.error)
+      void saveDetail(detail).catch(console.error)
     }
     originalOnEvent(event)
   }

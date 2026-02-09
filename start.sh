@@ -1,8 +1,8 @@
-export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
 export HOME=`realpath ./.ai/.mock`
-export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__=`realpath ./apps/server/node_modules/.bin/ccr`
+
+export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
+export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__='./packages/adapters/claude-code/node_modules/.bin/ccr'
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"
-export FORCE_COLOR=1
 
 # 后台运行 server
 node -C __vibe-forge__ -r esbuild-register ./apps/server/src/index.ts | tee .logs/server.log &

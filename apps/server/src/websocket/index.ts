@@ -315,7 +315,7 @@ export function processUserMessage(sessionId: string, text: string) {
 }
 
 export function setupWebSocket(server: Server, env: ServerEnv) {
-  const wss = new WebSocketServer({ server, path: env.WS_PATH })
+  const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
 
   wss.on('connection', async (ws, req) => {
     globalSockets.add(ws)
@@ -345,11 +345,11 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     ws.on('message', (raw: Buffer) => {
       try {
         const msg = JSON.parse(String(raw)) as any
-        
+
         if (msg.type === 'interaction_response') {
           const { id, data } = msg
           const pending = pendingInteractions.get(id)
-          
+
           if (pending) {
             clearTimeout(pending.timer)
             const cached = adapterCache.get(sessionId)
