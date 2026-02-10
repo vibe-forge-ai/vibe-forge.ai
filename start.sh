@@ -5,7 +5,7 @@ export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__='./packages/adapters/claud
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"
 
 # 后台运行 server
-node -C __vibe-forge__ -r esbuild-register ./apps/server/src/index.ts | tee .logs/server.log &
+node --watch --watch-path ./apps/server/src -C __vibe-forge__ -r esbuild-register ./apps/server/src/index.ts | tee .logs/server.log &
 # 后台运行 client
 cd ./apps/web && npm run dev | tee .logs/client.log &
 
