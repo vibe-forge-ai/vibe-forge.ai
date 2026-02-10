@@ -1,4 +1,3 @@
-/* eslint-disable no-labels */
 import process from 'node:process'
 
 import type { AdapterQueryOptions } from '#~/adapter/type.js'

@@ -1,7 +1,7 @@
 import './SessionItem.scss'
 
 import type { Session, SessionStatus } from '@vibe-forge/core'
-import { Badge, Button, Checkbox, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
+import { Badge, Button, Checkbox, List, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { useMemo } from 'react'

@@ -1,6 +1,5 @@
 import type { SessionInfo } from './adapter/index.js'
-import type { AskUserQuestionParams } from './types.js'
-import type { ChatMessage } from './types.js'
+import type { AskUserQuestionParams, ChatMessage } from './types.js'
 
 export type WSEvent =
   | { type: 'error'; message: string }
