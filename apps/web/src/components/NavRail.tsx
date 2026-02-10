@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { themeAtom } from '../store'
-import type { ThemeMode } from '../store'
 
 export function NavRail({
   collapsed,

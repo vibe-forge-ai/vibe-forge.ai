@@ -11,7 +11,7 @@ import { NavRail } from '#~/components/NavRail'
 import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
 import type { Session } from '@vibe-forge/core'
-import { isSidebarCollapsedAtom, isSidebarResizingAtom, sidebarWidthAtom, themeAtom } from './store/index'
+import { isSidebarResizingAtom, sidebarWidthAtom, themeAtom } from './store/index'
 
 const MIN_SIDEBAR_WIDTH = 200
 const MAX_SIDEBAR_WIDTH = 600
@@ -45,7 +45,6 @@ export default function App() {
   const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
 
   const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
   const setIsResizing = useSetAtom(isSidebarResizingAtom)
 
@@ -90,14 +89,6 @@ export default function App() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp])
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed((prev: boolean) => {
-      const newState = !prev
-      localStorage.setItem('sidebarCollapsed', newState.toString())
-      return newState
-    })
-  }
-
   const isDarkMode = themeMode === 'dark' ||
     (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
@@ -132,13 +123,11 @@ export default function App() {
       }}
     >
       <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-        <NavRail collapsed={isSidebarCollapsed} onToggleCollapse={toggleSidebar} />
+        <NavRail />
         {showSidebar && (
           <>
             <Sidebar
               width={sidebarWidth}
-              collapsed={isSidebarCollapsed}
-              onToggleCollapse={toggleSidebar}
               activeId={activeId}
               onSelectSession={(session: Session, isNew?: boolean) => {
                 if (session.id === '') {
@@ -149,19 +138,6 @@ export default function App() {
               }}
               onDeletedSession={handleDeletedSession}
             />
-            {!isSidebarCollapsed && (
-              <div
-                onMouseDown={handleMouseDown}
-                style={{
-                  width: '4px',
-                  cursor: 'col-resize',
-                  backgroundColor: isResizing ? '#2563eb' : 'transparent',
-                  transition: 'background-color 0.2s',
-                  zIndex: 10,
-                  flexShrink: 0
-                }}
-              />
-            )}
           </>
         )}
         <Layout.Content

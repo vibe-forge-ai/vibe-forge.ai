@@ -1,14 +1,14 @@
 import './Sidebar.scss'
 
 import { Button, Tooltip } from 'antd'
-import { useAtomValue } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
-import { createSession, deleteSession, updateSession } from '../api'
-import { isSidebarResizingAtom } from '../store/index'
+import { deleteSession, updateSession } from '../api'
+import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../store/index'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 
@@ -16,18 +16,15 @@ export function Sidebar({
   activeId,
   onSelectSession,
   onDeletedSession,
-  width,
-  collapsed,
-  onToggleCollapse
+  width
 }: {
   activeId?: string
   onSelectSession: (session: Session, isNew?: boolean) => void
   onDeletedSession?: (id: string, nextId?: string) => void
   width: number
-  collapsed: boolean
-  onToggleCollapse: () => void
 }) {
   const { t } = useTranslation()
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
   const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
@@ -192,12 +189,12 @@ export function Sidebar({
 
   return (
     <div
-      className={`sidebar-container ${collapsed ? 'collapsed' : ''}`}
+      className={`sidebar-container ${isSidebarCollapsed ? 'collapsed' : ''}`}
       style={{
-        width: collapsed ? 0 : width,
-        minWidth: collapsed ? 0 : undefined,
+        width: isSidebarCollapsed ? 0 : width,
+        minWidth: isSidebarCollapsed ? 0 : undefined,
         transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        borderRight: collapsed ? 'none' : undefined
+        borderRight: isSidebarCollapsed ? 'none' : undefined
       }}
     >
       <div
@@ -205,12 +202,10 @@ export function Sidebar({
         style={{
           width,
           transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: collapsed ? `translateX(-${width}px)` : 'translateX(0)'
+          transform: isSidebarCollapsed ? `translateX(-${width}px)` : 'translateX(0)'
         }}
       >
         <SidebarHeader
-          onToggleCollapse={onToggleCollapse}
-          isCollapsed={collapsed}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isBatchMode={isBatchMode}

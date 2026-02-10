@@ -1,12 +1,13 @@
 import './SidebarHeader.scss'
 
 import { Button, Checkbox, Input, Popconfirm, Tooltip } from 'antd'
-import React, { useEffect, useRef } from 'react'
+import { useAtom } from 'jotai'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { isSidebarCollapsedAtom } from '#~/store/index.js'
+
 interface SidebarHeaderProps {
-  onToggleCollapse: () => void
-  isCollapsed?: boolean
   searchQuery: string
   onSearchChange: (query: string) => void
   isBatchMode: boolean
@@ -20,8 +21,6 @@ interface SidebarHeaderProps {
 }
 
 export function SidebarHeader({
-  onToggleCollapse,
-  isCollapsed,
   searchQuery,
   onSearchChange,
   isBatchMode,
@@ -34,6 +33,7 @@ export function SidebarHeader({
   onCreateSession
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
 
   return (
@@ -97,18 +97,18 @@ export function SidebarHeader({
             </Popconfirm>
           )}
         </div>
-        <Tooltip title={isCollapsed ? t('common.expand') : t('common.collapse')}>
+        <Tooltip title={isSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
           <Button
             className='sidebar-collapse-btn'
             type='text'
-            onClick={onToggleCollapse}
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           >
             <span className='material-symbols-rounded'>
-              {isCollapsed ? 'dock_to_right' : 'left_panel_close'}
+              {isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
             </span>
           </Button>
         </Tooltip>
-        {isCollapsed && (
+        {isSidebarCollapsed && (
           <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='right'>
             <Button
               className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
