@@ -71,10 +71,10 @@ export default defineRegister((server) => {
   )
 
   server.registerTool(
-    'GetTaskStatus',
+    'GetTaskInfo',
     {
-      title: 'Get Task Status',
-      description: 'Check the status and logs of a specific task',
+      title: 'Get Task Info',
+      description: 'Get the status and logs of a specific task',
       inputSchema: z.object({
         taskId: z.string().describe('The ID of the task to check')
       })
@@ -87,16 +87,20 @@ export default defineRegister((server) => {
           isError: true
         }
       }
-
-      // Return last 10 log lines to keep context manageable
-      const recentLogs = task.logs.slice(-10).join('\n')
-
       return {
         content: [{
           type: 'text',
-          text: `Task ID: ${task.taskId}\nStatus: ${task.status}\nExit Code: ${
-            task.exitCode ?? 'N/A'
-          }\n\nRecent Logs:\n${recentLogs}`
+          text: JSON.stringify([{
+            taskId: task.taskId,
+            description: task.description,
+            status: task.status,
+            exitCode: task.exitCode,
+            logs: task.logs,
+            adapter: task.adapter,
+            type: task.type,
+            name: task.name,
+            background: task.background
+          }])
         }]
       }
     }

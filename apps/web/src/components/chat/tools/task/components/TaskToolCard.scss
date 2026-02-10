@@ -1,0 +1,114 @@
+.task-tool-card {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(
+    in srgb,
+    var(--bg-color) 92%,
+    var(--primary-color) 8%
+  );
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  &__status-icon {
+    font-size: 20px;
+    color: var(--sub-text-color);
+    transition: color .2s ease;
+
+    &:hover {
+      color: var(--text-color);
+    }
+
+    &.running {
+      color: var(--primary-color);
+    }
+
+    &.completed {
+      color: var(--success-color);
+    }
+
+    &.failed {
+      color: var(--danger-color);
+    }
+  }
+
+  &__execution-icon {
+    font-size: 20px;
+    color: var(--sub-text-color);
+    transition: color .2s ease;
+
+    &:hover {
+      color: var(--text-color);
+    }
+
+    &--background {
+      color: var(--sub-text-color);
+    }
+
+    &--foreground {
+      color: var(--warning-color);
+    }
+  }
+
+  &__main {
+    > .code-block-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    flex: 1;
+    margin-right: 12px;
+  }
+
+  &__session-id {
+    font-size: 11px;
+    color: var(--sub-text-color);
+    opacity: .6;
+    font-family: monospace;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  &__content {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  &__meta {
+    margin: 6px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__meta-chip {
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--sub-text-color);
+    background: var(--bg-color);
+  }
+}

@@ -1,0 +1,56 @@
+.tool-group.start-tasks-tool {
+  border-color: color-mix(
+    in srgb,
+    var(--border-color) 55%,
+    var(--primary-color) 45%
+  );
+
+  & .tool-call-header {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--tag-bg) 80%, var(--primary-color) 20%),
+      var(--tag-bg)
+    );
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__icon {
+    font-size: 16px;
+  }
+
+  &__title {
+    font-weight: 600;
+  }
+
+  &__count {
+    margin-left: 4px;
+    padding: 1px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sub-text-color);
+    background: color-mix(in srgb, var(--bg-color) 70%, transparent 30%);
+  }
+
+  &__list {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__empty {
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--sub-text-color);
+    background: var(--bg-color);
+  }
+}

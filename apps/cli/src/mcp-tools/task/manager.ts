@@ -6,6 +6,10 @@ import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/t
 export interface TaskInfo {
   taskId: string
   adapter?: string
+  description: string
+  type?: 'default' | 'spec' | 'entity'
+  name?: string
+  background?: boolean
   status: 'running' | 'completed' | 'failed'
   exitCode?: number
   logs: string[]
@@ -31,6 +35,10 @@ class TaskManager {
     const taskInfo: TaskInfo = {
       taskId,
       adapter,
+      description,
+      type,
+      name,
+      background,
       status: 'running',
       logs: [],
       createdAt: Date.now()
