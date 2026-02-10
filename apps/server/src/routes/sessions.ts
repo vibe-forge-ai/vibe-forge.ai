@@ -1,3 +1,5 @@
+import Router from '@koa/router'
+
 import { getDb } from '#~/db.js'
 import {
   getSessionInteraction,
@@ -7,7 +9,6 @@ import {
   startAdapterSession,
   updateAndNotifySession
 } from '#~/websocket/index.js'
-import Router from '@koa/router'
 
 export function sessionsRouter(): Router {
   const router = new Router()
