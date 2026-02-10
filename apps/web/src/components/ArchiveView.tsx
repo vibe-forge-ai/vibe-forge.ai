@@ -371,9 +371,7 @@ export function ArchiveView() {
                               height: '24px',
                               padding: 0
                             }}
-                            icon={
-                              <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>delete</span>
-                            }
+                            icon={<span className='material-symbols-rounded' style={{ fontSize: '18px' }}>delete</span>}
                             onClick={(e) => e.stopPropagation()}
                           />
                         </Popconfirm>

@@ -28,7 +28,7 @@ function ChatView() {
     return (
       <div style={{ height: '100%', display: 'grid', placeItems: 'center', alignContent: 'center', gap: '16px' }}>
         <Empty description={t('common.sessionNotFound')} />
-        <Button type="primary" onClick={() => navigate('/')}>{t('common.backToHome')}</Button>
+        <Button type='primary' onClick={() => navigate('/')}>{t('common.backToHome')}</Button>
       </div>
     )
   }
@@ -98,8 +98,8 @@ export default function App() {
     })
   }
 
-  const isDarkMode = themeMode === 'dark'
-    || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const isDarkMode = themeMode === 'dark' ||
+    (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const showSidebar = currentPath === '/' || currentPath.startsWith('/session/')
 
@@ -108,9 +108,9 @@ export default function App() {
     if (activeId !== deletedId) return
 
     if (nextId) {
-       void navigate(`/session/${nextId}`)
+      void navigate(`/session/${nextId}`)
     } else {
-       void navigate('/')
+      void navigate('/')
     }
   }, [activeId, navigate])
 

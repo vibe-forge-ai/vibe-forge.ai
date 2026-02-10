@@ -7,10 +7,10 @@
   --sidebar-active-text: #2563eb;
   --sidebar-btn-color: #9ca3af;
   --sidebar-btn-hover-bg: #fff1f0;
-  
+
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
-  box-shadow: 6px 0 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 6px 0 16px rgba(0, 0, 0, .06);
   z-index: 5;
   box-sizing: border-box;
   height: 100%;
@@ -26,7 +26,7 @@
     .sidebar-new-chat {
       padding: 0 16px;
       flex-shrink: 0;
-      
+
       .new-chat-btn {
         height: 36px;
         display: flex;
@@ -34,30 +34,32 @@
         justify-content: space-between;
         padding: 0 12px;
         font-weight: 500;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        
+        transition: all .2s cubic-bezier(.4, 0, .2, 1);
+
         .btn-content {
           display: flex;
           align-items: center;
           gap: 2px;
         }
-  
+
         .material-symbols-rounded {
           font-size: 18px;
         }
-  
+
         .shortcut-tag {
           font-size: 12px;
-          opacity: 0.8;
-          font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-          background: rgba(255, 255, 255, 0.2);
+          opacity: .8;
+          font-family:
+            ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation
+            Mono, monospace;
+          background: rgba(255, 255, 255, .2);
           padding: 2px 6px;
           border-radius: 4px;
           line-height: 1;
         }
-  
+
         &.active-scale {
-          transform: scale(0.96);
+          transform: scale(.96);
         }
 
         // Active State Styles
@@ -72,7 +74,7 @@
           .shortcut-tag {
             display: none;
           }
-          
+
           &:hover {
             background-color: transparent !important;
             color: var(--sidebar-active-text) !important;

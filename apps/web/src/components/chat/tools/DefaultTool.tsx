@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CodeBlock } from '../CodeBlock'
 import { ToolCallBox } from '../ToolCallBox'
+import { safeJsonStringify } from '../safeSerialize'
 
 export function DefaultTool({
   item,
@@ -29,7 +30,7 @@ export function DefaultTool({
         content={
           <div className='tool-content'>
             <CodeBlock
-              code={JSON.stringify(item.input != null ? item.input : {}, null, 2)}
+              code={safeJsonStringify(item.input != null ? item.input : {}, 2)}
               lang='json'
             />
           </div>
@@ -55,7 +56,7 @@ export function DefaultTool({
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{resultItem.content}</ReactMarkdown>
                   </div>
                   : <CodeBlock code={resultItem.content} lang='text' />)
-                : <CodeBlock code={JSON.stringify(resultItem.content, null, 2)} lang='json' />}
+                : <CodeBlock code={safeJsonStringify(resultItem.content, 2)} lang='json' />}
             </div>
           }
         />

@@ -4,6 +4,7 @@ import type { ChatMessageContent } from '@vibe-forge/core'
 import { useTranslation } from 'react-i18next'
 import { CodeBlock } from '../CodeBlock'
 import { ToolCallBox } from '../ToolCallBox'
+import { safeJsonStringify } from '../safeSerialize'
 
 export function ReadTool({
   item,
@@ -46,7 +47,7 @@ export function ReadTool({
 
   // Clean content by removing line numbers and markers
   const cleanContent = (content: any): string => {
-    if (typeof content !== 'string') return JSON.stringify(content, null, 2)
+    if (typeof content !== 'string') return safeJsonStringify(content, 2)
 
     // Only keep lines that start with the line number pattern (e.g., "  1→")
     // This effectively removes <system-reminder> blocks and any surrounding whitespace

@@ -68,11 +68,11 @@ export function SessionItem({
     if (!status) {
       return <div className={`status-dot ${isActive ? 'active' : ''}`} />
     }
-    
+
     let icon = ''
     let color = ''
     const title = t(`common.status.${status}`)
-    
+
     switch (status) {
       case 'completed':
         icon = 'check_circle'
@@ -99,13 +99,13 @@ export function SessionItem({
       default:
         return <div className={`status-dot ${isActive ? 'active' : ''}`} />
     }
-    
+
     return (
       <Tooltip title={title}>
-        <span 
+        <span
           className={`material-symbols-rounded status-icon ${status === 'running' ? 'spin' : ''}`}
-          style={{ 
-            color, 
+          style={{
+            color,
             fontSize: '16px',
             lineHeight: '16px',
             display: 'flex',
@@ -194,7 +194,10 @@ export function SessionItem({
           )}
           <div className='session-meta'>
             {session.status && (
-              <span className='status-text' style={{ fontSize: '11px', color: 'var(--sub-text-color)', marginRight: '8px' }}>
+              <span
+                className='status-text'
+                style={{ fontSize: '11px', color: 'var(--sub-text-color)', marginRight: '8px' }}
+              >
                 {t(`common.status.${session.status}`)}
               </span>
             )}

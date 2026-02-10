@@ -10,7 +10,7 @@ export function MessageFooter({
   isUser: boolean
 }) {
   const { message } = App.useApp()
-  
+
   return (
     <div className='msg-footer'>
       {isUser && msg.model != null && (

@@ -43,10 +43,12 @@ export function CompletionMenu({
             className={`completion-item ${index === selectedIndex ? 'active' : ''}`}
             onClick={() => onSelect(item)}
           >
-            {item.icon != null && item.icon !== '' && <span className='material-symbols-rounded icon'>{item.icon}</span>}
+            {item.icon != null && item.icon !== '' &&
+              <span className='material-symbols-rounded icon'>{item.icon}</span>}
             <div className='item-info'>
               <span className='label'>{item.label}</span>
-              {item.description != null && item.description !== '' && <span className='description'>{item.description}</span>}
+              {item.description != null && item.description !== '' &&
+                <span className='description'>{item.description}</span>}
             </div>
           </div>
         ))}

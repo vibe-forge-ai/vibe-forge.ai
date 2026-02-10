@@ -3,19 +3,19 @@ import './Chat.scss'
 import { App } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
-import { connectionManager } from '../connectionManager'
 import { createSession, getSessionMessages } from '../api'
+import { connectionManager } from '../connectionManager'
 
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
 import { MessageItem } from './chat/MessageItem'
-import { processMessages } from './chat/messageUtils'
 import { Sender } from './chat/Sender'
 import { ToolGroup } from './chat/ToolGroup'
+import { processMessages } from './chat/messageUtils'
 
 export function Chat({
   session
@@ -27,7 +27,9 @@ export function Chat({
   const navigate = useNavigate()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
-  const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(null)
+  const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(
+    null
+  )
   const [isCreating, setIsCreating] = useState(false)
   const [isReady, setIsReady] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -273,7 +275,7 @@ export function Chat({
       setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, text.trim())
-        
+
         await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
           if (!prev?.sessions) return { sessions: [newSession] }
           return {

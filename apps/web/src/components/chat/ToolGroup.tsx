@@ -50,7 +50,7 @@ export function ToolGroup({
   return (
     <div className='tool-group-container'>
       <div className='tool-group-wrapper card-style'>
-        <div 
+        <div
           className='tool-group-header'
           onClick={() => setExpanded(!expanded)}
         >
@@ -75,13 +75,15 @@ export function ToolGroup({
           </div>
         )}
 
-        {/* Always show the last item, but if expanded, it's just part of the list visually. 
+        {
+          /* Always show the last item, but if expanded, it's just part of the list visually.
             If collapsed, it appears "below" the header.
             Actually, to make it look like "part of the list", we should just put it in the flow.
-            
+
             When collapsed: Header + Last Item
             When expanded: Header + Other Items + Last Item
-        */}
+        */
+        }
         <div className='tool-group-last-item'>
           <ToolRenderer
             item={lastItem.item}

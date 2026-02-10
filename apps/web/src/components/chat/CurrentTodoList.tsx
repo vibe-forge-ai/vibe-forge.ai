@@ -90,8 +90,8 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
                 </span>
                 <div className='todo-content-wrapper'>
                   <span className='text'>{todo.content}</span>
-                  {todo.priority != null && todo.priority !== ''
-                    && <span className={`priority-tag ${todo.priority}`}>{todo.priority}</span>}
+                  {todo.priority != null && todo.priority !== '' &&
+                    <span className={`priority-tag ${todo.priority}`}>{todo.priority}</span>}
                 </div>
               </div>
             ))}

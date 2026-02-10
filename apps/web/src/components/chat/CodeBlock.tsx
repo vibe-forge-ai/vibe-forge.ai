@@ -90,8 +90,8 @@ export function CodeBlock({
 
   useEffect(() => {
     let isMounted = true
-    const isDark = themeMode === 'dark'
-      || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const isDark = themeMode === 'dark' ||
+      (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
     void codeToHtml(code, {
       lang,

@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CodeBlock } from '../CodeBlock'
 import { ToolCallBox } from '../ToolCallBox'
+import { safeJsonStringify } from '../safeSerialize'
 
 export function BashTool({
   item,
@@ -74,7 +75,7 @@ export function BashTool({
                 <div className='bash-code-wrapper'>
                   {typeof resultItem.content === 'string'
                     ? <CodeBlock code={resultItem.content} lang='text' />
-                    : <CodeBlock code={JSON.stringify(resultItem.content, null, 2)} lang='json' />}
+                    : <CodeBlock code={safeJsonStringify(resultItem.content, 2)} lang='json' />}
                 </div>
               </div>
             </div>

@@ -57,25 +57,25 @@
     font-size: 12px;
     color: var(--sub-text-color);
     border-bottom: 1px solid var(--border-color);
-    
+
     .label {
-        font-weight: 500;
-        margin-right: 8px;
+      font-weight: 500;
+      margin-right: 8px;
     }
-    
+
     .value {
-        font-family: var(--font-mono);
-        background: var(--bg-color-hover);
-        padding: 2px 4px;
-        border-radius: 4px;
+      font-family: var(--font-mono);
+      background: var(--bg-color-hover);
+      padding: 2px 4px;
+      border-radius: 4px;
     }
   }
 
   .tool-placeholder {
-      padding: 8px 12px;
-      color: var(--sub-text-color);
-      font-size: 12px;
-      font-style: italic;
+    padding: 8px 12px;
+    color: var(--sub-text-color);
+    font-size: 12px;
+    font-style: italic;
   }
 
   .file-list-container {
@@ -84,6 +84,6 @@
     border-right: none;
     border-bottom: none;
     // Keep top border if it separates from input-details, or remove all if cleaner
-    border: none; 
+    border: none;
   }
 }

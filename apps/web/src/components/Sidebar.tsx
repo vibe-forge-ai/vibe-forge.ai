@@ -42,11 +42,11 @@ export function Sidebar({
     if (searchQuery.trim() === '') return sessions
     const query = searchQuery.toLowerCase()
     return sessions.filter((s: Session) =>
-      (s.title ?? '').toLowerCase().includes(query)
-      || (s.lastMessage ?? '').toLowerCase().includes(query)
-      || (s.lastUserMessage ?? '').toLowerCase().includes(query)
-      || s.id.toLowerCase().includes(query)
-      || (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
+      (s.title ?? '').toLowerCase().includes(query) ||
+      (s.lastMessage ?? '').toLowerCase().includes(query) ||
+      (s.lastUserMessage ?? '').toLowerCase().includes(query) ||
+      s.id.toLowerCase().includes(query) ||
+      (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
     )
   }, [sessions, searchQuery])
 
@@ -139,7 +139,7 @@ export function Sidebar({
     try {
       await Promise.all(Array.from(selectedIds).map(async (id: string) => updateSession(id, { isArchived: true })))
       await mutateSessions()
-      
+
       // Calculate nextId if active session is archived
       if (activeId && selectedIds.has(activeId)) {
         let nextId: string | undefined
@@ -150,7 +150,7 @@ export function Sidebar({
         }
         onDeletedSession?.(activeId, nextId)
       }
-      
+
       setSelectedIds(new Set<string>())
       setIsBatchMode(false)
     } catch (err) {
@@ -171,7 +171,7 @@ export function Sidebar({
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        
+
         // 如果已经是激活状态，则不执行任何操作
         if (isCreatingSession) return
 
@@ -197,7 +197,7 @@ export function Sidebar({
         width: collapsed ? 0 : width,
         minWidth: collapsed ? 0 : undefined,
         transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        borderRight: collapsed ? 'none' : undefined,
+        borderRight: collapsed ? 'none' : undefined
       }}
     >
       <div
@@ -227,7 +227,7 @@ export function Sidebar({
           }}
         />
         <div className='sidebar-new-chat'>
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement="right">
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement='right'>
             <Button
               ref={createBtnRef}
               className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}

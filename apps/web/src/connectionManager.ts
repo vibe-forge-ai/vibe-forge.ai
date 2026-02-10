@@ -6,11 +6,11 @@ class ConnectionManager {
   private sockets = new Map<string, WebSocket>()
   private subscribers = new Map<string, Set<WSHandlers>>()
   private disconnectTimers = new Map<string, NodeJS.Timeout>()
-  
+
   // Keep connection alive for 60 seconds after last subscriber leaves
   // This allows for quick navigation between sessions without reconnecting
   // and basic background task updates if the user quickly checks back
-  private readonly DISCONNECT_DELAY = 60000 
+  private readonly DISCONNECT_DELAY = 60000
 
   /**
    * Connect to a session or reuse existing connection
@@ -33,7 +33,7 @@ class ConnectionManager {
 
     // 3. Ensure WebSocket is open
     const ws = this.sockets.get(sessionId)
-    
+
     // If socket doesn't exist or is closed/closing, create a new one
     if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
       this.createConnection(sessionId)
@@ -73,18 +73,21 @@ class ConnectionManager {
     const subs = this.subscribers.get(sessionId)
     if (subs) {
       subs.delete(handlers)
-      
+
       // If no more subscribers, schedule disconnect
       if (subs.size === 0) {
-        this.disconnectTimers.set(sessionId, setTimeout(() => {
-           const ws = this.sockets.get(sessionId)
-           if (ws) {
-             ws.close()
-             this.sockets.delete(sessionId)
-           }
-           this.disconnectTimers.delete(sessionId)
-           this.subscribers.delete(sessionId)
-        }, this.DISCONNECT_DELAY))
+        this.disconnectTimers.set(
+          sessionId,
+          setTimeout(() => {
+            const ws = this.sockets.get(sessionId)
+            if (ws) {
+              ws.close()
+              this.sockets.delete(sessionId)
+            }
+            this.disconnectTimers.delete(sessionId)
+            this.subscribers.delete(sessionId)
+          }, this.DISCONNECT_DELAY)
+        )
       }
     }
   }
@@ -95,14 +98,14 @@ class ConnectionManager {
       // Create a copy to avoid issues if handlers unsubscribe during execution
       const handlers = Array.from(subs)
       handlers.forEach(h => {
-          if (h[method]) {
-              try {
-                // @ts-ignore - Dynamic dispatch
-                h[method](data)
-              } catch (e) {
-                console.error(`Error in ${method} handler for session ${sessionId}:`, e)
-              }
+        if (h[method]) {
+          try {
+            // @ts-ignore - Dynamic dispatch
+            h[method](data)
+          } catch (e) {
+            console.error(`Error in ${method} handler for session ${sessionId}:`, e)
           }
+        }
       })
     }
   }

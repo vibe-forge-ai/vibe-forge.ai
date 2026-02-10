@@ -321,25 +321,28 @@ export function Sender({
     <div className='chat-input-wrapper'>
       {isThinking && <ThinkingStatus />}
       {interactionRequest != null && (
-        <div className='interaction-panel' style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          maxHeight: '200px', 
-          overflowY: 'auto', 
-          marginBottom: '10px',
-          gap: '8px',
-          padding: '8px',
-          border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          backgroundColor: 'var(--bg-color)'
-        }}>
+        <div
+          className='interaction-panel'
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '200px',
+            overflowY: 'auto',
+            marginBottom: '10px',
+            gap: '8px',
+            padding: '8px',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            backgroundColor: 'var(--bg-color)'
+          }}
+        >
           <div className='interaction-question' style={{ fontWeight: 'bold' }}>
             {interactionRequest.payload.question}
           </div>
           {interactionRequest.payload.options?.map((option) => (
-            <Button 
-              key={option.label} 
-              block 
+            <Button
+              key={option.label}
+              block
               style={{ height: 'auto', textAlign: 'left', display: 'block', padding: '8px 12px' }}
               onClick={() => onInteractionResponse?.(interactionRequest.id, option.label)}
             >

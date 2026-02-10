@@ -3,7 +3,7 @@
   height: 100%;
   background-color: var(--nav-bg, #dfdfdf);
   border-right: 1px solid var(--border-color);
-  box-shadow: 6px 0 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 6px 0 8px rgba(0, 0, 0, .06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -33,8 +33,6 @@
       background-color: var(--nav-hover-bg, #f3f4f6);
       color: var(--nav-hover-text, #111827);
     }
-
-
 
     &.active {
       background-color: var(--nav-active-bg, #eff6ff);

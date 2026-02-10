@@ -29,7 +29,7 @@
     font-weight: 500;
     color: var(--text-color);
     background-color: var(--tag-bg);
-    transition: text-shadow 0.4s ease;
+    transition: text-shadow .4s ease;
 
     &.collapsed {
       cursor: default;
@@ -44,7 +44,7 @@
     }
 
     &:hover {
-      text-shadow: 0 0 0.5px currentColor;
+      text-shadow: 0 0 .5px currentColor;
     }
 
     .material-symbols-rounded {
@@ -80,7 +80,7 @@
     }
 
     &:hover {
-      opacity: 0.8;
+      opacity: .8;
     }
 
     .material-symbols-rounded {
@@ -126,7 +126,7 @@
 
     .tool-content {
       padding: 0;
-      
+
       // Override code block wrapper styles
       .code-block-wrapper {
         border: none;
@@ -135,4 +135,3 @@
     }
   }
 }
-

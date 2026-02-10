@@ -25,10 +25,10 @@ export type ChatRenderItem = MessageRenderItem | ToolGroupItem
 
 export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
   const result: ChatRenderItem[] = []
-  
+
   const findResult = (
-    toolId: string, 
-    startIndex: number, 
+    toolId: string,
+    startIndex: number,
     allMsgs: ChatMessage[]
   ): Extract<ChatMessageContent, { type: 'tool_result' }> | undefined => {
     for (let i = startIndex; i < allMsgs.length; i++) {
@@ -51,11 +51,11 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
     if (!msg || !msg.content) {
       // If content is null/empty but legacy toolCall exists, we should render it
       if (msg && msg.toolCall) {
-         result.push({
+        result.push({
           type: 'message',
           message: msg,
-          isFirstInGroup: i === 0 || (i > 0 && messages[i-1]?.role !== msg.role)
-         })
+          isFirstInGroup: i === 0 || (i > 0 && messages[i - 1]?.role !== msg.role)
+        })
       }
       i++
       continue
@@ -77,7 +77,7 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
     if (Array.isArray(msg.content)) {
       const content = msg.content
       const textParts: ChatMessageContent[] = []
-      let currentToolGroup: { 
+      let currentToolGroup: {
         item: Extract<ChatMessageContent, { type: 'tool_use' }>
         resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
       }[] = []
@@ -86,11 +86,11 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
 
       const flushTools = () => {
         if (currentToolGroup.length > 0) {
-           result.push({
+          result.push({
             type: 'tool-group',
             id: `group-${msg.id}-${producedCount}`,
             items: [...currentToolGroup],
-            footer: undefined 
+            footer: undefined
           })
           currentToolGroup = []
           producedCount++
@@ -151,7 +151,7 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
     }
     i++
   }
-  
+
   const mergedResult: ChatRenderItem[] = []
   for (const item of result) {
     if (item.type === 'tool-group') {

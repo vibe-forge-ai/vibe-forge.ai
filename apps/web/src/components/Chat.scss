@@ -28,7 +28,7 @@
   position: relative;
   opacity: 0;
   background-color: var(--bg-color);
-  transition: 0.2s;
+  transition: .2s;
 
   &.ready {
     opacity: 1;
@@ -41,7 +41,9 @@
   flex-direction: column;
   justify-content: flex-end;
   padding-bottom: 0;
-  transition: flex 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    flex .4s cubic-bezier(.4, 0, .2, 1),
+    padding-bottom .4s cubic-bezier(.4, 0, .2, 1);
 }
 
 .scroll-bottom-btn {

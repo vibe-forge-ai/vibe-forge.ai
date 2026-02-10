@@ -109,7 +109,7 @@ export function SidebarHeader({
           </Button>
         </Tooltip>
         {isCollapsed && (
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement="right">
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='right'>
             <Button
               className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
               type='text'

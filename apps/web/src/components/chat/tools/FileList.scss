@@ -16,39 +16,39 @@
     font-family: var(--font-mono);
     font-size: 13px;
     color: var(--text-color);
-    transition: background-color 0.2s;
+    transition: background-color .2s;
     cursor: default;
-    
+
     &:hover {
       background-color: var(--bg-color-hover);
     }
 
     &.is-dir {
-        cursor: pointer;
+      cursor: pointer;
     }
 
     .toggle-icon {
-        font-size: 16px;
-        color: var(--sub-text-color);
-        margin-right: 4px;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        user-select: none;
+      font-size: 16px;
+      color: var(--sub-text-color);
+      margin-right: 4px;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
     }
 
     .spacer {
-        width: 20px;
-        display: inline-block;
+      width: 20px;
+      display: inline-block;
     }
 
     .file-icon {
       font-size: 18px;
       margin-right: 8px;
       color: var(--sub-text-color);
-      
+
       &.folder {
         color: #64b5f6; // Light blue for folders
       }
@@ -67,9 +67,9 @@
 }
 
 .file-list-empty {
-    padding: 12px;
-    color: var(--sub-text-color);
-    font-style: italic;
-    font-size: 13px;
-    text-align: center;
+  padding: 12px;
+  color: var(--sub-text-color);
+  font-style: italic;
+  font-size: 13px;
+  text-align: center;
 }

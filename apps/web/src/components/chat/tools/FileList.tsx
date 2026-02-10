@@ -1,139 +1,139 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import './FileList.scss'
 
 interface FileNode {
-    rawLine: string;
-    name: string;
-    path: string;
-    depth: number;
-    isDir: boolean;
+  rawLine: string
+  name: string
+  path: string
+  depth: number
+  isDir: boolean
 }
 
 interface FileListProps {
-    content: string | string[];
-    removeRoot?: boolean;
-    defaultCollapsed?: boolean;
+  content: string | string[]
+  removeRoot?: boolean
+  defaultCollapsed?: boolean
 }
 
 export function FileList({ content, removeRoot = false, defaultCollapsed = false }: FileListProps) {
   const nodes = useMemo(() => {
-    let lines: string[] = [];
+    let lines: string[] = []
     if (Array.isArray(content)) {
-      lines = content;
+      lines = content
     } else if (typeof content === 'string') {
-        // Try to parse if it looks like JSON
-        if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
-            try {
-                const parsed = JSON.parse(content);
-                if (Array.isArray(parsed)) {
-                    lines = parsed.map(String);
-                } else {
-                    lines = content.split('\n');
-                }
-            } catch (e) {
-                 lines = content.split('\n');
-            }
-        } else {
-             lines = content.split('\n');
+      // Try to parse if it looks like JSON
+      if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
+        try {
+          const parsed = JSON.parse(content)
+          if (Array.isArray(parsed)) {
+            lines = parsed.map(String)
+          } else {
+            lines = content.split('\n')
+          }
+        } catch (e) {
+          lines = content.split('\n')
         }
+      } else {
+        lines = content.split('\n')
+      }
     }
-    
-    // Filter empty lines
-    lines = lines.filter(line => line.trim() !== '');
 
-    let parsedNodes: FileNode[] = [];
-    
+    // Filter empty lines
+    lines = lines.filter(line => line.trim() !== '')
+
+    let parsedNodes: FileNode[] = []
+
     lines.forEach(line => {
-        // Calculate depth based on leading spaces (2 spaces = 1 level)
-        const leadingSpaces = line.match(/^\s*/)?.[0].length || 0;
-        const depth = Math.floor(leadingSpaces / 2);
-        
-        let name = line.trim();
-        // Remove leading "- " if present
-        if (name.startsWith('- ')) {
-            name = name.substring(2);
-        }
-        
-        const isDir = name.endsWith('/') || name.endsWith('\\');
-        
-        parsedNodes.push({
-            rawLine: line,
-            name,
-            path: name, // In a real tree we might build full path, but for display name is enough
-            depth,
-            isDir
-        });
-    });
+      // Calculate depth based on leading spaces (2 spaces = 1 level)
+      const leadingSpaces = line.match(/^\s*/)?.[0].length || 0
+      const depth = Math.floor(leadingSpaces / 2)
+
+      let name = line.trim()
+      // Remove leading "- " if present
+      if (name.startsWith('- ')) {
+        name = name.substring(2)
+      }
+
+      const isDir = name.endsWith('/') || name.endsWith('\\')
+
+      parsedNodes.push({
+        rawLine: line,
+        name,
+        path: name, // In a real tree we might build full path, but for display name is enough
+        depth,
+        isDir
+      })
+    })
 
     // Remove root logic
     if (removeRoot && parsedNodes.length > 1 && parsedNodes[0].isDir) {
-        // Only remove if the first node acts as a parent (next node is deeper)
-        // Or if it's just the top level directory and subsequent items are inside it
-        if (parsedNodes[1].depth > parsedNodes[0].depth) {
-            const rootDepth = parsedNodes[0].depth;
-            parsedNodes.shift();
-            // Normalize depths
-            const minDepth = Math.min(...parsedNodes.map(n => n.depth));
-            parsedNodes = parsedNodes.map(n => ({
-                ...n,
-                depth: n.depth - minDepth
-            }));
-        }
+      // Only remove if the first node acts as a parent (next node is deeper)
+      // Or if it's just the top level directory and subsequent items are inside it
+      if (parsedNodes[1].depth > parsedNodes[0].depth) {
+        const rootDepth = parsedNodes[0].depth
+        parsedNodes.shift()
+        // Normalize depths
+        const minDepth = Math.min(...parsedNodes.map(n => n.depth))
+        parsedNodes = parsedNodes.map(n => ({
+          ...n,
+          depth: n.depth - minDepth
+        }))
+      }
     }
-    
-    return parsedNodes;
+
+    return parsedNodes
   }, [content, removeRoot])
 
   const [collapsedIndices, setCollapsedIndices] = useState<Set<number>>(new Set())
 
   // Determine if we need spacers/toggle icons at all
   const hasDirectories = useMemo(() => {
-      return nodes.some(node => node.isDir);
-  }, [nodes]);
+    return nodes.some(node => node.isDir)
+  }, [nodes])
 
   useEffect(() => {
     if (defaultCollapsed) {
-        const newSet = new Set<number>();
-        nodes.forEach((node, index) => {
-            if (node.isDir) {
-                newSet.add(index);
-            }
-        });
-        setCollapsedIndices(newSet);
+      const newSet = new Set<number>()
+      nodes.forEach((node, index) => {
+        if (node.isDir) {
+          newSet.add(index)
+        }
+      })
+      setCollapsedIndices(newSet)
     } else {
-        setCollapsedIndices(new Set());
+      setCollapsedIndices(new Set())
     }
-  }, [nodes, defaultCollapsed]);
+  }, [nodes, defaultCollapsed])
 
   const toggleCollapse = (index: number) => {
     const newSet = new Set(collapsedIndices)
     if (newSet.has(index)) {
-        newSet.delete(index)
+      newSet.delete(index)
     } else {
-        newSet.add(index)
+      newSet.add(index)
     }
     setCollapsedIndices(newSet)
   }
 
   if (nodes.length === 0) {
-    return <div className="file-list-empty">No files found</div>
+    return <div className='file-list-empty'>No files found</div>
   }
 
   const getIcon = (node: FileNode) => {
     if (node.isDir) {
-        return { name: 'folder', className: 'folder' }
+      return { name: 'folder', className: 'folder' }
     }
-    
+
     // Check for common extensions
-    const ext = node.name.split('.').pop()?.toLowerCase();
+    const ext = node.name.split('.').pop()?.toLowerCase()
     if (ext && ['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'c', 'cpp', 'go', 'rs'].includes(ext)) {
-        return { name: 'code', className: 'file' }
+      return { name: 'code', className: 'file' }
     }
     if (ext && ['md', 'txt', 'json', 'yml', 'yaml', 'xml', 'html', 'css', 'scss'].includes(ext)) {
-        return { name: 'description', className: 'file' }
+      return { name: 'description', className: 'file' }
     }
     if (ext && ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico'].includes(ext)) {
-        return { name: 'image', className: 'file' }
+      return { name: 'image', className: 'file' }
     }
 
     // Default
@@ -142,56 +142,56 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
 
   // Calculate visible nodes
   const renderNodes = () => {
-    const elements: React.ReactNode[] = [];
-    let hideDepth: number | null = null;
+    const elements: React.ReactNode[] = []
+    let hideDepth: number | null = null
 
     nodes.forEach((node, index) => {
-        if (hideDepth !== null) {
-            if (node.depth > hideDepth) {
-                return; // Skip hidden node
-            } else {
-                hideDepth = null; // Reached sibling or parent, stop hiding
-            }
+      if (hideDepth !== null) {
+        if (node.depth > hideDepth) {
+          return // Skip hidden node
+        } else {
+          hideDepth = null // Reached sibling or parent, stop hiding
         }
+      }
 
-        const icon = getIcon(node);
-        const isCollapsed = collapsedIndices.has(index);
+      const icon = getIcon(node)
+      const isCollapsed = collapsedIndices.has(index)
 
-        if (isCollapsed) {
-            hideDepth = node.depth;
-        }
+      if (isCollapsed) {
+        hideDepth = node.depth
+      }
 
-        elements.push(
-            <div 
-                key={index} 
-                className={`file-list-item ${node.isDir ? 'is-dir' : ''}`} 
-                style={{ paddingLeft: `${node.depth * 20 + 12}px` }}
-                onClick={() => node.isDir && toggleCollapse(index)}
-            >
-                {/* Only render toggle icon or spacer if there are directories in the list */}
-                {hasDirectories && (
-                    <>
-                        {node.isDir && (
-                            <span className="material-symbols-rounded toggle-icon">
-                                {isCollapsed ? 'arrow_right' : 'arrow_drop_down'}
-                            </span>
-                        )}
-                        {!node.isDir && <span className="spacer" />}
-                    </>
-                )}
-                
-                <span className={`material-symbols-rounded file-icon ${icon.className}`}>
-                    {icon.name}
+      elements.push(
+        <div
+          key={index}
+          className={`file-list-item ${node.isDir ? 'is-dir' : ''}`}
+          style={{ paddingLeft: `${node.depth * 20 + 12}px` }}
+          onClick={() => node.isDir && toggleCollapse(index)}
+        >
+          {/* Only render toggle icon or spacer if there are directories in the list */}
+          {hasDirectories && (
+            <>
+              {node.isDir && (
+                <span className='material-symbols-rounded toggle-icon'>
+                  {isCollapsed ? 'arrow_right' : 'arrow_drop_down'}
                 </span>
-                <span className="file-path">{node.name}</span>
-            </div>
-        );
-    });
-    return elements;
+              )}
+              {!node.isDir && <span className='spacer' />}
+            </>
+          )}
+
+          <span className={`material-symbols-rounded file-icon ${icon.className}`}>
+            {icon.name}
+          </span>
+          <span className='file-path'>{node.name}</span>
+        </div>
+      )
+    })
+    return elements
   }
 
   return (
-    <div className="file-list-container">
+    <div className='file-list-container'>
       {renderNodes()}
     </div>
   )

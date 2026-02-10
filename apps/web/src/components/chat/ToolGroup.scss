@@ -3,7 +3,7 @@
 
   .tool-group-wrapper {
     margin: 0;
-    
+
     &.single-item {
       // No special style for single item
     }
@@ -13,7 +13,7 @@
       border-radius: 8px;
       background-color: var(--bg-color);
       overflow: hidden;
-      
+
       .tool-group-header {
         display: flex;
         align-items: center;
@@ -23,7 +23,7 @@
         border-bottom: 1px solid transparent;
         cursor: pointer;
         user-select: none;
-        transition: background-color .2s, text-shadow 0.4s ease;
+        transition: background-color .2s, text-shadow .4s ease;
 
         .header-left {
           display: flex;
@@ -32,7 +32,7 @@
           font-size: 13px;
           font-weight: 500;
           color: var(--text-color);
-          
+
           .material-symbols-rounded {
             font-size: 18px;
             color: var(--sub-text-color);
@@ -45,15 +45,15 @@
         }
 
         &:hover {
-          opacity: 0.8;
+          opacity: .8;
         }
       }
 
       .tool-group-list {
         display: flex;
         flex-direction: column;
-        gap: 0; 
-        padding: 0; 
+        gap: 0;
+        padding: 0;
         border-top: 1px solid var(--border-color);
         background-color: var(--bg-color);
       }
@@ -70,18 +70,18 @@
           border-radius: 0;
           background-color: transparent;
           overflow: visible; // Allow timeline line to overflow
-          
+
           .tool-call-box {
             margin: 0;
             border: none;
             border-radius: 0;
-            
+
             .tool-call-header {
               padding: 8px 12px;
               background-color: transparent;
-              
+
               &:hover {
-                text-shadow: 0 0 0.5px currentColor;
+                text-shadow: 0 0 .5px currentColor;
               }
             }
 
@@ -95,22 +95,22 @@
 
       // Timeline gap style
       .tool-group-list .tool-group {
-         position: relative;
-         margin-bottom: 12px; // Increased gap between items
-         border-bottom: none; // Remove border as we use gap + line
-         
-         &::after {
-           content: '';
-           position: absolute;
-           left: 19px;
-           bottom: -11px; // Adjusted for larger margin
-           height: 10px; // Increased length for larger gap
-           width: 2px;
-           background-color: var(--sub-text-color);
-           z-index: 99;
-           border-radius: 4px;
-           opacity: 0.5;
-         }
+        position: relative;
+        margin-bottom: 12px; // Increased gap between items
+        border-bottom: none; // Remove border as we use gap + line
+
+        &::after {
+          content: '';
+          position: absolute;
+          left: 19px;
+          bottom: -11px; // Adjusted for larger margin
+          height: 10px; // Increased length for larger gap
+          width: 2px;
+          background-color: var(--sub-text-color);
+          z-index: 99;
+          border-radius: 4px;
+          opacity: .5;
+        }
       }
     }
   }
@@ -120,7 +120,7 @@
     transition: opacity .2s ease;
     margin-top: 4px;
     padding-left: 2px;
-    
+
     .msg-footer {
       display: flex;
       align-items: center;
@@ -145,7 +145,7 @@ html.dark .tool-group-container .tool-group-wrapper.card-style {
   .tool-group-header {
     background-color: #374151;
     &:hover {
-      text-shadow: 0 0 0.5px currentColor;
+      text-shadow: 0 0 .5px currentColor;
     }
   }
   .tool-group-list, .tool-group-last-item {
