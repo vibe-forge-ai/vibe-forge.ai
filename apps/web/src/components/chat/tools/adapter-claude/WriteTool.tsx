@@ -1,17 +1,12 @@
 import React from 'react'
 import './WriteTool.scss'
-import type { ChatMessageContent } from '@vibe-forge/core'
 import { useTranslation } from 'react-i18next'
-import { CodeBlock } from '../CodeBlock'
-import { ToolCallBox } from '../ToolCallBox'
 
-export function WriteTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+import { defineToolRender } from '../defineToolRender'
+import { CodeBlock } from '../../CodeBlock'
+import { ToolCallBox } from '../../ToolCallBox'
+
+export const WriteTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as { file_path?: string; content?: string }
   const filePath = (input.file_path != null && input.file_path !== '') ? input.file_path : 'unknown file'
@@ -20,7 +15,6 @@ export function WriteTool({
   const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : ''
   const content = input.content ?? ''
 
-  // Get language from file extension
   const getLanguage = (path: string) => {
     const extPart = path.split('.').pop()
     const ext = (extPart != null && extPart !== '') ? extPart.toLowerCase() : ''
@@ -89,4 +83,4 @@ export function WriteTool({
       )}
     </div>
   )
-}
+})

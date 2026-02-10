@@ -21,7 +21,6 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
     if (Array.isArray(content)) {
       lines = content
     } else if (typeof content === 'string') {
-      // Try to parse if it looks like JSON
       if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
         try {
           const parsed = JSON.parse(content)
@@ -38,18 +37,15 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
       }
     }
 
-    // Filter empty lines
     lines = lines.filter(line => line.trim() !== '')
 
     let parsedNodes: FileNode[] = []
 
     lines.forEach(line => {
-      // Calculate depth based on leading spaces (2 spaces = 1 level)
       const leadingSpaces = line.match(/^\s*/)?.[0].length || 0
       const depth = Math.floor(leadingSpaces / 2)
 
       let name = line.trim()
-      // Remove leading "- " if present
       if (name.startsWith('- ')) {
         name = name.substring(2)
       }
@@ -59,20 +55,16 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
       parsedNodes.push({
         rawLine: line,
         name,
-        path: name, // In a real tree we might build full path, but for display name is enough
+        path: name,
         depth,
         isDir
       })
     })
 
-    // Remove root logic
     if (removeRoot && parsedNodes.length > 1 && parsedNodes[0].isDir) {
-      // Only remove if the first node acts as a parent (next node is deeper)
-      // Or if it's just the top level directory and subsequent items are inside it
       if (parsedNodes[1].depth > parsedNodes[0].depth) {
         const rootDepth = parsedNodes[0].depth
         parsedNodes.shift()
-        // Normalize depths
         const minDepth = Math.min(...parsedNodes.map(n => n.depth))
         parsedNodes = parsedNodes.map(n => ({
           ...n,
@@ -86,7 +78,6 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
 
   const [collapsedIndices, setCollapsedIndices] = useState<Set<number>>(new Set())
 
-  // Determine if we need spacers/toggle icons at all
   const hasDirectories = useMemo(() => {
     return nodes.some(node => node.isDir)
   }, [nodes])
@@ -124,7 +115,6 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
       return { name: 'folder', className: 'folder' }
     }
 
-    // Check for common extensions
     const ext = node.name.split('.').pop()?.toLowerCase()
     if (ext && ['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'c', 'cpp', 'go', 'rs'].includes(ext)) {
       return { name: 'code', className: 'file' }
@@ -136,11 +126,9 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
       return { name: 'image', className: 'file' }
     }
 
-    // Default
     return { name: 'draft', className: 'file' }
   }
 
-  // Calculate visible nodes
   const renderNodes = () => {
     const elements: React.ReactNode[] = []
     let hideDepth: number | null = null
@@ -148,9 +136,9 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
     nodes.forEach((node, index) => {
       if (hideDepth !== null) {
         if (node.depth > hideDepth) {
-          return // Skip hidden node
+          return
         } else {
-          hideDepth = null // Reached sibling or parent, stop hiding
+          hideDepth = null
         }
       }
 
@@ -168,7 +156,6 @@ export function FileList({ content, removeRoot = false, defaultCollapsed = false
           style={{ paddingLeft: `${node.depth * 20 + 12}px` }}
           onClick={() => node.isDir && toggleCollapse(index)}
         >
-          {/* Only render toggle icon or spacer if there are directories in the list */}
           {hasDirectories && (
             <>
               {node.isDir && (

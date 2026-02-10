@@ -1,8 +1,9 @@
 import './TodoTool.scss'
-import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { ToolCallBox } from '../ToolCallBox'
+
+import { defineToolRender } from '../defineToolRender'
+import { ToolCallBox } from '../../ToolCallBox'
 
 interface TodoItem {
   content: string
@@ -10,13 +11,7 @@ interface TodoItem {
   activeForm?: string
 }
 
-export function TodoTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+export const TodoTool = defineToolRender(({ item }) => {
   const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as { todos?: TodoItem[] }
   const todos = input.todos ?? []
@@ -62,4 +57,4 @@ export function TodoTool({
       />
     </div>
   )
-}
+})

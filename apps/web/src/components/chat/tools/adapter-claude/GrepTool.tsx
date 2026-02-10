@@ -1,19 +1,14 @@
 import React, { useMemo } from 'react'
 import './GrepTool.scss'
-import type { ChatMessageContent } from '@vibe-forge/core'
 import { useTranslation } from 'react-i18next'
-import { CodeBlock } from '../CodeBlock'
-import { ToolCallBox } from '../ToolCallBox'
-import { safeJsonStringify } from '../safeSerialize'
-import { FileList } from './FileList'
 
-export function GrepTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+import { defineToolRender } from '../defineToolRender'
+import { CodeBlock } from '../../CodeBlock'
+import { ToolCallBox } from '../../ToolCallBox'
+import { safeJsonStringify } from '../../safeSerialize'
+import { FileList } from './components/FileList'
+
+export const GrepTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as {
     pattern?: string
@@ -32,7 +27,6 @@ export function GrepTool({
     let lines: string[] = []
 
     if (typeof content === 'string') {
-      // Try to parse if it looks like JSON
       if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
         try {
           const parsed = JSON.parse(content)
@@ -51,7 +45,6 @@ export function GrepTool({
       lines = content.map(String)
     }
 
-    // Filter empty lines
     const count = lines.filter(line => line.trim() !== '').length
     return count
   }, [resultItem])
@@ -118,4 +111,4 @@ export function GrepTool({
       />
     </div>
   )
-}
+})

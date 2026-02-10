@@ -1,0 +1,65 @@
+.file-list-container {
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.file-list-item {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--tag-bg);
+  }
+
+  &.is-dir {
+    font-weight: 500;
+  }
+}
+
+.file-icon {
+  font-size: 14px;
+  margin-right: 4px;
+  color: var(--sub-text-color);
+
+  &.folder {
+    color: var(--primary-color);
+  }
+
+  &.file {
+    color: var(--sub-text-color);
+  }
+}
+
+.toggle-icon {
+  font-size: 14px;
+  margin-right: 4px;
+  color: var(--sub-text-color);
+}
+
+.spacer {
+  width: 14px;
+  margin-right: 4px;
+}
+
+.file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-list-empty {
+  padding: 8px 12px;
+  color: var(--sub-text-color);
+  font-size: 12px;
+  text-align: center;
+}

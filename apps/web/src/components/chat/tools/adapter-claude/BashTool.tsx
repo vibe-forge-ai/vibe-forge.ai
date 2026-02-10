@@ -1,20 +1,15 @@
 import './BashTool.scss'
-import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { CodeBlock } from '../CodeBlock'
-import { ToolCallBox } from '../ToolCallBox'
-import { safeJsonStringify } from '../safeSerialize'
 
-export function BashTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+import { defineToolRender } from '../defineToolRender'
+import { CodeBlock } from '../../CodeBlock'
+import { ToolCallBox } from '../../ToolCallBox'
+import { safeJsonStringify } from '../../safeSerialize'
+
+export const BashTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as {
     command?: string
@@ -84,4 +79,4 @@ export function BashTool({
       )}
     </div>
   )
-}
+})

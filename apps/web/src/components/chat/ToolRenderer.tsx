@@ -1,14 +1,10 @@
-import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
-import { BashTool } from './tools/BashTool'
+
+import type { ChatMessageContent } from '@vibe-forge/core'
+
 import { DefaultTool } from './tools/DefaultTool'
-import { GlobTool } from './tools/GlobTool'
-import { GrepTool } from './tools/GrepTool'
+import { BashTool, adapterClaudeToolRenders } from './tools/adapter-claude'
 import { taskToolRenders } from './tools/task'
-import { LsTool } from './tools/LSTool'
-import { ReadTool } from './tools/ReadTool'
-import { TodoTool } from './tools/TodoTool'
-import { WriteTool } from './tools/WriteTool'
 
 const TOOL_RENDERERS: Record<
   string,
@@ -17,14 +13,8 @@ const TOOL_RENDERERS: Record<
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
   }>
 > = {
-  Bash: BashTool,
-  LS: LsTool,
-  Glob: GlobTool,
-  Grep: GrepTool,
-  Read: ReadTool,
-  Write: WriteTool,
   ...taskToolRenders,
-  TodoWrite: TodoTool
+  ...adapterClaudeToolRenders
 }
 
 export function ToolRenderer({
