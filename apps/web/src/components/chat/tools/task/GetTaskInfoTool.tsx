@@ -3,8 +3,7 @@ import './GetTaskInfoTool.scss'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { ChatMessageContent } from '@vibe-forge/core'
-
+import { defineToolRender } from '../defineToolRender'
 import { ToolCallBox } from '../../ToolCallBox'
 import { TaskToolCard } from './components/TaskToolCard'
 
@@ -20,13 +19,7 @@ interface TaskResult {
   logs?: string[] | null
 }
 
-export function GetTaskInfoTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+export const GetTaskInfoTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
 
   const input = (item.input != null ? item.input : {}) as { taskId?: string }
@@ -91,4 +84,4 @@ export function GetTaskInfoTool({
       />
     </div>
   )
-}
+})

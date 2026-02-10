@@ -4,7 +4,7 @@ import { BashTool } from './tools/BashTool'
 import { DefaultTool } from './tools/DefaultTool'
 import { GlobTool } from './tools/GlobTool'
 import { GrepTool } from './tools/GrepTool'
-import { GetTaskInfoTool, StartTasksTool } from './tools/task'
+import { taskToolRenders } from './tools/task'
 import { LsTool } from './tools/LSTool'
 import { ReadTool } from './tools/ReadTool'
 import { TodoTool } from './tools/TodoTool'
@@ -23,10 +23,7 @@ const TOOL_RENDERERS: Record<
   Grep: GrepTool,
   Read: ReadTool,
   Write: WriteTool,
-  StartTasks: StartTasksTool,
-  mcp__VibeForge__StartTasks: StartTasksTool,
-  GetTaskInfo: GetTaskInfoTool,
-  mcp__VibeForge__GetTaskInfo: GetTaskInfoTool,
+  ...taskToolRenders,
   TodoWrite: TodoTool
 }
 

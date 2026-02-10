@@ -3,9 +3,8 @@ import './StartTasksTool.scss'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { ChatMessageContent } from '@vibe-forge/core'
-
 import { ToolCallBox } from '../../ToolCallBox'
+import { defineToolRender } from '../defineToolRender'
 import { TaskToolCard } from './components/TaskToolCard'
 
 interface StartTask {
@@ -28,13 +27,7 @@ interface TaskResult {
   logs?: string[] | null
 }
 
-export function StartTasksTool({
-  item,
-  resultItem
-}: {
-  item: Extract<ChatMessageContent, { type: 'tool_use' }>
-  resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
-}) {
+export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
 
   const input = (item.input != null ? item.input : {}) as { tasks?: StartTask[] }
@@ -105,4 +98,4 @@ export function StartTasksTool({
       />
     </div>
   )
-}
+})
