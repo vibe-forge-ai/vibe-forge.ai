@@ -4,6 +4,11 @@
     "module": "nodenext",
     "moduleResolution": "nodenext"
   },
+  "references": [
+    {
+      "path": "./tsconfig.bundler.json"
+    }
+  ],
   "include": [
     "../.ai.config.ts",
     "../.ai.dev.config.ts",
@@ -11,8 +16,6 @@
     "../vitest.workspace.ts",
     "../apps/web/vite.config.ts",
     "../apps/cli/src/**/*",
-    "../apps/server/src/**/*",
-    "../packages/adapters/claude-code/src/types.ts",
-    "../packages/core/src/controllers"
+    "../apps/server/src/**/*"
   ]
 }
