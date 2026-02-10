@@ -1,7 +1,9 @@
-import type { Command } from 'commander'
-import { getCache } from '@vibe-forge/core/utils/cache'
 import process from 'node:process'
+
+import type { Command } from 'commander'
+
 import type { TaskDetail } from '@vibe-forge/core'
+import { getCache } from '@vibe-forge/core/utils/cache'
 
 export function registerStopCommand(program: Command) {
   program
