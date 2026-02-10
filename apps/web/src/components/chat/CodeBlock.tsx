@@ -7,11 +7,13 @@ import { themeAtom } from '../../store'
 export function CodeBlock({
   code,
   lang = 'json',
-  showLineNumbers = false
+  showLineNumbers = false,
+  hideHeader = false
 }: {
   code: string
   lang?: string
   showLineNumbers?: boolean
+  hideHeader?: boolean
 }) {
   const [html, setHtml] = useState<string>('')
   const [copied, setCopied] = useState(false)
@@ -126,22 +128,24 @@ export function CodeBlock({
   if (html === '') {
     return (
       <div className='code-block-wrapper'>
-        <div className='code-block-header'>
-          <div className='code-lang-container'>
-            {getLangIcon(lang)}
-            <span className='code-lang'>{lang}</span>
+        {!hideHeader && (
+          <div className='code-block-header'>
+            <div className='code-lang-container'>
+              {getLangIcon(lang)}
+              <span className='code-lang'>{lang}</span>
+            </div>
+            <button
+              className='copy-button'
+              onClick={() => {
+                void handleCopy()
+              }}
+            >
+              <span className='material-symbols-rounded'>
+                {copied ? 'check' : 'content_copy'}
+              </span>
+            </button>
           </div>
-          <button
-            className='copy-button'
-            onClick={() => {
-              void handleCopy()
-            }}
-          >
-            <span className='material-symbols-rounded'>
-              {copied ? 'check' : 'content_copy'}
-            </span>
-          </button>
-        </div>
+        )}
         <pre style={{ margin: 0, padding: 12, fontSize: 12, color: '#4b5563', overflowX: 'auto' }}>
           <code>{code}</code>
         </pre>
@@ -151,7 +155,7 @@ export function CodeBlock({
 
   return (
     <div className='code-block-wrapper'>
-      <div className='code-block-header'>
+      {!hideHeader && (<div className='code-block-header'>
         <div className='code-lang-container'>
           {getLangIcon(lang)}
           <span className='code-lang'>{lang}</span>
@@ -166,7 +170,7 @@ export function CodeBlock({
             {copied ? 'check' : 'content_copy'}
           </span>
         </button>
-      </div>
+      </div>)}
       <div
         dangerouslySetInnerHTML={{ __html: html }}
       />

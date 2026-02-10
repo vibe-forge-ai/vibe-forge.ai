@@ -1,0 +1,440 @@
+.tool-group.start-tasks-tool {
+  border-color: color-mix(
+    in srgb,
+    var(--border-color) 55%,
+    var(--primary-color) 45%
+  );
+
+  .tool-call-header {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--tag-bg) 80%, var(--primary-color) 20%),
+      var(--tag-bg)
+    );
+  }
+
+  .start-tasks-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .status-icon {
+      font-size: 16px;
+    }
+  }
+
+  .start-tasks-title {
+    font-weight: 600;
+  }
+
+  .start-tasks-count {
+    margin-left: 4px;
+    padding: 1px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sub-text-color);
+    background: color-mix(in srgb, var(--bg-color) 70%, transparent 30%);
+  }
+
+  .start-tasks-list {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .start-task-row {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: color-mix(
+      in srgb,
+      var(--bg-color) 92%,
+      var(--primary-color) 8%
+    );
+    position: relative;
+  }
+
+  .start-task-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+
+    .start-task-status-icon,
+    .start-task-execution-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .material-symbols-rounded {
+        font-size: 20px;
+        color: var(--sub-text-color);
+        transition: color .2s ease;
+
+        &:hover {
+          color: var(--text-color);
+        }
+      }
+    }
+
+    .start-task-status-icon {
+      .material-symbols-rounded {
+        &.running {
+          color: var(--primary-color);
+        }
+        &.completed {
+          color: var(--success-color);
+        }
+        &.failed {
+          color: var(--danger-color);
+        }
+        &.help_outline {
+          color: var(--sub-text-color);
+        }
+      }
+    }
+  }
+
+  .start-task-main {
+    > .code-block-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+  }
+
+  .start-task-index {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sub-text-color);
+    background: var(--bg-color);
+  }
+
+  .start-task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+
+    .start-task-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-color);
+      flex: 1;
+      margin-right: 12px;
+    }
+
+    .session-id-placeholder {
+      font-size: 11px;
+      color: var(--sub-text-color);
+      opacity: .6;
+      font-family: monospace;
+      user-select: none;
+      white-space: nowrap;
+    }
+  }
+
+  .start-task-content {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  .start-task-desc {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .start-task-meta {
+    margin: 6px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .meta-chip {
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--sub-text-color);
+    background: var(--bg-color);
+
+    &.status {
+      font-weight: 600;
+    }
+
+    &.running {
+      color: var(--sub-text-color);
+      border-color: var(--border-color);
+      background: var(--bg-color);
+    }
+
+    &.completed {
+      color: var(--success-color);
+      border-color: color-mix(
+        in srgb,
+        var(--border-color) 70%,
+        var(--success-color) 30%
+      );
+      background: color-mix(
+        in srgb,
+        var(--bg-color) 88%,
+        var(--success-color) 12%
+      );
+    }
+
+    &.failed {
+      color: var(--danger-color);
+      border-color: color-mix(
+        in srgb,
+        var(--border-color) 70%,
+        var(--danger-color) 30%
+      );
+      background: color-mix(
+        in srgb,
+        var(--bg-color) 88%,
+        var(--danger-color) 12%
+      );
+    }
+
+    &.background {
+      color: var(--success-color);
+      border-color: color-mix(
+        in srgb,
+        var(--border-color) 70%,
+        var(--success-color) 30%
+      );
+      background: color-mix(
+        in srgb,
+        var(--bg-color) 88%,
+        var(--success-color) 12%
+      );
+    }
+
+    &.foreground {
+      color: var(--warning-color);
+      border-color: color-mix(
+        in srgb,
+        var(--border-color) 70%,
+        var(--warning-color) 30%
+      );
+      background: color-mix(
+        in srgb,
+        var(--bg-color) 88%,
+        var(--warning-color) 12%
+      );
+    }
+  }
+
+  .start-tasks-empty {
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--sub-text-color);
+    background: var(--bg-color);
+  }
+
+  .id-chip {
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-text-color);
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--border-color) 60%,
+        var(--primary-text-color) 40%
+      );
+    background: color-mix(
+      in srgb,
+      var(--bg-color) 88%,
+      var(--primary-text-color) 12%
+    );
+    white-space: nowrap;
+  }
+
+  .start-task-result {
+    margin-top: 8px;
+
+    // CodeBlock 容器样式
+    .code-block-wrapper {
+      margin: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+
+      .code-block-header {
+        padding: 6px 10px;
+        background: color-mix(
+          in srgb,
+          var(--bg-color) 95%,
+          var(--primary-color) 5%
+        );
+        border-bottom: 1px solid var(--border-color);
+
+        .code-lang-container {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .code-lang {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--sub-text-color);
+          }
+        }
+
+        .copy-button {
+          padding: 2px 6px;
+          font-size: 12px;
+          border-radius: 4px;
+          background: transparent;
+          border: 1px solid var(--border-color);
+          color: var(--sub-text-color);
+          cursor: pointer;
+          transition: all .2s ease;
+
+          &:hover {
+            background: var(--bg-color);
+            color: var(--text-color);
+          }
+        }
+      }
+
+      pre {
+        margin: 0 !important;
+        padding: 10px !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+        background: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        max-height: 300px !important;
+
+        code {
+          background: none !important;
+          padding: 0 !important;
+          font-family:
+            'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+            'Courier New', monospace !important;
+        }
+      }
+
+      // Shiki 高亮样式
+      &[data-theme] {
+        pre {
+          background: transparent !important;
+        }
+      }
+    }
+  }
+
+  .start-task-hint {
+    padding: 8px 10px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    font-size: 12px;
+    color: var(--sub-text-color);
+  }
+
+  // 可展开结果组件样式
+  .expandable-result {
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 4px 6px;
+      background: color-mix(
+        in srgb,
+        var(--bg-color) 95%,
+        var(--primary-color) 5%
+      );
+      border-radius: 6px;
+
+      .result-title {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--sub-text-color);
+      }
+
+      .expand-toggle {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 6px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--sub-text-color);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all .2s ease;
+
+        &:hover {
+          background: var(--bg-color);
+          color: var(--text-color);
+        }
+
+        .material-symbols-rounded {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .result-content {
+      .code-block-wrapper {
+        margin: 0;
+
+        pre {
+          max-height: 200px !important;
+          overflow-y: auto !important;
+
+          &::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+
+          &::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+          }
+
+          &::-webkit-scrollbar-thumb:hover {
+            background: color-mix(
+              in srgb,
+              var(--border-color) 80%,
+              var(--text-color) 20%
+            );
+          }
+        }
+      }
+    }
+  }
+}

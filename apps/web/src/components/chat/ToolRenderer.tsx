@@ -4,8 +4,9 @@ import { BashTool } from './tools/BashTool'
 import { DefaultTool } from './tools/DefaultTool'
 import { GlobTool } from './tools/GlobTool'
 import { GrepTool } from './tools/GrepTool'
-import { LsTool } from './tools/LsTool'
+import { LsTool } from './tools/LSTool'
 import { ReadTool } from './tools/ReadTool'
+import { StartTasksTool } from './tools/StartTasksTool'
 import { TodoTool } from './tools/TodoTool'
 import { WriteTool } from './tools/WriteTool'
 
@@ -22,6 +23,8 @@ const TOOL_RENDERERS: Record<
   Grep: GrepTool,
   Read: ReadTool,
   Write: WriteTool,
+  StartTasks: StartTasksTool,
+  mcp__VibeForge__StartTasks: StartTasksTool,
   TodoWrite: TodoTool
 }
 
@@ -43,8 +46,8 @@ ToolRenderer.findRendererByInput = (item: Extract<ChatMessageContent, { type: 't
   const input = item.input as Record<string, unknown> | null
   if (input != null && typeof input === 'object') {
     if (
-      'command' in input
-      && (('description' in input && input.description != null) || ('reason' in input && input.reason != null))
+      'command' in input &&
+      (('description' in input && input.description != null) || ('reason' in input && input.reason != null))
     ) {
       return BashTool
     }

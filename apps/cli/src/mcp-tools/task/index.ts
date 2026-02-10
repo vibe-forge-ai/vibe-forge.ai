@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { uuid } from '@vibe-forge/core/utils/uuid'
+
 import { defineRegister } from '../types'
 import { taskManager } from './manager'
 
@@ -25,7 +27,7 @@ export default defineRegister((server) => {
                 .describe('The type of definition to load (default, spec or entity)'),
               name: z
                 .string()
-                .describe('The name of the spec or entity to load')
+                .describe('The name of the spec or entity to load, if type is spec or entity. Otherwise, ignored.')
                 .optional(),
               adapter: z
                 .string()
@@ -43,33 +45,26 @@ export default defineRegister((server) => {
       })
     },
     async ({ tasks }) => {
-      const results = await Promise.all(tasks.map(task => taskManager.startTask(task)))
-
-      const startedTasks = results.map(r => r.taskId)
-      const logs = results.map(r => r.logs).filter(Boolean)
-
-      let message = `Started ${tasks.length} tasks.\nTask IDs: ${startedTasks.join(', ')}`
-
-      if (logs.length > 0) {
-        // dprint-ignore
-        message += (
-          `\n\nExecution Logs:\n` +
-          `${
-            logs.map((l, i) => (
-              `--- Task ${startedTasks[i]} Start ---\n` +
-              `${l?.join('\n')}\n` +
-              `--- Task ${startedTasks[i]} End ---\n`
-            )).join('\n\n')
-          }`
-        )
-      } else {
-        message += `\n\nPlease use 'GetTaskStatus' to check progress (for background tasks).`
-      }
+      const resolvedTasks = tasks.map(task => ({
+        ...task,
+        taskId: uuid()
+      }))
+      const results = await Promise.allSettled(resolvedTasks.map(task => taskManager.startTask(task)))
 
       return {
         content: [{
           type: 'text',
-          text: message
+          text: JSON.stringify(results.map((r, idx) => {
+            const { taskId, description } = resolvedTasks[idx]
+            const info = taskManager.getTask(taskId)
+            return {
+              taskId,
+              description,
+              status: info?.status ?? r.status,
+              exitCode: info?.exitCode,
+              logs: info?.logs ?? []
+            }
+          }))
         }]
       }
     }

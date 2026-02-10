@@ -37,6 +37,11 @@ html, body, #root, .ant-app {
   --code-bg: #f8fafc;
   --code-border: #f1f5f9;
   --star-color: #f59e0b;
+  --primary-color: #6366f1;
+  --success-color: #0f766e;
+  --warning-color: #b45309;
+  --primary-text-color: #1d4ed8;
+  --danger-color: #dc2626;
 }
 
 html.dark {
@@ -49,4 +54,9 @@ html.dark {
   --code-bg: #1e293b;
   --code-border: #334155;
   --star-color: #ffb81c;
+  --primary-color: #818cf8;
+  --success-color: #2dd4bf;
+  --warning-color: #f59e0b;
+  --primary-text-color: #60a5fa;
+  --danger-color: #f87171;
 }

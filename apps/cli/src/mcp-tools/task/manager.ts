@@ -2,7 +2,6 @@ import process from 'node:process'
 
 import type { AdapterOutputEvent, AdapterSession } from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
-import { uuid } from '@vibe-forge/core/utils/uuid'
 
 export interface TaskInfo {
   taskId: string
@@ -19,14 +18,14 @@ class TaskManager {
   private tasks: Map<string, TaskInfo> = new Map()
 
   public async startTask(options: {
+    taskId: string
     description: string
     type?: 'default' | 'spec' | 'entity'
     name?: string
     adapter?: string
     background?: boolean
   }): Promise<{ taskId: string; logs?: string[] }> {
-    const taskId = uuid()
-    const { adapter, description, type, name, background = true } = options
+    const { taskId, adapter, description, type, name, background = true } = options
 
     // Initialize Task Info
     const taskInfo: TaskInfo = {
@@ -126,7 +125,6 @@ class TaskManager {
       }
       case 'stop': {
         task.status = 'completed'
-        task.logs.push(JSON.stringify(event.data?.content))
         task.onStop?.()
         break
       }

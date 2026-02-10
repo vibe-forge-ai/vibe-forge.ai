@@ -33,7 +33,7 @@ export function LsTool({
 
   const processContent = (content: string) => {
     // Split lines and filter out empty lines immediately
-    let lines = content.split('\n').filter(line => line.trim() !== '')
+    const lines = content.split('\n').filter(line => line.trim() !== '')
 
     // Remove the last line as requested (useless info)
     if (lines.length > 0) {
