@@ -14,10 +14,37 @@ export function sessionsRouter(): Router {
   const router = new Router()
   const db = getDb()
 
-  router.get('/', (ctx) => {
-    ctx.body = { sessions: db.getSessions('active') }
-  })
-  router.get('', (ctx) => {
+  const parseLimit = (limit?: string) => {
+    if (limit == null) {
+      return null
+    }
+
+    const n = Number.parseInt(limit, 10)
+    return Number.isNaN(n) ? null : n
+  }
+
+  const createSessionWithInitialMessage = async (title?: string, initialMessage?: string) => {
+    const session = db.createSession(title)
+    notifySessionUpdated(session.id, session)
+
+    if (initialMessage) {
+      try {
+        await startAdapterSession(session.id)
+        processUserMessage(session.id, initialMessage)
+
+        const updated = db.getSession(session.id)
+        if (updated) {
+          Object.assign(session, updated)
+        }
+      } catch (err) {
+        console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      }
+    }
+
+    return session
+  }
+
+  router.get(['/', ''], (ctx) => {
     ctx.body = { sessions: db.getSessions('active') }
   })
 
@@ -32,15 +59,9 @@ export function sessionsRouter(): Router {
     const session = db.getSession(id)
     const interaction = getSessionInteraction(id)
 
-    if (limit != null) {
-      const n = Number.parseInt(limit, 10)
-      if (!Number.isNaN(n)) {
-        ctx.body = { messages: messages.slice(-n), session, interaction }
-        return
-      }
-    }
-
-    ctx.body = { messages, session, interaction }
+    const parsedLimit = parseLimit(limit)
+    const responseMessages = parsedLimit == null ? messages : messages.slice(-parsedLimit)
+    ctx.body = { messages: responseMessages, session, interaction }
   })
 
   router.patch('/:id', (ctx) => {
@@ -67,50 +88,9 @@ export function sessionsRouter(): Router {
     ctx.body = { ok: true }
   })
 
-  router.post('/', async (ctx) => {
+  router.post(['/', ''], async (ctx) => {
     const { title, initialMessage } = ctx.request.body as { title?: string; initialMessage?: string }
-    const session = db.createSession(title)
-    notifySessionUpdated(session.id, session)
-
-    if (initialMessage) {
-      // 启动进程并发送消息
-      try {
-        await startAdapterSession(session.id)
-        processUserMessage(session.id, initialMessage)
-
-        // 获取更新后的会话状态
-        const updated = db.getSession(session.id)
-        if (updated) {
-          Object.assign(session, updated)
-        }
-      } catch (err) {
-        console.error(`[sessions] Failed to start session ${session.id}:`, err)
-      }
-    }
-
-    ctx.body = { session }
-  })
-  router.post('', async (ctx) => {
-    const { title, initialMessage } = ctx.request.body as { title?: string; initialMessage?: string }
-    const session = db.createSession(title)
-    notifySessionUpdated(session.id, session)
-
-    if (initialMessage) {
-      // 启动进程并发送消息
-      try {
-        await startAdapterSession(session.id)
-        processUserMessage(session.id, initialMessage)
-
-        // 获取更新后的会话状态
-        const updated = db.getSession(session.id)
-        if (updated) {
-          Object.assign(session, updated)
-        }
-      } catch (err) {
-        console.error(`[sessions] Failed to start session ${session.id}:`, err)
-      }
-    }
-
+    const session = await createSessionWithInitialMessage(title, initialMessage)
     ctx.body = { session }
   })
 
