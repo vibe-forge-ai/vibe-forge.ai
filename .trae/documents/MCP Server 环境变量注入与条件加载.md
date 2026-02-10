@@ -24,11 +24,11 @@ export interface AdapterQueryOptions {
 
 修改 `prepare.ts`，在 `mcpServer.env` 中注入以下环境变量：
 
-* `__VF_PROJECT_AI_SERVER_HOST__`: 从 `env.SERVER_HOST` 或默认值 `localhost` 获取。
+- `__VF_PROJECT_AI_SERVER_HOST__`: 从 `env.SERVER_HOST` 或默认值 `localhost` 获取。
 
-* `__VF_PROJECT_AI_SERVER_PORT__`: 从 `env.SERVER_PORT` 或默认值 `8787` 获取。
+- `__VF_PROJECT_AI_SERVER_PORT__`: 从 `env.SERVER_PORT` 或默认值 `8787` 获取。
 
-* `__VF_PROJECT_AI_RUN_TYPE__`: 直接使用 `adapterOptions.runtime` 的值。
+- `__VF_PROJECT_AI_RUN_TYPE__`: 直接使用 `adapterOptions.runtime` 的值。
 
 ```typescript
 // src/controllers/task/prepare.ts
@@ -54,7 +54,7 @@ const { session } = await run({
   // ...
 }, {
   // ...
-  runtime: 'server',
+  runtime: 'server'
   // ...
 })
 ```
@@ -68,7 +68,7 @@ run({
   // ...
 }, {
   // ...
-  runtime: 'cli',
+  runtime: 'cli'
   // ...
 })
 ```
@@ -79,11 +79,11 @@ run({
 
 修改 `registerMcpCommand` 函数，在注册工具前检查环境变量。
 
-* 读取 `process.env.__VF_PROJECT_AI_RUN_TYPE__`。
+- 读取 `process.env.__VF_PROJECT_AI_RUN_TYPE__`。
 
-* 在遍历 `mcpTools.tools` 时，增加判断逻辑：
+- 在遍历 `mcpTools.tools` 时，增加判断逻辑：
 
-  * 如果 `category === 'interaction'` 且 `runType !== 'server'`，则跳过注册。
+  - 如果 `category === 'interaction'` 且 `runType !== 'server'`，则跳过注册。
 
 ```typescript
 // src/commands/mcp.ts
@@ -123,4 +123,3 @@ const port = process.env.__VF_PROJECT_AI_SERVER_PORT__ ?? '8787'
 4. **CLI**: 修改 `src/cli.ts` 传入 `runtime: 'cli'`。
 5. **CLI**: 修改 `src/commands/mcp.ts` 添加条件加载逻辑。
 6. **CLI**: 修改 `src/mcp-tools/interaction/ask-user.ts` 使用环境变量。
-

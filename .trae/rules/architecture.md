@@ -1,6 +1,7 @@
 ---
 alwaysApply: true
 ---
+
 # 项目架构说明 (Architecture)
 
 Vibe Forge 是一个基于 Monorepo 结构的 AI 辅助开发工具框架，采用插件化架构，支持多种 AI 适配器。

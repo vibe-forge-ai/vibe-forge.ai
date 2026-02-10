@@ -30,7 +30,7 @@ export const callPluginHook = async <K extends keyof HookInputs>(
 
     const currentPlugin = filterPlugins[index]
     const { name = '<anonymous>', [eventName]: hook } = currentPlugin
-    
+
     // 增加索引，防止重复调用导致死循环或错误逻辑
     index++
 
