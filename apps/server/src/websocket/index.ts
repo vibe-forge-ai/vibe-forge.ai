@@ -20,6 +20,7 @@ import type {
 import { run } from '@vibe-forge/core/controllers/task'
 
 import { getDb } from '#~/db.js'
+import { safeJsonStringify } from '#~/utils/json.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 function extractTextFromMessage(message: ChatMessage): string | undefined {
@@ -37,7 +38,7 @@ function extractTextFromMessage(message: ChatMessage): string | undefined {
 
 function sendToClient(ws: WebSocket, event: WSEvent) {
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(event))
+    ws.send(safeJsonStringify(event))
   }
 }
 

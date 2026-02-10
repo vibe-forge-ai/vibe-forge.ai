@@ -6,6 +6,7 @@ import { env as processEnv } from 'node:process'
 import Database from 'better-sqlite3'
 import { v4 as uuidv4 } from 'uuid'
 
+import { safeJsonStringify } from '#~/utils/json.js'
 import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 
 interface SessionRow {
@@ -249,7 +250,7 @@ export class SqliteDb {
 
   saveMessage(sessionId: string, data: unknown) {
     const stmt = this.db.prepare('INSERT INTO messages (sessionId, data, createdAt) VALUES (?, ?, ?)')
-    stmt.run(sessionId, JSON.stringify(data), Date.now())
+    stmt.run(sessionId, safeJsonStringify(data), Date.now())
   }
 
   getMessages(sessionId: string): unknown[] {
