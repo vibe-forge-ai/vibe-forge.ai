@@ -28,7 +28,34 @@ globs: apps/web/src/**/*
 - **类名命名规范**:
   - 采用中划线命名法（kebab-case），例如：`.chat-message-item`。
   - 组件根节点类名建议与文件名保持一致。
-  - 内部元素使用嵌套结构，推荐使用 SCSS 的 `&` 语法保持结构清晰。
+  - 推荐使用 BEM 结构并结合 SCSS 嵌套，通过 `&` 保持选择器结构清晰、可搜索。
+    - Block（组件根类名）: `.a-b-c`
+    - Element（子元素）: `.a-b-c__d-e`
+    - Modifier（状态/变体）: `.a-b-c--active`
+    - Element + Modifier: `.a-b-c__d-e--disabled`
+  - 开发时尽可能使用嵌套方式定义 Element/Modifier，避免重复书写前缀：
+
+    ```scss
+    .a-b-c {
+      display: flex;
+
+      &__d-e {
+        padding: 8px 12px;
+
+        &--disabled {
+          opacity: 0.5;
+          pointer-events: none;
+        }
+      }
+
+      &--active {
+        border-color: var(--border-color);
+      }
+    }
+    ```
+
+  - 嵌套深度建议控制在 3 层以内（Block → Element → Modifier），避免过深导致可读性下降和选择器权重难以控制。
+  - 避免在组件样式中嵌套标签选择器（如 `div span`），优先使用语义化类名；必要时可使用 `& > .child` 明确结构边界。
 - **布局容器**: 容器类名应反映其功能，如 `.container-list`, `.actions-grid`, `.settings-section`。
 
 ## CSS 变量 & 主题
@@ -54,20 +81,13 @@ globs: apps/web/src/**/*
   - 如果某些特殊 UI 在暗色模式下需要完全不同的配色方案（非简单覆盖变量），应在组件级 SCSS 中使用 `html.dark .component-class` 进行针对性处理。
   - 按钮激活状态、悬浮状态应考虑暗色模式下的可读性和对比度。
 
-*
+## 国际化 (i18n)
 
-+## 国际化 (i18n)
-+- **原则**: 禁止在 UI 中直接编写硬编码的文本（尤其是中文），必须通过 `i18n` 进行管理。
-+- **使用方法**:
-
--
+- **原则**: 禁止在 UI 中直接编写硬编码的文本（尤其是中文），必须通过 `i18n` 进行管理。
+- **使用方法**:
   - 使用 `useTranslation` hook: `const { t } = useTranslation();`
--
   - 翻译调用: `t('common.button.save')`
-    +- **资源管理**:
--
+- **资源管理**:
   - 翻译文件位于 `src/resources/locales/`。
--
   - `zh.json` 为中文主文件，`en.json` 为英文翻译。
--
   - Key 命名建议采用层级结构：`模块.功能.属性`（如 `chat.sidebar.delete_confirm`）。
