@@ -98,6 +98,7 @@ export interface Config {
    * 默认禁用的 MCP 服务器列表
    */
   defaultExcludeMcpServers?: string[]
+  noDefaultVibeForgeMcpServer?: boolean
   /**
    * 权限配置
    */
@@ -201,27 +202,13 @@ export const loadConfig = (options: {
 
   configCache = (async () => {
     return [
-      await loadJSConfig([
-        './.ai.config.js',
-        './.ai.config.mjs',
-        './.ai.config.cjs',
-        './.ai.config.ts',
-        './.ai.config.mts',
-        './.ai.config.cts',
-        './infra/.ai.config.js',
-        './infra/.ai.config.mjs',
-        './infra/.ai.config.cjs',
-        './infra/.ai.config.ts',
-        './infra/.ai.config.mts',
-        './infra/.ai.config.cts'
-      ]) ??
-        await loadJSONConfig(
-          [
-            './.ai.config.json',
-            './infra/.ai.config.json'
-          ],
-          options.jsonVariables ?? {}
-        ) ??
+      await loadJSONConfig(
+        [
+          './.ai.config.json',
+          './infra/.ai.config.json'
+        ],
+        options.jsonVariables ?? {}
+      ) ??
         await loadYAMLConfig(
           [
             './.ai.config.yaml',
@@ -231,27 +218,13 @@ export const loadConfig = (options: {
           ],
           options.jsonVariables ?? {}
         ),
-      await loadJSConfig([
-        './.ai.dev.config.js',
-        './.ai.dev.config.mjs',
-        './.ai.dev.config.cjs',
-        './.ai.dev.config.ts',
-        './.ai.dev.config.mts',
-        './.ai.dev.config.cts',
-        './infra/.ai.dev.config.js',
-        './infra/.ai.dev.config.mjs',
-        './infra/.ai.dev.config.cjs',
-        './infra/.ai.dev.config.ts',
-        './infra/.ai.dev.config.mts',
-        './infra/.ai.dev.config.cts'
-      ]) ??
-        await loadJSONConfig(
-          [
-            './.ai.dev.config.json',
-            './infra/.ai.dev.config.json'
-          ],
-          options.jsonVariables ?? {}
-        ) ??
+      await loadJSONConfig(
+        [
+          './.ai.dev.config.json',
+          './infra/.ai.dev.config.json'
+        ],
+        options.jsonVariables ?? {}
+      ) ??
         await loadYAMLConfig(
           [
             './.ai.dev.config.yaml',

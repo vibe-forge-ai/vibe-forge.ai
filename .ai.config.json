@@ -1,0 +1,29 @@
+{
+  "modelServices": {},
+  "adapters": {
+    "claude-code": {}
+  },
+  "plugins": {
+    "logger": {}
+  },
+  "mcpServers": {
+    "VibeForge": {
+      "command": "./node_modules/.bin/vf",
+      "args": [
+        "mcp"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [],
+    "deny": [],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(kill:*)",
+      "Bash(chmod:*)"
+    ]
+  },
+  "announcements": [
+    "欢迎使用 AI 时代的代码工业机床。"
+  ]
+}
