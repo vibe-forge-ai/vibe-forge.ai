@@ -87,6 +87,8 @@
       "write": "写入文件",
       "bash": "Bash",
       "getTaskInfo": "任务详情",
+      "listTasks": "任务列表",
+      "listTasksEmpty": "暂无任务",
       "startTasks": "启动任务",
       "startTasksBackground": "后台任务",
       "startTasksForeground": "前台任务",

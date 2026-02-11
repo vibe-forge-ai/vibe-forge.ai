@@ -86,6 +86,8 @@
       "write": "Write File",
       "bash": "Bash",
       "getTaskInfo": "Get Task Info",
+      "listTasks": "List Tasks",
+      "listTasksEmpty": "No tasks",
       "startTasks": "Start Tasks",
       "startTasksBackground": "Background",
       "startTasksForeground": "Foreground",

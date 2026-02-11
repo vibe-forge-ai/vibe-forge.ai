@@ -62,6 +62,7 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
               {tasks.map((task, idx) => {
                 const { description, type, name, adapter, background } = task
                 const { status, taskId, logs = [] } = taskResults?.[idx] ?? {}
+                const cardProps = { description, status, logs, adapter, type, name, background }
                 const metaChips = [
                   adapter,
                   type === 'default' ? undefined : type,
@@ -71,13 +72,7 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
                 return (
                   <TaskToolCard
                     key={idx}
-                    description={description}
-                    status={status}
-                    logs={logs}
-                    adapter={adapter}
-                    type={type}
-                    name={name}
-                    background={background}
+                    {...cardProps}
                     sessionId={taskId}
                     titleFallback={t('chat.tools.startTasks')}
                     metaChips={metaChips}

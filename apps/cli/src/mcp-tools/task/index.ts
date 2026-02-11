@@ -72,12 +72,13 @@ export default defineRegister((server) => {
           text: JSON.stringify(results.map((r, idx) => {
             const { taskId, description } = resolvedTasks[idx]
             const info = taskManager.getTask(taskId)
+            const { session, onStop, serverSync, createdAt, ...safeInfo } = info ?? {}
             return {
               taskId,
               description,
               status: info?.status ?? r.status,
-              exitCode: info?.exitCode,
-              logs: info?.logs ?? []
+              logs: info?.logs ?? [],
+              ...safeInfo
             }
           }))
         }]
@@ -102,20 +103,11 @@ export default defineRegister((server) => {
           isError: true
         }
       }
+      const { session, onStop, serverSync, createdAt, ...safeTask } = task
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify([{
-            taskId: task.taskId,
-            description: task.description,
-            status: task.status,
-            exitCode: task.exitCode,
-            logs: task.logs,
-            adapter: task.adapter,
-            type: task.type,
-            name: task.name,
-            background: task.background
-          }])
+          text: JSON.stringify([safeTask])
         }]
       }
     }
@@ -150,14 +142,10 @@ export default defineRegister((server) => {
     },
     async () => {
       const tasks = taskManager.getAllTasks()
-      if (tasks.length === 0) {
-        return { content: [{ type: 'text', text: 'No tasks found.' }] }
-      }
-      const list = tasks.map(t => `- [${t.status.toUpperCase()}] ${t.taskId} (Adapter: ${t.adapter})`).join('\n')
       return {
         content: [{
           type: 'text',
-          text: `Current Tasks:\n${list}`
+          text: JSON.stringify(tasks.map(({ session, onStop, serverSync, createdAt, ...task }) => task))
         }]
       }
     }

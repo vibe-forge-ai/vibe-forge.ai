@@ -35,16 +35,17 @@ export const GetTaskInfoTool = defineToolRender(({ item, resultItem }) => {
   }, [resultItem?.content])
 
   const logs = taskResult?.logs ?? []
-  const metaChips = taskResult
-    ? [
-      taskResult.adapter,
-      taskResult.type === 'default' ? undefined : taskResult.type,
-      taskResult.name,
-      taskResult.status,
-      taskResult.exitCode != null ? t('chat.tools.taskExitCode', { code: taskResult.exitCode }) : undefined,
-      taskResult.background === false ? t('chat.tools.startTasksForeground') : taskResult.background === true ? t('chat.tools.startTasksBackground') : undefined
+  const metaChips = taskResult ? (() => {
+    const { exitCode, ...cardMeta } = taskResult
+    return [
+      cardMeta.adapter,
+      cardMeta.type === 'default' ? undefined : cardMeta.type,
+      cardMeta.name,
+      cardMeta.status,
+      exitCode != null ? t('chat.tools.taskExitCode', { code: exitCode }) : undefined,
+      cardMeta.background === false ? t('chat.tools.startTasksForeground') : cardMeta.background === true ? t('chat.tools.startTasksBackground') : undefined
     ]
-    : []
+  })() : []
   const titleFallback = t('chat.tools.task')
 
   return (
@@ -61,19 +62,19 @@ export const GetTaskInfoTool = defineToolRender(({ item, resultItem }) => {
         content={
           <div className='tool-content'>
             {taskResult ? (
-              <TaskToolCard
-                description={taskResult.description}
-                status={taskResult.status}
-                logs={logs}
-                adapter={taskResult.adapter}
-                type={taskResult.type}
-                name={taskResult.name}
-                background={taskResult.background}
-                sessionId={taskResult.taskId || inputTaskId}
-                titleFallback={titleFallback}
-                metaChips={metaChips}
-                showExecutionIcon={false}
-              />
+              (() => {
+                const { taskId, exitCode, ...cardProps } = taskResult
+                return (
+                  <TaskToolCard
+                    {...cardProps}
+                    logs={logs}
+                    sessionId={taskId || inputTaskId}
+                    titleFallback={titleFallback}
+                    metaChips={metaChips}
+                    showExecutionIcon={false}
+                  />
+                )
+              })()
             ) : (
               <div className='get-task-info-tool__empty'>
                 {t('chat.tools.startTasksEmpty')}
