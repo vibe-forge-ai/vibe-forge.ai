@@ -10,8 +10,6 @@ import type {
   AdapterOutputEvent,
   AdapterSession,
   AskUserQuestionParams,
-  ChatMessage,
-  ChatMessageContent,
   ServerEnv,
   Session,
   SessionInfo,
@@ -20,21 +18,9 @@ import type {
 import { run } from '@vibe-forge/core/controllers/task'
 
 import { getDb } from '#~/db.js'
+import { applySessionEvent } from '#~/services/sessionEvents.js'
 import { safeJsonStringify } from '#~/utils/json.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-
-function extractTextFromMessage(message: ChatMessage): string | undefined {
-  if (typeof message.content === 'string') {
-    return message.content
-  }
-  if (Array.isArray(message.content)) {
-    const textContent = message.content.find((c: ChatMessageContent) => c.type === 'text')
-    if (textContent != null && 'text' in textContent) {
-      return textContent.text
-    }
-  }
-  return undefined
-}
 
 function sendToClient(ws: WebSocket, event: WSEvent) {
   if (ws.readyState === WebSocket.OPEN) {
@@ -42,10 +28,36 @@ function sendToClient(ws: WebSocket, event: WSEvent) {
   }
 }
 
+export function broadcastSessionEvent(sessionId: string, event: WSEvent) {
+  const cached = adapterCache.get(sessionId)
+  if (cached != null) {
+    cached.messages.push(event)
+    for (const socket of cached.sockets) {
+      sendToClient(socket, event)
+    }
+  }
+  const externalCached = externalCache.get(sessionId)
+  if (externalCached != null) {
+    externalCached.messages.push(event)
+    for (const socket of externalCached.sockets) {
+      sendToClient(socket, event)
+    }
+  }
+}
+
 // 记录 sessionId 对应的 process (adapter) 和相关的 sockets
 // 使用 Map 因为 sessionId 是字符串。如果需要自动清理，我们在 close 时手动处理。
 const adapterCache = new Map<string, {
   session: AdapterSession
+  sockets: Set<WebSocket>
+  messages: WSEvent[]
+  currentInteraction?: {
+    id: string
+    payload: AskUserQuestionParams
+  }
+}>()
+
+const externalCache = new Map<string, {
   sockets: Set<WebSocket>
   messages: WSEvent[]
   currentInteraction?: {
@@ -66,12 +78,38 @@ const pendingInteractions = new Map<string, {
 
 export function getSessionInteraction(sessionId: string) {
   const cached = adapterCache.get(sessionId)
-  return cached?.currentInteraction
+  if (cached?.currentInteraction != null) {
+    return cached.currentInteraction
+  }
+  return externalCache.get(sessionId)?.currentInteraction
+}
+
+export function setSessionInteraction(sessionId: string, interaction: { id: string; payload: AskUserQuestionParams }) {
+  const cached = adapterCache.get(sessionId)
+  if (cached != null) {
+    cached.currentInteraction = interaction
+    return
+  }
+  const externalCached = externalCache.get(sessionId) ?? { sockets: new Set<WebSocket>(), messages: [] }
+  externalCached.currentInteraction = interaction
+  externalCache.set(sessionId, externalCached)
+}
+
+export function clearSessionInteraction(sessionId: string, interactionId: string) {
+  const cached = adapterCache.get(sessionId)
+  if (cached?.currentInteraction?.id === interactionId) {
+    cached.currentInteraction = undefined
+    return
+  }
+  const externalCached = externalCache.get(sessionId)
+  if (externalCached?.currentInteraction?.id === interactionId) {
+    externalCached.currentInteraction = undefined
+  }
 }
 
 export function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
   const { sessionId } = params
-  const cached = adapterCache.get(sessionId)
+  const cached = adapterCache.get(sessionId) ?? externalCache.get(sessionId)
 
   if (cached == null || cached.sockets.size === 0) {
     return Promise.reject(new Error(`Session ${sessionId} is not active`))
@@ -157,34 +195,27 @@ export async function startAdapterSession(
       systemPrompt: options.systemPrompt,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       onEvent: (event: AdapterOutputEvent) => {
-        // 广播给所有关联的 sockets 并存入历史记录
         const broadcast = (ev: WSEvent) => {
           serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
           messages.push(ev)
-          const db = getDb()
-          db.saveMessage(sessionId, ev)
-
-          // 更新会话的最后一条消息字段
-          if (ev.type === 'message') {
-            const text = extractTextFromMessage(ev.message)
-            if (text != null && text !== '') {
-              updateAndNotifySession(sessionId, {
-                lastMessage: text,
-                lastUserMessage: ev.message.role === 'user' ? text : undefined,
-                status: 'running'
-              })
-            }
-          }
-
           for (const socket of sockets) {
             sendToClient(socket, ev)
           }
         }
 
+        const applyEvent = (ev: WSEvent) => {
+          applySessionEvent(sessionId, ev, {
+            broadcast,
+            onSessionUpdated: (session) => {
+              notifySessionUpdated(sessionId, session)
+            }
+          })
+        }
+
         switch (event.type) {
           case 'init':
             if ('model' in (event.data as any)) {
-              broadcast({
+              applyEvent({
                 type: 'session_info',
                 info: {
                   type: 'init',
@@ -195,7 +226,7 @@ export async function startAdapterSession(
             break
           case 'message':
             if ('role' in (event.data as any)) {
-              broadcast({
+              applyEvent({
                 type: 'message',
                 message: event.data
               })
@@ -225,8 +256,7 @@ export async function startAdapterSession(
           }
           case 'summary': {
             const summaryData = event.data as { summary: string; leafUuid: string }
-            // 广播 summary 事件给前端，但不更新数据库
-            broadcast({
+            applyEvent({
               type: 'session_info',
               info: {
                 type: 'summary',
@@ -311,6 +341,14 @@ export function processUserMessage(sessionId: string, text: string) {
       parentUuid
     })
   } else {
+    const externalCached = externalCache.get(sessionId)
+    if (externalCached != null) {
+      externalCached.messages.push(ev)
+      for (const socket of externalCached.sockets) {
+        sendToClient(socket, ev)
+      }
+      return
+    }
     serverLogger.warn({ sessionId }, '[server] Adapter session not found when processing user message')
   }
 }
@@ -332,12 +370,22 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     serverLogger.info({ sessionId }, '[server] Connection established')
 
     try {
-      const cached = await startAdapterSession(sessionId, {
-        model,
-        systemPrompt,
-        appendSystemPrompt
-      })
-      cached.sockets.add(ws)
+      const db = getDb()
+      const sessionData = db.getSession(sessionId)
+      const isExternalSession = sessionData?.parentSessionId != null
+
+      if (isExternalSession) {
+        const externalCached = externalCache.get(sessionId) ?? { sockets: new Set<WebSocket>(), messages: [] }
+        externalCached.sockets.add(ws)
+        externalCache.set(sessionId, externalCached)
+      } else {
+        const cached = await startAdapterSession(sessionId, {
+          model,
+          systemPrompt,
+          appendSystemPrompt
+        })
+        cached.sockets.add(ws)
+      }
     } catch (err) {
       sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
       return
@@ -349,14 +397,24 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
 
         if (msg.type === 'interaction_response') {
           const { id, data } = msg
+          const sessionData = getDb().getSession(sessionId)
+          const isExternalSession = sessionData?.parentSessionId != null
+          if (isExternalSession) {
+            clearSessionInteraction(sessionId, id)
+            const event: WSEvent = { type: 'interaction_response', id, data }
+            applySessionEvent(sessionId, event, {
+              broadcast: (ev) => broadcastSessionEvent(sessionId, ev),
+              onSessionUpdated: (session) => {
+                notifySessionUpdated(sessionId, session)
+              }
+            })
+            return
+          }
           const pending = pendingInteractions.get(id)
 
           if (pending) {
             clearTimeout(pending.timer)
-            const cached = adapterCache.get(sessionId)
-            if (cached != null && cached.currentInteraction?.id === id) {
-              cached.currentInteraction = undefined
-            }
+            clearSessionInteraction(sessionId, id)
             updateAndNotifySession(sessionId, { status: 'running' })
             pending.resolve(data)
             pendingInteractions.delete(id)
@@ -369,9 +427,12 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           processUserMessage(sessionId, msg.text)
         } else if (msg.type === 'interrupt') {
           serverLogger.info({ sessionId }, '[server] Received interrupt request')
-          const cached = adapterCache.get(sessionId)
-          if (cached != null) {
-            cached.session.emit({ type: 'interrupt' })
+          const sessionData = getDb().getSession(sessionId)
+          if (sessionData?.parentSessionId == null) {
+            const cached = adapterCache.get(sessionId)
+            if (cached != null) {
+              cached.session.emit({ type: 'interrupt' })
+            }
           }
         } else if (msg.type === 'terminate_session') {
           serverLogger.info({ sessionId }, '[server] Received terminate_session request')
@@ -387,7 +448,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const cached = adapterCache.get(sessionId)
       if (cached != null) {
         cached.sockets.delete(ws)
-        // 只有当所有关联的 socket 都关闭时，记录日志，但不再自动 kill session
         if (cached.sockets.size === 0) {
           serverLogger.info({ sessionId }, '[server] All sockets closed, but keeping adapter process alive')
         } else {
@@ -395,6 +455,14 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
             { sessionId, activeSockets: cached.sockets.size },
             '[server] Socket closed, but session still has active sockets'
           )
+        }
+        return
+      }
+      const externalCached = externalCache.get(sessionId)
+      if (externalCached != null) {
+        externalCached.sockets.delete(ws)
+        if (externalCached.sockets.size === 0) {
+          externalCache.delete(sessionId)
         }
       }
     })

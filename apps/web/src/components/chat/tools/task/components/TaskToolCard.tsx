@@ -1,7 +1,11 @@
 import './TaskToolCard.scss'
 
-import React from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import type { ChatMessage, WSEvent } from '@vibe-forge/core'
+
+import { connectionManager } from '#~/connectionManager.js'
 import { CodeBlock } from '../../../CodeBlock'
 
 export interface TaskToolCardProps {
@@ -55,8 +59,21 @@ export function TaskToolCard({
   foregroundLabel,
   backgroundLabel
 }: TaskToolCardProps) {
+  const navigate = useNavigate()
+  const [liveLogs, setLiveLogs] = useState<string[]>(logs ?? [])
+  const [liveStatus, setLiveStatus] = useState(status)
+  const seenMessageIdsRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    setLiveLogs(logs ?? [])
+  }, [logs])
+
+  useEffect(() => {
+    setLiveStatus(status)
+  }, [status])
+
   const { title, content } = parseTaskDescription(description)
-  const logText = (logs?.join('\n') ?? '').trim()
+  const logText = useMemo(() => (liveLogs?.join('\n') ?? '').trim(), [liveLogs])
   const resolvedTitle = title || titleFallback || ''
   const chips = (metaChips ?? []).filter((item): item is string => Boolean(item))
   const isForeground = background === false
@@ -66,11 +83,42 @@ export function TaskToolCard({
   const executionLabel = isForeground ? foregroundLabel : backgroundLabel
   const displaySessionId = sessionId != null && sessionId !== ''
 
+  useEffect(() => {
+    if (!sessionId) return
+    const cleanup = connectionManager.connect(sessionId, {
+      onMessage(data: WSEvent) {
+        if (data.type === 'message') {
+          const message = data.message as ChatMessage
+          if (message.id && seenMessageIdsRef.current.has(message.id)) {
+            return
+          }
+          if (message.id) {
+            seenMessageIdsRef.current.add(message.id)
+          }
+          const text = extractMessageText(message)
+          if (text !== '') {
+            setLiveLogs((prev) => [...prev, text])
+          }
+        } else if (data.type === 'session_updated') {
+          if (data.session?.id === sessionId) {
+            const updatedStatus = data.session?.status as typeof status | undefined
+            if (updatedStatus) {
+              setLiveStatus(updatedStatus)
+            }
+          }
+        }
+      }
+    })
+    return () => {
+      cleanup?.()
+    }
+  }, [sessionId])
+
   return (
     <div className='task-tool-card'>
       <div className='task-tool-card__left'>
-        <span className={`material-symbols-rounded task-tool-card__status-icon ${status ?? 'help_outline'}`}>
-          {getStatusIcon(status)}
+        <span className={`material-symbols-rounded task-tool-card__status-icon ${liveStatus ?? 'help_outline'}`}>
+          {getStatusIcon(liveStatus)}
         </span>
         {showExecutionIcon && (
           <span
@@ -85,7 +133,13 @@ export function TaskToolCard({
         <div className='task-tool-card__header'>
           <div className='task-tool-card__title'>{resolvedTitle}</div>
           {displaySessionId && (
-            <span className='task-tool-card__session-id'>{sessionId}</span>
+            <button
+              type='button'
+              className='task-tool-card__session-id task-tool-card__session-link'
+              onClick={() => navigate(`/session/${sessionId}`)}
+            >
+              {sessionId}
+            </button>
           )}
         </div>
         {content && (
@@ -108,4 +162,16 @@ export function TaskToolCard({
       </div>
     </div>
   )
+}
+
+function extractMessageText(message: ChatMessage): string {
+  if (typeof message.content === 'string') {
+    return message.content
+  }
+  if (Array.isArray(message.content)) {
+    return message.content
+      .map((c) => (c.type === 'text' ? c.text : ''))
+      .join('')
+  }
+  return ''
 }

@@ -22,11 +22,6 @@
     border-color: var(--sidebar-active-text) !important;
     color: var(--sidebar-active-text) !important;
 
-    // Remove old active indicator
-    &::before {
-      display: none;
-    }
-
     .session-item-actions {
       opacity: 1;
     }
@@ -175,6 +170,7 @@
           border-radius: 2px;
         }
       }
+
     }
   }
 

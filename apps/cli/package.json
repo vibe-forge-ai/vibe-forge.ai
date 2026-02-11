@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Vibe Forge CLI",
   "imports": {
-    "#~/*": {
+    "#~/*.js": {
       "__vibe-forge__": {
         "default": "./src/*.ts"
       }

@@ -89,6 +89,19 @@
     white-space: nowrap;
   }
 
+  &__session-link {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: right;
+
+    &:hover {
+      color: var(--text-color);
+      opacity: 1;
+    }
+  }
+
   &__content {
     font-size: 13px;
     line-height: 1.5;

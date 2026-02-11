@@ -11,6 +11,7 @@ import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 
 interface SessionRow {
   id: string
+  parentSessionId: string | null
   title: string | null
   lastMessage: string | null
   lastUserMessage: string | null
@@ -59,6 +60,7 @@ export class SqliteDb {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
+        parentSessionId TEXT,
         title TEXT,
         lastMessage TEXT,
         lastUserMessage TEXT,
@@ -101,6 +103,9 @@ export class SqliteDb {
     if (!columns.includes('isArchived')) {
       this.db.exec('ALTER TABLE sessions ADD COLUMN isArchived INTEGER DEFAULT 0')
     }
+    if (!columns.includes('parentSessionId')) {
+      this.db.exec('ALTER TABLE sessions ADD COLUMN parentSessionId TEXT')
+    }
     if (!columns.includes('lastMessage')) {
       this.db.exec('ALTER TABLE sessions ADD COLUMN lastMessage TEXT')
     }
@@ -132,6 +137,7 @@ export class SqliteDb {
     return rows.map(row => {
       return {
         id: row.id,
+        parentSessionId: row.parentSessionId ?? undefined,
         title: row.title ?? undefined,
         createdAt: row.createdAt,
         messageCount: row.messageCount,
@@ -156,6 +162,7 @@ export class SqliteDb {
     if (row == null) return undefined
     return {
       id: row.id,
+      parentSessionId: row.parentSessionId ?? undefined,
       title: row.title ?? undefined,
       createdAt: row.createdAt,
       messageCount: row.messageCount,
@@ -230,6 +237,26 @@ export class SqliteDb {
     this.updateSession(id, { isArchived })
   }
 
+  updateSessionArchivedWithChildren(id: string, isArchived: boolean): string[] {
+    const stmt = this.db.prepare('SELECT id FROM sessions WHERE parentSessionId = ?')
+    const updateStmt = this.db.prepare('UPDATE sessions SET isArchived = ? WHERE id = ?')
+    const updatedIds: string[] = []
+    const stack = [id]
+
+    while (stack.length > 0) {
+      const currentId = stack.pop()
+      if (!currentId) continue
+      updateStmt.run(isArchived ? 1 : 0, currentId)
+      updatedIds.push(currentId)
+      const rows = stmt.all(currentId) as { id: string }[]
+      for (const row of rows) {
+        stack.push(row.id)
+      }
+    }
+
+    return updatedIds
+  }
+
   updateSessionTags(sessionId: string, tags: string[]) {
     const transaction = this.db.transaction(() => {
       // 1. Delete existing tags for this session
@@ -266,15 +293,16 @@ export class SqliteDb {
     }
   }
 
-  createSession(title?: string, id?: string, status?: string): Session {
+  createSession(title?: string, id?: string, status?: string, parentSessionId?: string): Session {
     const session: Session = {
       id: id ?? uuidv4(),
+      parentSessionId: parentSessionId ?? undefined,
       title,
       createdAt: Date.now(),
       status: (status as any) ?? undefined
     }
-    const stmt = this.db.prepare('INSERT INTO sessions (id, title, createdAt, status) VALUES (?, ?, ?, ?)')
-    stmt.run(session.id, session.title, session.createdAt, session.status)
+    const stmt = this.db.prepare('INSERT INTO sessions (id, parentSessionId, title, createdAt, status) VALUES (?, ?, ?, ?, ?)')
+    stmt.run(session.id, session.parentSessionId ?? null, session.title, session.createdAt, session.status)
     return session
   }
 

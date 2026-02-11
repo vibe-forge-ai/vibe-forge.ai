@@ -3,7 +3,7 @@ import './commands/@core/extra-options'
 
 import { program } from 'commander'
 
-import { getCliDescription, getCliVersion } from '#~/utils'
+import { getCliDescription, getCliVersion } from '#~/utils.js'
 
 import { registerClearCommand } from './commands/clear'
 import { registerKillCommand } from './commands/kill'

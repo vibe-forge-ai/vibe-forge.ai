@@ -11,6 +11,7 @@ export type SessionStatus = 'running' | 'completed' | 'failed' | 'terminated' | 
 
 export interface Session {
   id: string
+  parentSessionId?: string
   title?: string
   createdAt: number
   messageCount?: number

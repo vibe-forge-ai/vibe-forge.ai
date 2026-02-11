@@ -4,7 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Command } from 'commander'
 
-import { getCliVersion } from '#~/utils'
+import { getCliVersion } from '#~/utils.js'
 
 import * as mcpTools from '../mcp-tools'
 import { createFilteredRegister, shouldEnableCategory } from '../mcp-tools/proxy'

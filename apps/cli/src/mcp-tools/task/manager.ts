@@ -1,7 +1,17 @@
 import process from 'node:process'
 
-import type { AdapterOutputEvent, AdapterSession } from '@vibe-forge/core'
+import type { AdapterOutputEvent, AdapterSession, ChatMessage } from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+
+import { extractTextFromMessage, fetchSessionMessages, postSessionEvent } from '#~/mcp-sync/index.js'
+
+interface ServerSyncState {
+  sessionId: string
+  lastEventIndex: number
+  lastAssistantMessageId?: string
+  seenMessageIds: Set<string>
+  poller?: NodeJS.Timeout
+}
 
 export interface TaskInfo {
   taskId: string
@@ -16,6 +26,7 @@ export interface TaskInfo {
   session?: AdapterSession
   createdAt: number
   onStop?: () => void
+  serverSync?: ServerSyncState
 }
 
 class TaskManager {
@@ -28,8 +39,9 @@ class TaskManager {
     name?: string
     adapter?: string
     background?: boolean
+    enableServerSync?: boolean
   }): Promise<{ taskId: string; logs?: string[] }> {
-    const { taskId, adapter, description, type, name, background = true } = options
+    const { taskId, adapter, description, type, name, background = true, enableServerSync } = options
 
     // Initialize Task Info
     const taskInfo: TaskInfo = {
@@ -43,6 +55,13 @@ class TaskManager {
       logs: [],
       createdAt: Date.now()
     }
+    if (enableServerSync) {
+      taskInfo.serverSync = {
+        sessionId: taskId,
+        lastEventIndex: 0,
+        seenMessageIds: new Set()
+      }
+    }
     this.tasks.set(taskId, taskInfo)
 
     try {
@@ -54,10 +73,14 @@ class TaskManager {
       )
 
       // Start Task
+      const parentCtxId = process.env.__VF_PROJECT_AI_CTX_ID__
       const { session } = await run({
         adapter,
         cwd: process.cwd(),
-        env: process.env
+        env: {
+          ...process.env,
+          __VF_PROJECT_AI_CTX_ID__: taskId
+        }
       }, {
         type: 'create',
         runtime: 'mcp',
@@ -80,6 +103,7 @@ class TaskManager {
           type: 'message',
           content: [{ type: 'text', text: description }]
         })
+        this.startServerPolling(taskId)
       }
 
       if (!background) {
@@ -117,8 +141,19 @@ class TaskManager {
     const task = this.tasks.get(taskId)
     if (!task) return
 
+    void this.syncEvent(task, event)
+
     switch (event.type) {
       case 'message': {
+        const message = event.data as ChatMessage
+        if (message?.id) {
+          task.serverSync?.seenMessageIds.add(message.id)
+        }
+        if (message?.role === 'assistant' && message.id) {
+          if (task.serverSync) {
+            task.serverSync.lastAssistantMessageId = message.id
+          }
+        }
         const content = event.data.content
         let text = ''
         if (typeof content === 'string') {
@@ -133,6 +168,7 @@ class TaskManager {
       }
       case 'stop': {
         task.status = 'completed'
+        this.stopServerPolling(taskId)
         task.onStop?.()
         break
       }
@@ -140,8 +176,66 @@ class TaskManager {
         task.status = event.data.exitCode === 0 ? 'completed' : 'failed'
         task.exitCode = event.data.exitCode ?? undefined
         task.logs.push(`Process exited with code ${event.data.exitCode}`)
+        this.stopServerPolling(taskId)
         task.onStop?.()
         break
+    }
+  }
+
+  private startServerPolling(taskId: string) {
+    const task = this.tasks.get(taskId)
+    if (!task?.serverSync) return
+    if (task.serverSync.poller) return
+
+    const poll = async () => {
+      const current = this.tasks.get(taskId)
+      if (!current?.serverSync || !current.session) return
+      try {
+        const events = await fetchSessionMessages(current.serverSync.sessionId)
+        const startIndex = current.serverSync.lastEventIndex
+        const newEvents = events.slice(startIndex)
+        current.serverSync.lastEventIndex = events.length
+
+        for (const ev of newEvents) {
+          if (ev.type !== 'message') continue
+          if (ev.message.role !== 'user') continue
+          if (ev.message.id && current.serverSync.seenMessageIds.has(ev.message.id)) {
+            continue
+          }
+          if (ev.message.id) {
+            current.serverSync.seenMessageIds.add(ev.message.id)
+          }
+          const text = extractTextFromMessage(ev.message).trim()
+          if (text === '') continue
+          current.session.emit({
+            type: 'message',
+            content: [{ type: 'text', text }],
+            parentUuid: current.serverSync.lastAssistantMessageId
+          })
+        }
+      } catch {}
+    }
+
+    task.serverSync.poller = setInterval(() => {
+      void poll()
+    }, 1000)
+    void poll()
+  }
+
+  private stopServerPolling(taskId: string) {
+    const task = this.tasks.get(taskId)
+    if (task?.serverSync?.poller) {
+      clearInterval(task.serverSync.poller)
+      task.serverSync.poller = undefined
+    }
+  }
+
+  private async syncEvent(task: TaskInfo, event: AdapterOutputEvent) {
+    if (!task.serverSync) return
+    try {
+      await postSessionEvent(task.serverSync.sessionId, event as unknown as Record<string, unknown>)
+    } catch (err) {
+      task.logs.push(`Sync event failed: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -159,6 +253,7 @@ class TaskManager {
       task.session.kill()
       task.logs.push('Task stopped by user')
       task.status = 'failed' // or 'stopped' if we had that status
+      this.stopServerPolling(taskId)
       if (task.onStop) task.onStop()
       return true
     }

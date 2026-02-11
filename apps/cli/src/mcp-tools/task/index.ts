@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
+import { createChildSession, getParentSessionId } from '#~/mcp-sync/index.js'
+
 import { defineRegister } from '../types'
 import { taskManager } from './manager'
 
@@ -49,7 +51,20 @@ export default defineRegister((server) => {
         ...task,
         taskId: uuid()
       }))
-      const results = await Promise.allSettled(resolvedTasks.map(task => taskManager.startTask(task)))
+      const parentSessionId = getParentSessionId()
+      const syncResults = parentSessionId
+        ? await Promise.allSettled(resolvedTasks.map(task =>
+          createChildSession({
+            id: task.taskId,
+            title: task.name ?? task.description,
+            parentSessionId
+          })
+        ))
+        : []
+      const results = await Promise.allSettled(resolvedTasks.map((task, idx) => {
+        const enableServerSync = parentSessionId != null && syncResults[idx]?.status === 'fulfilled'
+        return taskManager.startTask({ ...task, enableServerSync })
+      }))
 
       return {
         content: [{

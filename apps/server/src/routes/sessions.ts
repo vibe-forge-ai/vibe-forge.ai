@@ -1,11 +1,17 @@
 import Router from '@koa/router'
 
+import type { ChatMessage, SessionInfo, WSEvent } from '@vibe-forge/core'
+
 import { getDb } from '#~/db.js'
+import { applySessionEvent } from '#~/services/sessionEvents.js'
 import {
+  broadcastSessionEvent,
+  clearSessionInteraction,
   getSessionInteraction,
   killSession,
   notifySessionUpdated,
   processUserMessage,
+  setSessionInteraction,
   startAdapterSession,
   updateAndNotifySession
 } from '#~/websocket/index.js'
@@ -23,11 +29,17 @@ export function sessionsRouter(): Router {
     return Number.isNaN(n) ? null : n
   }
 
-  const createSessionWithInitialMessage = async (title?: string, initialMessage?: string) => {
-    const session = db.createSession(title)
+  const createSessionWithInitialMessage = async (
+    title?: string,
+    initialMessage?: string,
+    parentSessionId?: string,
+    id?: string,
+    shouldStart = true
+  ) => {
+    const session = db.createSession(title, id, undefined, parentSessionId)
     notifySessionUpdated(session.id, session)
 
-    if (initialMessage) {
+    if (initialMessage && shouldStart) {
       try {
         await startAdapterSession(session.id)
         processUserMessage(session.id, initialMessage)
@@ -73,8 +85,18 @@ export function sessionsRouter(): Router {
       tags?: string[]
     }
 
-    if (title !== undefined || isStarred !== undefined || isArchived !== undefined) {
-      updateAndNotifySession(id, { title, isStarred, isArchived })
+    if (title !== undefined || isStarred !== undefined) {
+      updateAndNotifySession(id, { title, isStarred })
+    }
+
+    if (isArchived !== undefined) {
+      const updatedIds = db.updateSessionArchivedWithChildren(id, isArchived)
+      for (const updatedId of updatedIds) {
+        const updatedSession = db.getSession(updatedId)
+        if (updatedSession != null) {
+          notifySessionUpdated(updatedId, updatedSession)
+        }
+      }
     }
 
     if (tags !== undefined) {
@@ -89,9 +111,165 @@ export function sessionsRouter(): Router {
   })
 
   router.post(['/', ''], async (ctx) => {
-    const { title, initialMessage } = ctx.request.body as { title?: string; initialMessage?: string }
-    const session = await createSessionWithInitialMessage(title, initialMessage)
+    const { id, title, initialMessage, parentSessionId, start } = ctx.request.body as {
+      id?: string
+      title?: string
+      initialMessage?: string
+      parentSessionId?: string
+      start?: boolean
+    }
+    const session = await createSessionWithInitialMessage(title, initialMessage, parentSessionId, id, start !== false)
     ctx.body = { session }
+  })
+
+  router.post('/:id/events', (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const existing = db.getSession(id)
+    if (existing == null) {
+      ctx.status = 404
+      ctx.body = { error: 'Session not found' }
+      return
+    }
+
+    const body = ctx.request.body as {
+      type?: string
+      data?: any
+      message?: ChatMessage
+      summary?: string
+      leafUuid?: string
+      id?: string
+      payload?: any
+      exitCode?: number
+      stderr?: string
+    }
+
+    const onSessionUpdated = (session: any) => {
+      notifySessionUpdated(id, session)
+    }
+
+    if (body.type === 'message' && body.data != null) {
+      const event: WSEvent = { type: 'message', message: body.data }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'message' && body.message != null) {
+      const event: WSEvent = { type: 'message', message: body.message }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'summary' && body.data?.summary) {
+      const info: SessionInfo = {
+        type: 'summary',
+        summary: body.data.summary,
+        leafUuid: body.data.leafUuid ?? ''
+      }
+      const event: WSEvent = { type: 'session_info', info }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'summary' && typeof body.summary === 'string') {
+      const info: SessionInfo = {
+        type: 'summary',
+        summary: body.summary,
+        leafUuid: body.leafUuid ?? ''
+      }
+      const event: WSEvent = { type: 'session_info', info }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'init' && body.data) {
+      const info: SessionInfo = {
+        type: 'init',
+        ...(body.data as SessionInfo)
+      }
+      const event: WSEvent = { type: 'session_info', info }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'interaction_request' && body.id && body.payload) {
+      const event: WSEvent = {
+        type: 'interaction_request',
+        id: body.id,
+        payload: body.payload
+      }
+      setSessionInteraction(id, { id: body.id, payload: body.payload })
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'interaction_response' && body.id && body.data != null) {
+      const event: WSEvent = {
+        type: 'interaction_response',
+        id: body.id,
+        data: body.data
+      }
+      clearSessionInteraction(id, body.id)
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'exit') {
+      const exitCode = Number(body.data?.exitCode ?? body.exitCode ?? 0)
+      if (exitCode === 0) {
+        updateAndNotifySession(id, { status: 'completed' })
+      } else {
+        const stderr = body.data?.stderr ?? body.stderr ?? ''
+        const event: WSEvent = {
+          type: 'error',
+          message: stderr !== ''
+            ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+            : `Process exited with code ${exitCode}`
+        }
+        applySessionEvent(id, event, {
+          broadcast: (ev) => broadcastSessionEvent(id, ev),
+          onSessionUpdated
+        })
+      }
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'stop') {
+      updateAndNotifySession(id, { status: 'completed' })
+      ctx.body = { ok: true }
+      return
+    }
+
+    ctx.status = 400
+    ctx.body = { error: 'Invalid event' }
   })
 
   router.delete('/:id', (ctx) => {
