@@ -186,8 +186,8 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
       ...(userConfig?.env ?? {})
     },
     companyAnnouncements: [
-      ...(config?.companyAnnouncements ?? []),
-      ...(userConfig?.companyAnnouncements ?? [])
+      ...(config?.announcements ?? []),
+      ...(userConfig?.announcements ?? [])
     ],
     enabledPlugins: {
       ...(config?.enabledPlugins ?? {}),

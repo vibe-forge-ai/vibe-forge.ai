@@ -14,11 +14,25 @@
       opacity: 0;
     }
 
-    .sender-container {
+    .new-session-guide-wrapper {
       flex: 1;
+      display: flex;
+      align-items: center;
       justify-content: center;
+      padding: 24px 24px 12px;
+    }
+
+    .sender-container {
+      flex: 0;
+      justify-content: flex-start;
+      padding: 0 24px 24px;
     }
   }
+}
+
+.new-session-guide-wrapper {
+  display: flex;
+  justify-content: center;
 }
 
 .chat-messages {

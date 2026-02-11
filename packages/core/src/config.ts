@@ -114,7 +114,7 @@ export interface Config {
   /**
    * 公告配置
    */
-  companyAnnouncements?: string[]
+  announcements?: string[]
   /**
    * 插件配置
    */

@@ -188,6 +188,7 @@ export class DefinitionLoader {
   async loadSpec(name: string): Promise<Definition<Spec> | undefined> {
     const patterns = [
       `.ai/specs/${name}.md`,
+      `.ai/specs/${name}/index.md`,
       `.ai/plugins/*/specs/${name}.md`
     ]
     const paths = await this.scan(patterns)
@@ -202,7 +203,9 @@ export class DefinitionLoader {
   async loadDefaultSpecs(): Promise<Definition<Spec>[]> {
     const patterns = [
       '.ai/specs/*.md',
-      '.ai/plugins/*/specs/*.md'
+      '.ai/specs/*/index.md',
+      '.ai/plugins/*/specs/*.md',
+      '.ai/plugins/*/specs/*/index.md'
     ]
     const paths = await this.scan(patterns)
     return loadLocalDocuments<Spec>(paths)

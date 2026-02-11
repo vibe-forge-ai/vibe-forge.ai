@@ -169,8 +169,9 @@ export function NavRail({
           <span>
             <Button
               type='text'
-              className='nav-item'
+              className={`nav-item ${currentPath === '/config' ? 'active' : ''}`}
               icon={<span className='material-symbols-rounded'>settings</span>}
+              onClick={() => void navigate('/config')}
             />
           </span>
         </Tooltip>

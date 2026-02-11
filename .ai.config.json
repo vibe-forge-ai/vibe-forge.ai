@@ -1,5 +1,4 @@
 {
-  "modelServices": {},
   "adapters": {
     "claude-code": {}
   },

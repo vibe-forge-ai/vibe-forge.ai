@@ -13,6 +13,7 @@ import { connectionManager } from '../connectionManager'
 import { ChatHeader } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
 import { MessageItem } from './chat/MessageItem'
+import { NewSessionGuide } from './chat/NewSessionGuide'
 import { Sender } from './chat/Sender'
 import { ToolGroup } from './chat/ToolGroup'
 import { processMessages } from './chat/messageUtils'
@@ -365,6 +366,12 @@ export function Chat({
           </div>
         )}
       </div>
+
+      {!session?.id && (
+        <div className='new-session-guide-wrapper'>
+          <NewSessionGuide />
+        </div>
+      )}
 
       <CurrentTodoList messages={messages} />
       <div className='sender-container'>
