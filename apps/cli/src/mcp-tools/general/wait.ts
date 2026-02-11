@@ -9,7 +9,7 @@ export default defineRegister(({ registerTool }) => {
       title: 'Wait Tool',
       description: 'Wait for a specified amount of time (milliseconds)',
       inputSchema: z.object({
-        ms: z.number().min(0).max(60000).describe('Time to wait in milliseconds (max 60s)')
+        ms: z.number().min(0).describe('Time to wait in milliseconds')
       })
     },
     async ({ ms }) => {
