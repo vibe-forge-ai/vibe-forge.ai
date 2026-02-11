@@ -200,8 +200,8 @@ export const loadConfig = (options: {
     return configCache
   }
 
-  configCache = (async () => {
-    return [
+  configCache = (async () =>
+    [
       await loadJSONConfig(
         [
           './.ai.config.json',
@@ -234,8 +234,7 @@ export const loadConfig = (options: {
           ],
           options.jsonVariables ?? {}
         )
-    ] as const
-  })()
+    ] as const)()
   return configCache
 }
 

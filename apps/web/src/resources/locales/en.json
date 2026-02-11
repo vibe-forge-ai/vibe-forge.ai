@@ -77,6 +77,32 @@
     "usedTools": "Used {{count}} tools",
     "viewInitInfo": "Double click to view initialization info",
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
+    "newSessionGuide": {
+      "loading": "Loading...",
+      "announcements": {
+        "title": "Announcements"
+      },
+      "specs": {
+        "title": "Existing Flows",
+        "params": "{{count}} params",
+        "empty": "No flows found. Add .ai/specs/*.md to show them here.",
+        "create": "Quick Create Flow",
+        "createToast": "Create a flow file under .ai/specs, then refresh the page."
+      },
+      "entities": {
+        "title": "Existing Entities",
+        "empty": "No entities found. Add them under .ai/entities to show here.",
+        "create": "Quick Create Entity",
+        "createToast": "Create an entity definition under .ai/entities, then refresh the page."
+      },
+      "help": {
+        "title": "Help",
+        "item1": "Flow files can include name/description/params for better discovery",
+        "item2": "Entities can be described with index.json or README.md",
+        "item3": "After creation, refresh the page to see them here",
+        "footer": "Add usage guidance to flow descriptions when needed"
+      }
+    },
     "todo": {
       "noTasks": "No tasks planned",
       "progress": "Progress: {{completed}}/{{total}} completed"
@@ -111,5 +137,38 @@
     "noTags": "No tags",
     "title": "Title",
     "newSessionPlaceholder": "Type a message to start a new chat..."
+  },
+  "config": {
+    "title": "System Configuration",
+    "readOnlyHint": "Configuration is read-only. Update by editing json/yaml config files.",
+    "loadFailed": "Failed to load configuration",
+    "sources": {
+      "project": "Project",
+      "user": "User"
+    },
+    "groups": {
+      "config": "Configuration",
+      "app": "Application"
+    },
+    "about": {
+      "software": "Software Info",
+      "version": "Version",
+      "lastRelease": "Last Release",
+      "checkUpdate": "Check Updates",
+      "docs": "Documentation",
+      "contact": "Contact Us",
+      "feedback": "Feedback",
+      "unknown": "Unknown"
+    },
+    "sections": {
+      "general": "General",
+      "conversation": "Conversation",
+      "modelServices": "Model Services",
+      "adapters": "Adapters",
+      "plugins": "Plugins",
+      "mcp": "MCP",
+      "experiments": "Experiments",
+      "about": "About"
+    }
   }
 }

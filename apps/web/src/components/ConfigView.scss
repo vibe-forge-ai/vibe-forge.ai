@@ -1,0 +1,237 @@
+.config-view {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  color: var(--text-color);
+  background: var(--bg-color);
+
+  &__state {
+    display: grid;
+    place-items: center;
+    flex: 1;
+  }
+
+  &__tabs-wrap {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    .ant-tabs-content-holder > .ant-tabs-content {
+      height: 100%;
+      & > .ant-tabs-tabpane {
+        padding: 16px;
+        height: calc(100% - 8px * 2);
+      }
+    }
+  }
+
+  &__tabs {
+    width: 100%;
+  }
+
+  &__section {
+    margin: 0;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--code-border);
+    background: var(--code-bg);
+    color: var(--text-color);
+    font-size: 12px;
+    overflow: auto;
+  }
+}
+
+.config-view__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-view__content-header {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.config-view__tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  line-height: 1;
+}
+
+.config-view__tab-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config-view__tab-text {
+  font-size: 13px;
+  color: var(--text-color);
+  line-height: 18px;
+}
+
+.config-view__tabs > .ant-tabs-nav {
+  min-width: 240px;
+  padding: 12px 24px;
+  border-right: 1px solid var(--border-color);
+
+  .ant-tabs-tab {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+
+    border-radius: 8px;
+  }
+
+  .ant-tabs-tab-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    color: var(--text-color);
+  }
+
+  .ant-tabs-tab-disabled {
+    cursor: default;
+  }
+
+  .ant-tabs-tab-disabled .ant-tabs-tab-btn {
+    cursor: default;
+    color: var(--sub-text-color);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .ant-tabs-tab-active {
+    background: var(--code-bg);
+  }
+
+  .ant-tabs-content-holder {
+    padding: 16px;
+  }
+}
+
+.config-view__group-label {
+  display: flex;
+  width: 100%;
+  margin-left: -24px;
+}
+
+.config-about {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-about__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--code-bg);
+}
+
+.config-about__app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.config-about__app-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tag-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-color);
+}
+
+.config-about__app-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-about__app-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.config-about__app-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-about__app-version {
+  color: var(--text-color);
+}
+
+.config-about__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--tag-bg);
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.config-about__list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+.config-about__item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  color: var(--text-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-about__item-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.config-about__item-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
+.config-about__item-row:last-child {
+  border-bottom: none;
+}
+
+.config-about__arrow {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}

@@ -78,6 +78,32 @@
     "usedTools": "使用了 {{count}} 个工具",
     "viewInitInfo": "双击查看初始化信息",
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
+    "newSessionGuide": {
+      "loading": "正在加载...",
+      "announcements": {
+        "title": "最新公告"
+      },
+      "specs": {
+        "title": "已有流程",
+        "params": "{{count}} 个参数",
+        "empty": "暂未发现流程，放入 .ai/specs/*.md 即可展示。",
+        "create": "快速创建流程",
+        "createToast": "请在 .ai/specs 下创建流程文件，保存后刷新页面。"
+      },
+      "entities": {
+        "title": "已有实体",
+        "empty": "暂未发现实体，放入 .ai/entities 即可展示。",
+        "create": "快速创建实体",
+        "createToast": "请在 .ai/entities 下创建实体定义文件，保存后刷新页面。"
+      },
+      "help": {
+        "title": "一些帮助",
+        "item1": "流程文件支持 name/description/params 等元信息，便于识别和调用",
+        "item2": "实体可使用 index.json 或 README.md 描述能力与职责",
+        "item3": "创建完成后刷新页面即可出现在这里",
+        "footer": "需要更多引导时，可在流程描述中写明使用方式"
+      }
+    },
     "todo": {
       "noTasks": "未规划任务",
       "progress": "任务进度: {{completed}}/{{total}} 已完成"
@@ -112,5 +138,38 @@
     "noTags": "暂无标签",
     "title": "标题",
     "newSessionPlaceholder": "输入消息以创建新会话..."
+  },
+  "config": {
+    "title": "系统配置",
+    "readOnlyHint": "配置为只读，如需修改请编辑 json/yaml 配置文件。",
+    "loadFailed": "配置加载失败",
+    "sources": {
+      "project": "项目",
+      "user": "用户"
+    },
+    "groups": {
+      "config": "配置",
+      "app": "应用"
+    },
+    "about": {
+      "software": "软件信息",
+      "version": "版本",
+      "lastRelease": "最后发布时间",
+      "checkUpdate": "检查更新",
+      "docs": "帮助文档",
+      "contact": "联系我们",
+      "feedback": "问题反馈",
+      "unknown": "未知"
+    },
+    "sections": {
+      "general": "通用",
+      "conversation": "会话",
+      "modelServices": "模型服务",
+      "adapters": "适配器",
+      "plugins": "插件",
+      "mcp": "MCP",
+      "experiments": "实验功能",
+      "about": "关于"
+    }
   }
 }

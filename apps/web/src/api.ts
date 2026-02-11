@@ -1,5 +1,20 @@
 import type { Session } from '@vibe-forge/core'
 
+export interface SpecSummary {
+  id: string
+  name: string
+  description: string
+  params: { name: string; description?: string }[]
+  always: boolean
+}
+
+export interface EntitySummary {
+  id: string
+  name: string
+  description: string
+  always: boolean
+}
+
 const SERVER_HOST = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ as string | undefined) ?? window.location.hostname
 const SERVER_PORT = (import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ as string | undefined) ?? '8787'
 const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`
@@ -30,6 +45,16 @@ export async function createSession(title?: string, initialMessage?: string): Pr
     body: JSON.stringify({ title, initialMessage })
   })
   return res.json() as Promise<{ session: Session }>
+}
+
+export async function listSpecs(): Promise<{ specs: SpecSummary[] }> {
+  const res = await fetch(`${SERVER_URL}/api/ai/specs`)
+  return res.json() as Promise<{ specs: SpecSummary[] }>
+}
+
+export async function listEntities(): Promise<{ entities: EntitySummary[] }> {
+  const res = await fetch(`${SERVER_URL}/api/ai/entities`)
+  return res.json() as Promise<{ entities: EntitySummary[] }>
 }
 
 export async function getConfig(): Promise<any> {

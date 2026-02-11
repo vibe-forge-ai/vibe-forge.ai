@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 
 import Router from '@koa/router'
@@ -46,7 +48,26 @@ const mergeConfig = (project?: Config, user?: Config): Config => ({
   plugins: user?.plugins ?? project?.plugins
 })
 
-const buildSections = (config: Config | undefined, workspaceFolder: string, present: boolean) => {
+interface AppInfo {
+  version?: string
+  lastReleaseAt?: string
+}
+
+const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
+  try {
+    const pkgPath = resolve(workspaceFolder, 'package.json')
+    const content = await readFile(pkgPath, 'utf-8')
+    const pkg = JSON.parse(content) as { version?: string; lastReleaseAt?: string; releaseDate?: string }
+    return {
+      version: pkg.version,
+      lastReleaseAt: pkg.lastReleaseAt ?? pkg.releaseDate
+    }
+  } catch {
+    return {}
+  }
+}
+
+const buildSections = (config: Config | undefined) => {
   const {
     baseDir,
     defaultAdapter,
@@ -78,11 +99,7 @@ const buildSections = (config: Config | undefined, workspaceFolder: string, pres
       defaultIncludeMcpServers: config?.defaultIncludeMcpServers,
       defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
       noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
-    }),
-    about: {
-      workspaceFolder,
-      present
-    }
+    })
   }
 }
 
@@ -97,19 +114,33 @@ export function configRouter(): Router {
         WORKSPACE_FOLDER: workspaceFolder,
         __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
       }
+      const urls = {
+        repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
+        docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
+        contact: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
+        issues: 'https://github.com/vibe-forge-ai/vibe-forge.ai/issues',
+        releases: 'https://github.com/vibe-forge-ai/vibe-forge.ai/releases'
+      }
+      const appInfo = await getAppInfo(workspaceFolder)
       const [projectConfig, userConfig] = await loadConfig({ jsonVariables })
       const mergedConfig = mergeConfig(projectConfig, userConfig)
       ctx.body = {
         sources: {
-          project: buildSections(projectConfig, workspaceFolder, projectConfig != null),
-          user: buildSections(userConfig, workspaceFolder, userConfig != null),
-          merged: buildSections(mergedConfig, workspaceFolder, projectConfig != null || userConfig != null)
+          project: buildSections(projectConfig),
+          user: buildSections(userConfig),
+          merged: buildSections(mergedConfig)
         },
         meta: {
           workspaceFolder,
           configPresent: {
             project: projectConfig != null,
             user: userConfig != null
+          },
+          experiments: {},
+          about: {
+            version: appInfo.version,
+            lastReleaseAt: appInfo.lastReleaseAt,
+            urls
           }
         }
       }

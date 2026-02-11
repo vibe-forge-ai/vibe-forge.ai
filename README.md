@@ -36,6 +36,11 @@ Vibe Forge 是一个基于 Monorepo 结构的 AI 辅助开发工具，旨在提�
    ```
    _注意：该命令会同时启动后端服务 (`apps/server`) 和前端应用 (`apps/web`)。_
 
+## 配置文件
+
+- 仅支持 JSON/YAML 配置：`.ai.config.json`、`.ai.config.yaml`/`.yml` 及其 `.ai.dev.config.*` 变体。
+- 系统配置页为只读展示，如需修改请直接编辑配置文件。
+
 ## 开发与维护工具
 
 为了保持代码质量，项目集成了以下检查工具：
