@@ -4,9 +4,11 @@ import { App, Button, Input, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import useSWR from 'swr'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
+import { isShortcutMatch } from '../../utils/shortcutUtils'
 
 const { TextArea } = Input
 
@@ -40,6 +42,23 @@ export function Sender({
   const [showToolsList, setShowToolsList] = useState(false)
   const textareaRef = useRef<TextAreaRef>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
+  const isMac = navigator.platform.includes('Mac')
+
+  const { data: configRes } = useSWR<{
+    sources?: {
+      merged?: {
+        shortcuts?: {
+          sendMessage?: string
+          clearInput?: string
+        }
+      }
+    }
+  }>('/api/config')
+  const sendShortcut = configRes?.sources?.merged?.shortcuts?.sendMessage
+  const clearInputShortcut = configRes?.sources?.merged?.shortcuts?.clearInput
+  const resolvedSendShortcut = sendShortcut != null && sendShortcut.trim() !== ''
+    ? sendShortcut
+    : 'mod+enter'
 
   const isThinking = sessionStatus === 'running'
 
@@ -79,6 +98,12 @@ export function Sender({
     setInput('')
     setDraft('')
     setShowCompletion(false)
+    setHistoryIndex(-1)
+  }
+
+  const clearInputValue = () => {
+    if (input === '') return
+    setInput('')
     setHistoryIndex(-1)
   }
 
@@ -171,6 +196,16 @@ export function Sender({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isShortcutMatch(e, resolvedSendShortcut, isMac)) {
+      e.preventDefault()
+      handleSend()
+      return
+    }
+    if (clearInputShortcut != null && clearInputShortcut.trim() !== '' && isShortcutMatch(e, clearInputShortcut, isMac)) {
+      e.preventDefault()
+      clearInputValue()
+      return
+    }
     if (showCompletion) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -242,8 +277,7 @@ export function Sender({
     if (e.key === 'Escape') {
       if (input !== '') {
         e.preventDefault()
-        setInput('')
-        setHistoryIndex(-1)
+        clearInputValue()
       }
       return
     }

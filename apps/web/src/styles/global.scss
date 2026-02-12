@@ -29,6 +29,7 @@ html, body, #root, .ant-app {
 
 :root {
   --bg-color: #ffffff;
+  --sub-bg-color: #fcfcfc;
   --text-color: #000000;
   --sub-text-color: #6b7280;
   --border-color: #f0f0f0;
@@ -46,6 +47,7 @@ html, body, #root, .ant-app {
 
 html.dark {
   --bg-color: #141414;
+  --sub-bg-color: #262626;
   --text-color: #ffffff;
   --sub-text-color: #8c8c8c;
   --border-color: #303030;

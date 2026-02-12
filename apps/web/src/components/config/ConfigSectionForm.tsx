@@ -4,6 +4,7 @@ import { Empty, Input, InputNumber, Select, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
+import { ShortcutInput } from './ConfigShortcutInput'
 import { FieldRow } from './ConfigFieldRow'
 import type { FieldSpec } from './configSchema'
 import { configSchema } from './configSchema'
@@ -261,6 +262,17 @@ export const SectionForm = ({
           />
         )
       }
+    } else if (field.type === 'shortcut') {
+      const isMac = navigator.platform.includes('Mac')
+      control = (
+        <ShortcutInput
+          value={typeof valueToUse === 'string' ? valueToUse : ''}
+          onChange={(next) => handleValueChange(next)}
+          placeholder={t('config.editor.shortcutPlaceholder')}
+          isMac={isMac}
+          t={t}
+        />
+      )
     }
 
     if (directRecordSections.has(sectionKey) && field.type === 'record') {

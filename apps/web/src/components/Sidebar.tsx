@@ -2,13 +2,15 @@ import './Sidebar.scss'
 
 import { Button, Tooltip } from 'antd'
 import { useAtom, useAtomValue } from 'jotai'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
 import { deleteSession, updateSession } from '../api'
+import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../store/index'
+import { formatShortcutLabel } from '../utils/shortcutUtils'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 
@@ -29,11 +31,30 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
+  const isMac = navigator.platform.includes('Mac')
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
   )
   const sessions: Session[] = sessionsRes?.sessions ?? []
+  const { data: configRes } = useSWR<{
+    sources?: {
+      merged?: {
+        shortcuts?: {
+          newSession?: string
+        }
+      }
+    }
+  }>('/api/config')
+
+  const newSessionShortcut = configRes?.sources?.merged?.shortcuts?.newSession
+  const resolvedNewSessionShortcut = newSessionShortcut != null && newSessionShortcut.trim() !== ''
+    ? newSessionShortcut
+    : 'mod+k'
+  const shortcutLabel = useMemo(
+    () => formatShortcutLabel(resolvedNewSessionShortcut, isMac),
+    [resolvedNewSessionShortcut, isMac]
+  )
 
   const filteredSessions = useMemo(() => {
     if (searchQuery.trim() === '') return sessions
@@ -164,28 +185,21 @@ export function Sidebar({
 
   const createBtnRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-
-        // 如果已经是激活状态，则不执行任何操作
-        if (isCreatingSession) return
-
-        // Trigger visual feedback
-        if (createBtnRef.current) {
-          createBtnRef.current.classList.add('active-scale')
-          setTimeout(() => {
-            createBtnRef.current?.classList.remove('active-scale')
-          }, 200)
-        }
-        void handleCreateSession()
+  useGlobalShortcut({
+    shortcut: resolvedNewSessionShortcut,
+    isMac,
+    onTrigger: (event) => {
+      event.preventDefault()
+      if (isCreatingSession) return
+      if (createBtnRef.current) {
+        createBtnRef.current.classList.add('active-scale')
+        setTimeout(() => {
+          createBtnRef.current?.classList.remove('active-scale')
+        }, 200)
       }
+      void handleCreateSession()
     }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sessions, isCreatingSession])
+  })
 
   return (
     <div
@@ -240,7 +254,7 @@ export function Sidebar({
                 <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
               </span>
               <span className='shortcut-tag'>
-                {navigator.platform.includes('Mac') ? '⌘K' : 'Ctrl+K'}
+                {shortcutLabel}
               </span>
             </Button>
           </Tooltip>

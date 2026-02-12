@@ -1,4 +1,13 @@
-export type FieldValueType = 'string' | 'number' | 'boolean' | 'string[]' | 'select' | 'json' | 'multiline' | 'record'
+export type FieldValueType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'string[]'
+  | 'select'
+  | 'json'
+  | 'multiline'
+  | 'record'
+  | 'shortcut'
 
 export type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue'
 
@@ -106,7 +115,9 @@ export const configSchema: Record<string, FieldSpec[]> = {
     }
   ],
   shortcuts: [
-    { path: ['newSession'], type: 'string', defaultValue: '', icon: 'add_comment' },
-    { path: ['openConfig'], type: 'string', defaultValue: '', icon: 'settings' }
+    { path: ['newSession'], type: 'shortcut', defaultValue: '', icon: 'add_comment' },
+    { path: ['openConfig'], type: 'shortcut', defaultValue: '', icon: 'settings' },
+    { path: ['sendMessage'], type: 'shortcut', defaultValue: '', icon: 'send' },
+    { path: ['clearInput'], type: 'shortcut', defaultValue: '', icon: 'clear' }
   ]
 }

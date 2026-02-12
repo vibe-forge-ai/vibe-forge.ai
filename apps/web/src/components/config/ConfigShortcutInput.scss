@@ -1,0 +1,11 @@
+.config-shortcut-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-shortcut-input .ant-input {
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
