@@ -11,6 +11,14 @@ export interface AdapterMap {}
 
 export interface ModelServiceConfig {
   /**
+   * 模型服务展示标题
+   */
+  title?: string
+  /**
+   * 模型服务展示描述
+   */
+  description?: string
+  /**
    * 模型服务 API 基础 URL
    */
   apiBaseUrl: string
@@ -116,6 +124,28 @@ export interface Config {
    */
   announcements?: string[]
   /**
+   * 快捷键配置
+   */
+  shortcuts?: {
+    newSession?: string
+    openConfig?: string
+  }
+  /**
+   * 会话配置
+   */
+  conversation?: {
+    /**
+     * 对话风格
+     * - `friendly`: 友好的对话风格，适合用户与助手交互
+     * - `programmatic`: 程序化的对话风格，适合助手执行任务
+     */
+    style?: 'friendly' | 'programmatic'
+    /**
+     * 自定义对话风格。通过指定提示词约束对话风格。
+     */
+    customInstructions?: string
+  }
+  /**
    * 插件配置
    */
   plugins?: PluginConfig
@@ -192,6 +222,10 @@ const loadYAMLConfig = async (paths: string[], jsonVariables: Record<string, str
 }
 
 let configCache: Promise<readonly [Config | undefined, Config | undefined]> | null = null
+
+export const resetConfigCache = () => {
+  configCache = null
+}
 
 export const loadConfig = (options: {
   jsonVariables?: Record<string, string | null | undefined>

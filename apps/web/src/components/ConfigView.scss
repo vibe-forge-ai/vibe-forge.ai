@@ -47,6 +47,358 @@
   gap: 12px;
 }
 
+.config-view__editor-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-view__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.config-view__card {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+}
+
+.config-view__card + .config-view__card {
+  margin-top: 14px;
+}
+
+.config-view__field-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--code-bg);
+}
+
+.config-view__field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.config-view__subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__subsection-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub-text-color);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.config-view__subsection-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-view__field-row:last-child {
+  border-bottom: none;
+}
+
+.config-view__field-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.config-view__field-row--stacked .config-view__field-control {
+  justify-content: flex-start;
+  min-width: 0;
+  width: 100%;
+}
+
+.config-view__field-row--stacked .config-view__field-control > * {
+  flex: 1 1 auto;
+}
+
+.config-view__field-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.config-view__field-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.config-view__field-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.config-view__field-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.config-view__field-control {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.config-view__field-control .ant-select {
+  width: 100%;
+}
+
+.config-view__field-control .ant-input-textarea {
+  width: 100%;
+}
+
+.config-view__multiline-input {
+  width: 100%;
+}
+
+.config-view__array-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__array-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-view__record-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-view__record-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.config-view__record-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-view__record-subtitle {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__record-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__record-fields {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--code-bg);
+}
+
+.config-view__record-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__record-key {
+  font-size: 12px;
+  color: var(--sub-text-color);
+  min-width: 140px;
+}
+
+.config-view__record-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-view__option-title {
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.config-view__option-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__source-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+}
+
+.config-view__multiline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__multiline-preview {
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.config-view__multiline-input {
+  border-radius: 10px;
+}
+
+.config-view__display-pill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.config-view__section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.config-view__section-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
+.config-view__section-hint {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view .ant-empty-image {
+  display: none;
+}
+
+.config-view__object-value {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__object-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.config-view__array-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__array-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__array-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__complex-editor {
+  border-radius: 10px;
+  border: 1px solid var(--code-border);
+  background: var(--code-bg);
+  color: var(--text-color);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+}
+
+.config-view__complex-editor textarea {
+  background: transparent;
+  color: var(--text-color);
+}
+
+.config-view__field-icon {
+  font-size: 16px;
+  color: var(--sub-text-color);
+}
+
 .config-view__content-header {
   display: flex;
   justify-content: flex-start;

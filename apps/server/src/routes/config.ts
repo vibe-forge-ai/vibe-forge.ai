@@ -5,11 +5,7 @@ import process from 'node:process'
 import Router from '@koa/router'
 
 import type { Config } from '@vibe-forge/core'
-import { loadConfig } from '@vibe-forge/core'
-
-const shouldMaskKey = (key: string) => /key|token|secret|password/i.test(key)
-
-const maskValue = (value: string) => (value === '' ? '' : '******')
+import { loadConfig, updateConfigFile } from '@vibe-forge/core'
 
 const sanitize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -18,8 +14,7 @@ const sanitize = (value: unknown): unknown => {
   if (value != null && typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
     return entries.reduce<Record<string, unknown>>((acc, [key, val]) => {
-      const next = sanitize(val)
-      acc[key] = (shouldMaskKey(key) && typeof next === 'string') ? maskValue(next) : next
+      acc[key] = sanitize(val)
       return acc
     }, {})
   }
@@ -45,7 +40,9 @@ const mergeConfig = (project?: Config, user?: Config): Config => ({
   mcpServers: mergeRecord(project?.mcpServers, user?.mcpServers),
   enabledPlugins: mergeRecord(project?.enabledPlugins, user?.enabledPlugins),
   extraKnownMarketplaces: mergeRecord(project?.extraKnownMarketplaces, user?.extraKnownMarketplaces),
-  plugins: user?.plugins ?? project?.plugins
+  plugins: user?.plugins ?? project?.plugins,
+  shortcuts: mergeRecord(project?.shortcuts, user?.shortcuts),
+  conversation: mergeRecord(project?.conversation, user?.conversation)
 })
 
 interface AppInfo {
@@ -73,7 +70,9 @@ const buildSections = (config: Config | undefined) => {
     defaultAdapter,
     defaultModelService,
     defaultModel,
-    announcements
+    announcements,
+    shortcuts,
+    conversation
   } = config ?? {}
 
   return {
@@ -86,7 +85,7 @@ const buildSections = (config: Config | undefined) => {
       permissions: sanitize(config?.permissions),
       env: sanitize(config?.env)
     },
-    conversation: {},
+    conversation: sanitize(conversation),
     modelServices: sanitize(config?.modelServices),
     adapters: sanitize(config?.adapters),
     plugins: sanitize({
@@ -99,9 +98,11 @@ const buildSections = (config: Config | undefined) => {
       defaultIncludeMcpServers: config?.defaultIncludeMcpServers,
       defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
       noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
-    })
+    }),
+    shortcuts: sanitize(shortcuts)
   }
 }
+
 
 export function configRouter(): Router {
   const router = new Router()
@@ -148,6 +149,36 @@ export function configRouter(): Router {
       console.error('[config] Failed to load config:', err)
       ctx.status = 500
       ctx.body = { error: 'Failed to load config' }
+    }
+  })
+
+  router.patch('/', async (ctx) => {
+    const { source, section, value } = ctx.request.body as {
+      source?: 'project' | 'user'
+      section?: string
+      value?: unknown
+    }
+
+    if (source !== 'project' && source !== 'user') {
+      ctx.status = 400
+      ctx.body = { error: 'Invalid source' }
+      return
+    }
+
+    if (section == null || typeof section !== 'string' || section.trim() === '') {
+      ctx.status = 400
+      ctx.body = { error: 'Invalid section' }
+      return
+    }
+
+    try {
+      const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+      await updateConfigFile({ workspaceFolder, source, section, value })
+      ctx.body = { ok: true }
+    } catch (err) {
+      console.error('[config] Failed to update config:', err)
+      ctx.status = 500
+      ctx.body = { error: 'Failed to update config' }
     }
   })
 
