@@ -24,6 +24,7 @@ export interface Spec {
   name?: string
   always?: boolean
   description?: string
+  tags?: string[]
   params?: {
     name: string
     description?: string
@@ -38,6 +39,7 @@ export interface Entity {
   name?: string
   always?: boolean
   description?: string
+  tags?: string[]
   prompt?: string
   promptPath?: string
   rules?: string[]
