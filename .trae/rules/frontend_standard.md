@@ -10,6 +10,7 @@ globs: apps/web/src/**/*
 - 业务组件放在 `src/components/` 下。
 - 每个组件包含 `.tsx` 和对应的 `.scss` 文件。
 - **样式引入**: 在 `.tsx` 文件的第一行引入对应的 `.scss` 文件，例如：`import './ComponentName.scss'`。
+- **文件体量限制**: 单一组件文件超过 400 行时，必须拆分为目录结构，拆出子组件与逻辑模块，并在目录下用 `index.tsx` 聚合对外导出。
 
 ## 数据获取 (SWR)
 
