@@ -1,10 +1,8 @@
 import './MessageItem.scss'
 import type { ChatMessage } from '@vibe-forge/core'
 import React from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { CodeBlock } from './CodeBlock'
 import { MessageFooter } from './MessageFooter'
+import { MarkdownContent } from './MarkdownContent'
 import { ToolRenderer } from './ToolRenderer'
 
 export function MessageItem({
@@ -21,36 +19,7 @@ export function MessageItem({
 
     if (typeof msg.content === 'string') {
       return (
-        <div className='markdown-body'>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              pre({ children }) {
-                return <>{children}</>
-              },
-              code({ inline, className, children, ...props }: any) {
-                const langClass = typeof className === 'string' ? className : ''
-                const match = /language-(\w+)/.exec(langClass)
-                const isInline = inline === true
-                const codeContent = String(children).replace(/\n$/, '')
-                return !isInline && match != null
-                  ? (
-                    <CodeBlock
-                      code={codeContent}
-                      lang={match[1]}
-                    />
-                  )
-                  : (
-                    <code className={langClass} {...props}>
-                      {children}
-                    </code>
-                  )
-              }
-            }}
-          >
-            {msg.content}
-          </ReactMarkdown>
-        </div>
+        <MarkdownContent content={msg.content} />
       )
     }
 
@@ -64,36 +33,7 @@ export function MessageItem({
         {msg.content.map((item, i) => {
           if (item.type === 'text') {
             return (
-              <div key={i} className='markdown-body'>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    pre({ children }) {
-                      return <>{children}</>
-                    },
-                    code({ inline, className, children, ...props }: any) {
-                      const langClass = typeof className === 'string' ? className : ''
-                      const match = /language-(\w+)/.exec(langClass)
-                      const isInline = inline === true
-                      const codeContent = String(children).replace(/\n$/, '')
-                      return !isInline && match != null
-                        ? (
-                          <CodeBlock
-                            code={codeContent}
-                            lang={match[1]}
-                          />
-                        )
-                        : (
-                          <code className={langClass} {...props}>
-                            {children}
-                          </code>
-                        )
-                    }
-                  }}
-                >
-                  {item.text}
-                </ReactMarkdown>
-              </div>
+              <MarkdownContent key={i} content={item.text} />
             )
           }
           return null

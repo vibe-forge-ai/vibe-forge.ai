@@ -1,9 +1,8 @@
 import type { ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { CodeBlock } from '../CodeBlock'
+import { MarkdownContent } from '../MarkdownContent'
 import { ToolCallBox } from '../ToolCallBox'
 import { safeJsonStringify } from '../safeSerialize'
 
@@ -52,9 +51,7 @@ export function DefaultTool({
             <div className='tool-content'>
               {typeof resultItem.content === 'string'
                 ? (resultItem.content.startsWith('```')
-                  ? <div className='markdown-body'>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{resultItem.content}</ReactMarkdown>
-                  </div>
+                  ? <MarkdownContent content={resultItem.content} />
                   : <CodeBlock code={resultItem.content} lang='text' />)
                 : <CodeBlock code={safeJsonStringify(resultItem.content, 2)} lang='json' />}
             </div>
