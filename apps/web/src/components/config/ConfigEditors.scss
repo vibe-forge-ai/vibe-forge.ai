@@ -1,0 +1,26 @@
+.config-view__array-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__array-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-view__complex-editor {
+  border-radius: 10px;
+  border: 1px solid var(--code-border);
+  background: var(--code-bg);
+  color: var(--text-color);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+}
+
+.config-view__complex-editor textarea {
+  background: transparent;
+  color: var(--text-color);
+}

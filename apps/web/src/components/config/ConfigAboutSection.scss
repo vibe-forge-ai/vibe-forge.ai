@@ -1,0 +1,111 @@
+.config-about {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-about__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--code-bg);
+}
+
+.config-about__app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.config-about__app-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tag-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-color);
+}
+
+.config-about__app-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-about__app-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.config-about__app-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-about__app-version {
+  color: var(--text-color);
+}
+
+.config-about__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--tag-bg);
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.config-about__list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+.config-about__item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  color: var(--text-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-about__item-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.config-about__item-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
+.config-about__item-row:last-child {
+  border-bottom: none;
+}
+
+.config-about__arrow {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}

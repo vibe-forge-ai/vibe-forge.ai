@@ -1,0 +1,26 @@
+.config-view__pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+}
+
+.config-view__display-pill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.config-view__field-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--code-bg);
+}

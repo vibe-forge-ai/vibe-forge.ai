@@ -170,6 +170,62 @@ export interface Config {
   >
 }
 
+export interface AboutInfo {
+  version?: string
+  lastReleaseAt?: string
+  urls?: {
+    repo?: string
+    docs?: string
+    contact?: string
+    issues?: string
+    releases?: string
+  }
+}
+
+export interface ConfigSection {
+  general?: {
+    baseDir?: Config['baseDir']
+    defaultAdapter?: Config['defaultAdapter']
+    defaultModelService?: Config['defaultModelService']
+    defaultModel?: Config['defaultModel']
+    announcements?: Config['announcements']
+    permissions?: Config['permissions']
+    env?: Config['env']
+  }
+  conversation?: Config['conversation']
+  modelServices?: Config['modelServices']
+  adapters?: Config['adapters']
+  plugins?: {
+    plugins?: Config['plugins']
+    enabledPlugins?: Config['enabledPlugins']
+    extraKnownMarketplaces?: Config['extraKnownMarketplaces']
+  }
+  mcp?: {
+    mcpServers?: Config['mcpServers']
+    defaultIncludeMcpServers?: Config['defaultIncludeMcpServers']
+    defaultExcludeMcpServers?: Config['defaultExcludeMcpServers']
+    noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
+  }
+  shortcuts?: Config['shortcuts']
+}
+
+export interface ConfigResponse {
+  sources?: {
+    project?: ConfigSection
+    user?: ConfigSection
+    merged?: ConfigSection
+  }
+  meta?: {
+    workspaceFolder?: string
+    configPresent?: {
+      project?: boolean
+      user?: boolean
+    }
+    experiments?: Record<string, unknown>
+    about?: AboutInfo
+  }
+}
+
 export const defineConfig = (config: Config) => config
 
 const loadJSConfig = async (paths: string[]) => {
