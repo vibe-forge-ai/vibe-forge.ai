@@ -1,0 +1,21 @@
+.knowledge-base-view__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.knowledge-base-view__filter-input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.knowledge-base-view__filter-select {
+  min-width: 220px;
+  flex: 0 1 280px;
+}
+
+.knowledge-base-view__filter-icon {
+  font-size: 16px;
+  color: var(--sub-text-color);
+}

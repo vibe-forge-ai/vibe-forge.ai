@@ -1,0 +1,18 @@
+.knowledge-base-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color);
+  color: var(--text-color);
+  overflow: hidden;
+}
+
+.knowledge-base-view__tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+.knowledge-base-view__tabs > .ant-tabs-nav {
+  padding: 0 24px;
+  margin: 0;
+}

@@ -1,0 +1,82 @@
+.knowledge-base-view__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.knowledge-base-view__item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.knowledge-base-view__item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.knowledge-base-view__item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.knowledge-base-view__item-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
+.knowledge-base-view__item-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.knowledge-base-view__item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.knowledge-base-view__meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.knowledge-base-view__meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 28px;
+}
+
+.knowledge-base-view__meta-pill-icon {
+  font-size: 14px;
+  color: var(--sub-text-color);
+}
+
+.knowledge-base-view__tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.knowledge-base-view__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.knowledge-base-view__tag-icon {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}

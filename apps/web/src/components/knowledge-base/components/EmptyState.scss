@@ -1,0 +1,19 @@
+.knowledge-base-view__empty {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+  background: var(--code-bg);
+}
+
+.knowledge-base-view__empty-simple {
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+  background: var(--code-bg);
+}

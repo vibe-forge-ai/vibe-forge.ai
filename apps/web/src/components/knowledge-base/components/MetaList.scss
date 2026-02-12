@@ -1,0 +1,19 @@
+.knowledge-base-view__meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.knowledge-base-view__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-color);
+}
+
+.knowledge-base-view__meta-item-icon {
+  font-size: 14px;
+  color: var(--sub-text-color);
+}

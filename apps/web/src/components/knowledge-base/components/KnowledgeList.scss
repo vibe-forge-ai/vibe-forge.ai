@@ -1,0 +1,19 @@
+.knowledge-base-view__list {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+.knowledge-base-view__list .ant-list-item {
+  padding: 0;
+  align-items: stretch;
+}
+
+.knowledge-base-view__list .ant-list-item + .ant-list-item {
+  border-top: 1px solid var(--border-color);
+}
+
+.knowledge-base-view__list-item {
+  padding: 0;
+}
