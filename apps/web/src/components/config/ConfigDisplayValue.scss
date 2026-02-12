@@ -19,8 +19,4 @@
 .config-view__field-list {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  background: var(--code-bg);
 }

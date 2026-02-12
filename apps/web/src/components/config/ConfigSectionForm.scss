@@ -7,10 +7,6 @@
 .config-view__field-list {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  background: var(--code-bg);
 }
 
 .config-view__subsection {
@@ -20,7 +16,7 @@
 }
 
 .config-view__subsection-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--sub-text-color);
   text-transform: uppercase;
@@ -30,7 +26,6 @@
 .config-view__subsection-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .config-view__multiline {

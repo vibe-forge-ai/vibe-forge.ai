@@ -5,132 +5,32 @@ import type { ReactNode } from 'react'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { FieldRow } from './ConfigFieldRow'
-import { BooleanRecordEditor, KeyValueEditor, McpServersRecordEditor, ModelServicesRecordEditor, RecordJsonEditor } from './ConfigRecordEditors'
-import { getFieldDescription, getFieldLabel, getTypeIcon, getValueByPath, getValueType, isEmptyValue, setValueByPath } from './configUtils'
+import type { FieldSpec } from './configSchema'
+import { configSchema } from './configSchema'
+import {
+  getFieldDescription,
+  getFieldLabel,
+  getTypeIcon,
+  getValueByPath,
+  getValueType,
+  isEmptyValue,
+  setValueByPath
+} from './configUtils'
 import type { TranslationFn } from './configUtils'
-
-type FieldValueType = 'string' | 'number' | 'boolean' | 'string[]' | 'select' | 'json' | 'multiline' | 'record'
-
-type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue'
-
-interface FieldOption {
-  value: string
-  label: string
-}
-
-interface FieldSpec {
-  path: string[]
-  type: FieldValueType
-  defaultValue: unknown
-  options?: FieldOption[]
-  placeholderKey?: string
-  labelKey?: string
-  descriptionKey?: string
-  group?: 'base' | 'items'
-  recordKind?: RecordKind
-  sensitive?: boolean
-}
-
-const configSchema: Record<string, FieldSpec[]> = {
-  general: [
-    { path: ['baseDir'], type: 'string', defaultValue: '' },
-    { path: ['defaultAdapter'], type: 'string', defaultValue: '' },
-    { path: ['defaultModelService'], type: 'select', defaultValue: '' },
-    { path: ['defaultModel'], type: 'select', defaultValue: '' },
-    { path: ['announcements'], type: 'string[]', defaultValue: [] },
-    { path: ['permissions', 'allow'], type: 'string[]', defaultValue: [] },
-    { path: ['permissions', 'deny'], type: 'string[]', defaultValue: [] },
-    { path: ['permissions', 'ask'], type: 'string[]', defaultValue: [] },
-    { path: ['env'], type: 'record', recordKind: 'keyValue', defaultValue: {} }
-  ],
-  conversation: [
-    {
-      path: ['style'],
-      type: 'select',
-      defaultValue: 'friendly',
-      options: [
-        { value: 'friendly', label: 'config.options.conversation.friendly' },
-        { value: 'programmatic', label: 'config.options.conversation.programmatic' }
-      ]
-    },
-    { path: ['customInstructions'], type: 'multiline', defaultValue: '' }
-  ],
-  modelServices: [
-    {
-      path: [],
-      type: 'record',
-      recordKind: 'modelServices',
-      defaultValue: {},
-      group: 'items',
-      labelKey: 'config.fields.modelServices.items.label',
-      descriptionKey: 'config.fields.modelServices.items.desc'
-    }
-  ],
-  adapters: [
-    {
-      path: [],
-      type: 'record',
-      recordKind: 'json',
-      defaultValue: {},
-      group: 'items',
-      labelKey: 'config.fields.adapters.items.label',
-      descriptionKey: 'config.fields.adapters.items.desc'
-    }
-  ],
-  plugins: [
-    {
-      path: ['plugins'],
-      type: 'record',
-      recordKind: 'json',
-      defaultValue: {},
-      group: 'items',
-      labelKey: 'config.fields.plugins.items.label',
-      descriptionKey: 'config.fields.plugins.items.desc'
-    },
-    {
-      path: ['enabledPlugins'],
-      type: 'record',
-      recordKind: 'boolean',
-      defaultValue: {},
-      group: 'base',
-      labelKey: 'config.fields.plugins.enabled.label',
-      descriptionKey: 'config.fields.plugins.enabled.desc'
-    },
-    {
-      path: ['extraKnownMarketplaces'],
-      type: 'record',
-      recordKind: 'json',
-      defaultValue: {},
-      group: 'base',
-      labelKey: 'config.fields.plugins.marketplaces.label',
-      descriptionKey: 'config.fields.plugins.marketplaces.desc'
-    }
-  ],
-  mcp: [
-    { path: ['defaultIncludeMcpServers'], type: 'string[]', defaultValue: [], group: 'base' },
-    { path: ['defaultExcludeMcpServers'], type: 'string[]', defaultValue: [], group: 'base' },
-    { path: ['noDefaultVibeForgeMcpServer'], type: 'boolean', defaultValue: false, group: 'base' },
-    {
-      path: ['mcpServers'],
-      type: 'record',
-      recordKind: 'mcpServers',
-      defaultValue: {},
-      group: 'items',
-      labelKey: 'config.fields.mcp.items.label',
-      descriptionKey: 'config.fields.mcp.items.desc'
-    }
-  ],
-  shortcuts: [
-    { path: ['newSession'], type: 'string', defaultValue: '' },
-    { path: ['openConfig'], type: 'string', defaultValue: '' }
-  ]
-}
+import {
+  BooleanRecordEditor,
+  KeyValueEditor,
+  McpServersRecordEditor,
+  ModelServicesRecordEditor,
+  RecordJsonEditor
+} from './recordEditors/index'
 
 export const SectionForm = ({
   sectionKey,
   value,
   onChange,
   mergedModelServices,
+  mergedAdapters,
   selectedModelService,
   t
 }: {
@@ -138,6 +38,7 @@ export const SectionForm = ({
   value: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
+  mergedAdapters: Record<string, unknown>
   selectedModelService?: string
   t: TranslationFn
 }) => {
@@ -145,6 +46,7 @@ export const SectionForm = ({
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
+  const directRecordSections = new Set(['modelServices', 'adapters', 'plugins', 'mcp'])
 
   const modelServiceEntries = Object.entries(mergedModelServices)
   const modelServiceOptions: Array<{ value: string; label: ReactNode }> = modelServiceEntries.map(([key, entry]) => {
@@ -175,6 +77,11 @@ export const SectionForm = ({
       label: <span>{item}</span>
     }))
     : []
+  const adapterOptions: Array<{ value: string; label: ReactNode }> = Object.keys(mergedAdapters)
+    .map(key => ({
+      value: key,
+      label: <span>{key}</span>
+    }))
 
   const groupedFields = fields.reduce<Record<string, FieldSpec[]>>((acc, field) => {
     const key = field.group ?? 'default'
@@ -182,7 +89,21 @@ export const SectionForm = ({
     acc[key].push(field)
     return acc
   }, {})
-  const orderedGroups = ['base', 'items', 'default'].filter(key => groupedFields[key]?.length)
+  const orderedGroups = ['base', 'permissions', 'env', 'items', 'default'].filter(key => groupedFields[key]?.length)
+
+  const getRecordAddLabel = (field: FieldSpec) => {
+    if (sectionKey === 'adapters') return t('config.editor.addAdapter')
+    if (sectionKey === 'plugins') {
+      if (field.path.join('.') === 'extraKnownMarketplaces') {
+        return t('config.editor.addMarketplace')
+      }
+      return t('config.editor.addPlugin')
+    }
+    if (sectionKey === 'general' && field.path.join('.') === 'env') return t('config.editor.addEnvVar')
+    if (sectionKey === 'mcp') return t('config.editor.addMcpServer')
+    if (sectionKey === 'modelServices') return t('config.editor.addModelService')
+    return t('config.editor.addEntry')
+  }
 
   const renderField = (field: FieldSpec) => {
     const fieldValue = getValueByPath(value, field.path)
@@ -193,6 +114,7 @@ export const SectionForm = ({
     const description = field.descriptionKey
       ? t(field.descriptionKey)
       : getFieldDescription(t, sectionKey, field.path)
+    const icon = field.icon ?? getTypeIcon(getValueType(valueToUse))
 
     const handleValueChange = (nextValue: unknown) => {
       const nextSectionValue = setValueByPath(value, field.path, nextValue)
@@ -256,12 +178,15 @@ export const SectionForm = ({
         />
       )
     } else if (field.type === 'select') {
+      const isDefaultAdapter = sectionKey === 'general' && field.path.join('.') === 'defaultAdapter'
       const isDefaultModelService = sectionKey === 'general' && field.path.join('.') === 'defaultModelService'
       const isDefaultModel = sectionKey === 'general' && field.path.join('.') === 'defaultModel'
       const options: Array<{ value: string; label: ReactNode }> = isDefaultModelService
         ? modelServiceOptions
         : isDefaultModel
         ? modelOptions
+        : isDefaultAdapter
+        ? adapterOptions
         : (field.options ?? []).map(option => ({
           value: option.value,
           label: <span>{t(option.label)}</span>
@@ -274,7 +199,9 @@ export const SectionForm = ({
           allowClear
           disabled={isDefaultModel && modelOptions.length === 0}
           placeholder={t(
-            isDefaultModelService
+            isDefaultAdapter
+              ? 'config.editor.defaultAdapterPlaceholder'
+              : isDefaultModelService
               ? 'config.editor.defaultModelServicePlaceholder'
               : 'config.editor.defaultModelPlaceholder'
           )}
@@ -295,7 +222,7 @@ export const SectionForm = ({
         control = (
           <ModelServicesRecordEditor
             value={recordValue}
-            onChange={(next) => handleValueChange(next)}
+            onChange={handleValueChange}
             t={t}
           />
         )
@@ -303,7 +230,7 @@ export const SectionForm = ({
         control = (
           <McpServersRecordEditor
             value={recordValue}
-            onChange={(next) => handleValueChange(next)}
+            onChange={handleValueChange}
             t={t}
           />
         )
@@ -311,15 +238,16 @@ export const SectionForm = ({
         control = (
           <KeyValueEditor
             value={recordValue as Record<string, string>}
-            onChange={(next) => handleValueChange(next)}
+            onChange={handleValueChange}
             t={t}
+            addLabel={getRecordAddLabel(field)}
           />
         )
       } else if (field.recordKind === 'boolean') {
         control = (
           <BooleanRecordEditor
             value={recordValue as Record<string, boolean>}
-            onChange={(next) => handleValueChange(next)}
+            onChange={handleValueChange}
             t={t}
           />
         )
@@ -327,19 +255,27 @@ export const SectionForm = ({
         control = (
           <RecordJsonEditor
             value={recordValue}
-            onChange={(next) => handleValueChange(next)}
+            onChange={handleValueChange}
             t={t}
+            addLabel={getRecordAddLabel(field)}
           />
         )
       }
     }
 
+    if (directRecordSections.has(sectionKey) && field.type === 'record') {
+      return (
+        <div key={`${field.path.join('.')}-${field.type}-${field.recordKind ?? ''}`}>
+          {control}
+        </div>
+      )
+    }
     return (
       <FieldRow
         key={`${field.path.join('.')}-${field.type}-${field.labelKey ?? ''}-${field.recordKind ?? ''}`}
         title={label}
         description={description}
-        icon={getTypeIcon(getValueType(valueToUse))}
+        icon={icon}
         layout={isStacked ? 'stacked' : 'inline'}
       >
         {control}
@@ -351,43 +287,44 @@ export const SectionForm = ({
     <div className='config-view__field-stack'>
       {orderedGroups.map((groupKey) => {
         const groupFields = groupedFields[groupKey] ?? []
-        if (groupKey === 'base') {
-          if (sectionKey === 'plugins') {
-            return (
-              <div key={groupKey} className='config-view__subsection'>
-                <div className='config-view__subsection-title'>
-                  {t('config.sectionGroups.base')}
-                </div>
-                <div className='config-view__subsection-body'>
-                  {groupFields.map(renderField)}
-                </div>
-              </div>
-            )
-          }
-          const hasBaseValues = groupFields.some((field) => {
+        const hideEmptyGroups = new Set(['base', 'permissions'])
+        if (hideEmptyGroups.has(groupKey)) {
+          const hasGroupValues = groupFields.some((field) => {
             const fieldValue = getValueByPath(value, field.path)
             if (typeof fieldValue === 'boolean') return fieldValue
             return !isEmptyValue(fieldValue)
           })
-          if (!hasBaseValues) {
+          if (!hasGroupValues) {
             return null
           }
         }
         if (groupKey === 'default') {
+          if (directRecordSections.has(sectionKey)) {
+            return (
+              <div key={groupKey}>
+                {groupFields.map(renderField)}
+              </div>
+            )
+          }
           return (
             <div key={groupKey} className='config-view__field-list'>
               {groupFields.map(renderField)}
             </div>
           )
         }
+        const groupLabel = groupKey === 'base'
+          ? t('config.sectionGroups.base')
+          : groupKey === 'permissions'
+          ? t('config.sectionGroups.permissions')
+          : groupKey === 'env'
+          ? t('config.sectionGroups.env')
+          : sectionKey === 'plugins'
+          ? t('config.sectionGroups.plugins')
+          : t('config.sectionGroups.items')
         return (
           <div key={groupKey} className='config-view__subsection'>
             <div className='config-view__subsection-title'>
-              {groupKey === 'base'
-                ? t('config.sectionGroups.base')
-                : sectionKey === 'plugins'
-                ? t('config.sectionGroups.plugins')
-                : t('config.sectionGroups.items')}
+              {groupLabel}
             </div>
             <div className='config-view__subsection-body'>
               {groupFields.map(renderField)}

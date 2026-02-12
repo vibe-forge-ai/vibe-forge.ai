@@ -4,11 +4,19 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.config-view__field-row:last-child {
+  border-radius: 0;
+  border: 1px solid var(--border-color);
   border-bottom: none;
+  background-color: var(--sub-bg-color);
+}
+.config-view__field-row:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.config-view__field-row:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .config-view__field-row--stacked {
@@ -28,7 +36,7 @@
 
 .config-view__field-meta {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }

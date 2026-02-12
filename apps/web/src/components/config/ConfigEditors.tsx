@@ -1,6 +1,6 @@
 import './ConfigEditors.scss'
 
-import { App, Button, Input } from 'antd'
+import { App, Button, Input, Tooltip } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -65,25 +65,34 @@ export const StringArrayEditor = ({
             onChange(updated)
           }}
         />
-        <Button
-          size='small'
-          onClick={() => {
-            const updated = value.slice()
-            updated.splice(index, 1)
-            onChange(updated)
-          }}
-        >
-          {t('config.editor.remove')}
-        </Button>
+        <Tooltip title={t('config.editor.remove')}>
+          <Button
+            size='small'
+            type='text'
+            danger
+            className='config-view__icon-button config-view__icon-button--compact'
+            aria-label={t('config.editor.remove')}
+            icon={<span className='material-symbols-rounded'>delete</span>}
+            onClick={() => {
+              const updated = value.slice()
+              updated.splice(index, 1)
+              onChange(updated)
+            }}
+          />
+        </Tooltip>
       </div>
     ))}
-    <Button
-      size='small'
-      onClick={() => {
-        onChange([...value, ''])
-      }}
-    >
-      {t('config.editor.addItem')}
-    </Button>
+    <Tooltip title={t('config.editor.addItem')}>
+      <Button
+        size='small'
+        type='primary'
+        className='config-view__icon-button config-view__icon-button--full'
+        aria-label={t('config.editor.addItem')}
+        icon={<span className='material-symbols-rounded'>add</span>}
+        onClick={() => {
+          onChange([...value, ''])
+        }}
+      />
+    </Tooltip>
   </div>
 )

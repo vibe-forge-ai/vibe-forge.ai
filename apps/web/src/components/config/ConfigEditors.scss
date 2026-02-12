@@ -24,3 +24,36 @@
   background: transparent;
   color: var(--text-color);
 }
+
+.config-view__icon-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config-view__icon-button--compact {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+
+.config-view__icon-button--full {
+  width: 100%;
+  min-width: 100%;
+}
+
+.config-view__array-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__array-add-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

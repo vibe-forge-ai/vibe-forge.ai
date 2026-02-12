@@ -8,9 +8,7 @@ import useSWR from 'swr'
 import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
 
 import { getConfig, updateConfig } from '../api'
-import { AboutSection } from './config/ConfigAboutSection'
-import { DisplayValue } from './config/ConfigDisplayValue'
-import { SectionForm } from './config/ConfigSectionForm'
+import { AboutSection, DisplayValue, SectionForm } from './config'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
 
 export function ConfigView() {
@@ -28,6 +26,9 @@ export function ConfigView() {
   const lastSavedRef = useRef<Record<string, string>>({})
   const mergedModelServices = useMemo(() => data?.sources?.merged?.modelServices ?? {}, [
     data?.sources?.merged?.modelServices
+  ])
+  const mergedAdapters = useMemo(() => data?.sources?.merged?.adapters ?? {}, [
+    data?.sources?.merged?.adapters
   ])
 
   useEffect(() => {
@@ -258,6 +259,7 @@ export function ConfigView() {
                             value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
                             onChange={(next) => handleDraftChange(tab.key, next)}
                             mergedModelServices={mergedModelServices as Record<string, unknown>}
+                            mergedAdapters={mergedAdapters as Record<string, unknown>}
                             selectedModelService={selectedModelService}
                             t={t}
                           />

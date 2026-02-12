@@ -6,12 +6,6 @@
     "logger": {}
   },
   "mcpServers": {
-    "VibeForge": {
-      "command": "./node_modules/.bin/vf",
-      "args": [
-        "mcp"
-      ]
-    }
   },
   "permissions": {
     "allow": [],

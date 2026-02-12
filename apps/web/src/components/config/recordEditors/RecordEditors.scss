@@ -6,9 +6,6 @@
 
 .config-view__record-card {
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-color);
-  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -22,6 +19,28 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-color);
+}
+
+.config-view__record-title-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__record-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__record-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-view__record-card--collapsed .config-view__record-body {
+  display: none;
 }
 
 .config-view__record-heading {
@@ -44,9 +63,6 @@
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  background: var(--code-bg);
 }
 
 .config-view__record-row {
@@ -63,6 +79,34 @@
 
 .config-view__record-add {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.config-view__record-add-inputs {
+  display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.config-view__icon-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config-view__icon-button--compact {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+
+.config-view__icon-button--full {
+  width: 100%;
+  min-width: 100%;
 }
