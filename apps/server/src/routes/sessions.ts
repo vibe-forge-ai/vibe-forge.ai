@@ -3,6 +3,7 @@ import Router from '@koa/router'
 import type { ChatMessage, SessionInfo, WSEvent } from '@vibe-forge/core'
 
 import { getDb } from '#~/db.js'
+import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import {
   broadcastSessionEvent,
@@ -10,9 +11,7 @@ import {
   getSessionInteraction,
   killSession,
   notifySessionUpdated,
-  processUserMessage,
   setSessionInteraction,
-  startAdapterSession,
   updateAndNotifySession
 } from '#~/websocket/index.js'
 
@@ -27,33 +26,6 @@ export function sessionsRouter(): Router {
 
     const n = Number.parseInt(limit, 10)
     return Number.isNaN(n) ? null : n
-  }
-
-  const createSessionWithInitialMessage = async (
-    title?: string,
-    initialMessage?: string,
-    parentSessionId?: string,
-    id?: string,
-    shouldStart = true
-  ) => {
-    const session = db.createSession(title, id, undefined, parentSessionId)
-    notifySessionUpdated(session.id, session)
-
-    if (initialMessage && shouldStart) {
-      try {
-        await startAdapterSession(session.id)
-        processUserMessage(session.id, initialMessage)
-
-        const updated = db.getSession(session.id)
-        if (updated) {
-          Object.assign(session, updated)
-        }
-      } catch (err) {
-        console.error(`[sessions] Failed to start session ${session.id}:`, err)
-      }
-    }
-
-    return session
   }
 
   router.get(['/', ''], (ctx) => {
@@ -118,7 +90,13 @@ export function sessionsRouter(): Router {
       parentSessionId?: string
       start?: boolean
     }
-    const session = await createSessionWithInitialMessage(title, initialMessage, parentSessionId, id, start !== false)
+    const session = await createSessionWithInitialMessage({
+      title,
+      initialMessage,
+      parentSessionId,
+      id,
+      shouldStart: start !== false
+    })
     ctx.body = { session }
   })
 

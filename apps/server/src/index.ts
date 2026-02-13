@@ -11,6 +11,7 @@ import bodyParser from 'koa-bodyparser'
 import { loadEnv } from '@vibe-forge/core'
 
 import { aiRouter } from '#~/routes/ai.js'
+import { automationRouter } from '#~/routes/automation.js'
 import { configRouter } from '#~/routes/config.js'
 import { interactRouter } from '#~/routes/interact.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
@@ -32,6 +33,7 @@ async function bootstrap() {
     { prefix: '/api/sessions', router: sessionsRouter() },
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/ai', router: aiRouter() },
+    { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() }
   ]
 

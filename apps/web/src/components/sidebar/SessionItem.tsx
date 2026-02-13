@@ -38,6 +38,7 @@ export function SessionItem({
   const { t, i18n } = useTranslation()
   const [isAddingTag, setIsAddingTag] = React.useState(false)
   const [newTag, setNewTag] = React.useState('')
+  const automationPrefix = 'automation:'
 
   const timeDisplay = useMemo(() => {
     const d = dayjs(session.createdAt)
@@ -63,6 +64,18 @@ export function SessionItem({
     if (session.lastMessage == null || session.lastMessage === '') return null
     return session.lastMessage.length > 60 ? `${session.lastMessage.slice(0, 60)}...` : session.lastMessage
   }, [session.lastMessage])
+
+  const parseAutomationTag = useMemo(() => {
+    return (tag: string) => {
+      if (!tag.startsWith(automationPrefix)) return null
+      const parts = tag.split(':')
+      if (parts.length < 3) return null
+      return {
+        ruleId: parts[1],
+        ruleTitle: parts.slice(2).join(':')
+      }
+    }
+  }, [automationPrefix])
 
   const getStatusIcon = (status?: SessionStatus) => {
     if (!status) {
@@ -208,14 +221,35 @@ export function SessionItem({
             </Tooltip>
           </div>
           <div className='tags-container'>
-            {session.tags?.map(tag => (
-              <Tag
-                key={tag}
-                className='session-tag'
-              >
-                {tag}
-              </Tag>
-            ))}
+            {session.tags?.map(tag => {
+              const automationTag = parseAutomationTag(tag)
+              if (automationTag) {
+                const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`
+                return (
+                  <Tag
+                    key={tag}
+                    className='session-tag session-tag--automation'
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <a
+                      className='session-tag__link'
+                      href={href}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {automationTag.ruleTitle}
+                    </a>
+                  </Tag>
+                )
+              }
+              return (
+                <Tag
+                  key={tag}
+                  className='session-tag'
+                >
+                  {tag}
+                </Tag>
+              )
+            })}
           </div>
         </div>
       </div>

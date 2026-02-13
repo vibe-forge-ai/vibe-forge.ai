@@ -168,6 +168,15 @@
           padding: 0 4px;
           line-height: 14px;
           border-radius: 2px;
+
+          &--automation {
+            padding: 0 6px;
+          }
+
+          &__link {
+            color: var(--primary-color);
+            text-decoration: none;
+          }
         }
       }
 
