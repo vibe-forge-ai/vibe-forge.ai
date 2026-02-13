@@ -10,11 +10,14 @@ import type {
   AdapterOutputEvent,
   AdapterSession,
   AskUserQuestionParams,
+  Config,
   ServerEnv,
   Session,
   SessionInfo,
+  SessionStatus,
   WSEvent
 } from '@vibe-forge/core'
+import { loadConfig, systemController } from '@vibe-forge/core'
 import { run } from '@vibe-forge/core/controllers/task'
 
 import { getDb } from '#~/db.js'
@@ -26,6 +29,78 @@ function sendToClient(ws: WebSocket, event: WSEvent) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(safeJsonStringify(event))
   }
+}
+
+const mergeRecord = <T>(left?: Record<string, T>, right?: Record<string, T>) => {
+  if (left == null && right == null) return undefined
+  return {
+    ...(left ?? {}),
+    ...(right ?? {})
+  }
+}
+
+const getMergedGeneralConfig = async () => {
+  const workspaceFolder = processEnv.__VF_PROJECT_WORKSPACE_FOLDER__ ?? processCwd()
+  const jsonVariables: Record<string, string | null | undefined> = {
+    ...processEnv,
+    WORKSPACE_FOLDER: workspaceFolder,
+    __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
+  }
+  const [projectConfig, userConfig] = await loadConfig({ jsonVariables })
+  return {
+    interfaceLanguage: userConfig?.interfaceLanguage ?? projectConfig?.interfaceLanguage,
+    modelLanguage: userConfig?.modelLanguage ?? projectConfig?.modelLanguage,
+    notifications: mergeRecord(
+      projectConfig?.notifications as Record<string, unknown> | undefined,
+      userConfig?.notifications as Record<string, unknown> | undefined
+    ) as Config['notifications']
+  }
+}
+
+const resolveNotificationText = (
+  status: SessionStatus,
+  session: Session,
+  language: Config['interfaceLanguage']
+) => {
+  const sessionLabel = session.title && session.title.trim() !== '' ? session.title : session.id
+  if (language === 'en') {
+    if (status === 'completed') return { title: 'Session completed', description: `Session "${sessionLabel}" completed.` }
+    if (status === 'failed') return { title: 'Session failed', description: `Session "${sessionLabel}" failed.` }
+    if (status === 'terminated') return { title: 'Session terminated', description: `Session "${sessionLabel}" terminated.` }
+    return { title: 'Session needs input', description: `Session "${sessionLabel}" is waiting for input.` }
+  }
+  if (status === 'completed') return { title: '会话已完成', description: `会话「${sessionLabel}」已完成。` }
+  if (status === 'failed') return { title: '会话失败', description: `会话「${sessionLabel}」失败。` }
+  if (status === 'terminated') return { title: '会话已终止', description: `会话「${sessionLabel}」已终止。` }
+  return { title: '会话等待输入', description: `会话「${sessionLabel}」正在等待输入。` }
+}
+
+const maybeNotifySession = async (
+  previousStatus: SessionStatus | undefined,
+  nextStatus: SessionStatus | undefined,
+  session: Session
+) => {
+  if (nextStatus == null || nextStatus === previousStatus) return
+  const { notifications, interfaceLanguage } = await getMergedGeneralConfig()
+  if (notifications?.disabled === true) return
+  const eventConfig = notifications?.events?.[nextStatus]
+  if (eventConfig?.disabled === true) return
+  const fallbackText = resolveNotificationText(nextStatus, session, interfaceLanguage)
+  const title = eventConfig?.title && eventConfig.title.trim() !== ''
+    ? eventConfig.title
+    : fallbackText.title
+  const description = eventConfig?.description && eventConfig.description.trim() !== ''
+    ? eventConfig.description
+    : fallbackText.description
+  const sound = eventConfig?.sound
+  const resolvedSound = typeof sound === 'string' && sound.trim() !== '' ? sound.trim() : undefined
+  await systemController.notify({
+    title,
+    description,
+    sound: resolvedSound,
+    volume: notifications.volume,
+    timeout: false
+  })
 }
 
 export function broadcastSessionEvent(sessionId: string, event: WSEvent) {
@@ -184,6 +259,11 @@ export async function startAdapterSession(
   // We can pass the `sockets` set to onEvent via closure.
 
   try {
+    const { modelLanguage } = await getMergedGeneralConfig().catch(() => ({ modelLanguage: undefined }))
+    const languagePrompt = modelLanguage == null
+      ? undefined
+      : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
+    const mergedSystemPrompt = [options.systemPrompt, languagePrompt].filter(Boolean).join('\n\n')
     const { session } = await run({
       env: processEnv as Record<string, string>,
       cwd: processCwd()
@@ -192,7 +272,7 @@ export async function startAdapterSession(
       runtime: 'server',
       sessionId,
       model: options.model,
-      systemPrompt: options.systemPrompt,
+      systemPrompt: mergedSystemPrompt,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       onEvent: (event: AdapterOutputEvent) => {
         const broadcast = (ev: WSEvent) => {
@@ -483,10 +563,12 @@ export function updateAndNotifySession(
   updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
 ) {
   const db = getDb()
+  const previous = db.getSession(id)
   db.updateSession(id, updates)
   const updated = db.getSession(id)
   if (updated) {
     notifySessionUpdated(id, updated)
+    void maybeNotifySession(previous?.status, updated.status, updated).catch(() => undefined)
   }
 }
 

@@ -1,13 +1,13 @@
 import './ConfigSectionForm.scss'
 
-import { Empty, Input, InputNumber, Select, Switch } from 'antd'
+import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
-import { ShortcutInput } from './ConfigShortcutInput'
 import { FieldRow } from './ConfigFieldRow'
+import { ShortcutInput } from './ConfigShortcutInput'
 import type { FieldSpec } from './configSchema'
-import { configSchema } from './configSchema'
+import { configGroupMeta, configSchema } from './configSchema'
 import {
   getFieldDescription,
   getFieldLabel,
@@ -91,6 +91,7 @@ export const SectionForm = ({
     return acc
   }, {})
   const orderedGroups = ['base', 'permissions', 'env', 'items', 'default'].filter(key => groupedFields[key]?.length)
+  const notificationEventOrder = ['completed', 'failed', 'terminated', 'waiting_input']
 
   const getRecordKeyPlaceholder = (field: FieldSpec) => {
     if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
@@ -154,12 +155,27 @@ export const SectionForm = ({
         </div>
       )
     } else if (field.type === 'number') {
-      control = (
-        <InputNumber
-          value={typeof valueToUse === 'number' ? valueToUse : 0}
-          onChange={(next) => handleValueChange(typeof next === 'number' ? next : 0)}
-        />
-      )
+      const isNotificationVolume = field.path.join('.') === 'notifications.volume'
+      if (isNotificationVolume) {
+        const sliderValue = typeof valueToUse === 'number' ? valueToUse : 0
+        control = (
+          <Slider
+            className='config-view__slider'
+            min={0}
+            max={100}
+            step={1}
+            value={sliderValue}
+            onChange={(next) => handleValueChange(typeof next === 'number' ? next : 0)}
+          />
+        )
+      } else {
+        control = (
+          <InputNumber
+            value={typeof valueToUse === 'number' ? valueToUse : 0}
+            onChange={(next) => handleValueChange(typeof next === 'number' ? next : 0)}
+          />
+        )
+      }
     } else if (field.type === 'boolean') {
       control = (
         <Switch
@@ -325,22 +341,87 @@ export const SectionForm = ({
             </div>
           )
         }
-        const groupLabel = groupKey === 'base'
-          ? t('config.sectionGroups.base')
-          : groupKey === 'permissions'
-          ? t('config.sectionGroups.permissions')
-          : groupKey === 'env'
-          ? t('config.sectionGroups.env')
-          : sectionKey === 'plugins'
-          ? t('config.sectionGroups.plugins')
-          : t('config.sectionGroups.items')
+        const groupLabel = (() => {
+          const labelKey = configGroupMeta[sectionKey]?.[groupKey]?.labelKey
+          if (labelKey) return t(labelKey)
+          return groupKey === 'base'
+            ? t('config.sectionGroups.base')
+            : groupKey === 'permissions'
+            ? t('config.sectionGroups.permissions')
+            : groupKey === 'env'
+            ? t('config.sectionGroups.env')
+            : sectionKey === 'plugins'
+            ? t('config.sectionGroups.plugins')
+            : t('config.sectionGroups.items')
+        })()
+        const visibleFields = groupFields.filter(field => field.hidden !== true)
+        const collapseFields = visibleFields.filter(field => field.collapse != null)
+        const nonCollapseFields = visibleFields.filter(field => field.collapse == null)
+        const collapseGroups = collapseFields.reduce<
+          Map<string, { meta: NonNullable<FieldSpec['collapse']>; fields: FieldSpec[] }>
+        >(
+          (acc, field) => {
+            const meta = field.collapse
+            if (!meta) return acc
+            const existing = acc.get(meta.key)
+            if (existing) {
+              existing.fields.push(field)
+            } else {
+              acc.set(meta.key, { meta, fields: [field] })
+            }
+            return acc
+          },
+          new Map()
+        )
+        const collapseItems = Array.from(collapseGroups.values()).map((group) => ({
+          key: group.meta.key,
+          collapsible: 'header' as const,
+          label: (
+            <div className='config-view__collapse-header'>
+              <div className='config-view__collapse-header-main'>
+                <div className='config-view__collapse-title'>
+                  {t(group.meta.labelKey)}
+                </div>
+                {group.meta.descKey && (
+                  <div className='config-view__collapse-desc'>
+                    {t(group.meta.descKey)}
+                  </div>
+                )}
+              </div>
+              {group.meta.togglePath && (
+                <Switch
+                  checked={!getValueByPath(value, group.meta.togglePath)}
+                  onChange={(next) => {
+                    const nextValue = setValueByPath(value, group.meta.togglePath!, !next)
+                    onChange(nextValue)
+                  }}
+                  onClick={(_, event) => {
+                    event.stopPropagation()
+                  }}
+                />
+              )}
+            </div>
+          ),
+          children: (
+            <div className='config-view__field-list'>
+              {group.fields.map(renderField)}
+            </div>
+          )
+        }))
         return (
           <div key={groupKey} className='config-view__subsection'>
             <div className='config-view__subsection-title'>
               {groupLabel}
             </div>
             <div className='config-view__subsection-body'>
-              {groupFields.map(renderField)}
+              {nonCollapseFields.map(renderField)}
+              {collapseItems.length > 0 && (
+                <Collapse
+                  className='config-view__collapse-group config-view__field-row'
+                  ghost
+                  items={collapseItems}
+                />
+              )}
             </div>
           </div>
         )

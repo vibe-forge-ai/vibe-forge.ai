@@ -1,6 +1,7 @@
 export * from './adapter'
 export * from './config'
 export * from './controllers/config'
+export * from './controllers/system'
 export * from './env'
 export * from './hooks'
 export * from './schema'

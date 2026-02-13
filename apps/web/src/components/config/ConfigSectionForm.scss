@@ -28,6 +28,44 @@
   flex-direction: column;
 }
 
+.config-view__slider {
+  width: 240px;
+}
+
+.config-view__collapse-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-view__collapse-group .ant-collapse-header {
+  padding: 0;
+}
+
+.config-view__collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.config-view__collapse-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-view__collapse-title {
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.config-view__collapse-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
 .config-view__multiline {
   display: flex;
   flex-direction: column;

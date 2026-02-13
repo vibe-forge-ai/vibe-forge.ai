@@ -101,6 +101,8 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField('defaultAdapter', sectionValue.defaultAdapter as Config['defaultAdapter'])
       updateField('defaultModelService', sectionValue.defaultModelService as Config['defaultModelService'])
       updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'])
+      updateField('interfaceLanguage', sectionValue.interfaceLanguage as Config['interfaceLanguage'])
+      updateField('modelLanguage', sectionValue.modelLanguage as Config['modelLanguage'])
       updateField('announcements', sectionValue.announcements as Config['announcements'])
       updateField(
         'permissions',
@@ -109,6 +111,10 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField(
         'env',
         mergeMaskedValues(sectionValue.env, config.env) as Config['env']
+      )
+      updateField(
+        'notifications',
+        mergeMaskedValues(sectionValue.notifications, config.notifications) as Config['notifications']
       )
       updateField(
         'shortcuts',

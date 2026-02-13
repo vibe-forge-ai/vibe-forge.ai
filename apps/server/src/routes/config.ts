@@ -42,7 +42,11 @@ const mergeConfig = (project?: Config, user?: Config): Config => ({
   extraKnownMarketplaces: mergeRecord(project?.extraKnownMarketplaces, user?.extraKnownMarketplaces),
   plugins: user?.plugins ?? project?.plugins,
   shortcuts: mergeRecord(project?.shortcuts, user?.shortcuts),
-  conversation: mergeRecord(project?.conversation, user?.conversation)
+  conversation: mergeRecord(project?.conversation, user?.conversation),
+  notifications: mergeRecord(
+    project?.notifications as Record<string, unknown> | undefined,
+    user?.notifications as Record<string, unknown> | undefined
+  ) as Config['notifications']
 })
 
 interface AppInfo {
@@ -70,9 +74,12 @@ const buildSections = (config: Config | undefined) => {
     defaultAdapter,
     defaultModelService,
     defaultModel,
+    interfaceLanguage,
+    modelLanguage,
     announcements,
     shortcuts,
-    conversation
+    conversation,
+    notifications
   } = config ?? {}
 
   return {
@@ -81,9 +88,12 @@ const buildSections = (config: Config | undefined) => {
       defaultAdapter,
       defaultModelService,
       defaultModel,
+      interfaceLanguage,
+      modelLanguage,
       announcements,
       permissions: sanitize(config?.permissions),
-      env: sanitize(config?.env)
+      env: sanitize(config?.env),
+      notifications: sanitize(notifications)
     },
     conversation: sanitize(conversation),
     modelServices: sanitize(config?.modelServices),

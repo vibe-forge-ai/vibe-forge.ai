@@ -40,6 +40,23 @@ export interface ModelServiceConfig {
   extra?: Record<string, unknown>
 }
 
+export type LanguageCode = 'zh' | 'en'
+
+export type NotificationTrigger = 'completed' | 'failed' | 'terminated' | 'waiting_input'
+
+export interface NotificationEventConfig {
+  title?: string
+  description?: string
+  disabled?: boolean
+  sound?: string
+}
+
+export interface NotificationConfig {
+  disabled?: boolean
+  volume?: number
+  events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
+}
+
 export interface Config {
   /**
    * 配置目录
@@ -65,6 +82,8 @@ export interface Config {
    * 默认模型名称
    */
   defaultModel?: string
+  interfaceLanguage?: LanguageCode
+  modelLanguage?: LanguageCode
   /**
    * MCP 服务器配置
    */
@@ -130,6 +149,7 @@ export interface Config {
     newSession?: string
     openConfig?: string
   }
+  notifications?: NotificationConfig
   /**
    * 会话配置
    */
@@ -188,9 +208,12 @@ export interface ConfigSection {
     defaultAdapter?: Config['defaultAdapter']
     defaultModelService?: Config['defaultModelService']
     defaultModel?: Config['defaultModel']
+    interfaceLanguage?: Config['interfaceLanguage']
+    modelLanguage?: Config['modelLanguage']
     announcements?: Config['announcements']
     permissions?: Config['permissions']
     env?: Config['env']
+    notifications?: Config['notifications']
   }
   conversation?: Config['conversation']
   modelServices?: Config['modelServices']

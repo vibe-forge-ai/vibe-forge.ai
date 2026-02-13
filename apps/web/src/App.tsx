@@ -13,7 +13,8 @@ import { KnowledgeBaseView } from '#~/components/knowledge-base'
 import { NavRail } from '#~/components/NavRail'
 import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
-import type { Session } from '@vibe-forge/core'
+import type { ConfigResponse, Session } from '@vibe-forge/core'
+import { getConfig } from './api'
 import { isSidebarResizingAtom, sidebarWidthAtom, themeAtom } from './store/index'
 
 const MIN_SIDEBAR_WIDTH = 200
@@ -40,12 +41,14 @@ function ChatView() {
 }
 
 export default function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [themeMode] = useAtom(themeAtom)
 
   const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
+  const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const interfaceLanguage = configRes?.sources?.merged?.general?.interfaceLanguage
 
   const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
@@ -115,6 +118,12 @@ export default function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  useEffect(() => {
+    if (interfaceLanguage && i18n.language !== interfaceLanguage) {
+      void i18n.changeLanguage(interfaceLanguage)
+    }
+  }, [i18n, interfaceLanguage])
 
   return (
     <ConfigProvider

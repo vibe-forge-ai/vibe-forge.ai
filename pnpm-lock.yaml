@@ -250,6 +250,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
+      node-notifier:
+        specifier: ^10.0.1
+        version: 10.0.1
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -257,6 +260,9 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
+      '@types/node-notifier':
+        specifier: ^8.0.5
+        version: 8.0.5
 
   packages/plugins/logger:
     dependencies:

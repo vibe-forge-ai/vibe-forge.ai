@@ -1,4 +1,6 @@
+import { spawn } from 'node:child_process'
 import path from 'node:path'
+import process from 'node:process'
 
 import type { NotificationMetadata } from 'node-notifier'
 import notifier from 'node-notifier'
@@ -12,6 +14,7 @@ const notifyOptionsSchema = z.object({
     .union([z.boolean(), z.string()])
     .optional()
     .describe('是否播放音效或指定音效文件路径'),
+  volume: z.number().optional().describe('音量，0-1 或 0-100'),
   timeout: z
     .union([z.number(), z.literal(false)])
     .optional()
@@ -28,6 +31,7 @@ export const notify = async (options: NotifyOptions) => {
     description,
     icon,
     sound = true,
+    volume,
     timeout = 10 * 60 * 1000,
     needConfirm
   } = options
@@ -37,6 +41,23 @@ export const notify = async (options: NotifyOptions) => {
   // 默认音效
   const defaultSound = path.resolve(__dirname, './assets/completed.mp3')
 
+  const resolvedSound = typeof sound === 'string'
+    ? sound
+    : (sound ? defaultSound : undefined)
+  const resolvedVolume = typeof volume === 'number'
+    ? (volume > 1 ? Math.min(volume, 100) / 100 : Math.max(volume, 0))
+    : undefined
+  const shouldPlaySound = resolvedSound != null && resolvedVolume !== 0
+  const shouldUseNotifierSound = !(resolvedVolume != null && resolvedSound != null && process.platform === 'darwin')
+  if (shouldPlaySound && !shouldUseNotifierSound && resolvedSound != null) {
+    try {
+      const args = ['-v', `${resolvedVolume ?? 1}`, resolvedSound]
+      const proc = spawn('afplay', args, { stdio: 'ignore', detached: true })
+      proc.unref()
+    } catch {
+    }
+  }
+
   const [response, metadata] = await new Promise<
     [string, NotificationMetadata | undefined]
   >((ok, no) => {
@@ -44,9 +65,7 @@ export const notify = async (options: NotifyOptions) => {
       {
         icon: icon || defaultIcon,
         title,
-        sound: typeof sound === 'string'
-          ? sound
-          : (sound ? defaultSound : undefined),
+        sound: shouldUseNotifierSound ? resolvedSound : undefined,
         message: description,
         wait: true,
         reply: true,
