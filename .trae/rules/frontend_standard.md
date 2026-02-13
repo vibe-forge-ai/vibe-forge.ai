@@ -22,6 +22,29 @@ globs: apps/web/src/**/*
 - 使用 `react-router-dom` 的 `useNavigate` 和 `useParams`。
 - 严禁手动修改 `window.location`。
 
+## URL Query 管理
+
+- 统一使用 `useQueryParams` 管理 query，避免手动拼接或直接读写 `useSearchParams`。
+- 推荐在页面中集中声明 query 的 keys、默认值与省略规则，确保可回放链接一致。
+
+```tsx
+import { useQueryParams } from '../../hooks/useQueryParams'
+
+const { values, update } = useQueryParams({
+  keys: ['rule', 'q', 'status'],
+  defaults: {
+    rule: '',
+    q: '',
+    status: 'all'
+  },
+  omit: {
+    rule: value => value === '',
+    q: value => value === '',
+    status: value => value === 'all'
+  }
+})
+```
+
 ## 样式规范
 
 - **样式拆分**: 禁止将所有样式写在单个大的 `.scss` 文件中。每个组件应拥有独立的 `.scss` 文件，并在 `.tsx` 中显式引入。
