@@ -1,27 +1,22 @@
 .sidebar-container {
   display: flex;
   flex-direction: column;
-  --sidebar-bg: #f5f5f5;
   --sidebar-hover-bg: #e5e5e5;
   --sidebar-active-bg: #eff6ff;
   --sidebar-active-text: #2563eb;
   --sidebar-btn-color: #9ca3af;
   --sidebar-btn-hover-bg: #fff1f0;
 
-  background-color: var(--sidebar-bg);
-  border-right: 1px solid var(--border-color);
-  box-shadow: 6px 0 16px rgba(0, 0, 0, .06);
+  background-color: var(--sub-bg-color);
+  border-right: 1px solid var(--sub-border-color);
   z-index: 5;
   box-sizing: border-box;
   height: 100%;
-  position: relative;
-  flex-shrink: 0;
 
   .sidebar-content {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: var(--sidebar-bg);
 
     .sidebar-new-chat {
       padding: 0 16px;
@@ -109,7 +104,6 @@
 }
 
 html.dark .sidebar-container {
-  --sidebar-bg: #0a0a0a;
   --sidebar-hover-bg: #1f1f1f;
   --sidebar-active-bg: #111b26;
   --sidebar-active-text: #3b82f6;

@@ -30,9 +30,16 @@ html, body, #root, .ant-app {
 :root {
   --bg-color: #ffffff;
   --sub-bg-color: #fcfcfc;
+  --sub-sub-bg-color: #ececec;
+
   --text-color: #000000;
-  --sub-text-color: #6b7280;
-  --border-color: #f0f0f0;
+  --sub-text-color: #1b1b1b;
+  --sub-sub-text-color: #303030;
+
+  --border-color: #d0d0d0;
+  --sub-border-color: #c0c0c0;
+  --sub-sub-border-color: #a0a0a0;
+
   --tag-bg: #f9fafb;
   --tag-hover-bg: #f3f4f6;
   --code-bg: #f0f2f4;
@@ -48,9 +55,16 @@ html, body, #root, .ant-app {
 html.dark {
   --bg-color: #141414;
   --sub-bg-color: #262626;
+  --sub-sub-bg-color: #303030;
+
   --text-color: #ffffff;
   --sub-text-color: #8c8c8c;
+  --sub-sub-text-color: #a5a5a5;
+
   --border-color: #303030;
+  --sub-border-color: #434343;
+  --sub-sub-border-color: #595959;
+
   --tag-bg: #1f1f1f;
   --tag-hover-bg: #262626;
   --code-bg: #1e293b;
@@ -63,17 +77,20 @@ html.dark {
   --danger-color: #f87171;
 }
 
-.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+.ant-select-dropdown
+  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background-color: var(--tag-hover-bg);
   color: var(--text-color);
 }
 
-.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+.ant-select-dropdown
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
   background-color: var(--primary-color);
   color: #ffffff;
 }
 
-.ant-select-dropdown .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+.ant-select-dropdown
+  .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background-color: var(--primary-color);
   color: #ffffff;
 }
