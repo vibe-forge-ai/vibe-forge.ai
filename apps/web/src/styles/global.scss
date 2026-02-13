@@ -33,12 +33,14 @@ html, body, #root, .ant-app {
   --sub-sub-bg-color: #ececec; /* 更内层/弱化容器背景 */
 
   --text-color: #000000; /* 主文本颜色 */
-  --sub-text-color: #1b1b1b; /* 次级说明文本 */
-  --sub-sub-text-color: #303030; /* 辅助弱化文本 */
+  --sub-text-color: #1b1b1b; /* 次级容器文本颜色 */
+  --sub-sub-text-color: #303030; /* 更内层/弱化容器文本颜色 */
 
   --border-color: #d0d0d0; /* 默认边框/分割线 */
   --sub-border-color: #c0c0c0; /* 轻分割线/次级边框 */
   --sub-sub-border-color: #a0a0a0; /* 弱化层级边框 */
+
+  --placeholder-color: #9ca3af; /* 页面/主容器下的占位符文本颜色 */
 
   --tag-bg: #f9fafb; /* 标签/微容器背景 */
   --tag-hover-bg: #f3f4f6; /* 标签/微容器悬浮背景 */
@@ -64,6 +66,8 @@ html.dark {
   --border-color: #303030; /* 默认边框/分割线 */
   --sub-border-color: #434343; /* 轻分割线/次级边框 */
   --sub-sub-border-color: #595959; /* 弱化层级边框 */
+
+  --placeholder-color: #575859; /* 页面/主容器下的占位符文本颜色 */
 
   --tag-bg: #1f1f1f; /* 标签/微容器背景 */
   --tag-hover-bg: #262626; /* 标签/微容器悬浮背景 */

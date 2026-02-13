@@ -1,2 +1,129 @@
-.automation-view__form-panel {
+.automation-view {
+  &__form-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+  }
+
+  &__form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__form-header-actions {
+    display: inline-flex;
+    gap: 12px;
+  }
+
+  &__form-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  &__form-icon {
+    font-size: 18px;
+    color: var(--sub-text-color);
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 20px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  &__form-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__form-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  &__form-right-scroll {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  &__form-section {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__label-icon {
+    font-size: 16px;
+    color: var(--sub-text-color);
+
+    &--run {
+      color: var(--success-color);
+    }
+  }
+
+  &__toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--tag-bg);
+  }
+
+  &__toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-color);
+
+    &--run {
+      color: var(--success-color);
+    }
+  }
+
+  &__square-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+
+    &--confirm {
+      font-weight: 600;
+    }
+  }
+
+  &__action-icon {
+    font-size: 18px;
+  }
 }

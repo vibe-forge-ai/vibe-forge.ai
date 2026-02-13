@@ -1,2 +1,128 @@
-.automation-view__list {
+.automation-view {
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &--horizontal {
+      gap: 10px;
+
+      .automation-view__list-item {
+        flex: 0 0 360px;
+        min-width: 360px;
+      }
+    }
+
+    &-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+
+      .automation-view__list-item {
+        min-width: 340px;
+        flex: 0 0 340px;
+      }
+    }
+  }
+
+  &__list-item {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--tag-bg);
+  }
+
+  &__list-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  &__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__section-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__section-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__section-count {
+    font-size: 12px;
+    color: var(--sub-text-color);
+  }
+
+  &__form-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  &__form-icon {
+    font-size: 18px;
+    color: var(--sub-text-color);
+  }
+
+  &__form-desc {
+    font-size: 12px;
+    color: var(--sub-text-color);
+    margin-bottom: 12px;
+  }
+
+  &__icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  &__action-icon {
+    font-size: 18px;
+  }
+
+  &__button-icon {
+    font-size: 16px;
+    margin-right: 4px;
+  }
+
+  &__remove-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  &__task-index {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--sub-text-color);
+  }
+
+  &__task-index-icon {
+    font-size: 14px;
+  }
 }
