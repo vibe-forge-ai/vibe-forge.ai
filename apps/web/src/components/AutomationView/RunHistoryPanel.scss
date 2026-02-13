@@ -43,8 +43,9 @@
 
   &__detail-title {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   &__detail-id {
