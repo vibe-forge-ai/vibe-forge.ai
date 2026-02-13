@@ -48,7 +48,7 @@
 
 .config-view__array-add {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
@@ -56,4 +56,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+}
+
+.config-view__array-add-inputs .ant-input,
+.config-view__array-add-inputs .ant-input-affix-wrapper {
+  flex: 1;
 }

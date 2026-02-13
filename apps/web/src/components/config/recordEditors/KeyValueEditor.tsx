@@ -10,13 +10,11 @@ export const KeyValueEditor = ({
   value,
   onChange,
   t,
-  addLabel,
   keyPlaceholder
 }: {
   value: Record<string, string>
   onChange: (nextValue: Record<string, string>) => void
   t: TranslationFn
-  addLabel: string
   keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
@@ -76,23 +74,23 @@ export const KeyValueEditor = ({
             placeholder={t('config.editor.fieldValue')}
             onChange={(event) => setNewValue(event.target.value)}
           />
+          <Tooltip title={t('common.confirm')}>
+            <Button
+              size='small'
+              type='primary'
+              className='config-view__icon-button'
+              aria-label={t('common.confirm')}
+              icon={<span className='material-symbols-rounded'>check</span>}
+              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
+              onClick={() => {
+                const nextValue = { ...value, [newKey]: newValue }
+                onChange(nextValue)
+                setNewKey('')
+                setNewValue('')
+              }}
+            />
+          </Tooltip>
         </div>
-        <Tooltip title={addLabel}>
-          <Button
-            size='small'
-            type='primary'
-            className='config-view__icon-button config-view__icon-button--full'
-            aria-label={addLabel}
-            icon={<span className='material-symbols-rounded'>add</span>}
-            disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
-            onClick={() => {
-              const nextValue = { ...value, [newKey]: newValue }
-              onChange(nextValue)
-              setNewKey('')
-              setNewValue('')
-            }}
-          />
-        </Tooltip>
       </div>
     </div>
   )

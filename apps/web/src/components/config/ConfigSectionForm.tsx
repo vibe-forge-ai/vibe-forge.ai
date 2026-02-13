@@ -104,20 +104,6 @@ export const SectionForm = ({
     return t('config.editor.fieldKey')
   }
 
-  const getRecordAddLabel = (field: FieldSpec) => {
-    if (sectionKey === 'adapters') return t('config.editor.addAdapter')
-    if (sectionKey === 'plugins') {
-      if (field.path.join('.') === 'extraKnownMarketplaces') {
-        return t('config.editor.addMarketplace')
-      }
-      return t('config.editor.addPlugin')
-    }
-    if (sectionKey === 'general' && field.path.join('.') === 'env') return t('config.editor.addEnvVar')
-    if (sectionKey === 'mcp') return t('config.editor.addMcpServer')
-    if (sectionKey === 'modelServices') return t('config.editor.addModelService')
-    return t('config.editor.addEntry')
-  }
-
   const renderField = (field: FieldSpec) => {
     const fieldValue = getValueByPath(value, field.path)
     const valueToUse = fieldValue !== undefined ? fieldValue : field.defaultValue
@@ -255,7 +241,6 @@ export const SectionForm = ({
             value={recordValue as Record<string, string>}
             onChange={handleValueChange}
             t={t}
-            addLabel={getRecordAddLabel(field)}
             keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
@@ -274,7 +259,6 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
-            addLabel={getRecordAddLabel(field)}
             keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )

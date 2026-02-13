@@ -54,21 +54,21 @@ export const BooleanRecordEditor = ({
             placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
+          <Tooltip title={t('common.confirm')}>
+            <Button
+              size='small'
+              type='primary'
+              className='config-view__icon-button'
+              aria-label={t('common.confirm')}
+              icon={<span className='material-symbols-rounded'>check</span>}
+              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
+              onClick={() => {
+                onChange({ ...value, [newKey]: true })
+                setNewKey('')
+              }}
+            />
+          </Tooltip>
         </div>
-        <Tooltip title={t('config.editor.addField')}>
-          <Button
-            size='small'
-            type='primary'
-            className='config-view__icon-button config-view__icon-button--full'
-            aria-label={t('config.editor.addField')}
-            icon={<span className='material-symbols-rounded'>add</span>}
-            disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
-            onClick={() => {
-              onChange({ ...value, [newKey]: true })
-              setNewKey('')
-            }}
-          />
-        </Tooltip>
       </div>
     </div>
   )

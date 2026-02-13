@@ -198,7 +198,7 @@ export const McpServersRecordEditor = ({
                         updateRecord({ ...recordValue, headers: next })
                       }}
                       t={t}
-                  addLabel={t('config.editor.addHeader')}
+                  keyPlaceholder={t('config.editor.newHeaderName')}
                     />
                   </FieldRow>
                 </>
@@ -215,7 +215,7 @@ export const McpServersRecordEditor = ({
                     updateRecord({ ...recordValue, env: next })
                   }}
                   t={t}
-                  addLabel={t('config.editor.addEnvVar')}
+                  keyPlaceholder={t('config.editor.newEnvVarName')}
                 />
               </FieldRow>
               </div>
@@ -230,28 +230,28 @@ export const McpServersRecordEditor = ({
             placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
+          <Tooltip title={t('common.confirm')}>
+            <Button
+              size='small'
+              type='primary'
+              className='config-view__icon-button'
+              aria-label={t('common.confirm')}
+              icon={<span className='material-symbols-rounded'>check</span>}
+              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
+              onClick={() => {
+                onChange({
+                  ...value,
+                  [newKey]: {
+                    enabled: true,
+                    command: '',
+                    args: []
+                  }
+                })
+                setNewKey('')
+              }}
+            />
+          </Tooltip>
         </div>
-        <Tooltip title={t('config.editor.addMcpServer')}>
-          <Button
-            size='small'
-            type='primary'
-            className='config-view__icon-button config-view__icon-button--full'
-            aria-label={t('config.editor.addMcpServer')}
-            icon={<span className='material-symbols-rounded'>add</span>}
-            disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
-            onClick={() => {
-              onChange({
-                ...value,
-                [newKey]: {
-                  enabled: true,
-                  command: '',
-                  args: []
-                }
-              })
-              setNewKey('')
-            }}
-          />
-        </Tooltip>
       </div>
     </div>
   )

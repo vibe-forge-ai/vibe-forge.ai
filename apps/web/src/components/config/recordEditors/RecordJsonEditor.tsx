@@ -10,13 +10,11 @@ export const RecordJsonEditor = ({
   value,
   onChange,
   t,
-  addLabel,
   keyPlaceholder
 }: {
   value: Record<string, unknown>
   onChange: (nextValue: Record<string, unknown>) => void
   t: TranslationFn
-  addLabel: string
   keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
@@ -94,21 +92,21 @@ export const RecordJsonEditor = ({
             placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
+          <Tooltip title={t('common.confirm')}>
+            <Button
+              size='small'
+              type='primary'
+              className='config-view__icon-button'
+              aria-label={t('common.confirm')}
+              icon={<span className='material-symbols-rounded'>check</span>}
+              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
+              onClick={() => {
+                onChange({ ...value, [newKey]: {} })
+                setNewKey('')
+              }}
+            />
+          </Tooltip>
         </div>
-        <Tooltip title={addLabel}>
-          <Button
-            size='small'
-            type='primary'
-            className='config-view__icon-button config-view__icon-button--full'
-            aria-label={addLabel}
-            icon={<span className='material-symbols-rounded'>add</span>}
-            disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
-            onClick={() => {
-              onChange({ ...value, [newKey]: {} })
-              setNewKey('')
-            }}
-          />
-        </Tooltip>
       </div>
     </div>
   )
