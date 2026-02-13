@@ -83,6 +83,7 @@
     "sortDesc": "Newest first",
     "sortAsc": "Oldest first",
     "triggerCount": "{{count}} triggers",
+    "basicDesc": "Describe purpose and toggle the rule on or off",
     "sectionBasic": "Basic Info",
     "sectionTriggers": "Triggers",
     "sectionTasks": "Tasks",
@@ -138,16 +139,25 @@
     "webhookTrigger": "Webhook",
     "intervalEvery": "Every {{minutes}} min",
     "enabled": "Enabled",
+    "ruleStatus": "Rule Status",
+    "lastRunLabel": "Last Run",
     "lastRun": "Last Run",
     "lastRunAt": "Last run: {{time}}",
     "noRunYet": "No runs yet",
     "emptyRules": "No automation rules",
     "selectRule": "Select an automation rule",
+    "ruleId": "Rule ID",
+    "createdAt": "Created At",
+    "enabledOn": "Enabled",
+    "enabledOff": "Disabled",
+    "noTriggers": "No triggers",
+    "noTasks": "No tasks",
     "runHistory": "Run History",
     "runTime": "Run Time",
     "runStatus": "Status",
     "runSummary": "Summary",
     "session": "Session",
+    "relatedSession": "Related Session",
     "openSession": "Open Session",
     "noRuns": "No runs yet",
     "actions": "Actions",
@@ -393,6 +403,14 @@
           "label": "Default Model",
           "desc": "Model used when none is specified"
         },
+        "interfaceLanguage": {
+          "label": "Interface Language",
+          "desc": "Controls UI display and interaction language"
+        },
+        "modelLanguage": {
+          "label": "Model Language",
+          "desc": "Controls the assistant response language"
+        },
         "announcements": {
           "label": "Announcements",
           "desc": "Shown when starting a new session"
@@ -413,6 +431,100 @@
         "env": {
           "label": "Environment",
           "desc": "Overrides or additional environment variables"
+        },
+        "notifications": {
+          "label": "Notifications",
+          "desc": "Trigger notifications on session status updates",
+          "disabled": {
+            "label": "Disable Notifications",
+            "desc": "Disable to stop sending notifications"
+          },
+          "volume": {
+            "label": "Notification Volume",
+            "desc": "0-1 or 0-100, 0 means mute"
+          },
+          "events": {
+            "completed": {
+              "label": "Completion Notification",
+              "desc": "Triggered when a session completes",
+              "disabled": {
+                "label": "Disable Completion Notification",
+                "desc": "Disable to stop completion notifications"
+              },
+              "title": {
+                "label": "Completion Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Completion Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Completion Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
+            "failed": {
+              "label": "Failure Notification",
+              "desc": "Triggered when a session fails",
+              "disabled": {
+                "label": "Disable Failure Notification",
+                "desc": "Disable to stop failure notifications"
+              },
+              "title": {
+                "label": "Failure Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Failure Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Failure Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
+            "terminated": {
+              "label": "Termination Notification",
+              "desc": "Triggered when a session is terminated",
+              "disabled": {
+                "label": "Disable Termination Notification",
+                "desc": "Disable to stop termination notifications"
+              },
+              "title": {
+                "label": "Termination Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Termination Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Termination Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
+            "waiting_input": {
+              "label": "Waiting Input Notification",
+              "desc": "Triggered when a session waits for input",
+              "disabled": {
+                "label": "Disable Waiting Input Notification",
+                "desc": "Disable to stop waiting input notifications"
+              },
+              "title": {
+                "label": "Waiting Input Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Waiting Input Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Waiting Input Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            }
+          }
         }
       },
       "conversation": {
@@ -553,6 +665,10 @@
       }
     },
     "options": {
+      "language": {
+        "zh": "Chinese",
+        "en": "English"
+      },
       "conversation": {
         "friendly": "Friendly",
         "programmatic": "Programmatic"

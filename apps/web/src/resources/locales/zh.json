@@ -84,6 +84,7 @@
     "sortDesc": "时间最新",
     "sortAsc": "时间最早",
     "triggerCount": "{{count}} 个触发条件",
+    "basicDesc": "用于说明规则用途与开关启停",
     "sectionBasic": "基本信息",
     "sectionTriggers": "触发条件",
     "sectionTasks": "任务内容",
@@ -139,16 +140,25 @@
     "webhookTrigger": "Webhook",
     "intervalEvery": "每 {{minutes}} 分钟",
     "enabled": "启用",
+    "ruleStatus": "规则状态",
+    "lastRunLabel": "最近运行",
     "lastRun": "最近运行",
     "lastRunAt": "最近运行：{{time}}",
     "noRunYet": "暂无运行记录",
     "emptyRules": "暂无自动化任务",
     "selectRule": "请选择一个自动化任务",
+    "ruleId": "规则 ID",
+    "createdAt": "创建时间",
+    "enabledOn": "已启用",
+    "enabledOff": "已停用",
+    "noTriggers": "暂无触发条件",
+    "noTasks": "暂无任务",
     "runHistory": "运行记录",
     "runTime": "运行时间",
     "runStatus": "状态",
     "runSummary": "摘要",
     "session": "会话",
+    "relatedSession": "相关会话",
     "openSession": "打开会话",
     "noRuns": "暂无运行记录",
     "actions": "操作",
@@ -394,6 +404,14 @@
           "label": "默认模型",
           "desc": "未指定时使用的模型"
         },
+        "interfaceLanguage": {
+          "label": "界面交互语言",
+          "desc": "控制界面显示与交互语言"
+        },
+        "modelLanguage": {
+          "label": "模型对话语言",
+          "desc": "控制模型输出语言"
+        },
         "announcements": {
           "label": "公告",
           "desc": "新建会话时的提示信息"
@@ -414,6 +432,100 @@
         "env": {
           "label": "环境变量",
           "desc": "覆盖或新增的运行环境变量"
+        },
+        "notifications": {
+          "label": "通知",
+          "desc": "会话状态变更时触发通知",
+          "disabled": {
+            "label": "禁用通知",
+            "desc": "关闭后不发送通知"
+          },
+          "volume": {
+            "label": "提示音量",
+            "desc": "0-1 或 0-100，0 为静音"
+          },
+          "events": {
+            "completed": {
+              "label": "完成通知",
+              "desc": "会话完成时触发",
+              "disabled": {
+                "label": "禁用完成通知",
+                "desc": "关闭后不发送完成通知"
+              },
+              "title": {
+                "label": "完成标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "完成文案",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "完成音频",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
+            "failed": {
+              "label": "失败通知",
+              "desc": "会话失败时触发",
+              "disabled": {
+                "label": "禁用失败通知",
+                "desc": "关闭后不发送失败通知"
+              },
+              "title": {
+                "label": "失败标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "失败文案",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "失败音频",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
+            "terminated": {
+              "label": "终止通知",
+              "desc": "会话终止时触发",
+              "disabled": {
+                "label": "禁用终止通知",
+                "desc": "关闭后不发送终止通知"
+              },
+              "title": {
+                "label": "终止标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "终止文案",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "终止音频",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
+            "waiting_input": {
+              "label": "等待输入通知",
+              "desc": "会话等待输入时触发",
+              "disabled": {
+                "label": "禁用等待输入通知",
+                "desc": "关闭后不发送等待输入通知"
+              },
+              "title": {
+                "label": "等待输入标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "等待输入文案",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "等待输入音频",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            }
+          }
         }
       },
       "conversation": {
@@ -554,6 +666,10 @@
       }
     },
     "options": {
+      "language": {
+        "zh": "中文",
+        "en": "English"
+      },
       "conversation": {
         "friendly": "友好",
         "programmatic": "程序化"
