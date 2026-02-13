@@ -1,3 +1,5 @@
+import './ArchiveView.scss'
+
 import type { Session } from '@vibe-forge/core'
 import { App, Button, Checkbox, Empty, Input, List, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
@@ -97,29 +99,23 @@ export function ArchiveView() {
   const isAllSelected = filteredSessions.length > 0 && selectedIds.size === filteredSessions.length
 
   return (
-    <div style={{ padding: '24px', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Space size={12}>
-          <span className='material-symbols-rounded' style={{ fontSize: '28px', color: '#6b7280' }}>
-            archive
-          </span>
-          <h2 style={{ margin: 0 }}>{t('common.archivedSessions')}</h2>
+    <div className='archive-view'>
+      <div className='archive-view__header'>
+        <Space size={8} className='archive-view__title'>
+          <h2 className='archive-view__title-text'>{t('common.archivedSessions')}</h2>
         </Space>
 
         <Space>
           {isBatchMode
             ? (
               <>
-                <span style={{ fontSize: '13px', color: '#6b7280', marginRight: '8px' }}>
+                <span className='archive-view__batch-info'>
                   {t('common.selectedCount', { count: selectedIds.size })}
                 </span>
                 <Tooltip title={t('common.cancel')}>
                   <Button
                     icon={
-                      <span
-                        className='material-symbols-rounded'
-                        style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
+                      <span className='material-symbols-rounded archive-view__action-icon'>
                         close
                       </span>
                     }
@@ -127,24 +123,14 @@ export function ArchiveView() {
                       setIsBatchMode(false)
                       setSelectedIds(new Set())
                     }}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
+                    className='archive-view__icon-button'
                   />
                 </Tooltip>
                 <Tooltip title={t('common.batchRestore')}>
                   <Button
                     type='primary'
                     icon={
-                      <span
-                        className='material-symbols-rounded'
-                        style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
+                      <span className='material-symbols-rounded archive-view__action-icon'>
                         unarchive
                       </span>
                     }
@@ -152,14 +138,7 @@ export function ArchiveView() {
                       void handleBatchRestore()
                     }}
                     disabled={selectedIds.size === 0}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
+                    className='archive-view__icon-button'
                   />
                 </Tooltip>
                 <Popconfirm
@@ -173,22 +152,12 @@ export function ArchiveView() {
                     <Button
                       danger
                       icon={
-                        <span
-                          className='material-symbols-rounded'
-                          style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
+                        <span className='material-symbols-rounded archive-view__action-icon'>
                           delete_sweep
                         </span>
                       }
                       disabled={selectedIds.size === 0}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 0
-                      }}
+                      className='archive-view__icon-button'
                     />
                   </Tooltip>
                 </Popconfirm>
@@ -198,41 +167,22 @@ export function ArchiveView() {
               <Tooltip title={t('common.batchMode')}>
                 <Button
                   icon={
-                    <span
-                      className='material-symbols-rounded'
-                      style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
+                    <span className='material-symbols-rounded archive-view__action-icon'>
                       checklist
                     </span>
                   }
                   onClick={() => setIsBatchMode(true)}
                   disabled={sessions.length === 0}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0
-                  }}
+                  className='archive-view__icon-button'
                 />
               </Tooltip>
             )}
         </Space>
       </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div className='archive-view__filter-bar'>
         {isBatchMode && (
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
+          <div className='archive-view__select-all'>
             <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
               <Checkbox
                 checked={isAllSelected}
@@ -243,18 +193,16 @@ export function ArchiveView() {
           </div>
         )}
         <Input
-          prefix={
-            <span className='material-symbols-rounded' style={{ fontSize: '18px', color: '#9ca3af' }}>search</span>
-          }
+          prefix={<span className='material-symbols-rounded archive-view__search-icon'>search</span>}
           placeholder={t('common.search')}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           allowClear
-          style={{ flex: 1 }}
+          className='archive-view__search-input'
         />
       </div>
 
-      <div style={{ flex: 1 }}>
+      <div className='archive-view__list'>
         {filteredSessions.length === 0
           ? (
             <Empty
@@ -268,26 +216,16 @@ export function ArchiveView() {
               dataSource={filteredSessions}
               renderItem={(session) => (
                 <List.Item
-                  style={{
-                    padding: '8px 0',
-                    background: selectedIds.has(session.id) ? '#f5f5f5' : 'transparent',
-                    cursor: isBatchMode ? 'pointer' : 'default',
-                    borderBottom: '1px solid #f0f0f0'
-                  }}
+                  className={[
+                    'archive-view__item',
+                    selectedIds.has(session.id) ? 'archive-view__item--selected' : '',
+                    isBatchMode ? 'archive-view__item--batch' : ''
+                  ].filter(Boolean).join(' ')}
                   onClick={() => isBatchMode && handleToggleSelect(session.id)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
+                  <div className='archive-view__item-row'>
                     {isBatchMode && (
-                      <div
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
+                      <div className='archive-view__item-select'>
                         <Checkbox
                           checked={selectedIds.has(session.id)}
                           onChange={() => handleToggleSelect(session.id)}
@@ -295,22 +233,11 @@ export function ArchiveView() {
                         />
                       </div>
                     )}
-                    <span
-                      className='material-symbols-rounded'
-                      style={{ fontSize: '20px', color: '#9ca3af', flexShrink: 0 }}
-                    >
+                    <span className='material-symbols-rounded archive-view__item-icon'>
                       chat_bubble
                     </span>
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span
-                        style={{
-                          fontWeight: 500,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          flex: 1
-                        }}
-                      >
+                    <div className='archive-view__item-main'>
+                      <span className='archive-view__item-title'>
                         {(session.title != null && session.title !== '')
                           ? session.title
                           : (session.lastMessage != null && session.lastMessage !== '')
@@ -318,34 +245,25 @@ export function ArchiveView() {
                           : t('common.newChat')}
                       </span>
                       {session.tags && session.tags.length > 0 && (
-                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                        <div className='archive-view__item-tags'>
                           {session.tags.map(tag => (
-                            <Tag key={tag} style={{ fontSize: '11px', borderRadius: '2px', margin: 0 }}>{tag}</Tag>
+                            <Tag key={tag} className='archive-view__item-tag'>{tag}</Tag>
                           ))}
                         </div>
                       )}
-                      <span style={{ fontSize: '12px', color: '#9ca3af', flexShrink: 0 }}>
+                      <span className='archive-view__item-time'>
                         {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
                       </span>
                     </div>
 
                     {!isBatchMode && (
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                      <div className='archive-view__item-actions'>
                         <Tooltip title={t('common.restore')}>
                           <Button
                             type='text'
                             size='small'
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: '24px',
-                              height: '24px',
-                              padding: 0
-                            }}
-                            icon={
-                              <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>unarchive</span>
-                            }
+                            className='archive-view__item-action-button'
+                            icon={<span className='material-symbols-rounded archive-view__action-icon'>unarchive</span>}
                             onClick={(e) => {
                               e.stopPropagation()
                               void handleRestore(session.id)
@@ -363,15 +281,8 @@ export function ArchiveView() {
                             type='text'
                             size='small'
                             danger
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: '24px',
-                              height: '24px',
-                              padding: 0
-                            }}
-                            icon={<span className='material-symbols-rounded' style={{ fontSize: '18px' }}>delete</span>}
+                            className='archive-view__item-action-button'
+                            icon={<span className='material-symbols-rounded archive-view__action-icon'>delete</span>}
                             onClick={(e) => e.stopPropagation()}
                           />
                         </Popconfirm>

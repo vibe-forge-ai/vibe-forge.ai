@@ -6,12 +6,12 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { EntitySummary, SpecSummary } from '#~/api.js'
-import { EntitiesTab } from './components/EntitiesTab'
-import { FlowsTab } from './components/FlowsTab'
-import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader'
-import { RulesTab } from './components/RulesTab'
-import { SkillsTab } from './components/SkillsTab'
-import { TabLabel } from './components/TabLabel'
+import { EntitiesTab } from './components/EntitiesTab.js'
+import { FlowsTab } from './components/FlowsTab.js'
+import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader.js'
+import { RulesTab } from './components/RulesTab.js'
+import { SkillsTab } from './components/SkillsTab.js'
+import { TabLabel } from './components/TabLabel.js'
 
 export function KnowledgeBaseView() {
   const { t } = useTranslation()

@@ -1,1 +1,1 @@
-export { KnowledgeBaseView } from './KnowledgeBaseView'
+export { KnowledgeBaseView } from './KnowledgeBaseView.js'

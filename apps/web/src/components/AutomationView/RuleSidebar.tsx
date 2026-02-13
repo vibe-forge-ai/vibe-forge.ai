@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
 
-type RuleSidebarProps = {
+interface RuleSidebarProps {
   rules: AutomationRule[]
   selectedRuleId: string | null
   query: string
@@ -101,7 +101,6 @@ export function RuleSidebar({
     <div className='automation-view__sidebar'>
       <div className='automation-view__sidebar-header'>
         <div className='automation-view__title'>
-          <span className='material-symbols-rounded automation-view__title-icon'>schedule</span>
           <h2 className='automation-view__title-text'>{t('automation.title')}</h2>
         </div>
         <Tooltip title={isCreating ? t('automation.creatingRule') : t('automation.newRule')}>
@@ -159,7 +158,9 @@ export function RuleSidebar({
                           {primaryType === 'interval' ? 'timer' : primaryType === 'cron' ? 'schedule' : 'webhook'}
                         </span>
                         <span className='automation-view__rule-title'>{rule.name}</span>
-                        <Tag color={primaryType === 'interval' ? 'blue' : primaryType === 'cron' ? 'geekblue' : 'purple'}>
+                        <Tag
+                          color={primaryType === 'interval' ? 'blue' : primaryType === 'cron' ? 'geekblue' : 'purple'}
+                        >
                           {primaryType === 'interval'
                             ? t('automation.typeInterval')
                             : primaryType === 'cron'
@@ -226,14 +227,20 @@ export function RuleSidebar({
                         </Tooltip>
                         <Tooltip title={isFavorite ? t('automation.unfavorite') : t('automation.favorite')}>
                           <Button
-                            className={`automation-view__icon-button automation-view__icon-button--favorite ${isFavorite ? 'automation-view__icon-button--active' : ''}`}
+                            className={`automation-view__icon-button automation-view__icon-button--favorite ${
+                              isFavorite ? 'automation-view__icon-button--active' : ''
+                            }`}
                             type='text'
                             onClick={(event) => {
                               event.stopPropagation()
                               toggleFavorite(rule.id)
                             }}
                           >
-                            <span className={`material-symbols-rounded automation-view__action-icon ${isFavorite ? 'automation-view__action-icon--star' : ''}`}>
+                            <span
+                              className={`material-symbols-rounded automation-view__action-icon ${
+                                isFavorite ? 'automation-view__action-icon--star' : ''
+                              }`}
+                            >
                               {isFavorite ? 'star' : 'star_outline'}
                             </span>
                           </Button>
