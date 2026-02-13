@@ -28,53 +28,53 @@ html, body, #root, .ant-app {
 }
 
 :root {
-  --bg-color: #ffffff;
-  --sub-bg-color: #fcfcfc;
-  --sub-sub-bg-color: #ececec;
+  --bg-color: #ffffff; /* 页面/主容器背景 */
+  --sub-bg-color: #fcfcfc; /* 次级容器背景 */
+  --sub-sub-bg-color: #ececec; /* 更内层/弱化容器背景 */
 
-  --text-color: #000000;
-  --sub-text-color: #1b1b1b;
-  --sub-sub-text-color: #303030;
+  --text-color: #000000; /* 主文本颜色 */
+  --sub-text-color: #1b1b1b; /* 次级说明文本 */
+  --sub-sub-text-color: #303030; /* 辅助弱化文本 */
 
-  --border-color: #d0d0d0;
-  --sub-border-color: #c0c0c0;
-  --sub-sub-border-color: #a0a0a0;
+  --border-color: #d0d0d0; /* 默认边框/分割线 */
+  --sub-border-color: #c0c0c0; /* 轻分割线/次级边框 */
+  --sub-sub-border-color: #a0a0a0; /* 弱化层级边框 */
 
-  --tag-bg: #f9fafb;
-  --tag-hover-bg: #f3f4f6;
-  --code-bg: #f0f2f4;
-  --code-border: #f1f5f9;
-  --star-color: #f59e0b;
-  --primary-color: #6366f1;
-  --success-color: #0f766e;
-  --warning-color: #b45309;
-  --primary-text-color: #1d4ed8;
-  --danger-color: #dc2626;
+  --tag-bg: #f9fafb; /* 标签/微容器背景 */
+  --tag-hover-bg: #f3f4f6; /* 标签/微容器悬浮背景 */
+  --code-bg: #f0f2f4; /* 代码块背景 */
+  --code-border: #f1f5f9; /* 代码块边框 */
+  --star-color: #f59e0b; /* 收藏/星标颜色 */
+  --primary-color: #6366f1; /* 主色调/主行动强调 */
+  --success-color: #0f766e; /* 成功状态颜色 */
+  --warning-color: #b45309; /* 警告状态颜色 */
+  --primary-text-color: #1d4ed8; /* 链接/强调文字颜色 */
+  --danger-color: #dc2626; /* 危险/错误状态颜色 */
 }
 
 html.dark {
-  --bg-color: #141414;
-  --sub-bg-color: #262626;
-  --sub-sub-bg-color: #303030;
+  --bg-color: #141414; /* 页面/主容器背景 */
+  --sub-bg-color: #262626; /* 次级容器背景 */
+  --sub-sub-bg-color: #303030; /* 更内层/弱化容器背景 */
 
-  --text-color: #ffffff;
-  --sub-text-color: #8c8c8c;
-  --sub-sub-text-color: #a5a5a5;
+  --text-color: #ffffff; /* 主文本颜色 */
+  --sub-text-color: #8c8c8c; /* 次级说明文本 */
+  --sub-sub-text-color: #a5a5a5; /* 辅助弱化文本 */
 
-  --border-color: #303030;
-  --sub-border-color: #434343;
-  --sub-sub-border-color: #595959;
+  --border-color: #303030; /* 默认边框/分割线 */
+  --sub-border-color: #434343; /* 轻分割线/次级边框 */
+  --sub-sub-border-color: #595959; /* 弱化层级边框 */
 
-  --tag-bg: #1f1f1f;
-  --tag-hover-bg: #262626;
-  --code-bg: #1e293b;
-  --code-border: #334155;
-  --star-color: #ffb81c;
-  --primary-color: #818cf8;
-  --success-color: #2dd4bf;
-  --warning-color: #f59e0b;
-  --primary-text-color: #60a5fa;
-  --danger-color: #f87171;
+  --tag-bg: #1f1f1f; /* 标签/微容器背景 */
+  --tag-hover-bg: #262626; /* 标签/微容器悬浮背景 */
+  --code-bg: #1e293b; /* 代码块背景 */
+  --code-border: #334155; /* 代码块边框 */
+  --star-color: #ffb81c; /* 收藏/星标颜色 */
+  --primary-color: #818cf8; /* 主色调/主行动强调 */
+  --success-color: #2dd4bf; /* 成功状态颜色 */
+  --warning-color: #f59e0b; /* 警告状态颜色 */
+  --primary-text-color: #60a5fa; /* 链接/强调文字颜色 */
+  --danger-color: #f87171; /* 危险/错误状态颜色 */
 }
 
 .ant-select-dropdown

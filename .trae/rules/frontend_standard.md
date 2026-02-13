@@ -88,8 +88,16 @@ const { values, update } = useQueryParams({
 
 ## CSS 变量 & 主题
 
-- **全局变量**: 所有通用的颜色、边距、圆角等必须使用 CSS 变量（CSS Variables），定义在 `src/styles/global.scss` 的 `:root` 中。
+- **全局变量**: 所有通用的颜色、边距、圆角等必须使用 CSS 变量（CSS Variables），定义在 `src/styles/global.scss` 的 `:root` 中；暗色模式在同文件的 `html.dark` 中覆盖。
+- **查看位置**: `src/styles/global.scss` 的 `:root`（浅色）与 `html.dark`（暗色覆盖）。
 - **变量命名**: 采用中划线命名，如 `--primary-color`, `--bg-color`, `--border-color`。
+- **使用规范建议**:
+  - **主色调**（`--primary-color`）: 仅用于主行动按钮、核心交互的激活态、关键选中状态；避免用于大面积背景。
+  - **文本颜色**: 主文本用 `--text-color`，次级说明用 `--sub-text-color`，更弱化辅助信息用 `--sub-sub-text-color`。
+  - **背景颜色**: 页面或主容器用 `--bg-color`，卡片/块级容器用 `--sub-bg-color`，更内层次容器用 `--sub-sub-bg-color`。
+  - **边框颜色**: 组件默认边框使用 `--border-color`；分割线/轻边框使用 `--sub-border-color`；仅在需要更弱化层级时使用 `--sub-sub-border-color`。
+  - **状态颜色**: 成功/警告/危险状态分别使用 `--success-color`、`--warning-color`、`--danger-color`。
+- **变量维护**: 新增或调整全局变量时，必须同时补齐 `html.dark` 的对应值，并在 `global.scss` 中为变量添加明确含义注释。
 - **常用全局变量列表**:
   - `--bg-color`: 页面/容器主背景。
   - `--text-color`: 主文本颜色。
