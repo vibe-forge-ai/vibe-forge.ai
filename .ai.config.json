@@ -5,8 +5,7 @@
   "plugins": {
     "logger": {}
   },
-  "mcpServers": {
-  },
+  "mcpServers": {},
   "permissions": {
     "allow": [],
     "deny": [],
@@ -18,5 +17,11 @@
   },
   "announcements": [
     "欢迎使用 AI 时代的代码工业机床。"
-  ]
+  ],
+  "shortcuts": {
+    "openConfig": "mod+,",
+    "sendMessage": "mod+enter",
+    "clearInput": "escape",
+    "newSession": "mod+k"
+  }
 }

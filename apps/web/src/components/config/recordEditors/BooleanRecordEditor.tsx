@@ -8,11 +8,13 @@ import type { TranslationFn } from '../configUtils'
 export const BooleanRecordEditor = ({
   value,
   onChange,
-  t
+  t,
+  keyPlaceholder
 }: {
   value: Record<string, boolean>
   onChange: (nextValue: Record<string, boolean>) => void
   t: TranslationFn
+  keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
   const entries = Object.entries(value)
@@ -49,7 +51,7 @@ export const BooleanRecordEditor = ({
         <div className='config-view__record-add-inputs'>
           <Input
             value={newKey}
-            placeholder={t('config.editor.fieldKey')}
+            placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
         </div>

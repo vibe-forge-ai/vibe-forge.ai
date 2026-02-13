@@ -10,12 +10,14 @@ export const RecordJsonEditor = ({
   value,
   onChange,
   t,
-  addLabel
+  addLabel,
+  keyPlaceholder
 }: {
   value: Record<string, unknown>
   onChange: (nextValue: Record<string, unknown>) => void
   t: TranslationFn
   addLabel: string
+  keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
   const entries = useMemo(() => Object.entries(value), [value])
@@ -89,7 +91,7 @@ export const RecordJsonEditor = ({
         <div className='config-view__record-add-inputs'>
           <Input
             value={newKey}
-            placeholder={t('config.editor.fieldKey')}
+            placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
         </div>

@@ -78,8 +78,28 @@ export function ConfigView() {
     { key: 'experiments', icon: 'science', label: t('config.sections.experiments'), value: data?.meta?.experiments },
     { key: 'about', icon: 'info', label: t('config.sections.about'), value: data?.meta?.about }
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
+  const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
 
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
+
+  const initializedTabRef = useRef(false)
+  useEffect(() => {
+    if (initializedTabRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    const tabKey = params.get('tab')
+    if (tabKey != null && tabKeys.has(tabKey)) {
+      setActiveTabKey(tabKey)
+    }
+    initializedTabRef.current = true
+  }, [tabKeys])
+
+  useEffect(() => {
+    if (!tabKeys.has(activeTabKey)) return
+    const params = new URLSearchParams(window.location.search)
+    params.set('tab', activeTabKey)
+    const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`
+    window.history.replaceState(null, '', nextUrl)
+  }, [activeTabKey, tabKeys])
 
   useEffect(() => {
     if (activeTab == null) return

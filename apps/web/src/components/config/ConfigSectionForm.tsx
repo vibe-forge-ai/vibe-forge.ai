@@ -92,6 +92,18 @@ export const SectionForm = ({
   }, {})
   const orderedGroups = ['base', 'permissions', 'env', 'items', 'default'].filter(key => groupedFields[key]?.length)
 
+  const getRecordKeyPlaceholder = (field: FieldSpec) => {
+    if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
+    if (sectionKey === 'adapters') return t('config.editor.newAdapterName')
+    if (sectionKey === 'plugins') {
+      if (field.path.join('.') === 'extraKnownMarketplaces') return t('config.editor.newMarketplaceName')
+      return t('config.editor.newPluginName')
+    }
+    if (sectionKey === 'mcp') return t('config.editor.newMcpServerName')
+    if (sectionKey === 'general' && field.path.join('.') === 'env') return t('config.editor.newEnvVarName')
+    return t('config.editor.fieldKey')
+  }
+
   const getRecordAddLabel = (field: FieldSpec) => {
     if (sectionKey === 'adapters') return t('config.editor.addAdapter')
     if (sectionKey === 'plugins') {
@@ -225,6 +237,7 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
       } else if (field.recordKind === 'mcpServers') {
@@ -233,6 +246,7 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
       } else if (field.recordKind === 'keyValue') {
@@ -242,6 +256,7 @@ export const SectionForm = ({
             onChange={handleValueChange}
             t={t}
             addLabel={getRecordAddLabel(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
       } else if (field.recordKind === 'boolean') {
@@ -250,6 +265,7 @@ export const SectionForm = ({
             value={recordValue as Record<string, boolean>}
             onChange={handleValueChange}
             t={t}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
       } else {
@@ -259,6 +275,7 @@ export const SectionForm = ({
             onChange={handleValueChange}
             t={t}
             addLabel={getRecordAddLabel(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
           />
         )
       }

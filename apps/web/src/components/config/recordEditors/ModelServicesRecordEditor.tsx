@@ -11,11 +11,13 @@ import type { TranslationFn } from '../configUtils'
 export const ModelServicesRecordEditor = ({
   value,
   onChange,
-  t
+  t,
+  keyPlaceholder
 }: {
   value: Record<string, unknown>
   onChange: (nextValue: Record<string, unknown>) => void
   t: TranslationFn
+  keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
   const entries = useMemo(() => Object.entries(value), [value])
@@ -196,7 +198,7 @@ export const ModelServicesRecordEditor = ({
         <div className='config-view__record-add-inputs'>
           <Input
             value={newKey}
-            placeholder={t('config.editor.fieldKey')}
+            placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
         </div>

@@ -10,12 +10,14 @@ export const KeyValueEditor = ({
   value,
   onChange,
   t,
-  addLabel
+  addLabel,
+  keyPlaceholder
 }: {
   value: Record<string, string>
   onChange: (nextValue: Record<string, string>) => void
   t: TranslationFn
   addLabel: string
+  keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
@@ -66,7 +68,7 @@ export const KeyValueEditor = ({
         <div className='config-view__array-add-inputs'>
           <Input
             value={newKey}
-            placeholder={t('config.editor.fieldKey')}
+            placeholder={keyPlaceholder}
             onChange={(event) => setNewKey(event.target.value)}
           />
           <Input
