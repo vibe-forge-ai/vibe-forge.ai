@@ -62,3 +62,18 @@ html.dark {
   --primary-text-color: #60a5fa;
   --danger-color: #f87171;
 }
+
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: var(--tag-hover-bg);
+  color: var(--text-color);
+}
+
+.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}

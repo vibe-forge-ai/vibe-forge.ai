@@ -2,7 +2,7 @@ import './TriggerList.scss'
 
 import { Button, Form, Input, InputNumber, Select, Tooltip } from 'antd'
 import type { FormInstance } from 'antd'
-import React, { useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { RuleFormValues } from './types'
@@ -15,7 +15,6 @@ type TriggerListProps = {
 
 export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerListProps) {
   const { t } = useTranslation()
-  const [collapsed, setCollapsed] = useState(true)
 
   return (
     <Form.List name='triggers'>
@@ -32,17 +31,6 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
               </span>
             </div>
             <div className='automation-view__section-actions'>
-              <Tooltip title={collapsed ? t('common.expand') : t('common.collapse')}>
-                <Button
-                  className='automation-view__icon-button'
-                  type='text'
-                  onClick={() => setCollapsed(value => !value)}
-                >
-                  <span className='material-symbols-rounded automation-view__action-icon'>
-                    {collapsed ? 'expand_more' : 'expand_less'}
-                  </span>
-                </Button>
-              </Tooltip>
               <Tooltip title={t('automation.addTrigger')}>
                 <Button
                   className='automation-view__icon-button'
@@ -60,17 +48,27 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
               </Tooltip>
             </div>
           </div>
-          {!collapsed && (
-            <>
-              <div className='automation-view__form-desc'>{t('automation.triggerAny')}</div>
-              <div className='automation-view__list-scroll'>
-                {fields.map((field, index) => {
-                  const triggerType = form.getFieldValue(['triggers', field.name, 'type']) as RuleFormValues['triggers'][number]['type']
-                  const triggerId = form.getFieldValue(['triggers', field.name, 'id']) as string | undefined
-                  const webhookKey = form.getFieldValue(['triggers', field.name, 'webhookKey']) as string | undefined
+          <div className='automation-view__form-desc'>{t('automation.triggerAny')}</div>
+          <div className='automation-view__list-scroll'>
+            {fields.map((field, index) => (
+              <Form.Item
+                key={field.key}
+                noStyle
+                shouldUpdate={(prevValues, nextValues) => {
+                  const prevTrigger = prevValues.triggers?.[field.name]
+                  const nextTrigger = nextValues.triggers?.[field.name]
+                  return prevTrigger?.type !== nextTrigger?.type
+                    || prevTrigger?.webhookKey !== nextTrigger?.webhookKey
+                    || prevTrigger?.id !== nextTrigger?.id
+                }}
+              >
+                {(formInstance) => {
+                  const triggerType = formInstance.getFieldValue(['triggers', field.name, 'type']) as RuleFormValues['triggers'][number]['type']
+                  const triggerId = formInstance.getFieldValue(['triggers', field.name, 'id']) as string | undefined
+                  const webhookKey = formInstance.getFieldValue(['triggers', field.name, 'webhookKey']) as string | undefined
                   const webhookUrl = getWebhookUrl(triggerId, webhookKey)
                   return (
-                    <div key={field.key} className='automation-view__list-item'>
+                    <div className='automation-view__list-item'>
                       <Form.Item name={[field.name, 'id']} hidden>
                         <Input />
                       </Form.Item>
@@ -208,10 +206,10 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
                       )}
                     </div>
                   )
-                })}
-              </div>
-            </>
-          )}
+                }}
+              </Form.Item>
+            ))}
+          </div>
         </div>
       )}
     </Form.List>

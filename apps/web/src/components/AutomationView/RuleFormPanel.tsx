@@ -167,7 +167,7 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
               className='automation-view__square-button'
               onClick={onCancel}
             >
-              {t('common.cancel')}
+              <span className='material-symbols-rounded automation-view__action-icon'>close</span>
             </Button>
           </Tooltip>
           <Tooltip title={t('common.confirm')}>
@@ -177,7 +177,7 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
               loading={submitting}
               onClick={() => void handleSubmit()}
             >
-              {t('common.confirm')}
+              <span className='material-symbols-rounded automation-view__action-icon'>check</span>
             </Button>
           </Tooltip>
         </div>
@@ -190,7 +190,6 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
                 <span className='material-symbols-rounded automation-view__form-icon'>info</span>
                 {t('automation.sectionBasic')}
               </div>
-              <div className='automation-view__form-desc'>{t('automation.basicDesc')}</div>
               <Form.Item
                 name='name'
                 label={(

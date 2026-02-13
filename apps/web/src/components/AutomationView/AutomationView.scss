@@ -293,11 +293,7 @@
   color: var(--primary-color);
 }
 
-.automation-view__detail-card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
-  background: var(--bg-color);
+.automation-view__detail {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -323,7 +319,7 @@
 .automation-view__detail-description {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--sub-text-color);
   font-size: 12px;
 }
@@ -383,7 +379,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-left: 20px;
+  padding-left: 22px;
 }
 
 .automation-view__run-item {

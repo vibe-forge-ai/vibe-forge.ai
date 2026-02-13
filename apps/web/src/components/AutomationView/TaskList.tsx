@@ -1,12 +1,11 @@
 import './TaskList.scss'
 
 import { Button, Form, Input, Tooltip } from 'antd'
-import React, { useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 export function TaskList() {
   const { t } = useTranslation()
-  const [collapsed, setCollapsed] = useState(true)
 
   return (
     <Form.List name='tasks'>
@@ -23,17 +22,6 @@ export function TaskList() {
               </span>
             </div>
             <div className='automation-view__section-actions'>
-              <Tooltip title={collapsed ? t('common.expand') : t('common.collapse')}>
-                <Button
-                  className='automation-view__icon-button'
-                  type='text'
-                  onClick={() => setCollapsed(value => !value)}
-                >
-                  <span className='material-symbols-rounded automation-view__action-icon'>
-                    {collapsed ? 'expand_more' : 'expand_less'}
-                  </span>
-                </Button>
-              </Tooltip>
               <Tooltip title={t('automation.addTask')}>
                 <Button
                   className='automation-view__icon-button'
@@ -48,46 +36,42 @@ export function TaskList() {
               </Tooltip>
             </div>
           </div>
-          {!collapsed && (
-            <>
-              <div className='automation-view__form-desc'>{t('automation.taskAll')}</div>
-              <div className='automation-view__list-scroll'>
-                {fields.map((field, index) => (
-                  <div key={field.key} className='automation-view__list-item'>
-                    <Form.Item name={[field.name, 'id']} hidden>
-                      <Input />
-                    </Form.Item>
-                    <Tooltip title={t('automation.remove')}>
-                      <Button
-                        className='automation-view__remove-button'
-                        danger
-                        onClick={() => remove(field.name)}
-                        disabled={fields.length <= 1}
-                      >
-                        <span className='material-symbols-rounded automation-view__button-icon'>close</span>
-                      </Button>
-                    </Tooltip>
-                    <div className='automation-view__list-header'>
-                      <Form.Item name={[field.name, 'title']} label={t('automation.taskTitle')}>
-                        <Input placeholder={t('automation.taskTitlePlaceholder')} />
-                      </Form.Item>
-                    </div>
-                    <Form.Item
-                      name={[field.name, 'prompt']}
-                      label={t('automation.prompt')}
-                      rules={[{ required: true, message: t('automation.promptRequired') }]}
-                    >
-                      <Input.TextArea rows={3} />
-                    </Form.Item>
-                    <div className='automation-view__task-index'>
-                      <span className='material-symbols-rounded automation-view__task-index-icon'>format_list_numbered</span>
-                      {t('automation.taskIndex', { index: index + 1 })}
-                    </div>
-                  </div>
-                ))}
+          <div className='automation-view__form-desc'>{t('automation.taskAll')}</div>
+          <div className='automation-view__list-scroll'>
+            {fields.map((field, index) => (
+              <div key={field.key} className='automation-view__list-item'>
+                <Form.Item name={[field.name, 'id']} hidden>
+                  <Input />
+                </Form.Item>
+                <Tooltip title={t('automation.remove')}>
+                  <Button
+                    className='automation-view__remove-button'
+                    danger
+                    onClick={() => remove(field.name)}
+                    disabled={fields.length <= 1}
+                  >
+                    <span className='material-symbols-rounded automation-view__button-icon'>close</span>
+                  </Button>
+                </Tooltip>
+                <div className='automation-view__list-header'>
+                  <Form.Item name={[field.name, 'title']} label={t('automation.taskTitle')}>
+                    <Input placeholder={t('automation.taskTitlePlaceholder')} />
+                  </Form.Item>
+                </div>
+                <Form.Item
+                  name={[field.name, 'prompt']}
+                  label={t('automation.prompt')}
+                  rules={[{ required: true, message: t('automation.promptRequired') }]}
+                >
+                  <Input.TextArea rows={3} />
+                </Form.Item>
+                <div className='automation-view__task-index'>
+                  <span className='material-symbols-rounded automation-view__task-index-icon'>format_list_numbered</span>
+                  {t('automation.taskIndex', { index: index + 1 })}
+                </div>
               </div>
-            </>
-          )}
+            ))}
+          </div>
         </div>
       )}
     </Form.List>

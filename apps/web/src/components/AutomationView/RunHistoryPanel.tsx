@@ -140,10 +140,9 @@ export function RunHistoryPanel({
 
   return (
     <div className='automation-view__content'>
-      <div className='automation-view__detail-card'>
+      <div className='automation-view__detail'>
         <div className='automation-view__detail-header'>
           <div className='automation-view__detail-title'>
-            <span className='material-symbols-rounded automation-view__content-icon'>info</span>
             <h3 className='automation-view__content-text'>{rule.name}</h3>
             <span className='automation-view__detail-id'>{rule.id}</span>
           </div>
@@ -205,16 +204,15 @@ export function RunHistoryPanel({
             {rule.lastSessionId && (
               <div className='automation-view__detail-row'>
                 <span className='material-symbols-rounded automation-view__meta-icon'>open_in_new</span>
-                <span className='automation-view__detail-label'>{t('automation.relatedSession')}</span>
                 <a
-                  className='automation-view__detail-link'
+                  className='automation-view__detail-label automation-view__detail-link'
                   href={`/session/${rule.lastSessionId}?tag=${
                     encodeURIComponent(`automation:${rule.id}:${rule.name}`)
                   }`}
                   target='_blank'
                   rel='noreferrer'
                 >
-                  {t('automation.openSession')}
+                  {t('automation.relatedSession')}
                 </a>
               </div>
             )}
