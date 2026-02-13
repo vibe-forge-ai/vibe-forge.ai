@@ -95,13 +95,6 @@ export function NavRail({
       active: currentPath === '/' || currentPath.startsWith('/session/')
     },
     {
-      key: 'search',
-      icon: 'search',
-      label: t('common.search'),
-      path: '/search',
-      active: currentPath === '/search'
-    },
-    {
       key: 'knowledge',
       icon: 'library_books',
       label: t('common.knowledgeBase'),

@@ -11,7 +11,6 @@ import { Chat } from '#~/components/Chat'
 import { ConfigView } from '#~/components/ConfigView'
 import { KnowledgeBaseView } from '#~/components/knowledge-base'
 import { NavRail } from '#~/components/NavRail'
-import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
 import type { ConfigResponse, Session } from '@vibe-forge/core'
 import { getConfig } from './api'
@@ -161,13 +160,9 @@ export default function App() {
           }}
         >
           <Routes>
-            <Route
-              path='/'
-              element={<Chat />}
-            />
+            <Route path='/' element={<Chat />} />
             <Route path='/session/:sessionId' element={<ChatView />} />
             <Route path='/archive' element={<ArchiveView />} />
-            <Route path='/search' element={<SearchView />} />
             <Route path='/automation' element={<AutomationView />} />
             <Route path='/knowledge' element={<KnowledgeBaseView />} />
             <Route path='/config' element={<ConfigView />} />
