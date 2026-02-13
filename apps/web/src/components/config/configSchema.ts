@@ -51,6 +51,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
     { path: ['defaultAdapter'], type: 'select', defaultValue: '', icon: 'settings_input_component', group: 'base' },
     { path: ['defaultModelService'], type: 'select', defaultValue: '', icon: 'hub', group: 'base' },
     { path: ['defaultModel'], type: 'select', defaultValue: '', icon: 'model_training', group: 'base' },
+    { path: ['recommendedModels'], type: 'json', defaultValue: [], icon: 'stars', group: 'base' },
     {
       path: ['interfaceLanguage'],
       type: 'select',

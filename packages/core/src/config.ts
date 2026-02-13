@@ -40,6 +40,14 @@ export interface ModelServiceConfig {
   extra?: Record<string, unknown>
 }
 
+export interface RecommendedModelConfig {
+  service?: string
+  model: string
+  title?: string
+  description?: string
+  placement?: 'modelSelector'
+}
+
 export type LanguageCode = 'zh' | 'en'
 
 export type NotificationTrigger = 'completed' | 'failed' | 'terminated' | 'waiting_input'
@@ -82,6 +90,7 @@ export interface Config {
    * 默认模型名称
    */
   defaultModel?: string
+  recommendedModels?: RecommendedModelConfig[]
   interfaceLanguage?: LanguageCode
   modelLanguage?: LanguageCode
   /**
@@ -208,6 +217,7 @@ export interface ConfigSection {
     defaultAdapter?: Config['defaultAdapter']
     defaultModelService?: Config['defaultModelService']
     defaultModel?: Config['defaultModel']
+    recommendedModels?: Config['recommendedModels']
     interfaceLanguage?: Config['interfaceLanguage']
     modelLanguage?: Config['modelLanguage']
     announcements?: Config['announcements']

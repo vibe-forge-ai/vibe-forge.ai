@@ -1,16 +1,29 @@
 import './Sender.scss'
-import type { AskUserQuestionParams, SessionInfo, SessionStatus } from '@vibe-forge/core'
-import { App, Button, Input, Tooltip } from 'antd'
+
+import { App, Button, Input, Select, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
+
+import type { AskUserQuestionParams, SessionInfo, SessionStatus } from '@vibe-forge/core'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
 import { isShortcutMatch } from '../../utils/shortcutUtils'
 
 const { TextArea } = Input
+
+interface ModelSelectOption {
+  value: string
+  label: React.ReactNode
+  searchText: string
+}
+
+interface ModelSelectGroup {
+  label: React.ReactNode
+  options: ModelSelectOption[]
+}
 
 export function Sender({
   onSend,
@@ -20,7 +33,11 @@ export function Sender({
   sessionInfo,
   interactionRequest,
   onInteractionResponse,
-  placeholder
+  placeholder,
+  modelOptions,
+  selectedModel,
+  onModelChange,
+  modelUnavailable
 }: {
   onSend: (text: string) => void
   sessionStatus?: SessionStatus
@@ -30,6 +47,10 @@ export function Sender({
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void
   placeholder?: string
+  modelOptions?: ModelSelectGroup[]
+  selectedModel?: string
+  onModelChange?: (model: string) => void
+  modelUnavailable?: boolean
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -77,6 +98,11 @@ export function Sender({
 
   const handleSend = () => {
     if (input.trim() === '' || isThinking) return
+
+    if (modelUnavailable) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
 
     if (interactionRequest != null && onInteractionResponse != null) {
       onInteractionResponse(interactionRequest.id, input.trim())
@@ -391,6 +417,11 @@ export function Sender({
         </div>
       )}
       <div className='chat-input-container'>
+        {modelUnavailable && (
+          <div className='model-unavailable'>
+            {t('chat.modelConfigRequired')}
+          </div>
+        )}
         {showCompletion && (
           <CompletionMenu
             items={completionItems}
@@ -408,6 +439,7 @@ export function Sender({
           onKeyDown={handleKeyDown}
           autoSize={{ minRows: 1, maxRows: 10 }}
           variant='borderless'
+          disabled={modelUnavailable}
         />
 
         <div className='chat-input-toolbar'>
@@ -472,21 +504,27 @@ export function Sender({
           </div>
 
           <div className='toolbar-right'>
-            <Tooltip title='切换模型'>
-              <span>
-                <div className='toolbar-btn model-switcher' onClick={() => void message.info('模型切换功能尚不支持')}>
-                  <span className='material-symbols-rounded'>variable_insert</span>
-                  <span className='model-name'>
-                    {(sessionInfo?.type === 'init' ? sessionInfo.model : null) ?? 'GPT-4o'}
-                  </span>
-                  <span className='material-symbols-rounded arrow'>keyboard_arrow_down</span>
-                </div>
-              </span>
-            </Tooltip>
+            <Select
+              className='model-select'
+              popupClassName='model-select-popup'
+              value={selectedModel}
+              options={modelOptions ?? []}
+              showSearch
+              allowClear={false}
+              disabled={modelUnavailable || isThinking}
+              onChange={(value) => onModelChange?.(value)}
+              placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
+              optionLabelProp='value'
+              filterOption={(input, option) => {
+                const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
+                return searchText.toLowerCase().includes(input.toLowerCase())
+              }}
+              dropdownMatchSelectWidth={false}
+            />
 
             <div
-              className={`chat-send-btn ${input.trim() !== '' ? 'active' : ''} ${isThinking ? 'thinking' : ''}`}
-              onClick={isThinking ? onInterrupt : handleSend}
+              className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${isThinking ? 'thinking' : ''} ${modelUnavailable ? 'disabled' : ''}`}
+              onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : handleSend)}
             >
               <span className='material-symbols-rounded'>
                 {isThinking ? 'stop_circle' : 'send'}

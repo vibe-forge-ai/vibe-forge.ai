@@ -250,10 +250,23 @@
     "result": "结果",
     "sessionActive": "会话进行中",
     "selectModel": "选择模型开始聊天",
+    "modelSelectPlaceholder": "选择模型",
+    "modelSearchPlaceholder": "搜索模型或服务",
+    "modelUnavailable": "暂无可用模型",
+    "modelConfigRequired": "请先在配置中添加模型服务后再开始会话",
+    "modelGroupRecommended": "推荐模型",
     "availableTools": "可用工具",
     "toolsCount": "{{count}} 个工具",
     "usedTools": "使用了 {{count}} 个工具",
     "viewInitInfo": "双击查看初始化信息",
+    "viewHistory": "历史",
+    "viewTimeline": "时序",
+    "viewSettings": "配置",
+    "timelineEmpty": "暂无子任务记录",
+    "timelineTask": "子任务",
+    "timelineStatus": "状态",
+    "timelineTiming": "时序",
+    "timelineStart": "开始",
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
     "newSessionGuide": {
       "loading": "正在加载...",
@@ -403,6 +416,10 @@
         "defaultModel": {
           "label": "默认模型",
           "desc": "未指定时使用的模型"
+        },
+        "recommendedModels": {
+          "label": "建议模型",
+          "desc": "用于模型下拉推荐展示的列表"
         },
         "interfaceLanguage": {
           "label": "界面交互语言",

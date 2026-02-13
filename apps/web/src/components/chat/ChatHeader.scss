@@ -57,6 +57,42 @@
   }
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-header-view-group {
+  .ant-radio-button-wrapper {
+    height: 30px;
+    line-height: 28px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+.chat-header-view-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  .material-symbols-rounded {
+    font-size: 16px;
+  }
+}
+
+.material-symbols-rounded.is-filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+.chat-header-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--sub-border-color);
+  opacity: .8;
+}
+
 .session-settings-drawer {
   display: flex;
   flex-direction: column;
@@ -226,16 +262,16 @@
 
           &.archive-action {
             &:hover {
-              border-color: #6366f1;
-              background-color: #eef2ff;
-              color: #4338ca;
+              border-color: var(--danger-color);
+              background-color: color-mix(in srgb, var(--danger-color) 12%, transparent);
+              color: var(--danger-color);
             }
             &.active {
-              background-color: #e0e7ff;
-              border-color: #6366f1;
-              color: #4338ca;
+              background-color: color-mix(in srgb, var(--danger-color) 18%, transparent);
+              border-color: var(--danger-color);
+              color: var(--danger-color);
               &:hover {
-                background-color: #c7d2fe;
+                background-color: color-mix(in srgb, var(--danger-color) 24%, transparent);
               }
             }
           }
@@ -287,15 +323,15 @@ html.dark {
 
             &.archive-action {
               &:hover {
-                background-color: #1e1b4b;
-                color: #818cf8;
+                background-color: color-mix(in srgb, var(--danger-color) 22%, transparent);
+                color: var(--danger-color);
               }
               &.active {
-                background-color: #1e1b4b;
-                border-color: #818cf8;
-                color: #818cf8;
+                background-color: color-mix(in srgb, var(--danger-color) 26%, transparent);
+                border-color: var(--danger-color);
+                color: var(--danger-color);
                 &:hover {
-                  background-color: #2e2a75;
+                  background-color: color-mix(in srgb, var(--danger-color) 32%, transparent);
                 }
               }
             }

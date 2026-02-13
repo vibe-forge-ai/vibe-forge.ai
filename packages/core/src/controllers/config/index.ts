@@ -101,6 +101,7 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField('defaultAdapter', sectionValue.defaultAdapter as Config['defaultAdapter'])
       updateField('defaultModelService', sectionValue.defaultModelService as Config['defaultModelService'])
       updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'])
+      updateField('recommendedModels', sectionValue.recommendedModels as Config['recommendedModels'])
       updateField('interfaceLanguage', sectionValue.interfaceLanguage as Config['interfaceLanguage'])
       updateField('modelLanguage', sectionValue.modelLanguage as Config['modelLanguage'])
       updateField('announcements', sectionValue.announcements as Config['announcements'])

@@ -1,6 +1,6 @@
 import './ChatHeader.scss'
 import type { SessionInfo } from '@vibe-forge/core'
-import { App, Button, Drawer, Dropdown, Input, Tag, Tooltip } from 'antd'
+import { App, Button, Dropdown, Input, Radio, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import { useAtomValue } from 'jotai'
 import React, { useEffect, useState } from 'react'
@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 import { deleteSession, updateSession } from '../../api'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
+
+export type ChatHeaderView = 'history' | 'timeline' | 'settings'
 
 export function ChatHeader({
   sessionInfo,
@@ -17,7 +19,9 @@ export function ChatHeader({
   isArchived,
   tags,
   lastMessage,
-  lastUserMessage
+  lastUserMessage,
+  activeView,
+  onViewChange
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
@@ -27,13 +31,14 @@ export function ChatHeader({
   tags?: string[]
   lastMessage?: string
   lastUserMessage?: string
+  activeView: ChatHeaderView
+  onViewChange: (view: ChatHeaderView) => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { mutate } = useSWRConfig()
   const isSidebarCollapsed = useAtomValue(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
 
   const summary = sessionInfo?.type === 'summary' ? sessionInfo.summary : null
@@ -79,8 +84,8 @@ export function ChatHeader({
     {
       key: 'star',
       label: isStarred ? t('common.unstar') : t('common.star'),
-      icon: <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>
-        {isStarred ? 'star_half' : 'star'}
+      icon: <span className={`material-symbols-rounded ${isStarred ? 'is-filled' : ''}`} style={{ fontSize: '18px' }}>
+        {isStarred ? 'star' : 'star_border'}
       </span>,
       onClick: () => {
         void handleToggleStar()
@@ -127,15 +132,47 @@ export function ChatHeader({
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Tooltip title={t('common.settings')}>
-          <Button
-            type='text'
-            icon={<span className='material-symbols-rounded'>settings</span>}
-            onClick={() => setIsSettingsOpen(true)}
-          />
-        </Tooltip>
-
+      <div className='chat-header-actions'>
+        <Radio.Group
+          className='chat-header-view-group'
+          value={activeView}
+          optionType='button'
+          buttonStyle='solid'
+          size='small'
+          onChange={(event) => {
+            onViewChange(event.target.value as ChatHeaderView)
+          }}
+          options={[
+            {
+              label: (
+                <span className='chat-header-view-option'>
+                  <span className='material-symbols-rounded'>forum</span>
+                  <span>{t('chat.viewHistory')}</span>
+                </span>
+              ),
+              value: 'history'
+            },
+            {
+              label: (
+                <span className='chat-header-view-option'>
+                  <span className='material-symbols-rounded'>timeline</span>
+                  <span>{t('chat.viewTimeline')}</span>
+                </span>
+              ),
+              value: 'timeline'
+            },
+            {
+              label: (
+                <span className='chat-header-view-option'>
+                  <span className='material-symbols-rounded'>tune</span>
+                  <span>{t('chat.viewSettings')}</span>
+                </span>
+              ),
+              value: 'settings'
+            }
+          ]}
+        />
+        <div className='chat-header-divider' />
         <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
           <Button
             type='text'
@@ -143,30 +180,11 @@ export function ChatHeader({
           />
         </Dropdown>
       </div>
-
-      <Drawer
-        title={t('chat.sessionSettings')}
-        open={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        width={360}
-        styles={{
-          body: { padding: '24px' }
-        }}
-      >
-        <SessionSettings
-          sessionId={sessionId!}
-          initialTitle={title}
-          initialTags={tags}
-          isStarred={isStarred}
-          isArchived={isArchived}
-          onClose={() => setIsSettingsOpen(false)}
-        />
-      </Drawer>
     </div>
   )
 }
 
-function SessionSettings({
+export function SessionSettingsPanel({
   sessionId,
   initialTitle,
   initialTags = [],
@@ -325,8 +343,8 @@ function SessionSettings({
                 })()
               }}
             >
-              <span className='material-symbols-rounded'>
-                {isStarred ? 'star_half' : 'star'}
+              <span className={`material-symbols-rounded ${isStarred ? 'is-filled' : ''}`}>
+                {isStarred ? 'star' : 'star_border'}
               </span>
               <span>{isStarred ? t('common.unstar') : t('common.star')}</span>
             </Button>

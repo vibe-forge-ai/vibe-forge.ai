@@ -249,10 +249,23 @@
     "result": "Result",
     "sessionActive": "Session Active",
     "selectModel": "Select a model to start",
+    "modelSelectPlaceholder": "Select model",
+    "modelSearchPlaceholder": "Search models or services",
+    "modelUnavailable": "No models available",
+    "modelConfigRequired": "Add a model service in config before starting a session",
+    "modelGroupRecommended": "Recommended Models",
     "availableTools": "Available Tools",
     "toolsCount": "{{count}} tools",
     "usedTools": "Used {{count}} tools",
     "viewInitInfo": "Double click to view initialization info",
+    "viewHistory": "History",
+    "viewTimeline": "Timeline",
+    "viewSettings": "Settings",
+    "timelineEmpty": "No subtask timeline data",
+    "timelineTask": "Task",
+    "timelineStatus": "Status",
+    "timelineTiming": "Timeline",
+    "timelineStart": "Start",
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
     "newSessionGuide": {
       "loading": "Loading...",
@@ -402,6 +415,10 @@
         "defaultModel": {
           "label": "Default Model",
           "desc": "Model used when none is specified"
+        },
+        "recommendedModels": {
+          "label": "Recommended Models",
+          "desc": "Models shown in the recommended section of the selector"
         },
         "interfaceLanguage": {
           "label": "Interface Language",

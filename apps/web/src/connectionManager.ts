@@ -6,6 +6,7 @@ class ConnectionManager {
   private sockets = new Map<string, WebSocket>()
   private subscribers = new Map<string, Set<WSHandlers>>()
   private disconnectTimers = new Map<string, NodeJS.Timeout>()
+  private connectionParams = new Map<string, string>()
 
   // Keep connection alive for 60 seconds after last subscriber leaves
   // This allows for quick navigation between sessions without reconnecting
@@ -18,7 +19,7 @@ class ConnectionManager {
    * @param handlers Event handlers for this subscription
    * @returns A cleanup function to unsubscribe
    */
-  connect(sessionId: string, handlers: WSHandlers): () => void {
+  connect(sessionId: string, handlers: WSHandlers, params?: Record<string, string>): () => void {
     // 1. Cancel any pending disconnect timer
     if (this.disconnectTimers.has(sessionId)) {
       clearTimeout(this.disconnectTimers.get(sessionId)!)
@@ -32,21 +33,31 @@ class ConnectionManager {
     this.subscribers.get(sessionId)!.add(handlers)
 
     // 3. Ensure WebSocket is open
-    const ws = this.sockets.get(sessionId)
+    const nextParams = this.normalizeParams({ sessionId, ...(params ?? {}) })
+    const paramsKey = this.buildParamsKey(nextParams)
+    const prevParamsKey = this.connectionParams.get(sessionId)
+    let ws = this.sockets.get(sessionId)
+
+    if (prevParamsKey != null && prevParamsKey !== paramsKey && ws) {
+      ws.close()
+      this.sockets.delete(sessionId)
+      ws = undefined
+    }
 
     // If socket doesn't exist or is closed/closing, create a new one
     if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-      this.createConnection(sessionId)
+      this.createConnection(sessionId, nextParams)
     } else if (ws.readyState === WebSocket.OPEN) {
       // If already open, trigger onOpen immediately for this new subscriber
       handlers.onOpen?.()
     }
 
+    this.connectionParams.set(sessionId, paramsKey)
     // 4. Return unsubscribe function
     return () => this.disconnect(sessionId, handlers)
   }
 
-  private createConnection(sessionId: string) {
+  private createConnection(sessionId: string, params: Record<string, string>) {
     const ws = createSocket({
       onOpen: () => {
         this.broadcast(sessionId, 'onOpen')
@@ -64,7 +75,7 @@ class ConnectionManager {
           this.sockets.delete(sessionId)
         }
       }
-    }, { sessionId })
+    }, params)
 
     this.sockets.set(sessionId, ws)
   }
@@ -86,6 +97,7 @@ class ConnectionManager {
             }
             this.disconnectTimers.delete(sessionId)
             this.subscribers.delete(sessionId)
+            this.connectionParams.delete(sessionId)
           }, this.DISCONNECT_DELAY)
         )
       }
@@ -124,6 +136,7 @@ class ConnectionManager {
       this.disconnectTimers.delete(sessionId)
     }
     this.subscribers.delete(sessionId)
+    this.connectionParams.delete(sessionId)
   }
 
   /**
@@ -136,6 +149,23 @@ class ConnectionManager {
     } else {
       console.warn(`Cannot send message: Session ${sessionId} not connected or ready`)
     }
+  }
+
+  private normalizeParams(params: Record<string, string>) {
+    return Object.entries(params).reduce<Record<string, string>>((acc, [key, value]) => {
+      if (value == null) return acc
+      const trimmed = String(value).trim()
+      if (trimmed === '') return acc
+      acc[key] = trimmed
+      return acc
+    }, {})
+  }
+
+  private buildParamsKey(params: Record<string, string>) {
+    return Object.entries(params)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&')
   }
 }
 

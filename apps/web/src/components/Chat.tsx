@@ -4,16 +4,27 @@ import { App } from 'antd'
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { useSWRConfig } from 'swr'
+import useSWR, { useSWRConfig } from 'swr'
 
-import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
-import { createSession, getSessionMessages } from '../api'
+import type {
+  AskUserQuestionParams,
+  ChatMessage,
+  ConfigResponse,
+  ModelServiceConfig,
+  RecommendedModelConfig,
+  Session,
+  SessionInfo,
+  WSEvent
+} from '@vibe-forge/core'
+import { createSession, getConfig, getSessionMessages } from '../api'
 import { connectionManager } from '../connectionManager'
 
-import { ChatHeader } from './chat/ChatHeader'
+import type { ChatHeaderView } from './chat/ChatHeader'
+import { ChatHeader, SessionSettingsPanel } from './chat/ChatHeader'
 import { CurrentTodoList } from './chat/CurrentTodoList'
 import { MessageItem } from './chat/MessageItem'
 import { NewSessionGuide } from './chat/NewSessionGuide'
+import { SessionTimelinePanel } from './chat/SessionTimelinePanel'
 import { Sender } from './chat/Sender'
 import { ToolGroup } from './chat/ToolGroup'
 import { processMessages } from './chat/messageUtils'
@@ -33,14 +44,194 @@ export function Chat({
   )
   const [isCreating, setIsCreating] = useState(false)
   const [isReady, setIsReady] = useState(false)
+  const [activeView, setActiveView] = useState<ChatHeaderView>('history')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const wasAtBottom = useRef<boolean>(true)
   const isInitialLoadRef = useRef<boolean>(true)
+  const lastConnectedModelRef = useRef<string | undefined>(undefined)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined)
   const { mutate } = useSWRConfig()
+  const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
 
   const isThinking = isCreating || session?.status === 'running'
+
+  const mergedModelServices = React.useMemo(() => {
+    const services = configRes?.sources?.merged?.modelServices
+    return (services ?? {}) as Record<string, ModelServiceConfig>
+  }, [configRes?.sources?.merged?.modelServices])
+
+  const recommendedModels = React.useMemo(() => {
+    const raw = configRes?.sources?.merged?.general?.recommendedModels
+    if (!Array.isArray(raw)) return []
+    return raw.filter((item): item is RecommendedModelConfig => (
+      item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
+    ))
+  }, [configRes?.sources?.merged?.general?.recommendedModels])
+
+  const modelServiceEntries = React.useMemo(() => Object.entries(mergedModelServices), [mergedModelServices])
+
+  const availableModels = React.useMemo(() => {
+    const list: Array<{ model: string; serviceKey: string; serviceTitle: string }> = []
+    for (const [serviceKey, serviceValue] of modelServiceEntries) {
+      const service = (serviceValue != null && typeof serviceValue === 'object') ? serviceValue as ModelServiceConfig : undefined
+      const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
+      const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
+      for (const model of models) {
+        list.push({ model, serviceKey, serviceTitle })
+      }
+    }
+    return list
+  }, [modelServiceEntries])
+
+  const availableModelValues = React.useMemo(() => availableModels.map(item => item.model), [availableModels])
+  const availableModelKey = React.useMemo(() => availableModelValues.join('|'), [availableModelValues])
+  const availableModelSet = React.useMemo(() => new Set(availableModelValues), [availableModelKey])
+  const hasAvailableModels = availableModelValues.length > 0
+  const defaultModelService = configRes?.sources?.merged?.general?.defaultModelService
+  const defaultModel = configRes?.sources?.merged?.general?.defaultModel
+  const resolvedDefaultModel = React.useMemo(() => {
+    if (!hasAvailableModels) return undefined
+    if (defaultModel && availableModelSet.has(defaultModel)) return defaultModel
+    if (defaultModelService && mergedModelServices[defaultModelService]) {
+      const service = mergedModelServices[defaultModelService]
+      const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
+      if (models.length > 0) return models[0]
+    }
+    return availableModelValues[0]
+  }, [availableModelSet, availableModelValues, defaultModel, defaultModelService, hasAvailableModels, mergedModelServices])
+
+  useEffect(() => {
+    if (!hasAvailableModels) {
+      setSelectedModel(undefined)
+      return
+    }
+    setSelectedModel((prev) => {
+      if (prev != null && availableModelSet.has(prev)) return prev
+      return resolvedDefaultModel
+    })
+  }, [availableModelSet, hasAvailableModels, resolvedDefaultModel])
+
+  const modelOptions = React.useMemo(() => {
+    const buildOption = (params: {
+      value: string
+      title: string
+      description?: string
+      serviceKey?: string
+      serviceTitle?: string
+    }) => {
+      const description = params.description?.trim()
+      const label = (
+        <div className='model-option'>
+          <div className='model-option-title'>{params.title}</div>
+          {description && <div className='model-option-desc'>{description}</div>}
+        </div>
+      )
+      const searchText = [
+        params.title,
+        params.value,
+        params.serviceTitle,
+        params.serviceKey,
+        description
+      ]
+        .filter(Boolean)
+        .join(' ')
+      return {
+        value: params.value,
+        label,
+        searchText
+      }
+    }
+
+    const modelToService = new Map<string, { key: string; title: string }>()
+    for (const entry of availableModels) {
+      if (!modelToService.has(entry.model)) {
+        modelToService.set(entry.model, { key: entry.serviceKey, title: entry.serviceTitle })
+      }
+    }
+
+    const resolveFirstAlias = (modelsAlias: Record<string, string[]> | undefined, model: string) => {
+      if (!modelsAlias) return undefined
+      for (const [alias, aliasModels] of Object.entries(modelsAlias)) {
+        if (!Array.isArray(aliasModels)) continue
+        if (aliasModels.includes(model)) return alias
+      }
+      return undefined
+    }
+
+    const serviceGroups = modelServiceEntries
+      .map(([serviceKey, serviceValue]) => {
+        const service = (serviceValue != null && typeof serviceValue === 'object') ? serviceValue as ModelServiceConfig : undefined
+        const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
+        const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
+        const serviceDescription = service?.description
+        const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
+        if (models.length === 0) return null
+        const options = models.map((model) => {
+          const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
+          const title = alias ?? model
+          const description = alias ? model : serviceTitle
+          return buildOption({
+            value: model,
+            title,
+            description,
+            serviceKey,
+            serviceTitle
+          })
+        })
+        return {
+          label: (
+            <div className='model-group-label'>
+              <div className='model-group-title'>{groupTitle}</div>
+              {serviceDescription && <div className='model-group-desc'>{serviceDescription}</div>}
+            </div>
+          ),
+          options
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item != null)
+
+    const recommendedOptions = recommendedModels
+      .filter((item) => {
+        if (item.placement && item.placement !== 'modelSelector') return false
+        return availableModelSet.has(item.model)
+      })
+      .map((item) => {
+        const serviceInfo = item.service ? mergedModelServices[item.service] : undefined
+        const serviceTitle = item.service
+          ? (serviceInfo?.title?.trim() !== '' ? serviceInfo?.title ?? '' : item.service)
+          : modelToService.get(item.model)?.title
+        const alias = item.service
+          ? resolveFirstAlias(serviceInfo?.modelsAlias as Record<string, string[]> | undefined, item.model)
+          : undefined
+        const title = item.title?.trim() !== '' ? item.title ?? '' : (alias ?? item.model)
+        const description = item.description?.trim() !== ''
+          ? item.description
+          : serviceTitle
+        return buildOption({
+          value: item.model,
+          title,
+          description,
+          serviceKey: item.service ?? modelToService.get(item.model)?.key,
+          serviceTitle
+        })
+      })
+
+    const groups = []
+    if (recommendedOptions.length > 0) {
+      const recommendedTitle = t('chat.modelGroupRecommended', { defaultValue: '推荐模型' })
+      groups.push({
+        label: (
+          <div className='model-group-label'>
+            <div className='model-group-title'>{recommendedTitle}</div>
+          </div>
+        ),
+        options: recommendedOptions
+      })
+    }
+    return [...groups, ...serviceGroups]
+  }, [availableModelSet, availableModels, mergedModelServices, modelServiceEntries, recommendedModels, t])
 
   const renderItems = React.useMemo(() => processMessages(messages), [messages])
 
@@ -85,10 +276,12 @@ export function Chat({
   }, [messages])
 
   useEffect(() => {
+    setActiveView('history')
     if (session?.id == null || session.id === '') {
       setMessages([])
       setSessionInfo(null)
       setIsReady(true)
+      lastConnectedModelRef.current = undefined
       return
     }
 
@@ -173,6 +366,17 @@ export function Chat({
     void fetchHistory()
 
     let cleanup: (() => void) | undefined
+    const normalizedModel = selectedModel ?? ''
+    const modelChanged = selectedModel != null
+      && lastConnectedModelRef.current != null
+      && normalizedModel !== lastConnectedModelRef.current
+      && session?.status !== 'running'
+    if (modelChanged) {
+      connectionManager.send(session.id, { type: 'terminate_session' })
+      connectionManager.close(session.id)
+    }
+    lastConnectedModelRef.current = normalizedModel
+
     const timer = setTimeout(() => {
       if (isDisposed) return
 
@@ -259,18 +463,22 @@ export function Chat({
         onClose() {
           // No-op
         }
-      })
-    }, 100)
+      }, selectedModel ? { model: selectedModel } : undefined)
+    }, modelChanged ? 200 : 100)
 
     return () => {
       isDisposed = true
       clearTimeout(timer)
       cleanup?.()
     }
-  }, [session?.id, mutate])
+  }, [selectedModel, session?.id, session?.status, mutate])
 
   const send = async (text: string) => {
     if (text.trim() === '' || isThinking) return
+    if (!hasAvailableModels) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
 
     if (!session?.id) {
       setIsCreating(true)
@@ -334,58 +542,85 @@ export function Chat({
           tags={session?.tags}
           lastMessage={session?.lastMessage}
           lastUserMessage={session?.lastUserMessage}
+          activeView={activeView}
+          onViewChange={setActiveView}
         />
       )}
 
-      <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
-        {renderItems.map((item, index) => {
-          if (item.type === 'message') {
-            return (
-              <MessageItem
-                key={item.message.id || index}
-                msg={item.message}
-                isFirstInGroup={item.isFirstInGroup}
-              />
-            )
-          } else if (item.type === 'tool-group') {
-            return (
-              <ToolGroup
-                key={item.id || `group-${index}`}
-                items={item.items}
-                footer={item.footer}
-              />
-            )
-          }
-          return null
-        })}
-        <div ref={messagesEndRef} />
+      {activeView === 'history' && (
+        <>
+          <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
+            {renderItems.map((item, index) => {
+              if (item.type === 'message') {
+                return (
+                  <MessageItem
+                    key={item.message.id || index}
+                    msg={item.message}
+                    isFirstInGroup={item.isFirstInGroup}
+                  />
+                )
+              } else if (item.type === 'tool-group') {
+                return (
+                  <ToolGroup
+                    key={item.id || `group-${index}`}
+                    items={item.items}
+                    footer={item.footer}
+                  />
+                )
+              }
+              return null
+            })}
+            <div ref={messagesEndRef} />
 
-        {showScrollBottom && (
-          <div className='scroll-bottom-btn' onClick={() => scrollToBottom()}>
-            <span className='material-symbols-rounded'>arrow_downward</span>
+            {showScrollBottom && (
+              <div className='scroll-bottom-btn' onClick={() => scrollToBottom()}>
+                <span className='material-symbols-rounded'>arrow_downward</span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {!session?.id && (
-        <div className='new-session-guide-wrapper'>
-          <NewSessionGuide />
+          {!session?.id && (
+            <div className='new-session-guide-wrapper'>
+              <NewSessionGuide />
+            </div>
+          )}
+
+          <CurrentTodoList messages={messages} />
+          <div className='sender-container'>
+            <Sender
+              onSend={send}
+              sessionStatus={isCreating ? 'running' : session?.status}
+              onInterrupt={interrupt}
+              onClear={clearMessages}
+              sessionInfo={sessionInfo}
+              interactionRequest={interactionRequest}
+              onInteractionResponse={handleInteractionResponse}
+              placeholder={!session?.id ? t('chat.newSessionPlaceholder') : undefined}
+              modelOptions={modelOptions}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              modelUnavailable={!hasAvailableModels}
+            />
+          </div>
+        </>
+      )}
+
+      {activeView === 'timeline' && (
+        <SessionTimelinePanel messages={messages} isThinking={isThinking} />
+      )}
+
+      {activeView === 'settings' && session?.id && (
+        <div className='chat-settings-panel'>
+          <SessionSettingsPanel
+            sessionId={session?.id}
+            initialTitle={session?.title}
+            initialTags={session?.tags}
+            isStarred={session?.isStarred}
+            isArchived={session?.isArchived}
+            onClose={() => setActiveView('history')}
+          />
         </div>
       )}
-
-      <CurrentTodoList messages={messages} />
-      <div className='sender-container'>
-        <Sender
-          onSend={send}
-          sessionStatus={isCreating ? 'running' : session?.status}
-          onInterrupt={interrupt}
-          onClear={clearMessages}
-          sessionInfo={sessionInfo}
-          interactionRequest={interactionRequest}
-          onInteractionResponse={handleInteractionResponse}
-          placeholder={!session?.id ? t('chat.newSessionPlaceholder') : undefined}
-        />
-      </div>
     </div>
   )
 }
