@@ -195,7 +195,7 @@ export function RuleSidebar({
                           <Switch
                             checked={rule.enabled}
                             onChange={(next) => void onToggle(rule, next)}
-                            onClick={(event) => event.stopPropagation()}
+                            onClick={(_, event) => event.stopPropagation()}
                           />
                         </Tooltip>
                       </div>
