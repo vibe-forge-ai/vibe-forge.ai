@@ -3,6 +3,7 @@
     "newChat": "新建会话",
     "search": "搜索标题或 ID...",
     "sessions": "会话列表",
+    "knowledgeBase": "项目知识库",
     "archive": "归档",
     "archivedSessions": "已归档会话",
     "theme": "主题模式",
@@ -11,6 +12,7 @@
     "themeSystem": "跟随系统",
     "settings": "设置",
     "language": "语言",
+    "automation": "自动化任务",
     "delete": "删除",
     "deleteSession": "删除会话",
     "deleteSessionConfirm": "确定要删除这个会话吗？此操作不可撤销。",
@@ -24,6 +26,7 @@
     "confirm": "确定",
     "startNewChat": "暂时没有未归档的历史会话，聊点什么吧",
     "backToHome": "返回首页",
+    "noData": "暂无数据",
     "noSessions": "未找到匹配的会话",
     "noArchivedSessions": "暂无已归档会话",
     "sessionNotFound": "会话不存在",
@@ -60,6 +63,170 @@
       "failed": "失败",
       "terminated": "已终止",
       "waiting_input": "等待输入"
+    }
+  },
+  "automation": {
+    "title": "自动化任务",
+    "newRule": "新建规则",
+    "creatingRule": "正在新建",
+    "editRule": "编辑规则",
+    "searchRule": "搜索规则",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏",
+    "toggleEnabled": "启用/停用",
+    "noDescription": "暂无说明",
+    "runSearch": "搜索运行记录",
+    "statusAll": "全部状态",
+    "timeAll": "全部时间",
+    "time24h": "近 24 小时",
+    "time7d": "近 7 天",
+    "time30d": "近 30 天",
+    "sortDesc": "时间最新",
+    "sortAsc": "时间最早",
+    "triggerCount": "{{count}} 个触发条件",
+    "sectionBasic": "基本信息",
+    "sectionTriggers": "触发条件",
+    "sectionTasks": "任务内容",
+    "ruleName": "规则名称",
+    "ruleNameRequired": "请输入规则名称",
+    "ruleDescription": "规则介绍",
+    "immediateRun": "立即触发",
+    "ruleType": "触发类型",
+    "ruleTypeRequired": "请选择触发类型",
+    "typeInterval": "时间间隔",
+    "typeWebhook": "接口触发",
+    "typeCron": "Cron 周期",
+    "intervalMinutes": "间隔（分钟）",
+    "intervalRequired": "请输入时间间隔",
+    "webhookKey": "Webhook Key",
+    "webhookKeyHint": "留空自动生成",
+    "cronExpressionLabel": "Cron 表达式",
+    "cronExpressionRequired": "请输入 Cron 表达式",
+    "cronExpressionHint": "例如：0 9 * * 1",
+    "cronExpression": "Cron：{{expression}}",
+    "cronPreset": "常用预设",
+    "cronPresetHint": "选择常用 Cron",
+    "cronPresetHourly": "每小时整点",
+    "cronPresetDaily9": "每天 09:00",
+    "cronPresetWeekday9": "工作日 09:00",
+    "cronPresetWeekend10": "周末 10:00",
+    "cronInputHint": "可直接输入 Cron 表达式，或用下方每周配置生成表达式",
+    "weeklyDay": "每周日期",
+    "weeklyTime": "时间（HH:mm）",
+    "weeklyTimeHint": "例如：09:00",
+    "weekdaySun": "周日",
+    "weekdayMon": "周一",
+    "weekdayTue": "周二",
+    "weekdayWed": "周三",
+    "weekdayThu": "周四",
+    "weekdayFri": "周五",
+    "weekdaySat": "周六",
+    "triggerAny": "满足任意一个条件即可触发任务",
+    "taskAll": "触发后同时执行以下任务",
+    "addTrigger": "添加触发条件",
+    "addTask": "添加任务",
+    "remove": "移除",
+    "taskDefaultTitle": "任务 {{index}}",
+    "taskTitle": "任务标题",
+    "taskTitlePlaceholder": "可选，用于区分多个任务",
+    "taskIndex": "第 {{index}} 个任务",
+    "taskCount": "{{count}} 个任务",
+    "taskUnknown": "未命名任务",
+    "webhookUrl": "Webhook 地址",
+    "prompt": "自动任务内容",
+    "promptRequired": "请输入自动任务内容",
+    "trigger": "触发方式",
+    "webhookTrigger": "Webhook",
+    "intervalEvery": "每 {{minutes}} 分钟",
+    "enabled": "启用",
+    "lastRun": "最近运行",
+    "lastRunAt": "最近运行：{{time}}",
+    "noRunYet": "暂无运行记录",
+    "emptyRules": "暂无自动化任务",
+    "selectRule": "请选择一个自动化任务",
+    "runHistory": "运行记录",
+    "runTime": "运行时间",
+    "runStatus": "状态",
+    "runSummary": "摘要",
+    "session": "会话",
+    "openSession": "打开会话",
+    "noRuns": "暂无运行记录",
+    "actions": "操作",
+    "run": "立即运行",
+    "edit": "编辑",
+    "delete": "删除",
+    "copy": "复制",
+    "webhookCopied": "Webhook 已复制",
+    "created": "规则已创建",
+    "updated": "规则已更新",
+    "deleted": "规则已删除",
+    "saveFailed": "保存失败",
+    "deleteFailed": "删除失败",
+    "toggleFailed": "更新失败",
+    "runStarted": "已启动任务",
+    "runFailed": "启动失败"
+  },
+  "knowledge": {
+    "title": "项目知识库",
+    "subtitle": "管理当前项目的技能、实体、流程与规则",
+    "tabs": {
+      "skills": "技能",
+      "entities": "实体",
+      "flows": "流程",
+      "rules": "规则"
+    },
+    "actions": {
+      "refresh": "刷新",
+      "refreshed": "已刷新",
+      "import": "导入",
+      "expand": "展开",
+      "collapse": "收起"
+    },
+    "filters": {
+      "search": "搜索名称、描述或参数",
+      "tags": "按标签过滤",
+      "noResults": "没有匹配的结果"
+    },
+    "meta": {
+      "params": "{{count}} 个参数",
+      "always": "常驻",
+      "skills": "技能",
+      "rules": "规则",
+      "skillsCount": "技能 {{count}}",
+      "rulesCount": "规则 {{count}}"
+    },
+    "skills": {
+      "title": "技能库",
+      "desc": "维护可复用的技能定义与调用说明。",
+      "empty": "暂未发现技能。",
+      "create": "新建技能",
+      "createHint": "请在 .ai/skills 中创建技能文件，保存后刷新页面。",
+      "importHint": "请将技能文件导入至 .ai/skills，保存后刷新页面。"
+    },
+    "entities": {
+      "title": "实体库",
+      "desc": "管理项目内的角色、组件或领域实体。",
+      "empty": "暂未发现实体。",
+      "create": "新建实体",
+      "createHint": "请在 .ai/entities 中创建实体定义文件，保存后刷新页面。",
+      "importHint": "请将实体文件导入至 .ai/entities，保存后刷新页面。"
+    },
+    "flows": {
+      "title": "流程库",
+      "desc": "管理项目流程与参数定义。",
+      "empty": "暂未发现流程。",
+      "noContent": "暂无流程定义内容",
+      "create": "新建流程",
+      "createHint": "请在 .ai/specs 中创建流程文件，保存后刷新页面。",
+      "importHint": "请将流程文件导入至 .ai/specs，保存后刷新页面。"
+    },
+    "rules": {
+      "title": "规则库",
+      "desc": "维护项目规范、约束与执行规则。",
+      "empty": "暂未发现规则。",
+      "create": "新建规则",
+      "createHint": "请在 .ai/rules 中创建规则文件，保存后刷新页面。",
+      "importHint": "请将规则文件导入至 .ai/rules，保存后刷新页面。"
     }
   },
   "chat": {
@@ -141,11 +308,268 @@
   },
   "config": {
     "title": "系统配置",
-    "readOnlyHint": "配置为只读，如需修改请编辑 json/yaml 配置文件。",
+    "readOnlyHint": "配置支持在线编辑，保存后会写入对应的 json/yaml 配置文件。",
     "loadFailed": "配置加载失败",
+    "editHint": "修改后会自动保存到当前来源配置文件，可用于项目或用户级别覆盖。",
+    "maskHint": "敏感字段已脱敏展示，保留 ****** 可保持原值。",
+    "invalidJson": "JSON 格式错误，请修正后再保存。",
+    "saveSuccess": "配置已保存",
+    "saveFailed": "配置保存失败",
+    "copySuccess": "配置已复制",
+    "copyFailed": "复制失败",
     "sources": {
       "project": "项目",
-      "user": "用户"
+      "user": "用户",
+      "projectMissing": "项目（未创建）",
+      "userMissing": "用户（未创建）"
+    },
+    "actions": {
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消",
+      "format": "格式化",
+      "copy": "复制"
+    },
+    "editor": {
+      "addField": "添加字段",
+      "addItem": "添加项",
+      "remove": "移除",
+      "collapse": "折叠",
+      "expand": "展开",
+      "addAdapter": "添加适配器",
+      "addPlugin": "添加插件",
+      "addMcpServer": "添加 MCP 服务",
+      "addModelService": "添加模型服务",
+      "addMarketplace": "添加市场",
+      "addEnvVar": "添加环境变量",
+      "addHeader": "添加请求头",
+      "addEntry": "添加条目",
+      "shortcutPlaceholder": "按下快捷键",
+      "clearShortcut": "清除快捷键",
+      "newModelServiceName": "新增模型服务名称",
+      "newAdapterName": "新增适配器名称",
+      "newPluginName": "新增插件名称",
+      "newMcpServerName": "新增 MCP 服务名称",
+      "newMarketplaceName": "新增市场名称",
+      "newEnvVarName": "新增环境变量名称",
+      "newHeaderName": "新增请求头名称",
+      "fieldKey": "字段名",
+      "fieldValue": "字段值",
+      "complexPlaceholder": "复杂结构请使用 JSON 输入",
+      "secretPlaceholder": "请输入密钥",
+      "itemPlaceholder": "请输入内容",
+      "commandPlaceholder": "请输入命令",
+      "urlPlaceholder": "请输入地址",
+      "multilinePlaceholder": "请输入内容",
+      "defaultAdapterPlaceholder": "请选择适配器",
+      "defaultModelServicePlaceholder": "请选择模型服务",
+      "defaultModelPlaceholder": "请选择模型",
+      "titlePlaceholder": "请输入标题",
+      "descriptionPlaceholder": "请输入描述",
+      "complexValue": "复杂结构",
+      "tagsPlaceholder": "输入后回车",
+      "types": {
+        "string": "文本",
+        "number": "数字",
+        "boolean": "开关",
+        "object": "对象",
+        "array": "数组"
+      }
+    },
+    "fields": {
+      "general": {
+        "baseDir": {
+          "label": "工作目录",
+          "desc": "配置文件和缓存的默认目录"
+        },
+        "defaultAdapter": {
+          "label": "默认适配器",
+          "desc": "未指定时使用的适配器"
+        },
+        "defaultModelService": {
+          "label": "默认模型服务",
+          "desc": "未指定时使用的模型服务"
+        },
+        "defaultModel": {
+          "label": "默认模型",
+          "desc": "未指定时使用的模型"
+        },
+        "announcements": {
+          "label": "公告",
+          "desc": "新建会话时的提示信息"
+        },
+        "permissions": {
+          "label": "权限",
+          "desc": "控制工具与资源的访问策略",
+          "allow": {
+            "label": "允许"
+          },
+          "deny": {
+            "label": "禁止"
+          },
+          "ask": {
+            "label": "询问"
+          }
+        },
+        "env": {
+          "label": "环境变量",
+          "desc": "覆盖或新增的运行环境变量"
+        }
+      },
+      "conversation": {
+        "style": {
+          "label": "对话风格",
+          "desc": "控制助手的对话风格"
+        },
+        "customInstructions": {
+          "label": "自定义指令",
+          "desc": "为对话提供额外的提示与约束"
+        }
+      },
+      "modelServices": {
+        "items": {
+          "label": "服务明细",
+          "desc": "按服务名称平铺配置"
+        },
+        "item": {
+          "title": {
+            "label": "展示标题",
+            "desc": "用于默认模型服务下拉展示"
+          },
+          "description": {
+            "label": "展示描述",
+            "desc": "用于默认模型服务下拉展示"
+          },
+          "apiBaseUrl": {
+            "label": "API 地址",
+            "desc": "模型服务的 API 基础地址"
+          },
+          "apiKey": {
+            "label": "API 密钥",
+            "desc": "模型服务的访问密钥"
+          },
+          "models": {
+            "label": "模型列表",
+            "desc": "该服务支持的模型名称"
+          },
+          "modelsAlias": {
+            "label": "模型别名",
+            "desc": "模型别名映射"
+          },
+          "extra": {
+            "label": "扩展配置",
+            "desc": "模型服务扩展参数"
+          }
+        }
+      },
+      "adapters": {
+        "items": {
+          "label": "适配器明细",
+          "desc": "按适配器名称平铺配置"
+        }
+      },
+      "plugins": {
+        "items": {
+          "label": "插件配置",
+          "desc": "按插件名称平铺配置"
+        },
+        "enabled": {
+          "label": "启用插件",
+          "desc": "控制插件启用状态"
+        },
+        "marketplaces": {
+          "label": "额外插件源",
+          "desc": "新增可用的插件市场来源"
+        }
+      },
+      "mcp": {
+        "mcpServers": {
+          "label": "MCP 服务器",
+          "desc": "配置 MCP 服务器的连接信息"
+        },
+        "defaultIncludeMcpServers": {
+          "label": "默认启用列表",
+          "desc": "默认启用的 MCP 服务器"
+        },
+        "defaultExcludeMcpServers": {
+          "label": "默认禁用列表",
+          "desc": "默认禁用的 MCP 服务器"
+        },
+        "noDefaultVibeForgeMcpServer": {
+          "label": "禁用内置 MCP",
+          "desc": "不启用内置 VibeForge MCP 服务器"
+        },
+        "items": {
+          "label": "服务器明细",
+          "desc": "按服务器名称平铺配置"
+        }
+      },
+      "mcpServer": {
+        "enabled": {
+          "label": "是否启用",
+          "desc": "控制当前 MCP 服务器的启用状态"
+        },
+        "type": {
+          "label": "连接类型",
+          "desc": "选择 MCP 服务器的连接方式"
+        },
+        "command": {
+          "label": "命令",
+          "desc": "本地命令启动方式"
+        },
+        "args": {
+          "label": "命令参数",
+          "desc": "启动命令的参数列表"
+        },
+        "url": {
+          "label": "服务地址",
+          "desc": "远程 MCP 服务地址"
+        },
+        "headers": {
+          "label": "请求头",
+          "desc": "连接时附带的请求头"
+        },
+        "env": {
+          "label": "环境变量",
+          "desc": "为 MCP 服务器注入环境变量"
+        }
+      },
+      "shortcuts": {
+        "newSession": {
+          "label": "新建会话",
+          "desc": "创建新会话的全局快捷键"
+        },
+        "openConfig": {
+          "label": "打开配置",
+          "desc": "打开配置页的快捷键"
+        },
+        "sendMessage": {
+          "label": "发送消息",
+          "desc": "发送消息的快捷键"
+        },
+        "clearInput": {
+          "label": "清空输入框",
+          "desc": "清空输入框内容的快捷键"
+        }
+      }
+    },
+    "options": {
+      "conversation": {
+        "friendly": "友好",
+        "programmatic": "程序化"
+      },
+      "mcp": {
+        "command": "命令",
+        "sse": "SSE",
+        "http": "HTTP"
+      }
+    },
+    "sectionGroups": {
+      "base": "基础配置",
+      "permissions": "工具权限",
+      "env": "环境变量",
+      "items": "明细配置",
+      "plugins": "插件配置"
     },
     "groups": {
       "config": "配置",
@@ -168,6 +592,7 @@
       "adapters": "适配器",
       "plugins": "插件",
       "mcp": "MCP",
+      "shortcuts": "快捷键",
       "experiments": "实验功能",
       "about": "关于"
     }

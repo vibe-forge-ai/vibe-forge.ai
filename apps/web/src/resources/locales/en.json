@@ -3,6 +3,7 @@
     "newChat": "New Chat",
     "search": "Search title or ID...",
     "sessions": "Sessions",
+    "knowledgeBase": "Knowledge Base",
     "archive": "Archive",
     "archivedSessions": "Archived Sessions",
     "theme": "Theme Mode",
@@ -11,6 +12,7 @@
     "themeSystem": "System",
     "settings": "Settings",
     "language": "Language",
+    "automation": "Automation",
     "delete": "Delete",
     "deleteSession": "Delete Session",
     "deleteSessionConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
@@ -24,6 +26,7 @@
     "confirm": "Confirm",
     "startNewChat": "No active sessions found. Start a new chat!",
     "backToHome": "Back to Home",
+    "noData": "No data",
     "noSessions": "No matching sessions found",
     "noArchivedSessions": "No archived sessions",
     "sessionNotFound": "Session not found",
@@ -59,6 +62,170 @@
       "failed": "Failed",
       "terminated": "Stopped",
       "waiting_input": "Waiting"
+    }
+  },
+  "automation": {
+    "title": "Automation",
+    "newRule": "New Rule",
+    "creatingRule": "Creating",
+    "editRule": "Edit Rule",
+    "searchRule": "Search rules",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "toggleEnabled": "Enable/Disable",
+    "noDescription": "No description",
+    "runSearch": "Search runs",
+    "statusAll": "All statuses",
+    "timeAll": "All time",
+    "time24h": "Last 24 hours",
+    "time7d": "Last 7 days",
+    "time30d": "Last 30 days",
+    "sortDesc": "Newest first",
+    "sortAsc": "Oldest first",
+    "triggerCount": "{{count}} triggers",
+    "sectionBasic": "Basic Info",
+    "sectionTriggers": "Triggers",
+    "sectionTasks": "Tasks",
+    "ruleName": "Rule Name",
+    "ruleNameRequired": "Enter a rule name",
+    "ruleDescription": "Description",
+    "immediateRun": "Run Immediately",
+    "ruleType": "Trigger Type",
+    "ruleTypeRequired": "Select a trigger type",
+    "typeInterval": "Interval",
+    "typeWebhook": "Webhook",
+    "typeCron": "Cron",
+    "intervalMinutes": "Interval (minutes)",
+    "intervalRequired": "Enter an interval",
+    "webhookKey": "Webhook Key",
+    "webhookKeyHint": "Leave empty to auto-generate",
+    "cronExpressionLabel": "Cron Expression",
+    "cronExpressionRequired": "Enter a cron expression",
+    "cronExpressionHint": "Example: 0 9 * * 1",
+    "cronExpression": "Cron: {{expression}}",
+    "cronPreset": "Presets",
+    "cronPresetHint": "Choose a preset",
+    "cronPresetHourly": "Hourly",
+    "cronPresetDaily9": "Daily at 09:00",
+    "cronPresetWeekday9": "Weekdays at 09:00",
+    "cronPresetWeekend10": "Weekend at 10:00",
+    "cronInputHint": "Enter cron directly, or use weekly fields below to generate one",
+    "weeklyDay": "Weekly Day",
+    "weeklyTime": "Time (HH:mm)",
+    "weeklyTimeHint": "Example: 09:00",
+    "weekdaySun": "Sun",
+    "weekdayMon": "Mon",
+    "weekdayTue": "Tue",
+    "weekdayWed": "Wed",
+    "weekdayThu": "Thu",
+    "weekdayFri": "Fri",
+    "weekdaySat": "Sat",
+    "triggerAny": "Trigger when any condition matches",
+    "taskAll": "Run all tasks when triggered",
+    "addTrigger": "Add Trigger",
+    "addTask": "Add Task",
+    "remove": "Remove",
+    "taskDefaultTitle": "Task {{index}}",
+    "taskTitle": "Task Title",
+    "taskTitlePlaceholder": "Optional, for distinguishing tasks",
+    "taskIndex": "Task {{index}}",
+    "taskCount": "{{count}} tasks",
+    "taskUnknown": "Untitled Task",
+    "webhookUrl": "Webhook URL",
+    "prompt": "Task Prompt",
+    "promptRequired": "Enter the task prompt",
+    "trigger": "Trigger",
+    "webhookTrigger": "Webhook",
+    "intervalEvery": "Every {{minutes}} min",
+    "enabled": "Enabled",
+    "lastRun": "Last Run",
+    "lastRunAt": "Last run: {{time}}",
+    "noRunYet": "No runs yet",
+    "emptyRules": "No automation rules",
+    "selectRule": "Select an automation rule",
+    "runHistory": "Run History",
+    "runTime": "Run Time",
+    "runStatus": "Status",
+    "runSummary": "Summary",
+    "session": "Session",
+    "openSession": "Open Session",
+    "noRuns": "No runs yet",
+    "actions": "Actions",
+    "run": "Run Now",
+    "edit": "Edit",
+    "delete": "Delete",
+    "copy": "Copy",
+    "webhookCopied": "Webhook copied",
+    "created": "Rule created",
+    "updated": "Rule updated",
+    "deleted": "Rule deleted",
+    "saveFailed": "Save failed",
+    "deleteFailed": "Delete failed",
+    "toggleFailed": "Update failed",
+    "runStarted": "Task started",
+    "runFailed": "Start failed"
+  },
+  "knowledge": {
+    "title": "Project Knowledge Base",
+    "subtitle": "Manage skills, entities, flows, and rules for this project",
+    "tabs": {
+      "skills": "Skills",
+      "entities": "Entities",
+      "flows": "Flows",
+      "rules": "Rules"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "refreshed": "Refreshed",
+      "import": "Import",
+      "expand": "Expand",
+      "collapse": "Collapse"
+    },
+    "filters": {
+      "search": "Search name, description, or params",
+      "tags": "Filter by tags",
+      "noResults": "No matching results"
+    },
+    "meta": {
+      "params": "{{count}} params",
+      "always": "Always",
+      "skills": "Skills",
+      "rules": "Rules",
+      "skillsCount": "Skills {{count}}",
+      "rulesCount": "Rules {{count}}"
+    },
+    "skills": {
+      "title": "Skill Library",
+      "desc": "Maintain reusable skill definitions and usage notes.",
+      "empty": "No skills found.",
+      "create": "Create Skill",
+      "createHint": "Create a skill file under .ai/skills, then refresh the page.",
+      "importHint": "Import skill files into .ai/skills, then refresh the page."
+    },
+    "entities": {
+      "title": "Entity Library",
+      "desc": "Manage roles, components, and domain entities for the project.",
+      "empty": "No entities found.",
+      "create": "Create Entity",
+      "createHint": "Create an entity definition under .ai/entities, then refresh the page.",
+      "importHint": "Import entity files into .ai/entities, then refresh the page."
+    },
+    "flows": {
+      "title": "Flow Library",
+      "desc": "Manage project flows and parameter definitions.",
+      "empty": "No flows found.",
+      "noContent": "No flow definition content",
+      "create": "Create Flow",
+      "createHint": "Create a flow file under .ai/specs, then refresh the page.",
+      "importHint": "Import flow files into .ai/specs, then refresh the page."
+    },
+    "rules": {
+      "title": "Rule Library",
+      "desc": "Maintain project conventions, constraints, and enforcement rules.",
+      "empty": "No rules found.",
+      "create": "Create Rule",
+      "createHint": "Create a rule file under .ai/rules, then refresh the page.",
+      "importHint": "Import rule files into .ai/rules, then refresh the page."
     }
   },
   "chat": {
@@ -140,11 +307,268 @@
   },
   "config": {
     "title": "System Configuration",
-    "readOnlyHint": "Configuration is read-only. Update by editing json/yaml config files.",
+    "readOnlyHint": "Configuration supports in-app editing and saves to json/yaml files.",
     "loadFailed": "Failed to load configuration",
+    "editHint": "Changes are auto-saved to the selected source config file for project or user overrides.",
+    "maskHint": "Sensitive fields are masked. Keep ****** to preserve existing values.",
+    "invalidJson": "Invalid JSON. Fix the format before saving.",
+    "saveSuccess": "Configuration saved",
+    "saveFailed": "Failed to save configuration",
+    "copySuccess": "Configuration copied",
+    "copyFailed": "Copy failed",
     "sources": {
       "project": "Project",
-      "user": "User"
+      "user": "User",
+      "projectMissing": "Project (Not created)",
+      "userMissing": "User (Not created)"
+    },
+    "actions": {
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "format": "Format",
+      "copy": "Copy"
+    },
+    "editor": {
+      "addField": "Add Field",
+      "addItem": "Add Item",
+      "remove": "Remove",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "addAdapter": "Add Adapter",
+      "addPlugin": "Add Plugin",
+      "addMcpServer": "Add MCP Server",
+      "addModelService": "Add Model Service",
+      "addMarketplace": "Add Marketplace",
+      "addEnvVar": "Add Environment Variable",
+      "addHeader": "Add Header",
+      "addEntry": "Add Entry",
+      "shortcutPlaceholder": "Press shortcut",
+      "clearShortcut": "Clear shortcut",
+      "newModelServiceName": "New model service name",
+      "newAdapterName": "New adapter name",
+      "newPluginName": "New plugin name",
+      "newMcpServerName": "New MCP server name",
+      "newMarketplaceName": "New marketplace name",
+      "newEnvVarName": "New environment variable name",
+      "newHeaderName": "New header name",
+      "fieldKey": "Field Key",
+      "fieldValue": "Field Value",
+      "complexPlaceholder": "Use JSON for complex structures",
+      "secretPlaceholder": "Enter secret",
+      "itemPlaceholder": "Enter value",
+      "commandPlaceholder": "Enter command",
+      "urlPlaceholder": "Enter URL",
+      "multilinePlaceholder": "Enter content",
+      "defaultAdapterPlaceholder": "Select adapter",
+      "defaultModelServicePlaceholder": "Select model service",
+      "defaultModelPlaceholder": "Select model",
+      "titlePlaceholder": "Enter title",
+      "descriptionPlaceholder": "Enter description",
+      "complexValue": "Complex value",
+      "tagsPlaceholder": "Type and press Enter",
+      "types": {
+        "string": "Text",
+        "number": "Number",
+        "boolean": "Boolean",
+        "object": "Object",
+        "array": "Array"
+      }
+    },
+    "fields": {
+      "general": {
+        "baseDir": {
+          "label": "Workspace Folder",
+          "desc": "Default folder for configuration and cache files"
+        },
+        "defaultAdapter": {
+          "label": "Default Adapter",
+          "desc": "Adapter used when none is specified"
+        },
+        "defaultModelService": {
+          "label": "Default Model Service",
+          "desc": "Model service used when none is specified"
+        },
+        "defaultModel": {
+          "label": "Default Model",
+          "desc": "Model used when none is specified"
+        },
+        "announcements": {
+          "label": "Announcements",
+          "desc": "Shown when starting a new session"
+        },
+        "permissions": {
+          "label": "Permissions",
+          "desc": "Access policy for tools and resources",
+          "allow": {
+            "label": "Allow"
+          },
+          "deny": {
+            "label": "Deny"
+          },
+          "ask": {
+            "label": "Ask"
+          }
+        },
+        "env": {
+          "label": "Environment",
+          "desc": "Overrides or additional environment variables"
+        }
+      },
+      "conversation": {
+        "style": {
+          "label": "Conversation Style",
+          "desc": "Controls the assistant’s interaction style"
+        },
+        "customInstructions": {
+          "label": "Custom Instructions",
+          "desc": "Additional guidance for the assistant"
+        }
+      },
+      "modelServices": {
+        "items": {
+          "label": "Service Entries",
+          "desc": "Flattened configuration by service name"
+        },
+        "item": {
+          "title": {
+            "label": "Display Title",
+            "desc": "Shown in the default model service dropdown"
+          },
+          "description": {
+            "label": "Display Description",
+            "desc": "Shown in the default model service dropdown"
+          },
+          "apiBaseUrl": {
+            "label": "API Base URL",
+            "desc": "Base URL for the model service API"
+          },
+          "apiKey": {
+            "label": "API Key",
+            "desc": "Access key for the model service"
+          },
+          "models": {
+            "label": "Models",
+            "desc": "Models supported by this service"
+          },
+          "modelsAlias": {
+            "label": "Model Aliases",
+            "desc": "Alias mapping for models"
+          },
+          "extra": {
+            "label": "Extra Settings",
+            "desc": "Additional configuration for the service"
+          }
+        }
+      },
+      "adapters": {
+        "items": {
+          "label": "Adapter Entries",
+          "desc": "Flattened configuration by adapter name"
+        }
+      },
+      "plugins": {
+        "items": {
+          "label": "Plugin Configuration",
+          "desc": "Flattened configuration by plugin name"
+        },
+        "enabled": {
+          "label": "Enabled Plugins",
+          "desc": "Enable or disable plugins"
+        },
+        "marketplaces": {
+          "label": "Extra Marketplaces",
+          "desc": "Additional plugin marketplace sources"
+        }
+      },
+      "mcp": {
+        "mcpServers": {
+          "label": "MCP Servers",
+          "desc": "Connection details for MCP servers"
+        },
+        "defaultIncludeMcpServers": {
+          "label": "Default Include",
+          "desc": "MCP servers enabled by default"
+        },
+        "defaultExcludeMcpServers": {
+          "label": "Default Exclude",
+          "desc": "MCP servers disabled by default"
+        },
+        "noDefaultVibeForgeMcpServer": {
+          "label": "Disable Built-in MCP",
+          "desc": "Do not enable the built-in VibeForge MCP server"
+        },
+        "items": {
+          "label": "Server Entries",
+          "desc": "Flattened configuration by server name"
+        }
+      },
+      "mcpServer": {
+        "enabled": {
+          "label": "Enabled",
+          "desc": "Toggle MCP server availability"
+        },
+        "type": {
+          "label": "Connection Type",
+          "desc": "Choose how to connect to the server"
+        },
+        "command": {
+          "label": "Command",
+          "desc": "Local command launch"
+        },
+        "args": {
+          "label": "Arguments",
+          "desc": "Command arguments"
+        },
+        "url": {
+          "label": "Server URL",
+          "desc": "Remote MCP server address"
+        },
+        "headers": {
+          "label": "Headers",
+          "desc": "Headers included for the connection"
+        },
+        "env": {
+          "label": "Environment",
+          "desc": "Environment variables for the MCP server"
+        }
+      },
+      "shortcuts": {
+        "newSession": {
+          "label": "New Session",
+          "desc": "Global shortcut for creating a new session"
+        },
+        "openConfig": {
+          "label": "Open Config",
+          "desc": "Shortcut for opening the config view"
+        },
+        "sendMessage": {
+          "label": "Send Message",
+          "desc": "Shortcut for sending a message"
+        },
+        "clearInput": {
+          "label": "Clear Input",
+          "desc": "Shortcut for clearing the input"
+        }
+      }
+    },
+    "options": {
+      "conversation": {
+        "friendly": "Friendly",
+        "programmatic": "Programmatic"
+      },
+      "mcp": {
+        "command": "Command",
+        "sse": "SSE",
+        "http": "HTTP"
+      }
+    },
+    "sectionGroups": {
+      "base": "Base Configuration",
+      "permissions": "Tool Permissions",
+      "env": "Environment Variables",
+      "items": "Entry Configuration",
+      "plugins": "Plugin Configuration"
     },
     "groups": {
       "config": "Configuration",
@@ -167,6 +591,7 @@
       "adapters": "Adapters",
       "plugins": "Plugins",
       "mcp": "MCP",
+      "shortcuts": "Shortcuts",
       "experiments": "Experiments",
       "about": "About"
     }
