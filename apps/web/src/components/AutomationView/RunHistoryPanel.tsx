@@ -104,8 +104,16 @@ export function RunHistoryPanel({
         const text = run.title ?? run.lastMessage ?? run.lastUserMessage ?? '-'
         return <span className='automation-view__run-summary'>{text}</span>
       }
-    },
+    }
   ], [t])
+
+  const recentRuns = useMemo(() => {
+    if (runs.length === 0) return []
+    const sorted = [...runs].sort((a, b) => b.runAt - a.runAt)
+    const latestSessionId = sorted[0]?.sessionId
+    if (!latestSessionId) return sorted.slice(0, 1)
+    return sorted.filter((run) => run.sessionId === latestSessionId)
+  }, [runs])
 
   if (!rule) {
     return (
@@ -115,6 +123,21 @@ export function RunHistoryPanel({
     )
   }
 
+  const triggerLabels = (rule.triggers ?? []).map((trigger) => {
+    if (trigger.type === 'interval') {
+      const minutes = trigger.intervalMs ? Math.max(1, Math.round(trigger.intervalMs / 60000)) : 1
+      return t('automation.intervalEvery', { minutes })
+    }
+    if (trigger.type === 'cron') {
+      const expression = trigger.cronExpression?.trim() || '-'
+      return t('automation.cronExpression', { expression })
+    }
+    return t('automation.webhookTrigger')
+  })
+  const taskLabels = (rule.tasks ?? []).map((task, index) => (
+    task.title || t('automation.taskDefaultTitle', { index: index + 1 })
+  ))
+
   return (
     <div className='automation-view__content'>
       <div className='automation-view__detail-card'>
@@ -122,6 +145,7 @@ export function RunHistoryPanel({
           <div className='automation-view__detail-title'>
             <span className='material-symbols-rounded automation-view__content-icon'>info</span>
             <h3 className='automation-view__content-text'>{rule.name}</h3>
+            <span className='automation-view__detail-id'>{rule.id}</span>
           </div>
           <Button
             className='automation-view__icon-button automation-view__icon-button--edit'
@@ -131,25 +155,102 @@ export function RunHistoryPanel({
             <span className='material-symbols-rounded automation-view__action-icon'>edit</span>
           </Button>
         </div>
-        <div className='automation-view__detail-meta'>
-          <span className='automation-view__detail-item'>
-            <span className='material-symbols-rounded automation-view__meta-icon'>description</span>
-            {rule.description || t('automation.noDescription')}
-          </span>
-          <span className='automation-view__detail-item'>
-            <span className='material-symbols-rounded automation-view__meta-icon'>bolt</span>
-            {t('automation.triggerCount', { count: rule.triggers?.length ?? 0 })}
-          </span>
-          <span className='automation-view__detail-item'>
-            <span className='material-symbols-rounded automation-view__meta-icon'>checklist</span>
-            {t('automation.taskCount', { count: rule.tasks?.length ?? 0 })}
-          </span>
-          <span className='automation-view__detail-item'>
-            <span className='material-symbols-rounded automation-view__meta-icon'>update</span>
-            {rule.lastRunAt
-              ? t('automation.lastRunAt', { time: dayjs(rule.lastRunAt).format('YYYY-MM-DD HH:mm') })
-              : t('automation.noRunYet')}
-          </span>
+        <div className='automation-view__detail-description'>
+          <span className='material-symbols-rounded automation-view__meta-icon'>description</span>
+          <span>{rule.description || t('automation.noDescription')}</span>
+        </div>
+        <div className='automation-view__detail-body'>
+          <div className='automation-view__detail-left'>
+            <div className='automation-view__detail-row'>
+              <span className='material-symbols-rounded automation-view__meta-icon'>event</span>
+              <span className='automation-view__detail-label'>{t('automation.createdAt')}</span>
+              <span className='automation-view__detail-value'>
+                {dayjs(rule.createdAt).format('YYYY-MM-DD HH:mm')}
+              </span>
+            </div>
+            <div className='automation-view__detail-row'>
+              <span className='material-symbols-rounded automation-view__meta-icon'>toggle_on</span>
+              <span className='automation-view__detail-label'>{t('automation.ruleStatus')}</span>
+              <span className='automation-view__detail-value' data-status={rule.enabled ? 'enabled' : 'disabled'}>
+                {rule.enabled ? t('automation.enabledOn') : t('automation.enabledOff')}
+              </span>
+            </div>
+            <div className='automation-view__detail-list'>
+              <div className='automation-view__detail-row'>
+                <span className='material-symbols-rounded automation-view__meta-icon'>update</span>
+                <span className='automation-view__detail-label'>{t('automation.lastRunLabel')}</span>
+              </div>
+              <div className='automation-view__run-list'>
+                {recentRuns.length > 0
+                  ? recentRuns.map((run) => (
+                    <div key={run.id} className='automation-view__run-item'>
+                      <a
+                        className='automation-view__run-link'
+                        href={`/session/${run.sessionId}?tag=${
+                          encodeURIComponent(`automation:${rule.id}:${rule.name}`)
+                        }`}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        {run.taskTitle ?? t('automation.taskUnknown')}
+                      </a>
+                      <span className='automation-view__run-time'>
+                        {dayjs(run.runAt).format('YYYY-MM-DD HH:mm')}
+                      </span>
+                    </div>
+                  ))
+                  : <span className='automation-view__detail-value'>{t('automation.noRunYet')}</span>}
+              </div>
+            </div>
+            {rule.lastSessionId && (
+              <div className='automation-view__detail-row'>
+                <span className='material-symbols-rounded automation-view__meta-icon'>open_in_new</span>
+                <span className='automation-view__detail-label'>{t('automation.relatedSession')}</span>
+                <a
+                  className='automation-view__detail-link'
+                  href={`/session/${rule.lastSessionId}?tag=${
+                    encodeURIComponent(`automation:${rule.id}:${rule.name}`)
+                  }`}
+                  target='_blank'
+                  rel='noreferrer'
+                >
+                  {t('automation.openSession')}
+                </a>
+              </div>
+            )}
+          </div>
+          <div className='automation-view__detail-right'>
+            <div className='automation-view__detail-section'>
+              <div className='automation-view__detail-section-title'>
+                <span className='material-symbols-rounded automation-view__meta-icon'>bolt</span>
+                {t('automation.sectionTriggers')}
+              </div>
+              <div className='automation-view__detail-chips'>
+                {triggerLabels.length
+                  ? triggerLabels.map((label, index) => (
+                    <span key={`${label}-${index}`} className='automation-view__detail-chip'>
+                      {label}
+                    </span>
+                  ))
+                  : <span className='automation-view__detail-placeholder'>{t('automation.noTriggers')}</span>}
+              </div>
+            </div>
+            <div className='automation-view__detail-section'>
+              <div className='automation-view__detail-section-title'>
+                <span className='material-symbols-rounded automation-view__meta-icon'>task</span>
+                {t('automation.sectionTasks')}
+              </div>
+              <div className='automation-view__detail-chips'>
+                {taskLabels.length
+                  ? taskLabels.map((label, index) => (
+                    <span key={`${label}-${index}`} className='automation-view__detail-chip'>
+                      {label}
+                    </span>
+                  ))
+                  : <span className='automation-view__detail-placeholder'>{t('automation.noTasks')}</span>}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

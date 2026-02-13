@@ -144,12 +144,12 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
           type: 'webhook',
           webhookKey: trigger.webhookKey?.trim() ?? ''
         }
-      }),
+      }) as AutomationRule['triggers'],
       tasks: values.tasks.map((task) => ({
         id: task.id,
         title: task.title?.trim() ?? '',
         prompt: task.prompt.trim()
-      }))
+      })) as AutomationRule['tasks']
     }
     await onSubmit(payload, values.immediateRun)
   }, [form, onSubmit])
@@ -164,22 +164,20 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
         <div className='automation-view__form-header-actions'>
           <Tooltip title={t('common.cancel')}>
             <Button
-              className='automation-view__circle-button'
-              shape='circle'
+              className='automation-view__square-button'
               onClick={onCancel}
             >
-              <span className='material-symbols-rounded automation-view__action-icon'>close</span>
+              {t('common.cancel')}
             </Button>
           </Tooltip>
           <Tooltip title={t('common.confirm')}>
             <Button
-              className='automation-view__circle-button automation-view__circle-button--confirm'
+              className='automation-view__square-button automation-view__square-button--confirm'
               type='primary'
-              shape='circle'
               loading={submitting}
               onClick={() => void handleSubmit()}
             >
-              <span className='material-symbols-rounded automation-view__action-icon'>check</span>
+              {t('common.confirm')}
             </Button>
           </Tooltip>
         </div>
@@ -192,6 +190,7 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
                 <span className='material-symbols-rounded automation-view__form-icon'>info</span>
                 {t('automation.sectionBasic')}
               </div>
+              <div className='automation-view__form-desc'>{t('automation.basicDesc')}</div>
               <Form.Item
                 name='name'
                 label={(

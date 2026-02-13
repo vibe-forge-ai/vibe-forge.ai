@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
+import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import { deleteSession, updateSession } from '../api'
 import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../store/index'
@@ -32,6 +33,12 @@ export function Sidebar({
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const isMac = navigator.platform.includes('Mac')
+  const { values } = useQueryParams<{ tag: string }>({
+    keys: ['tag'],
+    defaults: { tag: '' },
+    omit: { tag: (value) => value === '' }
+  })
+  const tagFilter = values.tag.trim()
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
@@ -57,16 +64,22 @@ export function Sidebar({
   )
 
   const filteredSessions = useMemo(() => {
-    if (searchQuery.trim() === '') return sessions
-    const query = searchQuery.toLowerCase()
-    return sessions.filter((s: Session) =>
-      (s.title ?? '').toLowerCase().includes(query) ||
-      (s.lastMessage ?? '').toLowerCase().includes(query) ||
-      (s.lastUserMessage ?? '').toLowerCase().includes(query) ||
-      s.id.toLowerCase().includes(query) ||
-      (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
-    )
-  }, [sessions, searchQuery])
+    const query = searchQuery.trim().toLowerCase()
+    return sessions.filter((s: Session) => {
+      if (tagFilter) {
+        const matchesTag = (s.tags ?? []).some((tag) => tag.toLowerCase() === tagFilter.toLowerCase())
+        if (!matchesTag) return false
+      }
+      if (!query) return true
+      return (
+        (s.title ?? '').toLowerCase().includes(query) ||
+        (s.lastMessage ?? '').toLowerCase().includes(query) ||
+        (s.lastUserMessage ?? '').toLowerCase().includes(query) ||
+        s.id.toLowerCase().includes(query) ||
+        (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
+      )
+    })
+  }, [sessions, searchQuery, tagFilter])
 
   async function handleCreateSession() {
     onSelectSession({ id: '' } as Session, true)
