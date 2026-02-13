@@ -1,4 +1,4 @@
-import type { Session } from '@vibe-forge/core'
+import type { ConfigResponse, ConfigSource, Session } from '@vibe-forge/core'
 
 export interface SpecSummary {
   id: string
@@ -6,6 +6,9 @@ export interface SpecSummary {
   description: string
   params: { name: string; description?: string }[]
   always: boolean
+  tags: string[]
+  skills: string[]
+  rules: string[]
 }
 
 export interface EntitySummary {
@@ -13,6 +16,61 @@ export interface EntitySummary {
   name: string
   description: string
   always: boolean
+  tags: string[]
+  skills: string[]
+  rules: string[]
+}
+
+export interface SpecDetail extends SpecSummary {
+  body: string
+}
+
+export interface EntityDetail extends EntitySummary {
+  body: string
+}
+
+export interface AutomationTrigger {
+  id: string
+  type: 'interval' | 'webhook' | 'cron'
+  intervalMs?: number | null
+  cronExpression?: string | null
+  webhookKey?: string | null
+}
+
+export interface AutomationTask {
+  id: string
+  title: string
+  prompt: string
+}
+
+export interface AutomationRule {
+  id: string
+  name: string
+  description?: string | null
+  type: 'interval' | 'webhook' | 'cron'
+  intervalMs?: number | null
+  webhookKey?: string | null
+  cronExpression?: string | null
+  prompt: string
+  enabled: boolean
+  createdAt: number
+  lastRunAt?: number | null
+  lastSessionId?: string | null
+  triggers?: AutomationTrigger[]
+  tasks?: AutomationTask[]
+}
+
+export interface AutomationRun {
+  id: string
+  ruleId: string
+  sessionId: string
+  runAt: number
+  taskId?: string | null
+  taskTitle?: string | null
+  status?: string
+  title?: string
+  lastMessage?: string
+  lastUserMessage?: string
 }
 
 const SERVER_HOST = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ as string | undefined) ?? window.location.hostname
@@ -57,9 +115,88 @@ export async function listEntities(): Promise<{ entities: EntitySummary[] }> {
   return res.json() as Promise<{ entities: EntitySummary[] }>
 }
 
-export async function getConfig(): Promise<any> {
+export async function getSpecDetail(path: string): Promise<{ spec: SpecDetail }> {
+  const url = new URL(`${SERVER_URL}/api/ai/specs/detail`)
+  url.searchParams.set('path', path)
+  const res = await fetch(url.toString())
+  return res.json() as Promise<{ spec: SpecDetail }>
+}
+
+export async function getEntityDetail(path: string): Promise<{ entity: EntityDetail }> {
+  const url = new URL(`${SERVER_URL}/api/ai/entities/detail`)
+  url.searchParams.set('path', path)
+  const res = await fetch(url.toString())
+  return res.json() as Promise<{ entity: EntityDetail }>
+}
+
+export async function getConfig(): Promise<ConfigResponse> {
   const res = await fetch(`${SERVER_URL}/api/config`)
-  return res.json()
+  return res.json() as Promise<ConfigResponse>
+}
+
+export async function listAutomationRules(): Promise<{ rules: AutomationRule[] }> {
+  const res = await fetch(`${SERVER_URL}/api/automation/rules`)
+  return res.json() as Promise<{ rules: AutomationRule[] }>
+}
+
+export async function createAutomationRule(rule: Partial<AutomationRule> & { immediateRun?: boolean }): Promise<{ rule: AutomationRule }> {
+  const res = await fetch(`${SERVER_URL}/api/automation/rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(rule)
+  })
+  return res.json() as Promise<{ rule: AutomationRule }>
+}
+
+export async function updateAutomationRule(
+  id: string,
+  rule: Partial<AutomationRule> & { immediateRun?: boolean }
+): Promise<{ rule: AutomationRule }> {
+  const res = await fetch(`${SERVER_URL}/api/automation/rules/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(rule)
+  })
+  return res.json() as Promise<{ rule: AutomationRule }>
+}
+
+export async function deleteAutomationRule(id: string): Promise<{ ok: boolean; removed: boolean }> {
+  const res = await fetch(`${SERVER_URL}/api/automation/rules/${id}`, {
+    method: 'DELETE'
+  })
+  return res.json() as Promise<{ ok: boolean; removed: boolean }>
+}
+
+export async function runAutomationRule(id: string): Promise<{ ok: boolean; sessionIds: string[] }> {
+  const res = await fetch(`${SERVER_URL}/api/automation/rules/${id}/run`, {
+    method: 'POST'
+  })
+  return res.json() as Promise<{ ok: boolean; sessionIds: string[] }>
+}
+
+export async function listAutomationRuns(id: string, limit = 50): Promise<{ runs: AutomationRun[] }> {
+  const url = new URL(`${SERVER_URL}/api/automation/rules/${id}/runs`)
+  url.searchParams.set('limit', limit.toString())
+  const res = await fetch(url.toString())
+  return res.json() as Promise<{ runs: AutomationRun[] }>
+}
+
+export async function updateConfig(
+  source: ConfigSource,
+  section: string,
+  value: unknown
+): Promise<{ ok: boolean }> {
+  const res = await fetch(`${SERVER_URL}/api/config`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source, section, value })
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    console.error('[api] update config failed:', res.status, text)
+    throw new Error(`Update config failed: ${res.status} ${text}`)
+  }
+  return res.json() as Promise<{ ok: boolean }>
 }
 
 export async function deleteSession(id: string): Promise<{ success: boolean }> {
