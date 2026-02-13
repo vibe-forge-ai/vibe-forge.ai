@@ -262,6 +262,8 @@
     "viewHistory": "历史",
     "viewTimeline": "时序",
     "viewSettings": "配置",
+    "deleteSessionTitle": "删除会话",
+    "deleteSessionDesc": "删除会话会永久移除全部消息与上下文，请确认后再继续。",
     "timelineEmpty": "暂无子任务记录",
     "timelineTask": "子任务",
     "timelineStatus": "状态",

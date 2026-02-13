@@ -1,6 +1,6 @@
 import './ConfigView.scss'
 
-import { App, Empty, Radio, Space, Spin, Tabs } from 'antd'
+import { App, Empty, Space, Spin, Tabs } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
@@ -8,7 +8,7 @@ import useSWR from 'swr'
 import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
 
 import { getConfig, updateConfig } from '../api'
-import { AboutSection, DisplayValue, SectionForm } from './config'
+import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
 
 export function ConfigView() {
@@ -189,7 +189,7 @@ export function ConfigView() {
         <div className='config-view__tabs-wrap'>
           <Tabs
             tabPosition='left'
-            tabBarGutter={0}
+            tabBarGutter={4}
             indicator={{ size: 0 }}
             className='config-view__tabs'
             activeKey={activeTabKey}
@@ -224,67 +224,27 @@ export function ConfigView() {
                       <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
                     )}
                     {configTabKeys.has(tab.key) && (
-                      <div className='config-view__editor-wrap'>
-                        <div className='config-view__section-header'>
-                          <div className='config-view__section-title'>
-                            <span className='material-symbols-rounded config-view__section-icon'>
-                              {tab.icon}
-                            </span>
-                            <span>{tab.label}</span>
-                          </div>
+                      <ConfigSectionPanel
+                        sectionKey={tab.key}
+                        title={tab.label}
+                        icon={tab.icon}
+                        value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
+                        onChange={(next) => handleDraftChange(tab.key, next)}
+                        mergedModelServices={mergedModelServices as Record<string, unknown>}
+                        mergedAdapters={mergedAdapters as Record<string, unknown>}
+                        selectedModelService={selectedModelService}
+                        t={t}
+                        headerExtra={(
                           <Space size={12}>
-                            <Radio.Group
+                            <ConfigSourceSwitch
                               value={sourceKey}
-                              optionType='button'
-                              buttonStyle='solid'
-                              size='small'
-                              onChange={(event) => {
-                                const value = event.target.value as ConfigSource
-                                setSourceKey(value)
-                              }}
-                              options={[
-                                {
-                                  label: (
-                                    <span className='config-view__source-option'>
-                                      <span className='material-symbols-rounded'>folder</span>
-                                      <span>
-                                        {configPresent?.project === true
-                                          ? t('config.sources.project')
-                                          : t('config.sources.projectMissing')}
-                                      </span>
-                                    </span>
-                                  ),
-                                  value: 'project'
-                                },
-                                {
-                                  label: (
-                                    <span className='config-view__source-option'>
-                                      <span className='material-symbols-rounded'>person</span>
-                                      <span>
-                                        {configPresent?.user === true
-                                          ? t('config.sources.user')
-                                          : t('config.sources.userMissing')}
-                                      </span>
-                                    </span>
-                                  ),
-                                  value: 'user'
-                                }
-                              ]}
+                              onChange={setSourceKey}
+                              configPresent={configPresent}
+                              t={t}
                             />
                           </Space>
-                        </div>
-                        <div className='config-view__card'>
-                          <SectionForm
-                            sectionKey={tab.key}
-                            value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
-                            onChange={(next) => handleDraftChange(tab.key, next)}
-                            mergedModelServices={mergedModelServices as Record<string, unknown>}
-                            mergedAdapters={mergedAdapters as Record<string, unknown>}
-                            selectedModelService={selectedModelService}
-                            t={t}
-                          />
-                        </div>
-                      </div>
+                        )}
+                      />
                     )}
                   </div>
                 )

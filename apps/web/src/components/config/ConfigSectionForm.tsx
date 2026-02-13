@@ -28,6 +28,7 @@ import {
 
 export const SectionForm = ({
   sectionKey,
+  fields: providedFields,
   value,
   onChange,
   mergedModelServices,
@@ -36,6 +37,7 @@ export const SectionForm = ({
   t
 }: {
   sectionKey: string
+  fields?: FieldSpec[]
   value: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
@@ -43,7 +45,7 @@ export const SectionForm = ({
   selectedModelService?: string
   t: TranslationFn
 }) => {
-  const fields = configSchema[sectionKey] ?? []
+  const fields = providedFields ?? configSchema[sectionKey] ?? []
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
@@ -125,6 +127,7 @@ export const SectionForm = ({
     const isStacked = ['multiline', 'json', 'record', 'string[]'].includes(field.type)
 
     if (field.type === 'string') {
+      const placeholder = field.placeholderKey ? t(field.placeholderKey) : undefined
       if (field.sensitive === true) {
         control = (
           <Input.Password
@@ -138,11 +141,13 @@ export const SectionForm = ({
           <Input
             value={typeof valueToUse === 'string' ? valueToUse : ''}
             onChange={(event) => handleValueChange(event.target.value)}
+            placeholder={placeholder}
           />
         )
       }
     } else if (field.type === 'multiline') {
       const currentText = typeof valueToUse === 'string' ? valueToUse : ''
+      const placeholder = field.placeholderKey ? t(field.placeholderKey) : t('config.editor.multilinePlaceholder')
       control = (
         <div className='config-view__multiline'>
           <Input.TextArea
@@ -150,7 +155,7 @@ export const SectionForm = ({
             value={currentText}
             onChange={(event) => handleValueChange(event.target.value)}
             autoSize={{ minRows: 3 }}
-            placeholder={t('config.editor.multilinePlaceholder')}
+            placeholder={placeholder}
           />
         </div>
       )

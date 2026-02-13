@@ -1,13 +1,16 @@
 import './ChatHeader.scss'
+
 import type { SessionInfo } from '@vibe-forge/core'
-import { App, Button, Dropdown, Input, Radio, Tag } from 'antd'
+import { App, Button, Dropdown, Radio } from 'antd'
 import type { MenuProps } from 'antd'
 import { useAtomValue } from 'jotai'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSWRConfig } from 'swr'
+
 import { deleteSession, updateSession } from '../../api'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
+import { ConfigSectionPanel } from '../config'
+import type { FieldSpec } from '../config/configSchema'
 
 export type ChatHeaderView = 'history' | 'timeline' | 'settings'
 
@@ -36,7 +39,6 @@ export function ChatHeader({
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { mutate } = useSWRConfig()
   const isSidebarCollapsed = useAtomValue(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
   const [editTitle, setEditTitle] = useState('')
@@ -188,54 +190,96 @@ export function SessionSettingsPanel({
   sessionId,
   initialTitle,
   initialTags = [],
-  isStarred,
-  isArchived,
   onClose
 }: {
   sessionId: string
   initialTitle?: string
   initialTags?: string[]
-  isStarred?: boolean
-  isArchived?: boolean
   onClose: () => void
 }) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
-  const { mutate } = useSWRConfig()
-  const [title, setTitle] = useState(initialTitle ?? '')
-  const [tagInput, setTagInput] = useState('')
-  const [tags, setTags] = useState<string[]>(initialTags)
-
-  const handleSaveTitle = async () => {
-    if (title.trim() === (initialTitle ?? '')) return
-    try {
-      await updateSession(sessionId, { title: title.trim() })
-      void message.success(t('chat.titleUpdated'))
-    } catch (err) {
-      void message.error(t('chat.titleUpdateFailed'))
+  const fields = useMemo<FieldSpec[]>(() => [
+    {
+      path: ['title'],
+      type: 'string',
+      defaultValue: '',
+      icon: 'edit_note',
+      labelKey: 'chat.title',
+      placeholderKey: 'chat.enterTitle'
+    },
+    {
+      path: ['tags'],
+      type: 'string[]',
+      defaultValue: [],
+      icon: 'sell',
+      labelKey: 'chat.tags'
     }
+  ], [])
+  const initialValue = useMemo(() => ({
+    title: initialTitle ?? '',
+    tags: initialTags
+  }), [initialTags, initialTitle])
+  const [draft, setDraft] = useState(initialValue)
+  const draftsRef = useRef(initialValue)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savingRef = useRef(false)
+  const lastSavedRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    setDraft(initialValue)
+  }, [initialValue])
+
+  useEffect(() => {
+    draftsRef.current = draft
+  }, [draft])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+      }
+    }
+  }, [])
+
+  const scheduleSave = (nextValue: { title: string; tags: string[] }) => {
+    const serialized = JSON.stringify(nextValue ?? {})
+    if (lastSavedRef.current === serialized) return
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
+    saveTimerRef.current = setTimeout(async () => {
+      if (savingRef.current) return
+      const currentValue = draftsRef.current
+      const currentSerialized = JSON.stringify(currentValue ?? {})
+      if (lastSavedRef.current === currentSerialized) return
+      savingRef.current = true
+      try {
+        await updateSession(sessionId, {
+          title: typeof currentValue.title === 'string' ? currentValue.title : '',
+          tags: Array.isArray(currentValue.tags) ? currentValue.tags : []
+        })
+        lastSavedRef.current = currentSerialized
+      } catch {
+        void message.error(t('common.operationFailed'))
+      } finally {
+        savingRef.current = false
+      }
+    }, 500)
   }
 
-  const handleAddTag = async () => {
-    if (tagInput.trim() === '' || tags.includes(tagInput.trim())) return
-    const newTags = [...tags, tagInput.trim()]
-    try {
-      await updateSession(sessionId, { tags: newTags })
-      setTags(newTags)
-      setTagInput('')
-    } catch (err) {
-      void message.error(t('common.operationFailed'))
+  const handleDraftChange = (nextValue: unknown) => {
+    const nextRecord = (nextValue != null && typeof nextValue === 'object')
+      ? nextValue as Record<string, unknown>
+      : {}
+    const nextDraft = {
+      title: typeof nextRecord.title === 'string' ? nextRecord.title : '',
+      tags: Array.isArray(nextRecord.tags)
+        ? nextRecord.tags.filter(item => typeof item === 'string')
+        : []
     }
-  }
-
-  const handleRemoveTag = async (tagToRemove: string) => {
-    const newTags = tags.filter(t => t !== tagToRemove)
-    try {
-      await updateSession(sessionId, { tags: newTags })
-      setTags(newTags)
-    } catch (err) {
-      void message.error(t('common.operationFailed'))
-    }
+    setDraft(nextDraft)
+    scheduleSave(nextDraft)
   }
 
   const handleDelete = () => {
@@ -259,126 +303,38 @@ export function SessionSettingsPanel({
 
   return (
     <div className='session-settings-drawer'>
-      <div className='settings-section'>
-        <div className='section-header'>
-          <span className='material-symbols-rounded'>edit_note</span>
-          {t('chat.title')}
-        </div>
-        <Input
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onBlur={() => {
-            void handleSaveTitle()
-          }}
-          onPressEnter={() => {
-            void handleSaveTitle()
-          }}
-          placeholder={t('chat.enterTitle')}
-          variant='filled'
-          size='large'
-          className='settings-input'
-        />
-      </div>
-
-      <div className='settings-section'>
-        <div className='section-header'>
-          <span className='material-symbols-rounded'>sell</span>
-          {t('chat.tags')}
-        </div>
-        <div className='tag-input-container'>
-          <Input
-            value={tagInput}
-            onChange={e => setTagInput(e.target.value)}
-            onPressEnter={() => {
-              void handleAddTag()
-            }}
-            placeholder={t('chat.addTagPlaceholder')}
-            variant='filled'
-            size='large'
-            className='settings-input'
-          />
-          <Button
-            type='primary'
-            size='large'
-            className='add-tag-btn'
-            icon={<span className='material-symbols-rounded'>add</span>}
-            onClick={() => {
-              void handleAddTag()
-            }}
-          />
-        </div>
-        <div className={`tags-list ${tags.length === 0 ? 'empty' : ''}`}>
-          {tags.map(tag => (
-            <Tag
-              key={tag}
-              closable
-              onClose={(e) => {
-                e.preventDefault()
-                void handleRemoveTag(tag)
-              }}
-              className='settings-tag'
-            >
-              {tag}
-            </Tag>
-          ))}
-          {tags.length === 0 && (
-            <div className='empty-text'>{t('chat.noTags')}</div>
-          )}
-        </div>
-      </div>
+      <ConfigSectionPanel
+        sectionKey='session'
+        title={null}
+        icon={undefined}
+        fields={fields}
+        value={draft}
+        onChange={handleDraftChange}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        selectedModelService={undefined}
+        t={t}
+        className='session-settings-drawer__form'
+      />
 
       <div className='settings-footer'>
-        <div className='settings-section actions-section'>
-          <div className='section-header'>
-            <span className='material-symbols-rounded'>bolt</span>
-            {t('common.actions')}
-          </div>
-          <div className='actions-grid'>
-            <Button
-              className={`action-card star-action ${isStarred ? 'active' : ''}`}
-              onClick={() => {
-                void (async () => {
-                  await updateSession(sessionId, { isStarred: !isStarred })
-                  void mutate(`/api/sessions`)
-                })()
-              }}
-            >
-              <span className={`material-symbols-rounded ${isStarred ? 'is-filled' : ''}`}>
-                {isStarred ? 'star' : 'star_border'}
-              </span>
-              <span>{isStarred ? t('common.unstar') : t('common.star')}</span>
-            </Button>
-
-            <Button
-              className={`action-card archive-action ${isArchived ? 'active' : ''}`}
-              onClick={() => {
-                void (async () => {
-                  await updateSession(sessionId, { isArchived: !isArchived })
-                  void mutate(`/api/sessions`)
-                  onClose()
-                })()
-              }}
-            >
-              <span className='material-symbols-rounded'>
-                {isArchived ? 'unarchive' : 'archive'}
-              </span>
-              <span>{isArchived ? t('common.restore') : t('common.archive')}</span>
-            </Button>
-          </div>
-        </div>
-
         <div className='danger-zone'>
-          <Button
-            danger
-            type='text'
-            block
-            size='large'
-            icon={<span className='material-symbols-rounded'>delete</span>}
-            onClick={handleDelete}
-            className='delete-btn'
-          >
-            {t('common.deleteSession')}
-          </Button>
+          <div className='delete-session-row'>
+            <div className='delete-session-meta'>
+              <div className='delete-session-title'>{t('chat.deleteSessionTitle')}</div>
+              <div className='delete-session-desc'>{t('chat.deleteSessionDesc')}</div>
+            </div>
+            <Button
+              danger
+              type='primary'
+              size='middle'
+              icon={<span className='material-symbols-rounded'>delete_forever</span>}
+              onClick={handleDelete}
+              className='delete-session-btn'
+            >
+              {t('common.delete')}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

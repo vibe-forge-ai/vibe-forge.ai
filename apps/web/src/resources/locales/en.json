@@ -261,6 +261,8 @@
     "viewHistory": "History",
     "viewTimeline": "Timeline",
     "viewSettings": "Settings",
+    "deleteSessionTitle": "Delete session",
+    "deleteSessionDesc": "This will permanently remove the session and all messages. Proceed carefully.",
     "timelineEmpty": "No subtask timeline data",
     "timelineTask": "Task",
     "timelineStatus": "Status",

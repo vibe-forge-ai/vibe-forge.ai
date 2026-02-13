@@ -99,6 +99,14 @@
   gap: 32px;
   height: 100%;
 
+  &__form {
+    .config-view__card {
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+    }
+  }
+
   .settings-section {
     display: flex;
     flex-direction: column;
@@ -280,21 +288,39 @@
     }
 
     .danger-zone {
-      .delete-btn {
-        height: 44px;
-        border-radius: 10px;
-        color: #ef4444;
+      .delete-session-row {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-weight: 500;
-        transition: all .2s;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        background-color: var(--sub-bg-color);
+      }
 
-        &:hover {
-          background-color: #fef2f2;
-          color: #dc2626;
-        }
+      .delete-session-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .delete-session-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      .delete-session-desc {
+        font-size: 12px;
+        color: var(--sub-text-color);
+      }
+
+      .delete-session-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 10px;
       }
     }
   }
