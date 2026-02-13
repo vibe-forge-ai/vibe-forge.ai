@@ -6,8 +6,10 @@ import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router
 import useSWR from 'swr'
 
 import { ArchiveView } from '#~/components/ArchiveView'
+import { AutomationView } from '#~/components/AutomationView'
 import { Chat } from '#~/components/Chat'
 import { ConfigView } from '#~/components/ConfigView'
+import { KnowledgeBaseView } from '#~/components/knowledge-base'
 import { NavRail } from '#~/components/NavRail'
 import { SearchView } from '#~/components/SearchView'
 import { Sidebar } from '#~/components/Sidebar'
@@ -157,6 +159,8 @@ export default function App() {
             <Route path='/session/:sessionId' element={<ChatView />} />
             <Route path='/archive' element={<ArchiveView />} />
             <Route path='/search' element={<SearchView />} />
+            <Route path='/automation' element={<AutomationView />} />
+            <Route path='/knowledge' element={<KnowledgeBaseView />} />
             <Route path='/config' element={<ConfigView />} />
           </Routes>
         </Layout.Content>

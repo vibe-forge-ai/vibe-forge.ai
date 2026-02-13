@@ -102,6 +102,20 @@ export function NavRail({
       active: currentPath === '/search'
     },
     {
+      key: 'knowledge',
+      icon: 'library_books',
+      label: t('common.knowledgeBase'),
+      path: '/knowledge',
+      active: currentPath === '/knowledge'
+    },
+    {
+      key: 'automation',
+      icon: 'schedule',
+      label: t('common.automation'),
+      path: '/automation',
+      active: currentPath === '/automation'
+    },
+    {
       key: 'archive',
       icon: 'archive',
       label: t('common.archivedSessions'),
