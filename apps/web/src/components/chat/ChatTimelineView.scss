@@ -21,11 +21,33 @@
   flex: 1 1 auto;
 }
 
+.session-timeline-section--row {
+  flex-direction: row;
+  gap: 16px;
+}
+
+.session-timeline-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.session-timeline-column--graph {
+  overflow: auto;
+}
+
+.session-timeline-column--events {
+  flex: 1 1 80%;
+}
+
 .session-timeline-section:not(:last-child) {
   border-bottom: 1px solid var(--sub-border-color);
 }
 
 .session-timeline-section > .session-timeline-panel,
-.session-timeline-section > .session-timeline-event-table {
+.session-timeline-section > .session-timeline-event-table,
+.session-timeline-column > .session-timeline-panel,
+.session-timeline-column > .session-timeline-event-table {
   flex: 1 1 auto;
 }

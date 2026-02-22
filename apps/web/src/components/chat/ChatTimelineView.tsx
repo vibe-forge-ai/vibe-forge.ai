@@ -80,17 +80,18 @@ export function ChatTimelineView({
         <SessionTimelinePanel
           task={mockTimelineTask}
           viewMode='gantt'
-          style={{ height: '100%' }}
         />
       </section>
-      <section className='session-timeline-section session-timeline-section--fixed'>
-        <SessionTimelinePanel
-          task={mockTimelineTask}
-          viewMode='git'
-        />
-      </section>
-      <section className='session-timeline-section session-timeline-section--flex'>
-        <SessionTimelineEventList task={mockTimelineTask} />
+      <section className='session-timeline-section session-timeline-section--flex session-timeline-section--row'>
+        <div className='session-timeline-column session-timeline-column--graph'>
+          <SessionTimelinePanel
+            task={mockTimelineTask}
+            viewMode='git'
+          />
+        </div>
+        <div className='session-timeline-column session-timeline-column--events'>
+          <SessionTimelineEventList task={mockTimelineTask} />
+        </div>
       </section>
     </div>
   )
