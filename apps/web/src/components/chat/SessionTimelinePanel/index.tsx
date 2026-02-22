@@ -6,13 +6,20 @@ import { useTranslation } from 'react-i18next'
 import { buildGantt, buildGitGraph } from './mermaid'
 import type { Task } from './types'
 
-export function SessionTimelinePanel({
-  task,
-  viewMode
-}: {
+export interface SessionTimelinePanelProps {
   task: Task
   viewMode: 'git' | 'gantt'
-}) {
+  className?: string
+  style?: React.CSSProperties
+}
+
+export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
+  const {
+    task,
+    viewMode,
+    className,
+    style
+  } = props
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation()
   const labels = React.useMemo(() => ({
@@ -51,6 +58,13 @@ export function SessionTimelinePanel({
         startOnLoad: false,
         themeVariables: {
           fontFamily
+        },
+        gitGraph: {},
+        gantt: {
+          gridLineStartPadding: 0,
+          topPadding: 0,
+          leftPadding: 0,
+          rightPadding: 0
         }
       })
       if (cancelled) return
@@ -74,6 +88,10 @@ export function SessionTimelinePanel({
   }, [mermaidCode, safeDiagramId])
 
   return (
-    <div ref={containerRef} className='session-timeline-panel' />
+    <div
+      ref={containerRef}
+      className={`session-timeline-panel session-timeline-panel--${viewMode} ${className}`}
+      style={style}
+    />
   )
 }

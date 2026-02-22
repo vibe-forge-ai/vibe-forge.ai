@@ -10,7 +10,7 @@ import type { Task } from './SessionTimelinePanel/types'
 
 const mockTimelineTask: Task = {
   startTime: '09:40:00',
-  endTime: '10:12:48',
+  endTime: '10:30:48',
   events: [
     {
       type: 'tool__StartTasks',
@@ -79,13 +79,14 @@ export function ChatTimelineView({
       <section className='session-timeline-section session-timeline-section--fixed'>
         <SessionTimelinePanel
           task={mockTimelineTask}
-          viewMode='git'
+          viewMode='gantt'
+          style={{ height: '100%' }}
         />
       </section>
       <section className='session-timeline-section session-timeline-section--fixed'>
         <SessionTimelinePanel
           task={mockTimelineTask}
-          viewMode='gantt'
+          viewMode='git'
         />
       </section>
       <section className='session-timeline-section session-timeline-section--flex'>

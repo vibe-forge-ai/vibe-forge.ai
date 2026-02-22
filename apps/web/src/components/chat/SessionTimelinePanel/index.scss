@@ -3,4 +3,8 @@
   align-content: center;
 }
 
-.session-timeline-mermaid__svg {}
+.session-timeline-mermaid__svg {
+  height: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}

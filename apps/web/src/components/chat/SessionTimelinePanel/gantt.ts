@@ -98,7 +98,6 @@ function collectGanttItems(task: Task, labels: GanttLabels) {
 function buildGanttLines(items: GanttItem[], labels: GanttLabels) {
   const lines = [
     'gantt',
-    `title ${labels.ganttTitle}`,
     'dateFormat HH:mm:ss',
     'axisFormat %H:%M:%S'
   ]
