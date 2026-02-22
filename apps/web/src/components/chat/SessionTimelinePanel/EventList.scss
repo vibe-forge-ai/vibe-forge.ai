@@ -1,0 +1,54 @@
+.session-timeline-event-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.session-timeline-event-table__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-timeline-event-table__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.session-timeline-event-table__search {
+  width: 240px;
+  max-width: 40%;
+}
+
+.session-timeline-event-table__table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.session-timeline-event-table__table .ant-table {
+  height: 100%;
+}
+
+.session-timeline-event-table__table .ant-table-container {
+  height: 100%;
+}
+
+.session-timeline-event-table__table .ant-table-body {
+  overflow-y: auto;
+}
+
+.session-timeline-event-table__time {
+  color: var(--secondary-text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.session-timeline-event-table__label {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-color);
+}

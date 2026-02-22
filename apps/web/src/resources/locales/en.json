@@ -284,6 +284,8 @@
       "taskEnd": "End",
       "viewGit": "Git Graph",
       "viewGantt": "Gantt",
+      "eventListTitle": "Event List",
+      "eventListSearch": "Search events",
       "ganttTitle": "Task Timeline",
       "ganttMainSection": "Main",
       "ganttTasksSection": "Tasks",

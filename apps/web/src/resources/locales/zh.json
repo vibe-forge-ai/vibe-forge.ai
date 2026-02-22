@@ -285,6 +285,8 @@
       "taskEnd": "结束",
       "viewGit": "Git 视图",
       "viewGantt": "甘特图",
+      "eventListTitle": "事件列表",
+      "eventListSearch": "搜索事件",
       "ganttTitle": "任务时序",
       "ganttMainSection": "主任务",
       "ganttTasksSection": "任务",

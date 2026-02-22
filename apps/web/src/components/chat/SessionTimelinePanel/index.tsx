@@ -3,19 +3,13 @@ import './index.scss'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { ChatMessage } from '@vibe-forge/core'
-
 import { buildGantt, buildGitGraph } from './mermaid'
 import type { Task } from './types'
 
 export function SessionTimelinePanel({
-  messages: _messages,
-  isThinking: _isThinking,
   task,
   viewMode
 }: {
-  messages: ChatMessage[]
-  isThinking: boolean
   task: Task
   viewMode: 'git' | 'gantt'
 }) {
@@ -103,8 +97,6 @@ export function SessionTimelinePanel({
   }, [mermaidCode, safeDiagramId])
 
   return (
-    <div className='session-timeline-panel'>
-      <div ref={containerRef} className='session-timeline-mermaid' />
-    </div>
+    <div ref={containerRef} className='session-timeline-panel' />
   )
 }

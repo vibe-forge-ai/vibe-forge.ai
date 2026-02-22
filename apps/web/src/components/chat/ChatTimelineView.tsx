@@ -1,13 +1,12 @@
 import './ChatTimelineView.scss'
 
-import { Button } from 'antd'
 import React from 'react'
-import { useTranslation } from 'react-i18next'
 
 import type { ChatMessage } from '@vibe-forge/core'
 
-import type { Task } from './SessionTimelinePanel/types'
 import { SessionTimelinePanel } from './SessionTimelinePanel'
+import { SessionTimelineEventList } from './SessionTimelinePanel/EventList'
+import type { Task } from './SessionTimelinePanel/types'
 
 const mockTimelineTask: Task = {
   startTime: '09:40:00',
@@ -16,7 +15,7 @@ const mockTimelineTask: Task = {
     {
       type: 'tool__StartTasks',
       startTime: '09:41:02',
-      endTime: '10:10:20',
+      endTime: '10:10:25',
       tasks: {
         taskA: {
           startTime: '09:41:10',
@@ -71,32 +70,27 @@ const mockTimelineTask: Task = {
 }
 
 export function ChatTimelineView({
-  messages,
-  isThinking
+  messages
 }: {
   messages: ChatMessage[]
-  isThinking: boolean
 }) {
-  const { t } = useTranslation()
-  const [viewMode, setViewMode] = React.useState<'git' | 'gantt'>('git')
-
   return (
     <div className='chat-timeline-view'>
-      <div className='session-timeline-toolbar'>
-        <Button
-          className='session-timeline-toggle'
-          type='default'
-          onClick={() => setViewMode(viewMode === 'git' ? 'gantt' : 'git')}
-        >
-          {viewMode === 'git' ? t('chat.timeline.viewGantt') : t('chat.timeline.viewGit')}
-        </Button>
-      </div>
-      <SessionTimelinePanel
-        messages={messages}
-        isThinking={isThinking}
-        task={mockTimelineTask}
-        viewMode={viewMode}
-      />
+      <section className='session-timeline-section session-timeline-section--fixed'>
+        <SessionTimelinePanel
+          task={mockTimelineTask}
+          viewMode='gantt'
+        />
+      </section>
+      <section className='session-timeline-section session-timeline-section--fixed'>
+        <SessionTimelinePanel
+          task={mockTimelineTask}
+          viewMode='git'
+        />
+      </section>
+      <section className='session-timeline-section session-timeline-section--flex'>
+        <SessionTimelineEventList task={mockTimelineTask} />
+      </section>
     </div>
   )
 }
