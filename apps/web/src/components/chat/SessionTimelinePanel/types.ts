@@ -34,5 +34,9 @@ export type TimelineEvent =
 export interface Task {
   startTime: string
   endTime: string
+
+  description?: string
+  model?: string
+
   events?: TimelineEvent[]
 }

@@ -19,15 +19,18 @@ const mockTimelineTask: Task = {
       tasks: {
         taskA: {
           startTime: '09:41:10',
-          endTime: '09:55:02'
+          endTime: '09:55:02',
+          description: 'Task A'
         },
         taskB: {
           startTime: '09:41:10',
-          endTime: '09:50:40'
+          endTime: '09:50:40',
+          description: 'Task B'
         },
         taskC: {
           startTime: '09:41:10',
           endTime: '10:10:20',
+          description: 'Task C',
           events: [
             {
               type: 'tool__StartTasks',
