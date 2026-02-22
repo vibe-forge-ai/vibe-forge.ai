@@ -1,13 +1,21 @@
 import { App } from 'antd'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import { createSession, getSessionMessages } from '../../api'
 import { connectionManager } from '../../connectionManager'
 import type { ChatHeaderView } from './ChatHeader'
+
+const normalizeView = (value: string): ChatHeaderView => {
+  if (value === 'timeline' || value === 'settings' || value === 'history') {
+    return value
+  }
+  return 'history'
+}
 
 export function useChatSession({
   session,
@@ -28,7 +36,19 @@ export function useChatSession({
   )
   const [isCreating, setIsCreating] = useState(false)
   const [isReady, setIsReady] = useState(false)
-  const [activeView, setActiveView] = useState<ChatHeaderView>('history')
+  const { values: queryValues, update: updateQuery } = useQueryParams<{ view: string }>({
+    keys: ['view'],
+    defaults: {
+      view: 'history'
+    },
+    omit: {
+      view: (value) => value === 'history'
+    }
+  })
+  const activeView = normalizeView(queryValues.view)
+  const setActiveView = useCallback((view: ChatHeaderView) => {
+    updateQuery({ view })
+  }, [updateQuery])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const wasAtBottom = useRef<boolean>(true)
@@ -79,7 +99,6 @@ export function useChatSession({
   }, [messages])
 
   useEffect(() => {
-    setActiveView('history')
     if (session?.id == null || session.id === '') {
       setMessages([])
       setSessionInfo(null)
@@ -266,6 +285,12 @@ export function useChatSession({
       cleanup?.()
     }
   }, [selectedModel, session?.id, session?.status, mutate])
+
+  useEffect(() => {
+    if (activeView !== queryValues.view) {
+      updateQuery({ view: activeView })
+    }
+  }, [activeView, queryValues.view, updateQuery])
 
   const send = async (text: string) => {
     if (text.trim() === '' || isThinking) return
