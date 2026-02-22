@@ -79,13 +79,13 @@ export function ChatTimelineView({
       <section className='session-timeline-section session-timeline-section--fixed'>
         <SessionTimelinePanel
           task={mockTimelineTask}
-          viewMode='gantt'
+          viewMode='git'
         />
       </section>
       <section className='session-timeline-section session-timeline-section--fixed'>
         <SessionTimelinePanel
           task={mockTimelineTask}
-          viewMode='git'
+          viewMode='gantt'
         />
       </section>
       <section className='session-timeline-section session-timeline-section--flex'>

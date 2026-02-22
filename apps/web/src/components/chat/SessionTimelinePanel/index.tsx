@@ -46,34 +46,11 @@ export function SessionTimelinePanel({
     const render = async () => {
       const mermaidModule = await import('mermaid')
       const mermaid = mermaidModule.default
-      const styles = getComputedStyle(document.documentElement)
-      const dangerColor = styles.getPropertyValue('--danger-color').trim()
-      const textColor = styles.getPropertyValue('--text-color').trim()
-      const bgColor = styles.getPropertyValue('--bg-color').trim()
-      const subBgColor = styles.getPropertyValue('--sub-bg-color').trim()
-      const primaryColor = styles.getPropertyValue('--primary-color').trim()
-      const warningColor = styles.getPropertyValue('--warning-color').trim()
-      const successColor = styles.getPropertyValue('--success-color').trim()
       const fontFamily = getComputedStyle(document.body).fontFamily
       mermaid.initialize({
         startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'dark',
         themeVariables: {
-          primaryColor: subBgColor,
-          primaryTextColor: textColor,
-          primaryBorderColor: dangerColor,
-          lineColor: dangerColor,
-          secondaryColor: bgColor,
-          secondaryBorderColor: dangerColor,
-          fontFamily,
-          git0: dangerColor,
-          git1: primaryColor,
-          git2: warningColor,
-          git3: successColor
-        },
-        flowchart: {
-          curve: 'linear'
+          fontFamily
         }
       })
       if (cancelled) return

@@ -178,7 +178,7 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
   const commitWithId = (commitId: string, action?: string) => {
     const safeAction = formatTag(action)
     if (safeAction) {
-      lines.push(`commit id:"${commitId}" type: HIGHLIGHT tag:"${safeAction}"`)
+      lines.push(`commit id:"${commitId}" tag:"${safeAction}"`)
     } else {
       lines.push(`commit id:"${commitId}"`)
     }
@@ -422,6 +422,7 @@ function applyTimelineOps(runtime: MermaidRuntime) {
         if (op.source === '<prev_branch>') {
           op.source = runtime.curBranch!
         }
+        console.log(runtime.curBranch)
         runtime.ensureBranch(op.target)
         runtime.ensureBranch(op.source)
         runtime.checkout(op.target)
