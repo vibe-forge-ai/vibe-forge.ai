@@ -1,0 +1,22 @@
+.chat-timeline-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.session-timeline-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.session-timeline-toggle {
+  border-color: var(--sub-border-color);
+  color: var(--text-color);
+  background-color: var(--sub-bg-color);
+
+  &:hover {
+    border-color: var(--primary-color);
+    color: var(--text-color);
+  }
+}
