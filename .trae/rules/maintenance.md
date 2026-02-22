@@ -21,8 +21,10 @@
   - 场景：统一代码格式。
 - **类型检查**: `pnpm -r exec tsc --noEmit`
   - 场景：在重构或修改共享包 (`packages/core`) 后，确保全量类型安全。
-- **单元测试**: `pnpm test` (或 `npx vitest`)
+- **单元测试**: `pnpm -C apps/web test` / `pnpm -C apps/cli test` / `npx vitest run <path>`
   - 场景：修改核心逻辑或 API 适配器后验证功能正确性。
+  - 注意：运行单个用例或目录时需使用 `vitest run <path>`，不要直接执行 `vitest <path>`。
+  - 说明：`vitest run` 支持文件路径与 glob，例如 `npx vitest run apps/cli/__tests__/*.spec.ts`。
 
 ### 1. 修改后端 API
 
