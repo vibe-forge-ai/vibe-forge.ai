@@ -506,7 +506,7 @@ export function Sender({
           <div className='toolbar-right'>
             <Select
               className='model-select'
-              popupClassName='model-select-popup'
+              classNames={{ popup: { root: 'model-select-popup' } }}
               value={selectedModel}
               options={modelOptions ?? []}
               showSearch
@@ -519,7 +519,7 @@ export function Sender({
                 const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
                 return searchText.toLowerCase().includes(input.toLowerCase())
               }}
-              dropdownMatchSelectWidth={false}
+              popupMatchSelectWidth={false}
             />
 
             <div
