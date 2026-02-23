@@ -64,6 +64,7 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
         },
         gitGraph: {},
         gantt: {
+          topAxis: true,
           displayMode: 'compact',
           gridLineStartPadding: 0,
           leftPadding: 16,
