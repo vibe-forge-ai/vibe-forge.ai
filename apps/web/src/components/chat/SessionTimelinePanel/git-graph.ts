@@ -1,4 +1,4 @@
-import type { Task, TimelineEvent, TimelineEventType } from './types'
+import type { Task, TimelineDiagram, TimelineEvent, TimelineEventType, TimelineInteraction, TimelineInteractionPayload } from './types'
 import { parseTime, sanitizeId } from './utils'
 
 interface MermaidLabels {
@@ -65,6 +65,7 @@ interface MermaidRuntime {
   labels: MermaidLabels
   lines: string[]
   ops: TimelineOp[]
+  interactions: TimelineInteraction[]
   commit: (commitId: string, action?: string) => string
   branch: (name: string) => void
   checkout: (name: string) => void
@@ -78,16 +79,21 @@ interface MermaidRuntime {
       seq?: number
     }
   ) => void
-  addCommit: (timeId: string, action?: string, options?: MermaidCommitTarget) => string
+  addCommit: (
+    timeId: string,
+    action?: string,
+    options?: MermaidCommitTarget,
+    payload?: TimelineInteractionPayload
+  ) => string
   addBranch: (time: string, baseBranch: string, name: string, priority: number) => void
   addMerge: (
     time: string,
     target: string,
     source: string,
     action: string,
-    mergeId: string,
-    priority: number
-  ) => void
+    priority: number,
+    payload?: TimelineInteractionPayload
+  ) => string
   ensureBranch: (name: string) => void
   normalizeCommitId: (value: string) => string
   allocateCommitId: (baseId: string) => string
@@ -174,6 +180,7 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
   let curBranch: string | undefined
   let opSeq = 0
   const ops: TimelineOp[] = []
+  const interactions: TimelineInteraction[] = []
 
   const commit = (commitId: string, action?: string) => {
     const safeAction = formatTag(action)
@@ -232,7 +239,12 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
     }
   }
 
-  const addCommit = (timeId: string, action?: string, options?: MermaidCommitTarget) => {
+  const addCommit = (
+    timeId: string,
+    action?: string,
+    options?: MermaidCommitTarget,
+    payload?: TimelineInteractionPayload
+  ) => {
     const baseId = normalizeCommitId(timeId)
     const commitId = allocateCommitId(baseId)
     if (options?.branchName && typeof options.priority === 'number') {
@@ -248,7 +260,21 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
       latestCommitIds.set(options.branchName, commitId)
       commitBranchById.set(commitId, options.branchName)
       updateGlobalLatestCommit(commitId, options.branchName, timeId, opSeq - 1)
+      if (payload) {
+        interactions.push({
+          id: commitId,
+          label: action ?? commitId,
+          payload
+        })
+      }
       return commitId
+    }
+    if (payload) {
+      interactions.push({
+        id: commitId,
+        label: action ?? commitId,
+        payload
+      })
     }
     return commit(commitId, action)
   }
@@ -306,9 +332,11 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
     target: string,
     source: string,
     action: string,
-    mergeId: string,
-    priority: number
+    priority: number,
+    payload?: TimelineInteractionPayload
   ) => {
+    const baseId = normalizeCommitId(time)
+    const mergeId = allocateCommitId(baseId)
     ops.push({
       kind: 'merge',
       time,
@@ -319,6 +347,14 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
       priority,
       seq: opSeq++
     })
+    if (payload) {
+      interactions.push({
+        id: mergeId,
+        label: action,
+        payload
+      })
+    }
+    return mergeId
   }
 
   const mainBranch = 'main'
@@ -334,6 +370,7 @@ function createMermaidRuntime(labels: MermaidLabels): MermaidRuntime {
     labels,
     lines,
     ops,
+    interactions,
     commit,
     branch,
     checkout,
@@ -368,12 +405,20 @@ function walkTimelineEvents(
     const { type, startTime, endTime } = event
     switch (type) {
       case 'tool__StartTasks': {
-        addCommit(startTime, labels.taskStart, { branchName: activeBranch, priority: 10 })
+        addCommit(startTime, labels.taskStart, { branchName: activeBranch, priority: 10 }, {
+          kind: 'event',
+          event
+        })
         const { tasks = {} } = event
         for (const [taskName, task] of Object.entries(tasks)) {
           const taskBranch = sanitizeId(taskName)
           parentByBranch.set(taskBranch, activeBranch)
           addBranch(startTime, activeBranch, taskBranch, 15)
+          addCommit(task.startTime, labels.taskStart, { branchName: taskBranch, priority: 16 }, {
+            kind: 'task',
+            name: taskName,
+            task
+          })
           const { events: taskEvents = [] } = task
           if (taskEvents.length > 0) {
             walkTimelineEvents(taskEvents, taskBranch, activeBranch, runtime)
@@ -384,25 +429,43 @@ function walkTimelineEvents(
         break
       }
       case 'tool__AskUserQuestion':
-        addCommit(startTime, labels.askUserQuestion, { branchName: activeBranch, priority: 20 })
-        addMerge(endTime, parentBranch, activeBranch, labels.userAnswer, endTime, 80)
+        addCommit(startTime, labels.askUserQuestion, { branchName: activeBranch, priority: 20 }, {
+          kind: 'event',
+          event
+        })
+        addMerge(endTime, parentBranch, activeBranch, labels.userAnswer, 80, {
+          kind: 'event',
+          event
+        })
         break
       case 'tool__Edit':
-        addCommit(startTime, getEventTitle(labels, type), { branchName: activeBranch, priority: 30 })
+        addCommit(startTime, getEventTitle(labels, type), { branchName: activeBranch, priority: 30 }, {
+          kind: 'event',
+          event
+        })
         break
       case 'tool__ResumeTask': {
         const commitId = addCommit(startTime, getEventTitle(labels, type), {
           branchName: activeBranch,
           priority: 40
+        }, {
+          kind: 'event',
+          event
         })
         resumeCommitIds.set(activeBranch, commitId)
         break
       }
       case 'user__Prompt':
-        addMerge(startTime, activeBranch, '<prev_branch>', getEventTitle(labels, type), endTime, 50)
+        addMerge(startTime, activeBranch, '<prev_branch>', getEventTitle(labels, type), 50, {
+          kind: 'event',
+          event
+        })
         break
       default:
-        addCommit(endTime, getEventTitle(labels, type), { branchName: activeBranch, priority: 55 })
+        addCommit(endTime, getEventTitle(labels, type), { branchName: activeBranch, priority: 55 }, {
+          kind: 'event',
+          event
+        })
         break
     }
   }
@@ -428,9 +491,7 @@ function applyTimelineOps(runtime: MermaidRuntime) {
         runtime.ensureBranch(op.target)
         runtime.ensureBranch(op.source)
         runtime.checkout(op.target)
-        const baseId = runtime.normalizeCommitId(op.time)
-        const mergeId = runtime.allocateCommitId(baseId)
-        runtime.merge(op.source, mergeId, op.action, {
+        runtime.merge(op.source, op.mergeId, op.action, {
           branchName: op.target,
           time: op.time,
           seq: op.seq
@@ -441,7 +502,7 @@ function applyTimelineOps(runtime: MermaidRuntime) {
   }
 }
 
-export function buildGitGraph(task: Task, labels: MermaidLabels) {
+export function buildGitGraph(task: Task, labels: MermaidLabels): TimelineDiagram {
   const runtime = createMermaidRuntime(labels)
   const mainBranch = 'main'
   runtime.checkout(mainBranch)
@@ -450,5 +511,8 @@ export function buildGitGraph(task: Task, labels: MermaidLabels) {
   applyTimelineOps(runtime)
   runtime.checkout(mainBranch)
   runtime.addCommit(task.endTime, labels.mainEnd)
-  return runtime.lines.join('\n')
+  return {
+    code: runtime.lines.join('\n'),
+    interactions: runtime.interactions
+  }
 }

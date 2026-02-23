@@ -40,3 +40,25 @@ export interface Task {
 
   events?: TimelineEvent[]
 }
+
+export type TimelineInteractionPayload =
+  | {
+    kind: 'event'
+    event: TimelineEvent
+  }
+  | {
+    kind: 'task'
+    name: string
+    task: Task
+  }
+
+export interface TimelineInteraction {
+  id: string
+  label: string
+  payload: TimelineInteractionPayload
+}
+
+export interface TimelineDiagram {
+  code: string
+  interactions: TimelineInteraction[]
+}

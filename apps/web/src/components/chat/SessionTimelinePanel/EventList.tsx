@@ -14,6 +14,9 @@ interface TimelineListItem {
   startTime: string
   endTime: string
   depth: number
+  input?: string
+  output?: string
+  payload?: TimelineEvent
 }
 
 interface TimelineLabels {
@@ -24,64 +27,48 @@ interface TimelineLabels {
   edit: string
   resumeTask: string
   userPrompt: string
-  taskStart: string
-  taskEnd: string
-}
-
-const buildLabel = (baseLabel: string, taskName?: string) => {
-  if (!taskName) {
-    return baseLabel
-  }
-  return `${baseLabel} · ${taskName}`
 }
 
 const collectTimelineEntries = (task: Task, labels: TimelineLabels) => {
   const entries: TimelineListItem[] = []
   let counter = 0
 
-  const addEntry = (label: string, startTime: string, endTime: string, depth: number) => {
+  const addEntry = (
+    label: string,
+    startTime: string,
+    endTime: string,
+    depth: number,
+    payload?: TimelineEvent
+  ) => {
     entries.push({
       id: `${label}-${startTime}-${endTime}-${counter}`,
       label,
       startTime,
       endTime,
-      depth
+      depth,
+      payload
     })
     counter += 1
-  }
-
-  const walkTask = (current: Task, depth: number, taskName?: string) => {
-    if (taskName) {
-      addEntry(buildLabel(labels.taskStart, taskName), current.startTime, current.startTime, depth)
-    }
-    walkEvents(current.events ?? [], depth)
-    if (taskName) {
-      addEntry(buildLabel(labels.taskEnd, taskName), current.endTime, current.endTime, depth)
-    }
   }
 
   const walkEvents = (events: TimelineEvent[], depth: number) => {
     for (const event of events) {
       if (event.type === 'tool__StartTasks') {
-        addEntry(labels.startTasks, event.startTime, event.endTime, depth)
-        const subTasks = event.tasks ?? {}
-        for (const [name, subTask] of Object.entries(subTasks)) {
-          walkTask(subTask, depth + 1, name)
-        }
+        addEntry(labels.startTasks, event.startTime, event.endTime, depth, event)
       } else if (event.type === 'tool__AskUserQuestion') {
-        addEntry(labels.askUserQuestion, event.startTime, event.endTime, depth)
+        addEntry(labels.askUserQuestion, event.startTime, event.endTime, depth, event)
       } else if (event.type === 'tool__Edit') {
-        addEntry(labels.edit, event.startTime, event.endTime, depth)
+        addEntry(labels.edit, event.startTime, event.endTime, depth, event)
       } else if (event.type === 'tool__ResumeTask') {
-        addEntry(labels.resumeTask, event.startTime, event.endTime, depth)
+        addEntry(labels.resumeTask, event.startTime, event.endTime, depth, event)
       } else if (event.type === 'user__Prompt') {
-        addEntry(labels.userPrompt, event.startTime, event.endTime, depth)
+        addEntry(labels.userPrompt, event.startTime, event.endTime, depth, event)
       }
     }
   }
 
   addEntry(labels.mainStart, task.startTime, task.startTime, 0)
-  walkTask(task, 0)
+  walkEvents(task.events ?? [], 0)
   addEntry(labels.mainEnd, task.endTime, task.endTime, 0)
 
   return entries
@@ -106,9 +93,7 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
     askUserQuestion: t('chat.timeline.askUserQuestion'),
     edit: t('chat.timeline.edit'),
     resumeTask: t('chat.timeline.resumeTask'),
-    userPrompt: t('chat.timeline.userPrompt'),
-    taskStart: t('chat.timeline.taskStart'),
-    taskEnd: t('chat.timeline.taskEnd')
+    userPrompt: t('chat.timeline.userPrompt')
   }), [t])
   const items = React.useMemo(() => collectTimelineEntries(task, labels), [labels, task])
   const filteredItems = React.useMemo(() => {
@@ -119,7 +104,41 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
       return text.includes(keyword)
     })
   }, [items, query])
+  const emptyValue = t('chat.timelineEmptyValue')
   const columns: ColumnsType<TimelineListItem> = React.useMemo(() => [
+    {
+      title: t('chat.timelineEventName'),
+      key: 'label',
+      width: 180,
+      render: (_value, item) => (
+        <span
+          className='session-timeline-event-table__label'
+          style={{ paddingLeft: `${item.depth * 16}px` }}
+        >
+          {item.label}
+        </span>
+      )
+    },
+    {
+      title: t('chat.timelineInput'),
+      key: 'input',
+      width: 180,
+      render: (_value, item) => (
+        <span className='session-timeline-event-table__value'>
+          {item.input ?? emptyValue}
+        </span>
+      )
+    },
+    {
+      title: t('chat.timelineOutput'),
+      key: 'output',
+      width: 180,
+      render: (_value, item) => (
+        <span className='session-timeline-event-table__value'>
+          {item.output ?? emptyValue}
+        </span>
+      )
+    },
     {
       title: t('chat.timelineTiming'),
       key: 'time',
@@ -133,20 +152,8 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
           </span>
         )
       }
-    },
-    {
-      title: t('chat.timelineTask'),
-      key: 'label',
-      render: (_value, item) => (
-        <span
-          className='session-timeline-event-table__label'
-          style={{ paddingLeft: `${item.depth * 16}px` }}
-        >
-          {item.label}
-        </span>
-      )
     }
-  ], [t])
+  ], [emptyValue, t])
 
   React.useEffect(() => {
     const element = containerRef.current
@@ -185,6 +192,13 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
         columns={columns}
         dataSource={filteredItems}
         rowKey='id'
+        onRow={(record) => ({
+          onClick: () => {
+            if (record.payload) {
+              console.warn(record.payload)
+            }
+          }
+        })}
         pagination={{
           pageSize: 20,
           showSizeChanger: true,

@@ -8,3 +8,13 @@
   white-space: nowrap;
   overflow-x: auto;
 }
+
+.session-timeline-mermaid__interactive {
+  cursor: pointer;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.session-timeline-mermaid__interactive:hover {
+  filter: drop-shadow(0 0 6px var(--primary-color));
+  opacity: 0.9;
+}

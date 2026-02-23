@@ -39,7 +39,7 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
     ganttMainSection: t('chat.timeline.ganttMainSection'),
     ganttTasksSection: t('chat.timeline.ganttTasksSection')
   }), [t])
-  const mermaidCode = React.useMemo(() => {
+  const diagram = React.useMemo(() => {
     if (viewMode === 'gantt') {
       return buildGantt(task, labels)
     }
@@ -47,6 +47,8 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
   }, [labels, task, viewMode])
   const diagramId = React.useId()
   const safeDiagramId = React.useMemo(() => diagramId.replace(/\W/g, '_'), [diagramId])
+  const interactionsRef = React.useRef(new Map<string, { label: string; payload: unknown }>())
+  const mermaidCode = React.useMemo(() => diagram.code, [diagram.code])
 
   React.useEffect(() => {
     let cancelled = false
@@ -56,15 +58,16 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
       const fontFamily = getComputedStyle(document.body).fontFamily
       mermaid.initialize({
         startOnLoad: false,
+        securityLevel: 'loose',
         themeVariables: {
           fontFamily
         },
         gitGraph: {},
         gantt: {
+          displayMode: 'compact',
           gridLineStartPadding: 0,
-          topPadding: 0,
-          leftPadding: 0,
-          rightPadding: 0
+          leftPadding: 16,
+          rightPadding: 16
         }
       })
       if (cancelled) return
@@ -76,6 +79,17 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
       const svgElement = container.querySelector('svg')
       if (svgElement) {
         svgElement.classList.add('session-timeline-mermaid__svg')
+        for (const interaction of diagram.interactions) {
+          const target = svgElement.querySelector<HTMLElement>(`#${CSS.escape(interaction.id)}`)
+          if (target) {
+            target.classList.add('session-timeline-mermaid__interactive')
+            target.addEventListener('click', () => {
+              const item = interactionsRef.current.get(interaction.id)
+              if (!item) return
+              console.warn(item.payload)
+            })
+          }
+        }
       }
       if (typeof bindFunctions === 'function') {
         bindFunctions(container)
@@ -85,12 +99,21 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
     return () => {
       cancelled = true
     }
-  }, [mermaidCode, safeDiagramId])
+  }, [diagram.interactions, mermaidCode, safeDiagramId])
+
+  React.useEffect(() => {
+    interactionsRef.current = new Map(
+      diagram.interactions.map((interaction) => [
+        interaction.id,
+        { label: interaction.label, payload: interaction.payload }
+      ])
+    )
+  }, [diagram.interactions])
 
   return (
     <div
       ref={containerRef}
-      className={`session-timeline-panel session-timeline-panel--${viewMode} ${className}`}
+      className={`session-timeline-panel session-timeline-panel--${viewMode}${className ? ` ${className}` : ''}`}
       style={style}
     />
   )

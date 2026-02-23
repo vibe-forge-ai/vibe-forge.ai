@@ -25,9 +25,8 @@ const ganttLabels = {
   ganttTitle: 'Timeline',
   ganttMainSection: 'Main',
   ganttTasksSection: 'Tasks',
-  askUserQuestion: 'Ask User',
-  userAnswer: 'User Answer',
-  receiveReply: 'Receive Reply'
+  resumeTask: 'Resume Task',
+  userPrompt: 'User Prompt'
 }
 
 const sampleMain: Task = {
@@ -75,23 +74,22 @@ const cherryPickMain: Task = {
 describe('sessionTimelineMermaid', () => {
   it('buildMermaid 生成包含分支与合并', () => {
     const result = buildGitGraph(sampleMain, labels)
-    expect(result).toContain('gitGraph')
-    expect(result).toContain('branch task_A')
-    expect(result).toContain('merge task_A')
-    expect(result).toContain('commit id:"09:00:00"')
+    expect(result.code).toContain('gitGraph')
+    expect(result.code).toContain('branch task_A')
+    expect(result.code).toContain('merge task_A')
+    expect(result.code).toContain('commit id:"09:00:00"')
   })
 
   it('buildGantt 生成分段任务', () => {
     const result = buildGantt(sampleMain, ganttLabels)
-    expect(result).toContain('gantt')
-    expect(result).toContain('section Main')
-    expect(result).toContain('section Tasks')
-    expect(result).toContain('task A')
+    expect(result.code).toContain('gantt')
+    expect(result.code).toContain('Main')
+    expect(result.code).toContain('task A')
   })
 
   it('buildMermaid 生成 cherry-pick', () => {
     const result = buildGitGraph(cherryPickMain, labels)
-    expect(result).toContain('User Prompt')
+    expect(result.code).toContain('User Prompt')
   })
 
   it('sanitizeId 与 parseTime 可处理基础输入', () => {
