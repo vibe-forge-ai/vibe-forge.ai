@@ -1,5 +1,5 @@
 {
-  "name": "@vibe-forge/web",
+  "name": "@vibe-forge/client",
   "type": "module",
   "version": "0.1.0",
   "private": true,

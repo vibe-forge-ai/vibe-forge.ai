@@ -7,7 +7,7 @@ export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"
 # 后台运行 server
 node --watch --watch-path ./apps/server/src -C __vibe-forge__ -r esbuild-register ./apps/server/src/index.ts | tee .logs/server.log &
 # 后台运行 client
-cd ./apps/web && npm run dev | tee .logs/client.log &
+cd ./apps/client && npm run dev | tee .logs/client.log &
 
 # 退出时终止所有后台进程
 trap "kill 0" EXIT
