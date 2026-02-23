@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "./start.sh"
+    "start": "./start.sh",
+    "publish:plan": "node ./scripts/publish-plan.mjs",
+    "publish:plan:exec": "node ./scripts/publish-plan.mjs --publish"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.0.0",

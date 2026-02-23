@@ -1,8 +1,7 @@
 {
   "name": "@vibe-forge/client",
   "type": "module",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0-alpha.4",
   "imports": {
     "#~/*": [
       "./src/*",
