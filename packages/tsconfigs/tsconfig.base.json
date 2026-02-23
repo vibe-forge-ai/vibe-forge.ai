@@ -2,7 +2,7 @@
   "compilerOptions": {
     "composite": true,
     "target": "ESNext",
-    "rootDir": "..",
+    "rootDir": "../..",
     "customConditions": [
       "__vibe-forge__"
     ],

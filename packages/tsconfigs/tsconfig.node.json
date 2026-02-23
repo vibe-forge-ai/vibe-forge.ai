@@ -10,12 +10,12 @@
     }
   ],
   "include": [
-    "../.ai.config.ts",
-    "../.ai.dev.config.ts",
-    "../vitest.config.ts",
-    "../vitest.workspace.ts",
-    "../apps/web/vite.config.ts",
-    "../apps/cli/src/**/*",
-    "../apps/server/src/**/*"
+    "../../.ai.config.ts",
+    "../../.ai.dev.config.ts",
+    "../../vitest.config.ts",
+    "../../vitest.workspace.ts",
+    "../../apps/web/vite.config.ts",
+    "../../apps/cli/src/**/*",
+    "../../apps/server/src/**/*"
   ]
 }

@@ -1,16 +1,16 @@
 {
   "references": [
     {
-      "path": "./tsconfigs/tsconfig.bundler.json"
+      "path": "./packages/tsconfigs/tsconfig.bundler.json"
     },
     {
-      "path": "./tsconfigs/tsconfig.bundler.web.json"
+      "path": "./packages/tsconfigs/tsconfig.bundler.web.json"
     },
     {
-      "path": "./tsconfigs/tsconfig.node.json"
+      "path": "./packages/tsconfigs/tsconfig.node.json"
     },
     {
-      "path": "./tsconfigs/tsconfig.node.test.json"
+      "path": "./packages/tsconfigs/tsconfig.node.test.json"
     }
   ],
   "files": []
