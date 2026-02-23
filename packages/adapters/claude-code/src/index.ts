@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { defineAdapter } from '@vibe-forge/core'
@@ -14,6 +15,14 @@ import type {
   ClaudeCodeIncomingEvent,
   ClaudeCodeUserEvent
 } from './types'
+
+const toRealPath = (targetPath: string) => {
+  try {
+    return realpathSync(targetPath)
+  } catch {
+    return targetPath
+  }
+}
 
 declare module '@vibe-forge/core' {
   interface AdapterMap {
@@ -243,9 +252,8 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     cliPath = 'claude'
   }
   if (cliPath?.startsWith('.')) {
-    cliPath = resolve(cwd, cliPath)
+    cliPath = toRealPath(resolve(cwd, cliPath))
   }
-
   // Common Arguments
   const args: string[] = [
     ...(cliArgs?.split(/\s+/).filter(Boolean) as string[]),

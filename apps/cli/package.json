@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli",
-  "version": "0.2.0-alpha.4",
+  "version": "0.2.0-alpha.6",
   "description": "Vibe Forge CLI",
   "imports": {
     "#~/*.js": {
@@ -35,12 +35,12 @@
     "@vibe-forge/core": "workspace:^",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
+    "esbuild-register": "^3.6.0",
     "fast-glob": "^3.3.3",
     "node-notifier": "^10.0.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node-notifier": "^8.0.5",
-    "esbuild-register": "^3.6.0"
+    "@types/node-notifier": "^8.0.5"
   }
 }

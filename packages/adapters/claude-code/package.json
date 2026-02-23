@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/adapter-claude-code",
-  "version": "0.2.0-alpha.4",
+  "version": "0.2.0-alpha.6",
   "description": "Claude Code Adapter for Vibe Forge",
   "exports": {
     ".": {
