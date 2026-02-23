@@ -4,6 +4,7 @@
   "dprint.path": "./node_modules/.bin/dprint",
   "cSpell.words": [
     "esbuild",
-    "gantt"
+    "gantt",
+    "vfui"
   ]
 }

@@ -13,9 +13,8 @@
     }
   },
   "bin": {
-    "vibe-forge-ui": "./cli.js",
-    "vforge-ui": "./cli.js",
-    "vfui": "./cli.js"
+    "vibe-forge-ui-server": "./cli.js",
+    "vfui-server": "./cli.js"
   },
   "dependencies": {
     "@koa/cors": "^5.0.0",
@@ -24,6 +23,7 @@
     "better-sqlite3": "^12.6.0",
     "cron-parser": "^4.9.0",
     "dotenv": "^16.4.5",
+    "esbuild-register": "^3.6.0",
     "koa": "^2.15.0",
     "koa-bodyparser": "^4.3.0",
     "pino": "^10.2.0",

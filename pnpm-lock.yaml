@@ -43,6 +43,9 @@ importers:
       '@vibe-forge/cli':
         specifier: workspace:*
         version: link:apps/cli
+      '@vibe-forge/client':
+        specifier: workspace:*
+        version: link:apps/client
       '@vibe-forge/plugin-logger':
         specifier: workspace:*
         version: link:packages/plugins/logger
@@ -104,6 +107,9 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@5.4.21(@types/node@22.18.12)(sass@1.97.2))
       antd:
         specifier: ^5.20.0
         version: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -140,25 +146,15 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
+      sass:
+        specifier: ^1.97.2
+        version: 1.97.2
       shiki:
         specifier: ^3.21.0
         version: 3.21.0
       swr:
         specifier: ^2.2.5
         version: 2.3.8(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.27
-      '@types/react-dom':
-        specifier: ^18.3.2
-        version: 18.3.7(@types/react@18.3.27)
-      '@vitejs/plugin-react':
-        specifier: ^5.1.2
-        version: 5.1.2(vite@5.4.21(@types/node@22.18.12)(sass@1.97.2))
-      sass:
-        specifier: ^1.97.2
-        version: 1.97.2
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -168,6 +164,13 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.18.12)(sass@1.97.2)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.3.2
+        version: 18.3.7(@types/react@18.3.27)
 
   apps/server:
     dependencies:
@@ -189,6 +192,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      esbuild-register:
+        specifier: ^3.6.0
+        version: 3.6.0(esbuild@0.27.2)
       koa:
         specifier: ^2.15.0
         version: 2.16.3

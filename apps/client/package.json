@@ -9,15 +9,14 @@
       "./src/*.tsx"
     ]
   },
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "test": "vitest run"
+  "bin": {
+    "vibe-forge-ui-client": "./cli.cjs",
+    "vfui-client": "./cli.cjs"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
     "@vibe-forge/core": "workspace:*",
+    "@vitejs/plugin-react": "^5.1.2",
     "antd": "^5.20.0",
     "dayjs": "^1.11.19",
     "i18next": "^25.7.4",
@@ -30,16 +29,15 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.12.0",
     "remark-gfm": "^4.0.1",
-    "shiki": "^3.21.0",
-    "swr": "^2.2.5"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.2",
-    "@vitejs/plugin-react": "^5.1.2",
     "sass": "^1.97.2",
+    "shiki": "^3.21.0",
+    "swr": "^2.2.5",
     "typescript": "^5.6.3",
     "vite": "^5.4.8",
     "vitest": "^3.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.2"
   }
 }

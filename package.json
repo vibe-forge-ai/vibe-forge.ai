@@ -12,6 +12,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260115.1",
     "@vibe-forge/adapter-claude-code": "workspace:*",
     "@vibe-forge/cli": "workspace:*",
+    "@vibe-forge/client": "workspace:*",
     "@vibe-forge/plugin-logger": "workspace:*",
     "@vibe-forge/server": "workspace:*",
     "dprint": "^0.50.2",
