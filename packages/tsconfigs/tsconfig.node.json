@@ -14,7 +14,7 @@
     "../../.ai.dev.config.ts",
     "../../vitest.config.ts",
     "../../vitest.workspace.ts",
-    "../../apps/web/vite.config.ts",
+    "../../apps/client/vite.config.ts",
     "../../apps/cli/src/**/*",
     "../../apps/server/src/**/*"
   ]

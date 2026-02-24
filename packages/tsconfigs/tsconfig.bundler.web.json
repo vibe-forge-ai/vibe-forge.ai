@@ -10,6 +10,6 @@
     }
   ],
   "include": [
-    "../../apps/web/src/**/*"
+    "../../apps/client/src/**/*"
   ]
 }
