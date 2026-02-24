@@ -14,6 +14,7 @@ export async function createSessionWithInitialMessage(options: {
   id?: string
   shouldStart?: boolean
   tags?: string[]
+  model?: string
 }): Promise<Session> {
   const {
     title,
@@ -21,7 +22,8 @@ export async function createSessionWithInitialMessage(options: {
     parentSessionId,
     id,
     shouldStart = true,
-    tags
+    tags,
+    model
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
@@ -38,7 +40,7 @@ export async function createSessionWithInitialMessage(options: {
 
   if (initialMessage && shouldStart) {
     try {
-      await startAdapterSession(session.id)
+      await startAdapterSession(session.id, { model })
       processUserMessage(session.id, initialMessage)
 
       const updated = db.getSession(session.id)

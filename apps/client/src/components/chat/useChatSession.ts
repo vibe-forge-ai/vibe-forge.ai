@@ -302,7 +302,7 @@ export function useChatSession({
     if (!session?.id) {
       setIsCreating(true)
       try {
-        const { session: newSession } = await createSession(undefined, text.trim())
+        const { session: newSession } = await createSession(undefined, text.trim(), selectedModel)
 
         await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
           if (!prev?.sessions) return { sessions: [newSession] }

@@ -18,7 +18,14 @@ interface ModelSelectGroup {
 
 export function useChatModels() {
   const { t } = useTranslation()
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined)
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(() => {
+    try {
+      const raw = localStorage.getItem('vf_chat_selected_model')
+      return raw == null || raw.trim() === '' ? undefined : raw
+    } catch {
+      return undefined
+    }
+  })
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
 
   const mergedModelServices = useMemo(() => {
@@ -76,6 +83,17 @@ export function useChatModels() {
       return resolvedDefaultModel
     })
   }, [availableModelSet, hasAvailableModels, resolvedDefaultModel])
+
+  useEffect(() => {
+    try {
+      if (selectedModel == null || selectedModel.trim() === '') {
+        localStorage.removeItem('vf_chat_selected_model')
+      } else {
+        localStorage.setItem('vf_chat_selected_model', selectedModel)
+      }
+    } catch {
+    }
+  }, [selectedModel])
 
   const modelOptions = useMemo<ModelSelectGroup[]>(() => {
     const buildOption = (params: {
