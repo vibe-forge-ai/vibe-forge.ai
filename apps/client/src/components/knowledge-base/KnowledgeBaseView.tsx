@@ -5,13 +5,18 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { EntitySummary, SpecSummary } from '#~/api.js'
+import type { EntitySummary, RuleSummary, SpecSummary } from '#~/api.js'
+import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import { EntitiesTab } from './components/EntitiesTab.js'
 import { FlowsTab } from './components/FlowsTab.js'
 import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader.js'
 import { RulesTab } from './components/RulesTab.js'
 import { SkillsTab } from './components/SkillsTab.js'
 import { TabLabel } from './components/TabLabel.js'
+
+interface KnowledgeQueryParams extends Record<string, string> {
+  kbTab: string
+}
 
 export function KnowledgeBaseView() {
   const { t } = useTranslation()
@@ -26,14 +31,28 @@ export function KnowledgeBaseView() {
     isLoading: isEntitiesLoading,
     mutate: mutateEntities
   } = useSWR<{ entities: EntitySummary[] }>('/api/ai/entities')
+  const {
+    data: rulesRes,
+    isLoading: isRulesLoading,
+    mutate: mutateRules
+  } = useSWR<{ rules: RuleSummary[] }>('/api/ai/rules')
 
   const specs = specsRes?.specs ?? []
   const entities = entitiesRes?.entities ?? []
+  const rules = rulesRes?.rules ?? []
 
   const [specQuery, setSpecQuery] = React.useState('')
   const [specTagFilter, setSpecTagFilter] = React.useState<string[]>([])
   const [entityQuery, setEntityQuery] = React.useState('')
   const [entityTagFilter, setEntityTagFilter] = React.useState<string[]>([])
+  const [ruleQuery, setRuleQuery] = React.useState('')
+
+  const { values, update } = useQueryParams<KnowledgeQueryParams>({
+    keys: ['kbTab'],
+    defaults: {
+      kbTab: 'skills'
+    }
+  })
 
   const specTagOptions = React.useMemo(() => {
     const tags = new Set<string>()
@@ -81,8 +100,18 @@ export function KnowledgeBaseView() {
     })
   }, [entityQuery, entityTagFilter, entities])
 
+  const filteredRules = React.useMemo(() => {
+    const query = ruleQuery.trim().toLowerCase()
+    return rules.filter(rule => {
+      if (query === '') return true
+      const globText = (rule.globs ?? []).join(' ')
+      const haystack = `${rule.name} ${rule.description} ${globText}`.toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [ruleQuery, rules])
+
   const handleRefresh = async () => {
-    await Promise.all([mutateSpecs(), mutateEntities()])
+    await Promise.all([mutateSpecs(), mutateEntities(), mutateRules()])
     void message.success(t('knowledge.actions.refreshed'))
   }
 
@@ -170,6 +199,11 @@ export function KnowledgeBaseView() {
       label: <TabLabel icon='gavel' label={t('knowledge.tabs.rules')} />,
       children: (
         <RulesTab
+          rules={rules}
+          filteredRules={filteredRules}
+          isLoading={isRulesLoading}
+          query={ruleQuery}
+          onQueryChange={setRuleQuery}
           onCreate={handleCreateRule}
           onImport={handleImportRule}
         />
@@ -177,10 +211,24 @@ export function KnowledgeBaseView() {
     }
   ]
 
+  const tabKeys = React.useMemo(() => tabs.map(tab => tab.key), [tabs])
+  const activeTab = tabKeys.includes(values.kbTab) ? values.kbTab : tabKeys[0]
+
+  React.useEffect(() => {
+    if (values.kbTab !== activeTab) {
+      update({ kbTab: activeTab })
+    }
+  }, [activeTab, update, values.kbTab])
+
   return (
     <div className='knowledge-base-view'>
       <KnowledgeBaseHeader onRefresh={handleRefresh} />
-      <Tabs className='knowledge-base-view__tabs' items={tabs} />
+      <Tabs
+        className='knowledge-base-view__tabs'
+        items={tabs}
+        activeKey={activeTab}
+        onChange={(key) => update({ kbTab: key })}
+      />
     </div>
   )
 }

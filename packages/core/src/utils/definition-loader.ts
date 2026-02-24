@@ -14,6 +14,7 @@ export interface Filter {
 export interface Rule {
   name?: string
   description?: string
+  globs?: string | string[]
   /**
    * 是否默认加载至系统上下文
    */
@@ -89,7 +90,12 @@ export class DefinitionLoader {
     patterns: string[],
     cwd: string = this.cwd
   ): Promise<string[]> {
-    return glob(patterns, { cwd, absolute: true })
+    const paths = await glob(patterns, { cwd, absolute: true })
+    return paths.sort((a, b) => {
+      const aKey = relative(cwd, a).split('\\').join('/')
+      const bKey = relative(cwd, b).split('\\').join('/')
+      return aKey.localeCompare(bKey)
+    })
   }
 
   async loadRules(rules: string[]) {

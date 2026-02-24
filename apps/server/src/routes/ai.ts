@@ -3,7 +3,7 @@ import process from 'node:process'
 
 import Router from '@koa/router'
 
-import type { Definition, Entity, Spec } from '@vibe-forge/core/utils/definition-loader'
+import type { Definition, Entity, Rule, Spec } from '@vibe-forge/core/utils/definition-loader'
 import { DefinitionLoader } from '@vibe-forge/core/utils/definition-loader'
 
 const getFirstNonEmptyLine = (text: string) =>
@@ -37,6 +37,13 @@ const resolveEntityName = (entity: Definition<Entity>) => {
   return fileName.replace(/\.[^/.]+$/, '')
 }
 
+const resolveRuleName = (rule: Definition<Rule>) => {
+  const name = rule.attributes.name?.trim()
+  if (name) return name
+  const fileName = basename(rule.path)
+  return fileName.replace(/\.[^/.]+$/, '')
+}
+
 const toTagList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string')
@@ -47,6 +54,14 @@ const toTagList = (value: unknown): string[] => {
       return include.filter((item): item is string => typeof item === 'string')
     }
   }
+  return []
+}
+
+const toStringList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string')
+  }
+  if (typeof value === 'string') return [value]
   return []
 }
 
@@ -149,6 +164,77 @@ export function aiRouter(): Router {
       console.error('[ai] Failed to load entities:', err)
       ctx.status = 500
       ctx.body = { error: 'Failed to load entities' }
+    }
+  })
+
+  router.get('/rules', async (ctx) => {
+    try {
+      const rules = await loader.loadDefaultRules()
+      ctx.body = {
+        rules: rules.map(rule => {
+          const name = resolveRuleName(rule)
+          const description = rule.attributes.description ?? getFirstNonEmptyLine(rule.body) ?? name
+          const alwaysApply = (rule.attributes as { alwaysApply?: boolean }).alwaysApply
+          return {
+            id: toRelativePath(rule.path, workspaceRoot),
+            name,
+            description,
+            always: rule.attributes.always ?? alwaysApply ?? true,
+            globs: toStringList(
+              (rule.attributes as { globs?: unknown; glob?: unknown }).globs
+                ?? (rule.attributes as { globs?: unknown; glob?: unknown }).glob
+            )
+          }
+        })
+      }
+    } catch (err) {
+      console.error('[ai] Failed to load rules:', err)
+      ctx.status = 500
+      ctx.body = { error: 'Failed to load rules' }
+    }
+  })
+
+  router.get('/rules/detail', async (ctx) => {
+    const targetPath = typeof ctx.query.path === 'string' ? ctx.query.path : undefined
+    if (!targetPath) {
+      ctx.status = 400
+      ctx.body = { error: 'Missing path' }
+      return
+    }
+
+    try {
+      const rules = await loader.loadDefaultRules()
+      const rule = rules.find(item => {
+        const relativePath = toRelativePath(item.path, workspaceRoot)
+        return relativePath === targetPath || item.path === targetPath
+      })
+
+      if (!rule) {
+        ctx.status = 404
+        ctx.body = { error: 'Rule not found' }
+        return
+      }
+
+      const name = resolveRuleName(rule)
+      const description = rule.attributes.description ?? getFirstNonEmptyLine(rule.body) ?? name
+      const alwaysApply = (rule.attributes as { alwaysApply?: boolean }).alwaysApply
+      ctx.body = {
+        rule: {
+          id: toRelativePath(rule.path, workspaceRoot),
+          name,
+          description,
+          always: rule.attributes.always ?? alwaysApply ?? true,
+          globs: toStringList(
+            (rule.attributes as { globs?: unknown; glob?: unknown }).globs
+              ?? (rule.attributes as { globs?: unknown; glob?: unknown }).glob
+          ),
+          body: rule.body ?? ''
+        }
+      }
+    } catch (err) {
+      console.error('[ai] Failed to load rule detail:', err)
+      ctx.status = 500
+      ctx.body = { error: 'Failed to load rule detail' }
     }
   })
 

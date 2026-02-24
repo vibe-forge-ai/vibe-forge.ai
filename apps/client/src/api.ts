@@ -21,11 +21,23 @@ export interface EntitySummary {
   rules: string[]
 }
 
+export interface RuleSummary {
+  id: string
+  name: string
+  description: string
+  always: boolean
+  globs?: string[]
+}
+
 export interface SpecDetail extends SpecSummary {
   body: string
 }
 
 export interface EntityDetail extends EntitySummary {
+  body: string
+}
+
+export interface RuleDetail extends RuleSummary {
   body: string
 }
 
@@ -119,6 +131,11 @@ export async function listEntities(): Promise<{ entities: EntitySummary[] }> {
   return res.json() as Promise<{ entities: EntitySummary[] }>
 }
 
+export async function listRules(): Promise<{ rules: RuleSummary[] }> {
+  const res = await fetch(`${SERVER_URL}/api/ai/rules`)
+  return res.json() as Promise<{ rules: RuleSummary[] }>
+}
+
 export async function getSpecDetail(path: string): Promise<{ spec: SpecDetail }> {
   const url = new URL(`${SERVER_URL}/api/ai/specs/detail`)
   url.searchParams.set('path', path)
@@ -131,6 +148,13 @@ export async function getEntityDetail(path: string): Promise<{ entity: EntityDet
   url.searchParams.set('path', path)
   const res = await fetch(url.toString())
   return res.json() as Promise<{ entity: EntityDetail }>
+}
+
+export async function getRuleDetail(path: string): Promise<{ rule: RuleDetail }> {
+  const url = new URL(`${SERVER_URL}/api/ai/rules/detail`)
+  url.searchParams.set('path', path)
+  const res = await fetch(url.toString())
+  return res.json() as Promise<{ rule: RuleDetail }>
 }
 
 export async function getConfig(): Promise<ConfigResponse> {
