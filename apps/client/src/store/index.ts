@@ -21,3 +21,5 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 export const themeAtom = atom<ThemeMode>(
   (localStorage.getItem('theme') as ThemeMode) || 'system'
 )
+
+export const showAnnouncementsAtom = atom(true)

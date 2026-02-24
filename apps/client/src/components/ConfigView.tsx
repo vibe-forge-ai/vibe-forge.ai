@@ -9,6 +9,7 @@ import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
 
 import { getConfig, updateConfig } from '../api'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
+import { AppSettingsPanel } from './config/AppSettingsPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
 
 export function ConfigView() {
@@ -75,6 +76,7 @@ export function ConfigView() {
     { key: 'mcp', icon: 'account_tree', label: t('config.sections.mcp'), value: currentSource?.mcp },
     { key: 'shortcuts', icon: 'keyboard', label: t('config.sections.shortcuts'), value: currentSource?.shortcuts },
     { key: 'group-app', type: 'group', label: t('config.groups.app') },
+    { key: 'appearance', icon: 'tune', label: t('config.sections.appearance') },
     { key: 'experiments', icon: 'science', label: t('config.sections.experiments'), value: data?.meta?.experiments },
     { key: 'about', icon: 'info', label: t('config.sections.about'), value: data?.meta?.about }
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
@@ -220,7 +222,10 @@ export function ConfigView() {
                     {tab.key === 'about' && (
                       <AboutSection value={tab.value as AboutInfo | undefined} />
                     )}
-                    {tab.key !== 'about' && !configTabKeys.has(tab.key) && (
+                    {tab.key === 'appearance' && (
+                      <AppSettingsPanel t={t} />
+                    )}
+                    {tab.key !== 'about' && tab.key !== 'appearance' && !configTabKeys.has(tab.key) && (
                       <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
                     )}
                     {configTabKeys.has(tab.key) && (

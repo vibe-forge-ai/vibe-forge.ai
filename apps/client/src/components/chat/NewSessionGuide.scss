@@ -15,17 +15,45 @@
 }
 
 .new-session-guide__announcements-header {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-color);
 }
 
+.new-session-guide__announcements-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .new-session-guide__announcements-icon {
   font-size: 18px;
   color: var(--sub-text-color);
+}
+
+.new-session-guide__announcements-close {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--sub-text-color);
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.new-session-guide__announcements-close:hover {
+  color: var(--text-color);
+}
+
+.new-session-guide__announcements-close .material-symbols-rounded {
+  font-size: 18px;
 }
 
 .new-session-guide__announcements-list {

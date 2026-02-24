@@ -759,8 +759,15 @@
       "plugins": "插件",
       "mcp": "MCP",
       "shortcuts": "快捷键",
+      "appearance": "外观",
       "experiments": "实验功能",
       "about": "关于"
+    },
+    "appSettings": {
+      "announcements": {
+        "label": "显示公告",
+        "desc": "新建会话时展示公告信息"
+      }
     }
   }
 }

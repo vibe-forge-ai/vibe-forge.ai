@@ -758,8 +758,15 @@
       "plugins": "Plugins",
       "mcp": "MCP",
       "shortcuts": "Shortcuts",
+      "appearance": "Appearance",
       "experiments": "Experiments",
       "about": "About"
+    },
+    "appSettings": {
+      "announcements": {
+        "label": "Show announcements",
+        "desc": "Show announcements when creating a new session"
+      }
     }
   }
 }

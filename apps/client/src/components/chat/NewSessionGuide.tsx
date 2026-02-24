@@ -1,15 +1,17 @@
 import './NewSessionGuide.scss'
 
 import { App, Button } from 'antd'
-import React from 'react'
+import { useAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { EntitySummary, SpecSummary } from '#~/api.js'
+import { showAnnouncementsAtom } from '#~/store/index.js'
 
 export function NewSessionGuide() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
 
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
   const { data: entitiesRes } = useSWR<{ entities: EntitySummary[] }>('/api/ai/entities')
@@ -26,6 +28,7 @@ export function NewSessionGuide() {
   )
 
   const specs = specsRes?.specs ?? []
+  const alwaysSpecs = specs.filter(spec => spec.always)
   const entities = entitiesRes?.entities ?? []
   const isSpecsReady = specsRes != null
   const isEntitiesReady = entitiesRes != null
@@ -47,11 +50,20 @@ export function NewSessionGuide() {
 
   return (
     <div className='new-session-guide'>
-      {announcements.length > 0 && (
+      {showAnnouncements && announcements.length > 0 && (
         <div className='new-session-guide__announcements'>
           <div className='new-session-guide__announcements-header'>
-            <span className='material-symbols-rounded new-session-guide__announcements-icon'>campaign</span>
-            <span>{t('chat.newSessionGuide.announcements.title')}</span>
+            <div className='new-session-guide__announcements-title'>
+              <span className='material-symbols-rounded new-session-guide__announcements-icon'>campaign</span>
+              <span>{t('chat.newSessionGuide.announcements.title')}</span>
+            </div>
+            <button
+              type='button'
+              className='new-session-guide__announcements-close'
+              onClick={() => setShowAnnouncements(false)}
+            >
+              <span className='material-symbols-rounded'>close</span>
+            </button>
           </div>
           <div className='new-session-guide__announcements-list'>
             {announcements.map((item, index) => (
@@ -69,15 +81,15 @@ export function NewSessionGuide() {
               <span className='material-symbols-rounded new-session-guide__title-icon'>account_tree</span>
               <span>{t('chat.newSessionGuide.specs.title')}</span>
             </div>
-            <div className='new-session-guide__count'>{specs.length}</div>
+            <div className='new-session-guide__count'>{alwaysSpecs.length}</div>
           </div>
           <div className='new-session-guide__body'>
             {!isSpecsReady && (
               <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
             )}
-            {isSpecsReady && specs.length > 0 && (
+            {isSpecsReady && alwaysSpecs.length > 0 && (
               <div className='new-session-guide__list'>
-                {specs.map((spec) => (
+                {alwaysSpecs.map((spec) => (
                   <div key={spec.id} className='new-session-guide__item'>
                     <div className='new-session-guide__item-title'>
                       <span>{spec.name}</span>
@@ -92,7 +104,7 @@ export function NewSessionGuide() {
                 ))}
               </div>
             )}
-            {isSpecsReady && specs.length === 0 && (
+            {isSpecsReady && alwaysSpecs.length === 0 && (
               <div className='new-session-guide__empty'>
                 <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.specs.empty')}</div>
                 <Button type='primary' size='small' onClick={handleCreateSpec}>
