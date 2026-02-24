@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 import http from 'node:http'
 import { exit } from 'node:process'
 

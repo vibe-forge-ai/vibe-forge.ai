@@ -76,12 +76,12 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../../packages/register
       commander:
         specifier: ^12.1.0
         version: 12.1.0
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -95,9 +95,6 @@ importers:
       '@types/node-notifier':
         specifier: ^8.0.5
         version: 8.0.5
-      esbuild-register:
-        specifier: ^3.6.0
-        version: 3.6.0(esbuild@0.27.2)
 
   apps/client:
     dependencies:
@@ -107,6 +104,9 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../../packages/register
       '@vitejs/plugin-react':
         specifier: ^5.1.2
         version: 5.1.2(vite@5.4.21(@types/node@22.18.12)(sass@1.97.2))
@@ -183,18 +183,15 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../../packages/register
       better-sqlite3:
         specifier: ^12.6.0
         version: 12.6.0
       cron-parser:
         specifier: ^4.9.0
         version: 4.9.0
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
-      esbuild-register:
-        specifier: ^3.6.0
-        version: 3.6.0(esbuild@0.27.2)
       koa:
         specifier: ^2.15.0
         version: 2.16.3
@@ -281,6 +278,17 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../core
+
+  packages/register:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      esbuild-register:
+        specifier: ^3.6.0
+        version: 3.6.0(esbuild@0.27.2)
+
+  packages/tsconfigs: {}
 
 packages:
 

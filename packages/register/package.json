@@ -1,0 +1,24 @@
+{
+  "name": "@vibe-forge/register",
+  "version": "0.2.0-alpha.9",
+  "exports": {
+    "./dotenv": {
+      "types": "./dotenv.d.ts",
+      "default": "./dotenv.js"
+    },
+    "./esbuild": {
+      "types": "./esbuild.d.ts",
+      "default": "./esbuild.js"
+    },
+    "./preload": {
+      "types": "./preload.d.ts",
+      "default": "./preload.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./index.d.ts",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "esbuild-register": "^3.6.0"
+  }
+}

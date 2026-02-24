@@ -1,11 +1,15 @@
-const path = require('node:path')
-const process = require('node:process')
+const path = require("node:path");
+const process = require("node:process");
 
-process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+require("@vibe-forge/register/dotenv");
+
+process.env.__VF_PROJECT_WORKSPACE_FOLDER__ =
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd();
+process.env.__VF_PROJECT_PACKAGE_DIR__ = __dirname;
 process.env.HOME = path.resolve(
   process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
-  './.ai/.mock'
-)
-process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ = './src/cli'
+  "./.ai/.mock",
+);
+process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ = "./src/cli";
 
-require('./cli-helper')
+require("./cli-helper");
