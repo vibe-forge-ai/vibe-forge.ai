@@ -1,5 +1,5 @@
 ---
-name: 开发代码
+name: 🧑‍💻 开发代码
 description: 开发代码时需要遵守的标准交付步骤，可以与其他特殊流程组合完成复杂开发任务的交付。
 rules:
   - "${workspaceFolder}/.ai/rules/项目结构.md"
