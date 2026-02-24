@@ -4,6 +4,8 @@ export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__='./packages/adapters/claude-code/node_modules/.bin/ccr'
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__='code'
 
+export IS_LOCAL_DEV='true'
+
 # 后台运行 server
 npx vfui-server | tee .logs/server.log &
 # 后台运行 client

@@ -1,7 +1,7 @@
 {
   "name": "@vibe-forge/client",
   "type": "module",
-  "version": "0.2.0-alpha.6",
+  "version": "0.2.0-alpha.7",
   "imports": {
     "#~/*": [
       "./src/*",
@@ -11,6 +11,9 @@
   "bin": {
     "vibe-forge-ui-client": "./cli.cjs",
     "vfui-client": "./cli.cjs"
+  },
+  "scripts": {
+    "prepublish": "vite build"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",

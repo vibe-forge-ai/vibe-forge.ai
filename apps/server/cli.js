@@ -1,4 +1,12 @@
 const { resolve } = require("node:path");
+const process = require("node:process");
+
+process.env.__VF_PROJECT_WORKSPACE_FOLDER__ =
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd();
+process.env.HOME = resolve(
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
+  "./.ai/.mock",
+);
 
 require("node:child_process").spawnSync(
   "node",
