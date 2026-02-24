@@ -80,7 +80,6 @@ export function NewSessionGuide() {
                 {specs.map((spec) => (
                   <div key={spec.id} className='new-session-guide__item'>
                     <div className='new-session-guide__item-title'>
-                      <span className='material-symbols-rounded new-session-guide__item-icon'>route</span>
                       <span>{spec.name}</span>
                     </div>
                     <div className='new-session-guide__item-desc'>{spec.description}</div>
@@ -121,7 +120,6 @@ export function NewSessionGuide() {
                 {entities.map((entity) => (
                   <div key={entity.id} className='new-session-guide__item'>
                     <div className='new-session-guide__item-title'>
-                      <span className='material-symbols-rounded new-session-guide__item-icon'>person</span>
                       <span>{entity.name}</span>
                     </div>
                     <div className='new-session-guide__item-desc'>{entity.description}</div>
