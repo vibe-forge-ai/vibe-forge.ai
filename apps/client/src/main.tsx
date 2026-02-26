@@ -8,6 +8,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { SWRConfig } from 'swr'
 
+import { fetchApiJson } from '#~/api/base.js'
+
 import App from './App'
 
 const root = createRoot(document.getElementById('root')!)
@@ -17,18 +19,7 @@ root.render(
       <AntdApp>
         <SWRConfig
           value={{
-            fetcher: async (path: string) => {
-              const serverHost = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ != null &&
-                  import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ !== '')
-                ? import.meta.env.__VF_PROJECT_AI_SERVER_HOST__
-                : window.location.hostname
-              const serverPort = (import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ != null &&
-                  import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ !== '')
-                ? import.meta.env.__VF_PROJECT_AI_SERVER_PORT__
-                : '8787'
-              const baseUrl = `http://${serverHost}:${serverPort}`
-              return fetch(`${baseUrl}${path}`).then(async (r) => r.json() as Promise<unknown>)
-            }
+            fetcher: async (path: string) => fetchApiJson<unknown>(path)
           }}
         >
           <BrowserRouter>
