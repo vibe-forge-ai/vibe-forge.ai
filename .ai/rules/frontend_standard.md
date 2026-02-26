@@ -1,6 +1,6 @@
 ---
 alwaysApply: false
-globs: apps/web/src/**/*
+globs: apps/client/src/**/*
 ---
 
 # 前端开发规范 (Frontend Development)
@@ -71,7 +71,7 @@ const { values, update } = useQueryParams({
         padding: 8px 12px;
 
         &--disabled {
-          opacity: 0.5;
+          opacity: .5;
           pointer-events: none;
         }
       }
