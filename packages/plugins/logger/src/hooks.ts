@@ -2,6 +2,22 @@ import { definePlugin } from '@vibe-forge/core/hooks'
 
 export default definePlugin({
   name: 'logger',
+  GenerateSystemPrompt: ({ logger }, input, next) => {
+    logger.info(input)
+    return next()
+  },
+  StartTasks: ({ logger }, input, next) => {
+    logger.info(input)
+    return next()
+  },
+  TaskStart: ({ logger }, input, next) => {
+    logger.info(input)
+    return next()
+  },
+  TaskStop: ({ logger }, input, next) => {
+    logger.info(input)
+    return next()
+  },
   SessionStart: ({ logger }, input, next) => {
     logger.info(input)
     return next()

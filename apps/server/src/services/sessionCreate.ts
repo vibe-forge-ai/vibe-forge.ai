@@ -1,11 +1,7 @@
 import type { Session } from '@vibe-forge/core'
 
 import { getDb } from '#~/db.js'
-import {
-  notifySessionUpdated,
-  processUserMessage,
-  startAdapterSession
-} from '#~/websocket/index.js'
+import { notifySessionUpdated, processUserMessage, startAdapterSession } from '#~/websocket/index.js'
 
 export async function createSessionWithInitialMessage(options: {
   title?: string
@@ -15,6 +11,8 @@ export async function createSessionWithInitialMessage(options: {
   shouldStart?: boolean
   tags?: string[]
   model?: string
+  promptType?: 'spec' | 'entity'
+  promptName?: string
 }): Promise<Session> {
   const {
     title,
@@ -23,7 +21,9 @@ export async function createSessionWithInitialMessage(options: {
     id,
     shouldStart = true,
     tags,
-    model
+    model,
+    promptType,
+    promptName
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
@@ -40,7 +40,7 @@ export async function createSessionWithInitialMessage(options: {
 
   if (initialMessage && shouldStart) {
     try {
-      await startAdapterSession(session.id, { model })
+      await startAdapterSession(session.id, { model, promptType, promptName })
       processUserMessage(session.id, initialMessage)
 
       const updated = db.getSession(session.id)

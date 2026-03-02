@@ -11,6 +11,7 @@ import { loadEnv } from '@vibe-forge/core'
 import { aiRouter } from '#~/routes/ai.js'
 import { automationRouter } from '#~/routes/automation.js'
 import { configRouter } from '#~/routes/config.js'
+import { hooksRouter } from '#~/routes/hooks.js'
 import { interactRouter } from '#~/routes/interact.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
 import { setupWebSocket } from '#~/websocket/index.js'
@@ -32,7 +33,8 @@ async function bootstrap() {
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/automation', router: automationRouter() },
-    { prefix: '/api/config', router: configRouter() }
+    { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/hooks', router: hooksRouter() }
   ]
 
   for (const { prefix, router } of routers) {

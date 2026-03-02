@@ -3,6 +3,7 @@ import process from 'node:process'
 import type { Command } from 'commander'
 
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import { callHook } from '@vibe-forge/core/utils/api'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extraOptions } from './@core/extra-options'
@@ -54,11 +55,21 @@ export function registerRunCommand(program: Command) {
       const sessionId = opts.sessionId ?? uuid()
       const type = opts.resume ? 'resume' : 'create'
 
-      const resolvedConfig = await generateAdapterQueryOptions(
-        opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined),
-        opts.spec || opts.entity,
-        process.cwd()
+      const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
+      const promptName = opts.spec || opts.entity
+      const promptCWD = process.cwd()
+      const [data, resolvedConfig] = await generateAdapterQueryOptions(
+        promptType,
+        promptName,
+        promptCWD
       )
+      await callHook('GenerateSystemPrompt', {
+        cwd: promptCWD,
+        sessionId,
+        type: promptType,
+        name: promptName,
+        data
+      })
 
       const finalSystemPrompt = [
         resolvedConfig.systemPrompt,

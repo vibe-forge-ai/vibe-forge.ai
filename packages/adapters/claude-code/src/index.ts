@@ -269,9 +269,7 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     '--mcp-config',
     mcpCachePath,
     '--settings',
-    settingsCachePath,
-    '--permission-mode',
-    'bypassPermissions'
+    settingsCachePath
   ].filter((a) => typeof a === 'string')
 
   // Handle session type logic
@@ -358,7 +356,7 @@ export default defineAdapter({
         onEvent({
           type: 'exit',
           data: {
-            exitCode: code,
+            exitCode: code ?? undefined,
             stderr: stderrBuffer.join('')
           }
         })
@@ -442,7 +440,7 @@ export default defineAdapter({
         onEvent({
           type: 'exit',
           data: {
-            exitCode: code
+            exitCode: code ?? undefined
           }
         })
       })

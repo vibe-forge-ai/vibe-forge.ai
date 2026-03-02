@@ -1,5 +1,8 @@
+import process from 'node:process'
+
 import { z } from 'zod'
 
+import { callHook } from '@vibe-forge/core/utils/api'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { createChildSession, getParentSessionId } from '#~/mcp-sync/index.js'
@@ -52,6 +55,12 @@ export default defineRegister((server) => {
         taskId: uuid()
       }))
       const parentSessionId = getParentSessionId()
+
+      await callHook('StartTasks', {
+        cwd: process.cwd(),
+        sessionId: process.env.__VF_PROJECT_AI_SESSION_ID__!,
+        tasks
+      })
       const syncResults = parentSessionId
         ? await Promise.allSettled(resolvedTasks.map(task =>
           createChildSession({
@@ -61,10 +70,13 @@ export default defineRegister((server) => {
           })
         ))
         : []
-      const results = await Promise.allSettled(resolvedTasks.map((task, idx) => {
-        const enableServerSync = parentSessionId != null && syncResults[idx]?.status === 'fulfilled'
-        return taskManager.startTask({ ...task, enableServerSync })
-      }))
+      const results = await Promise.allSettled(resolvedTasks
+        .map((task, idx) =>
+          taskManager.startTask({
+            ...task,
+            enableServerSync: parentSessionId != null && syncResults[idx]?.status === 'fulfilled'
+          })
+        ))
 
       return {
         content: [{

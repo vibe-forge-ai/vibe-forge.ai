@@ -8,7 +8,7 @@ export async function generateAdapterQueryOptions(
   type: 'spec' | 'entity' | undefined,
   name?: string,
   cwd: string = process.cwd()
-): Promise<Partial<AdapterQueryOptions>> {
+) {
   const loader = new DefinitionLoader(cwd)
   const options: Partial<AdapterQueryOptions> = {}
   const systemPromptParts: string[] = []
@@ -82,5 +82,15 @@ export async function generateAdapterQueryOptions(
   )
 
   options.systemPrompt = systemPromptParts.join('\n\n')
-  return options
+  return [
+    {
+      rules,
+      targetSkills,
+      entities,
+      skills,
+      specs,
+      targetBody
+    },
+    options
+  ] as const
 }

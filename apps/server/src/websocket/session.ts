@@ -4,7 +4,8 @@ import { v4 as uuidv4 } from 'uuid'
 import type { WebSocket } from 'ws'
 
 import type { AdapterOutputEvent, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
-import { run } from '@vibe-forge/core/controllers/task'
+import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import { callHook } from '@vibe-forge/core/utils/api'
 
 import { getDb } from '#~/db.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
@@ -21,6 +22,8 @@ export async function startAdapterSession(
     model?: string
     systemPrompt?: string
     appendSystemPrompt?: boolean
+    promptType?: 'spec' | 'entity'
+    promptName?: string
   } = {}
 ) {
   const db = getDb()
@@ -47,14 +50,37 @@ export async function startAdapterSession(
   const messages: WSEvent[] = []
 
   try {
+    const promptCwd = processCwd()
+    const [data, resolvedConfig] = await generateAdapterQueryOptions(
+      options.promptType,
+      options.promptName,
+      promptCwd
+    )
+    const env = {
+      ...processEnv,
+      __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+    }
+    await callHook('GenerateSystemPrompt', {
+      cwd: promptCwd,
+      sessionId,
+      type: options.promptType,
+      name: options.promptName,
+      data
+    }, env)
+    const finalSystemPrompt = [resolvedConfig.systemPrompt, options.systemPrompt]
+      .filter(Boolean)
+      .join('\n\n')
     const { modelLanguage } = await getMergedGeneralConfig().catch(() => ({ modelLanguage: undefined }))
     const languagePrompt = modelLanguage == null
       ? undefined
       : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
-    const mergedSystemPrompt = [options.systemPrompt, languagePrompt].filter(Boolean).join('\n\n')
+    const mergedSystemPrompt = [
+      finalSystemPrompt,
+      languagePrompt
+    ].filter(Boolean).join('\n\n')
     const { session } = await run({
-      env: processEnv as Record<string, string>,
-      cwd: processCwd()
+      env,
+      cwd: promptCwd
     }, {
       type,
       runtime: 'server',
@@ -62,6 +88,8 @@ export async function startAdapterSession(
       model: options.model,
       systemPrompt: mergedSystemPrompt,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
+      tools: resolvedConfig.tools,
+      mcpServers: resolvedConfig.mcpServers,
       onEvent: (event: AdapterOutputEvent) => {
         const broadcast = (ev: WSEvent) => {
           serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')

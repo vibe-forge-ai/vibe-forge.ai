@@ -2,6 +2,7 @@ import process from 'node:process'
 
 import type { AdapterOutputEvent, AdapterSession, ChatMessage } from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import { callHook } from '@vibe-forge/core/utils/api'
 
 import { extractTextFromMessage, fetchSessionMessages, postSessionEvent } from '#~/mcp-sync/index.js'
 
@@ -66,20 +67,30 @@ class TaskManager {
 
     try {
       // Resolve Config
-      const resolvedConfig = await generateAdapterQueryOptions(
-        type !== 'default' ? type : undefined,
-        name,
-        process.cwd()
+      const promptType = type !== 'default' ? type : undefined
+      const promptName = name
+      const promptCWD = process.cwd()
+      const [data, resolvedConfig] = await generateAdapterQueryOptions(
+        promptType,
+        promptName,
+        promptCWD
       )
+      await callHook('GenerateSystemPrompt', {
+        cwd: promptCWD,
+        sessionId: taskId,
+        type: promptType,
+        name: promptName,
+        data
+      })
 
       // Start Task
-      const parentCtxId = process.env.__VF_PROJECT_AI_CTX_ID__
+      const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
       const { session } = await run({
         adapter,
         cwd: process.cwd(),
         env: {
           ...process.env,
-          __VF_PROJECT_AI_CTX_ID__: taskId
+          __VF_PROJECT_AI_CTX_ID__: ctxId
         }
       }, {
         type: 'create',

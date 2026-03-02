@@ -83,13 +83,15 @@ export function sessionsRouter(): Router {
   })
 
   router.post(['/', ''], async (ctx) => {
-    const { id, title, initialMessage, parentSessionId, start, model } = ctx.request.body as {
+    const { id, title, initialMessage, parentSessionId, start, model, promptType, promptName } = ctx.request.body as {
       id?: string
       title?: string
       initialMessage?: string
       parentSessionId?: string
       start?: boolean
       model?: string
+      promptType?: 'spec' | 'entity'
+      promptName?: string
     }
     const session = await createSessionWithInitialMessage({
       title,
@@ -97,7 +99,9 @@ export function sessionsRouter(): Router {
       parentSessionId,
       id,
       shouldStart: start !== false,
-      model
+      model,
+      promptType,
+      promptName
     })
     ctx.body = { session }
   })

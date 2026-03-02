@@ -1,6 +1,6 @@
 import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, TaskDetail } from '@vibe-forge/core'
 import { loadAdapter } from '@vibe-forge/core'
-import { setCache } from '@vibe-forge/core/utils/cache'
+import { callHook } from '@vibe-forge/core/utils/api'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
@@ -25,12 +25,6 @@ export const run = async (
 
   await cache.set('base', base)
 
-  const startTime = Date.now()
-  logger.info('[Framework] Process start', {
-    ...base,
-    adapterOptions,
-    startDateTime: new Date(startTime).toLocaleString()
-  })
   const adapters = {
     ...config?.adapters,
     ...userConfig?.adapters
@@ -52,35 +46,39 @@ export const run = async (
       return adapterNames[0]
     })()
 
-  const detail: TaskDetail = {
-    ctxId: ctx.ctxId,
-    sessionId: adapterOptions.sessionId,
-    status: 'running',
-    startTime,
-    description: adapterOptions.description,
-    adapter: adapterType,
-    model: adapterOptions.model
-  }
-
-  const saveDetail = async (d: TaskDetail) => {
-    // Save to caches/ctxId/detail.json (ignoring sessionId)
-    await setCache(ctx.cwd, ctx.ctxId, undefined, 'detail', d)
-  }
-
-  await saveDetail(detail)
-
   const originalOnEvent = adapterOptions.onEvent
   const wrappedOnEvent = (event: AdapterOutputEvent) => {
     if (event.type === 'exit') {
-      detail.status = event.data.exitCode === 0 ? 'completed' : 'failed'
-      detail.endTime = Date.now()
-      detail.exitCode = event.data.exitCode ?? undefined
-      void saveDetail(detail).catch(console.error)
+      const { data } = event
+
+      void callHook('TaskStop', {
+        adapter: adapterType,
+        cwd: ctx.cwd,
+        sessionId: adapterOptions.sessionId,
+
+        options,
+        adapterOptions,
+
+        exitCode: data.exitCode,
+        stderr: data.stderr
+      }, ctx.env)
+        .catch((e) => {
+          logger.error('[Hook] TaskStop failed', e)
+        })
     }
     originalOnEvent(event)
   }
 
   const adapter = await loadAdapter(adapterType)
+
+  await callHook('TaskStart', {
+    adapter: adapterType,
+    cwd: ctx.cwd,
+    sessionId: adapterOptions.sessionId,
+
+    options,
+    adapterOptions
+  }, ctx.env)
   const session = await adapter.query(
     ctx,
     {
@@ -88,11 +86,6 @@ export const run = async (
       onEvent: wrappedOnEvent
     }
   )
-
-  if (session.pid) {
-    detail.pid = session.pid
-    await saveDetail(detail)
-  }
 
   return { session, ctx }
 }

@@ -14,7 +14,13 @@ export async function createSession(
   title?: string,
   initialMessage?: string,
   model?: string,
-  options?: { start?: boolean; parentSessionId?: string; id?: string }
+  options?: {
+    start?: boolean
+    parentSessionId?: string
+    id?: string
+    promptType?: 'spec' | 'entity'
+    promptName?: string
+  }
 ): Promise<{ session: Session }> {
   return fetchApiJson<{ session: Session }>('/api/sessions', {
     method: 'POST',
@@ -25,7 +31,9 @@ export async function createSession(
       model,
       start: options?.start,
       parentSessionId: options?.parentSessionId,
-      id: options?.id
+      id: options?.id,
+      promptType: options?.promptType,
+      promptName: options?.promptName
     })
   })
 }

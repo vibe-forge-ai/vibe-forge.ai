@@ -5,7 +5,6 @@ export interface HookInputCore {
   cwd: string
   sessionId: string
   hookEventName: keyof HookInputs
-  transcriptPath: string
 }
 
 /**
@@ -113,6 +112,34 @@ export interface HookInputs {
   SessionEnd: HookInputCore & {
     reason: string
   }
+
+  StartTasks: HookInputCore & {
+    tasks: Array<{
+      description: string
+      type: 'default' | 'spec' | 'entity'
+      name?: string
+      adapter?: string
+      background?: boolean
+    }>
+  }
+  GenerateSystemPrompt: HookInputCore & {
+    type?: 'spec' | 'entity'
+    name?: string
+    data?: unknown
+  }
+  TaskStart: HookInputCore & {
+    adapter?: string
+    options: unknown
+    adapterOptions: unknown
+  }
+  TaskStop: HookInputCore & {
+    exitCode?: number
+    stderr?: string
+    adapter?: string
+
+    options: unknown
+    adapterOptions: unknown
+  }
 }
 
 export type HookInput = HookInputs[keyof HookInputs]
@@ -168,6 +195,11 @@ export interface HookOutputs {
   SessionEnd: HookOutputCore
   SubagentStop: HookOutputCore
   PreCompact: HookOutputCore
+
+  StartTasks: HookOutputCore
+  GenerateSystemPrompt: HookOutputCore
+  TaskStart: HookOutputCore
+  TaskStop: HookOutputCore
 }
 
 export type HookOutput = HookOutputs[keyof HookOutputs]

@@ -10,7 +10,7 @@ export type AdapterOutputEvent =
   | { type: 'init'; data: SessionInitInfo }
   | { type: 'summary'; data: SessionSummaryInfo }
   | { type: 'message'; data: ChatMessage }
-  | { type: 'exit'; data: { exitCode: number | null; stderr?: string } }
+  | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
 
 export type SessionInfo =
@@ -66,6 +66,7 @@ export interface AdapterQueryOptions {
 
   systemPrompt?: string
   appendSystemPrompt?: boolean
+  permissionMode?: 'allow' | 'deny' | 'ask'
 
   mcpServers?: {
     include?: string[]

@@ -30,6 +30,11 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const model = params.get('model') ?? undefined
     const systemPrompt = params.get('systemPrompt') ?? undefined
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
+    const promptTypeRaw = params.get('type') ?? undefined
+    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity'
+      ? promptTypeRaw
+      : undefined
+    const promptName = params.get('name') ?? undefined
 
     const serverLogger = getSessionLogger(sessionId, 'server')
     serverLogger.info({ sessionId }, '[server] Connection established')
@@ -47,7 +52,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         const cached = await startAdapterSession(sessionId, {
           model,
           systemPrompt,
-          appendSystemPrompt
+          appendSystemPrompt,
+          promptType,
+          promptName
         })
         cached.sockets.add(ws)
       }
