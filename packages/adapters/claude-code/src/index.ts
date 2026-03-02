@@ -157,6 +157,7 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
     type,
     systemPrompt,
     appendSystemPrompt = true,
+    permissionMode,
     mcpServers: inputMCPServersRule,
     tools: inputToolsRule
   } = options
@@ -179,7 +180,10 @@ async function prepareClaudeExecution(ctx: AdapterCtx, options: AdapterQueryOpti
       ask: [
         ...(config?.permissions?.ask ?? []),
         ...(userConfig?.permissions?.ask ?? [])
-      ]
+      ],
+      defaultMode: permissionMode
+        ?? userConfig?.permissions?.defaultMode
+        ?? config?.permissions?.defaultMode
     },
     defaultIncludeMcpServers: [
       ...(config?.defaultIncludeMcpServers ?? []),

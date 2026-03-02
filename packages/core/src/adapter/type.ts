@@ -66,7 +66,7 @@ export interface AdapterQueryOptions {
 
   systemPrompt?: string
   appendSystemPrompt?: boolean
-  permissionMode?: 'allow' | 'deny' | 'ask'
+  permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
 
   mcpServers?: {
     include?: string[]

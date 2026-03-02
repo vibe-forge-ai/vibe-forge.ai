@@ -142,6 +142,7 @@ export interface Config {
     allow?: string[]
     deny?: string[]
     ask?: string[]
+    defaultMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   }
   /**
    * 环境变量配置
