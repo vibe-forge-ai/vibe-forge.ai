@@ -5,10 +5,7 @@ import { MessageFooter } from './MessageFooter'
 import './ToolGroup.scss'
 import { ToolRenderer } from './ToolRenderer'
 
-export function ToolGroup({
-  items,
-  footer
-}: {
+type ToolGroupProps = {
   items: {
     item: Extract<ChatMessageContent, { type: 'tool_use' }>
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
@@ -19,7 +16,12 @@ export function ToolGroup({
     createdAt: number
     originalMessage: ChatMessage
   }
-}) {
+}
+
+function ToolGroupComponent({
+  items,
+  footer
+}: ToolGroupProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
@@ -100,3 +102,19 @@ export function ToolGroup({
     </div>
   )
 }
+
+const areToolGroupPropsEqual = (prev: ToolGroupProps, next: ToolGroupProps) => {
+  if (prev.items.length !== next.items.length) return false
+  for (let i = 0; i < prev.items.length; i++) {
+    if (prev.items[i].item !== next.items[i].item) return false
+    if (prev.items[i].resultItem !== next.items[i].resultItem) return false
+  }
+  if (prev.footer == null && next.footer == null) return true
+  if (prev.footer == null || next.footer == null) return false
+  return prev.footer.originalMessage === next.footer.originalMessage
+    && prev.footer.createdAt === next.footer.createdAt
+    && prev.footer.model === next.footer.model
+    && prev.footer.usage === next.footer.usage
+}
+
+export const ToolGroup = React.memo(ToolGroupComponent, areToolGroupPropsEqual)

@@ -20,6 +20,7 @@ export interface TaskInfo {
   description: string
   type?: 'default' | 'spec' | 'entity'
   name?: string
+  permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   background?: boolean
   status: 'running' | 'completed' | 'failed'
   exitCode?: number
@@ -38,11 +39,12 @@ class TaskManager {
     description: string
     type?: 'default' | 'spec' | 'entity'
     name?: string
+    permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
     background?: boolean
     enableServerSync?: boolean
   }): Promise<{ taskId: string; logs?: string[] }> {
-    const { taskId, adapter, description, type, name, background = true, enableServerSync } = options
+    const { taskId, adapter, description, type, name, permissionMode, background = true, enableServerSync } = options
 
     // Initialize Task Info
     const taskInfo: TaskInfo = {
@@ -51,6 +53,7 @@ class TaskManager {
       description,
       type,
       name,
+      permissionMode,
       background,
       status: 'running',
       logs: [],
@@ -98,6 +101,7 @@ class TaskManager {
         mode: 'stream',
         sessionId: taskId,
         systemPrompt: resolvedConfig.systemPrompt,
+        permissionMode,
         tools: resolvedConfig.tools,
         skills: resolvedConfig.skills,
         mcpServers: resolvedConfig.mcpServers,

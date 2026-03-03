@@ -5,13 +5,15 @@ import { MessageFooter } from './MessageFooter'
 import { MarkdownContent } from './MarkdownContent'
 import { ToolRenderer } from './ToolRenderer'
 
-export function MessageItem({
-  msg,
-  isFirstInGroup
-}: {
+type MessageItemProps = {
   msg: ChatMessage
   isFirstInGroup: boolean
-}) {
+}
+
+function MessageItemComponent({
+  msg,
+  isFirstInGroup
+}: MessageItemProps) {
   const isUser = msg.role === 'user'
 
   const renderContent = () => {
@@ -76,3 +78,16 @@ export function MessageItem({
     </div>
   )
 }
+
+const areMessageItemPropsEqual = (prev: MessageItemProps, next: MessageItemProps) => {
+  return prev.isFirstInGroup === next.isFirstInGroup
+    && prev.msg.id === next.msg.id
+    && prev.msg.role === next.msg.role
+    && prev.msg.createdAt === next.msg.createdAt
+    && prev.msg.model === next.msg.model
+    && prev.msg.content === next.msg.content
+    && prev.msg.toolCall === next.msg.toolCall
+    && prev.msg.usage === next.msg.usage
+}
+
+export const MessageItem = React.memo(MessageItemComponent, areMessageItemPropsEqual)

@@ -30,6 +30,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const model = params.get('model') ?? undefined
     const systemPrompt = params.get('systemPrompt') ?? undefined
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
+    const permissionMode = params.get('permissionMode') ?? undefined
     const promptTypeRaw = params.get('type') ?? undefined
     const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity'
       ? promptTypeRaw
@@ -53,6 +54,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           model,
           systemPrompt,
           appendSystemPrompt,
+          permissionMode: permissionMode as 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions' | undefined,
           promptType,
           promptName
         })

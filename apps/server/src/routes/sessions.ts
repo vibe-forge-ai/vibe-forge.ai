@@ -83,7 +83,7 @@ export function sessionsRouter(): Router {
   })
 
   router.post(['/', ''], async (ctx) => {
-    const { id, title, initialMessage, parentSessionId, start, model, promptType, promptName } = ctx.request.body as {
+    const { id, title, initialMessage, parentSessionId, start, model, promptType, promptName, permissionMode } = ctx.request.body as {
       id?: string
       title?: string
       initialMessage?: string
@@ -92,6 +92,7 @@ export function sessionsRouter(): Router {
       model?: string
       promptType?: 'spec' | 'entity'
       promptName?: string
+      permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     }
     const session = await createSessionWithInitialMessage({
       title,
@@ -101,7 +102,8 @@ export function sessionsRouter(): Router {
       shouldStart: start !== false,
       model,
       promptType,
-      promptName
+      promptName,
+      permissionMode
     })
     ctx.body = { session }
   })

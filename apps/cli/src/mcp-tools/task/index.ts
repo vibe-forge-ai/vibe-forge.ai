@@ -38,6 +38,10 @@ export default defineRegister((server) => {
                 .string()
                 .describe('The adapter to use for the task (e.g. claude-code)')
                 .optional(),
+              permissionMode: z
+                .enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions'])
+                .describe('Permission mode for the task')
+                .optional(),
               background: z
                 .boolean()
                 .describe(

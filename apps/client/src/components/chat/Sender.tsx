@@ -8,6 +8,7 @@ import useSWR from 'swr'
 
 import type { AskUserQuestionParams, SessionInfo, SessionStatus } from '@vibe-forge/core'
 import type { CompletionItem } from './CompletionMenu'
+import type { PermissionMode } from './useChatPermissionMode'
 import { CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
 import { isShortcutMatch } from '../../utils/shortcutUtils'
@@ -37,6 +38,9 @@ export function Sender({
   modelOptions,
   selectedModel,
   onModelChange,
+  permissionMode,
+  permissionModeOptions,
+  onPermissionModeChange,
   modelUnavailable
 }: {
   onSend: (text: string) => void
@@ -50,6 +54,9 @@ export function Sender({
   modelOptions?: ModelSelectGroup[]
   selectedModel?: string
   onModelChange?: (model: string) => void
+  permissionMode: PermissionMode
+  permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
+  onPermissionModeChange: (mode: PermissionMode) => void
   modelUnavailable?: boolean
 }) {
   const { t } = useTranslation()
@@ -519,6 +526,20 @@ export function Sender({
                 const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
                 return searchText.toLowerCase().includes(input.toLowerCase())
               }}
+              popupMatchSelectWidth={false}
+            />
+
+            <Select
+              className='permission-mode-select'
+              classNames={{ popup: { root: 'permission-mode-select-popup' } }}
+              value={permissionMode}
+              options={permissionModeOptions}
+              showSearch={false}
+              allowClear={false}
+              disabled={modelUnavailable || isThinking}
+              onChange={(value) => onPermissionModeChange(value)}
+              placeholder='权限模式'
+              optionLabelProp='label'
               popupMatchSelectWidth={false}
             />
 

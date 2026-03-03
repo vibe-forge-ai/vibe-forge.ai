@@ -5,12 +5,23 @@
   "plugins": {
     "logger": {}
   },
-  "mcpServers": {},
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--headless",
+        "--isolated",
+        "--viewport",
+        "1920x934"
+      ]
+    }
+  },
   "permissions": {
     "allow": [],
     "deny": [],
     "ask": [
-      "Bash(rm:*)",
       "Bash(kill:*)",
       "Bash(chmod:*)"
     ]

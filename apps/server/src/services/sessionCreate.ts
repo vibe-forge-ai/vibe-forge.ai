@@ -13,6 +13,7 @@ export async function createSessionWithInitialMessage(options: {
   model?: string
   promptType?: 'spec' | 'entity'
   promptName?: string
+  permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
 }): Promise<Session> {
   const {
     title,
@@ -23,7 +24,8 @@ export async function createSessionWithInitialMessage(options: {
     tags,
     model,
     promptType,
-    promptName
+    promptName,
+    permissionMode
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
@@ -40,7 +42,7 @@ export async function createSessionWithInitialMessage(options: {
 
   if (initialMessage && shouldStart) {
     try {
-      await startAdapterSession(session.id, { model, promptType, promptName })
+      await startAdapterSession(session.id, { model, promptType, promptName, permissionMode })
       processUserMessage(session.id, initialMessage)
 
       const updated = db.getSession(session.id)

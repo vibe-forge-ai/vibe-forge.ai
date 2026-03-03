@@ -13,6 +13,7 @@ interface RunOptions {
   model?: string
   adapter: string
   systemPrompt?: string
+  permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   sessionId?: string
   resume?: boolean
   spec?: string
@@ -33,6 +34,7 @@ export function registerRunCommand(program: Command) {
     .option('--model <model>', 'Model to use')
     .option('--adapter <adapter>', 'Adapter to use', 'claude-code')
     .option('--system-prompt <prompt>', 'System prompt')
+    .option('--permission-mode <mode>', 'Permission mode (default, acceptEdits, plan, dontAsk, bypassPermissions)')
     .option('--session-id <id>', 'Session ID')
     .option('--resume', 'Resume existing session', false)
     .option('--output-format <format>', 'Output format', 'text')
@@ -101,6 +103,7 @@ export function registerRunCommand(program: Command) {
         sessionId,
         model: opts.model,
         systemPrompt: finalSystemPrompt,
+        permissionMode: opts.permissionMode,
         mode: opts.print ? 'stream' : 'direct',
         tools,
         mcpServers,

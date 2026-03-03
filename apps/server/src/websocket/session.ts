@@ -22,6 +22,7 @@ export async function startAdapterSession(
     model?: string
     systemPrompt?: string
     appendSystemPrompt?: boolean
+    permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     promptType?: 'spec' | 'entity'
     promptName?: string
   } = {}
@@ -87,6 +88,7 @@ export async function startAdapterSession(
       sessionId,
       model: options.model,
       systemPrompt: mergedSystemPrompt,
+      permissionMode: options.permissionMode,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       tools: resolvedConfig.tools,
       mcpServers: resolvedConfig.mcpServers,

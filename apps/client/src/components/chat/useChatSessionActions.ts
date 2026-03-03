@@ -1,0 +1,98 @@
+import { App } from 'antd'
+import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { useSWRConfig } from 'swr'
+
+import type { Session } from '@vibe-forge/core'
+import { createSession } from '../../api'
+import { connectionManager } from '../../connectionManager'
+import type { PermissionMode } from './useChatPermissionMode'
+
+export function useChatSessionActions({
+  session,
+  selectedModel,
+  hasAvailableModels,
+  permissionMode,
+  onClearMessages
+}: {
+  session?: Session
+  selectedModel?: string
+  hasAvailableModels: boolean
+  permissionMode: PermissionMode
+  onClearMessages: () => void
+}) {
+  const { message } = App.useApp()
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { mutate } = useSWRConfig()
+  const [isCreating, setIsCreating] = useState(false)
+  const isThinking = isCreating || session?.status === 'running'
+
+  const send = useCallback(async (text: string) => {
+    if (text.trim() === '' || isThinking) return
+    if (!hasAvailableModels) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
+
+    if (!session?.id) {
+      setIsCreating(true)
+      try {
+        const { session: newSession } = await createSession(undefined, text.trim(), selectedModel, {
+          permissionMode
+        })
+
+        await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+          if (!prev?.sessions) return { sessions: [newSession] }
+          return {
+            ...prev,
+            sessions: [newSession, ...prev.sessions]
+          }
+        }, false)
+
+        void navigate(`/session/${newSession.id}`)
+      } catch (err) {
+        console.error(err)
+        setIsCreating(false)
+        void message.error('Failed to create session')
+      }
+      return
+    }
+
+    connectionManager.send(session.id, {
+      type: 'user_message',
+      text: text.trim()
+    })
+  }, [
+    hasAvailableModels,
+    isThinking,
+    message,
+    mutate,
+    navigate,
+    permissionMode,
+    selectedModel,
+    session?.id,
+    t
+  ])
+
+  const interrupt = useCallback(() => {
+    if (!session?.id || isThinking === false) return
+    connectionManager.send(session.id, {
+      type: 'interrupt'
+    })
+  }, [isThinking, session?.id])
+
+  const clearMessages = useCallback(() => {
+    onClearMessages()
+    void message.success('Messages cleared')
+  }, [message, onClearMessages])
+
+  return {
+    isCreating,
+    isThinking,
+    send,
+    interrupt,
+    clearMessages
+  }
+}

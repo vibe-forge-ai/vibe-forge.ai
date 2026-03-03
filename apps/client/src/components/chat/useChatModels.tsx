@@ -5,13 +5,13 @@ import useSWR from 'swr'
 import type { ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
 import { getConfig } from '../../api'
 
-interface ModelSelectOption {
+export interface ModelSelectOption {
   value: string
   label: React.ReactNode
   searchText: string
 }
 
-interface ModelSelectGroup {
+export interface ModelSelectGroup {
   label: React.ReactNode
   options: ModelSelectOption[]
 }
@@ -46,7 +46,9 @@ export function useChatModels() {
   const availableModels = useMemo(() => {
     const list: Array<{ model: string; serviceKey: string; serviceTitle: string }> = []
     for (const [serviceKey, serviceValue] of modelServiceEntries) {
-      const service = (serviceValue != null && typeof serviceValue === 'object') ? serviceValue as ModelServiceConfig : undefined
+      const service = (serviceValue != null && typeof serviceValue === 'object')
+        ? serviceValue as ModelServiceConfig
+        : undefined
       const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
       const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
       for (const model of models) {
@@ -71,7 +73,14 @@ export function useChatModels() {
       if (models.length > 0) return models[0]
     }
     return availableModelValues[0]
-  }, [availableModelSet, availableModelValues, defaultModel, defaultModelService, hasAvailableModels, mergedModelServices])
+  }, [
+    availableModelSet,
+    availableModelValues,
+    defaultModel,
+    defaultModelService,
+    hasAvailableModels,
+    mergedModelServices
+  ])
 
   useEffect(() => {
     if (!hasAvailableModels) {
@@ -144,7 +153,9 @@ export function useChatModels() {
 
     const serviceGroups = modelServiceEntries
       .map(([serviceKey, serviceValue]) => {
-        const service = (serviceValue != null && typeof serviceValue === 'object') ? serviceValue as ModelServiceConfig : undefined
+        const service = (serviceValue != null && typeof serviceValue === 'object')
+          ? serviceValue as ModelServiceConfig
+          : undefined
         const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
         const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
         const serviceDescription = service?.description
