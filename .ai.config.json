@@ -6,7 +6,7 @@
     "logger": {}
   },
   "mcpServers": {
-    "chrome-devtools": {
+    "ChromeDevtools": {
       "command": "npx",
       "args": [
         "-y",
@@ -19,7 +19,9 @@
     }
   },
   "permissions": {
-    "allow": [],
+    "allow": [
+      "ChromeDevtools"
+    ],
     "deny": [],
     "ask": [
       "Bash(kill:*)",
