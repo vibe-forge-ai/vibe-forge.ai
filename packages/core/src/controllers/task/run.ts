@@ -1,9 +1,81 @@
-import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, TaskDetail } from '@vibe-forge/core'
+import type {
+  AdapterCtx,
+  AdapterOutputEvent,
+  AdapterQueryOptions,
+  ModelServiceConfig,
+  TaskDetail
+} from '@vibe-forge/core'
 import { loadAdapter } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/core/utils/api'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
+
+const normalizeNonEmptyString = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
+)
+
+const pickFirstNonEmptyString = (values: unknown[]) =>
+  values
+    .map(normalizeNonEmptyString)
+    .find((value): value is string => value != null)
+
+const resolveQueryModel = (params: {
+  config: AdapterCtx['configs'][0]
+  userConfig: AdapterCtx['configs'][1]
+  inputModel?: string
+}) => {
+  const inputModel = normalizeNonEmptyString(params.inputModel)
+  if (inputModel?.includes(',')) return inputModel
+
+  const mergedModelServices = {
+    ...(params.config?.modelServices ?? {}),
+    ...(params.userConfig?.modelServices ?? {})
+  }
+  const mergedDefaultModel = pickFirstNonEmptyString([params.userConfig?.defaultModel, params.config?.defaultModel])
+  const mergedDefaultModelService = pickFirstNonEmptyString([
+    params.userConfig?.defaultModelService,
+    params.config?.defaultModelService
+  ])
+
+  const serviceEntries = Object.entries(mergedModelServices)
+  const modelToService = new Map<string, string>()
+  const availableModels: string[] = []
+  for (const [serviceKey, serviceValue] of serviceEntries) {
+    const service = (serviceValue != null && typeof serviceValue === 'object')
+      ? serviceValue as ModelServiceConfig
+      : undefined
+    const models = Array.isArray(service?.models)
+      ? service?.models.filter(item => typeof item === 'string' && item.trim() !== '')
+      : []
+    for (const model of models) {
+      if (!modelToService.has(model)) modelToService.set(model, serviceKey)
+      availableModels.push(model)
+    }
+  }
+
+  const resolveDefaultModel = () => {
+    if (availableModels.length === 0) return undefined
+    if (mergedDefaultModel && modelToService.has(mergedDefaultModel)) return mergedDefaultModel
+    if (mergedDefaultModelService && mergedModelServices[mergedDefaultModelService]) {
+      const service = mergedModelServices[mergedDefaultModelService]
+      const models = Array.isArray(service?.models)
+        ? service?.models.filter(item => typeof item === 'string' && item.trim() !== '')
+        : []
+      if (models.length > 0) return models[0]
+    }
+    return availableModels[0]
+  }
+
+  const resolvedModel = inputModel ?? resolveDefaultModel()
+  if (!resolvedModel) return undefined
+
+  const resolvedService = modelToService.get(resolvedModel) ??
+    mergedDefaultModelService ??
+    serviceEntries[0]?.[0]
+
+  return resolvedService ? `${resolvedService},${resolvedModel}` : resolvedModel
+}
 
 declare module '@vibe-forge/core' {
   interface Cache {
@@ -70,6 +142,11 @@ export const run = async (
   }
 
   const adapter = await loadAdapter(adapterType)
+  const resolvedModel = resolveQueryModel({
+    config,
+    userConfig,
+    inputModel: adapterOptions.model
+  })
 
   await callHook('TaskStart', {
     adapter: adapterType,
@@ -83,6 +160,7 @@ export const run = async (
     ctx,
     {
       ...adapterOptions,
+      model: resolvedModel,
       onEvent: wrappedOnEvent
     }
   )
