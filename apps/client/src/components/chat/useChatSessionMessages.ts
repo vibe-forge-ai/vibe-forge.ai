@@ -36,12 +36,12 @@ const applyToolResultEvent = (currentMessages: ChatMessage[], data: WSEvent): Ch
 
 export function useChatSessionMessages({
   session,
-  selectedModel,
+  modelForQuery,
   permissionMode,
   setInteractionRequest
 }: {
   session?: Session
-  selectedModel?: string
+  modelForQuery?: string
   permissionMode: PermissionMode
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
@@ -131,8 +131,8 @@ export function useChatSessionMessages({
 
     let isDisposed = false
     let cleanup: (() => void) | undefined
-    const normalizedModel = selectedModel ?? ''
-    const modelChanged = selectedModel != null &&
+    const normalizedModel = modelForQuery ?? ''
+    const modelChanged = modelForQuery != null &&
       lastConnectedModelRef.current != null &&
       normalizedModel !== lastConnectedModelRef.current &&
       session?.status !== 'running'
@@ -152,8 +152,8 @@ export function useChatSessionMessages({
       if (isDisposed) return
 
       const connectionParams: Record<string, string> = {}
-      if (selectedModel) {
-        connectionParams.model = selectedModel
+    if (modelForQuery) {
+      connectionParams.model = modelForQuery
       }
       if (permissionMode) {
         connectionParams.permissionMode = permissionMode
@@ -239,7 +239,7 @@ export function useChatSessionMessages({
       clearTimeout(timer)
       cleanup?.()
     }
-  }, [message, mutate, permissionMode, selectedModel, session?.id, session?.status, setInteractionRequest])
+  }, [message, modelForQuery, mutate, permissionMode, session?.id, session?.status, setInteractionRequest])
 
   return {
     messages,

@@ -11,13 +11,13 @@ import type { PermissionMode } from './useChatPermissionMode'
 
 export function useChatSessionActions({
   session,
-  selectedModel,
+  modelForQuery,
   hasAvailableModels,
   permissionMode,
   onClearMessages
 }: {
   session?: Session
-  selectedModel?: string
+  modelForQuery?: string
   hasAvailableModels: boolean
   permissionMode: PermissionMode
   onClearMessages: () => void
@@ -39,7 +39,7 @@ export function useChatSessionActions({
     if (!session?.id) {
       setIsCreating(true)
       try {
-        const { session: newSession } = await createSession(undefined, text.trim(), selectedModel, {
+        const { session: newSession } = await createSession(undefined, text.trim(), modelForQuery, {
           permissionMode
         })
 
@@ -71,7 +71,7 @@ export function useChatSessionActions({
     mutate,
     navigate,
     permissionMode,
-    selectedModel,
+    modelForQuery,
     session?.id,
     t
   ])

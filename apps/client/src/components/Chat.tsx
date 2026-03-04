@@ -24,6 +24,7 @@ export function Chat({
     placeholder,
     modelOptions,
     selectedModel,
+    modelForQuery,
     setSelectedModel,
     permissionMode,
     setPermissionMode,
@@ -73,6 +74,7 @@ export function Chat({
           placeholder={placeholder}
           modelOptions={modelOptions}
           selectedModel={selectedModel}
+          modelForQuery={modelForQuery}
           onModelChange={setSelectedModel}
           permissionMode={permissionMode}
           permissionModeOptions={permissionModeOptions}

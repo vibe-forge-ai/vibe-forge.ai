@@ -34,6 +34,7 @@ export function ChatHistoryView({
   placeholder,
   modelOptions,
   selectedModel,
+  modelForQuery,
   onModelChange,
   permissionMode,
   permissionModeOptions,
@@ -52,6 +53,7 @@ export function ChatHistoryView({
   placeholder?: string
   modelOptions: ModelSelectGroup[]
   selectedModel?: string
+  modelForQuery?: string
   onModelChange: (model: string) => void
   permissionMode: PermissionMode
   permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
@@ -64,7 +66,7 @@ export function ChatHistoryView({
   })
   const { isCreating, send, interrupt, clearMessages } = useChatSessionActions({
     session,
-    selectedModel,
+    modelForQuery,
     hasAvailableModels,
     permissionMode,
     onClearMessages

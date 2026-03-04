@@ -13,7 +13,13 @@ export function useChatSession({
   session?: Session
 }) {
   const { t } = useTranslation()
-  const { selectedModel, setSelectedModel, modelOptions, hasAvailableModels } = useChatModels()
+  const {
+    selectedModel,
+    selectedModelWithService,
+    setSelectedModel,
+    modelOptions,
+    hasAvailableModels
+  } = useChatModels()
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { activeView, setActiveView } = useChatView()
   const { interactionRequest, setInteractionRequest, handleInteractionResponse } = useChatInteraction({
@@ -21,7 +27,7 @@ export function useChatSession({
   })
   const { messages, setMessages, sessionInfo, isReady } = useChatSessionMessages({
     session,
-    selectedModel,
+    modelForQuery: selectedModelWithService,
     permissionMode,
     setInteractionRequest
   })
@@ -40,6 +46,7 @@ export function useChatSession({
     placeholder: !session?.id ? t('chat.newSessionPlaceholder') : undefined,
     modelOptions,
     selectedModel,
+    modelForQuery: selectedModelWithService,
     setSelectedModel,
     permissionMode,
     setPermissionMode,

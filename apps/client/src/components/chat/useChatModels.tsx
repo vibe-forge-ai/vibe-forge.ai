@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
@@ -62,8 +62,24 @@ export function useChatModels() {
   const availableModelKey = useMemo(() => availableModelValues.join('|'), [availableModelValues])
   const availableModelSet = useMemo(() => new Set(availableModelValues), [availableModelKey])
   const hasAvailableModels = availableModelValues.length > 0
+  const modelToService = useMemo(() => {
+    const map = new Map<string, { key: string; title: string }>()
+    for (const entry of availableModels) {
+      if (!map.has(entry.model)) {
+        map.set(entry.model, { key: entry.serviceKey, title: entry.serviceTitle })
+      }
+    }
+    return map
+  }, [availableModels])
   const defaultModelService = configRes?.sources?.merged?.general?.defaultModelService
   const defaultModel = configRes?.sources?.merged?.general?.defaultModel
+  const formatModelWithService = useCallback((model: string | undefined) => {
+    const normalizedModel = typeof model === 'string' ? model.trim() : ''
+    if (normalizedModel === '') return undefined
+    if (normalizedModel.includes(',')) return normalizedModel
+    const resolvedService = modelToService.get(normalizedModel)?.key ?? defaultModelService
+    return resolvedService ? `${resolvedService},${normalizedModel}` : normalizedModel
+  }, [defaultModelService, modelToService])
   const resolvedDefaultModel = useMemo(() => {
     if (!hasAvailableModels) return undefined
     if (defaultModel && availableModelSet.has(defaultModel)) return defaultModel
@@ -81,6 +97,9 @@ export function useChatModels() {
     hasAvailableModels,
     mergedModelServices
   ])
+  const selectedModelWithService = useMemo(() => (
+    formatModelWithService(selectedModel)
+  ), [formatModelWithService, selectedModel])
 
   useEffect(() => {
     if (!hasAvailableModels) {
@@ -132,13 +151,6 @@ export function useChatModels() {
         value: params.value,
         label,
         searchText
-      }
-    }
-
-    const modelToService = new Map<string, { key: string; title: string }>()
-    for (const entry of availableModels) {
-      if (!modelToService.has(entry.model)) {
-        modelToService.set(entry.model, { key: entry.serviceKey, title: entry.serviceTitle })
       }
     }
 
@@ -224,10 +236,18 @@ export function useChatModels() {
       })
     }
     return [...groups, ...serviceGroups]
-  }, [availableModelSet, availableModels, mergedModelServices, modelServiceEntries, recommendedModels, t])
+  }, [
+    availableModelSet,
+    modelToService,
+    mergedModelServices,
+    modelServiceEntries,
+    recommendedModels,
+    t
+  ])
 
   return {
     selectedModel,
+    selectedModelWithService,
     setSelectedModel,
     modelOptions,
     hasAvailableModels
