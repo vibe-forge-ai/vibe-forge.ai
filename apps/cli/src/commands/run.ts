@@ -65,13 +65,17 @@ export function registerRunCommand(program: Command) {
         promptName,
         promptCWD
       )
+      const env = {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+      }
       await callHook('GenerateSystemPrompt', {
         cwd: promptCWD,
         sessionId,
         type: promptType,
         name: promptName,
         data
-      })
+      }, env)
 
       const finalSystemPrompt = [
         resolvedConfig.systemPrompt,

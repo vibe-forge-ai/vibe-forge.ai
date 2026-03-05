@@ -78,13 +78,17 @@ class TaskManager {
         promptName,
         promptCWD
       )
+      const env = {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
+      }
       await callHook('GenerateSystemPrompt', {
         cwd: promptCWD,
         sessionId: taskId,
         type: promptType,
         name: promptName,
         data
-      })
+      }, env)
 
       // Start Task
       const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
