@@ -1,15 +1,13 @@
-import React, { useMemo } from 'react'
 import './GrepTool.scss'
-import { useTranslation } from 'react-i18next'
-
-import { defineToolRender } from '../defineToolRender'
+import React, { useMemo } from 'react'
 import { CodeBlock } from '../../CodeBlock'
 import { ToolCallBox } from '../../ToolCallBox'
 import { safeJsonStringify } from '../../safeSerialize'
+import { defineToolRender } from '../defineToolRender'
 import { FileList } from './components/FileList'
+import { normalizeResultLines } from './utils'
 
 export const GrepTool = defineToolRender(({ item, resultItem }) => {
-  const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as {
     pattern?: string
     path?: string
@@ -23,28 +21,7 @@ export const GrepTool = defineToolRender(({ item, resultItem }) => {
 
   const fileCount = useMemo(() => {
     if (!resultItem) return null
-    const content = resultItem.content
-    let lines: string[] = []
-
-    if (typeof content === 'string') {
-      if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
-        try {
-          const parsed = JSON.parse(content)
-          if (Array.isArray(parsed)) {
-            lines = parsed.map(String)
-          } else {
-            lines = content.split('\n')
-          }
-        } catch (e) {
-          lines = content.split('\n')
-        }
-      } else {
-        lines = content.split('\n')
-      }
-    } else if (Array.isArray(content)) {
-      lines = content.map(String)
-    }
-
+    const lines = normalizeResultLines(resultItem.content)
     const count = lines.filter(line => line.trim() !== '').length
     return count
   }, [resultItem])
@@ -54,30 +31,34 @@ export const GrepTool = defineToolRender(({ item, resultItem }) => {
       <ToolCallBox
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-rounded'>find_in_page</span>
-            <span className='command-name'>Grep</span>
-            <span className='pattern'>{pattern}</span>
+            <span className='material-symbols-rounded tool-header-icon'>find_in_page</span>
+            <span className='tool-header-title'>Grep</span>
+            <span className='tool-header-secondary'>{pattern}</span>
             {fileCount !== null && (
-              <span className='file-count'>({fileCount} matches)</span>
+              <span className='tool-header-chip'>{fileCount} matches</span>
             )}
           </div>
         }
         content={
           <div className='tool-content'>
-            {(path || fileGlob) && (
-              <div className='input-details-grid'>
+            {(path || fileGlob || outputMode) && (
+              <div className='tool-input-grid'>
                 {path && (
-                  <div className='input-detail-item'>
-                    <span className='label'>Path:</span>
-                    <span className='value'>{path}</span>
+                  <div className='tool-input-item'>
+                    <span className='tool-input-label'>Path</span>
+                    <span className='tool-input-value'>{path}</span>
                   </div>
                 )}
                 {fileGlob && (
-                  <div className='input-detail-item'>
-                    <span className='label'>Glob:</span>
-                    <span className='value'>{fileGlob}</span>
+                  <div className='tool-input-item'>
+                    <span className='tool-input-label'>Glob</span>
+                    <span className='tool-input-value'>{fileGlob}</span>
                   </div>
                 )}
+                <div className='tool-input-item'>
+                  <span className='tool-input-label'>Mode</span>
+                  <span className='tool-input-value'>{outputMode}</span>
+                </div>
               </div>
             )}
             {resultItem

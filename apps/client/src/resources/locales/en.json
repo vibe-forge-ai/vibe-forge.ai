@@ -351,6 +351,12 @@
       "todo": "Task Planning",
       "call": "call",
       "reading": "Reading file...",
+      "offset": "offset",
+      "limit": "limit",
+      "timeout": "timeout",
+      "runInBackground": "run in background",
+      "dangerouslyDisableSandbox": "sandbox disabled",
+      "viewCommand": "View command",
       "unknown": "Unknown tool"
     },
     "sessionSettings": "Session Settings",

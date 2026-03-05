@@ -154,11 +154,13 @@ export function TaskToolCard({
             ))}
           </div>
         )}
-        <CodeBlock
-          hideHeader
-          code={logText}
-          lang='md'
-        />
+        {logText !== '' && (
+          <CodeBlock
+            hideHeader
+            code={logText}
+            lang='md'
+          />
+        )}
       </div>
     </div>
   )

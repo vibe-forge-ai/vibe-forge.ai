@@ -2,8 +2,8 @@ import './TodoTool.scss'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { defineToolRender } from '../defineToolRender'
 import { ToolCallBox } from '../../ToolCallBox'
+import { defineToolRender } from '../defineToolRender'
 
 interface TodoItem {
   content: string
@@ -15,15 +15,31 @@ export const TodoTool = defineToolRender(({ item }) => {
   const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as { todos?: TodoItem[] }
   const todos = input.todos ?? []
+  const totalCount = todos.length
+  const completedCount = todos.filter(todo => todo.status === 'completed').length
+  const inProgressCount = todos.filter(todo => todo.status === 'in_progress').length
+  const pendingCount = totalCount - completedCount - inProgressCount
 
   return (
     <div className='tool-group todo-tool'>
       <ToolCallBox
         defaultExpanded={true}
         header={
-          <div className='todo-header'>
-            <span className='material-symbols-rounded status-icon'>task_alt</span>
-            <span className='todo-title'>{t('chat.tools.todo')}</span>
+          <div className='tool-header-content'>
+            <span className='material-symbols-rounded tool-header-icon'>task_alt</span>
+            <span className='tool-header-title'>{t('chat.tools.todo')}</span>
+            {totalCount > 0 && (
+              <span className='tool-header-chip'>{totalCount} total</span>
+            )}
+            {inProgressCount > 0 && (
+              <span className='tool-header-chip'>{inProgressCount} doing</span>
+            )}
+            {pendingCount > 0 && (
+              <span className='tool-header-chip'>{pendingCount} todo</span>
+            )}
+            {completedCount > 0 && (
+              <span className='tool-header-chip'>{completedCount} done</span>
+            )}
           </div>
         }
         content={

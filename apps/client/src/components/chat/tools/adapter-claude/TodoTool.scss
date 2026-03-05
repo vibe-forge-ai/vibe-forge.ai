@@ -1,34 +1,15 @@
 .todo-tool {
-  .todo-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .status-icon {
-      font-size: 18px;
-    }
-
-    .todo-title {
-      font-size: 13px;
-      font-weight: 500;
-    }
-  }
-
-  .tool-content {
-    padding: 4px 0;
-  }
-
   .todo-item {
     display: flex;
     align-items: flex-start;
     gap: 8px;
     margin-bottom: 2px;
-    padding: 6px 12px;
+    padding: 6px 4px;
     border-radius: 0;
     transition: background-color .2s;
 
     &:hover {
-      background-color: rgba(0, 0, 0, .04);
+      background-color: var(--bg-color-hover);
     }
 
     &:last-child {
@@ -43,13 +24,13 @@
       }
 
       .status-icon {
-        color: #10b981;
+        color: var(--success-color);
       }
     }
 
     &.in_progress {
       .status-icon {
-        color: #3b82f6;
+        color: var(--primary-color);
       }
     }
 
@@ -57,6 +38,10 @@
       .status-icon {
         color: var(--sub-text-color);
       }
+    }
+
+    .status-icon {
+      font-size: 16px;
     }
 
     .todo-info {

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
-import { TaskToolCard } from './components/TaskToolCard'
+import { TaskRow } from './components/TaskRow'
 
 interface TaskResult {
   taskId: string
@@ -35,10 +35,10 @@ export const ListTasksTool = defineToolRender(({ resultItem }) => {
       <ToolCallBox
         defaultExpanded={true}
         header={
-          <div className='list-tasks-tool__header'>
-            <span className='material-symbols-rounded list-tasks-tool__icon'>list_alt</span>
-            <span className='list-tasks-tool__title'>{t('chat.tools.listTasks')}</span>
-            <span className='list-tasks-tool__count'>{taskResults.length}</span>
+          <div className='tool-header-content'>
+            <span className='material-symbols-rounded tool-header-icon'>list_alt</span>
+            <span className='tool-header-title'>{t('chat.tools.listTasks')}</span>
+            <span className='tool-header-chip'>{taskResults.length}</span>
           </div>
         }
         content={
@@ -59,10 +59,13 @@ export const ListTasksTool = defineToolRender(({ resultItem }) => {
                     : undefined
                 ]
                 return (
-                  <TaskToolCard
+                  <TaskRow
                     key={taskId}
-                    {...cardProps}
+                    description={cardProps.description}
+                    status={cardProps.status}
+                    background={cardProps.background}
                     sessionId={taskId}
+                    logs={cardProps.logs}
                     titleFallback={t('chat.tools.task')}
                     metaChips={metaChips}
                     showExecutionIcon={false}

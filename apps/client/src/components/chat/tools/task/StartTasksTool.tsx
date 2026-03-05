@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
-import { TaskToolCard } from './components/TaskToolCard'
+import { TaskRow } from './components/TaskRow'
 
 interface StartTask {
   description?: string
@@ -50,10 +50,10 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
       <ToolCallBox
         defaultExpanded={true}
         header={
-          <div className='start-tasks-tool__header'>
-            <span className='material-symbols-rounded start-tasks-tool__icon'>playlist_add</span>
-            <span className='start-tasks-tool__title'>{t('chat.tools.startTasks')}</span>
-            <span className='start-tasks-tool__count'>{tasks.length}</span>
+          <div className='tool-header-content'>
+            <span className='material-symbols-rounded tool-header-icon'>playlist_add</span>
+            <span className='tool-header-title'>{t('chat.tools.startTasks')}</span>
+            <span className='tool-header-chip'>{tasks.length}</span>
           </div>
         }
         content={
@@ -62,7 +62,6 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
               {tasks.map((task, idx) => {
                 const { description, type, name, adapter, background } = task
                 const { status, taskId, logs = [] } = taskResults?.[idx] ?? {}
-                const cardProps = { description, status, logs, adapter, type, name, background }
                 const metaChips = [
                   adapter,
                   type === 'default' ? undefined : type,
@@ -70,10 +69,13 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
                 ]
 
                 return (
-                  <TaskToolCard
+                  <TaskRow
                     key={idx}
-                    {...cardProps}
+                    description={description}
+                    status={status}
+                    background={background}
                     sessionId={taskId}
+                    logs={logs}
                     titleFallback={t('chat.tools.startTasks')}
                     metaChips={metaChips}
                     showExecutionIcon={true}

@@ -1,7 +1,5 @@
-import React, { useMemo } from 'react'
 import './LsTool.scss'
-import { useTranslation } from 'react-i18next'
-
+import React, { useMemo } from 'react'
 import { defineToolRender } from '../defineToolRender'
 import { CodeBlock } from '../../CodeBlock'
 import { ToolCallBox } from '../../ToolCallBox'
@@ -9,7 +7,6 @@ import { safeJsonStringify } from '../../safeSerialize'
 import { FileList } from './components/FileList'
 
 export const LsTool = defineToolRender(({ item, resultItem }) => {
-  const { t } = useTranslation()
   const input = (item.input != null ? item.input : {}) as { path?: string; ignore?: string[] }
   const path = (input.path != null && input.path !== '') ? input.path : 'current directory'
   const ignore = input.ignore
@@ -43,20 +40,22 @@ export const LsTool = defineToolRender(({ item, resultItem }) => {
       <ToolCallBox
         header={
           <div className='tool-header-content'>
-            <span className='material-symbols-rounded'>folder_open</span>
-            <span className='command-name'>LS</span>
-            <span className='path'>{path}</span>
+            <span className='material-symbols-rounded tool-header-icon'>folder_open</span>
+            <span className='tool-header-title'>LS</span>
+            <span className='tool-header-secondary'>{path}</span>
             {fileCount !== null && (
-              <span className='file-count'>({fileCount} files)</span>
+              <span className='tool-header-chip'>{fileCount} files</span>
             )}
           </div>
         }
         content={
           <div className='tool-content'>
             {ignore && ignore.length > 0 && (
-              <div className='input-details'>
-                <span className='label'>Ignore:</span>
-                <code>{JSON.stringify(ignore)}</code>
+              <div className='tool-input-grid'>
+                <div className='tool-input-item'>
+                  <span className='tool-input-label'>Ignore</span>
+                  <span className='tool-input-value'>{JSON.stringify(ignore)}</span>
+                </div>
               </div>
             )}
 

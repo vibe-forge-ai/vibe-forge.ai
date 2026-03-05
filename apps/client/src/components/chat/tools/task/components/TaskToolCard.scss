@@ -1,8 +1,8 @@
 .task-tool-card {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: color-mix(
@@ -14,12 +14,12 @@
   &__left {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
   }
 
   &__status-icon {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--sub-text-color);
     transition: color .2s ease;
 
@@ -41,7 +41,7 @@
   }
 
   &__execution-icon {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--sub-text-color);
     transition: color .2s ease;
 
@@ -69,15 +69,15 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   &__title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-color);
     flex: 1;
-    margin-right: 12px;
+    margin-right: 8px;
   }
 
   &__session-id {
@@ -103,24 +103,24 @@
   }
 
   &__content {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.5;
     color: var(--text-color);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   &__meta {
-    margin: 6px 0;
+    margin: 4px 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
   }
 
   &__meta-chip {
-    padding: 2px 6px;
+    padding: 1px 6px;
     border: 1px solid var(--border-color);
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--sub-text-color);
     background: var(--bg-color);
   }

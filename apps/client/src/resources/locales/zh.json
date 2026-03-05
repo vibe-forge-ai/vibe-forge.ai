@@ -352,6 +352,12 @@
       "todo": "任务规划",
       "call": "调用",
       "reading": "正在读取文件...",
+      "offset": "offset",
+      "limit": "limit",
+      "timeout": "timeout",
+      "runInBackground": "后台执行",
+      "dangerouslyDisableSandbox": "禁用沙箱",
+      "viewCommand": "查看指令",
       "unknown": "未知工具"
     },
     "sessionSettings": "会话设置",
