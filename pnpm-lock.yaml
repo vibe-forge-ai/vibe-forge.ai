@@ -201,6 +201,9 @@ importers:
       pino:
         specifier: ^10.2.0
         version: 10.2.0
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.1.3
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -232,9 +235,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
 
   packages/adapters/claude-code:
     dependencies:
@@ -272,6 +272,12 @@ importers:
       '@types/node-notifier':
         specifier: ^8.0.5
         version: 8.0.5
+
+  packages/plugins/chrome-devtools:
+    dependencies:
+      '@vibe-forge/core':
+        specifier: workspace:*
+        version: link:../../core
 
   packages/plugins/logger:
     dependencies:

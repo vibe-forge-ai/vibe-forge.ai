@@ -11,6 +11,15 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.js"
       }
+    },
+    "./schema": {
+      "__vibe-forge__": {
+        "default": "./src/schema.ts"
+      },
+      "default": {
+        "import": "./dist/schema.mjs",
+        "require": "./dist/schema.js"
+      }
     }
   },
   "bin": {
