@@ -147,27 +147,24 @@ export function ChatHeader({
           options={[
             {
               label: (
-                <span className='chat-header-view-option'>
-                  <span className='material-symbols-rounded'>forum</span>
-                  <span>{t('chat.viewHistory')}</span>
+                <span className='chat-header-view-option material-symbols-rounded'>
+                  forum
                 </span>
               ),
               value: 'history'
             },
             {
               label: (
-                <span className='chat-header-view-option'>
-                  <span className='material-symbols-rounded'>timeline</span>
-                  <span>{t('chat.viewTimeline')}</span>
+                <span className='chat-header-view-option material-symbols-rounded'>
+                  timeline
                 </span>
               ),
               value: 'timeline'
             },
             {
               label: (
-                <span className='chat-header-view-option'>
-                  <span className='material-symbols-rounded'>tune</span>
-                  <span>{t('chat.viewSettings')}</span>
+                <span className='chat-header-view-option material-symbols-rounded'>
+                  tune
                 </span>
               ),
               value: 'settings'

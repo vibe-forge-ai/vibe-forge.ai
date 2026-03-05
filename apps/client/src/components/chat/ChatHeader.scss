@@ -64,22 +64,16 @@
 }
 
 .chat-header-view-group {
-  .ant-radio-button-wrapper {
-    height: 30px;
-    line-height: 28px;
-    padding: 0 12px;
-    font-size: 12px;
+  .ant-radio-button-wrapper .ant-radio-button-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
   }
 }
 
-.chat-header-view-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  .material-symbols-rounded {
-    font-size: 16px;
-  }
+.chat-header-view-option.material-symbols-rounded {
+  font-size: 16px;
 }
 
 .material-symbols-rounded.is-filled {
@@ -271,15 +265,27 @@
           &.archive-action {
             &:hover {
               border-color: var(--danger-color);
-              background-color: color-mix(in srgb, var(--danger-color) 12%, transparent);
+              background-color: color-mix(
+                in srgb,
+                var(--danger-color) 12%,
+                transparent
+              );
               color: var(--danger-color);
             }
             &.active {
-              background-color: color-mix(in srgb, var(--danger-color) 18%, transparent);
+              background-color: color-mix(
+                in srgb,
+                var(--danger-color) 18%,
+                transparent
+              );
               border-color: var(--danger-color);
               color: var(--danger-color);
               &:hover {
-                background-color: color-mix(in srgb, var(--danger-color) 24%, transparent);
+                background-color: color-mix(
+                  in srgb,
+                  var(--danger-color) 24%,
+                  transparent
+                );
               }
             }
           }
@@ -349,15 +355,27 @@ html.dark {
 
             &.archive-action {
               &:hover {
-                background-color: color-mix(in srgb, var(--danger-color) 22%, transparent);
+                background-color: color-mix(
+                  in srgb,
+                  var(--danger-color) 22%,
+                  transparent
+                );
                 color: var(--danger-color);
               }
               &.active {
-                background-color: color-mix(in srgb, var(--danger-color) 26%, transparent);
+                background-color: color-mix(
+                  in srgb,
+                  var(--danger-color) 26%,
+                  transparent
+                );
                 border-color: var(--danger-color);
                 color: var(--danger-color);
                 &:hover {
-                  background-color: color-mix(in srgb, var(--danger-color) 32%, transparent);
+                  background-color: color-mix(
+                    in srgb,
+                    var(--danger-color) 32%,
+                    transparent
+                  );
                 }
               }
             }
