@@ -1,0 +1,48 @@
+{
+  "name": "@vibe-forge/plugin-chrome-devtools",
+  "version": "0.3.0",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./hooks": {
+      "__vibe-forge__": {
+        "default": "./src/hooks.ts"
+      },
+      "default": {
+        "import": "./dist/hooks.mjs",
+        "require": "./dist/hooks.js"
+      }
+    },
+    "./schema": {
+      "__vibe-forge__": {
+        "default": "./src/schema.ts"
+      },
+      "default": {
+        "import": "./dist/schema.mjs",
+        "require": "./dist/schema.js"
+      }
+    }
+  },
+  "dependencies": {
+    "@vibe-forge/core": "workspace:*"
+  }
+}
+
