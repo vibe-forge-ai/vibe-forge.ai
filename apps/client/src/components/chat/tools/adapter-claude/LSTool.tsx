@@ -1,5 +1,6 @@
 import './LsTool.scss'
 import React, { useMemo } from 'react'
+import type { ToolInputs } from '@vibe-forge/core'
 import { defineToolRender } from '../defineToolRender'
 import { CodeBlock } from '../../CodeBlock'
 import { ToolCallBox } from '../../ToolCallBox'
@@ -7,7 +8,7 @@ import { safeJsonStringify } from '../../safeSerialize'
 import { FileList } from './components/FileList'
 
 export const LsTool = defineToolRender(({ item, resultItem }) => {
-  const input = (item.input != null ? item.input : {}) as { path?: string; ignore?: string[] }
+  const input = (item.input != null ? item.input : {}) as ToolInputs['adapter:claude-code:LS']
   const path = (input.path != null && input.path !== '') ? input.path : 'current directory'
   const ignore = input.ignore
 

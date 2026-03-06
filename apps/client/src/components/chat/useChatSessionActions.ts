@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
-import type { Session } from '@vibe-forge/core'
+import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import { createSession } from '../../api'
 import { connectionManager } from '../../connectionManager'
 import type { PermissionMode } from './useChatPermissionMode'
@@ -39,7 +39,7 @@ export function useChatSessionActions({
     if (!session?.id) {
       setIsCreating(true)
       try {
-        const { session: newSession } = await createSession(undefined, text.trim(), modelForQuery, {
+        const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
           permissionMode
         })
 
@@ -76,6 +76,54 @@ export function useChatSessionActions({
     t
   ])
 
+  const sendContent = useCallback(async (content: ChatMessageContent[]) => {
+    if (content.length === 0 || isThinking) return
+    if (!hasAvailableModels) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
+
+    if (!session?.id) {
+      setIsCreating(true)
+      try {
+        const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
+          permissionMode
+        })
+
+        await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+          if (!prev?.sessions) return { sessions: [newSession] }
+          return {
+            ...prev,
+            sessions: [newSession, ...prev.sessions]
+          }
+        }, false)
+
+        void navigate(`/session/${newSession.id}`)
+        setIsCreating(false)
+      } catch (err) {
+        console.error(err)
+        setIsCreating(false)
+        void message.error('Failed to create session')
+      }
+      return
+    }
+
+    connectionManager.send(session.id, {
+      type: 'user_message',
+      content
+    })
+  }, [
+    hasAvailableModels,
+    isThinking,
+    message,
+    mutate,
+    navigate,
+    permissionMode,
+    modelForQuery,
+    session?.id,
+    t
+  ])
+
   const interrupt = useCallback(() => {
     if (!session?.id || isThinking === false) return
     connectionManager.send(session.id, {
@@ -92,6 +140,7 @@ export function useChatSessionActions({
     isCreating,
     isThinking,
     send,
+    sendContent,
     interrupt,
     clearMessages
   }

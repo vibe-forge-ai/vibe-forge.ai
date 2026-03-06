@@ -408,6 +408,10 @@ export class SqliteDb {
         if (textContent != null && 'text' in textContent) {
           return textContent.text
         }
+        const imageContent = data.content.find((c: ChatMessageContent) => c.type === 'image')
+        if (imageContent != null) {
+          return '[图片]'
+        }
       }
     } catch (e) {}
     return undefined

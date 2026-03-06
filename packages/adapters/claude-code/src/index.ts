@@ -3,7 +3,7 @@ import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { defineAdapter } from '@vibe-forge/core'
-import type { AdapterCtx, AdapterEvent, AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterEvent, AdapterMessageContent, AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import type {
@@ -22,6 +22,62 @@ const toRealPath = (targetPath: string) => {
   } catch {
     return targetPath
   }
+}
+
+const prefixToolName = (name: string) => (
+  name.startsWith('adapter:claude-code:') ? name : `adapter:claude-code:${name}`
+)
+
+function parseDataUrl(dataUrl: string) {
+  if (!dataUrl.startsWith('data:')) return null
+  const commaIndex = dataUrl.indexOf(',')
+  if (commaIndex < 0) return null
+  const meta = dataUrl.slice('data:'.length, commaIndex)
+  const data = dataUrl.slice(commaIndex + 1)
+  const parts = meta.split(';').filter(p => p.trim() !== '')
+  const mediaType = parts[0] ?? ''
+  const isBase64 = parts.includes('base64')
+  if (!isBase64) return null
+  if (mediaType.trim() === '') return null
+  if (data.trim() === '') return null
+  return { mediaType, data }
+}
+
+function mapAdapterContentToClaudeContent(content: AdapterMessageContent[]): ClaudeCodeContent[] {
+  return content.map((item) => {
+    if (item.type === 'text') {
+      return { type: 'text', text: item.text }
+    }
+    if (item.type === 'tool_use') {
+      const name = item.name.startsWith('adapter:claude-code:')
+        ? item.name.replace('adapter:claude-code:', '')
+        : item.name
+      return { type: 'tool_use', id: item.id, name, input: item.input as any }
+    }
+    if (item.type === 'tool_result') {
+      return {
+        type: 'tool_result',
+        tool_use_id: item.tool_use_id,
+        content: item.content as any,
+        is_error: item.is_error
+      }
+    }
+    if (item.type === 'image') {
+      const parsed = parseDataUrl(item.url)
+      if (parsed != null) {
+        return {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: item.mimeType ?? parsed.mediaType,
+            data: parsed.data
+          }
+        }
+      }
+      return { type: 'text', text: `[Image] ${item.url}` }
+    }
+    return { type: 'text', text: '' }
+  })
 }
 
 declare module '@vibe-forge/core' {
@@ -83,7 +139,7 @@ function handleIncomingEvent(data: ClaudeCodeIncomingEvent, onEvent: AdapterQuer
       const toolItem = {
         type: 'tool_use' as const,
         id: toolUsePart.id,
-        name: toolUsePart.name,
+        name: prefixToolName(toolUsePart.name),
         input: (toolUsePart.input ?? toolUsePart.args ?? {}) as Record<string, any>
       }
 
@@ -383,7 +439,7 @@ export default defineAdapter({
                 id: `msg_${Date.now()}`,
                 type: 'message',
                 role: 'user',
-                content: event.content as string | ClaudeCodeContent[],
+                content: mapAdapterContentToClaudeContent(event.content),
                 uuid: uuid()
               }
             }

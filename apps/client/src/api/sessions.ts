@@ -1,4 +1,4 @@
-import type { Session } from '@vibe-forge/core'
+import type { ChatMessageContent, Session } from '@vibe-forge/core'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
@@ -13,6 +13,7 @@ export async function listSessions(
 export async function createSession(
   title?: string,
   initialMessage?: string,
+  initialContent?: ChatMessageContent[],
   model?: string,
   options?: {
     start?: boolean
@@ -29,6 +30,7 @@ export async function createSession(
     body: JSON.stringify({
       title,
       initialMessage,
+      initialContent,
       model,
       start: options?.start,
       parentSessionId: options?.parentSessionId,

@@ -3,7 +3,7 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 import { v4 as uuidv4 } from 'uuid'
 import type { WebSocket } from 'ws'
 
-import type { AdapterOutputEvent, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type { AdapterOutputEvent, ChatMessage, ChatMessageContent, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { callHook } from '@vibe-forge/core/utils/api'
 
@@ -179,13 +179,25 @@ export async function startAdapterSession(
   }
 }
 
-export function processUserMessage(sessionId: string, text: string) {
+function extractTextFromContent(content: ChatMessageContent[]) {
+  const textItem = content.find(
+    (item): item is Extract<ChatMessageContent, { type: 'text' }> =>
+      item.type === 'text' && item.text.trim() !== ''
+  )
+  return textItem?.text
+}
+
+export function processUserMessage(sessionId: string, content: string | ChatMessageContent[]) {
   const serverLogger = getSessionLogger(sessionId, 'server')
-  const userText = String(text ?? '')
+  const userText = typeof content === 'string' ? String(content ?? '') : ''
+  const contentItems: ChatMessageContent[] = Array.isArray(content)
+    ? content
+    : [{ type: 'text', text: userText }]
+  const summaryText = extractTextFromContent(contentItems) ?? '[图片]'
   const userMessage: ChatMessage = {
     id: uuidv4(),
     role: 'user',
-    content: userText,
+    content: Array.isArray(content) ? contentItems : userText,
     createdAt: Date.now()
   }
 
@@ -195,8 +207,8 @@ export function processUserMessage(sessionId: string, text: string) {
 
   const currentSessionData = db.getSession(sessionId)
   const updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>> = {
-    lastMessage: userText,
-    lastUserMessage: userText,
+    lastMessage: summaryText,
+    lastUserMessage: summaryText,
     status: 'running'
   }
 
@@ -204,7 +216,7 @@ export function processUserMessage(sessionId: string, text: string) {
     currentSessionData?.title == null || currentSessionData.title === '' ||
     currentSessionData.title === 'New Session'
   ) {
-    const firstLine = userText.split('\n')[0].trim()
+    const firstLine = summaryText.split('\n')[0].trim()
     updates.title = firstLine.length > 50 ? `${firstLine.slice(0, 50)}...` : firstLine
   }
 
@@ -229,7 +241,7 @@ export function processUserMessage(sessionId: string, text: string) {
 
     cached.session.emit({
       type: 'message',
-      content: [{ type: 'text', text: userText }],
+      content: contentItems,
       parentUuid
     })
   } else {

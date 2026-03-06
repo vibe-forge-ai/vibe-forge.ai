@@ -1,6 +1,7 @@
 import './ReadTool.scss'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ToolInputs } from '@vibe-forge/core'
 import { CodeBlock } from '../../CodeBlock'
 import { ToolCallBox } from '../../ToolCallBox'
 import { safeJsonStringify } from '../../safeSerialize'
@@ -9,7 +10,7 @@ import { getFileInfo, getLanguageFromPath } from './utils'
 
 export const ReadTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
-  const input = (item.input != null ? item.input : {}) as { file_path?: string; offset?: number; limit?: number }
+  const input = (item.input != null ? item.input : {}) as ToolInputs['adapter:claude-code:Read']
   const { filePath } = getFileInfo(input.file_path)
   const language = getLanguageFromPath(filePath)
   const offset = input.offset

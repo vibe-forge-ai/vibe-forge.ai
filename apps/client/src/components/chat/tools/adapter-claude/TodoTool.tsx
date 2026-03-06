@@ -1,20 +1,17 @@
 import './TodoTool.scss'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ToolInputs } from '@vibe-forge/core'
 
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 
-interface TodoItem {
-  content: string
-  status: 'pending' | 'in_progress' | 'completed'
-  activeForm?: string
-}
+type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
 
 export const TodoTool = defineToolRender(({ item }) => {
   const { t } = useTranslation()
-  const input = (item.input != null ? item.input : {}) as { todos?: TodoItem[] }
-  const todos = input.todos ?? []
+  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['adapter:claude-code:TodoWrite']>
+  const todos = (input.todos ?? []) as TodoItem[]
   const totalCount = todos.length
   const completedCount = todos.filter(todo => todo.status === 'completed').length
   const inProgressCount = todos.filter(todo => todo.status === 'in_progress').length

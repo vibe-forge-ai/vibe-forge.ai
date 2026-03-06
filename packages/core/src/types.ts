@@ -25,6 +25,7 @@ export interface Session {
 
 export type ChatMessageContent =
   | { type: 'text'; text: string }
+  | { type: 'image'; url: string; name?: string; size?: number; mimeType?: string }
   | { type: 'tool_use'; id: string; name: string; input: any }
   | { type: 'tool_result'; tool_use_id: string; content: any; is_error?: boolean }
 

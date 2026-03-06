@@ -1,6 +1,6 @@
 import './Chat.scss'
 
-import type { ChatMessage, Session } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 import { ChatHeader } from './chat/ChatHeader.js'
 import { ChatHistoryView } from './chat/ChatHistoryView.js'
 import { ChatSettingsView } from './chat/ChatSettingsView.js'
@@ -32,14 +32,14 @@ export function Chat({
     hasAvailableModels,
     modelUnavailable
   } = useChatSession({ session })
-  const buildUserMessage = (text: string): ChatMessage => {
+  const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
       : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`
     return {
       id,
       role: 'user' as const,
-      content: text,
+      content,
       createdAt: Date.now()
     }
   }
@@ -71,6 +71,7 @@ export function Chat({
           onInteractionResponse={handleInteractionResponse}
           onClearMessages={() => setMessages([])}
           onSend={(text) => setMessages((prev) => [...prev, buildUserMessage(text)])}
+          onSendContent={(content) => setMessages((prev) => [...prev, buildUserMessage(content)])}
           placeholder={placeholder}
           modelOptions={modelOptions}
           selectedModel={selectedModel}

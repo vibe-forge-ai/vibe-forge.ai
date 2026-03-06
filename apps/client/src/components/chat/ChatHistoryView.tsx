@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 
-import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session, SessionInfo } from '@vibe-forge/core'
 import { CurrentTodoList } from './CurrentTodoList'
 import { MessageItem } from './MessageItem'
 import { NewSessionGuide } from './NewSessionGuide'
@@ -31,6 +31,7 @@ export function ChatHistoryView({
   onInteractionResponse,
   onClearMessages,
   onSend,
+  onSendContent,
   placeholder,
   modelOptions,
   selectedModel,
@@ -50,6 +51,7 @@ export function ChatHistoryView({
   onInteractionResponse: (id: string, data: string | string[]) => void
   onClearMessages: () => void
   onSend: (text: string) => void
+  onSendContent: (content: ChatMessageContent[]) => void
   placeholder?: string
   modelOptions: ModelSelectGroup[]
   selectedModel?: string
@@ -64,7 +66,7 @@ export function ChatHistoryView({
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     messagesLength: messages.length
   })
-  const { isCreating, send, interrupt, clearMessages } = useChatSessionActions({
+  const { isCreating, send, sendContent, interrupt, clearMessages } = useChatSessionActions({
     session,
     modelForQuery,
     hasAvailableModels,
@@ -77,6 +79,10 @@ export function ChatHistoryView({
     if (session?.id) {
       onSend(text)
     }
+  }
+  const handleSendContent = async (content: ChatMessageContent[]) => {
+    await sendContent(content)
+    onSendContent(content)
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
@@ -138,6 +144,7 @@ export function ChatHistoryView({
       <div className='sender-container'>
         <Sender
           onSend={handleSend}
+          onSendContent={handleSendContent}
           sessionStatus={isCreating ? 'running' : session?.status}
           onInterrupt={interrupt}
           onClear={clearMessages}

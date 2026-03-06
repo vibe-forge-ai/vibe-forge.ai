@@ -243,3 +243,7 @@ export interface ChromeDevtoolsToolInput<
   toolName: TName
   toolInput: ChromeDevtoolsToolInputs[TName]
 }
+
+declare module '@vibe-forge/core' {
+  interface ToolInputs extends ChromeDevtoolsToolInputs {}
+}

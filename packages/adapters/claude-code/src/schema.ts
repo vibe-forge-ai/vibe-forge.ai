@@ -8,16 +8,12 @@ export interface TaskToolInput {
   max_turns?: number
 }
 
-export interface TaskOutputToolInput {
-  task_id: string
-  block: boolean
-  timeout: number
-}
-
 export interface BashToolInput {
   command: string
   timeout?: number
   description?: string
+  reason?: string
+  thought?: string
   run_in_background?: boolean
   dangerouslyDisableSandbox?: boolean
   _simulatedSedEdit?: {
@@ -96,11 +92,6 @@ export interface WebSearchToolInput {
   blocked_domains?: string[]
 }
 
-export interface TaskStopToolInput {
-  task_id?: string
-  shell_id?: string
-}
-
 export interface AskUserQuestionToolInput {
   questions: Array<{
     question: string
@@ -149,32 +140,81 @@ export interface TaskUpdateToolInput {
 
 export interface TaskListToolInput {}
 
-export interface ToolInputs {
-  Task: TaskToolInput
-  TaskOutput: TaskOutputToolInput
-  Bash: BashToolInput
-  Glob: GlobToolInput
-  Grep: GrepToolInput
-  ExitPlanMode: ExitPlanModeToolInput
-  Read: ReadToolInput
-  Edit: EditToolInput
-  Write: WriteToolInput
-  NotebookEdit: NotebookEditToolInput
-  WebFetch: WebFetchToolInput
-  WebSearch: WebSearchToolInput
-  TaskStop: TaskStopToolInput
-  AskUserQuestion: AskUserQuestionToolInput
-  Skill: SkillToolInput
-  EnterPlanMode: EnterPlanModeToolInput
-  TaskCreate: TaskCreateToolInput
-  TaskGet: TaskGetToolInput
-  TaskUpdate: TaskUpdateToolInput
-  TaskList: TaskListToolInput
+export interface LSToolInput {
+  path?: string
+  ignore?: string[]
 }
 
-export type ToolName = keyof ToolInputs
-
-export interface ToolInput<TName extends ToolName = ToolName> {
-  toolName: TName
-  toolInput: ToolInputs[TName]
+export interface TodoItem {
+  id?: string
+  content: string
+  status: 'pending' | 'in_progress' | 'completed'
+  priority?: string
+  activeForm?: string
 }
+
+export interface TodoWriteToolInput {
+  todos: TodoItem[]
+  merge: boolean
+  summary?: string
+}
+
+export interface ClaudeToolInputs {
+  'adapter:claude-code:Task': TaskToolInput
+  'adapter:claude-code:Bash': BashToolInput
+  'adapter:claude-code:Glob': GlobToolInput
+  'adapter:claude-code:Grep': GrepToolInput
+  'adapter:claude-code:ExitPlanMode': ExitPlanModeToolInput
+  'adapter:claude-code:Read': ReadToolInput
+  'adapter:claude-code:Edit': EditToolInput
+  'adapter:claude-code:Write': WriteToolInput
+  'adapter:claude-code:NotebookEdit': NotebookEditToolInput
+  'adapter:claude-code:WebFetch': WebFetchToolInput
+  'adapter:claude-code:WebSearch': WebSearchToolInput
+  'adapter:claude-code:AskUserQuestion': AskUserQuestionToolInput
+  'adapter:claude-code:Skill': SkillToolInput
+  'adapter:claude-code:EnterPlanMode': EnterPlanModeToolInput
+  'adapter:claude-code:TaskCreate': TaskCreateToolInput
+  'adapter:claude-code:TaskGet': TaskGetToolInput
+  'adapter:claude-code:TaskUpdate': TaskUpdateToolInput
+  'adapter:claude-code:TaskList': TaskListToolInput
+  'adapter:claude-code:LS': LSToolInput
+  'adapter:claude-code:TodoWrite': TodoWriteToolInput
+}
+
+export interface ClaudeToolOutputs {
+  'adapter:claude-code:Read': {
+    type: 'text' | (string & {})
+    file: {
+      filePath: string
+      content: string
+      numLines: number
+      startLine: number
+      totalLines: number
+    }
+  }
+  'adapter:claude-code:LS': string
+  'adapter:claude-code:Edit': {
+    filePath: string
+    newString: string
+    oldString: string
+    originalFile: string
+  }
+  'adapter:claude-code:Write': {
+    filePath: string
+    content: string
+  }
+  'adapter:claude-code:Bash': {
+    stdout: string
+    stderr: string
+    interrupted: boolean
+    isImage: boolean
+  }
+}
+
+declare module '@vibe-forge/core' {
+  interface ToolInputs extends ClaudeToolInputs {}
+  interface ToolOutputs extends ClaudeToolOutputs {}
+}
+
+export type { ToolInput, ToolInputs, ToolName, ToolOutput } from '@vibe-forge/core'

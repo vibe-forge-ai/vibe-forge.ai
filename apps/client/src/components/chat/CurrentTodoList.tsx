@@ -1,14 +1,10 @@
 import './CurrentTodoList.scss'
-import type { ChatMessage } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ChatMessage } from '@vibe-forge/core'
+import type { ToolInputs } from '@vibe-forge/core'
 
-interface TodoItem {
-  id: string
-  content: string
-  status: 'pending' | 'in_progress' | 'completed'
-  priority: string
-}
+type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
 
 export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
   const { t } = useTranslation()
@@ -21,12 +17,17 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
     const msg = messages[i]
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
       const todoUse = msg.content.find(c =>
-        c != null && c.type === 'tool_use' && (c.name === 'TodoWrite' || c.name === 'todo_write')
+        c != null && c.type === 'tool_use' && (
+          c.name === 'TodoWrite' ||
+          c.name === 'todo_write' ||
+          c.name === 'adapter:claude-code:TodoWrite' ||
+          c.name === 'adapter:claude-code:todo_write'
+        )
       )
       if (
         todoUse != null && todoUse.type === 'tool_use' && todoUse.input != null && typeof todoUse.input === 'object'
       ) {
-        const input = todoUse.input as { todos?: TodoItem[] }
+        const input = todoUse.input as Partial<ToolInputs['adapter:claude-code:TodoWrite']>
         if (Array.isArray(input.todos)) {
           latestTodos = input.todos
           break

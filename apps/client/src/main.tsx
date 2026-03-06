@@ -1,4 +1,5 @@
 import './styles/global.scss'
+import 'devicon/devicon.min.css'
 import './i18n'
 
 import { App as AntdApp, ConfigProvider } from 'antd'

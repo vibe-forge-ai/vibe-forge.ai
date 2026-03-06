@@ -15,6 +15,15 @@ export interface ClaudeCodeContentText {
   text: string
 }
 
+export interface ClaudeCodeContentImage {
+  type: 'image'
+  source: {
+    type: 'base64'
+    media_type: string
+    data: string
+  }
+}
+
 export interface ClaudeCodeContentToolUse {
   type: 'tool_use'
   id: string
@@ -30,7 +39,11 @@ export interface ClaudeCodeContentToolResult {
   is_error?: boolean
 }
 
-export type ClaudeCodeContent = ClaudeCodeContentText | ClaudeCodeContentToolUse | ClaudeCodeContentToolResult
+export type ClaudeCodeContent =
+  | ClaudeCodeContentText
+  | ClaudeCodeContentImage
+  | ClaudeCodeContentToolUse
+  | ClaudeCodeContentToolResult
 
 export interface ClaudeCodeUserMessage {
   id?: string

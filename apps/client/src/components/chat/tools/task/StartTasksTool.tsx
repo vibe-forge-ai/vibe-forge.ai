@@ -2,18 +2,13 @@ import './StartTasksTool.scss'
 
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ToolInputs } from '@vibe-forge/core'
 
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 import { TaskRow } from './components/TaskRow'
 
-interface StartTask {
-  description?: string
-  type?: 'default' | 'spec' | 'entity'
-  name?: string
-  adapter?: string
-  background?: boolean
-}
+type StartTask = ToolInputs['StartTasks']['tasks'][number]
 
 interface TaskResult {
   taskId: string
@@ -30,7 +25,7 @@ interface TaskResult {
 export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
 
-  const input = (item.input != null ? item.input : {}) as { tasks?: StartTask[] }
+  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['StartTasks']>
   const tasks = Array.isArray(input.tasks) ? input.tasks : []
 
   const parsedResult = useMemo(() => {

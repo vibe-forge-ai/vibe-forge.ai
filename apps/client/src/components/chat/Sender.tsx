@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { AskUserQuestionParams, SessionInfo, SessionStatus } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessageContent, SessionInfo, SessionStatus } from '@vibe-forge/core'
 import type { CompletionItem } from './CompletionMenu'
 import type { PermissionMode } from './useChatPermissionMode'
 import { CompletionMenu } from './CompletionMenu'
@@ -26,8 +26,17 @@ interface ModelSelectGroup {
   options: ModelSelectOption[]
 }
 
+interface PendingImage {
+  id: string
+  url: string
+  name?: string
+  size?: number
+  mimeType?: string
+}
+
 export function Sender({
   onSend,
+  onSendContent,
   sessionStatus,
   onInterrupt,
   onClear,
@@ -44,6 +53,7 @@ export function Sender({
   modelUnavailable
 }: {
   onSend: (text: string) => void
+  onSendContent: (content: ChatMessageContent[]) => void
   sessionStatus?: SessionStatus
   onInterrupt: () => void
   onClear?: () => void
@@ -70,7 +80,9 @@ export function Sender({
   const [showToolsList, setShowToolsList] = useState(false)
   const textareaRef = useRef<TextAreaRef>(null)
   const toolsRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isMac = navigator.platform.includes('Mac')
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
 
   const { data: configRes } = useSWR<{
     sources?: {
@@ -103,8 +115,54 @@ export function Sender({
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [draft, setDraft] = useState('')
 
+  const readFileAsDataUrl = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        resolve(typeof reader.result === 'string' ? reader.result : '')
+      }
+      reader.onerror = () => {
+        reject(new Error('read_failed'))
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const addImageFiles = async (files: File[]) => {
+    const maxSize = 5 * 1024 * 1024
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue
+      if (file.size > maxSize) {
+        void message.error(t('chat.imageTooLarge'))
+        continue
+      }
+      try {
+        const url = await readFileAsDataUrl(file)
+        if (url === '') {
+          void message.error(t('chat.imageReadFailed'))
+          continue
+        }
+        setPendingImages(prev => [
+          ...prev,
+          {
+            id: globalThis.crypto?.randomUUID
+              ? globalThis.crypto.randomUUID()
+              : `img-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            url,
+            name: file.name,
+            size: file.size,
+            mimeType: file.type
+          }
+        ])
+      } catch (err) {
+        void message.error(t('chat.imageReadFailed'))
+      }
+    }
+  }
+
   const handleSend = () => {
-    if (input.trim() === '' || isThinking) return
+    if (isThinking) return
+    if (input.trim() === '' && pendingImages.length === 0) return
 
     if (modelUnavailable) {
       void message.warning(t('chat.modelConfigRequired'))
@@ -112,12 +170,31 @@ export function Sender({
     }
 
     if (interactionRequest != null && onInteractionResponse != null) {
+      if (pendingImages.length > 0) {
+        void message.warning(t('chat.imageNotSupportedInInteraction'))
+        return
+      }
       onInteractionResponse(interactionRequest.id, input.trim())
       setInput('')
       return
     }
 
-    onSend(input)
+    if (pendingImages.length > 0) {
+      const content: ChatMessageContent[] = []
+      if (input.trim() !== '') {
+        content.push({ type: 'text', text: input.trim() })
+      }
+      content.push(...pendingImages.map(img => ({
+        type: 'image',
+        url: img.url,
+        name: img.name,
+        size: img.size,
+        mimeType: img.mimeType
+      })))
+      onSendContent(content)
+    } else {
+      onSend(input)
+    }
 
     // Save to local storage history
     try {
@@ -129,9 +206,46 @@ export function Sender({
     }
 
     setInput('')
+    setPendingImages([])
     setDraft('')
     setShowCompletion(false)
     setHistoryIndex(-1)
+  }
+
+  const handleImageUpload = () => {
+    if (isThinking) return
+    if (modelUnavailable) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
+    if (interactionRequest != null) {
+      void message.warning(t('chat.imageNotSupportedInInteraction'))
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = Array.from(event.target.files ?? [])
+    if (fileList.length === 0) return
+    await addImageFiles(fileList)
+    event.target.value = ''
+  }
+
+  const handleRemovePendingImage = (id: string) => {
+    setPendingImages(prev => prev.filter(img => img.id !== id))
+  }
+
+  const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(event.clipboardData?.items ?? [])
+    const files = items
+      .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file != null)
+    if (files.length > 0) {
+      event.preventDefault()
+      await addImageFiles(files)
+    }
   }
 
   const clearInputValue = () => {
@@ -429,6 +543,18 @@ export function Sender({
             {t('chat.modelConfigRequired')}
           </div>
         )}
+        {pendingImages.length > 0 && (
+          <div className='pending-images'>
+            {pendingImages.map(img => (
+              <div key={img.id} className='pending-image'>
+                <img src={img.url} alt={img.name ?? 'image'} />
+                <div className='pending-image-remove' onClick={() => handleRemovePendingImage(img.id)}>
+                  <span className='material-symbols-rounded'>close</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {showCompletion && (
           <CompletionMenu
             items={completionItems}
@@ -444,12 +570,21 @@ export function Sender({
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           autoSize={{ minRows: 1, maxRows: 10 }}
           variant='borderless'
           disabled={modelUnavailable}
         />
 
         <div className='chat-input-toolbar'>
+          <input
+            ref={fileInputRef}
+            type='file'
+            accept='image/*'
+            multiple
+            onChange={handleImageFileChange}
+            className='file-input-hidden'
+          />
           <div className='toolbar-left'>
             <Tooltip title='快捷指令'>
               <span>
@@ -474,7 +609,7 @@ export function Sender({
             </Tooltip>
             <Tooltip title='上传图片'>
               <span>
-                <div className='toolbar-btn' onClick={() => void message.info('图片上传功能尚不支持')}>
+                <div className='toolbar-btn' onClick={handleImageUpload}>
                   <span className='material-symbols-rounded'>image</span>
                 </div>
               </span>

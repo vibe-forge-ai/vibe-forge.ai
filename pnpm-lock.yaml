@@ -104,6 +104,9 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@vibe-forge/plugin-chrome-devtools':
+        specifier: workspace:*
+        version: link:../../packages/plugins/chrome-devtools
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
@@ -116,6 +119,9 @@ importers:
       dayjs:
         specifier: ^1.11.19
         version: 1.11.19
+      devicon:
+        specifier: ^2.17.0
+        version: 2.17.0
       i18next:
         specifier: ^25.7.4
         version: 25.7.4(typescript@5.9.3)
@@ -2347,6 +2353,9 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==, tarball: https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz}
     engines: {node: '>=8'}
+
+  devicon@2.17.0:
+    resolution: {integrity: sha512-2nKUdjobJlmRSaCHa50PGsVq0VDURnq9gVzQoJggsM/NKN0tLhC/Uq2zmy2pH36Q/1q3gvYwp/GjTgv/R0Ysbg==, tarball: https://registry.npmjs.org/devicon/-/devicon-2.17.0.tgz}
 
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==, tarball: https://registry.npmjs.org/devlop/-/devlop-1.1.0.tgz}
@@ -6941,6 +6950,8 @@ snapshots:
   destroy@1.2.0: {}
 
   detect-libc@2.1.2: {}
+
+  devicon@2.17.0: {}
 
   devlop@1.1.0:
     dependencies:

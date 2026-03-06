@@ -27,7 +27,7 @@ function MessageItemComponent({
 
     if (!Array.isArray(msg.content)) return null
 
-    const hasContent = msg.content.some(c => c.type === 'text') || msg.toolCall != null
+    const hasContent = msg.content.some(c => c.type === 'text' || c.type === 'image') || msg.toolCall != null
     if (!hasContent) return null
 
     return (
@@ -36,6 +36,13 @@ function MessageItemComponent({
           if (item.type === 'text') {
             return (
               <MarkdownContent key={i} content={item.text} />
+            )
+          }
+          if (item.type === 'image') {
+            return (
+              <a key={i} className='message-image' href={item.url} target='_blank' rel='noreferrer'>
+                <img src={item.url} alt={item.name ?? 'image'} />
+              </a>
             )
           }
           return null

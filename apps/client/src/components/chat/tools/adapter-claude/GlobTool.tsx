@@ -1,5 +1,6 @@
 import './GlobTool.scss'
 import React, { useMemo } from 'react'
+import type { ToolInputs } from '@vibe-forge/core'
 import { ToolCallBox } from '../../ToolCallBox'
 import { safeJsonStringify } from '../../safeSerialize'
 import { defineToolRender } from '../defineToolRender'
@@ -7,7 +8,7 @@ import { FileList } from './components/FileList'
 import { normalizeResultLines } from './utils'
 
 export const GlobTool = defineToolRender(({ item, resultItem }) => {
-  const input = (item.input != null ? item.input : {}) as { pattern?: string; path?: string }
+  const input = (item.input != null ? item.input : {}) as ToolInputs['adapter:claude-code:Glob']
   const pattern = (input.pattern != null && input.pattern !== '') ? input.pattern : '*'
   const path = input.path
 

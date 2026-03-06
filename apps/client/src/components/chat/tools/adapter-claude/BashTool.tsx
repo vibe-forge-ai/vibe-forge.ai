@@ -1,4 +1,5 @@
 import './BashTool.scss'
+import type { ToolInputs } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CodeBlock } from '../../CodeBlock'
@@ -8,15 +9,7 @@ import { defineToolRender } from '../defineToolRender'
 
 export const BashTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
-  const input = (item.input != null ? item.input : {}) as {
-    command?: string
-    reason?: string
-    thought?: string
-    description?: string
-    timeout?: number
-    run_in_background?: boolean
-    dangerouslyDisableSandbox?: boolean
-  }
+  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['adapter:claude-code:Bash']>
   const command = input.command ?? ''
   const reason = (input.description != null && input.description !== '')
     ? input.description
@@ -52,7 +45,9 @@ export const BashTool = defineToolRender(({ item, resultItem }) => {
               {reasonLine !== '' && (
                 <div className='bash-tool__command-row'>
                   <span
-                    className={`bash-tool__command-text tool-header-mono${showCommandExpand ? ' bash-tool__command-text--clickable' : ''}`}
+                    className={`bash-tool__command-text tool-header-mono${
+                      showCommandExpand ? ' bash-tool__command-text--clickable' : ''
+                    }`}
                     title={showCommandExpand ? t('chat.tools.viewCommand') : undefined}
                     onClick={(e) => {
                       if (!showCommandExpand) return
@@ -60,7 +55,8 @@ export const BashTool = defineToolRender(({ item, resultItem }) => {
                       setShowCommandDetail(prev => !prev)
                     }}
                   >
-                    {commandLine}{hasMoreCommand ? ' …' : ''}
+                    {commandLine}
+                    {hasMoreCommand ? ' …' : ''}
                   </span>
                 </div>
               )}

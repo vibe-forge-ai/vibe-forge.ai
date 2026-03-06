@@ -1,0 +1,11 @@
+.chrome-devtools-tool {
+  &__icon {
+    color: unset;
+  }
+
+  .tool-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

@@ -1,6 +1,6 @@
 import Router from '@koa/router'
 
-import type { ChatMessage, SessionInfo, SessionInitInfo, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, SessionInfo, SessionInitInfo, WSEvent } from '@vibe-forge/core'
 
 import { getDb } from '#~/db.js'
 import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
@@ -83,10 +83,11 @@ export function sessionsRouter(): Router {
   })
 
   router.post(['/', ''], async (ctx) => {
-    const { id, title, initialMessage, parentSessionId, start, model, promptType, promptName, permissionMode } = ctx.request.body as {
+    const { id, title, initialMessage, initialContent, parentSessionId, start, model, promptType, promptName, permissionMode } = ctx.request.body as {
       id?: string
       title?: string
       initialMessage?: string
+      initialContent?: ChatMessageContent[]
       parentSessionId?: string
       start?: boolean
       model?: string
@@ -97,6 +98,7 @@ export function sessionsRouter(): Router {
     const session = await createSessionWithInitialMessage({
       title,
       initialMessage,
+      initialContent,
       parentSessionId,
       id,
       shouldStart: start !== false,

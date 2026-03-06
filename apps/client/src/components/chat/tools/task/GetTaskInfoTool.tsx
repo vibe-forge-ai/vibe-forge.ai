@@ -2,6 +2,7 @@ import './GetTaskInfoTool.scss'
 
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ToolInputs } from '@vibe-forge/core'
 
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
@@ -22,7 +23,7 @@ interface TaskResult {
 export const GetTaskInfoTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
 
-  const input = (item.input != null ? item.input : {}) as { taskId?: string }
+  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['GetTaskInfo']>
   const inputTaskId = input.taskId
 
   const taskResult = useMemo(() => {

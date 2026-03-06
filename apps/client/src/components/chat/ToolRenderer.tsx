@@ -4,6 +4,7 @@ import type { ChatMessageContent } from '@vibe-forge/core'
 
 import { DefaultTool } from './tools/DefaultTool'
 import { BashTool, adapterClaudeToolRenders } from './tools/adapter-claude'
+import { chromeDevtoolsToolRenders } from './tools/plugin-chrome-devtools'
 import { taskToolRenders } from './tools/task'
 
 const TOOL_RENDERERS: Record<
@@ -14,7 +15,8 @@ const TOOL_RENDERERS: Record<
   }>
 > = {
   ...taskToolRenders,
-  ...adapterClaudeToolRenders
+  ...adapterClaudeToolRenders,
+  ...chromeDevtoolsToolRenders
 }
 
 export function ToolRenderer({

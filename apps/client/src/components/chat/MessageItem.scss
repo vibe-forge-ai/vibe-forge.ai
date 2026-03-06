@@ -122,6 +122,20 @@ html.dark {
   width: 100%;
 }
 
+.message-image {
+  display: inline-block;
+  max-width: 360px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.message-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 .markdown-body {
   --border-color: #e5e7eb;
   --code-block-bg: #ffffff;

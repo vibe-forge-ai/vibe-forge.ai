@@ -1,3 +1,5 @@
+import type {} from '@vibe-forge/adapter-claude-code/schema'
+
 import { defineToolRenders } from '../defineToolRender'
 import { BashTool } from './BashTool'
 import { GlobTool } from './GlobTool'
@@ -15,14 +17,6 @@ export const adapterClaudeToolRenders = defineToolRenders({
   Read: ReadTool,
   Write: WriteTool,
   TodoWrite: TodoTool
-})
+}, { namespace: 'adapter:claude-code:' })
 
-export {
-  BashTool,
-  GlobTool,
-  GrepTool,
-  LsTool,
-  ReadTool,
-  TodoTool,
-  WriteTool
-}
+export { BashTool, GlobTool, GrepTool, LsTool, ReadTool, TodoTool, WriteTool }

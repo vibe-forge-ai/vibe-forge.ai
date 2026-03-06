@@ -1,12 +1,13 @@
 import './WriteTool.scss'
 import React from 'react'
+import type { ToolInputs } from '@vibe-forge/core'
 import { CodeBlock } from '../../CodeBlock'
 import { ToolCallBox } from '../../ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 import { getFileInfo, getLanguageFromPath } from './utils'
 
 export const WriteTool = defineToolRender(({ item, resultItem }) => {
-  const input = (item.input != null ? item.input : {}) as { file_path?: string; content?: string }
+  const input = (item.input != null ? item.input : {}) as ToolInputs['adapter:claude-code:Write']
   const { filePath } = getFileInfo(input.file_path)
   const content = input.content ?? ''
   const language = getLanguageFromPath(filePath)
