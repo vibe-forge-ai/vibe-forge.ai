@@ -2,8 +2,8 @@ import './MessageItem.scss'
 import type { ChatMessage } from '@vibe-forge/core'
 import React from 'react'
 import { MessageFooter } from './MessageFooter'
-import { MarkdownContent } from './MarkdownContent'
-import { ToolRenderer } from './ToolRenderer'
+import { MarkdownContent } from '#~/components/MarkdownContent'
+import { ToolRenderer } from '../tools/core/ToolRenderer'
 
 type MessageItemProps = {
   msg: ChatMessage

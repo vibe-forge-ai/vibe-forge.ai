@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import type { ChatMessage, WSEvent } from '@vibe-forge/core'
 
 import { connectionManager } from '#~/connectionManager.js'
-import { MarkdownContent } from '#~/components/chat/MarkdownContent'
+import { MarkdownContent } from '#~/components/MarkdownContent'
 
 export interface TaskRowProps {
   description?: string

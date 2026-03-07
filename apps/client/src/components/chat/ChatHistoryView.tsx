@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useRef } from 'react'
 
 import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session, SessionInfo } from '@vibe-forge/core'
 import { CurrentTodoList } from './CurrentTodoList'
-import { MessageItem } from './MessageItem'
+import { MessageItem } from './Messages/MessageItem'
 import { NewSessionGuide } from './NewSessionGuide'
-import { Sender } from './Sender'
-import { ToolGroup } from './ToolGroup'
-import { processMessages } from './messageUtils'
-import type { PermissionMode } from './useChatPermissionMode'
-import { useChatScroll } from './useChatScroll'
-import { useChatSessionActions } from './useChatSessionActions'
+import { Sender } from './Sender/Sender'
+import { ToolGroup } from './tools/core/ToolGroup'
+import { processMessages } from './Messages/message-utils'
+import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
+import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
 
 interface ModelSelectOption {
   value: string

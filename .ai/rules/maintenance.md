@@ -6,7 +6,7 @@
 
 - `pnpm dev`: 同时启动前端和后端（需配置对应的并行脚本，或分别在各目录下运行）。
 - 后端启动: `cd apps/server && pnpm dev` (支持热重载)。
-- 前端启动: `cd apps/web && pnpm dev` (支持 HMR)。
+- 前端启动: `cd apps/client && pnpm dev` (支持 HMR)。
 
 ## 常见维护任务
 
@@ -21,7 +21,7 @@
   - 场景：统一代码格式。
 - **类型检查**: `pnpm -r exec tsc --noEmit`
   - 场景：在重构或修改共享包 (`packages/core`) 后，确保全量类型安全。
-- **单元测试**: `pnpm -C apps/web test` / `pnpm -C apps/cli test` / `npx vitest run <path>`
+- **单元测试**: `pnpm -C apps/client test` / `pnpm -C apps/cli test` / `npx vitest run <path>`
   - 场景：修改核心逻辑或 API 适配器后验证功能正确性。
   - 注意：运行单个用例或目录时需使用 `vitest run <path>`，不要直接执行 `vitest <path>`。
   - 说明：`vitest run` 支持文件路径与 glob，例如 `npx vitest run apps/cli/__tests__/*.spec.ts`。
@@ -33,19 +33,19 @@
 
 ### 2. 修改前端样式
 
-- 样式文件采用 `.scss`，与组件同名放置在 `src/components/` 下。
+- 样式文件采用 `.scss`，与组件同名（PascalCase）放置在 `src/components/` 下。
 - 全局样式位于 `src/styles/global.scss`。
 
 ### 3. 环境参数配置
 
 - 环境变量通过 `.env` 文件或 shell 传入。
 - 后端参数参考 `apps/server/src/env.ts`，如 `DB_PATH` 可用于指定数据库存储位置。
-- 前端参数以 `VITE_` 开头，参考 `apps/web/src/vite-env.d.ts`。
+- 前端参数以 `VITE_` 开头，参考 `apps/client/src/vite-env.d.ts`。
 
 ### 4. 更新国际化文本
 
-- 中文文本修改：编辑 `apps/web/src/resources/locales/zh.json`。
-- 英文文本修改：编辑 `apps/web/src/resources/locales/en.json`。
+- 中文文本修改：编辑 `apps/client/src/resources/locales/zh.json`。
+- 英文文本修改：编辑 `apps/client/src/resources/locales/en.json`。
 - 如果添加了新的 Key，请确保在两个文件中都进行添加，以保证多语言支持的完整性。
 
 ## 注意事项

@@ -1,8 +1,8 @@
 import './WriteTool.scss'
 import React from 'react'
 import type { ToolInputs } from '@vibe-forge/core'
-import { CodeBlock } from '../../CodeBlock'
-import { ToolCallBox } from '../../ToolCallBox'
+import { CodeBlock } from '#~/components/CodeBlock'
+import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 import { getFileInfo, getLanguageFromPath } from './utils'
 

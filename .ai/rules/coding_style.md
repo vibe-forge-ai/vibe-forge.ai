@@ -42,7 +42,7 @@ alwaysApply: true
 - **包内跨目录引用**：
   - 当引用的模块位于当前包空间内，且层级较深或跨越了多个功能模块时，应使用包空间绝对路径，避免出现过多的 `../`。
   - 本项目统一使用 `#~/` 作为 src 目录的映射前缀（具体配置见各包的 `package.json` 中的 `imports` 字段）。
-  - 示例：在 `src/apps/web/components/chat/MessageItem.tsx` 中引用 `src/apps/web/store/index.ts` 时：
+  - 示例：在 `apps/client/src/components/chat/MessageItem.tsx` 中引用 `apps/client/src/store/index.ts` 时：
     - 推荐：`import { useStore } from '#~/store';`
     - 避免：`import { useStore } from '../../store';`
 
@@ -54,3 +54,15 @@ alwaysApply: true
   - 引用本项目下其他项目空间（Workspace）导出的内容时，使用对应的包名。
   - 示例：`import { CoreType } from '@vibe-forge/core';`
   - 注：可以通过查看对应包的 `package.json` 中的 `exports` 字段了解其导出规则。
+
+---
+
+## 命名与组织规范
+
+- **组件命名**：组件文件/目录使用 PascalCase（例如 `CodeBlock.tsx`, `CodeBlock.scss`），组件导出使用 PascalCase。
+- **非组件命名**：工具函数、hooks、普通模块文件/目录使用 kebab-case（例如 `safe-serialize.ts`, `use-chat-session.ts`）。
+- **Hook 约定**：Hook 统一放在 `src/hooks/` 下，并按域拆分子目录（例如 `src/hooks/chat/`）。
+- **通用模块归档**：
+  - 通用组件放在 `src/components/` 下，通过 `#~/components/...` 引用（例如 `#~/components/CodeBlock`），避免跨层级 `../../`。
+  - 通用工具函数放在 `src/utils/` 下，通过 `#~/utils/...` 引用。
+- **移动/重命名文件**：使用 `mv` 完成迁移，并同步更新所有相关的引入路径。

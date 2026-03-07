@@ -2,10 +2,10 @@ import React from 'react'
 
 import type { ChatMessageContent } from '@vibe-forge/core'
 
-import { DefaultTool } from './tools/DefaultTool'
-import { BashTool, adapterClaudeToolRenders } from './tools/adapter-claude'
-import { chromeDevtoolsToolRenders } from './tools/plugin-chrome-devtools'
-import { taskToolRenders } from './tools/task'
+import { DefaultTool } from '../DefaultTool'
+import { BashTool, adapterClaudeToolRenders } from '../adapter-claude'
+import { chromeDevtoolsToolRenders } from '../plugin-chrome-devtools'
+import { taskToolRenders } from '../task'
 
 const TOOL_RENDERERS: Record<
   string,

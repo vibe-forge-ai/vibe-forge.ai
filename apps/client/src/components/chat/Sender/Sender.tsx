@@ -8,10 +8,10 @@ import useSWR from 'swr'
 
 import type { AskUserQuestionParams, ChatMessageContent, SessionInfo, SessionStatus } from '@vibe-forge/core'
 import type { CompletionItem } from './CompletionMenu'
-import type { PermissionMode } from './useChatPermissionMode'
+import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
-import { isShortcutMatch } from '../../utils/shortcutUtils'
+import { isShortcutMatch } from '../../../utils/shortcutUtils'
 
 const { TextArea } = Input
 

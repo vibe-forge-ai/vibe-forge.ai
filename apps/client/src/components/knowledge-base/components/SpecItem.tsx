@@ -7,7 +7,7 @@ import useSWR from 'swr'
 
 import type { SpecDetail, SpecSummary } from '#~/api.js'
 import { getSpecDetail } from '#~/api.js'
-import { MarkdownContent } from '#~/components/chat/MarkdownContent'
+import { MarkdownContent } from '#~/components/MarkdownContent'
 import { LoadingState } from './LoadingState'
 import { MetaList } from './MetaList'
 

@@ -5,7 +5,7 @@ import { ChatHeader } from './chat/ChatHeader.js'
 import { ChatHistoryView } from './chat/ChatHistoryView.js'
 import { ChatSettingsView } from './chat/ChatSettingsView.js'
 import { ChatTimelineView } from './chat/ChatTimelineView.js'
-import { useChatSession } from './chat/useChatSession.js'
+import { useChatSession } from '#~/hooks/chat/use-chat-session'
 
 export function Chat({
   session

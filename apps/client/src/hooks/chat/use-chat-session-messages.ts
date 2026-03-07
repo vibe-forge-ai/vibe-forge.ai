@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
-import { getSessionMessages } from '../../api'
-import { connectionManager } from '../../connectionManager'
-import type { PermissionMode } from './useChatPermissionMode'
+import { getSessionMessages } from '#~/api.js'
+import { connectionManager } from '#~/connectionManager.js'
+import type { PermissionMode } from './use-chat-permission-mode'
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {
   if (data.type !== 'message') return currentMessages

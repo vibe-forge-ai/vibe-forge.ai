@@ -2,9 +2,9 @@ import './LsTool.scss'
 import React, { useMemo } from 'react'
 import type { ToolInputs } from '@vibe-forge/core'
 import { defineToolRender } from '../defineToolRender'
-import { CodeBlock } from '../../CodeBlock'
-import { ToolCallBox } from '../../ToolCallBox'
-import { safeJsonStringify } from '../../safeSerialize'
+import { CodeBlock } from '#~/components/CodeBlock'
+import { ToolCallBox } from '../core/ToolCallBox'
+import { safeJsonStringify } from '#~/utils/safe-serialize'
 import { FileList } from './components/FileList'
 
 export const LsTool = defineToolRender(({ item, resultItem }) => {

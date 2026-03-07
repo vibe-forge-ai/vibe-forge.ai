@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
-import { createSession } from '../../api'
-import { connectionManager } from '../../connectionManager'
-import type { PermissionMode } from './useChatPermissionMode'
+import { createSession } from '#~/api.js'
+import { connectionManager } from '#~/connectionManager.js'
+import type { PermissionMode } from './use-chat-permission-mode'
 
 export function useChatSessionActions({
   session,

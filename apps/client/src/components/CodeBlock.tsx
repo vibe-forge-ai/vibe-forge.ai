@@ -1,8 +1,10 @@
 import './CodeBlock.scss'
+
 import { useAtomValue } from 'jotai'
 import React, { useEffect, useState } from 'react'
 import { codeToHtml } from 'shiki'
-import { themeAtom } from '../../store'
+
+import { themeAtom } from '#~/store/index.js'
 
 export function CodeBlock({
   code,

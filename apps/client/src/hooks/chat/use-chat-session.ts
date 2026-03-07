@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
-import { useChatInteraction } from './useChatInteraction'
-import { useChatModels } from './useChatModels'
-import { useChatPermissionMode } from './useChatPermissionMode'
-import { useChatSessionMessages } from './useChatSessionMessages'
-import { useChatView } from './useChatView'
+import { useChatInteraction } from './use-chat-interaction'
+import { useChatModels } from './use-chat-models'
+import { useChatPermissionMode } from './use-chat-permission-mode'
+import { useChatSessionMessages } from './use-chat-session-messages'
+import { useChatView } from './use-chat-view'
 
 export function useChatSession({
   session

@@ -5,7 +5,7 @@ import useSWR from 'swr'
 
 import type { RuleDetail, RuleSummary } from '#~/api.js'
 import { getRuleDetail } from '#~/api.js'
-import { MarkdownContent } from '#~/components/chat/MarkdownContent'
+import { MarkdownContent } from '#~/components/MarkdownContent'
 import { LoadingState } from './LoadingState'
 
 type RuleItemProps = {

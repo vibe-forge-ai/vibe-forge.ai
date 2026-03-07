@@ -3,7 +3,7 @@ import './ListTasksTool.scss'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ToolCallBox } from '../../ToolCallBox'
+import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 import { TaskRow } from './components/TaskRow'
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
-import { getConfig } from '../../api'
+import { getConfig } from '#~/api.js'
 
 export interface ModelSelectOption {
   value: string

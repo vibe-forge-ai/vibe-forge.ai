@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import type { ChatMessage, WSEvent } from '@vibe-forge/core'
 
 import { connectionManager } from '#~/connectionManager.js'
-import { CodeBlock } from '../../../CodeBlock'
+import { CodeBlock } from '#~/components/CodeBlock'
 
 export interface TaskToolCardProps {
   description?: string

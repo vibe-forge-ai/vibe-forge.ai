@@ -1,8 +1,9 @@
+import './ToolGroup.scss'
+
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MessageFooter } from './MessageFooter'
-import './ToolGroup.scss'
+import { MessageFooter } from '../../Messages/MessageFooter'
 import { ToolRenderer } from './ToolRenderer'
 
 type ToolGroupProps = {

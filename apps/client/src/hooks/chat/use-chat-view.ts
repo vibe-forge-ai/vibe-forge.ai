@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react'
 
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
-import type { ChatHeaderView } from './ChatHeader'
+import type { ChatHeaderView } from '#~/components/chat/ChatHeader.js'
 
 const normalizeView = (value: string): ChatHeaderView => {
   if (value === 'timeline' || value === 'settings' || value === 'history') {

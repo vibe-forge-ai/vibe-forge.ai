@@ -3,7 +3,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ToolInputs } from '@vibe-forge/core'
 
-import { ToolCallBox } from '../../ToolCallBox'
+import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 
 type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
