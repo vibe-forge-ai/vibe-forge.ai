@@ -3,9 +3,9 @@
 - 复用 WebSocket 事件模型，抽象通用事件处理逻辑，保证扩展性与一致性
 
 ## 数据层改动
-- `apps/server/src/db.ts`
-  - sessions 表新增 `parentSessionId` 字段并做兼容迁移
-  - 新增/完善 CRUD：创建子会话、按父会话查询子会话、构建树数据（用于列表接口）
+- `apps/server/src/db/`
+  - 在 `apps/server/src/db/schema.ts` 中为 sessions 表新增 `parentSessionId` 字段并做兼容迁移
+  - 在 `apps/server/src/db/sessions.repo.ts` 中新增/完善 CRUD：创建子会话、按父会话查询子会话、构建树数据（用于列表接口）
 - `apps/server/src/types.ts`
   - 补齐会话类型中的 `parentSessionId`
 

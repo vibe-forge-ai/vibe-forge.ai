@@ -1,7 +1,7 @@
 import { parseExpression } from 'cron-parser'
 
-import { getDb } from '#~/db.js'
-import type { AutomationRule, AutomationTrigger } from '#~/db.js'
+import { getDb } from '#~/db/index.js'
+import type { AutomationRule, AutomationTrigger } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
 
 const timers = new Map<string, NodeJS.Timeout>()
@@ -133,11 +133,13 @@ export async function runAutomationRule(
   const runAt = Date.now()
   const tasks = db.listAutomationTasks(id)
   if (tasks.length === 0) return null
-  const sessions = await Promise.all(tasks.map(task => createSessionWithInitialMessage({
-    title: task.title ? `自动化任务: ${rule.name} · ${task.title}` : `自动化任务: ${rule.name}`,
-    initialMessage: task.prompt,
-    tags: [`automation:${rule.id}:${rule.name}`]
-  })))
+  const sessions = await Promise.all(tasks.map(task =>
+    createSessionWithInitialMessage({
+      title: task.title ? `自动化任务: ${rule.name} · ${task.title}` : `自动化任务: ${rule.name}`,
+      initialMessage: task.prompt,
+      tags: [`automation:${rule.id}:${rule.name}`]
+    })
+  ))
   const sessionIds = sessions.map(session => session.id)
   for (let index = 0; index < sessions.length; index += 1) {
     const session = sessions[index]

@@ -8,7 +8,7 @@ import { WebSocketServer } from 'ws'
 
 import type { ServerEnv, WSEvent } from '@vibe-forge/core'
 
-import { getDb } from '#~/db.js'
+import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
@@ -54,7 +54,13 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           model,
           systemPrompt,
           appendSystemPrompt,
-          permissionMode: permissionMode as 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions' | undefined,
+          permissionMode: permissionMode as
+            | 'default'
+            | 'acceptEdits'
+            | 'plan'
+            | 'dontAsk'
+            | 'bypassPermissions'
+            | undefined,
           promptType,
           promptName
         })

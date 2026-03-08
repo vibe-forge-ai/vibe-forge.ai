@@ -3,11 +3,18 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 import { v4 as uuidv4 } from 'uuid'
 import type { WebSocket } from 'ws'
 
-import type { AdapterOutputEvent, ChatMessage, ChatMessageContent, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type {
+  AdapterOutputEvent,
+  ChatMessage,
+  ChatMessageContent,
+  Session,
+  SessionInfo,
+  WSEvent
+} from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { callHook } from '@vibe-forge/core/utils/api'
 
-import { getDb } from '#~/db.js'
+import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
@@ -181,8 +188,7 @@ export async function startAdapterSession(
 
 function extractTextFromContent(content: ChatMessageContent[]) {
   const textItem = content.find(
-    (item): item is Extract<ChatMessageContent, { type: 'text' }> =>
-      item.type === 'text' && item.text.trim() !== ''
+    (item): item is Extract<ChatMessageContent, { type: 'text' }> => item.type === 'text' && item.text.trim() !== ''
   )
   return textItem?.text
 }

@@ -29,7 +29,8 @@
 ### 1. 修改后端 API
 
 - 路由定义位于 `apps/server/src/routes/`。
-- 如果涉及数据模型变更，请同步更新 `apps/server/src/db.ts` 中的 SQL 表结构定义以及 `apps/server/src/types.ts`。
+- 如果涉及数据模型变更，请同步更新 `apps/server/src/db/schema.ts` 的表结构与迁移逻辑，并在对应的 Repo 中调整读写逻辑。
+- 自动化相关的数据结构与读写逻辑位于 `apps/server/src/automation/db/`。
 
 ### 2. 修改前端样式
 

@@ -10,11 +10,11 @@
   - `waiting_input`: 等待用户确认/输入 (预留)
 - 更新 `Session` 接口，增加 `status` 字段。
 
-### 2. 数据库与存储 (`apps/server/src/db.ts`)
+### 2. 数据库与存储 (`apps/server/src/db/`)
 
-- **Schema**: 在 `sessions` 表中新增 `status` 字段。
-- **迁移**: 在 `init()` 中添加自动检测和 `ALTER TABLE` 逻辑。
-- **CRUD**: 更新 `createSession`, `updateSession`, `getSession` 等方法以支持 `status` 字段。
+- **Schema**: 在 `apps/server/src/db/schema.ts` 中为 `sessions` 表新增 `status` 字段。
+- **迁移**: 在 `schema.ts` 中添加自动检测和 `ALTER TABLE` 逻辑。
+- **CRUD**: 在 `apps/server/src/db/sessions.repo.ts` 中更新 `createSession`, `updateSession`, `getSession` 等方法以支持 `status` 字段。
 
 ### 3. 后端状态流转逻辑 (`apps/server/src/websocket/index.ts`)
 

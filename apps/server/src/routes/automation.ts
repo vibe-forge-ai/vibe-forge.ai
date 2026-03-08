@@ -3,14 +3,14 @@ import { randomUUID } from 'node:crypto'
 import Router from '@koa/router'
 import { parseExpression } from 'cron-parser'
 
-import { getDb } from '#~/db.js'
-import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db.js'
 import {
   initAutomationScheduler,
   removeAutomationRuleSchedule,
   runAutomationRule,
   scheduleAutomationRule
 } from '#~/automation/index.js'
+import { getDb } from '#~/db/index.js'
+import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db/index.js'
 
 let schedulerReady = false
 

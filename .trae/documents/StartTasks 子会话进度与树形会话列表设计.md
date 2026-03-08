@@ -14,9 +14,9 @@
 
 - 在 `sessions` 表新增 `parentSessionId`（可空）字段，用于父子关系
 - 在 `apps/server/src/types.ts` 中同步补齐类型字段
-- 在 `apps/server/src/db.ts` 中：
-  - 更新建表与兼容迁移逻辑（若缺列则添加）
-  - 新增/调整 CRUD：创建子会话、按父会话获取子会话、构建树形结构数据
+- 在 `apps/server/src/db/` 中：
+  - 在 `apps/server/src/db/schema.ts` 更新建表与兼容迁移逻辑（若缺列则添加）
+  - 在 `apps/server/src/db/sessions.repo.ts` 新增/调整 CRUD：创建子会话、按父会话获取子会话、构建树形结构数据
 
 ## 服务端事件复用与新接口
 

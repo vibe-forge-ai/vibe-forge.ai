@@ -42,3 +42,10 @@ npx vitest run <path>
 - 架构说明：[architecture.md](../.trae/rules/architecture.md)
 - 前端规范：[frontend_standard.md](../.trae/rules/frontend_standard.md)
 - 后端规范：[backend_standard.md](../.trae/rules/backend_standard.md)
+
+## 数据库结构
+
+- 入口与实例：`apps/server/src/db/index.ts`（导出 `getDb()`）。
+- 表结构与迁移：`apps/server/src/db/schema.ts`。
+- 领域读写：`apps/server/src/db/*.repo.ts`。
+- 自动化子域：`apps/server/src/automation/db/`。

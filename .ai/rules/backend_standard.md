@@ -12,10 +12,11 @@ globs: apps/server/src/**/*, apps/cli/src/**/*
 
 ## 数据处理 (Server)
 
-- 使用 `src/db.ts` 提供的 `getDb()` 获取数据库实例。
+- 使用 `src/db/index.ts` 导出的 `getDb()` 获取数据库实例。
 - 数据持久化基于 `better-sqlite3`。
-- 所有的 SQL 操作应在 `db.ts` 中封装为方法，避免在 Router 中直接编写 SQL。
+- 所有的 SQL 操作应在对应的 Repo 中封装，避免在 Router 中直接编写 SQL。
 - 复杂的业务逻辑应从路由处理函数中提取。
+- 文件读取优先使用 `node:fs/promises` 并通过解构方式引入。
 
 ## 外部适配器 (Adapters)
 
