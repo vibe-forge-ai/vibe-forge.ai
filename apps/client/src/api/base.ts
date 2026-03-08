@@ -1,6 +1,8 @@
+import { getServerHostEnv, getServerPortEnv } from '#~/runtime-config.js'
+
 const DEFAULT_SERVER_PORT = '8787'
-const SERVER_HOST_ENV = import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ as string | undefined
-const SERVER_PORT_ENV = import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ as string | undefined
+const SERVER_HOST_ENV = getServerHostEnv()
+const SERVER_PORT_ENV = getServerPortEnv()
 
 export const jsonHeaders = { 'Content-Type': 'application/json' } as const
 

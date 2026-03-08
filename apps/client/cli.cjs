@@ -13,7 +13,7 @@ process.env.HOME = resolve(
 );
 
 const cwd = realpathSync(resolve(__dirname, "./"));
-const args = process.env.IS_LOCAL_DEV === "true" ? [] : ["preview"];
+const args = process.env.__VF_PROJECT_AI_CLIENT_MODE__ === "dev" ? [] : ["preview"];
 
 require("node:child_process").spawnSync("vite", args, {
   cwd,

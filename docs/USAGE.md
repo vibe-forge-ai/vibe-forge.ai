@@ -33,7 +33,7 @@ export HOME="${HOME:-$PWD/.ai/.mock}"
 export __VF_PROJECT_WORKSPACE_FOLDER__="$PWD"
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__="$PWD/node_modules/.bin/ccr"
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"
-export IS_LOCAL_DEV="true"
+export __VF_PROJECT_AI_CLIENT_MODE__="dev"
 
 npx vfui-server | tee .logs/server.log &
 npx vfui-client | tee .logs/client.log &

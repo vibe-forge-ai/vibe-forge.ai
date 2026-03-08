@@ -1,6 +1,6 @@
 import type { ChatMessage, ChatMessageContent, Session, WSEvent } from '@vibe-forge/core'
 
-import { getDb } from '#~/db.js'
+import { getDb } from '#~/db/index.js'
 
 export type SessionEventCallbacks = {
   broadcast?: (event: WSEvent) => void

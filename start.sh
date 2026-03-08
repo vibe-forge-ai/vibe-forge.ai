@@ -4,12 +4,38 @@ export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__='./packages/adapters/claude-code/node_modules/.bin/ccr'
 export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__='code'
 
-export IS_LOCAL_DEV='true'
+CLIENT_MODE='dev'
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --client-mode=*)
+      CLIENT_MODE="${1#*=}"
+      ;;
+    --client-mode)
+      shift
+      CLIENT_MODE="${1:-dev}"
+      ;;
+    --prod-test|--test-prod)
+      CLIENT_MODE='prod'
+      ;;
+  esac
+  shift || true
+done
+
+export __VF_PROJECT_AI_CLIENT_MODE__="${CLIENT_MODE}"
+export __VF_PROJECT_AI_CLIENT_BASE__='/ui'
+
+mkdir -p .logs
+
+if [ "${CLIENT_MODE}" != 'dev' ]; then
+  (cd apps/client && npx vite build)
+fi
 
 # 后台运行 server
 npx vfui-server | tee .logs/server.log &
-# 后台运行 client
-npx vfui-client | tee .logs/client.log &
+if [ "${CLIENT_MODE}" = 'dev' ]; then
+  npx vfui-client | tee .logs/client.log &
+fi
 
 # 退出时终止所有后台进程
 trap 'kill 0' EXIT

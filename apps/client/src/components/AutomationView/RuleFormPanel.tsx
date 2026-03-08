@@ -5,6 +5,7 @@ import React, { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
+import { getServerHost, getServerPort } from '#~/api/base.js'
 
 import { TaskList } from './TaskList'
 import { TriggerList } from './TriggerList'
@@ -18,8 +19,8 @@ interface RuleFormPanelProps {
   onCancel: () => void
 }
 
-const serverHost = (import.meta.env.__VF_PROJECT_AI_SERVER_HOST__ as string | undefined) ?? window.location.hostname
-const serverPort = (import.meta.env.__VF_PROJECT_AI_SERVER_PORT__ as string | undefined) ?? '8787'
+const serverHost = getServerHost()
+const serverPort = getServerPort()
 const serverUrl = `http://${serverHost}:${serverPort}`
 
 export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: RuleFormPanelProps) {

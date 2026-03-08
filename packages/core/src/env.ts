@@ -8,6 +8,9 @@ export interface ServerEnv {
   __VF_PROJECT_AI_SERVER_LOG_DIR__: string
   __VF_PROJECT_AI_SERVER_LOG_LEVEL__: 'debug' | 'info' | 'warn' | 'error'
   __VF_PROJECT_AI_SERVER_ALLOW_CORS__: boolean
+  __VF_PROJECT_AI_CLIENT_MODE__?: 'dev' | 'static'
+  __VF_PROJECT_AI_CLIENT_BASE__?: string
+  __VF_PROJECT_AI_CLIENT_DIST_PATH__?: string
   __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__?: string
   __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__?: string
 }
@@ -21,6 +24,9 @@ export function loadEnv(): ServerEnv {
     __VF_PROJECT_AI_SERVER_LOG_DIR__ = '.logs',
     __VF_PROJECT_AI_SERVER_LOG_LEVEL__ = 'info',
     __VF_PROJECT_AI_SERVER_ALLOW_CORS__,
+    __VF_PROJECT_AI_CLIENT_MODE__ = 'static',
+    __VF_PROJECT_AI_CLIENT_BASE__,
+    __VF_PROJECT_AI_CLIENT_DIST_PATH__,
 
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__,
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__
@@ -36,6 +42,10 @@ export function loadEnv(): ServerEnv {
     __VF_PROJECT_AI_SERVER_ALLOW_CORS__: __VF_PROJECT_AI_SERVER_ALLOW_CORS__ != null
       ? __VF_PROJECT_AI_SERVER_ALLOW_CORS__ === 'true'
       : true,
+    __VF_PROJECT_AI_CLIENT_MODE__:
+      __VF_PROJECT_AI_CLIENT_MODE__ as ServerEnv['__VF_PROJECT_AI_CLIENT_MODE__'],
+    __VF_PROJECT_AI_CLIENT_BASE__,
+    __VF_PROJECT_AI_CLIENT_DIST_PATH__,
 
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__,
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__
