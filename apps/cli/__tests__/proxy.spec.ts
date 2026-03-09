@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createFilteredRegister, shouldEnableCategory } from '#~/mcp-tools/proxy'
+import { createFilteredRegister, shouldEnableCategory } from '#~/mcp-tools/proxy.js'
 
 describe('proxy logic', () => {
   describe('shouldEnableCategory', () => {

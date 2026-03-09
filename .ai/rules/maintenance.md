@@ -25,6 +25,12 @@
   - 场景：修改核心逻辑或 API 适配器后验证功能正确性。
   - 注意：运行单个用例或目录时需使用 `vitest run <path>`，不要直接执行 `vitest <path>`。
   - 说明：`vitest run` 支持文件路径与 glob，例如 `npx vitest run apps/cli/__tests__/*.spec.ts`。
+  - Vitest 配置：仓库根使用 `vitest.workspace.ts` 作为 workspace 配置文件（不再使用 `vitest.config.ts`）。
+  - workspace 划分：`node` / `bundler` / `bundler.web` 三个 project 的 include 规则来自 `packages/tsconfigs` 下对应的 `*.test.json`：
+    - `node`: `tsconfig.node.test.json`
+    - `bundler`: `tsconfig.bundler.test.json`
+    - `bundler.web`: `tsconfig.bundler.web.test.json`
+  - 维护方式：新增/移动测试文件时，优先调整对应 `tsconfig.*.test.json` 的 `include`，避免在 Vitest 配置里手写路径。
 
 ### 1. 修改后端 API
 

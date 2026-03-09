@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.bundler.web.json",
+  "compilerOptions": {
+  },
+  "references": [
+    { "path": "./tsconfig.bundler.web.json" }
+  ],
+  "include": [
+    "../../apps/client/__tests__/**/*"
+  ]
+}

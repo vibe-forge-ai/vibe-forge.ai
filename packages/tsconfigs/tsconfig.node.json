@@ -12,7 +12,6 @@
   "include": [
     "../../.ai.config.ts",
     "../../.ai.dev.config.ts",
-    "../../vitest.config.ts",
     "../../vitest.workspace.ts",
     "../../apps/client/vite.config.ts",
     "../../apps/cli/src/**/*",

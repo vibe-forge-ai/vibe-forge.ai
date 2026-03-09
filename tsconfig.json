@@ -4,7 +4,13 @@
       "path": "./packages/tsconfigs/tsconfig.bundler.json"
     },
     {
+      "path": "./packages/tsconfigs/tsconfig.bundler.test.json"
+    },
+    {
       "path": "./packages/tsconfigs/tsconfig.bundler.web.json"
+    },
+    {
+      "path": "./packages/tsconfigs/tsconfig.bundler.web.test.json"
     },
     {
       "path": "./packages/tsconfigs/tsconfig.node.json"
