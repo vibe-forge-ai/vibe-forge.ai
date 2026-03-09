@@ -46,11 +46,12 @@ export function TaskList() {
                 <Tooltip title={t('automation.remove')}>
                   <Button
                     className='automation-view__remove-button'
+                    type='text'
                     danger
                     onClick={() => remove(field.name)}
                     disabled={fields.length <= 1}
                   >
-                    <span className='material-symbols-rounded automation-view__button-icon'>close</span>
+                    <span className='material-symbols-rounded automation-view__action-icon'>close</span>
                   </Button>
                 </Tooltip>
                 <div className='automation-view__list-header'>

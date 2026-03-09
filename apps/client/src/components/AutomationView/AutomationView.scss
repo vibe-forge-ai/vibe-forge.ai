@@ -4,6 +4,10 @@
   padding: 24px;
   overflow: hidden;
 
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
+
   &__left {
     width: 360px;
     min-width: 320px;
