@@ -1,0 +1,182 @@
+.benchmark-view {
+  // Sidebar container
+  &__sidebar {
+    width: 408px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    padding: 24px;
+  }
+
+  &__sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+
+    height: 32px;
+  }
+
+  &__sidebar-title.ant-typography {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  &__sep.ant-divider {
+    margin: 0;
+    border-color: var(--border-color);
+  }
+
+  // Search row
+  &__search {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  &__search-icon {
+    font-size: 16px;
+    color: var(--sub-text-color);
+  }
+
+  // Tree
+  &__tree-shell {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  &__tree-shell .ant-tree {
+    background: transparent;
+  }
+
+  &__tree-shell .ant-tree-list-holder-inner {
+    gap: 2px;
+  }
+
+  &__tree-shell .ant-tree-node-content-wrapper {
+    min-width: 0;
+    padding: 0 !important;
+  }
+
+  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected,
+  &__tree-shell .ant-tree-node-content-wrapper:hover {
+    background: transparent !important;
+  }
+
+  &__tree-shell .ant-tree-treenode {
+    align-items: center;
+    padding: 0 !important;
+  }
+
+  &__tree-shell .ant-tree-switcher {
+    color: var(--sub-text-color);
+    align-self: center;
+  }
+
+  &__switcher {
+    font-size: 20px;
+    display: block;
+    transition: transform 0.2s ease;
+  }
+
+  &__tree-shell .ant-tree-switcher_open &__switcher {
+    transform: rotate(90deg);
+  }
+
+  &__tree-shell .ant-tree-switcher_close &__switcher {
+    transform: rotate(0deg);
+  }
+
+  &__tree-empty {
+    min-height: 100px;
+    display: grid;
+    place-items: center;
+  }
+
+  &__tree-category,
+  &__tree-case {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 4px;
+    border-radius: 6px;
+    min-width: 0;
+    transition: background-color 0.15s;
+  }
+
+  &__tree-category {
+    padding: 7px 4px;
+  }
+
+  &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-category,
+  &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-case,
+  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected &__tree-case {
+    background: var(--sub-bg-color);
+  }
+
+  &__tree-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    color: var(--sub-text-color);
+  }
+
+  &__tree-icon--category {
+    color: var(--warning-color);
+  }
+
+  &__tree-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  &__tree-run-btn {
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  &__tree-run-btn--category {
+    opacity: 1;
+  }
+
+  &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-run-btn,
+  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected &__tree-run-btn {
+    opacity: 1;
+  }
+
+  // Status icons in tree
+  &__status-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  &__status-icon--pass {
+    color: var(--success-color);
+  }
+
+  &__status-icon--partial {
+    color: var(--warning-color);
+  }
+
+  &__status-icon--fail {
+    color: var(--danger-color);
+  }
+
+  &__status-icon--no-result {
+    color: var(--sub-sub-text-color);
+    opacity: 0.5;
+  }
+}

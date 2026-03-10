@@ -1,0 +1,46 @@
+diff --git a/apps/cli/__tests__/proxy.spec.ts b/apps/cli/__tests__/proxy.spec.ts
+--- a/apps/cli/__tests__/proxy.spec.ts
++++ b/apps/cli/__tests__/proxy.spec.ts
+@@ -20,6 +20,14 @@ describe('proxy logic', () => {
+       expect(shouldEnableCategory('cat1', { include: ['cat1'], exclude: ['cat1'] })).toBe(false)
+       expect(shouldEnableCategory('cat1', { include: ['cat1'], exclude: ['cat2'] })).toBe(true)
+     })
++
++    it('should support wildcard include and exclude', () => {
++      expect(shouldEnableCategory('tool.wait', { include: ['tool.*'] })).toBe(true)
++      expect(shouldEnableCategory('tool.read', { include: ['tool.*'], exclude: ['tool.read'] })).toBe(false)
++    })
++
++    it('should support global wildcard include', () => {
++      expect(shouldEnableCategory('any.category', { include: ['*'] })).toBe(true)
++    })
+   })
+ 
+   describe('createFilteredRegister', () => {
+@@ -58,5 +66,22 @@ describe('proxy logic', () => {
+       vi.clearAllMocks()
+       proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
+       expect(mockTool.disable).toHaveBeenCalled()
++    })
++
++    it('should support wildcard include for tool registration', () => {
++      const proxy = createFilteredRegister(mockServer, {
++        tools: { include: ['tool*'] }
++      })
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool-extra', { description: 'test' }, async () => ({ content: [] }))
++      expect(mockTool.disable).not.toHaveBeenCalled()
++    })
++
++    it('should support wildcard exclude for tool registration', () => {
++      const proxy = createFilteredRegister(mockServer, {
++        tools: { exclude: ['tool*'] }
++      })
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool-extra', { description: 'test' }, async () => ({ content: [] }))
++      expect(mockTool.disable).toHaveBeenCalled()
+     })
+   })
+ }

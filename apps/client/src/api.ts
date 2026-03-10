@@ -9,13 +9,21 @@ export {
   updateAutomationRule
 } from './api/automation'
 
+export {
+  getBenchmarkCase,
+  getBenchmarkResult,
+  getBenchmarkRun,
+  listBenchmarkCases,
+  listBenchmarkCategories,
+  startBenchmarkRun
+} from './api/benchmark'
 // 配置读取与更新 API
 export { getConfig, updateConfig } from './api/config'
 
 // 知识库与规则说明 API
 export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
-export { getEntityDetail, getRuleDetail, getSpecDetail, listEntities, listRules, listSpecs } from './api/knowledge'
 
+export { getEntityDetail, getRuleDetail, getSpecDetail, listEntities, listRules, listSpecs } from './api/knowledge'
 // 项目与工程 API
 export { createProject, listProjects } from './api/projects'
 
@@ -32,3 +40,5 @@ export {
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
+
+export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/core'

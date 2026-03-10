@@ -1,0 +1,267 @@
+.benchmark-view {
+  // Case header
+  &__case-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0 16px;
+  }
+
+  &__case-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  &__case-title.ant-typography {
+    margin: 0;
+  }
+
+  &__case-desc.ant-typography {
+    margin: 0;
+  }
+
+  &__case-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--sub-text-color);
+  }
+
+  // Sections
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  &__section--last {
+    padding-bottom: 24px;
+  }
+
+  &__twin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  &__goal-body {
+    max-height: 360px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  &__task-goal {
+    min-width: 0;
+  }
+
+  &__section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-color);
+  }
+
+  &__section-icon {
+    font-size: 16px;
+    color: var(--primary-color);
+  }
+
+  // Info grid
+  &__info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 13px;
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--sub-text-color);
+      flex-shrink: 0;
+    }
+
+    &--block {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    code,
+    span:last-child {
+      max-width: 70%;
+      text-align: right;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--text-color);
+    }
+  }
+
+  &__hint {
+    font-size: 13px;
+  }
+
+  // Run state
+  &__run-block {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__run-metric {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+
+    label {
+      color: var(--sub-text-color);
+    }
+
+    strong {
+      font-size: 18px;
+      line-height: 1;
+    }
+  }
+
+  // Result
+  &__result {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__score-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  &__score-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+
+    label {
+      font-size: 12px;
+      color: var(--sub-text-color);
+    }
+
+    strong {
+      font-size: 20px;
+      line-height: 1;
+      color: var(--text-color);
+    }
+  }
+
+  &__judge-summary.ant-typography {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  &__subgrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  &__subpanel {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--sub-bg-color);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__subpanel-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  &__file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__file-tag {
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--code-bg);
+    color: var(--text-color);
+    font-size: 12px;
+    font-family: 'SFMono-Regular', 'SF Mono', Monaco, Consolas, monospace;
+  }
+
+  &__issues-list {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 13px;
+
+    li + li {
+      margin-top: 6px;
+    }
+  }
+
+  // Ensure Material Symbols font renders inside markdown-body
+  .markdown-body .material-symbols-rounded {
+    font-family: 'Material Symbols Rounded';
+  }
+
+  // Status tag (shown next to result section label)
+  &__status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-end: 0;
+  }
+
+  &__tag-icon {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .benchmark-view {
+    &__score-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}

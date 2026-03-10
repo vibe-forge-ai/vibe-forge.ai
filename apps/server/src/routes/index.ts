@@ -9,6 +9,7 @@ import type Koa from 'koa'
 import type { loadEnv } from '@vibe-forge/core'
 
 import { aiRouter } from './ai'
+import { benchmarkRouter } from './benchmark'
 import { automationRouter } from './automation'
 import { configRouter } from './config'
 import { hooksRouter } from './hooks'
@@ -79,6 +80,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/sessions', router: sessionsRouter() },
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/ai', router: aiRouter() },
+    { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },
     { prefix: '/api/hooks', router: hooksRouter() }

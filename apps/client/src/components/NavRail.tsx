@@ -109,6 +109,13 @@ export function NavRail({
       active: currentPath === '/automation'
     },
     {
+      key: 'benchmark',
+      icon: 'speed',
+      label: t('common.benchmark'),
+      path: '/benchmark',
+      active: currentPath === '/benchmark'
+    },
+    {
       key: 'archive',
       icon: 'archive',
       label: t('common.archivedSessions'),

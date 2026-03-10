@@ -1,0 +1,47 @@
+diff --git a/apps/cli/src/mcp-tools/proxy.ts b/apps/cli/src/mcp-tools/proxy.ts
+--- a/apps/cli/src/mcp-tools/proxy.ts
++++ b/apps/cli/src/mcp-tools/proxy.ts
+@@ -5,12 +5,24 @@ export interface FilterOptions {
+   exclude?: string[]
+ }
+ 
++const matchesFilterValue = (name: string, value: string) => {
++  if (value === '*') return true
++  if (value.endsWith('*')) {
++    return name.startsWith(value.slice(0, -1))
++  }
++  return name === value
++}
++
++const matchesFilterList = (name: string, values: string[]) => {
++  return values.some(value => matchesFilterValue(name, value))
++}
++
+ export function createFilteredRegister(
+   server: McpServer,
+   options: {
+     tools?: FilterOptions
+     prompts?: FilterOptions
+     resources?: FilterOptions
+   }
+ ): Parameters<Register>[0] {
+   const shouldEnable = (name: string, filter?: FilterOptions) => {
+     if (!filter) return true
+     const { include = [], exclude = [] } = filter
+-    if (include.length > 0 && !include.includes(name)) return false
+-    if (exclude.includes(name)) return false
++    if (include.length > 0 && !matchesFilterList(name, include)) return false
++    if (matchesFilterList(name, exclude)) return false
+     return true
+   }
+ 
+@@ -48,7 +60,7 @@ export const shouldEnableCategory = (
+   options: FilterOptions
+ ) => {
+   const { include = [], exclude = [] } = options
+-  if (include.length > 0 && !include.includes(category)) return false
+-  if (exclude.includes(category)) return false
++  if (include.length > 0 && !matchesFilterList(category, include)) return false
++  if (matchesFilterList(category, exclude)) return false
+   return true
+ }

@@ -4,6 +4,7 @@ import { program } from 'commander'
 
 import { getCliDescription, getCliVersion } from '#~/utils.js'
 
+import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
@@ -19,6 +20,7 @@ program
 // Register default run options
 registerRunCommand(program)
 
+registerBenchmarkCommand(program)
 registerMcpCommand(program)
 registerClearCommand(program)
 registerListCommand(program)
