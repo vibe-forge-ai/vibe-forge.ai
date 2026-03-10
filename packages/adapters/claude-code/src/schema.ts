@@ -216,5 +216,3 @@ declare module '@vibe-forge/core' {
   interface ToolInputs extends ClaudeToolInputs {}
   interface ToolOutputs extends ClaudeToolOutputs {}
 }
-
-export type { ToolInput, ToolInputs, ToolName, ToolOutput } from '@vibe-forge/core'
