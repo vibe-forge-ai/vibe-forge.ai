@@ -1,0 +1,36 @@
+diff --git a/apps/cli/__tests__/proxy.spec.ts b/apps/cli/__tests__/proxy.spec.ts
+--- a/apps/cli/__tests__/proxy.spec.ts
++++ b/apps/cli/__tests__/proxy.spec.ts
+@@ -60,5 +60,30 @@
+       vi.clearAllMocks()
+       proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
+       expect(mockTool.disable).toHaveBeenCalled()
+     })
++
++    it('should expose getStats returning zero counts initially', () => {
++      const proxy = createFilteredRegister(mockServer, {})
++      expect(proxy.getStats()).toEqual({ registered: 0, disabled: 0 })
++    })
++
++    it('should track registered count across all registration calls', () => {
++      const proxy = createFilteredRegister(mockServer, {})
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
++      proxy.registerTool('tool2', { description: 'test' }, async () => ({ content: [] }))
++      proxy.registerPrompt('prompt1', { description: 'test' }, async () => ({ messages: [] }))
++      expect(proxy.getStats().registered).toBe(3)
++    })
++
++    it('should track disabled count when tools are filtered out', () => {
++      const proxy = createFilteredRegister(mockServer, {
++        tools: { include: ['tool1'] }
++      })
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
++      proxy.registerTool('tool2', { description: 'test' }, async () => ({ content: [] }))
++      expect(proxy.getStats()).toEqual({ registered: 2, disabled: 1 })
++    })
+   })
+ })

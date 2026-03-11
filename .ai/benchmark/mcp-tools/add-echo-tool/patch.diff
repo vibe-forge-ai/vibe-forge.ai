@@ -1,0 +1,43 @@
+diff --git a/apps/cli/src/mcp-tools/general/echo.ts b/apps/cli/src/mcp-tools/general/echo.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/cli/src/mcp-tools/general/echo.ts
+@@ -0,0 +1,16 @@
++import { z } from 'zod'
++
++import { defineRegister } from '../types'
++
++export default defineRegister(({ registerTool }) => {
++  registerTool(
++    'echo',
++    {
++      title: 'Echo Tool',
++      description: 'Echoes back the provided message',
++      inputSchema: z.object({
++        message: z.string().describe('The message to echo back')
++      })
++    },
++    async ({ message }) => {
++      return {
++        content: [{ type: 'text', text: `Echo: ${message}` }]
++      }
++    }
++  )
++})
+diff --git a/apps/cli/src/mcp-tools/index.ts b/apps/cli/src/mcp-tools/index.ts
+--- a/apps/cli/src/mcp-tools/index.ts
++++ b/apps/cli/src/mcp-tools/index.ts
+@@ -1,11 +1,13 @@
+ import wait from './general/wait'
++import echo from './general/echo'
+ import askUser from './interaction/ask-user'
+ import task from './task'
+ import type { Register } from './types'
+ 
+ export const tools: Record<string, Register> = {
+   general: (server) => {
+     wait(server)
++    echo(server)
+   },
+   interaction: (server) => {
+     askUser(server)

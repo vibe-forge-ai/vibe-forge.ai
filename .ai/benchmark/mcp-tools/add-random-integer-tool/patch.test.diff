@@ -1,0 +1,56 @@
+diff --git a/apps/cli/__tests__/tools.spec.ts b/apps/cli/__tests__/tools.spec.ts
+--- a/apps/cli/__tests__/tools.spec.ts
++++ b/apps/cli/__tests__/tools.spec.ts
+@@ -1,7 +1,8 @@
+ import { describe, expect, it } from 'vitest'
+ 
+ import wait from '#~/mcp-tools/general/wait.js'
++import randomInteger from '#~/mcp-tools/general/random-integer.js'
+ 
+ import { createToolTester } from './mcp-test-utils.js'
+ 
+ describe('mcp tools integration', () => {
+@@ -40,4 +41,34 @@
+       await expect(tester.callTool('wait', { ms: -1 }))
+         .rejects.toThrow()
+     })
+   })
++
++  describe('random-integer tool', () => {
++    it('should register random-integer tool', () => {
++      const tester = createToolTester()
++      randomInteger(tester.mockRegister)
++
++      expect(tester.getRegisteredTools()).toContain('random-integer')
++      const info = tester.getToolInfo('random-integer')
++      expect(info?.title).toBe('Random Integer Tool')
++    })
++
++    it('should return an integer within the specified range', async () => {
++      const tester = createToolTester()
++      randomInteger(tester.mockRegister)
++
++      const result = await tester.callTool('random-integer', { min: 1, max: 100 }) as any
++      const value = Number(result.content[0].text)
++      expect(Number.isInteger(value)).toBe(true)
++      expect(value).toBeGreaterThanOrEqual(1)
++      expect(value).toBeLessThanOrEqual(100)
++    })
++
++    it('should return exactly min when min equals max', async () => {
++      const tester = createToolTester()
++      randomInteger(tester.mockRegister)
++
++      const result = await tester.callTool('random-integer', { min: 42, max: 42 }) as any
++      expect(result.content[0].text).toBe('42')
++    })
++
++    it('should fail validation when max is less than min', async () => {
++      const tester = createToolTester()
++      randomInteger(tester.mockRegister)
++
++      await expect(tester.callTool('random-integer', { min: 10, max: 5 }))
++        .rejects.toThrow()
++    })
++  })
+ })

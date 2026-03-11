@@ -1,0 +1,55 @@
+diff --git a/apps/cli/src/mcp-tools/proxy.ts b/apps/cli/src/mcp-tools/proxy.ts
+--- a/apps/cli/src/mcp-tools/proxy.ts
++++ b/apps/cli/src/mcp-tools/proxy.ts
+@@ -5,12 +5,28 @@ export interface FilterOptions {
+   exclude?: string[]
+ }
+ 
++const isNegated = (value: string) => value.startsWith('!')
++const positiveValue = (value: string) => (isNegated(value) ? value.slice(1) : value)
++
++const isExplicitlyExcluded = (name: string, values: string[]) =>
++  values.some(v => isNegated(v) && positiveValue(v) === name)
++
++const matchesPositiveList = (name: string, values: string[]) => {
++  const positives = values.filter(v => !isNegated(v))
++  return positives.length === 0 || positives.some(v => v === name)
++}
++
+ export function createFilteredRegister(
+   server: McpServer,
+   options: {
+     tools?: FilterOptions
+     prompts?: FilterOptions
+     resources?: FilterOptions
+   }
+ ): Parameters<Register>[0] {
+-  const shouldEnable = (name: string, filter?: FilterOptions) => {
+-    if (!filter) return true
+-    const { include = [], exclude = [] } = filter
+-    if (include.length > 0 && !include.includes(name)) return false
+-    if (exclude.includes(name)) return false
+-    return true
+-  }
++  const shouldEnable = (name: string, filter?: FilterOptions) => {
++    if (!filter) return true
++    const { include = [], exclude = [] } = filter
++    if (isExplicitlyExcluded(name, include) || isExplicitlyExcluded(name, exclude)) return false
++    const positiveIncludes = include.filter(v => !isNegated(v))
++    if (positiveIncludes.length > 0 && !positiveIncludes.some(v => v === name)) return false
++    if (exclude.filter(v => !isNegated(v)).some(v => v === name)) return false
++    return true
++  }
+ 
+   return {
+@@ -55,7 +71,9 @@ export const shouldEnableCategory = (
+ ) => {
+   const { include = [], exclude = [] } = options
+-  if (include.length > 0 && !include.includes(category)) return false
+-  if (exclude.includes(category)) return false
++  if (isExplicitlyExcluded(category, include) || isExplicitlyExcluded(category, exclude)) return false
++  const positiveIncludes = include.filter(v => !isNegated(v))
++  if (positiveIncludes.length > 0 && !positiveIncludes.some(v => v === category)) return false
++  if (exclude.filter(v => !isNegated(v)).some(v => v === category)) return false
+   return true
+ }

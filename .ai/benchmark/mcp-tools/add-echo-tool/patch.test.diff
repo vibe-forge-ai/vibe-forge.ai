@@ -1,0 +1,45 @@
+diff --git a/apps/cli/__tests__/tools.spec.ts b/apps/cli/__tests__/tools.spec.ts
+--- a/apps/cli/__tests__/tools.spec.ts
++++ b/apps/cli/__tests__/tools.spec.ts
+@@ -1,7 +1,8 @@
+ import { describe, expect, it } from 'vitest'
+ 
+ import wait from '#~/mcp-tools/general/wait.js'
++import echo from '#~/mcp-tools/general/echo.js'
+ 
+ import { createToolTester } from './mcp-test-utils.js'
+ 
+ describe('mcp tools integration', () => {
+@@ -40,4 +41,30 @@
+       await expect(tester.callTool('wait', { ms: -1 }))
+         .rejects.toThrow()
+     })
+   })
++
++  describe('echo tool', () => {
++    it('should register echo tool', () => {
++      const tester = createToolTester()
++      echo(tester.mockRegister)
++
++      expect(tester.getRegisteredTools()).toContain('echo')
++      const info = tester.getToolInfo('echo')
++      expect(info?.title).toBe('Echo Tool')
++    })
++
++    it('should return echoed message with prefix', async () => {
++      const tester = createToolTester()
++      echo(tester.mockRegister)
++
++      const result = await tester.callTool('echo', { message: 'hello world' }) as any
++      expect(result.content[0].text).toBe('Echo: hello world')
++    })
++
++    it('should fail validation when message is missing', async () => {
++      const tester = createToolTester()
++      echo(tester.mockRegister)
++
++      await expect(tester.callTool('echo', {}))
++        .rejects.toThrow()
++    })
++  })
+ })

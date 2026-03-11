@@ -1,0 +1,57 @@
+diff --git a/apps/cli/src/mcp-tools/proxy.ts b/apps/cli/src/mcp-tools/proxy.ts
+--- a/apps/cli/src/mcp-tools/proxy.ts
++++ b/apps/cli/src/mcp-tools/proxy.ts
+@@ -10,17 +10,21 @@ export function createFilteredRegister(
+   options: {
+     tools?: FilterOptions
+     prompts?: FilterOptions
+     resources?: FilterOptions
+   }
+-): Parameters<Register>[0] {
++): Parameters<Register>[0] & { getStats: () => { registered: number; disabled: number } } {
+   const shouldEnable = (name: string, filter?: FilterOptions) => {
+     if (!filter) return true
+     const { include = [], exclude = [] } = filter
+     if (include.length > 0 && !include.includes(name)) return false
+     if (exclude.includes(name)) return false
+     return true
+   }
+ 
++  const stats = { registered: 0, disabled: 0 }
++
+   return {
+     registerTool: (...args) => {
+       const tool = server.registerTool(...args)
+       const name = args[0]
++      stats.registered++
+       if (!shouldEnable(name, options.tools)) {
+         tool.disable()
++        stats.disabled++
+       }
+       return tool
+     },
+     registerPrompt: (...args) => {
+       const prompt = server.registerPrompt(...args)
+       const name = args[0]
++      stats.registered++
+       if (!shouldEnable(name, options.prompts)) {
+         prompt.disable()
++        stats.disabled++
+       }
+       return prompt
+     },
+     registerResource: (...args) => {
+       // @ts-ignore - McpServer types have complex overloads that are hard to proxy perfectly
+       const resource = server.registerResource(...args)
+       const name = args[0]
++      stats.registered++
+       if (!shouldEnable(name, options.resources)) {
+         resource.disable()
++        stats.disabled++
+       }
+       return resource
+-    }
++    },
++    getStats: () => ({ ...stats })
+   }
+ }

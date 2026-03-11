@@ -1,0 +1,47 @@
+diff --git a/apps/cli/__tests__/proxy.spec.ts b/apps/cli/__tests__/proxy.spec.ts
+--- a/apps/cli/__tests__/proxy.spec.ts
++++ b/apps/cli/__tests__/proxy.spec.ts
+@@ -22,6 +22,16 @@
+     it('should prioritize include then exclude', () => {
+       expect(shouldEnableCategory('cat1', { include: ['cat1'], exclude: ['cat1'] })).toBe(false)
+       expect(shouldEnableCategory('cat1', { include: ['cat1'], exclude: ['cat2'] })).toBe(true)
+     })
++
++    it('should treat !name in include as explicit exclusion', () => {
++      expect(shouldEnableCategory('debug', { include: ['!debug'] })).toBe(false)
++      expect(shouldEnableCategory('other', { include: ['!debug'] })).toBe(true)
++    })
++
++    it('should prioritize !negation over positive include entries', () => {
++      expect(shouldEnableCategory('tool', { include: ['tool', '!tool'] })).toBe(false)
++    })
+   })
+ 
+   describe('createFilteredRegister', () => {
+@@ -60,5 +70,22 @@
+       vi.clearAllMocks()
+       proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
+       expect(mockTool.disable).toHaveBeenCalled()
+     })
++
++    it('should disable tool when negated in include list', () => {
++      const proxy = createFilteredRegister(mockServer, {
++        tools: { include: ['!tool1'] }
++      })
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool1', { description: 'test' }, async () => ({ content: [] }))
++      expect(mockTool.disable).toHaveBeenCalled()
++    })
++
++    it('should enable tool when negation does not match', () => {
++      const proxy = createFilteredRegister(mockServer, {
++        tools: { include: ['!tool1'] }
++      })
++
++      vi.clearAllMocks()
++      proxy.registerTool('tool2', { description: 'test' }, async () => ({ content: [] }))
++      expect(mockTool.disable).not.toHaveBeenCalled()
++    })
+   })
+ })
