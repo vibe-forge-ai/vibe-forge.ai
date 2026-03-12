@@ -46,7 +46,7 @@ export function registerInitCommand(program: Command) {
   program
     .command('init')
     .description('Init project by config')
-    .option('--force, -f', 'Force to override existing files')
+    .option('--force', 'Force to override existing files')
     .action(async (options: InitOptions) => {
       const { ctx, config, userConfig } = await createInitContext()
       const adapterNames = new Set([
@@ -59,8 +59,8 @@ export function registerInitCommand(program: Command) {
       }
       let hasError = false
       for (const name of adapterNames) {
-        const hasConfig = (config?.adapters != null && name in config.adapters)
-          || (userConfig?.adapters != null && name in userConfig.adapters)
+        const hasConfig = (config?.adapters != null && name in config.adapters) ||
+          (userConfig?.adapters != null && name in userConfig.adapters)
         if (!hasConfig) {
           continue
         }

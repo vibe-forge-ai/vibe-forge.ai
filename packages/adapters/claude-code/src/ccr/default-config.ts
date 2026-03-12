@@ -101,8 +101,8 @@ const resolveDefaultModel = (params: {
       defaultService: defaultModelServiceName
     }
   }
-  const fallbackModelName = modelServices[defaultModelServiceName]?.models?.[0]
-    ?? defaultProvider.models?.[0]
+  const fallbackModelName = modelServices[defaultModelServiceName]?.models?.[0] ??
+    defaultProvider.models?.[0]
   if (!fallbackModelName) {
     throw new Error(`模型服务 ${defaultModelServiceName} 无可用模型`)
   }
@@ -159,13 +159,13 @@ export const generateDefaultCCRConfigJSON = (params: {
   const loggerEnabled = adapterOptions?.ccrTransformers?.logger ?? true
   const transformers = [
     {
-      path: resolveTransformerPath(cwd, 'ccr-transfomers/gemini-open-router-polyfill.js')
+      path: resolveTransformerPath(cwd, 'ccr-transformers/gemini-open-router-polyfill.js')
     },
     {
-      path: resolveTransformerPath(cwd, 'ccr-transfomers/openai-polyfill.js')
+      path: resolveTransformerPath(cwd, 'ccr-transformers/openai-polyfill.js')
     },
     ...(loggerEnabled
-      ? [{ path: resolveTransformerPath(cwd, 'ccr-transfomers/logger.js') }]
+      ? [{ path: resolveTransformerPath(cwd, 'ccr-transformers/logger.js') }]
       : [])
   ]
   return JSON.stringify(
