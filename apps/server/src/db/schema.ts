@@ -35,6 +35,22 @@ export function initSchema(db: Database.Database) {
         FOREIGN KEY(tagId) REFERENCES tags(id) ON DELETE CASCADE
       );
 
+      CREATE TABLE IF NOT EXISTS channel_sessions (
+        channelType TEXT NOT NULL,
+        sessionType TEXT NOT NULL,
+        channelId TEXT NOT NULL,
+        channelKey TEXT NOT NULL,
+        replyReceiveId TEXT,
+        replyReceiveIdType TEXT,
+        sessionId TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        PRIMARY KEY (channelType, sessionType, channelId),
+        FOREIGN KEY(sessionId) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_channel_sessions_sessionId ON channel_sessions(sessionId);
+
       CREATE INDEX IF NOT EXISTS idx_messages_sessionId ON messages(sessionId);
 
       CREATE TABLE IF NOT EXISTS automation_rules (
@@ -103,6 +119,17 @@ export function initSchema(db: Database.Database) {
   }
   if (!columns.includes('status')) {
     db.exec('ALTER TABLE sessions ADD COLUMN status TEXT')
+  }
+
+  const channelSessionsInfo = db.prepare('PRAGMA table_info(channel_sessions)').all() as { name: string }[]
+  const channelSessionsColumns = channelSessionsInfo.map(c => c.name)
+  if (channelSessionsColumns.length > 0) {
+    if (!channelSessionsColumns.includes('replyReceiveId')) {
+      db.exec('ALTER TABLE channel_sessions ADD COLUMN replyReceiveId TEXT')
+    }
+    if (!channelSessionsColumns.includes('replyReceiveIdType')) {
+      db.exec('ALTER TABLE channel_sessions ADD COLUMN replyReceiveIdType TEXT')
+    }
   }
 
   const automationTableInfo = db.prepare('PRAGMA table_info(automation_rules)').all() as { name: string }[]

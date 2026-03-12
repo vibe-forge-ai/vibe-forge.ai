@@ -134,6 +134,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       )
       return nextConfig
     }
+    case 'channels': {
+      updateField(
+        'channels',
+        mergeMaskedValues(sectionValue, config.channels) as Config['channels']
+      )
+      return nextConfig
+    }
     case 'adapters': {
       updateField('adapters', mergeMaskedValues(sectionValue, config.adapters) as Config['adapters'])
       return nextConfig

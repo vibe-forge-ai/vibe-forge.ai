@@ -9,7 +9,7 @@ export type FieldValueType =
   | 'record'
   | 'shortcut'
 
-export type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue'
+export type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue' | 'channels'
 
 export interface FieldOption {
   value: string
@@ -258,6 +258,15 @@ export const configSchema: Record<string, FieldSpec[]> = {
       recordKind: 'modelServices',
       defaultValue: {},
       icon: 'hub'
+    }
+  ],
+  channels: [
+    {
+      path: [],
+      type: 'record',
+      recordKind: 'channels',
+      defaultValue: {},
+      icon: 'campaign'
     }
   ],
   adapters: [

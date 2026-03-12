@@ -20,6 +20,7 @@ import {
 import type { TranslationFn } from './configUtils'
 import {
   BooleanRecordEditor,
+  ChannelRecordEditor,
   KeyValueEditor,
   McpServersRecordEditor,
   ModelServicesRecordEditor,
@@ -49,7 +50,7 @@ export const SectionForm = ({
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
-  const directRecordSections = new Set(['modelServices', 'adapters', 'plugins', 'mcp'])
+  const directRecordSections = new Set(['modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
 
   const modelServiceEntries = Object.entries(mergedModelServices)
   const modelServiceOptions: Array<{ value: string; label: ReactNode }> = modelServiceEntries.map(([key, entry]) => {
@@ -97,6 +98,7 @@ export const SectionForm = ({
 
   const getRecordKeyPlaceholder = (field: FieldSpec) => {
     if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
+    if (sectionKey === 'channels') return t('config.editor.newChannelName')
     if (sectionKey === 'adapters') return t('config.editor.newAdapterName')
     if (sectionKey === 'plugins') {
       if (field.path.join('.') === 'extraKnownMarketplaces') return t('config.editor.newMarketplaceName')
@@ -241,6 +243,15 @@ export const SectionForm = ({
       if (field.recordKind === 'modelServices') {
         control = (
           <ModelServicesRecordEditor
+            value={recordValue}
+            onChange={handleValueChange}
+            t={t}
+            keyPlaceholder={getRecordKeyPlaceholder(field)}
+          />
+        )
+      } else if (field.recordKind === 'channels') {
+        control = (
+          <ChannelRecordEditor
             value={recordValue}
             onChange={handleValueChange}
             t={t}

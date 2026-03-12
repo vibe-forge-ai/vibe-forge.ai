@@ -21,6 +21,7 @@
     "@koa/router": "^12.0.0",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/channel-lark": "workspace:^",
     "better-sqlite3": "^12.6.0",
     "cron-parser": "^4.9.0",
     "koa": "^2.15.0",

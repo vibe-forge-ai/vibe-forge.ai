@@ -274,6 +274,7 @@ export function sessionsRouter(): Router {
 
   router.delete('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
+    db.deleteChannelSessionBySessionId(id)
     const removed = db.deleteSession(id)
     if (removed) {
       // 显式销毁会话进程

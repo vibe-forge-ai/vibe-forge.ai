@@ -18,9 +18,10 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
-    "@vibe-forge/adapter-claude-code": "workspace:*",
-    "@vibe-forge/core": "workspace:*",
-    "@vibe-forge/plugin-chrome-devtools": "workspace:*",
+    "@vibe-forge/adapter-claude-code": "workspace:^",
+    "@vibe-forge/channel-lark": "workspace:^",
+    "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/plugin-chrome-devtools": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vitejs/plugin-react": "^5.1.2",
     "antd": "^5.20.0",
@@ -39,7 +40,8 @@
     "sass": "^1.97.2",
     "shiki": "^3.21.0",
     "swr": "^2.2.5",
-    "vite": "^5.4.8"
+    "vite": "^5.4.8",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

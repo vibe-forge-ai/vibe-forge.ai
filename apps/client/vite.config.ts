@@ -14,6 +14,9 @@ export default defineConfig({
   ],
   root: '.',
   base: clientBase,
+  resolve: {
+    conditions: ['browser', '__vibe-forge__', 'module', 'import', 'development']
+  },
   server: {
     host: process.env.__VF_PROJECT_AI_CLIENT_HOST__,
     port: Number(process.env.__VF_PROJECT_AI_CLIENT_PORT__ ?? 5173)

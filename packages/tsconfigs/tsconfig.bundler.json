@@ -5,6 +5,7 @@
   "include": [
     "../../packages/*/src/**/*",
     "../../packages/adapters/*/src/**/*",
+    "../../packages/channels/*/src/**/*",
     "../../packages/plugins/*/src/**/*"
   ]
 }

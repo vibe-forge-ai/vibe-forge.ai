@@ -4,6 +4,8 @@
 .ai/.mock
 .ai/caches
 .ai/logs
+.ai/results
+.ai/worktress
 .ai.dev.config.json
 
 ### Node template

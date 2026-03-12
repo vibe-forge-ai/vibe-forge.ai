@@ -37,6 +37,7 @@ const mergeConfig = (project?: Config, user?: Config): Config => ({
     user?.adapters as Record<string, unknown> | undefined
   ) as Config['adapters'],
   modelServices: mergeRecord(project?.modelServices, user?.modelServices),
+  channels: mergeRecord(project?.channels, user?.channels),
   mcpServers: mergeRecord(project?.mcpServers, user?.mcpServers),
   enabledPlugins: mergeRecord(project?.enabledPlugins, user?.enabledPlugins),
   extraKnownMarketplaces: mergeRecord(project?.extraKnownMarketplaces, user?.extraKnownMarketplaces),
@@ -99,6 +100,7 @@ const buildSections = (config: Config | undefined) => {
     },
     conversation: sanitize(conversation),
     modelServices: sanitize(config?.modelServices),
+    channels: sanitize(config?.channels),
     adapters: sanitize(config?.adapters),
     plugins: sanitize({
       plugins: config?.plugins,

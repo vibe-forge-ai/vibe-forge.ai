@@ -6,8 +6,9 @@
     { "path": "./tsconfig.bundler.json" }
   ],
   "include": [
-    "../../packages/*/tests/**/*",
-    "../../packages/adapters/*/tests/**/*",
-    "../../packages/plugins/*/tests/**/*"
+    "../../packages/*/__tests__/**/*",
+    "../../packages/adapters/*/__tests__/**/*",
+    "../../packages/channels/*/__tests__/**/*",
+    "../../packages/plugins/*/__tests__/**/*"
   ]
 }

@@ -45,6 +45,7 @@ export function ConfigView() {
       'general',
       'conversation',
       'modelServices',
+      'channels',
       'adapters',
       'plugins',
       'mcp',
@@ -65,6 +66,12 @@ export function ConfigView() {
       icon: 'model_training',
       label: t('config.sections.modelServices'),
       value: currentSource?.modelServices
+    },
+    {
+      key: 'channels',
+      icon: 'campaign',
+      label: t('config.sections.channels'),
+      value: currentSource?.channels
     },
     {
       key: 'adapters',

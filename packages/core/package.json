@@ -22,6 +22,15 @@
         "require": "./dist/index.js"
       }
     },
+    "./channel": {
+      "__vibe-forge__": {
+        "default": "./src/channel.ts"
+      },
+      "default": {
+        "import": "./dist/channel.mjs",
+        "require": "./dist/channel.js"
+      }
+    },
     "./utils/*": {
       "__vibe-forge__": {
         "default": "./src/utils/*.ts"
@@ -38,6 +47,15 @@
       "default": {
         "import": "./dist/controllers/task/index.mjs",
         "require": "./dist/controllers/task/index.js"
+      }
+    },
+    "./controllers/benchmark": {
+      "__vibe-forge__": {
+        "default": "./src/controllers/benchmark/index.ts"
+      },
+      "default": {
+        "import": "./dist/controllers/benchmark/index.mjs",
+        "require": "./dist/controllers/benchmark/index.js"
       }
     },
     "./schema": {

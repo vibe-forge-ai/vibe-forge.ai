@@ -16,6 +16,7 @@ import { callHook } from '@vibe-forge/core/utils/api'
 
 import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
+import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { adapterCache, externalCache } from './cache'
@@ -115,6 +116,7 @@ export async function startAdapterSession(
               notifySessionUpdated(sessionId, session)
             }
           })
+          void handleChannelSessionEvent(sessionId, ev).catch(() => undefined)
         }
 
         switch (event.type) {

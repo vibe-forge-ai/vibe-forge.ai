@@ -9,6 +9,7 @@ import type {
   AutomationTrigger
 } from '#~/automation/db/types.js'
 
+import { createChannelSessionsRepo } from './channelSessions.repo'
 import { createConnection } from './connection'
 import { createMessagesRepo } from './messages.repo'
 import { initSchema } from './schema'
@@ -19,6 +20,7 @@ export class SqliteDb {
   private db: Database.Database
   private sessions: ReturnType<typeof createSessionsRepo>
   private messages: ReturnType<typeof createMessagesRepo>
+  private channelSessions: ReturnType<typeof createChannelSessionsRepo>
   private tags: ReturnType<typeof createTagsRepo>
   private automation: ReturnType<typeof createAutomationRepo>
 
@@ -28,6 +30,7 @@ export class SqliteDb {
     initSchema(this.db)
     this.sessions = createSessionsRepo(this.db)
     this.messages = createMessagesRepo(this.db)
+    this.channelSessions = createChannelSessionsRepo(this.db)
     this.tags = createTagsRepo(this.db)
     this.automation = createAutomationRepo(this.db)
   }
@@ -66,6 +69,22 @@ export class SqliteDb {
 
   getMessages(sessionId: string) {
     return this.messages.getMessages(sessionId)
+  }
+
+  getChannelSession(channelType: string, sessionType: string, channelId: string) {
+    return this.channelSessions.getChannelSession(channelType, sessionType, channelId)
+  }
+
+  getChannelSessionBySessionId(sessionId: string) {
+    return this.channelSessions.getChannelSessionBySessionId(sessionId)
+  }
+
+  upsertChannelSession(row: Parameters<typeof this.channelSessions.upsertChannelSession>[0]) {
+    return this.channelSessions.upsertChannelSession(row)
+  }
+
+  deleteChannelSessionBySessionId(sessionId: string) {
+    return this.channelSessions.deleteChannelSessionBySessionId(sessionId)
   }
 
   copyMessages(fromSessionId: string, toSessionId: string) {

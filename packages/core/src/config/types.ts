@@ -1,4 +1,4 @@
-import type { ChannelConfig } from '../channel'
+import type { ChannelConfig } from '../channels'
 import type { PluginConfig } from '../hooks'
 
 export interface AdapterMap {}

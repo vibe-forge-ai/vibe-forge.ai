@@ -1,3 +1,4 @@
+export { ChannelRecordEditor } from './ChannelRecordEditor'
 export { BooleanRecordEditor } from './BooleanRecordEditor'
 export { KeyValueEditor } from './KeyValueEditor'
 export { McpServersRecordEditor } from './McpServersRecordEditor'

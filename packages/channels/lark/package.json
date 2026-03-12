@@ -1,0 +1,40 @@
+{
+  "name": "@vibe-forge/channel-lark",
+  "version": "0.3.0",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./connection": {
+      "__vibe-forge__": {
+        "default": "./src/connection.ts"
+      },
+      "default": {
+        "import": "./dist/connection.mjs",
+        "require": "./dist/connection.js"
+      }
+    }
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "latest",
+    "@vibe-forge/core": "workspace:^",
+    "zod": "^3.24.1"
+  }
+}
