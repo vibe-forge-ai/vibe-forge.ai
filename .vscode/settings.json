@@ -11,5 +11,9 @@
     "shiki",
     "unack",
     "vfui"
-  ]
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "chat.instructionsFilesLocations": {
+    ".ai/rules": true
+  }
 }
