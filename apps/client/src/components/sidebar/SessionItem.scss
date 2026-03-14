@@ -163,11 +163,15 @@
         align-items: center;
 
         .session-tag {
+          max-width: 120px;
           font-size: 10px;
           margin: 0;
           padding: 0 4px;
           line-height: 14px;
           border-radius: 2px;
+          display: inline-flex;
+          align-items: center;
+          white-space: nowrap;
 
           &--automation {
             padding: 0 6px;
@@ -176,6 +180,19 @@
           &__link {
             color: var(--primary-color);
             text-decoration: none;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          &__text {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
         }
       }

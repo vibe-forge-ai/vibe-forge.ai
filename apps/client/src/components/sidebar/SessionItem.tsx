@@ -226,28 +226,36 @@ export function SessionItem({
               if (automationTag) {
                 const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`
                 return (
-                  <Tag
+                  <Tooltip
                     key={tag}
-                    className='session-tag session-tag--automation'
-                    onClick={(event) => event.stopPropagation()}
+                    title={automationTag.ruleTitle}
                   >
-                    <a
-                      className='session-tag__link'
-                      href={href}
+                    <Tag
+                      className='session-tag session-tag--automation'
                       onClick={(event) => event.stopPropagation()}
                     >
-                      {automationTag.ruleTitle}
-                    </a>
-                  </Tag>
+                      <a
+                        className='session-tag__link'
+                        href={href}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {automationTag.ruleTitle}
+                      </a>
+                    </Tag>
+                  </Tooltip>
                 )
               }
               return (
-                <Tag
+                <Tooltip
                   key={tag}
-                  className='session-tag'
+                  title={tag}
                 >
-                  {tag}
-                </Tag>
+                  <Tag className='session-tag'>
+                    <span className='session-tag__text'>
+                      {tag}
+                    </span>
+                  </Tag>
+                </Tooltip>
               )
             })}
           </div>
