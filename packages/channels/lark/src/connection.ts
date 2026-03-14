@@ -1,10 +1,14 @@
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
-import type { ChannelConnection, ChannelEventHandlers, ChannelInboundEvent } from '@vibe-forge/core/channel'
+import type { ChannelConnection, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
 import { defineChannelConnection } from '@vibe-forge/core/channel'
 
-import type { LarkChannelConfig, LarkChannelMessage } from './index'
-import { larkChannelConfigSchema } from './index'
+import type { LarkChannelConfig, LarkChannelMessage, LarkMessagePayload } from '#~/types.js'
+import { larkChannelConfigSchema } from '#~/types.js'
+
+import { parseLarkContent } from './utils/parse'
+import { createTenantTokenProvider } from './utils/tenant-token'
+import { resolveLarkId } from './utils/text-format'
 
 const sendLarkMessage = async (
   client: Client,
@@ -25,45 +29,36 @@ const sendLarkMessage = async (
   }
 }
 
-interface LarkMessagePayload {
-  event_type?: string
-  message?: {
-    chat_id?: string
-    chat_type?: string
-    content?: string
-    message_id?: string
-  }
-  sender?: {
-    sender_id?: {
-      open_id?: string | null
-      user_id?: string | null
-      union_id?: string | null
-    }
-  }
+const reactionPool = [
+  'STRIVE',
+  'MeMeMe',
+  'Typing',
+  'OnIt',
+  'OneSecond',
+  'SHAKE',
+  'HIGHFIVE',
+  'SaluteFace'
+]
+
+const toStandardSessionType = (chatType: string) => {
+  if (chatType === 'p2p') return 'direct'
+  return 'group'
 }
 
-const parseLarkText = (content?: string) => {
-  if (content == null || content === '') return undefined
-  try {
-    const parsed = JSON.parse(content) as { text?: string }
-    return parsed.text ?? undefined
-  } catch {
-    return undefined
+export const toChannelInboundEvent = async (
+  payload: LarkMessagePayload,
+  client: Client,
+  options?: {
+    tenantTokenProvider?: () => Promise<string | undefined>
   }
-}
-
-export const toChannelInboundEvent = (payload: LarkMessagePayload, client: Client): ChannelInboundEvent | null => {
+): Promise<ChannelInboundEvent | null> => {
   const message = payload.message
   if (message == null || message.chat_id == null || message.chat_type == null) {
     return null
   }
-  const senderId = payload.sender?.sender_id?.open_id ??
-    payload.sender?.sender_id?.user_id ??
-    payload.sender?.sender_id?.union_id ??
-    undefined
+  const senderId = resolveLarkId(payload.sender?.sender_id)
   let reactionId: string | undefined
   let acked = false
-  const reactionPool = ['STRIVE', 'MeMeMe', 'Typing', 'OnIt', 'OneSecond', 'SHAKE', 'HIGHFIVE', 'SaluteFace']
   const emojiType = reactionPool[Math.floor(Math.random() * reactionPool.length)]
   const ack = async () => {
     if (acked) return
@@ -95,35 +90,64 @@ export const toChannelInboundEvent = (payload: LarkMessagePayload, client: Clien
     void res
   }
 
+  const parsed = await parseLarkContent({
+    content: message.content,
+    mentions: message.mentions,
+    client,
+    tenantTokenProvider: options?.tenantTokenProvider
+  })
+  const rawText = parsed.rawText
+  const formattedText = parsed.formattedText
+  const displayText = senderId ? `[${senderId}]:\n${formattedText ?? ''}` : formattedText
+
   return {
     channelType: 'lark',
-    sessionType: message.chat_type,
+    sessionType: toStandardSessionType(message.chat_type),
     channelId: message.chat_id,
     senderId,
     messageId: message.message_id,
-    text: parseLarkText(message.content),
+    text: displayText,
     replyTo: {
       receiveId: message.chat_id,
       receiveIdType: 'chat_id'
     },
     ack,
     unack,
-    raw: payload
+    raw: {
+      payload,
+      rawText,
+      formattedText,
+      contentItems: parsed.contentItems,
+      images: parsed.images,
+      rich: parsed.rich
+    }
   }
 }
 
 export const connectLarkChannel = defineChannelConnection(async (
-  config: LarkChannelConfig
+  config: LarkChannelConfig,
+  options?: {
+    logger?: ChannelLogger
+  }
 ): Promise<ChannelConnection<LarkChannelMessage>> => {
-  const client = new Client({
+  const logger = options?.logger
+  const domain = {
+    Feishu: Domain.Feishu,
+    Lark: Domain.Lark
+  }[config.domain ?? 'Feishu']
+  const commonClientOptions = {
     appId: config.appId,
     appSecret: config.appSecret,
-    domain: Domain.Feishu
+    domain,
+    logger
+  }
+  const client = new Client({
+    ...commonClientOptions
   })
   const wsClient = new WSClient({
-    appId: config.appId,
-    appSecret: config.appSecret
+    ...commonClientOptions
   })
+  const tenantTokenProvider = createTenantTokenProvider(config)
   return {
     sendMessage: async (message) => {
       await sendLarkMessage(client, message)
@@ -132,7 +156,9 @@ export const connectLarkChannel = defineChannelConnection(async (
       const dispatcher = new EventDispatcher({})
       dispatcher.register({
         'im.message.receive_v1': async (payload: unknown) => {
-          const inbound = toChannelInboundEvent(payload as LarkMessagePayload, client)
+          const inbound = await toChannelInboundEvent(payload as LarkMessagePayload, client, {
+            tenantTokenProvider
+          })
           if (inbound == null) return
           await handlers.message?.(inbound)
         }

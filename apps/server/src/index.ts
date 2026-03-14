@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import http from 'node:http'
 import process, { exit } from 'node:process'
 
@@ -10,6 +9,7 @@ import { loadConfig, loadEnv } from '@vibe-forge/core'
 
 import { initChannels } from './channels'
 import { mountRoutes } from './routes'
+import { logger } from './utils/logger'
 import { setupWebSocket } from './websocket'
 
 async function init() {
@@ -52,10 +52,10 @@ async function bootstrap() {
   server.listen(serverPort, serverHost, () => {
     const host = `${serverHost}:${serverPort}`
     const httpHost = `http://${host}`
-    console.log(
+    logger.info(
       `[server] listening on ${httpHost}`
     )
-    console.log(
+    logger.info(
       `[server]              ws://${host}${serverWSPath}`
     )
     mountRoutesOnListen(httpHost)
@@ -63,6 +63,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error('[server] bootstrap failed:', err)
+  logger.error('[server] bootstrap failed:', err)
   exit(1)
 })

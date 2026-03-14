@@ -1,5 +1,5 @@
 import type { WSEvent } from '@vibe-forge/core'
-import type { ChannelConnection } from '@vibe-forge/core/channel'
+import type { ChannelConnection, ChannelConnectionOptions } from '@vibe-forge/core/channel'
 
 export interface ChannelRuntimeState {
   key: string
@@ -29,7 +29,7 @@ export interface SafeParseSchema {
 }
 
 export interface LoadedChannelModule {
-  connectChannel: (config: unknown) => Promise<ChannelConnection<ChannelTextMessage>>
+  connectChannel: (config: unknown, options?: ChannelConnectionOptions) => Promise<ChannelConnection<ChannelTextMessage>>
   configSchema?: SafeParseSchema
 }
 

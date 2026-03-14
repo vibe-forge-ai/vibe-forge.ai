@@ -1,6 +1,8 @@
 import type { WSEvent } from '@vibe-forge/core'
 import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
 
+import { logger } from '#~/utils/logger.js'
+
 import { handleInboundEvent, handleSessionEvent } from './handlers'
 import { loadChannelModule } from './loader'
 import type { ChannelManager, ChannelRuntimeState } from './types'
@@ -35,7 +37,7 @@ export const initChannels = async (
         continue
       }
       const connectionConfig = parsed && parsed.success === true ? parsed.data : rawConfig
-      const connection = await mod.connectChannel(connectionConfig)
+      const connection = await mod.connectChannel(connectionConfig, { logger })
       states.set(key, { key, type, status: 'connected', connection })
       await connection.startReceiving?.({
         handlers: {

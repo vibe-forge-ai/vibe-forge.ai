@@ -1,4 +1,4 @@
-import type { WSEvent } from '@vibe-forge/core'
+import type { ChatMessageContent, WSEvent } from '@vibe-forge/core'
 import type { ChannelConnection, ChannelInboundEvent } from '@vibe-forge/core/channel'
 
 import { getDb } from '#~/db/index.js'
@@ -11,14 +11,72 @@ import { consumePendingUnack, isDuplicateMessage, resolveBinding, setBinding, se
 import type { ChannelRuntimeState, ChannelTextMessage } from './types'
 
 const buildChannelTags = (inbound: ChannelInboundEvent) => {
-  if (inbound.channelType !== 'lark') return []
-  if (inbound.sessionType === 'p2p' && inbound.senderId) {
-    return [`channel:lark:direct:${inbound.senderId}`]
+  if (inbound.sessionType === 'direct' && inbound.senderId) {
+    return [`channel:${inbound.channelType}:direct:${inbound.senderId}`]
   }
   if (inbound.sessionType === 'group') {
-    return [`channel:lark:group:${inbound.channelId}`]
+    return [`channel:${inbound.channelType}:group:${inbound.channelId}`]
   }
   return []
+}
+
+const stripSpeakerPrefix = (text: string) => {
+  const lines = text.split('\n')
+  if (lines.length < 2) return text
+  if (/^\[[^\]]+\]\s*:\s*$/.test(lines[0]?.trim() ?? '')) {
+    return lines.slice(1).join('\n')
+  }
+  return text
+}
+
+const stripLeadingAtTags = (text: string) => {
+  let result = text
+  while (true) {
+    const trimmed = result.trimStart()
+    if (!trimmed.startsWith('<at ')) return result
+    const endIndex = trimmed.indexOf('</at>')
+    if (endIndex < 0) return result
+    result = trimmed.slice(endIndex + '</at>'.length)
+  }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value != null
+}
+
+const isChatMessageContent = (value: unknown): value is ChatMessageContent => {
+  if (!isRecord(value)) return false
+  const type = value.type
+  if (type === 'text') {
+    return typeof value.text === 'string'
+  }
+  if (type === 'image') {
+    return typeof value.url === 'string' &&
+      (value.name == null || typeof value.name === 'string') &&
+      (value.size == null || typeof value.size === 'number') &&
+      (value.mimeType == null || typeof value.mimeType === 'string')
+  }
+  if (type === 'tool_use') {
+    return typeof value.id === 'string' && typeof value.name === 'string'
+  }
+  if (type === 'tool_result') {
+    return typeof value.tool_use_id === 'string' &&
+      (value.is_error == null || typeof value.is_error === 'boolean')
+  }
+  return false
+}
+
+const getInboundContentItems = (inbound: ChannelInboundEvent): ChatMessageContent[] | undefined => {
+  const raw = inbound.raw
+  if (!isRecord(raw)) return undefined
+  const maybe = raw.contentItems
+  if (!Array.isArray(maybe)) return undefined
+  const items: ChatMessageContent[] = []
+  for (const item of maybe) {
+    if (!isChatMessageContent(item)) return undefined
+    items.push(item)
+  }
+  return items
 }
 
 export const handleInboundEvent = async (
@@ -32,7 +90,9 @@ export const handleInboundEvent = async (
       return
     }
   }
-  if (inbound.text == null || inbound.text === '') return
+  const inboundContentItems = getInboundContentItems(inbound)
+  const hasInboundContentItems = inboundContentItems != null && inboundContentItems.length > 0
+  if ((inbound.text == null || inbound.text === '') && !hasInboundContentItems) return
   const db = getDb()
   let { sessionId } = db.getChannelSession(
     inbound.channelType,
@@ -40,7 +100,8 @@ export const handleInboundEvent = async (
     inbound.channelId
   ) ?? {}
 
-  const trimmed = inbound.text.trim()
+  const commandSourceText = stripLeadingAtTags(stripSpeakerPrefix(inbound.text ?? ''))
+  const trimmed = commandSourceText.trim()
   const command = trimmed.split(/\s+/)[0]
   const commandResult = await handleChannelCommand(command, sessionId, inbound, connection)
   if (commandResult.handled) return
@@ -49,14 +110,15 @@ export const handleInboundEvent = async (
 
   if (!sessionId) {
     const session = await createSessionWithInitialMessage({
-      title: inbound.text.split('\n')[0],
-      initialMessage: inbound.text,
+      title: stripSpeakerPrefix(inbound.text ?? '').split('\n')[0],
+      initialMessage: hasInboundContentItems ? undefined : inbound.text,
+      initialContent: hasInboundContentItems ? inboundContentItems : undefined,
       shouldStart: true,
       tags: buildChannelTags(inbound)
     })
     sessionId = session.id
   } else {
-    processUserMessage(sessionId, inbound.text)
+    processUserMessage(sessionId, hasInboundContentItems ? inboundContentItems : inbound.text ?? '')
   }
 
   setPendingUnack(sessionId, inbound.unack)

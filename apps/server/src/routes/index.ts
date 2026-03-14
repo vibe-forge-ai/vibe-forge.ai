@@ -8,9 +8,11 @@ import type Koa from 'koa'
 
 import type { loadEnv } from '@vibe-forge/core'
 
+import { logger } from '#~/utils/logger.js'
+
 import { aiRouter } from './ai'
-import { benchmarkRouter } from './benchmark'
 import { automationRouter } from './automation'
+import { benchmarkRouter } from './benchmark'
 import { configRouter } from './config'
 import { hooksRouter } from './hooks'
 import { interactRouter } from './interact'
@@ -117,11 +119,9 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     onListen: (httpHost: string) => {
       if (clientMode !== 'dev') {
         if (clientDistPath) {
-          // eslint-disable-next-line no-console
-          console.log(`[server]              ${httpHost}${clientBase} from ${clientDistPath}`)
+          logger.info(`[server]              ${httpHost}${clientBase} from ${clientDistPath}`)
         } else {
-          // eslint-disable-next-line no-console
-          console.log('[server] client dist not found, static hosting disabled')
+          logger.info('[server] client dist not found, static hosting disabled')
         }
       }
     }

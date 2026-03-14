@@ -28,6 +28,18 @@ export interface ChannelConnection<TMessage> {
   close?: () => Promise<void>
 }
 
+export interface ChannelLogger {
+  error: (...msg: unknown[]) => void | Promise<void>
+  warn: (...msg: unknown[]) => void | Promise<void>
+  info: (...msg: unknown[]) => void | Promise<void>
+  debug: (...msg: unknown[]) => void | Promise<void>
+  trace: (...msg: unknown[]) => void | Promise<void>
+}
+
+export interface ChannelConnectionOptions {
+  logger?: ChannelLogger
+}
+
 export interface ChannelInboundEvent {
   channelType: string
   sessionType: string
@@ -71,5 +83,8 @@ export const defineChannel = <TConfigSchema extends z.ZodTypeAny, TMessageSchema
 ) => descriptor
 
 export const defineChannelConnection = <TConfigSchema extends z.ZodTypeAny, TMessageSchema extends z.ZodTypeAny>(
-  connect: (config: z.infer<TConfigSchema>) => Promise<ChannelConnection<z.infer<TMessageSchema>>>
+  connect: (
+    config: z.infer<TConfigSchema>,
+    options?: ChannelConnectionOptions
+  ) => Promise<ChannelConnection<z.infer<TMessageSchema>>>
 ) => connect
