@@ -3,7 +3,9 @@
   "editor.formatOnSave": true,
   "dprint.path": "./node_modules/.bin/dprint",
   "cSpell.words": [
+    "acked",
     "esbuild",
+    "Feishu",
     "gantt",
     "larksuiteoapi",
     "shiki",
