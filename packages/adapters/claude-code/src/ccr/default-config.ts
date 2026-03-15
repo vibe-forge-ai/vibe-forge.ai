@@ -159,13 +159,13 @@ export const generateDefaultCCRConfigJSON = (params: {
   const loggerEnabled = adapterOptions?.ccrTransformers?.logger ?? true
   const transformers = [
     {
-      path: resolveTransformerPath(cwd, 'ccr-transformers/gemini-open-router-polyfill.js')
+      path: resolveTransformerPath('gemini-open-router-polyfill.js')
     },
     {
-      path: resolveTransformerPath(cwd, 'ccr-transformers/openai-polyfill.js')
+      path: resolveTransformerPath('openai-polyfill.js')
     },
     ...(loggerEnabled
-      ? [{ path: resolveTransformerPath(cwd, 'ccr-transformers/logger.js') }]
+      ? [{ path: resolveTransformerPath('logger.js') }]
       : [])
   ]
   return JSON.stringify(

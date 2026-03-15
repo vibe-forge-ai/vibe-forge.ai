@@ -22,10 +22,10 @@ export const resolveAdapterCliPath = () => {
   return toRealPath(resolve(adapterPackageDir, 'node_modules/.bin/ccr'))
 }
 
-export const resolveTransformerPath = (cwd: string, relativePath: string) => {
-  const distPath = resolve(cwd, 'node_modules/@vibe-forge/adapter-claude-code/dist', relativePath)
+export const resolveTransformerPath = (relativePath: string) => {
+  const distPath = resolve(adapterPackageDir, 'dist/ccr-transformers', relativePath)
   if (existsSync(distPath)) return distPath
-  const srcPath = resolve(cwd, 'node_modules/@vibe-forge/adapter-claude-code/src', relativePath)
+  const srcPath = resolve(adapterPackageDir, 'src/ccr-transformers', relativePath)
   if (existsSync(srcPath)) return srcPath
-  return resolve(cwd, relativePath)
+  return resolve(adapterPackageDir, 'ccr-transformers', relativePath)
 }
