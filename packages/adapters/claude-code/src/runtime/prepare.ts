@@ -1,4 +1,4 @@
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
 import { resolveAdapterCliPath } from '../ccr/paths'
 

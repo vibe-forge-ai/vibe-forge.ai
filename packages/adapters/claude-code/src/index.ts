@@ -1,6 +1,6 @@
 import './adapter-config'
 
-import { defineAdapter } from '@vibe-forge/core'
+import { defineAdapter } from '@vibe-forge/core/adapter'
 
 import { initClaudeCodeAdapter } from './runtime/init'
 import { createClaudeSession } from './runtime/session'

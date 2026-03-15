@@ -1,4 +1,5 @@
-import type { AdapterQueryOptions, ChatMessage } from '@vibe-forge/core'
+import type { ChatMessage } from '@vibe-forge/core'
+import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
 import type {
   ClaudeCodeContentText,

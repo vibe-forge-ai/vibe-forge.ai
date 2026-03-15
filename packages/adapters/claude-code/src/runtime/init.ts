@@ -4,7 +4,7 @@ import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterInitOptions } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterInitOptions } from '@vibe-forge/core/adapter'
 
 import { generateDefaultCCRConfigJSON } from '../ccr/default-config'
 import { resolveAdapterCliPath } from '../ccr/paths'

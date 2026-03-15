@@ -22,6 +22,15 @@
         "require": "./dist/index.js"
       }
     },
+    "./adapter": {
+      "__vibe-forge__": {
+        "default": "./src/adapter/index.ts"
+      },
+      "default": {
+        "import": "./dist/adapter.mjs",
+        "require": "./dist/adapter.js"
+      }
+    },
     "./channel": {
       "__vibe-forge__": {
         "default": "./src/channel.ts"

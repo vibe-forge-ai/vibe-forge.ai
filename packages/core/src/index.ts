@@ -1,4 +1,3 @@
-export * from './adapter'
 export * from './config'
 export * from './controllers/benchmark'
 export * from './controllers/config'

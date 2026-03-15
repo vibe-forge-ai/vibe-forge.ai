@@ -1,6 +1,7 @@
 {
   "adapters": {
-    "claude-code": {}
+    "claude-code": {},
+    "codex": {}
   },
   "plugins": {
     "logger": {}
@@ -19,18 +20,11 @@
     }
   },
   "permissions": {
-    "allow": [
-      "ChromeDevtools"
-    ],
+    "allow": ["ChromeDevtools"],
     "deny": [],
-    "ask": [
-      "Bash(kill:*)",
-      "Bash(chmod:*)"
-    ]
+    "ask": ["Bash(kill:*)", "Bash(chmod:*)"]
   },
-  "announcements": [
-    "欢迎使用 AI 时代的代码工业机床。"
-  ],
+  "announcements": ["欢迎使用 AI 时代的代码工业机床。"],
   "shortcuts": {
     "openConfig": "mod+,",
     "sendMessage": "mod+enter",

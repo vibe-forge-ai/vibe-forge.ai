@@ -1,7 +1,7 @@
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core'
 import { loadConfig } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import { getCache, setCache } from '@vibe-forge/core/utils/cache'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 import { uuid } from '@vibe-forge/core/utils/uuid'

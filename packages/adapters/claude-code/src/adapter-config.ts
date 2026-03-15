@@ -1,4 +1,10 @@
+export {}
+
 declare module '@vibe-forge/core' {
+  interface Cache {
+    'adapter.claude-code.mcp': Record<string, unknown>
+    'adapter.claude-code.settings': Record<string, unknown>
+  }
   interface AdapterMap {
     'claude-code': {
       ccrOptions?: {
@@ -17,9 +23,5 @@ declare module '@vibe-forge/core' {
       }
       apiTimeout?: number
     }
-  }
-  interface Cache {
-    'adapter.claude-code.mcp': Record<string, unknown>
-    'adapter.claude-code.settings': Record<string, unknown>
   }
 }

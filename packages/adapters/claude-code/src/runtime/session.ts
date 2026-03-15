@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/core'
+import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
-import type { ClaudeCodeBaseEvent, ClaudeCodeIncomingEvent, ClaudeCodeUserEvent } from '../types'
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'
+import type { ClaudeCodeBaseEvent, ClaudeCodeIncomingEvent, ClaudeCodeUserEvent } from '../types'
 import { prepareClaudeExecution } from './prepare'
 
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
