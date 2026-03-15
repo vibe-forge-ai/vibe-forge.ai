@@ -8,6 +8,7 @@ import useSWR from 'swr'
 import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
 
 import { getConfig, updateConfig } from '../api'
+import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
@@ -16,8 +17,12 @@ export function ConfigView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
-  const [sourceKey, setSourceKey] = useState<ConfigSource>('project')
-  const [activeTabKey, setActiveTabKey] = useState('general')
+  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
+    keys: ['tab', 'source'],
+    defaults: { tab: 'general', source: 'project' },
+  })
+  const sourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
+  const setSourceKey = (next: ConfigSource) => updateQuery({ source: next })
   const [drafts, setDrafts] = useState<Record<string, unknown>>({})
   const configPresent = data?.meta?.configPresent
   const currentSource = data?.sources?.[sourceKey]
@@ -33,10 +38,11 @@ export function ConfigView() {
   ])
 
   useEffect(() => {
+    if (searchParams.get('source') != null) return
     if (configPresent?.project) {
-      setSourceKey('project')
+      updateQuery({ source: 'project' })
     } else if (configPresent?.user) {
-      setSourceKey('user')
+      updateQuery({ source: 'user' })
     }
   }, [configPresent?.project, configPresent?.user])
 
@@ -89,26 +95,10 @@ export function ConfigView() {
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
   const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
 
+  const activeTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
+  const setActiveTabKey = (key: string) => updateQuery({ tab: key })
+
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
-
-  const initializedTabRef = useRef(false)
-  useEffect(() => {
-    if (initializedTabRef.current) return
-    const params = new URLSearchParams(window.location.search)
-    const tabKey = params.get('tab')
-    if (tabKey != null && tabKeys.has(tabKey)) {
-      setActiveTabKey(tabKey)
-    }
-    initializedTabRef.current = true
-  }, [tabKeys])
-
-  useEffect(() => {
-    if (!tabKeys.has(activeTabKey)) return
-    const params = new URLSearchParams(window.location.search)
-    params.set('tab', activeTabKey)
-    const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`
-    window.history.replaceState(null, '', nextUrl)
-  }, [activeTabKey, tabKeys])
 
   useEffect(() => {
     if (activeTab == null) return
@@ -251,8 +241,18 @@ export function ConfigView() {
                             <ConfigSourceSwitch
                               value={sourceKey}
                               onChange={setSourceKey}
-                              configPresent={configPresent}
-                              t={t}
+                              options={[
+                                {
+                                  value: 'project',
+                                  icon: 'folder',
+                                  label: configPresent?.project === true ? t('config.sources.project') : t('config.sources.projectMissing')
+                                },
+                                {
+                                  value: 'user',
+                                  icon: 'person',
+                                  label: configPresent?.user === true ? t('config.sources.user') : t('config.sources.userMissing')
+                                }
+                              ]}
                             />
                           </Space>
                         )}
