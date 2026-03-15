@@ -22,6 +22,9 @@ const resolveQueryModel = (params: {
   inputModel?: string
 }) => {
   const inputModel = normalizeNonEmptyString(params.inputModel)
+  // "default" or "default,xxxModel" → pass through directly to the adapter
+  // so it can bypass the CCR relay and use the native claude binary
+  if (inputModel === 'default' || inputModel?.startsWith('default,')) return inputModel
   if (inputModel?.includes(',')) return inputModel
 
   const mergedModelServices = {

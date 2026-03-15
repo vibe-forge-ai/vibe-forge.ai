@@ -102,11 +102,25 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     settings
   )
 
+  // When model is "default" or "default,xxxModel", bypass the CCR relay and
+  // run the claude binary directly.
+  //   "default"          → no --model flag (use claude's built-in default)
+  //   "default,xxxModel" → pass --model xxxModel
+  const isDefaultService = typeof model === 'string' &&
+    (model === 'default' || model.startsWith('default,'))
+  const resolvedModel = isDefaultService
+    ? (model!.includes(',') ? model!.slice(model!.indexOf(',') + 1).trim() : '')
+    : model
+
   let {
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath,
     __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__: cliArgs = ''
   } = env
-  if (!cliPath) {
+  if (isDefaultService) {
+    // Bypass CCR: always use the claude binary directly, ignore custom CLI args
+    cliPath = 'claude'
+    cliArgs = ''
+  } else if (!cliPath) {
     cliPath = 'claude'
   }
   if (cliPath?.startsWith('.')) {
@@ -135,7 +149,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     args.push('--resume', sessionId)
   }
 
-  if (model != null && model !== '') args.push('--model', model)
+  if (resolvedModel != null && resolvedModel !== '') args.push('--model', resolvedModel)
 
   if (systemPrompt != null && systemPrompt !== '') {
     args.push(
