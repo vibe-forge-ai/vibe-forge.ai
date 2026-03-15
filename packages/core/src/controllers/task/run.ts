@@ -2,7 +2,7 @@ import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions } from '#~/ada
 import { loadAdapter } from '#~/adapter/index.js'
 import type { ModelServiceConfig } from '#~/config.js'
 import type { TaskDetail } from '#~/types.js'
-import type { callHook } from '#~/utils/api.js'
+import { callHook } from '#~/utils/api.js'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
