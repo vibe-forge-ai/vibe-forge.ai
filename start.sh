@@ -1,7 +1,3 @@
-export HOME=`realpath ./.ai/.mock`
-
-export __VF_PROJECT_WORKSPACE_FOLDER__=`realpath .`
-
 CLIENT_MODE='dev'
 
 while [ "$#" -gt 0 ]; do
