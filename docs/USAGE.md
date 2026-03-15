@@ -31,8 +31,6 @@
 ```bash
 export HOME="${HOME:-$PWD/.ai/.mock}"
 export __VF_PROJECT_WORKSPACE_FOLDER__="$PWD"
-export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__="$PWD/node_modules/.bin/ccr"
-export __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__="code"
 export __VF_PROJECT_AI_CLIENT_MODE__="dev"
 
 npx vfui-server | tee .logs/server.log &
@@ -46,7 +44,7 @@ wait
 
 - `__VF_PROJECT_WORKSPACE_FOLDER__` 指向你的项目根目录，配置与会话将基于该目录。
 - `HOME` 可用于隔离运行环境（默认用项目内的 `./.ai/.mock`），按需替换或移除。
-- `__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__` 指向 `ccr` 可执行文件（通常来自依赖 `@musistudio/claude-code-router`，随 `@vibe-forge/adapter-claude-code` 一起安装到 `node_modules/.bin`）。
+- 当配置了 `modelServices` 时，adapter 会自动使用 CCR（`node_modules/.bin/ccr`）进行模型服务代理。未配置时则直接使用原生 `claude` 二进制。
 
 ## CLI 使用
 

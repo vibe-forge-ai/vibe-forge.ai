@@ -22,20 +22,29 @@ const resolveQueryModel = (params: {
   inputModel?: string
 }) => {
   const inputModel = normalizeNonEmptyString(params.inputModel)
-  // "default" or "default,xxxModel" → pass through directly to the adapter
-  // so it can bypass the CCR relay and use the native claude binary
-  if (inputModel === 'default' || inputModel?.startsWith('default,')) return inputModel
-  if (inputModel?.includes(',')) return inputModel
+  // User explicitly provided a model → pass through as-is.
+  // The adapter decides CCR vs native based on whether it contains ",".
+  if (inputModel != null) return inputModel
 
+  // No explicit model → auto-resolve from modelServices config.
+  // Produces "service,model" format when services are configured,
+  // which signals the adapter to route through CCR.
   const mergedModelServices = {
     ...(params.config?.modelServices ?? {}),
     ...(params.userConfig?.modelServices ?? {})
   }
-  const mergedDefaultModel = pickFirstNonEmptyString([params.userConfig?.defaultModel, params.config?.defaultModel])
-  const mergedDefaultModelService = pickFirstNonEmptyString([
-    params.userConfig?.defaultModelService,
-    params.config?.defaultModelService
-  ])
+  const mergedDefaultModel = pickFirstNonEmptyString(
+    [
+      params.userConfig?.defaultModel,
+      params.config?.defaultModel
+    ]
+  )
+  const mergedDefaultModelService = pickFirstNonEmptyString(
+    [
+      params.userConfig?.defaultModelService,
+      params.config?.defaultModelService
+    ]
+  )
 
   const serviceEntries = Object.entries(mergedModelServices)
   const modelToService = new Map<string, string>()
@@ -53,20 +62,21 @@ const resolveQueryModel = (params: {
     }
   }
 
+  if (availableModels.length === 0) return undefined
+
   const resolveDefaultModel = () => {
-    if (availableModels.length === 0) return undefined
     if (mergedDefaultModel && modelToService.has(mergedDefaultModel)) return mergedDefaultModel
     if (mergedDefaultModelService && mergedModelServices[mergedDefaultModelService]) {
-      const service = mergedModelServices[mergedDefaultModelService]
+      const service = mergedModelServices[mergedDefaultModelService] as ModelServiceConfig | undefined
       const models = Array.isArray(service?.models)
-        ? service?.models.filter(item => typeof item === 'string' && item.trim() !== '')
+        ? service?.models.filter((item: unknown) => typeof item === 'string' && (item as string).trim() !== '')
         : []
       if (models.length > 0) return models[0]
     }
     return availableModels[0]
   }
 
-  const resolvedModel = inputModel ?? resolveDefaultModel()
+  const resolvedModel = resolveDefaultModel()
   if (!resolvedModel) return undefined
 
   const resolvedService = modelToService.get(resolvedModel) ??

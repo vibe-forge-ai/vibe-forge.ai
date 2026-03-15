@@ -35,7 +35,7 @@ export const initClaudeCodeAdapter = async (ctx: AdapterCtx, options: AdapterIni
     })
   )
   const homePath = resolve(cwd, '.ai/.mock')
-  const cliPath = resolveAdapterCliPath(cwd, env)
+  const cliPath = resolveAdapterCliPath()
   if (!existsSync(cliPath)) {
     console.warn(`ccr binary not found at ${cliPath}, skip restart`)
     return

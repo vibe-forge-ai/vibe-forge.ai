@@ -1,8 +1,6 @@
-import { resolve } from 'node:path'
-
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core'
 
-import { toRealPath } from '../ccr/paths'
+import { resolveAdapterCliPath } from '../ccr/paths'
 
 export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { env, cwd, cache, configs: [config, userConfig] } = ctx
@@ -102,32 +100,22 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     settings
   )
 
-  // When model is "default" or "default,xxxModel", bypass the CCR relay and
-  // run the claude binary directly.
-  //   "default"          → no --model flag (use claude's built-in default)
-  //   "default,xxxModel" → pass --model xxxModel
-  const isDefaultService = typeof model === 'string' &&
-    (model === 'default' || model.startsWith('default,'))
-  const resolvedModel = isDefaultService
-    ? (model!.includes(',') ? model!.slice(model!.indexOf(',') + 1).trim() : '')
-    : model
+  // Routing: model with "," → CCR proxy; model without "," → native claude binary.
+  //   "serviceKey,modelName" → ccr code ... --model serviceKey,modelName
+  //   "opus" / undefined     → claude ... --model opus  (or omit --model)
+  const useCCR = typeof model === 'string' && model.includes(',')
 
-  let {
-    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__: cliPath,
-    __VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_ARGS__: cliArgs = ''
-  } = env
-  if (isDefaultService) {
-    // Bypass CCR: always use the claude binary directly, ignore custom CLI args
-    cliPath = 'claude'
-    cliArgs = ''
-  } else if (!cliPath) {
+  let cliPath: string
+  const prefixArgs: string[] = []
+  if (useCCR) {
+    cliPath = resolveAdapterCliPath()
+    prefixArgs.push('code')
+  } else {
     cliPath = 'claude'
   }
-  if (cliPath?.startsWith('.')) {
-    cliPath = toRealPath(resolve(cwd, cliPath))
-  }
+
   const args: string[] = [
-    ...(cliArgs?.split(/\s+/).filter(Boolean) as string[]),
+    ...prefixArgs,
     ...(description
       ? [JSON.stringify(
         `${(
@@ -149,7 +137,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     args.push('--resume', sessionId)
   }
 
-  if (resolvedModel != null && resolvedModel !== '') args.push('--model', resolvedModel)
+  if (model != null && model !== '') args.push('--model', model)
 
   if (systemPrompt != null && systemPrompt !== '') {
     args.push(

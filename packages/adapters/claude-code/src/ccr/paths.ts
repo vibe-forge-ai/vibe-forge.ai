@@ -1,7 +1,10 @@
 import { existsSync, realpathSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
 
-import type { AdapterCtx } from '@vibe-forge/core'
+const require = createRequire(import.meta.url ?? __filename)
+
+const adapterPackageDir = dirname(require.resolve('@vibe-forge/adapter-claude-code/package.json'))
 
 export const toRealPath = (targetPath: string) => {
   try {
@@ -11,15 +14,12 @@ export const toRealPath = (targetPath: string) => {
   }
 }
 
-export const resolveAdapterCliPath = (cwd: string, env: AdapterCtx['env']) => {
-  const envCliPath = env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__
-  let cliPath = typeof envCliPath === 'string' && envCliPath !== ''
-    ? envCliPath
-    : resolve(cwd, 'node_modules/.bin/ccr')
-  if (cliPath.startsWith('.')) {
-    cliPath = toRealPath(resolve(cwd, cliPath))
-  }
-  return cliPath
+/**
+ * Resolve the CCR (claude-code-router) binary path.
+ * Resolved via `require.resolve` from the adapter package's dependencies.
+ */
+export const resolveAdapterCliPath = () => {
+  return toRealPath(resolve(adapterPackageDir, 'node_modules/.bin/ccr'))
 }
 
 export const resolveTransformerPath = (cwd: string, relativePath: string) => {
