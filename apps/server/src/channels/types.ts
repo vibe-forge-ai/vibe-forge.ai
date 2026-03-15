@@ -1,5 +1,5 @@
 import type { WSEvent } from '@vibe-forge/core'
-import type { ChannelBaseConfig, ChannelConnection, ChannelConnectionOptions } from '@vibe-forge/core/channel'
+import type { ChannelBaseConfig, ChannelConnection } from '@vibe-forge/core/channel'
 
 import type { ChannelTextMessage } from './middleware/@types'
 
@@ -19,18 +19,6 @@ export interface ChannelSessionBinding {
   sessionType: string
   replyReceiveId?: string
   replyReceiveIdType?: string
-}
-
-export interface SafeParseSchema {
-  safeParse: (input: unknown) => { success: boolean; data?: unknown; error?: { message: string } }
-}
-
-export interface LoadedChannelModule {
-  connectChannel: (
-    config: unknown,
-    options?: ChannelConnectionOptions
-  ) => Promise<ChannelConnection<ChannelTextMessage>>
-  configSchema?: SafeParseSchema
 }
 
 export interface ChannelManager {

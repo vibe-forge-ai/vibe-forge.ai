@@ -25,7 +25,7 @@ describe('larkChannelDefinition.connect', () => {
       withTenantToken: vi.fn()
     }))
 
-    const { connectLarkChannel } = await import('#~/connection.js')
+    const { createChannelConnection } = await import('#~/connection.js')
 
     const config: LarkChannelConfig = {
       type: 'lark',
@@ -33,7 +33,7 @@ describe('larkChannelDefinition.connect', () => {
       appSecret: 'app_secret'
     }
 
-    const connection = await connectLarkChannel(config)
+    const connection = await createChannelConnection(config)
     await connection.sendMessage({ text: 'hello', receiveId: 'oc_xxx', receiveIdType: 'chat_id' })
 
     expect(Client).toHaveBeenCalledWith({
@@ -73,7 +73,7 @@ describe('larkChannelDefinition.connect', () => {
       withTenantToken: vi.fn()
     }))
 
-    const { connectLarkChannel } = await import('#~/connection.js')
+    const { createChannelConnection } = await import('#~/connection.js')
 
     const config: LarkChannelConfig = {
       type: 'lark',
@@ -82,7 +82,7 @@ describe('larkChannelDefinition.connect', () => {
     }
 
     const handler = vi.fn()
-    const connection = await connectLarkChannel(config)
+    const connection = await createChannelConnection(config)
     await connection.startReceiving?.({
       handlers: {
         message: handler
@@ -140,7 +140,7 @@ describe('larkChannelDefinition.connect', () => {
       withTenantToken: vi.fn()
     }))
 
-    const { connectLarkChannel } = await import('#~/connection.js')
+    const { createChannelConnection } = await import('#~/connection.js')
 
     const config: LarkChannelConfig = {
       type: 'lark',
@@ -149,7 +149,7 @@ describe('larkChannelDefinition.connect', () => {
     }
 
     const handler = vi.fn()
-    const connection = await connectLarkChannel(config)
+    const connection = await createChannelConnection(config)
     await connection.startReceiving?.({
       handlers: {
         message: handler
@@ -212,7 +212,7 @@ describe('larkChannelDefinition.connect', () => {
       withTenantToken: vi.fn()
     }))
 
-    const { connectLarkChannel } = await import('#~/connection.js')
+    const { createChannelConnection } = await import('#~/connection.js')
 
     const config: LarkChannelConfig = {
       type: 'lark',
@@ -220,7 +220,7 @@ describe('larkChannelDefinition.connect', () => {
       appSecret: 'app_secret'
     }
 
-    const connection = await connectLarkChannel(config)
+    const connection = await createChannelConnection(config)
 
     await expect(connection.sendMessage({ text: 'hello', receiveId: 'oc_xxx', receiveIdType: 'chat_id' }))
       .rejects
@@ -275,7 +275,7 @@ describe('larkChannelDefinition.connect', () => {
     }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { connectLarkChannel } = await import('#~/connection.js')
+    const { createChannelConnection } = await import('#~/connection.js')
 
     const config: LarkChannelConfig = {
       type: 'lark',
@@ -284,7 +284,7 @@ describe('larkChannelDefinition.connect', () => {
     }
 
     const handler = vi.fn()
-    const connection = await connectLarkChannel(config)
+    const connection = await createChannelConnection(config)
     await connection.startReceiving?.({
       handlers: {
         message: handler

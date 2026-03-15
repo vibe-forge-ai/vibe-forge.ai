@@ -1,10 +1,9 @@
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
 import type { ChannelConnection, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
-import { defineChannelConnection } from '@vibe-forge/core/channel'
+import { defineCreateChannelConnection } from '@vibe-forge/core/channel'
 
 import type { LarkChannelConfig, LarkChannelMessage, LarkMessagePayload } from '#~/types.js'
-import { larkChannelConfigSchema } from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
 import { createTenantTokenProvider } from './utils/tenant-token'
@@ -45,7 +44,7 @@ const toStandardSessionType = (chatType: string) => {
   return 'group'
 }
 
-export const toChannelInboundEvent = async (
+const toChannelInboundEvent = async (
   payload: LarkMessagePayload,
   client: Client,
   options?: {
@@ -124,7 +123,7 @@ export const toChannelInboundEvent = async (
   }
 }
 
-export const connectLarkChannel = defineChannelConnection(async (
+export const createChannelConnection = defineCreateChannelConnection(async (
   config: LarkChannelConfig,
   options?: {
     logger?: ChannelLogger
@@ -170,6 +169,3 @@ export const connectLarkChannel = defineChannelConnection(async (
     close: async () => wsClient.close()
   }
 })
-
-export const connectChannel = connectLarkChannel
-export const configSchema = larkChannelConfigSchema

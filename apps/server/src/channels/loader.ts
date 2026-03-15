@@ -1,26 +1,33 @@
 import { createRequire } from 'node:module'
 
-import type { LoadedChannelModule, SafeParseSchema } from './types'
+import type { ChannelCreateFn, ChannelDescriptor } from '@vibe-forge/core/channel'
 
 const nodeRequire = createRequire(__filename)
 
-const resolveConnectionSpecifier = (type: string) => {
-  const specifier = `@vibe-forge/channel-${type}/connection`
-  void nodeRequire.resolve(specifier)
-  return specifier
+export interface LoadedChannel {
+  create: ChannelCreateFn
+  definition: ChannelDescriptor
 }
 
-const isSafeParseSchema = (value: unknown): value is SafeParseSchema => {
-  return Boolean(value) && typeof value === 'object' && typeof (value as SafeParseSchema).safeParse === 'function'
-}
+export const loadChannelModule = (type: string): LoadedChannel => {
+  const mainSpecifier = `@vibe-forge/channel-${type}`
+  const connSpecifier = `@vibe-forge/channel-${type}/connection`
 
-export const loadChannelModule = (type: string): LoadedChannelModule => {
-  const specifier = resolveConnectionSpecifier(type)
-  const mod = nodeRequire(specifier) as Partial<LoadedChannelModule> & { configSchema?: unknown }
-  const connectChannel = mod.connectChannel
-  if (typeof connectChannel !== 'function') {
-    throw new TypeError(`Channel module ${specifier} must export connectChannel(config)`)
+  const mainMod = nodeRequire(mainSpecifier) as {
+    channelDefinition?: ChannelDescriptor
   }
-  const configSchema = isSafeParseSchema(mod.configSchema) ? mod.configSchema : undefined
-  return { connectChannel, configSchema }
+  const definition = mainMod.channelDefinition
+  if (definition == null) {
+    throw new TypeError(`${mainSpecifier} must export channelDefinition`)
+  }
+
+  const connMod = nodeRequire(connSpecifier) as {
+    createChannelConnection?: ChannelCreateFn
+  }
+  const create = connMod.createChannelConnection
+  if (typeof create !== 'function') {
+    throw new TypeError(`${connSpecifier} must export createChannelConnection`)
+  }
+
+  return { create, definition }
 }

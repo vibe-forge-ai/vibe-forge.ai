@@ -122,9 +122,11 @@ export const defineChannel = <TConfigSchema extends z.ZodTypeAny, TMessageSchema
   descriptor: ChannelDescriptor<TConfigSchema, TMessageSchema>
 ) => descriptor
 
-export const defineChannelConnection = <TConfigSchema extends z.ZodTypeAny, TMessageSchema extends z.ZodTypeAny>(
-  connect: (
-    config: z.infer<TConfigSchema>,
-    options?: ChannelConnectionOptions
-  ) => Promise<ChannelConnection<z.infer<TMessageSchema>>>
-) => connect
+export type ChannelCreateFn<TConfig = unknown, TMessage = unknown> = (
+  config: TConfig,
+  options?: ChannelConnectionOptions
+) => Promise<ChannelConnection<TMessage>>
+
+export const defineCreateChannelConnection = <TConfigSchema extends z.ZodTypeAny, TMessageSchema extends z.ZodTypeAny>(
+  connect: ChannelCreateFn<z.infer<TConfigSchema>, z.infer<TMessageSchema>>
+): ChannelCreateFn<z.infer<TConfigSchema>, z.infer<TMessageSchema>> => connect

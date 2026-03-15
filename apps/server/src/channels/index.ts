@@ -31,13 +31,13 @@ export const initChannels = async (
         states.set(key, { key, type, status: 'disabled' })
         continue
       }
-      const parsed = mod.configSchema?.safeParse(rawConfig)
-      if (parsed && parsed.success === false) {
+      const parsed = mod.definition.configSchema.safeParse(rawConfig)
+      if (parsed.success === false) {
         states.set(key, { key, type, status: 'error', error: parsed.error?.message })
         continue
       }
-      const connectionConfig = parsed && parsed.success === true ? parsed.data : rawConfig
-      const connection = await mod.connectChannel(connectionConfig, { logger })
+      const connectionConfig = parsed.success ? parsed.data : rawConfig
+      const connection = await mod.create(connectionConfig, { logger })
       states.set(key, { key, type, status: 'connected', connection, config: connectionConfig as ChannelBaseConfig })
       await connection.startReceiving?.({
         handlers: {
