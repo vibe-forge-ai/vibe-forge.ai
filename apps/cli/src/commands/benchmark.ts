@@ -104,7 +104,7 @@ export function registerBenchmarkCommand(program: Command) {
     .requiredOption('--category <category>', 'Benchmark category')
     .option('--title <title>', 'Benchmark title')
     .option('--concurrency <count>', 'Category concurrency', '2')
-    .option('--adapter <adapter>', 'Adapter to use', 'claude-code')
+    .option('--adapter <adapter>', 'Adapter to use')
     .option('--model <model>', 'Model to use')
     .option('--system-prompt <prompt>', 'Additional system prompt')
     .option('--permission-mode <mode>', 'Permission mode')

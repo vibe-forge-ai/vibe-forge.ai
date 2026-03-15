@@ -11,7 +11,7 @@ import { extraOptions } from './@core/extra-options'
 interface RunOptions {
   print: boolean
   model?: string
-  adapter: string
+  adapter?: string
   systemPrompt?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   sessionId?: string
@@ -32,7 +32,7 @@ export function registerRunCommand(program: Command) {
     .argument('[description...]')
     .option('--print', 'Run in direct mode with printed output', false)
     .option('--model <model>', 'Model to use')
-    .option('--adapter <adapter>', 'Adapter to use', 'claude-code')
+    .option('--adapter <adapter>', 'Adapter to use')
     .option('--system-prompt <prompt>', 'System prompt')
     .option('--permission-mode <mode>', 'Permission mode (default, acceptEdits, plan, dontAsk, bypassPermissions)')
     .option('--session-id <id>', 'Session ID')
