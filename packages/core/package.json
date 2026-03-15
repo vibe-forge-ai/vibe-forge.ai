@@ -31,33 +31,6 @@
         "require": "./dist/channel.js"
       }
     },
-    "./utils/*": {
-      "__vibe-forge__": {
-        "default": "./src/utils/*.ts"
-      },
-      "default": {
-        "import": "./dist/utils/*.mjs",
-        "require": "./dist/utils/*.js"
-      }
-    },
-    "./controllers/task": {
-      "__vibe-forge__": {
-        "default": "./src/controllers/task/index.ts"
-      },
-      "default": {
-        "import": "./dist/controllers/task/index.mjs",
-        "require": "./dist/controllers/task/index.js"
-      }
-    },
-    "./controllers/benchmark": {
-      "__vibe-forge__": {
-        "default": "./src/controllers/benchmark/index.ts"
-      },
-      "default": {
-        "import": "./dist/controllers/benchmark/index.mjs",
-        "require": "./dist/controllers/benchmark/index.js"
-      }
-    },
     "./schema": {
       "__vibe-forge__": {
         "default": "./src/schema.ts"
@@ -74,6 +47,24 @@
       "default": {
         "import": "./dist/hooks/index.mjs",
         "require": "./dist/hooks/index.js"
+      }
+    },
+    "./utils/*": {
+      "__vibe-forge__": {
+        "default": "./src/utils/*.ts"
+      },
+      "default": {
+        "import": "./dist/utils/*.mjs",
+        "require": "./dist/utils/*.js"
+      }
+    },
+    "./controllers/*": {
+      "__vibe-forge__": {
+        "default": "./src/controllers/*/index.ts"
+      },
+      "default": {
+        "import": "./dist/controllers/*/index.mjs",
+        "require": "./dist/controllers/*/index.js"
       }
     }
   },
