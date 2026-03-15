@@ -1,12 +1,8 @@
-import type {
-  AdapterCtx,
-  AdapterOutputEvent,
-  AdapterQueryOptions,
-  ModelServiceConfig,
-  TaskDetail
-} from '@vibe-forge/core'
-import { loadAdapter } from '@vibe-forge/core'
-import { callHook } from '@vibe-forge/core/utils/api'
+import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions } from '#~/adapter/index.js'
+import { loadAdapter } from '#~/adapter/index.js'
+import type { ModelServiceConfig } from '#~/config.js'
+import type { TaskDetail } from '#~/types.js'
+import type { callHook } from '#~/utils/api.js'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
