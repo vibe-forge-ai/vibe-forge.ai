@@ -4,12 +4,46 @@ export interface ChannelMap {}
 
 export type ChannelType = keyof ChannelMap
 
+export const channelAccessSchema = z.object({
+  // 管理员
+  admins: z.array(z.string()).optional().describe(
+    '频道管理员账号（sender ID），管理员拥有管理操作权限且不受以下访问控制限制'
+  ),
+  // 会话类型控制
+  allowPrivateChat: z.boolean().optional().describe('是否允许私聊消息，默认 true'),
+  allowGroupChat: z.boolean().optional().describe('是否允许群聊消息，默认 true'),
+  // 群组访问控制
+  allowedGroups: z.array(z.string()).optional().describe('群组白名单（channel ID），设置后仅在指定群中响应'),
+  blockedGroups: z.array(z.string()).optional().describe('群组黑名单（channel ID），在指定群中不响应'),
+  // 用户访问控制
+  allowedSenders: z.array(z.string()).optional().describe('发送者白名单（sender ID），设置后仅白名单内的用户可交互'),
+  blockedSenders: z.array(z.string()).optional().describe('发送者黑名单（sender ID），黑名单内的用户消息将被忽略')
+})
+
+export type ChannelAccessConfig = z.infer<typeof channelAccessSchema>
+
 export const channelBaseSchema = z.object({
-  type: z.string().min(1).describe('频道类型'),
-  title: z.string().optional().describe('频道标题'),
-  description: z.string().optional().describe('频道说明'),
-  enabled: z.boolean().optional().describe('是否启用'),
-  admins: z.array(z.string()).optional().describe('频道管理员账号')
+  // 基础配置
+  type: z
+    .string().min(1)
+    .describe('频道类型'),
+  title: z
+    .string().optional()
+    .describe('频道标题'),
+  description: z
+    .string().optional()
+    .describe('频道说明'),
+  enabled: z
+    .boolean().optional()
+    .describe('是否启用'),
+  // 会话行为
+  systemPrompt: z
+    .string().optional()
+    .describe('在此频道启动会话时注入的系统提示词'),
+  // 访问权限控制
+  access: channelAccessSchema
+    .optional()
+    .describe('频道访问权限配置')
 })
 
 export type ChannelBaseConfig = z.infer<typeof channelBaseSchema>
@@ -25,6 +59,12 @@ export interface ChannelConnection<TMessage> {
   startReceiving?: (options: {
     handlers: ChannelEventHandlers
   }) => Promise<void>
+  /**
+   * Called when a new session is being created for this channel.
+   * The channel implementation can use this to inject channel-specific context
+   * (e.g. bot profile fetched from platform API) into the system prompt.
+   */
+  generateSystemPrompt?: (inbound: ChannelInboundEvent) => Promise<string | undefined>
   close?: () => Promise<void>
 }
 

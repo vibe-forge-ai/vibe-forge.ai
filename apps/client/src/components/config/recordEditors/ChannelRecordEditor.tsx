@@ -257,6 +257,39 @@ export const ChannelRecordEditor = ({
 
   return (
     <div className='config-view__record-list'>
+      <div className='config-view__record-add'>
+        <div className='config-view__record-add-inputs'>
+          <Input
+            value={newKey}
+            placeholder={keyPlaceholder}
+            onChange={(event) => setNewKey(event.target.value)}
+          />
+          <Select
+            value={newType}
+            options={typeOptions}
+            onChange={(nextValue) => setNewType(nextValue)}
+          />
+          <Tooltip title={t('common.confirm')}>
+            <Button
+              size='small'
+              type='primary'
+              className='config-view__icon-button'
+              aria-label={t('common.confirm')}
+              icon={<span className='material-symbols-rounded'>check</span>}
+              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey) || newType === ''}
+              onClick={() => {
+                const definition = getChannelDefinition(newType)
+                if (!definition) return
+                onChange({
+                  ...value,
+                  [newKey]: buildRecordDefaults(definition)
+                })
+                setNewKey('')
+              }}
+            />
+          </Tooltip>
+        </div>
+      </div>
       {entries.map(([key, itemValue]) => {
         const recordValue = (itemValue != null && typeof itemValue === 'object')
           ? itemValue as ChannelRecordValue
@@ -359,39 +392,6 @@ export const ChannelRecordEditor = ({
           </div>
         )
       })}
-      <div className='config-view__record-add'>
-        <div className='config-view__record-add-inputs'>
-          <Input
-            value={newKey}
-            placeholder={keyPlaceholder}
-            onChange={(event) => setNewKey(event.target.value)}
-          />
-          <Select
-            value={newType}
-            options={typeOptions}
-            onChange={(nextValue) => setNewType(nextValue)}
-          />
-          <Tooltip title={t('common.confirm')}>
-            <Button
-              size='small'
-              type='primary'
-              className='config-view__icon-button'
-              aria-label={t('common.confirm')}
-              icon={<span className='material-symbols-rounded'>check</span>}
-              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey) || newType === ''}
-              onClick={() => {
-                const definition = getChannelDefinition(newType)
-                if (!definition) return
-                onChange({
-                  ...value,
-                  [newKey]: buildRecordDefaults(definition)
-                })
-                setNewKey('')
-              }}
-            />
-          </Tooltip>
-        </div>
-      </div>
     </div>
   )
 }

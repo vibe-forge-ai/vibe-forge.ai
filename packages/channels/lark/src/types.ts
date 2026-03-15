@@ -5,10 +5,18 @@ import { z } from 'zod'
 import { channelBaseSchema } from '@vibe-forge/core/channel'
 
 export const larkChannelConfigSchema = channelBaseSchema.extend({
-  type: z.literal('lark').describe('频道类型'),
-  appId: z.string().min(1).describe('飞书 App ID'),
-  appSecret: z.string().min(1).describe('飞书 App Secret'),
-  domain: z.enum(['Feishu', 'Lark']).optional().describe('飞书 Domain')
+  type: z
+    .literal('lark')
+    .describe('频道类型'),
+  appId: z
+    .string().min(1)
+    .describe('飞书 App ID'),
+  appSecret: z
+    .string().min(1)
+    .describe('飞书 App Secret'),
+  domain: z
+    .enum(['Feishu', 'Lark']).optional()
+    .describe('飞书 Domain')
 })
 
 export const larkChannelMessageSchema = z.object({
