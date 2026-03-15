@@ -15,5 +15,9 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "chat.instructionsFilesLocations": {
     ".ai/rules": true
-  }
+  },
+  "chat.editor.fontFamily": "Menlo, Monaco, 'Courier New', monospace",
+  "chat.fontFamily": "Menlo, Monaco, 'Courier New', monospace",
+  "chat.editor.fontSize": 12,
+  "chat.fontSize": 12
 }
