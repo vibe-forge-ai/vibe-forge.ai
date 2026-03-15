@@ -30,7 +30,8 @@
         "import": "./dist/connection.mjs",
         "require": "./dist/connection.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "latest",

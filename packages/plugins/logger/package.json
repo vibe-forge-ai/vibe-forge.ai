@@ -30,7 +30,8 @@
         "import": "./dist/hooks.mjs",
         "require": "./dist/hooks.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@vibe-forge/core": "workspace:*"

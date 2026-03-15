@@ -39,10 +39,10 @@
         "import": "./dist/schema.mjs",
         "require": "./dist/schema.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@vibe-forge/core": "workspace:*"
   }
 }
-

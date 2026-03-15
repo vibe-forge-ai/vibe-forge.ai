@@ -20,7 +20,8 @@
         "import": "./dist/schema.mjs",
         "require": "./dist/schema.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "claude": "./node_modules/.bin/claude"
