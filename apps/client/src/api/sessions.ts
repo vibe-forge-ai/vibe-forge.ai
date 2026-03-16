@@ -22,6 +22,7 @@ export async function createSession(
     promptType?: 'spec' | 'entity'
     promptName?: string
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+    adapter?: string
   }
 ): Promise<{ session: Session }> {
   return fetchApiJson<{ session: Session }>('/api/sessions', {
@@ -37,7 +38,8 @@ export async function createSession(
       id: options?.id,
       promptType: options?.promptType,
       promptName: options?.promptName,
-      permissionMode: options?.permissionMode
+      permissionMode: options?.permissionMode,
+      adapter: options?.adapter
     })
   })
 }

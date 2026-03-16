@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
+import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
 import { getConfig } from '#~/api.js'
 
 export interface ModelSelectOption {
@@ -16,7 +16,11 @@ export interface ModelSelectGroup {
   options: ModelSelectOption[]
 }
 
-export function useChatModels() {
+export function useChatModels({
+  selectedAdapter
+}: {
+  selectedAdapter?: string
+} = {}) {
   const { t } = useTranslation()
   const [selectedModel, setSelectedModel] = useState<string | undefined>(() => {
     try {
@@ -41,6 +45,30 @@ export function useChatModels() {
     ))
   }, [configRes?.sources?.merged?.general?.recommendedModels])
 
+  const adapterBuiltinModels = useMemo(() => {
+    const raw = configRes?.sources?.merged?.adapterBuiltinModels
+    return (raw ?? {}) as Record<string, AdapterBuiltinModel[]>
+  }, [configRes?.sources?.merged?.adapterBuiltinModels])
+
+  const activeBuiltinModels = useMemo(() => {
+    if (selectedAdapter && adapterBuiltinModels[selectedAdapter]) {
+      return { [selectedAdapter]: adapterBuiltinModels[selectedAdapter] }
+    }
+    return adapterBuiltinModels
+  }, [adapterBuiltinModels, selectedAdapter])
+
+  const activeBuiltinModelValues = useMemo(() => (
+    Object.values(activeBuiltinModels).flat().map(model => model.value)
+  ), [activeBuiltinModels])
+
+  const builtinModelSet = useMemo(() => {
+    const set = new Set<string>()
+    for (const models of Object.values(activeBuiltinModels)) {
+      for (const m of models) set.add(m.value)
+    }
+    return set
+  }, [activeBuiltinModels])
+
   const modelServiceEntries = useMemo(() => Object.entries(mergedModelServices), [mergedModelServices])
 
   const availableModels = useMemo(() => {
@@ -61,7 +89,7 @@ export function useChatModels() {
   const availableModelValues = useMemo(() => availableModels.map(item => item.model), [availableModels])
   const availableModelKey = useMemo(() => availableModelValues.join('|'), [availableModelValues])
   const availableModelSet = useMemo(() => new Set(availableModelValues), [availableModelKey])
-  const hasAvailableModels = availableModelValues.length > 0
+  const hasAvailableModels = availableModelValues.length > 0 || builtinModelSet.size > 0
   const modelToService = useMemo(() => {
     const map = new Map<string, { key: string; title: string }>()
     for (const entry of availableModels) {
@@ -76,25 +104,35 @@ export function useChatModels() {
   const formatModelWithService = useCallback((model: string | undefined) => {
     const normalizedModel = typeof model === 'string' ? model.trim() : ''
     if (normalizedModel === '') return undefined
+    // Builtin adapter models pass through as-is (no service prefix)
+    if (builtinModelSet.has(normalizedModel)) return normalizedModel
     if (normalizedModel.includes(',')) return normalizedModel
     const resolvedService = modelToService.get(normalizedModel)?.key ?? defaultModelService
     return resolvedService ? `${resolvedService},${normalizedModel}` : normalizedModel
-  }, [defaultModelService, modelToService])
+  }, [builtinModelSet, defaultModelService, modelToService])
   const resolvedDefaultModel = useMemo(() => {
-    if (!hasAvailableModels) return undefined
+    if (defaultModel && builtinModelSet.has(defaultModel)) return defaultModel
+    if (activeBuiltinModelValues.length > 0) {
+      return activeBuiltinModelValues[0]
+    }
     if (defaultModel && availableModelSet.has(defaultModel)) return defaultModel
     if (defaultModelService && mergedModelServices[defaultModelService]) {
       const service = mergedModelServices[defaultModelService]
       const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
       if (models.length > 0) return models[0]
     }
-    return availableModelValues[0]
+    if (availableModelValues.length > 0) return availableModelValues[0]
+    // Fall back to first builtin model from the active adapter
+    const firstBuiltin = Object.values(activeBuiltinModels).flat()[0]
+    return firstBuiltin?.value
   }, [
+    activeBuiltinModels,
+    activeBuiltinModelValues,
     availableModelSet,
     availableModelValues,
+    builtinModelSet,
     defaultModel,
     defaultModelService,
-    hasAvailableModels,
     mergedModelServices
   ])
   const selectedModelWithService = useMemo(() => (
@@ -107,10 +145,13 @@ export function useChatModels() {
       return
     }
     setSelectedModel((prev) => {
-      if (prev != null && availableModelSet.has(prev)) return prev
+      if (prev != null) {
+        const isValid = availableModelSet.has(prev) || builtinModelSet.has(prev)
+        if (isValid) return prev
+      }
       return resolvedDefaultModel
     })
-  }, [availableModelSet, hasAvailableModels, resolvedDefaultModel])
+  }, [availableModelSet, builtinModelSet, hasAvailableModels, resolvedDefaultModel, selectedAdapter])
 
   useEffect(() => {
     try {
@@ -235,8 +276,31 @@ export function useChatModels() {
         options: recommendedOptions
       })
     }
+
+    // Adapter builtin model groups (filtered to active adapter)
+    for (const [adapterKey, models] of Object.entries(activeBuiltinModels)) {
+      if (!Array.isArray(models) || models.length === 0) continue
+      const adapterTitle = t('chat.modelGroupBuiltin', {
+        adapter: adapterKey,
+        defaultValue: `${adapterKey} (Default)`
+      })
+      groups.push({
+        label: (
+          <div className='model-group-label'>
+            <div className='model-group-title'>{adapterTitle}</div>
+          </div>
+        ),
+        options: models.map(m => buildOption({
+          value: m.value,
+          title: m.title,
+          description: m.description
+        }))
+      })
+    }
+
     return [...groups, ...serviceGroups]
   }, [
+    activeBuiltinModels,
     availableModelSet,
     modelToService,
     mergedModelServices,

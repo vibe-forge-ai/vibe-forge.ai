@@ -14,9 +14,9 @@ import type {
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { callHook } from '@vibe-forge/core/utils/api'
 
+import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
-import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { adapterCache, externalCache } from './cache'
@@ -33,6 +33,7 @@ export async function startAdapterSession(
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     promptType?: 'spec' | 'entity'
     promptName?: string
+    adapter?: string
   } = {}
 ) {
   const db = getDb()
@@ -89,7 +90,8 @@ export async function startAdapterSession(
     ].filter(Boolean).join('\n\n')
     const { session } = await run({
       env,
-      cwd: promptCwd
+      cwd: promptCwd,
+      adapter: options.adapter
     }, {
       type,
       runtime: 'server',

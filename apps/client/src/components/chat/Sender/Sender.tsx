@@ -50,6 +50,9 @@ export function Sender({
   permissionMode,
   permissionModeOptions,
   onPermissionModeChange,
+  selectedAdapter,
+  adapterOptions,
+  onAdapterChange,
   modelUnavailable
 }: {
   onSend: (text: string) => void
@@ -67,6 +70,9 @@ export function Sender({
   permissionMode: PermissionMode
   permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
   onPermissionModeChange: (mode: PermissionMode) => void
+  selectedAdapter?: string
+  adapterOptions?: Array<{ value: string; label: React.ReactNode }>
+  onAdapterChange?: (adapter: string) => void
   modelUnavailable?: boolean
 }) {
   const { t } = useTranslation()
@@ -646,6 +652,22 @@ export function Sender({
           </div>
 
           <div className='toolbar-right'>
+            {adapterOptions && adapterOptions.length > 1 && (
+              <Select
+                className='adapter-select'
+                classNames={{ popup: { root: 'adapter-select-popup' } }}
+                value={selectedAdapter}
+                options={adapterOptions}
+                showSearch={false}
+                allowClear={false}
+                disabled={modelUnavailable || isThinking}
+                onChange={(value) => onAdapterChange?.(value)}
+                placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
+                optionLabelProp='label'
+                popupMatchSelectWidth={false}
+              />
+            )}
+
             <Select
               className='model-select'
               classNames={{ popup: { root: 'model-select-popup' } }}

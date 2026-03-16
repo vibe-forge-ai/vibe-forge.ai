@@ -36,6 +36,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       ? promptTypeRaw
       : undefined
     const promptName = params.get('name') ?? undefined
+    const adapter = params.get('adapter') ?? undefined
 
     const serverLogger = getSessionLogger(sessionId, 'server')
     serverLogger.info({ sessionId }, '[server] Connection established')
@@ -62,7 +63,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
             | 'bypassPermissions'
             | undefined,
           promptType,
-          promptName
+          promptName,
+          adapter
         })
         cached.sockets.add(ws)
       }

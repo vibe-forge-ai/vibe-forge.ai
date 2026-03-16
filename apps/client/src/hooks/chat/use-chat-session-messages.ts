@@ -2,9 +2,9 @@ import { App } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 
-import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
+import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
 import type { PermissionMode } from './use-chat-permission-mode'
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {
@@ -38,11 +38,13 @@ export function useChatSessionMessages({
   session,
   modelForQuery,
   permissionMode,
+  adapter,
   setInteractionRequest
 }: {
   session?: Session
   modelForQuery?: string
   permissionMode: PermissionMode
+  adapter?: string
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
   const { message } = App.useApp()
@@ -53,6 +55,7 @@ export function useChatSessionMessages({
   const isInitialLoadRef = useRef<boolean>(true)
   const lastConnectedModelRef = useRef<string | undefined>(undefined)
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
+  const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     setMessages([])
@@ -141,22 +144,31 @@ export function useChatSessionMessages({
       lastConnectedPermissionModeRef.current != null &&
       normalizedPermissionMode !== lastConnectedPermissionModeRef.current &&
       session?.status !== 'running'
-    if (modelChanged || permissionModeChanged) {
+    const normalizedAdapter = adapter ?? ''
+    const adapterChanged = adapter != null &&
+      lastConnectedAdapterRef.current != null &&
+      normalizedAdapter !== lastConnectedAdapterRef.current &&
+      session?.status !== 'running'
+    if (modelChanged || permissionModeChanged || adapterChanged) {
       connectionManager.send(session.id, { type: 'terminate_session' })
       connectionManager.close(session.id)
     }
     lastConnectedModelRef.current = normalizedModel
     lastConnectedPermissionModeRef.current = normalizedPermissionMode
+    lastConnectedAdapterRef.current = normalizedAdapter
 
     const timer = setTimeout(() => {
       if (isDisposed) return
 
       const connectionParams: Record<string, string> = {}
-    if (modelForQuery) {
-      connectionParams.model = modelForQuery
+      if (modelForQuery) {
+        connectionParams.model = modelForQuery
       }
       if (permissionMode) {
         connectionParams.permissionMode = permissionMode
+      }
+      if (adapter) {
+        connectionParams.adapter = adapter
       }
 
       cleanup = connectionManager.connect(session.id, {
@@ -239,7 +251,7 @@ export function useChatSessionMessages({
       clearTimeout(timer)
       cleanup?.()
     }
-  }, [message, modelForQuery, mutate, permissionMode, session?.id, session?.status, setInteractionRequest])
+  }, [adapter, message, modelForQuery, mutate, permissionMode, session?.id, session?.status, setInteractionRequest])
 
   return {
     messages,

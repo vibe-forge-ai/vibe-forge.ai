@@ -93,7 +93,8 @@ export function sessionsRouter(): Router {
       model,
       promptType,
       promptName,
-      permissionMode
+      permissionMode,
+      adapter
     } = ctx.request.body as {
       id?: string
       title?: string
@@ -105,6 +106,7 @@ export function sessionsRouter(): Router {
       promptType?: 'spec' | 'entity'
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+      adapter?: string
     }
     const session = await createSessionWithInitialMessage({
       title,
@@ -116,7 +118,8 @@ export function sessionsRouter(): Router {
       model,
       promptType,
       promptName,
-      permissionMode
+      permissionMode,
+      adapter
     })
     ctx.body = { session }
   })

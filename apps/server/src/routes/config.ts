@@ -4,7 +4,7 @@ import process from 'node:process'
 
 import Router from '@koa/router'
 
-import type { Config } from '@vibe-forge/core'
+import type { AdapterBuiltinModel, Config } from '@vibe-forge/core'
 import { loadConfig, updateConfigFile } from '@vibe-forge/core'
 
 const sanitize = (value: unknown): unknown => {
@@ -102,6 +102,7 @@ const buildSections = (config: Config | undefined) => {
     modelServices: sanitize(config?.modelServices),
     channels: sanitize(config?.channels),
     adapters: sanitize(config?.adapters),
+    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
     plugins: sanitize({
       plugins: config?.plugins,
       enabledPlugins: config?.enabledPlugins,
@@ -117,6 +118,25 @@ const buildSections = (config: Config | undefined) => {
   }
 }
 
+const loadAdapterBuiltinModels = (
+  adapters: Config['adapters']
+): Record<string, AdapterBuiltinModel[]> => {
+  const result: Record<string, AdapterBuiltinModel[]> = {}
+  if (!adapters) return result
+  for (const adapterKey of Object.keys(adapters)) {
+    try {
+      const packageName = adapterKey.startsWith('@') ? adapterKey : `@vibe-forge/adapter-${adapterKey}`
+      // eslint-disable-next-line ts/no-require-imports
+      const mod = require(`${packageName}/models`)
+      if (Array.isArray(mod?.builtinModels)) {
+        result[adapterKey] = mod.builtinModels
+      }
+    } catch {
+      // Adapter does not export builtin models — skip
+    }
+  }
+  return result
+}
 
 export function configRouter(): Router {
   const router = new Router()
@@ -139,11 +159,13 @@ export function configRouter(): Router {
       const appInfo = await getAppInfo(workspaceFolder)
       const [projectConfig, userConfig] = await loadConfig({ jsonVariables })
       const mergedConfig = mergeConfig(projectConfig, userConfig)
+      const mergedSections = buildSections(mergedConfig)
+      mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
       ctx.body = {
         sources: {
           project: buildSections(projectConfig),
           user: buildSections(userConfig),
-          merged: buildSections(mergedConfig)
+          merged: mergedSections
         },
         meta: {
           workspaceFolder,

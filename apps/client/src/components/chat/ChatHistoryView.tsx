@@ -40,6 +40,9 @@ export function ChatHistoryView({
   permissionMode,
   permissionModeOptions,
   onPermissionModeChange,
+  selectedAdapter,
+  adapterOptions,
+  onAdapterChange,
   modelUnavailable,
   hasAvailableModels
 }: {
@@ -60,6 +63,9 @@ export function ChatHistoryView({
   permissionMode: PermissionMode
   permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
   onPermissionModeChange: (mode: PermissionMode) => void
+  selectedAdapter?: string
+  adapterOptions: Array<{ value: string; label: React.ReactNode }>
+  onAdapterChange: (adapter: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
 }) {
@@ -71,6 +77,7 @@ export function ChatHistoryView({
     modelForQuery,
     hasAvailableModels,
     permissionMode,
+    adapter: selectedAdapter,
     onClearMessages
   })
   const initialScrollDoneRef = useRef(false)
@@ -158,6 +165,9 @@ export function ChatHistoryView({
           permissionMode={permissionMode}
           permissionModeOptions={permissionModeOptions}
           onPermissionModeChange={onPermissionModeChange}
+          selectedAdapter={selectedAdapter}
+          adapterOptions={adapterOptions}
+          onAdapterChange={onAdapterChange}
           modelUnavailable={modelUnavailable}
         />
       </div>

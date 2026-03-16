@@ -29,6 +29,9 @@ export function Chat({
     permissionMode,
     setPermissionMode,
     permissionModeOptions,
+    selectedAdapter,
+    setSelectedAdapter,
+    adapterOptions,
     hasAvailableModels,
     modelUnavailable
   } = useChatSession({ session })
@@ -80,6 +83,9 @@ export function Chat({
           permissionMode={permissionMode}
           permissionModeOptions={permissionModeOptions}
           onPermissionModeChange={setPermissionMode}
+          selectedAdapter={selectedAdapter}
+          adapterOptions={adapterOptions}
+          onAdapterChange={setSelectedAdapter}
           modelUnavailable={modelUnavailable}
           hasAvailableModels={hasAvailableModels}
         />

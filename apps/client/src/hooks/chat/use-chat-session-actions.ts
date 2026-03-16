@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
-import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import { createSession } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
+import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import type { PermissionMode } from './use-chat-permission-mode'
 
 export function useChatSessionActions({
@@ -14,12 +14,14 @@ export function useChatSessionActions({
   modelForQuery,
   hasAvailableModels,
   permissionMode,
+  adapter,
   onClearMessages
 }: {
   session?: Session
   modelForQuery?: string
   hasAvailableModels: boolean
   permissionMode: PermissionMode
+  adapter?: string
   onClearMessages: () => void
 }) {
   const { message } = App.useApp()
@@ -40,7 +42,8 @@ export function useChatSessionActions({
       setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
-          permissionMode
+          permissionMode,
+          adapter
         })
 
         await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -65,6 +68,7 @@ export function useChatSessionActions({
       text: text.trim()
     })
   }, [
+    adapter,
     hasAvailableModels,
     isThinking,
     message,
@@ -87,7 +91,8 @@ export function useChatSessionActions({
       setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
-          permissionMode
+          permissionMode,
+          adapter
         })
 
         await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -113,6 +118,7 @@ export function useChatSessionActions({
       content
     })
   }, [
+    adapter,
     hasAvailableModels,
     isThinking,
     message,

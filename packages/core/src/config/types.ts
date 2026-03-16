@@ -3,6 +3,12 @@ import type { PluginConfig } from '../hooks'
 
 export interface AdapterMap {}
 
+export interface AdapterBuiltinModel {
+  value: string
+  title: string
+  description: string
+}
+
 export interface ModelServiceConfig {
   /**
    * 模型服务展示标题
@@ -228,6 +234,7 @@ export interface ConfigSection {
   modelServices?: Config['modelServices']
   channels?: Config['channels']
   adapters?: Config['adapters']
+  adapterBuiltinModels?: Record<string, AdapterBuiltinModel[]>
   plugins?: {
     plugins?: Config['plugins']
     enabledPlugins?: Config['enabledPlugins']

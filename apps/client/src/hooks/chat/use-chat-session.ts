@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
+import { useChatAdapter } from './use-chat-adapter'
 import { useChatInteraction } from './use-chat-interaction'
 import { useChatModels } from './use-chat-models'
 import { useChatPermissionMode } from './use-chat-permission-mode'
@@ -13,13 +14,14 @@ export function useChatSession({
   session?: Session
 }) {
   const { t } = useTranslation()
+  const { selectedAdapter, setSelectedAdapter, adapterOptions } = useChatAdapter()
   const {
     selectedModel,
     selectedModelWithService,
     setSelectedModel,
     modelOptions,
     hasAvailableModels
-  } = useChatModels()
+  } = useChatModels({ selectedAdapter })
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { activeView, setActiveView } = useChatView()
   const { interactionRequest, setInteractionRequest, handleInteractionResponse } = useChatInteraction({
@@ -29,6 +31,7 @@ export function useChatSession({
     session,
     modelForQuery: selectedModelWithService,
     permissionMode,
+    adapter: selectedAdapter,
     setInteractionRequest
   })
   const isThinking = session?.status === 'running'
@@ -51,6 +54,9 @@ export function useChatSession({
     permissionMode,
     setPermissionMode,
     permissionModeOptions,
+    selectedAdapter,
+    setSelectedAdapter,
+    adapterOptions,
     hasAvailableModels,
     modelUnavailable: !hasAvailableModels
   }
