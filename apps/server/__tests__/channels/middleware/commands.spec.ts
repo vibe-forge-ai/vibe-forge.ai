@@ -107,6 +107,7 @@ beforeEach(() => {
     id: 'sess-abc',
     title: 'Session A',
     status: 'running',
+    messageCount: 12,
     model: 'gpt-test',
     adapter: 'codex',
     permissionMode: 'plan',
@@ -243,6 +244,7 @@ describe('/session command', () => {
     expect(ctx.reply).toHaveBeenCalledOnce()
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('Session A')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('gpt-test')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('上下文消息数：12')
   })
 })
 
