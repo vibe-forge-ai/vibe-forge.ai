@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('#~/db/index.js', () => ({
-  getDb: vi.fn()
-}))
-
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { resolveSessionMiddleware } from '#~/channels/middleware/resolve-session.js'
 import { getDb } from '#~/db/index.js'
+
+vi.mock('#~/db/index.js', () => ({
+  getDb: vi.fn()
+}))
 
 const makeCtx = (): ChannelContext => ({
   channelKey: 'lark:default',

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { readFile } from 'node:fs/promises'
+
+import { loadChannelAgentRules } from '#~/channels/middleware/dispatch/prompt/agent-rules.js'
+
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn()
 }))
-
-import { loadChannelAgentRules } from '#~/channels/middleware/dispatch/prompt/agent-rules.js'
-import { readFile } from 'node:fs/promises'
 
 const readFileMock = vi.mocked(readFile)
 

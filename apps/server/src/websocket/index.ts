@@ -6,4 +6,3 @@ export {
   setSessionInteraction
 } from './interactions'
 export { setupWebSocket } from './server'
-export { killSession, processUserMessage, startAdapterSession, updateAndNotifySession } from './session'

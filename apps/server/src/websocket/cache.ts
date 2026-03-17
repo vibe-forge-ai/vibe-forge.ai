@@ -1,6 +1,6 @@
-import { WebSocket } from 'ws'
-
-import type { AdapterSession, AskUserQuestionParams, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, WSEvent } from '@vibe-forge/core'
+import type { AdapterSession } from '@vibe-forge/core/adapter'
+import type { WebSocket } from 'ws'
 
 export const adapterCache = new Map<string, {
   session: AdapterSession

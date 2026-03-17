@@ -3,15 +3,8 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 import { v4 as uuidv4 } from 'uuid'
 import type { WebSocket } from 'ws'
 
-import type {
-  AdapterOutputEvent,
-  ChatMessage,
-  ChatMessageContent,
-  Session,
-  SessionPermissionMode,
-  SessionInfo,
-  WSEvent
-} from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
+import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/core/adapter'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { callHook } from '@vibe-forge/core/utils/api'
 
@@ -20,10 +13,10 @@ import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
-import { adapterCache, externalCache } from './cache'
-import { notifySessionUpdated } from './events'
-import { getMergedGeneralConfig, maybeNotifySession } from './notifications'
-import { sendToClient } from './utils'
+import { adapterCache, externalCache } from '#~/websocket/cache.js'
+import { notifySessionUpdated } from '#~/websocket/events.js'
+import { getMergedGeneralConfig, maybeNotifySession } from '#~/websocket/notifications.js'
+import { sendToClient } from '#~/websocket/utils.js'
 
 export async function startAdapterSession(
   sessionId: string,
@@ -60,7 +53,10 @@ export async function startAdapterSession(
   const resolvedAdapter = options.adapter ?? existing?.adapter
   const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
 
-  if (resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter || resolvedPermissionMode !== existing?.permissionMode) {
+  if (
+    resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
+    resolvedPermissionMode !== existing?.permissionMode
+  ) {
     db.updateSession(sessionId, {
       model: resolvedModel,
       adapter: resolvedAdapter,

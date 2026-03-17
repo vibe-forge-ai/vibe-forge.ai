@@ -1,7 +1,8 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
-import { notifySessionUpdated, processUserMessage, startAdapterSession } from '#~/websocket/index.js'
+import { processUserMessage, startAdapterSession } from '#~/services/session.js'
+import { notifySessionUpdated } from '#~/websocket/events.js'
 
 export async function createSessionWithInitialMessage(options: {
   title?: string

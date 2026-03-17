@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { channelCommandMiddleware } from '#~/channels/middleware/commands/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
+import { deleteBinding } from '#~/channels/state.js'
+import { getDb } from '#~/db/index.js'
+import { killSession, startAdapterSession } from '#~/websocket/index.js'
+import { updateConfigFile } from '@vibe-forge/core'
+
 vi.mock('@vibe-forge/core', async () => {
   const actual = await vi.importActual<typeof import('@vibe-forge/core')>('@vibe-forge/core')
   return {
@@ -20,14 +28,6 @@ vi.mock('#~/websocket/index.js', () => ({
   killSession: vi.fn(),
   startAdapterSession: vi.fn().mockResolvedValue(undefined)
 }))
-
-import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { channelCommandMiddleware } from '#~/channels/middleware/commands/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
-import { deleteBinding } from '#~/channels/state.js'
-import { getDb } from '#~/db/index.js'
-import { killSession, startAdapterSession } from '#~/websocket/index.js'
-import { updateConfigFile } from '@vibe-forge/core'
 
 const deleteChannelSessionBySessionId = vi.fn()
 const getSession = vi.fn()

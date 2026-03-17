@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('#~/channels/state.js', () => ({
-  isDuplicateMessage: vi.fn()
-}))
-
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { deduplicateMiddleware } from '#~/channels/middleware/deduplicate.js'
 import { isDuplicateMessage } from '#~/channels/state.js'
+
+vi.mock('#~/channels/state.js', () => ({
+  isDuplicateMessage: vi.fn()
+}))
 
 const makeCtx = (messageId = 'msg1'): ChannelContext => ({
   channelKey: 'lark:default',

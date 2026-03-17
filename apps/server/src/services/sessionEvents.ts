@@ -2,7 +2,7 @@ import type { ChatMessage, ChatMessageContent, Session, WSEvent } from '@vibe-fo
 
 import { getDb } from '#~/db/index.js'
 
-export type SessionEventCallbacks = {
+export interface SessionEventCallbacks {
   broadcast?: (event: WSEvent) => void
   onSessionUpdated?: (session: Session) => void
 }

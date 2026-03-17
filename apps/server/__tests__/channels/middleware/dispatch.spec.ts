@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
+import { processUserMessage } from '#~/services/session.js'
+import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
+
 vi.mock('#~/services/sessionCreate.js', () => ({
   createSessionWithInitialMessage: vi.fn()
 }))
 
-vi.mock('#~/websocket/session.js', () => ({
+vi.mock('#~/services/session.js', () => ({
   processUserMessage: vi.fn()
 }))
 
 vi.mock('#~/channels/middleware/dispatch/prompt.js', () => ({
   buildSessionSystemPrompt: vi.fn().mockResolvedValue('system-prompt')
 }))
-
-import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
-import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
-import { processUserMessage } from '#~/websocket/session.js'
 
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   channelKey: 'lark:default',

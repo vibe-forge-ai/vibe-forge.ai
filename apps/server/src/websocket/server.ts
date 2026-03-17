@@ -9,13 +9,13 @@ import { WebSocketServer } from 'ws'
 import type { ServerEnv, WSEvent } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
+import { killSession, processUserMessage, startAdapterSession, updateAndNotifySession } from '#~/services/session.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { adapterCache, externalCache, globalSockets, pendingInteractions } from './cache'
 import { broadcastSessionEvent, notifySessionUpdated } from './events'
 import { clearSessionInteraction } from './interactions'
-import { killSession, processUserMessage, startAdapterSession, updateAndNotifySession } from './session'
 import { sendToClient } from './utils'
 
 export function setupWebSocket(server: Server, env: ServerEnv) {

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
+import { getDb } from '#~/db/index.js'
+import { setBinding, setPendingUnack } from '#~/channels/state.js'
+
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
 }))
@@ -8,11 +13,6 @@ vi.mock('#~/channels/state.js', () => ({
   setBinding: vi.fn(),
   setPendingUnack: vi.fn()
 }))
-
-import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
-import { setBinding, setPendingUnack } from '#~/channels/state.js'
-import { getDb } from '#~/db/index.js'
 
 const upsertChannelSession = vi.fn()
 

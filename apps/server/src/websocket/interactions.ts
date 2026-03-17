@@ -3,8 +3,9 @@ import type { WebSocket } from 'ws'
 
 import type { AskUserQuestionParams, WSEvent } from '@vibe-forge/core'
 
+import { updateAndNotifySession } from '#~/services/session.js'
+
 import { adapterCache, externalCache, pendingInteractions } from './cache'
-import { updateAndNotifySession } from './session'
 import { sendToClient } from './utils'
 
 export function getSessionInteraction(sessionId: string) {

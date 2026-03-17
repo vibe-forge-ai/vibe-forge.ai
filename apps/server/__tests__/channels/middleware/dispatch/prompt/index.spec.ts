@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { loadChannelAgentRules } from '#~/channels/middleware/dispatch/prompt/agent-rules.js'
+import { buildChannelContextPrompt } from '#~/channels/middleware/dispatch/prompt/context.js'
+import { buildSessionSystemPrompt } from '#~/channels/middleware/dispatch/prompt/index.js'
+
 vi.mock('#~/channels/middleware/dispatch/prompt/agent-rules.js', () => ({
   loadChannelAgentRules: vi.fn()
 }))
@@ -7,10 +11,6 @@ vi.mock('#~/channels/middleware/dispatch/prompt/agent-rules.js', () => ({
 vi.mock('#~/channels/middleware/dispatch/prompt/context.js', () => ({
   buildChannelContextPrompt: vi.fn()
 }))
-
-import { loadChannelAgentRules } from '#~/channels/middleware/dispatch/prompt/agent-rules.js'
-import { buildChannelContextPrompt } from '#~/channels/middleware/dispatch/prompt/context.js'
-import { buildSessionSystemPrompt } from '#~/channels/middleware/dispatch/prompt/index.js'
 
 const makeInbound = () => ({
   channelType: 'lark',

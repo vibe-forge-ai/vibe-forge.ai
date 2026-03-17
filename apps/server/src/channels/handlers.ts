@@ -2,8 +2,8 @@ import type { ConfigSource, WSEvent } from '@vibe-forge/core'
 import type { ChannelBaseConfig, ChannelConnection, ChannelInboundEvent } from '@vibe-forge/core/channel'
 
 import { getDb } from '#~/db/index.js'
+import { killSession, startAdapterSession } from '#~/services/session.js'
 import { extractTextFromMessage } from '#~/services/sessionEvents.js'
-import { killSession, startAdapterSession } from '#~/websocket/index.js'
 
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'

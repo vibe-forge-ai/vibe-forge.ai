@@ -3,16 +3,15 @@ import Router from '@koa/router'
 import type { ChatMessage, ChatMessageContent, SessionInfo, SessionInitInfo, WSEvent } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
+import { killSession, updateAndNotifySession } from '#~/services/session.js'
 import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
 import { applySessionEvent } from '#~/services/sessionEvents.js'
 import {
   broadcastSessionEvent,
   clearSessionInteraction,
   getSessionInteraction,
-  killSession,
   notifySessionUpdated,
-  setSessionInteraction,
-  updateAndNotifySession
+  setSessionInteraction
 } from '#~/websocket/index.js'
 
 export function sessionsRouter(): Router {
