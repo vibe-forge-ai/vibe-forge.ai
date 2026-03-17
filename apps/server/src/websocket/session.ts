@@ -8,6 +8,7 @@ import type {
   ChatMessage,
   ChatMessageContent,
   Session,
+  SessionPermissionMode,
   SessionInfo,
   WSEvent
 } from '@vibe-forge/core'
@@ -30,7 +31,7 @@ export async function startAdapterSession(
     model?: string
     systemPrompt?: string
     appendSystemPrompt?: boolean
-    permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+    permissionMode?: SessionPermissionMode
     promptType?: 'spec' | 'entity'
     promptName?: string
     adapter?: string
@@ -54,6 +55,17 @@ export async function startAdapterSession(
   if (existing == null) {
     serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
     db.createSession(undefined, sessionId)
+  }
+  const resolvedModel = options.model ?? existing?.model
+  const resolvedAdapter = options.adapter ?? existing?.adapter
+  const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
+
+  if (resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter || resolvedPermissionMode !== existing?.permissionMode) {
+    db.updateSession(sessionId, {
+      model: resolvedModel,
+      adapter: resolvedAdapter,
+      permissionMode: resolvedPermissionMode
+    })
   }
 
   const sockets = new Set<WebSocket>()
@@ -91,14 +103,14 @@ export async function startAdapterSession(
     const { session } = await run({
       env,
       cwd: promptCwd,
-      adapter: options.adapter
+      adapter: resolvedAdapter
     }, {
       type,
       runtime: 'server',
       sessionId,
-      model: options.model,
+      model: resolvedModel,
       systemPrompt: mergedSystemPrompt,
-      permissionMode: options.permissionMode,
+      permissionMode: resolvedPermissionMode,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       tools: resolvedConfig.tools,
       mcpServers: resolvedConfig.mcpServers,
@@ -124,6 +136,13 @@ export async function startAdapterSession(
         switch (event.type) {
           case 'init':
             if ('model' in (event.data as any)) {
+              updateAndNotifySession(sessionId, {
+                model: typeof (event.data as any).model === 'string'
+                  ? (event.data as any).model
+                  : resolvedModel,
+                adapter: resolvedAdapter,
+                permissionMode: resolvedPermissionMode
+              })
               applyEvent({
                 type: 'session_info',
                 info: {

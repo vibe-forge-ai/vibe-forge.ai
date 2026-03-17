@@ -9,6 +9,8 @@ export interface Project {
 
 export type SessionStatus = 'running' | 'completed' | 'failed' | 'terminated' | 'waiting_input'
 
+export type SessionPermissionMode = 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+
 export interface Session {
   id: string
   parentSessionId?: string
@@ -21,6 +23,9 @@ export interface Session {
   isArchived?: boolean
   tags?: string[]
   status?: SessionStatus
+  model?: string
+  adapter?: string
+  permissionMode?: SessionPermissionMode
 }
 
 export type ChatMessageContent =

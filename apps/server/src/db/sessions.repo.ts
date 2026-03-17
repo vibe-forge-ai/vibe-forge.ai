@@ -15,6 +15,9 @@ interface SessionRow {
   isArchived: number
   tags?: string
   status: string | null
+  model: string | null
+  adapter: string | null
+  permissionMode: string | null
 }
 
 export function createSessionsRepo(db: Database.Database) {
@@ -46,7 +49,10 @@ export function createSessionsRepo(db: Database.Database) {
       isStarred: row.isStarred === 1,
       isArchived: row.isArchived === 1,
       tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : [],
-      status: (row.status as any) ?? undefined
+      status: (row.status as any) ?? undefined,
+      model: row.model ?? undefined,
+      adapter: row.adapter ?? undefined,
+      permissionMode: (row.permissionMode as any) ?? undefined
     }))
   }
 
@@ -70,7 +76,10 @@ export function createSessionsRepo(db: Database.Database) {
       isStarred: row.isStarred === 1,
       isArchived: row.isArchived === 1,
       tags: (row.tags != null && row.tags !== '') ? row.tags.split(',') : [],
-      status: (row.status as any) ?? undefined
+      status: (row.status as any) ?? undefined,
+      model: row.model ?? undefined,
+      adapter: row.adapter ?? undefined,
+      permissionMode: (row.permissionMode as any) ?? undefined
     }
   }
 
@@ -101,6 +110,18 @@ export function createSessionsRepo(db: Database.Database) {
     if (updates.status !== undefined) {
       sets.push('status = ?')
       params.push(updates.status)
+    }
+    if (updates.model !== undefined) {
+      sets.push('model = ?')
+      params.push(updates.model)
+    }
+    if (updates.adapter !== undefined) {
+      sets.push('adapter = ?')
+      params.push(updates.adapter)
+    }
+    if (updates.permissionMode !== undefined) {
+      sets.push('permissionMode = ?')
+      params.push(updates.permissionMode)
     }
 
     if (sets.length === 0) return

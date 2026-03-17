@@ -5,7 +5,7 @@
 ```
 channels/
   index.ts            初始化所有频道连接，对外暴露 ChannelManager
-  handlers.ts         handleSessionEvent（出站回复）+ 转发 handleInboundEvent
+  handlers.ts         handleInboundEvent（ctx 组装 + 管道执行）、handleSessionEvent（出站回复）
   types.ts            频道层共享类型（re-export 自 middleware/@types）
   state.ts            内存绑定状态（dedup / binding / pendingUnack）
   loader.ts           动态加载频道连接模块
@@ -14,7 +14,7 @@ channels/
       index.ts            ChannelContext / ChannelTextMessage / ChannelMiddleware
     @utils/             通用工具函数
       index.ts            stripSpeakerPrefix / stripLeadingAtTags / getInboundContentItems
-    index.ts            管道组装（compose）+ handleInboundEvent 入口 + reply 实现
+    index.ts            管道组装（compose），导出 pipeline
     deduplicate.ts      按 messageId 去重
     parse-content.ts    解析富文本内容 + 剥离 @-tag 和发言者前缀
     access-control.ts   检查 allowPrivateChat / allowGroupChat / 黑白名单
@@ -41,8 +41,8 @@ channels/
 2. **中间件实现文件**（如 `ack.ts`、`commands.ts`）— 每个文件只导出一个 `ChannelMiddleware`，
    命名统一为 `<camelCase>Middleware`。
 
-3. **`index.ts`**（唯一入口）— 负责管道组装（`compose`）、`handleInboundEvent` 导出，
-   以及 `ctx.reply` 等需要注入进 context 的工具函数实现；不直接包含业务逻辑。
+3. **`index.ts`**（唯一入口）— 负责管道组装（`compose`）、`pipeline` 导出；
+   不包含 `ChannelContext` 组装逻辑（ctx 在 `handlers.ts` 中创建）。
 
 ## 中间件管道执行顺序
 

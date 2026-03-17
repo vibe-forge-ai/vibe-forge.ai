@@ -35,6 +35,13 @@ export async function createSessionWithInitialMessage(options: {
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
+  if (model !== undefined || permissionMode !== undefined || adapter !== undefined) {
+    db.updateSession(session.id, { model, permissionMode, adapter })
+    const updatedSession = db.getSession(session.id)
+    if (updatedSession) {
+      Object.assign(session, updatedSession)
+    }
+  }
   notifySessionUpdated(session.id, session)
 
   if (tags && tags.length > 0) {

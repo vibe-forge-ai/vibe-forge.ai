@@ -11,7 +11,10 @@ export function initSchema(db: Database.Database) {
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
         isArchived INTEGER DEFAULT 0,
-        status TEXT
+        status TEXT,
+        model TEXT,
+        adapter TEXT,
+        permissionMode TEXT
       );
 
       CREATE TABLE IF NOT EXISTS messages (
@@ -119,6 +122,15 @@ export function initSchema(db: Database.Database) {
   }
   if (!columns.includes('status')) {
     db.exec('ALTER TABLE sessions ADD COLUMN status TEXT')
+  }
+  if (!columns.includes('model')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN model TEXT')
+  }
+  if (!columns.includes('adapter')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN adapter TEXT')
+  }
+  if (!columns.includes('permissionMode')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN permissionMode TEXT')
   }
 
   const channelSessionsInfo = db.prepare('PRAGMA table_info(channel_sessions)').all() as { name: string }[]

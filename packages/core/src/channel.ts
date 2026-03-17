@@ -40,6 +40,13 @@ export const channelBaseSchema = z.object({
   systemPrompt: z
     .string().optional()
     .describe('在此频道启动会话时注入的系统提示词'),
+  // 指令
+  commandPrefix: z
+    .string().optional()
+    .describe('频道指令前缀，默认 /'),
+  language: z
+    .enum(['zh', 'en']).optional()
+    .describe('频道提示语言，默认 zh'),
   // 访问权限控制
   access: channelAccessSchema
     .optional()

@@ -1,11 +1,72 @@
-import type { WSEvent } from '@vibe-forge/core'
+import type { ConfigSource, WSEvent } from '@vibe-forge/core'
+import type { ChannelBaseConfig, ChannelConnection, ChannelInboundEvent } from '@vibe-forge/core/channel'
 
+import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/sessionEvents.js'
+import { killSession, startAdapterSession } from '#~/websocket/index.js'
 
-import { consumePendingUnack, resolveBinding } from './state'
+import { pipeline } from './middleware'
+import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
+import { defineMessages } from './middleware/i18n'
+import { consumePendingUnack, deleteBinding, resolveBinding } from './state'
 import type { ChannelRuntimeState } from './types'
 
-export { handleInboundEvent } from './middleware'
+export const handleInboundEvent = async (
+  channelKey: string,
+  inbound: ChannelInboundEvent,
+  connection: ChannelConnection<ChannelTextMessage> | undefined,
+  config?: ChannelBaseConfig,
+  configSource?: ConfigSource
+) => {
+  const ctx: ChannelContext = {
+    channelKey,
+    configSource,
+    inbound,
+    connection,
+    config,
+    sessionId: undefined,
+    contentItems: undefined,
+    commandText: '',
+    defineMessages,
+    t: (key) => key,
+    reply: async (text: string) => {
+      if (!connection) return
+      const receiveId = inbound.replyTo?.receiveId ?? inbound.channelId
+      const receiveIdType = inbound.replyTo?.receiveIdType ?? 'chat_id'
+      await connection.sendMessage({ receiveId, receiveIdType, text })
+    },
+    getBoundSession: () => {
+      if (!ctx.sessionId) return undefined
+      return getDb().getSession(ctx.sessionId)
+    },
+    resetSession: () => {
+      const { sessionId } = ctx
+      if (sessionId) {
+        getDb().deleteChannelSessionBySessionId(sessionId)
+        deleteBinding(sessionId)
+        ctx.sessionId = undefined
+      }
+    },
+    stopSession: () => {
+      if (ctx.sessionId) {
+        killSession(ctx.sessionId)
+      }
+    },
+    restartSession: async () => {
+      if (ctx.sessionId) {
+        killSession(ctx.sessionId)
+        await startAdapterSession(ctx.sessionId)
+      }
+    },
+    updateSession: (updates) => {
+      if (ctx.sessionId) {
+        getDb().updateSession(ctx.sessionId, updates)
+      }
+    }
+  }
+
+  await pipeline(ctx)
+}
 
 export const handleSessionEvent = async (
   states: Map<string, ChannelRuntimeState>,

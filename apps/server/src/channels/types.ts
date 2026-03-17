@@ -1,4 +1,4 @@
-import type { WSEvent } from '@vibe-forge/core'
+import type { ConfigSource, WSEvent } from '@vibe-forge/core'
 import type { ChannelBaseConfig, ChannelConnection } from '@vibe-forge/core/channel'
 
 import type { ChannelTextMessage } from './middleware/@types'
@@ -9,6 +9,7 @@ export interface ChannelRuntimeState {
   status: 'connected' | 'disabled' | 'error'
   connection?: ChannelConnection<ChannelTextMessage>
   config?: ChannelBaseConfig
+  configSource?: ConfigSource
   error?: string
 }
 
