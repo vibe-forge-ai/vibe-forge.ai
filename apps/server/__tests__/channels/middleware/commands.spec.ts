@@ -57,6 +57,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     defineMessages,
     t: createT(undefined),
     reply: vi.fn().mockResolvedValue(undefined),
+    pushFollowUps: vi.fn().mockResolvedValue(undefined),
     getBoundSession: vi.fn(),
     resetSession: vi.fn(),
     stopSession: vi.fn(),
@@ -152,10 +153,18 @@ describe('non-command input', () => {
 describe('/help command', () => {
   it('sends the help message and does not call next', async () => {
     const next = vi.fn()
-    const ctx = makeCtx({ commandText: '/help' })
+    const ctx = makeCtx({
+      commandText: '/help',
+      reply: vi.fn().mockResolvedValue({ messageId: 'om-help-1' }) as any
+    })
     await channelCommandMiddleware(ctx, next)
 
     expect(ctx.reply).toHaveBeenCalledOnce()
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('第 1/2 页')
+    expect(ctx.pushFollowUps).toHaveBeenCalledWith({
+      messageId: 'om-help-1',
+      followUps: [{ content: '/help --page=2' }]
+    })
     expect(next).not.toHaveBeenCalled()
   })
 
@@ -186,6 +195,32 @@ describe('/help command', () => {
     expect(message).toContain('/set <field:model|adapter> <name>')
     expect(message).toContain('model：模型')
     expect(message).toContain('修改当前会话的模型并立即重启')
+  })
+
+  it('falls back to fuzzy search when no exact help target exists', async () => {
+    const ctx = makeCtx({ commandText: '/help permiss' })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('未找到完整匹配')
+    expect(message).toContain('/permissionMode <mode:default|acceptEdits|plan|dontAsk|bypassPermissions>')
+  })
+
+  it('supports help paging callbacks through explicit page arguments', async () => {
+    const ctx = makeCtx({ commandText: '/help --page=2' })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('第 2/2 页')
+    expect(message).toContain('/allow <field:sender|group|private|groupchat> <value>')
+    expect(ctx.pushFollowUps).toHaveBeenCalledWith({
+      messageId: undefined,
+      followUps: [{ content: '/help --page=1' }]
+    })
   })
 
   it('shows titled choice guidance for invalid values', async () => {

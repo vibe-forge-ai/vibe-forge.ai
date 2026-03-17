@@ -10,6 +10,9 @@ defineMessages('zh', {
   'cmd.whoami.description': '查看当前身份与会话上下文',
   'cmd.lang.description': '切换当前频道的提示语言',
   'cmd.lang.success': ({ lang }) => `已切换语言为 ${lang}。`,
+  'help.page': ({ current, total }) => `第 ${current}/${total} 页`,
+  'help.search.title': ({ query }) => `未找到完整匹配，以下是与“${query}”相关的指令：`,
+  'help.search.empty': ({ query }) => `未找到与“${query}”相关的指令。`,
   'choice.lang.zh.title': '中文',
   'choice.lang.zh.description': '使用中文返回命令帮助与执行结果。',
   'choice.lang.en.title': '英文',
@@ -26,6 +29,9 @@ defineMessages('en', {
   'cmd.whoami.description': 'Show current identity and session context',
   'cmd.lang.description': 'Switch channel prompt language',
   'cmd.lang.success': ({ lang }) => `Language switched to ${lang}.`,
+  'help.page': ({ current, total }) => `Page ${current}/${total}`,
+  'help.search.title': ({ query }) => `No exact match found. Commands related to "${query}":`,
+  'help.search.empty': ({ query }) => `No commands related to "${query}" were found.`,
   'choice.lang.zh.title': 'Chinese',
   'choice.lang.zh.description': 'Use Chinese for command help and responses.',
   'choice.lang.en.title': 'English',
@@ -44,6 +50,26 @@ interface FormatHelpOptions {
   prefix?: string
   isAdmin?: boolean
 }
+
+interface HelpListEntry {
+  usage: string
+  descriptionKey: string
+  path: string[]
+  aliases: string[]
+}
+
+interface HelpRequest {
+  page: number
+  query: string
+  path: string[]
+}
+
+interface HelpPage {
+  text: string
+  followUps: Array<{ content: string }>
+}
+
+const HELP_PAGE_SIZE = 8
 
 const LANGUAGE_CHOICES: readonly CommandArgumentChoice<LanguageCode>[] = [
   {
@@ -94,34 +120,166 @@ const flattenVisible = <TContext>(
   ancestors: readonly string[],
   prefix: string,
   admin: boolean
-): Array<{ usage: string; descriptionKey: string }> => {
-  const lines: Array<{ usage: string; descriptionKey: string }> = []
+): HelpListEntry[] => {
+  const lines: HelpListEntry[] = []
   for (const cmd of commands) {
     if (cmd.permission === 'admin' && !admin) continue
     const name = ancestors.length === 0 ? `${prefix}${cmd.name}` : cmd.name
     const path = [...ancestors, name]
     if (cmd.action) {
-      lines.push({ usage: formatUsage(cmd, ancestors, prefix), descriptionKey: cmd.descriptionKey ?? '' })
+      lines.push({
+        usage: formatUsage(cmd, ancestors, prefix),
+        descriptionKey: cmd.descriptionKey ?? '',
+        path: [cmd.name],
+        aliases: [...cmd.aliases]
+      })
     }
     if (cmd.subcommands.length > 0) {
-      lines.push(...flattenVisible(cmd.subcommands, path, prefix, admin))
+      const childEntries = flattenVisible(cmd.subcommands, path, prefix, admin)
+      lines.push(...childEntries.map(entry => ({
+        ...entry,
+        path: [cmd.name, ...entry.path]
+      })))
     }
   }
   return lines
 }
 
+const normalizeHelpText = (value: string) => value.trim().toLowerCase()
+
+const findSubsequenceIndex = (haystack: string, needle: string) => {
+  if (needle === '') return 0
+  let needleIndex = 0
+  let firstMatchIndex = -1
+  for (let haystackIndex = 0; haystackIndex < haystack.length; haystackIndex += 1) {
+    if (haystack[haystackIndex] !== needle[needleIndex]) continue
+    if (firstMatchIndex === -1) firstMatchIndex = haystackIndex
+    needleIndex += 1
+    if (needleIndex === needle.length) {
+      return firstMatchIndex
+    }
+  }
+  return -1
+}
+
+const scoreSearchCandidate = (query: string, candidate: string) => {
+  const normalizedQuery = normalizeHelpText(query)
+  const normalizedCandidate = normalizeHelpText(candidate)
+  if (normalizedQuery === '' || normalizedCandidate === '') return -1
+  if (normalizedCandidate === normalizedQuery) return 1000
+  if (normalizedCandidate.startsWith(normalizedQuery)) {
+    return 800 - (normalizedCandidate.length - normalizedQuery.length)
+  }
+  const includeIndex = normalizedCandidate.indexOf(normalizedQuery)
+  if (includeIndex >= 0) return 600 - includeIndex
+  const subsequenceIndex = findSubsequenceIndex(normalizedCandidate, normalizedQuery)
+  if (subsequenceIndex >= 0) return 300 - subsequenceIndex
+  return -1
+}
+
+const searchVisibleCommands = (entries: readonly HelpListEntry[], query: string) => {
+  return entries
+    .map((entry) => {
+      const pathCandidate = entry.path.join(' ')
+      const aliasCandidates = entry.aliases.map(alias => `${entry.path.slice(0, -1).join(' ')} ${alias}`.trim())
+      const usageCandidate = entry.usage.replace(/^\//, '')
+      const score = Math.max(
+        scoreSearchCandidate(query, pathCandidate),
+        scoreSearchCandidate(query, usageCandidate),
+        ...aliasCandidates.map(candidate => scoreSearchCandidate(query, candidate))
+      )
+      return { entry, score }
+    })
+    .filter(result => result.score >= 0)
+    .sort((left, right) => right.score - left.score || left.entry.usage.localeCompare(right.entry.usage))
+    .map(result => result.entry)
+}
+
+const parseHelpRequest = (rawArgs: readonly string[]): HelpRequest => {
+  let page = 1
+  let query = ''
+  const path: string[] = []
+
+  for (const token of rawArgs) {
+    if (token.startsWith('--page=')) {
+      const parsedPage = Number.parseInt(token.slice('--page='.length), 10)
+      if (Number.isFinite(parsedPage) && parsedPage > 0) {
+        page = parsedPage
+      }
+      continue
+    }
+    if (token.startsWith('--query=')) {
+      query = decodeURIComponent(token.slice('--query='.length))
+      continue
+    }
+    path.push(token)
+  }
+
+  if (query === '') {
+    query = path.join(' ').trim()
+  }
+
+  return { page, query, path }
+}
+
+const formatHelpEntries = (
+  entries: readonly HelpListEntry[],
+  translate: (key: string, args?: Record<string, string | number | boolean | undefined>) => string
+) =>
+  entries.map(({ usage, descriptionKey }) => {
+    const text = descriptionKey ? translate(descriptionKey) : ''
+    return `- ${usage}${text ? `：${text}` : ''}`
+  })
+
+const createHelpPageCommand = (prefix: string, page: number, query: string) => {
+  const parts = [`${prefix}help`, `--page=${page}`]
+  if (query !== '') {
+    parts.push(`--query=${encodeURIComponent(query)}`)
+  }
+  return parts.join(' ')
+}
+
+const paginateHelpEntries = (
+  entries: readonly HelpListEntry[],
+  title: string,
+  opts: FormatHelpOptions,
+  query = '',
+  requestedPage = 1
+): HelpPage => {
+  const { t: translate, prefix = '/' } = opts
+  const totalPages = Math.max(1, Math.ceil(entries.length / HELP_PAGE_SIZE))
+  const currentPage = Math.min(Math.max(requestedPage, 1), totalPages)
+  const startIndex = (currentPage - 1) * HELP_PAGE_SIZE
+  const currentEntries = entries.slice(startIndex, startIndex + HELP_PAGE_SIZE)
+  const lines = [
+    title,
+    translate('help.page', { current: currentPage, total: totalPages }),
+    ...formatHelpEntries(currentEntries, translate)
+  ]
+
+  const followUps = [] as Array<{ content: string }>
+  if (totalPages > 1 && currentPage > 1) {
+    followUps.push({ content: createHelpPageCommand(prefix, currentPage - 1, query) })
+  }
+  if (totalPages > 1 && currentPage < totalPages) {
+    followUps.push({ content: createHelpPageCommand(prefix, currentPage + 1, query) })
+  }
+
+  return {
+    text: lines.join('\n'),
+    followUps
+  }
+}
+
 const formatCommandList = <TContext>(
   commands: readonly AnyCommandSpec<TContext>[],
-  opts: FormatHelpOptions
+  opts: FormatHelpOptions,
+  page = 1
 ) => {
   const { t: translate, prefix = '/', isAdmin: admin = false } = opts
   const title = translate('system.supportedCommands')
   const lines = flattenVisible(commands, [], prefix, admin)
-    .map(({ usage, descriptionKey }) => {
-      const text = descriptionKey ? translate(descriptionKey) : ''
-      return `- ${usage}${text ? `：${text}` : ''}`
-    })
-  return [title, ...lines].join('\n')
+  return paginateHelpEntries(lines, title, opts, '', page)
 }
 
 const findByPath = <TContext>(
@@ -149,7 +307,7 @@ const formatDetailedHelp = <TContext>(
   const { t: translate, prefix = '/', isAdmin: admin = false } = opts
 
   if (path.length === 0) {
-    return formatCommandList(commands, opts)
+    return formatCommandList(commands, opts).text
   }
 
   const target = findByPath(commands, path, prefix)
@@ -183,6 +341,27 @@ const formatDetailedHelp = <TContext>(
   return lines.join('\n')
 }
 
+const formatSearchHelp = <TContext>(
+  commands: readonly AnyCommandSpec<TContext>[],
+  query: string,
+  opts: FormatHelpOptions,
+  page = 1
+) => {
+  const { t: translate, prefix = '/', isAdmin: admin = false } = opts
+  const entries = flattenVisible(commands, [], prefix, admin)
+  const matches = searchVisibleCommands(entries, query)
+  if (matches.length === 0) {
+    return {
+      text: translate('help.search.empty', { query }),
+      followUps: []
+    }
+  }
+  return paginateHelpEntries(matches, translate('help.search.title', { query }), opts, query, page)
+}
+
+const canUseFollowUps = (ctx: ChannelContext) =>
+  ctx.inbound.channelType === 'lark' && ctx.inbound.sessionType === 'direct'
+
 // ── Commands ────────────────────────────────────────────────────────────────
 
 export const generalCommands = (
@@ -192,15 +371,33 @@ export const generalCommands = (
   command<ChannelContext>('help')
     .description('cmd.help.description')
     .argument(variadicArg('command'))
-    .action(async ({ ctx, args: [commandPath] }) => {
+    .action(async ({ ctx, rawArgs }) => {
       const prefix = getPrefix(ctx)
       const admin = isAdmin(ctx)
       const cmds = allCommands()
       const opts = { t: ctx.t, prefix, isAdmin: admin }
-      if ((commandPath as string[]).length === 0) {
-        await ctx.reply(formatCommandList(cmds, opts))
-      } else {
-        await ctx.reply(formatDetailedHelp(cmds, commandPath as string[], opts))
+      const helpRequest = parseHelpRequest(rawArgs)
+
+      if (helpRequest.path.length === 0 && helpRequest.query === '') {
+        const helpPage = formatCommandList(cmds, opts, helpRequest.page)
+        const result = await ctx.reply(helpPage.text)
+        if (canUseFollowUps(ctx)) {
+          await ctx.pushFollowUps({ messageId: result?.messageId, followUps: helpPage.followUps })
+        }
+        return
+      }
+
+      const exactHelp = formatDetailedHelp(cmds, helpRequest.path, opts)
+      const target = findByPath(cmds, helpRequest.path, prefix)
+      if (target && (target.permission !== 'admin' || admin)) {
+        await ctx.reply(exactHelp)
+        return
+      }
+
+      const helpPage = formatSearchHelp(cmds, helpRequest.query, opts, helpRequest.page)
+      const result = await ctx.reply(helpPage.text)
+      if (canUseFollowUps(ctx)) {
+        await ctx.pushFollowUps({ messageId: result?.messageId, followUps: helpPage.followUps })
       }
     }),
 

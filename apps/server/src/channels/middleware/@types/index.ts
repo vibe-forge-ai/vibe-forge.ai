@@ -1,5 +1,11 @@
 import type { ChatMessageContent, ConfigSource, Session } from '@vibe-forge/core'
-import type { ChannelBaseConfig, ChannelConnection, ChannelInboundEvent } from '@vibe-forge/core/channel'
+import type {
+  ChannelBaseConfig,
+  ChannelConnection,
+  ChannelFollowUp,
+  ChannelInboundEvent,
+  ChannelSendResult
+} from '@vibe-forge/core/channel'
 
 import type { LanguageCode, MessageArgs, MessageCatalog } from '../i18n'
 
@@ -26,7 +32,9 @@ export interface ChannelContext {
   /** Translate an i18n key using the channel's configured language */
   t: (key: string, args?: MessageArgs) => string
   /** Send a text reply back to the channel; no-op when connection is unavailable */
-  reply: (text: string) => Promise<void>
+  reply: (text: string) => Promise<ChannelSendResult | undefined>
+  /** Attach follow-up bubbles below a sent message when the channel supports it */
+  pushFollowUps: (input: { messageId?: string; followUps: readonly ChannelFollowUp[] }) => Promise<void>
 
   // ── session operations ──
   /** Get the session bound to the current channel, or undefined */

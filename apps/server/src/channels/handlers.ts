@@ -30,10 +30,14 @@ export const handleInboundEvent = async (
     defineMessages,
     t: (key) => key,
     reply: async (text: string) => {
-      if (!connection) return
+      if (!connection) return undefined
       const receiveId = inbound.replyTo?.receiveId ?? inbound.channelId
       const receiveIdType = inbound.replyTo?.receiveIdType ?? 'chat_id'
-      await connection.sendMessage({ receiveId, receiveIdType, text })
+      return connection.sendMessage({ receiveId, receiveIdType, text })
+    },
+    pushFollowUps: async ({ messageId, followUps }) => {
+      if (!connection?.pushFollowUps || !messageId || followUps.length === 0) return
+      await connection.pushFollowUps({ messageId, followUps })
     },
     getBoundSession: () => {
       if (!ctx.sessionId) return undefined

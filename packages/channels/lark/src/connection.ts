@@ -1,9 +1,10 @@
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
-import type { ChannelConnection, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
+import type { ChannelConnection, ChannelFollowUp, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
 import { defineCreateChannelConnection } from '@vibe-forge/core/channel'
 
 import type { LarkChannelConfig, LarkChannelMessage, LarkMessagePayload } from '#~/types.js'
+import type { LarkPushFollowUpsResponse, LarkSendMessageResponse } from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
 import { createTenantTokenProvider } from './utils/tenant-token'
@@ -22,9 +23,53 @@ const sendLarkMessage = async (
       msg_type: 'text',
       content: JSON.stringify({ text: message.text })
     }
-  })
+  }) as LarkSendMessageResponse
   if (result.code != null && result.code !== 0) {
     throw new Error(`Lark message send failed: ${result.msg ?? 'unknown error'}`)
+  }
+
+  return {
+    messageId: result.data?.message_id
+  }
+}
+
+const pushLarkFollowUps = async (
+  messageId: string,
+  followUps: readonly ChannelFollowUp[],
+  tenantTokenProvider: () => Promise<string | undefined>
+) => {
+  const accessToken = await tenantTokenProvider()
+  if (!accessToken) {
+    throw new Error('Lark push follow up failed: missing tenant access token')
+  }
+
+  const response = await globalThis.fetch(
+    `https://fsopen.bytedance.net/open-apis/im/v1/messages/${encodeURIComponent(messageId)}/push_follow_up`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify({
+        follow_ups: followUps.map(followUp => ({
+          content: followUp.content,
+          i18n_contents: followUp.i18nContents?.map(item => ({
+            content: item.content,
+            language: item.language
+          }))
+        }))
+      })
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Lark push follow up failed: HTTP ${response.status ?? 0}`)
+  }
+
+  const result = await response.json().catch(() => undefined) as LarkPushFollowUpsResponse | undefined
+  if (result?.code != null && result.code !== 0) {
+    throw new Error(`Lark push follow up failed: ${result.msg ?? 'unknown error'}`)
   }
 }
 
@@ -149,7 +194,10 @@ export const createChannelConnection = defineCreateChannelConnection(async (
   const tenantTokenProvider = createTenantTokenProvider(config)
   return {
     sendMessage: async (message) => {
-      await sendLarkMessage(client, message)
+      return sendLarkMessage(client, message)
+    },
+    pushFollowUps: async ({ messageId, followUps }) => {
+      await pushLarkFollowUps(messageId, followUps, tenantTokenProvider)
     },
     startReceiving: async ({ handlers }) => {
       const dispatcher = new EventDispatcher({})

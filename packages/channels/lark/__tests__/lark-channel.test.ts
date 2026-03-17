@@ -8,7 +8,7 @@ import type { LarkChannelConfig } from '#~/index.js'
 describe('larkChannelDefinition.connect', () => {
   it('sends message using lark sdk', async () => {
     vi.resetModules()
-    const create = vi.fn().mockResolvedValue({ code: 0 })
+    const create = vi.fn().mockResolvedValue({ code: 0, data: { message_id: 'om_sent' } })
     const Client = vi.fn().mockImplementation(() => ({
       im: {
         message: {
@@ -34,7 +34,9 @@ describe('larkChannelDefinition.connect', () => {
     }
 
     const connection = await createChannelConnection(config)
-    await connection.sendMessage({ text: 'hello', receiveId: 'oc_xxx', receiveIdType: 'chat_id' })
+    await expect(connection.sendMessage({ text: 'hello', receiveId: 'oc_xxx', receiveIdType: 'chat_id' }))
+      .resolves
+      .toEqual({ messageId: 'om_sent' })
 
     expect(Client).toHaveBeenCalledWith({
       appId: 'app_id',
@@ -49,6 +51,76 @@ describe('larkChannelDefinition.connect', () => {
         content: JSON.stringify({ text: 'hello' })
       }
     })
+  })
+
+  it('pushes follow-up bubbles through the Lark API', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          code: 0,
+          msg: 'ok',
+          tenant_access_token: 't_xxx',
+          expire: 7200
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 0, msg: 'success', data: {} })
+      })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create: vi.fn()
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const config: LarkChannelConfig = {
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret'
+    }
+
+    const connection = await createChannelConnection(config)
+    await connection.pushFollowUps?.({
+      messageId: 'om_target',
+      followUps: [
+        { content: '/help --page=1' },
+        { content: '/help --page=2' }
+      ]
+    })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://fsopen.bytedance.net/open-apis/im/v1/messages/om_target/push_follow_up',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer t_xxx',
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify({
+          follow_ups: [
+            { content: '/help --page=1', i18n_contents: undefined },
+            { content: '/help --page=2', i18n_contents: undefined }
+          ]
+        })
+      }
+    )
   })
 
   it('starts websocket receiving with handlers', async () => {

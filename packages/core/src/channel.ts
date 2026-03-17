@@ -61,8 +61,24 @@ export type ChannelConfig = {
   [K in ChannelType]: ChannelConfigByType<K>
 }[ChannelType]
 
+export interface ChannelSendResult {
+  messageId?: string
+}
+
+export interface ChannelFollowUp {
+  content: string
+  i18nContents?: Array<{
+    content: string
+    language: string
+  }>
+}
+
 export interface ChannelConnection<TMessage> {
-  sendMessage: (message: TMessage) => Promise<void>
+  sendMessage: (message: TMessage) => Promise<ChannelSendResult | undefined>
+  pushFollowUps?: (input: {
+    messageId: string
+    followUps: readonly ChannelFollowUp[]
+  }) => Promise<void>
   startReceiving?: (options: {
     handlers: ChannelEventHandlers
   }) => Promise<void>

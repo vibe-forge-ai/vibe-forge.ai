@@ -94,6 +94,20 @@ export interface TenantAccessTokenResponse {
   expire?: number
 }
 
+export interface LarkSendMessageResponse {
+  code?: number
+  msg?: string
+  data?: {
+    message_id?: string
+  }
+}
+
+export interface LarkPushFollowUpsResponse {
+  code?: number
+  msg?: string
+  data?: Record<string, never>
+}
+
 export interface FetchResponse {
   ok: boolean
   status?: number
