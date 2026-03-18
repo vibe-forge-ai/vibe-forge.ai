@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
-import { createSession } from '#~/api.js'
+import { createSession, getApiErrorMessage } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import type { PermissionMode } from './use-chat-permission-mode'
@@ -58,7 +58,7 @@ export function useChatSessionActions({
       } catch (err) {
         console.error(err)
         setIsCreating(false)
-        void message.error('Failed to create session')
+        void message.error(getApiErrorMessage(err, 'Failed to create session'))
       }
       return
     }
@@ -108,7 +108,7 @@ export function useChatSessionActions({
       } catch (err) {
         console.error(err)
         setIsCreating(false)
-        void message.error('Failed to create session')
+        void message.error(getApiErrorMessage(err, 'Failed to create session'))
       }
       return
     }

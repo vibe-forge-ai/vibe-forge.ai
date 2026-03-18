@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
-import { deleteSession, listSessions, updateSession } from '../api'
+import { deleteSession, getApiErrorMessage, listSessions, updateSession } from '../api'
 
 export function ArchiveView() {
   const { t } = useTranslation()
@@ -40,7 +40,7 @@ export function ArchiveView() {
       void message.success(t('common.restoreSuccess', 'Restored successfully'))
       void mutate()
     } catch (err) {
-      void message.error(t('common.restoreFailed', 'Failed to restore'))
+      void message.error(getApiErrorMessage(err, t('common.restoreFailed', 'Failed to restore')))
     }
   }
 
@@ -50,7 +50,7 @@ export function ArchiveView() {
       void message.success(t('common.deleteSuccess', 'Deleted successfully'))
       void mutate()
     } catch (err) {
-      void message.error(t('common.deleteFailed', 'Failed to delete'))
+      void message.error(getApiErrorMessage(err, t('common.deleteFailed', 'Failed to delete')))
     }
   }
 
@@ -80,7 +80,7 @@ export function ArchiveView() {
       setIsBatchMode(false)
       void mutate()
     } catch (err) {
-      void message.error(t('common.batchRestoreFailed', 'Failed to restore some sessions'))
+      void message.error(getApiErrorMessage(err, t('common.batchRestoreFailed', 'Failed to restore some sessions')))
     }
   }
 
@@ -92,7 +92,7 @@ export function ArchiveView() {
       setIsBatchMode(false)
       void mutate()
     } catch (err) {
-      void message.error(t('common.batchDeleteFailed', 'Failed to delete some sessions'))
+      void message.error(getApiErrorMessage(err, t('common.batchDeleteFailed', 'Failed to delete some sessions')))
     }
   }
 

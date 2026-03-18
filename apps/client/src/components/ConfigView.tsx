@@ -7,7 +7,7 @@ import useSWR from 'swr'
 
 import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
 
-import { getConfig, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
@@ -158,8 +158,8 @@ export function ConfigView() {
         await updateConfig(source, sectionKey, currentValue)
         lastSavedRef.current[draftKey] = currentSerialized
         await mutate()
-      } catch {
-        void message.error(t('config.saveFailed'))
+      } catch (error) {
+        void message.error(getApiErrorMessage(error, t('config.saveFailed')))
       } finally {
         savingRef.current[draftKey] = false
       }

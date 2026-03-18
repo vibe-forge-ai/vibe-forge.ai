@@ -10,6 +10,7 @@ import type { AutomationRule, AutomationRun } from '#~/api.js'
 import {
   createAutomationRule,
   deleteAutomationRule,
+  getApiErrorMessage,
   listAutomationRules,
   listAutomationRuns,
   runAutomationRule,
@@ -127,8 +128,8 @@ export function AutomationView() {
         void mutateRuns()
         setPanelMode('view')
       }
-    } catch {
-      void message.error(t('automation.saveFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('automation.saveFailed')))
     } finally {
       setSubmitting(false)
     }
@@ -143,8 +144,8 @@ export function AutomationView() {
       }
       void mutate()
       void message.success(t('automation.deleted'))
-    } catch {
-      void message.error(t('automation.deleteFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('automation.deleteFailed')))
     }
   }, [message, mutate, selectedRuleId, t])
 
@@ -157,8 +158,8 @@ export function AutomationView() {
         void mutateRuns()
         void navigate(`/session/${nextSessionId}`)
       }
-    } catch {
-      void message.error(t('automation.runFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('automation.runFailed')))
     }
   }, [message, mutateRuns, navigate, t])
 
@@ -166,8 +167,8 @@ export function AutomationView() {
     try {
       await updateAutomationRule(rule.id, { enabled })
       void mutate()
-    } catch {
-      void message.error(t('automation.toggleFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('automation.toggleFailed')))
     }
   }, [message, mutate, t])
 

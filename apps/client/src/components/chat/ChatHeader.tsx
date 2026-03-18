@@ -7,7 +7,7 @@ import { useAtomValue } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { deleteSession, updateSession } from '../../api'
+import { deleteSession, getApiErrorMessage, updateSession } from '../../api'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
@@ -68,7 +68,7 @@ export function ChatHeader({
       await updateSession(sessionId, { isStarred: !isStarred })
       void message.success(isStarred ? t('common.unstarred') : t('common.starred'))
     } catch (err) {
-      void message.error(t('common.operationFailed'))
+      void message.error(getApiErrorMessage(err, t('common.operationFailed')))
     }
   }
 
@@ -78,7 +78,7 @@ export function ChatHeader({
       await updateSession(sessionId, { isArchived: !isArchived })
       void message.success(isArchived ? t('common.restored') : t('common.archived'))
     } catch (err) {
-      void message.error(t('common.operationFailed'))
+      void message.error(getApiErrorMessage(err, t('common.operationFailed')))
     }
   }
 
@@ -257,8 +257,8 @@ export function SessionSettingsPanel({
           tags: Array.isArray(currentValue.tags) ? currentValue.tags : []
         })
         lastSavedRef.current = currentSerialized
-      } catch {
-        void message.error(t('common.operationFailed'))
+      } catch (err) {
+        void message.error(getApiErrorMessage(err, t('common.operationFailed')))
       } finally {
         savingRef.current = false
       }
@@ -292,7 +292,7 @@ export function SessionSettingsPanel({
           void message.success(t('common.deleteSuccess'))
           onClose()
         } catch (err) {
-          void message.error(t('common.deleteFailed'))
+          void message.error(getApiErrorMessage(err, t('common.deleteFailed')))
         }
       }
     })

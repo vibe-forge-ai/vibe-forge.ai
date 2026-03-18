@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import {
+  getApiErrorMessage,
   getBenchmarkResult,
   getBenchmarkRun,
   listBenchmarkCases,
@@ -88,8 +89,8 @@ export function BenchmarkView() {
       const res = await startBenchmarkRun({ category: item.category, title: item.title })
       setActiveRunId(res.run.runId)
       void message.success(t('benchmark.runStarted'))
-    } catch {
-      void message.error(t('benchmark.runFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('benchmark.runFailed')))
     }
   }, [message, t])
 
@@ -98,8 +99,8 @@ export function BenchmarkView() {
       const res = await startBenchmarkRun({ category })
       setActiveRunId(res.run.runId)
       void message.success(t('benchmark.categoryRunStarted'))
-    } catch {
-      void message.error(t('benchmark.runFailed'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('benchmark.runFailed')))
     }
   }, [message, t])
 
