@@ -43,6 +43,33 @@
   }
 }
 
+.chat-messages-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.chat-pending-session-banner {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 4px;
+  padding: 8px 14px;
+  border: 1px solid rgba(59, 130, 246, .18);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, .92), rgba(255, 255, 255, .96));
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, .08);
+
+  .material-symbols-rounded {
+    font-size: 16px;
+  }
+}
+
 .sender-container {
   flex: 0;
   display: flex;

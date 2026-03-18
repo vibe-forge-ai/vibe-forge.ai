@@ -32,10 +32,10 @@ export function useChatSessionActions({
   const isThinking = isCreating || session?.status === 'running'
 
   const send = useCallback(async (text: string) => {
-    if (text.trim() === '' || isThinking) return
+    if (text.trim() === '' || isThinking) return false
     if (!hasAvailableModels) {
       void message.warning(t('chat.modelConfigRequired'))
-      return
+      return false
     }
 
     if (!session?.id) {
@@ -55,18 +55,20 @@ export function useChatSessionActions({
         }, false)
 
         void navigate(`/session/${newSession.id}`)
+        return true
       } catch (err) {
         console.error(err)
         setIsCreating(false)
         void message.error(getApiErrorMessage(err, 'Failed to create session'))
+        return false
       }
-      return
     }
 
     connectionManager.send(session.id, {
       type: 'user_message',
       text: text.trim()
     })
+    return true
   }, [
     adapter,
     hasAvailableModels,
@@ -81,10 +83,10 @@ export function useChatSessionActions({
   ])
 
   const sendContent = useCallback(async (content: ChatMessageContent[]) => {
-    if (content.length === 0 || isThinking) return
+    if (content.length === 0 || isThinking) return false
     if (!hasAvailableModels) {
       void message.warning(t('chat.modelConfigRequired'))
-      return
+      return false
     }
 
     if (!session?.id) {
@@ -104,19 +106,20 @@ export function useChatSessionActions({
         }, false)
 
         void navigate(`/session/${newSession.id}`)
-        setIsCreating(false)
+        return true
       } catch (err) {
         console.error(err)
         setIsCreating(false)
         void message.error(getApiErrorMessage(err, 'Failed to create session'))
+        return false
       }
-      return
     }
 
     connectionManager.send(session.id, {
       type: 'user_message',
       content
     })
+    return true
   }, [
     adapter,
     hasAvailableModels,

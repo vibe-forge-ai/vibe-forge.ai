@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
@@ -32,9 +33,8 @@ export function ChatHistoryView({
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
+  setMessages,
   onClearMessages,
-  onSend,
-  onSendContent,
   placeholder,
   modelOptions,
   selectedModel,
@@ -57,9 +57,8 @@ export function ChatHistoryView({
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   onClearMessages: () => void
-  onSend: (text: string) => void
-  onSendContent: (content: ChatMessageContent[]) => void
   placeholder?: string
   modelOptions: ModelSelectGroup[]
   selectedModel?: string
@@ -74,6 +73,7 @@ export function ChatHistoryView({
   modelUnavailable: boolean
   hasAvailableModels: boolean
 }) {
+  const { t } = useTranslation()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     messagesLength: messages.length
   })
@@ -86,15 +86,49 @@ export function ChatHistoryView({
     onClearMessages
   })
   const initialScrollDoneRef = useRef(false)
+  const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
+    const id = globalThis.crypto?.randomUUID
+      ? globalThis.crypto.randomUUID()
+      : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    return {
+      id,
+      role: 'user' as const,
+      content,
+      createdAt: Date.now()
+    }
+  }
+
   const handleSend = async (text: string) => {
-    await send(text)
-    if (session?.id) {
-      onSend(text)
+    if (!session?.id) {
+      const optimisticMessage = buildUserMessage(text)
+      setMessages((prev) => [...prev, optimisticMessage])
+      const didSend = await send(text)
+      if (!didSend) {
+        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+      }
+      return
+    }
+
+    const didSend = await send(text)
+    if (didSend) {
+      setMessages((prev) => [...prev, buildUserMessage(text)])
     }
   }
   const handleSendContent = async (content: ChatMessageContent[]) => {
-    await sendContent(content)
-    onSendContent(content)
+    if (!session?.id) {
+      const optimisticMessage = buildUserMessage(content)
+      setMessages((prev) => [...prev, optimisticMessage])
+      const didSend = await sendContent(content)
+      if (!didSend) {
+        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+      }
+      return
+    }
+
+    const didSend = await sendContent(content)
+    if (didSend) {
+      setMessages((prev) => [...prev, buildUserMessage(content)])
+    }
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
@@ -116,6 +150,12 @@ export function ChatHistoryView({
     <>
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
         <div className='chat-messages-content' ref={messagesContentRef}>
+          {!session?.id && isCreating && (
+            <div className='chat-pending-session-banner'>
+              <span className='material-symbols-rounded'>hourglass_top</span>
+              <span>{t('common.creatingChat')}</span>
+            </div>
+          )}
           {renderItems.map((item, index) => {
             if (item.type === 'message') {
               return (
@@ -146,7 +186,7 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {!session?.id && (
+      {!session?.id && messages.length === 0 && (
         <div className='new-session-guide-wrapper'>
           <NewSessionGuide />
         </div>

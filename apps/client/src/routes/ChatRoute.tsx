@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 
-import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+import type { Session } from '@vibe-forge/core'
 
 import { listSessions } from '#~/api'
 import { ChatHeader } from '#~/components/chat/ChatHeader.js'
@@ -70,21 +70,10 @@ function ChatRouteView({
     hasAvailableModels,
     modelUnavailable
   } = useChatSession({ session })
-
-  const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
-    const id = globalThis.crypto?.randomUUID
-      ? globalThis.crypto.randomUUID()
-      : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    return {
-      id,
-      role: 'user' as const,
-      content,
-      createdAt: Date.now()
-    }
-  }
+  const isEmptyNewSession = !session?.id && messages.length === 0
 
   return (
-    <div className={`chat-container ${isReady ? 'ready' : ''} ${!session?.id ? 'is-new-session' : ''}`}>
+    <div className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''}`}>
       {session?.id && (
         <ChatHeader
           sessionInfo={sessionInfo}
@@ -110,9 +99,8 @@ function ChatRouteView({
           onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}
+          setMessages={setMessages}
           onClearMessages={() => setMessages([])}
-          onSend={(text) => setMessages((prev) => [...prev, buildUserMessage(text)])}
-          onSendContent={(content) => setMessages((prev) => [...prev, buildUserMessage(content)])}
           placeholder={placeholder}
           modelOptions={modelOptions}
           selectedModel={selectedModel}
