@@ -213,7 +213,11 @@ export function parseWorkspacePatterns(workspaceConfig) {
     .filter(Boolean);
 }
 
-export async function expandWorkspaceDirs(repoRoot, workspacePatterns, fsOps = defaultFs) {
+export async function expandWorkspaceDirs(
+  repoRoot,
+  workspacePatterns,
+  fsOps = defaultFs,
+) {
   const workspaceDirs = new Set();
 
   for (const pattern of workspacePatterns) {
@@ -245,7 +249,11 @@ export async function loadWorkspacePackages(repoRoot, fsOps = defaultFs) {
     path.join(repoRoot, "pnpm-workspace.yaml"),
   );
   const workspacePatterns = parseWorkspacePatterns(workspaceConfig);
-  const workspaceDirs = await expandWorkspaceDirs(repoRoot, workspacePatterns, fsOps);
+  const workspaceDirs = await expandWorkspaceDirs(
+    repoRoot,
+    workspacePatterns,
+    fsOps,
+  );
 
   const packages = new Map();
 
@@ -321,7 +329,9 @@ function normalizeWorkspaceRange(rawRange) {
   if (!rawRange) {
     return "";
   }
-  return String(rawRange).replace(/^workspace:/, "").trim();
+  return String(rawRange)
+    .replace(/^workspace:/, "")
+    .trim();
 }
 
 function isVersionSatisfied(version, rawRange) {
@@ -353,9 +363,11 @@ function isVersionSatisfied(version, rawRange) {
     if (base.minor > 0) {
       return parsedVersion.major === 0 && parsedVersion.minor === base.minor;
     }
-    return parsedVersion.major === 0
-      && parsedVersion.minor === 0
-      && parsedVersion.patch === base.patch;
+    return (
+      parsedVersion.major === 0 &&
+      parsedVersion.minor === 0 &&
+      parsedVersion.patch === base.patch
+    );
   }
 
   if (normalizedRange.startsWith("~")) {
@@ -363,7 +375,9 @@ function isVersionSatisfied(version, rawRange) {
     if (!base || compareSemver(parsedVersion, base) < 0) {
       return false;
     }
-    return parsedVersion.major === base.major && parsedVersion.minor === base.minor;
+    return (
+      parsedVersion.major === base.major && parsedVersion.minor === base.minor
+    );
   }
 
   return false;
@@ -457,7 +471,9 @@ export function createPublishPlan(packages, options) {
     for (const name of requestedNames) {
       const pkg = packages.get(name);
       if (pkg?.private) {
-        throw new Error(`包 ${name} 为 private，若要包含请传入 --include-private`);
+        throw new Error(
+          `包 ${name} 为 private，若要包含请传入 --include-private`,
+        );
       }
     }
   }
@@ -476,7 +492,10 @@ export function createPublishPlan(packages, options) {
     throw new Error("没有可发布的包");
   }
 
-  const reverseDependencies = buildReverseDependencies(packages, options.includePrivate);
+  const reverseDependencies = buildReverseDependencies(
+    packages,
+    options.includePrivate,
+  );
   const adjacency = new Map();
   const indegree = new Map();
   const internalDependencies = new Map();
@@ -506,7 +525,9 @@ export function createPublishPlan(packages, options) {
 
         const depPkg = packages.get(depName);
         if (depPkg?.private && !options.includePrivate) {
-          throw new Error(`包 ${name} 依赖 private 包 ${depName}，无法生成发布计划`);
+          throw new Error(
+            `包 ${name} 依赖 private 包 ${depName}，无法生成发布计划`,
+          );
         }
 
         internalDependencies.get(name).push(depName);
@@ -556,9 +577,15 @@ export function createPublishPlan(packages, options) {
       version,
       nextVersion: options.bump ? bumpVersion(version, options.bump) : "",
       private: Boolean(pkg?.private),
-      internalDependencies: Array.from(new Set(internalDependencies.get(name) ?? [])).sort(),
+      internalDependencies: Array.from(
+        new Set(internalDependencies.get(name) ?? []),
+      ).sort(),
       impactedDependents: options.bump
-        ? analyzeDependentImpacts(name, bumpVersion(version, options.bump), reverseDependencies)
+        ? analyzeDependentImpacts(
+            name,
+            bumpVersion(version, options.bump),
+            reverseDependencies,
+          )
         : [],
     };
   });
@@ -579,10 +606,7 @@ export function formatPlan(plan, repoRoot, options) {
       : "执行发布"
     : "仅生成计划";
 
-  const lines = [
-    `模式: ${mode}`,
-    `包数量: ${plan.items.length}`,
-  ];
+  const lines = [`模式: ${mode}`, `包数量: ${plan.items.length}`];
 
   if (options.bump) {
     lines.push(`版本升级: ${options.bump}`);
@@ -602,12 +626,14 @@ export function formatPlan(plan, repoRoot, options) {
         ? `${item.version} -> ${item.nextVersion}`
         : item.version
       : "未声明版本";
-    const depsPart = item.internalDependencies.length > 0
-      ? ` | 依赖: ${item.internalDependencies.join(", ")}`
-      : "";
-    const impactsPart = item.impactedDependents.length > 0
-      ? ` | 可能影响: ${item.impactedDependents.map((dependent) => `${dependent.name}(${dependent.range})`).join(", ")}`
-      : "";
+    const depsPart =
+      item.internalDependencies.length > 0
+        ? ` | 依赖: ${item.internalDependencies.join(", ")}`
+        : "";
+    const impactsPart =
+      item.impactedDependents.length > 0
+        ? ` | 可能影响: ${item.impactedDependents.map((dependent) => `${dependent.name}(${dependent.range})`).join(", ")}`
+        : "";
     lines.push(
       `${index + 1}. ${item.name}@${versionPart} (${path.relative(repoRoot, item.dir)})${depsPart}${impactsPart}`,
     );
@@ -619,7 +645,11 @@ export function formatPlan(plan, repoRoot, options) {
 export function serializePlan(plan, repoRoot, options) {
   return {
     summary: {
-      mode: options.publish ? (options.dryRun ? "publish-dry-run" : "publish") : "plan",
+      mode: options.publish
+        ? options.dryRun
+          ? "publish-dry-run"
+          : "publish"
+        : "plan",
       packageCount: plan.items.length,
       skippedPrivate: plan.skippedPrivate,
       bump: options.bump || null,
@@ -637,7 +667,12 @@ export function serializePlan(plan, repoRoot, options) {
   };
 }
 
-export async function applyVersionBump(plan, packages, kind, fsOps = defaultFs) {
+export async function applyVersionBump(
+  plan,
+  packages,
+  kind,
+  fsOps = defaultFs,
+) {
   const updates = [];
 
   for (const item of plan.items) {
@@ -683,7 +718,12 @@ export async function promptRetry(pkgName, options, io = process) {
   return normalized === "y" || normalized === "yes";
 }
 
-export async function executePublishPlan(plan, options, runCommand = spawnSync, retryPrompt = promptRetry) {
+export async function executePublishPlan(
+  plan,
+  options,
+  runCommand = spawnSync,
+  retryPrompt = promptRetry,
+) {
   const failures = [];
   const attempts = [];
   const args = buildPublishArgs(options);
@@ -733,7 +773,10 @@ export async function executePublishPlan(plan, options, runCommand = spawnSync, 
   };
 }
 
-export async function runPublishPlanCli(argv = process.argv.slice(2), runtime = {}) {
+export async function runPublishPlanCli(
+  argv = process.argv.slice(2),
+  runtime = {},
+) {
   const repoRoot = runtime.repoRoot ?? process.cwd();
   const stdout = runtime.stdout ?? process.stdout;
   const fsOps = runtime.fsOps ?? defaultFs;
@@ -753,7 +796,9 @@ export async function runPublishPlanCli(argv = process.argv.slice(2), runtime = 
   const plan = createPublishPlan(packages, options);
 
   if (options.json) {
-    stdout.write(`${JSON.stringify(serializePlan(plan, repoRoot, options), null, 2)}\n`);
+    stdout.write(
+      `${JSON.stringify(serializePlan(plan, repoRoot, options), null, 2)}\n`,
+    );
   } else {
     stdout.write(`${formatPlan(plan, repoRoot, options)}\n`);
   }
@@ -765,7 +810,12 @@ export async function runPublishPlanCli(argv = process.argv.slice(2), runtime = 
 
   let publishResult = null;
   if (options.publish) {
-    publishResult = await executePublishPlan(plan, options, runCommand, retryPrompt);
+    publishResult = await executePublishPlan(
+      plan,
+      options,
+      runCommand,
+      retryPrompt,
+    );
     if (publishResult.failures.length > 0) {
       stdout.write("发布失败的包:\n");
       for (const item of publishResult.failures) {
