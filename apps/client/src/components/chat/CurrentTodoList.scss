@@ -1,4 +1,22 @@
 .current-todo-container {
+  --todo-panel-bg: var(--bg-color);
+  --todo-panel-muted-bg: var(--tag-bg);
+  --todo-panel-border: var(--border-color);
+  --todo-panel-hover-border: var(--primary-color);
+  --todo-panel-shadow: 0 2px 4px -1px rgba(0, 0, 0, .06);
+  --todo-overlay-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+  --todo-track-bg: var(--tag-hover-bg);
+  --todo-text: var(--text-color);
+  --todo-sub-text: var(--sub-text-color);
+  --todo-pending-icon: var(--placeholder-color);
+  --todo-hover-bg: var(--tag-bg);
+  --todo-priority-high-bg: #fee2e2;
+  --todo-priority-high-text: #ef4444;
+  --todo-priority-medium-bg: #fef3c7;
+  --todo-priority-medium-text: #d97706;
+  --todo-priority-low-bg: #d1fae5;
+  --todo-priority-low-text: #10b981;
+
   position: relative;
   margin: 12px 24px 0 24px;
   z-index: 10;
@@ -9,31 +27,31 @@
     opacity: .6;
     .todo-progress-bar {
       cursor: default;
-      background: #f9fafb;
+      background: var(--todo-panel-muted-bg);
       box-shadow: none;
       &:hover {
-        border-color: #e5e7eb;
+        border-color: var(--todo-panel-border);
       }
       .progress-info .material-symbols-rounded {
-        color: #9ca3af;
+        color: var(--todo-pending-icon);
       }
     }
   }
 
   .todo-progress-bar {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--todo-panel-bg);
+    border: 1px solid var(--todo-panel-border);
     border-radius: 8px;
     padding: 8px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, .06);
+    box-shadow: var(--todo-panel-shadow);
     cursor: pointer;
     transition: all .2s ease;
 
     &:hover {
-      border-color: #3b82f6;
+      border-color: var(--todo-panel-hover-border);
     }
 
     .progress-info {
@@ -44,26 +62,26 @@
 
       .material-symbols-rounded {
         font-size: 20px;
-        color: #3b82f6;
+        color: var(--primary-color);
       }
 
       .text {
         font-size: 13px;
         font-weight: 500;
-        color: #374151;
+        color: var(--todo-text);
       }
     }
 
     .progress-track {
       flex: 1;
       height: 6px;
-      background: #f3f4f6;
+      background: var(--todo-track-bg);
       border-radius: 3px;
       overflow: hidden;
 
       .progress-fill {
         height: 100%;
-        background: #3b82f6;
+        background: var(--primary-color);
         transition: width .3s ease;
       }
     }
@@ -73,12 +91,12 @@
       border: none;
       padding: 0;
       cursor: pointer;
-      color: #9ca3af;
+      color: var(--todo-pending-icon);
       display: flex;
       align-items: center;
 
       &:hover {
-        color: #374151;
+        color: var(--todo-text);
       }
     }
   }
@@ -88,10 +106,10 @@
     bottom: calc(100% + 8px);
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--todo-panel-bg);
+    border: 1px solid var(--todo-panel-border);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    box-shadow: var(--todo-overlay-shadow);
     animation: slideUp .3s cubic-bezier(.4, 0, .2, 1);
     overflow: hidden;
     z-index: 100;
@@ -109,7 +127,7 @@
         transition: background-color .2s;
 
         &:hover {
-          background-color: #f9fafb;
+          background-color: var(--todo-hover-bg);
         }
 
         .icon {
@@ -130,21 +148,21 @@
 
         &.status-in_progress {
           .icon {
-            color: #3b82f6;
+            color: var(--primary-color);
             animation: spin 2s linear infinite;
           }
           .text {
-            color: #111827;
+            color: var(--todo-text);
             font-weight: 500;
           }
         }
 
         &.status-pending {
           .icon {
-            color: #9ca3af;
+            color: var(--todo-pending-icon);
           }
           .text {
-            color: #4b5563;
+            color: var(--todo-sub-text);
           }
         }
 
@@ -167,22 +185,33 @@
             font-weight: 600;
 
             &.high {
-              background: #fee2e2;
-              color: #ef4444;
+              background: var(--todo-priority-high-bg);
+              color: var(--todo-priority-high-text);
             }
             &.medium {
-              background: #fef3c7;
-              color: #d97706;
+              background: var(--todo-priority-medium-bg);
+              color: var(--todo-priority-medium-text);
             }
             &.low {
-              background: #d1fae5;
-              color: #10b981;
+              background: var(--todo-priority-low-bg);
+              color: var(--todo-priority-low-text);
             }
           }
         }
       }
     }
   }
+}
+
+html.dark .current-todo-container {
+  --todo-panel-shadow: 0 8px 24px rgba(0, 0, 0, .24);
+  --todo-overlay-shadow: 0 16px 36px rgba(0, 0, 0, .32);
+  --todo-priority-high-bg: rgba(248, 113, 113, .16);
+  --todo-priority-high-text: #fca5a5;
+  --todo-priority-medium-bg: rgba(245, 158, 11, .16);
+  --todo-priority-medium-text: #fcd34d;
+  --todo-priority-low-bg: rgba(45, 212, 191, .16);
+  --todo-priority-low-text: #5eead4;
 }
 
 @keyframes slideDown {
