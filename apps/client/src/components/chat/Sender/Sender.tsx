@@ -6,12 +6,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { AskUserQuestionParams, ChatMessageContent, SessionInfo, SessionStatus } from '@vibe-forge/core'
-import type { CompletionItem } from './CompletionMenu'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import type { AskUserQuestionParams, ChatMessageContent, SessionInfo, SessionStatus } from '@vibe-forge/core'
+import { isShortcutMatch } from '../../../utils/shortcutUtils'
+import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
 import { ThinkingStatus } from './ThinkingStatus'
-import { isShortcutMatch } from '../../../utils/shortcutUtils'
 
 const { TextArea } = Input
 
@@ -41,6 +41,8 @@ export function Sender({
   onInterrupt,
   onClear,
   sessionInfo,
+  connectionError,
+  onRetryConnection,
   interactionRequest,
   onInteractionResponse,
   placeholder,
@@ -61,6 +63,8 @@ export function Sender({
   onInterrupt: () => void
   onClear?: () => void
   sessionInfo?: SessionInfo | null
+  connectionError?: string | null
+  onRetryConnection?: () => void
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void
   placeholder?: string
@@ -354,7 +358,9 @@ export function Sender({
       handleSend()
       return
     }
-    if (clearInputShortcut != null && clearInputShortcut.trim() !== '' && isShortcutMatch(e, clearInputShortcut, isMac)) {
+    if (
+      clearInputShortcut != null && clearInputShortcut.trim() !== '' && isShortcutMatch(e, clearInputShortcut, isMac)
+    ) {
       e.preventDefault()
       clearInputValue()
       return
@@ -544,6 +550,20 @@ export function Sender({
         </div>
       )}
       <div className='chat-input-container'>
+        {connectionError && connectionError.trim() !== '' && (
+          <div className='connection-error-banner'>
+            <div className='connection-error-content'>
+              <span className='material-symbols-rounded'>error</span>
+              <div className='connection-error-copy'>
+                <div className='connection-error-title'>{t('chat.connectionErrorTitle')}</div>
+                <div className='connection-error-message'>{connectionError}</div>
+              </div>
+            </div>
+            <Button size='small' onClick={onRetryConnection}>
+              {t('chat.retryConnection')}
+            </Button>
+          </div>
+        )}
         {modelUnavailable && (
           <div className='model-unavailable'>
             {t('chat.modelConfigRequired')}
@@ -701,7 +721,9 @@ export function Sender({
             />
 
             <div
-              className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${isThinking ? 'thinking' : ''} ${modelUnavailable ? 'disabled' : ''}`}
+              className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${
+                isThinking ? 'thinking' : ''
+              } ${modelUnavailable ? 'disabled' : ''}`}
               onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : handleSend)}
             >
               <span className='material-symbols-rounded'>

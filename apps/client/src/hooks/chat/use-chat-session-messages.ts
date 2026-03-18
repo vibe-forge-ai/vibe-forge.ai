@@ -1,5 +1,6 @@
 import { App } from 'antd'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 
 import { getSessionMessages } from '#~/api.js'
@@ -47,20 +48,32 @@ export function useChatSessionMessages({
   adapter?: string
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
-  const { message } = App.useApp()
+  const { t } = useTranslation()
   const { mutate } = useSWRConfig()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [isReady, setIsReady] = useState(false)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const isInitialLoadRef = useRef<boolean>(true)
   const lastConnectedModelRef = useRef<string | undefined>(undefined)
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
+  const expectedCloseRef = useRef(false)
+
+  const retryConnection = useCallback(() => {
+    if (session?.id == null || session.id === '') return
+    expectedCloseRef.current = true
+    setConnectionError(null)
+    connectionManager.close(session.id)
+    setRetryCount((count) => count + 1)
+  }, [session?.id])
 
   useEffect(() => {
     setMessages([])
     setSessionInfo(null)
     setIsReady(false)
+    setConnectionError(null)
     setInteractionRequest(null)
     isInitialLoadRef.current = true
 
@@ -68,6 +81,7 @@ export function useChatSessionMessages({
       setIsReady(true)
       lastConnectedModelRef.current = undefined
       lastConnectedPermissionModeRef.current = undefined
+      lastConnectedAdapterRef.current = undefined
       return
     }
 
@@ -150,6 +164,8 @@ export function useChatSessionMessages({
       normalizedAdapter !== lastConnectedAdapterRef.current &&
       session?.status !== 'running'
     if (modelChanged || permissionModeChanged || adapterChanged) {
+      expectedCloseRef.current = true
+      setConnectionError(null)
       connectionManager.send(session.id, { type: 'terminate_session' })
       connectionManager.close(session.id)
     }
@@ -173,11 +189,13 @@ export function useChatSessionMessages({
 
       cleanup = connectionManager.connect(session.id, {
         onOpen() {
+          expectedCloseRef.current = false
+          setConnectionError(null)
         },
         onMessage(data: WSEvent) {
           if (isDisposed) return
           if (data.type === 'error') {
-            void message.error(data.message)
+            setConnectionError(data.message)
             return
           }
 
@@ -241,7 +259,17 @@ export function useChatSessionMessages({
             setInteractionRequest({ id: data.id, payload: data.payload })
           }
         },
+        onError() {
+          if (isDisposed) return
+          setConnectionError(t('chat.connectionError'))
+        },
         onClose() {
+          if (isDisposed) return
+          if (expectedCloseRef.current) {
+            expectedCloseRef.current = false
+            return
+          }
+          setConnectionError((current) => current ?? t('chat.connectionClosed'))
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
     }, modelChanged ? 200 : 100)
@@ -251,12 +279,24 @@ export function useChatSessionMessages({
       clearTimeout(timer)
       cleanup?.()
     }
-  }, [adapter, message, modelForQuery, mutate, permissionMode, session?.id, session?.status, setInteractionRequest])
+  }, [
+    adapter,
+    modelForQuery,
+    mutate,
+    permissionMode,
+    retryCount,
+    session?.id,
+    session?.status,
+    setInteractionRequest,
+    t
+  ])
 
   return {
     messages,
     setMessages,
     sessionInfo,
-    isReady
+    isReady,
+    connectionError,
+    retryConnection
   }
 }

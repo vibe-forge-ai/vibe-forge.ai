@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
 import { getConfig } from '#~/api.js'
+import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
 
 export interface ModelSelectOption {
   value: string
@@ -139,19 +139,39 @@ export function useChatModels({
     formatModelWithService(selectedModel)
   ), [formatModelWithService, selectedModel])
 
+  const resolveSelectableModel = useCallback((value?: string) => {
+    const normalizedValue = typeof value === 'string' ? value.trim() : ''
+    if (normalizedValue !== '') {
+      if (availableModelSet.has(normalizedValue) || builtinModelSet.has(normalizedValue)) {
+        return normalizedValue
+      }
+
+      const rawModel = normalizedValue.includes(',')
+        ? normalizedValue.split(/,(.+)/)[1]?.trim()
+        : undefined
+
+      if (rawModel && (availableModelSet.has(rawModel) || builtinModelSet.has(rawModel))) {
+        return rawModel
+      }
+    }
+
+    return resolvedDefaultModel
+  }, [availableModelSet, builtinModelSet, resolvedDefaultModel])
+
+  const updateSelectedModel = useCallback((value?: string) => {
+    setSelectedModel((prev) => {
+      const nextValue = resolveSelectableModel(value)
+      return nextValue === prev ? prev : nextValue
+    })
+  }, [resolveSelectableModel])
+
   useEffect(() => {
     if (!hasAvailableModels) {
       setSelectedModel(undefined)
       return
     }
-    setSelectedModel((prev) => {
-      if (prev != null) {
-        const isValid = availableModelSet.has(prev) || builtinModelSet.has(prev)
-        if (isValid) return prev
-      }
-      return resolvedDefaultModel
-    })
-  }, [availableModelSet, builtinModelSet, hasAvailableModels, resolvedDefaultModel, selectedAdapter])
+    setSelectedModel((prev) => resolveSelectableModel(prev))
+  }, [hasAvailableModels, resolveSelectableModel, selectedAdapter])
 
   useEffect(() => {
     try {
@@ -290,11 +310,13 @@ export function useChatModels({
             <div className='model-group-title'>{adapterTitle}</div>
           </div>
         ),
-        options: models.map(m => buildOption({
-          value: m.value,
-          title: m.title,
-          description: m.description
-        }))
+        options: models.map(m =>
+          buildOption({
+            value: m.value,
+            title: m.title,
+            description: m.description
+          })
+        )
       })
     }
 
@@ -312,7 +334,7 @@ export function useChatModels({
   return {
     selectedModel,
     selectedModelWithService,
-    setSelectedModel,
+    setSelectedModel: updateSelectedModel,
     modelOptions,
     hasAvailableModels
   }

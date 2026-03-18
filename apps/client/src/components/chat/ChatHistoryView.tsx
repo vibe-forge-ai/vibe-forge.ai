@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 
-import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session, SessionInfo } from '@vibe-forge/core'
-import { CurrentTodoList } from './CurrentTodoList'
-import { MessageItem } from './Messages/MessageItem'
-import { NewSessionGuide } from './NewSessionGuide'
-import { Sender } from './Sender/Sender'
-import { ToolGroup } from './tools/core/ToolGroup'
-import { processMessages } from './Messages/message-utils'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
+import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session, SessionInfo } from '@vibe-forge/core'
+import { CurrentTodoList } from './CurrentTodoList'
+import { MessageItem } from './Messages/MessageItem'
+import { processMessages } from './Messages/message-utils'
+import { NewSessionGuide } from './NewSessionGuide'
+import { Sender } from './Sender/Sender'
+import { ToolGroup } from './tools/core/ToolGroup'
 
 interface ModelSelectOption {
   value: string
@@ -27,6 +27,8 @@ export function ChatHistoryView({
   messages,
   session,
   sessionInfo,
+  connectionError,
+  onRetryConnection,
   interactionRequest,
   onInteractionResponse,
   onClearMessages,
@@ -50,6 +52,8 @@ export function ChatHistoryView({
   messages: ChatMessage[]
   session?: Session
   sessionInfo: SessionInfo | null
+  connectionError?: string | null
+  onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
   onClearMessages: () => void
@@ -156,6 +160,8 @@ export function ChatHistoryView({
           onInterrupt={interrupt}
           onClear={clearMessages}
           sessionInfo={sessionInfo}
+          connectionError={connectionError}
+          onRetryConnection={onRetryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={onInteractionResponse}
           placeholder={placeholder}

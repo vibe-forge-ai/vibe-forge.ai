@@ -1,10 +1,10 @@
-import { createElement, type ReactNode } from 'react'
+import { type ReactNode, createElement } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
-import type { ConfigResponse } from '@vibe-forge/core'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
+import type { ConfigResponse } from '@vibe-forge/core'
 
 const ADAPTER_STORAGE_KEY = 'vf_chat_adapter'
 
@@ -25,6 +25,22 @@ export function useChatAdapter() {
   }, [configRes?.sources?.merged?.adapters])
 
   const defaultAdapter = configRes?.sources?.merged?.general?.defaultAdapter
+
+  const resolveAdapter = (value?: string) => {
+    const normalizedValue = typeof value === 'string' ? value.trim() : ''
+    const keys = Object.keys(mergedAdapters)
+    if (keys.length === 0) return undefined
+    if (normalizedValue !== '' && keys.includes(normalizedValue)) return normalizedValue
+    if (defaultAdapter && keys.includes(defaultAdapter as string)) return defaultAdapter as string
+    return keys[0]
+  }
+
+  const updateSelectedAdapter = (value?: string) => {
+    setSelectedAdapter((prev) => {
+      const nextValue = resolveAdapter(value)
+      return nextValue === prev ? prev : nextValue
+    })
+  }
 
   const adapterOptions = useMemo<Array<{ value: string; label: ReactNode }>>(() => {
     const keys = Object.keys(mergedAdapters)
@@ -55,11 +71,7 @@ export function useChatAdapter() {
       setSelectedAdapter(undefined)
       return
     }
-    setSelectedAdapter((prev) => {
-      if (prev != null && keys.includes(prev)) return prev
-      if (defaultAdapter && keys.includes(defaultAdapter as string)) return defaultAdapter as string
-      return keys[0]
-    })
+    setSelectedAdapter((prev) => resolveAdapter(prev))
   }, [defaultAdapter, mergedAdapters])
 
   // Persist to localStorage
@@ -75,7 +87,7 @@ export function useChatAdapter() {
 
   return {
     selectedAdapter,
-    setSelectedAdapter,
+    setSelectedAdapter: updateSelectedAdapter,
     adapterOptions
   }
 }

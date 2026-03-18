@@ -1,11 +1,11 @@
 import './Chat.scss'
 
+import { useChatSession } from '#~/hooks/chat/use-chat-session'
 import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
 import { ChatHeader } from './chat/ChatHeader.js'
 import { ChatHistoryView } from './chat/ChatHistoryView.js'
 import { ChatSettingsView } from './chat/ChatSettingsView.js'
 import { ChatTimelineView } from './chat/ChatTimelineView.js'
-import { useChatSession } from '#~/hooks/chat/use-chat-session'
 
 export function Chat({
   session
@@ -17,6 +17,8 @@ export function Chat({
     sessionInfo,
     interactionRequest,
     isReady,
+    connectionError,
+    retryConnection,
     activeView,
     setActiveView,
     handleInteractionResponse,
@@ -70,6 +72,8 @@ export function Chat({
           messages={messages}
           session={session}
           sessionInfo={sessionInfo}
+          connectionError={connectionError}
+          onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}
           onClearMessages={() => setMessages([])}
