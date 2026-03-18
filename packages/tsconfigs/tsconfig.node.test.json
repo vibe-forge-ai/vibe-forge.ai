@@ -7,6 +7,7 @@
   ],
   "include": [
     "../../apps/cli/__tests__/**/*",
-    "../../apps/server/__tests__/**/*"
+    "../../apps/server/__tests__/**/*",
+    "../../scripts/__tests__/**/*"
   ]
 }
