@@ -7,7 +7,7 @@ import { command, requiredArg, restArg } from './command-system'
 
 defineMessages('zh', {
   'cmd.session.description': '查看当前会话状态',
-  'cmd.reset.description': '解绑当前会话',
+  'cmd.reset.description': '归档并解绑当前会话',
   'cmd.stop.description': '停止当前运行中的会话',
   'cmd.permissionMode.description': '设置当前会话权限模式并立即重启',
   'cmd.get.description': '查看当前会话的模型、适配器或权限模式',
@@ -43,7 +43,7 @@ defineMessages('zh', {
   'session.starred': ({ starred }) => `星标：${starred}`,
   'session.archived': ({ archived }) => `归档：${archived}`,
   'session.tags': ({ tags }) => `标签：${tags}`,
-  'reset.success': '已解绑当前会话，可以继续对话创建新会话。',
+  'reset.success': '已归档并解绑当前会话，可以继续对话创建新会话。',
   'stop.noSession': '当前频道没有可停止的会话。',
   'stop.notRunning': ({ status }) => `当前会话状态为 ${status}，无需停止。`,
   'stop.success': '已停止当前会话。',
@@ -55,7 +55,7 @@ defineMessages('zh', {
 
 defineMessages('en', {
   'cmd.session.description': 'Show current session status',
-  'cmd.reset.description': 'Unbind current session',
+  'cmd.reset.description': 'Archive and unbind current session',
   'cmd.stop.description': 'Stop the current running session',
   'cmd.permissionMode.description': 'Set session permission mode and restart',
   'cmd.get.description': 'View current session model, adapter, or permission mode',
@@ -91,7 +91,7 @@ defineMessages('en', {
   'session.starred': ({ starred }) => `Starred: ${starred}`,
   'session.archived': ({ archived }) => `Archived: ${archived}`,
   'session.tags': ({ tags }) => `Tags: ${tags}`,
-  'reset.success': 'Session unbound. You can continue chatting to create a new session.',
+  'reset.success': 'Session archived and unbound. You can continue chatting to create a new session.',
   'stop.noSession': 'No active session to stop.',
   'stop.notRunning': ({ status }) => `Session status is ${status}, no need to stop.`,
   'stop.success': 'Session stopped.',

@@ -4,6 +4,7 @@ import type { ChannelBaseConfig, ChannelConnection, ChannelInboundEvent } from '
 import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
+import { notifySessionUpdated } from '#~/services/session/runtime.js'
 
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
@@ -46,6 +47,13 @@ export const handleInboundEvent = async (
     resetSession: () => {
       const { sessionId } = ctx
       if (sessionId) {
+        const updatedIds = getDb().updateSessionArchivedWithChildren(sessionId, true)
+        for (const updatedId of updatedIds) {
+          const updatedSession = getDb().getSession(updatedId)
+          if (updatedSession != null) {
+            notifySessionUpdated(updatedId, updatedSession)
+          }
+        }
         getDb().deleteChannelSessionBySessionId(sessionId)
         deleteBinding(sessionId)
         ctx.sessionId = undefined

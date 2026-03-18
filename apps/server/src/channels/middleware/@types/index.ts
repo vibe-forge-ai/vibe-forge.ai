@@ -39,7 +39,7 @@ export interface ChannelContext {
   // ── session operations ──
   /** Get the session bound to the current channel, or undefined */
   getBoundSession: () => Session | undefined
-  /** Unbind the current session (delete DB record and binding) */
+  /** Archive and unbind the current session */
   resetSession: () => void
   /** Stop the running session (kill the process) */
   stopSession: () => void

@@ -32,6 +32,7 @@ vi.mock('#~/services/session/index.js', () => ({
 const deleteChannelSessionBySessionId = vi.fn()
 const getSession = vi.fn()
 const updateSession = vi.fn()
+const updateSessionArchivedWithChildren = vi.fn()
 
 const makeInbound = (overrides: Record<string, unknown> = {}) => ({
   channelType: 'lark',
@@ -73,6 +74,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
   if (!overrides.resetSession) {
     ctx.resetSession = vi.fn(() => {
       if (ctx.sessionId) {
+        updateSessionArchivedWithChildren(ctx.sessionId, true)
         deleteChannelSessionBySessionId(ctx.sessionId)
         deleteBinding(ctx.sessionId)
         ctx.sessionId = undefined
@@ -119,7 +121,8 @@ beforeEach(() => {
   vi.mocked(getDb).mockReturnValue({
     deleteChannelSessionBySessionId,
     getSession,
-    updateSession
+    updateSession,
+    updateSessionArchivedWithChildren
   } as any)
 })
 
@@ -251,11 +254,12 @@ describe('/session command', () => {
 // ── /reset ─────────────────────────────────────────────────────────────────
 
 describe('/reset command — no admins configured', () => {
-  it('deletes the session and sends success message', async () => {
+  it('archives and unbinds the session and sends success message', async () => {
     const next = vi.fn()
     const ctx = makeCtx({ commandText: '/reset' })
     await channelCommandMiddleware(ctx, next)
 
+    expect(updateSessionArchivedWithChildren).toHaveBeenCalledWith('sess-abc', true)
     expect(deleteChannelSessionBySessionId).toHaveBeenCalledWith('sess-abc')
     expect(deleteBinding).toHaveBeenCalledWith('sess-abc')
     expect(ctx.reply).toHaveBeenCalledOnce()
@@ -272,6 +276,7 @@ describe('/reset command — no admins configured', () => {
     const ctx = makeCtx({ commandText: '/reset', sessionId: undefined })
     await channelCommandMiddleware(ctx, vi.fn())
 
+    expect(updateSessionArchivedWithChildren).not.toHaveBeenCalled()
     expect(deleteChannelSessionBySessionId).not.toHaveBeenCalled()
     expect(deleteBinding).not.toHaveBeenCalled()
     expect(ctx.reply).toHaveBeenCalledOnce()
@@ -300,6 +305,7 @@ describe('/reset command — admins configured', () => {
     })
     await channelCommandMiddleware(ctx, vi.fn())
 
+    expect(updateSessionArchivedWithChildren).toHaveBeenCalledWith('sess-abc', true)
     expect(deleteChannelSessionBySessionId).toHaveBeenCalledWith('sess-abc')
     expect(ctx.reply).toHaveBeenCalledOnce()
   })
