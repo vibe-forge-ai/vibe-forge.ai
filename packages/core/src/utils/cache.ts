@@ -46,6 +46,13 @@ export const getCache = async <K extends keyof Cache>(
   key: K
 ): Promise<Cache[K] | undefined> => {
   const cachePath = getCachePath(cwd, taskId, sessionId, key)
-  await fs.access(cachePath)
+  try {
+    await fs.access(cachePath)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined
+    }
+    throw error
+  }
   return JSON.parse(await fs.readFile(cachePath, 'utf-8'))
 }

@@ -2,11 +2,13 @@ import process from 'node:process'
 
 import type { Command } from 'commander'
 
+import type { ChatMessage } from '@vibe-forge/core'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { callHook } from '@vibe-forge/core/utils/api'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extraOptions } from './@core/extra-options'
+import { extractTextFromMessage } from '#~/mcp-sync/index.js'
 
 interface RunOptions {
   print: boolean
@@ -48,6 +50,7 @@ export function registerRunCommand(program: Command) {
     .option('--exclude-skill <skill...>', 'Exclude skill')
     .action(async (descriptionArgs: string[], opts: RunOptions) => {
       const description = descriptionArgs.join(' ')
+      let lastAssistantText: string | undefined
 
       if (opts.spec && opts.entity) {
         console.error('Error: --spec and --entity are mutually exclusive.')
@@ -120,13 +123,19 @@ export function registerRunCommand(program: Command) {
         extraOptions,
         onEvent: (event) => {
           if (opts.print) {
+            if (event.type === 'message') {
+              lastAssistantText = getPrintableAssistantText(event.data) ?? lastAssistantText
+            }
             switch (opts.outputFormat) {
               case 'stream-json':
                 console.log(JSON.stringify(event, null, 2))
                 break
               case 'text':
                 if (event.type === 'stop') {
-                  console.log(event.data?.content)
+                  const output = resolvePrintableStopText(event.data, lastAssistantText)
+                  if (output != null) {
+                    console.log(output)
+                  }
                   session.kill()
                   process.exit(0)
                 }
@@ -147,6 +156,18 @@ export function registerRunCommand(program: Command) {
       })
     })
 }
+
+export const getPrintableAssistantText = (message: ChatMessage | undefined) => {
+  if (message?.role !== 'assistant') return undefined
+
+  const text = extractTextFromMessage(message).trim()
+  return text === '' ? undefined : text
+}
+
+export const resolvePrintableStopText = (
+  message: ChatMessage | undefined,
+  lastAssistantText: string | undefined
+) => getPrintableAssistantText(message) ?? lastAssistantText
 
 function mergeListConfig(
   config: { include?: string[]; exclude?: string[] } | undefined,

@@ -11,6 +11,9 @@ import { AgentMessageAccumulator, CommandOutputAccumulator, handleIncomingNotifi
 import { CodexRpcClient } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy, CodexThread, CodexTurn } from '#~/types.js'
 
+type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
+type CodexOutboundApprovalPolicy = 'never' | 'untrusted' | 'on-request'
+
 /**
  * Map a single vibe-forge `AdapterMessageContent` item to zero or one Codex input items.
  */
@@ -39,10 +42,20 @@ function buildSpawnEnv(env: AdapterCtx['env']): NodeJS.ProcessEnv {
   }
 }
 
-function resolveApprovalPolicy(permissionMode: AdapterQueryOptions['permissionMode']): string {
+function resolveApprovalPolicy(permissionMode: AdapterQueryOptions['permissionMode']): CodexApprovalPolicy {
   if (permissionMode === 'bypassPermissions' || permissionMode === 'dontAsk') return 'never'
   if (permissionMode === 'plan') return 'onRequest'
   return 'unlessTrusted' // 'default' | 'acceptEdits' | undefined
+}
+
+function toCodexOutboundApprovalPolicy(
+  approvalPolicy: CodexApprovalPolicy
+): CodexOutboundApprovalPolicy {
+  return approvalPolicy === 'unlessTrusted'
+    ? 'untrusted'
+    : approvalPolicy === 'onRequest'
+    ? 'on-request'
+    : 'never'
 }
 
 /**
@@ -206,7 +219,7 @@ interface CodexSessionBase {
   cwd: string
   binaryPath: string
   spawnEnv: NodeJS.ProcessEnv
-  approvalPolicy: string
+  approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
   features: Record<string, boolean>
   /** `-c key=value` args for developer_instructions, model_providers, and mcp_servers overrides. */
@@ -323,6 +336,7 @@ function createDirectCodexSession(base: CodexSessionBase, options: AdapterQueryO
   const { onEvent, description, extraOptions, type: sessionType } = options
 
   const isResume = sessionType === 'resume'
+  const approvalFlag = toCodexOutboundApprovalPolicy(approvalPolicy)
 
   // When resuming, the subcommand must come before all other flags.
   const args: string[] = isResume
@@ -345,17 +359,7 @@ function createDirectCodexSession(base: CodexSessionBase, options: AdapterQueryO
     args.push('--sandbox', sandboxFlag)
   }
 
-  // Approval policy: camelCase → kebab-case CLI value
-  const approvalFlag = approvalPolicy === 'unlessTrusted'
-    ? 'untrusted'
-    : approvalPolicy === 'onRequest'
-    ? 'on-request'
-    : approvalPolicy === 'never'
-    ? 'never'
-    : undefined
-  if (approvalFlag) {
-    args.push('--ask-for-approval', approvalFlag)
-  }
+  args.push('--ask-for-approval', approvalFlag)
 
   // Feature flags: --enable / --disable
   args.push(...buildFeatureArgs(features))
@@ -420,6 +424,7 @@ async function createStreamCodexSession(
   const { cache, configs: [config, userConfig] } = ctx
   const { onEvent, description, sessionId, type: sessionType } = options
   const model = resolvedModel
+  const rpcApprovalPolicy = toCodexOutboundApprovalPolicy(approvalPolicy)
 
   const {
     experimentalApi = false,
@@ -500,7 +505,7 @@ async function createStreamCodexSession(
     logger.info('[codex session] starting new thread', { cwd })
     const startResult = await rpc.request<{ thread: CodexThread }>('thread/start', {
       cwd,
-      approvalPolicy,
+      approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
       serviceName: 'vibe-forge',
       ...(model ? { model } : {})
@@ -517,7 +522,7 @@ async function createStreamCodexSession(
       threadId,
       input,
       cwd,
-      approvalPolicy,
+      approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
       ...(model ? { model } : {}),
       ...(effort ? { effort } : {})
@@ -546,7 +551,7 @@ async function createStreamCodexSession(
             threadId: threadId!,
             input: textItems,
             cwd,
-            approvalPolicy,
+            approvalPolicy: rpcApprovalPolicy,
             sandboxPolicy,
             ...(model ? { model } : {}),
             ...(effort ? { effort } : {})
