@@ -23,9 +23,17 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
 
   wss.on('connection', async (ws, req) => {
-    addSessionSubscriberSocket(ws)
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
+    const subscribeMode = params.get('subscribe')
+
+    if (subscribeMode === 'sessions') {
+      addSessionSubscriberSocket(ws)
+      ws.on('close', () => {
+        removeSessionSubscriberSocket(ws)
+      })
+      return
+    }
 
     const sessionId = params.get('sessionId') ?? uuidv4()
     const model = params.get('model') ?? undefined
@@ -109,7 +117,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     })
 
     ws.on('close', () => {
-      removeSessionSubscriberSocket(ws)
       const runtime = detachSocketFromSession(sessionId, ws)
       const cached = runtime != null && 'session' in runtime ? runtime : undefined
       if (cached != null) {

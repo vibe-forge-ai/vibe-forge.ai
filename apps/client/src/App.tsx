@@ -5,15 +5,18 @@ import { useTranslation } from 'react-i18next'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import useSWR from 'swr'
 
+import type { ConfigResponse, Session } from '@vibe-forge/core'
+
 import { ArchiveView } from '#~/components/ArchiveView'
 import { AutomationView } from '#~/components/AutomationView'
 import { BenchmarkView } from '#~/components/BenchmarkView'
 import { Chat } from '#~/components/Chat'
 import { ConfigView } from '#~/components/ConfigView'
-import { KnowledgeBaseView } from '#~/components/knowledge-base'
 import { NavRail } from '#~/components/NavRail'
 import { Sidebar } from '#~/components/Sidebar'
-import type { ConfigResponse, Session } from '@vibe-forge/core'
+import { KnowledgeBaseView } from '#~/components/knowledge-base'
+import { useSessionSubscription } from '#~/hooks/use-session-subscription.js'
+
 import { getConfig } from './api'
 import { isSidebarResizingAtom, sidebarWidthAtom, themeAtom } from './store/index'
 
@@ -45,6 +48,8 @@ export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
   const [themeMode] = useAtom(themeAtom)
+
+  useSessionSubscription()
 
   const { data: sessionsRes } = useSWR<{ sessions: Session[] }>('/api/sessions')
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
