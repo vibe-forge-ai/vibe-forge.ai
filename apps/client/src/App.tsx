@@ -1,10 +1,10 @@
 import { ConfigProvider } from 'antd'
 
-import { AppShell } from '#~/components/app/layout/AppShell'
-import { AppRoutes } from '#~/components/app/routes/AppRoutes'
+import { AppShell } from '#~/components/layout/AppShell'
 import { useSessionSubscription } from '#~/hooks/use-session-subscription.js'
 import { useAppPreferences } from '#~/hooks/use-app-preferences'
 import { useSidebarNavigation } from '#~/hooks/use-sidebar-navigation'
+import { AppRoutes } from '#~/routes/AppRoutes'
 
 export default function App() {
   useSessionSubscription()

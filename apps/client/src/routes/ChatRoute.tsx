@@ -1,13 +1,46 @@
-import './Chat.scss'
+import './ChatRoute.scss'
 
-import { useChatSession } from '#~/hooks/chat/use-chat-session'
+import { Button, Empty } from 'antd'
+import { useTranslation } from 'react-i18next'
+import { useNavigate, useParams } from 'react-router-dom'
+import useSWR from 'swr'
+
 import type { ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
-import { ChatHeader } from './chat/ChatHeader.js'
-import { ChatHistoryView } from './chat/ChatHistoryView.js'
-import { ChatSettingsView } from './chat/ChatSettingsView.js'
-import { ChatTimelineView } from './chat/ChatTimelineView.js'
 
-export function Chat({
+import { listSessions } from '#~/api'
+import { ChatHeader } from '#~/components/chat/ChatHeader.js'
+import { ChatHistoryView } from '#~/components/chat/ChatHistoryView.js'
+import { ChatSettingsView } from '#~/components/chat/ChatSettingsView.js'
+import { ChatTimelineView } from '#~/components/chat/ChatTimelineView.js'
+import { useChatSession } from '#~/hooks/chat/use-chat-session'
+
+export function ChatRoute() {
+  const { t } = useTranslation()
+  const { sessionId } = useParams()
+  const navigate = useNavigate()
+  const { data: sessionsRes, isLoading } = useSWR<{ sessions: Session[] }>(
+    sessionId ? '/api/sessions' : null,
+    () => listSessions('active')
+  )
+  const session = sessionId == null ? undefined : sessionsRes?.sessions.find(item => item.id === sessionId)
+
+  if (sessionId != null && isLoading) {
+    return null
+  }
+
+  if (sessionId != null && session == null) {
+    return (
+      <div className='chat-route__empty-state'>
+        <Empty description={t('common.sessionNotFound')} />
+        <Button type='primary' onClick={() => void navigate('/')}>{t('common.backToHome')}</Button>
+      </div>
+    )
+  }
+
+  return <ChatRouteView session={session} />
+}
+
+function ChatRouteView({
   session
 }: {
   session?: Session
@@ -37,6 +70,7 @@ export function Chat({
     hasAvailableModels,
     modelUnavailable
   } = useChatSession({ session })
+
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -54,13 +88,13 @@ export function Chat({
       {session?.id && (
         <ChatHeader
           sessionInfo={sessionInfo}
-          sessionId={session?.id}
-          sessionTitle={session?.title}
-          isStarred={session?.isStarred}
-          isArchived={session?.isArchived}
-          tags={session?.tags}
-          lastMessage={session?.lastMessage}
-          lastUserMessage={session?.lastUserMessage}
+          sessionId={session.id}
+          sessionTitle={session.title}
+          isStarred={session.isStarred}
+          isArchived={session.isArchived}
+          tags={session.tags}
+          lastMessage={session.lastMessage}
+          lastUserMessage={session.lastUserMessage}
           activeView={activeView}
           onViewChange={setActiveView}
         />
