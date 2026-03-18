@@ -4,11 +4,19 @@ import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
 import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
+import {
+  buildServiceModelSelector,
+  listServiceModels,
+  resolveChatModelSelection,
+  resolveDefaultChatModelSelection,
+  resolveServiceModelSelector
+} from './model-selector'
 
 export interface ModelSelectOption {
   value: string
   label: React.ReactNode
   searchText: string
+  displayLabel: string
 }
 
 export interface ModelSelectGroup {
@@ -71,92 +79,54 @@ export function useChatModels({
 
   const modelServiceEntries = useMemo(() => Object.entries(mergedModelServices), [mergedModelServices])
 
-  const availableModels = useMemo(() => {
-    const list: Array<{ model: string; serviceKey: string; serviceTitle: string }> = []
-    for (const [serviceKey, serviceValue] of modelServiceEntries) {
-      const service = (serviceValue != null && typeof serviceValue === 'object')
-        ? serviceValue as ModelServiceConfig
-        : undefined
-      const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
-      const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
-      for (const model of models) {
-        list.push({ model, serviceKey, serviceTitle })
-      }
-    }
-    return list
-  }, [modelServiceEntries])
-
-  const availableModelValues = useMemo(() => availableModels.map(item => item.model), [availableModels])
-  const availableModelKey = useMemo(() => availableModelValues.join('|'), [availableModelValues])
-  const availableModelSet = useMemo(() => new Set(availableModelValues), [availableModelKey])
-  const hasAvailableModels = availableModelValues.length > 0 || builtinModelSet.size > 0
+  const availableServiceModels = useMemo(() => listServiceModels(mergedModelServices), [mergedModelServices])
+  const hasAvailableModels = availableServiceModels.length > 0 || builtinModelSet.size > 0
   const modelToService = useMemo(() => {
     const map = new Map<string, { key: string; title: string }>()
-    for (const entry of availableModels) {
+    for (const entry of availableServiceModels) {
+      const serviceValue = mergedModelServices[entry.serviceKey]
+      const serviceTitle = serviceValue?.title?.trim() !== '' ? serviceValue?.title ?? '' : entry.serviceKey
       if (!map.has(entry.model)) {
-        map.set(entry.model, { key: entry.serviceKey, title: entry.serviceTitle })
+        map.set(entry.model, { key: entry.serviceKey, title: serviceTitle })
       }
     }
     return map
-  }, [availableModels])
+  }, [availableServiceModels, mergedModelServices])
   const defaultModelService = configRes?.sources?.merged?.general?.defaultModelService
   const defaultModel = configRes?.sources?.merged?.general?.defaultModel
   const formatModelWithService = useCallback((model: string | undefined) => {
-    const normalizedModel = typeof model === 'string' ? model.trim() : ''
-    if (normalizedModel === '') return undefined
-    // Builtin adapter models pass through as-is (no service prefix)
-    if (builtinModelSet.has(normalizedModel)) return normalizedModel
-    if (normalizedModel.includes(',')) return normalizedModel
-    const resolvedService = modelToService.get(normalizedModel)?.key ?? defaultModelService
-    return resolvedService ? `${resolvedService},${normalizedModel}` : normalizedModel
-  }, [builtinModelSet, defaultModelService, modelToService])
+    return resolveChatModelSelection({
+      value: model,
+      builtinModels: activeBuiltinModelValues,
+      serviceModels: availableServiceModels,
+      defaultModelService
+    })
+  }, [activeBuiltinModelValues, availableServiceModels, defaultModelService])
   const resolvedDefaultModel = useMemo(() => {
-    if (defaultModel && builtinModelSet.has(defaultModel)) return defaultModel
-    if (activeBuiltinModelValues.length > 0) {
-      return activeBuiltinModelValues[0]
-    }
-    if (defaultModel && availableModelSet.has(defaultModel)) return defaultModel
-    if (defaultModelService && mergedModelServices[defaultModelService]) {
-      const service = mergedModelServices[defaultModelService]
-      const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
-      if (models.length > 0) return models[0]
-    }
-    if (availableModelValues.length > 0) return availableModelValues[0]
-    // Fall back to first builtin model from the active adapter
-    const firstBuiltin = Object.values(activeBuiltinModels).flat()[0]
-    return firstBuiltin?.value
+    return resolveDefaultChatModelSelection({
+      defaultModel,
+      defaultModelService,
+      builtinModels: activeBuiltinModelValues,
+      serviceModels: availableServiceModels
+    })
   }, [
-    activeBuiltinModels,
     activeBuiltinModelValues,
-    availableModelSet,
-    availableModelValues,
-    builtinModelSet,
+    availableServiceModels,
     defaultModel,
-    defaultModelService,
-    mergedModelServices
+    defaultModelService
   ])
   const selectedModelWithService = useMemo(() => (
-    formatModelWithService(selectedModel)
-  ), [formatModelWithService, selectedModel])
+    formatModelWithService(selectedModel) ?? resolvedDefaultModel
+  ), [formatModelWithService, resolvedDefaultModel, selectedModel])
 
   const resolveSelectableModel = useCallback((value?: string) => {
-    const normalizedValue = typeof value === 'string' ? value.trim() : ''
-    if (normalizedValue !== '') {
-      if (availableModelSet.has(normalizedValue) || builtinModelSet.has(normalizedValue)) {
-        return normalizedValue
-      }
-
-      const rawModel = normalizedValue.includes(',')
-        ? normalizedValue.split(/,(.+)/)[1]?.trim()
-        : undefined
-
-      if (rawModel && (availableModelSet.has(rawModel) || builtinModelSet.has(rawModel))) {
-        return rawModel
-      }
-    }
-
-    return resolvedDefaultModel
-  }, [availableModelSet, builtinModelSet, resolvedDefaultModel])
+    return resolveChatModelSelection({
+      value,
+      builtinModels: activeBuiltinModelValues,
+      serviceModels: availableServiceModels,
+      defaultModelService
+    }) ?? resolvedDefaultModel
+  }, [activeBuiltinModelValues, availableServiceModels, defaultModelService, resolvedDefaultModel])
 
   const updateSelectedModel = useCallback((value?: string) => {
     setSelectedModel((prev) => {
@@ -211,7 +181,8 @@ export function useChatModels({
       return {
         value: params.value,
         label,
-        searchText
+        searchText,
+        displayLabel: params.title
       }
     }
 
@@ -232,14 +203,16 @@ export function useChatModels({
         const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
         const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
         const serviceDescription = service?.description
-        const models = Array.isArray(service?.models) ? service?.models.filter(item => typeof item === 'string') : []
+        const models = Array.isArray(service?.models)
+          ? service.models.filter((item): item is string => typeof item === 'string')
+          : []
         if (models.length === 0) return null
-        const options = models.map((model) => {
+        const options = models.map((model: string) => {
           const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
           const title = alias ?? model
           const description = alias ? model : serviceTitle
           return buildOption({
-            value: model,
+            value: buildServiceModelSelector(serviceKey, model),
             title,
             description,
             serviceKey,
@@ -261,7 +234,11 @@ export function useChatModels({
     const recommendedOptions = recommendedModels
       .filter((item) => {
         if (item.placement && item.placement !== 'modelSelector') return false
-        return availableModelSet.has(item.model)
+        return resolveServiceModelSelector({
+          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
+          serviceModels: availableServiceModels,
+          preferredServiceKey: item.service ?? defaultModelService
+        }) != null
       })
       .map((item) => {
         const serviceInfo = item.service ? mergedModelServices[item.service] : undefined
@@ -275,8 +252,13 @@ export function useChatModels({
         const description = item.description?.trim() !== ''
           ? item.description
           : serviceTitle
+        const value = resolveServiceModelSelector({
+          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
+          serviceModels: availableServiceModels,
+          preferredServiceKey: item.service ?? defaultModelService
+        }) ?? item.model
         return buildOption({
-          value: item.model,
+          value,
           title,
           description,
           serviceKey: item.service ?? modelToService.get(item.model)?.key,
@@ -323,7 +305,8 @@ export function useChatModels({
     return [...groups, ...serviceGroups]
   }, [
     activeBuiltinModels,
-    availableModelSet,
+    availableServiceModels,
+    defaultModelService,
     modelToService,
     mergedModelServices,
     modelServiceEntries,

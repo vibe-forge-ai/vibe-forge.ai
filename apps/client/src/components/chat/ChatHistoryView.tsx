@@ -15,6 +15,7 @@ interface ModelSelectOption {
   value: string
   label: React.ReactNode
   searchText: string
+  displayLabel: string
 }
 
 interface ModelSelectGroup {

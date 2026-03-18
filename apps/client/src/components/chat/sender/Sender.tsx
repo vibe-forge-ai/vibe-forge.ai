@@ -19,6 +19,7 @@ interface ModelSelectOption {
   value: string
   label: React.ReactNode
   searchText: string
+  displayLabel: string
 }
 
 interface ModelSelectGroup {
@@ -32,6 +33,12 @@ interface PendingImage {
   name?: string
   size?: number
   mimeType?: string
+}
+
+interface SenderToolGroup {
+  key: 'chrome-devtools' | 'system'
+  label: string
+  tools: string[]
 }
 
 export function Sender({
@@ -111,6 +118,20 @@ export function Sender({
     : 'mod+enter'
 
   const isThinking = sessionStatus === 'running'
+  const groupedTools: SenderToolGroup[] = sessionInfo != null && sessionInfo.type === 'init'
+    ? [
+        {
+          key: 'chrome-devtools',
+          label: t('chat.toolGroupChromeDevtools'),
+          tools: sessionInfo.tools.filter(tool => tool.startsWith('mcp__ChromeDevtools__'))
+        },
+        {
+          key: 'system',
+          label: t('chat.toolGroupSystem'),
+          tools: sessionInfo.tools.filter(tool => !tool.startsWith('mcp__ChromeDevtools__'))
+        }
+      ].filter(group => group.tools.length > 0)
+    : []
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -656,14 +677,19 @@ export function Sender({
                   <div className='tools-list-popup'>
                     <div className='popup-header'>{t('chat.availableTools')}</div>
                     <div className='popup-content'>
-                      <div className='tools-list'>
-                        {sessionInfo.tools.map(tool => (
-                          <div key={tool} className='tool-item'>
-                            <span className='material-symbols-rounded'>check_circle</span>
-                            <span className='tool-name'>{tool}</span>
+                      {groupedTools.map(group => (
+                        <div key={group.key} className='tool-section'>
+                          <div className='tool-section-title'>{group.label}</div>
+                          <div className='tools-list'>
+                            {group.tools.map(tool => (
+                              <div key={tool} className='tool-item'>
+                                <span className='material-symbols-rounded'>check_circle</span>
+                                <span className='tool-name'>{tool}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -698,7 +724,7 @@ export function Sender({
               disabled={modelUnavailable || isThinking}
               onChange={(value) => onModelChange?.(value)}
               placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
-              optionLabelProp='value'
+              optionLabelProp='displayLabel'
               filterOption={(input, option) => {
                 const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
                 return searchText.toLowerCase().includes(input.toLowerCase())
