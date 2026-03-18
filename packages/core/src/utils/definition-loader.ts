@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, relative, resolve } from 'node:path'
 import process from 'node:process'
 
 import { glob } from 'fast-glob'
@@ -79,6 +79,50 @@ export const loadLocalDocuments = async <Attrs extends object>(
   return Promise.all(promises)
 }
 
+const normalizePath = (path: string) => path.split('\\').join('/')
+
+const stripExtension = (fileName: string) => fileName.replace(/\.[^/.]+$/, '')
+
+const getFirstNonEmptyLine = (text: string) =>
+  text
+    .split('\n')
+    .map(line => line.trim())
+    .find(Boolean)
+
+const toPromptPath = (cwd: string, path: string) => {
+  const relPath = normalizePath(relative(cwd, path))
+  return relPath.startsWith('..') ? normalizePath(path) : relPath
+}
+
+const resolveDocumentName = (
+  path: string,
+  explicitName?: string,
+  indexFileNames: string[] = []
+) => {
+  const trimmedName = explicitName?.trim()
+  if (trimmedName) return trimmedName
+
+  const fileName = basename(path).toLowerCase()
+  if (indexFileNames.includes(fileName)) {
+    return basename(dirname(path))
+  }
+
+  return stripExtension(basename(path))
+}
+
+const resolveDocumentDescription = (
+  body: string,
+  explicitDescription?: string,
+  fallbackName?: string
+) => {
+  const trimmedDescription = explicitDescription?.trim()
+  return trimmedDescription || getFirstNonEmptyLine(body) || fallbackName || ''
+}
+
+const resolveSpecIdentifier = (path: string, explicitName?: string) => {
+  return resolveDocumentName(path, explicitName, ['index.md'])
+}
+
 export class DefinitionLoader {
   private readonly cwd: string
 
@@ -113,13 +157,12 @@ export class DefinitionLoader {
     const rulesPrompt = rules
       .map((rule) => {
         const { path, body, attributes } = rule
-        const name = attributes.name ?? basename(path)
-        const desc = attributes.description ?? name
-        return (
-          `  - ${name}：${desc}\n` +
-          `${attributes.always ? body : ''}\n` +
-          '--------------------\n'
-        )
+        const name = resolveDocumentName(path, attributes.name)
+        const desc = resolveDocumentDescription(body, attributes.description, name)
+        const content = attributes.always && body.trim()
+          ? `<rule-content>\n${body.trim()}\n</rule-content>\n`
+          : ''
+        return `  - ${name}：${desc}\n${content}--------------------\n`
       })
       .filter(Boolean)
       .join('\n')
@@ -150,9 +193,7 @@ export class DefinitionLoader {
     // Filter by directory name (skill name)
     if (skills) {
       paths = paths.filter(path => {
-        const parts = path.split('/')
-        // .../skills/{name}/SKILL.md
-        return skills.includes(parts[parts.length - 2])
+        return skills.includes(basename(dirname(path)))
       })
     }
 
@@ -164,13 +205,17 @@ export class DefinitionLoader {
   generateSkillsPrompt(skills: Definition<Skill>[]): string {
     return skills
       .map((skill) => {
-        const { path, body } = skill
+        const { path, body, attributes } = skill
+        const name = resolveDocumentName(path, attributes.name, ['skill.md'])
+        const desc = resolveDocumentDescription(body, attributes.description, name)
         return (
           '技能相关信息如下，通过阅读以下内容了解技能的详细信息：\n' +
-          `- 技能文件资源路径：${dirname(path)}\n` +
+          `- 技能名称：${name}\n` +
+          `- 技能介绍：${desc}\n` +
+          `- 技能文件资源路径：${toPromptPath(this.cwd, dirname(path))}\n` +
           '- 资源内容：\n' +
           '<skill-content>\n' +
-          `${body}\n` +
+          `${body.trim()}\n` +
           '</skill-content>\n' +
           '资源内容中的文件路径相对「技能文件资源路径」路径，通过读取相关工具按照实际需要进行阅读。\n'
         )
@@ -185,7 +230,11 @@ export class DefinitionLoader {
         skills
           .filter(({ attributes: { always } }) => always !== false)
           .map(
-            ({ attributes: { name, description } }) => `  - ${name}：${description}\n`
+            ({ path, body, attributes }) => {
+              const name = resolveDocumentName(path, attributes.name, ['skill.md'])
+              const desc = resolveDocumentDescription(body, attributes.description, name)
+              return `  - ${name}：${desc}\n`
+            }
           )
           .join('')
       }\n` +
@@ -197,7 +246,8 @@ export class DefinitionLoader {
     const patterns = [
       `.ai/specs/${name}.md`,
       `.ai/specs/${name}/index.md`,
-      `.ai/plugins/*/specs/${name}.md`
+      `.ai/plugins/*/specs/${name}.md`,
+      `.ai/plugins/*/specs/${name}/index.md`
     ]
     const paths = await this.scan(patterns)
     if (paths.length === 0) return undefined
@@ -221,34 +271,23 @@ export class DefinitionLoader {
   generateSpecRoutePrompt(specsDocuments: Definition<Spec>[]): string {
     const specsRouteStr = specsDocuments
       .filter(({ attributes }) => attributes.always !== false)
-      .map(({ path, attributes }) => {
-        const name = attributes.name ?? basename(dirname(path))
-        const desc = attributes.description ?? name
+      .map(({ path, body, attributes }) => {
+        const name = resolveDocumentName(path, attributes.name, ['index.md'])
+        const desc = resolveDocumentDescription(body, attributes.description, name)
+        const identifier = resolveSpecIdentifier(path, attributes.name)
         const params = attributes.params ?? []
-        // Calculate relative path for display/ID
-        // User code used relative('.ai/specs', path), but here path is absolute.
-        // We can try to make it relative to cwd/.ai/specs if possible, or just relative to cwd.
-        // The user code seems to assume specs are in .ai/specs.
-        // Let's use relative(join(this.cwd, '.ai/specs'), path) if it's in there, otherwise...
-        // Actually, just providing a relative path from project root is probably fine or the name.
-        // User code: relative('.ai/specs', path)
-
-        let relPath = relative(join(this.cwd, '.ai/specs'), path)
-        if (relPath.startsWith('..')) {
-          // Maybe in a plugin?
-          relPath = relative(this.cwd, path)
-        }
+        const paramsPrompt = params.length > 0
+          ? params
+            .map(({ name, description }) => `    - ${name}：${description ?? '无'}\n`)
+            .join('')
+          : '    - 无\n'
 
         return (
           `- 流程名称：${name}\n` +
           `  - 介绍：${desc}\n` +
-          `  - 标识：${relPath}\n` +
+          `  - 标识：${identifier}\n` +
           '  - 参数：\n' +
-          `${
-            params
-              .map(({ name, description }) => `    - ${name}：${description}\n`)
-              .join('')
-          }\n`
+          `${paramsPrompt}`
         )
       })
       .join('\n')
@@ -285,7 +324,9 @@ export class DefinitionLoader {
 
     // 2. Fallback to Markdown file
     const patterns = [
+      `.ai/entities/${name}.md`,
       `.ai/entities/${name}/README.md`,
+      `.ai/plugins/*/entities/${name}.md`,
       `.ai/plugins/*/entities/${name}/README.md`
     ]
     const paths = await this.scan(patterns)
@@ -327,7 +368,9 @@ export class DefinitionLoader {
     // List both .md and index.json entities
     const mdPatterns = [
       '.ai/entities/*.md',
-      '.ai/plugins/*/entities/*.md'
+      '.ai/entities/*/README.md',
+      '.ai/plugins/*/entities/*.md',
+      '.ai/plugins/*/entities/*/README.md'
     ]
     const jsonPatterns = [
       '.ai/entities/*/index.json',
@@ -350,7 +393,12 @@ export class DefinitionLoader {
       '项目存在如下实体：\n' +
       `${
         entities
-          .map(({ attributes: { name, prompt: _p }, body }) => `  - ${name}：${body}\n`)
+          .filter(({ attributes }) => attributes.always !== false)
+          .map(({ path, attributes, body }) => {
+            const name = resolveDocumentName(path, attributes.name, ['readme.md', 'index.json'])
+            const desc = resolveDocumentDescription(body, attributes.description, name)
+            return `  - ${name}：${desc}\n`
+          })
           .join('')
       }\n` +
       '解决用户问题时，需根据用户需求可以通过 run-tasks 工具指定为实体后，自行调度多个不同类型的实体来完成工作。\n' +
