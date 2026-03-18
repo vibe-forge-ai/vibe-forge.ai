@@ -23,12 +23,15 @@ function makeMockLogger() {
   }
 }
 
-function makeCtx() {
+function makeCtx(overrides: {
+  env?: Record<string, string>
+  configs?: [unknown?, unknown?]
+} = {}) {
   const cacheStore = new Map<string, unknown>()
   return {
     ctxId: 'test-ctx',
     cwd: '/tmp',
-    env: {},
+    env: overrides.env ?? {},
     cache: {
       set: async (key: string, value: unknown) => {
         cacheStore.set(key, value)
@@ -37,15 +40,21 @@ function makeCtx() {
       get: async (key: string) => cacheStore.get(key)
     },
     logger: makeMockLogger(),
-    configs: [undefined, undefined]
+    configs: overrides.configs ?? [undefined, undefined]
   } as any
 }
 
-function makeProc() {
+function makeProc(options: {
+  resumeError?: { code: number; message: string }
+  turnStartErrors?: Record<number, { code: number; message: string }>
+  threadStartIds?: string[]
+  resumedThreadId?: string
+} = {}) {
   const stdin = new PassThrough()
   const stdout = new PassThrough()
   const receivedLines: any[] = []
   let turnCount = 0
+  let threadStartCount = 0
   let exitHandler: ((code: number | null) => void) | undefined
 
   stdin.on('data', (chunk: unknown) => {
@@ -62,10 +71,27 @@ function makeProc() {
       if (message.method === 'initialize') {
         stdout.push(`${JSON.stringify({ id: message.id, result: { userAgent: 'codex/1.0' } })}\n`)
       } else if (message.method === 'thread/start') {
-        stdout.push(`${JSON.stringify({ id: message.id, result: { thread: { id: 'thr_1' } } })}\n`)
+        threadStartCount += 1
+        const threadId = options.threadStartIds?.[threadStartCount - 1] ?? `thr_${threadStartCount}`
+        stdout.push(`${JSON.stringify({ id: message.id, result: { thread: { id: threadId } } })}\n`)
+      } else if (message.method === 'thread/resume') {
+        if (options.resumeError) {
+          stdout.push(`${JSON.stringify({ id: message.id, error: options.resumeError })}\n`)
+        } else {
+          stdout.push(
+            `${
+              JSON.stringify({ id: message.id, result: { thread: { id: options.resumedThreadId ?? 'thr_resumed' } } })
+            }\n`
+          )
+        }
       } else if (message.method === 'turn/start') {
         turnCount += 1
-        stdout.push(`${JSON.stringify({ id: message.id, result: { turn: { id: `turn_${turnCount}` } } })}\n`)
+        const turnError = options.turnStartErrors?.[turnCount]
+        if (turnError) {
+          stdout.push(`${JSON.stringify({ id: message.id, error: turnError })}\n`)
+        } else {
+          stdout.push(`${JSON.stringify({ id: message.id, result: { turn: { id: `turn_${turnCount}` } } })}\n`)
+        }
       } else if (message.method === 'turn/steer' || message.method === 'turn/interrupt') {
         stdout.push(`${JSON.stringify({ id: message.id, result: {} })}\n`)
       }
@@ -181,5 +207,125 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(initialTurnRequest?.params.approvalPolicy).toBe('never')
 
     session.kill()
+  })
+
+  it('uses codex defaults when model is "default"', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          modelServices: {
+            'gpt-responses': {
+              title: 'GPT Responses',
+              apiBaseUrl: 'http://example.test/responses',
+              apiKey: 'test-key',
+              extra: {
+                codex: {
+                  wireApi: 'responses'
+                }
+              }
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-model-default',
+        model: 'default',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs.some(arg => arg.includes('model_provider='))).toBe(false)
+    expect(spawnArgs.some(arg => arg.includes('model_providers.'))).toBe(false)
+
+    const startRequest = receivedLines.find(line => line.method === 'thread/start')
+    expect(startRequest?.params.model).toBeUndefined()
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.model).toBeUndefined()
+
+    session.kill()
+  })
+
+  it('recreates the thread when resume hits invalid_encrypted_content', async () => {
+    process.env.HOME = '/tmp'
+    const ctx = makeCtx()
+
+    const firstProc = makeProc({ threadStartIds: ['thr_original'] })
+    const secondProc = makeProc({
+      resumeError: {
+        code: -4003,
+        message: 'code: invalid_encrypted_content; message: organization_id did not match the target organization'
+      },
+      threadStartIds: ['thr_recovered']
+    })
+    spawnMock
+      .mockReturnValueOnce(firstProc.proc)
+      .mockReturnValueOnce(secondProc.proc)
+
+    const firstSession = await createCodexSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-resume-recover',
+      onEvent: () => {}
+    } as any)
+    firstSession.kill()
+
+    const secondSession = await createCodexSession(ctx, {
+      type: 'resume',
+      runtime: 'server',
+      sessionId: 'session-resume-recover',
+      description: 'retry on a fresh thread',
+      onEvent: () => {}
+    } as any)
+
+    await waitForWrites()
+    secondSession.kill()
+
+    expect(secondProc.receivedLines.some(line => line.method === 'thread/resume')).toBe(true)
+    expect(secondProc.receivedLines.some(line => line.method === 'thread/start')).toBe(true)
+
+    const cachedThreads = await ctx.cache.get('adapter.codex.threads')
+    expect(Object.values(cachedThreads ?? {})).toContain('thr_recovered')
+    expect(Object.values(cachedThreads ?? {})).not.toContain('thr_original')
+  })
+
+  it('emits exit when a post-start turn fails', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc({
+      turnStartErrors: {
+        2: { code: -4003, message: 'code: invalid_encrypted_content; message: broken thread state' }
+      }
+    })
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-turn-failure',
+      description: 'first turn works',
+      onEvent: (event) => events.push(event)
+    } as any)
+
+    session.emit({
+      type: 'message',
+      content: [{ type: 'text', text: 'second turn fails' }]
+    } as any)
+
+    await waitForWrites()
+
+    expect(events.some(event => (
+      event.type === 'exit' &&
+      event.data.exitCode === 1 &&
+      event.data.stderr?.includes('invalid_encrypted_content')
+    ))).toBe(true)
   })
 })
