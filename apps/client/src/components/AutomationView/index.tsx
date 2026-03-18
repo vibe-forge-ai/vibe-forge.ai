@@ -1,4 +1,4 @@
-import './AutomationView.scss'
+import './index.scss'
 
 import { App } from 'antd'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
