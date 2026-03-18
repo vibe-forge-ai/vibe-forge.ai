@@ -315,6 +315,8 @@
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
     "modelGroupRecommended": "Recommended Models",
     "availableTools": "Available Tools",
+    "toolGroupChromeDevtools": "ChromeDevtools",
+    "toolGroupSystem": "System",
     "toolsCount": "{{count}} tools",
     "usedTools": "Used {{count}} tools",
     "viewInitInfo": "Double click to view initialization info",

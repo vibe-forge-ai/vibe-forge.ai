@@ -1,8 +1,8 @@
 import './Sender.scss'
 
-import { App, Button, Input, Select, Tooltip } from 'antd'
+import { App, Button, Cascader, Input, Select, Tooltip } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
@@ -39,6 +39,21 @@ interface SenderToolGroup {
   key: 'chrome-devtools' | 'system'
   label: string
   tools: string[]
+}
+
+interface SenderToolOption {
+  value: string
+  label: React.ReactNode
+  children?: SenderToolOption[]
+}
+
+const formatToolLabel = (tool: string) => {
+  const parts = tool.split('__')
+  return parts[parts.length - 1] || tool
+}
+
+const getToolGroupIcon = (groupKey: SenderToolGroup['key']) => {
+  return groupKey === 'chrome-devtools' ? 'web_traffic' : 'memory'
 }
 
 export function Sender({
@@ -96,7 +111,6 @@ export function Sender({
 
   const [showToolsList, setShowToolsList] = useState(false)
   const textareaRef = useRef<TextAreaRef>(null)
-  const toolsRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isMac = navigator.platform.includes('Mac')
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
@@ -132,16 +146,25 @@ export function Sender({
         }
       ].filter(group => group.tools.length > 0)
     : []
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
-        setShowToolsList(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
+    value: group.key,
+    label: (
+      <span className='sender-tool-group-option'>
+        <span className='sender-tool-group-option__icon material-symbols-rounded'>{getToolGroupIcon(group.key)}</span>
+        <span className='sender-tool-group-option__text'>{group.label}</span>
+        <span className='sender-tool-group-option__count'>{group.tools.length}</span>
+      </span>
+    ),
+    children: group.tools.map(tool => ({
+      value: tool,
+      label: (
+        <span className='sender-tool-option'>
+          <span className='sender-tool-option__dot' />
+          <span className='sender-tool-option__text'>{formatToolLabel(tool)}</span>
+        </span>
+      )
+    }))
+  }))
 
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [draft, setDraft] = useState('')
@@ -663,36 +686,25 @@ export function Sender({
             </Tooltip>
 
             {sessionInfo != null && sessionInfo.type === 'init' && (
-              <div className='session-info-toolbar' ref={toolsRef}>
-                <div
-                  className={`info-item ${showToolsList ? 'active' : ''}`}
-                  onClick={() => setShowToolsList(!showToolsList)}
+              <div className='session-info-toolbar'>
+                <Cascader
+                  open={showToolsList}
+                  options={toolCascaderOptions}
+                  expandTrigger='hover'
+                  placement='topLeft'
+                  allowClear={false}
+                  popupClassName='sender-tools-cascader-popup'
+                  onOpenChange={setShowToolsList}
+                  onChange={() => setShowToolsList(false)}
                 >
-                  <span className='material-symbols-rounded'>build</span>
-                  <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
-                  <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
-                </div>
-
-                {showToolsList && (
-                  <div className='tools-list-popup'>
-                    <div className='popup-header'>{t('chat.availableTools')}</div>
-                    <div className='popup-content'>
-                      {groupedTools.map(group => (
-                        <div key={group.key} className='tool-section'>
-                          <div className='tool-section-title'>{group.label}</div>
-                          <div className='tools-list'>
-                            {group.tools.map(tool => (
-                              <div key={tool} className='tool-item'>
-                                <span className='material-symbols-rounded'>check_circle</span>
-                                <span className='tool-name'>{tool}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className={`info-item ${showToolsList ? 'active' : ''}`}>
+                    <span className='info-item-leading'>
+                      <span className='material-symbols-rounded'>build</span>
+                    </span>
+                    <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
+                    <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
                   </div>
-                )}
+                </Cascader>
               </div>
             )}
           </div>
