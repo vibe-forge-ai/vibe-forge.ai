@@ -1,0 +1,35 @@
+import { useAtomValue } from 'jotai'
+import { useCallback } from 'react'
+import { matchPath, useLocation, useNavigate } from 'react-router-dom'
+
+import type { Session } from '@vibe-forge/core'
+
+import { sidebarWidthAtom } from '#~/store'
+
+const SESSION_ROUTE_PATTERN = '/session/:sessionId'
+
+export function useSidebarNavigation() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const sidebarWidth = useAtomValue(sidebarWidthAtom)
+  const sessionMatch = matchPath({ path: SESSION_ROUTE_PATTERN, end: true }, location.pathname)
+  const activeSessionId = sessionMatch?.params.sessionId
+  const showSidebar = location.pathname === '/' || activeSessionId != null
+
+  const handleSelectSession = useCallback((session: Session, _isNew?: boolean) => {
+    void navigate(session.id === '' ? '/' : `/session/${session.id}`)
+  }, [navigate])
+
+  const handleDeletedSession = useCallback((deletedId: string, nextId?: string) => {
+    if (activeSessionId !== deletedId) return
+    void navigate(nextId ? `/session/${nextId}` : '/')
+  }, [activeSessionId, navigate])
+
+  return {
+    activeSessionId,
+    handleDeletedSession,
+    handleSelectSession,
+    showSidebar,
+    sidebarWidth
+  }
+}

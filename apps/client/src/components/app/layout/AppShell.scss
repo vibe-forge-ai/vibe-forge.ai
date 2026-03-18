@@ -1,0 +1,19 @@
+.app-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.app-shell__content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.app-shell--dark {
+  .app-shell__content {
+    background-color: #141414;
+  }
+}
