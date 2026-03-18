@@ -1,13 +1,14 @@
 import http from 'node:http'
-import process, { exit } from 'node:process'
+import { exit } from 'node:process'
 
-import cors from '@koa/cors'
 import Koa from 'koa'
-import bodyParser from 'koa-bodyparser'
 
-import { loadConfig, loadEnv } from '@vibe-forge/core'
+import { loadEnv } from '@vibe-forge/core'
+
+import { loadConfigSources } from '#~/services/config/index.js'
 
 import { initChannels } from './channels'
+import { initMiddlewares } from './middlewares'
 import { mountRoutes } from './routes'
 import { logger } from './utils/logger'
 import { setupWebSocket } from './websocket'
@@ -20,20 +21,10 @@ async function init() {
   const server = http.createServer((req, res) => {
     void handler(req, res)
   })
-  const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
-  const jsonVariables: Record<string, string | null | undefined> = {
-    ...process.env,
-    WORKSPACE_FOLDER: workspaceFolder,
-    __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
-  }
-  const configs = await loadConfig({ jsonVariables })
+  const { projectConfig, userConfig } = await loadConfigSources()
+  const configs = [projectConfig, userConfig] as const
 
   return { app, env, server, configs }
-}
-
-async function initMiddlewares(app: Koa) {
-  app.use(cors({ origin: '*', credentials: true }))
-  app.use(bodyParser())
 }
 
 async function bootstrap() {

@@ -38,6 +38,8 @@ export {
   updateSessionTitle
 } from './api/sessions'
 
+export { ApiError, getApiErrorMessage } from './api/base'
+
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
 
