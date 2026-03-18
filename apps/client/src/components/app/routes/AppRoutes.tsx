@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 
 import { ArchiveView } from '#~/components/ArchiveView'
-import { AutomationView } from '#~/components/AutomationView'
-import { BenchmarkView } from '#~/components/BenchmarkView'
+import { AutomationView } from '#~/components/automation-view'
+import { BenchmarkView } from '#~/components/benchmark-view'
 import { Chat } from '#~/components/Chat'
 import { ConfigView } from '#~/components/ConfigView'
 import { KnowledgeBaseView } from '#~/components/knowledge-base'

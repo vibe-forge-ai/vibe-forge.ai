@@ -5,10 +5,10 @@ import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
 import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session, SessionInfo } from '@vibe-forge/core'
 import { CurrentTodoList } from './CurrentTodoList'
-import { MessageItem } from './Messages/MessageItem'
-import { processMessages } from './Messages/message-utils'
+import { MessageItem } from './messages/MessageItem'
+import { processMessages } from './messages/message-utils'
 import { NewSessionGuide } from './NewSessionGuide'
-import { Sender } from './Sender/Sender'
+import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
 
 interface ModelSelectOption {

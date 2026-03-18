@@ -4,9 +4,9 @@ import React from 'react'
 
 import type { ChatMessage } from '@vibe-forge/core'
 
-import { SessionTimelinePanel } from './SessionTimelinePanel'
-import { SessionTimelineEventList } from './SessionTimelinePanel/EventList'
-import type { Task } from './SessionTimelinePanel/types'
+import { SessionTimelinePanel } from './session-timeline-panel'
+import { SessionTimelineEventList } from './session-timeline-panel/EventList'
+import type { Task } from './session-timeline-panel/types'
 
 const mockTimelineTask: Task = {
   startTime: '09:40:00',

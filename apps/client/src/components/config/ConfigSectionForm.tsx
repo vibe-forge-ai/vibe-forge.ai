@@ -25,7 +25,7 @@ import {
   McpServersRecordEditor,
   ModelServicesRecordEditor,
   RecordJsonEditor
-} from './recordEditors/index'
+} from './record-editors/index'
 
 export const SectionForm = ({
   sectionKey,
