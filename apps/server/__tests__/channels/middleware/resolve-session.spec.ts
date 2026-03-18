@@ -14,16 +14,22 @@ const makeCtx = (): ChannelContext => ({
   connection: undefined,
   config: undefined,
   sessionId: undefined,
+  channelAdapter: undefined,
   contentItems: undefined,
   commandText: '',
-  reply: vi.fn().mockResolvedValue(undefined)
+  reply: vi.fn().mockResolvedValue(undefined),
+  getChannelAdapterPreference: vi.fn(),
+  setChannelAdapterPreference: vi.fn()
 })
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('resolveSessionMiddleware', () => {
   it('sets ctx.sessionId when the DB finds a matching session', async () => {
-    vi.mocked(getDb).mockReturnValue({ getChannelSession: vi.fn().mockReturnValue({ sessionId: 'sess-abc' }) } as any)
+    vi.mocked(getDb).mockReturnValue({
+      getChannelSession: vi.fn().mockReturnValue({ sessionId: 'sess-abc' }),
+      getChannelPreference: vi.fn().mockReturnValue(undefined)
+    } as any)
     const ctx = makeCtx()
     const next = vi.fn().mockResolvedValue(undefined)
 
@@ -34,7 +40,10 @@ describe('resolveSessionMiddleware', () => {
   })
 
   it('leaves ctx.sessionId undefined when no session is found', async () => {
-    vi.mocked(getDb).mockReturnValue({ getChannelSession: vi.fn().mockReturnValue(undefined) } as any)
+    vi.mocked(getDb).mockReturnValue({
+      getChannelSession: vi.fn().mockReturnValue(undefined),
+      getChannelPreference: vi.fn().mockReturnValue(undefined)
+    } as any)
     const ctx = makeCtx()
     const next = vi.fn().mockResolvedValue(undefined)
 
@@ -46,11 +55,25 @@ describe('resolveSessionMiddleware', () => {
 
   it('queries using channelType, sessionType, and channelId', async () => {
     const getChannelSession = vi.fn().mockReturnValue(null)
-    vi.mocked(getDb).mockReturnValue({ getChannelSession } as any)
+    const getChannelPreference = vi.fn().mockReturnValue(null)
+    vi.mocked(getDb).mockReturnValue({ getChannelSession, getChannelPreference } as any)
     const ctx = makeCtx()
 
     await resolveSessionMiddleware(ctx, vi.fn())
 
     expect(getChannelSession).toHaveBeenCalledWith('lark', 'direct', 'ch1')
+    expect(getChannelPreference).toHaveBeenCalledWith('lark', 'direct', 'ch1')
+  })
+
+  it('loads the pending channel adapter preference', async () => {
+    vi.mocked(getDb).mockReturnValue({
+      getChannelSession: vi.fn().mockReturnValue(undefined),
+      getChannelPreference: vi.fn().mockReturnValue({ adapter: 'codex' })
+    } as any)
+    const ctx = makeCtx()
+
+    await resolveSessionMiddleware(ctx, vi.fn())
+
+    expect(ctx.channelAdapter).toBe('codex')
   })
 })

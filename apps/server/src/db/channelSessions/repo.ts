@@ -12,6 +12,16 @@ export interface ChannelSessionRow {
   updatedAt: number
 }
 
+export interface ChannelPreferenceRow {
+  channelType: string
+  sessionType: string
+  channelId: string
+  channelKey: string
+  adapter?: string
+  createdAt: number
+  updatedAt: number
+}
+
 export function createChannelSessionsRepo(db: Database.Database) {
   const get = (
     channelType: string,
@@ -70,10 +80,46 @@ export function createChannelSessionsRepo(db: Database.Database) {
     return stmt.run(sessionId).changes
   }
 
+  const getPreference = (
+    channelType: string,
+    sessionType: string,
+    channelId: string
+  ): ChannelPreferenceRow | undefined => {
+    const stmt = db.prepare(`
+      SELECT channelType, sessionType, channelId, channelKey, adapter, createdAt, updatedAt
+      FROM channel_preferences
+      WHERE channelType = ? AND sessionType = ? AND channelId = ?
+    `)
+    return stmt.get(channelType, sessionType, channelId) as ChannelPreferenceRow | undefined
+  }
+
+  const upsertPreference = (row: Omit<ChannelPreferenceRow, 'createdAt' | 'updatedAt'>) => {
+    const now = Date.now()
+    const stmt = db.prepare(`
+      INSERT INTO channel_preferences (channelType, sessionType, channelId, channelKey, adapter, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET
+        channelKey = excluded.channelKey,
+        adapter = excluded.adapter,
+        updatedAt = excluded.updatedAt
+    `)
+    stmt.run(
+      row.channelType,
+      row.sessionType,
+      row.channelId,
+      row.channelKey,
+      row.adapter ?? null,
+      now,
+      now
+    )
+  }
+
   return {
     get,
+    getPreference,
     getBySessionId,
     removeBySessionId,
-    upsert
+    upsert,
+    upsertPreference
   }
 }

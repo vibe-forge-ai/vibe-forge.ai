@@ -76,6 +76,7 @@ describe('db schema modules', () => {
 
     const sessionColumns = sqlite.prepare('PRAGMA table_info(sessions)').all() as Array<{ name: string }>
     const channelColumns = sqlite.prepare('PRAGMA table_info(channel_sessions)').all() as Array<{ name: string }>
+    const channelPreferenceColumns = sqlite.prepare('PRAGMA table_info(channel_preferences)').all() as Array<{ name: string }>
     const automationRuleColumns = sqlite.prepare('PRAGMA table_info(automation_rules)').all() as Array<{ name: string }>
     const automationTaskColumns = sqlite.prepare('PRAGMA table_info(automation_tasks)').all() as Array<{ name: string }>
     const automationRunColumns = sqlite.prepare('PRAGMA table_info(automation_runs)').all() as Array<{ name: string }>
@@ -94,6 +95,15 @@ describe('db schema modules', () => {
     expect(channelColumns.map(column => column.name)).toEqual(expect.arrayContaining([
       'replyReceiveId',
       'replyReceiveIdType'
+    ]))
+    expect(channelPreferenceColumns.map(column => column.name)).toEqual(expect.arrayContaining([
+      'channelType',
+      'sessionType',
+      'channelId',
+      'channelKey',
+      'adapter',
+      'createdAt',
+      'updatedAt'
     ]))
     expect(automationRuleColumns.map(column => column.name)).toEqual(expect.arrayContaining([
       'description',

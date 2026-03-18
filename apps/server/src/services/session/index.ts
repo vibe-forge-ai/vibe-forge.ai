@@ -25,6 +25,8 @@ import {
 } from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
+const activeAdapterRunStore = new Map<string, string>()
+
 export async function startAdapterSession(
   sessionId: string,
   options: {
@@ -42,29 +44,53 @@ export async function startAdapterSession(
   const hasHistory = historyMessages.length > 0
   const serverLogger = getSessionLogger(sessionId, 'server')
   const type = hasHistory ? 'resume' : 'create'
+  const existing = db.getSession(sessionId)
+  const resolvedModel = options.model ?? existing?.model
+  const resolvedAdapter = options.adapter ?? existing?.adapter
+  const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
 
   const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
-    serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
-    return cached
+    const currentModel = cached.config?.model ?? existing?.model
+    const currentAdapter = cached.config?.adapter ?? existing?.adapter
+    const currentPermissionMode = cached.config?.permissionMode ?? existing?.permissionMode
+    const configChanged = (
+      currentModel !== resolvedModel ||
+      currentAdapter !== resolvedAdapter ||
+      currentPermissionMode !== resolvedPermissionMode
+    )
+
+    if (!configChanged) {
+      serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
+      return cached
+    }
+
+    serverLogger.info({
+      sessionId,
+      currentModel,
+      resolvedModel,
+      currentAdapter,
+      resolvedAdapter,
+      currentPermissionMode,
+      resolvedPermissionMode
+    }, '[server] Restarting adapter process due to session config change')
+    activeAdapterRunStore.delete(sessionId)
+    cached.session.kill()
+    deleteAdapterSessionRuntime(sessionId)
   }
 
   serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
 
-  const existing = db.getSession(sessionId)
   if (existing == null) {
     serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
     db.createSession(undefined, sessionId)
   }
-  const resolvedModel = options.model ?? existing?.model
-  const resolvedAdapter = options.adapter ?? existing?.adapter
-  const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
 
   if (
     resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
     resolvedPermissionMode !== existing?.permissionMode
   ) {
-    db.updateSession(sessionId, {
+    updateAndNotifySession(sessionId, {
       model: resolvedModel,
       adapter: resolvedAdapter,
       permissionMode: resolvedPermissionMode
@@ -72,6 +98,8 @@ export async function startAdapterSession(
   }
 
   const connectionState = createSessionConnectionState()
+  const runId = uuidv4()
+  activeAdapterRunStore.set(sessionId, runId)
 
   try {
     const promptCwd = processCwd()
@@ -118,6 +146,10 @@ export async function startAdapterSession(
       tools: resolvedConfig.tools,
       mcpServers: resolvedConfig.mcpServers,
       onEvent: (event: AdapterOutputEvent) => {
+        if (activeAdapterRunStore.get(sessionId) !== runId) {
+          return
+        }
+
         const broadcast = (ev: WSEvent) => {
           serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
           emitRuntimeEvent(connectionState, ev)
@@ -140,7 +172,9 @@ export async function startAdapterSession(
                 model: typeof (event.data as any).model === 'string'
                   ? (event.data as any).model
                   : resolvedModel,
-                adapter: resolvedAdapter,
+                adapter: typeof (event.data as any).adapter === 'string'
+                  ? (event.data as any).adapter
+                  : resolvedAdapter,
                 permissionMode: resolvedPermissionMode
               })
               applyEvent({
@@ -176,6 +210,9 @@ export async function startAdapterSession(
             emitRuntimeEvent(connectionState, errorEvent, { recordMessage: false })
 
             deleteAdapterSessionRuntime(sessionId)
+            if (activeAdapterRunStore.get(sessionId) === runId) {
+              activeAdapterRunStore.delete(sessionId)
+            }
             break
           }
           case 'summary': {
@@ -198,8 +235,17 @@ export async function startAdapterSession(
       }
     })
 
-    return setAdapterSessionRuntime(sessionId, bindAdapterSessionRuntime(connectionState, session))
+    return setAdapterSessionRuntime(sessionId, bindAdapterSessionRuntime(connectionState, session, {
+      runId,
+      model: resolvedModel,
+      adapter: resolvedAdapter,
+      permissionMode: resolvedPermissionMode
+    }))
   } catch (err) {
+    if (activeAdapterRunStore.get(sessionId) === runId) {
+      activeAdapterRunStore.delete(sessionId)
+    }
+    updateAndNotifySession(sessionId, { status: 'failed' })
     serverLogger.error({ err, sessionId }, '[server] session init error')
     throw err
   }
@@ -293,6 +339,7 @@ export function updateAndNotifySession(
 export function killSession(sessionId: string) {
   const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
+    activeAdapterRunStore.delete(sessionId)
     getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
     cached.session.kill()
     deleteAdapterSessionRuntime(sessionId)

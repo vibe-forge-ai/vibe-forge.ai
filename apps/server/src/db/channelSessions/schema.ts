@@ -19,11 +19,26 @@ export const channelSessionsSchemaModule: SchemaModule = {
       );
 
       CREATE INDEX IF NOT EXISTS idx_channel_sessions_sessionId ON channel_sessions(sessionId);
+
+      CREATE TABLE IF NOT EXISTS channel_preferences (
+        channelType TEXT NOT NULL,
+        sessionType TEXT NOT NULL,
+        channelId TEXT NOT NULL,
+        channelKey TEXT NOT NULL,
+        adapter TEXT,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        PRIMARY KEY (channelType, sessionType, channelId)
+      );
     `)
 
     if (getColumns('channel_sessions').length > 0) {
       ensureColumn('channel_sessions', 'replyReceiveId', 'TEXT')
       ensureColumn('channel_sessions', 'replyReceiveIdType', 'TEXT')
+    }
+
+    if (getColumns('channel_preferences').length > 0) {
+      ensureColumn('channel_preferences', 'adapter', 'TEXT')
     }
   }
 }

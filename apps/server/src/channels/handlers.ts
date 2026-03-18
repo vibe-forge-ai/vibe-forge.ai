@@ -26,6 +26,7 @@ export const handleInboundEvent = async (
     connection,
     config,
     sessionId: undefined,
+    channelAdapter: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -74,6 +75,17 @@ export const handleInboundEvent = async (
       if (ctx.sessionId) {
         getDb().updateSession(ctx.sessionId, updates)
       }
+    },
+    getChannelAdapterPreference: () => ctx.channelAdapter,
+    setChannelAdapterPreference: (adapter) => {
+      ctx.channelAdapter = adapter
+      getDb().upsertChannelPreference({
+        channelType: inbound.channelType,
+        sessionType: inbound.sessionType,
+        channelId: inbound.channelId,
+        channelKey,
+        adapter
+      })
     }
   }
 

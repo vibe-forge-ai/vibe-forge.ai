@@ -129,6 +129,17 @@ export const run = async (
 
   const originalOnEvent = adapterOptions.onEvent
   const wrappedOnEvent = (event: AdapterOutputEvent) => {
+    if (event.type === 'init') {
+      originalOnEvent({
+        ...event,
+        data: {
+          ...event.data,
+          adapter: adapterType
+        }
+      })
+      return
+    }
+
     if (event.type === 'exit') {
       const { data } = event
 

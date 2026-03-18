@@ -272,7 +272,7 @@ export function useChatSessionMessages({
           setConnectionError((current) => current ?? t('chat.connectionClosed'))
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
-    }, modelChanged ? 200 : 100)
+    }, (modelChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
 
     return () => {
       isDisposed = true

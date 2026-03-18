@@ -11,7 +11,7 @@ defineMessages('zh', {
   'cmd.stop.description': '停止当前运行中的会话',
   'cmd.permissionMode.description': '设置当前会话权限模式并立即重启',
   'cmd.get.description': '查看当前会话的模型、适配器或权限模式',
-  'cmd.set.description': '修改当前会话的模型或适配器并立即重启',
+  'cmd.set.description': '修改当前会话的模型，或在无会话时设置下一次会话的适配器',
   'choice.session.getField.model.title': '模型',
   'choice.session.getField.model.description': '读取当前会话使用的模型名称。',
   'choice.session.getField.adapter.title': '适配器',
@@ -21,7 +21,7 @@ defineMessages('zh', {
   'choice.session.setField.model.title': '模型',
   'choice.session.setField.model.description': '修改当前会话的模型并立即重启。',
   'choice.session.setField.adapter.title': '适配器',
-  'choice.session.setField.adapter.description': '修改当前会话的适配器并立即重启。',
+  'choice.session.setField.adapter.description': '在当前频道无会话时，设置下一次创建会话使用的适配器。',
   'choice.session.permissionMode.default.title': '默认',
   'choice.session.permissionMode.default.description': '使用适配器默认的权限行为。',
   'choice.session.permissionMode.acceptEdits.title': '接受编辑',
@@ -50,7 +50,8 @@ defineMessages('zh', {
   'set.noSession': '当前频道没有已绑定会话，无法修改会话设置。',
   'set.permissionMode.success': ({ mode }) => `已将权限模式设置为 ${mode}，并重启当前会话。`,
   'set.model.success': ({ model }) => `已设置模型为 ${model}，并重启当前会话。`,
-  'set.adapter.success': ({ adapter }) => `已设置适配器为 ${adapter}，并重启当前会话。`
+  'set.adapter.pending.success': ({ adapter }) => `已将下次会话的适配器设置为 ${adapter}。请发送下一条消息创建新会话。`,
+  'set.adapter.requiresReset': '当前频道已有会话，无法切换适配器。请先执行 /reset 重置会话，再设置适配器。'
 })
 
 defineMessages('en', {
@@ -59,7 +60,7 @@ defineMessages('en', {
   'cmd.stop.description': 'Stop the current running session',
   'cmd.permissionMode.description': 'Set session permission mode and restart',
   'cmd.get.description': 'View current session model, adapter, or permission mode',
-  'cmd.set.description': 'Set session model or adapter and restart',
+  'cmd.set.description': 'Set the current session model, or set the adapter for the next session when no session is bound',
   'choice.session.getField.model.title': 'Model',
   'choice.session.getField.model.description': 'Read the model currently used by the session.',
   'choice.session.getField.adapter.title': 'Adapter',
@@ -69,7 +70,7 @@ defineMessages('en', {
   'choice.session.setField.model.title': 'Model',
   'choice.session.setField.model.description': 'Change the session model and restart immediately.',
   'choice.session.setField.adapter.title': 'Adapter',
-  'choice.session.setField.adapter.description': 'Change the session adapter and restart immediately.',
+  'choice.session.setField.adapter.description': 'When no session is bound in this channel, set the adapter used for the next session.',
   'choice.session.permissionMode.default.title': 'Default',
   'choice.session.permissionMode.default.description': 'Use the adapter default permission behavior.',
   'choice.session.permissionMode.acceptEdits.title': 'Accept edits',
@@ -98,7 +99,8 @@ defineMessages('en', {
   'set.noSession': 'No session bound. Cannot modify session settings.',
   'set.permissionMode.success': ({ mode }) => `Permission mode set to ${mode}. Session restarted.`,
   'set.model.success': ({ model }) => `Model set to ${model}. Session restarted.`,
-  'set.adapter.success': ({ adapter }) => `Adapter set to ${adapter}. Session restarted.`
+  'set.adapter.pending.success': ({ adapter }) => `Adapter for the next session set to ${adapter}. Send the next message to create a new session.`,
+  'set.adapter.requiresReset': 'A session is already bound to this channel. Run /reset first, then set the adapter.'
 })
 
 const formatList = (ctx: ChannelContext, items: string[] | undefined) =>
@@ -260,16 +262,18 @@ export const sessionCommands = () => [
     .description('cmd.get.description')
     .argument(requiredArg('field', { choices: GET_FIELD_CHOICES }))
     .action(async ({ ctx, args: [field] }) => {
+      if (field === 'adapter') {
+        const session = ctx.getBoundSession()
+        const adapter = session?.adapter ?? ctx.getChannelAdapterPreference()
+        await ctx.reply(ctx.t('session.adapter', { adapter: adapter ?? ctx.t('label.notSet') }))
+        return
+      }
+
       const session = await getBoundSessionOrReply(ctx)
       if (!session) return
 
       if (field === 'model') {
         await ctx.reply(ctx.t('session.model', { model: session.model ?? ctx.t('label.notSet') }))
-        return
-      }
-
-      if (field === 'adapter') {
-        await ctx.reply(ctx.t('session.adapter', { adapter: session.adapter ?? ctx.t('label.notSet') }))
         return
       }
 
@@ -282,6 +286,18 @@ export const sessionCommands = () => [
     .argument(requiredArg('field', { choices: SET_FIELD_CHOICES }))
     .argument(restArg('name'))
     .action(async ({ ctx, args: [field, value] }) => {
+      if (field === 'adapter') {
+        const session = ctx.getBoundSession()
+        if (ctx.sessionId && session) {
+          await ctx.reply(ctx.t('set.adapter.requiresReset'))
+          return
+        }
+
+        ctx.setChannelAdapterPreference(value as string)
+        await ctx.reply(ctx.t('set.adapter.pending.success', { adapter: value as string }))
+        return
+      }
+
       const session = await getBoundSessionOrReply(ctx)
       if (!session) return
 
@@ -293,11 +309,5 @@ export const sessionCommands = () => [
         )
         return
       }
-
-      await restartSessionWithReply(
-        ctx,
-        { adapter: value as string },
-        ctx.t('set.adapter.success', { adapter: value as string })
-      )
     })
 ]

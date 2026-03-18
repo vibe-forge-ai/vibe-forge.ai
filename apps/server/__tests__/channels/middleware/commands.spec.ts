@@ -33,6 +33,7 @@ const deleteChannelSessionBySessionId = vi.fn()
 const getSession = vi.fn()
 const updateSession = vi.fn()
 const updateSessionArchivedWithChildren = vi.fn()
+const upsertChannelPreference = vi.fn()
 
 const makeInbound = (overrides: Record<string, unknown> = {}) => ({
   channelType: 'lark',
@@ -53,6 +54,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     connection: undefined,
     config: undefined,
     sessionId: 'sess-abc',
+    channelAdapter: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -64,6 +66,17 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     stopSession: vi.fn(),
     restartSession: vi.fn().mockResolvedValue(undefined),
     updateSession: vi.fn(),
+    getChannelAdapterPreference: vi.fn(() => ctx.channelAdapter),
+    setChannelAdapterPreference: vi.fn((adapter?: string) => {
+      ctx.channelAdapter = adapter
+      upsertChannelPreference({
+        channelType: ctx.inbound.channelType,
+        sessionType: ctx.inbound.sessionType,
+        channelId: ctx.inbound.channelId,
+        channelKey: ctx.channelKey,
+        adapter
+      })
+    }),
     ...overrides
   }
 
@@ -121,6 +134,8 @@ beforeEach(() => {
   vi.mocked(getDb).mockReturnValue({
     deleteChannelSessionBySessionId,
     getSession,
+    getChannelPreference: vi.fn().mockReturnValue(undefined),
+    upsertChannelPreference,
     updateSession,
     updateSessionArchivedWithChildren
   } as any)
@@ -198,7 +213,7 @@ describe('/help command', () => {
     const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
     expect(message).toContain('/set <field:model|adapter> <name>')
     expect(message).toContain('model：模型')
-    expect(message).toContain('修改当前会话的模型并立即重启')
+    expect(message).toContain('适配器')
   })
 
   it('falls back to fuzzy search when no exact help target exists', async () => {
@@ -363,6 +378,36 @@ describe('session setting commands', () => {
     expect(ctx.reply).toHaveBeenCalledWith('缺少参数：<name>\n用法：/set <field:model|adapter> <name>')
   })
 
+  it('/set adapter stores the next-session adapter when no session is bound', async () => {
+    const ctx = makeCtx({
+      commandText: '/set adapter codex',
+      config: { type: 'lark' } as any,
+      sessionId: undefined
+    })
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('已将下次会话的适配器设置为 codex')
+    expect(upsertChannelPreference).toHaveBeenCalledWith({
+      channelType: 'lark',
+      sessionType: 'direct',
+      channelId: 'ch1',
+      channelKey: 'lark:default',
+      adapter: 'codex'
+    })
+  })
+
+  it('/set adapter is rejected when a session is already bound', async () => {
+    const ctx = makeCtx({ commandText: '/set adapter codex', config: { type: 'lark' } as any })
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledWith('当前频道已有会话，无法切换适配器。请先执行 /reset 重置会话，再设置适配器。')
+    expect(upsertChannelPreference).not.toHaveBeenCalled()
+    expect(updateSession).not.toHaveBeenCalled()
+    expect(startAdapterSession).not.toHaveBeenCalled()
+  })
+
   it('/get validates usage', async () => {
     const ctx = makeCtx({ commandText: '/get', config: { type: 'lark' } as any })
     await channelCommandMiddleware(ctx, vi.fn())
@@ -375,6 +420,17 @@ describe('session setting commands', () => {
     const ctx = makeCtx({ commandText: '/get model', config: { type: 'lark' } as any })
     await channelCommandMiddleware(ctx, vi.fn())
     expect(ctx.reply).toHaveBeenCalledWith('模型：gpt-test')
+  })
+
+  it('/get adapter returns the pending channel adapter when no session is bound', async () => {
+    const ctx = makeCtx({
+      commandText: '/get adapter',
+      config: { type: 'lark' } as any,
+      sessionId: undefined,
+      channelAdapter: 'codex'
+    })
+    await channelCommandMiddleware(ctx, vi.fn())
+    expect(ctx.reply).toHaveBeenCalledWith('适配器：codex')
   })
 
   it('/set model updates session model and restarts the session', async () => {

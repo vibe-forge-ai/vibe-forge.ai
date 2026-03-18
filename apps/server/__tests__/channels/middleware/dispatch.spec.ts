@@ -30,9 +30,12 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   connection: undefined,
   config: undefined,
   sessionId: undefined,
+  channelAdapter: undefined,
   contentItems: undefined,
   commandText: 'hello world',
   reply: vi.fn().mockResolvedValue(undefined),
+  getChannelAdapterPreference: vi.fn(),
+  setChannelAdapterPreference: vi.fn(),
   ...overrides
 })
 
@@ -60,6 +63,15 @@ describe('dispatchMiddleware', () => {
       const ctx = makeCtx()
       await dispatchMiddleware(ctx, vi.fn().mockResolvedValue(undefined))
       expect(ctx.sessionId).toBe('new-sess')
+    })
+
+    it('uses the pending channel adapter when creating a new session', async () => {
+      const ctx = makeCtx({ channelAdapter: 'codex' })
+
+      await dispatchMiddleware(ctx, vi.fn().mockResolvedValue(undefined))
+
+      const args = vi.mocked(createSessionWithInitialMessage).mock.calls[0][0]
+      expect(args.adapter).toBe('codex')
     })
 
     it('uses contentItems when present instead of text', async () => {

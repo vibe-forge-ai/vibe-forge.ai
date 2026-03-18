@@ -59,6 +59,7 @@ const getToolGroupIcon = (groupKey: SenderToolGroup['key']) => {
 export function Sender({
   onSend,
   onSendContent,
+  adapterLocked = false,
   sessionStatus,
   onInterrupt,
   onClear,
@@ -81,6 +82,7 @@ export function Sender({
 }: {
   onSend: (text: string) => void
   onSendContent: (content: ChatMessageContent[]) => void
+  adapterLocked?: boolean
   sessionStatus?: SessionStatus
   onInterrupt: () => void
   onClear?: () => void
@@ -718,7 +720,7 @@ export function Sender({
                 options={adapterOptions}
                 showSearch={false}
                 allowClear={false}
-                disabled={modelUnavailable || isThinking}
+                disabled={adapterLocked || modelUnavailable || isThinking}
                 onChange={(value) => onAdapterChange?.(value)}
                 placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
                 optionLabelProp='label'

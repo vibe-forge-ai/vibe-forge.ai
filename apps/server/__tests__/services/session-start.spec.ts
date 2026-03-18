@@ -1,0 +1,214 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getDb } from '#~/db/index.js'
+import { startAdapterSession } from '#~/services/session/index.js'
+import { adapterSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
+
+const mocks = vi.hoisted(() => ({
+  run: vi.fn(),
+  generateAdapterQueryOptions: vi.fn(),
+  loadMergedConfig: vi.fn(),
+  callHook: vi.fn(),
+  handleChannelSessionEvent: vi.fn()
+}))
+
+vi.mock('#~/db/index.js', () => ({
+  getDb: vi.fn()
+}))
+
+vi.mock('@vibe-forge/core/controllers/task', () => ({
+  generateAdapterQueryOptions: mocks.generateAdapterQueryOptions,
+  run: mocks.run
+}))
+
+vi.mock('@vibe-forge/core/utils/api', () => ({
+  callHook: mocks.callHook
+}))
+
+vi.mock('#~/channels/index.js', () => ({
+  handleChannelSessionEvent: mocks.handleChannelSessionEvent
+}))
+
+vi.mock('#~/services/config/index.js', () => ({
+  loadMergedConfig: mocks.loadMergedConfig
+}))
+
+vi.mock('#~/services/session/notification.js', () => ({
+  maybeNotifySession: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('#~/services/session/runtime.js', async () => {
+  const actual = await vi.importActual<typeof import('#~/services/session/runtime.js')>(
+    '#~/services/session/runtime.js'
+  )
+  return {
+    ...actual,
+    notifySessionUpdated: vi.fn()
+  }
+})
+
+vi.mock('#~/utils/logger.js', () => ({
+  getSessionLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn()
+  }))
+}))
+
+describe('startAdapterSession', () => {
+  let currentSession: any
+  const getMessages = vi.fn()
+  const createSession = vi.fn()
+  const updateSession = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    adapterSessionStore.clear()
+
+    currentSession = {
+      id: 'sess-1',
+      createdAt: Date.now(),
+      status: 'completed',
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    }
+
+    getMessages.mockReturnValue([])
+    createSession.mockImplementation((_title?: string, id?: string) => ({
+      id: id ?? 'sess-1',
+      createdAt: Date.now()
+    }))
+    updateSession.mockImplementation((_id: string, updates: Record<string, unknown>) => {
+      currentSession = { ...currentSession, ...updates }
+    })
+
+    vi.mocked(getDb).mockReturnValue({
+      getMessages,
+      getSession: vi.fn(() => currentSession),
+      createSession,
+      updateSession
+    } as any)
+
+    mocks.generateAdapterQueryOptions.mockResolvedValue([
+      {},
+      {
+        systemPrompt: undefined,
+        tools: undefined,
+        mcpServers: undefined
+      }
+    ])
+    mocks.loadMergedConfig.mockResolvedValue({ mergedConfig: {} })
+    mocks.callHook.mockResolvedValue(undefined)
+  })
+
+  it('reuses the cached runtime when adapter config is unchanged', async () => {
+    const runtime = {
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      } as any,
+      sockets: new Set(),
+      messages: [],
+      config: {
+        runId: 'run-same',
+        model: 'gpt-4o',
+        adapter: 'codex',
+        permissionMode: 'default'
+      }
+    }
+    adapterSessionStore.set('sess-1', runtime as any)
+
+    const result = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(result).toBe(runtime)
+    expect(mocks.run).not.toHaveBeenCalled()
+    expect(runtime.session.kill).not.toHaveBeenCalled()
+  })
+
+  it('restarts the runtime when adapter changes and ignores stale exit events', async () => {
+    const oldKill = vi.fn()
+    const oldEmit = vi.fn()
+    const newKill = vi.fn()
+    const newEmit = vi.fn()
+    let oldOnEvent: ((event: any) => void) | undefined
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      oldOnEvent = adapterOptions.onEvent
+      return {
+        session: {
+          kill: oldKill,
+          emit: oldEmit
+        }
+      }
+    })
+
+    const initialRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(initialRuntime.config?.adapter).toBe('codex')
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      return {
+        session: {
+          kill: newKill,
+          emit: newEmit
+        }
+      }
+    })
+
+    const restartedRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    expect(oldKill).toHaveBeenCalledOnce()
+    expect(restartedRuntime).not.toBe(initialRuntime)
+    expect(restartedRuntime.config?.adapter).toBe('claude-code')
+    expect(currentSession.adapter).toBe('claude-code')
+
+    oldOnEvent?.({
+      type: 'exit',
+      data: {
+        exitCode: 1,
+        stderr: 'old runtime exit'
+      }
+    })
+
+    expect(currentSession.status).toBe('completed')
+    expect(adapterSessionStore.get('sess-1')).toBe(restartedRuntime)
+    expect(vi.mocked(notifySessionUpdated)).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        adapter: 'claude-code'
+      })
+    )
+    expect(newKill).not.toHaveBeenCalled()
+  })
+
+  it('marks the session as failed when adapter startup throws', async () => {
+    mocks.run.mockRejectedValueOnce(new Error('adapter init failed'))
+
+    await expect(startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })).rejects.toThrow('adapter init failed')
+
+    expect(currentSession.status).toBe('failed')
+    expect(vi.mocked(notifySessionUpdated)).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        status: 'failed'
+      })
+    )
+  })
+})

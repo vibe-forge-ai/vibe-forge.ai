@@ -115,6 +115,21 @@ describe('sqliteDb', () => {
     }))
   })
 
+  it('persists channel adapter preferences independently of the current session binding', () => {
+    db.upsertChannelPreference({
+      channelType: 'lark',
+      sessionType: 'direct',
+      channelId: 'channel-1',
+      channelKey: 'key-1',
+      adapter: 'codex'
+    })
+
+    expect(db.getChannelPreference('lark', 'direct', 'channel-1')).toEqual(expect.objectContaining({
+      channelKey: 'key-1',
+      adapter: 'codex'
+    }))
+  })
+
   it('updates automation rules with nullable fields through the same API surface', () => {
     db.createAutomationRule({
       id: 'rule-1',

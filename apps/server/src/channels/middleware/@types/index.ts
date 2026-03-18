@@ -23,6 +23,8 @@ export interface ChannelContext {
   config: ChannelBaseConfig | undefined
   /** Resolved from DB before running the middleware chain */
   sessionId: string | undefined
+  /** Channel-level preferred adapter used when the next session is created */
+  channelAdapter: string | undefined
   /** Parsed rich content items from inbound.raw, if any */
   contentItems: ChatMessageContent[] | undefined
   /** Normalized text stripped of @-tags and speaker prefixes, used for command matching */
@@ -47,6 +49,10 @@ export interface ChannelContext {
   restartSession: () => Promise<void>
   /** Update session fields in DB */
   updateSession: (updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode'>>) => void
+  /** Read the adapter preference for the next session created in this channel */
+  getChannelAdapterPreference: () => string | undefined
+  /** Persist the adapter preference for the next session created in this channel */
+  setChannelAdapterPreference: (adapter: string | undefined) => void
 }
 
 export type ChannelMiddleware = (ctx: ChannelContext, next: () => Promise<void>) => Promise<void>

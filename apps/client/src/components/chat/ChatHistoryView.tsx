@@ -197,6 +197,7 @@ export function ChatHistoryView({
         <Sender
           onSend={handleSend}
           onSendContent={handleSendContent}
+          adapterLocked={session?.id != null}
           sessionStatus={isCreating ? 'running' : session?.status}
           onInterrupt={interrupt}
           onClear={clearMessages}

@@ -20,6 +20,7 @@ export type SessionInfo =
 export interface SessionInitInfo {
   uuid: string
   model: string
+  adapter?: string
   version: string
   tools: string[]
   slashCommands: string[]

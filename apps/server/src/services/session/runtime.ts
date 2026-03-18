@@ -1,4 +1,4 @@
-import type { AskUserQuestionParams, Session, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
 import type { AdapterSession } from '@vibe-forge/core/adapter'
 import { WebSocket as WebSocketImpl } from 'ws'
 import type { WebSocket } from 'ws'
@@ -16,8 +16,16 @@ export interface SessionConnectionState {
   currentInteraction?: SessionInteractionState
 }
 
+export interface AdapterSessionConfig {
+  runId: string
+  model?: string
+  adapter?: string
+  permissionMode?: SessionPermissionMode
+}
+
 export interface AdapterSessionRuntime extends SessionConnectionState {
   session: AdapterSession
+  config?: AdapterSessionConfig
 }
 
 export interface PendingSessionInteraction {
@@ -40,9 +48,10 @@ export function createSessionConnectionState(): SessionConnectionState {
 
 export function bindAdapterSessionRuntime(
   connectionState: SessionConnectionState,
-  session: AdapterSession
+  session: AdapterSession,
+  config?: AdapterSessionConfig
 ): AdapterSessionRuntime {
-  return Object.assign(connectionState, { session })
+  return Object.assign(connectionState, { session, config })
 }
 
 export function getAdapterSessionRuntime(sessionId: string) {

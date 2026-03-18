@@ -83,12 +83,20 @@ export class SqliteDb {
     return this.channelSessions.get(channelType, sessionType, channelId)
   }
 
+  getChannelPreference(channelType: string, sessionType: string, channelId: string) {
+    return this.channelSessions.getPreference(channelType, sessionType, channelId)
+  }
+
   getChannelSessionBySessionId(sessionId: string) {
     return this.channelSessions.getBySessionId(sessionId)
   }
 
   upsertChannelSession(row: Parameters<typeof this.channelSessions.upsert>[0]) {
     return this.channelSessions.upsert(row)
+  }
+
+  upsertChannelPreference(row: Parameters<typeof this.channelSessions.upsertPreference>[0]) {
+    return this.channelSessions.upsertPreference(row)
   }
 
   deleteChannelSessionBySessionId(sessionId: string) {
