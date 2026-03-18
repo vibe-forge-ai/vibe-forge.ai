@@ -1,20 +1,29 @@
 import type Database from 'better-sqlite3'
 
-import { createAutomationRepo } from '#~/automation/db/repo.js'
+import { createAutomationRepo } from './automation/repo'
 import type {
   AutomationRule,
   AutomationRuleDetail,
   AutomationRun,
   AutomationTask,
   AutomationTrigger
-} from '#~/automation/db/types.js'
+} from './automation/repo'
+import { automationSchemaModule } from './automation/schema'
+import { channelSessionsSchemaModule } from './channelSessions/schema'
 
-import { createChannelSessionsRepo } from './channelSessions.repo'
+import { createChannelSessionsRepo } from './channelSessions/repo'
 import { createConnection } from './connection'
-import { createMessagesRepo } from './messages.repo'
 import { initSchema } from './schema'
-import { createSessionsRepo } from './sessions.repo'
-import { createTagsRepo } from './tags.repo'
+import { createMessagesRepo } from './sessions/messages.repo'
+import { createSessionsRepo } from './sessions/repo'
+import { sessionsSchemaModule } from './sessions/schema'
+import { createTagsRepo } from './sessions/tags.repo'
+
+const dbSchemaModules = [sessionsSchemaModule, channelSessionsSchemaModule, automationSchemaModule] as const
+
+export interface SqliteDbOptions {
+  db?: Database.Database
+}
 
 export class SqliteDb {
   private db: Database.Database
@@ -24,10 +33,9 @@ export class SqliteDb {
   private tags: ReturnType<typeof createTagsRepo>
   private automation: ReturnType<typeof createAutomationRepo>
 
-  constructor() {
-    const { db } = createConnection()
-    this.db = db
-    initSchema(this.db)
+  constructor(options: SqliteDbOptions = {}) {
+    this.db = options.db ?? createConnection().db
+    initSchema(this.db, dbSchemaModules)
     this.sessions = createSessionsRepo(this.db)
     this.messages = createMessagesRepo(this.db)
     this.channelSessions = createChannelSessionsRepo(this.db)
@@ -36,75 +44,75 @@ export class SqliteDb {
   }
 
   getSessions(filter: 'active' | 'archived' | 'all' = 'active') {
-    return this.sessions.getSessions(filter)
+    return this.sessions.list(filter)
   }
 
   getSession(id: string) {
-    return this.sessions.getSession(id)
+    return this.sessions.get(id)
   }
 
-  updateSession(id: string, updates: Parameters<typeof this.sessions.updateSession>[1]) {
-    return this.sessions.updateSession(id, updates)
+  updateSession(id: string, updates: Parameters<typeof this.sessions.update>[1]) {
+    return this.sessions.update(id, updates)
   }
 
   updateSessionStarred(id: string, isStarred: boolean) {
-    return this.sessions.updateSessionStarred(id, isStarred)
+    return this.sessions.setStarred(id, isStarred)
   }
 
   updateSessionArchived(id: string, isArchived: boolean) {
-    return this.sessions.updateSessionArchived(id, isArchived)
+    return this.sessions.setArchived(id, isArchived)
   }
 
   updateSessionArchivedWithChildren(id: string, isArchived: boolean) {
-    return this.sessions.updateSessionArchivedWithChildren(id, isArchived)
+    return this.sessions.archiveTree(id, isArchived)
   }
 
   updateSessionTags(sessionId: string, tags: string[]) {
-    return this.tags.updateSessionTags(sessionId, tags)
+    return this.tags.replace(sessionId, tags)
   }
 
   saveMessage(sessionId: string, data: unknown) {
-    return this.messages.saveMessage(sessionId, data)
+    return this.messages.save(sessionId, data)
   }
 
   getMessages(sessionId: string) {
-    return this.messages.getMessages(sessionId)
+    return this.messages.list(sessionId)
   }
 
   getChannelSession(channelType: string, sessionType: string, channelId: string) {
-    return this.channelSessions.getChannelSession(channelType, sessionType, channelId)
+    return this.channelSessions.get(channelType, sessionType, channelId)
   }
 
   getChannelSessionBySessionId(sessionId: string) {
-    return this.channelSessions.getChannelSessionBySessionId(sessionId)
+    return this.channelSessions.getBySessionId(sessionId)
   }
 
-  upsertChannelSession(row: Parameters<typeof this.channelSessions.upsertChannelSession>[0]) {
-    return this.channelSessions.upsertChannelSession(row)
+  upsertChannelSession(row: Parameters<typeof this.channelSessions.upsert>[0]) {
+    return this.channelSessions.upsert(row)
   }
 
   deleteChannelSessionBySessionId(sessionId: string) {
-    return this.channelSessions.deleteChannelSessionBySessionId(sessionId)
+    return this.channelSessions.removeBySessionId(sessionId)
   }
 
   copyMessages(fromSessionId: string, toSessionId: string) {
-    return this.messages.copyMessages(fromSessionId, toSessionId)
+    return this.messages.copy(fromSessionId, toSessionId)
   }
 
   createSession(title?: string, id?: string, status?: string, parentSessionId?: string) {
-    return this.sessions.createSession(title, id, status, parentSessionId)
+    return this.sessions.create(title, id, status, parentSessionId)
   }
 
   updateSessionTitle(id: string, title: string) {
-    return this.sessions.updateSessionTitle(id, title)
+    return this.sessions.setTitle(id, title)
   }
 
   updateSessionLastMessages(id: string, lastMessage?: string, lastUserMessage?: string) {
-    return this.sessions.updateSessionLastMessages(id, lastMessage, lastUserMessage)
+    return this.sessions.setLastMessages(id, lastMessage, lastUserMessage)
   }
 
   deleteSession(id: string) {
-    return this.sessions.deleteSession(id)
+    return this.sessions.remove(id)
   }
 
   close() {
@@ -112,65 +120,65 @@ export class SqliteDb {
   }
 
   listAutomationRules() {
-    return this.automation.listAutomationRules()
+    return this.automation.listRules()
   }
 
   listAutomationRuleDetails() {
-    return this.automation.listAutomationRuleDetails()
+    return this.automation.listRuleDetails()
   }
 
   getAutomationRuleDetail(id: string) {
-    return this.automation.getAutomationRuleDetail(id)
+    return this.automation.getRuleDetail(id)
   }
 
   getAutomationRule(id: string) {
-    return this.automation.getAutomationRule(id)
+    return this.automation.getRule(id)
   }
 
   createAutomationRule(rule: AutomationRule) {
-    return this.automation.createAutomationRule(rule)
+    return this.automation.createRule(rule)
   }
 
   updateAutomationRule(id: string, updates: Partial<Omit<AutomationRule, 'id' | 'createdAt'>>) {
-    return this.automation.updateAutomationRule(id, updates)
+    return this.automation.updateRule(id, updates)
   }
 
   deleteAutomationRule(id: string) {
-    return this.automation.deleteAutomationRule(id)
+    return this.automation.removeRule(id)
   }
 
   listAutomationTriggers(ruleId: string) {
-    return this.automation.listAutomationTriggers(ruleId)
+    return this.automation.listTriggers(ruleId)
   }
 
   getAutomationTrigger(id: string) {
-    return this.automation.getAutomationTrigger(id)
+    return this.automation.getTrigger(id)
   }
 
   replaceAutomationTriggers(
     ruleId: string,
     triggers: Array<Omit<AutomationTrigger, 'id' | 'ruleId' | 'createdAt'> & { id?: string }>
   ) {
-    return this.automation.replaceAutomationTriggers(ruleId, triggers)
+    return this.automation.replaceTriggers(ruleId, triggers)
   }
 
   listAutomationTasks(ruleId: string) {
-    return this.automation.listAutomationTasks(ruleId)
+    return this.automation.listTasks(ruleId)
   }
 
   replaceAutomationTasks(
     ruleId: string,
     tasks: Array<Omit<AutomationTask, 'id' | 'ruleId' | 'createdAt'> & { id?: string }>
   ) {
-    return this.automation.replaceAutomationTasks(ruleId, tasks)
+    return this.automation.replaceTasks(ruleId, tasks)
   }
 
   createAutomationRun(ruleId: string, sessionId: string, taskId?: string | null, taskTitle?: string | null) {
-    return this.automation.createAutomationRun(ruleId, sessionId, taskId, taskTitle)
+    return this.automation.createRun(ruleId, sessionId, taskId, taskTitle)
   }
 
   listAutomationRuns(ruleId: string, limit = 50) {
-    return this.automation.listAutomationRuns(ruleId, limit)
+    return this.automation.listRuns(ruleId, limit)
   }
 }
 

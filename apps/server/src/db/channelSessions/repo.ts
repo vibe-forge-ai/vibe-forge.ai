@@ -13,7 +13,7 @@ export interface ChannelSessionRow {
 }
 
 export function createChannelSessionsRepo(db: Database.Database) {
-  const getChannelSession = (
+  const get = (
     channelType: string,
     sessionType: string,
     channelId: string
@@ -26,7 +26,7 @@ export function createChannelSessionsRepo(db: Database.Database) {
     return stmt.get(channelType, sessionType, channelId) as ChannelSessionRow | undefined
   }
 
-  const getChannelSessionBySessionId = (sessionId: string): ChannelSessionRow | undefined => {
+  const getBySessionId = (sessionId: string): ChannelSessionRow | undefined => {
     const stmt = db.prepare(`
       SELECT channelType, sessionType, channelId, channelKey, replyReceiveId, replyReceiveIdType, sessionId, createdAt, updatedAt
       FROM channel_sessions
@@ -37,7 +37,7 @@ export function createChannelSessionsRepo(db: Database.Database) {
     return stmt.get(sessionId) as ChannelSessionRow | undefined
   }
 
-  const upsertChannelSession = (row: Omit<ChannelSessionRow, 'createdAt' | 'updatedAt'>) => {
+  const upsert = (row: Omit<ChannelSessionRow, 'createdAt' | 'updatedAt'>) => {
     const now = Date.now()
     const stmt = db.prepare(`
       INSERT INTO channel_sessions (channelType, sessionType, channelId, channelKey, replyReceiveId, replyReceiveIdType, sessionId, createdAt, updatedAt)
@@ -62,7 +62,7 @@ export function createChannelSessionsRepo(db: Database.Database) {
     )
   }
 
-  const deleteChannelSessionBySessionId = (sessionId: string) => {
+  const removeBySessionId = (sessionId: string) => {
     const stmt = db.prepare(`
       DELETE FROM channel_sessions
       WHERE sessionId = ?
@@ -71,9 +71,9 @@ export function createChannelSessionsRepo(db: Database.Database) {
   }
 
   return {
-    getChannelSession,
-    getChannelSessionBySessionId,
-    upsertChannelSession,
-    deleteChannelSessionBySessionId
+    get,
+    getBySessionId,
+    removeBySessionId,
+    upsert
   }
 }

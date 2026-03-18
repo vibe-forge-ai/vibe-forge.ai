@@ -1,18 +1,19 @@
 import Router from '@koa/router'
 
-import type { ChatMessage, ChatMessageContent, SessionInfo, SessionInitInfo, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
+import type { SessionInfo, SessionInitInfo } from '@vibe-forge/core/adapter'
 
 import { getDb } from '#~/db/index.js'
-import { killSession, updateAndNotifySession } from '#~/services/session.js'
-import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
-import { applySessionEvent } from '#~/services/sessionEvents.js'
+import { createSessionWithInitialMessage } from '#~/services/session/create.js'
+import { applySessionEvent } from '#~/services/session/events.js'
+import { killSession, updateAndNotifySession } from '#~/services/session/index.js'
 import {
-  broadcastSessionEvent,
   clearSessionInteraction,
   getSessionInteraction,
-  notifySessionUpdated,
   setSessionInteraction
-} from '#~/websocket/index.js'
+} from '#~/services/session/interaction.js'
+import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
+import { badRequest, methodNotAllowed, notFound } from '#~/utils/http.js'
 
 export function sessionsRouter(): Router {
   const router = new Router()
@@ -127,9 +128,7 @@ export function sessionsRouter(): Router {
     const { id } = ctx.params as { id: string }
     const existing = db.getSession(id)
     if (existing == null) {
-      ctx.status = 404
-      ctx.body = { error: 'Session not found' }
-      return
+      throw notFound('Session not found', { id }, 'session_not_found')
     }
 
     const body = ctx.request.body as {
@@ -270,8 +269,7 @@ export function sessionsRouter(): Router {
       return
     }
 
-    ctx.status = 400
-    ctx.body = { error: 'Invalid event' }
+    throw badRequest('Invalid event', { type: body.type }, 'invalid_event')
   })
 
   router.delete('/:id', (ctx) => {
@@ -292,9 +290,7 @@ export function sessionsRouter(): Router {
 
     const original = db.getSession(id)
     if (!original) {
-      ctx.status = 404
-      ctx.body = { error: 'Original session not found' }
-      return
+      throw notFound('Original session not found', { id }, 'original_session_not_found')
     }
 
     // 创建新会话
@@ -309,8 +305,7 @@ export function sessionsRouter(): Router {
   })
 
   router.all('/:id', (ctx) => {
-    ctx.status = 405
-    ctx.body = { error: 'Method Not Allowed' }
+    throw methodNotAllowed('Method Not Allowed', { path: ctx.path }, 'method_not_allowed')
   })
 
   return router

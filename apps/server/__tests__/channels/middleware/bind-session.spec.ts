@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
-import { getDb } from '#~/db/index.js'
 import { setBinding, setPendingUnack } from '#~/channels/state.js'
+import { getDb } from '#~/db/index.js'
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
@@ -31,7 +31,15 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   sessionId: 'sess-abc',
   contentItems: undefined,
   commandText: '',
+  defineMessages: vi.fn(),
+  t: ((key: string) => key) as any,
   reply: vi.fn().mockResolvedValue(undefined),
+  pushFollowUps: vi.fn().mockResolvedValue(undefined),
+  getBoundSession: vi.fn(),
+  resetSession: vi.fn(),
+  stopSession: vi.fn(),
+  restartSession: vi.fn().mockResolvedValue(undefined),
+  updateSession: vi.fn(),
   ...overrides
 })
 

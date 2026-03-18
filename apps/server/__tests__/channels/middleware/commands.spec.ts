@@ -5,7 +5,7 @@ import { channelCommandMiddleware } from '#~/channels/middleware/commands/index.
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deleteBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
-import { killSession, startAdapterSession } from '#~/websocket/index.js'
+import { killSession, startAdapterSession } from '#~/services/session/index.js'
 import { updateConfigFile } from '@vibe-forge/core'
 
 vi.mock('@vibe-forge/core', async () => {
@@ -24,7 +24,7 @@ vi.mock('#~/channels/state.js', () => ({
   deleteBinding: vi.fn()
 }))
 
-vi.mock('#~/websocket/index.js', () => ({
+vi.mock('#~/services/session/index.js', () => ({
   killSession: vi.fn(),
   startAdapterSession: vi.fn().mockResolvedValue(undefined)
 }))

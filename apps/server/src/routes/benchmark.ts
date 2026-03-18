@@ -14,6 +14,8 @@ import {
   runBenchmarkCategory
 } from '@vibe-forge/core/controllers/benchmark'
 
+import { badRequest, notFound } from '#~/utils/http.js'
+
 const runRegistry = new Map<string, BenchmarkRunSummary>()
 
 const upsertRun = (run: BenchmarkRunSummary) => {
@@ -59,9 +61,7 @@ export function benchmarkRouter(): Router {
     const { category, title } = ctx.params as { category: string; title: string }
     const caseItem = await getBenchmarkCase({ category, title })
     if (caseItem == null) {
-      ctx.status = 404
-      ctx.body = { error: 'Benchmark case not found' }
-      return
+      throw notFound('Benchmark case not found', { category, title }, 'benchmark_case_not_found')
     }
     ctx.body = { case: caseItem }
   })
@@ -78,9 +78,7 @@ export function benchmarkRouter(): Router {
     const { category, title } = ctx.params as { category: string; title: string }
     const result = await readBenchmarkResult(process.cwd(), category, title)
     if (result == null) {
-      ctx.status = 404
-      ctx.body = { error: 'Benchmark result not found' }
-      return
+      throw notFound('Benchmark result not found', { category, title }, 'benchmark_result_not_found')
     }
     ctx.body = { result }
   })
@@ -89,9 +87,7 @@ export function benchmarkRouter(): Router {
     const { runId } = ctx.params as { runId: string }
     const run = runRegistry.get(runId)
     if (run == null) {
-      ctx.status = 404
-      ctx.body = { error: 'Benchmark run not found' }
-      return
+      throw notFound('Benchmark run not found', { runId }, 'benchmark_run_not_found')
     }
     ctx.body = { run }
   })
@@ -110,9 +106,7 @@ export function benchmarkRouter(): Router {
     const category = (body.category ?? '').trim()
     const title = (body.title ?? '').trim()
     if (category === '') {
-      ctx.status = 400
-      ctx.body = { error: 'category is required' }
-      return
+      throw badRequest('category is required', undefined, 'category_required')
     }
 
     const runId = randomUUID()
@@ -122,9 +116,7 @@ export function benchmarkRouter(): Router {
       : availableCases.filter(item => item.title === title)
 
     if (targetCases.length === 0) {
-      ctx.status = 404
-      ctx.body = { error: 'No benchmark cases matched the request' }
-      return
+      throw notFound('No benchmark cases matched the request', { category, title }, 'benchmark_cases_not_found')
     }
 
     const initialRun = upsertRun({

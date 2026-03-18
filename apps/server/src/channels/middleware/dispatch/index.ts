@@ -1,7 +1,7 @@
 import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
 
-import { processUserMessage } from '#~/services/session.js'
-import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
+import { createSessionWithInitialMessage } from '#~/services/session/create.js'
+import { processUserMessage } from '#~/services/session/index.js'
 
 import type { ChannelMiddleware } from '../@types'
 import { stripSpeakerPrefix } from '../@utils'

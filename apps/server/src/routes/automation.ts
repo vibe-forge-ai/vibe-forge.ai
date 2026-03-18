@@ -8,11 +8,58 @@ import {
   removeAutomationRuleSchedule,
   runAutomationRule,
   scheduleAutomationRule
-} from '#~/automation/index.js'
+} from '#~/services/automation/index.js'
 import { getDb } from '#~/db/index.js'
 import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db/index.js'
+import { badRequest, conflict, notFound, unauthorized } from '#~/utils/http.js'
 
 let schedulerReady = false
+
+type NormalizedAutomationTrigger = Omit<AutomationTrigger, 'ruleId' | 'createdAt'>
+
+const invalidPayload = () => badRequest('Invalid payload', undefined, 'invalid_payload')
+
+const normalizeTrigger = (
+  trigger: Partial<AutomationTrigger>,
+  isValidCron: (expression?: string | null) => boolean
+): NormalizedAutomationTrigger => {
+  const type: AutomationTrigger['type'] = trigger.type === 'webhook'
+    ? 'webhook'
+    : trigger.type === 'cron'
+      ? 'cron'
+      : 'interval'
+  const intervalMs = trigger.intervalMs ?? null
+  const cronExpression = (trigger.cronExpression ?? '').trim()
+  const webhookKey = (trigger.webhookKey ?? '').trim()
+
+  if (type === 'interval' && (intervalMs == null || intervalMs <= 0)) {
+    throw badRequest('Invalid interval', undefined, 'invalid_interval')
+  }
+  if (type === 'cron' && !isValidCron(cronExpression)) {
+    throw badRequest('Invalid cron expression', undefined, 'invalid_cron_expression')
+  }
+
+  return {
+    id: trigger.id ?? randomUUID(),
+    type,
+    intervalMs: type === 'interval' ? intervalMs : null,
+    cronExpression: type === 'cron' ? cronExpression : null,
+    webhookKey: type === 'webhook' ? (webhookKey !== '' ? webhookKey : randomUUID()) : null
+  }
+}
+
+const normalizeTask = (task: Partial<AutomationTask>, index: number) => {
+  const title = (task.title ?? '').trim() || `任务 ${index + 1}`
+  const prompt = (task.prompt ?? '').trim()
+  if (prompt === '') {
+    throw badRequest('Invalid task prompt', undefined, 'invalid_task_prompt')
+  }
+  return {
+    id: task.id ?? randomUUID(),
+    title,
+    prompt
+  }
+}
 
 export function automationRouter(): Router {
   const router = new Router()
@@ -54,44 +101,11 @@ export function automationRouter(): Router {
     const immediateRun = body.immediateRun === true
 
     if (name === '' || triggers.length === 0 || tasks.length === 0) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid payload' }
-      return
+      throw invalidPayload()
     }
 
-    const normalizedTriggers = triggers.map((trigger) => {
-      const type = trigger.type === 'webhook' ? 'webhook' : trigger.type === 'cron' ? 'cron' : 'interval'
-      const intervalMs = trigger.intervalMs ?? null
-      const cronExpression = (trigger.cronExpression ?? '').trim()
-      const webhookKey = (trigger.webhookKey ?? '').trim()
-
-      if (type === 'interval' && (intervalMs == null || intervalMs <= 0)) {
-        throw new Error('Invalid interval')
-      }
-      if (type === 'cron' && !isValidCron(cronExpression)) {
-        throw new Error('Invalid cron expression')
-      }
-      return {
-        id: trigger.id ?? randomUUID(),
-        type,
-        intervalMs: type === 'interval' ? intervalMs : null,
-        cronExpression: type === 'cron' ? cronExpression : null,
-        webhookKey: type === 'webhook' ? (webhookKey !== '' ? webhookKey : randomUUID()) : null
-      }
-    })
-
-    const normalizedTasks = tasks.map((task, index) => {
-      const title = (task.title ?? '').trim() || `任务 ${index + 1}`
-      const prompt = (task.prompt ?? '').trim()
-      if (prompt === '') {
-        throw new Error('Invalid task prompt')
-      }
-      return {
-        id: task.id ?? randomUUID(),
-        title,
-        prompt
-      }
-    })
+    const normalizedTriggers = triggers.map(trigger => normalizeTrigger(trigger, isValidCron))
+    const normalizedTasks = tasks.map((task, index) => normalizeTask(task, index))
 
     const primaryTrigger = normalizedTriggers[0]
     const primaryTask = normalizedTasks[0]
@@ -110,31 +124,24 @@ export function automationRouter(): Router {
       lastSessionId: null
     }
 
-    try {
-      db.createAutomationRule(rule)
-      db.replaceAutomationTriggers(rule.id, normalizedTriggers)
-      db.replaceAutomationTasks(rule.id, normalizedTasks)
-      if (enabled) {
-        scheduleAutomationRule(rule.id)
-      }
-      const detail = db.getAutomationRuleDetail(rule.id)
-      if (immediateRun) {
-        await runAutomationRule(rule.id, { ignoreEnabled: true })
-      }
-      ctx.body = { rule: detail }
-    } catch (err) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid payload' }
+    db.createAutomationRule(rule)
+    db.replaceAutomationTriggers(rule.id, normalizedTriggers)
+    db.replaceAutomationTasks(rule.id, normalizedTasks)
+    if (enabled) {
+      scheduleAutomationRule(rule.id)
     }
+    const detail = db.getAutomationRuleDetail(rule.id)
+    if (immediateRun) {
+      await runAutomationRule(rule.id, { ignoreEnabled: true })
+    }
+    ctx.body = { rule: detail }
   })
 
   router.patch('/rules/:id', async (ctx) => {
     const { id } = ctx.params as { id: string }
     const existing = db.getAutomationRule(id)
     if (!existing) {
-      ctx.status = 404
-      ctx.body = { error: 'Rule not found' }
-      return
+      throw notFound('Rule not found', { id }, 'rule_not_found')
     }
     const body = ctx.request.body as {
       name?: string
@@ -151,82 +158,42 @@ export function automationRouter(): Router {
     if (body.enabled !== undefined) updates.enabled = body.enabled
 
     if (updates.name !== undefined && updates.name.trim() === '') {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid payload' }
-      return
+      throw invalidPayload()
     }
 
-    try {
-      if (body.triggers) {
-        if (!Array.isArray(body.triggers) || body.triggers.length === 0) {
-          ctx.status = 400
-          ctx.body = { error: 'Invalid payload' }
-          return
-        }
-        const normalizedTriggers = body.triggers.map((trigger) => {
-          const type = trigger.type === 'webhook' ? 'webhook' : trigger.type === 'cron' ? 'cron' : 'interval'
-          const intervalMs = trigger.intervalMs ?? null
-          const cronExpression = (trigger.cronExpression ?? '').trim()
-          const webhookKey = (trigger.webhookKey ?? '').trim()
-          if (type === 'interval' && (intervalMs == null || intervalMs <= 0)) {
-            throw new Error('Invalid interval')
-          }
-          if (type === 'cron' && !isValidCron(cronExpression)) {
-            throw new Error('Invalid cron expression')
-          }
-          return {
-            id: trigger.id ?? randomUUID(),
-            type,
-            intervalMs: type === 'interval' ? intervalMs : null,
-            cronExpression: type === 'cron' ? cronExpression : null,
-            webhookKey: type === 'webhook' ? (webhookKey !== '' ? webhookKey : randomUUID()) : null
-          }
-        })
-        const primaryTrigger = normalizedTriggers[0]
-        updates.type = primaryTrigger?.type ?? updates.type ?? existing.type
-        updates.intervalMs = primaryTrigger?.intervalMs ?? null
-        updates.webhookKey = primaryTrigger?.webhookKey ?? null
-        updates.cronExpression = primaryTrigger?.cronExpression ?? null
-        removeAutomationRuleSchedule(id)
-        db.replaceAutomationTriggers(id, normalizedTriggers)
+    if (body.triggers) {
+      if (!Array.isArray(body.triggers) || body.triggers.length === 0) {
+        throw invalidPayload()
       }
-
-      if (body.tasks) {
-        if (!Array.isArray(body.tasks) || body.tasks.length === 0) {
-          ctx.status = 400
-          ctx.body = { error: 'Invalid payload' }
-          return
-        }
-        const normalizedTasks = body.tasks.map((task, index) => {
-          const title = (task.title ?? '').trim() || `任务 ${index + 1}`
-          const prompt = (task.prompt ?? '').trim()
-          if (prompt === '') {
-            throw new Error('Invalid task prompt')
-          }
-          return {
-            id: task.id ?? randomUUID(),
-            title,
-            prompt
-          }
-        })
-        const primaryTask = normalizedTasks[0]
-        updates.prompt = primaryTask?.prompt ?? updates.prompt ?? existing.prompt
-        db.replaceAutomationTasks(id, normalizedTasks)
-      }
-
-      db.updateAutomationRule(id, updates)
-      const updated = db.getAutomationRule(id)
-      if (updated?.enabled) {
-        scheduleAutomationRule(id)
-      }
-      if (immediateRun) {
-        await runAutomationRule(id, { ignoreEnabled: true })
-      }
-      ctx.body = { rule: db.getAutomationRuleDetail(id) }
-    } catch (err) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid payload' }
+      const normalizedTriggers = body.triggers.map(trigger => normalizeTrigger(trigger, isValidCron))
+      const primaryTrigger = normalizedTriggers[0]
+      updates.type = primaryTrigger?.type ?? updates.type ?? existing.type
+      updates.intervalMs = primaryTrigger?.intervalMs ?? null
+      updates.webhookKey = primaryTrigger?.webhookKey ?? null
+      updates.cronExpression = primaryTrigger?.cronExpression ?? null
+      removeAutomationRuleSchedule(id)
+      db.replaceAutomationTriggers(id, normalizedTriggers)
     }
+
+    if (body.tasks) {
+      if (!Array.isArray(body.tasks) || body.tasks.length === 0) {
+        throw invalidPayload()
+      }
+      const normalizedTasks = body.tasks.map((task, index) => normalizeTask(task, index))
+      const primaryTask = normalizedTasks[0]
+      updates.prompt = primaryTask?.prompt ?? updates.prompt ?? existing.prompt
+      db.replaceAutomationTasks(id, normalizedTasks)
+    }
+
+    db.updateAutomationRule(id, updates)
+    const updated = db.getAutomationRule(id)
+    if (updated?.enabled) {
+      scheduleAutomationRule(id)
+    }
+    if (immediateRun) {
+      await runAutomationRule(id, { ignoreEnabled: true })
+    }
+    ctx.body = { rule: db.getAutomationRuleDetail(id) }
   })
 
   router.delete('/rules/:id', (ctx) => {
@@ -242,9 +209,7 @@ export function automationRouter(): Router {
     const { id } = ctx.params as { id: string }
     const result = await runAutomationRule(id)
     if (!result) {
-      ctx.status = 409
-      ctx.body = { error: 'Rule disabled or missing' }
-      return
+      throw conflict('Rule disabled or missing', { id }, 'rule_unavailable')
     }
     ctx.body = { ok: true, ...result }
   })
@@ -261,26 +226,18 @@ export function automationRouter(): Router {
     const { id } = ctx.params as { id: string }
     const trigger = db.getAutomationTrigger(id)
     if (!trigger) {
-      ctx.status = 404
-      ctx.body = { error: 'Trigger not found' }
-      return
+      throw notFound('Trigger not found', { id }, 'trigger_not_found')
     }
     if (trigger.type !== 'webhook') {
-      ctx.status = 400
-      ctx.body = { error: 'Not a webhook trigger' }
-      return
+      throw badRequest('Not a webhook trigger', { id }, 'invalid_trigger_type')
     }
     const key = (ctx.query.key as string | undefined) ?? ctx.get('x-automation-key')
     if (key == null || key !== trigger.webhookKey) {
-      ctx.status = 401
-      ctx.body = { error: 'Invalid key' }
-      return
+      throw unauthorized('Invalid key', { id }, 'invalid_webhook_key')
     }
     const result = await runAutomationRule(trigger.ruleId)
     if (!result) {
-      ctx.status = 409
-      ctx.body = { error: 'Rule disabled' }
-      return
+      throw conflict('Rule disabled', { ruleId: trigger.ruleId }, 'rule_disabled')
     }
     ctx.body = { ok: true, ...result }
   })

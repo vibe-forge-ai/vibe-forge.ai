@@ -6,6 +6,8 @@ import Router from '@koa/router'
 import type { Definition, Entity, Rule, Spec } from '@vibe-forge/core/utils/definition-loader'
 import { DefinitionLoader } from '@vibe-forge/core/utils/definition-loader'
 
+import { badRequest, internalServerError, isHttpError, notFound } from '#~/utils/http.js'
+
 const getFirstNonEmptyLine = (text: string) =>
   text
     .split('\n')
@@ -91,18 +93,14 @@ export function aiRouter(): Router {
         })
       }
     } catch (err) {
-      console.error('[ai] Failed to load specs:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load specs' }
+      throw internalServerError('Failed to load specs', { cause: err, code: 'ai_specs_load_failed' })
     }
   })
 
   router.get('/specs/detail', async (ctx) => {
     const targetPath = typeof ctx.query.path === 'string' ? ctx.query.path : undefined
     if (!targetPath) {
-      ctx.status = 400
-      ctx.body = { error: 'Missing path' }
-      return
+      throw badRequest('Missing path', undefined, 'missing_path')
     }
 
     try {
@@ -113,9 +111,7 @@ export function aiRouter(): Router {
       })
 
       if (!spec) {
-        ctx.status = 404
-        ctx.body = { error: 'Spec not found' }
-        return
+        throw notFound('Spec not found', { path: targetPath }, 'spec_not_found')
       }
 
       const name = resolveSpecName(spec)
@@ -135,9 +131,8 @@ export function aiRouter(): Router {
         }
       }
     } catch (err) {
-      console.error('[ai] Failed to load spec detail:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load spec detail' }
+      if (isHttpError(err)) throw err
+      throw internalServerError('Failed to load spec detail', { cause: err, code: 'ai_spec_detail_load_failed' })
     }
   })
 
@@ -161,9 +156,7 @@ export function aiRouter(): Router {
         })
       }
     } catch (err) {
-      console.error('[ai] Failed to load entities:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load entities' }
+      throw internalServerError('Failed to load entities', { cause: err, code: 'ai_entities_load_failed' })
     }
   })
 
@@ -188,18 +181,14 @@ export function aiRouter(): Router {
         })
       }
     } catch (err) {
-      console.error('[ai] Failed to load rules:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load rules' }
+      throw internalServerError('Failed to load rules', { cause: err, code: 'ai_rules_load_failed' })
     }
   })
 
   router.get('/rules/detail', async (ctx) => {
     const targetPath = typeof ctx.query.path === 'string' ? ctx.query.path : undefined
     if (!targetPath) {
-      ctx.status = 400
-      ctx.body = { error: 'Missing path' }
-      return
+      throw badRequest('Missing path', undefined, 'missing_path')
     }
 
     try {
@@ -210,9 +199,7 @@ export function aiRouter(): Router {
       })
 
       if (!rule) {
-        ctx.status = 404
-        ctx.body = { error: 'Rule not found' }
-        return
+        throw notFound('Rule not found', { path: targetPath }, 'rule_not_found')
       }
 
       const name = resolveRuleName(rule)
@@ -232,18 +219,15 @@ export function aiRouter(): Router {
         }
       }
     } catch (err) {
-      console.error('[ai] Failed to load rule detail:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load rule detail' }
+      if (isHttpError(err)) throw err
+      throw internalServerError('Failed to load rule detail', { cause: err, code: 'ai_rule_detail_load_failed' })
     }
   })
 
   router.get('/entities/detail', async (ctx) => {
     const targetPath = typeof ctx.query.path === 'string' ? ctx.query.path : undefined
     if (!targetPath) {
-      ctx.status = 400
-      ctx.body = { error: 'Missing path' }
-      return
+      throw badRequest('Missing path', undefined, 'missing_path')
     }
 
     try {
@@ -254,9 +238,7 @@ export function aiRouter(): Router {
       })
 
       if (!entity) {
-        ctx.status = 404
-        ctx.body = { error: 'Entity not found' }
-        return
+        throw notFound('Entity not found', { path: targetPath }, 'entity_not_found')
       }
 
       const name = resolveEntityName(entity)
@@ -275,9 +257,8 @@ export function aiRouter(): Router {
         }
       }
     } catch (err) {
-      console.error('[ai] Failed to load entity detail:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load entity detail' }
+      if (isHttpError(err)) throw err
+      throw internalServerError('Failed to load entity detail', { cause: err, code: 'ai_entity_detail_load_failed' })
     }
   })
 

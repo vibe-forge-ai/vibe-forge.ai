@@ -1,26 +1,13 @@
-import { cwd as processCwd, env as processEnv } from 'node:process'
+import type { Config, NotificationTrigger, Session, SessionStatus } from '@vibe-forge/core'
+import { systemController } from '@vibe-forge/core'
 
-import type { Config, Session, SessionStatus } from '@vibe-forge/core'
-import { loadConfig, systemController } from '@vibe-forge/core'
+import { loadMergedConfig } from '#~/services/config/index.js'
 
-import { mergeRecord } from './utils'
-
-export const getMergedGeneralConfig = async () => {
-  const workspaceFolder = processEnv.__VF_PROJECT_WORKSPACE_FOLDER__ ?? processCwd()
-  const jsonVariables: Record<string, string | null | undefined> = {
-    ...processEnv,
-    WORKSPACE_FOLDER: workspaceFolder,
-    __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
+const toNotificationTrigger = (status: SessionStatus): NotificationTrigger | undefined => {
+  if (status === 'completed' || status === 'failed' || status === 'terminated' || status === 'waiting_input') {
+    return status
   }
-  const [projectConfig, userConfig] = await loadConfig({ jsonVariables })
-  return {
-    interfaceLanguage: userConfig?.interfaceLanguage ?? projectConfig?.interfaceLanguage,
-    modelLanguage: userConfig?.modelLanguage ?? projectConfig?.modelLanguage,
-    notifications: mergeRecord(
-      projectConfig?.notifications as Record<string, unknown> | undefined,
-      userConfig?.notifications as Record<string, unknown> | undefined
-    ) as Config['notifications']
-  }
+  return undefined
 }
 
 const resolveNotificationText = (
@@ -30,9 +17,13 @@ const resolveNotificationText = (
 ) => {
   const sessionLabel = session.title && session.title.trim() !== '' ? session.title : session.id
   if (language === 'en') {
-    if (status === 'completed') return { title: 'Session completed', description: `Session "${sessionLabel}" completed.` }
+    if (status === 'completed') {
+      return { title: 'Session completed', description: `Session "${sessionLabel}" completed.` }
+    }
     if (status === 'failed') return { title: 'Session failed', description: `Session "${sessionLabel}" failed.` }
-    if (status === 'terminated') return { title: 'Session terminated', description: `Session "${sessionLabel}" terminated.` }
+    if (status === 'terminated') {
+      return { title: 'Session terminated', description: `Session "${sessionLabel}" terminated.` }
+    }
     return { title: 'Session needs input', description: `Session "${sessionLabel}" is waiting for input.` }
   }
   if (status === 'completed') return { title: '会话已完成', description: `会话「${sessionLabel}」已完成。` }
@@ -41,17 +32,25 @@ const resolveNotificationText = (
   return { title: '会话等待输入', description: `会话「${sessionLabel}」正在等待输入。` }
 }
 
-export const maybeNotifySession = async (
+export async function maybeNotifySession(
   previousStatus: SessionStatus | undefined,
   nextStatus: SessionStatus | undefined,
   session: Session
-) => {
+) {
   if (nextStatus == null || nextStatus === previousStatus) return
-  const { notifications, interfaceLanguage } = await getMergedGeneralConfig()
+
+  const notificationTrigger = toNotificationTrigger(nextStatus)
+  if (notificationTrigger == null) return
+
+  const { mergedConfig } = await loadMergedConfig()
+  const { notifications, interfaceLanguage } = mergedConfig
+
   if (notifications?.disabled === true) return
-  const eventConfig = notifications?.events?.[nextStatus]
+
+  const eventConfig = notifications?.events?.[notificationTrigger]
   if (eventConfig?.disabled === true) return
-  const fallbackText = resolveNotificationText(nextStatus, session, interfaceLanguage)
+
+  const fallbackText = resolveNotificationText(notificationTrigger, session, interfaceLanguage)
   const title = eventConfig?.title && eventConfig.title.trim() !== ''
     ? eventConfig.title
     : fallbackText.title
@@ -60,11 +59,12 @@ export const maybeNotifySession = async (
     : fallbackText.description
   const sound = eventConfig?.sound
   const resolvedSound = typeof sound === 'string' && sound.trim() !== '' ? sound.trim() : undefined
+
   await systemController.notify({
     title,
     description,
     sound: resolvedSound,
-    volume: notifications.volume,
+    volume: notifications?.volume,
     timeout: false
   })
 }

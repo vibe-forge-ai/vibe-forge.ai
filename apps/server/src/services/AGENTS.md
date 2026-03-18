@@ -1,6 +1,9 @@
 # Services 目录说明
-- session.ts：Adapter 会话启动、消息写入、状态更新与终止
-- sessionCreate.ts：会话创建、初始消息注入与标签初始化
-- sessionEvents.ts：会话事件落库、状态派生与消息内容提取
 
-理解路径建议：先读 sessionCreate.ts 了解会话是如何被创建和启动的，再读 session.ts 理解运行态管理，最后阅读 sessionEvents.ts 看事件如何落库与更新会话状态。
+- config/：配置子域服务目录，统一负责 workspace 变量、配置读取与合并
+- automation/：automation 子域服务目录，负责规则执行与触发器调度
+- session/：会话子域服务目录，统一负责生命周期、交互、通知与运行态管理
+
+分层约定：services 统一承载跨入口复用的业务编排、运行态状态和配置装载；routes/websocket/channels 不直接维护会话缓存，不直接拼装 loadConfig 的 jsonVariables。
+
+理解路径建议：先读 config/、automation/ 和 session/runtime.ts 建立基础认知，再读 session/index.ts 和 session/interaction.ts 理解会话运行时流程，最后结合 session/create.ts 与 session/events.ts 看创建、落库与状态派生。

@@ -1,7 +1,6 @@
 import { cwd as processCwd, env as processEnv } from 'node:process'
 
 import { v4 as uuidv4 } from 'uuid'
-import type { WebSocket } from 'ws'
 
 import type { ChatMessage, ChatMessageContent, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
 import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/core/adapter'
@@ -10,13 +9,21 @@ import { callHook } from '@vibe-forge/core/utils/api'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
-import { applySessionEvent } from '#~/services/sessionEvents.js'
+import { loadMergedConfig } from '#~/services/config/index.js'
+import { applySessionEvent } from '#~/services/session/events.js'
+import { maybeNotifySession } from '#~/services/session/notification.js'
+import {
+  bindAdapterSessionRuntime,
+  broadcastSessionEvent,
+  createSessionConnectionState,
+  deleteAdapterSessionRuntime,
+  emitRuntimeEvent,
+  getAdapterSessionRuntime,
+  getExternalSessionRuntime,
+  notifySessionUpdated,
+  setAdapterSessionRuntime
+} from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-
-import { adapterCache, externalCache } from '#~/websocket/cache.js'
-import { notifySessionUpdated } from '#~/websocket/events.js'
-import { getMergedGeneralConfig, maybeNotifySession } from '#~/websocket/notifications.js'
-import { sendToClient } from '#~/websocket/utils.js'
 
 export async function startAdapterSession(
   sessionId: string,
@@ -36,7 +43,7 @@ export async function startAdapterSession(
   const serverLogger = getSessionLogger(sessionId, 'server')
   const type = hasHistory ? 'resume' : 'create'
 
-  const cached = adapterCache.get(sessionId)
+  const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
     serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
     return cached
@@ -64,8 +71,7 @@ export async function startAdapterSession(
     })
   }
 
-  const sockets = new Set<WebSocket>()
-  const messages: WSEvent[] = []
+  const connectionState = createSessionConnectionState()
 
   try {
     const promptCwd = processCwd()
@@ -88,7 +94,8 @@ export async function startAdapterSession(
     const finalSystemPrompt = [resolvedConfig.systemPrompt, options.systemPrompt]
       .filter(Boolean)
       .join('\n\n')
-    const { modelLanguage } = await getMergedGeneralConfig().catch(() => ({ modelLanguage: undefined }))
+    const { mergedConfig } = await loadMergedConfig().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
+    const { modelLanguage } = mergedConfig
     const languagePrompt = modelLanguage == null
       ? undefined
       : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
@@ -113,10 +120,7 @@ export async function startAdapterSession(
       onEvent: (event: AdapterOutputEvent) => {
         const broadcast = (ev: WSEvent) => {
           serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
-          messages.push(ev)
-          for (const socket of sockets) {
-            sendToClient(socket, ev)
-          }
+          emitRuntimeEvent(connectionState, ev)
         }
 
         const applyEvent = (ev: WSEvent) => {
@@ -169,11 +173,9 @@ export async function startAdapterSession(
               status: exitCode === 0 ? 'completed' : 'failed'
             })
 
-            for (const socket of sockets) {
-              sendToClient(socket, errorEvent)
-            }
+            emitRuntimeEvent(connectionState, errorEvent, { recordMessage: false })
 
-            adapterCache.delete(sessionId)
+            deleteAdapterSessionRuntime(sessionId)
             break
           }
           case 'summary': {
@@ -196,9 +198,7 @@ export async function startAdapterSession(
       }
     })
 
-    const entry = { session, sockets, messages }
-    adapterCache.set(sessionId, entry)
-    return entry
+    return setAdapterSessionRuntime(sessionId, bindAdapterSessionRuntime(connectionState, session))
   } catch (err) {
     serverLogger.error({ err, sessionId }, '[server] session init error')
     throw err
@@ -247,12 +247,9 @@ export function processUserMessage(sessionId: string, content: string | ChatMess
 
   updateAndNotifySession(sessionId, updates)
 
-  const cached = adapterCache.get(sessionId)
+  const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
-    cached.messages.push(ev)
-    for (const socket of cached.sockets) {
-      sendToClient(socket, ev)
-    }
+    broadcastSessionEvent(sessionId, ev)
 
     const messageList = cached.messages
 
@@ -270,12 +267,9 @@ export function processUserMessage(sessionId: string, content: string | ChatMess
       parentUuid
     })
   } else {
-    const externalCached = externalCache.get(sessionId)
+    const externalCached = getExternalSessionRuntime(sessionId)
     if (externalCached != null) {
-      externalCached.messages.push(ev)
-      for (const socket of externalCached.sockets) {
-        sendToClient(socket, ev)
-      }
+      broadcastSessionEvent(sessionId, ev)
       return
     }
     serverLogger.warn({ sessionId }, '[server] Adapter session not found when processing user message')
@@ -297,11 +291,19 @@ export function updateAndNotifySession(
 }
 
 export function killSession(sessionId: string) {
-  const cached = adapterCache.get(sessionId)
+  const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
     getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
     cached.session.kill()
-    adapterCache.delete(sessionId)
+    deleteAdapterSessionRuntime(sessionId)
     updateAndNotifySession(sessionId, { status: 'terminated' })
+  }
+}
+
+export function interruptSession(sessionId: string) {
+  const cached = getAdapterSessionRuntime(sessionId)
+  if (cached != null) {
+    getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Interrupting adapter process by request')
+    cached.session.emit({ type: 'interrupt' })
   }
 }

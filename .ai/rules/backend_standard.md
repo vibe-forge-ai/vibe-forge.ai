@@ -15,7 +15,11 @@ globs: apps/server/src/**/*, apps/cli/src/**/*
 - 使用 `src/db/index.ts` 导出的 `getDb()` 获取数据库实例。
 - 数据持久化基于 `better-sqlite3`。
 - 所有的 SQL 操作应在对应的 Repo 中封装，避免在 Router 中直接编写 SQL。
+- Schema 初始化必须通过 `src/db/schema.ts` 提供的注入式编排器完成；每个领域的建表和迁移单独维护在 `src/db/*.schema.ts`。
 - 复杂的业务逻辑应从路由处理函数中提取。
+- 会话运行态状态（如 socket 集合、消息缓存、交互等待队列）统一放在 `src/services/`，不要放在 `routes/` 或 `websocket/` 私有文件中。
+- Server 侧配置读取统一通过 `src/services/config.ts`，不要在各模块内重复直接调用 `loadConfig` 或手写 `jsonVariables`。
+- 不要在单一 schema 文件中持续叠加所有表结构；新增领域时在独立 schema 模块中维护，并由 `src/db/index.ts` 注入注册。
 - 文件读取优先使用 `node:fs/promises` 并通过解构方式引入。
 
 ## 外部适配器 (Adapters)

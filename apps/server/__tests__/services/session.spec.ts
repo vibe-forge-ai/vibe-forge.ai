@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import { killSession, processUserMessage } from '#~/services/session.js'
-import { adapterCache, externalCache } from '#~/websocket/cache.js'
-import { notifySessionUpdated } from '#~/websocket/events.js'
-import { maybeNotifySession } from '#~/websocket/notifications.js'
-import { sendToClient } from '#~/websocket/utils.js'
+import { killSession, processUserMessage } from '#~/services/session/index.js'
+import { maybeNotifySession } from '#~/services/session/notification.js'
+import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
@@ -15,17 +13,18 @@ vi.mock('#~/channels/index.js', () => ({
   handleChannelSessionEvent: vi.fn()
 }))
 
-vi.mock('#~/websocket/events.js', () => ({
-  notifySessionUpdated: vi.fn()
-}))
+vi.mock('#~/services/session/runtime.js', async () => {
+  const actual = await vi.importActual<typeof import('#~/services/session/runtime.js')>(
+    '#~/services/session/runtime.js'
+  )
+  return {
+    ...actual,
+    notifySessionUpdated: vi.fn()
+  }
+})
 
-vi.mock('#~/websocket/notifications.js', () => ({
-  getMergedGeneralConfig: vi.fn().mockResolvedValue({ modelLanguage: undefined }),
+vi.mock('#~/services/session/notification.js', () => ({
   maybeNotifySession: vi.fn().mockResolvedValue(undefined)
-}))
-
-vi.mock('#~/websocket/utils.js', () => ({
-  sendToClient: vi.fn()
 }))
 
 vi.mock('#~/utils/logger.js', () => ({
@@ -43,8 +42,8 @@ describe('session service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    adapterCache.clear()
-    externalCache.clear()
+    adapterSessionStore.clear()
+    externalSessionStore.clear()
 
     currentSession = {
       id: 'sess-1',
@@ -66,10 +65,10 @@ describe('session service', () => {
   })
 
   it('processes user messages through the active adapter session cache', () => {
-    const socket = { readyState: 1 } as any
+    const socket = { readyState: 1, send: vi.fn() } as any
     const emit = vi.fn()
 
-    adapterCache.set('sess-1', {
+    adapterSessionStore.set('sess-1', {
       session: {
         emit,
         kill: vi.fn()
@@ -122,12 +121,8 @@ describe('session service', () => {
       'running',
       expect.objectContaining({ status: 'running' })
     )
-    expect(vi.mocked(sendToClient)).toHaveBeenCalledWith(
-      socket,
-      expect.objectContaining({
-        type: 'message'
-      })
-    )
+    expect(socket.send).toHaveBeenCalledOnce()
+    expect(String(vi.mocked(socket.send).mock.calls[0][0])).toContain('"type":"message"')
     expect(emit).toHaveBeenCalledWith({
       type: 'message',
       content: [{ type: 'text', text: 'hello world' }],
@@ -138,7 +133,7 @@ describe('session service', () => {
   it('kills active sessions and updates the persisted status', () => {
     const kill = vi.fn()
 
-    adapterCache.set('sess-1', {
+    adapterSessionStore.set('sess-1', {
       session: {
         emit: vi.fn(),
         kill
@@ -150,7 +145,7 @@ describe('session service', () => {
     killSession('sess-1')
 
     expect(kill).toHaveBeenCalledOnce()
-    expect(adapterCache.has('sess-1')).toBe(false)
+    expect(adapterSessionStore.has('sess-1')).toBe(false)
     expect(updateSession).toHaveBeenCalledWith('sess-1', { status: 'terminated' })
     expect(vi.mocked(notifySessionUpdated)).toHaveBeenCalledWith(
       'sess-1',

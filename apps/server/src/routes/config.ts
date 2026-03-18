@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import process from 'node:process'
 
 import Router from '@koa/router'
 
 import type { AdapterBuiltinModel, Config } from '@vibe-forge/core'
-import { loadConfig, updateConfigFile } from '@vibe-forge/core'
+import { updateConfigFile } from '@vibe-forge/core'
+
+import { getWorkspaceFolder, loadMergedConfig } from '#~/services/config/index.js'
+import { badRequest, internalServerError } from '#~/utils/http.js'
 
 const sanitize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -20,35 +22,6 @@ const sanitize = (value: unknown): unknown => {
   }
   return value
 }
-
-const mergeRecord = <T>(left?: Record<string, T>, right?: Record<string, T>) => {
-  if (left == null && right == null) return undefined
-  return {
-    ...(left ?? {}),
-    ...(right ?? {})
-  }
-}
-
-const mergeConfig = (project?: Config, user?: Config): Config => ({
-  ...project,
-  ...user,
-  adapters: mergeRecord(
-    project?.adapters as Record<string, unknown> | undefined,
-    user?.adapters as Record<string, unknown> | undefined
-  ) as Config['adapters'],
-  modelServices: mergeRecord(project?.modelServices, user?.modelServices),
-  channels: mergeRecord(project?.channels, user?.channels),
-  mcpServers: mergeRecord(project?.mcpServers, user?.mcpServers),
-  enabledPlugins: mergeRecord(project?.enabledPlugins, user?.enabledPlugins),
-  extraKnownMarketplaces: mergeRecord(project?.extraKnownMarketplaces, user?.extraKnownMarketplaces),
-  plugins: user?.plugins ?? project?.plugins,
-  shortcuts: mergeRecord(project?.shortcuts, user?.shortcuts),
-  conversation: mergeRecord(project?.conversation, user?.conversation),
-  notifications: mergeRecord(
-    project?.notifications as Record<string, unknown> | undefined,
-    user?.notifications as Record<string, unknown> | undefined
-  ) as Config['notifications']
-})
 
 interface AppInfo {
   version?: string
@@ -143,12 +116,7 @@ export function configRouter(): Router {
 
   router.get('/', async (ctx) => {
     try {
-      const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
-      const jsonVariables: Record<string, string | null | undefined> = {
-        ...process.env,
-        WORKSPACE_FOLDER: workspaceFolder,
-        __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
-      }
+      const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadMergedConfig()
       const urls = {
         repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
         docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
@@ -157,8 +125,6 @@ export function configRouter(): Router {
         releases: 'https://github.com/vibe-forge-ai/vibe-forge.ai/releases'
       }
       const appInfo = await getAppInfo(workspaceFolder)
-      const [projectConfig, userConfig] = await loadConfig({ jsonVariables })
-      const mergedConfig = mergeConfig(projectConfig, userConfig)
       const mergedSections = buildSections(mergedConfig)
       mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
       ctx.body = {
@@ -182,9 +148,7 @@ export function configRouter(): Router {
         }
       }
     } catch (err) {
-      console.error('[config] Failed to load config:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to load config' }
+      throw internalServerError('Failed to load config', { cause: err, code: 'config_load_failed' })
     }
   })
 
@@ -196,25 +160,19 @@ export function configRouter(): Router {
     }
 
     if (source !== 'project' && source !== 'user') {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid source' }
-      return
+      throw badRequest('Invalid source', { source }, 'invalid_source')
     }
 
     if (section == null || typeof section !== 'string' || section.trim() === '') {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid section' }
-      return
+      throw badRequest('Invalid section', { section }, 'invalid_section')
     }
 
     try {
-      const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+      const workspaceFolder = getWorkspaceFolder()
       await updateConfigFile({ workspaceFolder, source, section, value })
       ctx.body = { ok: true }
     } catch (err) {
-      console.error('[config] Failed to update config:', err)
-      ctx.status = 500
-      ctx.body = { error: 'Failed to update config' }
+      throw internalServerError('Failed to update config', { cause: err, code: 'config_update_failed' })
     }
   })
 

@@ -3,26 +3,27 @@ import type { Server } from 'node:http'
 import { URL } from 'node:url'
 
 import { v4 as uuidv4 } from 'uuid'
-import type { WebSocket } from 'ws'
 import { WebSocketServer } from 'ws'
 
-import type { ServerEnv, WSEvent } from '@vibe-forge/core'
+import type { ServerEnv } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
-import { killSession, processUserMessage, startAdapterSession, updateAndNotifySession } from '#~/services/session.js'
-import { applySessionEvent } from '#~/services/sessionEvents.js'
+import { interruptSession, killSession, processUserMessage, startAdapterSession } from '#~/services/session/index.js'
+import { handleInteractionResponse } from '#~/services/session/interaction.js'
+import {
+  addSessionSubscriberSocket,
+  attachSocketToSession,
+  detachSocketFromSession,
+  removeSessionSubscriberSocket
+} from '#~/services/session/runtime.js'
+import { safeJsonStringify } from '#~/utils/json.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-
-import { adapterCache, externalCache, globalSockets, pendingInteractions } from './cache'
-import { broadcastSessionEvent, notifySessionUpdated } from './events'
-import { clearSessionInteraction } from './interactions'
-import { sendToClient } from './utils'
 
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
 
   wss.on('connection', async (ws, req) => {
-    globalSockets.add(ws)
+    addSessionSubscriberSocket(ws)
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
 
@@ -47,9 +48,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const isExternalSession = sessionData?.parentSessionId != null
 
       if (isExternalSession) {
-        const externalCached = externalCache.get(sessionId) ?? { sockets: new Set<WebSocket>(), messages: [] }
-        externalCached.sockets.add(ws)
-        externalCache.set(sessionId, externalCached)
+        attachSocketToSession(sessionId, ws, 'external')
       } else {
         const cached = await startAdapterSession(sessionId, {
           model,
@@ -66,10 +65,15 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           promptName,
           adapter
         })
-        cached.sockets.add(ws)
+        attachSocketToSession(sessionId, ws, 'adapter')
+        if (cached == null) {
+          throw new Error(`Failed to initialize session runtime for ${sessionId}`)
+        }
       }
     } catch (err) {
-      sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(safeJsonStringify({ type: 'error', message: err instanceof Error ? err.message : String(err) }))
+      }
       return
     }
 
@@ -79,28 +83,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
 
         if (msg.type === 'interaction_response') {
           const { id, data } = msg
-          const sessionData = getDb().getSession(sessionId)
-          const isExternalSession = sessionData?.parentSessionId != null
-          if (isExternalSession) {
-            clearSessionInteraction(sessionId, id)
-            const event: WSEvent = { type: 'interaction_response', id, data }
-            applySessionEvent(sessionId, event, {
-              broadcast: (ev) => broadcastSessionEvent(sessionId, ev),
-              onSessionUpdated: (session) => {
-                notifySessionUpdated(sessionId, session)
-              }
-            })
-            return
-          }
-          const pending = pendingInteractions.get(id)
-
-          if (pending) {
-            clearTimeout(pending.timer)
-            clearSessionInteraction(sessionId, id)
-            updateAndNotifySession(sessionId, { status: 'running' })
-            pending.resolve(data)
-            pendingInteractions.delete(id)
-          }
+          handleInteractionResponse(sessionId, id, data)
           return
         }
 
@@ -112,25 +95,24 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           serverLogger.info({ sessionId }, '[server] Received interrupt request')
           const sessionData = getDb().getSession(sessionId)
           if (sessionData?.parentSessionId == null) {
-            const cached = adapterCache.get(sessionId)
-            if (cached != null) {
-              cached.session.emit({ type: 'interrupt' })
-            }
+            interruptSession(sessionId)
           }
         } else if (msg.type === 'terminate_session') {
           serverLogger.info({ sessionId }, '[server] Received terminate_session request')
           killSession(sessionId)
         }
       } catch (err) {
-        sendToClient(ws, { type: 'error', message: err instanceof Error ? err.message : String(err) })
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(safeJsonStringify({ type: 'error', message: err instanceof Error ? err.message : String(err) }))
+        }
       }
     })
 
     ws.on('close', () => {
-      globalSockets.delete(ws)
-      const cached = adapterCache.get(sessionId)
+      removeSessionSubscriberSocket(ws)
+      const runtime = detachSocketFromSession(sessionId, ws)
+      const cached = runtime != null && 'session' in runtime ? runtime : undefined
       if (cached != null) {
-        cached.sockets.delete(ws)
         if (cached.sockets.size === 0) {
           serverLogger.info({ sessionId }, '[server] All sockets closed, but keeping adapter process alive')
         } else {
@@ -138,14 +120,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
             { sessionId, activeSockets: cached.sockets.size },
             '[server] Socket closed, but session still has active sockets'
           )
-        }
-        return
-      }
-      const externalCached = externalCache.get(sessionId)
-      if (externalCached != null) {
-        externalCached.sockets.delete(ws)
-        if (externalCached.sockets.size === 0) {
-          externalCache.delete(sessionId)
         }
       }
     })

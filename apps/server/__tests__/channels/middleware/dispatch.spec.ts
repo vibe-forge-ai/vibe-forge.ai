@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
-import { processUserMessage } from '#~/services/session.js'
-import { createSessionWithInitialMessage } from '#~/services/sessionCreate.js'
+import { createSessionWithInitialMessage } from '#~/services/session/create.js'
+import { processUserMessage } from '#~/services/session/index.js'
 
-vi.mock('#~/services/sessionCreate.js', () => ({
+vi.mock('#~/services/session/create.js', () => ({
   createSessionWithInitialMessage: vi.fn()
 }))
 
-vi.mock('#~/services/session.js', () => ({
+vi.mock('#~/services/session/index.js', () => ({
   processUserMessage: vi.fn()
 }))
 

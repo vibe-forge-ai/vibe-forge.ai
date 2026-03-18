@@ -1,7 +1,8 @@
 import Router from '@koa/router'
 import { AskUserQuestionParamsSchema } from '@vibe-forge/core/schema'
 
-import { requestInteraction } from '#~/websocket/index.js'
+import { requestInteraction } from '#~/services/session/interaction.js'
+import { badRequest, notFound, requestTimeout } from '#~/utils/http.js'
 
 export function interactRouter() {
   const router = new Router()
@@ -11,17 +12,17 @@ export function interactRouter() {
     const result = AskUserQuestionParamsSchema.safeParse(body)
 
     if (!result.success) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid parameters', details: result.error.errors }
-      return
+      throw badRequest('Invalid parameters', result.error.errors, 'invalid_parameters')
     }
 
     try {
       const answer = await requestInteraction(result.data)
       ctx.body = { result: answer }
     } catch (err) {
-      ctx.status = err instanceof Error && err.message.includes('not active') ? 404 : 408
-      ctx.body = { error: err instanceof Error ? err.message : String(err) }
+      if (err instanceof Error && err.message.includes('not active')) {
+        throw notFound(err.message, undefined, 'interaction_not_active')
+      }
+      throw requestTimeout(err instanceof Error ? err.message : String(err), undefined, 'interaction_timeout')
     }
   })
 

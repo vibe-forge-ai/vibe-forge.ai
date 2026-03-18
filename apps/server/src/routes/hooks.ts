@@ -5,6 +5,8 @@ import process from 'node:process'
 
 import Router from '@koa/router'
 
+import { badRequest, internalServerError } from '#~/utils/http.js'
+
 type AllowedHookEventName =
   | 'StartTasks'
   | 'TaskStart'
@@ -105,9 +107,7 @@ export function hooksRouter(): Router {
 
   router.post('/call', async (ctx) => {
     if (!isRecord(ctx.request.body)) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid body' }
-      return
+      throw badRequest('Invalid body', undefined, 'invalid_body')
     }
 
     const hookEventNameRaw = ctx.request.body.hookEventName
@@ -115,21 +115,15 @@ export function hooksRouter(): Router {
     const envRaw = ctx.request.body.env
 
     if (typeof hookEventNameRaw !== 'string' || !allowedHookEventNames.has(hookEventNameRaw as AllowedHookEventName)) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid hookEventName' }
-      return
+      throw badRequest('Invalid hookEventName', { hookEventName: hookEventNameRaw }, 'invalid_hook_event_name')
     }
     if (!isRecord(inputRaw)) {
-      ctx.status = 400
-      ctx.body = { error: 'Invalid input' }
-      return
+      throw badRequest('Invalid input', undefined, 'invalid_input')
     }
 
     const sessionId = typeof inputRaw.sessionId === 'string' ? inputRaw.sessionId : ''
     if (!sessionId) {
-      ctx.status = 400
-      ctx.body = { error: 'Missing sessionId' }
-      return
+      throw badRequest('Missing sessionId', undefined, 'missing_session_id')
     }
 
     try {
@@ -140,8 +134,7 @@ export function hooksRouter(): Router {
       })
       ctx.body = { ok: true, ...result }
     } catch (e) {
-      ctx.status = 500
-      ctx.body = { error: `Failed to call hook: ${String(e)}` }
+      throw internalServerError(`Failed to call hook: ${String(e)}`, { cause: e, code: 'hook_call_failed' })
     }
   })
 

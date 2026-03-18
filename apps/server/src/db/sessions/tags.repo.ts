@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 
 export function createTagsRepo(db: Database.Database) {
-  const updateSessionTags = (sessionId: string, tags: string[]) => {
+  const replace = (sessionId: string, tags: string[]) => {
     const transaction = db.transaction(() => {
       db.prepare('DELETE FROM session_tags WHERE sessionId = ?').run(sessionId)
 
@@ -15,7 +15,7 @@ export function createTagsRepo(db: Database.Database) {
   }
 
   return {
-    updateSessionTags
+    replace
   }
 }
 
