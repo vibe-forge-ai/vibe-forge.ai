@@ -1,6 +1,10 @@
 {
   "adapters": {
-    "claude-code": {},
+    "claude-code": {
+      "ccrTransformers": {
+        "logger": true
+      }
+    },
     "codex": {}
   },
   "plugins": {
