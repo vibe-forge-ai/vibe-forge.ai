@@ -119,9 +119,16 @@ export function broadcastSessionEvent(sessionId: string, event: WSEvent) {
   }
 }
 
-export function notifySessionUpdated(_sessionId: string, session: Session | { id: string; isDeleted: boolean }) {
+export function notifySessionUpdated(sessionId: string, session: Session | { id: string; isDeleted: boolean }) {
   const event: WSEvent = { type: 'session_updated', session }
   const payload = safeJsonStringify(event)
+  const runtime = getSessionConnectionState(sessionId)
+
+  for (const socket of runtime?.sockets ?? []) {
+    if (socket.readyState === WebSocketImpl.OPEN) {
+      socket.send(payload)
+    }
+  }
 
   for (const socket of sessionSubscriberSockets) {
     if (socket.readyState === WebSocketImpl.OPEN) {
