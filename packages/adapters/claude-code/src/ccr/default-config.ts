@@ -2,6 +2,33 @@ import type { Config, ModelServiceConfig } from '@vibe-forge/core'
 
 import { resolveTransformerPath } from './paths'
 
+const getServiceQueryParams = (service: ModelServiceConfig) => {
+  const extra = (service.extra ?? {}) as {
+    codex?: {
+      queryParams?: Record<string, string>
+    }
+    claudeCodeRouter?: {
+      queryParams?: Record<string, string>
+    }
+  }
+
+  return extra.claudeCodeRouter?.queryParams ?? extra.codex?.queryParams
+}
+
+const buildProviderBaseUrl = (service: ModelServiceConfig) => {
+  const queryParams = getServiceQueryParams(service)
+  if (queryParams == null || Object.keys(queryParams).length === 0) {
+    return service.apiBaseUrl
+  }
+
+  const url = new URL(service.apiBaseUrl)
+  for (const [key, value] of Object.entries(queryParams)) {
+    if (typeof value !== 'string' || value.trim() === '') continue
+    url.searchParams.set(key, value)
+  }
+  return url.toString()
+}
+
 const normalizeServiceModel = (
   serviceKey: string,
   modelName: string,
@@ -72,7 +99,7 @@ const resolveDefaultModel = (params: {
   const { config, userConfig, modelServices } = params
   const providers = Object.entries(modelServices).map(([name, configValue]) => ({
     name,
-    api_base_url: configValue.apiBaseUrl,
+    api_base_url: buildProviderBaseUrl(configValue),
     api_key: configValue.apiKey,
     models: configValue.models,
     transformer: configValue.extra?.claudeCodeRouterTransformer

@@ -98,7 +98,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         serverLogger.info({ event: 'user_input', data: msg }, 'Received user message')
         if (msg.type === 'user_message') {
           const content = msg.content ?? msg.text
-          processUserMessage(sessionId, content)
+          void processUserMessage(sessionId, content)
         } else if (msg.type === 'interrupt') {
           serverLogger.info({ sessionId }, '[server] Received interrupt request')
           const sessionData = getDb().getSession(sessionId)

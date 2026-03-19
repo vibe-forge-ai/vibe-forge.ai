@@ -43,11 +43,12 @@ export async function startAdapterSession(
   const historyMessages = db.getMessages(sessionId) as WSEvent[]
   const hasHistory = historyMessages.length > 0
   const serverLogger = getSessionLogger(sessionId, 'server')
-  const type = hasHistory ? 'resume' : 'create'
   const existing = db.getSession(sessionId)
   const resolvedModel = options.model ?? existing?.model
   const resolvedAdapter = options.adapter ?? existing?.adapter
   const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
+  const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
+  const type = hasHistory && !adapterChanged ? 'resume' : 'create'
 
   const cached = getAdapterSessionRuntime(sessionId)
   if (cached != null) {
@@ -258,7 +259,7 @@ function extractTextFromContent(content: ChatMessageContent[]) {
   return textItem?.text
 }
 
-export function processUserMessage(sessionId: string, content: string | ChatMessageContent[]) {
+export async function processUserMessage(sessionId: string, content: string | ChatMessageContent[]) {
   const serverLogger = getSessionLogger(sessionId, 'server')
   const userText = typeof content === 'string' ? String(content ?? '') : ''
   const contentItems: ChatMessageContent[] = Array.isArray(content)
@@ -293,33 +294,39 @@ export function processUserMessage(sessionId: string, content: string | ChatMess
 
   updateAndNotifySession(sessionId, updates)
 
-  const cached = getAdapterSessionRuntime(sessionId)
-  if (cached != null) {
+  const externalCached = getExternalSessionRuntime(sessionId)
+  if (externalCached != null) {
     broadcastSessionEvent(sessionId, ev)
-
-    const messageList = cached.messages
-
-    const lastAssistantMessage = messageList
-      .filter((m: WSEvent): m is Extract<WSEvent, { type: 'message' }> =>
-        m.type === 'message' && m.message.role === 'assistant' && (m.message.id != null && m.message.id !== '')
-      )
-      .pop()
-
-    const parentUuid = lastAssistantMessage != null ? lastAssistantMessage.message.id : undefined
-
-    cached.session.emit({
-      type: 'message',
-      content: contentItems,
-      parentUuid
-    })
-  } else {
-    const externalCached = getExternalSessionRuntime(sessionId)
-    if (externalCached != null) {
-      broadcastSessionEvent(sessionId, ev)
-      return
-    }
-    serverLogger.warn({ sessionId }, '[server] Adapter session not found when processing user message')
+    return
   }
+
+  let runtime = getAdapterSessionRuntime(sessionId)
+  if (runtime == null) {
+    serverLogger.info({ sessionId }, '[server] Adapter runtime missing for user message, starting a new process')
+    runtime = await startAdapterSession(sessionId)
+  }
+
+  if (runtime == null) {
+    serverLogger.warn({ sessionId }, '[server] Adapter session not found when processing user message')
+    return
+  }
+
+  broadcastSessionEvent(sessionId, ev)
+
+  const messageList = db.getMessages(sessionId) as WSEvent[]
+  const lastAssistantMessage = messageList
+    .filter((m: WSEvent): m is Extract<WSEvent, { type: 'message' }> =>
+      m.type === 'message' && m.message.role === 'assistant' && (m.message.id != null && m.message.id !== '')
+    )
+    .pop()
+
+  const parentUuid = lastAssistantMessage != null ? lastAssistantMessage.message.id : undefined
+
+  runtime.session.emit({
+    type: 'message',
+    content: contentItems,
+    parentUuid
+  })
 }
 
 export function updateAndNotifySession(

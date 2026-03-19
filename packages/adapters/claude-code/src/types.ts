@@ -83,6 +83,7 @@ export interface ClaudeCodeAssistantEvent extends ClaudeCodeBaseEvent {
 export interface ClaudeCodeSystemInitEvent extends ClaudeCodeBaseEvent {
   type: 'system'
   subtype: 'init'
+  session_id?: string
   model: string
   claude_code_version: string
   tools: unknown[]
@@ -123,9 +124,17 @@ export interface ClaudeCodeResultEvent extends ClaudeCodeBaseEvent {
   permission_denials: unknown[]
 }
 
+export interface ClaudeCodeErrorResultEvent extends ClaudeCodeBaseEvent {
+  type: 'result'
+  subtype: 'error_during_execution'
+  session_id?: string
+  errors: string[]
+}
+
 export type ClaudeCodeIncomingEvent =
   | ClaudeCodeUserEvent
   | ClaudeCodeAssistantEvent
   | ClaudeCodeSystemInitEvent
   | ClaudeCodeSummaryEvent
   | ClaudeCodeResultEvent
+  | ClaudeCodeErrorResultEvent

@@ -37,6 +37,7 @@ vi.mock('#~/utils/logger.js', () => ({
 
 describe('session service', () => {
   const saveMessage = vi.fn()
+  const getMessages = vi.fn()
   const updateSession = vi.fn()
   let currentSession: any
 
@@ -59,14 +60,27 @@ describe('session service', () => {
 
     vi.mocked(getDb).mockReturnValue({
       saveMessage,
+      getMessages,
       getSession: vi.fn(() => currentSession),
       updateSession
     } as any)
   })
 
-  it('processes user messages through the active adapter session cache', () => {
+  it('processes user messages through the active adapter session cache', async () => {
     const socket = { readyState: 1, send: vi.fn() } as any
     const emit = vi.fn()
+    const messageHistory = [
+      {
+        type: 'message',
+        message: {
+          id: 'assistant-1',
+          role: 'assistant',
+          content: 'previous',
+          createdAt: 1
+        }
+      } as any
+    ]
+    getMessages.mockReturnValue(messageHistory)
 
     adapterSessionStore.set('sess-1', {
       session: {
@@ -74,20 +88,10 @@ describe('session service', () => {
         kill: vi.fn()
       } as any,
       sockets: new Set([socket]),
-      messages: [
-        {
-          type: 'message',
-          message: {
-            id: 'assistant-1',
-            role: 'assistant',
-            content: 'previous',
-            createdAt: 1
-          }
-        } as any
-      ]
+      messages: messageHistory
     })
 
-    processUserMessage('sess-1', 'hello world')
+    await processUserMessage('sess-1', 'hello world')
 
     expect(saveMessage).toHaveBeenCalledOnce()
     expect(saveMessage).toHaveBeenCalledWith(

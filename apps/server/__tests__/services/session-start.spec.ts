@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import { startAdapterSession } from '#~/services/session/index.js'
+import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { adapterSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
@@ -58,6 +58,7 @@ vi.mock('#~/utils/logger.js', () => ({
 describe('startAdapterSession', () => {
   let currentSession: any
   const getMessages = vi.fn()
+  const saveMessage = vi.fn()
   const createSession = vi.fn()
   const updateSession = vi.fn()
 
@@ -85,6 +86,7 @@ describe('startAdapterSession', () => {
 
     vi.mocked(getDb).mockReturnValue({
       getMessages,
+      saveMessage,
       getSession: vi.fn(() => currentSession),
       createSession,
       updateSession
@@ -137,7 +139,20 @@ describe('startAdapterSession', () => {
     const newEmit = vi.fn()
     let oldOnEvent: ((event: any) => void) | undefined
 
+    getMessages.mockReturnValue([
+      {
+        type: 'message',
+        message: {
+          id: 'assist-1',
+          role: 'assistant',
+          content: 'previous answer',
+          createdAt: Date.now()
+        }
+      }
+    ])
+
     mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      expect(adapterOptions.type).toBe('resume')
       oldOnEvent = adapterOptions.onEvent
       return {
         session: {
@@ -156,6 +171,7 @@ describe('startAdapterSession', () => {
     expect(initialRuntime.config?.adapter).toBe('codex')
 
     mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      expect(adapterOptions.type).toBe('create')
       return {
         session: {
           kill: newKill,
@@ -208,6 +224,53 @@ describe('startAdapterSession', () => {
       'sess-1',
       expect.objectContaining({
         status: 'failed'
+      })
+    )
+  })
+
+  it('restarts the adapter on demand when a follow-up user message arrives after completion', async () => {
+    const emit = vi.fn()
+
+    currentSession.status = 'completed'
+    getMessages.mockReturnValue([
+      {
+        type: 'message',
+        message: {
+          id: 'assist-1',
+          role: 'assistant',
+          content: 'previous answer',
+          createdAt: Date.now()
+        }
+      }
+    ])
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill: vi.fn()
+      }
+    })
+
+    await processUserMessage('sess-1', 'follow up')
+
+    expect(mocks.run).toHaveBeenCalledOnce()
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      type: 'resume',
+      sessionId: 'sess-1'
+    }))
+    expect(emit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{ type: 'text', text: 'follow up' }],
+      parentUuid: 'assist-1'
+    })
+    expect(currentSession.status).toBe('running')
+    expect(saveMessage).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'message',
+        message: expect.objectContaining({
+          role: 'user',
+          content: 'follow up'
+        })
       })
     )
   })

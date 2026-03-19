@@ -4,6 +4,9 @@ declare module '@vibe-forge/core' {
   interface Cache {
     'adapter.claude-code.mcp': Record<string, unknown>
     'adapter.claude-code.settings': Record<string, unknown>
+    'adapter.claude-code.resume-state': {
+      canResume: boolean
+    }
   }
   interface AdapterMap {
     'claude-code': {

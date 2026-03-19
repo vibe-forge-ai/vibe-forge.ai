@@ -98,6 +98,9 @@ export const handleIncomingEvent = (
   }
 
   if (data.type === 'result') {
+    if (data.subtype !== 'success') {
+      return
+    }
     let messageData: ChatMessage | undefined
     if (data.result != null && data.result !== '') {
       messageData = {

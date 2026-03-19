@@ -5,13 +5,18 @@ import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'
-import type { ClaudeCodeBaseEvent, ClaudeCodeIncomingEvent, ClaudeCodeUserEvent } from '../types'
+import type {
+  ClaudeCodeBaseEvent,
+  ClaudeCodeErrorResultEvent,
+  ClaudeCodeIncomingEvent,
+  ClaudeCodeUserEvent
+} from '../types'
 import { prepareClaudeExecution } from './prepare'
 
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
-  const { cliPath, args, env, cwd, sessionId } = await prepareClaudeExecution(ctx, options)
+  const { cliPath, args, env, cwd, sessionId, executionType } = await prepareClaudeExecution(ctx, options)
 
   if (mode === 'stream') {
     args.push(
@@ -37,6 +42,18 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
     })
 
     let stdoutBuffer = ''
+    let canResumeMarked = executionType === 'resume'
+
+    const markResumeReady = async () => {
+      if (canResumeMarked) return
+      canResumeMarked = true
+      await ctx.cache.set('adapter.claude-code.resume-state', { canResume: true })
+    }
+
+    const clearResumeReady = async () => {
+      canResumeMarked = false
+      await ctx.cache.set('adapter.claude-code.resume-state', { canResume: false })
+    }
 
     proc.stdout.on('data', (buf) => {
       const rawStr = String(buf)
@@ -50,7 +67,27 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
         const trimmed = cleanedLine.trim()
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
           try {
-            handleIncomingEvent(JSON.parse(trimmed) as ClaudeCodeIncomingEvent, onEvent)
+            const parsed = JSON.parse(trimmed) as ClaudeCodeIncomingEvent
+            if (
+              parsed.type === 'result' &&
+              parsed.subtype === 'error_during_execution' &&
+              (parsed as ClaudeCodeErrorResultEvent).errors.some(
+                error => error.includes(`No conversation found with session ID: ${sessionId}`)
+              )
+            ) {
+              void clearResumeReady()
+            }
+            if (
+              executionType === 'create' &&
+              (
+                (parsed.type === 'system' && parsed.subtype === 'init') ||
+                parsed.type === 'assistant' ||
+                (parsed.type === 'result' && parsed.subtype === 'success')
+              )
+            ) {
+              void markResumeReady()
+            }
+            handleIncomingEvent(parsed, onEvent)
           } catch (err) {
             console.error('Failed to parse JSON:', trimmed, err)
           }

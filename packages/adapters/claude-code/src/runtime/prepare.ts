@@ -15,6 +15,8 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     mcpServers: inputMCPServersRule,
     tools: inputToolsRule
   } = options
+  const resumeState = await cache.get('adapter.claude-code.resume-state')
+  const executionType = type === 'resume' && resumeState?.canResume === true ? 'resume' : 'create'
 
   const settings = {
     mcpServers: {
@@ -131,9 +133,9 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     settingsCachePath
   ].filter((a) => typeof a === 'string')
 
-  if (type === 'create') {
+  if (executionType === 'create') {
     args.push('--session-id', sessionId)
-  } else if (type === 'resume') {
+  } else {
     args.push('--resume', sessionId)
   }
 
@@ -146,5 +148,5 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     )
   }
 
-  return { cliPath: cliPath!, args, env, cwd, sessionId }
+  return { cliPath: cliPath!, args, env, cwd, sessionId, executionType }
 }
