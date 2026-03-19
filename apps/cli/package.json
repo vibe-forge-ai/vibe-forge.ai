@@ -28,7 +28,7 @@
     "vf-call-hook": "./call-hook.js"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/cli/__tests__"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
