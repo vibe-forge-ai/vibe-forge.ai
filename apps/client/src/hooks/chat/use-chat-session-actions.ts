@@ -1,5 +1,5 @@
 import { App } from 'antd'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
@@ -30,6 +30,11 @@ export function useChatSessionActions({
   const { mutate } = useSWRConfig()
   const [isCreating, setIsCreating] = useState(false)
   const isThinking = isCreating || session?.status === 'running'
+
+  useEffect(() => {
+    if (!isCreating || session?.id == null || session.id === '') return
+    setIsCreating(false)
+  }, [isCreating, session?.id])
 
   const send = useCallback(async (text: string) => {
     if (text.trim() === '' || isThinking) return false
