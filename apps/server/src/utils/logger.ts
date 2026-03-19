@@ -4,9 +4,10 @@ import { cwd as processCwd } from 'node:process'
 
 import pino from 'pino'
 
-import { loadEnv } from '@vibe-forge/core'
+import { loadEnv, resolveServerLogLevel } from '@vibe-forge/core'
 
 const env = loadEnv()
+const logLevel = resolveServerLogLevel(env)
 const __VF_PROJECT_AI_SERVER_LOG_DIR__ = path.isAbsolute(env.__VF_PROJECT_AI_SERVER_LOG_DIR__)
   ? env.__VF_PROJECT_AI_SERVER_LOG_DIR__
   : path.join(processCwd(), env.__VF_PROJECT_AI_SERVER_LOG_DIR__)
@@ -30,7 +31,7 @@ export function getSessionLogger(sessionId: string, type: 'server' | 'claude.cli
 
   return pino(
     {
-      level: env.__VF_PROJECT_AI_SERVER_LOG_LEVEL__,
+      level: logLevel,
       base: null, // Remove default pid and hostname for cleaner jsonl
       timestamp: pino.stdTimeFunctions.isoTime
     },
@@ -43,7 +44,7 @@ export function getSessionLogger(sessionId: string, type: 'server' | 'claude.cli
 
 // Default global logger for general server logs (not session-specific)
 export const logger = pino({
-  level: env.__VF_PROJECT_AI_SERVER_LOG_LEVEL__,
+  level: logLevel,
   transport: {
     target: 'pino-pretty',
     options: {

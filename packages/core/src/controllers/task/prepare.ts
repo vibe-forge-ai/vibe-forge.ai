@@ -6,6 +6,8 @@ import { getCache, setCache } from '@vibe-forge/core/utils/cache'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
+import { resolveServerLogLevel } from '#~/env.js'
+
 import type { RunTaskOptions } from './type'
 
 export const prepare = async (
@@ -36,7 +38,13 @@ export const prepare = async (
     // 移除 NODE_OPTIONS 环境变量，防止干扰子进程的运行环境
     NODE_OPTIONS: undefined
   }
-  const logger = createLogger(cwd, ctxId, sessionId, env?.LOG_PREFIX ?? '')
+  const logger = createLogger(
+    cwd,
+    ctxId,
+    sessionId,
+    env?.LOG_PREFIX ?? '',
+    resolveServerLogLevel(env)
+  )
 
   const jsonVariables: Record<string, string | null | undefined> = {
     ...env,

@@ -1,6 +1,8 @@
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
+import type { LogLevel } from '#~/env.js'
+
 export interface Logger {
   stream: NodeJS.WritableStream
   info: (...args: unknown[]) => void
@@ -9,11 +11,19 @@ export interface Logger {
   error: (...args: unknown[]) => void
 }
 
+const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40
+}
+
 export const createLogger = (
   cwd: string,
   taskId: string,
   sessionId: string,
-  logPrefix = ''
+  logPrefix = '',
+  level: LogLevel = 'info'
 ) => {
   const normalizedSessionId = sessionId ?? 'default'
   const taskDir = resolve(
@@ -32,7 +42,10 @@ export const createLogger = (
   const loggerStream = createWriteStream(loggerFilePath, {
     flags: 'a'
   })
-  const createLog = (tag: string) => (...args: unknown[]) => {
+  const createLog = (tag: string, currentLevel: LogLevel) => (...args: unknown[]) => {
+    if (LOG_LEVEL_PRIORITY[currentLevel] < LOG_LEVEL_PRIORITY[level]) {
+      return
+    }
     const msg = args
       .map((arg) => {
         if (typeof arg === 'string') {
@@ -68,9 +81,9 @@ export const createLogger = (
   }
   return {
     stream: loggerStream,
-    info: createLog('I'),
-    warn: createLog('W'),
-    debug: createLog('D'),
-    error: createLog('E')
+    info: createLog('I', 'info'),
+    warn: createLog('W', 'warn'),
+    debug: createLog('D', 'debug'),
+    error: createLog('E', 'error')
   }
 }

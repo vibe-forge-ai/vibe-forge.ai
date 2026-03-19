@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import { loadConfig } from '@vibe-forge/core'
+import { loadConfig, resolveServerLogLevel } from '@vibe-forge/core'
 import type { HookOutputCore } from '@vibe-forge/core/hooks'
 import { resolvePlugins } from '@vibe-forge/core/hooks'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
@@ -20,7 +20,13 @@ void (async function main() {
 
     const { sessionId, hookEventName } = hookInput
 
-    const _logger = createLogger(workspaceFolder, ctxId, sessionId, logPrefix)
+    const _logger = createLogger(
+      workspaceFolder,
+      ctxId,
+      sessionId,
+      logPrefix,
+      resolveServerLogLevel(process.env)
+    )
 
     const logger: typeof _logger = {
       ..._logger,

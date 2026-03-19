@@ -1,8 +1,24 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { generateDefaultCCRConfigJSON } from '../src/ccr/default-config'
 
 describe('generateDefaultCCRConfigJSON', () => {
+  const baseUserConfig = {
+    defaultModelService: 'gpt-responses',
+    defaultModel: 'gpt-5.2-codex-2026-01-14',
+    modelServices: {
+      'gpt-responses': {
+        apiBaseUrl: 'http://aidp.bytedance.net/api/modelhub/online/responses',
+        apiKey: 'test-key',
+        models: ['gpt-5.2-codex-2026-01-14']
+      }
+    }
+  } as const
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('appends configured query params to CCR provider URLs', () => {
     const raw = generateDefaultCCRConfigJSON({
       cwd: '/tmp/project',
@@ -66,5 +82,36 @@ describe('generateDefaultCCRConfigJSON', () => {
         api_base_url: 'https://search.bytedance.net/gpt/openapi/online/v2/crawl'
       }
     ])
+  })
+
+  it('injects logger transformer by default', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: baseUserConfig
+    })
+
+    const config = JSON.parse(raw) as {
+      transformers: Array<{ path: string }>
+    }
+
+    expect(config.transformers.some(item => item.path.endsWith('logger.js'))).toBe(true)
+  })
+
+  it('allows disabling logger transformer explicitly', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: baseUserConfig,
+      adapterOptions: {
+        ccrTransformers: {
+          logger: false
+        }
+      }
+    })
+
+    const config = JSON.parse(raw) as {
+      transformers: Array<{ path: string }>
+    }
+
+    expect(config.transformers.some(item => item.path.endsWith('logger.js'))).toBe(false)
   })
 })

@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import type { Command } from 'commander'
 
-import { loadConfig } from '@vibe-forge/core'
+import { loadConfig, resolveServerLogLevel } from '@vibe-forge/core'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
 import { loadAdapter } from '@vibe-forge/core/adapter'
 import { getCache, setCache } from '@vibe-forge/core/utils/cache'
@@ -22,7 +22,7 @@ const createInitContext = async () => {
     __VF_PROJECT_AI_RUN_TYPE__: 'cli',
     NODE_OPTIONS: undefined
   }
-  const logger = createLogger(cwd, ctxId, ctxId, env.LOG_PREFIX ?? '')
+  const logger = createLogger(cwd, ctxId, ctxId, env.LOG_PREFIX ?? '', resolveServerLogLevel(env))
   const jsonVariables: Record<string, string | null | undefined> = {
     ...env,
     WORKSPACE_FOLDER: cwd,
