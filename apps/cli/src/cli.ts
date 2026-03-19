@@ -10,6 +10,7 @@ import { registerInitCommand } from './commands/init'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
 import { registerMcpCommand } from './commands/mcp'
+import { registerReportCommand } from './commands/report'
 import { registerRunCommand } from './commands/run'
 import { registerStopCommand } from './commands/stop'
 
@@ -26,6 +27,7 @@ registerMcpCommand(program)
 registerInitCommand(program)
 registerClearCommand(program)
 registerListCommand(program)
+registerReportCommand(program)
 registerStopCommand(program)
 registerKillCommand(program)
 
