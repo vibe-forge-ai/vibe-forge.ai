@@ -16,6 +16,7 @@ import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
+  takeExternalSessionRuntime,
   deleteAdapterSessionRuntime,
   emitRuntimeEvent,
   getAdapterSessionRuntime,
@@ -98,7 +99,7 @@ export async function startAdapterSession(
     })
   }
 
-  const connectionState = createSessionConnectionState()
+  const connectionState = takeExternalSessionRuntime(sessionId) ?? createSessionConnectionState()
   const runId = uuidv4()
   activeAdapterRunStore.set(sessionId, runId)
 
@@ -278,6 +279,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   db.saveMessage(sessionId, ev)
 
   const currentSessionData = db.getSession(sessionId)
+  const isExternalSession = currentSessionData?.parentSessionId != null
   const updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>> = {
     lastMessage: summaryText,
     lastUserMessage: summaryText,
@@ -295,7 +297,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   updateAndNotifySession(sessionId, updates)
 
   const externalCached = getExternalSessionRuntime(sessionId)
-  if (externalCached != null) {
+  if (isExternalSession && externalCached != null) {
     broadcastSessionEvent(sessionId, ev)
     return
   }

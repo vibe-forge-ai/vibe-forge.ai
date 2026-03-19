@@ -15,13 +15,15 @@ export const createLogger = (
   sessionId: string,
   logPrefix = ''
 ) => {
-  const date = new Date()
-  // 以 年-月-日-小时 作为一级目录名
-  const dateDir = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${date.getHours()}`
+  const normalizedSessionId = sessionId ?? 'default'
+  const taskDir = resolve(
+    cwd,
+    `.ai${logPrefix}/logs/${taskId}`
+  )
 
   const loggerFilePath = resolve(
-    cwd,
-    `.ai${logPrefix}/logs/${taskId}/${dateDir}/${sessionId ?? 'default'}.log.md`
+    taskDir,
+    `${normalizedSessionId}.log.md`
   )
   // 默认日志文件不存在时，创建一个默认的日志文件
   if (!existsSync(loggerFilePath)) {

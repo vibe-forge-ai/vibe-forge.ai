@@ -3,13 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   adapterSessionStore,
   createSessionConnectionState,
+  externalSessionStore,
   notifySessionUpdated,
-  sessionSubscriberSockets
+  sessionSubscriberSockets,
+  takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
 
 describe('notifySessionUpdated', () => {
   beforeEach(() => {
     adapterSessionStore.clear()
+    externalSessionStore.clear()
     sessionSubscriberSockets.clear()
   })
 
@@ -43,5 +46,15 @@ describe('notifySessionUpdated', () => {
     expect(sessionSocket.send).toHaveBeenCalledOnce()
     expect(subscriberSocket.send).toHaveBeenCalledOnce()
     expect(String(sessionSocket.send.mock.calls[0]?.[0])).toContain('"type":"session_updated"')
+  })
+
+  it('can promote a passive runtime into an adapter runtime', () => {
+    const passiveRuntime = createSessionConnectionState()
+    externalSessionStore.set('sess-1', passiveRuntime)
+
+    const taken = takeExternalSessionRuntime('sess-1')
+
+    expect(taken).toBe(passiveRuntime)
+    expect(externalSessionStore.has('sess-1')).toBe(false)
   })
 })

@@ -12,6 +12,7 @@ import { interruptSession, killSession, processUserMessage, startAdapterSession 
 import { handleInteractionResponse } from '#~/services/session/interaction.js'
 import {
   addSessionSubscriberSocket,
+  getAdapterSessionRuntime,
   attachSocketToSession,
   detachSocketFromSession,
   removeSessionSubscriberSocket
@@ -54,10 +55,16 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       const db = getDb()
       const sessionData = db.getSession(sessionId)
       const isExternalSession = sessionData?.parentSessionId != null
+      const cachedRuntime = getAdapterSessionRuntime(sessionId)
+      const shouldAutoStartAdapter = sessionData == null ||
+        sessionData.status === 'running' ||
+        sessionData.status === 'waiting_input'
 
       if (isExternalSession) {
         attachSocketToSession(sessionId, ws, 'external')
-      } else {
+      } else if (cachedRuntime != null) {
+        attachSocketToSession(sessionId, ws, 'adapter')
+      } else if (shouldAutoStartAdapter) {
         const cached = await startAdapterSession(sessionId, {
           model,
           systemPrompt,
@@ -77,6 +84,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         if (cached == null) {
           throw new Error(`Failed to initialize session runtime for ${sessionId}`)
         }
+      } else {
+        attachSocketToSession(sessionId, ws, 'external')
       }
     } catch (err) {
       if (ws.readyState === WebSocket.OPEN) {

@@ -6,6 +6,7 @@ const addSessionSubscriberSocket = vi.fn()
 const removeSessionSubscriberSocket = vi.fn()
 const attachSocketToSession = vi.fn()
 const detachSocketFromSession = vi.fn()
+const getAdapterSessionRuntime = vi.fn()
 const startAdapterSession = vi.fn()
 const handleInteractionResponse = vi.fn()
 const processUserMessage = vi.fn()
@@ -52,7 +53,8 @@ vi.mock('#~/services/session/runtime.js', () => ({
   addSessionSubscriberSocket,
   removeSessionSubscriberSocket,
   attachSocketToSession,
-  detachSocketFromSession
+  detachSocketFromSession,
+  getAdapterSessionRuntime
 }))
 
 vi.mock('#~/utils/logger.js', () => ({
@@ -66,6 +68,7 @@ describe('setupWebSocket', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     connectionHandler = undefined
+    getAdapterSessionRuntime.mockReturnValue(undefined)
 
     const { setupWebSocket } = await import('#~/websocket/server.js')
     setupWebSocket({} as Server, {
@@ -94,7 +97,7 @@ describe('setupWebSocket', () => {
   it('does not register regular session sockets as session list subscribers', async () => {
     startAdapterSession.mockResolvedValue({ sockets: new Set(), session: {} })
     attachSocketToSession.mockReturnValue({ sockets: new Set([{}]), session: {} })
-    getSession.mockReturnValue(undefined)
+    getSession.mockReturnValue({ id: 'sess-1', status: 'running' })
 
     const ws = {
       on: vi.fn(),
@@ -119,5 +122,26 @@ describe('setupWebSocket', () => {
       adapter: undefined
     })
     expect(attachSocketToSession).toHaveBeenCalledWith('sess-1', ws, 'adapter')
+  })
+
+  it('keeps completed sessions in passive mode when opening the page', async () => {
+    getSession.mockReturnValue({
+      id: 'sess-1',
+      status: 'completed'
+    })
+
+    const ws = {
+      on: vi.fn(),
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    await connectionHandler?.(ws, {
+      url: '/ws?sessionId=sess-1',
+      headers: { host: 'localhost' }
+    })
+
+    expect(startAdapterSession).not.toHaveBeenCalled()
+    expect(attachSocketToSession).toHaveBeenCalledWith('sess-1', ws, 'external')
   })
 })

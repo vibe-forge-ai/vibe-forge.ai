@@ -71,6 +71,16 @@ export function getExternalSessionRuntime(sessionId: string) {
   return externalSessionStore.get(sessionId)
 }
 
+export function takeExternalSessionRuntime(sessionId: string) {
+  const runtime = externalSessionStore.get(sessionId)
+  if (runtime == null) {
+    return undefined
+  }
+
+  externalSessionStore.delete(sessionId)
+  return runtime
+}
+
 export function ensureExternalSessionRuntime(sessionId: string) {
   const existing = externalSessionStore.get(sessionId)
   if (existing != null) {

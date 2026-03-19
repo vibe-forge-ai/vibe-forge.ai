@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
 import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
-import { adapterSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
+import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
@@ -65,6 +65,7 @@ describe('startAdapterSession', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     adapterSessionStore.clear()
+    externalSessionStore.clear()
 
     currentSession = {
       id: 'sess-1',
@@ -273,5 +274,47 @@ describe('startAdapterSession', () => {
         })
       })
     )
+  })
+
+  it('promotes passive session sockets when a follow-up user message restarts the adapter', async () => {
+    const emit = vi.fn()
+    const passiveSocket = {
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    currentSession.status = 'completed'
+    getMessages.mockReturnValue([
+      {
+        type: 'message',
+        message: {
+          id: 'assist-1',
+          role: 'assistant',
+          content: 'previous answer',
+          createdAt: Date.now()
+        }
+      }
+    ])
+    externalSessionStore.set('sess-1', {
+      sockets: new Set([passiveSocket as any]),
+      messages: []
+    })
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill: vi.fn()
+      }
+    })
+
+    await processUserMessage('sess-1', 'follow up')
+
+    expect(externalSessionStore.has('sess-1')).toBe(false)
+    expect(adapterSessionStore.get('sess-1')?.sockets.has(passiveSocket as any)).toBe(true)
+    expect(passiveSocket.send).toHaveBeenCalledWith(expect.stringContaining('"type":"message"'))
+    expect(emit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{ type: 'text', text: 'follow up' }],
+      parentUuid: 'assist-1'
+    })
   })
 })
