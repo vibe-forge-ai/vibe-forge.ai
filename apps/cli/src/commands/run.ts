@@ -7,8 +7,9 @@ import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/t
 import { callHook } from '@vibe-forge/core/utils/api'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
-import { extraOptions } from './@core/extra-options'
 import { extractTextFromMessage } from '#~/mcp-sync/index.js'
+
+import { extraOptions } from './@core/extra-options'
 
 interface RunOptions {
   print: boolean
