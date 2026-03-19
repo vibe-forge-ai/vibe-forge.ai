@@ -162,6 +162,8 @@ export const run = async (
   }
 
   const adapter = await loadAdapter(adapterType)
+  await adapter.init?.(ctx)
+
   const resolvedModel = resolveQueryModel({
     config,
     userConfig,

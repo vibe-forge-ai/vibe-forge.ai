@@ -87,10 +87,6 @@ export interface AdapterQueryOptions {
   onEvent: (event: AdapterOutputEvent) => void
 }
 
-export interface AdapterInitOptions {
-  force?: boolean
-}
-
 export interface AdapterSession {
   kill: () => void
   emit: (event: AdapterEvent) => void
@@ -99,8 +95,7 @@ export interface AdapterSession {
 
 export interface Adapter {
   init?: (
-    ctx: AdapterCtx,
-    options: AdapterInitOptions
+    ctx: AdapterCtx
   ) => Promise<void>
   query: (
     ctx: AdapterCtx,

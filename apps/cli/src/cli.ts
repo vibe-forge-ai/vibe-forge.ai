@@ -6,7 +6,6 @@ import { getCliDescription, getCliVersion } from '#~/utils.js'
 
 import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
-import { registerInitCommand } from './commands/init'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
 import { registerMcpCommand } from './commands/mcp'
@@ -23,7 +22,6 @@ registerRunCommand(program)
 
 registerBenchmarkCommand(program)
 registerMcpCommand(program)
-registerInitCommand(program)
 registerClearCommand(program)
 registerListCommand(program)
 registerStopCommand(program)
