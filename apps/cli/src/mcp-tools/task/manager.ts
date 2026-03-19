@@ -1,8 +1,8 @@
 import process from 'node:process'
 
 import type { AdapterOutputEvent, AdapterSession, ChatMessage } from '@vibe-forge/core'
+import { callHook } from '@vibe-forge/core/hooks'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
-import { callHook } from '@vibe-forge/core/utils/api'
 
 import { extractTextFromMessage, fetchSessionMessages, postSessionEvent } from '#~/mcp-sync/index.js'
 

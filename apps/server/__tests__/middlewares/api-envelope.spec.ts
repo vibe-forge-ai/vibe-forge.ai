@@ -110,7 +110,7 @@ describe('apiEnvelopeMiddleware', () => {
 
   it('serializes thrown HttpError instances for api routes', async () => {
     const ctx = await runMiddleware({
-      path: '/api/hooks',
+      path: '/api/config',
       next: async () => {
         throw badRequest('Invalid hook payload', { field: 'hookEventName' }, 'invalid_hook_payload')
       }

@@ -3,8 +3,8 @@ import process from 'node:process'
 import type { Command } from 'commander'
 
 import type { ChatMessage } from '@vibe-forge/core'
+import { callHook } from '@vibe-forge/core/hooks'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
-import { callHook } from '@vibe-forge/core/utils/api'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extractTextFromMessage } from '#~/mcp-sync/index.js'

@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import { z } from 'zod'
 
-import { callHook } from '@vibe-forge/core/utils/api'
+import { callHook } from '@vibe-forge/core/hooks'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { createChildSession, getParentSessionId } from '#~/mcp-sync/index.js'

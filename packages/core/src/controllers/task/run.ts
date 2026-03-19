@@ -1,8 +1,8 @@
 import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions } from '#~/adapter/index.js'
 import { loadAdapter } from '#~/adapter/index.js'
 import type { ModelServiceConfig } from '#~/config.js'
+import { callHook } from '#~/hooks/call.js'
 import type { TaskDetail } from '#~/types.js'
-import { callHook } from '#~/utils/api.js'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'

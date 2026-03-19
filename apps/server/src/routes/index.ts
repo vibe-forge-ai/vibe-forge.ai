@@ -14,7 +14,6 @@ import { aiRouter } from './ai'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { configRouter } from './config'
-import { hooksRouter } from './hooks'
 import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
 import { uiRouter } from './ui'
@@ -84,8 +83,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/api/automation', router: automationRouter() },
-    { prefix: '/api/config', router: configRouter() },
-    { prefix: '/api/hooks', router: hooksRouter() }
+    { prefix: '/api/config', router: configRouter() }
   ]
 
   const clientMode = env.__VF_PROJECT_AI_CLIENT_MODE__

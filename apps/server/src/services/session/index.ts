@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { ChatMessage, ChatMessageContent, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
 import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/core/adapter'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
-import { callHook } from '@vibe-forge/core/utils/api'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
@@ -114,13 +113,6 @@ export async function startAdapterSession(
       ...processEnv,
       __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
     }
-    await callHook('GenerateSystemPrompt', {
-      cwd: promptCwd,
-      sessionId,
-      type: options.promptType,
-      name: options.promptName,
-      data
-    }, env)
     const finalSystemPrompt = [resolvedConfig.systemPrompt, options.systemPrompt]
       .filter(Boolean)
       .join('\n\n')

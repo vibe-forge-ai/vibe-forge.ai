@@ -1,0 +1,74 @@
+import { Buffer } from 'node:buffer'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
+import process from 'node:process'
+
+import type { HookInputs, HookOutputs } from './type'
+
+export type HookEventName = keyof HookInputs
+
+type HookInputPayload<K extends HookEventName> = Omit<HookInputs[K], 'hookEventName'>
+
+const pickHookEnv = (env: Record<string, unknown>): Record<string, string> => {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(env)) {
+    if (typeof value === 'string') {
+      result[key] = value
+    }
+  }
+  return result
+}
+
+const resolveHookCliJs = () => {
+  try {
+    const pkgJsonPath = require.resolve('@vibe-forge/cli/package.json')
+    return path.resolve(path.dirname(pkgJsonPath), 'call-hook.js')
+  } catch (error) {
+    throw new Error('Failed to resolve @vibe-forge/cli hook entry', { cause: error })
+  }
+}
+
+export const callHook = async <K extends HookEventName>(
+  hookEventName: K,
+  input: HookInputPayload<K>,
+  env: Record<string, unknown> = process.env
+): Promise<HookOutputs[K]> => {
+  const childEnv = pickHookEnv(env)
+  const child = spawn(process.execPath, [resolveHookCliJs()], {
+    cwd: typeof input.cwd === 'string' ? input.cwd : process.cwd(),
+    env: childEnv,
+    stdio: ['pipe', 'pipe', 'pipe']
+  })
+
+  const stdoutChunks: Buffer[] = []
+  const stderrChunks: Buffer[] = []
+
+  child.stdout.on('data', chunk => stdoutChunks.push(chunk))
+  child.stderr.on('data', chunk => stderrChunks.push(chunk))
+
+  const exitCode = await new Promise<number>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', code => resolve(code ?? 0))
+    child.stdin.end(JSON.stringify({
+      ...input,
+      hookEventName
+    }))
+  })
+
+  const stdout = Buffer.concat(stdoutChunks).toString('utf-8').trim()
+  const stderr = Buffer.concat(stderrChunks).toString('utf-8').trim()
+
+  if (exitCode !== 0) {
+    throw new Error(`Failed to call hook: process exited with code ${exitCode}${stderr ? ` - ${stderr}` : ''}`)
+  }
+
+  if (stdout === '') {
+    return { continue: true } as HookOutputs[K]
+  }
+
+  try {
+    return JSON.parse(stdout) as HookOutputs[K]
+  } catch (error) {
+    throw new Error(`Failed to parse hook output: ${stdout}${stderr ? `\nstderr: ${stderr}` : ''}`, { cause: error })
+  }
+}

@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
   loadMergedConfig: vi.fn(),
-  callHook: vi.fn(),
   handleChannelSessionEvent: vi.fn()
 }))
 
@@ -19,10 +18,6 @@ vi.mock('#~/db/index.js', () => ({
 vi.mock('@vibe-forge/core/controllers/task', () => ({
   generateAdapterQueryOptions: mocks.generateAdapterQueryOptions,
   run: mocks.run
-}))
-
-vi.mock('@vibe-forge/core/utils/api', () => ({
-  callHook: mocks.callHook
 }))
 
 vi.mock('#~/channels/index.js', () => ({
@@ -102,7 +97,6 @@ describe('startAdapterSession', () => {
       }
     ])
     mocks.loadMergedConfig.mockResolvedValue({ mergedConfig: {} })
-    mocks.callHook.mockResolvedValue(undefined)
   })
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
