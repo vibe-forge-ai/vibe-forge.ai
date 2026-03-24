@@ -55,6 +55,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     config: undefined,
     sessionId: 'sess-abc',
     channelAdapter: undefined,
+    channelPermissionMode: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -74,7 +75,20 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
         sessionType: ctx.inbound.sessionType,
         channelId: ctx.inbound.channelId,
         channelKey: ctx.channelKey,
-        adapter
+        adapter,
+        permissionMode: ctx.channelPermissionMode
+      })
+    }),
+    getChannelPermissionModePreference: vi.fn(() => ctx.channelPermissionMode),
+    setChannelPermissionModePreference: vi.fn((permissionMode) => {
+      ctx.channelPermissionMode = permissionMode
+      upsertChannelPreference({
+        channelType: ctx.inbound.channelType,
+        sessionType: ctx.inbound.sessionType,
+        channelId: ctx.inbound.channelId,
+        channelKey: ctx.channelKey,
+        adapter: ctx.channelAdapter,
+        permissionMode
       })
     }),
     ...overrides
@@ -363,6 +377,29 @@ describe('session setting commands', () => {
     expect(startAdapterSession).toHaveBeenCalledWith('sess-abc')
   })
 
+  it('/permissionMode stores the next-session permission mode when no session is bound', async () => {
+    const ctx = makeCtx({
+      commandText: '/permissionMode dontAsk',
+      config: { type: 'lark' } as any,
+      sessionId: undefined
+    })
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('已将下次会话的权限模式设置为 dontAsk')
+    expect(upsertChannelPreference).toHaveBeenCalledWith({
+      channelType: 'lark',
+      sessionType: 'direct',
+      channelId: 'ch1',
+      channelKey: 'lark:default',
+      adapter: undefined,
+      permissionMode: 'dontAsk'
+    })
+    expect(updateSession).not.toHaveBeenCalled()
+    expect(startAdapterSession).not.toHaveBeenCalled()
+  })
+
   it('/permissionMode shows detailed choices when the mode is missing', async () => {
     const ctx = makeCtx({ commandText: '/permissionMode', config: { type: 'lark' } as any })
     await channelCommandMiddleware(ctx, vi.fn())
@@ -431,6 +468,17 @@ describe('session setting commands', () => {
     })
     await channelCommandMiddleware(ctx, vi.fn())
     expect(ctx.reply).toHaveBeenCalledWith('适配器：codex')
+  })
+
+  it('/get permissionMode returns the pending channel permission mode when no session is bound', async () => {
+    const ctx = makeCtx({
+      commandText: '/get permissionMode',
+      config: { type: 'lark' } as any,
+      sessionId: undefined,
+      channelPermissionMode: 'dontAsk'
+    })
+    await channelCommandMiddleware(ctx, vi.fn())
+    expect(ctx.reply).toHaveBeenCalledWith('权限模式：dontAsk')
   })
 
   it('/set model updates session model and restarts the session', async () => {

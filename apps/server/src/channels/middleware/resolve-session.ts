@@ -8,5 +8,6 @@ export const resolveSessionMiddleware: ChannelMiddleware = async (ctx, next) => 
   const preference = db.getChannelPreference(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
   ctx.sessionId = result?.sessionId
   ctx.channelAdapter = preference?.adapter
+  ctx.channelPermissionMode = preference?.permissionMode
   await next()
 }

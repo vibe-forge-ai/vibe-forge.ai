@@ -9,7 +9,7 @@ defineMessages('zh', {
   'cmd.session.description': '查看当前会话状态',
   'cmd.reset.description': '归档并解绑当前会话',
   'cmd.stop.description': '停止当前运行中的会话',
-  'cmd.permissionMode.description': '设置当前会话权限模式并立即重启',
+  'cmd.permissionMode.description': '设置当前会话权限模式，或在无会话时设置下一次会话的权限模式',
   'cmd.get.description': '查看当前会话的模型、适配器或权限模式',
   'cmd.set.description': '修改当前会话的模型，或在无会话时设置下一次会话的适配器',
   'choice.session.getField.model.title': '模型',
@@ -48,7 +48,8 @@ defineMessages('zh', {
   'stop.notRunning': ({ status }) => `当前会话状态为 ${status}，无需停止。`,
   'stop.success': '已停止当前会话。',
   'set.noSession': '当前频道没有已绑定会话，无法修改会话设置。',
-  'set.permissionMode.success': ({ mode }) => `已将权限模式设置为 ${mode}，并重启当前会话。`,
+  'set.permissionMode.success': ({ mode }) => `已将权限模式设置为 ${mode}。`,
+  'set.permissionMode.pending.success': ({ mode }) => `已将下次会话的权限模式设置为 ${mode}。请发送下一条消息创建新会话。`,
   'set.model.success': ({ model }) => `已设置模型为 ${model}，并重启当前会话。`,
   'set.adapter.pending.success': ({ adapter }) => `已将下次会话的适配器设置为 ${adapter}。请发送下一条消息创建新会话。`,
   'set.adapter.requiresReset': '当前频道已有会话，无法切换适配器。请先执行 /reset 重置会话，再设置适配器。'
@@ -58,7 +59,7 @@ defineMessages('en', {
   'cmd.session.description': 'Show current session status',
   'cmd.reset.description': 'Archive and unbind current session',
   'cmd.stop.description': 'Stop the current running session',
-  'cmd.permissionMode.description': 'Set session permission mode and restart',
+  'cmd.permissionMode.description': 'Set the current session permission mode, or set the next-session permission mode when no session is bound',
   'cmd.get.description': 'View current session model, adapter, or permission mode',
   'cmd.set.description': 'Set the current session model, or set the adapter for the next session when no session is bound',
   'choice.session.getField.model.title': 'Model',
@@ -97,7 +98,9 @@ defineMessages('en', {
   'stop.notRunning': ({ status }) => `Session status is ${status}, no need to stop.`,
   'stop.success': 'Session stopped.',
   'set.noSession': 'No session bound. Cannot modify session settings.',
-  'set.permissionMode.success': ({ mode }) => `Permission mode set to ${mode}. Session restarted.`,
+  'set.permissionMode.success': ({ mode }) => `Permission mode set to ${mode}.`,
+  'set.permissionMode.pending.success': ({ mode }) =>
+    `Permission mode for the next session set to ${mode}. Send the next message to create a new session.`,
   'set.model.success': ({ model }) => `Model set to ${model}. Session restarted.`,
   'set.adapter.pending.success': ({ adapter }) => `Adapter for the next session set to ${adapter}. Send the next message to create a new session.`,
   'set.adapter.requiresReset': 'A session is already bound to this channel. Run /reset first, then set the adapter.'
@@ -248,8 +251,12 @@ export const sessionCommands = () => [
     .adminOnly()
     .argument(requiredArg('mode', { choices: PERMISSION_MODE_CHOICES }))
     .action(async ({ ctx, args: [permissionMode] }) => {
-      const session = await getBoundSessionOrReply(ctx)
-      if (!session) return
+      const session = ctx.getBoundSession()
+      if (!ctx.sessionId || !session) {
+        ctx.setChannelPermissionModePreference(permissionMode)
+        await ctx.reply(ctx.t('set.permissionMode.pending.success', { mode: permissionMode }))
+        return
+      }
 
       await restartSessionWithReply(
         ctx,
@@ -269,15 +276,16 @@ export const sessionCommands = () => [
         return
       }
 
-      const session = await getBoundSessionOrReply(ctx)
-      if (!session) return
-
       if (field === 'model') {
+        const session = await getBoundSessionOrReply(ctx)
+        if (!session) return
         await ctx.reply(ctx.t('session.model', { model: session.model ?? ctx.t('label.notSet') }))
         return
       }
 
-      await ctx.reply(ctx.t('session.permissionMode', { mode: session.permissionMode ?? ctx.t('label.notSet') }))
+      const session = ctx.getBoundSession()
+      const permissionMode = session?.permissionMode ?? ctx.getChannelPermissionModePreference()
+      await ctx.reply(ctx.t('session.permissionMode', { mode: permissionMode ?? ctx.t('label.notSet') }))
     }),
 
   command<ChannelContext>('set')

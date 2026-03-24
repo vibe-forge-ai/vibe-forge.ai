@@ -27,6 +27,7 @@ export const handleInboundEvent = async (
     config,
     sessionId: undefined,
     channelAdapter: undefined,
+    channelPermissionMode: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -84,7 +85,20 @@ export const handleInboundEvent = async (
         sessionType: inbound.sessionType,
         channelId: inbound.channelId,
         channelKey,
-        adapter
+        adapter,
+        permissionMode: ctx.channelPermissionMode
+      })
+    },
+    getChannelPermissionModePreference: () => ctx.channelPermissionMode,
+    setChannelPermissionModePreference: (permissionMode) => {
+      ctx.channelPermissionMode = permissionMode
+      getDb().upsertChannelPreference({
+        channelType: inbound.channelType,
+        sessionType: inbound.sessionType,
+        channelId: inbound.channelId,
+        channelKey,
+        adapter: ctx.channelAdapter,
+        permissionMode
       })
     }
   }

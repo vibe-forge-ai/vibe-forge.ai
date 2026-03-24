@@ -102,6 +102,7 @@ describe('db schema modules', () => {
       'channelId',
       'channelKey',
       'adapter',
+      'permissionMode',
       'createdAt',
       'updatedAt'
     ]))

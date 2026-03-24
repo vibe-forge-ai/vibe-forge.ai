@@ -1,4 +1,4 @@
-import type { ChatMessageContent, ConfigSource, Session } from '@vibe-forge/core'
+import type { ChatMessageContent, ConfigSource, Session, SessionPermissionMode } from '@vibe-forge/core'
 import type {
   ChannelBaseConfig,
   ChannelConnection,
@@ -25,6 +25,8 @@ export interface ChannelContext {
   sessionId: string | undefined
   /** Channel-level preferred adapter used when the next session is created */
   channelAdapter: string | undefined
+  /** Channel-level preferred permission mode used when the next session is created */
+  channelPermissionMode: SessionPermissionMode | undefined
   /** Parsed rich content items from inbound.raw, if any */
   contentItems: ChatMessageContent[] | undefined
   /** Normalized text stripped of @-tags and speaker prefixes, used for command matching */
@@ -53,6 +55,10 @@ export interface ChannelContext {
   getChannelAdapterPreference: () => string | undefined
   /** Persist the adapter preference for the next session created in this channel */
   setChannelAdapterPreference: (adapter: string | undefined) => void
+  /** Read the permission mode preference for the next session created in this channel */
+  getChannelPermissionModePreference: () => SessionPermissionMode | undefined
+  /** Persist the permission mode preference for the next session created in this channel */
+  setChannelPermissionModePreference: (permissionMode: SessionPermissionMode | undefined) => void
 }
 
 export type ChannelMiddleware = (ctx: ChannelContext, next: () => Promise<void>) => Promise<void>

@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import type { SessionPermissionMode } from '@vibe-forge/core'
 
 export interface ChannelSessionRow {
   channelType: string
@@ -18,6 +19,7 @@ export interface ChannelPreferenceRow {
   channelId: string
   channelKey: string
   adapter?: string
+  permissionMode?: SessionPermissionMode
   createdAt: number
   updatedAt: number
 }
@@ -86,7 +88,7 @@ export function createChannelSessionsRepo(db: Database.Database) {
     channelId: string
   ): ChannelPreferenceRow | undefined => {
     const stmt = db.prepare(`
-      SELECT channelType, sessionType, channelId, channelKey, adapter, createdAt, updatedAt
+      SELECT channelType, sessionType, channelId, channelKey, adapter, permissionMode, createdAt, updatedAt
       FROM channel_preferences
       WHERE channelType = ? AND sessionType = ? AND channelId = ?
     `)
@@ -96,11 +98,14 @@ export function createChannelSessionsRepo(db: Database.Database) {
   const upsertPreference = (row: Omit<ChannelPreferenceRow, 'createdAt' | 'updatedAt'>) => {
     const now = Date.now()
     const stmt = db.prepare(`
-      INSERT INTO channel_preferences (channelType, sessionType, channelId, channelKey, adapter, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO channel_preferences (
+        channelType, sessionType, channelId, channelKey, adapter, permissionMode, createdAt, updatedAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET
         channelKey = excluded.channelKey,
         adapter = excluded.adapter,
+        permissionMode = excluded.permissionMode,
         updatedAt = excluded.updatedAt
     `)
     stmt.run(
@@ -109,6 +114,7 @@ export function createChannelSessionsRepo(db: Database.Database) {
       row.channelId,
       row.channelKey,
       row.adapter ?? null,
+      row.permissionMode ?? null,
       now,
       now
     )
