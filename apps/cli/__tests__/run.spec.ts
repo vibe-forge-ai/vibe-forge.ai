@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getPrintableAssistantText, resolvePrintableStopText } from '#~/commands/run.js'
+import {
+  getPrintableAssistantText,
+  resolveInjectDefaultSystemPromptOption,
+  resolvePrintableStopText
+} from '#~/commands/run.js'
 
 describe('run command print output', () => {
   it('extracts printable assistant text from string content', () => {
@@ -27,5 +31,10 @@ describe('run command print output', () => {
 
   it('falls back to the last assistant text when stop has no message payload', () => {
     expect(resolvePrintableStopText(undefined, 'final answer')).toBe('final answer')
+  })
+
+  it('treats commander default values as no CLI override for negative boolean flags', () => {
+    expect(resolveInjectDefaultSystemPromptOption(true, 'default')).toBeUndefined()
+    expect(resolveInjectDefaultSystemPromptOption(false, 'cli')).toBe(false)
   })
 })

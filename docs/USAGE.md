@@ -63,3 +63,15 @@ npx vf run --help
 - `vf clear`：清理本地日志与缓存
 - `vf stop <ctxId>`：优雅停止任务
 - `vf kill <ctxId>`：强制终止任务
+
+如果你不希望 CLI 注入 Vibe Forge 自动生成的默认 system prompt（例如 rules / skills / entities / specs 生成的提示词），可以：
+
+- 单次执行时传 `vf run --no-inject-default-system-prompt`
+- 或在配置文件中设置：
+
+```yaml
+conversation:
+  injectDefaultSystemPrompt: false
+```
+
+这个开关不会影响你手动传入的 `--system-prompt`，只会关闭 CLI 自动拼接的默认提示词。

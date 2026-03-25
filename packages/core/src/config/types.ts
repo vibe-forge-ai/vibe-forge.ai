@@ -178,6 +178,12 @@ export interface Config {
      * 自定义对话风格。通过指定提示词约束对话风格。
      */
     customInstructions?: string
+    /**
+     * 是否注入 Vibe Forge 自动生成的默认系统提示词
+     * （例如 rules / skills / entities / specs 生成的提示词）。
+     * 默认为 true。
+     */
+    injectDefaultSystemPrompt?: boolean
   }
   /**
    * 插件配置

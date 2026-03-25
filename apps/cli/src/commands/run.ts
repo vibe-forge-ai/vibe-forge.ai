@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import type { Command } from 'commander'
+import type { Command, OptionValueSource } from 'commander'
 
 import type { ChatMessage } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/core/hooks'
@@ -8,6 +8,10 @@ import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/t
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extractTextFromMessage } from '#~/mcp-sync/index.js'
+import {
+  loadInjectDefaultSystemPromptValue,
+  mergeSystemPrompts
+} from '#~/system-prompt.js'
 
 import { extraOptions } from './@core/extra-options'
 
@@ -28,6 +32,7 @@ interface RunOptions {
   excludeTool?: string[]
   includeSkill?: string[]
   excludeSkill?: string[]
+  injectDefaultSystemPrompt?: boolean
 }
 
 export function registerRunCommand(program: Command) {
@@ -37,6 +42,10 @@ export function registerRunCommand(program: Command) {
     .option('--model <model>', 'Model to use')
     .option('--adapter <adapter>', 'Adapter to use')
     .option('--system-prompt <prompt>', 'System prompt')
+    .option(
+      '--no-inject-default-system-prompt',
+      'Do not inject the default system prompt generated from rules/skills/entities/specs'
+    )
     .option('--permission-mode <mode>', 'Permission mode (default, acceptEdits, plan, dontAsk, bypassPermissions)')
     .option('--session-id <id>', 'Session ID')
     .option('--resume', 'Resume existing session', false)
@@ -49,7 +58,7 @@ export function registerRunCommand(program: Command) {
     .option('--exclude-tool <tool...>', 'Exclude tool')
     .option('--include-skill <skill...>', 'Include skill')
     .option('--exclude-skill <skill...>', 'Exclude skill')
-    .action(async (descriptionArgs: string[], opts: RunOptions) => {
+    .action(async (descriptionArgs: string[], opts: RunOptions, command: Command) => {
       const description = descriptionArgs.join(' ')
       let lastAssistantText: string | undefined
 
@@ -81,12 +90,19 @@ export function registerRunCommand(program: Command) {
         data
       }, env)
 
-      const finalSystemPrompt = [
-        resolvedConfig.systemPrompt,
-        opts.systemPrompt
-      ]
-        .filter(Boolean)
-        .join('\n\n')
+      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
+        promptCWD,
+        resolveInjectDefaultSystemPromptOption(
+          opts.injectDefaultSystemPrompt,
+          command.getOptionValueSource('injectDefaultSystemPrompt')
+        )
+      )
+
+      const finalSystemPrompt = mergeSystemPrompts({
+        generatedSystemPrompt: resolvedConfig.systemPrompt,
+        userSystemPrompt: opts.systemPrompt,
+        injectDefaultSystemPrompt
+      })
 
       const tools = mergeListConfig(
         resolvedConfig.tools,
@@ -157,6 +173,11 @@ export function registerRunCommand(program: Command) {
       })
     })
 }
+
+export const resolveInjectDefaultSystemPromptOption = (
+  value: boolean | undefined,
+  source: OptionValueSource | undefined
+) => source === 'default' ? undefined : value
 
 export const getPrintableAssistantText = (message: ChatMessage | undefined) => {
   if (message?.role !== 'assistant') return undefined

@@ -5,6 +5,10 @@ import { callHook } from '@vibe-forge/core/hooks'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 
 import { extractTextFromMessage, fetchSessionMessages, postSessionEvent } from '#~/mcp-sync/index.js'
+import {
+  loadInjectDefaultSystemPromptValue,
+  mergeSystemPrompts
+} from '#~/system-prompt.js'
 
 interface ServerSyncState {
   sessionId: string
@@ -90,6 +94,8 @@ class TaskManager {
         data
       }, env)
 
+      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(promptCWD)
+
       // Start Task
       const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
       const { session } = await run({
@@ -104,7 +110,10 @@ class TaskManager {
         runtime: 'mcp',
         mode: 'stream',
         sessionId: taskId,
-        systemPrompt: resolvedConfig.systemPrompt,
+        systemPrompt: mergeSystemPrompts({
+          generatedSystemPrompt: resolvedConfig.systemPrompt,
+          injectDefaultSystemPrompt
+        }),
         permissionMode,
         tools: resolvedConfig.tools,
         skills: resolvedConfig.skills,
