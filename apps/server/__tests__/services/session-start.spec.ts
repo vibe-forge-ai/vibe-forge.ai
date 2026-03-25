@@ -223,6 +223,34 @@ describe('startAdapterSession', () => {
     )
   })
 
+  it('replaces the generated system prompt when appendSystemPrompt is false', async () => {
+    mocks.generateAdapterQueryOptions.mockResolvedValueOnce([
+      {},
+      {
+        systemPrompt: 'generated prompt',
+        tools: undefined,
+        mcpServers: undefined
+      }
+    ])
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      systemPrompt: 'custom prompt',
+      appendSystemPrompt: false
+    })
+
+    expect(mocks.run).toHaveBeenCalledOnce()
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      systemPrompt: 'custom prompt',
+      appendSystemPrompt: false
+    }))
+  })
+
   it('restarts the adapter on demand when a follow-up user message arrives after completion', async () => {
     const emit = vi.fn()
 

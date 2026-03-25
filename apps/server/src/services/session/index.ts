@@ -113,9 +113,11 @@ export async function startAdapterSession(
       ...processEnv,
       __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
     }
-    const finalSystemPrompt = [resolvedConfig.systemPrompt, options.systemPrompt]
-      .filter(Boolean)
-      .join('\n\n')
+    const finalSystemPrompt = options.appendSystemPrompt === false
+      ? (options.systemPrompt ?? resolvedConfig.systemPrompt)
+      : [resolvedConfig.systemPrompt, options.systemPrompt]
+        .filter(Boolean)
+        .join('\n\n')
     const { mergedConfig } = await loadMergedConfig().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
     const { modelLanguage } = mergedConfig
     const languagePrompt = modelLanguage == null

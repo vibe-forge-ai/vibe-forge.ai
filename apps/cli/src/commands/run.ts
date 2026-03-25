@@ -76,7 +76,15 @@ export function registerRunCommand(program: Command) {
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         promptType,
         promptName,
-        promptCWD
+        promptCWD,
+        opts.includeSkill || opts.excludeSkill
+          ? {
+            skills: {
+              include: opts.includeSkill,
+              exclude: opts.excludeSkill
+            }
+          }
+          : undefined
       )
       const env = {
         ...process.env,

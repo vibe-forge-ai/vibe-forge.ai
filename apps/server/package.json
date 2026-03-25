@@ -19,6 +19,7 @@
   "dependencies": {
     "@koa/cors": "^5.0.0",
     "@koa/router": "^12.0.0",
+    "@vibe-forge/adapter-opencode": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/channel-lark": "workspace:^",
