@@ -120,9 +120,12 @@ This emits (in order):
 -c 'model_providers.myProvider.base_url="https://api.example.com/v1"'
 -c 'model_providers.myProvider.experimental_bearer_token="sk-..."'
 -c 'model_providers.myProvider.wire_api="responses"'
+-c 'model_providers.myProvider.http_headers={X-Tenant = "tenant-1"}'
 ```
 
 `wire_api` defaults to `"responses"`. Override per service via `service.extra.codex.wireApi`.
+Static provider headers can be passed via `service.extra.codex.headers`, which maps to
+`model_providers.<name>.http_headers`.
 
 Corresponding vibe-forge config:
 
@@ -133,7 +136,11 @@ modelServices: {
     apiKey: 'sk-...',
     title: 'My Provider',
     extra: {
-      codex: { wireApi: 'responses' },
+      codex: {
+        wireApi: 'responses',
+        headers: { 'X-Tenant': 'tenant-1' },
+        queryParams: { 'api-version': '2025-04-01-preview' },
+      },
     },
   },
 },

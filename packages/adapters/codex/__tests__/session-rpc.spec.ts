@@ -119,6 +119,10 @@ async function waitForWrites() {
   await new Promise(resolve => setTimeout(resolve, 20))
 }
 
+function getConfigOverrides(spawnArgs: string[]) {
+  return spawnArgs.filter((_, index) => spawnArgs[index - 1] === '-c')
+}
+
 describe('createCodexSession RPC approval policy mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -250,6 +254,58 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
     expect(initialTurnRequest?.params.model).toBeUndefined()
+
+    session.kill()
+  })
+
+  it('passes through codex model provider headers as config overrides', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          modelServices: {
+            azure: {
+              title: 'Azure',
+              apiBaseUrl: 'https://example.openai.azure.com/openai',
+              apiKey: 'test-key',
+              extra: {
+                codex: {
+                  wireApi: 'responses',
+                  headers: {
+                    'X-Tenant': 'tenant-1'
+                  },
+                  queryParams: {
+                    'api-version': '2025-04-01-preview'
+                  }
+                }
+              }
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-provider-options',
+        model: 'azure,gpt-5.4',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+
+    expect(overrides).toContain('model_provider="azure"')
+    expect(overrides).toContain('model_providers.azure.name="Azure"')
+    expect(overrides).toContain('model_providers.azure.base_url="https://example.openai.azure.com/openai"')
+    expect(overrides).toContain('model_providers.azure.experimental_bearer_token="test-key"')
+    expect(overrides).toContain('model_providers.azure.wire_api="responses"')
+    expect(overrides).toContain('model_providers.azure.http_headers={X-Tenant = "tenant-1"}')
+    expect(overrides).toContain('model_providers.azure.query_params={ak = "test-key", api-version = "2025-04-01-preview"}')
 
     session.kill()
   })

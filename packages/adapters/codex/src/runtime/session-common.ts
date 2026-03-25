@@ -61,6 +61,28 @@ export function toCodexOutboundApprovalPolicy(
  */
 const toToml = (value: string) => JSON.stringify(value)
 
+interface CodexModelProviderExtra {
+  wireApi?: string
+  queryParams?: Record<string, string>
+  headers?: Record<string, string>
+}
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value != null && typeof value === 'object' && !Array.isArray(value)
+
+const normalizeStringRecord = (value: unknown): Record<string, string> => {
+  if (!isPlainObject(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  )
+}
+
+/**
+ * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
+ */
+const toTomlInlineTable = (obj: Record<string, string>) =>
+  `{${Object.entries(obj).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}}`
+
 /**
  * Derive the `-c key=value` overrides and API-key env injections needed to map
  * vibe-forge `systemPrompt` and `modelServices` onto codex configuration.
@@ -93,8 +115,7 @@ function buildCodexConfigOverrides(params: {
 
     if (service) {
       const { title, apiBaseUrl, apiKey, extra } = service
-      const { wireApi, queryParams } =
-        (extra?.codex as { wireApi?: string; queryParams?: Record<string, string> } | undefined) ?? {}
+      const { wireApi, queryParams, headers } = (extra?.codex as CodexModelProviderExtra | undefined) ?? {}
       const prefix = `model_providers.${serviceKey}`
 
       args.push('-c', `model_provider=${toToml(serviceKey)}`)
@@ -111,9 +132,13 @@ function buildCodexConfigOverrides(params: {
       if (wireApi) {
         args.push('-c', `${prefix}.wire_api=${toToml(wireApi)}`)
       }
+      const normalizedHeaders = normalizeStringRecord(headers)
+      if (Object.keys(normalizedHeaders).length > 0) {
+        args.push('-c', `${prefix}.http_headers=${toTomlInlineTable(normalizedHeaders)}`)
+      }
       const mergedQueryParams = {
         ...(apiKey ? { ak: apiKey } : {}),
-        ...queryParams
+        ...normalizeStringRecord(queryParams)
       }
       if (Object.keys(mergedQueryParams).length > 0) {
         args.push('-c', `${prefix}.query_params=${toTomlInlineTable(mergedQueryParams)}`)
@@ -127,12 +152,6 @@ function buildCodexConfigOverrides(params: {
 
   return { args, resolvedModel }
 }
-
-/**
- * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
- */
-const toTomlInlineTable = (obj: Record<string, string>) =>
-  `{${Object.entries(obj).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}}`
 
 /**
  * Build `-c mcp_servers.<name>.*` overrides for each filtered MCP server.

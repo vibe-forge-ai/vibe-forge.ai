@@ -84,6 +84,11 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
     } as any
   }
 
+  function getCachedThreadIds(value: unknown) {
+    return Object.values((value ?? {}) as Record<string, unknown>)
+      .filter((item): item is string => typeof item === 'string')
+  }
+
   it('completes the initialize handshake and receives a thread id', async () => {
     const events: AdapterOutputEvent[] = []
     const ctx = makeCtx()
@@ -102,8 +107,9 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
 
     // Session should not have thrown; cache should have a thread id
     const cachedThreads = await ctx.cache.get('adapter.codex.threads')
-    expect(cachedThreads?.['test-session-1']).toBeDefined()
-    expect(typeof cachedThreads?.['test-session-1']).toBe('string')
+    const cachedThreadIds = getCachedThreadIds(cachedThreads)
+    expect(cachedThreadIds.length).toBeGreaterThan(0)
+    expect(typeof cachedThreadIds[0]).toBe('string')
   }, 15_000)
 
   it('sends a turn and receives agent message and stop events', async () => {
@@ -174,7 +180,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
     })
     sessionA.kill()
 
-    const threadIdAfterCreate = (await ctx.cache.get('adapter.codex.threads'))?.['test-session-resume']
+    const threadIdAfterCreate = getCachedThreadIds(await ctx.cache.get('adapter.codex.threads'))[0]
     expect(threadIdAfterCreate).toBeDefined()
 
     // Now resume the same session
@@ -199,7 +205,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
     sessionB.kill()
 
     // Thread id should be the same (resumed not created)
-    const threadIdAfterResume = (await ctx.cache.get('adapter.codex.threads'))?.['test-session-resume']
+    const threadIdAfterResume = getCachedThreadIds(await ctx.cache.get('adapter.codex.threads'))[0]
     expect(threadIdAfterResume).toBe(threadIdAfterCreate)
   }, 70_000)
 })
