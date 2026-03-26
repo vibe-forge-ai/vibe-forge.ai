@@ -13,6 +13,20 @@ export const handleIncomingEvent = (
   data: ClaudeCodeIncomingEvent,
   onEvent: AdapterQueryOptions['onEvent']
 ) => {
+  const emitResultError = (params: {
+    message: string
+    details?: Record<string, unknown>
+  }) => {
+    onEvent({
+      type: 'error',
+      data: {
+        message: params.message,
+        details: params.details,
+        fatal: true
+      }
+    })
+  }
+
   if (data.type === 'system') {
     if (data.subtype === 'init') {
       onEvent({
@@ -98,9 +112,37 @@ export const handleIncomingEvent = (
   }
 
   if (data.type === 'result') {
+    if (data.subtype === 'error_during_execution') {
+      const errors = Array.isArray(data.errors) ? data.errors.filter(error => error.trim() !== '') : []
+      emitResultError({
+        message: errors[0] ?? 'Claude Code execution failed',
+        details: {
+          errors,
+          sessionId: data.session_id
+        }
+      })
+      return
+    }
+
     if (data.subtype !== 'success') {
       return
     }
+
+    if (data.is_error) {
+      emitResultError({
+        message: data.result !== '' ? data.result : 'Claude Code execution failed',
+        details: {
+          sessionId: data.session_id,
+          durationMs: data.duration_ms,
+          durationApiMs: data.duration_api_ms,
+          numTurns: data.num_turns,
+          totalCostUsd: data.total_cost_usd,
+          usage: data.usage,
+          permissionDenials: data.permission_denials
+        }
+      })
+    }
+
     let messageData: ChatMessage | undefined
     if (data.result != null && data.result !== '') {
       messageData = {

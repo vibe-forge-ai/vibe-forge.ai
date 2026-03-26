@@ -97,6 +97,7 @@ describe('startAdapterSession', () => {
       }
     ])
     mocks.loadMergedConfig.mockResolvedValue({ mergedConfig: {} })
+    mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
   })
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
@@ -249,6 +250,36 @@ describe('startAdapterSession', () => {
       systemPrompt: 'custom prompt',
       appendSystemPrompt: false
     }))
+  })
+
+  it('keeps the session failed when a fatal error is followed by stop', async () => {
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      adapterOptions.onEvent({
+        type: 'error',
+        data: {
+          message: 'turn failed',
+          fatal: true
+        }
+      })
+      adapterOptions.onEvent({
+        type: 'stop',
+        data: undefined
+      })
+      return {
+        session: {
+          emit: vi.fn(),
+          kill: vi.fn()
+        }
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(currentSession.status).toBe('failed')
   })
 
   it('restarts the adapter on demand when a follow-up user message arrives after completion', async () => {

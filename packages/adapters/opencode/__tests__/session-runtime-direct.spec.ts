@@ -90,7 +90,16 @@ describe('createOpenCodeSession direct runtime', () => {
 
     await flushAsyncWork()
 
-    expect(events).toEqual([{ type: 'exit', data: { exitCode: 1, stderr: 'opencode missing' } }])
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'error',
+        data: expect.objectContaining({
+          message: 'opencode missing',
+          fatal: true
+        })
+      }),
+      { type: 'exit', data: { exitCode: 1, stderr: 'opencode missing' } }
+    ])
   })
 
   it('resolves the latest session id before starting direct resume mode', async () => {

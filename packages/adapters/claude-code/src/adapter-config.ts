@@ -14,6 +14,7 @@ declare module '@vibe-forge/core' {
         LOG?: boolean
         PORT?: string
         HOST?: string
+        API_TIMEOUT_MS?: number
       }
       ccrTransformers?: {
         logger?: boolean

@@ -4,6 +4,7 @@ import type { Command, OptionValueSource } from 'commander'
 
 import type { ChatMessage } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/core/hooks'
+import type { AdapterErrorData } from '@vibe-forge/core/adapter'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
@@ -35,6 +36,34 @@ interface RunOptions {
   injectDefaultSystemPrompt?: boolean
 }
 
+export const createSessionExitController = <T extends { kill(): void }>(params?: {
+  exit?: (code: number) => never | void
+}) => {
+  let session: T | undefined
+  let pendingExitCode: number | undefined
+  let didRequestExit = false
+  const exit = params?.exit ?? process.exit
+
+  return {
+    bindSession(nextSession: T) {
+      session = nextSession
+      if (pendingExitCode == null) return
+      session.kill()
+      exit(pendingExitCode)
+    },
+    requestExit(code: number) {
+      if (didRequestExit) return
+      didRequestExit = true
+      if (session != null) {
+        session.kill()
+        exit(code)
+        return
+      }
+      pendingExitCode = code
+    }
+  }
+}
+
 export function registerRunCommand(program: Command) {
   program
     .argument('[description...]')
@@ -61,6 +90,8 @@ export function registerRunCommand(program: Command) {
     .action(async (descriptionArgs: string[], opts: RunOptions, command: Command) => {
       const description = descriptionArgs.join(' ')
       let lastAssistantText: string | undefined
+      let didExitAfterError = false
+      const exitController = createSessionExitController()
 
       if (opts.spec && opts.entity) {
         console.error('Error: --spec and --entity are mutually exclusive.')
@@ -151,34 +182,63 @@ export function registerRunCommand(program: Command) {
             if (event.type === 'message') {
               lastAssistantText = getPrintableAssistantText(event.data) ?? lastAssistantText
             }
+            if (event.type === 'error') {
+              const errorMessage = getAdapterErrorMessage(event.data)
+              const isFatal = event.data.fatal !== false
+              switch (opts.outputFormat) {
+                case 'stream-json':
+                  console.log(JSON.stringify(event, null, 2))
+                  if (isFatal) {
+                    didExitAfterError = true
+                    exitController.requestExit(1)
+                  }
+                  break
+                case 'text':
+                  if (isFatal) {
+                    didExitAfterError = true
+                    console.error(errorMessage)
+                    exitController.requestExit(1)
+                  }
+                  break
+                case 'json':
+                  if (isFatal) {
+                    didExitAfterError = true
+                    console.log(JSON.stringify(event, null, 2))
+                    exitController.requestExit(1)
+                  }
+                  break
+              }
+              return
+            }
             switch (opts.outputFormat) {
               case 'stream-json':
                 console.log(JSON.stringify(event, null, 2))
                 break
               case 'text':
                 if (event.type === 'stop') {
+                  if (didExitAfterError) return
                   const output = resolvePrintableStopText(event.data, lastAssistantText)
                   if (output != null) {
                     console.log(output)
                   }
-                  session.kill()
-                  process.exit(0)
+                  exitController.requestExit(0)
                 }
                 break
               case 'json':
                 if (event.type === 'stop') {
+                  if (didExitAfterError) return
                   console.log(JSON.stringify(event, null, 2))
-                  session.kill()
-                  process.exit(0)
+                  exitController.requestExit(0)
                 }
                 break
             }
           }
           if (event.type === 'exit') {
-            process.exit(event.data.exitCode ?? 0)
+            exitController.requestExit(event.data.exitCode ?? 0)
           }
         }
       })
+      exitController.bindSession(session)
     })
 }
 
@@ -198,6 +258,16 @@ export const resolvePrintableStopText = (
   message: ChatMessage | undefined,
   lastAssistantText: string | undefined
 ) => getPrintableAssistantText(message) ?? lastAssistantText
+
+export const getAdapterErrorMessage = (data: AdapterErrorData) => {
+  const details = data.details == null
+    ? undefined
+    : typeof data.details === 'string'
+    ? data.details
+    : JSON.stringify(data.details, null, 2)
+
+  return details ? `${data.message}\n${details}` : data.message
+}
 
 function mergeListConfig(
   config: { include?: string[]; exclude?: string[] } | undefined,

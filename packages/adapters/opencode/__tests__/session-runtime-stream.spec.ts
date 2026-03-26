@@ -168,6 +168,13 @@ describe('createOpenCodeSession stream runtime', () => {
 
     expect(events).toEqual([
       expect.objectContaining({ type: 'init' }),
+      expect.objectContaining({
+        type: 'error',
+        data: expect.objectContaining({
+          message: 'spawn failed',
+          fatal: true
+        })
+      }),
       { type: 'exit', data: { exitCode: 1, stderr: 'spawn failed' } }
     ])
   })

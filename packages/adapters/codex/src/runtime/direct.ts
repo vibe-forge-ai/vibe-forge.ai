@@ -19,6 +19,7 @@ export function createDirectCodexSession(base: CodexSessionBase, options: Adapte
     cwd,
     binaryPath,
     spawnEnv,
+    useYolo,
     approvalPolicy,
     sandboxPolicy,
     features,
@@ -31,9 +32,15 @@ export function createDirectCodexSession(base: CodexSessionBase, options: Adapte
   const isResume = sessionType === 'resume'
   const approvalFlag = toCodexOutboundApprovalPolicy(approvalPolicy)
 
-  const args: string[] = isResume
-    ? ['resume', ...configOverrideArgs]
-    : [...configOverrideArgs]
+  const args: string[] = []
+
+  if (useYolo) {
+    args.push('--yolo')
+  }
+  if (isResume) {
+    args.push('resume')
+  }
+  args.push(...configOverrideArgs)
 
   if (resolvedModel) {
     args.push('--model', resolvedModel)
@@ -46,11 +53,13 @@ export function createDirectCodexSession(base: CodexSessionBase, options: Adapte
     : sandboxPolicy.type === 'dangerFullAccess'
     ? 'danger-full-access'
     : undefined
-  if (sandboxFlag) {
+  if (!useYolo && sandboxFlag) {
     args.push('--sandbox', sandboxFlag)
   }
 
-  args.push('--ask-for-approval', approvalFlag)
+  if (!useYolo) {
+    args.push('--ask-for-approval', approvalFlag)
+  }
   args.push(...buildFeatureArgs(features))
 
   if (extraOptions?.length) {
@@ -72,9 +81,39 @@ export function createDirectCodexSession(base: CodexSessionBase, options: Adapte
   logger.info('[codex session] spawning CLI (direct mode)', { binaryPath, args, cwd })
 
   const proc = spawn(String(binaryPath), args, { env: spawnEnv, cwd, stdio: 'inherit' })
+  let didEmitExit = false
+
+  const emitExit = (data: { exitCode?: number; stderr?: string }) => {
+    if (didEmitExit) return
+    didEmitExit = true
+    onEvent({ type: 'exit', data })
+  }
+
+  proc.on('error', (err) => {
+    const message = err instanceof Error ? err.message : String(err)
+    onEvent({
+      type: 'error',
+      data: {
+        message,
+        details: err,
+        fatal: true
+      }
+    })
+    emitExit({ exitCode: 1, stderr: message })
+  })
 
   proc.on('exit', (code) => {
-    onEvent({ type: 'exit', data: { exitCode: code ?? undefined } })
+    if ((code ?? 0) !== 0) {
+      onEvent({
+        type: 'error',
+        data: {
+          message: `Process exited with code ${code ?? 1}`,
+          details: { exitCode: code ?? 1 },
+          fatal: true
+        }
+      })
+    }
+    emitExit({ exitCode: code ?? undefined })
   })
 
   return {

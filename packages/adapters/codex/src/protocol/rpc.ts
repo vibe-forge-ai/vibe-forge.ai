@@ -5,6 +5,18 @@ import type { Logger } from '@vibe-forge/core/utils/create-logger'
 
 import type { CodexNotification, CodexRequest, CodexResponse } from '#~/types.js'
 
+export class CodexRpcError extends Error {
+  readonly code: number
+  readonly data?: unknown
+
+  constructor(code: number, message: string, data?: unknown) {
+    super(`[${code}] ${message}`)
+    this.name = 'CodexRpcError'
+    this.code = code
+    this.data = data
+  }
+}
+
 interface PendingReq {
   resolve: (result: unknown) => void
   reject: (err: Error) => void
@@ -45,7 +57,11 @@ export class CodexRpcClient {
           }
           this.pending.delete(response.id)
           if (response.error) {
-            pending.reject(new Error(`[${response.error.code}] ${response.error.message}`))
+            pending.reject(new CodexRpcError(
+              response.error.code,
+              response.error.message,
+              response.error.data
+            ))
           } else {
             pending.resolve(response.result)
           }

@@ -45,7 +45,9 @@ export function applySessionEvent(
   } else if (event.type === 'interaction_response') {
     updates.status = 'running'
   } else if (event.type === 'error') {
-    updates.status = 'failed'
+    if (event.data.fatal !== false) {
+      updates.status = 'failed'
+    }
   }
 
   if (Object.keys(updates).length > 0) {

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
 
 import { createCodexSession } from '#~/runtime/session.js'
+import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
 
 vi.mock('node:child_process', () => ({
   spawn: vi.fn()
@@ -123,6 +124,24 @@ function getConfigOverrides(spawnArgs: string[]) {
   return spawnArgs.filter((_, index) => spawnArgs[index - 1] === '-c')
 }
 
+function getConfigOverride(overrides: string[], prefix: string) {
+  return overrides.find(override => override.startsWith(prefix))
+}
+
+function decodeProxyMeta(overrides: string[], serviceKey: string) {
+  const headerOverride = getConfigOverride(overrides, `model_providers.${serviceKey}.http_headers=`)
+  if (headerOverride == null) {
+    throw new Error(`Missing http_headers override for ${serviceKey}`)
+  }
+
+  const encodedMeta = headerOverride.match(new RegExp(`${CODEX_PROXY_META_HEADER_NAME} = "([^"]+)"`))?.[1]
+  if (encodedMeta == null) {
+    throw new Error(`Missing ${CODEX_PROXY_META_HEADER_NAME} header for ${serviceKey}`)
+  }
+
+  return JSON.parse(Buffer.from(encodedMeta, 'base64url').toString('utf8')) as Record<string, unknown>
+}
+
 describe('createCodexSession RPC approval policy mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -206,9 +225,44 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const startRequest = receivedLines.find(line => line.method === 'thread/start')
     expect(startRequest?.params.approvalPolicy).toBe('never')
+    expect(startRequest?.params.sandboxPolicy).toEqual({ type: 'workspaceWrite' })
 
     const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
     expect(initialTurnRequest?.params.approvalPolicy).toBe('never')
+    expect(initialTurnRequest?.params.sandboxPolicy).toEqual({ type: 'workspaceWrite' })
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('app-server')
+    expect(spawnArgs).not.toContain('--yolo')
+
+    session.kill()
+  })
+
+  it('uses --yolo and danger-full-access when permission mode is bypassPermissions', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-bypass',
+      permissionMode: 'bypassPermissions',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('--yolo')
+    expect(spawnArgs[1]).toBe('app-server')
+
+    const startRequest = receivedLines.find(line => line.method === 'thread/start')
+    expect(startRequest?.params.approvalPolicy).toBe('never')
+    expect(startRequest?.params.sandboxPolicy).toEqual({ type: 'dangerFullAccess' })
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.approvalPolicy).toBe('never')
+    expect(initialTurnRequest?.params.sandboxPolicy).toEqual({ type: 'dangerFullAccess' })
 
     session.kill()
   })
@@ -258,7 +312,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
-  it('passes through codex model provider headers as config overrides', async () => {
+  it('routes codex model providers through the local proxy with upstream metadata', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()
     spawnMock.mockReturnValue(proc)
@@ -271,6 +325,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
               title: 'Azure',
               apiBaseUrl: 'https://example.openai.azure.com/openai',
               apiKey: 'test-key',
+              timeoutMs: 600000,
               extra: {
                 codex: {
                   wireApi: 'responses',
@@ -298,14 +353,150 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
 
     expect(overrides).toContain('model_provider="azure"')
     expect(overrides).toContain('model_providers.azure.name="Azure"')
-    expect(overrides).toContain('model_providers.azure.base_url="https://example.openai.azure.com/openai"')
     expect(overrides).toContain('model_providers.azure.experimental_bearer_token="test-key"')
     expect(overrides).toContain('model_providers.azure.wire_api="responses"')
-    expect(overrides).toContain('model_providers.azure.http_headers={X-Tenant = "tenant-1"}')
-    expect(overrides).toContain('model_providers.azure.query_params={ak = "test-key", api-version = "2025-04-01-preview"}')
+    expect(overrides).toContain('model_providers.azure.stream_idle_timeout_ms=600000')
+    expect(getConfigOverride(overrides, 'model_providers.azure.base_url=')).toMatch(
+      /^model_providers\.azure\.base_url="http:\/\/127\.0\.0\.1:\d+"$/
+    )
+    expect(overrides.some(override => override.startsWith('model_providers.azure.query_params='))).toBe(false)
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      headers: {
+        'X-Tenant': 'tenant-1'
+      },
+      queryParams: {
+        'api-version': '2025-04-01-preview'
+      }
+    })
+
+    session.kill()
+  })
+
+  it('passes maxOutputTokens from adapter config to turn/start', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              maxOutputTokens: 4096
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-max-output-tokens',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.maxOutputTokens).toBe(4096)
+
+    session.kill()
+  })
+
+  it('routes model service maxOutputTokens through the proxy and suppresses adapter fallback', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              maxOutputTokens: 4096
+            }
+          },
+          modelServices: {
+            azure: {
+              title: 'Azure',
+              apiBaseUrl: 'https://example.openai.azure.com/openai',
+              apiKey: 'test-key',
+              maxOutputTokens: 8192
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-service-max-output-tokens',
+        model: 'azure,gpt-5.4',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.maxOutputTokens).toBeUndefined()
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      maxOutputTokens: 8192
+    })
+
+    session.kill()
+  })
+
+  it('passes model service maxOutputTokens to direct mode through proxy metadata', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          modelServices: {
+            azure: {
+              title: 'Azure',
+              apiBaseUrl: 'https://example.openai.azure.com/openai',
+              apiKey: 'test-key',
+              maxOutputTokens: 8192
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        mode: 'direct',
+        runtime: 'server',
+        sessionId: 'session-direct-service-max-output-tokens',
+        model: 'azure,gpt-5.4',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
+
+    expect(overrides).toContain('model_provider="azure"')
+    expect(getConfigOverride(overrides, 'model_providers.azure.base_url=')).toMatch(
+      /^model_providers\.azure\.base_url="http:\/\/127\.0\.0\.1:\d+"$/
+    )
+    expect(overrides.some(override => override.startsWith('model_providers.azure.max_output_tokens='))).toBe(false)
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      maxOutputTokens: 8192
+    })
+    expect(spawnArgs).toContain('--model')
+    expect(spawnArgs).toContain('gpt-5.4')
 
     session.kill()
   })
@@ -379,9 +570,38 @@ describe('createCodexSession RPC approval policy mapping', () => {
     await waitForWrites()
 
     expect(events.some(event => (
+      event.type === 'error' &&
+      event.data.message.includes('invalid_encrypted_content')
+    ))).toBe(true)
+    expect(events.some(event => (
       event.type === 'exit' &&
       event.data.exitCode === 1 &&
       event.data.stderr?.includes('invalid_encrypted_content')
     ))).toBe(true)
+  })
+
+  it('places --yolo before resume in direct mode for bypassPermissions', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'resume',
+      mode: 'direct',
+      runtime: 'server',
+      sessionId: 'session-direct-bypass',
+      permissionMode: 'bypassPermissions',
+      description: 'resume prompt',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('--yolo')
+    expect(spawnArgs[1]).toBe('resume')
+    expect(spawnArgs).toContain('--last')
+    expect(spawnArgs).not.toContain('--ask-for-approval')
+    expect(spawnArgs).not.toContain('--sandbox')
+
+    session.kill()
   })
 })

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterEvent, AdapterOutputEvent, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import type { CodexSessionBase } from './session-common'
 
 import { AgentMessageAccumulator, CommandOutputAccumulator, handleIncomingNotification } from '#~/protocol/incoming.js'
@@ -9,6 +9,7 @@ import type { CodexInputItem, CodexThread, CodexTurn } from '#~/types.js'
 
 import {
   buildFeatureArgs,
+  toAdapterErrorData,
   getErrorMessage,
   isInvalidEncryptedContentError,
   mapContentToCodexInput,
@@ -29,11 +30,13 @@ export async function createStreamCodexSession(
     cwd,
     binaryPath,
     spawnEnv,
+    useYolo,
     approvalPolicy,
     sandboxPolicy,
     features,
     configOverrideArgs,
     resolvedModel,
+    resolvedMaxOutputTokens,
     threadCacheKey,
     cachedThreadId
   } = base
@@ -45,6 +48,7 @@ export async function createStreamCodexSession(
   const {
     experimentalApi = false,
     effort,
+    maxOutputTokens: adapterMaxOutputTokens,
     clientInfo: rawClientInfo = {}
   } = {
     ...(config?.adapters?.codex ?? {}),
@@ -52,8 +56,14 @@ export async function createStreamCodexSession(
   } as {
     experimentalApi?: boolean
     effort?: string
+    maxOutputTokens?: number
     clientInfo?: { name?: string; title?: string; version?: string }
   }
+  const maxOutputTokens = typeof resolvedMaxOutputTokens === 'number'
+    ? resolvedMaxOutputTokens
+    : resolvedMaxOutputTokens === null
+    ? undefined
+    : adapterMaxOutputTokens
   const clientInfo = {
     name: rawClientInfo.name ?? 'vibe-forge',
     title: rawClientInfo.title ?? 'Vibe Forge',
@@ -64,7 +74,12 @@ export async function createStreamCodexSession(
 
   const proc = spawn(
     String(binaryPath),
-    ['app-server', ...configOverrideArgs, ...buildFeatureArgs(features)],
+    [
+      ...(useYolo ? ['--yolo'] : []),
+      'app-server',
+      ...configOverrideArgs,
+      ...buildFeatureArgs(features)
+    ],
     { env: spawnEnv, cwd, stdio: ['pipe', 'pipe', 'inherit'] }
   )
 
@@ -75,14 +90,25 @@ export async function createStreamCodexSession(
   let activeTurnId: string | undefined
   let usedCachedThread = false
   let didEmitExit = false
+  let didEmitFatalError = false
+
+  const emitEvent = (event: AdapterOutputEvent) => {
+    if (event.type === 'error' && event.data.fatal !== false) {
+      didEmitFatalError = true
+    }
+    onEvent(event)
+  }
 
   const emitFailureAndExit = (err: unknown) => {
     if (didEmitExit) return
     didEmitExit = true
     const stderr = getErrorMessage(err)
     logger.error('[codex session] stream session failed', { err, sessionId, threadId })
+    if (!didEmitFatalError) {
+      emitEvent({ type: 'error', data: toAdapterErrorData(err) })
+    }
     rpc.destroy(stderr)
-    onEvent({ type: 'exit', data: { exitCode: 1, stderr } })
+    emitEvent({ type: 'exit', data: { exitCode: 1, stderr } })
     proc.kill()
   }
 
@@ -105,16 +131,35 @@ export async function createStreamCodexSession(
     if (method === 'turn/started') {
       activeTurnId = (params as { turn?: { id?: string } }).turn?.id
     } else if (method === 'turn/completed') {
+      const turn = (params as { turn?: CodexTurn }).turn
+      if (turn?.status === 'failed') {
+        logger.error('[codex session] turn failed', {
+          sessionId,
+          threadId,
+          turnId: turn.id,
+          error: turn.error
+        })
+      }
       activeTurnId = undefined
     }
-    handleIncomingNotification(method, params, rpc, onEvent, msgAcc, cmdAcc, approvalPolicy)
+    handleIncomingNotification(method, params, rpc, emitEvent, msgAcc, cmdAcc, approvalPolicy)
   })
 
   proc.on('exit', (code) => {
     if (didEmitExit) return
     didEmitExit = true
+    if ((code ?? 0) !== 0 && !didEmitFatalError) {
+      emitEvent({
+        type: 'error',
+        data: {
+          message: `Process exited with code ${code ?? 1}`,
+          details: { exitCode: code ?? 1 },
+          fatal: true
+        }
+      })
+    }
     rpc.destroy('process exited')
-    onEvent({ type: 'exit', data: { exitCode: code ?? undefined } })
+    emitEvent({ type: 'exit', data: { exitCode: code ?? undefined } })
   })
 
   const startNewThread = async () => {
@@ -161,7 +206,8 @@ export async function createStreamCodexSession(
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
       ...(model ? { model } : {}),
-      ...(effort ? { effort } : {})
+      ...(effort ? { effort } : {}),
+      ...(typeof maxOutputTokens === 'number' ? { maxOutputTokens } : {})
     }
 
     try {

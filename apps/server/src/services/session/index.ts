@@ -127,6 +127,8 @@ export async function startAdapterSession(
       finalSystemPrompt,
       languagePrompt
     ].filter(Boolean).join('\n\n')
+    let sawFatalError = false
+
     const { session } = await run({
       env,
       cwd: promptCwd,
@@ -190,20 +192,36 @@ export async function startAdapterSession(
               })
             }
             break
+          case 'error':
+            if (event.data.fatal !== false) {
+              sawFatalError = true
+            }
+            applyEvent({
+              type: 'error',
+              data: event.data,
+              message: event.data.message
+            })
+            break
           case 'exit': {
             const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
-            const errorEvent: WSEvent = {
-              type: 'error',
-              message: exitCode !== 0
-                ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
-                : 'Process exited unexpectedly'
-            }
-
             updateAndNotifySession(sessionId, {
               status: exitCode === 0 ? 'completed' : 'failed'
             })
-
-            emitRuntimeEvent(connectionState, errorEvent, { recordMessage: false })
+            if (exitCode !== 0 && !sawFatalError) {
+              emitRuntimeEvent(connectionState, {
+                type: 'error',
+                data: {
+                  message: stderr !== ''
+                    ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+                    : `Process exited with code ${exitCode}`,
+                  details: stderr !== '' ? { stderr } : undefined,
+                  fatal: true
+                },
+                message: stderr !== ''
+                  ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+                  : `Process exited with code ${exitCode}`
+              }, { recordMessage: false })
+            }
 
             deleteAdapterSessionRuntime(sessionId)
             if (activeAdapterRunStore.get(sessionId) === runId) {
@@ -224,7 +242,10 @@ export async function startAdapterSession(
             break
           }
           case 'stop': {
-            updateAndNotifySession(sessionId, { status: 'completed' })
+            const latestSession = getDb().getSession(sessionId)
+            if (latestSession?.status !== 'failed') {
+              updateAndNotifySession(sessionId, { status: 'completed' })
+            }
             break
           }
         }

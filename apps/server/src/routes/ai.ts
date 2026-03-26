@@ -59,6 +59,43 @@ const toTagList = (value: unknown): string[] => {
   return []
 }
 
+const toSkillList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string')
+  }
+  if (value && typeof value === 'object') {
+    const list = (value as { list?: unknown }).list
+    if (Array.isArray(list)) {
+      return list.filter((item): item is string => typeof item === 'string')
+    }
+  }
+  return []
+}
+
+const toRuleList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+
+  return value.flatMap((item) => {
+    if (typeof item === 'string') return [item]
+    if (item == null || typeof item !== 'object') return []
+
+    const desc = typeof (item as { desc?: unknown }).desc === 'string'
+      ? (item as { desc: string }).desc
+      : undefined
+
+    if ((item as { type?: unknown }).type === 'remote') {
+      const tags = toStringList((item as { tags?: unknown }).tags)
+      return [desc ?? (tags.length > 0 ? `remote:${tags.join(',')}` : 'remote')]
+    }
+
+    const path = typeof (item as { path?: unknown }).path === 'string'
+      ? (item as { path: string }).path
+      : undefined
+
+    return [desc ?? path].filter((rule): rule is string => Boolean(rule))
+  })
+}
+
 const toStringList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string')
@@ -150,8 +187,8 @@ export function aiRouter(): Router {
             description,
             always: entity.attributes.always ?? true,
             tags,
-            skills: toTagList(entity.attributes.skills),
-            rules: toTagList(entity.attributes.rules)
+            skills: toSkillList(entity.attributes.skills),
+            rules: toRuleList(entity.attributes.rules)
           }
         })
       }
@@ -251,8 +288,8 @@ export function aiRouter(): Router {
           description,
           always: entity.attributes.always ?? true,
           tags,
-          skills: toTagList(entity.attributes.skills),
-          rules: toTagList(entity.attributes.rules),
+          skills: toSkillList(entity.attributes.skills),
+          rules: toRuleList(entity.attributes.rules),
           body: entity.body ?? ''
         }
       }

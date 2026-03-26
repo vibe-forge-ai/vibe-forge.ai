@@ -100,6 +100,33 @@ describe('codex rpc client', () => {
       await expect(promise).rejects.toThrow('Not initialized')
     })
 
+    it('preserves error data for upstream diagnostics', async () => {
+      const { proc, feedLine } = makeProc()
+      const rpc = new CodexRpcClient(proc, makeMockLogger() as any)
+
+      const promise = rpc.request('turn/start', {})
+      feedLine({
+        id: 1,
+        error: {
+          code: 400,
+          message: 'Incomplete response returned',
+          data: {
+            status: 'incomplete',
+            incomplete_details: { reason: 'max_output_tokens' }
+          }
+        }
+      })
+
+      await expect(promise).rejects.toMatchObject({
+        name: 'CodexRpcError',
+        code: 400,
+        data: {
+          status: 'incomplete',
+          incomplete_details: { reason: 'max_output_tokens' }
+        }
+      })
+    })
+
     it('rejects all pending requests when destroy() is called', async () => {
       const { proc } = makeProc()
       const rpc = new CodexRpcClient(proc, makeMockLogger() as any)

@@ -23,6 +23,11 @@ declare module '@vibe-forge/core' {
       /** Reasoning effort level for supported models. */
       effort?: 'low' | 'medium' | 'high'
       /**
+       * Maximum completion tokens allowed for each turn in stream mode.
+       * Useful when upstream Responses-compatible providers apply a low default.
+       */
+      maxOutputTokens?: number
+      /**
        * Feature flag overrides applied via `--enable` / `--disable`.
        * Keys are feature names from `codex features list`:
        * `undo`, `shell_tool`, `web_search_request`, `web_search_cached`,

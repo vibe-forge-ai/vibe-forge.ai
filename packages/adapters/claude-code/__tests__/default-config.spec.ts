@@ -84,6 +84,68 @@ describe('generateDefaultCCRConfigJSON', () => {
     ])
   })
 
+  it('maps model service timeout to CCR API_TIMEOUT_MS and prefers the default service when values differ', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: {
+        defaultModelService: 'fast',
+        defaultModel: 'gpt-5.4-mini',
+        modelServices: {
+          fast: {
+            apiBaseUrl: 'https://example.test/fast/chat/completions',
+            apiKey: 'fast-key',
+            models: ['gpt-5.4-mini'],
+            timeoutMs: 120000
+          },
+          slow: {
+            apiBaseUrl: 'https://example.test/slow/chat/completions',
+            apiKey: 'slow-key',
+            models: ['gpt-5.4'],
+            timeoutMs: 600000
+          }
+        }
+      }
+    })
+
+    const config = JSON.parse(raw) as {
+      API_TIMEOUT_MS?: number
+    }
+
+    expect(config.API_TIMEOUT_MS).toBe(120000)
+  })
+
+  it('adds a maxtoken transformer for model service maxOutputTokens without clobbering existing transformers', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: {
+        defaultModelService: 'gateway',
+        defaultModel: 'gpt-5.4',
+        modelServices: {
+          gateway: {
+            apiBaseUrl: 'https://example.test/chat/completions',
+            apiKey: 'gateway-key',
+            models: ['gpt-5.4'],
+            maxOutputTokens: 8192,
+            extra: {
+              claudeCodeRouterTransformer: {
+                use: ['openrouter']
+              }
+            }
+          }
+        }
+      }
+    })
+
+    const config = JSON.parse(raw) as {
+      Providers: Array<{ transformer?: { use?: unknown[] } }>
+    }
+
+    expect(config.Providers[0]?.transformer?.use).toEqual([
+      'openrouter',
+      ['maxtoken', { max_tokens: 8192 }]
+    ])
+  })
+
   it('injects logger transformer by default', () => {
     const raw = generateDefaultCCRConfigJSON({
       cwd: '/tmp/project',

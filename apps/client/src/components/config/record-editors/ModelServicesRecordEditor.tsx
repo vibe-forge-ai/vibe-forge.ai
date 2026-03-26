@@ -1,6 +1,6 @@
 import './ModelServicesRecordEditor.scss'
 
-import { Button, Input, Tooltip } from 'antd'
+import { Button, Input, InputNumber, Tooltip } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 
 import { ComplexTextEditor, StringArrayEditor } from '../ConfigEditors'
@@ -177,6 +177,48 @@ export const ModelServicesRecordEditor = ({
                 />
               </FieldRow>
               <FieldRow
+                title={t('config.fields.modelServices.item.timeoutMs.label')}
+                description={t('config.fields.modelServices.item.timeoutMs.desc')}
+                icon={getTypeIcon('number')}
+              >
+                <InputNumber
+                  min={1}
+                  step={1000}
+                  value={typeof recordValue.timeoutMs === 'number' ? recordValue.timeoutMs : undefined}
+                  onChange={(nextValue) => {
+                    onChange({
+                      ...value,
+                      [key]: {
+                        ...recordValue,
+                        ...(typeof nextValue === 'number' ? { timeoutMs: nextValue } : { timeoutMs: undefined })
+                      }
+                    })
+                  }}
+                />
+              </FieldRow>
+              <FieldRow
+                title={t('config.fields.modelServices.item.maxOutputTokens.label')}
+                description={t('config.fields.modelServices.item.maxOutputTokens.desc')}
+                icon={getTypeIcon('number')}
+              >
+                <InputNumber
+                  min={1}
+                  step={256}
+                  value={typeof recordValue.maxOutputTokens === 'number' ? recordValue.maxOutputTokens : undefined}
+                  onChange={(nextValue) => {
+                    onChange({
+                      ...value,
+                      [key]: {
+                        ...recordValue,
+                        ...(typeof nextValue === 'number'
+                          ? { maxOutputTokens: nextValue }
+                          : { maxOutputTokens: undefined })
+                      }
+                    })
+                  }}
+                />
+              </FieldRow>
+              <FieldRow
                 title={t('config.fields.modelServices.item.extra.label')}
                 description={t('config.fields.modelServices.item.extra.desc')}
                 icon={getTypeIcon('object')}
@@ -219,6 +261,8 @@ export const ModelServicesRecordEditor = ({
                     apiKey: '',
                     models: [],
                     modelsAlias: {},
+                    timeoutMs: undefined,
+                    maxOutputTokens: undefined,
                     extra: {}
                   }
                 })

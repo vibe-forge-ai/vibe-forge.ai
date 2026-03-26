@@ -194,7 +194,21 @@ class TaskManager {
         }
         break
       }
+      case 'error': {
+        task.logs.push(event.data.message)
+        if (event.data.fatal !== false) {
+          task.status = 'failed'
+          this.stopServerPolling(taskId)
+          task.onStop?.()
+        }
+        break
+      }
       case 'stop': {
+        if (task.status === 'failed') {
+          this.stopServerPolling(taskId)
+          task.onStop?.()
+          break
+        }
         task.status = 'completed'
         this.stopServerPolling(taskId)
         task.onStop?.()
