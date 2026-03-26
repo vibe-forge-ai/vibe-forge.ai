@@ -204,9 +204,6 @@ importers:
       '@koa/router':
         specifier: ^12.0.0
         version: 12.0.2
-      '@vibe-forge/adapter-opencode':
-        specifier: workspace:^
-        version: link:../../packages/adapters/opencode
       '@vibe-forge/channel-lark':
         specifier: workspace:^
         version: link:../../packages/channels/lark
