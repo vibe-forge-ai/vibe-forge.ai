@@ -112,7 +112,7 @@ Passed directly as `--model gpt-5.4` (direct) or `model: "gpt-5.4"` in RPC calls
 
 ### Model service routing — `"service,model"` format
 
-When the model string contains a comma, the adapter resolves it against `modelServices` and injects the provider configuration via `-c` overrides:
+When the model string contains a comma, the adapter resolves it against `modelServices` and injects the provider configuration via `-c` overrides. Routed services are sent through a per-process local proxy so vibe-forge can translate service-level settings that Codex does not expose natively.
 
 ```
 model: "myProvider,gpt-4o-mini"
@@ -123,15 +123,18 @@ This emits (in order):
 ```sh
 -c 'model_provider="myProvider"'
 -c 'model_providers.myProvider.name="My Provider"'
--c 'model_providers.myProvider.base_url="https://api.example.com/v1"'
+-c 'model_providers.myProvider.base_url="http://127.0.0.1:<random-port>"'
 -c 'model_providers.myProvider.experimental_bearer_token="sk-..."'
 -c 'model_providers.myProvider.wire_api="responses"'
--c 'model_providers.myProvider.http_headers={X-Tenant = "tenant-1"}'
+-c 'model_providers.myProvider.http_headers={X-Vibe-Forge-Proxy-Meta = "<base64url-json>"}'
 ```
 
 `wire_api` defaults to `"responses"`. Override per service via `service.extra.codex.wireApi`.
-Static provider headers can be passed via `service.extra.codex.headers`, which maps to
-`model_providers.<name>.http_headers`.
+Static provider headers, query params, upstream base URL, and `maxOutputTokens` are encoded into the proxy metadata header and restored by the local proxy before the request is forwarded upstream.
+
+The local proxy is started automatically by the adapter. Users do not need to run it manually. The proxy listens on a random loopback port and is reused across repeated routed Codex sessions in the same process.
+
+`modelServices.<service>.maxOutputTokens` does not rely on a native Codex provider field. Instead, the adapter encodes it into the proxy metadata, and the proxy writes it into the outgoing Responses API JSON body as `max_output_tokens` when the upstream request does not already define that field.
 
 Corresponding vibe-forge config:
 
@@ -154,6 +157,16 @@ modelServices: {
 
 > `experimental_bearer_token` is a dev-only per-provider API key field in codex config.
 > See the [sample config](https://developers.openai.com/codex/config-sample) under `[model_providers]`.
+
+### Proxy logs
+
+When routed model services use the local proxy, adapter-specific proxy logs are written to:
+
+```text
+.ai/logs/<ctxId>/<sessionId>/adapter-codex/proxy.log.md
+```
+
+This mirrors the adapter-scoped logging layout used by the Claude Code Router transformers. Proxy logs are separate from the main task/session log file and include structured request/response diagnostics without dumping sensitive query parameter values or credentials.
 
 ---
 

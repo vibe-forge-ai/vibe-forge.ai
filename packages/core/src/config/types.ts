@@ -43,7 +43,7 @@ export interface ModelServiceConfig {
   timeoutMs?: number
   /**
    * 模型服务默认最大输出 token。
-   * - Codex: 映射为 `turn/start.maxOutputTokens`
+   * - Codex: 对 routed model service 通过本地代理写入 Responses API `max_output_tokens`
    * - Claude Code Router: 映射为 `maxtoken` transformer
    * - OpenCode: 映射为 model `options.maxOutputTokens` / `limit.output`
    */

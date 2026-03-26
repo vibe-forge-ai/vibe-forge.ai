@@ -59,7 +59,11 @@ export async function createStreamCodexSession(
     maxOutputTokens?: number
     clientInfo?: { name?: string; title?: string; version?: string }
   }
-  const maxOutputTokens = resolvedMaxOutputTokens ?? adapterMaxOutputTokens
+  const maxOutputTokens = typeof resolvedMaxOutputTokens === 'number'
+    ? resolvedMaxOutputTokens
+    : resolvedMaxOutputTokens === null
+    ? undefined
+    : adapterMaxOutputTokens
   const clientInfo = {
     name: rawClientInfo.name ?? 'vibe-forge',
     title: rawClientInfo.title ?? 'Vibe Forge',

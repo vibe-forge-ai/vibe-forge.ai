@@ -5,10 +5,12 @@ import process from 'node:process'
 
 import type { ModelServiceConfig } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import { createLogger } from '@vibe-forge/core/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
+import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
 export type CodexOutboundApprovalPolicy = 'never' | 'untrusted' | 'on-request'
@@ -88,6 +90,20 @@ const normalizePositiveInteger = (value: unknown): number | undefined => (
     : undefined
 )
 
+const resolveRoutedServiceKey = (rawModel: string | undefined) => {
+  const normalizedRawModel = rawModel?.trim()
+  if (normalizedRawModel == null || !normalizedRawModel.includes(',')) return undefined
+  const commaIdx = normalizedRawModel.indexOf(',')
+  return normalizedRawModel.slice(0, commaIdx).trim() || undefined
+}
+
+const normalizeProviderBaseUrl = (apiBaseUrl: string | undefined, wireApi: string | undefined) => {
+  if (typeof apiBaseUrl !== 'string' || apiBaseUrl.trim() === '') return undefined
+  return (wireApi ?? 'responses') === 'responses' && apiBaseUrl.endsWith('/responses')
+    ? apiBaseUrl.slice(0, -'/responses'.length)
+    : apiBaseUrl
+}
+
 /**
  * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
  */
@@ -105,21 +121,39 @@ function buildCodexConfigOverrides(params: {
   systemPrompt: string | undefined
   rawModel: string | undefined
   modelServices: Record<string, ModelServiceConfig>
+  proxyBaseUrl?: string
+  proxyLogContext?: {
+    cwd: string
+    ctxId: string
+    sessionId: string
+  }
 }): {
     args: string[]
+    fingerprintArgs: string[]
     resolvedModel: string | undefined
-    resolvedMaxOutputTokens: number | undefined
+    resolvedMaxOutputTokens: number | null | undefined
   } {
-  const { systemPrompt, rawModel, modelServices } = params
+  const { systemPrompt, rawModel, modelServices, proxyBaseUrl, proxyLogContext } = params
   const args: string[] = []
+  const fingerprintArgs: string[] = []
   const normalizedRawModel = rawModel?.trim()
+  const pushArgs = (value: string) => {
+    args.push('-c', value)
+  }
+  const pushFingerprintArgs = (value: string) => {
+    fingerprintArgs.push('-c', value)
+  }
+  const pushBoth = (value: string) => {
+    pushArgs(value)
+    pushFingerprintArgs(value)
+  }
 
   if (systemPrompt) {
-    args.push('-c', `developer_instructions=${toToml(systemPrompt)}`)
+    pushBoth(`developer_instructions=${toToml(systemPrompt)}`)
   }
 
   let resolvedModel: string | undefined
-  let resolvedMaxOutputTokens: number | undefined
+  let resolvedMaxOutputTokens: number | null | undefined
 
   if (normalizedRawModel?.toLowerCase() === 'default') {
     resolvedModel = undefined
@@ -133,39 +167,48 @@ function buildCodexConfigOverrides(params: {
       const { title, apiBaseUrl, apiKey, extra, timeoutMs, maxOutputTokens } = service
       const { wireApi, queryParams, headers } = (extra?.codex as CodexModelProviderExtra | undefined) ?? {}
       const prefix = `model_providers.${serviceKey}`
+      const normalizedBaseUrl = normalizeProviderBaseUrl(apiBaseUrl, wireApi)
+      const normalizedHeaders = normalizeStringRecord(headers)
+      const normalizedQueryParams = normalizeStringRecord(queryParams)
+      const normalizedTimeoutMs = normalizePositiveInteger(timeoutMs)
+      const normalizedMaxOutputTokens = normalizePositiveInteger(maxOutputTokens)
+      const shouldProxyProvider = proxyBaseUrl != null && normalizedBaseUrl != null
 
-      args.push('-c', `model_provider=${toToml(serviceKey)}`)
-      args.push('-c', `${prefix}.name=${toToml(title ?? serviceKey)}`)
-      if (apiBaseUrl) {
-        const normalizedBaseUrl = (wireApi ?? 'responses') === 'responses' && apiBaseUrl.endsWith('/responses')
-          ? apiBaseUrl.slice(0, -'/responses'.length)
-          : apiBaseUrl
-        args.push('-c', `${prefix}.base_url=${toToml(normalizedBaseUrl)}`)
+      pushBoth(`model_provider=${toToml(serviceKey)}`)
+      pushBoth(`${prefix}.name=${toToml(title ?? serviceKey)}`)
+      if (shouldProxyProvider) {
+        const proxyMeta = encodeCodexProxyMeta({
+          upstreamBaseUrl: normalizedBaseUrl,
+          ...(Object.keys(normalizedHeaders).length > 0 ? { headers: normalizedHeaders } : {}),
+          ...(Object.keys(normalizedQueryParams).length > 0 ? { queryParams: normalizedQueryParams } : {}),
+          ...(normalizedMaxOutputTokens != null ? { maxOutputTokens: normalizedMaxOutputTokens } : {}),
+          ...(proxyLogContext != null ? { logContext: proxyLogContext } : {})
+        })
+        pushArgs(`${prefix}.base_url=${toToml(proxyBaseUrl)}`)
+        pushFingerprintArgs(`${prefix}.base_url=${toToml(normalizedBaseUrl)}`)
+        pushBoth(
+          `${prefix}.http_headers=${toTomlInlineTable({ [CODEX_PROXY_META_HEADER_NAME]: proxyMeta })}`
+        )
+      } else if (normalizedBaseUrl != null) {
+        pushBoth(`${prefix}.base_url=${toToml(normalizedBaseUrl)}`)
       }
       if (apiKey) {
-        args.push('-c', `${prefix}.experimental_bearer_token=${toToml(apiKey)}`)
+        pushBoth(`${prefix}.experimental_bearer_token=${toToml(apiKey)}`)
       }
       if (wireApi) {
-        args.push('-c', `${prefix}.wire_api=${toToml(wireApi)}`)
+        pushBoth(`${prefix}.wire_api=${toToml(wireApi)}`)
       }
-      const normalizedHeaders = normalizeStringRecord(headers)
-      if (Object.keys(normalizedHeaders).length > 0) {
-        args.push('-c', `${prefix}.http_headers=${toTomlInlineTable(normalizedHeaders)}`)
+      if (!shouldProxyProvider && Object.keys(normalizedHeaders).length > 0) {
+        pushBoth(`${prefix}.http_headers=${toTomlInlineTable(normalizedHeaders)}`)
       }
-      const normalizedTimeoutMs = normalizePositiveInteger(timeoutMs)
       if (normalizedTimeoutMs != null) {
-        args.push('-c', `${prefix}.stream_idle_timeout_ms=${normalizedTimeoutMs}`)
+        pushBoth(`${prefix}.stream_idle_timeout_ms=${normalizedTimeoutMs}`)
       }
-      resolvedMaxOutputTokens = normalizePositiveInteger(maxOutputTokens)
-      if (resolvedMaxOutputTokens != null) {
-        args.push('-c', `${prefix}.max_output_tokens=${resolvedMaxOutputTokens}`)
-      }
-      const mergedQueryParams = {
-        ...(apiKey ? { ak: apiKey } : {}),
-        ...normalizeStringRecord(queryParams)
-      }
-      if (Object.keys(mergedQueryParams).length > 0) {
-        args.push('-c', `${prefix}.query_params=${toTomlInlineTable(mergedQueryParams)}`)
+      resolvedMaxOutputTokens = shouldProxyProvider && normalizedMaxOutputTokens != null
+        ? null
+        : normalizedMaxOutputTokens
+      if (!shouldProxyProvider && Object.keys(normalizedQueryParams).length > 0) {
+        pushBoth(`${prefix}.query_params=${toTomlInlineTable(normalizedQueryParams)}`)
       }
     }
 
@@ -174,7 +217,7 @@ function buildCodexConfigOverrides(params: {
     resolvedModel = normalizedRawModel || undefined
   }
 
-  return { args, resolvedModel, resolvedMaxOutputTokens }
+  return { args, fingerprintArgs, resolvedModel, resolvedMaxOutputTokens }
 }
 
 /**
@@ -249,7 +292,7 @@ export interface CodexSessionBase {
   features: Record<string, boolean>
   configOverrideArgs: string[]
   resolvedModel: string | undefined
-  resolvedMaxOutputTokens: number | undefined
+  resolvedMaxOutputTokens: number | null | undefined
   threadCacheKey: string
   cachedThreadId: string | undefined
 }
@@ -308,7 +351,7 @@ async function buildThreadCacheKey(params: {
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
   resolvedModel: string | undefined
-  configOverrideArgs: string[]
+  configFingerprintArgs: string[]
   features: Record<string, boolean>
 }) {
   const authPath = resolve(process.env.HOME!, '.codex', 'auth.json')
@@ -328,7 +371,7 @@ async function buildThreadCacheKey(params: {
       approvalPolicy: params.approvalPolicy,
       sandboxPolicy: params.sandboxPolicy,
       model: params.resolvedModel ?? null,
-      configOverrideArgs: params.configOverrideArgs,
+      configOverrideArgs: params.configFingerprintArgs,
       features: params.features,
       authDigest: authDigest ?? null
     }))
@@ -363,10 +406,47 @@ export async function resolveSessionBase(
     ...(userConfig?.modelServices ?? {})
   }
 
-  const { args: configOverrideArgs, resolvedModel, resolvedMaxOutputTokens } = buildCodexConfigOverrides({
+  const routedServiceKey = resolveRoutedServiceKey(options.model)
+  const routedService = routedServiceKey != null ? mergedModelServices[routedServiceKey] : undefined
+  const shouldUseProxy = typeof routedService?.apiBaseUrl === 'string' && routedService.apiBaseUrl.trim() !== ''
+  const proxyLogger = shouldUseProxy
+    ? createLogger(
+        cwd,
+        `${ctx.ctxId}/${options.sessionId ?? 'default'}/adapter-codex`,
+        'proxy'
+      )
+    : undefined
+  const proxyBaseUrl = shouldUseProxy
+    ? (await ensureCodexProxyServer(proxyLogger)).baseUrl
+    : undefined
+  if (proxyBaseUrl != null && routedServiceKey != null && proxyLogger != null) {
+    proxyLogger.info('[codex session] using local proxy for routed model service', {
+      serviceKey: routedServiceKey,
+      proxyBaseUrl,
+      upstreamBaseUrl: normalizeProviderBaseUrl(
+        routedService?.apiBaseUrl,
+        ((routedService?.extra?.codex as CodexModelProviderExtra | undefined) ?? {}).wireApi
+      ) ?? routedService?.apiBaseUrl
+    })
+  }
+
+  const {
+    args: configOverrideArgs,
+    fingerprintArgs: configFingerprintArgs,
+    resolvedModel,
+    resolvedMaxOutputTokens
+  } = buildCodexConfigOverrides({
     systemPrompt: options.systemPrompt,
     rawModel: options.model,
-    modelServices: mergedModelServices
+    modelServices: mergedModelServices,
+    proxyBaseUrl,
+    proxyLogContext: proxyBaseUrl != null
+      ? {
+          cwd,
+          ctxId: ctx.ctxId,
+          sessionId: options.sessionId ?? 'default'
+        }
+      : undefined
   })
 
   const mergedMcpServers = {
@@ -393,7 +473,9 @@ export async function resolveSessionBase(
     filteredMcpServers[key] = serverConfig
   }
 
-  configOverrideArgs.push(...buildMcpConfigArgs(filteredMcpServers))
+  const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers)
+  configOverrideArgs.push(...mcpConfigArgs)
+  configFingerprintArgs.push(...mcpConfigArgs)
 
   const threadCacheKey = await buildThreadCacheKey({
     cwd,
@@ -401,7 +483,7 @@ export async function resolveSessionBase(
     approvalPolicy,
     sandboxPolicy,
     resolvedModel,
-    configOverrideArgs,
+    configFingerprintArgs,
     features
   })
   let cachedThreadId: string | undefined

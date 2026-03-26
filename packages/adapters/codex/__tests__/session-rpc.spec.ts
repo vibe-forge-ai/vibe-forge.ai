@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
 
 import { createCodexSession } from '#~/runtime/session.js'
+import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
 
 vi.mock('node:child_process', () => ({
   spawn: vi.fn()
@@ -121,6 +122,24 @@ async function waitForWrites() {
 
 function getConfigOverrides(spawnArgs: string[]) {
   return spawnArgs.filter((_, index) => spawnArgs[index - 1] === '-c')
+}
+
+function getConfigOverride(overrides: string[], prefix: string) {
+  return overrides.find(override => override.startsWith(prefix))
+}
+
+function decodeProxyMeta(overrides: string[], serviceKey: string) {
+  const headerOverride = getConfigOverride(overrides, `model_providers.${serviceKey}.http_headers=`)
+  if (headerOverride == null) {
+    throw new Error(`Missing http_headers override for ${serviceKey}`)
+  }
+
+  const encodedMeta = headerOverride.match(new RegExp(`${CODEX_PROXY_META_HEADER_NAME} = "([^"]+)"`))?.[1]
+  if (encodedMeta == null) {
+    throw new Error(`Missing ${CODEX_PROXY_META_HEADER_NAME} header for ${serviceKey}`)
+  }
+
+  return JSON.parse(Buffer.from(encodedMeta, 'base64url').toString('utf8')) as Record<string, unknown>
 }
 
 describe('createCodexSession RPC approval policy mapping', () => {
@@ -293,7 +312,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
-  it('passes through codex model provider headers as config overrides', async () => {
+  it('routes codex model providers through the local proxy with upstream metadata', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()
     spawnMock.mockReturnValue(proc)
@@ -334,15 +353,26 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
 
     expect(overrides).toContain('model_provider="azure"')
     expect(overrides).toContain('model_providers.azure.name="Azure"')
-    expect(overrides).toContain('model_providers.azure.base_url="https://example.openai.azure.com/openai"')
     expect(overrides).toContain('model_providers.azure.experimental_bearer_token="test-key"')
     expect(overrides).toContain('model_providers.azure.wire_api="responses"')
-    expect(overrides).toContain('model_providers.azure.http_headers={X-Tenant = "tenant-1"}')
     expect(overrides).toContain('model_providers.azure.stream_idle_timeout_ms=600000')
-    expect(overrides).toContain('model_providers.azure.query_params={ak = "test-key", api-version = "2025-04-01-preview"}')
+    expect(getConfigOverride(overrides, 'model_providers.azure.base_url=')).toMatch(
+      /^model_providers\.azure\.base_url="http:\/\/127\.0\.0\.1:\d+"$/
+    )
+    expect(overrides.some(override => override.startsWith('model_providers.azure.query_params='))).toBe(false)
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      headers: {
+        'X-Tenant': 'tenant-1'
+      },
+      queryParams: {
+        'api-version': '2025-04-01-preview'
+      }
+    })
 
     session.kill()
   })
@@ -377,7 +407,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
-  it('prefers model service maxOutputTokens over adapter config for routed models', async () => {
+  it('routes model service maxOutputTokens through the proxy and suppresses adapter fallback', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()
     spawnMock.mockReturnValue(proc)
@@ -410,13 +440,20 @@ describe('createCodexSession RPC approval policy mapping', () => {
       } as any
     )
 
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
     const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
-    expect(initialTurnRequest?.params.maxOutputTokens).toBe(8192)
+    expect(initialTurnRequest?.params.maxOutputTokens).toBeUndefined()
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      maxOutputTokens: 8192
+    })
 
     session.kill()
   })
 
-  it('passes model service maxOutputTokens to direct mode as a config override', async () => {
+  it('passes model service maxOutputTokens to direct mode through proxy metadata', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()
     spawnMock.mockReturnValue(proc)
@@ -447,9 +484,17 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const overrides = getConfigOverrides(spawnArgs)
+    const proxyMeta = decodeProxyMeta(overrides, 'azure')
 
     expect(overrides).toContain('model_provider="azure"')
-    expect(overrides).toContain('model_providers.azure.max_output_tokens=8192')
+    expect(getConfigOverride(overrides, 'model_providers.azure.base_url=')).toMatch(
+      /^model_providers\.azure\.base_url="http:\/\/127\.0\.0\.1:\d+"$/
+    )
+    expect(overrides.some(override => override.startsWith('model_providers.azure.max_output_tokens='))).toBe(false)
+    expect(proxyMeta).toMatchObject({
+      upstreamBaseUrl: 'https://example.openai.azure.com/openai',
+      maxOutputTokens: 8192
+    })
     expect(spawnArgs).toContain('--model')
     expect(spawnArgs).toContain('gpt-5.4')
 
