@@ -46,6 +46,10 @@ function resolveApprovalPolicy(permissionMode: AdapterQueryOptions['permissionMo
   return 'unlessTrusted'
 }
 
+function shouldUseYolo(permissionMode: AdapterQueryOptions['permissionMode']) {
+  return permissionMode === 'bypassPermissions'
+}
+
 export function toCodexOutboundApprovalPolicy(
   approvalPolicy: CodexApprovalPolicy
 ): CodexOutboundApprovalPolicy {
@@ -219,6 +223,7 @@ export interface CodexSessionBase {
   cwd: string
   binaryPath: string
   spawnEnv: NodeJS.ProcessEnv
+  useYolo: boolean
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
   features: Record<string, boolean>
@@ -237,6 +242,9 @@ export const isInvalidEncryptedContentError = (err: unknown) => {
 
 async function buildThreadCacheKey(params: {
   cwd: string
+  useYolo: boolean
+  approvalPolicy: CodexApprovalPolicy
+  sandboxPolicy: CodexSandboxPolicy
   resolvedModel: string | undefined
   configOverrideArgs: string[]
   features: Record<string, boolean>
@@ -254,6 +262,9 @@ async function buildThreadCacheKey(params: {
   const fingerprint = createHash('sha256')
     .update(JSON.stringify({
       cwd: params.cwd,
+      useYolo: params.useYolo,
+      approvalPolicy: params.approvalPolicy,
+      sandboxPolicy: params.sandboxPolicy,
       model: params.resolvedModel ?? null,
       configOverrideArgs: params.configOverrideArgs,
       features: params.features,
@@ -278,8 +289,11 @@ export async function resolveSessionBase(
     ...(userConfig?.adapters?.codex ?? {})
   } as { sandboxPolicy?: CodexSandboxPolicy; features?: Record<string, boolean> }
 
+  const useYolo = shouldUseYolo(options.permissionMode)
   const approvalPolicy = resolveApprovalPolicy(options.permissionMode)
-  const sandboxPolicy: CodexSandboxPolicy = configSandboxPolicy ?? { type: 'workspaceWrite' }
+  const sandboxPolicy: CodexSandboxPolicy = useYolo
+    ? { type: 'dangerFullAccess' }
+    : (configSandboxPolicy ?? { type: 'workspaceWrite' })
   const features: Record<string, boolean> = configFeatures ?? {}
 
   const mergedModelServices: Record<string, ModelServiceConfig> = {
@@ -321,6 +335,9 @@ export async function resolveSessionBase(
 
   const threadCacheKey = await buildThreadCacheKey({
     cwd,
+    useYolo,
+    approvalPolicy,
+    sandboxPolicy,
     resolvedModel,
     configOverrideArgs,
     features
@@ -340,6 +357,7 @@ export async function resolveSessionBase(
     cwd,
     binaryPath,
     spawnEnv,
+    useYolo,
     approvalPolicy,
     sandboxPolicy,
     features,

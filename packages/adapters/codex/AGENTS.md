@@ -155,11 +155,12 @@ modelServices: {
 
 Set via `AdapterQueryOptions.permissionMode`. Mapped to codex values:
 
-| vibe-forge `permissionMode`        | codex `approval_policy` / `--ask-for-approval` |
-| ---------------------------------- | ---------------------------------------------- |
-| `bypassPermissions` or `dontAsk`   | `never`                                        |
-| `plan`                             | `on-request`                                   |
-| `default`, `acceptEdits`, or unset | `untrusted`                                    |
+| vibe-forge `permissionMode`        | codex mapping                                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| `bypassPermissions`                | `--dangerously-bypass-approvals-and-sandbox` (`--yolo`) + `danger-full-access` |
+| `dontAsk`                          | `approval_policy = never` / `--ask-for-approval never`                        |
+| `plan`                             | `approval_policy = on-request` / `--ask-for-approval on-request`              |
+| `default`, `acceptEdits`, or unset | `approval_policy = untrusted` / `--ask-for-approval untrusted`                |
 
 ---
 

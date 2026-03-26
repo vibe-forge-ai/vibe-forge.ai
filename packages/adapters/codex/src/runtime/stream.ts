@@ -29,6 +29,7 @@ export async function createStreamCodexSession(
     cwd,
     binaryPath,
     spawnEnv,
+    useYolo,
     approvalPolicy,
     sandboxPolicy,
     features,
@@ -64,7 +65,12 @@ export async function createStreamCodexSession(
 
   const proc = spawn(
     String(binaryPath),
-    ['app-server', ...configOverrideArgs, ...buildFeatureArgs(features)],
+    [
+      ...(useYolo ? ['--yolo'] : []),
+      'app-server',
+      ...configOverrideArgs,
+      ...buildFeatureArgs(features)
+    ],
     { env: spawnEnv, cwd, stdio: ['pipe', 'pipe', 'inherit'] }
   )
 

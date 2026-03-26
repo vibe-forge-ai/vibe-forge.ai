@@ -206,9 +206,44 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const startRequest = receivedLines.find(line => line.method === 'thread/start')
     expect(startRequest?.params.approvalPolicy).toBe('never')
+    expect(startRequest?.params.sandboxPolicy).toEqual({ type: 'workspaceWrite' })
 
     const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
     expect(initialTurnRequest?.params.approvalPolicy).toBe('never')
+    expect(initialTurnRequest?.params.sandboxPolicy).toEqual({ type: 'workspaceWrite' })
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('app-server')
+    expect(spawnArgs).not.toContain('--yolo')
+
+    session.kill()
+  })
+
+  it('uses --yolo and danger-full-access when permission mode is bypassPermissions', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-bypass',
+      permissionMode: 'bypassPermissions',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('--yolo')
+    expect(spawnArgs[1]).toBe('app-server')
+
+    const startRequest = receivedLines.find(line => line.method === 'thread/start')
+    expect(startRequest?.params.approvalPolicy).toBe('never')
+    expect(startRequest?.params.sandboxPolicy).toEqual({ type: 'dangerFullAccess' })
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.approvalPolicy).toBe('never')
+    expect(initialTurnRequest?.params.sandboxPolicy).toEqual({ type: 'dangerFullAccess' })
 
     session.kill()
   })
@@ -383,5 +418,30 @@ describe('createCodexSession RPC approval policy mapping', () => {
       event.data.exitCode === 1 &&
       event.data.stderr?.includes('invalid_encrypted_content')
     ))).toBe(true)
+  })
+
+  it('places --yolo before resume in direct mode for bypassPermissions', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'resume',
+      mode: 'direct',
+      runtime: 'server',
+      sessionId: 'session-direct-bypass',
+      permissionMode: 'bypassPermissions',
+      description: 'resume prompt',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs[0]).toBe('--yolo')
+    expect(spawnArgs[1]).toBe('resume')
+    expect(spawnArgs).toContain('--last')
+    expect(spawnArgs).not.toContain('--ask-for-approval')
+    expect(spawnArgs).not.toContain('--sandbox')
+
+    session.kill()
   })
 })
