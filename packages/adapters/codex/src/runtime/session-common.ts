@@ -105,7 +105,11 @@ function buildCodexConfigOverrides(params: {
   systemPrompt: string | undefined
   rawModel: string | undefined
   modelServices: Record<string, ModelServiceConfig>
-}): { args: string[]; resolvedModel: string | undefined } {
+}): {
+    args: string[]
+    resolvedModel: string | undefined
+    resolvedMaxOutputTokens: number | undefined
+  } {
   const { systemPrompt, rawModel, modelServices } = params
   const args: string[] = []
   const normalizedRawModel = rawModel?.trim()
@@ -115,6 +119,7 @@ function buildCodexConfigOverrides(params: {
   }
 
   let resolvedModel: string | undefined
+  let resolvedMaxOutputTokens: number | undefined
 
   if (normalizedRawModel?.toLowerCase() === 'default') {
     resolvedModel = undefined
@@ -125,7 +130,7 @@ function buildCodexConfigOverrides(params: {
     const service = modelServices[serviceKey]
 
     if (service) {
-      const { title, apiBaseUrl, apiKey, extra, timeoutMs } = service
+      const { title, apiBaseUrl, apiKey, extra, timeoutMs, maxOutputTokens } = service
       const { wireApi, queryParams, headers } = (extra?.codex as CodexModelProviderExtra | undefined) ?? {}
       const prefix = `model_providers.${serviceKey}`
 
@@ -151,6 +156,10 @@ function buildCodexConfigOverrides(params: {
       if (normalizedTimeoutMs != null) {
         args.push('-c', `${prefix}.stream_idle_timeout_ms=${normalizedTimeoutMs}`)
       }
+      resolvedMaxOutputTokens = normalizePositiveInteger(maxOutputTokens)
+      if (resolvedMaxOutputTokens != null) {
+        args.push('-c', `${prefix}.max_output_tokens=${resolvedMaxOutputTokens}`)
+      }
       const mergedQueryParams = {
         ...(apiKey ? { ak: apiKey } : {}),
         ...normalizeStringRecord(queryParams)
@@ -165,7 +174,7 @@ function buildCodexConfigOverrides(params: {
     resolvedModel = normalizedRawModel || undefined
   }
 
-  return { args, resolvedModel }
+  return { args, resolvedModel, resolvedMaxOutputTokens }
 }
 
 /**
@@ -240,6 +249,7 @@ export interface CodexSessionBase {
   features: Record<string, boolean>
   configOverrideArgs: string[]
   resolvedModel: string | undefined
+  resolvedMaxOutputTokens: number | undefined
   threadCacheKey: string
   cachedThreadId: string | undefined
 }
@@ -353,7 +363,7 @@ export async function resolveSessionBase(
     ...(userConfig?.modelServices ?? {})
   }
 
-  const { args: configOverrideArgs, resolvedModel } = buildCodexConfigOverrides({
+  const { args: configOverrideArgs, resolvedModel, resolvedMaxOutputTokens } = buildCodexConfigOverrides({
     systemPrompt: options.systemPrompt,
     rawModel: options.model,
     modelServices: mergedModelServices
@@ -415,6 +425,7 @@ export async function resolveSessionBase(
     features,
     configOverrideArgs,
     resolvedModel,
+    resolvedMaxOutputTokens,
     threadCacheKey,
     cachedThreadId
   }

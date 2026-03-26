@@ -36,6 +36,7 @@ export async function createStreamCodexSession(
     features,
     configOverrideArgs,
     resolvedModel,
+    resolvedMaxOutputTokens,
     threadCacheKey,
     cachedThreadId
   } = base
@@ -47,7 +48,7 @@ export async function createStreamCodexSession(
   const {
     experimentalApi = false,
     effort,
-    maxOutputTokens,
+    maxOutputTokens: adapterMaxOutputTokens,
     clientInfo: rawClientInfo = {}
   } = {
     ...(config?.adapters?.codex ?? {}),
@@ -58,6 +59,7 @@ export async function createStreamCodexSession(
     maxOutputTokens?: number
     clientInfo?: { name?: string; title?: string; version?: string }
   }
+  const maxOutputTokens = resolvedMaxOutputTokens ?? adapterMaxOutputTokens
   const clientInfo = {
     name: rawClientInfo.name ?? 'vibe-forge',
     title: rawClientInfo.title ?? 'Vibe Forge',

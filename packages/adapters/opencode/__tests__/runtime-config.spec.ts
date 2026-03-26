@@ -70,7 +70,9 @@ describe('OpenCode config and model helpers', () => {
       gateway: {
         apiBaseUrl: 'https://example.test/v1',
         apiKey: 'secret',
-        title: 'Gateway'
+        title: 'Gateway',
+        timeoutMs: 600000,
+        maxOutputTokens: 8192
       }
     })
 
@@ -80,11 +82,19 @@ describe('OpenCode config and model helpers', () => {
         npm: '@ai-sdk/openai-compatible',
         options: {
           apiKey: 'secret',
-          baseURL: 'https://example.test/v1'
+          baseURL: 'https://example.test/v1',
+          timeout: 600000,
+          chunkTimeout: 600000
         },
         models: {
           'gpt-5': {
-            name: 'gpt-5'
+            name: 'gpt-5',
+            limit: {
+              output: 8192
+            },
+            options: {
+              maxOutputTokens: 8192
+            }
           }
         }
       }

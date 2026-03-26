@@ -688,6 +688,14 @@
             "label": "Model Aliases",
             "desc": "Alias mapping for models"
           },
+          "timeoutMs": {
+            "label": "Timeout (ms)",
+            "desc": "Provider timeout in milliseconds. Codex uses it as stream idle timeout; Claude Code Router uses global API timeout."
+          },
+          "maxOutputTokens": {
+            "label": "Max Output Tokens",
+            "desc": "Default output token cap for this service. Codex uses maxOutputTokens; Claude Code Router uses the maxtoken transformer."
+          },
           "extra": {
             "label": "Extra Settings",
             "desc": "Additional configuration for the service"

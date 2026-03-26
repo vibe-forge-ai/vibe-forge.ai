@@ -377,6 +377,85 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('prefers model service maxOutputTokens over adapter config for routed models', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              maxOutputTokens: 4096
+            }
+          },
+          modelServices: {
+            azure: {
+              title: 'Azure',
+              apiBaseUrl: 'https://example.openai.azure.com/openai',
+              apiKey: 'test-key',
+              maxOutputTokens: 8192
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-service-max-output-tokens',
+        model: 'azure,gpt-5.4',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.maxOutputTokens).toBe(8192)
+
+    session.kill()
+  })
+
+  it('passes model service maxOutputTokens to direct mode as a config override', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          modelServices: {
+            azure: {
+              title: 'Azure',
+              apiBaseUrl: 'https://example.openai.azure.com/openai',
+              apiKey: 'test-key',
+              maxOutputTokens: 8192
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        mode: 'direct',
+        runtime: 'server',
+        sessionId: 'session-direct-service-max-output-tokens',
+        model: 'azure,gpt-5.4',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+
+    expect(overrides).toContain('model_provider="azure"')
+    expect(overrides).toContain('model_providers.azure.max_output_tokens=8192')
+    expect(spawnArgs).toContain('--model')
+    expect(spawnArgs).toContain('gpt-5.4')
+
+    session.kill()
+  })
+
   it('recreates the thread when resume hits invalid_encrypted_content', async () => {
     process.env.HOME = '/tmp'
     const ctx = makeCtx()

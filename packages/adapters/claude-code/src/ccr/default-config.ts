@@ -29,6 +29,45 @@ const buildProviderBaseUrl = (service: ModelServiceConfig) => {
   return url.toString()
 }
 
+const normalizePositiveInteger = (value: unknown): number | undefined => (
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : undefined
+)
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+
+const hasMaxtokenTransformer = (use: unknown[]) => use.some((entry) => {
+  if (entry === 'maxtoken') return true
+  return Array.isArray(entry) && entry[0] === 'maxtoken'
+})
+
+const buildProviderTransformer = (service: ModelServiceConfig) => {
+  const baseValue = service.extra?.claudeCodeRouterTransformer
+  const maxOutputTokens = normalizePositiveInteger(service.maxOutputTokens)
+
+  if (maxOutputTokens == null) return baseValue
+  if (!isPlainObject(baseValue)) {
+    return {
+      use: [
+        ['maxtoken', { max_tokens: maxOutputTokens }]
+      ]
+    }
+  }
+
+  const use = Array.isArray(baseValue.use) ? [...baseValue.use] : []
+  if (!hasMaxtokenTransformer(use)) {
+    use.push(['maxtoken', { max_tokens: maxOutputTokens }])
+  }
+
+  return {
+    ...baseValue,
+    use
+  }
+}
+
 const normalizeServiceModel = (
   serviceKey: string,
   modelName: string,
@@ -102,7 +141,7 @@ const resolveDefaultModel = (params: {
     api_base_url: buildProviderBaseUrl(configValue),
     api_key: configValue.apiKey,
     models: configValue.models,
-    transformer: configValue.extra?.claudeCodeRouterTransformer
+    transformer: buildProviderTransformer(configValue)
   }))
   const defaultProvider = providers[0]
   if (!defaultProvider) {
@@ -167,6 +206,31 @@ const resolveRouterModel = (params: {
   return defaultModel
 }
 
+const resolveCompatibleApiTimeoutMs = (params: {
+  defaultService: string
+  modelServices: Record<string, ModelServiceConfig>
+  adapterOptions?: NonNullable<Config['adapters']>['claude-code']
+}) => {
+  const { defaultService, modelServices, adapterOptions } = params
+  const explicitCcrTimeout = normalizePositiveInteger(
+    (adapterOptions?.ccrOptions as Record<string, unknown> | undefined)?.API_TIMEOUT_MS
+  )
+  if (explicitCcrTimeout != null) return explicitCcrTimeout
+
+  const adapterTimeout = normalizePositiveInteger(adapterOptions?.apiTimeout)
+  if (adapterTimeout != null) return adapterTimeout
+
+  const timeoutByService = Object.fromEntries(
+    Object.entries(modelServices)
+      .map(([serviceKey, service]) => [serviceKey, normalizePositiveInteger(service.timeoutMs)] as const)
+      .filter((entry): entry is [string, number] => entry[1] != null)
+  )
+  const uniqueTimeouts = Array.from(new Set(Object.values(timeoutByService)))
+  if (uniqueTimeouts.length === 0) return undefined
+  if (uniqueTimeouts.length === 1) return uniqueTimeouts[0]
+  return timeoutByService[defaultService] ?? uniqueTimeouts[0]
+}
+
 export const generateDefaultCCRConfigJSON = (params: {
   cwd: string
   config?: Config
@@ -184,6 +248,11 @@ export const generateDefaultCCRConfigJSON = (params: {
     modelServices
   })
   const loggerEnabled = adapterOptions?.ccrTransformers?.logger ?? true
+  const apiTimeoutMs = resolveCompatibleApiTimeoutMs({
+    defaultService,
+    modelServices,
+    adapterOptions
+  })
   const transformers = [
     {
       path: resolveTransformerPath('gemini-open-router-polyfill.js')
@@ -198,6 +267,7 @@ export const generateDefaultCCRConfigJSON = (params: {
   return JSON.stringify(
     {
       ...(adapterOptions?.ccrOptions ?? {}),
+      ...(apiTimeoutMs != null ? { API_TIMEOUT_MS: apiTimeoutMs } : {}),
       transformers,
       Providers: providers,
       Router: {

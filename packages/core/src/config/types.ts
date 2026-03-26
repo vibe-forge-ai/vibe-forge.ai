@@ -35,6 +35,20 @@ export interface ModelServiceConfig {
    */
   modelsAlias?: Record<string, string[]>
   /**
+   * 模型服务超时（毫秒）。
+   * - Codex: 映射为 `stream_idle_timeout_ms`
+   * - Claude Code Router: 映射为全局 `API_TIMEOUT_MS`
+   * - OpenCode: 映射为 provider `timeout` / `chunkTimeout`
+   */
+  timeoutMs?: number
+  /**
+   * 模型服务默认最大输出 token。
+   * - Codex: 映射为 `turn/start.maxOutputTokens`
+   * - Claude Code Router: 映射为 `maxtoken` transformer
+   * - OpenCode: 映射为 model `options.maxOutputTokens` / `limit.output`
+   */
+  maxOutputTokens?: number
+  /**
    * 拓展配置，由下游自行消费
    */
   extra?: Record<string, unknown>

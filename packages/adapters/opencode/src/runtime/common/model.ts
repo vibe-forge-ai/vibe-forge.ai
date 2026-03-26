@@ -2,6 +2,12 @@ import type { ModelServiceConfig } from '@vibe-forge/core'
 
 import { asPlainRecord, normalizeStringRecord } from './object-utils'
 
+const normalizePositiveInteger = (value: unknown): number | undefined => (
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : undefined
+)
+
 const appendQueryParams = (baseURL: string, queryParams: Record<string, string>) => {
   if (Object.keys(queryParams).length === 0) return baseURL
 
@@ -65,6 +71,8 @@ export const resolveOpenCodeModel = (
     normalizeProviderBaseURL(service.apiBaseUrl, npm),
     normalizeStringRecord(providerExtra.queryParams)
   )
+  const normalizedTimeoutMs = normalizePositiveInteger(service.timeoutMs)
+  const normalizedMaxOutputTokens = normalizePositiveInteger(service.maxOutputTokens)
 
   return {
     cliModel: `${providerId}/${modelId}`,
@@ -75,13 +83,31 @@ export const resolveOpenCodeModel = (
         options: {
           apiKey: service.apiKey,
           baseURL,
+          ...(normalizedTimeoutMs != null
+            ? {
+              timeout: normalizedTimeoutMs,
+              chunkTimeout: normalizedTimeoutMs
+            }
+            : {}),
           ...(() => {
             const headers = normalizeStringRecord(providerExtra.headers)
             return Object.keys(headers).length > 0 ? { headers } : {}
           })()
         },
         models: {
-          [modelId]: { name: modelId }
+          [modelId]: {
+            name: modelId,
+            ...(normalizedMaxOutputTokens != null
+              ? {
+                limit: {
+                  output: normalizedMaxOutputTokens
+                },
+                options: {
+                  maxOutputTokens: normalizedMaxOutputTokens
+                }
+              }
+              : {})
+          }
         }
       }
     }

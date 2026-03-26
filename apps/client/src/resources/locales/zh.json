@@ -689,6 +689,14 @@
             "label": "模型别名",
             "desc": "模型别名映射"
           },
+          "timeoutMs": {
+            "label": "超时（毫秒）",
+            "desc": "模型服务超时。Codex 会映射为流空闲超时，Claude Code Router 会映射为全局 API 超时。"
+          },
+          "maxOutputTokens": {
+            "label": "最大输出 Token",
+            "desc": "该服务的默认输出上限。Codex 会映射为 maxOutputTokens，Claude Code Router 会映射为 maxtoken transformer。"
+          },
           "extra": {
             "label": "扩展配置",
             "desc": "模型服务扩展参数"
