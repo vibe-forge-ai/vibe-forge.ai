@@ -288,11 +288,47 @@ describe('handleIncomingNotification', () => {
         }
       })
 
-      expect(events).toHaveLength(1)
-      const ev = events[0]
+      expect(events).toHaveLength(2)
+      expect(events[0]).toMatchObject({
+        type: 'error',
+        data: {
+          message: 'Context window exceeded',
+          fatal: true
+        }
+      })
+      const ev = events[1]
       expect(ev.type).toBe('stop')
       if (ev.type === 'stop') {
         expect(ev.data?.content).toBe('Context window exceeded')
+      }
+    })
+
+    it('includes codex turn details in the surfaced failure message', () => {
+      const { events } = dispatch('turn/completed', {
+        turn: {
+          id: 'turn_4',
+          status: 'failed',
+          items: [],
+          error: {
+            message: 'Incomplete response returned',
+            codexErrorInfo: 'status=incomplete',
+            additionalDetails: 'reason=max_output_tokens'
+          }
+        }
+      })
+
+      expect(events[0]).toMatchObject({
+        type: 'error',
+        data: {
+          fatal: true
+        }
+      })
+      const ev = events[1]
+      expect(ev.type).toBe('stop')
+      if (ev.type === 'stop') {
+        expect(ev.data?.content).toContain('Incomplete response returned')
+        expect(ev.data?.content).toContain('status=incomplete')
+        expect(ev.data?.content).toContain('reason=max_output_tokens')
       }
     })
 

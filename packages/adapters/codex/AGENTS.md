@@ -34,6 +34,7 @@ export default defineConfig({
       sandboxPolicy: { type: 'workspaceWrite' },
       experimentalApi: false,
       effort: 'medium',
+      maxOutputTokens: 4096,
       clientInfo: { name: 'vibe-forge', title: 'Vibe Forge', version: '0.1.0' },
       features: {
         shell_snapshot: true,
@@ -84,6 +85,11 @@ Notable flags:
 
 Reasoning effort for supported models: `'low' | 'medium' | 'high'`.\
 Passed to `turn/start` RPC calls in `stream` mode.
+
+### `maxOutputTokens`
+
+Maximum completion tokens per turn in `stream` mode.\
+Passed to `turn/start` as `maxOutputTokens`.
 
 ### `experimentalApi`
 

@@ -81,9 +81,39 @@ export function createDirectCodexSession(base: CodexSessionBase, options: Adapte
   logger.info('[codex session] spawning CLI (direct mode)', { binaryPath, args, cwd })
 
   const proc = spawn(String(binaryPath), args, { env: spawnEnv, cwd, stdio: 'inherit' })
+  let didEmitExit = false
+
+  const emitExit = (data: { exitCode?: number; stderr?: string }) => {
+    if (didEmitExit) return
+    didEmitExit = true
+    onEvent({ type: 'exit', data })
+  }
+
+  proc.on('error', (err) => {
+    const message = err instanceof Error ? err.message : String(err)
+    onEvent({
+      type: 'error',
+      data: {
+        message,
+        details: err,
+        fatal: true
+      }
+    })
+    emitExit({ exitCode: 1, stderr: message })
+  })
 
   proc.on('exit', (code) => {
-    onEvent({ type: 'exit', data: { exitCode: code ?? undefined } })
+    if ((code ?? 0) !== 0) {
+      onEvent({
+        type: 'error',
+        data: {
+          message: `Process exited with code ${code ?? 1}`,
+          details: { exitCode: code ?? 1 },
+          fatal: true
+        }
+      })
+    }
+    emitExit({ exitCode: code ?? undefined })
   })
 
   return {

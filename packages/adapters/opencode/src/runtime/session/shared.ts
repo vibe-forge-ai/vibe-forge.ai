@@ -47,6 +47,16 @@ export const getErrorMessage = (error: unknown) => (
   error instanceof Error ? error.message : String(error ?? 'OpenCode session failed unexpectedly')
 )
 
+export const toAdapterErrorData = (
+  error: unknown,
+  overrides: Partial<{ message: string; code: string; details: unknown; fatal: boolean }> = {}
+) => ({
+  message: overrides.message ?? getErrorMessage(error),
+  ...(overrides.code != null ? { code: overrides.code } : {}),
+  ...(overrides.details !== undefined ? { details: overrides.details } : {}),
+  fatal: overrides.fatal ?? true
+})
+
 export const toProcessEnv = (env: Record<string, string | null | undefined>) => (
   Object.fromEntries(
     Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')

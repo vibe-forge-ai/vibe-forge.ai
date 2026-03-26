@@ -306,6 +306,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
               title: 'Azure',
               apiBaseUrl: 'https://example.openai.azure.com/openai',
               apiKey: 'test-key',
+              timeoutMs: 600000,
               extra: {
                 codex: {
                   wireApi: 'responses',
@@ -340,7 +341,38 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(overrides).toContain('model_providers.azure.experimental_bearer_token="test-key"')
     expect(overrides).toContain('model_providers.azure.wire_api="responses"')
     expect(overrides).toContain('model_providers.azure.http_headers={X-Tenant = "tenant-1"}')
+    expect(overrides).toContain('model_providers.azure.stream_idle_timeout_ms=600000')
     expect(overrides).toContain('model_providers.azure.query_params={ak = "test-key", api-version = "2025-04-01-preview"}')
+
+    session.kill()
+  })
+
+  it('passes maxOutputTokens from adapter config to turn/start', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              maxOutputTokens: 4096
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-max-output-tokens',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.maxOutputTokens).toBe(4096)
 
     session.kill()
   })
@@ -413,6 +445,10 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     await waitForWrites()
 
+    expect(events.some(event => (
+      event.type === 'error' &&
+      event.data.message.includes('invalid_encrypted_content')
+    ))).toBe(true)
     expect(events.some(event => (
       event.type === 'exit' &&
       event.data.exitCode === 1 &&

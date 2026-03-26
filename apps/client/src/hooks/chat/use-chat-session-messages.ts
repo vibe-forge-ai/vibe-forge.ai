@@ -195,7 +195,7 @@ export function useChatSessionMessages({
         onMessage(data: WSEvent) {
           if (isDisposed) return
           if (data.type === 'error') {
-            setConnectionError(data.message)
+            setConnectionError(data.data?.message ?? data.message ?? 'Unknown error')
             return
           }
 

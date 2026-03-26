@@ -17,6 +17,14 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
   const { cliPath, args, env, cwd, sessionId, executionType } = await prepareClaudeExecution(ctx, options)
+  let didEmitFatalError = false
+
+  const emitEvent = (event: Parameters<typeof onEvent>[0]) => {
+    if (event.type === 'error' && event.data.fatal !== false) {
+      didEmitFatalError = true
+    }
+    onEvent(event)
+  }
 
   if (mode === 'stream') {
     args.push(
@@ -87,7 +95,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
             ) {
               void markResumeReady()
             }
-            handleIncomingEvent(parsed, onEvent)
+            handleIncomingEvent(parsed, emitEvent)
           } catch (err) {
             console.error('Failed to parse JSON:', trimmed, err)
           }
@@ -101,13 +109,49 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       stderrBuffer.push(rawStr)
     })
 
-    proc.on('exit', (code) => {
-      onEvent({
+    let didEmitExit = false
+    const emitExit = (data: { exitCode?: number; stderr?: string }) => {
+      if (didEmitExit) return
+      didEmitExit = true
+      emitEvent({
         type: 'exit',
-        data: {
-          exitCode: code ?? undefined,
-          stderr: stderrBuffer.join('')
-        }
+        data
+      })
+    }
+
+    proc.on('error', (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      if (!didEmitFatalError) {
+        emitEvent({
+          type: 'error',
+          data: {
+            message,
+            details: err,
+            fatal: true
+          }
+        })
+      }
+      emitExit({
+        exitCode: 1,
+        stderr: message
+      })
+    })
+
+    proc.on('exit', (code) => {
+      const stderr = stderrBuffer.join('')
+      if ((code ?? 0) !== 0 && !didEmitFatalError) {
+        emitEvent({
+          type: 'error',
+          data: {
+            message: stderr !== '' ? stderr : `Process exited with code ${code ?? 1}`,
+            details: stderr !== '' ? { stderr } : { exitCode: code ?? 1 },
+            fatal: true
+          }
+        })
+      }
+      emitExit({
+        exitCode: code ?? undefined,
+        stderr
       })
     })
 
@@ -187,12 +231,47 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
     stdio: 'inherit'
   })
 
-  proc.on('exit', (code) => {
-    onEvent({
+  let didEmitExit = false
+  const emitExit = (data: { exitCode?: number; stderr?: string }) => {
+    if (didEmitExit) return
+    didEmitExit = true
+    emitEvent({
       type: 'exit',
-      data: {
-        exitCode: code ?? undefined
-      }
+      data
+    })
+  }
+
+  proc.on('error', (err) => {
+    const message = err instanceof Error ? err.message : String(err)
+    if (!didEmitFatalError) {
+      emitEvent({
+        type: 'error',
+        data: {
+          message,
+          details: err,
+          fatal: true
+        }
+      })
+    }
+    emitExit({
+      exitCode: 1,
+      stderr: message
+    })
+  })
+
+  proc.on('exit', (code) => {
+    if ((code ?? 0) !== 0 && !didEmitFatalError) {
+      emitEvent({
+        type: 'error',
+        data: {
+          message: `Process exited with code ${code ?? 1}`,
+          details: { exitCode: code ?? 1 },
+          fatal: true
+        }
+      })
+    }
+    emitExit({
+      exitCode: code ?? undefined
     })
   })
 

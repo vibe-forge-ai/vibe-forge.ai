@@ -134,7 +134,7 @@ export function sessionsRouter(): Router {
     const body = ctx.request.body as {
       type?: string
       data?: any
-      message?: ChatMessage
+      message?: ChatMessage | string
       summary?: string
       leafUuid?: string
       id?: string
@@ -157,7 +157,7 @@ export function sessionsRouter(): Router {
       return
     }
 
-    if (body.type === 'message' && body.message != null) {
+    if (body.type === 'message' && body.message != null && typeof body.message !== 'string') {
       const event: WSEvent = { type: 'message', message: body.message }
       applySessionEvent(id, event, {
         broadcast: (ev) => broadcastSessionEvent(id, ev),
@@ -242,29 +242,72 @@ export function sessionsRouter(): Router {
       return
     }
 
+    if (body.type === 'error' && body.data?.message) {
+      const event: WSEvent = {
+        type: 'error',
+        data: body.data,
+        message: body.data.message
+      }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
+    if (body.type === 'error' && typeof body.message === 'string') {
+      const event: WSEvent = {
+        type: 'error',
+        data: {
+          message: body.message,
+          fatal: true
+        },
+        message: body.message
+      }
+      applySessionEvent(id, event, {
+        broadcast: (ev) => broadcastSessionEvent(id, ev),
+        onSessionUpdated
+      })
+      ctx.body = { ok: true }
+      return
+    }
+
     if (body.type === 'exit') {
       const exitCode = Number(body.data?.exitCode ?? body.exitCode ?? 0)
       if (exitCode === 0) {
         updateAndNotifySession(id, { status: 'completed' })
       } else {
         const stderr = body.data?.stderr ?? body.stderr ?? ''
-        const event: WSEvent = {
-          type: 'error',
-          message: stderr !== ''
+        const latestSession = db.getSession(id)
+        if (latestSession?.status !== 'failed') {
+          const message = stderr !== ''
             ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
             : `Process exited with code ${exitCode}`
+          const event: WSEvent = {
+            type: 'error',
+            data: {
+              message,
+              details: stderr !== '' ? { stderr } : undefined,
+              fatal: true
+            },
+            message
+          }
+          applySessionEvent(id, event, {
+            broadcast: (ev) => broadcastSessionEvent(id, ev),
+            onSessionUpdated
+          })
         }
-        applySessionEvent(id, event, {
-          broadcast: (ev) => broadcastSessionEvent(id, ev),
-          onSessionUpdated
-        })
       }
       ctx.body = { ok: true }
       return
     }
 
     if (body.type === 'stop') {
-      updateAndNotifySession(id, { status: 'completed' })
+      const latestSession = db.getSession(id)
+      if (latestSession?.status !== 'failed') {
+        updateAndNotifySession(id, { status: 'completed' })
+      }
       ctx.body = { ok: true }
       return
     }

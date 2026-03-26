@@ -89,7 +89,12 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       }
     } catch (err) {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(safeJsonStringify({ type: 'error', message: err instanceof Error ? err.message : String(err) }))
+        const message = err instanceof Error ? err.message : String(err)
+        ws.send(safeJsonStringify({
+          type: 'error',
+          data: { message, fatal: true },
+          message
+        }))
       }
       return
     }
@@ -120,7 +125,12 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         }
       } catch (err) {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(safeJsonStringify({ type: 'error', message: err instanceof Error ? err.message : String(err) }))
+          const message = err instanceof Error ? err.message : String(err)
+          ws.send(safeJsonStringify({
+            type: 'error',
+            data: { message, fatal: true },
+            message
+          }))
         }
       }
     })

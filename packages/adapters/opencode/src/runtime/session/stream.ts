@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterEvent, AdapterOutputEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
 
 import {
   DEFAULT_OPENCODE_TOOLS,
@@ -12,7 +12,7 @@ import {
 import { resolveOpenCodeBinaryPath } from '../../paths'
 import { buildChildEnv, ensureSystemPromptFile } from './child-env'
 import { findOpenCodeSessionId, runOpenCodeCommand } from './process'
-import { createAssistantMessage, getErrorMessage, resolveAdapterConfig, stripAnsi } from './shared'
+import { createAssistantMessage, getErrorMessage, resolveAdapterConfig, stripAnsi, toAdapterErrorData } from './shared'
 
 export const createStreamOpenCodeSession = async (
   ctx: AdapterCtx,
@@ -49,6 +49,14 @@ export const createStreamOpenCodeSession = async (
   let currentPid: number | undefined
   let currentKill: (() => void) | undefined
   let opencodeSessionId = cachedSession?.opencodeSessionId
+  let didEmitFatalError = false
+
+  const emitEvent = (event: AdapterOutputEvent) => {
+    if (event.type === 'error' && event.data.fatal !== false) {
+      didEmitFatalError = true
+    }
+    options.onEvent(event)
+  }
 
   const emitUnexpectedExit = (error: unknown) => {
     if (destroyed) return
@@ -56,7 +64,8 @@ export const createStreamOpenCodeSession = async (
     currentPid = undefined
     currentKill = undefined
     ctx.logger.error('OpenCode session turn failed unexpectedly', { err: error })
-    options.onEvent({ type: 'exit', data: { exitCode: 1, stderr: getErrorMessage(error) } })
+    emitEvent({ type: 'error', data: toAdapterErrorData(error) })
+    emitEvent({ type: 'exit', data: { exitCode: 1, stderr: getErrorMessage(error) } })
   }
 
   const runTurn = async (content: Extract<AdapterEvent, { type: 'message' }>, allowRetry: boolean): Promise<void> => {
@@ -116,7 +125,19 @@ export const createStreamOpenCodeSession = async (
         await runTurn(content, false)
         return
       }
-      options.onEvent({ type: 'exit', data: { exitCode: result.exitCode, stderr: result.stderr || result.stdout } })
+      if (!didEmitFatalError) {
+        emitEvent({
+          type: 'error',
+          data: toAdapterErrorData(result.stderr || result.stdout || `Process exited with code ${result.exitCode}`, {
+            details: {
+              exitCode: result.exitCode,
+              stdout: result.stdout,
+              stderr: result.stderr
+            }
+          })
+        })
+      }
+      emitEvent({ type: 'exit', data: { exitCode: result.exitCode, stderr: result.stderr || result.stdout } })
       return
     }
 
@@ -137,8 +158,8 @@ export const createStreamOpenCodeSession = async (
       output === '' ? '[OpenCode completed without text output]' : output,
       cliModel
     )
-    options.onEvent({ type: 'message', data: assistantMessage })
-    options.onEvent({ type: 'stop', data: assistantMessage })
+    emitEvent({ type: 'message', data: assistantMessage })
+    emitEvent({ type: 'stop', data: assistantMessage })
   }
 
   let queue = Promise.resolve()

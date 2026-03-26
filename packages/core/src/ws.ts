@@ -1,8 +1,8 @@
-import type { SessionInfo } from './adapter/index.js'
+import type { AdapterErrorData, SessionInfo } from './adapter/index.js'
 import type { AskUserQuestionParams, ChatMessage } from './types.js'
 
 export type WSEvent =
-  | { type: 'error'; message: string }
+  | { type: 'error'; data: AdapterErrorData; message?: string }
   | { type: 'message'; message: ChatMessage }
   | { type: 'session_info'; info: SessionInfo }
   | { type: 'tool_result'; toolCallId: string; output: any; isError: boolean }

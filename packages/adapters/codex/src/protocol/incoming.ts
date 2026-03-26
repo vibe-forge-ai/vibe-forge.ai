@@ -95,6 +95,18 @@ export const handleIncomingNotification = (
   cmdAcc: CommandOutputAccumulator,
   approvalPolicy: string = 'unlessTrusted'
 ): void => {
+  const formatTurnErrorMessage = (
+    error?: { message?: string | null; codexErrorInfo?: string | null; additionalDetails?: string | null } | null
+  ) => {
+    const parts = [
+      error?.message?.trim(),
+      error?.codexErrorInfo?.trim(),
+      error?.additionalDetails?.trim()
+    ].filter((part): part is string => typeof part === 'string' && part.length > 0)
+
+    return parts.length > 0 ? parts.join('\n') : 'Turn failed'
+  }
+
   // ── Agent message delta ───────────────────────────────────────────────────
   if (method === 'item/agentMessage/delta') {
     const p = params as unknown as ItemAgentMessageDeltaParams
@@ -319,7 +331,15 @@ export const handleIncomingNotification = (
       cmdAcc.clear()
       onEvent({ type: 'stop', data: undefined })
     } else if (status === 'failed') {
-      const errorMsg = turn.error?.message ?? 'Turn failed'
+      const errorMsg = formatTurnErrorMessage(turn.error)
+      onEvent({
+        type: 'error',
+        data: {
+          message: errorMsg,
+          details: turn.error,
+          fatal: true
+        }
+      })
       const data: ChatMessage = {
         id: uuid(),
         role: 'assistant',

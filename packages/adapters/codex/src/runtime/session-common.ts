@@ -8,6 +8,7 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
+import { CodexRpcError } from '#~/protocol/rpc.js'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
 export type CodexOutboundApprovalPolicy = 'never' | 'untrusted' | 'on-request'
@@ -81,6 +82,12 @@ const normalizeStringRecord = (value: unknown): Record<string, string> => {
   )
 }
 
+const normalizePositiveInteger = (value: unknown): number | undefined => (
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : undefined
+)
+
 /**
  * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
  */
@@ -118,7 +125,7 @@ function buildCodexConfigOverrides(params: {
     const service = modelServices[serviceKey]
 
     if (service) {
-      const { title, apiBaseUrl, apiKey, extra } = service
+      const { title, apiBaseUrl, apiKey, extra, timeoutMs } = service
       const { wireApi, queryParams, headers } = (extra?.codex as CodexModelProviderExtra | undefined) ?? {}
       const prefix = `model_providers.${serviceKey}`
 
@@ -139,6 +146,10 @@ function buildCodexConfigOverrides(params: {
       const normalizedHeaders = normalizeStringRecord(headers)
       if (Object.keys(normalizedHeaders).length > 0) {
         args.push('-c', `${prefix}.http_headers=${toTomlInlineTable(normalizedHeaders)}`)
+      }
+      const normalizedTimeoutMs = normalizePositiveInteger(timeoutMs)
+      if (normalizedTimeoutMs != null) {
+        args.push('-c', `${prefix}.stream_idle_timeout_ms=${normalizedTimeoutMs}`)
       }
       const mergedQueryParams = {
         ...(apiKey ? { ak: apiKey } : {}),
@@ -233,7 +244,48 @@ export interface CodexSessionBase {
   cachedThreadId: string | undefined
 }
 
-export const getErrorMessage = (err: unknown) => err instanceof Error ? err.message : String(err)
+export const getErrorSummary = (err: unknown) => (
+  err instanceof Error ? err.message : String(err)
+)
+
+export const getErrorDetails = (err: unknown): unknown => (
+  err instanceof CodexRpcError ? err.data : undefined
+)
+
+const formatErrorDetails = (value: unknown): string | undefined => {
+  if (value == null) return undefined
+  if (typeof value === 'string') return value
+
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+export const getErrorMessage = (err: unknown) => {
+  const summary = getErrorSummary(err)
+  const details = formatErrorDetails(getErrorDetails(err))
+  return details ? `${summary}\nDetails: ${details}` : summary
+}
+
+export const toAdapterErrorData = (
+  err: unknown,
+  overrides: Partial<{ message: string; code: string; details: unknown; fatal: boolean }> = {}
+) => ({
+  message: overrides.message ?? getErrorSummary(err),
+  ...(overrides.code != null
+    ? { code: overrides.code }
+    : err instanceof CodexRpcError
+    ? { code: String(err.code) }
+    : {}),
+  ...(overrides.details !== undefined
+    ? { details: overrides.details }
+    : getErrorDetails(err) !== undefined
+    ? { details: getErrorDetails(err) }
+    : {}),
+  fatal: overrides.fatal ?? true
+})
 
 export const isInvalidEncryptedContentError = (err: unknown) => {
   const message = getErrorMessage(err)

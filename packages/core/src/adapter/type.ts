@@ -6,10 +6,18 @@ import type { ChatMessage, ChatMessageContent } from '../types'
 
 export type AdapterMessageContent = ChatMessageContent
 
+export interface AdapterErrorData {
+  message: string
+  code?: string
+  details?: unknown
+  fatal?: boolean
+}
+
 export type AdapterOutputEvent =
   | { type: 'init'; data: SessionInitInfo }
   | { type: 'summary'; data: SessionSummaryInfo }
   | { type: 'message'; data: ChatMessage }
+  | { type: 'error'; data: AdapterErrorData }
   | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
 
