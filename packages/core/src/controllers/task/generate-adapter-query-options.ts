@@ -3,7 +3,7 @@ import { basename, dirname } from 'node:path'
 
 import type { AdapterQueryOptions } from '#~/adapter/type.js'
 import { DefinitionLoader } from '#~/utils/definition-loader.js'
-import type { Definition, Filter, Skill } from '#~/utils/definition-loader.js'
+import type { Definition, Entity, Filter, Skill, Spec } from '#~/utils/definition-loader.js'
 
 const filterSkills = (
   skills: Definition<Skill>[],
@@ -31,6 +31,73 @@ const dedupeSkills = (skills: Definition<Skill>[]) => {
   })
 }
 
+type SkillSelectionInput =
+  | AdapterQueryOptions['skills']
+  | Entity['skills']
+  | Spec['skills']
+
+const toNormalizedSkillSelection = (
+  selection?: SkillSelectionInput
+): AdapterQueryOptions['skills'] | undefined => {
+  if (selection == null) return undefined
+
+  if (Array.isArray(selection)) {
+    return selection.length > 0
+      ? {
+          include: selection
+        }
+      : undefined
+  }
+
+  if ('type' in selection && Array.isArray(selection.list)) {
+    const list = selection.list.filter((item): item is string => typeof item === 'string')
+    return selection.type === 'include'
+      ? {
+          include: list
+        }
+      : {
+          exclude: list
+        }
+  }
+
+  return selection
+}
+
+const mergeSkillSelections = (
+  ...selections: Array<SkillSelectionInput | undefined>
+): AdapterQueryOptions['skills'] | undefined => {
+  let include: Set<string> | undefined
+  const exclude = new Set<string>()
+
+  for (const selection of selections) {
+    const normalized = toNormalizedSkillSelection(selection)
+    if (normalized == null) continue
+
+    if (normalized.include != null && normalized.include.length > 0) {
+      const current = new Set(normalized.include)
+      include = include == null
+        ? current
+        : new Set([...include].filter(item => current.has(item)))
+    }
+
+    for (const item of normalized.exclude ?? []) {
+      exclude.add(item)
+    }
+  }
+
+  if (include == null && exclude.size === 0) return undefined
+
+  return {
+    include: include == null ? undefined : [...include],
+    exclude: exclude.size === 0 ? undefined : [...exclude]
+  }
+}
+
+const getIncludedSkillNames = (selection?: SkillSelectionInput): string[] => {
+  const normalized = toNormalizedSkillSelection(selection)
+  return normalized?.include ?? []
+}
+
 export async function generateAdapterQueryOptions(
   type: 'spec' | 'entity' | undefined,
   name?: string,
@@ -42,16 +109,14 @@ export async function generateAdapterQueryOptions(
   const loader = new DefinitionLoader(cwd)
   const options: Partial<AdapterQueryOptions> = {}
   const systemPromptParts: string[] = []
+  let effectiveSkillSelection = toNormalizedSkillSelection(input?.skills)
 
   // 1. 获取数据
   // 1.1 获取默认数据
   const entities = type !== 'entity'
     ? await loader.loadDefaultEntities()
     : []
-  const skills = filterSkills(
-    await loader.loadDefaultSkills(),
-    input?.skills
-  )
+  const defaultSkills = await loader.loadDefaultSkills()
   const rules = await loader.loadDefaultRules()
   const specs = await loader.loadDefaultSpecs()
 
@@ -60,15 +125,6 @@ export async function generateAdapterQueryOptions(
   let targetBody = ''
   let targetToolsFilter: Filter | undefined
   let targetMcpServersFilter: Filter | undefined
-  let selectedSkillsPrompt: Definition<Skill>[] = []
-  if (input?.skills?.include != null && input.skills.include.length > 0) {
-    selectedSkillsPrompt = dedupeSkills(
-      filterSkills(
-        await loader.loadSkills(input.skills.include),
-        { include: input.skills.include }
-      )
-    )
-  }
   if (type && name) {
     const data = {
       spec: await loader.loadSpec(name),
@@ -84,7 +140,9 @@ export async function generateAdapterQueryOptions(
       // always load spec or entity tagged rules
       rules.push(
         ...(
-          await loader.loadRules(attributes.rules)
+          await loader.loadRules(attributes.rules, {
+            baseDir: dirname(data.path)
+          })
         ).map((rule) => ({
           ...rule,
           attributes: {
@@ -98,18 +156,37 @@ export async function generateAdapterQueryOptions(
     if (
       attributes.skills
     ) {
-      targetSkills.push(...await loader.loadSkills(attributes.skills))
+      effectiveSkillSelection = mergeSkillSelections(
+        input?.skills,
+        attributes.skills
+      )
+      targetSkills.push(
+        ...filterSkills(
+          await loader.loadSkills(getIncludedSkillNames(attributes.skills)),
+          effectiveSkillSelection
+        )
+      )
     }
 
     targetBody = body
     targetToolsFilter = attributes.tools
     targetMcpServersFilter = attributes.mcpServers
   }
+  const skills = filterSkills(defaultSkills, effectiveSkillSelection)
+  let selectedSkillsPrompt: Definition<Skill>[] = []
+  if (input?.skills?.include != null && input.skills.include.length > 0) {
+    selectedSkillsPrompt = dedupeSkills(
+      filterSkills(
+        await loader.loadSkills(input.skills.include),
+        effectiveSkillSelection
+      )
+    )
+  }
 
   // 2. 基于数据生成上下文
   // 2.1 加载关联上下文
   systemPromptParts.push(loader.generateRulesPrompt(rules))
-  systemPromptParts.push(loader.generateSkillsPrompt(targetSkills))
+  systemPromptParts.push(loader.generateSkillsPrompt(dedupeSkills(targetSkills)))
   systemPromptParts.push(loader.generateSkillsPrompt(
     selectedSkillsPrompt.filter(skill => !targetSkills.some(target => target.path === skill.path))
   ))

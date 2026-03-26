@@ -36,6 +36,25 @@ export interface Spec {
   tools?: Filter
 }
 
+export interface LocalRuleReference {
+  type?: 'local'
+  path: string
+  desc?: string
+}
+
+export interface RemoteRuleReference {
+  type: 'remote'
+  tags?: string[]
+  desc?: string
+}
+
+export type RuleReference = string | LocalRuleReference | RemoteRuleReference
+
+export interface SkillSelection {
+  type: 'include' | 'exclude'
+  list: string[]
+}
+
 export interface Entity {
   name?: string
   always?: boolean
@@ -43,8 +62,8 @@ export interface Entity {
   tags?: string[]
   prompt?: string
   promptPath?: string
-  rules?: string[]
-  skills?: string[]
+  rules?: RuleReference[]
+  skills?: string[] | SkillSelection
   mcpServers?: Filter
   tools?: Filter
 }
@@ -123,6 +142,66 @@ const resolveSpecIdentifier = (path: string, explicitName?: string) => {
   return resolveDocumentName(path, explicitName, ['index.md'])
 }
 
+const toNonEmptyStringArray = (values: unknown): string[] => {
+  if (!Array.isArray(values)) return []
+  return values
+    .filter((value): value is string => typeof value === 'string')
+    .map(value => value.trim())
+    .filter(Boolean)
+}
+
+const isLocalRuleReference = (value: RuleReference): value is LocalRuleReference => {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    typeof value.path === 'string' &&
+    (value.type == null || value.type === 'local')
+  )
+}
+
+const isRemoteRuleReference = (value: RuleReference): value is RemoteRuleReference => {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    value.type === 'remote'
+  )
+}
+
+const resolveRulePattern = (pattern: string, baseDir: string) => {
+  const trimmed = pattern.trim()
+  if (!trimmed) return undefined
+  if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    return normalizePath(resolve(baseDir, trimmed))
+  }
+  return trimmed
+}
+
+const createRemoteRuleDefinition = (
+  rule: RemoteRuleReference,
+  index: number
+): Definition<Rule> => {
+  const tags = toNonEmptyStringArray(rule.tags)
+  const desc = rule.desc?.trim() || (
+    tags.length > 0
+      ? `远程知识库标签：${tags.join(', ')}`
+      : '远程知识库规则引用'
+  )
+  const bodyParts = [
+    desc,
+    tags.length > 0 ? `知识库标签：${tags.join(', ')}` : undefined,
+    '该规则来自远程知识库引用，不对应本地文件。'
+  ].filter((value): value is string => Boolean(value))
+
+  return {
+    path: `remote-rule-${index + 1}.md`,
+    body: bodyParts.join('\n'),
+    attributes: {
+      name: tags.length > 0 ? `remote:${tags.join(',')}` : `remote-rule-${index + 1}`,
+      description: desc
+    }
+  }
+}
+
 export class DefinitionLoader {
   private readonly cwd: string
 
@@ -142,10 +221,53 @@ export class DefinitionLoader {
     })
   }
 
-  async loadRules(rules: string[]) {
-    return loadLocalDocuments<Rule>(
-      await this.scan(rules)
-    )
+  async loadRules(
+    rules: RuleReference[],
+    options?: {
+      baseDir?: string
+    }
+  ) {
+    const baseDir = options?.baseDir ?? this.cwd
+    const definitions: Definition<Rule>[] = []
+
+    for (const [index, rule] of rules.entries()) {
+      if (typeof rule === 'string') {
+        const pattern = resolveRulePattern(rule, baseDir)
+        if (!pattern) continue
+        definitions.push(
+          ...await loadLocalDocuments<Rule>(
+            await this.scan([pattern])
+          )
+        )
+        continue
+      }
+
+      if (isRemoteRuleReference(rule)) {
+        definitions.push(createRemoteRuleDefinition(rule, index))
+        continue
+      }
+
+      if (!isLocalRuleReference(rule)) continue
+
+      const pattern = resolveRulePattern(rule.path, baseDir)
+      if (!pattern) continue
+
+      const docs = await loadLocalDocuments<Rule>(
+        await this.scan([pattern])
+      )
+
+      definitions.push(
+        ...docs.map((doc) => ({
+          ...doc,
+          attributes: {
+            ...doc.attributes,
+            description: rule.desc?.trim() || doc.attributes.description
+          }
+        }))
+      )
+    }
+
+    return definitions
   }
   async loadDefaultRules(): Promise<Definition<Rule>[]> {
     return this.loadRules([
