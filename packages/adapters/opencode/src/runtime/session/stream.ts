@@ -12,7 +12,14 @@ import {
 import { resolveOpenCodeBinaryPath } from '../../paths'
 import { buildChildEnv, ensureSystemPromptFile } from './child-env'
 import { findOpenCodeSessionId, runOpenCodeCommand } from './process'
-import { createAssistantMessage, getErrorMessage, resolveAdapterConfig, stripAnsi, toAdapterErrorData } from './shared'
+import {
+  createAssistantMessage,
+  extractTextFromOpenCodeJsonEvents,
+  getErrorMessage,
+  resolveAdapterConfig,
+  stripAnsi,
+  toAdapterErrorData
+} from './shared'
 
 export const createStreamOpenCodeSession = async (
   ctx: AdapterCtx,
@@ -93,8 +100,10 @@ export const createStreamOpenCodeSession = async (
         agent,
         share: adapterConfig.share,
         title,
+        dir: ctx.cwd,
         opencodeSessionId,
-        extraOptions: options.extraOptions
+        extraOptions: options.extraOptions,
+        format: 'json'
       }),
       cwd: ctx.cwd,
       env,
@@ -115,10 +124,10 @@ export const createStreamOpenCodeSession = async (
     currentKill = undefined
     if (destroyed) return
 
-    const output = stripAnsi(result.stdout).trim()
+    const output = extractTextFromOpenCodeJsonEvents(result.stdout).trim()
     const error = stripAnsi(result.stderr).trim()
     if (result.exitCode !== 0) {
-      const missingSession = /session.+not found|no session found/i.test(`${output}\n${error}`)
+      const missingSession = /session.+not found|no session found/i.test(`${result.stdout}\n${error}`)
       if (missingSession && opencodeSessionId != null && allowRetry) {
         opencodeSessionId = undefined
         await ctx.cache.set('adapter.opencode.session', { title })
@@ -155,7 +164,7 @@ export const createStreamOpenCodeSession = async (
     }
 
     const assistantMessage = createAssistantMessage(
-      output === '' ? '[OpenCode completed without text output]' : output,
+      output === '' ? (stripAnsi(result.stdout).trim() || '[OpenCode completed without text output]') : output,
       cliModel
     )
     emitEvent({ type: 'message', data: assistantMessage })

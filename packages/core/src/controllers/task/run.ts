@@ -1,7 +1,9 @@
 import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions } from '#~/adapter/index.js'
 import { loadAdapter } from '#~/adapter/index.js'
 import type { ModelServiceConfig } from '#~/config.js'
+import { createAdapterHookBridge } from '#~/hooks/bridge.js'
 import { callHook } from '#~/hooks/call.js'
+import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 import type { TaskDetail } from '#~/types.js'
 
 import { prepare } from './prepare'
@@ -127,14 +129,54 @@ export const run = async (
       return adapterNames[0]
     })()
 
+  const adapter = await loadAdapter(adapterType)
+  await adapter.init?.(ctx)
+
+  const resolvedModel = resolveQueryModel({
+    config,
+    userConfig,
+    inputModel: adapterOptions.model
+  })
+
   const originalOnEvent = adapterOptions.onEvent
+  const supportedAssetPlanAdapters = new Set(['claude-code', 'codex', 'opencode'])
+  const assetPlan = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
+    ? undefined
+    : buildAdapterAssetPlan({
+        adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
+        bundle: ctx.assets,
+        options: {
+          mcpServers: adapterOptions.mcpServers,
+          skills: adapterOptions.skills,
+          promptAssetIds: adapterOptions.promptAssetIds
+        }
+      })
+  const nativeBridgeDisabledEvents = adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
+    ? ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
+    : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
+      : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
+        ? ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
+        : []
+  const hookBridge = createAdapterHookBridge({
+    ctx,
+    adapter: adapterType,
+    runtime: adapterOptions.runtime,
+    sessionId: adapterOptions.sessionId,
+    type: adapterOptions.type,
+    model: resolvedModel,
+    disabledEvents: nativeBridgeDisabledEvents
+  })
   const wrappedOnEvent = (event: AdapterOutputEvent) => {
+    hookBridge.handleOutput(event)
+
     if (event.type === 'init') {
       originalOnEvent({
         ...event,
         data: {
           ...event.data,
-          adapter: adapterType
+          adapter: adapterType,
+          assetDiagnostics: assetPlan?.diagnostics ?? event.data.assetDiagnostics
         }
       })
       return
@@ -161,16 +203,7 @@ export const run = async (
     originalOnEvent(event)
   }
 
-  const adapter = await loadAdapter(adapterType)
-  await adapter.init?.(ctx)
-
-  const resolvedModel = resolveQueryModel({
-    config,
-    userConfig,
-    inputModel: adapterOptions.model
-  })
-
-  await callHook('TaskStart', {
+  const taskStartOutput = await callHook('TaskStart', {
     adapter: adapterType,
     cwd: ctx.cwd,
     sessionId: adapterOptions.sessionId,
@@ -178,14 +211,21 @@ export const run = async (
     options,
     adapterOptions
   }, ctx.env)
+  if (taskStartOutput?.continue === false) {
+    throw new Error(taskStartOutput.stopReason ?? 'TaskStart hook blocked task startup')
+  }
+  await hookBridge.start()
+  const description = await hookBridge.prepareInitialPrompt(adapterOptions.description)
   const session = await adapter.query(
     ctx,
     {
       ...adapterOptions,
+      assetPlan,
+      description,
       model: resolvedModel,
       onEvent: wrappedOnEvent
     }
   )
 
-  return { session, ctx }
+  return { session: hookBridge.wrapSession(session), ctx }
 }

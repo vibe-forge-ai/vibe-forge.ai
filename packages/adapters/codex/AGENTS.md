@@ -20,6 +20,73 @@ The adapter drives Codex in two modes:
 
 ---
 
+## Hooks maintenance
+
+Cross-reference these docs first when touching hooks:
+
+- `docs/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
+- `docs/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
+- `apps/cli/src/AGENTS.md` — CLI hook bridge entry and `call-hook.js` routing
+
+Primary implementation entrypoints for Codex hooks:
+
+- `src/runtime/native-hooks.ts`
+  - writes the managed `.ai/.mock/.codex/hooks.json`
+- `src/runtime/init.ts`
+  - installs mock-home assets during adapter init
+- `src/runtime/session-common.ts`
+  - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
+- `apps/cli/codex-hook.js`
+- `apps/cli/src/hooks/codex.ts`
+- `apps/cli/call-hook.js`
+- `packages/core/src/hooks/native.ts`
+- `packages/core/src/hooks/bridge.ts`
+- `packages/core/src/controllers/task/run.ts`
+
+Keep the ownership split clean:
+
+- adapter layer: writes Codex-native config and passes runtime env
+- CLI bridge: translates Codex hook payloads into Vibe Forge hook input/output
+- core hooks runtime: loads workspace plugins and applies native/bridge dedupe
+
+### Real CLI smoke
+
+Do not stop at unit tests. Run a real Codex CLI turn:
+
+Quick path from repo root:
+
+```bash
+pnpm smoke:hooks:codex
+```
+
+This command starts the local mock LLM server and drives Codex through the `hook-smoke-mock` model service defined in the repo-root `.ai.config.json`.
+
+```bash
+__VF_PROJECT_AI_CTX_ID__='hooks-smoke-codex' \
+node apps/cli/cli.js \
+  --adapter codex \
+  --model hook-smoke-mock,codex-hooks \
+  --print \
+  --no-inject-default-system-prompt \
+  --exclude-mcp-server ChromeDevtools \
+  --session-id '<uuid>' \
+  "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX and nothing else."
+```
+
+Validation checklist:
+
+- terminal output is exactly `E2E_CODEX`
+- `.ai/logs/<ctxId>/<sessionId>.log.md` contains `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`
+- `.ai/.mock/.codex/hooks.json` still points to the managed Vibe Forge bridge
+
+Codex-specific lessons from this work:
+
+- native hooks should stay entirely inside mock home; do not write to the real Codex home
+- `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
+- when native hooks are active, bridge duplicates must stay disabled in `packages/core/src/controllers/task/run.ts`
+
+---
+
 ## Adapter configuration
 
 Adapter-specific options live under `adapters.codex` in your vibe-forge config.
@@ -80,6 +147,22 @@ Notable flags:
 | `undo`               | true    | Per-turn git ghost snapshots                            |
 | `web_search_request` | true    | Live web search                                         |
 | `remote_models`      | false   | Refresh remote model list at startup                    |
+| `codex_hooks`        | false   | Native `SessionStart/UserPromptSubmit/PreToolUse/PostToolUse/Stop` hooks |
+
+### Native hooks
+
+When workspace hook plugins are configured, the adapter now installs a managed `hooks.json`
+into the isolated mock Codex home and auto-enables the `codex_hooks` feature flag for that
+session. This lets Codex run native:
+
+- `SessionStart`
+- `UserPromptSubmit`
+- `PreToolUse`
+- `PostToolUse`
+- `Stop`
+
+Those native events are bridged back into the same Vibe Forge hook runtime used by Claude Code
+and OpenCode. `SessionEnd` still comes from the framework bridge.
 
 ### `effort`
 

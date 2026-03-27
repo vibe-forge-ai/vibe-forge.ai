@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
 
 import { resolveOpenCodeBinaryPath } from '#~/paths.js'
+import { ensureOpenCodeNativeHooksInstalled } from './native-hooks'
 
 const execFileAsync = promisify(execFile)
 
@@ -38,18 +39,15 @@ export const initOpenCodeAdapter = async (ctx: AdapterCtx) => {
   const realHome = process.env.__VF_PROJECT_REAL_HOME__
   const aiHome = process.env.HOME
 
-  if (!realHome || !aiHome) return
-
-  await ensureSymlink(
-    join(realHome, '.config', 'opencode'),
-    join(aiHome, '.config', 'opencode')
-  )
-  await ensureSymlink(
-    join(realHome, '.local', 'share', 'opencode', 'auth.json'),
-    join(aiHome, '.local', 'share', 'opencode', 'auth.json')
-  )
-  await ensureSymlink(
-    join(realHome, '.local', 'share', 'opencode', 'mcp-auth.json'),
-    join(aiHome, '.local', 'share', 'opencode', 'mcp-auth.json')
-  )
+  if (realHome && aiHome) {
+    await ensureSymlink(
+      join(realHome, '.local', 'share', 'opencode', 'auth.json'),
+      join(aiHome, '.local', 'share', 'opencode', 'auth.json')
+    )
+    await ensureSymlink(
+      join(realHome, '.local', 'share', 'opencode', 'mcp-auth.json'),
+      join(aiHome, '.local', 'share', 'opencode', 'mcp-auth.json')
+    )
+  }
+  await ensureOpenCodeNativeHooksInstalled(ctx)
 }

@@ -47,6 +47,7 @@ export const createDirectOpenCodeSession = async (
     agent,
     share: adapterConfig.share,
     title,
+    dir: ctx.cwd,
     opencodeSessionId,
     extraOptions: options.extraOptions
   }), {

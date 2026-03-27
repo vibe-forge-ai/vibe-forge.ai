@@ -99,8 +99,8 @@ export const executeHookInput = async (
   }
   const [config, userConfig] = await loadConfig({ jsonVariables })
   const plugins = [
-    ...await resolvePlugins(config?.plugins ?? []),
-    ...await resolvePlugins(userConfig?.plugins ?? [])
+    ...await resolvePlugins(config?.plugins ?? [], config?.enabledPlugins ?? {}),
+    ...await resolvePlugins(userConfig?.plugins ?? [], userConfig?.enabledPlugins ?? {})
   ]
 
   return callPluginHook(

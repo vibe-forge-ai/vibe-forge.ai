@@ -8,6 +8,7 @@ import type { AdapterCtx } from '@vibe-forge/core/adapter'
 
 import { generateDefaultCCRConfigJSON } from '../ccr/default-config'
 import { resolveAdapterCliPath } from '../ccr/paths'
+import { ensureClaudeNativeHooksInstalled } from './native-hooks'
 
 export const initClaudeCodeAdapter = async (ctx: AdapterCtx) => {
   const { cwd, env, configs: [config, userConfig] } = ctx
@@ -26,6 +27,7 @@ export const initClaudeCodeAdapter = async (ctx: AdapterCtx) => {
       adapterOptions
     })
   )
+  await ensureClaudeNativeHooksInstalled(ctx)
   const homePath = resolve(cwd, '.ai/.mock')
   const cliPath = resolveAdapterCliPath()
   if (!existsSync(cliPath)) {

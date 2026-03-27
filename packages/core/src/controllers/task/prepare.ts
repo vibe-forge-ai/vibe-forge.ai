@@ -5,6 +5,7 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import { getCache, setCache } from '@vibe-forge/core/utils/cache'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 import { uuid } from '@vibe-forge/core/utils/uuid'
+import { resolveWorkspaceAssetBundle } from '@vibe-forge/core/utils/workspace-assets'
 
 import { resolveServerLogLevel } from '#~/env.js'
 
@@ -52,6 +53,10 @@ export const prepare = async (
     __VF_PROJECT_WORKSPACE_FOLDER__: cwd
   }
   const [config, userConfig] = await loadConfig({ jsonVariables })
+  const assets = await resolveWorkspaceAssetBundle({
+    cwd,
+    configs: [config, userConfig]
+  })
   return [
     {
       ctxId,
@@ -62,7 +67,8 @@ export const prepare = async (
         get: (key) => getCache(cwd, ctxId, sessionId, key)
       },
       logger,
-      configs: [config, userConfig]
+      configs: [config, userConfig],
+      assets
     } satisfies AdapterCtx
   ] as const
 }

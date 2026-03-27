@@ -34,7 +34,10 @@ const loadPlugin = async (
   }
 }
 
-export const resolvePlugins = async (config: PluginConfig): Promise<Partial<Plugin>[]> => {
+export const resolvePlugins = async (
+  config: PluginConfig,
+  enabledPlugins: Record<string, boolean> = {}
+): Promise<Partial<Plugin>[]> => {
   // 1. 处理数组形式配置 (直接实例化或函数调用)
   if (Array.isArray(config)) {
     return config.map((p) => (typeof p === 'function' ? p() : p))
@@ -42,6 +45,7 @@ export const resolvePlugins = async (config: PluginConfig): Promise<Partial<Plug
 
   // 2. 处理对象形式配置 (动态加载)
   const entries = Object.entries(config)
+    .filter(([pkgName]) => enabledPlugins[pkgName] !== false)
   if (entries.length === 0) return []
 
   // 并行加载所有插件

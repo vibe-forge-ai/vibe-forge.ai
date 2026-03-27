@@ -1,5 +1,11 @@
 # `src` 目录说明
 
+hooks 相关改动先交叉看：
+
+- `../AGENTS.md`
+- `../../../docs/HOOKS.md`
+- `../../../docs/HOOKS-REFERENCE.md`
+
 ## 入口层
 
 - `index.ts`：adapter 包对外入口，只负责导出 `init` / `query` 能力
@@ -21,6 +27,12 @@
 - `runtime/common.ts` / `runtime/session.ts`
 - 仅作为稳定入口和 re-export 路由
 - 新逻辑不要继续堆回这两个文件
+- `runtime/native-hooks.ts`
+- `runtime/session/child-env.ts`
+- `runtime/session/skill-config.ts`
+- `runtime/session/stream.ts`
+- `runtime/common/tools.ts`
+  - 这几处共同决定 OpenCode native hooks、session config dir 和 JSON 事件流
 
 ## 依赖方向
 
@@ -36,3 +48,4 @@
 - 涉及 OpenCode CLI 参数、env、session resume 语义的改动，至少补一条 runtime 回归测试
 - 涉及 permissions / tools / model / mcp 映射的改动，至少补一条 common 回归测试
 - 若新增目录，先在本文件补一句职责说明，再落代码
+- hooks 改动不要只跑单测，至少再按 `../AGENTS.md` 里的真实 CLI 路径补一轮 smoke

@@ -1,4 +1,4 @@
-import { lstat } from 'node:fs/promises'
+import { lstat, readFile } from 'node:fs/promises'
 import { execFile, spawn } from 'node:child_process'
 import { join } from 'node:path'
 
@@ -87,7 +87,10 @@ describe('createOpenCodeSession runtime config', () => {
     await flushAsyncWork()
 
     const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }
-    const inlineConfig = JSON.parse(spawnOptions.env?.OPENCODE_CONFIG_CONTENT ?? '{}') as {
+    const configDir = spawnOptions.env?.OPENCODE_CONFIG_DIR
+    const inlineConfig = JSON.parse(
+      configDir ? await readFile(join(configDir, 'opencode.json'), 'utf8') : '{}'
+    ) as {
       mcp?: Record<string, unknown>
     }
 
@@ -152,5 +155,69 @@ describe('createOpenCodeSession runtime config', () => {
     expect(typeof configDir).toBe('string')
     expect((await lstat(join(configDir!, 'skills', 'research'))).isSymbolicLink()).toBe(true)
     await expect(lstat(join(configDir!, 'skills', 'review'))).rejects.toThrow()
+  })
+
+  it('merges base opencode.json into the session config without mutating the source file', async () => {
+    const workspace = await createWorkspace()
+    const baseConfigDir = join(workspace, 'user-opencode-config')
+    await writeDocument(
+      join(baseConfigDir, 'opencode.json'),
+      JSON.stringify({
+        instructions: ['base-instructions.md'],
+        theme: 'ocean',
+        nested: {
+          keep: true
+        }
+      }, null, 2)
+    )
+    mockExecFileJsonResponses(execFileMock, [
+      { id: 'sess_merge', title: 'Vibe Forge:session-merge', updatedAt: '2026-03-26T00:00:00.000Z' }
+    ])
+    spawnMock.mockImplementation(() => makeProc({ stdout: 'merged\n' }))
+
+    const { ctx } = makeCtx({
+      cwd: workspace,
+      env: {
+        OPENCODE_CONFIG_DIR: baseConfigDir
+      }
+    })
+
+    await createOpenCodeSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-merge',
+      description: 'merge config',
+      onEvent: () => {}
+    } as any)
+
+    await flushAsyncWork()
+
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }
+    const configDir = spawnOptions.env?.OPENCODE_CONFIG_DIR
+    const sessionConfig = JSON.parse(
+      configDir ? await readFile(join(configDir, 'opencode.json'), 'utf8') : '{}'
+    ) as {
+      instructions?: string[]
+      theme?: string
+      nested?: Record<string, unknown>
+    }
+    const sourceConfig = JSON.parse(
+      await readFile(join(baseConfigDir, 'opencode.json'), 'utf8')
+    ) as {
+      instructions?: string[]
+      theme?: string
+      nested?: Record<string, unknown>
+    }
+
+    expect(sessionConfig.instructions).toContain('base-instructions.md')
+    expect(sessionConfig.theme).toBe('ocean')
+    expect(sessionConfig.nested).toMatchObject({ keep: true })
+    expect(sourceConfig).toEqual({
+      instructions: ['base-instructions.md'],
+      theme: 'ocean',
+      nested: {
+        keep: true
+      }
+    })
   })
 })

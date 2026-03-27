@@ -148,6 +148,9 @@ export function Sender({
         }
       ].filter(group => group.tools.length > 0)
     : []
+  const assetWarnings = sessionInfo != null && sessionInfo.type === 'init'
+    ? (sessionInfo.assetDiagnostics ?? []).filter(diagnostic => diagnostic.status === 'skipped')
+    : []
   const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
     value: group.key,
     label: (
@@ -689,6 +692,34 @@ export function Sender({
 
             {sessionInfo != null && sessionInfo.type === 'init' && (
               <div className='session-info-toolbar'>
+                {assetWarnings.length > 0 && (
+                  <Tooltip
+                    placement='topLeft'
+                    title={(
+                      <div className='asset-warning-tooltip'>
+                        <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
+                        {assetWarnings.slice(0, 5).map((warning) => (
+                          <div key={warning.assetId} className='asset-warning-tooltip__item'>
+                            <code>{warning.assetId}</code>
+                            <span>{warning.reason}</span>
+                          </div>
+                        ))}
+                        {assetWarnings.length > 5 && (
+                          <div className='asset-warning-tooltip__more'>
+                            {t('chat.assetWarningsMore', { count: assetWarnings.length - 5 })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  >
+                    <div className='info-item asset-warning-item'>
+                      <span className='info-item-leading'>
+                        <span className='material-symbols-rounded'>warning</span>
+                      </span>
+                      <span className='info-text'>{t('chat.assetWarningsCount', { count: assetWarnings.length })}</span>
+                    </div>
+                  </Tooltip>
+                )}
                 <Cascader
                   open={showToolsList}
                   options={toolCascaderOptions}

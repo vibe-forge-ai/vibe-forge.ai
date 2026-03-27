@@ -4,6 +4,8 @@ import { resolveAdapterCliPath } from '../ccr/paths'
 
 export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { env, cwd, cache, configs: [config, userConfig] } = ctx
+  const assetPlan = options.assetPlan
+  const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
   const {
     description,
     sessionId,
@@ -19,7 +21,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
   const executionType = type === 'resume' && resumeState?.canResume === true ? 'resume' : 'create'
 
   const settings = {
-    mcpServers: {
+    mcpServers: assetPlan?.mcpServers ?? {
       ...config?.mcpServers,
       ...userConfig?.mcpServers
     },
@@ -51,17 +53,24 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     plansDirectory: './.ai/works',
     env: {
       ...(config?.env ?? {}),
-      ...(userConfig?.env ?? {})
+      ...(userConfig?.env ?? {}),
+      ...(nativeHooksAvailable
+        ? {
+            __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+            __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
+            __VF_CLAUDE_TASK_SESSION_ID__: sessionId
+          }
+        : {})
     },
     companyAnnouncements: [
       ...(config?.announcements ?? []),
       ...(userConfig?.announcements ?? [])
     ],
-    enabledPlugins: {
+    enabledPlugins: assetPlan?.native.enabledPlugins ?? {
       ...(config?.enabledPlugins ?? {}),
       ...(userConfig?.enabledPlugins ?? {})
     },
-    extraKnownMarketplaces: {
+    extraKnownMarketplaces: assetPlan?.native.extraKnownMarketplaces ?? {
       ...(config?.extraKnownMarketplaces ?? {}),
       ...(userConfig?.extraKnownMarketplaces ?? {})
     }
@@ -148,5 +157,21 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     )
   }
 
-  return { cliPath: cliPath!, args, env, cwd, sessionId, executionType }
+  return {
+    cliPath: cliPath!,
+    args,
+    env: {
+      ...env,
+      ...(nativeHooksAvailable
+        ? {
+            __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+            __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
+            __VF_CLAUDE_TASK_SESSION_ID__: sessionId
+          }
+        : {})
+    },
+    cwd,
+    sessionId,
+    executionType
+  }
 }

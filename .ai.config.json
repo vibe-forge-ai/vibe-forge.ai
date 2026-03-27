@@ -11,6 +11,30 @@
   "plugins": {
     "logger": {}
   },
+  "modelServices": {
+    "hook-smoke-mock": {
+      "title": "Hook Smoke Mock",
+      "description": "Local offline mock LLM service for hook smoke tests.",
+      "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/responses",
+      "apiKey": "hook-smoke-local",
+      "models": ["codex-hooks", "claude-hooks", "opencode-hooks"],
+      "extra": {
+        "codex": {
+          "wireApi": "responses"
+        },
+        "opencode": {
+          "wireApi": "responses"
+        }
+      }
+    },
+    "hook-smoke-mock-ccr": {
+      "title": "Hook Smoke Mock CCR",
+      "description": "Local offline mock LLM service for Claude Code Router smoke tests.",
+      "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/chat/completions",
+      "apiKey": "hook-smoke-local",
+      "models": ["claude-hooks"]
+    }
+  },
   "mcpServers": {
     "ChromeDevtools": {
       "command": "npx",

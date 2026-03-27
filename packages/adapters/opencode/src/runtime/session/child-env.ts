@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
@@ -53,6 +53,17 @@ const parseEnvConfigContent = (env: AdapterCtx['env']) => {
   }
 }
 
+const readBaseConfigContent = async (configDir: string | undefined) => {
+  if (configDir == null) return undefined
+
+  try {
+    const parsed = JSON.parse(await readFile(resolve(configDir, 'opencode.json'), 'utf8'))
+    return asPlainRecord(parsed)
+  } catch {
+    return undefined
+  }
+}
+
 export const buildChildEnv = async (params: {
   ctx: AdapterCtx
   options: AdapterQueryOptions
@@ -60,10 +71,29 @@ export const buildChildEnv = async (params: {
   systemPromptFile?: string
 }) => {
   const configDir = await ensureOpenCodeConfigDir({ ctx: params.ctx, options: params.options })
+  const nativeHooksAvailable = params.ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
+  const baseConfigContent = await readBaseConfigContent(configDir)
   const { cliModel, providerConfig } = resolveOpenCodeModel(
     params.options.model,
     resolveMergedModelServices(params.ctx)
   )
+  const inlineConfigContent = buildInlineConfigContent({
+    baseConfigContent,
+    adapterConfigContent: params.adapterConfig.configContent,
+    envConfigContent: parseEnvConfigContent(params.ctx.env),
+    permissionMode: params.options.permissionMode,
+    tools: params.options.tools,
+    mcpServers: undefined,
+    availableMcpServers: params.options.assetPlan?.mcpServers ?? mapResolvedMcpServerSelection(params.ctx, params.options),
+    systemPromptFile: params.systemPromptFile,
+    providerConfig
+  })
+
+  if (configDir != null) {
+    const configPath = resolve(configDir, 'opencode.json')
+    await rm(configPath, { force: true })
+    await writeFile(configPath, `${JSON.stringify(inlineConfigContent, null, 2)}\n`, 'utf8')
+  }
 
   return {
     cliModel,
@@ -71,19 +101,46 @@ export const buildChildEnv = async (params: {
       ...process.env,
       ...params.ctx.env,
       OPENCODE_DISABLE_AUTOUPDATE: params.ctx.env.OPENCODE_DISABLE_AUTOUPDATE ?? 'true',
-      OPENCODE_CONFIG_CONTENT: JSON.stringify(buildInlineConfigContent({
-        adapterConfigContent: params.adapterConfig.configContent,
-        envConfigContent: parseEnvConfigContent(params.ctx.env),
-        permissionMode: params.options.permissionMode,
-        tools: params.options.tools,
-        mcpServers: resolveMcpServerSelection(params.ctx, params.options.mcpServers),
-        availableMcpServers: resolveMergedMcpServers(params.ctx),
-        systemPromptFile: params.systemPromptFile,
-        providerConfig
-      })),
+      ...(nativeHooksAvailable
+        ? {
+            __VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__: '1',
+            __VF_OPENCODE_HOOK_RUNTIME__: params.options.runtime,
+            __VF_OPENCODE_TASK_SESSION_ID__: params.options.sessionId
+          }
+        : {}),
+      ...(configDir == null
+        ? { OPENCODE_CONFIG_CONTENT: JSON.stringify(inlineConfigContent) }
+        : {}),
       ...(configDir != null ? { OPENCODE_CONFIG_DIR: configDir } : {})
     })
   }
+}
+
+const mapResolvedMcpServerSelection = (
+  ctx: AdapterCtx,
+  options: AdapterQueryOptions
+) => (
+  options.assetPlan?.mcpServers ?? mapSelectedMcpServersToConfig(
+    resolveMergedMcpServers(ctx),
+    resolveMcpServerSelection(ctx, options.mcpServers)
+  )
+)
+
+const mapSelectedMcpServersToConfig = (
+  availableMcpServers: Config['mcpServers'],
+  selection: AdapterQueryOptions['mcpServers']
+) => {
+  if (availableMcpServers == null) return undefined
+  const include = selection?.include != null ? new Set(selection.include) : undefined
+  const exclude = new Set(selection?.exclude ?? [])
+
+  return Object.fromEntries(
+    Object.entries(availableMcpServers).filter(([name]) => {
+      if (include != null && !include.has(name)) return false
+      if (exclude.has(name)) return false
+      return true
+    })
+  )
 }
 
 export const ensureSystemPromptFile = async (

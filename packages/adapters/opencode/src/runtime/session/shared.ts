@@ -19,6 +19,13 @@ export interface OpenCodeRunResult {
   stderr: string
 }
 
+interface OpenCodeJsonLineEvent {
+  type?: string
+  part?: {
+    text?: string
+  }
+}
+
 export const execFileAsync = (
   file: string,
   args: string[],
@@ -42,6 +49,25 @@ export const createAssistantMessage = (content: string, model?: string): ChatMes
   createdAt: Date.now(),
   ...(model != null ? { model } : {})
 })
+
+export const extractTextFromOpenCodeJsonEvents = (stdout: string) => {
+  const textParts: string[] = []
+
+  for (const rawLine of stdout.split('\n')) {
+    const line = rawLine.trim()
+    if (!line.startsWith('{') || !line.endsWith('}')) continue
+
+    try {
+      const event = JSON.parse(line) as OpenCodeJsonLineEvent
+      if (event.type === 'text' && typeof event.part?.text === 'string') {
+        textParts.push(event.part.text)
+      }
+    } catch {
+    }
+  }
+
+  return textParts.join('')
+}
 
 export const getErrorMessage = (error: unknown) => (
   error instanceof Error ? error.message : String(error ?? 'OpenCode session failed unexpectedly')

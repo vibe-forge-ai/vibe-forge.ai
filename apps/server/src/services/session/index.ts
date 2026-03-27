@@ -143,6 +143,7 @@ export async function startAdapterSession(
       appendSystemPrompt: options.appendSystemPrompt ?? true,
       tools: resolvedConfig.tools,
       mcpServers: resolvedConfig.mcpServers,
+      promptAssetIds: resolvedConfig.promptAssetIds,
       onEvent: (event: AdapterOutputEvent) => {
         if (activeAdapterRunStore.get(sessionId) !== runId) {
           return

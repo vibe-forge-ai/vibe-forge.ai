@@ -267,6 +267,35 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('enables native codex hooks and injects runtime metadata when available', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx({
+      env: {
+        __VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__: '1',
+        __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/vibe-forge-cli'
+      }
+    }), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-native-hooks',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }
+
+    expect(spawnArgs).toEqual(expect.arrayContaining(['--enable', 'codex_hooks']))
+    expect(spawnOptions.env?.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__).toBe('1')
+    expect(spawnOptions.env?.__VF_CODEX_HOOK_RUNTIME__).toBe('server')
+    expect(spawnOptions.env?.__VF_CODEX_TASK_SESSION_ID__).toBe('session-native-hooks')
+
+    session.kill()
+  })
+
   it('uses codex defaults when model is "default"', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()

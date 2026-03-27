@@ -33,7 +33,7 @@ declare module '@vibe-forge/core' {
        * `undo`, `shell_tool`, `web_search_request`, `web_search_cached`,
        * `unified_exec`, `shell_snapshot`, `apply_patch_freeform`, `exec_policy`,
        * `experimental_windows_sandbox`, `elevated_windows_sandbox`,
-       * `remote_compaction`, `remote_models`, `powershell_utf8`,
+       * `remote_compaction`, `remote_models`, `powershell_utf8`, `codex_hooks`,
        * `enable_request_compression`, `tui2`.
        * `true` → `--enable <name>`, `false` → `--disable <name>`.
        */
@@ -52,6 +52,7 @@ declare module '@vibe-forge/core' {
           | 'remote_compaction'
           | 'remote_models'
           | 'powershell_utf8'
+          | 'codex_hooks'
           | 'enable_request_compression'
           | 'tui2'
           | (string & {}),

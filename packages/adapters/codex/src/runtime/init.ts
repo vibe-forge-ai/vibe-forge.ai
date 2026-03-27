@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
+import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
 const execFileAsync = promisify(execFile)
 
@@ -52,6 +53,7 @@ async function linkAuthFile(home: string): Promise<void> {
  *   1. Verifies that the `codex` binary is reachable.
  *   2. Symlinks the real `~/.codex/auth.json` into the mock HOME directory so
  *      authentication works under HOME isolation.
+ *   3. Installs a workspace-local native hooks bridge into the mock Codex home.
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
@@ -68,4 +70,5 @@ export const initCodexAdapter = async (ctx: AdapterCtx) => {
   }
 
   await linkAuthFile(home)
+  await ensureCodexNativeHooksInstalled(ctx)
 }

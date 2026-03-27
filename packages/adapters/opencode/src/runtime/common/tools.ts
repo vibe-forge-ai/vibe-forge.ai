@@ -106,10 +106,12 @@ export const buildOpenCodeRunArgs = (params: {
   agent?: string
   share?: boolean
   title?: string
+  dir?: string
   opencodeSessionId?: string
   extraOptions?: string[]
+  format?: 'default' | 'json'
 }) => {
-  const args = ['run', '--format', 'default']
+  const args = ['run', '--format', params.format ?? 'default']
 
   if (params.opencodeSessionId) {
     args.push('--session', params.opencodeSessionId)
@@ -120,6 +122,7 @@ export const buildOpenCodeRunArgs = (params: {
   if (params.model) args.push('--model', params.model)
   if (params.agent) args.push('--agent', params.agent)
   if (params.share) args.push('--share')
+  if (params.dir) args.push('--dir', params.dir)
 
   for (const file of params.files) args.push('--file', file)
   args.push(...sanitizeOpenCodeExtraOptions(params.extraOptions))

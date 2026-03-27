@@ -8,6 +8,7 @@ import { buildToolPermissionConfig, mapPermissionModeToOpenCode } from './permis
 import { buildToolConfig } from './tools'
 
 export const buildInlineConfigContent = (params: {
+  baseConfigContent?: Record<string, unknown>
   adapterConfigContent?: Record<string, unknown>
   envConfigContent?: Record<string, unknown>
   permissionMode?: AdapterQueryOptions['permissionMode']
@@ -17,7 +18,10 @@ export const buildInlineConfigContent = (params: {
   systemPromptFile?: string
   providerConfig?: Record<string, unknown>
 }) => {
-  const mergedBaseConfig = deepMerge(params.envConfigContent ?? {}, params.adapterConfigContent ?? {})
+  const mergedBaseConfig = deepMerge(
+    deepMerge(params.baseConfigContent ?? {}, params.envConfigContent ?? {}),
+    params.adapterConfigContent ?? {}
+  )
   const inheritedPermission = normalizePermissionNode(mergedBaseConfig.permission)
   const hasToolFilter = (params.tools?.include?.length ?? 0) > 0 || (params.tools?.exclude?.length ?? 0) > 0
   const basePermission = params.permissionMode === 'dontAsk' || params.permissionMode === 'bypassPermissions'

@@ -55,8 +55,14 @@ export const ensureOpenCodeConfigDir = async (params: {
   options: AdapterQueryOptions
 }) => {
   const baseConfigDir = params.ctx.env.OPENCODE_CONFIG_DIR ?? process.env.OPENCODE_CONFIG_DIR ?? undefined
-  const resolvedSkills = await filterResolvedSkills(params.ctx.cwd, params.options.skills)
-  if (baseConfigDir == null && resolvedSkills.size === 0) return undefined
+  const planOverlays = params.options.assetPlan?.overlays ?? []
+  const resolvedSkills = planOverlays.length > 0
+    ? new Map(
+        planOverlays
+          .filter((entry) => entry.kind === 'skill')
+          .map((entry) => [basename(entry.targetPath), entry.sourcePath] as const)
+      )
+    : await filterResolvedSkills(params.ctx.cwd, params.options.skills)
 
   const configDir = resolve(
     params.ctx.cwd,
@@ -73,11 +79,18 @@ export const ensureOpenCodeConfigDir = async (params: {
     for (const folderName of ['agents', 'commands', 'modes', 'plugins']) {
       await ensureSymlinkTarget(resolve(baseConfigDir, folderName), resolve(configDir, folderName)).catch(() => undefined)
     }
+    for (const fileName of ['opencode.json', 'package.json', 'bun.lock', 'bun.lockb']) {
+      await ensureSymlinkTarget(resolve(baseConfigDir, fileName), resolve(configDir, fileName)).catch(() => undefined)
+    }
     await mirrorDirectoryEntries(resolve(baseConfigDir, 'skills'), resolve(configDir, 'skills'))
   }
 
   for (const [name, sourceDir] of resolvedSkills.entries()) {
     await ensureSymlinkTarget(sourceDir, resolve(configDir, 'skills', name))
+  }
+
+  for (const overlay of planOverlays.filter((entry) => entry.kind !== 'skill')) {
+    await ensureSymlinkTarget(overlay.sourcePath, resolve(configDir, overlay.targetPath))
   }
 
   return configDir

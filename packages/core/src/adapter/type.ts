@@ -1,6 +1,7 @@
 import type { Cache, Config } from '@vibe-forge/core'
 
 import type { Logger } from '#~/utils/create-logger.js'
+import type { AdapterAssetPlan, AssetDiagnostic, WorkspaceAssetBundle } from '#~/utils/workspace-assets.js'
 
 import type { ChatMessage, ChatMessageContent } from '../types'
 
@@ -35,6 +36,7 @@ export interface SessionInitInfo {
   cwd: string
   agents: string[]
   title?: string
+  assetDiagnostics?: AssetDiagnostic[]
 }
 
 export interface SessionSummaryInfo {
@@ -62,6 +64,7 @@ export interface AdapterCtx {
   logger: Logger
 
   configs: [Config?, Config?]
+  assets?: WorkspaceAssetBundle
 }
 
 export interface AdapterQueryOptions {
@@ -91,6 +94,8 @@ export interface AdapterQueryOptions {
   }
 
   extraOptions?: string[]
+  promptAssetIds?: string[]
+  assetPlan?: AdapterAssetPlan
 
   onEvent: (event: AdapterOutputEvent) => void
 }

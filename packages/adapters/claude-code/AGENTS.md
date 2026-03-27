@@ -1,5 +1,14 @@
 # Claude Code Adapter
 
+## 文档入口
+
+- `docs/HOOKS.md`
+  - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
+- `docs/HOOKS-REFERENCE.md`
+  - 真实 CLI 验证命令、本次改造经验、共用实现入口
+- `apps/cli/src/AGENTS.md`
+  - CLI hook bridge、`call-hook.js` 与 session logger 入口
+
 ## 目录职责
 
 - `src/runtime/prepare.ts`
@@ -11,6 +20,9 @@
 - `src/runtime/init.ts`
   - adapter 初始化逻辑
   - 适合排查 `npx vf init`、mock home、router restart 一类问题
+- `src/runtime/native-hooks.ts`
+  - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 native hooks 配置
+  - Claude Code 的原生 hooks 最终会回调 `apps/cli/claude-hook.js`
 - `src/ccr/default-config.ts`
   - 生成 CCR 默认配置
   - 决定默认注入哪些 transformer、provider/router 如何路由
@@ -21,6 +33,65 @@
   - Claude Code 输出事件解析与内容适配
 - `src/adapter-config.ts`
   - adapter 配置类型入口，先看这里确认有哪些配置面
+
+## Hooks 维护入口
+
+- `src/runtime/native-hooks.ts`
+  - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 hooks 配置
+- `src/runtime/prepare.ts`
+  - 注入 session 运行参数、native hook env、settings 与 mcp config
+- `src/runtime/init.ts`
+  - adapter 初始化阶段写 mock home、生成 CCR 配置、必要时重启 router
+- `apps/cli/claude-hook.js`
+- `apps/cli/src/hooks/claude.ts`
+- `apps/cli/call-hook.js`
+- `packages/core/src/hooks/native.ts`
+- `packages/core/src/hooks/bridge.ts`
+- `packages/core/src/controllers/task/run.ts`
+
+职责边界要保持清楚：
+
+- Claude adapter 只负责 native settings 写入与运行参数装配
+- CLI hook bridge 负责把 Claude 原生 payload 翻译成统一 hook 协议
+- core 负责插件执行、日志、native/bridge 去重
+
+## 真实 CLI 验证
+
+不要只看 unit test。至少跑一轮真实 Claude Code：
+
+仓库根快捷命令：
+
+```bash
+pnpm smoke:hooks:claude
+```
+
+这条命令默认会启动本地 mock LLM server，并通过仓库根 `.ai.config.json` 里的 `hook-smoke-mock` model service 驱动 Claude Code。
+这里走的是 `hook-smoke-mock-ccr`，也就是 `/chat/completions` 路径；比走 Responses polyfill 更稳定。
+
+```bash
+__VF_PROJECT_AI_CTX_ID__='hooks-smoke-claude' \
+node apps/cli/cli.js \
+  --adapter claude-code \
+  --model 'hook-smoke-mock-ccr,claude-hooks' \
+  --print \
+  --no-inject-default-system-prompt \
+  --exclude-mcp-server ChromeDevtools \
+  --include-tool Read \
+  --permission-mode bypassPermissions \
+  --session-id '<uuid>' \
+  "Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else."
+```
+
+通过标准：
+
+- 终端输出 `E2E_CLAUDE`
+- `.ai/logs/<ctxId>/<sessionId>.log.md` 出现 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
+- `.ai/.mock/.claude/settings.json` 仍指向 Vibe Forge 托管 hook bridge
+
+这次开发里，Claude 额外要记住两点：
+
+- 仓库根如果已有 `.claude/settings.json`，Claude 会和 mock home settings 一起加载，容易出现双触发
+- 排查重复 hook 时，不要只看 `.ai/.mock/.claude/settings.json`，也要检查项目级 `.claude/settings.json`
 
 ## 调试路由
 
@@ -70,11 +141,14 @@
 先读：
 - `apps/cli/src/commands/init.ts`
 - `apps/cli/src/hooks/index.ts`
+- `apps/cli/src/hooks/claude.ts`
+- `src/runtime/native-hooks.ts`
 - `packages/core/src/utils/create-logger.ts`
 - `packages/core/src/env.ts`
 
 关键事实：
 - CLI init 和 hooks 不是从 adapter 内部直接创建 logger，而是走 CLI/core 入口
+- Claude Code native hooks 的托管配置写在 `.ai/.mock/.claude/settings.json`
 - 所以这类问题不要只盯着 adapter
 
 ### 5. server 控制台 / session jsonl 日志级别不对
@@ -134,4 +208,3 @@
   - `pnpm exec vitest run packages/core/__tests__/create-logger.spec.ts packages/core/__tests__/env.spec.ts`
   - `pnpm exec vitest run packages/adapters/claude-code/__tests__/default-config.spec.ts`
   - `pnpm exec tsc -p tsconfig.json --noEmit`
-

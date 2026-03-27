@@ -399,7 +399,7 @@ export async function resolveSessionBase(
   const sandboxPolicy: CodexSandboxPolicy = useYolo
     ? { type: 'dangerFullAccess' }
     : (configSandboxPolicy ?? { type: 'workspaceWrite' })
-  const features: Record<string, boolean> = configFeatures ?? {}
+  const features: Record<string, boolean> = { ...(configFeatures ?? {}) }
 
   const mergedModelServices: Record<string, ModelServiceConfig> = {
     ...(config?.modelServices ?? {}),
@@ -449,33 +449,25 @@ export async function resolveSessionBase(
       : undefined
   })
 
-  const mergedMcpServers = {
+  const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? {
     ...(config?.mcpServers ?? {}),
     ...(userConfig?.mcpServers ?? {})
-  }
-  const defaultInclude = [
-    ...(config?.defaultIncludeMcpServers ?? []),
-    ...(userConfig?.defaultIncludeMcpServers ?? [])
-  ]
-  const defaultExclude = [
-    ...(config?.defaultExcludeMcpServers ?? []),
-    ...(userConfig?.defaultExcludeMcpServers ?? [])
-  ]
-  const includeMcpServers = options.mcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
-  const excludeMcpServers = options.mcpServers?.exclude ?? (defaultExclude.length > 0 ? defaultExclude : undefined)
-
-  const filteredMcpServers: Record<string, unknown> = {}
-  for (const [key, server] of Object.entries(mergedMcpServers)) {
-    if ((server as { enabled?: boolean }).enabled === false) continue
-    if (includeMcpServers && !includeMcpServers.includes(key)) continue
-    if (excludeMcpServers?.includes(key)) continue
-    const { enabled: _enabled, ...serverConfig } = server as { enabled?: boolean; [k: string]: unknown }
-    filteredMcpServers[key] = serverConfig
   }
 
   const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers)
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
+
+  const binaryPath = resolveCodexBinaryPath(env)
+  await mkdir(resolve(process.env.HOME!, '.codex'), { recursive: true })
+  const spawnEnv = buildSpawnEnv(env)
+
+  if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
+    features.codex_hooks = true
+    spawnEnv.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__ = '1'
+    spawnEnv.__VF_CODEX_HOOK_RUNTIME__ = options.runtime
+    spawnEnv.__VF_CODEX_TASK_SESSION_ID__ = options.sessionId
+  }
 
   const threadCacheKey = await buildThreadCacheKey({
     cwd,
@@ -491,10 +483,6 @@ export async function resolveSessionBase(
     const cachedThreads = await cache.get('adapter.codex.threads')
     cachedThreadId = cachedThreads?.[threadCacheKey]
   }
-
-  const binaryPath = resolveCodexBinaryPath(env)
-  await mkdir(resolve(process.env.HOME!, '.codex'), { recursive: true })
-  const spawnEnv = buildSpawnEnv(env)
 
   return {
     logger,

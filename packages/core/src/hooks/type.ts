@@ -1,4 +1,17 @@
-import type { ToolInput, ToolOutput } from '../tools'
+import type { AdapterQueryOptions } from '../adapter'
+
+export type HookSource = 'native' | 'bridge'
+
+export interface HookToolCall {
+  toolCallId?: string
+  toolName: string
+  toolInput?: unknown
+}
+
+export interface HookToolResult extends HookToolCall {
+  toolResponse?: unknown
+  isError?: boolean
+}
 
 /**
  * https://docs.anthropic.com/en/docs/claude-code/hooks#hook-input
@@ -7,25 +20,37 @@ export interface HookInputCore {
   cwd: string
   sessionId: string
   hookEventName: keyof HookInputs
+  adapter?: string
+  runtime?: AdapterQueryOptions['runtime']
+  hookSource?: HookSource
+  canBlock?: boolean
 }
 
 export interface HookInputs {
   /**
    * https://docs.anthropic.com/en/docs/claude-code/hooks#pretooluse-input
    */
-  PreToolUse: HookInputCore & ToolInput
+  PreToolUse: HookInputCore & HookToolCall
   /**
    * https://docs.anthropic.com/en/docs/claude-code/hooks#posttooluse-input
    */
-  PostToolUse: HookInputCore & ToolOutput
+  PostToolUse: HookInputCore & HookToolResult
   Notification: HookInputCore
   UserPromptSubmit: HookInputCore & { prompt: string }
-  Stop: HookInputCore
+  Stop: HookInputCore & {
+    lastAssistantMessage?: string
+  }
   SubagentStop: HookInputCore
   PreCompact: HookInputCore
-  SessionStart: HookInputCore
+  SessionStart: HookInputCore & {
+    source?: 'startup' | 'resume'
+    model?: string
+  }
   SessionEnd: HookInputCore & {
     reason: string
+    exitCode?: number
+    stderr?: string
+    lastAssistantMessage?: string
   }
 
   StartTasks: HookInputCore & {

@@ -170,6 +170,7 @@ export function registerRunCommand(program: Command) {
         mode: opts.print ? 'stream' : 'direct',
         tools,
         mcpServers,
+        promptAssetIds: resolvedConfig.promptAssetIds,
         skills: opts.includeSkill || opts.excludeSkill
           ? {
             include: opts.includeSkill,
