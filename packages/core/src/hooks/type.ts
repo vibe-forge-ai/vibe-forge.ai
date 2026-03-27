@@ -20,6 +20,8 @@ export interface HookInputCore {
   cwd: string
   sessionId: string
   hookEventName: keyof HookInputs
+  transcriptPath?: string | null
+  turnId?: string
   adapter?: string
   runtime?: AdapterQueryOptions['runtime']
   hookSource?: HookSource
@@ -38,6 +40,7 @@ export interface HookInputs {
   Notification: HookInputCore
   UserPromptSubmit: HookInputCore & { prompt: string }
   Stop: HookInputCore & {
+    stopHookActive?: boolean
     lastAssistantMessage?: string
   }
   SubagentStop: HookInputCore
@@ -129,13 +132,22 @@ export interface HookOutputs {
     }
   }
   Notification: HookOutputCore
-  UserPromptSubmit: HookOutputCore
   Stop: HookOutputCore
-  SessionStart: HookOutputCore
+  SessionStart: HookOutputCore & {
+    hookSpecificOutput?: {
+      hookEventName: 'SessionStart'
+      additionalContext: string
+    }
+  }
   SessionEnd: HookOutputCore
   SubagentStop: HookOutputCore
   PreCompact: HookOutputCore
-
+  UserPromptSubmit: HookOutputCore & {
+    hookSpecificOutput?: {
+      hookEventName: 'UserPromptSubmit'
+      additionalContext: string
+    }
+  }
   StartTasks: HookOutputCore
   GenerateSystemPrompt: HookOutputCore
   TaskStart: HookOutputCore

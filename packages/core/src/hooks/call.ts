@@ -1,9 +1,9 @@
 import { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
-import path from 'node:path'
 import process from 'node:process'
 
 import type { HookInputs, HookOutputs } from './type'
+import { resolveManagedHookScriptPath } from './native'
 
 export type HookEventName = keyof HookInputs
 
@@ -19,22 +19,13 @@ const pickHookEnv = (env: Record<string, unknown>): Record<string, string> => {
   return result
 }
 
-const resolveHookCliJs = () => {
-  try {
-    const pkgJsonPath = require.resolve('@vibe-forge/cli/package.json')
-    return path.resolve(path.dirname(pkgJsonPath), 'call-hook.js')
-  } catch (error) {
-    throw new Error('Failed to resolve @vibe-forge/cli hook entry', { cause: error })
-  }
-}
-
 export const callHook = async <K extends HookEventName>(
   hookEventName: K,
   input: HookInputPayload<K>,
   env: Record<string, unknown> = process.env
 ): Promise<HookOutputs[K]> => {
   const childEnv = pickHookEnv(env)
-  const child = spawn(process.execPath, [resolveHookCliJs()], {
+  const child = spawn(process.execPath, [resolveManagedHookScriptPath('call-hook.js')], {
     cwd: typeof input.cwd === 'string' ? input.cwd : process.cwd(),
     env: childEnv,
     stdio: ['pipe', 'pipe', 'pipe']

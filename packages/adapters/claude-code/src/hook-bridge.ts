@@ -63,3 +63,6 @@ export const runClaudeHookBridge = async () => {
     }))
   }
 }
+
+export const isNativeHookEnv = isClaudeNativeHookEnv
+export const runHookBridge = runClaudeHookBridge

@@ -50,10 +50,19 @@
         "require": "./dist/icon.js"
       }
     },
+    "./hook-bridge": {
+      "__vibe-forge__": {
+        "default": "./src/hook-bridge.ts"
+      },
+      "default": {
+        "import": "./dist/hook-bridge.mjs",
+        "require": "./dist/hook-bridge.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@openai/codex": "0.117.0-alpha.23",
+    "@openai/codex": "0.117.0",
     "@vibe-forge/core": "workspace:^"
   }
 }

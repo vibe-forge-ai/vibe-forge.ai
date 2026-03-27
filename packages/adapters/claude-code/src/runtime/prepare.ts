@@ -1,4 +1,5 @@
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
 
 import { resolveAdapterCliPath } from '../ccr/paths'
 
@@ -57,6 +58,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
       ...(nativeHooksAvailable
         ? {
           __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
           __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
           __VF_CLAUDE_TASK_SESSION_ID__: sessionId
         }
@@ -165,6 +167,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
       ...(nativeHooksAvailable
         ? {
           __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
           __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
           __VF_CLAUDE_TASK_SESSION_ID__: sessionId
         }

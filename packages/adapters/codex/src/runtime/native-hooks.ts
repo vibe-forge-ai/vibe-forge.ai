@@ -7,7 +7,7 @@ import {
   mergeManagedHookGroups,
   prepareManagedHookRuntime,
   readJsonFileOrDefault,
-  resolveHookCliScriptPath,
+  resolveManagedHookScriptPath,
   writeJsonFile
 } from '@vibe-forge/core/hooks'
 import type { NativeHookMatcherGroup } from '@vibe-forge/core/hooks'
@@ -22,10 +22,21 @@ export const CODEX_NATIVE_HOOK_EVENTS = [
 
 type CodexNativeHookEvent = (typeof CODEX_NATIVE_HOOK_EVENTS)[number]
 
-const MANAGED_COMMAND_PATH = resolveHookCliScriptPath('codex-hook.js')
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+
+const MANAGED_COMMAND_PATH = resolveManagedHookScriptPath('call-hook.js')
+const MANAGED_COMMAND_MARKERS = [
+  MANAGED_COMMAND_PATH,
+  'vf-call-hook',
+  'codex-hook.js',
+  'call-hook.js'
+]
 
 const isManagedGroup = (group: NativeHookMatcherGroup) => (
-  Array.isArray(group.hooks) && group.hooks.some(hook => hook.command.includes(MANAGED_COMMAND_PATH))
+  Array.isArray(group.hooks) &&
+  group.hooks.some(hook => MANAGED_COMMAND_MARKERS.some(marker => hook.command.includes(marker)))
 )
 
 const createManagedGroup = (
@@ -54,7 +65,18 @@ export const ensureCodexNativeHooksInstalled = async (
   try {
     const { mockHome, nodePath } = prepareManagedHookRuntime(ctx)
     const hooksPath = resolve(mockHome, '.codex', 'hooks.json')
+    const projectHooksPath = resolve(ctx.cwd, '.codex', 'hooks.json')
     const existing = await readJsonFileOrDefault<unknown>(hooksPath, {})
+    const projectHooks = await readJsonFileOrDefault<unknown>(projectHooksPath, {})
+    const projectHooksConfig = isRecord(projectHooks) && isRecord(projectHooks.hooks)
+      ? projectHooks.hooks
+      : undefined
+    const projectManagedEvents = new Set<CodexNativeHookEvent>(
+      CODEX_NATIVE_HOOK_EVENTS.filter((eventName) => {
+        const hooks = projectHooksConfig?.[eventName]
+        return Array.isArray(hooks) && hooks.some(group => isManagedGroup(group as NativeHookMatcherGroup))
+      })
+    )
     const command = buildNodeScriptCommand({
       nodePath,
       scriptPath: MANAGED_COMMAND_PATH
@@ -65,7 +87,8 @@ export const ensureCodexNativeHooksInstalled = async (
       eventNames: CODEX_NATIVE_HOOK_EVENTS,
       enabled,
       isManagedGroup,
-      createGroup: (eventName: string) => createManagedGroup(command, eventName as CodexNativeHookEvent)
+      createGroup: (eventName: string) => createManagedGroup(command, eventName as CodexNativeHookEvent),
+      shouldManageEvent: (eventName: string) => !projectManagedEvents.has(eventName as CodexNativeHookEvent)
     })
     await writeJsonFile(hooksPath, merged)
 

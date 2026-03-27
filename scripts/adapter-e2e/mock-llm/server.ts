@@ -56,7 +56,24 @@ export const startMockLlmServer = async (
       !hasToolResult(body) &&
       requestedToolCount > 0 &&
       selectedTool == null
-    const turn = resolveMockTurn(scenarios, model, body)
+    let turn
+    try {
+      turn = resolveMockTurn(scenarios, model, body)
+    } catch (error) {
+      logDebug(
+        'mock-llm unknown scenario',
+        JSON.stringify({
+          model,
+          requestPath
+        })
+      )
+      writeJson(res, 404, {
+        error: 'unknown_model_scenario',
+        message: error instanceof Error ? error.message : `No mock model scenario registered for ${model}`,
+        model
+      })
+      return
+    }
     const traceEntry: MockLlmTraceEntry = {
       path: requestPath,
       model,

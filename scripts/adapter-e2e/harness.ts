@@ -89,10 +89,11 @@ export const collectCaseMockTrace = (
   trace: MockLlmTraceEntry[],
   traceStartIndex: number,
   testCase: ResolvedAdapterE2ECase
-) =>
-  trace
-    .slice(traceStartIndex)
-    .filter(entry => matchesResolvedCaseModel(entry, testCase))
+) => {
+  const nextTrace = trace.slice(traceStartIndex)
+  const matchedTrace = nextTrace.filter(entry => matchesResolvedCaseModel(entry, testCase))
+  return matchedTrace.length > 0 ? matchedTrace : nextTrace
+}
 
 export const runAdapterE2ESuite = async (
   requested: string | undefined = 'all',

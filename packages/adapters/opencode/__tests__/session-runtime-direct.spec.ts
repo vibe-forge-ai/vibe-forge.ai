@@ -3,6 +3,7 @@ import { execFile, spawn } from 'node:child_process'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
 
 import { createOpenCodeSession } from '#~/runtime/session.js'
 
@@ -69,8 +70,38 @@ describe('createOpenCodeSession direct runtime', () => {
       '--format',
       'default',
       '--title',
-      'Vibe Forge:session-direct-empty'
+      'Vibe Forge:session-direct-empty',
+      '--dir',
+      '/tmp'
     ])
+  })
+
+  it('injects the shared native hook bridge adapter env when opencode native hooks are enabled', async () => {
+    mockExecFileJsonResponses(execFileMock, [
+      { id: 'sess_native_hooks', title: 'Vibe Forge:session-native-hooks', updatedAt: '2026-03-26T00:00:00.000Z' }
+    ])
+    spawnMock.mockImplementation(() => makeProc({ exitCode: 0 }))
+
+    const { ctx } = makeCtx({
+      env: {
+        __VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__: '1'
+      }
+    })
+
+    await createOpenCodeSession(ctx, {
+      type: 'create',
+      runtime: 'cli',
+      mode: 'direct',
+      sessionId: 'session-native-hooks',
+      description: 'say hi',
+      onEvent: () => {}
+    } as any)
+
+    await flushAsyncWork()
+
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }
+    expect(spawnOptions.env?.__VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__).toBe('1')
+    expect(spawnOptions.env?.[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('opencode')
   })
 
   it('emits exit in direct mode when the child process errors before launch', async () => {

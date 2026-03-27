@@ -195,9 +195,9 @@ packages/adapters/opencode/node_modules/.bin/opencode run \
   - workspace hook 插件、native 资产、overlay 规划
 - `apps/cli/src/hooks/*.ts`
   - CLI 侧 hook 入口
-- `apps/cli/codex-hook.js`
-- `apps/cli/claude-hook.js`
 - `apps/cli/call-hook.js`
+- `packages/adapters/codex/src/hook-bridge.ts`
+- `packages/adapters/claude-code/src/hook-bridge.ts`
 - `scripts/run-tools.mjs`
   - 运行时 loader，负责 `esbuild-register` 和脚本 CLI 入口
 - `scripts/cli.ts`

@@ -34,7 +34,9 @@ export type PluginConfig =
   | Partial<PluginMap>
 
 export * from './bridge'
+export * from './bridge-loader'
 export * from './call'
+export * from './entry'
 export * from './loader'
 export * from './native'
 export * from './runtime'

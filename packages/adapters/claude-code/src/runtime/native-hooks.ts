@@ -7,7 +7,7 @@ import {
   mergeManagedHookGroups,
   prepareManagedHookRuntime,
   readJsonFileOrDefault,
-  resolveHookCliScriptPath,
+  resolveManagedHookScriptPath,
   writeJsonFile
 } from '@vibe-forge/core/hooks'
 import type { NativeHookMatcherGroup } from '@vibe-forge/core/hooks'
@@ -29,7 +29,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
 
-const MANAGED_COMMAND_PATH = resolveHookCliScriptPath('claude-hook.js')
+const MANAGED_COMMAND_PATH = resolveManagedHookScriptPath('call-hook.js')
 const MANAGED_COMMAND_MARKERS = [
   MANAGED_COMMAND_PATH,
   'vf-call-hook',

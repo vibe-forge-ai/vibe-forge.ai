@@ -127,6 +127,7 @@ export const runProcess = async ({
 export const buildBaseEnv = (ctxId: string, mockServerPort: number): NodeJS.ProcessEnv => ({
   ...process.env,
   __VF_PROJECT_AI_CTX_ID__: ctxId,
+  __VF_PROJECT_AI_DISABLE_DEV_CONFIG__: '1',
   __VF_PROJECT_WORKSPACE_FOLDER__: repoRoot,
   HOOK_SMOKE_MOCK_PORT: String(mockServerPort)
 })

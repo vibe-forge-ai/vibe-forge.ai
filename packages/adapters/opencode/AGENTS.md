@@ -28,6 +28,8 @@
 
 - `src/runtime/native-hooks.ts`
   - 负责 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js`
+- `packages/core/call-hook.js`
+  - OpenCode 托管 plugin 最终回调到这里，再进入共享 hook runtime
 - `src/runtime/session/skill-config.ts`
   - base config、plugins、skills 镜像到 session config dir
 - `src/runtime/session/child-env.ts`

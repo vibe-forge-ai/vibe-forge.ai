@@ -1,5 +1,3 @@
-import { runHookCli } from '@vibe-forge/core/hooks'
+import { runHookEntrypoint } from './entry'
 
-import { isClaudeNativeHookEnv, runClaudeHookBridge } from './claude-runtime'
-
-void (isClaudeNativeHookEnv() ? runClaudeHookBridge() : runHookCli())
+void runHookEntrypoint()

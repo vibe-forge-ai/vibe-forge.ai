@@ -1,4 +1,5 @@
 import path from 'node:path'
+import process from 'node:process'
 
 import { describe, expect, it } from 'vitest'
 
@@ -40,5 +41,11 @@ describe('adapter e2e snapshot stderr projection', () => {
     expect(snapshot.stderr).toEqual([
       'WARN codex_core::models_manager::model_info: Unknown model codex-direct-answer is used. This will use fallback model metadata.'
     ])
+  })
+
+  it('normalizes the active node executable path', () => {
+    const snapshot = createAdapterE2ESnapshot(createResult(process.execPath))
+
+    expect(snapshot.stderr).toEqual(['<node-path>'])
   })
 })

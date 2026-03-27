@@ -143,6 +143,7 @@ const createCommonExpectations = (
 })
 
 const createToolCaseExpectations = (
+  adapter: AdapterE2ETarget,
   finalOutput: string,
   toolName: string
 ): AdapterE2ECaseExpectations => {
@@ -151,8 +152,12 @@ const createToolCaseExpectations = (
     ...base,
     hooks: [
       ...(base.hooks ?? []),
-      { event: 'PreToolUse', count: 1 },
-      { event: 'PostToolUse', count: 1 }
+      ...(adapter === 'codex'
+        ? []
+        : [
+            { event: 'PreToolUse', count: 1 },
+            { event: 'PostToolUse', count: 1 }
+          ])
     ],
     mockTrace: {
       minRequests: 2,
@@ -204,7 +209,7 @@ const toolCase = (
         ['README.md', config.output]
       )
     ],
-    expectations: createToolCaseExpectations(config.output, config.toolName)
+    expectations: createToolCaseExpectations(adapter, config.output, config.toolName)
   })
 }
 

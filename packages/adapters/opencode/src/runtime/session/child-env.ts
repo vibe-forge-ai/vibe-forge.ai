@@ -4,6 +4,7 @@ import process from 'node:process'
 
 import type { Config, ModelServiceConfig } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord } from '../common/object-utils'
@@ -112,6 +113,7 @@ export const buildChildEnv = async (params: {
       ...(nativeHooksAvailable
         ? {
           __VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__: '1',
+          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'opencode',
           __VF_OPENCODE_HOOK_RUNTIME__: params.options.runtime,
           __VF_OPENCODE_TASK_SESSION_ID__: params.options.sessionId
         }

@@ -57,6 +57,7 @@ const loadYAMLConfig = async (paths: string[], jsonVariables: Record<string, str
 }
 
 let configCache: Promise<readonly [Config | undefined, Config | undefined]> | null = null
+const DISABLE_DEV_CONFIG_ENV = '__VF_PROJECT_AI_DISABLE_DEV_CONFIG__'
 
 export const resetConfigCache = () => {
   configCache = null
@@ -64,10 +65,16 @@ export const resetConfigCache = () => {
 
 export const loadConfig = (options: {
   jsonVariables?: Record<string, string | null | undefined>
+  disableDevConfig?: boolean
 }) => {
   if (configCache) {
     return configCache
   }
+
+  const shouldLoadDevConfig = (
+    options.disableDevConfig !== true &&
+    process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
+  )
 
   configCache = (async () =>
     [
@@ -87,22 +94,24 @@ export const loadConfig = (options: {
           ],
           options.jsonVariables ?? {}
         ),
-      await loadJSONConfig(
-        [
-          './.ai.dev.config.json',
-          './infra/.ai.dev.config.json'
-        ],
-        options.jsonVariables ?? {}
-      ) ??
-        await loadYAMLConfig(
+      shouldLoadDevConfig
+        ? await loadJSONConfig(
           [
-            './.ai.dev.config.yaml',
-            './.ai.dev.config.yml',
-            './infra/.ai.dev.config.yaml',
-            './infra/.ai.dev.config.yml'
+            './.ai.dev.config.json',
+            './infra/.ai.dev.config.json'
           ],
           options.jsonVariables ?? {}
-        )
+        ) ??
+          await loadYAMLConfig(
+            [
+              './.ai.dev.config.yaml',
+              './.ai.dev.config.yml',
+              './infra/.ai.dev.config.yaml',
+              './infra/.ai.dev.config.yml'
+            ],
+            options.jsonVariables ?? {}
+          )
+        : undefined
     ] as const)()
   return configCache
 }

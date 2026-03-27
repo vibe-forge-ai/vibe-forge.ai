@@ -6,7 +6,7 @@ import type { AdapterCtx } from '@vibe-forge/core/adapter'
 import {
   hasManagedHookPlugins,
   prepareManagedHookRuntime,
-  resolveHookCliScriptPath,
+  resolveManagedHookScriptPath,
   writeJsonFile
 } from '@vibe-forge/core/hooks'
 
@@ -63,7 +63,7 @@ const syncPluginDirectory = async (sourceDir: string | undefined, targetDir: str
 }
 
 const buildManagedPluginSource = () => {
-  const callHookPath = resolveHookCliScriptPath('call-hook.js')
+  const callHookPath = resolveManagedHookScriptPath('call-hook.js')
 
   return `import { spawnSync } from "node:child_process"
 import process from "node:process"

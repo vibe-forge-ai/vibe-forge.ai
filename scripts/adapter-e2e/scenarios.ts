@@ -43,7 +43,7 @@ export const MANAGED_ARTIFACTS: Record<AdapterE2ETarget, ManagedArtifactDefiniti
       candidates: [
         {
           path: path.resolve(repoRoot, '.ai/.mock/.codex/hooks.json'),
-          includes: ['codex-hook.js', 'PreToolUse', 'PostToolUse', 'SessionStart', 'UserPromptSubmit', 'Stop']
+          includes: ['call-hook.js', 'PreToolUse', 'PostToolUse', 'SessionStart', 'UserPromptSubmit', 'Stop']
         }
       ]
     }

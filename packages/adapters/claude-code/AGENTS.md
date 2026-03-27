@@ -22,7 +22,7 @@
   - 适合排查 `npx vf init`、mock home、router restart 一类问题
 - `src/runtime/native-hooks.ts`
   - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 native hooks 配置
-  - Claude Code 的原生 hooks 最终会回调 `apps/cli/claude-hook.js`
+  - Claude Code 的原生 hooks 最终会回调 `packages/core/call-hook.js`
 - `src/ccr/default-config.ts`
   - 生成 CCR 默认配置
   - 决定默认注入哪些 transformer、provider/router 如何路由
@@ -42,17 +42,18 @@
   - 注入 session 运行参数、native hook env、settings 与 mcp config
 - `src/runtime/init.ts`
   - adapter 初始化阶段写 mock home、生成 CCR 配置、必要时重启 router
-- `apps/cli/claude-hook.js`
-- `apps/cli/src/hooks/claude.ts`
-- `apps/cli/call-hook.js`
+- `src/hook-bridge.ts`
+  - 负责把 Claude native payload 翻译成统一 hook 协议
+- `packages/core/call-hook.js`
+- `apps/cli/src/hooks/index.ts`
 - `packages/core/src/hooks/native.ts`
 - `packages/core/src/hooks/bridge.ts`
 - `packages/core/src/controllers/task/run.ts`
 
 职责边界要保持清楚：
 
-- Claude adapter 只负责 native settings 写入与运行参数装配
-- CLI hook bridge 负责把 Claude 原生 payload 翻译成统一 hook 协议
+- Claude adapter 负责 native settings 写入、运行参数装配和 Claude 协议翻译
+- CLI hook bridge 只负责把入口分发到 adapter / core
 - core 负责插件执行、日志、native/bridge 去重
 
 ## 真实 CLI 验证
@@ -153,7 +154,7 @@ node apps/cli/cli.js \
 
 - `apps/cli/src/commands/init.ts`
 - `apps/cli/src/hooks/index.ts`
-- `apps/cli/src/hooks/claude.ts`
+- `src/hook-bridge.ts`
 - `src/runtime/native-hooks.ts`
 - `packages/core/src/utils/create-logger.ts`
 - `packages/core/src/env.ts`

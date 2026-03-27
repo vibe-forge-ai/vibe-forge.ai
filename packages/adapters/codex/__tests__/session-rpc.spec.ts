@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
 
 import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
 import { createCodexSession } from '#~/runtime/session.js'
@@ -294,6 +295,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     expect(spawnArgs).toEqual(expect.arrayContaining(['--enable', 'codex_hooks']))
     expect(spawnOptions.env?.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__).toBe('1')
+    expect(spawnOptions.env?.[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('codex')
     expect(spawnOptions.env?.__VF_CODEX_HOOK_RUNTIME__).toBe('server')
     expect(spawnOptions.env?.__VF_CODEX_TASK_SESSION_ID__).toBe('session-native-hooks')
 

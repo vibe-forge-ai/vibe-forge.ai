@@ -5,6 +5,7 @@ import process from 'node:process'
 
 import type { ModelServiceConfig } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
@@ -465,6 +466,7 @@ export async function resolveSessionBase(
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
     features.codex_hooks = true
     spawnEnv.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__ = '1'
+    spawnEnv[NATIVE_HOOK_BRIDGE_ADAPTER_ENV] = 'codex'
     spawnEnv.__VF_CODEX_HOOK_RUNTIME__ = options.runtime
     spawnEnv.__VF_CODEX_TASK_SESSION_ID__ = options.sessionId
   }

@@ -25,7 +25,8 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 
 - 这些文件都只写到 mock home，不污染用户真实 home。
 - OpenCode 不再把真实的 `~/.config/opencode` 整个软链进 mock home，而是把用户已有配置镜像进 mock config dir，再叠加托管 plugin。
-- 三家的 native 配置最终都会回调 `@vibe-forge/cli/call-hook.js` 或轻量桥接脚本，再进入 `packages/core/src/hooks`。
+- 三家的 native 配置最终都会回调 `@vibe-forge/cli/call-hook.js`，再进入 `packages/core/src/hooks`。
+- Codex 按 2026-03-27 官方 hooks 文档会同时加载 `~/.codex/hooks.json` 和 `<repo>/.codex/hooks.json`；托管 mock-home hooks 时要避免和项目级 managed hooks 重复。
 
 ## 事件支持矩阵
 

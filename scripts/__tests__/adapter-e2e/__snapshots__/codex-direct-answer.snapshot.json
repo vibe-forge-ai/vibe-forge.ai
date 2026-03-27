@@ -19,7 +19,7 @@
         "message",
         "message"
       ],
-      "requestedToolCount": 15,
+      "requestedToolCount": 11,
       "selectedTool": {
         "name": "exec_command",
         "args": {
@@ -71,7 +71,7 @@
     {
       "label": "codex hooks config",
       "path": ".ai/.mock/.codex/hooks.json",
-      "content": "{\n  \"hooks\": {\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<user-home>/.local/share/fnm/node-versions/v22.20.0/installation/bin/node\\\" \\\"<repo>/apps/cli/codex-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge SessionStart hook\"\n          }\n        ]\n      }\n    ],\n    \"UserPromptSubmit\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<user-home>/.local/share/fnm/node-versions/v22.20.0/installation/bin/node\\\" \\\"<repo>/apps/cli/codex-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge UserPromptSubmit hook\"\n          }\n        ]\n... (42 more lines)"
+      "content": "{\n  \"hooks\": {\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<node-path>\\\" \\\"<repo>/packages/core/call-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge SessionStart hook\"\n          }\n        ]\n      }\n    ],\n    \"UserPromptSubmit\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<node-path>\\\" \\\"<repo>/packages/core/call-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge UserPromptSubmit hook\"\n          }\n        ]\n... (42 more lines)"
     }
   ]
 }

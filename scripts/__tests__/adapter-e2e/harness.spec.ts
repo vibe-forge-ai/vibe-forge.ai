@@ -62,4 +62,32 @@ describe('collectCaseMockTrace', () => {
       trace[3]
     ])
   })
+
+  it('falls back to trace slicing when the adapter rewrites request models', () => {
+    const resolvedCase: ResolvedAdapterE2ECase = {
+      id: 'codex-direct-answer',
+      title: 'Codex direct answer',
+      adapter: 'codex',
+      prompt: 'prompt',
+      model: 'hook-smoke-mock,codex-direct-answer',
+      allowedTransports: ['wrapper'],
+      args: () => [],
+      mockScenarios: [],
+      expectations: {}
+    }
+    const trace: MockLlmTraceEntry[] = [
+      createTraceEntry('claude-read-once', {
+        kind: 'message',
+        text: 'E2E_CLAUDE'
+      }),
+      createTraceEntry('gpt-5.4-2026-03-05', {
+        kind: 'message',
+        text: 'E2E_CODEX_DIRECT'
+      })
+    ]
+
+    expect(collectCaseMockTrace(trace, 1, resolvedCase)).toEqual([
+      trace[1]
+    ])
+  })
 })

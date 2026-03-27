@@ -1,4 +1,6 @@
 import process from 'node:process'
+import { readdir, rm } from 'node:fs/promises'
+import path from 'node:path'
 
 import {
   buildBaseEnv,
@@ -16,6 +18,27 @@ import {
 import type { AdapterE2EHarnessOptions, AdapterE2EResult, ResolvedAdapterE2ECase } from './types'
 import { collectManagedArtifacts, readHookLog } from './verify'
 
+const isCodexTransientEntry = (name: string) => (
+  name === '.tmp' ||
+  name === 'history.jsonl' ||
+  name === 'log' ||
+  name === 'shell_snapshots' ||
+  /^logs_\d+\.sqlite(?:-(?:shm|wal))?$/.test(name) ||
+  /^state_\d+\.sqlite(?:-(?:shm|wal))?$/.test(name)
+)
+
+const resetCodexMockState = async () => {
+  const codexHome = path.resolve(mockHome, '.codex')
+  const entries = await readdir(codexHome, { withFileTypes: true }).catch(() => [])
+
+  await Promise.all(entries
+    .filter(entry => isCodexTransientEntry(entry.name))
+    .map(entry => rm(path.resolve(codexHome, entry.name), {
+      force: true,
+      recursive: true
+    })))
+}
+
 export const runWrappedAdapter = async (
   testCase: ResolvedAdapterE2ECase,
   mockServerPort: number,
@@ -23,6 +46,9 @@ export const runWrappedAdapter = async (
 ): Promise<AdapterE2EResult> => {
   const ctxId = createCtxId(testCase.adapter)
   const sessionId = createSessionId()
+  if (testCase.adapter === 'codex') {
+    await resetCodexMockState()
+  }
   const result = await runProcess({
     command: process.execPath,
     args: testCase.args(sessionId),

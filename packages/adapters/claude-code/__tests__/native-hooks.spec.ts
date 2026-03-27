@@ -54,6 +54,8 @@ describe('ensureClaudeNativeHooksInstalled', () => {
     expect(settings.hooks?.SessionStart).toHaveLength(1)
     expect(settings.hooks?.PreToolUse?.[0]?.matcher).toBe('.*')
     expect(settings.hooks?.PostToolUse?.[0]?.matcher).toBe('.*')
+    expect(JSON.stringify(settings)).toContain('call-hook.js')
+    expect(JSON.stringify(settings)).not.toContain('claude-hook.js')
   })
 
   it('does not duplicate native hooks already provided by project-level vf-call-hook settings', async () => {
@@ -127,5 +129,6 @@ describe('ensureClaudeNativeHooksInstalled', () => {
     expect(settings.hooks?.PostToolUse ?? []).toEqual([])
     expect(settings.hooks?.Stop ?? []).toEqual([])
     expect(settings.hooks?.Notification).toHaveLength(1)
+    expect(JSON.stringify(settings)).toContain('call-hook.js')
   })
 })

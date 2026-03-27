@@ -20,6 +20,8 @@ export interface NativeHooksConfigFile {
   hooks?: Partial<Record<string, NativeHookMatcherGroup[]>> & Record<string, unknown>
 }
 
+export const NATIVE_HOOK_BRIDGE_ADAPTER_ENV = '__VF_VIBE_FORGE_HOOK_BRIDGE_ADAPTER__'
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
@@ -36,17 +38,17 @@ export const resolveMockHome = (
   return explicitHome ? resolve(explicitHome) : resolve(cwd, '.ai', '.mock')
 }
 
-export const resolveHookCliPackageDir = () => {
+export const resolveManagedHookPackageDir = () => {
   try {
-    const pkgJsonPath = require.resolve('@vibe-forge/cli/package.json')
+    const pkgJsonPath = require.resolve('@vibe-forge/core/package.json')
     return dirname(pkgJsonPath)
   } catch (error) {
-    throw new Error('Failed to resolve @vibe-forge/cli for native hooks', { cause: error })
+    throw new Error('Failed to resolve @vibe-forge/core managed hook entry', { cause: error })
   }
 }
 
-export const resolveHookCliScriptPath = (fileName: string) => (
-  resolve(resolveHookCliPackageDir(), fileName)
+export const resolveManagedHookScriptPath = (fileName: string) => (
+  resolve(resolveManagedHookPackageDir(), fileName)
 )
 
 export const shellQuote = (value: string) => JSON.stringify(value)
@@ -60,16 +62,13 @@ export const prepareManagedHookRuntime = (
   ctx: Pick<AdapterCtx, 'cwd' | 'env'>
 ) => {
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
-  const cliPackageDir = resolveHookCliPackageDir()
   const nodePath = process.execPath
 
-  ctx.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = cliPackageDir
   ctx.env.__VF_PROJECT_WORKSPACE_FOLDER__ = ctx.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? ctx.cwd
   ctx.env.__VF_PROJECT_NODE_PATH__ = nodePath
 
   return {
     mockHome,
-    cliPackageDir,
     nodePath
   }
 }

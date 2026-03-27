@@ -1,4 +1,5 @@
 import path from 'node:path'
+import process from 'node:process'
 
 import { parseHookLogEntries } from './log'
 import { repoRoot } from './runtime'
@@ -9,6 +10,7 @@ const uuidPattern = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const sanitizeValue = (value: string) => (
   value
     .replaceAll(repoRoot, '<repo>')
+    .replaceAll(process.execPath, '<node-path>')
     .replace(uuidPattern, '<uuid>')
     .replace(/hooks-smoke-[\w-]+-\d+/g, '<ctxId>')
     .replace(/\.tmp-\d+/g, '.tmp-<nonce>')

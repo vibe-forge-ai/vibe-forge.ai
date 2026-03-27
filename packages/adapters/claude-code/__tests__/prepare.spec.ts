@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
+
 import { prepareClaudeExecution } from '../src/runtime/prepare'
 
 const sessionId = '6cd99e50-d3be-4070-b408-8133cfc42750'
@@ -53,5 +55,27 @@ describe('prepareClaudeExecution', () => {
     expect(result.args).toContain('--resume')
     expect(result.args).toContain(sessionId)
     expect(result.args).not.toContain('--session-id')
+  })
+
+  it('injects the shared native hook bridge adapter env when claude native hooks are enabled', async () => {
+    const ctx = createCtx()
+    ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ = '1'
+
+    const result = await prepareClaudeExecution(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      onEvent: vi.fn()
+    })
+
+    expect(result.env[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('claude-code')
+    expect(ctx.cache.set).toHaveBeenCalledWith(
+      'adapter.claude-code.settings',
+      expect.objectContaining({
+        env: expect.objectContaining({
+          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code'
+        })
+      })
+    )
   })
 })

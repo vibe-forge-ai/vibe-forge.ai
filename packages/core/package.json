@@ -58,6 +58,7 @@
         "require": "./dist/hooks/index.js"
       }
     },
+    "./call-hook.js": "./call-hook.js",
     "./utils/*": {
       "__vibe-forge__": {
         "default": "./src/utils/*.ts"
@@ -79,6 +80,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@vibe-forge/register": "workspace:^",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2",
     "js-yaml": "^4.1.1",

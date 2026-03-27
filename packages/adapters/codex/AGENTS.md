@@ -14,6 +14,7 @@ The adapter drives Codex in two modes:
 | Topic         | URL                                                  |
 | ------------- | ---------------------------------------------------- |
 | CLI reference | https://developers.openai.com/codex/cli/reference.md |
+| Hooks         | https://developers.openai.com/codex/hooks            |
 | Config basics | https://developers.openai.com/codex/config-basic     |
 | Sample config | https://developers.openai.com/codex/config-sample    |
 | MCP servers   | https://developers.openai.com/codex/mcp              |
@@ -36,17 +37,18 @@ Primary implementation entrypoints for Codex hooks:
   - installs mock-home assets during adapter init
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
-- `apps/cli/codex-hook.js`
-- `apps/cli/src/hooks/codex.ts`
-- `apps/cli/call-hook.js`
+- `src/hook-bridge.ts`
+  - translates Codex native payloads into Vibe Forge hook input/output
+- `packages/core/call-hook.js`
+- `apps/cli/src/hooks/index.ts`
 - `packages/core/src/hooks/native.ts`
 - `packages/core/src/hooks/bridge.ts`
 - `packages/core/src/controllers/task/run.ts`
 
 Keep the ownership split clean:
 
-- adapter layer: writes Codex-native config and passes runtime env
-- CLI bridge: translates Codex hook payloads into Vibe Forge hook input/output
+- adapter layer: writes Codex-native config, passes runtime env, and owns Codex protocol translation
+- CLI bridge: only dispatches into the adapter-owned bridge/runtime entry
 - core hooks runtime: loads workspace plugins and applies native/bridge dedupe
 
 ### Real CLI smoke
@@ -85,6 +87,7 @@ Validation checklist:
 Codex-specific lessons from this work:
 
 - native hooks should stay entirely inside mock home; do not write to the real Codex home
+- Codex 2026-03-27 official hooks docs say `~/.codex/hooks.json` and `<repo>/.codex/hooks.json` are both loaded, so project-level managed hooks must be deduped before writing mock-home hooks
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
 - when native hooks are active, bridge duplicates must stay disabled in `packages/core/src/controllers/task/run.ts`
 

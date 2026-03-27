@@ -130,6 +130,34 @@ describe('mock llm server', () => {
     expect(payload.output[0].name).toBe('exec_command')
   })
 
+  it('returns a controlled error for unknown scenario models', async () => {
+    server = await startMockLlmServer({
+      scenarios: []
+    })
+
+    const response = await fetch(`http://127.0.0.1:${server.port}/v1/responses`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'hook-smoke-mock,missing-case',
+        input: [
+          {
+            role: 'user',
+            content: 'reply'
+          }
+        ]
+      })
+    })
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'unknown_model_scenario',
+      model: 'hook-smoke-mock,missing-case'
+    })
+  })
+
   it('returns title text for title generation requests', () => {
     const turn = resolveMockTurn(
       defaultScenarios,
