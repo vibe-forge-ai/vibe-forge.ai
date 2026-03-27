@@ -97,7 +97,9 @@ export const mergeManagedHookGroups = (params: {
   shouldManageEvent?: (eventName: string) => boolean
 }): NativeHooksConfigFile => {
   const parsed = isPlainObject(params.existing) ? params.existing as NativeHooksConfigFile : {}
-  const hooks = isPlainObject(parsed.hooks) ? parsed.hooks : {}
+  const hooks = isPlainObject(parsed.hooks)
+    ? parsed.hooks as NonNullable<NativeHooksConfigFile['hooks']>
+    : {}
   const nextHooks: Record<string, unknown> = { ...hooks }
 
   for (const eventName of params.eventNames) {
@@ -111,6 +113,6 @@ export const mergeManagedHookGroups = (params: {
 
   return {
     ...parsed,
-    hooks: nextHooks
+    hooks: nextHooks as NativeHooksConfigFile['hooks']
   }
 }

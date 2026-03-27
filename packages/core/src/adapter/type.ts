@@ -2,8 +2,9 @@ import type { Cache, Config } from '@vibe-forge/core'
 
 import type { Logger } from '#~/utils/create-logger.js'
 import type { AdapterAssetPlan, AssetDiagnostic, WorkspaceAssetBundle } from '#~/utils/workspace-assets.js'
-
 import type { ChatMessage, ChatMessageContent } from '../types'
+
+export type { AssetDiagnostic } from '#~/utils/workspace-assets.js'
 
 export type AdapterMessageContent = ChatMessageContent
 

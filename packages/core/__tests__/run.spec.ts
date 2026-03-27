@@ -1,4 +1,11 @@
+import { PassThrough } from 'node:stream'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { AdapterCtx } from '#~/adapter/index.js'
+import { run } from '#~/controllers/task/run.js'
+import type { Logger } from '#~/utils/create-logger.js'
+import type { WorkspaceAssetBundle } from '#~/utils/workspace-assets.js'
 
 const {
   prepareMock,
@@ -32,44 +39,55 @@ vi.mock('#~/hooks/bridge.js', () => ({
   createAdapterHookBridge: createAdapterHookBridgeMock
 }))
 
-import { run } from '#~/controllers/task/run.js'
+type TestCtx = AdapterCtx & {
+  assets: WorkspaceAssetBundle
+}
 
-const createCtx = () => ({
+const createLogger = (): Logger => ({
+  stream: new PassThrough(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn()
+})
+
+const createAssets = (): WorkspaceAssetBundle => ({
+  cwd: '/tmp/project',
+  assets: [],
+  rules: [],
+  specs: [],
+  entities: [],
+  skills: [],
+  mcpServers: {},
+  hookPlugins: [],
+  enabledPlugins: {},
+  extraKnownMarketplaces: {},
+  defaultIncludeMcpServers: [],
+  defaultExcludeMcpServers: []
+})
+
+const createAdapters = (adapters: Record<string, unknown>) => (
+  adapters as NonNullable<NonNullable<AdapterCtx['configs'][0]>['adapters']>
+)
+
+const createCtx = (): TestCtx => ({
   ctxId: 'ctx-1',
   cwd: '/tmp/project',
   env: {},
   cache: {
     set: vi.fn().mockResolvedValue({ cachePath: '/tmp/project/.ai/cache/base.json' }),
     get: vi.fn()
-  },
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  },
+  } as AdapterCtx['cache'],
+  logger: createLogger(),
   configs: [
     {
-      adapters: {
+      adapters: createAdapters({
         codex: {}
-      }
+      })
     },
     undefined
-  ],
-  assets: {
-    cwd: '/tmp/project',
-    assets: [],
-    rules: [],
-    specs: [],
-    entities: [],
-    skills: [],
-    mcpServers: {},
-    hookPlugins: [],
-    enabledPlugins: {},
-    extraKnownMarketplaces: {},
-    defaultIncludeMcpServers: [],
-    defaultExcludeMcpServers: []
-  }
+  ] as AdapterCtx['configs'],
+  assets: createAssets()
 })
 
 describe('task run adapter init', () => {
@@ -198,9 +216,9 @@ describe('task run adapter init', () => {
     const ctx = createCtx()
     ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ = '1'
     ctx.configs = [{
-      adapters: {
+      adapters: createAdapters({
         'claude-code': {}
-      }
+      })
     }, undefined]
     prepareMock.mockResolvedValue([ctx])
 
@@ -226,9 +244,9 @@ describe('task run adapter init', () => {
     const ctx = createCtx()
     ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ = '1'
     ctx.configs = [{
-      adapters: {
+      adapters: createAdapters({
         opencode: {}
-      }
+      })
     }, undefined]
     prepareMock.mockResolvedValue([ctx])
 

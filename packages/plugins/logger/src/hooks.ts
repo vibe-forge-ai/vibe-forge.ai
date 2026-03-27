@@ -7,7 +7,7 @@ const asRecord = (value: unknown): Record<string, unknown> => (
 )
 
 const REDACTED = '[REDACTED]'
-const SENSITIVE_KEY_PATTERN = /(api[-_]?key|token|secret|authorization|password|cookie|session[-_]?token|bearer)/i
+const SENSITIVE_KEY_PATTERN = /api[-_]?key|token|secret|authorization|password|cookie|session[-_]?token|bearer/i
 
 const sanitizeEnvRecord = (value: unknown) => {
   const record = asRecord(value)

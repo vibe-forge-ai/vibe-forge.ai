@@ -23,7 +23,7 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
-describe('DefinitionLoader', () => {
+describe('definitionLoader', () => {
   it('generates skill prompts with stable names, descriptions and relative paths', () => {
     const cwd = '/workspace/project'
     const loader = new DefinitionLoader(cwd)
@@ -128,7 +128,7 @@ describe('DefinitionLoader', () => {
     expect(pluginSpec?.path).toContain('/.ai/plugins/demo/specs/ship/index.md')
     expect(reviewer?.path).toContain('/.ai/entities/reviewer/README.md')
     expect(planner?.path).toContain('/.ai/entities/planner.md')
-    expect(entities.map(entity => entity.path)).toEqual([
+    expect(entities.map((entity: (typeof entities)[number]) => entity.path)).toEqual([
       join(workspace, '.ai/entities/planner.md'),
       join(workspace, '.ai/entities/reviewer/README.md')
     ])

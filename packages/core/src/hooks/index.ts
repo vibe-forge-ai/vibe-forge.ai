@@ -33,8 +33,8 @@ export type PluginConfig =
   | Record<string, Record<string, unknown>>
   | Partial<PluginMap>
 
-export * from './call'
 export * from './bridge'
+export * from './call'
 export * from './loader'
 export * from './native'
 export * from './runtime'

@@ -1,4 +1,11 @@
+import { PassThrough } from 'node:stream'
+
 import { describe, expect, it, vi } from 'vitest'
+
+import type { AdapterSession } from '#~/adapter/index.js'
+import type { ChatMessage } from '#~/types.js'
+import { createAdapterHookBridge } from '#~/hooks/bridge.js'
+import type { Logger } from '#~/utils/create-logger.js'
 
 const { callHookMock } = vi.hoisted(() => ({
   callHookMock: vi.fn()
@@ -8,17 +15,14 @@ vi.mock('#~/hooks/call.js', () => ({
   callHook: callHookMock
 }))
 
-import type { AdapterSession } from '#~/adapter/index.js'
-import type { ChatMessage } from '#~/types.js'
-import { createAdapterHookBridge } from '#~/hooks/bridge.js'
-
 const flushAsyncWork = async () => {
   await Promise.resolve()
   await Promise.resolve()
   await new Promise(resolve => setTimeout(resolve, 0))
 }
 
-const createLogger = () => ({
+const createLogger = (): Logger => ({
+  stream: new PassThrough(),
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),

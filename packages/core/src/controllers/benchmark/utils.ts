@@ -1,4 +1,6 @@
+import type { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { access, mkdir, readFile, symlink } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -50,18 +52,23 @@ export const execCommand = async (input: ExecCommandInput): Promise<CommandResul
   } = input
 
   return new Promise((resolve, reject) => {
+    const childEnv: NodeJS.ProcessEnv = { ...process.env }
+    for (const [key, value] of Object.entries(env ?? {})) {
+      if (value != null) {
+        childEnv[key] = value
+      }
+    }
+
     const child = spawn(command, args, {
       cwd,
-      env: {
-        ...process.env,
-        ...env
-      },
+      env: childEnv,
       stdio: 'pipe'
-    })
+    }) as ChildProcessWithoutNullStreams
 
     const stdout: string[] = []
     const stderr: string[] = []
     let settled = false
+    let timer: ReturnType<typeof setTimeout> | null = null
 
     const finish = (value: CommandResult | Error, isError = false) => {
       if (settled) return
@@ -74,16 +81,16 @@ export const execCommand = async (input: ExecCommandInput): Promise<CommandResul
       resolve(value as CommandResult)
     }
 
-    child.stdout.on('data', (chunk) => {
+    child.stdout.on('data', (chunk: Buffer | string) => {
       stdout.push(String(chunk))
     })
-    child.stderr.on('data', (chunk) => {
+    child.stderr.on('data', (chunk: Buffer | string) => {
       stderr.push(String(chunk))
     })
-    child.on('error', (error) => {
+    child.on('error', (error: Error) => {
       finish(error, true)
     })
-    child.on('close', (code) => {
+    child.on('close', (code: number | null) => {
       finish({
         exitCode: code ?? -1,
         stdout: stdout.join(''),
@@ -92,7 +99,7 @@ export const execCommand = async (input: ExecCommandInput): Promise<CommandResul
       })
     })
 
-    const timer = timeoutMs != null
+    timer = timeoutMs != null
       ? setTimeout(() => {
           child.kill('SIGTERM')
         }, timeoutMs)

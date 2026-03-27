@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import '../../adapters/codex/src/adapter-config.js'
 import { getCache, getCachePath, setCache } from '#~/utils/cache.js'
 
 describe('cache utils', () => {

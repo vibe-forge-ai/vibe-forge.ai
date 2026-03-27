@@ -7,14 +7,16 @@ import yaml from 'js-yaml'
 
 import type { Config } from '../config'
 import { loadConfig } from '../config/load'
-import {
-  DefinitionLoader,
-  type Definition,
-  type Entity,
-  type Filter,
-  type Rule,
-  type Skill,
-  type Spec
+import { DefinitionLoader } from './definition-loader'
+import type {
+  Definition,
+  Entity,
+  Filter,
+  Rule,
+  RuleReference,
+  Skill,
+  SkillSelection,
+  Spec,
 } from './definition-loader'
 
 export type WorkspaceAssetKind =
@@ -79,7 +81,7 @@ interface WorkspaceOverlayPayload {
   targetSubpath: string
 }
 
-interface WorkspaceNativePluginPayload {
+interface WorkspaceConfigNativePluginPayload {
   name: string
   enabled: boolean
 }
@@ -91,7 +93,7 @@ export type WorkspaceAsset =
   | WorkspaceAssetBase<'skill', WorkspaceDocumentPayload<Definition<Skill>>>
   | WorkspaceAssetBase<'mcpServer', WorkspaceMcpPayload>
   | WorkspaceAssetBase<'hookPlugin', WorkspaceHookPluginPayload>
-  | WorkspaceAssetBase<'nativePlugin', WorkspaceNativePluginPayload>
+  | WorkspaceAssetBase<'nativePlugin', WorkspaceConfigNativePluginPayload | WorkspaceOverlayPayload>
   | WorkspaceAssetBase<'agent', WorkspaceOverlayPayload>
   | WorkspaceAssetBase<'command', WorkspaceOverlayPayload>
   | WorkspaceAssetBase<'mode', WorkspaceOverlayPayload>
@@ -193,6 +195,35 @@ const mergeRecord = <T>(left?: Record<string, T>, right?: Record<string, T>) => 
 })
 
 const uniqueValues = (values: string[]) => Array.from(new Set(values.filter(Boolean)))
+
+type WorkspaceOpenCodeOverlayAsset =
+  | (
+    & Extract<WorkspaceAsset, { kind: 'nativePlugin' }>
+    & { payload: WorkspaceOverlayPayload }
+  )
+  | Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' }>
+
+const isOverlayPayload = (payload: unknown): payload is WorkspaceOverlayPayload => (
+  payload != null &&
+  typeof payload === 'object' &&
+  typeof (payload as WorkspaceOverlayPayload).sourcePath === 'string' &&
+  typeof (payload as WorkspaceOverlayPayload).entryName === 'string' &&
+  typeof (payload as WorkspaceOverlayPayload).targetSubpath === 'string'
+)
+
+const isOpenCodeOverlayAsset = (asset: WorkspaceAsset): asset is WorkspaceOpenCodeOverlayAsset => (
+  (asset.kind === 'nativePlugin' || asset.kind === 'agent' || asset.kind === 'command' || asset.kind === 'mode')
+  && isOverlayPayload(asset.payload)
+)
+
+const isLocalRuleReference = (
+  rule: RuleReference
+): rule is Extract<RuleReference, { path: string }> => (
+  rule != null &&
+  typeof rule === 'object' &&
+  'path' in rule &&
+  typeof rule.path === 'string'
+)
 
 const assetOriginPriority: Record<WorkspaceAsset['origin'], number> = {
   project: 0,
@@ -307,7 +338,7 @@ const loadPluginMcpAssets = async (
 const loadOpenCodeOverlayAssets = async (
   cwd: string,
   enabledPlugins: Record<string, boolean>
-) => {
+): Promise<WorkspaceOpenCodeOverlayAsset[]> => {
   const paths = await glob([
     '.ai/plugins/*/opencode/plugins/*',
     '.ai/plugins/*/opencode/agents/*',
@@ -328,27 +359,48 @@ const loadOpenCodeOverlayAssets = async (
       const [, pluginId, rawFolder, entryName] = match
       if (!isPluginEnabled(enabledPlugins, pluginId)) return undefined
 
-      const kind = {
-        plugins: 'nativePlugin',
-        agents: 'agent',
-        commands: 'command',
-        modes: 'mode'
-      }[rawFolder] as Extract<WorkspaceAssetKind, 'nativePlugin' | 'agent' | 'command' | 'mode'>
-
-      return {
-        id: `${kind}:${relativePath}`,
-        kind,
+      const base = {
         pluginId,
-        origin: 'plugin',
-        scope: 'workspace',
+        origin: 'plugin' as const,
+        scope: 'workspace' as const,
         enabled: true,
-        targets: ['opencode'],
+        targets: ['opencode'] as WorkspaceAssetAdapter[],
         payload: {
           sourcePath: path,
           entryName,
           targetSubpath: `${rawFolder}/${entryName}`
         }
-      } satisfies Extract<WorkspaceAsset, { kind: typeof kind }>
+      }
+
+      if (rawFolder === 'plugins') {
+        return {
+          id: `nativePlugin:${relativePath}`,
+          kind: 'nativePlugin',
+          ...base
+        } satisfies Extract<WorkspaceAsset, { kind: 'nativePlugin' }>
+      }
+
+      if (rawFolder === 'agents') {
+        return {
+          id: `agent:${relativePath}`,
+          kind: 'agent',
+          ...base
+        } satisfies Extract<WorkspaceAsset, { kind: 'agent' }>
+      }
+
+      if (rawFolder === 'commands') {
+        return {
+          id: `command:${relativePath}`,
+          kind: 'command',
+          ...base
+        } satisfies Extract<WorkspaceAsset, { kind: 'command' }>
+      }
+
+      return {
+        id: `mode:${relativePath}`,
+        kind: 'mode',
+        ...base
+      } satisfies Extract<WorkspaceAsset, { kind: 'mode' }>
     })
     .filter((entry): entry is NonNullable<typeof entry> => entry != null)
 }
@@ -481,6 +533,30 @@ const dedupeSkillAssets = (skills: Array<Extract<WorkspaceAsset, { kind: 'skill'
     return true
   })
 }
+
+const resolveRulePatterns = (rules: RuleReference[]) => (
+  rules.flatMap((rule) => {
+    if (typeof rule === 'string') return [rule]
+    if (isLocalRuleReference(rule)) return [rule.path]
+    return []
+  })
+)
+
+const resolveIncludedSkillNames = (selection: string[] | SkillSelection) => (
+  Array.isArray(selection)
+    ? selection
+    : selection.type === 'include'
+      ? selection.list
+      : []
+)
+
+const resolveExcludedSkillNames = (selection: string[] | SkillSelection) => (
+  Array.isArray(selection)
+    ? []
+    : selection.type === 'exclude'
+      ? selection.list
+      : []
+)
 
 const resolveSelectedRuleAssets = async (
   bundle: WorkspaceAssetBundle,
@@ -688,7 +764,7 @@ export async function resolvePromptAssetSelection(
     promptAssetIds.add(targetAsset.id)
 
     if (attributes.rules) {
-      const matchedRuleAssets = await resolveSelectedRuleAssets(params.bundle, attributes.rules)
+      const matchedRuleAssets = await resolveSelectedRuleAssets(params.bundle, resolveRulePatterns(attributes.rules))
       rules.push(
         ...matchedRuleAssets.map((asset) => ({
           ...asset.payload.definition,
@@ -704,9 +780,12 @@ export async function resolvePromptAssetSelection(
     }
 
     if (attributes.skills) {
+      const includedSkillNames = new Set(resolveIncludedSkillNames(attributes.skills))
+      const excludedSkillNames = new Set(resolveExcludedSkillNames(attributes.skills))
       for (const skillAsset of params.bundle.skills) {
         const skillName = basename(dirname(skillAsset.payload.definition.path))
-        if (!attributes.skills.includes(skillName)) continue
+        if (includedSkillNames.size > 0 && !includedSkillNames.has(skillName)) continue
+        if (excludedSkillNames.has(skillName)) continue
         targetSkillsAssets.push(skillAsset)
         promptAssetIds.add(skillAsset.id)
       }
@@ -847,15 +926,14 @@ export function buildAdapterAssetPlan(params: {
     }
 
     for (const asset of params.bundle.assets) {
-      if (!['nativePlugin', 'agent', 'command', 'mode'].includes(asset.kind)) continue
+      if (!isOpenCodeOverlayAsset(asset)) continue
       if (!asset.targets.includes('opencode')) continue
 
-      const payload = asset.payload as WorkspaceOverlayPayload
       overlays.push({
         assetId: asset.id,
         kind: asset.kind,
-        sourcePath: payload.sourcePath,
-        targetPath: payload.targetSubpath
+        sourcePath: asset.payload.sourcePath,
+        targetPath: asset.payload.targetSubpath
       })
       diagnostics.push({
         assetId: asset.id,

@@ -3,6 +3,7 @@ import { loadAdapter } from '#~/adapter/index.js'
 import type { ModelServiceConfig } from '#~/config.js'
 import { createAdapterHookBridge } from '#~/hooks/bridge.js'
 import { callHook } from '#~/hooks/call.js'
+import type { HookInputs } from '#~/hooks/type.js'
 import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 import type { TaskDetail } from '#~/types.js'
 
@@ -95,6 +96,14 @@ declare module '@vibe-forge/core' {
   }
 }
 
+const BASE_NATIVE_BRIDGE_DISABLED_EVENTS: Array<
+  'SessionStart' | 'UserPromptSubmit' | 'PreToolUse' | 'PostToolUse' | 'Stop'
+> = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
+
+const OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS: Array<
+  'SessionStart' | 'PreToolUse' | 'PostToolUse' | 'Stop'
+> = ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
+
 export const run = async (
   options: RunTaskOptions,
   adapterOptions: AdapterQueryOptions
@@ -151,13 +160,15 @@ export const run = async (
           promptAssetIds: adapterOptions.promptAssetIds
         }
       })
-  const nativeBridgeDisabledEvents = adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
-    ? ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
-    : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
-      ? ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
-      : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
-        ? ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
-        : []
+  const nativeBridgeDisabledEvents: Array<keyof HookInputs> = (
+    adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
+        ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+        : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
+          ? OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS
+          : []
+  )
   const hookBridge = createAdapterHookBridge({
     ctx,
     adapter: adapterType,

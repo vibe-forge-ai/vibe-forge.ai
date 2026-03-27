@@ -37,7 +37,12 @@ export const callPluginHook = async <K extends keyof HookInputs>(
     }
 
     const currentPlugin = filteredPlugins[index]
-    const { name = '<anonymous>', [eventName]: hook } = currentPlugin
+    const name = currentPlugin.name ?? '<anonymous>'
+    const hook = currentPlugin[eventName] as (
+      ctx: HookContext,
+      input: HookInputs[K],
+      next: () => Promise<HookOutputs[K]>
+    ) => Promise<HookOutputs[K]>
     index++
 
     const withNameLogger = {
@@ -104,9 +109,9 @@ export const executeHookInput = async (
   ]
 
   return callPluginHook(
-    input.hookEventName,
+    input.hookEventName as keyof HookInputs,
     { logger },
-    input as HookInputs[typeof input.hookEventName],
+    input as never,
     plugins
   )
 }
@@ -127,13 +132,13 @@ export const runHookCli = async () => {
   try {
     const input = await readHookInput()
     const result = await executeHookInput(input)
-    console.log(JSON.stringify(result))
+    process.stdout.write(`${JSON.stringify(result)}\n`)
   } catch (error) {
-    console.log(
-      JSON.stringify({
+    process.stdout.write(
+      `${JSON.stringify({
         continue: false,
         stopReason: `run hook error: ${String(error)}`
-      } satisfies HookOutputCore)
+      } satisfies HookOutputCore)}\n`
     )
   }
 }

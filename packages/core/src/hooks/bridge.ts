@@ -10,6 +10,8 @@ import type { HookInputs } from './type'
 
 import { callHook } from './call'
 
+type AdapterMessageEvent = Extract<AdapterEvent, { type: 'message' }>
+
 const normalizeText = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 )
@@ -37,7 +39,7 @@ const describeContentPart = (item: ChatMessageContent): string | undefined => {
   }
 }
 
-const extractPromptText = (content: AdapterEvent['content']) => {
+const extractPromptText = (content: AdapterMessageEvent['content']) => {
   const parts = content
     .map(describeContentPart)
     .filter((value): value is string => value != null)

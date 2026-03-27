@@ -154,8 +154,8 @@ const isLocalRuleReference = (value: RuleReference): value is LocalRuleReference
   return (
     value != null &&
     typeof value === 'object' &&
-    typeof value.path === 'string' &&
-    (value.type == null || value.type === 'local')
+    typeof (value as { path?: unknown }).path === 'string' &&
+    ((value as { type?: unknown }).type == null || (value as { type?: unknown }).type === 'local')
   )
 }
 
