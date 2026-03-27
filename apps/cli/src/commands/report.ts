@@ -6,7 +6,14 @@ import process from 'node:process'
 
 import type { Command } from 'commander'
 
-const REPORT_TARGETS = ['.ai/logs', '.ai/caches', '.ai/.mock'] as const
+const REPORT_TARGETS = ['.ai/logs', '.ai/caches'] as const
+const REPORT_MOCK_TARGETS = [
+  '.ai/.mock/.claude',
+  '.ai/.mock/.claude-code-router',
+  '.ai/.mock/.codex',
+  '.ai/.mock/.vf'
+] as const
+const REPORT_MOCK_FILE_PREFIX = '.claude.json'
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -37,10 +44,10 @@ export const resolveReportArchivePath = (cwd: string, filename?: string) => {
   return path.resolve(cwd, archiveName)
 }
 
-export const collectReportTargets = async (cwd: string) => {
+const collectExistingTargets = async (cwd: string, targets: readonly string[]) => {
   const availableTargets: string[] = []
 
-  for (const target of REPORT_TARGETS) {
+  for (const target of targets) {
     try {
       await fs.access(path.resolve(cwd, target), constants.F_OK)
       availableTargets.push(target)
@@ -49,6 +56,34 @@ export const collectReportTargets = async (cwd: string) => {
     }
   }
 
+  return availableTargets
+}
+
+const collectMockReportTargets = async (cwd: string) => {
+  const availableTargets = await collectExistingTargets(cwd, REPORT_MOCK_TARGETS)
+  const mockRoot = path.resolve(cwd, '.ai/.mock')
+
+  try {
+    const entries = await fs.readdir(mockRoot, { withFileTypes: true })
+    const mockFiles = entries
+      .filter(entry => entry.isFile() && (
+        entry.name === REPORT_MOCK_FILE_PREFIX ||
+        entry.name.startsWith(`${REPORT_MOCK_FILE_PREFIX}.backup`)
+      ))
+      .map(entry => `.ai/.mock/${entry.name}`)
+      .sort((left, right) => left.localeCompare(right))
+
+    availableTargets.push(...mockFiles)
+  } catch {
+    // ignore missing mock root
+  }
+
+  return availableTargets
+}
+
+export const collectReportTargets = async (cwd: string) => {
+  const availableTargets = await collectExistingTargets(cwd, REPORT_TARGETS)
+  availableTargets.push(...await collectMockReportTargets(cwd))
   return availableTargets
 }
 
@@ -137,7 +172,7 @@ export async function runReportCommand(options: RunReportCommandOptions = {}) {
 export function registerReportCommand(program: Command) {
   program
     .command('report [filename]')
-    .description('Package .ai logs, caches and mock data into a compressed archive')
+    .description('Package .ai logs, caches and selected mock data into a compressed archive')
     .action(async (filename?: string) => {
       try {
         await runReportCommand({ filename })
