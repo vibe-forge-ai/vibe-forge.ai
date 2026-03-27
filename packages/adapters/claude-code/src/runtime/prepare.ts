@@ -56,10 +56,10 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
       ...(userConfig?.env ?? {}),
       ...(nativeHooksAvailable
         ? {
-            __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
-            __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
-            __VF_CLAUDE_TASK_SESSION_ID__: sessionId
-          }
+          __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+          __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
+          __VF_CLAUDE_TASK_SESSION_ID__: sessionId
+        }
         : {})
     },
     companyAnnouncements: [
@@ -164,10 +164,10 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
       ...env,
       ...(nativeHooksAvailable
         ? {
-            __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
-            __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
-            __VF_CLAUDE_TASK_SESSION_ID__: sessionId
-          }
+          __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+          __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
+          __VF_CLAUDE_TASK_SESSION_ID__: sessionId
+        }
         : {})
     },
     cwd,

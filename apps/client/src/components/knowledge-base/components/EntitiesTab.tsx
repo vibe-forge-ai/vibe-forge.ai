@@ -42,7 +42,7 @@ export function EntitiesTab({
       <SectionHeader
         title={t('knowledge.entities.title')}
         description={t('knowledge.entities.desc')}
-        actions={(
+        actions={
           <Space>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
@@ -58,7 +58,7 @@ export function EntitiesTab({
               {t('knowledge.entities.create')}
             </ActionButton>
           </Space>
-        )}
+        }
       />
       <FilterBar
         query={query}

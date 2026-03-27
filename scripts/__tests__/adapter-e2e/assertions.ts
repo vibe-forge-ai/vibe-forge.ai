@@ -5,11 +5,7 @@ import { expect } from 'vitest'
 import { countHookLogEvents, parseHookLogEntries } from '../../adapter-e2e/log'
 import { repoRoot } from '../../adapter-e2e/runtime'
 import { serializeAdapterE2ESnapshot } from '../../adapter-e2e/snapshot'
-import type {
-  AdapterE2ECase,
-  AdapterE2ECaseExpectations,
-  AdapterE2EResult
-} from '../../adapter-e2e/types'
+import type { AdapterE2ECase, AdapterE2ECaseExpectations, AdapterE2EResult } from '../../adapter-e2e/types'
 
 export const resolveAdapterE2ESnapshotPath = (testCase: AdapterE2ECase) => (
   path.resolve(
@@ -75,8 +71,8 @@ const expectMockTrace = (
 
   if (mockTrace.finalResponseText != null) {
     expect(result.mockTrace.some(entry => (
-      entry.response.kind === 'message'
-      && entry.response.text === mockTrace.finalResponseText
+      entry.response.kind === 'message' &&
+      entry.response.text === mockTrace.finalResponseText
     ))).toBe(true)
   }
 }

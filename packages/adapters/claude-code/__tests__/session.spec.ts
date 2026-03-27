@@ -101,10 +101,12 @@ describe('claude-code session error events', () => {
   })
 
   it('emits error before exit for non-zero stream exits', async () => {
-    spawnMock.mockImplementation(() => makeProc({
-      stderr: ['stream failed'],
-      exitCode: 1
-    }))
+    spawnMock.mockImplementation(() =>
+      makeProc({
+        stderr: ['stream failed'],
+        exitCode: 1
+      })
+    )
 
     const events: AdapterOutputEvent[] = []
     await createClaudeSession(makeCtx(), {
@@ -137,21 +139,25 @@ describe('claude-code session error events', () => {
   })
 
   it('does not emit a duplicate fatal error after error_during_execution is already surfaced', async () => {
-    spawnMock.mockImplementation(() => makeProc({
-      stdout: [
-        `${JSON.stringify({
-          type: 'result',
-          subtype: 'error_during_execution',
-          uuid: 'evt-1',
-          timestamp: new Date().toISOString(),
-          sessionId: 'sess-1',
-          cwd: '/tmp',
-          session_id: 'sess-1',
-          errors: ['tool failed']
-        })}\n`
-      ],
-      exitCode: 1
-    }))
+    spawnMock.mockImplementation(() =>
+      makeProc({
+        stdout: [
+          `${
+            JSON.stringify({
+              type: 'result',
+              subtype: 'error_during_execution',
+              uuid: 'evt-1',
+              timestamp: new Date().toISOString(),
+              sessionId: 'sess-1',
+              cwd: '/tmp',
+              session_id: 'sess-1',
+              errors: ['tool failed']
+            })
+          }\n`
+        ],
+        exitCode: 1
+      })
+    )
 
     const events: AdapterOutputEvent[] = []
     await createClaudeSession(makeCtx(), {

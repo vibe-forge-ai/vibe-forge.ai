@@ -9,9 +9,9 @@ export const resolveInjectDefaultSystemPromptValue = (options: {
   userConfig?: Config
 }) => (
   options.cliValue ??
-  options.userConfig?.conversation?.injectDefaultSystemPrompt ??
-  options.projectConfig?.conversation?.injectDefaultSystemPrompt ??
-  true
+    options.userConfig?.conversation?.injectDefaultSystemPrompt ??
+    options.projectConfig?.conversation?.injectDefaultSystemPrompt ??
+    true
 )
 
 export async function loadInjectDefaultSystemPromptValue(

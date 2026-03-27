@@ -5,11 +5,7 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  collectReportTargets,
-  resolveReportArchivePath,
-  runReportCommand
-} from '#~/commands/report.js'
+import { collectReportTargets, resolveReportArchivePath, runReportCommand } from '#~/commands/report.js'
 
 const tempDirs: string[] = []
 

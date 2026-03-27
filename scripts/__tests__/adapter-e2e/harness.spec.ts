@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { collectCaseMockTrace } from '../../adapter-e2e/harness'
-import type {
-  MockLlmTraceEntry,
-  ResolvedAdapterE2ECase
-} from '../../adapter-e2e/types'
+import type { MockLlmTraceEntry, ResolvedAdapterE2ECase } from '../../adapter-e2e/types'
 
 const createTraceEntry = (
   model: string,

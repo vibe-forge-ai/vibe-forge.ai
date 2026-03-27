@@ -1,9 +1,4 @@
 import {
-  ADAPTER_E2E_DEFAULTS,
-  ADAPTER_E2E_TARGETS
-} from '../../adapter-e2e/scenarios'
-import { cliPath } from '../../adapter-e2e/runtime'
-import {
   andPredicates,
   createRuleBasedMockScenario,
   defineMockScenarioRule,
@@ -14,12 +9,14 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
+import { cliPath } from '../../adapter-e2e/runtime'
+import { ADAPTER_E2E_DEFAULTS, ADAPTER_E2E_TARGETS } from '../../adapter-e2e/scenarios'
 import type {
   AdapterE2ECase,
   AdapterE2ECaseExpectations,
   AdapterE2ETarget,
-  ResolvedAdapterE2ECase,
-  MockModelScenario
+  MockModelScenario,
+  ResolvedAdapterE2ECase
 } from '../../adapter-e2e/types'
 
 export const defineAdapterE2ECase = (testCase: AdapterE2ECase) => testCase
@@ -85,50 +82,52 @@ const createToolCaseMockScenario = (
   title: string,
   finalOutput: string,
   requestNeedles: string[]
-): MockModelScenario => createRuleBasedMockScenario({
-  id: scenarioId,
-  title,
-  finalOutput,
-  rules: [
-    defineMockScenarioRule({
-      id: 'title-generation',
-      when: whenTitleGeneration(),
-      respond: messageTurn(title)
-    }),
-    defineMockScenarioRule({
-      id: 'tool-result',
-      when: whenToolResult(),
-      respond: messageTurn(finalOutput)
-    }),
-    defineMockScenarioRule({
-      id: 'tool-call',
-      when: andPredicates(
-        whenToolsAvailable(),
-        whenRequestTextIncludes(...requestNeedles)
-      ),
-      respond: selectedToolTurn(messageTurn(finalOutput))
-    })
-  ],
-  fallback: messageTurn(finalOutput)
-})
+): MockModelScenario =>
+  createRuleBasedMockScenario({
+    id: scenarioId,
+    title,
+    finalOutput,
+    rules: [
+      defineMockScenarioRule({
+        id: 'title-generation',
+        when: whenTitleGeneration(),
+        respond: messageTurn(title)
+      }),
+      defineMockScenarioRule({
+        id: 'tool-result',
+        when: whenToolResult(),
+        respond: messageTurn(finalOutput)
+      }),
+      defineMockScenarioRule({
+        id: 'tool-call',
+        when: andPredicates(
+          whenToolsAvailable(),
+          whenRequestTextIncludes(...requestNeedles)
+        ),
+        respond: selectedToolTurn(messageTurn(finalOutput))
+      })
+    ],
+    fallback: messageTurn(finalOutput)
+  })
 
 const createNoToolCaseMockScenario = (
   scenarioId: string,
   title: string,
   finalOutput: string
-): MockModelScenario => createRuleBasedMockScenario({
-  id: scenarioId,
-  title,
-  finalOutput,
-  rules: [
-    defineMockScenarioRule({
-      id: 'title-generation',
-      when: whenTitleGeneration(),
-      respond: messageTurn(title)
-    })
-  ],
-  fallback: messageTurn(finalOutput)
-})
+): MockModelScenario =>
+  createRuleBasedMockScenario({
+    id: scenarioId,
+    title,
+    finalOutput,
+    rules: [
+      defineMockScenarioRule({
+        id: 'title-generation',
+        when: whenTitleGeneration(),
+        respond: messageTurn(title)
+      })
+    ],
+    fallback: messageTurn(finalOutput)
+  })
 
 const createCommonExpectations = (
   finalOutput: string
@@ -253,13 +252,18 @@ const buildAdapterArgs = (
   if (adapter === 'codex') {
     return [
       cliPath,
-      '--adapter', 'codex',
-      '--model', model,
+      '--adapter',
+      'codex',
+      '--model',
+      model,
       '--print',
       '--no-inject-default-system-prompt',
-      '--permission-mode', 'bypassPermissions',
-      '--exclude-mcp-server', 'ChromeDevtools',
-      '--session-id', sessionId,
+      '--permission-mode',
+      'bypassPermissions',
+      '--exclude-mcp-server',
+      'ChromeDevtools',
+      '--session-id',
+      sessionId,
       ...extraArgs,
       prompt
     ]
@@ -268,14 +272,20 @@ const buildAdapterArgs = (
   if (adapter === 'claude-code') {
     return [
       cliPath,
-      '--adapter', 'claude-code',
-      '--model', model,
+      '--adapter',
+      'claude-code',
+      '--model',
+      model,
       '--print',
       '--no-inject-default-system-prompt',
-      '--exclude-mcp-server', 'ChromeDevtools',
-      '--include-tool', 'Read',
-      '--permission-mode', 'bypassPermissions',
-      '--session-id', sessionId,
+      '--exclude-mcp-server',
+      'ChromeDevtools',
+      '--include-tool',
+      'Read',
+      '--permission-mode',
+      'bypassPermissions',
+      '--session-id',
+      sessionId,
       ...extraArgs,
       prompt
     ]
@@ -283,12 +293,16 @@ const buildAdapterArgs = (
 
   return [
     cliPath,
-    '--adapter', 'opencode',
-    '--model', model,
+    '--adapter',
+    'opencode',
+    '--model',
+    model,
     '--print',
     '--no-inject-default-system-prompt',
-    '--exclude-mcp-server', 'ChromeDevtools',
-    '--session-id', sessionId,
+    '--exclude-mcp-server',
+    'ChromeDevtools',
+    '--session-id',
+    sessionId,
     ...extraArgs,
     prompt
   ]
@@ -309,13 +323,14 @@ export const resolveAdapterE2ECase = (
     model,
     prompt,
     allowedTransports: testCase.allowedTransports ?? ['wrapper'],
-    args: (sessionId) => buildAdapterArgs(
-      testCase.adapter,
-      model,
-      prompt,
-      sessionId,
-      extraArgs
-    ),
+    args: (sessionId) =>
+      buildAdapterArgs(
+        testCase.adapter,
+        model,
+        prompt,
+        sessionId,
+        extraArgs
+      ),
     mockScenarios: testCase.mockScenarios ?? [],
     expectations: testCase.expectations ?? {}
   }

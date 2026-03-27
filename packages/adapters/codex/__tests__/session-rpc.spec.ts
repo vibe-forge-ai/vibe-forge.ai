@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
 
-import { createCodexSession } from '#~/runtime/session.js'
 import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
+import { createCodexSession } from '#~/runtime/session.js'
 
 vi.mock('node:child_process', () => ({
   spawn: vi.fn()
@@ -273,18 +273,21 @@ describe('createCodexSession RPC approval policy mapping', () => {
     const { proc } = makeProc()
     spawnMock.mockReturnValue(proc)
 
-    const session = await createCodexSession(makeCtx({
-      env: {
-        __VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__: '1',
-        __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/vibe-forge-cli'
-      }
-    }), {
-      type: 'create',
-      runtime: 'server',
-      sessionId: 'session-native-hooks',
-      description: 'Reply with pong.',
-      onEvent: () => {}
-    } as any)
+    const session = await createCodexSession(
+      makeCtx({
+        env: {
+          __VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__: '1',
+          __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/vibe-forge-cli'
+        }
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-native-hooks',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }

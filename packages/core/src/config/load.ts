@@ -119,4 +119,3 @@ export const loadAdapterConfig = async <
     ...(userConfig?.adapters?.[name] ?? {})
   } as unknown as NonNullable<Config['adapters']>[K]
 }
-

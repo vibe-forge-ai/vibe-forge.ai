@@ -1,5 +1,5 @@
-import { lstat, readFile } from 'node:fs/promises'
 import { execFile, spawn } from 'node:child_process'
+import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
@@ -129,8 +129,14 @@ describe('createOpenCodeSession runtime config', () => {
 
   it('bridges Vibe Forge skills into OPENCODE_CONFIG_DIR for the skill tool', async () => {
     const workspace = await createWorkspace()
-    await writeDocument(join(workspace, '.ai/skills/research/SKILL.md'), '---\nname: research\ndescription: 检索资料\n---\n阅读 README.md')
-    await writeDocument(join(workspace, '.ai/skills/review/SKILL.md'), '---\nname: review\ndescription: 代码评审\n---\n检查风险')
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\nname: research\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/review/SKILL.md'),
+      '---\nname: review\ndescription: 代码评审\n---\n检查风险'
+    )
     mockExecFileJsonResponses(execFileMock, [
       { id: 'sess_skill', title: 'Vibe Forge:session-skill-bridge', updatedAt: '2026-03-26T00:00:00.000Z' }
     ])
@@ -162,13 +168,17 @@ describe('createOpenCodeSession runtime config', () => {
     const baseConfigDir = join(workspace, 'user-opencode-config')
     await writeDocument(
       join(baseConfigDir, 'opencode.json'),
-      JSON.stringify({
-        instructions: ['base-instructions.md'],
-        theme: 'ocean',
-        nested: {
-          keep: true
-        }
-      }, null, 2)
+      JSON.stringify(
+        {
+          instructions: ['base-instructions.md'],
+          theme: 'ocean',
+          nested: {
+            keep: true
+          }
+        },
+        null,
+        2
+      )
     )
     mockExecFileJsonResponses(execFileMock, [
       { id: 'sess_merge', title: 'Vibe Forge:session-merge', updatedAt: '2026-03-26T00:00:00.000Z' }

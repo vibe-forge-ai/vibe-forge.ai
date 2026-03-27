@@ -71,11 +71,11 @@ const isApiSuccessEnvelope = <T>(value: unknown): value is ApiSuccessEnvelope<T>
 }
 
 const isApiErrorEnvelope = (value: unknown): value is ApiErrorEnvelope => {
-  return isRecord(value)
-    && value.success === false
-    && isRecord(value.error)
-    && typeof value.error.message === 'string'
-    && typeof value.error.code === 'string'
+  return isRecord(value) &&
+    value.success === false &&
+    isRecord(value.error) &&
+    typeof value.error.message === 'string' &&
+    typeof value.error.code === 'string'
 }
 
 const parseResponseBody = async (res: Response): Promise<unknown> => {
@@ -99,8 +99,8 @@ const toApiError = (status: number, body: unknown, fallbackMessage: string) => {
     const message = typeof body.error === 'string'
       ? body.error
       : typeof body.message === 'string'
-        ? body.message
-        : fallbackMessage
+      ? body.message
+      : fallbackMessage
     const code = typeof body.code === 'string' ? body.code : 'request_failed'
     return new ApiError(status, {
       code,

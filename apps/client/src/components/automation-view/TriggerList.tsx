@@ -35,13 +35,14 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
                 <Button
                   className='automation-view__icon-button'
                   type='text'
-                  onClick={() => add({
-                    type: 'interval',
-                    intervalMinutes: 30,
-                    cronExpression: '',
-                    weeklyDay: '1',
-                    weeklyTime: '09:00'
-                  })}
+                  onClick={() =>
+                    add({
+                      type: 'interval',
+                      intervalMinutes: 30,
+                      cronExpression: '',
+                      weeklyDay: '1',
+                      weeklyTime: '09:00'
+                    })}
                 >
                   <span className='material-symbols-rounded automation-view__action-icon'>add</span>
                 </Button>
@@ -57,15 +58,21 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
                 shouldUpdate={(prevValues, nextValues) => {
                   const prevTrigger = prevValues.triggers?.[field.name]
                   const nextTrigger = nextValues.triggers?.[field.name]
-                  return prevTrigger?.type !== nextTrigger?.type
-                    || prevTrigger?.webhookKey !== nextTrigger?.webhookKey
-                    || prevTrigger?.id !== nextTrigger?.id
+                  return prevTrigger?.type !== nextTrigger?.type ||
+                    prevTrigger?.webhookKey !== nextTrigger?.webhookKey ||
+                    prevTrigger?.id !== nextTrigger?.id
                 }}
               >
                 {(formInstance) => {
-                  const triggerType = formInstance.getFieldValue(['triggers', field.name, 'type']) as RuleFormValues['triggers'][number]['type']
+                  const triggerType = formInstance.getFieldValue([
+                    'triggers',
+                    field.name,
+                    'type'
+                  ]) as RuleFormValues['triggers'][number]['type']
                   const triggerId = formInstance.getFieldValue(['triggers', field.name, 'id']) as string | undefined
-                  const webhookKey = formInstance.getFieldValue(['triggers', field.name, 'webhookKey']) as string | undefined
+                  const webhookKey = formInstance.getFieldValue(['triggers', field.name, 'webhookKey']) as
+                    | string
+                    | undefined
                   const webhookUrl = getWebhookUrl(triggerId, webhookKey)
                   return (
                     <div className='automation-view__list-item'>
@@ -151,7 +158,8 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
                                 { label: t('automation.cronPresetWeekday9'), value: '0 9 * * 1-5' },
                                 { label: t('automation.cronPresetWeekend10'), value: '0 10 * * 6,0' }
                               ]}
-                              onChange={(value) => form.setFieldValue(['triggers', field.name, 'cronExpression'], value)}
+                              onChange={(value) =>
+                                form.setFieldValue(['triggers', field.name, 'cronExpression'], value)}
                               placeholder={t('automation.cronPresetHint')}
                               allowClear
                             />
@@ -197,7 +205,9 @@ export function TriggerList({ form, updateWeeklyCron, getWebhookUrl }: TriggerLi
                                     void navigator.clipboard.writeText(webhookUrl)
                                   }}
                                 >
-                                  <span className='material-symbols-rounded automation-view__action-icon'>content_copy</span>
+                                  <span className='material-symbols-rounded automation-view__action-icon'>
+                                    content_copy
+                                  </span>
                                 </Button>
                               </Tooltip>
                             </div>

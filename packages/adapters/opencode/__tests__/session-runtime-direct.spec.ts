@@ -103,10 +103,11 @@ describe('createOpenCodeSession direct runtime', () => {
   })
 
   it('resolves the latest session id before starting direct resume mode', async () => {
-    mockExecFileJsonResponses(execFileMock,
-      [{ id: 'sess_latest', title: 'Vibe Forge:session-direct-resume', updatedAt: '2026-03-26T00:00:00.000Z' }],
-      [{ id: 'sess_latest', title: 'Vibe Forge:session-direct-resume', updatedAt: '2026-03-26T00:00:01.000Z' }]
-    )
+    mockExecFileJsonResponses(execFileMock, [{
+      id: 'sess_latest',
+      title: 'Vibe Forge:session-direct-resume',
+      updatedAt: '2026-03-26T00:00:00.000Z'
+    }], [{ id: 'sess_latest', title: 'Vibe Forge:session-direct-resume', updatedAt: '2026-03-26T00:00:01.000Z' }])
     spawnMock.mockImplementation(() => makeProc({ exitCode: 0 }))
 
     const events: AdapterOutputEvent[] = []

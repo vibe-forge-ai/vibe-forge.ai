@@ -1,5 +1,5 @@
-import {  createElement, useEffect, useMemo, useState  } from 'react'
-import type {ReactNode} from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'

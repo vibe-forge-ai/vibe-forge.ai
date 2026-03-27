@@ -14,12 +14,12 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 
 当 workspace 配置了 hook 插件时，adapter init 会在 `.ai/.mock` 下安装托管配置：
 
-| Adapter | 托管文件 |
-| --- | --- |
-| `claude-code` | `.ai/.mock/.claude/settings.json` |
-| `codex` | `.ai/.mock/.codex/hooks.json` |
-| `opencode` | `.ai/.mock/.config/opencode/opencode.json` |
-| `opencode` | `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js` |
+| Adapter       | 托管文件                                                 |
+| ------------- | -------------------------------------------------------- |
+| `claude-code` | `.ai/.mock/.claude/settings.json`                        |
+| `codex`       | `.ai/.mock/.codex/hooks.json`                            |
+| `opencode`    | `.ai/.mock/.config/opencode/opencode.json`               |
+| `opencode`    | `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js` |
 
 说明：
 
@@ -29,16 +29,16 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 
 ## 事件支持矩阵
 
-| Hook 事件 | Claude Code | Codex | OpenCode |
-| --- | --- | --- | --- |
-| `TaskStart` / `TaskStop` | 框架触发 | 框架触发 | 框架触发 |
-| `SessionStart` | native | native | native |
-| `UserPromptSubmit` | native | native | bridge |
-| `PreToolUse` | native | native | native |
-| `PostToolUse` | native | native | native |
-| `Stop` | native | native | native |
-| `SessionEnd` | bridge | bridge | bridge |
-| `Notification` / `SubagentStop` / `PreCompact` | native | 不支持 | 不支持 |
+| Hook 事件                                      | Claude Code | Codex    | OpenCode |
+| ---------------------------------------------- | ----------- | -------- | -------- |
+| `TaskStart` / `TaskStop`                       | 框架触发    | 框架触发 | 框架触发 |
+| `SessionStart`                                 | native      | native   | native   |
+| `UserPromptSubmit`                             | native      | native   | bridge   |
+| `PreToolUse`                                   | native      | native   | native   |
+| `PostToolUse`                                  | native      | native   | native   |
+| `Stop`                                         | native      | native   | native   |
+| `SessionEnd`                                   | bridge      | bridge   | bridge   |
+| `Notification` / `SubagentStop` / `PreCompact` | native      | 不支持   | 不支持   |
 
 说明：
 

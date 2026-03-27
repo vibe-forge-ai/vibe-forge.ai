@@ -1,66 +1,64 @@
-const process = require("node:process");
+const process = require('node:process')
 
 if (!process.env.__IS_LOADER_CLI__) {
-  const { execPath } = process;
+  const { execPath } = process
 
-  const args = process.argv.slice(1);
+  const args = process.argv.slice(1)
 
   const nodeOptions = [
-    `--require=${require.resolve("@vibe-forge/register/preload")}`,
-  ].join(" ");
+    `--require=${require.resolve('@vibe-forge/register/preload')}`
+  ].join(' ')
 
-  const child = require("node:child_process").spawn(execPath, args, {
-    stdio: "inherit",
+  const child = require('node:child_process').spawn(execPath, args, {
+    stdio: 'inherit',
     env: {
       ...process.env,
 
-      NODE_OPTIONS: `--conditions=__vibe-forge__ ${nodeOptions} ${process.env.NODE_OPTIONS ?? ""}`,
+      NODE_OPTIONS: `--conditions=__vibe-forge__ ${nodeOptions} ${process.env.NODE_OPTIONS ?? ''}`,
 
-      __IS_LOADER_CLI__: "true",
-    },
-  });
+      __IS_LOADER_CLI__: 'true'
+    }
+  })
 
   const forwardSignal = (signal) => {
     if (!child.killed) {
-      child.kill(signal);
+      child.kill(signal)
     }
-  };
+  }
 
   function handleSigint() {
-    forwardSignal("SIGINT");
+    forwardSignal('SIGINT')
   }
 
   function handleSigterm() {
-    forwardSignal("SIGTERM");
+    forwardSignal('SIGTERM')
   }
 
   const cleanup = () => {
-    process.off("SIGINT", handleSigint);
-    process.off("SIGTERM", handleSigterm);
-  };
+    process.off('SIGINT', handleSigint)
+    process.off('SIGTERM', handleSigterm)
+  }
 
-  process.on("SIGINT", handleSigint);
-  process.on("SIGTERM", handleSigterm);
+  process.on('SIGINT', handleSigint)
+  process.on('SIGTERM', handleSigterm)
 
-  child.on("error", (error) => {
-    cleanup();
-    console.error(error.message);
-    process.exit(1);
-  });
+  child.on('error', (error) => {
+    cleanup()
+    console.error(error.message)
+    process.exit(1)
+  })
 
-  child.on("exit", (code, signal) => {
-    cleanup();
+  child.on('exit', (code, signal) => {
+    cleanup()
     if (signal) {
-      process.kill(process.pid, signal);
-      return;
+      process.kill(process.pid, signal)
+      return
     }
-    process.exit(code ?? 0);
-  });
+    process.exit(code ?? 0)
+  })
 } else {
-  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ =
-    process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd();
-  process.env.__VF_PROJECT_PACKAGE_DIR__ =
-    process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname;
-  process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = __dirname;
-  require(process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__);
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+  process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname
+  process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = __dirname
+  require(process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__)
 }

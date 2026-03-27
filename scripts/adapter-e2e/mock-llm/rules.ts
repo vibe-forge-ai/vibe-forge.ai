@@ -49,7 +49,8 @@ export const toolTurn = (
 
 export const selectedToolTurn = (
   fallback?: MockScenarioTurn
-) => (
+) =>
+(
   context: MockScenarioContext,
   helpers: MockScenarioHelpers
 ): MockScenarioTurn => {
@@ -63,17 +64,20 @@ export const selectedToolTurn = (
   return fallback ?? messageTurn('')
 }
 
-export const whenTitleGeneration = (): ScenarioPredicate => (
+export const whenTitleGeneration = (): ScenarioPredicate =>
+(
   context,
   helpers
 ) => helpers.isTitleGenerationRequest(context.body)
 
-export const whenToolResult = (): ScenarioPredicate => (
+export const whenToolResult = (): ScenarioPredicate =>
+(
   context,
   helpers
 ) => helpers.hasToolResult(context.body)
 
-export const whenRequestTextIncludes = (...needles: string[]): ScenarioPredicate => (
+export const whenRequestTextIncludes = (...needles: string[]): ScenarioPredicate =>
+(
   context,
   helpers
 ) => {
@@ -81,14 +85,16 @@ export const whenRequestTextIncludes = (...needles: string[]): ScenarioPredicate
   return needles.every(needle => requestText.includes(needle))
 }
 
-export const whenToolsAvailable = (): ScenarioPredicate => (
+export const whenToolsAvailable = (): ScenarioPredicate =>
+(
   context,
   helpers
 ) => helpers.pickToolCall(context.body) != null
 
 export const whenAlways = (): ScenarioPredicate => () => true
 
-export const andPredicates = (...predicates: ScenarioPredicate[]): ScenarioPredicate => (
+export const andPredicates = (...predicates: ScenarioPredicate[]): ScenarioPredicate =>
+(
   context,
   helpers
 ) => predicates.every(predicate => predicate(context, helpers))

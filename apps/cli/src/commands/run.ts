@@ -3,17 +3,14 @@ import process from 'node:process'
 import { Option } from 'commander'
 import type { Command, OptionValueSource } from 'commander'
 
-import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/core/adapter'
 import type { ChatMessage } from '@vibe-forge/core'
-import { callHook } from '@vibe-forge/core/hooks'
+import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/core/adapter'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import { callHook } from '@vibe-forge/core/hooks'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 import { extractTextFromMessage } from '#~/mcp-sync/index.js'
-import {
-  loadInjectDefaultSystemPromptValue,
-  mergeSystemPrompts
-} from '#~/system-prompt.js'
+import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '#~/system-prompt.js'
 
 import { extraOptions } from './@core/extra-options'
 
@@ -119,11 +116,11 @@ export function registerRunCommand(program: Command) {
         promptCWD,
         opts.includeSkill || opts.excludeSkill
           ? {
-              skills: {
-                include: opts.includeSkill,
-                exclude: opts.excludeSkill
-              }
+            skills: {
+              include: opts.includeSkill,
+              exclude: opts.excludeSkill
             }
+          }
           : undefined
       )
       const env = {
@@ -182,9 +179,9 @@ export function registerRunCommand(program: Command) {
         promptAssetIds: resolvedConfig.promptAssetIds,
         skills: opts.includeSkill || opts.excludeSkill
           ? {
-              include: opts.includeSkill,
-              exclude: opts.excludeSkill
-            }
+            include: opts.includeSkill,
+            exclude: opts.excludeSkill
+          }
           : undefined,
         extraOptions,
         onEvent: (event: AdapterOutputEvent) => {
@@ -334,22 +331,22 @@ function mergeListConfig(
 ) {
   const include = config?.include || includeOpts
     ? [
-        ...(config?.include ?? []),
-        ...(includeOpts ?? [])
-      ]
+      ...(config?.include ?? []),
+      ...(includeOpts ?? [])
+    ]
     : undefined
 
   const exclude = config?.exclude || excludeOpts
     ? [
-        ...(config?.exclude ?? []),
-        ...(excludeOpts ?? [])
-      ]
+      ...(config?.exclude ?? []),
+      ...(excludeOpts ?? [])
+    ]
     : undefined
 
   return include || exclude
     ? {
-        include,
-        exclude
-      }
+      include,
+      exclude
+    }
     : undefined
 }

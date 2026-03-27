@@ -6,7 +6,7 @@ import type { ConfigSource } from '@vibe-forge/core'
 export function ConfigSourceSwitch({
   value,
   onChange,
-  options,
+  options
 }: {
   value: ConfigSource
   onChange: (value: ConfigSource) => void

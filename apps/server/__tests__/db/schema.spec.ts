@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { automationSchemaModule } from '../../src/db/automation/schema'
 import { channelSessionsSchemaModule } from '../../src/db/channelSessions/schema'
-import {  initSchema } from '../../src/db/schema'
-import type {SchemaModule} from '../../src/db/schema';
+import { initSchema } from '../../src/db/schema'
+import type { SchemaModule } from '../../src/db/schema'
 import { sessionsSchemaModule } from '../../src/db/sessions/schema'
 
 describe('db schema modules', () => {
@@ -77,7 +77,9 @@ describe('db schema modules', () => {
 
     const sessionColumns = sqlite.prepare('PRAGMA table_info(sessions)').all() as Array<{ name: string }>
     const channelColumns = sqlite.prepare('PRAGMA table_info(channel_sessions)').all() as Array<{ name: string }>
-    const channelPreferenceColumns = sqlite.prepare('PRAGMA table_info(channel_preferences)').all() as Array<{ name: string }>
+    const channelPreferenceColumns = sqlite.prepare('PRAGMA table_info(channel_preferences)').all() as Array<
+      { name: string }
+    >
     const automationRuleColumns = sqlite.prepare('PRAGMA table_info(automation_rules)').all() as Array<{ name: string }>
     const automationTaskColumns = sqlite.prepare('PRAGMA table_info(automation_tasks)').all() as Array<{ name: string }>
     const automationRunColumns = sqlite.prepare('PRAGMA table_info(automation_runs)').all() as Array<{ name: string }>

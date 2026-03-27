@@ -33,8 +33,7 @@ export interface CaseWorkspaceState extends CategoryWorkspaceState {
 
 const categoryWorkspaceInflight = new Map<string, Promise<CategoryWorkspaceState>>()
 
-const resolveWorktreeRoot = (workspaceFolder = process.cwd()) =>
-  resolve(workspaceFolder, '.ai/worktress/benchmark')
+const resolveWorktreeRoot = (workspaceFolder = process.cwd()) => resolve(workspaceFolder, '.ai/worktress/benchmark')
 
 const findGitRoot = async (workspaceFolder: string) => {
   const result = await execCommand({
@@ -78,9 +77,9 @@ export const ensureCategoryWorkspace = async (input: CategoryWorkspaceInput): Pr
 
     const currentState = await pathExists(statePath)
       ? JSON.parse(await readFile(statePath, 'utf-8')) as {
-          baseCommit?: string
-          setupCommand?: string
-        }
+        baseCommit?: string
+        setupCommand?: string
+      }
       : null
 
     const needsRecreate = !await pathExists(workspacePath) ||
@@ -110,10 +109,20 @@ export const ensureCategoryWorkspace = async (input: CategoryWorkspaceInput): Pr
           throw new Error(setupResult.stderr || setupResult.stdout || 'Failed to prepare category workspace')
         }
       }
-      await writeFile(statePath, `${JSON.stringify({
-        baseCommit: input.baseCommit,
-        setupCommand: input.setupCommand
-      }, null, 2)}\n`, 'utf-8')
+      await writeFile(
+        statePath,
+        `${
+          JSON.stringify(
+            {
+              baseCommit: input.baseCommit,
+              setupCommand: input.setupCommand
+            },
+            null,
+            2
+          )
+        }\n`,
+        'utf-8'
+      )
     }
 
     return {

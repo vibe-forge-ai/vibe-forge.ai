@@ -2,12 +2,8 @@ import { spawn } from 'node:child_process'
 
 import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
 
-import {
-  buildOpenCodeRunArgs,
-  buildOpenCodeSessionTitle,
-  resolveOpenCodeAgent
-} from '../common'
 import { resolveOpenCodeBinaryPath } from '../../paths'
+import { buildOpenCodeRunArgs, buildOpenCodeSessionTitle, resolveOpenCodeAgent } from '../common'
 import { buildChildEnv, ensureSystemPromptFile } from './child-env'
 import { findOpenCodeSessionId } from './process'
 import { getErrorMessage, resolveAdapterConfig, toAdapterErrorData } from './shared'
@@ -40,21 +36,25 @@ export const createDirectOpenCodeSession = async (
 
   if (options.type === 'create') await ctx.cache.set('adapter.opencode.session', { title })
 
-  const proc = spawn(binaryPath, buildOpenCodeRunArgs({
-    prompt: options.description?.trim() !== '' ? options.description?.trim() : undefined,
-    files: [],
-    model: cliModel,
-    agent,
-    share: adapterConfig.share,
-    title,
-    dir: ctx.cwd,
-    opencodeSessionId,
-    extraOptions: options.extraOptions
-  }), {
-    cwd: ctx.cwd,
-    env: env as Record<string, string>,
-    stdio: 'inherit'
-  })
+  const proc = spawn(
+    binaryPath,
+    buildOpenCodeRunArgs({
+      prompt: options.description?.trim() !== '' ? options.description?.trim() : undefined,
+      files: [],
+      model: cliModel,
+      agent,
+      share: adapterConfig.share,
+      title,
+      dir: ctx.cwd,
+      opencodeSessionId,
+      extraOptions: options.extraOptions
+    }),
+    {
+      cwd: ctx.cwd,
+      env: env as Record<string, string>,
+      stdio: 'inherit'
+    }
+  )
 
   let finished = false
   let didEmitFatalError = false

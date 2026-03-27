@@ -19,7 +19,7 @@ export function ConfigView() {
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
   const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
     keys: ['tab', 'source'],
-    defaults: { tab: 'general', source: 'project' },
+    defaults: { tab: 'general', source: 'project' }
   })
   const sourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
   const setSourceKey = (next: ConfigSource) => updateQuery({ source: next })
@@ -236,7 +236,7 @@ export function ConfigView() {
                         mergedAdapters={mergedAdapters as Record<string, unknown>}
                         selectedModelService={selectedModelService}
                         t={t}
-                        headerExtra={(
+                        headerExtra={
                           <Space size={12}>
                             <ConfigSourceSwitch
                               value={sourceKey}
@@ -245,17 +245,21 @@ export function ConfigView() {
                                 {
                                   value: 'project',
                                   icon: 'folder',
-                                  label: configPresent?.project === true ? t('config.sources.project') : t('config.sources.projectMissing')
+                                  label: configPresent?.project === true
+                                    ? t('config.sources.project')
+                                    : t('config.sources.projectMissing')
                                 },
                                 {
                                   value: 'user',
                                   icon: 'person',
-                                  label: configPresent?.user === true ? t('config.sources.user') : t('config.sources.userMissing')
+                                  label: configPresent?.user === true
+                                    ? t('config.sources.user')
+                                    : t('config.sources.userMissing')
                                 }
                               ]}
                             />
                           </Space>
-                        )}
+                        }
                       />
                     )}
                   </div>

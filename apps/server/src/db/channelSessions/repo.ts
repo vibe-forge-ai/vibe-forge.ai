@@ -1,5 +1,5 @@
-import type Database from 'better-sqlite3'
 import type { SessionPermissionMode } from '@vibe-forge/core'
+import type Database from 'better-sqlite3'
 
 export interface ChannelSessionRow {
   channelType: string

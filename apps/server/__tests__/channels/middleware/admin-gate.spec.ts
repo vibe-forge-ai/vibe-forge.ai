@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { adminGateMiddleware } from '#~/channels/middleware/admin-gate.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   channelKey: 'lark:default',

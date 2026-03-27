@@ -62,7 +62,9 @@ export const ModelServicesRecordEditor = ({
                     type='text'
                     className='config-view__icon-button config-view__icon-button--compact'
                     aria-label={isCollapsed ? t('config.editor.expand') : t('config.editor.collapse')}
-                    icon={<span className='material-symbols-rounded'>{isCollapsed ? 'chevron_right' : 'expand_more'}</span>}
+                    icon={
+                      <span className='material-symbols-rounded'>{isCollapsed ? 'chevron_right' : 'expand_more'}</span>
+                    }
                     onClick={() => {
                       setCollapsedKeys(prev => ({ ...prev, [key]: !isCollapsed }))
                     }}
@@ -96,141 +98,141 @@ export const ModelServicesRecordEditor = ({
             </div>
             <div className='config-view__record-body'>
               <div className='config-view__record-fields'>
-              <FieldRow
-                title={t('config.fields.modelServices.item.title.label')}
-                description={t('config.fields.modelServices.item.title.desc')}
-                icon={getTypeIcon('string')}
-              >
-                <Input
-                  value={titleValue}
-                  onChange={(event) => {
-                    onChange({ ...value, [key]: { ...recordValue, title: event.target.value } })
-                  }}
-                  placeholder={t('config.editor.titlePlaceholder')}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.description.label')}
-                description={t('config.fields.modelServices.item.description.desc')}
-                icon={getTypeIcon('string')}
-                layout='stacked'
-              >
-                <Input.TextArea
-                  value={descriptionValue}
-                  onChange={(event) => {
-                    onChange({ ...value, [key]: { ...recordValue, description: event.target.value } })
-                  }}
-                  autoSize={{ minRows: 2 }}
-                  placeholder={t('config.editor.descriptionPlaceholder')}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.apiBaseUrl.label')}
-                description={t('config.fields.modelServices.item.apiBaseUrl.desc')}
-                icon={getTypeIcon('string')}
-              >
-                <Input
-                  value={typeof recordValue.apiBaseUrl === 'string' ? recordValue.apiBaseUrl : ''}
-                  onChange={(event) => {
-                    onChange({ ...value, [key]: { ...recordValue, apiBaseUrl: event.target.value } })
-                  }}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.apiKey.label')}
-                description={t('config.fields.modelServices.item.apiKey.desc')}
-                icon={getTypeIcon('string')}
-              >
-                <Input.Password
-                  value={typeof recordValue.apiKey === 'string' ? recordValue.apiKey : ''}
-                  onChange={(event) => {
-                    onChange({ ...value, [key]: { ...recordValue, apiKey: event.target.value } })
-                  }}
-                  placeholder={t('config.editor.secretPlaceholder')}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.models.label')}
-                description={t('config.fields.modelServices.item.models.desc')}
-                icon={getTypeIcon('array')}
-                layout='stacked'
-              >
-                <StringArrayEditor
-                  value={models}
-                  onChange={(next) => {
-                    onChange({ ...value, [key]: { ...recordValue, models: next } })
-                  }}
-                  t={t}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.modelsAlias.label')}
-                description={t('config.fields.modelServices.item.modelsAlias.desc')}
-                icon={getTypeIcon('object')}
-                layout='stacked'
-              >
-                <ComplexTextEditor
-                  value={recordValue.modelsAlias ?? {}}
-                  onChange={(next) => {
-                    onChange({ ...value, [key]: { ...recordValue, modelsAlias: next } })
-                  }}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.timeoutMs.label')}
-                description={t('config.fields.modelServices.item.timeoutMs.desc')}
-                icon={getTypeIcon('number')}
-              >
-                <InputNumber
-                  min={1}
-                  step={1000}
-                  value={typeof recordValue.timeoutMs === 'number' ? recordValue.timeoutMs : undefined}
-                  onChange={(nextValue) => {
-                    onChange({
-                      ...value,
-                      [key]: {
-                        ...recordValue,
-                        ...(typeof nextValue === 'number' ? { timeoutMs: nextValue } : { timeoutMs: undefined })
-                      }
-                    })
-                  }}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.maxOutputTokens.label')}
-                description={t('config.fields.modelServices.item.maxOutputTokens.desc')}
-                icon={getTypeIcon('number')}
-              >
-                <InputNumber
-                  min={1}
-                  step={256}
-                  value={typeof recordValue.maxOutputTokens === 'number' ? recordValue.maxOutputTokens : undefined}
-                  onChange={(nextValue) => {
-                    onChange({
-                      ...value,
-                      [key]: {
-                        ...recordValue,
-                        ...(typeof nextValue === 'number'
-                          ? { maxOutputTokens: nextValue }
-                          : { maxOutputTokens: undefined })
-                      }
-                    })
-                  }}
-                />
-              </FieldRow>
-              <FieldRow
-                title={t('config.fields.modelServices.item.extra.label')}
-                description={t('config.fields.modelServices.item.extra.desc')}
-                icon={getTypeIcon('object')}
-                layout='stacked'
-              >
-                <ComplexTextEditor
-                  value={recordValue.extra ?? {}}
-                  onChange={(next) => {
-                    onChange({ ...value, [key]: { ...recordValue, extra: next } })
-                  }}
-                />
-              </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.title.label')}
+                  description={t('config.fields.modelServices.item.title.desc')}
+                  icon={getTypeIcon('string')}
+                >
+                  <Input
+                    value={titleValue}
+                    onChange={(event) => {
+                      onChange({ ...value, [key]: { ...recordValue, title: event.target.value } })
+                    }}
+                    placeholder={t('config.editor.titlePlaceholder')}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.description.label')}
+                  description={t('config.fields.modelServices.item.description.desc')}
+                  icon={getTypeIcon('string')}
+                  layout='stacked'
+                >
+                  <Input.TextArea
+                    value={descriptionValue}
+                    onChange={(event) => {
+                      onChange({ ...value, [key]: { ...recordValue, description: event.target.value } })
+                    }}
+                    autoSize={{ minRows: 2 }}
+                    placeholder={t('config.editor.descriptionPlaceholder')}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.apiBaseUrl.label')}
+                  description={t('config.fields.modelServices.item.apiBaseUrl.desc')}
+                  icon={getTypeIcon('string')}
+                >
+                  <Input
+                    value={typeof recordValue.apiBaseUrl === 'string' ? recordValue.apiBaseUrl : ''}
+                    onChange={(event) => {
+                      onChange({ ...value, [key]: { ...recordValue, apiBaseUrl: event.target.value } })
+                    }}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.apiKey.label')}
+                  description={t('config.fields.modelServices.item.apiKey.desc')}
+                  icon={getTypeIcon('string')}
+                >
+                  <Input.Password
+                    value={typeof recordValue.apiKey === 'string' ? recordValue.apiKey : ''}
+                    onChange={(event) => {
+                      onChange({ ...value, [key]: { ...recordValue, apiKey: event.target.value } })
+                    }}
+                    placeholder={t('config.editor.secretPlaceholder')}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.models.label')}
+                  description={t('config.fields.modelServices.item.models.desc')}
+                  icon={getTypeIcon('array')}
+                  layout='stacked'
+                >
+                  <StringArrayEditor
+                    value={models}
+                    onChange={(next) => {
+                      onChange({ ...value, [key]: { ...recordValue, models: next } })
+                    }}
+                    t={t}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.modelsAlias.label')}
+                  description={t('config.fields.modelServices.item.modelsAlias.desc')}
+                  icon={getTypeIcon('object')}
+                  layout='stacked'
+                >
+                  <ComplexTextEditor
+                    value={recordValue.modelsAlias ?? {}}
+                    onChange={(next) => {
+                      onChange({ ...value, [key]: { ...recordValue, modelsAlias: next } })
+                    }}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.timeoutMs.label')}
+                  description={t('config.fields.modelServices.item.timeoutMs.desc')}
+                  icon={getTypeIcon('number')}
+                >
+                  <InputNumber
+                    min={1}
+                    step={1000}
+                    value={typeof recordValue.timeoutMs === 'number' ? recordValue.timeoutMs : undefined}
+                    onChange={(nextValue) => {
+                      onChange({
+                        ...value,
+                        [key]: {
+                          ...recordValue,
+                          ...(typeof nextValue === 'number' ? { timeoutMs: nextValue } : { timeoutMs: undefined })
+                        }
+                      })
+                    }}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.maxOutputTokens.label')}
+                  description={t('config.fields.modelServices.item.maxOutputTokens.desc')}
+                  icon={getTypeIcon('number')}
+                >
+                  <InputNumber
+                    min={1}
+                    step={256}
+                    value={typeof recordValue.maxOutputTokens === 'number' ? recordValue.maxOutputTokens : undefined}
+                    onChange={(nextValue) => {
+                      onChange({
+                        ...value,
+                        [key]: {
+                          ...recordValue,
+                          ...(typeof nextValue === 'number'
+                            ? { maxOutputTokens: nextValue }
+                            : { maxOutputTokens: undefined })
+                        }
+                      })
+                    }}
+                  />
+                </FieldRow>
+                <FieldRow
+                  title={t('config.fields.modelServices.item.extra.label')}
+                  description={t('config.fields.modelServices.item.extra.desc')}
+                  icon={getTypeIcon('object')}
+                  layout='stacked'
+                >
+                  <ComplexTextEditor
+                    value={recordValue.extra ?? {}}
+                    onChange={(next) => {
+                      onChange({ ...value, [key]: { ...recordValue, extra: next } })
+                    }}
+                  />
+                </FieldRow>
               </div>
             </div>
           </div>

@@ -1,9 +1,9 @@
 import type { Client } from '@larksuiteoapi/node-sdk'
 
+import type { InboundContentItem, LarkMention, ParsedLarkContent, TenantTokenProvider } from '#~/types.js'
 import { isRecord, isRichNode } from './guards'
 import { downloadLarkImageAsDataUrl } from './media'
 import { escapeXmlAttr, escapeXmlText, formatLarkText, resolveLarkId } from './text-format'
-import type { InboundContentItem, LarkMention, ParsedLarkContent, TenantTokenProvider } from '#~/types.js'
 
 export const parseLarkContent = async (options: {
   content?: string

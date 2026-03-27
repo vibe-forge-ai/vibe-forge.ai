@@ -57,11 +57,13 @@ export class CodexRpcClient {
           }
           this.pending.delete(response.id)
           if (response.error) {
-            pending.reject(new CodexRpcError(
-              response.error.code,
-              response.error.message,
-              response.error.data
-            ))
+            pending.reject(
+              new CodexRpcError(
+                response.error.code,
+                response.error.message,
+                response.error.data
+              )
+            )
           } else {
             pending.resolve(response.result)
           }

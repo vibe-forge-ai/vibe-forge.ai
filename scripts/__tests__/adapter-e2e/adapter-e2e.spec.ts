@@ -1,11 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import {
-  ADAPTER_E2E_CASES,
-  resolveSelectedAdapterE2ECases
-} from './cases'
 import { createAdapterE2EHarness } from '../../adapter-e2e/harness'
 import { expectAdapterE2EResultToMatchSnapshot } from './assertions'
+import { ADAPTER_E2E_CASES, resolveSelectedAdapterE2ECases } from './cases'
 
 const shouldRunE2E = process.env.VF_RUN_ADAPTER_E2E === '1'
 const describeE2E = shouldRunE2E ? describe.sequential : describe.skip

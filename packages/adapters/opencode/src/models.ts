@@ -4,7 +4,7 @@ export const builtinModels: AdapterBuiltinModel[] = [
   {
     value: 'default',
     title: 'default',
-    description: 'Use OpenCode\'s configured default model'
+    description: "Use OpenCode's configured default model"
   },
   {
     value: 'openai/gpt-5',

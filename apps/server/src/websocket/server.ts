@@ -12,9 +12,9 @@ import { interruptSession, killSession, processUserMessage, startAdapterSession 
 import { handleInteractionResponse } from '#~/services/session/interaction.js'
 import {
   addSessionSubscriberSocket,
-  getAdapterSessionRuntime,
   attachSocketToSession,
   detachSocketFromSession,
+  getAdapterSessionRuntime,
   removeSessionSubscriberSocket
 } from '#~/services/session/runtime.js'
 import { safeJsonStringify } from '#~/utils/json.js'

@@ -4,8 +4,8 @@ import type { ModelServiceConfig } from '#~/config.js'
 import { createAdapterHookBridge } from '#~/hooks/bridge.js'
 import { callHook } from '#~/hooks/call.js'
 import type { HookInputs } from '#~/hooks/type.js'
-import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 import type { TaskDetail } from '#~/types.js'
+import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
@@ -152,23 +152,22 @@ export const run = async (
   const assetPlan = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
     ? undefined
     : buildAdapterAssetPlan({
-        adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
-        bundle: ctx.assets,
-        options: {
-          mcpServers: adapterOptions.mcpServers,
-          skills: adapterOptions.skills,
-          promptAssetIds: adapterOptions.promptAssetIds
-        }
-      })
-  const nativeBridgeDisabledEvents: Array<keyof HookInputs> = (
+      adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
+      bundle: ctx.assets,
+      options: {
+        mcpServers: adapterOptions.mcpServers,
+        skills: adapterOptions.skills,
+        promptAssetIds: adapterOptions.promptAssetIds
+      }
+    })
+  const nativeBridgeDisabledEvents: Array<keyof HookInputs> =
     adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
-        ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
-        : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
-          ? OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS
-          : []
-  )
+      ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : []
   const hookBridge = createAdapterHookBridge({
     ctx,
     adapter: adapterType,

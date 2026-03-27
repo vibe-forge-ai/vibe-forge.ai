@@ -7,32 +7,38 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord } from '../common/object-utils'
+import { toProcessEnv } from './shared'
+import type { OpenCodeAdapterConfig } from './shared'
 import { ensureOpenCodeConfigDir } from './skill-config'
-import { toProcessEnv  } from './shared'
-import type {OpenCodeAdapterConfig} from './shared';
 
-const resolveMergedModelServices = (ctx: AdapterCtx) => ({
-  ...(ctx.configs[0]?.modelServices ?? {}),
-  ...(ctx.configs[1]?.modelServices ?? {})
-}) as Record<string, ModelServiceConfig>
+const resolveMergedModelServices = (ctx: AdapterCtx) =>
+  ({
+    ...(ctx.configs[0]?.modelServices ?? {}),
+    ...(ctx.configs[1]?.modelServices ?? {})
+  }) as Record<string, ModelServiceConfig>
 
-const resolveMergedMcpServers = (ctx: AdapterCtx) => ({
-  ...(ctx.configs[0]?.mcpServers ?? {}),
-  ...(ctx.configs[1]?.mcpServers ?? {})
-}) as Config['mcpServers']
+const resolveMergedMcpServers = (ctx: AdapterCtx) =>
+  ({
+    ...(ctx.configs[0]?.mcpServers ?? {}),
+    ...(ctx.configs[1]?.mcpServers ?? {})
+  }) as Config['mcpServers']
 
 const resolveMcpServerSelection = (
   ctx: AdapterCtx,
   selection: AdapterQueryOptions['mcpServers']
 ) => {
-  const include = selection?.include ?? Array.from(new Set([
-    ...(ctx.configs[0]?.defaultIncludeMcpServers ?? []),
-    ...(ctx.configs[1]?.defaultIncludeMcpServers ?? [])
-  ]))
-  const exclude = selection?.exclude ?? Array.from(new Set([
-    ...(ctx.configs[0]?.defaultExcludeMcpServers ?? []),
-    ...(ctx.configs[1]?.defaultExcludeMcpServers ?? [])
-  ]))
+  const include = selection?.include ?? Array.from(
+    new Set([
+      ...(ctx.configs[0]?.defaultIncludeMcpServers ?? []),
+      ...(ctx.configs[1]?.defaultIncludeMcpServers ?? [])
+    ])
+  )
+  const exclude = selection?.exclude ?? Array.from(
+    new Set([
+      ...(ctx.configs[0]?.defaultExcludeMcpServers ?? []),
+      ...(ctx.configs[1]?.defaultExcludeMcpServers ?? [])
+    ])
+  )
 
   return include.length > 0 || exclude.length > 0
     ? {
@@ -85,7 +91,8 @@ export const buildChildEnv = async (params: {
     permissionMode: params.options.permissionMode,
     tools: params.options.tools,
     mcpServers: undefined,
-    availableMcpServers: params.options.assetPlan?.mcpServers ?? mapResolvedMcpServerSelection(params.ctx, params.options),
+    availableMcpServers: params.options.assetPlan?.mcpServers ??
+      mapResolvedMcpServerSelection(params.ctx, params.options),
     systemPromptFile: params.systemPromptFile,
     providerConfig
   })
@@ -104,10 +111,10 @@ export const buildChildEnv = async (params: {
       OPENCODE_DISABLE_AUTOUPDATE: params.ctx.env.OPENCODE_DISABLE_AUTOUPDATE ?? 'true',
       ...(nativeHooksAvailable
         ? {
-            __VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__: '1',
-            __VF_OPENCODE_HOOK_RUNTIME__: params.options.runtime,
-            __VF_OPENCODE_TASK_SESSION_ID__: params.options.sessionId
-          }
+          __VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__: '1',
+          __VF_OPENCODE_HOOK_RUNTIME__: params.options.runtime,
+          __VF_OPENCODE_TASK_SESSION_ID__: params.options.sessionId
+        }
         : {}),
       ...(configDir == null
         ? { OPENCODE_CONFIG_CONTENT: JSON.stringify(inlineConfigContent) }

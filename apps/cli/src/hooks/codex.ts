@@ -51,7 +51,7 @@ type NativeCodexHookInput =
   | NativeCodexUserPromptSubmitInput
   | NativeCodexStopInput
 
-const runtime = (process.env.__VF_CODEX_HOOK_RUNTIME__ as AdapterQueryOptions['runtime'] | undefined)
+const runtime = process.env.__VF_CODEX_HOOK_RUNTIME__ as AdapterQueryOptions['runtime'] | undefined
 const taskSessionId = process.env.__VF_CODEX_TASK_SESSION_ID__?.trim()
 
 const blockReason = (value: unknown, fallback: string) => (

@@ -59,7 +59,11 @@
   padding: 8px 14px;
   border: 1px solid rgba(59, 130, 246, .18);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(239, 246, 255, .92), rgba(255, 255, 255, .96));
+  background: linear-gradient(
+    135deg,
+    rgba(239, 246, 255, .92),
+    rgba(255, 255, 255, .96)
+  );
   color: #2563eb;
   font-size: 13px;
   font-weight: 500;

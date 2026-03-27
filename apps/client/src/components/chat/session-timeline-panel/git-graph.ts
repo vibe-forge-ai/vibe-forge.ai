@@ -1,4 +1,11 @@
-import type { Task, TimelineDiagram, TimelineEvent, TimelineEventType, TimelineInteraction, TimelineInteractionPayload } from './types'
+import type {
+  Task,
+  TimelineDiagram,
+  TimelineEvent,
+  TimelineEventType,
+  TimelineInteraction,
+  TimelineInteractionPayload
+} from './types'
 import { parseTime, sanitizeId } from './utils'
 
 interface MermaidLabels {

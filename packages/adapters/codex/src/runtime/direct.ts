@@ -3,10 +3,7 @@ import { spawn } from 'node:child_process'
 import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import type { CodexSessionBase } from './session-common'
 
-import {
-  buildFeatureArgs,
-  toCodexOutboundApprovalPolicy
-} from './session-common'
+import { buildFeatureArgs, toCodexOutboundApprovalPolicy } from './session-common'
 
 /**
  * Spawn `codex [prompt?]` or `codex resume [SESSION_ID|--last] [prompt?]` with

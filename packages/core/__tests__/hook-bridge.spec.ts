@@ -3,8 +3,8 @@ import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AdapterSession } from '#~/adapter/index.js'
-import type { ChatMessage } from '#~/types.js'
 import { createAdapterHookBridge } from '#~/hooks/bridge.js'
+import type { ChatMessage } from '#~/types.js'
 import type { Logger } from '#~/utils/create-logger.js'
 
 const { callHookMock } = vi.hoisted(() => ({

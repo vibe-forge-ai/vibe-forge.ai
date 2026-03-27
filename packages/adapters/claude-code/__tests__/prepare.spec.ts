@@ -4,24 +4,25 @@ import { prepareClaudeExecution } from '../src/runtime/prepare'
 
 const sessionId = '6cd99e50-d3be-4070-b408-8133cfc42750'
 
-const createCtx = (resumeState?: { canResume: boolean }) => ({
-  ctxId: 'test-ctx',
-  cwd: '/tmp/workspace',
-  env: {},
-  cache: {
-    get: vi.fn(async (key: string) => (
-      key === 'adapter.claude-code.resume-state' ? resumeState : undefined
-    )),
-    set: vi.fn(async () => ({ cachePath: '/tmp/cache.json' }))
-  },
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  },
-  configs: [undefined, undefined]
-}) as any
+const createCtx = (resumeState?: { canResume: boolean }) =>
+  ({
+    ctxId: 'test-ctx',
+    cwd: '/tmp/workspace',
+    env: {},
+    cache: {
+      get: vi.fn(async (key: string) => (
+        key === 'adapter.claude-code.resume-state' ? resumeState : undefined
+      )),
+      set: vi.fn(async () => ({ cachePath: '/tmp/cache.json' }))
+    },
+    logger: {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn()
+    },
+    configs: [undefined, undefined]
+  }) as any
 
 describe('prepareClaudeExecution', () => {
   it('falls back to create mode when no resume state exists', async () => {

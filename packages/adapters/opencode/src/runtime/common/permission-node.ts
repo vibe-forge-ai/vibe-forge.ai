@@ -78,7 +78,11 @@ export const mergePermissionNodes = (
 ): PermissionNode | undefined => {
   if (override == null) return clonePermissionNode(base)
   if (base == null) return clonePermissionNode(override)
-  if (isPermissionValue(base)) return isPermissionValue(override) ? override : mergePermissionNodes({ '*': base }, override)
+  if (isPermissionValue(base)) {
+    return isPermissionValue(override)
+      ? override
+      : mergePermissionNodes({ '*': base }, override)
+  }
   if (isPermissionValue(override)) return applyPermissionLevel(base, override)
 
   const result: PermissionRecord = { ...(clonePermissionNode(base) as PermissionRecord) }

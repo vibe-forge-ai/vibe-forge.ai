@@ -353,8 +353,8 @@ export const createAdapterHookBridge = (params: {
             reason: killRequested
               ? 'terminated'
               : (event.data.exitCode ?? 0) === 0
-                ? 'completed'
-                : 'failed',
+              ? 'completed'
+              : 'failed',
             exitCode: event.data.exitCode,
             stderr: event.data.stderr,
             lastAssistantMessage

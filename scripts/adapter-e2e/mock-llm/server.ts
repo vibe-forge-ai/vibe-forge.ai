@@ -1,24 +1,20 @@
 import { createServer } from 'node:http'
 
 import { isDebugEnabled } from '../runtime'
-import type {
-  MockLlmServerHandle,
-  MockLlmServerOptions,
-  MockLlmTraceEntry
-} from '../types'
+import type { MockLlmServerHandle, MockLlmServerOptions, MockLlmTraceEntry } from '../types'
 import { writeChatCompletionResult } from './chat-completions'
 import { writeJson } from './http'
+import { resolveMockTurn } from './registry'
 import {
   asArray,
   asObject,
-  getRequestText,
   getRequestInputs,
+  getRequestText,
   hasToolResult,
   isStreamRequest,
   isTitleGenerationRequest,
   readJsonBody
 } from './request'
-import { resolveMockTurn } from './registry'
 import { writeResponsesResult } from './responses'
 import { pickToolCall } from './tooling'
 
@@ -56,12 +52,10 @@ export const startMockLlmServer = async (
       : 'hook-smoke-mock,unknown'
     const requestedToolCount = asArray(body.tools).length
     const selectedTool = pickToolCall(body)
-    const shouldRejectForUnsupportedTool = (
-      !isTitleGenerationRequest(body)
-      && !hasToolResult(body)
-      && requestedToolCount > 0
-      && selectedTool == null
-    )
+    const shouldRejectForUnsupportedTool = !isTitleGenerationRequest(body) &&
+      !hasToolResult(body) &&
+      requestedToolCount > 0 &&
+      selectedTool == null
     const turn = resolveMockTurn(scenarios, model, body)
     const traceEntry: MockLlmTraceEntry = {
       path: requestPath,
@@ -77,12 +71,15 @@ export const startMockLlmServer = async (
     }
     trace.push(traceEntry)
 
-    logDebug('mock-llm request', JSON.stringify({
-      ...traceEntry,
-      stream: isStreamRequest(body, req.headers.accept),
-      turn: turn.kind,
-      toolCount: requestedToolCount
-    }))
+    logDebug(
+      'mock-llm request',
+      JSON.stringify({
+        ...traceEntry,
+        stream: isStreamRequest(body, req.headers.accept),
+        turn: turn.kind,
+        toolCount: requestedToolCount
+      })
+    )
 
     if (shouldRejectForUnsupportedTool) {
       writeJson(res, 422, { error: 'no_supported_tool_available' })
@@ -136,12 +133,6 @@ export const startMockLlmServer = async (
   }
 }
 
-export {
-  resolveMockScenario,
-  resolveMockTurn
-} from './registry'
-export {
-  hasToolResult,
-  isTitleGenerationRequest
-} from './request'
+export { resolveMockScenario, resolveMockTurn } from './registry'
+export { hasToolResult, isTitleGenerationRequest } from './request'
 export { pickToolCall } from './tooling'

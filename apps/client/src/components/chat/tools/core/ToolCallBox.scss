@@ -133,43 +133,42 @@
         border-radius: 0;
       }
 
-        .tool-result-structured {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 12px;
-        }
+      .tool-result-structured {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+      }
 
-        .tool-result-text {
-          font-size: 13px;
-          color: var(--text-color);
-        }
+      .tool-result-text {
+        font-size: 13px;
+        color: var(--text-color);
+      }
 
-        .tool-result-text-content {
-          white-space: pre-wrap;
-          line-height: 1.6;
-        }
+      .tool-result-text-content {
+        white-space: pre-wrap;
+        line-height: 1.6;
+      }
 
-        .tool-result-image-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
+      .tool-result-image-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-        .tool-result-image {
-          max-width: 100%;
-          border-radius: 6px;
-          border: 1px solid var(--border-color);
-          background: var(--bg-color);
-        }
+      .tool-result-image {
+        max-width: 100%;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+      }
 
-        .tool-result-image-caption {
-          font-size: 12px;
-          color: var(--sub-text-color);
-        }
+      .tool-result-image-caption {
+        font-size: 12px;
+        color: var(--sub-text-color);
+      }
     }
   }
-
 
   .tool-header-content {
     display: flex;

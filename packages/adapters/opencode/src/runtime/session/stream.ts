@@ -1,7 +1,14 @@
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterEvent, AdapterOutputEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
+import type {
+  AdapterCtx,
+  AdapterEvent,
+  AdapterOutputEvent,
+  AdapterQueryOptions,
+  AdapterSession
+} from '@vibe-forge/core/adapter'
 
+import { resolveOpenCodeBinaryPath } from '../../paths'
 import {
   DEFAULT_OPENCODE_TOOLS,
   buildOpenCodeRunArgs,
@@ -9,7 +16,6 @@ import {
   normalizeOpenCodePrompt,
   resolveOpenCodeAgent
 } from '../common'
-import { resolveOpenCodeBinaryPath } from '../../paths'
 import { buildChildEnv, ensureSystemPromptFile } from './child-env'
 import { findOpenCodeSessionId, runOpenCodeCommand } from './process'
 import {

@@ -1,14 +1,6 @@
 import { repoRoot } from '../runtime'
-import type {
-  JsonObject,
-  MockModelScenario,
-  MockScenarioTurn
-} from '../types'
-import {
-  getRequestText,
-  hasToolResult,
-  isTitleGenerationRequest
-} from './request'
+import type { JsonObject, MockModelScenario, MockScenarioTurn } from '../types'
+import { getRequestText, hasToolResult, isTitleGenerationRequest } from './request'
 import { pickToolCall } from './tooling'
 
 const defaultResolveTurn = (
@@ -49,8 +41,8 @@ export const resolveMockScenario = (
 ) => {
   const normalized = model.trim()
   return scenarios.find((scenario) => (
-    normalized.includes(scenario.id)
-    || (scenario.aliases ?? []).some(alias => normalized.includes(alias))
+    normalized.includes(scenario.id) ||
+    (scenario.aliases ?? []).some(alias => normalized.includes(alias))
   ))
 }
 

@@ -58,8 +58,8 @@ const assertArchivePath = (cwd: string, archivePath: string, sources: string[]) 
   for (const source of sources) {
     const resolvedSourcePath = path.resolve(cwd, source)
     if (
-      resolvedArchivePath === resolvedSourcePath
-      || resolvedArchivePath.startsWith(`${resolvedSourcePath}${path.sep}`)
+      resolvedArchivePath === resolvedSourcePath ||
+      resolvedArchivePath.startsWith(`${resolvedSourcePath}${path.sep}`)
     ) {
       throw new Error(`Report archive must not be created inside ${source}.`)
     }
@@ -97,9 +97,13 @@ const createTarArchive = async (cwd: string, archivePath: string, sources: strin
       }
 
       const message = stderr.trim()
-      reject(new Error(message
-        ? `Failed to create report archive: ${message}`
-        : `Failed to create report archive with exit code ${code ?? -1}.`))
+      reject(
+        new Error(
+          message
+            ? `Failed to create report archive: ${message}`
+            : `Failed to create report archive with exit code ${code ?? -1}.`
+        )
+      )
     })
   })
 }

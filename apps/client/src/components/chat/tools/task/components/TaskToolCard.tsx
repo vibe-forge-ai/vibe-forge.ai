@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom'
 
 import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
 
-import { connectionManager } from '#~/connectionManager.js'
 import { CodeBlock } from '#~/components/CodeBlock'
+import { connectionManager } from '#~/connectionManager.js'
 
 export interface TaskToolCardProps {
   description?: string

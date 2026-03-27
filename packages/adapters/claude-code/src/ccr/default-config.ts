@@ -39,10 +39,11 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
 
-const hasMaxtokenTransformer = (use: unknown[]) => use.some((entry) => {
-  if (entry === 'maxtoken') return true
-  return Array.isArray(entry) && entry[0] === 'maxtoken'
-})
+const hasMaxtokenTransformer = (use: unknown[]) =>
+  use.some((entry) => {
+    if (entry === 'maxtoken') return true
+    return Array.isArray(entry) && entry[0] === 'maxtoken'
+  })
 
 const buildProviderTransformer = (service: ModelServiceConfig) => {
   const baseValue = service.extra?.claudeCodeRouterTransformer

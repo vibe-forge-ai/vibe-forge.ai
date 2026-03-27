@@ -35,11 +35,9 @@ export const formatLarkText = (
       const name = mention.name
       const id = resolveLarkId(mention.id)
       if (key == null || key === '' || name == null || name === '' || id == null || id === '') continue
-      const replacement = (
-        `<at type="lark" user_id="${escapeXmlAttr(id)}">` +
+      const replacement = `<at type="lark" user_id="${escapeXmlAttr(id)}">` +
         `${escapeXmlText(name)}` +
         `</at>`
-      )
       text = text.replace(new RegExp(escapeRegExp(key), 'g'), replacement)
     }
   }

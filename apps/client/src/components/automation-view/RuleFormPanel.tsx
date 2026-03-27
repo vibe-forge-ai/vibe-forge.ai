@@ -193,24 +193,24 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
               </div>
               <Form.Item
                 name='name'
-                label={(
+                label={
                   <span className='automation-view__label'>
                     <span className='material-symbols-rounded automation-view__label-icon'>badge</span>
                     {t('automation.ruleName')}
                   </span>
-                )}
+                }
                 rules={[{ required: true, message: t('automation.ruleNameRequired') }]}
               >
                 <Input />
               </Form.Item>
               <Form.Item
                 name='description'
-                label={(
+                label={
                   <span className='automation-view__label'>
                     <span className='material-symbols-rounded automation-view__label-icon'>description</span>
                     {t('automation.ruleDescription')}
                   </span>
-                )}
+                }
               >
                 <Input.TextArea rows={2} />
               </Form.Item>
@@ -226,7 +226,9 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
                 </div>
                 <div className='automation-view__toggle-row'>
                   <span className='automation-view__toggle-label automation-view__toggle-label--run'>
-                    <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>play_circle</span>
+                    <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>
+                      play_circle
+                    </span>
                     {t('automation.immediateRun')}
                   </span>
                   <Form.Item name='immediateRun' valuePropName='checked' noStyle>

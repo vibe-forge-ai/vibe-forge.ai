@@ -21,7 +21,7 @@ export function SkillsTab({ onCreate, onImport }: SkillsTabProps) {
       <SectionHeader
         title={t('knowledge.skills.title')}
         description={t('knowledge.skills.desc')}
-        actions={(
+        actions={
           <Space>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
@@ -37,7 +37,7 @@ export function SkillsTab({ onCreate, onImport }: SkillsTabProps) {
               {t('knowledge.skills.create')}
             </ActionButton>
           </Space>
-        )}
+        }
       />
       <EmptyState
         description={t('knowledge.skills.empty')}

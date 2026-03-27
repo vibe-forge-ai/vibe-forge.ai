@@ -46,7 +46,12 @@ describe('createOpenCodeSession stream runtime', () => {
     await flushAsyncWork()
 
     expect(spawnMock.mock.calls[0]?.[1]).toEqual([
-      'run', '--format', 'default', '--title', 'Vibe Forge:session-1', 'Reply with exactly pong.'
+      'run',
+      '--format',
+      'default',
+      '--title',
+      'Vibe Forge:session-1',
+      'Reply with exactly pong.'
     ])
     expect(events.map(event => event.type)).toEqual(['init', 'message', 'stop'])
     expect(events[1]).toMatchObject({ type: 'message', data: { role: 'assistant', content: 'pong' } })
@@ -57,10 +62,11 @@ describe('createOpenCodeSession stream runtime', () => {
   })
 
   it('reuses the cached OpenCode session id for later turns', async () => {
-    mockExecFileJsonResponses(execFileMock,
-      [{ id: 'sess_1', title: 'Vibe Forge:session-stream', updatedAt: '2026-03-26T00:00:00.000Z' }],
-      [{ id: 'sess_1', title: 'Vibe Forge:session-stream', updatedAt: '2026-03-26T00:01:00.000Z' }]
-    )
+    mockExecFileJsonResponses(execFileMock, [{
+      id: 'sess_1',
+      title: 'Vibe Forge:session-stream',
+      updatedAt: '2026-03-26T00:00:00.000Z'
+    }], [{ id: 'sess_1', title: 'Vibe Forge:session-stream', updatedAt: '2026-03-26T00:01:00.000Z' }])
     spawnMock
       .mockImplementationOnce(() => makeProc({ stdout: 'first\n' }))
       .mockImplementationOnce(() => makeProc({ stdout: 'second\n' }))
@@ -112,10 +118,11 @@ describe('createOpenCodeSession stream runtime', () => {
   })
 
   it('retries without the cached session id when resume hits a missing session', async () => {
-    mockExecFileJsonResponses(execFileMock,
-      [{ id: 'sess_new', title: 'Vibe Forge:session-resume', updatedAt: '2026-03-26T00:00:00.000Z' }],
-      [{ id: 'sess_new', title: 'Vibe Forge:session-resume', updatedAt: '2026-03-26T00:00:01.000Z' }]
-    )
+    mockExecFileJsonResponses(execFileMock, [{
+      id: 'sess_new',
+      title: 'Vibe Forge:session-resume',
+      updatedAt: '2026-03-26T00:00:00.000Z'
+    }], [{ id: 'sess_new', title: 'Vibe Forge:session-resume', updatedAt: '2026-03-26T00:00:01.000Z' }])
     spawnMock
       .mockImplementationOnce(() => makeProc({ stderr: 'Error: session not found\n', exitCode: 1 }))
       .mockImplementationOnce(() => makeProc({ stdout: 'recovered\n' }))

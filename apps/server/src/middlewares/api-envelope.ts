@@ -1,7 +1,7 @@
 import { STATUS_CODES } from 'node:http'
 
-import type Koa from 'koa'
 import type { ApiErrorResponse, ApiSuccessResponse } from '#~/utils/http.js'
+import type Koa from 'koa'
 
 import { HttpError, notFound } from '#~/utils/http.js'
 import { logger } from '#~/utils/logger.js'
@@ -61,8 +61,8 @@ const toLegacyErrorResponse = (body: unknown, status: number): ApiErrorResponse 
     const message = typeof body.error === 'string'
       ? body.error
       : typeof body.message === 'string'
-        ? body.message
-        : getStatusMessage(status)
+      ? body.message
+      : getStatusMessage(status)
     const code = typeof body.code === 'string' ? body.code : defaultCodeForStatus(status)
     return {
       success: false,

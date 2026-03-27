@@ -1,8 +1,8 @@
+import { spawnSync } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import process from 'node:process'
-import { spawnSync } from 'node:child_process'
 
 import { afterEach, describe, expect, it } from 'vitest'
 

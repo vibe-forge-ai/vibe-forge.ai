@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildInlineConfigContent,
-  buildToolConfig,
-  buildToolPermissionConfig
-} from '#~/runtime/common.js'
+import { buildInlineConfigContent, buildToolConfig, buildToolPermissionConfig } from '#~/runtime/common.js'
 
 describe('openCode permission and tool helpers', () => {
   it('derives permission overrides from tool selection aliases', () => {

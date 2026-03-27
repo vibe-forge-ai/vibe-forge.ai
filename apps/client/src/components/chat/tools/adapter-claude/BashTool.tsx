@@ -1,10 +1,10 @@
 import './BashTool.scss'
+import { CodeBlock } from '#~/components/CodeBlock'
+import { safeJsonStringify } from '#~/utils/safe-serialize'
 import type { ToolInputs } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CodeBlock } from '#~/components/CodeBlock'
 import { ToolCallBox } from '../core/ToolCallBox'
-import { safeJsonStringify } from '#~/utils/safe-serialize'
 import { defineToolRender } from '../defineToolRender'
 
 export const BashTool = defineToolRender(({ item, resultItem }) => {

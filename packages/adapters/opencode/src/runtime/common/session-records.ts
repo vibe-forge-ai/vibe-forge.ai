@@ -23,10 +23,10 @@ export const extractOpenCodeSessionRecords = (input: unknown): OpenCodeSessionRe
   const payload = Array.isArray(parsed)
     ? parsed
     : Array.isArray(record?.sessions)
-      ? record.sessions as unknown[]
-      : Array.isArray(record?.items)
-        ? record.items as unknown[]
-        : []
+    ? record.sessions as unknown[]
+    : Array.isArray(record?.items)
+    ? record.items as unknown[]
+    : []
 
   return payload.flatMap((entry) => {
     const current = asPlainRecord(entry)
@@ -41,11 +41,11 @@ export const extractOpenCodeSessionRecords = (input: unknown): OpenCodeSessionRe
       title: typeof current.title === 'string' && current.title.trim() !== '' ? current.title : undefined,
       updatedAt: parseTimestamp(
         current.updatedAt ??
-        current.updated_at ??
-        current.modifiedAt ??
-        current.modified_at ??
-        current.createdAt ??
-        current.created_at
+          current.updated_at ??
+          current.modifiedAt ??
+          current.modified_at ??
+          current.createdAt ??
+          current.created_at
       )
     }]
   })

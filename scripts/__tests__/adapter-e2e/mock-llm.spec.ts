@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
-  ADAPTER_E2E_CASES,
-  collectCaseMockScenarios
-} from './cases'
-import { ADAPTER_E2E_DEFAULTS } from '../../adapter-e2e/scenarios'
-import {
   createRuleBasedMockScenario,
   defineMockScenarioRule,
   messageTurn,
@@ -15,14 +10,10 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
-import {
-  resolveMockTurn,
-  startMockLlmServer
-} from '../../adapter-e2e/mock-llm/server'
-import type {
-  JsonObject,
-  MockLlmServerHandle
-} from '../../adapter-e2e/types'
+import { resolveMockTurn, startMockLlmServer } from '../../adapter-e2e/mock-llm/server'
+import { ADAPTER_E2E_DEFAULTS } from '../../adapter-e2e/scenarios'
+import type { JsonObject, MockLlmServerHandle } from '../../adapter-e2e/types'
+import { ADAPTER_E2E_CASES, collectCaseMockScenarios } from './cases'
 
 const createReadBody = (): JsonObject => ({
   model: 'hook-smoke-mock,codex-read-once',

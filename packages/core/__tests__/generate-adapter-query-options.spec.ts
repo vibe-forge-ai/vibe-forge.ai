@@ -33,20 +33,24 @@ describe('generateAdapterQueryOptions', () => {
     )
     await writeDocument(
       join(workspace, '.ai/entities/api-developer/index.json'),
-      JSON.stringify({
-        prompt: '你是 API 开发实体',
-        rules: [
-          {
-            path: './rules/migrate.md',
-            desc: '迁移老范式的 API 代码到新范式'
-          },
-          {
-            type: 'remote',
-            tags: ['business', 'api-develop'],
-            desc: '遇到未说明的方法时，可查询远程知识库'
-          }
-        ]
-      }, null, 2)
+      JSON.stringify(
+        {
+          prompt: '你是 API 开发实体',
+          rules: [
+            {
+              path: './rules/migrate.md',
+              desc: '迁移老范式的 API 代码到新范式'
+            },
+            {
+              type: 'remote',
+              tags: ['business', 'api-develop'],
+              desc: '遇到未说明的方法时，可查询远程知识库'
+            }
+          ]
+        },
+        null,
+        2
+      )
     )
 
     const [{ rules }, resolvedConfig] = await generateAdapterQueryOptions(
@@ -132,13 +136,17 @@ describe('generateAdapterQueryOptions', () => {
     )
     await writeDocument(
       join(workspace, '.ai/entities/api-developer/index.json'),
-      JSON.stringify({
-        prompt: '你是 API 开发实体',
-        skills: {
-          type: 'include',
-          list: ['review']
-        }
-      }, null, 2)
+      JSON.stringify(
+        {
+          prompt: '你是 API 开发实体',
+          skills: {
+            type: 'include',
+            list: ['review']
+          }
+        },
+        null,
+        2
+      )
     )
 
     const [, resolvedConfig] = await generateAdapterQueryOptions(
@@ -165,13 +173,17 @@ describe('generateAdapterQueryOptions', () => {
     )
     await writeDocument(
       join(workspace, '.ai/entities/api-developer/index.json'),
-      JSON.stringify({
-        prompt: '你是 API 开发实体',
-        skills: {
-          type: 'exclude',
-          list: ['review']
-        }
-      }, null, 2)
+      JSON.stringify(
+        {
+          prompt: '你是 API 开发实体',
+          skills: {
+            type: 'exclude',
+            list: ['review']
+          }
+        },
+        null,
+        2
+      )
     )
 
     const [, resolvedConfig] = await generateAdapterQueryOptions(

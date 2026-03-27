@@ -1,12 +1,9 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { MANAGED_ARTIFACTS } from './scenarios'
 import { repoRoot, waitForPath } from './runtime'
-import type {
-  AdapterE2ETarget,
-  VerifiedManagedArtifact
-} from './types'
+import { MANAGED_ARTIFACTS } from './scenarios'
+import type { AdapterE2ETarget, VerifiedManagedArtifact } from './types'
 
 export const resolveLogPath = (ctxId: string, sessionId: string) => (
   path.resolve(repoRoot, '.ai/logs', ctxId, `${sessionId}.log.md`)

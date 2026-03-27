@@ -3,8 +3,8 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CodeBlock } from '#~/components/CodeBlock'
-import { ToolCallBox } from '../core/ToolCallBox'
 import { safeJsonStringify } from '#~/utils/safe-serialize'
+import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
 
 const formatToolName = (name: string) => {

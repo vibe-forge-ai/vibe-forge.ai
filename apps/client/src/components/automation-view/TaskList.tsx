@@ -26,10 +26,11 @@ export function TaskList() {
                 <Button
                   className='automation-view__icon-button'
                   type='text'
-                  onClick={() => add({
-                    title: t('automation.taskDefaultTitle', { index: fields.length + 1 }),
-                    prompt: ''
-                  })}
+                  onClick={() =>
+                    add({
+                      title: t('automation.taskDefaultTitle', { index: fields.length + 1 }),
+                      prompt: ''
+                    })}
                 >
                   <span className='material-symbols-rounded automation-view__action-icon'>add</span>
                 </Button>
@@ -67,7 +68,9 @@ export function TaskList() {
                   <Input.TextArea rows={3} />
                 </Form.Item>
                 <div className='automation-view__task-index'>
-                  <span className='material-symbols-rounded automation-view__task-index-icon'>format_list_numbered</span>
+                  <span className='material-symbols-rounded automation-view__task-index-icon'>
+                    format_list_numbered
+                  </span>
                   {t('automation.taskIndex', { index: index + 1 })}
                 </div>
               </div>

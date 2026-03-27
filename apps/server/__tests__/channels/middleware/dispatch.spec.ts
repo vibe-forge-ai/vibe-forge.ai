@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { processUserMessage } from '#~/services/session/index.js'
 

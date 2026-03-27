@@ -1,18 +1,12 @@
 import path from 'node:path'
 
-import {
-  mockClaudeService,
-  mockModelService,
-  repoRoot
-} from './runtime'
-import type {
-  AdapterE2ETarget,
-  ManagedArtifactDefinition
-} from './types'
+import { mockClaudeService, mockModelService, repoRoot } from './runtime'
+import type { AdapterE2ETarget, ManagedArtifactDefinition } from './types'
 
 const codexPrompt = 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX and nothing else.'
 const claudePrompt = 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else.'
-const opencodePrompt = 'Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.'
+const opencodePrompt =
+  'Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.'
 
 export const ADAPTER_E2E_TARGETS: AdapterE2ETarget[] = [
   'codex',

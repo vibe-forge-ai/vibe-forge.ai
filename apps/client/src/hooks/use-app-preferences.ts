@@ -24,8 +24,8 @@ export function useAppPreferences(): AppPreferences {
   const themeMode = useAtomValue(themeAtom)
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
   const interfaceLanguage = configRes?.sources?.merged?.general?.interfaceLanguage
-  const isDarkMode = themeMode === 'dark'
-    || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const isDarkMode = themeMode === 'dark' ||
+    (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode)

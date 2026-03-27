@@ -18,4 +18,3 @@ export const getResultStatusMeta = (result?: BenchmarkResult | null) => {
   if (result.status === 'partial') return { icon: 'rule', statusKey: 'partial' }
   return { icon: 'cancel', statusKey: 'fail' }
 }
-

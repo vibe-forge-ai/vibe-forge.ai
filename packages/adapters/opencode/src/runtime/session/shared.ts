@@ -55,15 +55,16 @@ export const execFileAsync = (
   file: string,
   args: string[],
   options: { cwd: string; env: Record<string, string>; maxBuffer: number }
-) => new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-  execFile(file, args, options, (error, stdout, stderr) => {
-    if (error) {
-      reject(error)
-      return
-    }
-    resolve({ stdout: String(stdout), stderr: String(stderr) })
+) =>
+  new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) {
+        reject(error)
+        return
+      }
+      resolve({ stdout: String(stdout), stderr: String(stderr) })
+    })
   })
-})
 
 export const stripAnsi = (value: string) => stripAnsiSequences(value)
 

@@ -47,9 +47,11 @@ const syncPluginDirectory = async (sourceDir: string | undefined, targetDir: str
   await mkdir(targetDir, { recursive: true })
 
   const existingEntries = await readdir(targetDir).catch(() => [])
-  await Promise.all(existingEntries
-    .filter(entry => entry !== MANAGED_PLUGIN_FILE_NAME)
-    .map(entry => rm(resolve(targetDir, entry), { recursive: true, force: true })))
+  await Promise.all(
+    existingEntries
+      .filter(entry => entry !== MANAGED_PLUGIN_FILE_NAME)
+      .map(entry => rm(resolve(targetDir, entry), { recursive: true, force: true }))
+  )
 
   if (sourceDir == null || !await pathExists(sourceDir)) return
 

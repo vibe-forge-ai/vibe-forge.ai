@@ -1,10 +1,10 @@
+import { createLogger } from '@vibe-forge/core/utils/create-logger'
+import type { Logger } from '@vibe-forge/core/utils/create-logger'
 import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
-import { createLogger } from '@vibe-forge/core/utils/create-logger'
-import type { Logger } from '@vibe-forge/core/utils/create-logger'
 
 export const CODEX_PROXY_META_HEADER_NAME = 'X-Vibe-Forge-Proxy-Meta'
 type CodexProxyLogger = Logger
@@ -89,21 +89,19 @@ const maybeInjectMaxOutputTokens = (
   if (requestBodyBuffer.length === 0) return undefined
 
   const normalizedMaxOutputTokens = (
-    typeof proxyMeta.maxOutputTokens === 'number' &&
-    Number.isFinite(proxyMeta.maxOutputTokens) &&
-    proxyMeta.maxOutputTokens > 0
-  )
+      typeof proxyMeta.maxOutputTokens === 'number' &&
+      Number.isFinite(proxyMeta.maxOutputTokens) &&
+      proxyMeta.maxOutputTokens > 0
+    )
     ? Math.floor(proxyMeta.maxOutputTokens)
     : undefined
 
   if (normalizedMaxOutputTokens == null) return requestBodyBuffer
 
   const contentType = normalizeContentType(req.headers['content-type'])
-  const shouldInspectJson = (
-    contentType === 'application/json' ||
+  const shouldInspectJson = contentType === 'application/json' ||
     contentType?.endsWith('+json') === true ||
     looksLikeJsonPayload(requestBodyBuffer)
-  )
 
   if (!shouldInspectJson) return requestBodyBuffer
 

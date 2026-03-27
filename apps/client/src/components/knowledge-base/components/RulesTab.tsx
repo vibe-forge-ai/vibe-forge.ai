@@ -35,7 +35,7 @@ export function RulesTab({
       <SectionHeader
         title={t('knowledge.rules.title')}
         description={t('knowledge.rules.desc')}
-        actions={(
+        actions={
           <Space>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
@@ -51,7 +51,7 @@ export function RulesTab({
               {t('knowledge.rules.create')}
             </ActionButton>
           </Space>
-        )}
+        }
       />
       <div className='knowledge-base-view__filters'>
         <Input

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
-import process from 'node:process'
 import { basename, dirname, extname, relative } from 'node:path'
+import process from 'node:process'
 
 import { glob } from 'fast-glob'
 import yaml from 'js-yaml'
@@ -8,16 +8,7 @@ import yaml from 'js-yaml'
 import type { Config } from '../config'
 import { loadConfig } from '../config/load'
 import { DefinitionLoader } from './definition-loader'
-import type {
-  Definition,
-  Entity,
-  Filter,
-  Rule,
-  RuleReference,
-  Skill,
-  SkillSelection,
-  Spec,
-} from './definition-loader'
+import type { Definition, Entity, Filter, Rule, RuleReference, Skill, SkillSelection, Spec } from './definition-loader'
 
 export type WorkspaceAssetKind =
   | 'rule'
@@ -212,8 +203,8 @@ const isOverlayPayload = (payload: unknown): payload is WorkspaceOverlayPayload 
 )
 
 const isOpenCodeOverlayAsset = (asset: WorkspaceAsset): asset is WorkspaceOpenCodeOverlayAsset => (
-  (asset.kind === 'nativePlugin' || asset.kind === 'agent' || asset.kind === 'command' || asset.kind === 'mode')
-  && isOverlayPayload(asset.payload)
+  (asset.kind === 'nativePlugin' || asset.kind === 'agent' || asset.kind === 'command' || asset.kind === 'mode') &&
+  isOverlayPayload(asset.payload)
 )
 
 const isLocalRuleReference = (
@@ -257,7 +248,10 @@ const pushAsset = <TAsset extends WorkspaceAsset>(
   return next
 }
 
-const createDocumentAsset = <TKind extends Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>, TDefinition>(
+const createDocumentAsset = <
+  TKind extends Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>,
+  TDefinition,
+>(
   params: {
     cwd: string
     kind: TKind
@@ -461,7 +455,9 @@ const compareDocumentAssetPriority = (
   return left.payload.definition.path.localeCompare(right.payload.definition.path)
 }
 
-const dedupeDocumentAssetsByIdentifier = <TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>>(
+const dedupeDocumentAssetsByIdentifier = <
+  TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>,
+>(
   assets: TAsset[],
   resolveIdentifier: (asset: TAsset) => string
 ) => {
@@ -546,16 +542,16 @@ const resolveIncludedSkillNames = (selection: string[] | SkillSelection) => (
   Array.isArray(selection)
     ? selection
     : selection.type === 'include'
-      ? selection.list
-      : []
+    ? selection.list
+    : []
 )
 
 const resolveExcludedSkillNames = (selection: string[] | SkillSelection) => (
   Array.isArray(selection)
     ? []
     : selection.type === 'exclude'
-      ? selection.list
-      : []
+    ? selection.list
+    : []
 )
 
 const resolveSelectedRuleAssets = async (
@@ -573,12 +569,14 @@ const toDocumentDefinitions = <TDefinition>(
   assets: Array<WorkspaceDocumentAsset<TDefinition>>
 ) => assets.map(asset => asset.payload.definition)
 
-type WorkspaceDocumentAsset<TDefinition> = Extract<
-  WorkspaceAsset,
-  { kind: 'rule' | 'spec' | 'entity' | 'skill' }
-> & {
-  payload: WorkspaceDocumentPayload<TDefinition & { path: string }>
-}
+type WorkspaceDocumentAsset<TDefinition> =
+  & Extract<
+    WorkspaceAsset,
+    { kind: 'rule' | 'spec' | 'entity' | 'skill' }
+  >
+  & {
+    payload: WorkspaceDocumentPayload<TDefinition & { path: string }>
+  }
 
 const toPromptAssetIds = (assets: Array<{ id: string }>) => uniqueValues(assets.map(asset => asset.id))
 
@@ -628,11 +626,12 @@ export async function resolveWorkspaceAssetBundle(params: {
       rawEntities.map((definition) => createDocumentAsset({ cwd: params.cwd, kind: 'entity', definition })),
       enabledPlugins
     ),
-    asset => resolveDocumentName(
-      asset.payload.definition.path,
-      asset.payload.definition.attributes.name,
-      ['readme.md', 'index.json']
-    )
+    asset =>
+      resolveDocumentName(
+        asset.payload.definition.path,
+        asset.payload.definition.attributes.name,
+        ['readme.md', 'index.json']
+      )
   )
   const skills = dedupeDocumentAssetsByIdentifier(
     dedupeDocumentAssets(
@@ -897,8 +896,8 @@ export function buildAdapterAssetPlan(params: {
     const nativeHookReason = params.adapter === 'claude-code'
       ? 'Mapped into the isolated Claude Code native hooks bridge under .ai/.mock/.claude/settings.json.'
       : params.adapter === 'codex'
-        ? 'Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop.'
-        : 'Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins.'
+      ? 'Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop.'
+      : 'Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins.'
     diagnostics.push({
       assetId: hookPlugin.id,
       adapter: params.adapter,
@@ -977,21 +976,21 @@ export function buildAdapterAssetPlan(params: {
     overlays,
     native: params.adapter === 'claude-code'
       ? {
-          enabledPlugins: params.bundle.enabledPlugins,
-          extraKnownMarketplaces: params.bundle.extraKnownMarketplaces
-        }
+        enabledPlugins: params.bundle.enabledPlugins,
+        extraKnownMarketplaces: params.bundle.extraKnownMarketplaces
+      }
       : params.adapter === 'codex' && params.bundle.hookPlugins.length > 0
       ? {
-          codexHooks: {
-            supportedEvents: [
-              'SessionStart',
-              'UserPromptSubmit',
-              'PreToolUse',
-              'PostToolUse',
-              'Stop'
-            ]
-          }
+        codexHooks: {
+          supportedEvents: [
+            'SessionStart',
+            'UserPromptSubmit',
+            'PreToolUse',
+            'PostToolUse',
+            'Stop'
+          ]
         }
+      }
       : {}
   }
 }

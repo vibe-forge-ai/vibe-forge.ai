@@ -1,8 +1,8 @@
 import type { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
-import { access, mkdir, readFile, symlink } from 'node:fs/promises'
 import { constants } from 'node:fs'
+import { access, mkdir, readFile, symlink } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 
@@ -101,8 +101,8 @@ export const execCommand = async (input: ExecCommandInput): Promise<CommandResul
 
     timer = timeoutMs != null
       ? setTimeout(() => {
-          child.kill('SIGTERM')
-        }, timeoutMs)
+        child.kill('SIGTERM')
+      }, timeoutMs)
       : null
 
     if (stdin != null && stdin !== '') {

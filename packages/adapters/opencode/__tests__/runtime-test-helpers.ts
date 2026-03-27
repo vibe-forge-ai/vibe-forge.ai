@@ -1,5 +1,5 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type { execFile } from 'node:child_process'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { PassThrough } from 'node:stream'
@@ -129,14 +129,16 @@ export function mockExecFileJsonResponses(
   execFileMock: MockedFunction<typeof execFile>,
   ...payloads: unknown[]
 ) {
-  execFileMock.mockImplementation(((...args: any[]) => {
-    const callback = args.at(-1) as ((err: Error | null, stdout: string, stderr: string) => void) | undefined
-    const payload = payloads.shift() ?? []
-    queueMicrotask(() => {
-      callback?.(null, JSON.stringify(payload), '')
-    })
-    return {} as any
-  }) as any)
+  execFileMock.mockImplementation(
+    ((...args: any[]) => {
+      const callback = args.at(-1) as ((err: Error | null, stdout: string, stderr: string) => void) | undefined
+      const payload = payloads.shift() ?? []
+      queueMicrotask(() => {
+        callback?.(null, JSON.stringify(payload), '')
+      })
+      return {} as any
+    }) as any
+  )
 }
 
 export async function flushAsyncWork() {

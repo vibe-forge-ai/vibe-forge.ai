@@ -5,4 +5,3 @@ declare module '@vibe-forge/core' {
     'chrome-devtools': {}
   }
 }
-

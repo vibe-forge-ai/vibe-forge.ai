@@ -3,14 +3,14 @@ import { randomUUID } from 'node:crypto'
 import Router from '@koa/router'
 import { parseExpression } from 'cron-parser'
 
+import { getDb } from '#~/db/index.js'
+import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db/index.js'
 import {
   initAutomationScheduler,
   removeAutomationRuleSchedule,
   runAutomationRule,
   scheduleAutomationRule
 } from '#~/services/automation/index.js'
-import { getDb } from '#~/db/index.js'
-import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db/index.js'
 import { badRequest, conflict, notFound, unauthorized } from '#~/utils/http.js'
 
 let schedulerReady = false
@@ -26,8 +26,8 @@ const normalizeTrigger = (
   const type: AutomationTrigger['type'] = trigger.type === 'webhook'
     ? 'webhook'
     : trigger.type === 'cron'
-      ? 'cron'
-      : 'interval'
+    ? 'cron'
+    : 'interval'
   const intervalMs = trigger.intervalMs ?? null
   const cronExpression = (trigger.cronExpression ?? '').trim()
   const webhookKey = (trigger.webhookKey ?? '').trim()

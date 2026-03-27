@@ -3,7 +3,13 @@ import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-s
 import type { ChannelConnection, ChannelFollowUp, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
 import { defineCreateChannelConnection } from '@vibe-forge/core/channel'
 
-import type { LarkChannelConfig, LarkChannelMessage, LarkMessagePayload, LarkPushFollowUpsResponse, LarkSendMessageResponse  } from '#~/types.js'
+import type {
+  LarkChannelConfig,
+  LarkChannelMessage,
+  LarkMessagePayload,
+  LarkPushFollowUpsResponse,
+  LarkSendMessageResponse
+} from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
 import { createTenantTokenProvider } from './utils/tenant-token'

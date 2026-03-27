@@ -74,9 +74,9 @@ const sanitizeUnknown = (value: unknown): unknown => {
 const compactObject = <T extends Record<string, unknown>>(value: T) => (
   Object.fromEntries(
     Object.entries(value).filter(([, entry]) => (
-      entry !== undefined
-      && entry !== ''
-      && (!Array.isArray(entry) || entry.length > 0)
+      entry !== undefined &&
+      entry !== '' &&
+      (!Array.isArray(entry) || entry.length > 0)
     ))
   )
 )
@@ -205,17 +205,17 @@ const summarizeStdout = (stdout: string) => {
     return parsed.map((item) => {
       const part = item?.part
       const partObject = (
-        part != null
-        && typeof part === 'object'
-        && !Array.isArray(part)
-      )
+          part != null &&
+          typeof part === 'object' &&
+          !Array.isArray(part)
+        )
         ? part as Record<string, unknown>
         : {}
       const state = (
-        partObject.state != null
-        && typeof partObject.state === 'object'
-        && !Array.isArray(partObject.state)
-      )
+          partObject.state != null &&
+          typeof partObject.state === 'object' &&
+          !Array.isArray(partObject.state)
+        )
         ? partObject.state as Record<string, unknown>
         : {}
 
@@ -240,12 +240,14 @@ const summarizeStderr = (stderr: string) => {
 
   const lines = normalized
     .split('\n')
-    .map((line) => line
-      .replace(/^\d{4}-\d{2}-\d{2}T\S+\s+/, '')
-      .replace(/^INFO\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'INFO ')
-      .replace(/^WARN\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'WARN ')
-      .replace(/^ERROR\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'ERROR ')
-      .trim())
+    .map((line) =>
+      line
+        .replace(/^\d{4}-\d{2}-\d{2}T\S+\s+/, '')
+        .replace(/^INFO\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'INFO ')
+        .replace(/^WARN\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'WARN ')
+        .replace(/^ERROR\s+\d{4}-\d{2}-\d{2}T\S+\s+\+\d+ms\s+/, 'ERROR ')
+        .trim()
+    )
   const filteredLines: string[] = []
   let droppingHtmlNoise = false
 
@@ -307,21 +309,21 @@ export const createAdapterE2ESnapshot = (result: AdapterE2EResult) => ({
     selectedTool: entry.selectedTool == null
       ? undefined
       : {
-          name: sanitizeValue(entry.selectedTool.name),
-          args: sanitizeUnknown(entry.selectedTool.args)
-        },
+        name: sanitizeValue(entry.selectedTool.name),
+        args: sanitizeUnknown(entry.selectedTool.args)
+      },
     response: entry.response.kind === 'tool'
       ? {
-          kind: 'tool',
-          tool: {
-            name: sanitizeValue(entry.response.tool.name),
-            args: sanitizeUnknown(entry.response.tool.args)
-          }
+        kind: 'tool',
+        tool: {
+          name: sanitizeValue(entry.response.tool.name),
+          args: sanitizeUnknown(entry.response.tool.args)
         }
+      }
       : {
-          kind: 'message',
-          text: summarizeText(entry.response.text)
-        }
+        kind: 'message',
+        text: summarizeText(entry.response.text)
+      }
   })),
   log: {
     path: sanitizeValue(path.relative(repoRoot, result.logPath)),

@@ -4,7 +4,11 @@ import { dirname, join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { buildAdapterAssetPlan, resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '#~/utils/workspace-assets.js'
+import {
+  buildAdapterAssetPlan,
+  resolvePromptAssetSelection,
+  resolveWorkspaceAssetBundle
+} from '#~/utils/workspace-assets.js'
 
 const tempDirs: string[] = []
 
@@ -107,7 +111,8 @@ describe('workspace assets', () => {
     expect(bundle.rules).toHaveLength(0)
     expect(Object.keys(bundle.mcpServers)).toHaveLength(0)
     expect(bundle.hookPlugins).toHaveLength(0)
-    expect(bundle.assets.some((asset: (typeof bundle.assets)[number]) => asset.pluginId === 'demo' && asset.enabled)).toBe(false)
+    expect(bundle.assets.some((asset: (typeof bundle.assets)[number]) => asset.pluginId === 'demo' && asset.enabled))
+      .toBe(false)
   })
 
   it('builds codex diagnostics for prompt, mcp, native hooks, and unsupported claude native plugins', async () => {

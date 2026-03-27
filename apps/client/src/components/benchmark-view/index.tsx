@@ -109,7 +109,9 @@ export function BenchmarkView() {
     const casesToRun = cases.filter(item => caseKeys.includes(`case:${item.category}/${item.title}`))
     if (casesToRun.length === 0) {
       for (const item of cases) {
-        try { await startBenchmarkRun({ category: item.category, title: item.title }) } catch { /* continue */ }
+        try {
+          await startBenchmarkRun({ category: item.category, title: item.title })
+        } catch { /* continue */ }
       }
       void message.success(t('benchmark.runStarted'))
       return

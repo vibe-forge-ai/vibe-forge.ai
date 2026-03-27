@@ -42,47 +42,49 @@ export const RecordJsonEditor = ({
             key={key}
             className={`config-view__record-card${isCollapsed ? ' config-view__record-card--collapsed' : ''}`}
           >
-          <div className='config-view__record-title'>
-            <div className='config-view__record-title-left'>
-              <Tooltip title={isCollapsed ? t('config.editor.expand') : t('config.editor.collapse')}>
+            <div className='config-view__record-title'>
+              <div className='config-view__record-title-left'>
+                <Tooltip title={isCollapsed ? t('config.editor.expand') : t('config.editor.collapse')}>
+                  <Button
+                    size='small'
+                    type='text'
+                    className='config-view__icon-button config-view__icon-button--compact'
+                    aria-label={isCollapsed ? t('config.editor.expand') : t('config.editor.collapse')}
+                    icon={
+                      <span className='material-symbols-rounded'>{isCollapsed ? 'chevron_right' : 'expand_more'}</span>
+                    }
+                    onClick={() => {
+                      setCollapsedKeys(prev => ({ ...prev, [key]: !isCollapsed }))
+                    }}
+                  />
+                </Tooltip>
+                <span>{key}</span>
+              </div>
+              <Tooltip title={t('config.editor.remove')}>
                 <Button
                   size='small'
                   type='text'
+                  danger
                   className='config-view__icon-button config-view__icon-button--compact'
-                  aria-label={isCollapsed ? t('config.editor.expand') : t('config.editor.collapse')}
-                  icon={<span className='material-symbols-rounded'>{isCollapsed ? 'chevron_right' : 'expand_more'}</span>}
+                  aria-label={t('config.editor.remove')}
+                  icon={<span className='material-symbols-rounded'>delete</span>}
                   onClick={() => {
-                    setCollapsedKeys(prev => ({ ...prev, [key]: !isCollapsed }))
+                    const updated = { ...value }
+                    delete updated[key]
+                    onChange(updated)
                   }}
                 />
               </Tooltip>
-              <span>{key}</span>
             </div>
-            <Tooltip title={t('config.editor.remove')}>
-              <Button
-                size='small'
-                type='text'
-                danger
-                className='config-view__icon-button config-view__icon-button--compact'
-                aria-label={t('config.editor.remove')}
-                icon={<span className='material-symbols-rounded'>delete</span>}
-                onClick={() => {
-                  const updated = { ...value }
-                  delete updated[key]
-                  onChange(updated)
+            <div className='config-view__record-body'>
+              <ComplexTextEditor
+                value={itemValue}
+                onChange={(next) => {
+                  onChange({ ...value, [key]: next })
                 }}
               />
-            </Tooltip>
+            </div>
           </div>
-          <div className='config-view__record-body'>
-            <ComplexTextEditor
-              value={itemValue}
-              onChange={(next) => {
-                onChange({ ...value, [key]: next })
-              }}
-            />
-          </div>
-        </div>
         )
       })}
       <div className='config-view__record-add'>

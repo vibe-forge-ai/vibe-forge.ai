@@ -62,30 +62,34 @@ describe('ensureClaudeNativeHooksInstalled', () => {
     await mkdir(join(workspace, '.claude'), { recursive: true })
     await writeFile(
       join(workspace, '.claude', 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          SessionStart: [{
-            matcher: '*',
-            hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
-          }],
-          UserPromptSubmit: [{
-            matcher: '*',
-            hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
-          }],
-          PreToolUse: [{
-            matcher: '*',
-            hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
-          }],
-          PostToolUse: [{
-            matcher: '*',
-            hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
-          }],
-          Stop: [{
-            matcher: '*',
-            hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
-          }]
-        }
-      }, null, 2)
+      JSON.stringify(
+        {
+          hooks: {
+            SessionStart: [{
+              matcher: '*',
+              hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
+            }],
+            UserPromptSubmit: [{
+              matcher: '*',
+              hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
+            }],
+            PreToolUse: [{
+              matcher: '*',
+              hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
+            }],
+            PostToolUse: [{
+              matcher: '*',
+              hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
+            }],
+            Stop: [{
+              matcher: '*',
+              hooks: [{ type: 'command', command: '$CLAUDE_PROJECT_DIR/node_modules/.bin/vf-call-hook' }]
+            }]
+          }
+        },
+        null,
+        2
+      )
     )
 
     const ctx = {

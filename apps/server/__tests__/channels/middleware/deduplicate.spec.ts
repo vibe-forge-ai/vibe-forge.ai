@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deduplicateMiddleware } from '#~/channels/middleware/deduplicate.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { isDuplicateMessage } from '#~/channels/state.js'
 
 vi.mock('#~/channels/state.js', () => ({

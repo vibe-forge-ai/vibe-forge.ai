@@ -61,10 +61,10 @@ const buildResponse = ({
   },
   ...(incompleteReason != null
     ? {
-        incomplete_details: {
-          reason: incompleteReason
-        }
+      incomplete_details: {
+        reason: incompleteReason
       }
+    }
     : {}),
   ...(error != null ? { error } : {})
 })

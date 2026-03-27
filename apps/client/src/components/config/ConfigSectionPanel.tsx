@@ -3,8 +3,8 @@ import '../ConfigView.scss'
 import type { ReactNode } from 'react'
 
 import { SectionForm } from './ConfigSectionForm'
-import type { TranslationFn } from './configUtils'
 import type { FieldSpec } from './configSchema'
+import type { TranslationFn } from './configUtils'
 
 export function ConfigSectionPanel({
   sectionKey,

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  mergeSystemPrompts,
-  resolveInjectDefaultSystemPromptValue
-} from '#~/system-prompt.js'
+import { mergeSystemPrompts, resolveInjectDefaultSystemPromptValue } from '#~/system-prompt.js'
 
 describe('system prompt controls', () => {
   it('keeps generated and user prompts when default injection is enabled', () => {
@@ -52,5 +49,4 @@ describe('system prompt controls', () => {
       }
     })).toBe(false)
   })
-
 })

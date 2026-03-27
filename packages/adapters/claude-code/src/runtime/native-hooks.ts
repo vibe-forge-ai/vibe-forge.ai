@@ -38,7 +38,8 @@ const MANAGED_COMMAND_MARKERS = [
 ]
 
 const isManagedGroup = (group: NativeHookMatcherGroup) => (
-  Array.isArray(group.hooks) && group.hooks.some(hook => MANAGED_COMMAND_MARKERS.some(marker => hook.command.includes(marker)))
+  Array.isArray(group.hooks) &&
+  group.hooks.some(hook => MANAGED_COMMAND_MARKERS.some(marker => hook.command.includes(marker)))
 )
 
 const createManagedGroup = (

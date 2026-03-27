@@ -79,7 +79,13 @@ export const configSchema: Record<string, FieldSpec[]> = {
     { path: ['permissions', 'deny'], type: 'string[]', defaultValue: [], icon: 'block', group: 'permissions' },
     { path: ['permissions', 'ask'], type: 'string[]', defaultValue: [], icon: 'help', group: 'permissions' },
     { path: ['env'], type: 'record', recordKind: 'keyValue', defaultValue: {}, icon: 'terminal', group: 'env' },
-    { path: ['notifications', 'disabled'], type: 'boolean', defaultValue: false, icon: 'notifications', group: 'items' },
+    {
+      path: ['notifications', 'disabled'],
+      type: 'boolean',
+      defaultValue: false,
+      icon: 'notifications',
+      group: 'items'
+    },
     { path: ['notifications', 'volume'], type: 'number', defaultValue: 100, icon: 'volume_down', group: 'items' },
     {
       path: ['notifications', 'events', 'completed', 'title'],

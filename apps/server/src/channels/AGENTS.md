@@ -96,7 +96,9 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
 
 interface ChannelConnectionExtensions {
-  generateSystemPrompt?: (inbound: ChannelInboundEvent) => Promise<string | undefined>
+  generateSystemPrompt?: (
+    inbound: ChannelInboundEvent
+  ) => Promise<string | undefined>
 }
 ```
 

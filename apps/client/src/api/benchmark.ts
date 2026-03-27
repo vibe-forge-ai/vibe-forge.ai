@@ -25,11 +25,15 @@ export async function listBenchmarkCases(category?: string): Promise<{ cases: Be
 }
 
 export async function getBenchmarkCase(category: string, title: string): Promise<{ case: BenchmarkCase }> {
-  return fetchApiJson<{ case: BenchmarkCase }>(`/api/benchmark/cases/${encodeURIComponent(category)}/${encodeURIComponent(title)}`)
+  return fetchApiJson<{ case: BenchmarkCase }>(
+    `/api/benchmark/cases/${encodeURIComponent(category)}/${encodeURIComponent(title)}`
+  )
 }
 
 export async function getBenchmarkResult(category: string, title: string): Promise<{ result: BenchmarkResult }> {
-  return fetchApiJson<{ result: BenchmarkResult }>(`/api/benchmark/results/${encodeURIComponent(category)}/${encodeURIComponent(title)}`)
+  return fetchApiJson<{ result: BenchmarkResult }>(
+    `/api/benchmark/results/${encodeURIComponent(category)}/${encodeURIComponent(title)}`
+  )
 }
 
 export async function startBenchmarkRun(payload: BenchmarkRunRequest): Promise<{ run: BenchmarkRunSummary }> {

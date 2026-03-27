@@ -5,9 +5,9 @@ import process from 'node:process'
 import { glob } from 'fast-glob'
 import fm from 'front-matter'
 
-import type { BenchmarkCase, BenchmarkCategory, BenchmarkCaseSelector, BenchmarkListOptions } from './types'
-import { BenchmarkFrontmatterSchema } from './schema'
 import { readBenchmarkResult } from './result-store'
+import { BenchmarkFrontmatterSchema } from './schema'
+import type { BenchmarkCase, BenchmarkCaseSelector, BenchmarkCategory, BenchmarkListOptions } from './types'
 
 export const resolveBenchmarkRoot = (workspaceFolder = process.cwd()) => resolve(workspaceFolder, '.ai/benchmark')
 

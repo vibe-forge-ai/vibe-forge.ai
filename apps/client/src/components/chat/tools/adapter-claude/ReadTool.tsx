@@ -1,10 +1,10 @@
 import './ReadTool.scss'
+import { CodeBlock } from '#~/components/CodeBlock'
+import { safeJsonStringify } from '#~/utils/safe-serialize'
+import type { ToolInputs } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ToolInputs } from '@vibe-forge/core'
-import { CodeBlock } from '#~/components/CodeBlock'
 import { ToolCallBox } from '../core/ToolCallBox'
-import { safeJsonStringify } from '#~/utils/safe-serialize'
 import { defineToolRender } from '../defineToolRender'
 import { getFileInfo, getLanguageFromPath } from './utils'
 

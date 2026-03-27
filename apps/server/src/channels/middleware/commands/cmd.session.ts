@@ -49,7 +49,8 @@ defineMessages('zh', {
   'stop.success': '已停止当前会话。',
   'set.noSession': '当前频道没有已绑定会话，无法修改会话设置。',
   'set.permissionMode.success': ({ mode }) => `已将权限模式设置为 ${mode}。`,
-  'set.permissionMode.pending.success': ({ mode }) => `已将下次会话的权限模式设置为 ${mode}。请发送下一条消息创建新会话。`,
+  'set.permissionMode.pending.success': ({ mode }) =>
+    `已将下次会话的权限模式设置为 ${mode}。请发送下一条消息创建新会话。`,
   'set.model.success': ({ model }) => `已设置模型为 ${model}，并重启当前会话。`,
   'set.adapter.pending.success': ({ adapter }) => `已将下次会话的适配器设置为 ${adapter}。请发送下一条消息创建新会话。`,
   'set.adapter.requiresReset': '当前频道已有会话，无法切换适配器。请先执行 /reset 重置会话，再设置适配器。'
@@ -59,9 +60,11 @@ defineMessages('en', {
   'cmd.session.description': 'Show current session status',
   'cmd.reset.description': 'Archive and unbind current session',
   'cmd.stop.description': 'Stop the current running session',
-  'cmd.permissionMode.description': 'Set the current session permission mode, or set the next-session permission mode when no session is bound',
+  'cmd.permissionMode.description':
+    'Set the current session permission mode, or set the next-session permission mode when no session is bound',
   'cmd.get.description': 'View current session model, adapter, or permission mode',
-  'cmd.set.description': 'Set the current session model, or set the adapter for the next session when no session is bound',
+  'cmd.set.description':
+    'Set the current session model, or set the adapter for the next session when no session is bound',
   'choice.session.getField.model.title': 'Model',
   'choice.session.getField.model.description': 'Read the model currently used by the session.',
   'choice.session.getField.adapter.title': 'Adapter',
@@ -71,7 +74,8 @@ defineMessages('en', {
   'choice.session.setField.model.title': 'Model',
   'choice.session.setField.model.description': 'Change the session model and restart immediately.',
   'choice.session.setField.adapter.title': 'Adapter',
-  'choice.session.setField.adapter.description': 'When no session is bound in this channel, set the adapter used for the next session.',
+  'choice.session.setField.adapter.description':
+    'When no session is bound in this channel, set the adapter used for the next session.',
   'choice.session.permissionMode.default.title': 'Default',
   'choice.session.permissionMode.default.description': 'Use the adapter default permission behavior.',
   'choice.session.permissionMode.acceptEdits.title': 'Accept edits',
@@ -102,7 +106,8 @@ defineMessages('en', {
   'set.permissionMode.pending.success': ({ mode }) =>
     `Permission mode for the next session set to ${mode}. Send the next message to create a new session.`,
   'set.model.success': ({ model }) => `Model set to ${model}. Session restarted.`,
-  'set.adapter.pending.success': ({ adapter }) => `Adapter for the next session set to ${adapter}. Send the next message to create a new session.`,
+  'set.adapter.pending.success': ({ adapter }) =>
+    `Adapter for the next session set to ${adapter}. Send the next message to create a new session.`,
   'set.adapter.requiresReset': 'A session is already bound to this channel. Run /reset first, then set the adapter.'
 })
 
@@ -315,7 +320,6 @@ export const sessionCommands = () => [
           { model: value as string },
           ctx.t('set.model.success', { model: value as string })
         )
-        
       }
     })
 ]

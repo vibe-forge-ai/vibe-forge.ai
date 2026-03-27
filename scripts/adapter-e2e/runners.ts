@@ -13,15 +13,8 @@ import {
   toProviderModel,
   waitForPath
 } from './runtime'
-import type {
-  AdapterE2EHarnessOptions,
-  AdapterE2EResult,
-  ResolvedAdapterE2ECase
-} from './types'
-import {
-  collectManagedArtifacts,
-  readHookLog
-} from './verify'
+import type { AdapterE2EHarnessOptions, AdapterE2EResult, ResolvedAdapterE2ECase } from './types'
+import { collectManagedArtifacts, readHookLog } from './verify'
 
 export const runWrappedAdapter = async (
   testCase: ResolvedAdapterE2ECase,
@@ -83,9 +76,12 @@ export const runOpenCodeUpstream = async (input: {
     args: [
       'run',
       '--print-logs',
-      '--format', 'json',
-      '--model', toProviderModel(input.testCase.model),
-      '--dir', repoRoot,
+      '--format',
+      'json',
+      '--model',
+      toProviderModel(input.testCase.model),
+      '--dir',
+      repoRoot,
       input.testCase.prompt
     ],
     env: {
@@ -152,8 +148,8 @@ export const runOpenCode = async (
   })
 
   if (
-    wrapperResult.code === 0
-    && !wrapperResult.timedOut
+    wrapperResult.code === 0 &&
+    !wrapperResult.timedOut
   ) {
     const { logPath, content } = await readHookLog({
       ctxId,

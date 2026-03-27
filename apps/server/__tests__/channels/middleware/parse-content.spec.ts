@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { getInboundContentItems, stripLeadingAtTags, stripSpeakerPrefix } from '#~/channels/middleware/@utils/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { parseContentMiddleware } from '#~/channels/middleware/parse-content.js'
 
 // ── stripSpeakerPrefix ──────────────────────────────────────────────────────

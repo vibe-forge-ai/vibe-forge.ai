@@ -138,20 +138,22 @@ export function Sender({
   const isThinking = sessionStatus === 'running'
   const groupedTools: SenderToolGroup[] = sessionInfo != null && sessionInfo.type === 'init'
     ? ([
-        {
-          key: 'chrome-devtools',
-          label: t('chat.toolGroupChromeDevtools'),
-          tools: sessionInfo.tools.filter((tool: string) => tool.startsWith('mcp__ChromeDevtools__'))
-        },
-        {
-          key: 'system',
-          label: t('chat.toolGroupSystem'),
-          tools: sessionInfo.tools.filter((tool: string) => !tool.startsWith('mcp__ChromeDevtools__'))
-        }
-      ] satisfies SenderToolGroup[]).filter((group): group is SenderToolGroup => group.tools.length > 0)
+      {
+        key: 'chrome-devtools',
+        label: t('chat.toolGroupChromeDevtools'),
+        tools: sessionInfo.tools.filter((tool: string) => tool.startsWith('mcp__ChromeDevtools__'))
+      },
+      {
+        key: 'system',
+        label: t('chat.toolGroupSystem'),
+        tools: sessionInfo.tools.filter((tool: string) => !tool.startsWith('mcp__ChromeDevtools__'))
+      }
+    ] satisfies SenderToolGroup[]).filter((group): group is SenderToolGroup => group.tools.length > 0)
     : []
   const assetWarnings = sessionInfo != null && sessionInfo.type === 'init'
-    ? (sessionInfo.assetDiagnostics ?? []).filter((diagnostic: SessionAssetDiagnostic) => diagnostic.status === 'skipped')
+    ? (sessionInfo.assetDiagnostics ?? []).filter((diagnostic: SessionAssetDiagnostic) =>
+      diagnostic.status === 'skipped'
+    )
     : []
   const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
     value: group.key,
@@ -697,7 +699,7 @@ export function Sender({
                 {assetWarnings.length > 0 && (
                   <Tooltip
                     placement='topLeft'
-                    title={(
+                    title={
                       <div className='asset-warning-tooltip'>
                         <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
                         {assetWarnings.slice(0, 5).map((warning: SessionAssetDiagnostic) => (
@@ -712,7 +714,7 @@ export function Sender({
                           </div>
                         )}
                       </div>
-                    )}
+                    }
                   >
                     <div className='info-item asset-warning-item'>
                       <span className='info-item-leading'>

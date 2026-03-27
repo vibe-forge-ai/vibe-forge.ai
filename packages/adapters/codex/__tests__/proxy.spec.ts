@@ -7,11 +7,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import {
-  CODEX_PROXY_META_HEADER_NAME,
-  encodeCodexProxyMeta,
-  ensureCodexProxyServer
-} from '#~/runtime/proxy.js'
+import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from '#~/runtime/proxy.js'
 
 const upstreamServers: Server[] = []
 const tempDirs: string[] = []

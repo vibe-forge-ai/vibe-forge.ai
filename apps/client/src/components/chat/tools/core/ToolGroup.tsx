@@ -112,10 +112,10 @@ const areToolGroupPropsEqual = (prev: ToolGroupProps, next: ToolGroupProps) => {
   }
   if (prev.footer == null && next.footer == null) return true
   if (prev.footer == null || next.footer == null) return false
-  return prev.footer.originalMessage === next.footer.originalMessage
-    && prev.footer.createdAt === next.footer.createdAt
-    && prev.footer.model === next.footer.model
-    && prev.footer.usage === next.footer.usage
+  return prev.footer.originalMessage === next.footer.originalMessage &&
+    prev.footer.createdAt === next.footer.createdAt &&
+    prev.footer.model === next.footer.model &&
+    prev.footer.usage === next.footer.usage
 }
 
 export const ToolGroup = React.memo(ToolGroupComponent, areToolGroupPropsEqual)

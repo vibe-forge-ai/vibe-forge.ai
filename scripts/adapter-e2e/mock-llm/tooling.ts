@@ -1,12 +1,7 @@
 import path from 'node:path'
 
 import { repoRoot } from '../runtime'
-import type {
-  JsonObject,
-  JsonValue,
-  MockToolCall,
-  MockToolCandidate
-} from '../types'
+import type { JsonObject, JsonValue, MockToolCall, MockToolCandidate } from '../types'
 import { asArray, asObject } from './request'
 
 const getToolName = (tool: JsonObject) => {
@@ -33,10 +28,10 @@ const resolveToolArgs = (
   const readmePath = path.resolve(repoRoot, 'README.md')
 
   if (
-    normalized === 'read'
-    || 'filePath' in properties
-    || 'file_path' in properties
-    || 'path' in properties
+    normalized === 'read' ||
+    'filePath' in properties ||
+    'file_path' in properties ||
+    'path' in properties
   ) {
     return {
       ...('file_path' in properties ? { file_path: readmePath } : {}),
@@ -57,10 +52,10 @@ const resolveToolArgs = (
   }
 
   if (
-    normalized === 'bash'
-    || normalized === 'shell'
-    || normalized === 'local_shell'
-    || 'command' in properties
+    normalized === 'bash' ||
+    normalized === 'shell' ||
+    normalized === 'local_shell' ||
+    'command' in properties
   ) {
     return {
       command: "sed -n '1,200p' README.md"
@@ -87,16 +82,16 @@ export const getToolCandidates = (body: JsonObject): MockToolCandidate[] => (
 
 export const pickToolCall = (body: JsonObject): MockToolCall | undefined => {
   const candidates = getToolCandidates(body)
-  const preferred = candidates.find(item => item.name.toLowerCase() === 'read')
-    ?? candidates.find(item => item.name.toLowerCase() === 'exec_command')
-    ?? candidates.find(item => item.name.toLowerCase() === 'bash')
-    ?? candidates.find(item => item.name.toLowerCase() === 'shell')
-    ?? candidates.find(item => Object.keys(item.args).length > 0)
+  const preferred = candidates.find(item => item.name.toLowerCase() === 'read') ??
+    candidates.find(item => item.name.toLowerCase() === 'exec_command') ??
+    candidates.find(item => item.name.toLowerCase() === 'bash') ??
+    candidates.find(item => item.name.toLowerCase() === 'shell') ??
+    candidates.find(item => Object.keys(item.args).length > 0)
 
   return preferred == null
     ? undefined
     : {
-        name: preferred.name,
-        args: preferred.args
-      }
+      name: preferred.name,
+      args: preferred.args
+    }
 }

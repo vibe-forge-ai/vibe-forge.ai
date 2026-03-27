@@ -58,10 +58,10 @@ export const ensureOpenCodeConfigDir = async (params: {
   const planOverlays = params.options.assetPlan?.overlays ?? []
   const resolvedSkills = planOverlays.length > 0
     ? new Map(
-        planOverlays
-          .filter((entry) => entry.kind === 'skill')
-          .map((entry) => [basename(entry.targetPath), entry.sourcePath] as const)
-      )
+      planOverlays
+        .filter((entry) => entry.kind === 'skill')
+        .map((entry) => [basename(entry.targetPath), entry.sourcePath] as const)
+    )
     : await filterResolvedSkills(params.ctx.cwd, params.options.skills)
 
   const configDir = resolve(
@@ -77,7 +77,9 @@ export const ensureOpenCodeConfigDir = async (params: {
 
   if (baseConfigDir) {
     for (const folderName of ['agents', 'commands', 'modes', 'plugins']) {
-      await ensureSymlinkTarget(resolve(baseConfigDir, folderName), resolve(configDir, folderName)).catch(() => undefined)
+      await ensureSymlinkTarget(resolve(baseConfigDir, folderName), resolve(configDir, folderName)).catch(() =>
+        undefined
+      )
     }
     for (const fileName of ['opencode.json', 'package.json', 'bun.lock', 'bun.lockb']) {
       await ensureSymlinkTarget(resolve(baseConfigDir, fileName), resolve(configDir, fileName)).catch(() => undefined)

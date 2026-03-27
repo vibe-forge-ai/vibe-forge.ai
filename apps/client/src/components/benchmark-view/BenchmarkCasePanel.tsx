@@ -4,8 +4,8 @@ import { Button, Divider, Empty, Progress, Tag, Typography } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { BenchmarkCase, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/core'
 import { MarkdownContent } from '#~/components/MarkdownContent'
+import type { BenchmarkCase, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/core'
 
 import { formatTimestamp, getResultStatusMeta } from './utils.js'
 
@@ -85,10 +85,10 @@ export function BenchmarkCasePanel({
         </div>
         {displayDescription
           ? (
-              <Typography.Paragraph type='secondary' className='benchmark-view__case-desc'>
-                {displayDescription}
-              </Typography.Paragraph>
-            )
+            <Typography.Paragraph type='secondary' className='benchmark-view__case-desc'>
+              {displayDescription}
+            </Typography.Paragraph>
+          )
           : null}
         <div className='benchmark-view__case-meta'>
           <span className='benchmark-view__meta-item'>
@@ -184,29 +184,29 @@ function RunStateSection({
       />
       {activeRunId === ''
         ? (
-            <Typography.Text type='secondary' className='benchmark-view__hint'>
-              {t('benchmark.noActiveRun')}
-            </Typography.Text>
-          )
+          <Typography.Text type='secondary' className='benchmark-view__hint'>
+            {t('benchmark.noActiveRun')}
+          </Typography.Text>
+        )
         : (
-            <div className='benchmark-view__run-block'>
-              <div className='benchmark-view__run-metric'>
-                <label>{t('benchmark.progress')}</label>
-                <strong>{`${activeRun?.completedCount ?? 0}/${activeRun?.totalCount ?? '-'}`}</strong>
+          <div className='benchmark-view__run-block'>
+            <div className='benchmark-view__run-metric'>
+              <label>{t('benchmark.progress')}</label>
+              <strong>{`${activeRun?.completedCount ?? 0}/${activeRun?.totalCount ?? '-'}`}</strong>
+            </div>
+            <Progress percent={progressPercent} showInfo={false} />
+            <div className='benchmark-view__info-grid'>
+              <div className='benchmark-view__info-row'>
+                <label>{t('benchmark.runStatus')}</label>
+                <span>{activeRun?.status ?? '-'}</span>
               </div>
-              <Progress percent={progressPercent} showInfo={false} />
-              <div className='benchmark-view__info-grid'>
-                <div className='benchmark-view__info-row'>
-                  <label>{t('benchmark.runStatus')}</label>
-                  <span>{activeRun?.status ?? '-'}</span>
-                </div>
-                <div className='benchmark-view__info-row'>
-                  <label>{t('benchmark.lastMessage')}</label>
-                  <Typography.Text>{activeRun?.lastMessage ?? '-'}</Typography.Text>
-                </div>
+              <div className='benchmark-view__info-row'>
+                <label>{t('benchmark.lastMessage')}</label>
+                <Typography.Text>{activeRun?.lastMessage ?? '-'}</Typography.Text>
               </div>
             </div>
-          )}
+          </div>
+        )}
     </div>
   )
 }
@@ -227,83 +227,83 @@ function ResultSection({
       />
       {latestResult == null
         ? (
-            <Typography.Text type='secondary' className='benchmark-view__hint'>
-              {t('benchmark.noResult')}
-            </Typography.Text>
-          )
+          <Typography.Text type='secondary' className='benchmark-view__hint'>
+            {t('benchmark.noResult')}
+          </Typography.Text>
+        )
         : (
-            <div className='benchmark-view__result'>
-              <div className='benchmark-view__score-strip'>
-                <div className='benchmark-view__score-item'>
-                  <label>{t('benchmark.finalScore')}</label>
-                  <strong>{latestResult.finalScore}</strong>
-                </div>
-                <div className='benchmark-view__score-item'>
-                  <label>{t('benchmark.testScore')}</label>
-                  <strong>{latestResult.scores.testScore}</strong>
-                </div>
-                <div className='benchmark-view__score-item'>
-                  <label>{t('benchmark.goalScore')}</label>
-                  <strong>{latestResult.scores.goalScore}</strong>
-                </div>
-                <div className='benchmark-view__score-item'>
-                  <label>{t('benchmark.referenceScore')}</label>
-                  <strong>{latestResult.scores.referenceScore}</strong>
-                </div>
+          <div className='benchmark-view__result'>
+            <div className='benchmark-view__score-strip'>
+              <div className='benchmark-view__score-item'>
+                <label>{t('benchmark.finalScore')}</label>
+                <strong>{latestResult.finalScore}</strong>
               </div>
-              <div className='benchmark-view__info-grid'>
-                <div className='benchmark-view__info-row'>
-                  <label>
-                    <span className='material-symbols-rounded'>schedule</span>
-                    {t('benchmark.durationMs')}
-                  </label>
-                  <span>{latestResult.durationMs}</span>
-                </div>
-                <div className='benchmark-view__info-row'>
-                  <label>
-                    <span className='material-symbols-rounded'>monitoring</span>
-                    {t('benchmark.testExitCode')}
-                  </label>
-                  <span>{latestResult.testExitCode}</span>
-                </div>
+              <div className='benchmark-view__score-item'>
+                <label>{t('benchmark.testScore')}</label>
+                <strong>{latestResult.scores.testScore}</strong>
               </div>
-              <Typography.Paragraph className='benchmark-view__judge-summary'>
-                {latestResult.judgeSummary}
-              </Typography.Paragraph>
-              <div className='benchmark-view__subgrid'>
-                <div className='benchmark-view__subpanel'>
-                  <div className='benchmark-view__subpanel-title'>
-                    <span className='material-symbols-rounded'>plagiarism</span>
-                    <span>{t('benchmark.changedFiles')}</span>
-                  </div>
-                  {latestResult.changedFiles != null && latestResult.changedFiles.length > 0
-                    ? (
-                        <div className='benchmark-view__file-list'>
-                          {latestResult.changedFiles.map((file: string) => (
-                            <span key={file} className='benchmark-view__file-tag'>{file}</span>
-                          ))}
-                        </div>
-                      )
-                    : (
-                        <Typography.Text type='secondary'>{t('benchmark.noChangedFiles')}</Typography.Text>
-                      )}
-                </div>
-                <div className='benchmark-view__subpanel'>
-                  <div className='benchmark-view__subpanel-title'>
-                    <span className='material-symbols-rounded'>report</span>
-                    <span>{t('benchmark.issues')}</span>
-                  </div>
-                  {latestResult.issues.length === 0
-                    ? <Typography.Text type='secondary'>{t('benchmark.noIssues')}</Typography.Text>
-                    : (
-                        <ul className='benchmark-view__issues-list'>
-                          {latestResult.issues.map((issue: string) => <li key={issue}>{issue}</li>)}
-                        </ul>
-                      )}
-                </div>
+              <div className='benchmark-view__score-item'>
+                <label>{t('benchmark.goalScore')}</label>
+                <strong>{latestResult.scores.goalScore}</strong>
+              </div>
+              <div className='benchmark-view__score-item'>
+                <label>{t('benchmark.referenceScore')}</label>
+                <strong>{latestResult.scores.referenceScore}</strong>
               </div>
             </div>
-          )}
+            <div className='benchmark-view__info-grid'>
+              <div className='benchmark-view__info-row'>
+                <label>
+                  <span className='material-symbols-rounded'>schedule</span>
+                  {t('benchmark.durationMs')}
+                </label>
+                <span>{latestResult.durationMs}</span>
+              </div>
+              <div className='benchmark-view__info-row'>
+                <label>
+                  <span className='material-symbols-rounded'>monitoring</span>
+                  {t('benchmark.testExitCode')}
+                </label>
+                <span>{latestResult.testExitCode}</span>
+              </div>
+            </div>
+            <Typography.Paragraph className='benchmark-view__judge-summary'>
+              {latestResult.judgeSummary}
+            </Typography.Paragraph>
+            <div className='benchmark-view__subgrid'>
+              <div className='benchmark-view__subpanel'>
+                <div className='benchmark-view__subpanel-title'>
+                  <span className='material-symbols-rounded'>plagiarism</span>
+                  <span>{t('benchmark.changedFiles')}</span>
+                </div>
+                {latestResult.changedFiles != null && latestResult.changedFiles.length > 0
+                  ? (
+                    <div className='benchmark-view__file-list'>
+                      {latestResult.changedFiles.map((file: string) => (
+                        <span key={file} className='benchmark-view__file-tag'>{file}</span>
+                      ))}
+                    </div>
+                  )
+                  : (
+                    <Typography.Text type='secondary'>{t('benchmark.noChangedFiles')}</Typography.Text>
+                  )}
+              </div>
+              <div className='benchmark-view__subpanel'>
+                <div className='benchmark-view__subpanel-title'>
+                  <span className='material-symbols-rounded'>report</span>
+                  <span>{t('benchmark.issues')}</span>
+                </div>
+                {latestResult.issues.length === 0
+                  ? <Typography.Text type='secondary'>{t('benchmark.noIssues')}</Typography.Text>
+                  : (
+                    <ul className='benchmark-view__issues-list'>
+                      {latestResult.issues.map((issue: string) => <li key={issue}>{issue}</li>)}
+                    </ul>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }

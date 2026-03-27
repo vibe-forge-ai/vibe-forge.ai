@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ModelServiceConfig } from '@vibe-forge/core'
 import {
   listServiceModels,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
   resolveServiceModelSelector
 } from '#~/hooks/chat/model-selector'
+import type { ModelServiceConfig } from '@vibe-forge/core'
 
 const modelServices: Record<string, ModelServiceConfig> = {
   serviceA: {

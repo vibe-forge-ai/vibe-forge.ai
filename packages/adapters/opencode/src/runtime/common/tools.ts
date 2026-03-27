@@ -63,7 +63,17 @@ const OPEN_CODE_TOOL_ALIASES: Record<string, string> = {
 
 const PERMISSION_ONLY_TOOL_KEYS = new Set(['agent', 'task'])
 const MANAGED_FLAGS_WITH_VALUE = new Set([
-  '--agent', '--attach', '--file', '--format', '--model', '--port', '--session', '--title', '-f', '-m', '-s'
+  '--agent',
+  '--attach',
+  '--file',
+  '--format',
+  '--model',
+  '--port',
+  '--session',
+  '--title',
+  '-f',
+  '-m',
+  '-s'
 ])
 const MANAGED_FLAGS = new Set(['--continue', '--fork', '--share', '-c'])
 

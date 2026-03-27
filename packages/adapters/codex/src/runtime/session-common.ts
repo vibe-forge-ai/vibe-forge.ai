@@ -8,8 +8,8 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
-import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
+import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
@@ -128,11 +128,11 @@ function buildCodexConfigOverrides(params: {
     sessionId: string
   }
 }): {
-    args: string[]
-    fingerprintArgs: string[]
-    resolvedModel: string | undefined
-    resolvedMaxOutputTokens: number | null | undefined
-  } {
+  args: string[]
+  fingerprintArgs: string[]
+  resolvedModel: string | undefined
+  resolvedMaxOutputTokens: number | null | undefined
+} {
   const { systemPrompt, rawModel, modelServices, proxyBaseUrl, proxyLogContext } = params
   const args: string[] = []
   const fingerprintArgs: string[] = []
@@ -411,10 +411,10 @@ export async function resolveSessionBase(
   const shouldUseProxy = typeof routedService?.apiBaseUrl === 'string' && routedService.apiBaseUrl.trim() !== ''
   const proxyLogger = shouldUseProxy
     ? createLogger(
-        cwd,
-        `${ctx.ctxId}/${options.sessionId ?? 'default'}/adapter-codex`,
-        'proxy'
-      )
+      cwd,
+      `${ctx.ctxId}/${options.sessionId ?? 'default'}/adapter-codex`,
+      'proxy'
+    )
     : undefined
   const proxyBaseUrl = shouldUseProxy
     ? (await ensureCodexProxyServer(proxyLogger)).baseUrl
@@ -442,10 +442,10 @@ export async function resolveSessionBase(
     proxyBaseUrl,
     proxyLogContext: proxyBaseUrl != null
       ? {
-          cwd,
-          ctxId: ctx.ctxId,
-          sessionId: options.sessionId ?? 'default'
-        }
+        cwd,
+        ctxId: ctx.ctxId,
+        sessionId: options.sessionId ?? 'default'
+      }
       : undefined
   })
 

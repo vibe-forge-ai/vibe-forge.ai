@@ -1,14 +1,11 @@
 import process from 'node:process'
 
 import type { AdapterOutputEvent, AdapterSession, ChatMessage } from '@vibe-forge/core'
-import { callHook } from '@vibe-forge/core/hooks'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import { callHook } from '@vibe-forge/core/hooks'
 
 import { extractTextFromMessage, fetchSessionMessages, postSessionEvent } from '#~/mcp-sync/index.js'
-import {
-  loadInjectDefaultSystemPromptValue,
-  mergeSystemPrompts
-} from '#~/system-prompt.js'
+import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '#~/system-prompt.js'
 
 interface ServerSyncState {
   sessionId: string

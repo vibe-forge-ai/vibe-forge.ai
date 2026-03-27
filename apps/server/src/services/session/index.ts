@@ -15,13 +15,13 @@ import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
-  takeExternalSessionRuntime,
   deleteAdapterSessionRuntime,
   emitRuntimeEvent,
   getAdapterSessionRuntime,
   getExternalSessionRuntime,
   notifySessionUpdated,
-  setAdapterSessionRuntime
+  setAdapterSessionRuntime,
+  takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
@@ -55,11 +55,9 @@ export async function startAdapterSession(
     const currentModel = cached.config?.model ?? existing?.model
     const currentAdapter = cached.config?.adapter ?? existing?.adapter
     const currentPermissionMode = cached.config?.permissionMode ?? existing?.permissionMode
-    const configChanged = (
-      currentModel !== resolvedModel ||
+    const configChanged = currentModel !== resolvedModel ||
       currentAdapter !== resolvedAdapter ||
       currentPermissionMode !== resolvedPermissionMode
-    )
 
     if (!configChanged) {
       serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
@@ -253,12 +251,15 @@ export async function startAdapterSession(
       }
     })
 
-    return setAdapterSessionRuntime(sessionId, bindAdapterSessionRuntime(connectionState, session, {
-      runId,
-      model: resolvedModel,
-      adapter: resolvedAdapter,
-      permissionMode: resolvedPermissionMode
-    }))
+    return setAdapterSessionRuntime(
+      sessionId,
+      bindAdapterSessionRuntime(connectionState, session, {
+        runId,
+        model: resolvedModel,
+        adapter: resolvedAdapter,
+        permissionMode: resolvedPermissionMode
+      })
+    )
   } catch (err) {
     if (activeAdapterRunStore.get(sessionId) === runId) {
       activeAdapterRunStore.delete(sessionId)

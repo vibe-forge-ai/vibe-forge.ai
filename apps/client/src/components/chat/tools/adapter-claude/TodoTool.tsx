@@ -1,7 +1,7 @@
 import './TodoTool.scss'
+import type { ToolInputs } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ToolInputs } from '@vibe-forge/core'
 
 import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'

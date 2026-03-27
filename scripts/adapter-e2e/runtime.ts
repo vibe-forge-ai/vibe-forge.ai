@@ -100,12 +100,12 @@ export const runProcess = async ({
 
   const timeout = timeoutMs != null
     ? setTimeout(() => {
-        timedOut = true
-        killProcessTree(child.pid ?? undefined, 'SIGTERM')
-        forceKillTimer = setTimeout(() => {
-          killProcessTree(child.pid ?? undefined, 'SIGKILL')
-        }, 5_000)
-      }, timeoutMs)
+      timedOut = true
+      killProcessTree(child.pid ?? undefined, 'SIGTERM')
+      forceKillTimer = setTimeout(() => {
+        killProcessTree(child.pid ?? undefined, 'SIGKILL')
+      }, 5_000)
+    }, timeoutMs)
     : undefined
 
   return new Promise((resolve, reject) => {

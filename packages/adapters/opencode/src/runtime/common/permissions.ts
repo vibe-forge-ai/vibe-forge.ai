@@ -1,18 +1,25 @@
 import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
-import {
-  findPermissionEntry,
-  isPermissionValue
-  
-  
-  
-} from './permission-node'
-import type {PermissionNode, PermissionRecord, PermissionValue} from './permission-node';
+import { findPermissionEntry, isPermissionValue } from './permission-node'
+import type { PermissionNode, PermissionRecord, PermissionValue } from './permission-node'
 import { LEGACY_TOOL_PERMISSION_ALIASES } from './tools'
 
 const OPENCODE_PERMISSION_KEYS = [
-  'bash', 'edit', 'glob', 'grep', 'question', 'read', 'list', 'lsp', 'skill',
-  'task', 'todoread', 'todowrite', 'webfetch', 'websearch', 'codesearch'
+  'bash',
+  'edit',
+  'glob',
+  'grep',
+  'question',
+  'read',
+  'list',
+  'lsp',
+  'skill',
+  'task',
+  'todoread',
+  'todowrite',
+  'webfetch',
+  'websearch',
+  'codesearch'
 ]
 
 export const mapPermissionModeToOpenCode = (

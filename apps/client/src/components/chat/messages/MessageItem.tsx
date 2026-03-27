@@ -1,9 +1,9 @@
 import './MessageItem.scss'
+import { MarkdownContent } from '#~/components/MarkdownContent'
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
-import { MessageFooter } from './MessageFooter'
-import { MarkdownContent } from '#~/components/MarkdownContent'
 import { ToolRenderer } from '../tools/core/ToolRenderer'
+import { MessageFooter } from './MessageFooter'
 
 interface MessageItemProps {
   msg: ChatMessage
@@ -27,7 +27,8 @@ function MessageItemComponent({
 
     if (!Array.isArray(msg.content)) return null
 
-    const hasContent = msg.content.some((c: ChatMessageContent) => c.type === 'text' || c.type === 'image') || msg.toolCall != null
+    const hasContent = msg.content.some((c: ChatMessageContent) => c.type === 'text' || c.type === 'image') ||
+      msg.toolCall != null
     if (!hasContent) return null
 
     return (
@@ -87,14 +88,14 @@ function MessageItemComponent({
 }
 
 const areMessageItemPropsEqual = (prev: MessageItemProps, next: MessageItemProps) => {
-  return prev.isFirstInGroup === next.isFirstInGroup
-    && prev.msg.id === next.msg.id
-    && prev.msg.role === next.msg.role
-    && prev.msg.createdAt === next.msg.createdAt
-    && prev.msg.model === next.msg.model
-    && prev.msg.content === next.msg.content
-    && prev.msg.toolCall === next.msg.toolCall
-    && prev.msg.usage === next.msg.usage
+  return prev.isFirstInGroup === next.isFirstInGroup &&
+    prev.msg.id === next.msg.id &&
+    prev.msg.role === next.msg.role &&
+    prev.msg.createdAt === next.msg.createdAt &&
+    prev.msg.model === next.msg.model &&
+    prev.msg.content === next.msg.content &&
+    prev.msg.toolCall === next.msg.toolCall &&
+    prev.msg.usage === next.msg.usage
 }
 
 export const MessageItem = React.memo(MessageItemComponent, areMessageItemPropsEqual)

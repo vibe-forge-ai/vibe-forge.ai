@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { setBinding, setPendingUnack } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 

@@ -54,7 +54,9 @@ const mergeSessionList = (
   }
 
   const nextSessions = existing
-    ? prev.sessions.map((currentSession) => currentSession.id === updatedSession.id ? { ...currentSession, ...session } : currentSession)
+    ? prev.sessions.map((currentSession) =>
+      currentSession.id === updatedSession.id ? { ...currentSession, ...session } : currentSession
+    )
     : [session, ...prev.sessions]
 
   return {

@@ -142,14 +142,14 @@ Keys must be valid codex feature names (run `codex features list` to see all).
 
 Notable flags:
 
-| Name                 | Default | Description                                             |
-| -------------------- | ------- | ------------------------------------------------------- |
-| `shell_snapshot`     | false   | Snapshot shell environment for faster repeated commands |
-| `unified_exec`       | false   | Use PTY-backed exec tool                                |
-| `shell_tool`         | true    | Enable default shell tool                               |
-| `undo`               | true    | Per-turn git ghost snapshots                            |
-| `web_search_request` | true    | Live web search                                         |
-| `remote_models`      | false   | Refresh remote model list at startup                    |
+| Name                 | Default | Description                                                              |
+| -------------------- | ------- | ------------------------------------------------------------------------ |
+| `shell_snapshot`     | false   | Snapshot shell environment for faster repeated commands                  |
+| `unified_exec`       | false   | Use PTY-backed exec tool                                                 |
+| `shell_tool`         | true    | Enable default shell tool                                                |
+| `undo`               | true    | Per-turn git ghost snapshots                                             |
+| `web_search_request` | true    | Live web search                                                          |
+| `remote_models`      | false   | Refresh remote model list at startup                                     |
 | `codex_hooks`        | false   | Native `SessionStart/UserPromptSubmit/PreToolUse/PostToolUse/Stop` hooks |
 
 ### Native hooks
@@ -234,10 +234,10 @@ const modelServices = {
       codex: {
         wireApi: 'responses',
         headers: { 'X-Tenant': 'tenant-1' },
-        queryParams: { 'api-version': '2025-04-01-preview' },
-      },
-    },
-  },
+        queryParams: { 'api-version': '2025-04-01-preview' }
+      }
+    }
+  }
 }
 ```
 
@@ -260,12 +260,12 @@ This mirrors the adapter-scoped logging layout used by the Claude Code Router tr
 
 Set via `AdapterQueryOptions.permissionMode`. Mapped to codex values:
 
-| vibe-forge `permissionMode`        | codex mapping                                                                 |
-| ---------------------------------- | ----------------------------------------------------------------------------- |
+| vibe-forge `permissionMode`        | codex mapping                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
 | `bypassPermissions`                | `--dangerously-bypass-approvals-and-sandbox` (`--yolo`) + `danger-full-access` |
-| `dontAsk`                          | `approval_policy = never` / `--ask-for-approval never`                        |
-| `plan`                             | `approval_policy = on-request` / `--ask-for-approval on-request`              |
-| `default`, `acceptEdits`, or unset | `approval_policy = untrusted` / `--ask-for-approval untrusted`                |
+| `dontAsk`                          | `approval_policy = never` / `--ask-for-approval never`                         |
+| `plan`                             | `approval_policy = on-request` / `--ask-for-approval on-request`               |
+| `default`, `acceptEdits`, or unset | `approval_policy = untrusted` / `--ask-for-approval untrusted`                 |
 
 ---
 

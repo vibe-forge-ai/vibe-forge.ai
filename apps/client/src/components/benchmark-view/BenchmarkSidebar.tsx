@@ -21,7 +21,9 @@ interface BenchmarkTreeNode {
 function ResultStatusIcon({ result }: { result: BenchmarkResult | null | undefined }) {
   const meta = getResultStatusMeta(result)
   return (
-    <span className={`material-symbols-rounded benchmark-view__status-icon benchmark-view__status-icon--${meta.statusKey}`}>
+    <span
+      className={`material-symbols-rounded benchmark-view__status-icon benchmark-view__status-icon--${meta.statusKey}`}
+    >
       {meta.icon}
     </span>
   )
@@ -69,7 +71,9 @@ function buildCaseTreeData(params: {
         selectable: true,
         title: (
           <div className='benchmark-view__tree-category'>
-            <span className='material-symbols-rounded benchmark-view__tree-icon benchmark-view__tree-icon--category'>folder_open</span>
+            <span className='material-symbols-rounded benchmark-view__tree-icon benchmark-view__tree-icon--category'>
+              folder_open
+            </span>
             <Typography.Text strong className='benchmark-view__tree-title'>
               {category.category}
             </Typography.Text>
@@ -167,9 +171,7 @@ export function BenchmarkSidebar({
       t,
       onRunCase,
       onRunCategory
-    }),
-    [cases, categories, query, t]
-  )
+    }), [cases, categories, query, t])
 
   const handleTreeCheck = (
     checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }
@@ -248,25 +250,25 @@ export function BenchmarkSidebar({
       <div className='benchmark-view__tree-shell'>
         {treeData.length === 0
           ? (
-              <div className='benchmark-view__tree-empty'>
-                <Empty description={t('benchmark.emptyCases')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              </div>
-            )
+            <div className='benchmark-view__tree-empty'>
+              <Empty description={t('benchmark.emptyCases')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            </div>
+          )
           : (
-              <Tree
-                blockNode
-                checkable
-                showIcon={false}
-                switcherIcon={<span className='material-symbols-rounded benchmark-view__switcher'>chevron_right</span>}
-                selectedKeys={selectedCase ? [`case:${selectedCase.category}/${selectedCase.title}`] : []}
-                expandedKeys={expandedKeys}
-                checkedKeys={checkedKeys}
-                treeData={treeData}
-                onExpand={(keys) => onExpandedKeysChange(keys.map(String))}
-                onSelect={handleTreeSelect}
-                onCheck={handleTreeCheck}
-              />
-            )}
+            <Tree
+              blockNode
+              checkable
+              showIcon={false}
+              switcherIcon={<span className='material-symbols-rounded benchmark-view__switcher'>chevron_right</span>}
+              selectedKeys={selectedCase ? [`case:${selectedCase.category}/${selectedCase.title}`] : []}
+              expandedKeys={expandedKeys}
+              checkedKeys={checkedKeys}
+              treeData={treeData}
+              onExpand={(keys) => onExpandedKeysChange(keys.map(String))}
+              onSelect={handleTreeSelect}
+              onCheck={handleTreeCheck}
+            />
+          )}
       </div>
     </div>
   )

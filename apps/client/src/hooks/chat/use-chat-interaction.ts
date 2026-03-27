@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 
-import type { AskUserQuestionParams } from '@vibe-forge/core'
 import { connectionManager } from '#~/connectionManager.js'
+import type { AskUserQuestionParams } from '@vibe-forge/core'
 
 export function useChatInteraction({ sessionId }: { sessionId?: string }) {
   const [interactionRequest, setInteractionRequest] = useState<{ id: string; payload: AskUserQuestionParams } | null>(

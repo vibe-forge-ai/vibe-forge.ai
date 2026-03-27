@@ -16,18 +16,20 @@ const args = process.argv.slice(2)
 
 if (args.includes('--help') || args.includes('-h')) {
   process.stdout.write(
-    `${[
-      'Usage: pnpm typecheck [scope...]',
-      '',
-      'Available scopes:',
-      ...TYPECHECK_CONFIGS.map(([name]) => `  - ${name}`)
-    ].join('\n')  }\n`
+    `${
+      [
+        'Usage: pnpm typecheck [scope...]',
+        '',
+        'Available scopes:',
+        ...TYPECHECK_CONFIGS.map(([name]) => `  - ${name}`)
+      ].join('\n')
+    }\n`
   )
   process.exit(0)
 }
 
 if (args.includes('--list')) {
-  process.stdout.write(`${TYPECHECK_CONFIGS.map(([name]) => name).join('\n')  }\n`)
+  process.stdout.write(`${TYPECHECK_CONFIGS.map(([name]) => name).join('\n')}\n`)
   process.exit(0)
 }
 
@@ -39,7 +41,7 @@ const missingScopes = requestedScopes.filter(
 if (missingScopes.length > 0) {
   process.stderr.write(
     `Unknown typecheck scope: ${missingScopes.join(', ')}\n` +
-    'Run `pnpm typecheck --list` to see valid scopes.\n'
+      'Run `pnpm typecheck --list` to see valid scopes.\n'
   )
   process.exit(1)
 }

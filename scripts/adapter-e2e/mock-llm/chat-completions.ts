@@ -29,17 +29,17 @@ export const writeChatCompletionResult = (
           ...(toolCall == null
             ? {}
             : {
-                tool_calls: [
-                  {
-                    id: toolCall.call_id,
-                    type: 'function',
-                    function: {
-                      name: toolCall.name,
-                      arguments: toolCall.arguments
-                    }
+              tool_calls: [
+                {
+                  id: toolCall.call_id,
+                  type: 'function',
+                  function: {
+                    name: toolCall.name,
+                    arguments: toolCall.arguments
                   }
-                ]
-              })
+                }
+              ]
+            })
         },
         finish_reason: toolCall == null ? 'stop' : 'tool_calls'
       }

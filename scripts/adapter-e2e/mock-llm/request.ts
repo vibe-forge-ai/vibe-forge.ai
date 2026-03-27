@@ -48,8 +48,8 @@ export const getRequestText = (body: JsonObject) => (
 
 export const isTitleGenerationRequest = (body: JsonObject) => {
   const requestText = getRequestText(body)
-  return requestText.includes('Generate a title for this conversation')
-    || requestText.includes('You are a title generator')
+  return requestText.includes('Generate a title for this conversation') ||
+    requestText.includes('You are a title generator')
 }
 
 export const hasToolResult = (body: JsonObject) => (

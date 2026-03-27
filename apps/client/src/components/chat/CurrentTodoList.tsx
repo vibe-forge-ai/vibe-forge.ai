@@ -1,7 +1,7 @@
 import './CurrentTodoList.scss'
+import type { ChatMessage, ChatMessageContent, ToolInputs } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ChatMessage, ChatMessageContent, ToolInputs } from '@vibe-forge/core'
 
 type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
 

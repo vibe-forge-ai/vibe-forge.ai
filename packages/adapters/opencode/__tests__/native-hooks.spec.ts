@@ -30,9 +30,12 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
     const realHome = await createTempDir('opencode-hooks-home-')
     const mockHome = join(workspace, '.ai', '.mock')
 
-    await writeDocument(join(realHome, '.config', 'opencode', 'opencode.json'), JSON.stringify({
-      $schema: 'https://opencode.ai/config.json'
-    }))
+    await writeDocument(
+      join(realHome, '.config', 'opencode', 'opencode.json'),
+      JSON.stringify({
+        $schema: 'https://opencode.ai/config.json'
+      })
+    )
     await writeDocument(join(realHome, '.config', 'opencode', 'commands', 'review.md'), '# review')
     process.env.__VF_PROJECT_REAL_HOME__ = realHome
 

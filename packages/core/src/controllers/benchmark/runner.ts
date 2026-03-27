@@ -6,10 +6,16 @@ import { uuid } from '#~/utils/uuid.js'
 
 import { getBenchmarkCase, listBenchmarkCases } from './discover'
 import { writeBenchmarkResult } from './result-store'
-import type { BenchmarkRunCaseInput, BenchmarkRunCaseOutput, BenchmarkRunCategoryInput, BenchmarkRunCategoryOutput, BenchmarkRunEvent } from './types'
 import type { BenchmarkResult } from './schema'
-import { createCaseWorkspace, disposeCaseWorkspace } from './workspace'
+import type {
+  BenchmarkRunCaseInput,
+  BenchmarkRunCaseOutput,
+  BenchmarkRunCategoryInput,
+  BenchmarkRunCategoryOutput,
+  BenchmarkRunEvent
+} from './types'
 import { execCommand, execShellCommand, parseDiffFiles, summarizeText } from './utils'
+import { createCaseWorkspace, disposeCaseWorkspace } from './workspace'
 
 interface TaskExecutionResult {
   sessionId: string
@@ -171,18 +177,17 @@ const judgeResult = (params: {
   }
 
   const finalScore = Number((0.7 * testScore + 0.2 * goalScore + 0.1 * referenceScore).toFixed(2))
-  const status: BenchmarkResult['status'] =
-    testScore === 1 && goalScore >= 0.8
-      ? 'pass'
-      : finalScore > 0
-          ? 'partial'
-          : 'fail'
+  const status: BenchmarkResult['status'] = testScore === 1 && goalScore >= 0.8
+    ? 'pass'
+    : finalScore > 0
+    ? 'partial'
+    : 'fail'
 
   const judgeSummary = status === 'pass'
     ? '验收测试通过，任务目标完成度良好。'
     : status === 'partial'
-        ? '实现存在部分有效改动，但仍需进一步完善。'
-        : '当前实现未完成任务目标。'
+    ? '实现存在部分有效改动，但仍需进一步完善。'
+    : '当前实现未完成任务目标。'
 
   return {
     status,

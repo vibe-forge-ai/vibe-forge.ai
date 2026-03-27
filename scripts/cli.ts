@@ -1,9 +1,9 @@
 import { Command } from 'commander'
 import process from 'node:process'
 
-import { runProcess } from './adapter-e2e/runtime'
-import { runAdapterE2ESuite } from './adapter-e2e/harness'
 import { parseAdapterE2ESelection } from './__tests__/adapter-e2e/cases'
+import { runAdapterE2ESuite } from './adapter-e2e/harness'
+import { runProcess } from './adapter-e2e/runtime'
 
 const runVitestAdapterE2E = async (input: {
   selection: string | undefined

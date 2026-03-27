@@ -1,10 +1,10 @@
-import { startMockLlmServer } from './mock-llm/server'
 import {
   ADAPTER_E2E_CASES,
   collectCaseMockScenarios,
   resolveAdapterE2ECase,
   resolveSelectedAdapterE2ECases
 } from '../__tests__/adapter-e2e/cases'
+import { startMockLlmServer } from './mock-llm/server'
 import { runOpenCode, runWrappedAdapter } from './runners'
 import type {
   AdapterE2ECase,
@@ -79,9 +79,9 @@ const matchesResolvedCaseModel = (
 ) => {
   const candidates = [testCase.id, testCase.model].filter(Boolean)
   return candidates.some(candidate => (
-    entry.model === candidate
-    || entry.model.includes(candidate)
-    || candidate.includes(entry.model)
+    entry.model === candidate ||
+    entry.model.includes(candidate) ||
+    candidate.includes(entry.model)
   ))
 }
 
@@ -89,9 +89,10 @@ export const collectCaseMockTrace = (
   trace: MockLlmTraceEntry[],
   traceStartIndex: number,
   testCase: ResolvedAdapterE2ECase
-) => trace
-  .slice(traceStartIndex)
-  .filter(entry => matchesResolvedCaseModel(entry, testCase))
+) =>
+  trace
+    .slice(traceStartIndex)
+    .filter(entry => matchesResolvedCaseModel(entry, testCase))
 
 export const runAdapterE2ESuite = async (
   requested: string | undefined = 'all',

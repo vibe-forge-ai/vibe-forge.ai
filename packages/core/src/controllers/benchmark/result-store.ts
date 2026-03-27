@@ -4,8 +4,8 @@ import process from 'node:process'
 
 import { glob } from 'fast-glob'
 
-import { BenchmarkResultSchema  } from './schema'
-import type {BenchmarkResult} from './schema';
+import { BenchmarkResultSchema } from './schema'
+import type { BenchmarkResult } from './schema'
 import { readTextIfExists } from './utils'
 
 export const resolveBenchmarkResultPath = (workspaceFolder: string, category: string, title: string) =>

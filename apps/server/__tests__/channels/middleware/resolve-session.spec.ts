@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { resolveSessionMiddleware } from '#~/channels/middleware/resolve-session.js'
 import { getDb } from '#~/db/index.js'
 

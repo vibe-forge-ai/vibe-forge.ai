@@ -3,8 +3,8 @@ import { spawn } from 'node:child_process'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
 
 import { extractOpenCodeSessionRecords, selectOpenCodeSessionByTitle } from '../common'
-import { execFileAsync  } from './shared'
-import type {OpenCodeRunResult} from './shared';
+import { execFileAsync } from './shared'
+import type { OpenCodeRunResult } from './shared'
 
 export const findOpenCodeSessionId = async (params: {
   binaryPath: string
@@ -33,24 +33,25 @@ export const runOpenCodeCommand = (params: {
   cwd: string
   env: Record<string, string | null | undefined>
   onStart?: (pid?: number) => void
-}) => new Promise<OpenCodeRunResult>((resolveResult, reject) => {
-  const proc = spawn(params.binaryPath, params.args, {
-    cwd: params.cwd,
-    env: params.env as Record<string, string>,
-    stdio: 'pipe'
-  })
+}) =>
+  new Promise<OpenCodeRunResult>((resolveResult, reject) => {
+    const proc = spawn(params.binaryPath, params.args, {
+      cwd: params.cwd,
+      env: params.env as Record<string, string>,
+      stdio: 'pipe'
+    })
 
-  params.onStart?.(proc.pid)
-  const stdoutChunks: string[] = []
-  const stderrChunks: string[] = []
-  proc.stdout.on('data', chunk => stdoutChunks.push(String(chunk)))
-  proc.stderr.on('data', chunk => stderrChunks.push(String(chunk)))
-  proc.on('error', reject)
-  proc.on('exit', code => {
-    resolveResult({
-      exitCode: code ?? 0,
-      stdout: stdoutChunks.join(''),
-      stderr: stderrChunks.join('')
+    params.onStart?.(proc.pid)
+    const stdoutChunks: string[] = []
+    const stderrChunks: string[] = []
+    proc.stdout.on('data', chunk => stdoutChunks.push(String(chunk)))
+    proc.stderr.on('data', chunk => stderrChunks.push(String(chunk)))
+    proc.on('error', reject)
+    proc.on('exit', code => {
+      resolveResult({
+        exitCode: code ?? 0,
+        stdout: stdoutChunks.join(''),
+        stderr: stderrChunks.join('')
+      })
     })
   })
-})

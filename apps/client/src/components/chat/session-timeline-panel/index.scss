@@ -19,10 +19,10 @@
 
 .session-timeline-mermaid__interactive {
   cursor: pointer;
-  transition: filter 0.2s ease, opacity 0.2s ease;
+  transition: filter .2s ease, opacity .2s ease;
 }
 
 .session-timeline-mermaid__interactive:hover {
   filter: drop-shadow(0 0 6px var(--primary-color));
-  opacity: 0.9;
+  opacity: .9;
 }

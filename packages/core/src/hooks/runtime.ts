@@ -6,9 +6,9 @@ import { resolveServerLogLevel } from '#~/env.js'
 import { createLogger } from '#~/utils/create-logger.js'
 import { transformCamelKey } from '#~/utils/string-transform.js'
 
-import type { HookInput, HookInputs, HookOutputCore, HookOutputs } from './type'
 import type { HookContext, Plugin } from './index'
 import { resolvePlugins } from './loader'
+import type { HookInput, HookInputs, HookOutputCore, HookOutputs } from './type'
 
 export const callPluginHook = async <K extends keyof HookInputs>(
   eventName: K,
@@ -135,10 +135,14 @@ export const runHookCli = async () => {
     process.stdout.write(`${JSON.stringify(result)}\n`)
   } catch (error) {
     process.stdout.write(
-      `${JSON.stringify({
-        continue: false,
-        stopReason: `run hook error: ${String(error)}`
-      } satisfies HookOutputCore)}\n`
+      `${
+        JSON.stringify(
+          {
+            continue: false,
+            stopReason: `run hook error: ${String(error)}`
+          } satisfies HookOutputCore
+        )
+      }\n`
     )
   }
 }

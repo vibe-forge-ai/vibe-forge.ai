@@ -348,6 +348,5 @@ export const handleIncomingNotification = (
       }
       onEvent({ type: 'stop', data })
     }
-    
   }
 }

@@ -85,7 +85,7 @@ describe('adapter e2e hook log parsing', () => {
         event: 'PostToolUse',
         header: 'Bash',
         toolName: 'Bash',
-        detail: '> sed -n \'1,200p\' README.md'
+        detail: "> sed -n '1,200p' README.md"
       }
     ])
   })

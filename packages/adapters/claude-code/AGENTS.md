@@ -102,11 +102,13 @@ node apps/cli/cli.js \
 ### 1. `npx vf ... --print` 没有输出、输出格式异常、resume/create 行为不对
 
 先读：
+
 - `src/runtime/prepare.ts`
 - `src/runtime/session.ts`
 - `src/protocol/incoming.ts`
 
 重点确认：
+
 - `executionType` 是 `create` 还是 `resume`
 - `--print --verbose --debug --output-format stream-json --input-format stream-json` 是否按预期注入
 - stdout 中的 JSONL 是否被正确解析并转成 adapter event
@@ -114,14 +116,17 @@ node apps/cli/cli.js \
 ### 2. 主会话日志里出现了不该出现的 debug，或开启 debug 后仍没有 debug
 
 先读：
+
 - `packages/core/src/utils/create-logger.ts`
 - `packages/core/src/env.ts`
 - `packages/core/src/controllers/task/prepare.ts`
 
 再回到本 adapter：
+
 - `src/runtime/session.ts`
 
 关键事实：
+
 - 主会话日志文件：`.ai/logs/<ctxId>/<sessionId>.log.md`
 - `logger.debug()` 是否展示，取决于 `resolveServerLogLevel()`
 - `Claude Code CLI stdout` 属于主会话 debug 日志，不属于 transformer 文件日志
@@ -129,6 +134,7 @@ node apps/cli/cli.js \
 ### 3. transformer 日志没有生成，或想确认 CCR 变换链路
 
 先读：
+
 - `src/ccr/default-config.ts`
 - `src/ccr-transformers/logger.js`
 - `src/ccr-transformers/openai-polyfill.js`
@@ -136,6 +142,7 @@ node apps/cli/cli.js \
 - `src/ccr-transformers/kimi-thinking-polyfill.js`
 
 关键事实：
+
 - transformer 日志文件：`.ai/logs/<ctxId>/<sessionId>/adapter-claude-code/*.log.md`
 - 这是 CCR 内部诊断日志，和主会话 `.log.md` 的 debug 开关是两套概念
 - 排查“为什么某个 transformer 没生效”时，优先看 `default-config.ts` 里是否被注入
@@ -143,6 +150,7 @@ node apps/cli/cli.js \
 ### 4. `npx vf init`、hook、plugin logger 的日志级别不对
 
 先读：
+
 - `apps/cli/src/commands/init.ts`
 - `apps/cli/src/hooks/index.ts`
 - `apps/cli/src/hooks/claude.ts`
@@ -151,6 +159,7 @@ node apps/cli/cli.js \
 - `packages/core/src/env.ts`
 
 关键事实：
+
 - CLI init 和 hooks 不是从 adapter 内部直接创建 logger，而是走 CLI/core 入口
 - Claude Code native hooks 的托管配置写在 `.ai/.mock/.claude/settings.json`
 - 所以这类问题不要只盯着 adapter
@@ -158,10 +167,12 @@ node apps/cli/cli.js \
 ### 5. server 控制台 / session jsonl 日志级别不对
 
 先读：
+
 - `apps/server/src/utils/logger.ts`
 - `packages/core/src/env.ts`
 
 关键事实：
+
 - server pino logger 和会话 markdown logger 不是同一实现
 - 但应共享同一套 log level 解析规则
 
@@ -170,11 +181,13 @@ node apps/cli/cli.js \
 ### 场景 A: 先复现 CLI 现象
 
 执行：
+
 - `npx vf init`
 - `npx vf clear`
 - `npx vf 你好 --print`
 
 如果需要对比 debug 开关，再执行：
+
 - `__VF_PROJECT_AI_SERVER_DEBUG__=true npx vf 你好 --print`
 
 ### 场景 B: 只看本次运行生成的日志
@@ -182,6 +195,7 @@ node apps/cli/cli.js \
 不要直接全量 grep `.ai/logs`。
 
 推荐做法：
+
 - `touch /tmp/<marker>`
 - 执行复现命令
 - `find .ai/logs -type f -newer /tmp/<marker> | sort`

@@ -112,8 +112,8 @@ export interface MockScenarioHelpers {
 }
 
 export type MockScenarioTurn =
-  | { kind: 'message', text: string }
-  | { kind: 'tool', tool: MockToolCall }
+  | { kind: 'message'; text: string }
+  | { kind: 'tool'; tool: MockToolCall }
 
 export interface MockLlmTraceEntry {
   path: string

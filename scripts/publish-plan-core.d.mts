@@ -81,7 +81,9 @@ export declare const helpText: string
 
 export declare function parseArgs(argv: string[]): PublishPlanOptions
 export declare function bumpVersion(rawVersion: string, kind: PublishPlanBumpKind): string
-export declare function buildPublishArgs(options: Pick<PublishPlanOptions, 'access' | 'tag' | 'dryRun' | 'noGitChecks'>): string[]
+export declare function buildPublishArgs(
+  options: Pick<PublishPlanOptions, 'access' | 'tag' | 'dryRun' | 'noGitChecks'>
+): string[]
 export declare function parseWorkspacePatterns(workspaceConfig: string): string[]
 export declare function expandWorkspaceDirs(
   repoRoot: string,
@@ -107,7 +109,11 @@ export declare function createPublishPlan(
   options: PublishPlanOptions
 ): PublishPlan
 export declare function formatPlan(plan: PublishPlan, repoRoot: string, options: PublishPlanOptions): string
-export declare function serializePlan(plan: PublishPlan, repoRoot: string, options: PublishPlanOptions): PublishPlanSerializeResult
+export declare function serializePlan(
+  plan: PublishPlan,
+  repoRoot: string,
+  options: PublishPlanOptions
+): PublishPlanSerializeResult
 export declare function applyVersionBump(
   plan: PublishPlan,
   packages: Map<string, PublishPlanPackage>,

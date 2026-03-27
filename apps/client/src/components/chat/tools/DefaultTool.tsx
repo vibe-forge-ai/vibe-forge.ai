@@ -1,9 +1,9 @@
-import type { ChatMessageContent } from '@vibe-forge/core'
-import { useTranslation } from 'react-i18next'
 import { CodeBlock } from '#~/components/CodeBlock'
 import { MarkdownContent } from '#~/components/MarkdownContent'
-import { ToolCallBox } from './core/ToolCallBox'
 import { safeJsonStringify, toSerializable } from '#~/utils/safe-serialize'
+import type { ChatMessageContent } from '@vibe-forge/core'
+import { useTranslation } from 'react-i18next'
+import { ToolCallBox } from './core/ToolCallBox'
 
 interface StructuredTextBlock {
   type: 'text'

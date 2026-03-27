@@ -85,7 +85,7 @@
   &__switcher {
     font-size: 20px;
     display: block;
-    transition: transform 0.2s ease;
+    transition: transform .2s ease;
   }
 
   &__tree-shell .ant-tree-switcher_open &__switcher {
@@ -110,7 +110,7 @@
     padding: 5px 4px;
     border-radius: 6px;
     min-width: 0;
-    transition: background-color 0.15s;
+    transition: background-color .15s;
   }
 
   &__tree-category {
@@ -119,7 +119,8 @@
 
   &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-category,
   &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-case,
-  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected &__tree-case {
+  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected
+    &__tree-case {
     background: var(--sub-bg-color);
   }
 
@@ -145,7 +146,7 @@
   &__tree-run-btn {
     flex-shrink: 0;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity .15s;
   }
 
   &__tree-run-btn--category {
@@ -153,7 +154,8 @@
   }
 
   &__tree-shell .ant-tree-node-content-wrapper:hover &__tree-run-btn,
-  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected &__tree-run-btn {
+  &__tree-shell .ant-tree-node-content-wrapper.ant-tree-node-selected
+    &__tree-run-btn {
     opacity: 1;
   }
 
@@ -177,6 +179,6 @@
 
   &__status-icon--no-result {
     color: var(--sub-sub-text-color);
-    opacity: 0.5;
+    opacity: .5;
   }
 }

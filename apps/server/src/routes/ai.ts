@@ -211,8 +211,8 @@ export function aiRouter(): Router {
             description,
             always: rule.attributes.always ?? alwaysApply ?? true,
             globs: toStringList(
-              (rule.attributes as { globs?: unknown; glob?: unknown }).globs
-                ?? (rule.attributes as { globs?: unknown; glob?: unknown }).glob
+              (rule.attributes as { globs?: unknown; glob?: unknown }).globs ??
+                (rule.attributes as { globs?: unknown; glob?: unknown }).glob
             )
           }
         })
@@ -249,8 +249,8 @@ export function aiRouter(): Router {
           description,
           always: rule.attributes.always ?? alwaysApply ?? true,
           globs: toStringList(
-            (rule.attributes as { globs?: unknown; glob?: unknown }).globs
-              ?? (rule.attributes as { globs?: unknown; glob?: unknown }).glob
+            (rule.attributes as { globs?: unknown; glob?: unknown }).globs ??
+              (rule.attributes as { globs?: unknown; glob?: unknown }).glob
           ),
           body: rule.body ?? ''
         }
