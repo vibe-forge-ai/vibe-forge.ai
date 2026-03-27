@@ -9,7 +9,9 @@ import { runOpenCode, runWrappedAdapter } from './runners'
 import type {
   AdapterE2ECase,
   AdapterE2EHarnessOptions,
-  AdapterE2EResult
+  AdapterE2EResult,
+  MockLlmTraceEntry,
+  ResolvedAdapterE2ECase
 } from './types'
 
 const printScenarioResult = (result: AdapterE2EResult) => {
@@ -46,7 +48,11 @@ export const createAdapterE2EHarness = async (
 
     return {
       ...result,
-      mockTrace: mockServer.getTrace().slice(traceStartIndex)
+      mockTrace: collectCaseMockTrace(
+        mockServer.getTrace(),
+        traceStartIndex,
+        resolvedCase
+      )
     }
   }
 
@@ -66,6 +72,26 @@ export const createAdapterE2EHarness = async (
     }
   }
 }
+
+const matchesResolvedCaseModel = (
+  entry: MockLlmTraceEntry,
+  testCase: ResolvedAdapterE2ECase
+) => {
+  const candidates = [testCase.id, testCase.model].filter(Boolean)
+  return candidates.some(candidate => (
+    entry.model === candidate
+    || entry.model.includes(candidate)
+    || candidate.includes(entry.model)
+  ))
+}
+
+export const collectCaseMockTrace = (
+  trace: MockLlmTraceEntry[],
+  traceStartIndex: number,
+  testCase: ResolvedAdapterE2ECase
+) => trace
+  .slice(traceStartIndex)
+  .filter(entry => matchesResolvedCaseModel(entry, testCase))
 
 export const runAdapterE2ESuite = async (
   requested: string | undefined = 'all',
