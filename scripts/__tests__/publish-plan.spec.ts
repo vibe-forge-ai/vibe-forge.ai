@@ -282,7 +282,7 @@ describe('publish-plan', () => {
       }
     })
 
-    expect(result.kind).toBe('help')
+    expect((result as { kind: string }).kind).toBe('help')
     expect(output.join('')).toContain('pnpm tools publish-plan')
   })
 

@@ -128,10 +128,10 @@ Maps to the codex `sandbox_mode` / `--sandbox` CLI flag.
 Optional fields on the sandbox policy object:
 
 ```ts
-sandboxPolicy: {
+const sandboxPolicy = {
   type: 'workspaceWrite',
-  writableRoots: ['/tmp/extra'],   // extra writable roots
-  networkAccess: true,             // allow outbound network inside sandbox
+  writableRoots: ['/tmp/extra'], // extra writable roots
+  networkAccess: true // allow outbound network inside sandbox
 }
 ```
 
@@ -225,7 +225,7 @@ The local proxy is started automatically by the adapter. Users do not need to ru
 Corresponding vibe-forge config:
 
 ```ts
-modelServices: {
+const modelServices = {
   myProvider: {
     apiBaseUrl: 'https://api.example.com/v1',
     apiKey: 'sk-...',
@@ -238,7 +238,7 @@ modelServices: {
       },
     },
   },
-},
+}
 ```
 
 > `experimental_bearer_token` is a dev-only per-provider API key field in codex config.

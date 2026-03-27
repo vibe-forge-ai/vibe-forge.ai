@@ -237,7 +237,7 @@ export const generateDefaultCCRConfigJSON = (params: {
   userConfig?: Config
   adapterOptions?: NonNullable<Config['adapters']>['claude-code']
 }) => {
-  const { cwd, config, userConfig, adapterOptions } = params
+  const { config, userConfig, adapterOptions } = params
   const modelServices = {
     ...(config?.modelServices ?? {}),
     ...(userConfig?.modelServices ?? {})

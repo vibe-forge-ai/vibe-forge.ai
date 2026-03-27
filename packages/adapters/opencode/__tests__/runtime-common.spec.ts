@@ -23,7 +23,7 @@ describe('resolveOpenCodeBinaryPath', () => {
   })
 })
 
-describe('OpenCode prompt and session helpers', () => {
+describe('openCode prompt and session helpers', () => {
   it('normalizes prompt text and attachments', () => {
     const result = normalizeOpenCodePrompt([
       { type: 'text', text: 'Explain this diff' },

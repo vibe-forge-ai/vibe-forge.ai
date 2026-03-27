@@ -8,7 +8,8 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord } from '../common/object-utils'
 import { ensureOpenCodeConfigDir } from './skill-config'
-import { toProcessEnv, type OpenCodeAdapterConfig } from './shared'
+import { toProcessEnv  } from './shared'
+import type {OpenCodeAdapterConfig} from './shared';
 
 const resolveMergedModelServices = (ctx: AdapterCtx) => ({
   ...(ctx.configs[0]?.modelServices ?? {}),

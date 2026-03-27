@@ -1,6 +1,8 @@
+import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 import { createLogger } from '@vibe-forge/core/utils/create-logger'
 import type { Logger } from '@vibe-forge/core/utils/create-logger'
 
@@ -83,7 +85,7 @@ const maybeInjectMaxOutputTokens = (
   requestBodyBuffer: Buffer,
   req: IncomingMessage,
   proxyMeta: CodexProxyMeta
-) => {
+): string | Buffer | undefined => {
   if (requestBodyBuffer.length === 0) return undefined
 
   const normalizedMaxOutputTokens = (
@@ -117,6 +119,12 @@ const maybeInjectMaxOutputTokens = (
   } catch {
     return requestBodyText
   }
+}
+
+const toFetchBody = (body: string | Buffer | undefined): BodyInit | undefined => {
+  if (body == null) return undefined
+  if (typeof body === 'string') return body
+  return new Uint8Array(body)
 }
 
 const writeJsonError = (
@@ -279,7 +287,7 @@ const handleProxyRequest = async (
     const upstreamResponse = await fetch(upstreamUrl, {
       method: req.method ?? 'POST',
       headers: upstreamHeaders,
-      body: upstreamBody,
+      body: toFetchBody(upstreamBody),
       signal: abortController.signal
     })
     if (!upstreamResponse.ok) {
@@ -304,7 +312,7 @@ const handleProxyRequest = async (
       return
     }
 
-    Readable.fromWeb(upstreamResponse.body).pipe(res)
+    Readable.fromWeb(upstreamResponse.body as NodeReadableStream).pipe(res)
   } catch (err) {
     if (abortController.signal.aborted) {
       res.end()

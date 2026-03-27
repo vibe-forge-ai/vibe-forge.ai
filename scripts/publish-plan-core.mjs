@@ -347,7 +347,7 @@ function isVersionSatisfied(version, rawRange) {
 
   const exact = normalizeWorkspaceRange(normalizedRange.replace(/^[=]/, ""));
   const exactVersion = parseSemver(exact);
-  if (exactVersion && /^[0-9]/.test(exact)) {
+  if (exactVersion && /^\d/.test(exact)) {
     return compareSemver(parsedVersion, exactVersion) === 0;
   }
 

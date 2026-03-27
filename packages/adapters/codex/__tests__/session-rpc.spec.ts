@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { PassThrough } from 'node:stream'
 
 import { spawn } from 'node:child_process'
@@ -162,7 +163,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
       runtime: 'server',
       sessionId: 'session-default',
       description: 'Reply with pong.',
-      onEvent: (event) => events.push(event)
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
     const startRequest = receivedLines.find(line => line.method === 'thread/start')
@@ -183,7 +184,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(turnRequests[1]?.params.approvalPolicy).toBe('untrusted')
 
     session.kill()
-    expect(events.some(event => event.type === 'exit')).toBe(true)
+    expect(events.some((event: AdapterOutputEvent) => event.type === 'exit')).toBe(true)
   })
 
   it('maps plan permission mode to on-request for outgoing RPC requests', async () => {
@@ -588,7 +589,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
       runtime: 'server',
       sessionId: 'session-turn-failure',
       description: 'first turn works',
-      onEvent: (event) => events.push(event)
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
     session.emit({
@@ -598,11 +599,11 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     await waitForWrites()
 
-    expect(events.some(event => (
+    expect(events.some((event: AdapterOutputEvent) => (
       event.type === 'error' &&
       event.data.message.includes('invalid_encrypted_content')
     ))).toBe(true)
-    expect(events.some(event => (
+    expect(events.some((event: AdapterOutputEvent) => (
       event.type === 'exit' &&
       event.data.exitCode === 1 &&
       event.data.stderr?.includes('invalid_encrypted_content')

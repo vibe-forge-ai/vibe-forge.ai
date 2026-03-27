@@ -1,9 +1,11 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import type { execFile } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
 import { afterEach, beforeEach, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
 
 const tempDirs: string[] = []
 
@@ -124,10 +126,10 @@ export function makeErrorProc(error: Error) {
 }
 
 export function mockExecFileJsonResponses(
-  execFileMock: { mockImplementation: (impl: (...args: unknown[]) => unknown) => unknown },
+  execFileMock: MockedFunction<typeof execFile>,
   ...payloads: unknown[]
 ) {
-  execFileMock.mockImplementation(((...args: unknown[]) => {
+  execFileMock.mockImplementation(((...args: any[]) => {
     const callback = args.at(-1) as ((err: Error | null, stdout: string, stderr: string) => void) | undefined
     const payload = payloads.shift() ?? []
     queueMicrotask(() => {

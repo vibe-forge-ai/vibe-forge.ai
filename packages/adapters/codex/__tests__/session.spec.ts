@@ -97,7 +97,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
       type: 'create',
       runtime: 'server',
       sessionId: 'test-session-1',
-      onEvent: (e) => events.push(e)
+      onEvent: (e: AdapterOutputEvent) => events.push(e)
     })
 
     // Give the server a moment to emit turn/completed
@@ -121,7 +121,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
       runtime: 'server',
       sessionId: 'test-session-2',
       description: 'Reply with the single word "pong" and nothing else.',
-      onEvent: (e) => events.push(e)
+      onEvent: (e: AdapterOutputEvent) => events.push(e)
     })
 
     // Wait up to 30 s for the turn to complete
@@ -165,7 +165,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
       runtime: 'server',
       sessionId: 'test-session-resume',
       description: 'Say "hello".',
-      onEvent: (e) => eventsA.push(e)
+      onEvent: (e: AdapterOutputEvent) => eventsA.push(e)
     })
 
     // Wait for stop
@@ -190,7 +190,7 @@ describe.skipIf(!codexAvailable)('codex app-server integration', () => {
       runtime: 'server',
       sessionId: 'test-session-resume',
       description: 'Say "world".',
-      onEvent: (e) => eventsB.push(e)
+      onEvent: (e: AdapterOutputEvent) => eventsB.push(e)
     })
 
     await new Promise<void>((resolve) => {

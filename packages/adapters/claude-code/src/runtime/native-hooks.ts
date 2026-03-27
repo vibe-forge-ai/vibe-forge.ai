@@ -8,9 +8,9 @@ import {
   prepareManagedHookRuntime,
   readJsonFileOrDefault,
   resolveHookCliScriptPath,
-  type NativeHookMatcherGroup,
   writeJsonFile
 } from '@vibe-forge/core/hooks'
+import type { NativeHookMatcherGroup } from '@vibe-forge/core/hooks'
 
 export const CLAUDE_NATIVE_HOOK_EVENTS = [
   'SessionStart',
@@ -22,6 +22,12 @@ export const CLAUDE_NATIVE_HOOK_EVENTS = [
   'SubagentStop',
   'PreCompact'
 ] as const
+
+type ClaudeNativeHookEvent = (typeof CLAUDE_NATIVE_HOOK_EVENTS)[number]
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
 
 const MANAGED_COMMAND_PATH = resolveHookCliScriptPath('claude-hook.js')
 const MANAGED_COMMAND_MARKERS = [
@@ -37,7 +43,7 @@ const isManagedGroup = (group: NativeHookMatcherGroup) => (
 
 const createManagedGroup = (
   command: string,
-  eventName: (typeof CLAUDE_NATIVE_HOOK_EVENTS)[number]
+  eventName: ClaudeNativeHookEvent
 ): NativeHookMatcherGroup => ({
   ...(eventName === 'PreToolUse' || eventName === 'PostToolUse'
     ? { matcher: '.*' }
@@ -64,18 +70,12 @@ export const ensureClaudeNativeHooksInstalled = async (
     const projectSettingsPath = resolve(ctx.cwd, '.claude', 'settings.json')
     const existing = await readJsonFileOrDefault<unknown>(settingsPath, {})
     const projectSettings = await readJsonFileOrDefault<unknown>(projectSettingsPath, {})
-    const projectManagedEvents = new Set(
+    const projectSettingsHooks = isRecord(projectSettings) && isRecord(projectSettings.hooks)
+      ? projectSettings.hooks
+      : undefined
+    const projectManagedEvents = new Set<ClaudeNativeHookEvent>(
       CLAUDE_NATIVE_HOOK_EVENTS.filter((eventName) => {
-        const hooks = (
-          projectSettings != null &&
-          typeof projectSettings === 'object' &&
-          !Array.isArray(projectSettings) &&
-          projectSettings.hooks != null &&
-          typeof projectSettings.hooks === 'object' &&
-          !Array.isArray(projectSettings.hooks)
-        )
-          ? (projectSettings.hooks as Record<string, unknown>)[eventName]
-          : undefined
+        const hooks = projectSettingsHooks?.[eventName]
         return Array.isArray(hooks) && hooks.some(group => isManagedGroup(group as NativeHookMatcherGroup))
       })
     )
@@ -89,8 +89,8 @@ export const ensureClaudeNativeHooksInstalled = async (
       eventNames: CLAUDE_NATIVE_HOOK_EVENTS,
       enabled,
       isManagedGroup,
-      createGroup: (eventName) => createManagedGroup(command, eventName as (typeof CLAUDE_NATIVE_HOOK_EVENTS)[number]),
-      shouldManageEvent: eventName => !projectManagedEvents.has(eventName)
+      createGroup: (eventName: string) => createManagedGroup(command, eventName as ClaudeNativeHookEvent),
+      shouldManageEvent: (eventName: string) => !projectManagedEvents.has(eventName as ClaudeNativeHookEvent)
     })
     await writeJsonFile(settingsPath, merged)
 

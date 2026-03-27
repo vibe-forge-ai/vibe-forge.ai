@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '#~/runtime/common.js'
 
-describe('OpenCode config and model helpers', () => {
+describe('openCode config and model helpers', () => {
   it('builds inline config overrides for permissions, mcp, tools, and instructions', () => {
     const config = buildInlineConfigContent({
       envConfigContent: {

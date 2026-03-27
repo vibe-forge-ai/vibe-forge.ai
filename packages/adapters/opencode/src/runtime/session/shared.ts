@@ -26,6 +26,31 @@ interface OpenCodeJsonLineEvent {
   }
 }
 
+const stripAnsiSequences = (value: string) => {
+  let output = ''
+  let index = 0
+
+  while (index < value.length) {
+    if (value.charCodeAt(index) === 27 && value[index + 1] === '[') {
+      index += 2
+      while (index < value.length) {
+        const code = value.charCodeAt(index)
+        if (code >= 64 && code <= 126) {
+          index += 1
+          break
+        }
+        index += 1
+      }
+      continue
+    }
+
+    output += value[index]
+    index += 1
+  }
+
+  return output
+}
+
 export const execFileAsync = (
   file: string,
   args: string[],
@@ -40,7 +65,7 @@ export const execFileAsync = (
   })
 })
 
-export const stripAnsi = (value: string) => value.replaceAll(/\u001B\[[0-9;]*[A-Za-z]/g, '')
+export const stripAnsi = (value: string) => stripAnsiSequences(value)
 
 export const createAssistantMessage = (content: string, model?: string): ChatMessage => ({
   id: uuid(),

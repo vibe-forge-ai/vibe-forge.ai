@@ -8,9 +8,9 @@ import {
   prepareManagedHookRuntime,
   readJsonFileOrDefault,
   resolveHookCliScriptPath,
-  type NativeHookMatcherGroup,
   writeJsonFile
 } from '@vibe-forge/core/hooks'
+import type { NativeHookMatcherGroup } from '@vibe-forge/core/hooks'
 
 export const CODEX_NATIVE_HOOK_EVENTS = [
   'SessionStart',
@@ -20,6 +20,8 @@ export const CODEX_NATIVE_HOOK_EVENTS = [
   'Stop'
 ] as const
 
+type CodexNativeHookEvent = (typeof CODEX_NATIVE_HOOK_EVENTS)[number]
+
 const MANAGED_COMMAND_PATH = resolveHookCliScriptPath('codex-hook.js')
 
 const isManagedGroup = (group: NativeHookMatcherGroup) => (
@@ -28,7 +30,7 @@ const isManagedGroup = (group: NativeHookMatcherGroup) => (
 
 const createManagedGroup = (
   command: string,
-  eventName: (typeof CODEX_NATIVE_HOOK_EVENTS)[number]
+  eventName: CodexNativeHookEvent
 ): NativeHookMatcherGroup => ({
   ...(eventName === 'PreToolUse' || eventName === 'PostToolUse'
     ? { matcher: '^Bash$' }
@@ -63,7 +65,7 @@ export const ensureCodexNativeHooksInstalled = async (
       eventNames: CODEX_NATIVE_HOOK_EVENTS,
       enabled,
       isManagedGroup,
-      createGroup: (eventName) => createManagedGroup(command, eventName as (typeof CODEX_NATIVE_HOOK_EVENTS)[number])
+      createGroup: (eventName: string) => createManagedGroup(command, eventName as CodexNativeHookEvent)
     })
     await writeJsonFile(hooksPath, merged)
 

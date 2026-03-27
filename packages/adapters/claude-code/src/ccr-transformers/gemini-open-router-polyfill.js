@@ -273,7 +273,7 @@ class GeminiTransformer {
 
       const decoder = new TextDecoder();
       let fullStreamContent = "";
-      let streamChunks = [];
+      const streamChunks = [];
 
       // Read the entire stream to capture final result
       const reader = response.body.getReader();

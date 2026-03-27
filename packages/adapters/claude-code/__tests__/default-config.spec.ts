@@ -13,7 +13,7 @@ describe('generateDefaultCCRConfigJSON', () => {
         models: ['gpt-5.2-codex-2026-01-14']
       }
     }
-  } as const
+  }
 
   afterEach(() => {
     vi.unstubAllEnvs()

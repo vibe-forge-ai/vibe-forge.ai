@@ -3,7 +3,8 @@ import { spawn } from 'node:child_process'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
 
 import { extractOpenCodeSessionRecords, selectOpenCodeSessionByTitle } from '../common'
-import { execFileAsync, type OpenCodeRunResult } from './shared'
+import { execFileAsync  } from './shared'
+import type {OpenCodeRunResult} from './shared';
 
 export const findOpenCodeSessionId = async (params: {
   binaryPath: string

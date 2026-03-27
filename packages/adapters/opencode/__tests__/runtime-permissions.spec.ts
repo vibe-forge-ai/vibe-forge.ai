@@ -6,7 +6,7 @@ import {
   buildToolPermissionConfig
 } from '#~/runtime/common.js'
 
-describe('OpenCode permission and tool helpers', () => {
+describe('openCode permission and tool helpers', () => {
   it('derives permission overrides from tool selection aliases', () => {
     expect(buildToolPermissionConfig({
       include: ['grep', 'view'],

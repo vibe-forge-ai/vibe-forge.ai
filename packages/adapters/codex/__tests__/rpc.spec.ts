@@ -177,7 +177,7 @@ describe('codex rpc client', () => {
       const rpc = new CodexRpcClient(proc, makeMockLogger() as any)
 
       const received: Array<[string, unknown]> = []
-      rpc.onNotification((method, params) => {
+      rpc.onNotification((method: string, params: Record<string, unknown>) => {
         received.push([method, params])
       })
 

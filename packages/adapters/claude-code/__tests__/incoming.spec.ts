@@ -17,7 +17,7 @@ describe('claude-code incoming error handling', () => {
       cwd: '/tmp',
       session_id: 'sess-1',
       errors: ['Incomplete response returned', 'reason=max_output_tokens']
-    }, (event) => events.push(event))
+    }, (event: AdapterOutputEvent) => events.push(event))
 
     expect(events).toEqual([
       {
@@ -58,7 +58,7 @@ describe('claude-code incoming error handling', () => {
         output_tokens: 0
       },
       permission_denials: []
-    }, (event) => events.push(event))
+    }, (event: AdapterOutputEvent) => events.push(event))
 
     expect(events).toEqual([
       {

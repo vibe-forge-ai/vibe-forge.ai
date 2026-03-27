@@ -112,7 +112,7 @@ describe('claude-code session error events', () => {
       runtime: 'server',
       mode: 'stream',
       sessionId: 'sess-1',
-      onEvent: (event) => events.push(event)
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
     await new Promise(resolve => setTimeout(resolve, 10))
@@ -159,12 +159,12 @@ describe('claude-code session error events', () => {
       runtime: 'server',
       mode: 'stream',
       sessionId: 'sess-1',
-      onEvent: (event) => events.push(event)
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(events.filter(event => event.type === 'error')).toHaveLength(1)
+    expect(events.filter((event: AdapterOutputEvent) => event.type === 'error')).toHaveLength(1)
     expect(events.at(-1)).toEqual({
       type: 'exit',
       data: {

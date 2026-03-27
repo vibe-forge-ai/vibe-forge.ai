@@ -59,9 +59,11 @@ const expectMockTrace = (
     expect(result.mockTrace.length).toBeGreaterThanOrEqual(mockTrace.minRequests)
   }
 
-  const toolResponses = result.mockTrace
-    .filter(entry => entry.response.kind === 'tool')
-    .map(entry => entry.response.tool.name)
+  const toolResponses = result.mockTrace.flatMap(entry => (
+    entry.response.kind === 'tool'
+      ? [entry.response.tool.name]
+      : []
+  ))
 
   if (mockTrace.maxToolCalls != null) {
     expect(toolResponses.length).toBeLessThanOrEqual(mockTrace.maxToolCalls)

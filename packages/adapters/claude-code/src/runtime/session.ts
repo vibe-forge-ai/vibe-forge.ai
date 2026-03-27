@@ -13,6 +13,31 @@ import type {
 } from '../types'
 import { prepareClaudeExecution } from './prepare'
 
+const stripAnsiSequences = (value: string) => {
+  let output = ''
+  let index = 0
+
+  while (index < value.length) {
+    if (value.charCodeAt(index) === 27 && value[index + 1] === '[') {
+      index += 2
+      while (index < value.length) {
+        const code = value.charCodeAt(index)
+        if (code >= 64 && code <= 126) {
+          index += 1
+          break
+        }
+        index += 1
+      }
+      continue
+    }
+
+    output += value[index]
+    index += 1
+  }
+
+  return output
+}
+
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
@@ -70,8 +95,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       stdoutBuffer = lines.pop() ?? ''
       for (const line of lines) {
         logger.debug('Claude Code CLI stdout:', { line })
-        const ansiRegex = new RegExp('\\u001B\\[[0-9;]*[a-z]', 'gi')
-        const cleanedLine = line.replace(ansiRegex, '')
+        const cleanedLine = stripAnsiSequences(line)
         const trimmed = cleanedLine.trim()
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
           try {

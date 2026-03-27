@@ -2,11 +2,12 @@ import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
 
 import {
   findPermissionEntry,
-  isPermissionValue,
-  type PermissionNode,
-  type PermissionRecord,
-  type PermissionValue
+  isPermissionValue
+  
+  
+  
 } from './permission-node'
+import type {PermissionNode, PermissionRecord, PermissionValue} from './permission-node';
 import { LEGACY_TOOL_PERMISSION_ALIASES } from './tools'
 
 const OPENCODE_PERMISSION_KEYS = [

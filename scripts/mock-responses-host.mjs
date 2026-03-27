@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
+import process from 'node:process'
 
 const host = process.env.HOST ?? '127.0.0.1'
 const port = Number(process.env.PORT ?? '40111')
@@ -87,7 +89,7 @@ const server = createServer(async (req, res) => {
     return
   }
 
-  if (req.method !== 'POST' || !/(^|\/)responses$/.test(url.pathname)) {
+  if (req.method !== 'POST' || /(?:^|\/)responses$/.test(url.pathname) === false) {
     writeJson(res, 404, { error: { message: `No mock route for ${req.method} ${url.pathname}` } })
     return
   }
