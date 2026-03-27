@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import type { BenchmarkResult } from '@vibe-forge/core'
+import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/core'
 import {
   getBenchmarkCase,
   listBenchmarkCases,
@@ -75,7 +75,7 @@ export function registerBenchmarkCommand(program: Command) {
       }
 
       console.log('Categories:')
-      console.table(categories.map(item => ({
+      console.table(categories.map((item: BenchmarkCategory) => ({
         Category: item.category,
         Cases: item.caseCount,
         Pass: item.lastStatuses.pass,
@@ -89,7 +89,7 @@ export function registerBenchmarkCommand(program: Command) {
       }
 
       console.log('\nCases:')
-      console.table(cases.map(item => ({
+      console.table(cases.map((item: BenchmarkCase) => ({
         Category: item.category,
         Title: item.title,
         Summary: item.summary,
@@ -137,7 +137,7 @@ export function registerBenchmarkCommand(program: Command) {
         onEvent
       })
 
-      console.table(output.results.map(result => ({
+      console.table(output.results.map((result: BenchmarkResult) => ({
         Title: result.title,
         Status: result.status,
         Score: result.finalScore,
@@ -146,7 +146,7 @@ export function registerBenchmarkCommand(program: Command) {
         Reference: result.scores.referenceScore
       })))
 
-      const hasFailure = output.results.some(result => result.status === 'fail')
+      const hasFailure = output.results.some((result: BenchmarkResult) => result.status === 'fail')
       process.exit(hasFailure ? 1 : 0)
     })
 

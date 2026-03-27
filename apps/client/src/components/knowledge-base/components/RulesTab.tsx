@@ -9,7 +9,7 @@ import { RuleList } from './RuleList'
 import { SectionHeader } from './SectionHeader'
 import { TabContent } from './TabContent'
 
-type RulesTabProps = {
+interface RulesTabProps {
   rules: RuleSummary[]
   filteredRules: RuleSummary[]
   isLoading: boolean

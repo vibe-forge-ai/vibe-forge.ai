@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { RuleFormValues } from './types'
 
-type TriggerListProps = {
+interface TriggerListProps {
   form: FormInstance<RuleFormValues>
   updateWeeklyCron: (index: number, nextDay?: string, nextTime?: string) => void
   getWebhookUrl: (triggerId?: string, webhookKey?: string) => string

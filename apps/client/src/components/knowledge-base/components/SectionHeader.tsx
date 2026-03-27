@@ -2,7 +2,7 @@ import './SectionHeader.scss'
 
 import type { ReactNode } from 'react'
 
-type SectionHeaderProps = {
+interface SectionHeaderProps {
   title: string
   description: string
   actions?: ReactNode

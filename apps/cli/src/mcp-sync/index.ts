@@ -67,7 +67,7 @@ export const extractTextFromMessage = (message: ChatMessage): string => {
   if (Array.isArray(message.content)) {
     return message.content
       .filter((c: ChatMessageContent) => c.type === 'text')
-      .map((c) => ('text' in c ? c.text : ''))
+      .map((c: ChatMessageContent) => ('text' in c ? c.text : ''))
       .join('')
   }
   return ''

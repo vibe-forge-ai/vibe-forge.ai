@@ -119,7 +119,7 @@ class TaskManager {
         skills: resolvedConfig.skills,
         mcpServers: resolvedConfig.mcpServers,
         promptAssetIds: resolvedConfig.promptAssetIds,
-        onEvent: (event) => {
+        onEvent: (event: AdapterOutputEvent) => {
           this.handleEvent(taskId, event)
         }
       })

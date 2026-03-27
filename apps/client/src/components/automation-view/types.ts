@@ -1,4 +1,4 @@
-export type RuleFormValues = {
+export interface RuleFormValues {
   name: string
   description?: string
   enabled: boolean

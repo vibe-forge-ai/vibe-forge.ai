@@ -3,7 +3,7 @@ import './KnowledgeList.scss'
 import { List } from 'antd'
 import type { ReactNode } from 'react'
 
-type KnowledgeListProps<T> = {
+interface KnowledgeListProps<T> {
   data: T[]
   renderItem: (item: T) => ReactNode
 }

@@ -1,8 +1,7 @@
 import './CurrentTodoList.scss'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ChatMessage } from '@vibe-forge/core'
-import type { ToolInputs } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, ToolInputs } from '@vibe-forge/core'
 
 type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
 
@@ -16,7 +15,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
-      const todoUse = msg.content.find(c =>
+      const todoUse = msg.content.find((c: ChatMessageContent) =>
         c != null && c.type === 'tool_use' && (
           c.name === 'TodoWrite' ||
           c.name === 'todo_write' ||

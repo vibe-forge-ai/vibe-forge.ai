@@ -4,7 +4,7 @@ import { Empty } from 'antd'
 
 import { ActionButton } from './ActionButton'
 
-type EmptyStateProps = {
+interface EmptyStateProps {
   description: string
   actionLabel?: string
   onAction?: () => void

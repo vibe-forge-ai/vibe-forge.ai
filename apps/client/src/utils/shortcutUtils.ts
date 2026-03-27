@@ -1,6 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-export type ShortcutSpec = {
+export interface ShortcutSpec {
   key: string
   metaKey: boolean
   ctrlKey: boolean

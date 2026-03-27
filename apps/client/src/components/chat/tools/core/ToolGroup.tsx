@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { MessageFooter } from '../../messages/MessageFooter'
 import { ToolRenderer } from './ToolRenderer'
 
-type ToolGroupProps = {
+interface ToolGroupProps {
   items: {
     item: Extract<ChatMessageContent, { type: 'tool_use' }>
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>

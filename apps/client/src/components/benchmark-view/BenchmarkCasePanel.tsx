@@ -279,7 +279,7 @@ function ResultSection({
                   {latestResult.changedFiles != null && latestResult.changedFiles.length > 0
                     ? (
                         <div className='benchmark-view__file-list'>
-                          {latestResult.changedFiles.map(file => (
+                          {latestResult.changedFiles.map((file: string) => (
                             <span key={file} className='benchmark-view__file-tag'>{file}</span>
                           ))}
                         </div>
@@ -297,7 +297,7 @@ function ResultSection({
                     ? <Typography.Text type='secondary'>{t('benchmark.noIssues')}</Typography.Text>
                     : (
                         <ul className='benchmark-view__issues-list'>
-                          {latestResult.issues.map(issue => <li key={issue}>{issue}</li>)}
+                          {latestResult.issues.map((issue: string) => <li key={issue}>{issue}</li>)}
                         </ul>
                       )}
                 </div>

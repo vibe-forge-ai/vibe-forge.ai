@@ -246,7 +246,7 @@ export function ArchiveView() {
                       </span>
                       {session.tags && session.tags.length > 0 && (
                         <div className='archive-view__item-tags'>
-                          {session.tags.map(tag => (
+                          {session.tags.map((tag: string) => (
                             <Tag key={tag} className='archive-view__item-tag'>{tag}</Tag>
                           ))}
                         </div>

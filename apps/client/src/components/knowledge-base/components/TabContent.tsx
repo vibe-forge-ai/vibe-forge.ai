@@ -2,7 +2,7 @@ import './TabContent.scss'
 
 import type { ReactNode } from 'react'
 
-type TabContentProps = {
+interface TabContentProps {
   children: ReactNode
   className?: string
 }

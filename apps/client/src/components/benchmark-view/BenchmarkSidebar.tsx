@@ -1,15 +1,24 @@
 import './BenchmarkSidebar.scss'
 
-import { Badge, Button, Divider, Empty, Input, Tooltip, Tree, Typography } from 'antd'
+import { Badge, Button, Empty, Input, Tooltip, Tree, Typography } from 'antd'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { BenchmarkCase, BenchmarkCategory } from '@vibe-forge/core'
+import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/core'
 
 import type { TreeNodeCase } from './types.js'
 import { getResultStatusMeta } from './utils.js'
 
-function ResultStatusIcon({ result }: { result: import('@vibe-forge/core').BenchmarkResult | null | undefined }) {
+interface BenchmarkTreeNode {
+  key: React.Key
+  title: React.ReactNode
+  selectable?: boolean
+  isLeaf?: boolean
+  children?: BenchmarkTreeNode[]
+  caseData?: TreeNodeCase
+}
+
+function ResultStatusIcon({ result }: { result: BenchmarkResult | null | undefined }) {
   const meta = getResultStatusMeta(result)
   return (
     <span className={`material-symbols-rounded benchmark-view__status-icon benchmark-view__status-icon--${meta.statusKey}`}>
@@ -31,7 +40,7 @@ function buildCaseTreeData(params: {
   const { categories, cases, query, t, onRunCase, onRunCategory } = params
   const keyword = query.trim().toLowerCase()
 
-  const categoriesOrder = categories.length > 0
+  const categoriesOrder: BenchmarkCategory[] = categories.length > 0
     ? categories
     : Array.from(new Set(cases.map(item => item.category))).map(category => ({
       category,
@@ -39,7 +48,7 @@ function buildCaseTreeData(params: {
       lastStatuses: { pass: 0, partial: 0, fail: 0 }
     }))
 
-  return categoriesOrder
+  const nodes = categoriesOrder
     .map((category) => {
       const categoryCases = cases.filter(item => item.category === category.category)
       const categoryMatches = keyword === '' || category.category.toLowerCase().includes(keyword)
@@ -108,7 +117,9 @@ function buildCaseTreeData(params: {
         })
       }
     })
-    .filter(Boolean)
+    .filter(node => node != null)
+
+  return nodes as BenchmarkTreeNode[]
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -148,7 +159,7 @@ export function BenchmarkSidebar({
 }: BenchmarkSidebarProps) {
   const { t } = useTranslation()
 
-  const treeData = useMemo(() =>
+  const treeData = useMemo<BenchmarkTreeNode[]>(() =>
     buildCaseTreeData({
       categories,
       cases,

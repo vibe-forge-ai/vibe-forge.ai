@@ -8,7 +8,7 @@ import { getRuleDetail } from '#~/api.js'
 import { MarkdownContent } from '#~/components/MarkdownContent'
 import { LoadingState } from './LoadingState'
 
-type RuleItemProps = {
+interface RuleItemProps {
   rule: RuleSummary
 }
 

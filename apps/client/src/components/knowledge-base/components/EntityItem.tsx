@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { EntitySummary } from '#~/api.js'
 import { MetaList } from './MetaList'
 
-type EntityItemProps = {
+interface EntityItemProps {
   entity: EntitySummary
 }
 

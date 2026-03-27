@@ -35,7 +35,7 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       const msg = allMsgs[i]
       if (Array.isArray(msg.content)) {
         const found = msg.content.find(
-          c => c.type === 'tool_result' && c.tool_use_id === toolId
+          (c: ChatMessageContent) => c.type === 'tool_result' && c.tool_use_id === toolId
         )
         if (found) {
           return found as Extract<ChatMessageContent, { type: 'tool_result' }>

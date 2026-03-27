@@ -1,11 +1,11 @@
 import './MessageItem.scss'
-import type { ChatMessage } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import React from 'react'
 import { MessageFooter } from './MessageFooter'
 import { MarkdownContent } from '#~/components/MarkdownContent'
 import { ToolRenderer } from '../tools/core/ToolRenderer'
 
-type MessageItemProps = {
+interface MessageItemProps {
   msg: ChatMessage
   isFirstInGroup: boolean
 }
@@ -27,12 +27,12 @@ function MessageItemComponent({
 
     if (!Array.isArray(msg.content)) return null
 
-    const hasContent = msg.content.some(c => c.type === 'text' || c.type === 'image') || msg.toolCall != null
+    const hasContent = msg.content.some((c: ChatMessageContent) => c.type === 'text' || c.type === 'image') || msg.toolCall != null
     if (!hasContent) return null
 
     return (
       <div className='message-contents'>
-        {msg.content.map((item, i) => {
+        {msg.content.map((item: ChatMessageContent, i: number) => {
           if (item.type === 'text') {
             return (
               <MarkdownContent key={i} content={item.text} />

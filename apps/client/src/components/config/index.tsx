@@ -1,5 +1,5 @@
 export { AboutSection } from './ConfigAboutSection'
 export { DisplayValue } from './ConfigDisplayValue'
+export { SectionForm } from './ConfigSectionForm'
 export { ConfigSectionPanel } from './ConfigSectionPanel'
 export { ConfigSourceSwitch } from './ConfigSourceSwitch'
-export { SectionForm } from './ConfigSectionForm'

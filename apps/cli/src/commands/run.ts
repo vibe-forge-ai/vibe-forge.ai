@@ -187,7 +187,7 @@ export function registerRunCommand(program: Command) {
             }
           : undefined,
         extraOptions,
-        onEvent: (event) => {
+        onEvent: (event: AdapterOutputEvent) => {
           if (opts.print) {
             const nextState = handlePrintEvent({
               event,

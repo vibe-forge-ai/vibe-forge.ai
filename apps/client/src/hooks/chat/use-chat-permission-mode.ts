@@ -17,7 +17,11 @@ export function useChatPermissionMode() {
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default')
 
   const updatePermissionMode = (value?: string) => {
-    setPermissionMode(isPermissionMode(value ?? '') ? value : 'default')
+    if (value != null && isPermissionMode(value)) {
+      setPermissionMode(value)
+      return
+    }
+    setPermissionMode('default')
   }
 
   useEffect(() => {

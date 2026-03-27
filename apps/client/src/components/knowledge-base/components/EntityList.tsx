@@ -9,7 +9,7 @@ import { EntityItem } from './EntityItem'
 import { KnowledgeList } from './KnowledgeList'
 import { LoadingState } from './LoadingState'
 
-type EntityListProps = {
+interface EntityListProps {
   isLoading: boolean
   entities: EntitySummary[]
   filteredEntities: EntitySummary[]

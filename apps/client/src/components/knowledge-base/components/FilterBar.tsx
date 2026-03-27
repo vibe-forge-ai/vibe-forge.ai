@@ -2,12 +2,12 @@ import './FilterBar.scss'
 
 import { Input, Select } from 'antd'
 
-type FilterOption = {
+interface FilterOption {
   label: string
   value: string
 }
 
-type FilterBarProps = {
+interface FilterBarProps {
   query: string
   tagOptions: FilterOption[]
   tagFilter: string[]

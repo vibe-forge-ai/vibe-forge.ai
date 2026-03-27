@@ -35,6 +35,8 @@ interface PendingImage {
   mimeType?: string
 }
 
+type SessionAssetDiagnostic = NonNullable<Extract<SessionInfo, { type: 'init' }>['assetDiagnostics']>[number]
+
 interface SenderToolGroup {
   key: 'chrome-devtools' | 'system'
   label: string
@@ -135,21 +137,21 @@ export function Sender({
 
   const isThinking = sessionStatus === 'running'
   const groupedTools: SenderToolGroup[] = sessionInfo != null && sessionInfo.type === 'init'
-    ? [
+    ? ([
         {
           key: 'chrome-devtools',
           label: t('chat.toolGroupChromeDevtools'),
-          tools: sessionInfo.tools.filter(tool => tool.startsWith('mcp__ChromeDevtools__'))
+          tools: sessionInfo.tools.filter((tool: string) => tool.startsWith('mcp__ChromeDevtools__'))
         },
         {
           key: 'system',
           label: t('chat.toolGroupSystem'),
-          tools: sessionInfo.tools.filter(tool => !tool.startsWith('mcp__ChromeDevtools__'))
+          tools: sessionInfo.tools.filter((tool: string) => !tool.startsWith('mcp__ChromeDevtools__'))
         }
-      ].filter(group => group.tools.length > 0)
+      ] satisfies SenderToolGroup[]).filter((group): group is SenderToolGroup => group.tools.length > 0)
     : []
   const assetWarnings = sessionInfo != null && sessionInfo.type === 'init'
-    ? (sessionInfo.assetDiagnostics ?? []).filter(diagnostic => diagnostic.status === 'skipped')
+    ? (sessionInfo.assetDiagnostics ?? []).filter((diagnostic: SessionAssetDiagnostic) => diagnostic.status === 'skipped')
     : []
   const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
     value: group.key,
@@ -243,7 +245,7 @@ export function Sender({
       if (input.trim() !== '') {
         content.push({ type: 'text', text: input.trim() })
       }
-      content.push(...pendingImages.map(img => ({
+      content.push(...pendingImages.map((img): ChatMessageContent => ({
         type: 'image',
         url: img.url,
         name: img.name,
@@ -524,19 +526,19 @@ export function Sender({
       if (sessionInfo?.type === 'init') {
         const info = sessionInfo
         if (charBeforeCursor === '/') {
-          items = (info.slashCommands != null ? info.slashCommands : []).map(cmd => ({
+          items = (info.slashCommands != null ? info.slashCommands : []).map((cmd: string) => ({
             label: `/${cmd}`,
             value: cmd,
             icon: 'terminal'
           }))
         } else if (charBeforeCursor === '@') {
-          items = (info.agents != null ? info.agents : []).map(agent => ({
+          items = (info.agents != null ? info.agents : []).map((agent: string) => ({
             label: `@${agent}`,
             value: agent,
             icon: 'smart_toy'
           }))
         } else if (charBeforeCursor === '#') {
-          items = (info.tools != null ? info.tools : []).map(tool => ({
+          items = (info.tools != null ? info.tools : []).map((tool: string) => ({
             label: `#${tool}`,
             value: tool,
             icon: 'check_box'
@@ -581,7 +583,7 @@ export function Sender({
           <div className='interaction-question' style={{ fontWeight: 'bold' }}>
             {interactionRequest.payload.question}
           </div>
-          {interactionRequest.payload.options?.map((option) => (
+          {interactionRequest.payload.options?.map((option: NonNullable<AskUserQuestionParams['options']>[number]) => (
             <Button
               key={option.label}
               block
@@ -698,7 +700,7 @@ export function Sender({
                     title={(
                       <div className='asset-warning-tooltip'>
                         <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
-                        {assetWarnings.slice(0, 5).map((warning) => (
+                        {assetWarnings.slice(0, 5).map((warning: SessionAssetDiagnostic) => (
                           <div key={warning.assetId} className='asset-warning-tooltip__item'>
                             <code>{warning.assetId}</code>
                             <span>{warning.reason}</span>

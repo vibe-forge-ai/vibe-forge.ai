@@ -1,7 +1,14 @@
-import type { Register } from '#~/mcp-tools/types'
+import type { Register } from '#~/mcp-tools/types.js'
 import type { z } from 'zod'
 
 type ToolHandler = (args: any) => Promise<any>
+type RegisterServer = Parameters<Register>[0]
+interface RegisterToolOptions {
+  inputSchema?: z.ZodTypeAny
+  title: string
+  description?: string
+}
+type RegisterToolHandler = (args: any) => Promise<any>
 
 interface ToolEntry {
   handler: ToolHandler
@@ -16,8 +23,8 @@ interface ToolEntry {
 export function createToolTester() {
   const tools = new Map<string, ToolEntry>()
 
-  const mockRegister: Parameters<Register>[0] = {
-    registerTool: (name, options, handler) => {
+  const mockRegister = {
+    registerTool: (name: string, options: RegisterToolOptions, handler: RegisterToolHandler) => {
       tools.set(name, {
         // @ts-ignore - The handler type from the SDK is complex with extra context
         handler: handler as ToolHandler,
@@ -41,7 +48,7 @@ export function createToolTester() {
         disable: () => {}
       } as any
     }
-  }
+  } as RegisterServer
 
   return {
     mockRegister,

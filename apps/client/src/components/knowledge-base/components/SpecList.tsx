@@ -9,7 +9,7 @@ import { KnowledgeList } from './KnowledgeList'
 import { LoadingState } from './LoadingState'
 import { SpecItem } from './SpecItem'
 
-type SpecListProps = {
+interface SpecListProps {
   isLoading: boolean
   specs: SpecSummary[]
   filteredSpecs: SpecSummary[]

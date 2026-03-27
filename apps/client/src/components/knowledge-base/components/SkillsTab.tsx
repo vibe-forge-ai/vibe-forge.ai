@@ -8,7 +8,7 @@ import { EmptyState } from './EmptyState'
 import { SectionHeader } from './SectionHeader'
 import { TabContent } from './TabContent'
 
-type SkillsTabProps = {
+interface SkillsTabProps {
   onCreate: () => void
   onImport: () => void
 }

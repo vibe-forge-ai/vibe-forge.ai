@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { mapClaudeHookInputToVibeForge } from '#~/hooks/claude-runtime.js'
 
-describe('Claude hook bridge helpers', () => {
+describe('claude hook bridge helpers', () => {
   it('maps supported Claude native hooks into the unified hook shape', () => {
     const result = mapClaudeHookInputToVibeForge({
       cwd: '/tmp/project',

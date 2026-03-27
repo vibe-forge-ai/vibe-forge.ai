@@ -1,6 +1,6 @@
 import './TabLabel.scss'
 
-type TabLabelProps = {
+interface TabLabelProps {
   icon: string
   label: string
 }

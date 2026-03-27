@@ -1,10 +1,12 @@
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-type QueryParamConfig<T extends Record<string, string>> = {
-  keys: Array<keyof T & string>
+type QueryParamKey<T> = Extract<keyof T, string>
+
+interface QueryParamConfig<T extends Record<string, string>> {
+  keys: QueryParamKey<T>[]
   defaults?: Partial<T>
-  omit?: Partial<Record<keyof T & string, (value: string) => boolean>>
+  omit?: Partial<Record<QueryParamKey<T>, (value: string) => boolean>>
 }
 
 export const useQueryParams = <T extends Record<string, string>>({
@@ -13,13 +15,13 @@ export const useQueryParams = <T extends Record<string, string>>({
   omit
 }: QueryParamConfig<T>) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const keySet = useMemo(() => new Set(keys), [keys])
+  const keySet = useMemo(() => new Set<string>(keys), [keys])
 
   const values = useMemo(() => {
     return keys.reduce((acc, key) => {
       const raw = searchParams.get(key)
       const fallback = defaults?.[key] ?? ''
-      acc[key] = (raw ?? fallback) as T[keyof T]
+      acc[key] = (raw ?? fallback) as T[QueryParamKey<T>]
       return acc
     }, {} as T)
   }, [defaults, keys, searchParams])
@@ -29,7 +31,7 @@ export const useQueryParams = <T extends Record<string, string>>({
     const merged = keys.reduce((acc, key) => {
       const raw = searchParams.get(key)
       const fallback = defaults?.[key] ?? ''
-      acc[key] = (raw ?? fallback) as T[keyof T]
+      acc[key] = (raw ?? fallback) as T[QueryParamKey<T>]
       return acc
     }, {} as T)
 

@@ -8,7 +8,15 @@ import { createSocket } from '#~/ws.js'
 interface SessionListResponse {
   sessions: Session[]
 }
-type SessionUpdate = Session | { id: string; isDeleted: boolean }
+interface DeletedSessionUpdate {
+  id: string
+  isDeleted: boolean
+}
+type SessionUpdate = Session | DeletedSessionUpdate
+
+const isDeletedSessionUpdate = (update: SessionUpdate): update is DeletedSessionUpdate => {
+  return 'isDeleted' in update && update.isDeleted
+}
 
 const sortSessions = (sessions: Session[]) => {
   return [...sessions].sort((a, b) => {
@@ -25,16 +33,17 @@ const mergeSessionList = (
 ) => {
   if (prev?.sessions == null) return prev
 
-  if ('isDeleted' in updatedSession && updatedSession.isDeleted) {
+  if (isDeletedSessionUpdate(updatedSession)) {
     return {
       ...prev,
       sessions: prev.sessions.filter((session) => session.id !== updatedSession.id)
     }
   }
 
+  const session = updatedSession
   const shouldInclude = filter === 'archived'
-    ? updatedSession.isArchived === true
-    : updatedSession.isArchived !== true
+    ? session.isArchived === true
+    : session.isArchived !== true
   const existing = prev.sessions.find((session) => session.id === updatedSession.id)
 
   if (!shouldInclude) {
@@ -45,8 +54,8 @@ const mergeSessionList = (
   }
 
   const nextSessions = existing
-    ? prev.sessions.map((session) => session.id === updatedSession.id ? { ...session, ...updatedSession } : session)
-    : [updatedSession, ...prev.sessions]
+    ? prev.sessions.map((currentSession) => currentSession.id === updatedSession.id ? { ...currentSession, ...session } : currentSession)
+    : [session, ...prev.sessions]
 
   return {
     ...prev,

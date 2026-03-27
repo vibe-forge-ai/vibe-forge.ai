@@ -221,7 +221,7 @@ export function SessionItem({
             </Tooltip>
           </div>
           <div className='tags-container'>
-            {session.tags?.map(tag => {
+            {session.tags?.map((tag: string) => {
               const automationTag = parseAutomationTag(tag)
               if (automationTag) {
                 const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`

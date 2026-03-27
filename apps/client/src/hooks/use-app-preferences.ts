@@ -9,7 +9,17 @@ import type { ConfigResponse } from '@vibe-forge/core'
 import { getConfig } from '#~/api'
 import { themeAtom } from '#~/store'
 
-export function useAppPreferences() {
+interface AppPreferences {
+  isDarkMode: boolean
+  themeConfig: {
+    algorithm: typeof theme.darkAlgorithm | typeof theme.defaultAlgorithm
+    token: {
+      colorPrimary: string
+    }
+  }
+}
+
+export function useAppPreferences(): AppPreferences {
   const { i18n } = useTranslation()
   const themeMode = useAtomValue(themeAtom)
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)

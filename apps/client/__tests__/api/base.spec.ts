@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError, fetchApiJson, fetchApiJsonOrThrow, getApiErrorMessage } from '#~/api/base'
+
 vi.mock('#~/runtime-config.js', () => ({
   getServerHostEnv: () => 'api.example.com',
   getServerPortEnv: () => '8787'
 }))
-
-import { ApiError, fetchApiJson, fetchApiJsonOrThrow, getApiErrorMessage } from '#~/api/base'
 
 const makeJsonResponse = (body: unknown, init?: ResponseInit) => {
   return new Response(JSON.stringify(body), {

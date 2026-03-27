@@ -11,7 +11,7 @@ import { MarkdownContent } from '#~/components/MarkdownContent'
 import { LoadingState } from './LoadingState'
 import { MetaList } from './MetaList'
 
-type SpecItemProps = {
+interface SpecItemProps {
   spec: SpecSummary
 }
 

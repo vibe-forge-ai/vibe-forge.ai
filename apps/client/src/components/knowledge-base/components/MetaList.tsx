@@ -1,6 +1,6 @@
 import './MetaList.scss'
 
-type MetaListProps = {
+interface MetaListProps {
   items: string[]
 }
 

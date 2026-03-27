@@ -10,7 +10,7 @@ import { SectionHeader } from './SectionHeader'
 import { SpecList } from './SpecList'
 import { TabContent } from './TabContent'
 
-type FlowsTabProps = {
+interface FlowsTabProps {
   specs: SpecSummary[]
   filteredSpecs: SpecSummary[]
   isLoading: boolean

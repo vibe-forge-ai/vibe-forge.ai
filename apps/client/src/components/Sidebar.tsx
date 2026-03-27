@@ -67,7 +67,7 @@ export function Sidebar({
     const query = searchQuery.trim().toLowerCase()
     return sessions.filter((s: Session) => {
       if (tagFilter) {
-        const matchesTag = (s.tags ?? []).some((tag) => tag.toLowerCase() === tagFilter.toLowerCase())
+        const matchesTag = (s.tags ?? []).some((tag: string) => tag.toLowerCase() === tagFilter.toLowerCase())
         if (!matchesTag) return false
       }
       if (!query) return true

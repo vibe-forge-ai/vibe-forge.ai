@@ -9,7 +9,7 @@ import { KnowledgeList } from './KnowledgeList'
 import { LoadingState } from './LoadingState'
 import { RuleItem } from './RuleItem'
 
-type RuleListProps = {
+interface RuleListProps {
   isLoading: boolean
   rules: RuleSummary[]
   filteredRules: RuleSummary[]

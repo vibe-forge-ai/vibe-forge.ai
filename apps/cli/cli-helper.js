@@ -26,13 +26,18 @@ if (!process.env.__IS_LOADER_CLI__) {
     }
   };
 
+  function handleSigint() {
+    forwardSignal("SIGINT");
+  }
+
+  function handleSigterm() {
+    forwardSignal("SIGTERM");
+  }
+
   const cleanup = () => {
     process.off("SIGINT", handleSigint);
     process.off("SIGTERM", handleSigterm);
   };
-
-  const handleSigint = () => forwardSignal("SIGINT");
-  const handleSigterm = () => forwardSignal("SIGTERM");
 
   process.on("SIGINT", handleSigint);
   process.on("SIGTERM", handleSigterm);

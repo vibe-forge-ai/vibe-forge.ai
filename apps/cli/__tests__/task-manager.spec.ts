@@ -52,7 +52,7 @@ describe('taskManager fatal error scenarios', () => {
   })
 
   it('keeps the task failed when a fatal error is followed by stop', async () => {
-    const { taskManager } = await import('../src/mcp-tools/task/manager')
+    const { taskManager } = await import('#~/mcp-tools/task/manager.js')
 
     mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
       const session = {

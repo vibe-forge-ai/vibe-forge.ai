@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildGantt, buildGitGraph, parseTime, sanitizeId } from '#~/components/chat/SessionTimelinePanel/mermaid'
-import type { Task } from '#~/components/chat/SessionTimelinePanel/mermaid'
+import { buildGantt, buildGitGraph, parseTime, sanitizeId } from '#~/components/chat/session-timeline-panel/mermaid.js'
+import type { Task } from '#~/components/chat/session-timeline-panel/mermaid.js'
 
 const labels = {
   mainStart: 'Main Start',

@@ -54,7 +54,7 @@ export const StartTasksTool = defineToolRender(({ item, resultItem }) => {
         content={
           <div className='tool-content'>
             <div className='start-tasks-tool__list'>
-              {tasks.map((task, idx) => {
+              {tasks.map((task: StartTask, idx: number) => {
                 const { description, type, name, adapter, background } = task
                 const { status, taskId, logs = [] } = taskResults?.[idx] ?? {}
                 const metaChips = [

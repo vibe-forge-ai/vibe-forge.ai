@@ -204,7 +204,7 @@ export function useChatModels({
         const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
         const serviceDescription = service?.description
         const models = Array.isArray(service?.models)
-          ? service.models.filter((item): item is string => typeof item === 'string')
+          ? service.models.filter((item: unknown): item is string => typeof item === 'string')
           : []
         if (models.length === 0) return null
         const options = models.map((model: string) => {

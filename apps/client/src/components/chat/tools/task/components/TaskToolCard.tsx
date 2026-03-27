@@ -3,7 +3,7 @@ import './TaskToolCard.scss'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { ChatMessage, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
 
 import { connectionManager } from '#~/connectionManager.js'
 import { CodeBlock } from '#~/components/CodeBlock'
@@ -149,7 +149,7 @@ export function TaskToolCard({
         )}
         {chips.length > 0 && (
           <div className='task-tool-card__meta'>
-            {chips.map((item) => (
+            {chips.map((item: string) => (
               <span className='task-tool-card__meta-chip' key={item}>{item}</span>
             ))}
           </div>
@@ -172,7 +172,7 @@ function extractMessageText(message: ChatMessage): string {
   }
   if (Array.isArray(message.content)) {
     return message.content
-      .map((c) => (c.type === 'text' ? c.text : ''))
+      .map((c: ChatMessageContent) => (c.type === 'text' ? c.text : ''))
       .join('')
   }
   return ''
