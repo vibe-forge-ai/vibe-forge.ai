@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.node.test.json",
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "noEmit": true
+  },
+  "references": [],
+  "include": [
+    "../../.ai.config.ts",
+    "../../.ai.dev.config.ts",
+    "../../scripts/**/*.ts",
+    "../../vitest.workspace.ts",
+    "../../apps/client/vite.config.ts",
+    "../../apps/cli/src/**/*",
+    "../../apps/server/src/**/*",
+    "../../apps/cli/__tests__/**/*",
+    "../../apps/server/__tests__/**/*",
+    "../../scripts/__tests__/**/*"
+  ]
+}

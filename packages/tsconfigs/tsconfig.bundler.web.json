@@ -1,8 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "outDir": "dist"
+    "jsx": "react-jsx"
   },
   "references": [
     {
@@ -10,6 +9,7 @@
     }
   ],
   "include": [
-    "../../apps/client/src/**/*"
+    "../../apps/client/src/**/*",
+    "../../apps/client/src/**/*.json"
   ]
 }

@@ -2,6 +2,20 @@ import config from "@antfu/eslint-config";
 
 export default config(
   {
+    ignores: [
+      '**/*.d.ts',
+      'apps/cli/src/**/*.js',
+      'apps/cli/__tests__/**/*.js',
+      'apps/server/src/**/*.js',
+      'apps/server/__tests__/**/*.js',
+      'packages/core/src/**/*.js',
+      'packages/core/__tests__/**/*.js',
+      'packages/channels/lark/src/**/*.js',
+      'packages/adapters/codex/src/**/*.js',
+      'packages/adapters/codex/__tests__/**/*.js',
+      'packages/adapters/opencode/src/**/*.js',
+      'packages/adapters/opencode/__tests__/**/*.js',
+    ],
     stylistic: false,
     typescript: {
       overrides: {

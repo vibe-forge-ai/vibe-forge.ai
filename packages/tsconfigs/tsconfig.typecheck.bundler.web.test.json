@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.bundler.web.test.json",
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "noEmit": true
+  },
+  "references": [],
+  "include": [
+    "../../apps/client/src/**/*",
+    "../../apps/client/src/**/*.json",
+    "../../apps/client/__tests__/**/*"
+  ]
+}

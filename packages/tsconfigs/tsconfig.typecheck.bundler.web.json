@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.bundler.web.json",
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "noEmit": true
+  },
+  "references": []
+}

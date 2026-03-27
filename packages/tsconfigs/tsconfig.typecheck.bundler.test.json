@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.bundler.test.json",
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "noEmit": true
+  },
+  "references": [],
+  "include": [
+    "../*/src/**/*",
+    "../adapters/*/src/**/*",
+    "../channels/*/src/**/*",
+    "../plugins/*/src/**/*",
+    "../../packages/*/__tests__/**/*",
+    "../../packages/adapters/*/__tests__/**/*",
+    "../../packages/channels/*/__tests__/**/*",
+    "../../packages/plugins/*/__tests__/**/*"
+  ]
+}
