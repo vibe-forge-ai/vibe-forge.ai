@@ -125,6 +125,17 @@ describe('model selection utilities', () => {
     })
   })
 
+  it('does not let includeModels reject the literal default model', () => {
+    expect(evaluateAdapterModelRules({
+      model: 'default',
+      adapterConfig: {
+        includeModels: ['serviceA']
+      }
+    })).toMatchObject({
+      allowed: true
+    })
+  })
+
   it('falls back to adapter defaultModel when the selected model is excluded', () => {
     const serviceModels = listServiceModels(modelServices)
 

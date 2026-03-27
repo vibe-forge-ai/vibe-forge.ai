@@ -309,6 +309,7 @@ export const evaluateAdapterModelRules = (params: {
   const normalizedModel = normalizeNonEmptyString(params.model)
   const includeModels = getAdapterConfiguredIncludeModels(params.adapterConfig)
   const excludeModels = getAdapterConfiguredExcludeModels(params.adapterConfig)
+  const isAdapterDefaultModel = normalizedModel?.toLowerCase() === 'default'
 
   if (!normalizedModel) {
     return {
@@ -328,6 +329,7 @@ export const evaluateAdapterModelRules = (params: {
   }
 
   if (
+    !isAdapterDefaultModel &&
     includeModels.length > 0 &&
     !includeModels.some(selector => doesModelMatchSelector({ model: normalizedModel, selector }))
   ) {

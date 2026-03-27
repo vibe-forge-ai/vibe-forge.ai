@@ -415,6 +415,41 @@ describe('task run adapter init', () => {
     }))
   })
 
+  it('allows the literal default model even when includeModels is configured', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        opencode: {
+          includeModels: ['serviceA']
+        }
+      }),
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelA']
+        }
+      }
+    }, undefined]
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'opencode',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-default-model-allowed',
+      model: 'default',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      model: 'default'
+    })
+  })
+
   it('throws when adapter rules reject the selected model and defaultModel is missing', async () => {
     const ctx = createCtx()
     ctx.configs = [{
