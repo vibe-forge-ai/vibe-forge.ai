@@ -61,10 +61,6 @@ export const MANAGED_ARTIFACTS: Record<AdapterE2ETarget, ManagedArtifactDefiniti
         {
           path: path.resolve(repoRoot, '.ai/.mock/.claude/settings.json'),
           includes: ['"hooks"']
-        },
-        {
-          path: path.resolve(repoRoot, '.claude/settings.json'),
-          includes: ['vf-call-hook', 'PreToolUse', 'PostToolUse', 'SessionStart', 'UserPromptSubmit', 'Stop']
         }
       ]
     }

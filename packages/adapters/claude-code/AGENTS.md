@@ -93,7 +93,8 @@ node apps/cli/cli.js \
 
 这次开发里，Claude 额外要记住两点：
 
-- 仓库根如果已有 `.claude/settings.json`，Claude 会和 mock home settings 一起加载，容易出现双触发
+- 仓库默认不提交项目级 `.claude/settings.json`；Claude 托管入口是 `.ai/.mock/.claude/settings.json`
+- 但如果用户自己加了项目级 `.claude/settings.json`，Claude 仍会和 mock home settings 一起加载，容易出现双触发
 - 排查重复 hook 时，不要只看 `.ai/.mock/.claude/settings.json`，也要检查项目级 `.claude/settings.json`
 
 ## 调试路由

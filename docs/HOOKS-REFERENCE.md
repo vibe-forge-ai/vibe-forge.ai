@@ -163,9 +163,10 @@ packages/adapters/opencode/node_modules/.bin/opencode run \
 - 更稳妥的方式是：先准备 session config dir，再把运行时 config 落成真实 `opencode.json`。
 - 如果 session config dir 里 `plugins/` 为空、`opencode.json` 被覆盖成空对象，先查 `src/runtime/session/child-env.ts` 和 `src/runtime/session/skill-config.ts`。
 
-### 4. Claude Code 会叠加项目级和 mock home 两套 settings
+### 4. Claude Code 仍会叠加项目级和 mock home 两套 settings
 
-- 仓库根如果已经有 `.claude/settings.json`，Claude 会一起加载。
+- 仓库默认不再提交项目级 `.claude/settings.json`，托管入口只有 `.ai/.mock/.claude/settings.json`。
+- 但如果用户自己在工作区放了 `.claude/settings.json`，Claude 仍会一起加载。
 - mock home 再注入一套托管 hooks 后，容易出现双触发。
 - 所以排查 Claude 重复 hook 时，不要只看 `.ai/.mock/.claude/settings.json`，还要看项目级 `.claude/settings.json`。
 
