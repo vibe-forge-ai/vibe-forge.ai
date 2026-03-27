@@ -267,4 +267,126 @@ describe('task run adapter init', () => {
       disabledEvents: ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
     }))
   })
+
+  it('prefers exact model selector metadata over service metadata for default adapter resolution', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {},
+        'claude-code': {}
+      }),
+      models: {
+        serviceA: {
+          defaultAdapter: 'claude-code'
+        },
+        'serviceA,modelX': {
+          defaultAdapter: 'codex'
+        }
+      },
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelX']
+        }
+      },
+      defaultModelService: 'serviceA',
+      defaultModel: 'modelX'
+    }, undefined]
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-model-selector',
+      onEvent: vi.fn()
+    })
+
+    expect(loadAdapterMock).toHaveBeenCalledWith('codex')
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      model: 'serviceA,modelX'
+    })
+  })
+
+  it('uses adapter-level model before falling back to global default model', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {
+          model: 'serviceA,modelB'
+        },
+        'claude-code': {}
+      }),
+      defaultModel: 'serviceA,modelA',
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelA', 'modelB']
+        }
+      }
+    }, undefined]
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-adapter-model',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      model: 'serviceA,modelB'
+    })
+  })
+
+  it('prefers user config model selector metadata over project config', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {},
+        'claude-code': {}
+      }),
+      models: {
+        serviceA: {
+          defaultAdapter: 'claude-code'
+        }
+      },
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelX']
+        }
+      },
+      defaultModelService: 'serviceA',
+      defaultModel: 'modelX'
+    }, {
+      models: {
+        serviceA: {
+          defaultAdapter: 'codex'
+        }
+      }
+    }]
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-user-override',
+      onEvent: vi.fn()
+    })
+
+    expect(loadAdapterMock).toHaveBeenCalledWith('codex')
+  })
 })

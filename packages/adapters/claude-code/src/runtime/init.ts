@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import { omitAdapterCommonConfig } from '@vibe-forge/core/utils/model-selection'
 
 import { generateDefaultCCRConfigJSON } from '../ccr/default-config'
 import { resolveAdapterCliPath } from '../ccr/paths'
@@ -12,10 +13,10 @@ import { ensureClaudeNativeHooksInstalled } from './native-hooks'
 
 export const initClaudeCodeAdapter = async (ctx: AdapterCtx) => {
   const { cwd, env, configs: [config, userConfig] } = ctx
-  const adapterOptions = {
+  const adapterOptions = omitAdapterCommonConfig({
     ...(config?.adapters?.['claude-code'] ?? {}),
     ...(userConfig?.adapters?.['claude-code'] ?? {})
-  }
+  })
   const configPath = resolve(cwd, '.ai/.mock/.claude-code-router/config.json')
   await mkdir(dirname(configPath), { recursive: true })
   await writeFile(

@@ -72,6 +72,7 @@ const buildSections = (config: Config | undefined) => {
       notifications: sanitize(notifications)
     },
     conversation: sanitize(conversation),
+    models: sanitize(config?.models),
     modelServices: sanitize(config?.modelServices),
     channels: sanitize(config?.channels),
     adapters: sanitize(config?.adapters),

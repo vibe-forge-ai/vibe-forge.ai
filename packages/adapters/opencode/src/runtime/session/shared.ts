@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 
 import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import { omitAdapterCommonConfig } from '@vibe-forge/core/utils/model-selection'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
 export interface OpenCodeAdapterConfig {
@@ -117,8 +118,8 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
 
 export const resolveAdapterConfig = (ctx: AdapterCtx): OpenCodeAdapterConfig => {
   const [config, userConfig] = ctx.configs
-  return {
+  return omitAdapterCommonConfig({
     ...(config?.adapters?.opencode ?? {}),
     ...(userConfig?.adapters?.opencode ?? {})
-  }
+  }) as OpenCodeAdapterConfig
 }

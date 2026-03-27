@@ -470,6 +470,7 @@
       "addEnvVar": "Add Environment Variable",
       "addHeader": "Add Header",
       "addEntry": "Add Entry",
+      "newModelSelectorName": "New model selector",
       "shortcutPlaceholder": "Press shortcut",
       "clearShortcut": "Clear shortcut",
       "newModelServiceName": "New model service name",
@@ -661,6 +662,12 @@
           "desc": "Additional guidance for the assistant"
         }
       },
+      "models": {
+        "items": {
+          "label": "Model Selector Entries",
+          "desc": "Selector metadata keyed by `service` or `service,model`"
+        }
+      },
       "modelServices": {
         "items": {
           "label": "Service Entries",
@@ -708,7 +715,7 @@
       "adapters": {
         "items": {
           "label": "Adapter Entries",
-          "desc": "Flattened configuration by adapter name"
+          "desc": "Flattened configuration by adapter name. `model` is the adapter-level default model."
         }
       },
       "plugins": {
@@ -835,6 +842,7 @@
     "sections": {
       "general": "General",
       "conversation": "Conversation",
+      "models": "Models",
       "modelServices": "Model Services",
       "channels": "Channels",
       "adapters": "Adapters",

@@ -127,6 +127,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField('conversation', mergeMaskedValues(sectionValue, config.conversation) as Config['conversation'])
       return nextConfig
     }
+    case 'models': {
+      updateField(
+        'models',
+        mergeMaskedValues(sectionValue, config.models) as Config['models']
+      )
+      return nextConfig
+    }
     case 'modelServices': {
       updateField(
         'modelServices',

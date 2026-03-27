@@ -50,7 +50,7 @@ export const SectionForm = ({
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
-  const directRecordSections = new Set(['modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
+  const directRecordSections = new Set(['models', 'modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
 
   const modelServiceEntries = Object.entries(mergedModelServices)
   const modelServiceOptions: Array<{ value: string; label: ReactNode }> = modelServiceEntries.map(([key, entry]) => {
@@ -97,6 +97,7 @@ export const SectionForm = ({
   const notificationEventOrder = ['completed', 'failed', 'terminated', 'waiting_input']
 
   const getRecordKeyPlaceholder = (field: FieldSpec) => {
+    if (sectionKey === 'models') return t('config.editor.newModelSelectorName')
     if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
     if (sectionKey === 'channels') return t('config.editor.newChannelName')
     if (sectionKey === 'adapters') return t('config.editor.newAdapterName')

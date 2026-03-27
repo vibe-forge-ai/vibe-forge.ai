@@ -2,9 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
-import { useChatAdapter } from './use-chat-adapter'
 import { useChatInteraction } from './use-chat-interaction'
-import { useChatModels } from './use-chat-models'
+import { useChatModelAdapterSelection } from './use-chat-model-adapter-selection'
 import { useChatPermissionMode } from './use-chat-permission-mode'
 import { useChatSessionMessages } from './use-chat-session-messages'
 import { useChatView } from './use-chat-view'
@@ -15,14 +14,19 @@ export function useChatSession({
   session?: Session
 }) {
   const { t } = useTranslation()
-  const { selectedAdapter, setSelectedAdapter, adapterOptions } = useChatAdapter()
   const {
+    adapterOptions,
+    applySessionSelection,
+    selectedAdapter,
     selectedModel,
     selectedModelWithService,
     setSelectedModel,
+    setSelectedAdapter,
     modelOptions,
     hasAvailableModels
-  } = useChatModels({ selectedAdapter })
+  } = useChatModelAdapterSelection({
+    adapterLocked: session?.id != null
+  })
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { activeView, setActiveView } = useChatView()
   const { interactionRequest, setInteractionRequest, handleInteractionResponse } = useChatInteraction({
@@ -47,16 +51,15 @@ export function useChatSession({
     const previous = lastObservedSessionRef.current
     const sessionChanged = previous?.id !== session.id
 
-    if (sessionChanged || previous?.model !== session.model) {
-      setSelectedModel(session.model)
+    if (sessionChanged || previous?.model !== session.model || previous?.adapter !== session.adapter) {
+      applySessionSelection({
+        model: session.model,
+        adapter: session.adapter
+      })
     }
 
     if (sessionChanged || previous?.permissionMode !== session.permissionMode) {
       setPermissionMode(session.permissionMode)
-    }
-
-    if (sessionChanged || previous?.adapter !== session.adapter) {
-      setSelectedAdapter(session.adapter)
     }
 
     lastObservedSessionRef.current = {
@@ -70,9 +73,8 @@ export function useChatSession({
     session?.id,
     session?.model,
     session?.permissionMode,
+    applySessionSelection,
     setPermissionMode,
-    setSelectedAdapter,
-    setSelectedModel
   ])
 
   return {

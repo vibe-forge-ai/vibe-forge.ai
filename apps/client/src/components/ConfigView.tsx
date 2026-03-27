@@ -50,6 +50,7 @@ export function ConfigView() {
     new Set([
       'general',
       'conversation',
+      'models',
       'modelServices',
       'channels',
       'adapters',
@@ -66,6 +67,12 @@ export function ConfigView() {
       icon: 'forum',
       label: t('config.sections.conversation'),
       value: currentSource?.conversation
+    },
+    {
+      key: 'models',
+      icon: 'tune',
+      label: t('config.sections.models'),
+      value: currentSource?.models
     },
     {
       key: 'modelServices',

@@ -257,6 +257,15 @@ export const configSchema: Record<string, FieldSpec[]> = {
     },
     { path: ['customInstructions'], type: 'multiline', defaultValue: '', icon: 'description' }
   ],
+  models: [
+    {
+      path: [],
+      type: 'record',
+      recordKind: 'json',
+      defaultValue: {},
+      icon: 'tune'
+    }
+  ],
   modelServices: [
     {
       path: [],

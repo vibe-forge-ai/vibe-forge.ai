@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   listServiceModels,
+  resolveAdapterForChatModelSelection,
+  resolveChatAdapterSelection,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
+  resolveModelForChatAdapterSelection,
   resolveServiceModelSelector
 } from '#~/hooks/chat/model-selector'
-import type { ModelServiceConfig } from '@vibe-forge/core'
+import type { AdapterBuiltinModel, ModelMetadataConfig, ModelServiceConfig } from '@vibe-forge/core'
 
 const modelServices: Record<string, ModelServiceConfig> = {
   serviceA: {
@@ -18,6 +21,32 @@ const modelServices: Record<string, ModelServiceConfig> = {
     apiBaseUrl: 'https://service-b.example.com',
     apiKey: 'token-b',
     models: ['modelX', 'modelBOnly']
+  }
+}
+
+const adapterBuiltinModels: Record<string, AdapterBuiltinModel[]> = {
+  codex: [
+    {
+      value: 'builtin-fast',
+      title: 'builtin-fast',
+      description: 'Fast builtin model'
+    }
+  ],
+  'claude-code': [
+    {
+      value: 'sonnet',
+      title: 'sonnet',
+      description: 'Claude Sonnet'
+    }
+  ]
+}
+
+const modelMetadata: Record<string, ModelMetadataConfig> = {
+  serviceA: {
+    defaultAdapter: 'claude-code'
+  },
+  'serviceA,modelX': {
+    defaultAdapter: 'codex'
   }
 }
 
@@ -100,5 +129,59 @@ describe('chat model selector helpers', () => {
       value: 'modelX',
       serviceModels
     })).toBe('serviceA,modelX')
+  })
+
+  it('resolves adapter by exact model selector metadata before service metadata', () => {
+    expect(resolveAdapterForChatModelSelection({
+      model: 'serviceA,modelX',
+      availableAdapters: ['claude-code', 'codex'],
+      defaultAdapter: 'claude-code',
+      adapterBuiltinModels,
+      modelMetadata
+    })).toBe('codex')
+
+    expect(resolveAdapterForChatModelSelection({
+      model: 'serviceA,modelAOnly',
+      availableAdapters: ['claude-code', 'codex'],
+      defaultAdapter: 'codex',
+      adapterBuiltinModels,
+      modelMetadata
+    })).toBe('claude-code')
+  })
+
+  it('falls back to a builtin-compatible adapter when no routed selector metadata exists', () => {
+    expect(resolveAdapterForChatModelSelection({
+      model: 'sonnet',
+      availableAdapters: ['codex', 'claude-code'],
+      defaultAdapter: 'codex',
+      adapterBuiltinModels,
+      modelMetadata: {}
+    })).toBe('claude-code')
+  })
+
+  it('uses adapter-level default model before global defaults', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveModelForChatAdapterSelection({
+      adapter: 'codex',
+      adapters: {
+        codex: {
+          model: 'serviceB,modelBOnly'
+        }
+      },
+      defaultModel: 'serviceA,modelAOnly',
+      defaultModelService: 'serviceA',
+      builtinModels: ['builtin-fast'],
+      fallbackBuiltinModels: ['builtin-fast', 'sonnet'],
+      serviceModels
+    })).toBe('serviceB,modelBOnly')
+  })
+
+  it('validates adapter selections against the available adapter list', () => {
+    expect(resolveChatAdapterSelection({
+      value: 'missing',
+      availableAdapters: ['codex', 'claude-code'],
+      defaultAdapter: 'claude-code'
+    })).toBe('claude-code')
   })
 })

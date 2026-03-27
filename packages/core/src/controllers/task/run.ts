@@ -1,41 +1,59 @@
 import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions } from '#~/adapter/index.js'
 import { loadAdapter } from '#~/adapter/index.js'
-import type { ModelServiceConfig } from '#~/config.js'
 import { createAdapterHookBridge } from '#~/hooks/bridge.js'
 import { callHook } from '#~/hooks/call.js'
 import type { HookInputs } from '#~/hooks/type.js'
 import type { TaskDetail } from '#~/types.js'
+import {
+  getAdapterConfiguredModel,
+  listServiceModels,
+  normalizeNonEmptyString,
+  resolveDefaultModelSelection,
+  resolveModelDefaultAdapter,
+  resolveModelSelection
+} from '#~/utils/model-selection.js'
 import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 
 import { prepare } from './prepare'
 import type { RunTaskOptions } from './type'
-
-const normalizeNonEmptyString = (value: unknown) => (
-  typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
-)
 
 const pickFirstNonEmptyString = (values: unknown[]) =>
   values
     .map(normalizeNonEmptyString)
     .find((value): value is string => value != null)
 
-const resolveQueryModel = (params: {
+const resolveQuerySelection = (params: {
   config: AdapterCtx['configs'][0]
   userConfig: AdapterCtx['configs'][1]
+  inputAdapter?: string
   inputModel?: string
 }) => {
-  const inputModel = normalizeNonEmptyString(params.inputModel)
-  // User explicitly provided a model → pass through as-is.
-  // The adapter decides CCR vs native based on whether it contains ",".
-  if (inputModel != null) return inputModel
-
-  // No explicit model → auto-resolve from modelServices config.
-  // Produces "service,model" format when services are configured,
-  // which signals the adapter to route through CCR.
+  const mergedAdapters = {
+    ...(params.config?.adapters ?? {}),
+    ...(params.userConfig?.adapters ?? {})
+  }
+  const mergedModels = {
+    ...(params.config?.models ?? {}),
+    ...(params.userConfig?.models ?? {})
+  }
   const mergedModelServices = {
     ...(params.config?.modelServices ?? {}),
     ...(params.userConfig?.modelServices ?? {})
   }
+  const availableAdapters = Object.keys(mergedAdapters)
+  const serviceModels = listServiceModels(mergedModelServices)
+  const explicitAdapter = normalizeNonEmptyString(params.inputAdapter)
+  const explicitModel = resolveModelSelection({
+    value: params.inputModel,
+    serviceModels,
+    preserveUnknown: true
+  })
+  const mergedDefaultAdapter = pickFirstNonEmptyString(
+    [
+      params.userConfig?.defaultAdapter,
+      params.config?.defaultAdapter
+    ]
+  )
   const mergedDefaultModel = pickFirstNonEmptyString(
     [
       params.userConfig?.defaultModel,
@@ -48,45 +66,63 @@ const resolveQueryModel = (params: {
       params.config?.defaultModelService
     ]
   )
+  const resolvedDefaultModel = resolveDefaultModelSelection({
+    defaultModel: mergedDefaultModel,
+    defaultModelService: mergedDefaultModelService,
+    serviceModels,
+    preserveUnknownDefaultModel: true
+  })
 
-  const serviceEntries = Object.entries(mergedModelServices)
-  const modelToService = new Map<string, string>()
-  const availableModels: string[] = []
-  for (const [serviceKey, serviceValue] of serviceEntries) {
-    const service = (serviceValue != null && typeof serviceValue === 'object')
-      ? serviceValue as ModelServiceConfig
-      : undefined
-    const models = Array.isArray(service?.models)
-      ? service?.models.filter(item => typeof item === 'string' && item.trim() !== '')
-      : []
-    for (const model of models) {
-      if (!modelToService.has(model)) modelToService.set(model, serviceKey)
-      availableModels.push(model)
+  const resolveAdapterFallback = () => explicitAdapter ?? mergedDefaultAdapter ?? availableAdapters[0]
+
+  const resolveAdapterForModel = (model: string) => (
+    explicitAdapter ??
+    resolveModelDefaultAdapter({
+      model,
+      models: mergedModels
+    }) ??
+    mergedDefaultAdapter ??
+    availableAdapters[0]
+  )
+
+  const resolveModelForAdapter = (adapter: string | undefined) => {
+    const adapterConfiguredModel = getAdapterConfiguredModel(
+      adapter != null ? mergedAdapters[adapter as keyof typeof mergedAdapters] : undefined
+    )
+    return resolveModelSelection({
+      value: adapterConfiguredModel,
+      serviceModels,
+      preferredServiceKey: mergedDefaultModelService,
+      preserveUnknown: true
+    }) ?? resolvedDefaultModel
+  }
+
+  if (explicitModel != null) {
+    return {
+      adapter: resolveAdapterForModel(explicitModel),
+      model: explicitModel
     }
   }
 
-  if (availableModels.length === 0) return undefined
-
-  const resolveDefaultModel = () => {
-    if (mergedDefaultModel && modelToService.has(mergedDefaultModel)) return mergedDefaultModel
-    if (mergedDefaultModelService && mergedModelServices[mergedDefaultModelService]) {
-      const service = mergedModelServices[mergedDefaultModelService] as ModelServiceConfig | undefined
-      const models = Array.isArray(service?.models)
-        ? service?.models.filter((item: unknown) => typeof item === 'string' && (item as string).trim() !== '')
-        : []
-      if (models.length > 0) return models[0]
+  if (explicitAdapter != null) {
+    return {
+      adapter: explicitAdapter,
+      model: resolveModelForAdapter(explicitAdapter)
     }
-    return availableModels[0]
   }
 
-  const resolvedModel = resolveDefaultModel()
-  if (!resolvedModel) return undefined
+  if (resolvedDefaultModel != null) {
+    return {
+      adapter: resolveAdapterForModel(resolvedDefaultModel),
+      model: resolvedDefaultModel
+    }
+  }
 
-  const resolvedService = modelToService.get(resolvedModel) ??
-    mergedDefaultModelService ??
-    serviceEntries[0]?.[0]
-
-  return resolvedService ? `${resolvedService},${resolvedModel}` : resolvedModel
+  const adapter = resolveAdapterFallback()
+  return {
+    adapter,
+    model: resolveModelForAdapter(adapter)
+  }
 }
 
 declare module '@vibe-forge/core' {
@@ -117,35 +153,20 @@ export const run = async (
 
   await cache.set('base', base)
 
-  const adapters = {
-    ...config?.adapters,
-    ...userConfig?.adapters
+  const resolvedSelection = resolveQuerySelection({
+    config,
+    userConfig,
+    inputAdapter: options.adapter,
+    inputModel: adapterOptions.model
+  })
+  const adapterType = resolvedSelection.adapter
+  if (adapterType == null) {
+    throw new Error('No adapter found in config, please set adapters in config file')
   }
-  // dprint-ignore
-  const adapterType =
-    // 0. adapter from options
-    options.adapter ??
-    // 1. config default adapter
-    config?.defaultAdapter ??
-    // 2. user config default adapter
-    userConfig?.defaultAdapter ??
-    // 3. first adapter in config
-    (() => {
-      const adapterNames = Object.keys(adapters)
-      if (adapterNames.length === 0) {
-        throw new Error('No adapter found in config, please set adapters in config file')
-      }
-      return adapterNames[0]
-    })()
 
   const adapter = await loadAdapter(adapterType)
   await adapter.init?.(ctx)
-
-  const resolvedModel = resolveQueryModel({
-    config,
-    userConfig,
-    inputModel: adapterOptions.model
-  })
+  const resolvedModel = resolvedSelection.model
 
   const originalOnEvent = adapterOptions.onEvent
   const supportedAssetPlanAdapters = new Set(['claude-code', 'codex', 'opencode'])

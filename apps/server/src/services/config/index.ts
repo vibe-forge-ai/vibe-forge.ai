@@ -33,6 +33,7 @@ export function mergeConfigs(project?: Config, user?: Config): Config {
       project?.adapters as Record<string, unknown> | undefined,
       user?.adapters as Record<string, unknown> | undefined
     ) as Config['adapters'],
+    models: mergeRecord(project?.models, user?.models),
     modelServices: mergeRecord(project?.modelServices, user?.modelServices),
     channels: mergeRecord(project?.channels, user?.channels),
     mcpServers: mergeRecord(project?.mcpServers, user?.mcpServers),

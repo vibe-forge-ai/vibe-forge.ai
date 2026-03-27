@@ -3,6 +3,16 @@ import type { PluginConfig } from '../hooks'
 
 export interface AdapterMap {}
 
+export interface AdapterConfigCommon {
+  model?: string
+}
+
+export type AdapterConfigEntry<T> = T & AdapterConfigCommon
+
+export type AdapterConfigMap = Partial<{
+  [K in keyof AdapterMap]: AdapterConfigEntry<AdapterMap[K]>
+}>
+
 export interface AdapterBuiltinModel {
   value: string
   title: string
@@ -62,6 +72,10 @@ export interface RecommendedModelConfig {
   placement?: 'modelSelector'
 }
 
+export interface ModelMetadataConfig {
+  defaultAdapter?: string
+}
+
 export type LanguageCode = 'zh' | 'en'
 
 export type NotificationTrigger = 'completed' | 'failed' | 'terminated' | 'waiting_input'
@@ -87,7 +101,11 @@ export interface Config {
   /**
    * 适配器配置
    */
-  adapters?: Partial<AdapterMap>
+  adapters?: AdapterConfigMap
+  /**
+   * 模型选择器元信息
+   */
+  models?: Record<string, ModelMetadataConfig>
   /**
    * 默认适配器名称
    */
@@ -251,6 +269,7 @@ export interface ConfigSection {
     notifications?: Config['notifications']
   }
   conversation?: Config['conversation']
+  models?: Config['models']
   modelServices?: Config['modelServices']
   channels?: Config['channels']
   adapters?: Config['adapters']
