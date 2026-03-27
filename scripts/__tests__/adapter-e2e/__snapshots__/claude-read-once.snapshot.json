@@ -1,0 +1,114 @@
+{
+  "caseId": "claude-read-once",
+  "adapter": "claude-code",
+  "transport": "wrapper",
+  "exitCode": 0,
+  "stdout": "E2E_CLAUDE",
+  "stderr": "",
+  "mockTrace": [
+    {
+      "path": "/chat/completions",
+      "model": "claude-read-once",
+      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else.",
+      "inputTypes": [
+        "system",
+        "user"
+      ],
+      "requestedToolCount": 17,
+      "selectedTool": {
+        "name": "Read",
+        "args": {
+          "file_path": "<repo>/README.md",
+          "limit": 2000,
+          "offset": 1
+        }
+      },
+      "response": {
+        "kind": "tool",
+        "tool": {
+          "name": "Read",
+          "args": {
+            "file_path": "<repo>/README.md",
+            "limit": 2000,
+            "offset": 1
+          }
+        }
+      }
+    },
+    {
+      "path": "/chat/completions",
+      "model": "claude-read-once",
+      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else.",
+      "inputTypes": [
+        "system",
+        "user",
+        "assistant",
+        "tool"
+      ],
+      "requestedToolCount": 17,
+      "selectedTool": {
+        "name": "Read",
+        "args": {
+          "file_path": "<repo>/README.md",
+          "limit": 2000,
+          "offset": 1
+        }
+      },
+      "response": {
+        "kind": "message",
+        "text": "E2E_CLAUDE"
+      }
+    }
+  ],
+  "log": {
+    "path": ".ai/logs/<ctxId>/<uuid>.log.md",
+    "entries": [
+      {
+        "event": "GenerateSystemPrompt"
+      },
+      {
+        "event": "TaskStart",
+        "adapter": "claude-code",
+        "redacted": true
+      },
+      {
+        "event": "SessionStart",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": true
+      },
+      {
+        "event": "UserPromptSubmit",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": true,
+        "prompt": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else."
+      },
+      {
+        "event": "PreToolUse",
+        "header": "claude-code Read",
+        "toolName": "Read"
+      },
+      {
+        "event": "PostToolUse",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "header": "Read",
+        "toolName": "Read"
+      },
+      {
+        "event": "Stop",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": false
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "label": "claude managed settings",
+      "path": ".ai/.mock/.claude/settings.json",
+      "content": "{\n  \"hooks\": {\n    \"SessionStart\": [],\n    \"UserPromptSubmit\": [],\n    \"PreToolUse\": [],\n    \"PostToolUse\": [],\n    \"Notification\": [],\n    \"Stop\": [],\n    \"SubagentStop\": [],\n    \"PreCompact\": []\n  }\n}"
+    }
+  ]
+}

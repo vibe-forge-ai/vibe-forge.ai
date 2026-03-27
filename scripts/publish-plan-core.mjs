@@ -38,7 +38,7 @@ const defaultFs = {
 };
 
 export const helpText = `用法:
-  pnpm publish:plan [options]
+  pnpm tools publish-plan [options]
 
 选项:
   -p, --packages <names>    逗号分隔的包名列表

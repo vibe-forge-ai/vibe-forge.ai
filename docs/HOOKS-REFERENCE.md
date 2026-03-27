@@ -27,16 +27,38 @@
   - 终端最终输出是否符合预期。
   - `.ai/logs/<ctxId>/<sessionId>.log.md` 是否落下对应 hook 事件。
   - `.ai/.mock` 下的托管配置是否仍指向 Vibe Forge hook bridge。
-- 仓库根已经固化了 smoke 命令：
-  - `pnpm smoke:hooks:codex`
-  - `pnpm smoke:hooks:claude`
-  - `pnpm smoke:hooks:opencode`
-  - `pnpm smoke:hooks:all`
+- 标准 E2E 入口是 `pnpm test:e2e:adapters`。
+- 该命令通过 `scripts/__tests__/adapter-e2e/adapter-e2e.spec.ts` 驱动 Vitest，并复用 `scripts/adapter-e2e/` 下的共享 TypeScript harness。
+- 每个 case 的定义、spec、snapshot 都集中在 `scripts/__tests__/adapter-e2e/`，真实 CLI 结果通过 Vitest file snapshot 固化在 `scripts/__tests__/adapter-e2e/__snapshots__/*.snapshot.json`。
+- CLI 维护入口统一为 `pnpm tools ...`，底层 loader 是 `scripts/run-tools.mjs`，命令定义在 `scripts/cli.ts`。
+- 仓库根的常用入口：
+  - `pnpm tools adapter-e2e run codex`
+  - `pnpm tools adapter-e2e run claude-code`
+  - `pnpm tools adapter-e2e run opencode`
+  - `pnpm tools adapter-e2e run all`
+  - `pnpm tools adapter-e2e test`
+  - `pnpm tools adapter-e2e test codex-read-once --update`
+  - `pnpm tools adapter-e2e test codex-direct-answer --update`
 - 这组命令默认启动本地 mock LLM server，不依赖外部模型服务。
 - 对应的 smoke model service 配置写在仓库根 `.ai.config.json`：
   - `modelServices.hook-smoke-mock` 给 Codex / OpenCode
   - `modelServices.hook-smoke-mock-ccr` 给 Claude Code Router
-- `smoke:hooks:opencode` 会先试包装层，超时后自动 fallback 到 upstream `opencode run --format json`。
+- `pnpm tools adapter-e2e run opencode` 会先试包装层，超时后自动 fallback 到 upstream `opencode run --format json`。
+
+### Case 维护方式
+
+- 在 `scripts/__tests__/adapter-e2e/cases.ts` 里定义 case。
+- 每个 case 都要显式声明 `expectations`，至少覆盖：
+  - 最终输出文本
+  - mock trace 是否真的走了工具 / 没走工具
+  - hook 事件计数
+- 当前标准场景保持两类：
+  - `*-read-once`: 验证单次工具调用 + `PreToolUse/PostToolUse`
+  - `*-direct-answer`: 验证无工具直答 + `PreToolUse/PostToolUse` 不出现
+- mock LLM 的输入命中规则和返回结果，统一用 `scripts/adapter-e2e/mock-llm/rules.ts` 里的 DSL 组合。
+- runner 只负责触发真实 CLI 和采集结果；不要把新的期望判断塞回 runner。
+- hook 日志解析统一在 `scripts/adapter-e2e/log.ts`，snapshot 和 assertions 共用这层，不要各自再写一套 parser。
+- 快照投影在 `scripts/adapter-e2e/snapshot.ts`，这里只保留维护上真正有价值的摘要：CLI 输出、mock trace、hook 事件摘要、managed artifact 内容。
 
 ### Codex
 
@@ -175,6 +197,40 @@ packages/adapters/opencode/node_modules/.bin/opencode run \
 - `apps/cli/codex-hook.js`
 - `apps/cli/claude-hook.js`
 - `apps/cli/call-hook.js`
+- `scripts/run-tools.mjs`
+  - 运行时 loader，负责 `esbuild-register` 和脚本 CLI 入口
+- `scripts/cli.ts`
+  - commander 维护 CLI，统一挂载 `adapter-e2e` / `publish-plan`
+- `scripts/adapter-e2e/harness.ts`
+  - harness 生命周期、suite 调度、结果汇总
+- `scripts/adapter-e2e/runners.ts`
+  - 真实 CLI 运行、wrapper/fallback 选择、统一结果归并
+- `scripts/adapter-e2e/log.ts`
+  - hook 日志 line-based parser、事件计数
+- `scripts/adapter-e2e/mock-llm/server.ts`
+  - 本地 mock LLM server 的 HTTP 装配层
+- `scripts/adapter-e2e/mock-llm/request.ts`
+  - 请求体解析、title/tool-result/stream 判定
+- `scripts/adapter-e2e/mock-llm/tooling.ts`
+  - mock tool 选择与参数生成
+- `scripts/adapter-e2e/mock-llm/registry.ts`
+  - scenario registry 与 turn 解析
+- `scripts/adapter-e2e/mock-llm/responses.ts`
+  - OpenAI Responses 协议输出
+- `scripts/adapter-e2e/mock-llm/chat-completions.ts`
+  - Chat Completions 协议输出
+- `scripts/adapter-e2e/scenarios.ts`
+  - adapter 默认 prompt/model 和 managed artifact 断言
+- `scripts/__tests__/adapter-e2e/cases.ts`
+  - case DSL、case 选择、标准场景族、显式 expectations
+- `scripts/__tests__/adapter-e2e/assertions.ts`
+  - 结构化 expectations 校验与 snapshot 路径管理
+- `scripts/__tests__/adapter-e2e/adapter-e2e.spec.ts`
+  - 真实 CLI E2E 主测试入口
+- `scripts/__tests__/adapter-e2e/log.spec.ts`
+  - hook 日志解析和 snapshot 投影回归
+- `scripts/__tests__/adapter-e2e/mock-llm.spec.ts`
+  - mock LLM 可扩展性的快速回归测试
 
 ### Codex
 

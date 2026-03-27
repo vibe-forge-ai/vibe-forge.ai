@@ -1,0 +1,71 @@
+{
+  "caseId": "claude-direct-answer",
+  "adapter": "claude-code",
+  "transport": "wrapper",
+  "exitCode": 0,
+  "stdout": "E2E_CLAUDE_DIRECT",
+  "stderr": "",
+  "mockTrace": [
+    {
+      "path": "/chat/completions",
+      "model": "claude-direct-answer",
+      "request": "Do not use any tool. Reply with exactly E2E_CLAUDE_DIRECT and nothing else.",
+      "inputTypes": [
+        "system",
+        "user"
+      ],
+      "requestedToolCount": 17,
+      "selectedTool": {
+        "name": "Read",
+        "args": {
+          "file_path": "<repo>/README.md",
+          "limit": 2000,
+          "offset": 1
+        }
+      },
+      "response": {
+        "kind": "message",
+        "text": "E2E_CLAUDE_DIRECT"
+      }
+    }
+  ],
+  "log": {
+    "path": ".ai/logs/<ctxId>/<uuid>.log.md",
+    "entries": [
+      {
+        "event": "GenerateSystemPrompt"
+      },
+      {
+        "event": "TaskStart",
+        "adapter": "claude-code",
+        "redacted": true
+      },
+      {
+        "event": "SessionStart",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": true
+      },
+      {
+        "event": "UserPromptSubmit",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": true,
+        "prompt": "Do not use any tool. Reply with exactly E2E_CLAUDE_DIRECT and nothing else."
+      },
+      {
+        "event": "Stop",
+        "adapter": "claude-code",
+        "hookSource": "native",
+        "canBlock": false
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "label": "claude managed settings",
+      "path": ".ai/.mock/.claude/settings.json",
+      "content": "{\n  \"hooks\": {\n    \"SessionStart\": [],\n    \"UserPromptSubmit\": [],\n    \"PreToolUse\": [],\n    \"PostToolUse\": [],\n    \"Notification\": [],\n    \"Stop\": [],\n    \"SubagentStop\": [],\n    \"PreCompact\": []\n  }\n}"
+    }
+  ]
+}

@@ -53,11 +53,14 @@
 仓库根快捷命令：
 
 ```bash
-pnpm smoke:hooks:opencode
+pnpm test:e2e:adapters
+pnpm tools adapter-e2e run opencode
+pnpm tools adapter-e2e test opencode-read-once --update
 ```
 
 这条命令会先试 `vf --adapter opencode`，超时后自动 fallback 到 upstream `opencode run --format json`。
-它默认也会启动本地 mock LLM server，并通过仓库根 `.ai.config.json` 里的 `hook-smoke-mock` model service 驱动 OpenCode。
+它默认也会启动本地 mock LLM server，并通过仓库根 `.ai.config.json` 里的 `hook-smoke-mock` model service 驱动 OpenCode。adapter E2E 的共享 harness 在 `scripts/adapter-e2e/`，scripts CLI 入口在 `scripts/cli.ts`。
+case 定义、spec 和期望快照统一维护在 `scripts/__tests__/adapter-e2e/`。
 
 ```bash
 __VF_PROJECT_AI_CTX_ID__='hooks-smoke-opencode' \

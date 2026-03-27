@@ -62,11 +62,14 @@
 仓库根快捷命令：
 
 ```bash
-pnpm smoke:hooks:claude
+pnpm test:e2e:adapters
+pnpm tools adapter-e2e run claude-code
+pnpm tools adapter-e2e test claude-read-once --update
 ```
 
-这条命令默认会启动本地 mock LLM server，并通过仓库根 `.ai.config.json` 里的 `hook-smoke-mock` model service 驱动 Claude Code。
-这里走的是 `hook-smoke-mock-ccr`，也就是 `/chat/completions` 路径；比走 Responses polyfill 更稳定。
+这条命令默认会启动本地 mock LLM server，并通过仓库根 `.ai.config.json` 里的 `hook-smoke-mock-ccr` model service 驱动 Claude Code。
+这里走的是 `/chat/completions` 路径；比走 Responses polyfill 更稳定。adapter E2E 的共享 harness 在 `scripts/adapter-e2e/`，scripts CLI 入口在 `scripts/cli.ts`。
+case 定义、spec 和期望快照统一维护在 `scripts/__tests__/adapter-e2e/`。
 
 ```bash
 __VF_PROJECT_AI_CTX_ID__='hooks-smoke-claude' \

@@ -46,10 +46,14 @@ hooks 相关问题先按这条链路看：
 - CLI bridge 只做协议翻译和最小 env 补齐，不写业务判断
 - 业务 hook 执行放在 `packages/core/src/hooks/*`
 - `.ai/.mock` 的 native 资产写入放在 adapter / core native helper，不要散落到 CLI 命令层
-- 真实 hooks 验证优先走仓库根的 `pnpm smoke:hooks:*`，不要长期依赖手工拼命令
-- `pnpm smoke:hooks:*` 默认会起本地 mock LLM server；对应模型服务配置在仓库根 `.ai.config.json`
+- 真实 adapter E2E 验证优先走仓库根的 `pnpm test:e2e:adapters`
+- 定向排查时走 `pnpm tools adapter-e2e run <selection>`
+- `pnpm test:e2e:adapters` 和 `pnpm tools adapter-e2e run <selection>` 默认都会起本地 mock LLM server；对应模型服务配置在仓库根 `.ai.config.json`
   - `hook-smoke-mock` 给 Codex / OpenCode
   - `hook-smoke-mock-ccr` 给 Claude Code Router
+- adapter E2E 的 shared harness 在 `scripts/adapter-e2e/`，scripts CLI 入口在 `scripts/cli.ts`
+- 新增场景优先改 `scripts/__tests__/adapter-e2e/cases.ts` 和 `mock-llm/rules.ts`，不要再往脚本入口堆逻辑
+- 真实 CLI 结果统一写进 Vitest file snapshot；更新时用 `pnpm tools adapter-e2e test <case-id> --update`
 
 ## 什么时候继续往下读别的目录
 

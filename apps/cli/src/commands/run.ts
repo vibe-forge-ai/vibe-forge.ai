@@ -1,10 +1,11 @@
 import process from 'node:process'
 
+import { Option } from 'commander'
 import type { Command, OptionValueSource } from 'commander'
 
+import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/core/adapter'
 import type { ChatMessage } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/core/hooks'
-import type { AdapterErrorData } from '@vibe-forge/core/adapter'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
 import { uuid } from '@vibe-forge/core/utils/uuid'
 
@@ -16,6 +17,10 @@ import {
 
 import { extraOptions } from './@core/extra-options'
 
+export const RUN_OUTPUT_FORMATS = ['text', 'json', 'stream-json'] as const
+
+export type RunOutputFormat = (typeof RUN_OUTPUT_FORMATS)[number]
+
 interface RunOptions {
   print: boolean
   model?: string
@@ -26,7 +31,7 @@ interface RunOptions {
   resume?: boolean
   spec?: string
   entity?: string
-  outputFormat?: 'json' | 'stream-json' | 'text'
+  outputFormat?: RunOutputFormat
   includeMcpServer?: string[]
   excludeMcpServer?: string[]
   includeTool?: string[]
@@ -78,7 +83,11 @@ export function registerRunCommand(program: Command) {
     .option('--permission-mode <mode>', 'Permission mode (default, acceptEdits, plan, dontAsk, bypassPermissions)')
     .option('--session-id <id>', 'Session ID')
     .option('--resume', 'Resume existing session', false)
-    .option('--output-format <format>', 'Output format', 'text')
+    .addOption(
+      new Option('--output-format <format>', 'Output format')
+        .choices([...RUN_OUTPUT_FORMATS])
+        .default('text')
+    )
     .option('--spec <spec>', 'Load spec definition')
     .option('--entity <entity>', 'Load entity definition')
     .option('--include-mcp-server <server...>', 'Include MCP server')
@@ -110,11 +119,11 @@ export function registerRunCommand(program: Command) {
         promptCWD,
         opts.includeSkill || opts.excludeSkill
           ? {
-            skills: {
-              include: opts.includeSkill,
-              exclude: opts.excludeSkill
+              skills: {
+                include: opts.includeSkill,
+                exclude: opts.excludeSkill
+              }
             }
-          }
           : undefined
       )
       const env = {
@@ -173,66 +182,24 @@ export function registerRunCommand(program: Command) {
         promptAssetIds: resolvedConfig.promptAssetIds,
         skills: opts.includeSkill || opts.excludeSkill
           ? {
-            include: opts.includeSkill,
-            exclude: opts.excludeSkill
-          }
+              include: opts.includeSkill,
+              exclude: opts.excludeSkill
+            }
           : undefined,
         extraOptions,
         onEvent: (event) => {
           if (opts.print) {
-            if (event.type === 'message') {
-              lastAssistantText = getPrintableAssistantText(event.data) ?? lastAssistantText
-            }
-            if (event.type === 'error') {
-              const errorMessage = getAdapterErrorMessage(event.data)
-              const isFatal = event.data.fatal !== false
-              switch (opts.outputFormat) {
-                case 'stream-json':
-                  console.log(JSON.stringify(event, null, 2))
-                  if (isFatal) {
-                    didExitAfterError = true
-                    exitController.requestExit(1)
-                  }
-                  break
-                case 'text':
-                  if (isFatal) {
-                    didExitAfterError = true
-                    console.error(errorMessage)
-                    exitController.requestExit(1)
-                  }
-                  break
-                case 'json':
-                  if (isFatal) {
-                    didExitAfterError = true
-                    console.log(JSON.stringify(event, null, 2))
-                    exitController.requestExit(1)
-                  }
-                  break
-              }
-              return
-            }
-            switch (opts.outputFormat) {
-              case 'stream-json':
-                console.log(JSON.stringify(event, null, 2))
-                break
-              case 'text':
-                if (event.type === 'stop') {
-                  if (didExitAfterError) return
-                  const output = resolvePrintableStopText(event.data, lastAssistantText)
-                  if (output != null) {
-                    console.log(output)
-                  }
-                  exitController.requestExit(0)
-                }
-                break
-              case 'json':
-                if (event.type === 'stop') {
-                  if (didExitAfterError) return
-                  console.log(JSON.stringify(event, null, 2))
-                  exitController.requestExit(0)
-                }
-                break
-            }
+            const nextState = handlePrintEvent({
+              event,
+              outputFormat: opts.outputFormat ?? 'text',
+              lastAssistantText,
+              didExitAfterError,
+              log: (message) => console.log(message),
+              errorLog: (message) => console.error(message),
+              requestExit: (code) => exitController.requestExit(code)
+            })
+            lastAssistantText = nextState.lastAssistantText
+            didExitAfterError = nextState.didExitAfterError
           }
           if (event.type === 'exit') {
             exitController.requestExit(event.data.exitCode ?? 0)
@@ -270,6 +237,96 @@ export const getAdapterErrorMessage = (data: AdapterErrorData) => {
   return details ? `${data.message}\n${details}` : data.message
 }
 
+export const handlePrintEvent = (input: {
+  event: AdapterOutputEvent
+  outputFormat: RunOutputFormat
+  lastAssistantText: string | undefined
+  didExitAfterError: boolean
+  log: (message: string) => void
+  errorLog: (message: string) => void
+  requestExit: (code: number) => void
+}) => {
+  const nextAssistantText = input.event.type === 'message'
+    ? (getPrintableAssistantText(input.event.data) ?? input.lastAssistantText)
+    : input.lastAssistantText
+
+  if (input.event.type === 'error') {
+    const isFatal = input.event.data.fatal !== false
+
+    switch (input.outputFormat) {
+      case 'stream-json':
+        input.log(JSON.stringify(input.event, null, 2))
+        if (isFatal) {
+          input.requestExit(1)
+          return {
+            lastAssistantText: nextAssistantText,
+            didExitAfterError: true
+          }
+        }
+        return {
+          lastAssistantText: nextAssistantText,
+          didExitAfterError: input.didExitAfterError
+        }
+      case 'json':
+        if (isFatal) {
+          input.log(JSON.stringify(input.event, null, 2))
+          input.requestExit(1)
+          return {
+            lastAssistantText: nextAssistantText,
+            didExitAfterError: true
+          }
+        }
+        return {
+          lastAssistantText: nextAssistantText,
+          didExitAfterError: input.didExitAfterError
+        }
+      case 'text':
+        if (isFatal) {
+          input.errorLog(getAdapterErrorMessage(input.event.data))
+          input.requestExit(1)
+          return {
+            lastAssistantText: nextAssistantText,
+            didExitAfterError: true
+          }
+        }
+        return {
+          lastAssistantText: nextAssistantText,
+          didExitAfterError: input.didExitAfterError
+        }
+    }
+  }
+
+  switch (input.outputFormat) {
+    case 'stream-json':
+      input.log(JSON.stringify(input.event, null, 2))
+      return {
+        lastAssistantText: nextAssistantText,
+        didExitAfterError: input.didExitAfterError
+      }
+    case 'json':
+      if (input.event.type === 'stop' && !input.didExitAfterError) {
+        input.log(JSON.stringify(input.event, null, 2))
+        input.requestExit(0)
+      }
+      return {
+        lastAssistantText: nextAssistantText,
+        didExitAfterError: input.didExitAfterError
+      }
+    case 'text':
+      if (input.event.type === 'stop' && !input.didExitAfterError) {
+        const output = resolvePrintableStopText(input.event.data, nextAssistantText)
+        if (output != null) {
+          input.log(output)
+        }
+        input.requestExit(0)
+      }
+      return {
+        lastAssistantText: nextAssistantText,
+        didExitAfterError: input.didExitAfterError
+      }
+  }
+}
+
 function mergeListConfig(
   config: { include?: string[]; exclude?: string[] } | undefined,
   includeOpts: string[] | undefined,
@@ -277,22 +334,22 @@ function mergeListConfig(
 ) {
   const include = config?.include || includeOpts
     ? [
-      ...(config?.include ?? []),
-      ...(includeOpts ?? [])
-    ]
+        ...(config?.include ?? []),
+        ...(includeOpts ?? [])
+      ]
     : undefined
 
   const exclude = config?.exclude || excludeOpts
     ? [
-      ...(config?.exclude ?? []),
-      ...(excludeOpts ?? [])
-    ]
+        ...(config?.exclude ?? []),
+        ...(excludeOpts ?? [])
+      ]
     : undefined
 
   return include || exclude
     ? {
-      include,
-      exclude
-    }
+        include,
+        exclude
+      }
     : undefined
 }

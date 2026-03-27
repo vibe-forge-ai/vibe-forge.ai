@@ -8,7 +8,7 @@ import {
   loadWorkspacePackages,
   parseArgs,
   runPublishPlanCli
-} from '../publish-plan.mjs'
+} from '../publish-plan-core.mjs'
 
 const createPackage = (
   name: string,
@@ -283,7 +283,7 @@ describe('publish-plan', () => {
     })
 
     expect(result.kind).toBe('help')
-    expect(output.join('')).toContain('pnpm publish:plan')
+    expect(output.join('')).toContain('pnpm tools publish-plan')
   })
 
   it('bumps semantic versions by kind', () => {

@@ -1,0 +1,189 @@
+{
+  "caseId": "opencode-read-once",
+  "adapter": "opencode",
+  "transport": "upstream-fallback",
+  "exitCode": 0,
+  "stdout": [
+    {
+      "type": "step_start",
+      "partType": "step-start"
+    },
+    {
+      "type": "tool_use",
+      "partType": "tool",
+      "tool": "read",
+      "status": "completed",
+      "input": {
+        "filePath": "<repo>/README.md",
+        "limit": 2000,
+        "offset": 1
+      }
+    },
+    {
+      "type": "step_finish",
+      "partType": "step-finish",
+      "reason": "tool-calls"
+    },
+    {
+      "type": "step_start",
+      "partType": "step-start"
+    },
+    {
+      "type": "text",
+      "partType": "text",
+      "text": "E2E_OPENCODE"
+    },
+    {
+      "type": "step_finish",
+      "partType": "step-finish",
+      "reason": "stop"
+    }
+  ],
+  "stderr": [
+    "INFO service=default version=1.3.2 args=[\"run\",\"--print-logs\",\"--format\",\"json\",\"--model\",\"hook-smoke-mock/opencode-read-once\",\"--dir\",\"<repo>\",\"Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.\"] opencode",
+    "INFO service=default directory=<repo> creating instance",
+    "INFO service=project directory=<repo> fromDirectory",
+    "INFO service=db path=<repo>/.ai/.mock/.local/share/opencode/opencode.db opening database",
+    "INFO service=db count=9 mode=bundled applying migrations",
+    "INFO service=default directory=<repo> bootstrapping",
+    "INFO service=config path=<repo>/.ai/.mock/.config/opencode/config.json loading",
+    "INFO service=config path=<repo>/.ai/.mock/.config/opencode/opencode.json loading",
+    "INFO service=config path=<repo>/.ai/.mock/.config/opencode/opencode.jsonc loading",
+    "INFO service=config path=<repo>/.ai/.mock/.opencode-adapter/<uuid>/config-dir/opencode.jsonc loading",
+    "INFO service=config path=<repo>/.ai/.mock/.opencode-adapter/<uuid>/config-dir/opencode.json loading",
+    "INFO service=plugin name=CodexAuthPlugin loading internal plugin",
+    "... (truncated)"
+  ],
+  "mockTrace": [
+    {
+      "path": "/responses",
+      "model": "opencode-read-once",
+      "request": "\"Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.\"",
+      "inputTypes": [
+        "developer",
+        "user",
+        "user"
+      ],
+      "requestedToolCount": 0,
+      "response": {
+        "kind": "message",
+        "text": "OpenCode hook smoke"
+      }
+    },
+    {
+      "path": "/responses",
+      "model": "opencode-read-once",
+      "request": "\"Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.\"",
+      "inputTypes": [
+        "developer",
+        "user"
+      ],
+      "requestedToolCount": 10,
+      "selectedTool": {
+        "name": "read",
+        "args": {
+          "filePath": "<repo>/README.md",
+          "limit": 2000,
+          "offset": 1
+        }
+      },
+      "response": {
+        "kind": "tool",
+        "tool": {
+          "name": "read",
+          "args": {
+            "filePath": "<repo>/README.md",
+            "limit": 2000,
+            "offset": 1
+          }
+        }
+      }
+    },
+    {
+      "path": "/responses",
+      "model": "opencode-read-once",
+      "request": "\"Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else.\"",
+      "inputTypes": [
+        "developer",
+        "user",
+        "function_call",
+        "function_call_output"
+      ],
+      "requestedToolCount": 10,
+      "selectedTool": {
+        "name": "read",
+        "args": {
+          "filePath": "<repo>/README.md",
+          "limit": 2000,
+          "offset": 1
+        }
+      },
+      "response": {
+        "kind": "message",
+        "text": "E2E_OPENCODE"
+      }
+    }
+  ],
+  "log": {
+    "path": ".ai/logs/<ctxId>/<uuid>.log.md",
+    "entries": [
+      {
+        "event": "GenerateSystemPrompt"
+      },
+      {
+        "event": "TaskStart",
+        "adapter": "opencode",
+        "redacted": true
+      },
+      {
+        "event": "UserPromptSubmit",
+        "adapter": "opencode",
+        "hookSource": "bridge",
+        "canBlock": true,
+        "prompt": "Use the read tool exactly once on README.md, then reply with exactly E2E_OPENCODE and nothing else."
+      },
+      {
+        "event": "SessionStart",
+        "adapter": "opencode",
+        "hookSource": "native",
+        "canBlock": true
+      },
+      {
+        "event": "PreToolUse",
+        "header": "opencode read",
+        "toolName": "read"
+      },
+      {
+        "event": "PostToolUse",
+        "adapter": "opencode",
+        "hookSource": "native",
+        "header": "read",
+        "toolName": "read",
+        "detail": "README.md"
+      },
+      {
+        "event": "Stop",
+        "adapter": "opencode",
+        "hookSource": "native",
+        "canBlock": false
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "label": "opencode global config",
+      "path": ".ai/.mock/.config/opencode/opencode.json",
+      "content": "{\n  \"$schema\": \"https://opencode.ai/config.json\"\n}"
+    },
+    {
+      "label": "opencode managed plugin",
+      "path": ".ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js",
+      "content": "import { spawnSync } from \"node:child_process\"\nimport process from \"node:process\"\n\nconst ACTIVE_MARKER = \"__VF_VIBE_FORGE_OPENCODE_HOOKS_ACTIVE__\"\nconst NODE_PATH = process.env.__VF_PROJECT_NODE_PATH__ ?? \"<user-home>/.local/share/fnm/node-versions/v22.20.0/installation/bin/node\"\nconst CALL_HOOK_PATH = \"<repo>/apps/cli/call-hook.js\"\nconst SESSION_ID = process.env.__VF_OPENCODE_TASK_SESSION_ID__ ?? \"opencode-session\"\nconst RUNTIME = process.env.__VF_OPENCODE_HOOK_RUNTIME__\n\nconst parseJson = (value, fallback) => {\n  try {\n    return JSON.parse(value)\n  } catch {\n    return fallback\n  }\n}\n\nconst createBaseInput = (hookEventName, cwd, canBlock) => ({\n  hookEventName,\n  cwd,\n  sessionId: SESSION_ID,\n  adapter: \"opencode\",\n  runtime: RUNTIME,\n  hookSource: \"native\",\n... (88 more lines)"
+    },
+    {
+      "label": "opencode session config",
+      "path": ".ai/.mock/.opencode-adapter/<uuid>/config-dir/opencode.json",
+      "content": "{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"provider\": {\n    \"hook-smoke-mock\": {\n      \"npm\": \"@ai-sdk/openai\",\n      \"name\": \"Hook Smoke Mock\",\n      \"options\": {\n        \"apiKey\": \"<mock-api-key>\",\n        \"baseURL\": \"http://127.0.0.1:<port>\"\n      },\n      \"models\": {\n        \"opencode-read-once\": {\n          \"name\": \"opencode-read-once\"\n        }\n      }\n    }\n  }\n}"
+    }
+  ]
+}

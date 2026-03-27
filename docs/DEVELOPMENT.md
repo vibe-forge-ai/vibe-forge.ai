@@ -34,6 +34,10 @@ npx eslint .
 npx dprint fmt
 pnpm -r exec tsc --noEmit
 pnpm -C apps/cli test
+pnpm test:e2e:adapters
+pnpm tools adapter-e2e run codex
+pnpm tools adapter-e2e test codex-read-once --update
+pnpm tools publish-plan -- --help
 npx vitest run <path>
 ```
 

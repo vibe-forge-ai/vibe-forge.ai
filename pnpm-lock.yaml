@@ -58,6 +58,9 @@ importers:
       '@vibe-forge/server':
         specifier: workspace:*
         version: link:apps/server
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       dprint:
         specifier: ^0.50.2
         version: 0.50.2

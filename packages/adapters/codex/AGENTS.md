@@ -56,10 +56,13 @@ Do not stop at unit tests. Run a real Codex CLI turn:
 Quick path from repo root:
 
 ```bash
-pnpm smoke:hooks:codex
+pnpm test:e2e:adapters
+pnpm tools adapter-e2e run codex
+pnpm tools adapter-e2e test codex-read-once --update
 ```
 
-This command starts the local mock LLM server and drives Codex through the `hook-smoke-mock` model service defined in the repo-root `.ai.config.json`.
+This command starts the local mock LLM server and drives Codex through the `hook-smoke-mock` model service defined in the repo-root `.ai.config.json`. The shared adapter E2E harness lives under `scripts/adapter-e2e/`, and the scripts CLI entry is `scripts/cli.ts`.
+The case definition, spec, and expected snapshot live together under `scripts/__tests__/adapter-e2e/`.
 
 ```bash
 __VF_PROJECT_AI_CTX_ID__='hooks-smoke-codex' \

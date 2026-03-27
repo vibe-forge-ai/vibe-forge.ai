@@ -1,0 +1,77 @@
+{
+  "caseId": "codex-direct-answer",
+  "adapter": "codex",
+  "transport": "wrapper",
+  "exitCode": 0,
+  "stdout": "E2E_CODEX_DIRECT",
+  "stderr": [
+    "WARN codex_core::models_manager::model_info: Unknown model codex-direct-answer is used. This will use fallback model metadata.",
+    "WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=codex-direct-answer personality=pragmatic",
+    "WARN codex_core::shell_snapshot: Failed to delete shell snapshot at \"<repo>/.ai/.mock/.codex/shell_snapshots/<uuid>.tmp-<nonce>\": Os { code: 2, kind: NotFound, message: \"No such file or directory\" }"
+  ],
+  "mockTrace": [
+    {
+      "path": "/responses",
+      "model": "codex-direct-answer",
+      "request": "Do not use any tool. Reply with exactly E2E_CODEX_DIRECT and nothing else.",
+      "inputTypes": [
+        "message",
+        "message",
+        "message"
+      ],
+      "requestedToolCount": 15,
+      "selectedTool": {
+        "name": "exec_command",
+        "args": {
+          "cmd": "sed -n '1,200p' README.md",
+          "max_output_tokens": 2000,
+          "workdir": "<repo>",
+          "yield_time_ms": 1000
+        }
+      },
+      "response": {
+        "kind": "message",
+        "text": "E2E_CODEX_DIRECT"
+      }
+    }
+  ],
+  "log": {
+    "path": ".ai/logs/<ctxId>/<uuid>.log.md",
+    "entries": [
+      {
+        "event": "GenerateSystemPrompt"
+      },
+      {
+        "event": "TaskStart",
+        "adapter": "codex",
+        "redacted": true
+      },
+      {
+        "event": "SessionStart",
+        "adapter": "codex",
+        "hookSource": "native",
+        "canBlock": true
+      },
+      {
+        "event": "UserPromptSubmit",
+        "adapter": "codex",
+        "hookSource": "native",
+        "canBlock": true,
+        "prompt": "Do not use any tool. Reply with exactly E2E_CODEX_DIRECT and nothing else."
+      },
+      {
+        "event": "Stop",
+        "adapter": "codex",
+        "hookSource": "native",
+        "canBlock": true
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "label": "codex hooks config",
+      "path": ".ai/.mock/.codex/hooks.json",
+      "content": "{\n  \"hooks\": {\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<user-home>/.local/share/fnm/node-versions/v22.20.0/installation/bin/node\\\" \\\"<repo>/apps/cli/codex-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge SessionStart hook\"\n          }\n        ]\n      }\n    ],\n    \"UserPromptSubmit\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"<user-home>/.local/share/fnm/node-versions/v22.20.0/installation/bin/node\\\" \\\"<repo>/apps/cli/codex-hook.js\\\"\",\n            \"timeout\": 600,\n            \"statusMessage\": \"running vibe-forge UserPromptSubmit hook\"\n          }\n        ]\n... (42 more lines)"
+    }
+  ]
+}

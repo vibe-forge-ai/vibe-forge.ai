@@ -111,12 +111,21 @@ plugins:
 
 验证 hooks 时，不要只跑单元测试，至少补一轮真实 CLI：
 
+- 标准入口：
+  - `pnpm test:e2e:adapters`
 - 快速入口：
-  - `pnpm smoke:hooks:codex`
-  - `pnpm smoke:hooks:claude`
-  - `pnpm smoke:hooks:opencode`
-  - `pnpm smoke:hooks:all`
+  - `pnpm tools adapter-e2e run codex`
+  - `pnpm tools adapter-e2e run claude-code`
+  - `pnpm tools adapter-e2e run opencode`
+  - `pnpm tools adapter-e2e run all`
+- 维护 snapshot：
+  - `pnpm tools adapter-e2e test codex-read-once --update`
+  - `pnpm tools adapter-e2e test codex-direct-answer --update`
+  - `pnpm tools adapter-e2e test all --update`
+- `test:e2e:adapters` 基于 Vitest 跑完整的离线 adapter E2E，用 `scripts/adapter-e2e/` 下的共享 TypeScript harness 校验真实 CLI 结果、native 配置落地、日志脱敏和 hook 事件。
+- 每个 case 的定义、Vitest spec 和预期快照都集中在 `scripts/__tests__/adapter-e2e/`；快照文件在 `scripts/__tests__/adapter-e2e/__snapshots__/*.snapshot.json`。结构化 expectations 也在 case 里定义，先校验输出 / mock trace / hook 计数，再落 snapshot。
 - 这些命令默认会启动仓库内置的本地 mock LLM server，离线完成一轮真实 CLI。
+- 维护命令统一收口到 `pnpm tools ...`，底层由 `scripts/run-tools.mjs` 加 `scripts/cli.ts` 驱动。
 - 对应的 smoke model service 定义在仓库根 `.ai.config.json` 里：
   - `hook-smoke-mock` 给 Codex / OpenCode
   - `hook-smoke-mock-ccr` 给 Claude Code Router
@@ -130,6 +139,7 @@ plugins:
 - `SessionStart`
 - `UserPromptSubmit`
 - 一次真实工具调用，对应 `PreToolUse` / `PostToolUse`
+- 一次无工具直答，确认 `PreToolUse` / `PostToolUse` 不出现
 - 模型正常结束，对应 `Stop`
 
 验证时优先看：
