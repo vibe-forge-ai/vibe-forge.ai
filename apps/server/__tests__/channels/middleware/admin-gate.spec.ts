@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { adminGateMiddleware } from '#~/channels/middleware/admin-gate.js'
 
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
@@ -9,9 +10,23 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   connection: undefined,
   config: undefined,
   sessionId: undefined,
+  channelAdapter: undefined,
+  channelPermissionMode: undefined,
   contentItems: undefined,
   commandText: '',
+  defineMessages,
+  t: createT(undefined),
   reply: vi.fn().mockResolvedValue(undefined),
+  pushFollowUps: vi.fn().mockResolvedValue(undefined),
+  getBoundSession: vi.fn(),
+  resetSession: vi.fn(),
+  stopSession: vi.fn(),
+  restartSession: vi.fn().mockResolvedValue(undefined),
+  updateSession: vi.fn(),
+  getChannelAdapterPreference: vi.fn(),
+  setChannelAdapterPreference: vi.fn(),
+  getChannelPermissionModePreference: vi.fn(),
+  setChannelPermissionModePreference: vi.fn(),
   ...overrides
 })
 

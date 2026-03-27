@@ -93,7 +93,11 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 `@vibe-forge/core/channel` 的 `ChannelConnection<TMessage>` 支持可选方法：
 
 ```typescript
-generateSystemPrompt?: (inbound: ChannelInboundEvent) => Promise<string | undefined>
+import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
+
+interface ChannelConnectionExtensions {
+  generateSystemPrompt?: (inbound: ChannelInboundEvent) => Promise<string | undefined>
+}
 ```
 
 频道实现可在此方法中调用平台 API（如获取 bot profile），结果自动注入 systemPrompt。

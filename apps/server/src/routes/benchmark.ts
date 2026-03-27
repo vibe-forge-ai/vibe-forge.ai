@@ -70,7 +70,7 @@ export function benchmarkRouter(): Router {
     const { category, title } = ctx.query as { category?: string; title?: string }
     const results = await listBenchmarkResults(undefined, category)
     ctx.body = {
-      results: title == null ? results : results.filter(item => item.title === title)
+      results: title == null ? results : results.filter((item: { title: string }) => item.title === title)
     }
   })
 
@@ -113,7 +113,7 @@ export function benchmarkRouter(): Router {
     const availableCases = await listBenchmarkCases({ category })
     const targetCases = title === ''
       ? availableCases
-      : availableCases.filter(item => item.title === title)
+      : availableCases.filter((item: { title: string }) => item.title === title)
 
     if (targetCases.length === 0) {
       throw notFound('No benchmark cases matched the request', { category, title }, 'benchmark_cases_not_found')
@@ -150,7 +150,7 @@ export function benchmarkRouter(): Router {
             permissionMode: body.permissionMode,
             runtime: 'server',
             runId,
-            onEvent: (event) => {
+            onEvent: (event: { message: string; phase: string }) => {
               markRunMessage(runId, event.message)
               if (event.phase === 'result') {
                 incrementCompletedCount(runId)
@@ -182,7 +182,7 @@ export function benchmarkRouter(): Router {
           permissionMode: body.permissionMode,
           runtime: 'server',
           runId,
-          onEvent: (event) => {
+          onEvent: (event: { message: string; phase: string; scope?: string }) => {
             markRunMessage(runId, event.message)
             if (event.phase === 'result' && event.scope === 'case') {
               incrementCompletedCount(runId)

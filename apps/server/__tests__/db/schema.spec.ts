@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { automationSchemaModule } from '../../src/db/automation/schema'
 import { channelSessionsSchemaModule } from '../../src/db/channelSessions/schema'
-import { type SchemaModule, initSchema } from '../../src/db/schema'
+import {  initSchema } from '../../src/db/schema'
+import type {SchemaModule} from '../../src/db/schema';
 import { sessionsSchemaModule } from '../../src/db/sessions/schema'
 
 describe('db schema modules', () => {

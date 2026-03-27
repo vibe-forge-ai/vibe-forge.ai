@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import type { Server } from 'node:http'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'

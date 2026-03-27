@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { i18nMiddleware } from '#~/channels/middleware/i18n.js'
+import { createT, defineMessages, i18nMiddleware } from '#~/channels/middleware/i18n.js'
 
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   channelKey: 'lark:default',
@@ -15,16 +15,23 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   connection: undefined,
   config: undefined,
   sessionId: undefined,
+  channelAdapter: undefined,
+  channelPermissionMode: undefined,
   contentItems: undefined,
   commandText: '',
-  defineMessages: vi.fn() as any,
-  t: (key) => key,
+  defineMessages,
+  t: createT(undefined),
   reply: vi.fn().mockResolvedValue(undefined),
+  pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
   updateSession: vi.fn(),
+  getChannelAdapterPreference: vi.fn(),
+  setChannelAdapterPreference: vi.fn(),
+  getChannelPermissionModePreference: vi.fn(),
+  setChannelPermissionModePreference: vi.fn(),
   ...overrides
 })
 

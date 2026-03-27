@@ -83,6 +83,6 @@ export const removeFromAccessList = async <TField extends AccessListField>(
   value: string
 ) => {
   const currentItems = ctx.config?.access?.[field] ?? []
-  const nextItems = currentItems.filter(item => item !== value)
+  const nextItems = currentItems.filter((item: string) => item !== value)
   await setAccessField(ctx, field, nextItems.length > 0 ? nextItems : undefined)
 }

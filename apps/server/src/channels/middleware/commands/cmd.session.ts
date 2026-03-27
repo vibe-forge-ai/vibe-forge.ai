@@ -315,7 +315,7 @@ export const sessionCommands = () => [
           { model: value as string },
           ctx.t('set.model.success', { model: value as string })
         )
-        return
+        
       }
     })
 ]

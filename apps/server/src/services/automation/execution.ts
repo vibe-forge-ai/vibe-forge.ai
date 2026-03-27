@@ -48,7 +48,7 @@ export async function runAutomationRule(
     })
   ))
 
-  const sessionIds = sessions.map(session => session.id)
+  const sessionIds = sessions.map((session: Awaited<ReturnType<typeof createSessionWithInitialMessage>>) => session.id)
   for (let index = 0; index < sessions.length; index += 1) {
     const session = sessions[index]
     const task = tasks[index]

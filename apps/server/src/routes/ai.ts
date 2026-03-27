@@ -113,7 +113,7 @@ export function aiRouter(): Router {
     try {
       const specs = await loader.loadDefaultSpecs()
       ctx.body = {
-        specs: specs.map(spec => {
+        specs: specs.map((spec: Definition<Spec>) => {
           const name = resolveSpecName(spec)
           const description = spec.attributes.description ?? getFirstNonEmptyLine(spec.body) ?? name
           const tags = toTagList(spec.attributes.tags)
@@ -142,7 +142,7 @@ export function aiRouter(): Router {
 
     try {
       const specs = await loader.loadDefaultSpecs()
-      const spec = specs.find(item => {
+      const spec = specs.find((item: Definition<Spec>) => {
         const relativePath = toRelativePath(item.path, workspaceRoot)
         return relativePath === targetPath || item.path === targetPath
       })
@@ -177,7 +177,7 @@ export function aiRouter(): Router {
     try {
       const entities = await loader.loadDefaultEntities()
       ctx.body = {
-        entities: entities.map(entity => {
+        entities: entities.map((entity: Definition<Entity>) => {
           const name = resolveEntityName(entity)
           const description = entity.attributes.description ?? getFirstNonEmptyLine(entity.body) ?? name
           const tags = toTagList(entity.attributes.tags)
@@ -201,7 +201,7 @@ export function aiRouter(): Router {
     try {
       const rules = await loader.loadDefaultRules()
       ctx.body = {
-        rules: rules.map(rule => {
+        rules: rules.map((rule: Definition<Rule>) => {
           const name = resolveRuleName(rule)
           const description = rule.attributes.description ?? getFirstNonEmptyLine(rule.body) ?? name
           const alwaysApply = (rule.attributes as { alwaysApply?: boolean }).alwaysApply
@@ -230,7 +230,7 @@ export function aiRouter(): Router {
 
     try {
       const rules = await loader.loadDefaultRules()
-      const rule = rules.find(item => {
+      const rule = rules.find((item: Definition<Rule>) => {
         const relativePath = toRelativePath(item.path, workspaceRoot)
         return relativePath === targetPath || item.path === targetPath
       })
@@ -269,7 +269,7 @@ export function aiRouter(): Router {
 
     try {
       const entities = await loader.loadDefaultEntities()
-      const entity = entities.find(item => {
+      const entity = entities.find((item: Definition<Entity>) => {
         const relativePath = toRelativePath(item.path, workspaceRoot)
         return relativePath === targetPath || item.path === targetPath
       })

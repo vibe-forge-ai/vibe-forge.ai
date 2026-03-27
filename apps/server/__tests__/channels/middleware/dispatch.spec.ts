@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { processUserMessage } from '#~/services/session/index.js'
@@ -34,6 +35,8 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   channelPermissionMode: undefined,
   contentItems: undefined,
   commandText: 'hello world',
+  defineMessages,
+  t: createT(undefined),
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),

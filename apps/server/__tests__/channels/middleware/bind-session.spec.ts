@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
+import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
 import { setBinding, setPendingUnack } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
@@ -29,10 +30,12 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   connection: undefined,
   config: undefined,
   sessionId: 'sess-abc',
+  channelAdapter: undefined,
+  channelPermissionMode: undefined,
   contentItems: undefined,
   commandText: '',
-  defineMessages: vi.fn(),
-  t: ((key: string) => key) as any,
+  defineMessages,
+  t: createT(undefined),
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
@@ -40,6 +43,10 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
   updateSession: vi.fn(),
+  getChannelAdapterPreference: vi.fn(),
+  setChannelAdapterPreference: vi.fn(),
+  getChannelPermissionModePreference: vi.fn(),
+  setChannelPermissionModePreference: vi.fn(),
   ...overrides
 })
 
