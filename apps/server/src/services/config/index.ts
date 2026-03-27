@@ -2,6 +2,7 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 
 import type { Config } from '@vibe-forge/core'
 import { loadConfig } from '@vibe-forge/core'
+import { mergeAdapterConfigs } from '@vibe-forge/core/utils/model-selection'
 
 export function getWorkspaceFolder() {
   return processEnv.__VF_PROJECT_WORKSPACE_FOLDER__ ?? processCwd()
@@ -29,7 +30,7 @@ export function mergeConfigs(project?: Config, user?: Config): Config {
   return {
     ...project,
     ...user,
-    adapters: mergeRecord(
+    adapters: mergeAdapterConfigs(
       project?.adapters as Record<string, unknown> | undefined,
       user?.adapters as Record<string, unknown> | undefined
     ) as Config['adapters'],

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   listServiceModels,
   resolveAdapterForChatModelSelection,
+  resolveAdapterModelCompatibility,
   resolveChatAdapterSelection,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
@@ -166,7 +167,7 @@ describe('chat model selector helpers', () => {
       adapter: 'codex',
       adapters: {
         codex: {
-          model: 'serviceB,modelBOnly'
+          defaultModel: 'serviceB,modelBOnly'
         }
       },
       defaultModel: 'serviceA,modelAOnly',
@@ -175,6 +176,30 @@ describe('chat model selector helpers', () => {
       fallbackBuiltinModels: ['builtin-fast', 'sonnet'],
       serviceModels
     })).toBe('serviceB,modelBOnly')
+  })
+
+  it('switches to adapter defaultModel when includeModels excludes the current service', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterModelCompatibility({
+      adapter: 'codex',
+      model: 'serviceB,modelBOnly',
+      adapterConfig: {
+        defaultModel: 'serviceA,modelAOnly',
+        includeModels: ['serviceA']
+      },
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknownDefaultModel: false
+    })).toMatchObject({
+      model: 'serviceA,modelAOnly',
+      warning: {
+        adapter: 'codex',
+        requestedModel: 'serviceB,modelBOnly',
+        resolvedModel: 'serviceA,modelAOnly',
+        reason: 'not_included'
+      }
+    })
   })
 
   it('validates adapter selections against the available adapter list', () => {

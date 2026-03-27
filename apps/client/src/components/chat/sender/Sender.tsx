@@ -36,6 +36,7 @@ interface PendingImage {
 }
 
 type SessionAssetDiagnostic = NonNullable<Extract<SessionInfo, { type: 'init' }>['assetDiagnostics']>[number]
+type SessionSelectionWarning = NonNullable<Extract<SessionInfo, { type: 'init' }>['selectionWarnings']>[number]
 
 interface SenderToolGroup {
   key: 'chrome-devtools' | 'system'
@@ -155,6 +156,9 @@ export function Sender({
       diagnostic.status === 'skipped'
     )
     : []
+  const selectionWarnings = sessionInfo != null && sessionInfo.type === 'init'
+    ? (sessionInfo.selectionWarnings ?? [])
+    : []
   const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
     value: group.key,
     label: (
@@ -177,6 +181,19 @@ export function Sender({
 
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [draft, setDraft] = useState('')
+
+  const formatSelectionWarning = (warning: SessionSelectionWarning) => {
+    const reason = warning.reason === 'excluded'
+      ? t('chat.selectionWarningReasonExcluded')
+      : t('chat.selectionWarningReasonNotIncluded')
+
+    return t('chat.selectionWarningFallback', {
+      adapter: warning.adapter,
+      requestedModel: warning.requestedModel,
+      resolvedModel: warning.resolvedModel,
+      reason
+    })
+  }
 
   const readFileAsDataUrl = (file: File) => {
     return new Promise<string>((resolve, reject) => {
@@ -696,6 +713,33 @@ export function Sender({
 
             {sessionInfo != null && sessionInfo.type === 'init' && (
               <div className='session-info-toolbar'>
+                {selectionWarnings.length > 0 && (
+                  <Tooltip
+                    placement='topLeft'
+                    title={
+                      <div className='asset-warning-tooltip'>
+                        <div className='asset-warning-tooltip__title'>{t('chat.selectionWarningsTitle')}</div>
+                        {selectionWarnings.slice(0, 5).map((warning: SessionSelectionWarning, index: number) => (
+                          <div key={`${warning.adapter}:${warning.requestedModel}:${index}`} className='asset-warning-tooltip__item'>
+                            <span>{formatSelectionWarning(warning)}</span>
+                          </div>
+                        ))}
+                        {selectionWarnings.length > 5 && (
+                          <div className='asset-warning-tooltip__more'>
+                            {t('chat.assetWarningsMore', { count: selectionWarnings.length - 5 })}
+                          </div>
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className='info-item asset-warning-item'>
+                      <span className='info-item-leading'>
+                        <span className='material-symbols-rounded'>warning</span>
+                      </span>
+                      <span className='info-text'>{t('chat.selectionWarningsCount', { count: selectionWarnings.length })}</span>
+                    </div>
+                  </Tooltip>
+                )}
                 {assetWarnings.length > 0 && (
                   <Tooltip
                     placement='topLeft'

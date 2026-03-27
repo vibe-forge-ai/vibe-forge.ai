@@ -17,6 +17,7 @@ import {
   listServiceModels,
   normalizeNonEmptyString,
   resolveAdapterForChatModelSelection,
+  resolveAdapterModelCompatibility,
   resolveChatAdapterSelection,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
@@ -137,7 +138,7 @@ export function useChatModelAdapterSelection({
     const builtinModels = buildBuiltinModelValues(
       adapter != null ? adapterBuiltinModels[adapter] : undefined
     )
-    return resolveModelForChatAdapterSelection({
+    const resolvedModel = resolveModelForChatAdapterSelection({
       adapter,
       adapters: mergedAdapters,
       defaultModel,
@@ -146,11 +147,44 @@ export function useChatModelAdapterSelection({
       fallbackBuiltinModels: allBuiltinModelValues,
       serviceModels: availableServiceModels
     })
+    if (!adapter || !resolvedModel) return resolvedModel
+
+    const compatibility = resolveAdapterModelCompatibility({
+      adapter,
+      model: resolvedModel,
+      adapterConfig: mergedAdapters[adapter],
+      builtinModels,
+      serviceModels: availableServiceModels,
+      preferredServiceKey: defaultModelService,
+      preserveUnknownDefaultModel: false
+    })
+    return compatibility.model ?? resolvedModel
   }, [
     adapterBuiltinModels,
     allBuiltinModelValues,
     availableServiceModels,
     defaultModel,
+    defaultModelService,
+    mergedAdapters
+  ])
+
+  const resolveCompatibleModelForAdapter = useCallback((adapter: string | undefined, model: string | undefined) => {
+    if (!adapter || !model) return model
+
+    const compatibility = resolveAdapterModelCompatibility({
+      adapter,
+      model,
+      adapterConfig: mergedAdapters[adapter],
+      builtinModels: buildBuiltinModelValues(adapterBuiltinModels[adapter]),
+      serviceModels: availableServiceModels,
+      preferredServiceKey: defaultModelService,
+      preserveUnknownDefaultModel: false
+    })
+
+    return compatibility.model ?? model
+  }, [
+    adapterBuiltinModels,
+    availableServiceModels,
     defaultModelService,
     mergedAdapters
   ])
@@ -191,8 +225,9 @@ export function useChatModelAdapterSelection({
     }
 
     if (selectionDriver === 'model') {
-      const nextModel = resolveSelectableModel(selectedModel, allBuiltinModelValues, false) ?? resolvedDefaultModel
-      const nextAdapter = resolveAdapterForModel(nextModel) ?? resolveAdapterValue(selectedAdapter)
+      const nextModelCandidate = resolveSelectableModel(selectedModel, allBuiltinModelValues, false) ?? resolvedDefaultModel
+      const nextAdapter = resolveAdapterForModel(nextModelCandidate) ?? resolveAdapterValue(selectedAdapter)
+      const nextModel = resolveCompatibleModelForAdapter(nextAdapter, nextModelCandidate)
       setSelectedModel((prev) => prev === nextModel ? prev : nextModel)
       setSelectedAdapter((prev) => prev === nextAdapter ? prev : nextAdapter)
       return
@@ -208,6 +243,7 @@ export function useChatModelAdapterSelection({
     availableAdapters.length,
     hasAvailableModels,
     resolveAdapterForModel,
+    resolveCompatibleModelForAdapter,
     resolveAdapterValue,
     resolveModelForAdapter,
     resolveSelectableModel,
@@ -251,16 +287,20 @@ export function useChatModelAdapterSelection({
     if (!nextModel) return
 
     setSelectionDriver('model')
-    setSelectedModel((prev) => prev === nextModel ? prev : nextModel)
+    const nextAdapter = adapterLocked
+      ? selectedAdapter
+      : (resolveAdapterForModel(nextModel) ?? resolveAdapterValue(selectedAdapter))
+    const resolvedNextModel = resolveCompatibleModelForAdapter(nextAdapter, nextModel)
+    setSelectedModel((prev) => prev === resolvedNextModel ? prev : resolvedNextModel)
 
     if (adapterLocked) return
 
-    const nextAdapter = resolveAdapterForModel(nextModel) ?? resolveAdapterValue(selectedAdapter)
     setSelectedAdapter((prev) => prev === nextAdapter ? prev : nextAdapter)
   }, [
     adapterBuiltinModels,
     adapterLocked,
     allBuiltinModelValues,
+    resolveCompatibleModelForAdapter,
     resolveAdapterForModel,
     resolveAdapterValue,
     resolveSelectableModel,

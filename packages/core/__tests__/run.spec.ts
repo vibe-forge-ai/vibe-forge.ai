@@ -311,12 +311,12 @@ describe('task run adapter init', () => {
     })
   })
 
-  it('uses adapter-level model before falling back to global default model', async () => {
+  it('uses adapter-level defaultModel before falling back to global default model', async () => {
     const ctx = createCtx()
     ctx.configs = [{
       adapters: createAdapters({
         codex: {
-          model: 'serviceA,modelB'
+          defaultModel: 'serviceA,modelB'
         },
         'claude-code': {}
       }),
@@ -345,6 +345,110 @@ describe('task run adapter init', () => {
     expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
       model: 'serviceA,modelB'
     })
+  })
+
+  it('falls back to adapter defaultModel and emits a selection warning when rules reject the chosen model', async () => {
+    const ctx = createCtx()
+    const onEvent = vi.fn()
+    queryMock.mockImplementation(async (_ctx, options) => {
+      options.onEvent({
+        type: 'init',
+        data: {
+          uuid: 'adapter-init',
+          model: options.model ?? 'serviceA,modelA',
+          version: '1.0.0',
+          tools: [],
+          slashCommands: [],
+          cwd: '/tmp/project',
+          agents: []
+        }
+      })
+      return {
+        kill: vi.fn(),
+        emit: vi.fn()
+      }
+    })
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {
+          defaultModel: 'serviceA,modelB',
+          excludeModels: ['serviceA,modelA']
+        }
+      }),
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelA', 'modelB']
+        }
+      }
+    }, undefined]
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-adapter-model-rules',
+      model: 'serviceA,modelA',
+      onEvent
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      model: 'serviceA,modelB'
+    })
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'init',
+      data: expect.objectContaining({
+        selectionWarnings: [
+          expect.objectContaining({
+            adapter: 'codex',
+            requestedModel: 'serviceA,modelA',
+            resolvedModel: 'serviceA,modelB',
+            reason: 'excluded'
+          })
+        ]
+      })
+    }))
+  })
+
+  it('throws when adapter rules reject the selected model and defaultModel is missing', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {
+          includeModels: ['serviceB']
+        }
+      }),
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelA']
+        },
+        serviceB: {
+          apiBaseUrl: 'https://service-b.example.com',
+          apiKey: 'token-b',
+          models: ['modelB']
+        }
+      }
+    }, undefined]
+    prepareMock.mockResolvedValue([ctx])
+
+    await expect(run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-adapter-model-rules-error',
+      model: 'serviceA,modelA',
+      onEvent: vi.fn()
+    })).rejects.toThrow('Configure adapters.codex.defaultModel to continue')
   })
 
   it('prefers user config model selector metadata over project config', async () => {

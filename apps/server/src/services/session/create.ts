@@ -69,6 +69,8 @@ export async function createSessionWithInitialMessage(options: {
       }
     } catch (err) {
       console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      db.deleteSession(session.id)
+      throw err
     }
   }
 

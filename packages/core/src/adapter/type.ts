@@ -1,4 +1,5 @@
 import type { Cache, Config } from '@vibe-forge/core'
+import type { AdapterModelFallbackWarning } from '#~/utils/model-selection.js'
 
 import type { Logger } from '#~/utils/create-logger.js'
 import type { AdapterAssetPlan, AssetDiagnostic, WorkspaceAssetBundle } from '#~/utils/workspace-assets.js'
@@ -37,6 +38,7 @@ export interface SessionInitInfo {
   cwd: string
   agents: string[]
   title?: string
+  selectionWarnings?: AdapterModelFallbackWarning[]
   assetDiagnostics?: AssetDiagnostic[]
 }
 

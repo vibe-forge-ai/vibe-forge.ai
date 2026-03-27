@@ -314,6 +314,11 @@
     "assetWarningsTitle": "兼容性提示",
     "assetWarningsCount": "{{count}} 个资产告警",
     "assetWarningsMore": "还有 {{count}} 条",
+    "selectionWarningsTitle": "模型路由提示",
+    "selectionWarningsCount": "{{count}} 个模型告警",
+    "selectionWarningReasonExcluded": "该模型被适配器规则排除了",
+    "selectionWarningReasonNotIncluded": "该模型不在适配器允许列表中",
+    "selectionWarningFallback": "适配器 {{adapter}} 已将模型从 {{requestedModel}} 切换到 {{resolvedModel}}，原因：{{reason}}。",
     "imageTooLarge": "图片大小不能超过 5MB",
     "imageReadFailed": "图片读取失败",
     "imageNotSupportedInInteraction": "当前交互不支持图片",
@@ -716,7 +721,7 @@
       "adapters": {
         "items": {
           "label": "适配器明细",
-          "desc": "按适配器名称平铺配置，其中 `model` 表示适配器级默认模型"
+          "desc": "按适配器名称平铺配置，公共字段包括 `defaultModel`、`includeModels` 和 `excludeModels`"
         }
       },
       "plugins": {

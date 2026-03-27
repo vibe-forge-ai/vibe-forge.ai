@@ -4,7 +4,24 @@ import type { PluginConfig } from '../hooks'
 export interface AdapterMap {}
 
 export interface AdapterConfigCommon {
-  model?: string
+  /**
+   * 适配器默认模型
+   */
+  defaultModel?: string
+  /**
+   * 允许的模型选择器列表。
+   * - `service`
+   * - `service,model`
+   * - builtin / raw model
+   */
+  includeModels?: string[]
+  /**
+   * 禁止的模型选择器列表。
+   * - `service`
+   * - `service,model`
+   * - builtin / raw model
+   */
+  excludeModels?: string[]
 }
 
 export type AdapterConfigEntry<T> = T & AdapterConfigCommon

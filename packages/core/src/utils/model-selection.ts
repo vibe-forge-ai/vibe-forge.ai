@@ -6,10 +6,53 @@ export interface ServiceModelEntry {
   selectorValue: string
 }
 
+export type AdapterModelRuleRejectionReason = 'not_included' | 'excluded'
+
+export interface AdapterModelRuleEvaluation {
+  allowed: boolean
+  reason?: AdapterModelRuleRejectionReason
+  includeModels: string[]
+  excludeModels: string[]
+}
+
+export interface AdapterModelFallbackWarning {
+  type: 'adapter_model_fallback'
+  adapter: string
+  requestedModel: string
+  resolvedModel: string
+  reason: AdapterModelRuleRejectionReason
+  includeModels?: string[]
+  excludeModels?: string[]
+}
+
+export interface AdapterModelFallbackError {
+  type: 'missing_default_model' | 'default_model_not_allowed'
+  adapter: string
+  requestedModel: string
+  defaultModel?: string
+  reason: AdapterModelRuleRejectionReason
+  includeModels?: string[]
+  excludeModels?: string[]
+}
+
+export interface AdapterModelCompatibilityResult {
+  model?: string
+  warning?: AdapterModelFallbackWarning
+  error?: AdapterModelFallbackError
+}
+
 const asRecord = (value: unknown): Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {}
+)
+
+const asStringArray = (value: unknown) => (
+  Array.isArray(value)
+    ? value
+      .map(item => normalizeNonEmptyString(item))
+      .filter((item): item is string => Boolean(item))
+    : []
 )
 
 export const normalizeNonEmptyString = (value: unknown) => (
@@ -183,12 +226,210 @@ export const resolveModelDefaultAdapter = (params: {
   models?: Record<string, ModelMetadataConfig>
 }) => normalizeNonEmptyString(resolveModelMetadata(params)?.defaultAdapter)
 
-export const getAdapterConfiguredModel = (adapterConfig: unknown) => (
-  normalizeNonEmptyString(asRecord(adapterConfig).model)
+export const mergeAdapterConfigs = <
+  T extends Record<string, unknown> | undefined
+>(
+  left: T,
+  right: T
+) => {
+  const keys = new Set([
+    ...Object.keys(left ?? {}),
+    ...Object.keys(right ?? {})
+  ])
+
+  const merged = Object.fromEntries(
+    Array.from(keys).map((key) => [
+      key,
+      {
+        ...asRecord(left?.[key]),
+        ...asRecord(right?.[key])
+      }
+    ])
+  )
+
+  return merged as T
+}
+
+export const getAdapterConfiguredDefaultModel = (adapterConfig: unknown) => {
+  const record = asRecord(adapterConfig)
+  return normalizeNonEmptyString(record.defaultModel) ?? normalizeNonEmptyString(record.model)
+}
+
+export const getAdapterConfiguredIncludeModels = (adapterConfig: unknown) => (
+  asStringArray(asRecord(adapterConfig).includeModels)
 )
+
+export const getAdapterConfiguredExcludeModels = (adapterConfig: unknown) => (
+  asStringArray(asRecord(adapterConfig).excludeModels)
+)
+
+export const resolveAdapterConfiguredDefaultModel = (params: {
+  adapterConfig?: unknown
+  builtinModels?: Iterable<string>
+  serviceModels: ServiceModelEntry[]
+  preferredServiceKey?: string
+  preserveUnknown?: boolean
+}) => {
+  const configuredModel = getAdapterConfiguredDefaultModel(params.adapterConfig)
+  return resolveModelSelection({
+    value: configuredModel,
+    builtinModels: params.builtinModels,
+    serviceModels: params.serviceModels,
+    preferredServiceKey: params.preferredServiceKey,
+    preserveUnknown: params.preserveUnknown
+  })
+}
+
+export const doesModelMatchSelector = (params: {
+  model?: string
+  selector?: string
+}) => {
+  const normalizedModel = normalizeNonEmptyString(params.model)
+  const normalizedSelector = normalizeNonEmptyString(params.selector)
+  if (!normalizedModel || !normalizedSelector) return false
+
+  const parsedModel = parseServiceModelSelector(normalizedModel)
+  const parsedSelector = parseServiceModelSelector(normalizedSelector)
+
+  if (parsedSelector) {
+    return parsedModel?.selectorValue === parsedSelector.selectorValue
+  }
+
+  if (parsedModel) {
+    return parsedModel.serviceKey === normalizedSelector
+  }
+
+  return normalizedModel === normalizedSelector
+}
+
+export const evaluateAdapterModelRules = (params: {
+  model?: string
+  adapterConfig?: unknown
+}): AdapterModelRuleEvaluation => {
+  const normalizedModel = normalizeNonEmptyString(params.model)
+  const includeModels = getAdapterConfiguredIncludeModels(params.adapterConfig)
+  const excludeModels = getAdapterConfiguredExcludeModels(params.adapterConfig)
+
+  if (!normalizedModel) {
+    return {
+      allowed: true,
+      includeModels,
+      excludeModels
+    }
+  }
+
+  if (excludeModels.some(selector => doesModelMatchSelector({ model: normalizedModel, selector }))) {
+    return {
+      allowed: false,
+      reason: 'excluded',
+      includeModels,
+      excludeModels
+    }
+  }
+
+  if (
+    includeModels.length > 0 &&
+    !includeModels.some(selector => doesModelMatchSelector({ model: normalizedModel, selector }))
+  ) {
+    return {
+      allowed: false,
+      reason: 'not_included',
+      includeModels,
+      excludeModels
+    }
+  }
+
+  return {
+    allowed: true,
+    includeModels,
+    excludeModels
+  }
+}
+
+export const resolveAdapterModelCompatibility = (params: {
+  adapter: string
+  model?: string
+  adapterConfig?: unknown
+  builtinModels?: Iterable<string>
+  serviceModels: ServiceModelEntry[]
+  preferredServiceKey?: string
+  preserveUnknownDefaultModel?: boolean
+}): AdapterModelCompatibilityResult => {
+  const normalizedModel = normalizeNonEmptyString(params.model)
+  if (!normalizedModel) {
+    return { model: normalizedModel }
+  }
+
+  const evaluation = evaluateAdapterModelRules({
+    model: normalizedModel,
+    adapterConfig: params.adapterConfig
+  })
+  if (evaluation.allowed) {
+    return { model: normalizedModel }
+  }
+
+  const resolvedDefaultModel = resolveAdapterConfiguredDefaultModel({
+    adapterConfig: params.adapterConfig,
+    builtinModels: params.builtinModels,
+    serviceModels: params.serviceModels,
+    preferredServiceKey: params.preferredServiceKey,
+    preserveUnknown: params.preserveUnknownDefaultModel
+  })
+
+  if (!resolvedDefaultModel) {
+    return {
+      error: {
+        type: 'missing_default_model',
+        adapter: params.adapter,
+        requestedModel: normalizedModel,
+        defaultModel: getAdapterConfiguredDefaultModel(params.adapterConfig),
+        reason: evaluation.reason ?? 'not_included',
+        includeModels: evaluation.includeModels.length > 0 ? evaluation.includeModels : undefined,
+        excludeModels: evaluation.excludeModels.length > 0 ? evaluation.excludeModels : undefined
+      }
+    }
+  }
+
+  const fallbackEvaluation = evaluateAdapterModelRules({
+    model: resolvedDefaultModel,
+    adapterConfig: params.adapterConfig
+  })
+  if (!fallbackEvaluation.allowed) {
+    return {
+      error: {
+        type: 'default_model_not_allowed',
+        adapter: params.adapter,
+        requestedModel: normalizedModel,
+        defaultModel: resolvedDefaultModel,
+        reason: fallbackEvaluation.reason ?? 'not_included',
+        includeModels: fallbackEvaluation.includeModels.length > 0 ? fallbackEvaluation.includeModels : undefined,
+        excludeModels: fallbackEvaluation.excludeModels.length > 0 ? fallbackEvaluation.excludeModels : undefined
+      }
+    }
+  }
+
+  return {
+    model: resolvedDefaultModel,
+    warning: {
+      type: 'adapter_model_fallback',
+      adapter: params.adapter,
+      requestedModel: normalizedModel,
+      resolvedModel: resolvedDefaultModel,
+      reason: evaluation.reason ?? 'not_included',
+      includeModels: evaluation.includeModels.length > 0 ? evaluation.includeModels : undefined,
+      excludeModels: evaluation.excludeModels.length > 0 ? evaluation.excludeModels : undefined
+    }
+  }
+}
 
 export const omitAdapterCommonConfig = <T extends Record<string, unknown> | undefined>(adapterConfig: T) => {
   const record = asRecord(adapterConfig)
-  const { model: _model, ...nativeConfig } = record
-  return nativeConfig as Omit<NonNullable<T>, keyof AdapterConfigCommon>
+  const {
+    defaultModel: _defaultModel,
+    model: _legacyModel,
+    includeModels: _includeModels,
+    excludeModels: _excludeModels,
+    ...nativeConfig
+  } = record
+  return nativeConfig as Omit<NonNullable<T>, keyof AdapterConfigCommon | 'model'>
 }

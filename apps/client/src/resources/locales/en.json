@@ -313,6 +313,11 @@
     "assetWarningsTitle": "Compatibility notes",
     "assetWarningsCount": "{{count}} asset warnings",
     "assetWarningsMore": "+{{count}} more",
+    "selectionWarningsTitle": "Model routing warnings",
+    "selectionWarningsCount": "{{count}} model warnings",
+    "selectionWarningReasonExcluded": "the model is excluded by adapter rules",
+    "selectionWarningReasonNotIncluded": "the model is not included by adapter rules",
+    "selectionWarningFallback": "Adapter {{adapter}} switched from {{requestedModel}} to {{resolvedModel}} because {{reason}}.",
     "imageTooLarge": "Image must be smaller than 5MB",
     "imageReadFailed": "Failed to read image",
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
@@ -715,7 +720,7 @@
       "adapters": {
         "items": {
           "label": "Adapter Entries",
-          "desc": "Flattened configuration by adapter name. `model` is the adapter-level default model."
+          "desc": "Flattened configuration by adapter name. Common fields include `defaultModel`, `includeModels`, and `excludeModels`."
         }
       },
       "plugins": {

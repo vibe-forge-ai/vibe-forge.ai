@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { ModelMetadataConfig, ModelServiceConfig } from '#~/config/types.js'
 import {
+  doesModelMatchSelector,
+  evaluateAdapterModelRules,
   listServiceModels,
+  resolveAdapterConfiguredDefaultModel,
+  resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
   resolveModelDefaultAdapter,
   resolveModelMetadata,
@@ -70,5 +74,100 @@ describe('model selection utilities', () => {
       serviceModels,
       preserveUnknownDefaultModel: false
     })).toBe('serviceB,modelX')
+  })
+
+  it('matches service selectors and exact selectors for routed models', () => {
+    expect(doesModelMatchSelector({
+      model: 'serviceA,modelX',
+      selector: 'serviceA'
+    })).toBe(true)
+    expect(doesModelMatchSelector({
+      model: 'serviceA,modelX',
+      selector: 'serviceA,modelX'
+    })).toBe(true)
+    expect(doesModelMatchSelector({
+      model: 'serviceA,modelX',
+      selector: 'serviceB'
+    })).toBe(false)
+  })
+
+  it('prefers adapter defaultModel before global defaults', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterConfiguredDefaultModel({
+      adapterConfig: {
+        defaultModel: 'serviceB,modelBOnly'
+      },
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknown: false
+    })).toBe('serviceB,modelBOnly')
+  })
+
+  it('treats service selectors as valid includeModels rules', () => {
+    expect(evaluateAdapterModelRules({
+      model: 'serviceA,modelX',
+      adapterConfig: {
+        includeModels: ['serviceA']
+      }
+    })).toMatchObject({
+      allowed: true
+    })
+
+    expect(evaluateAdapterModelRules({
+      model: 'serviceB,modelX',
+      adapterConfig: {
+        includeModels: ['serviceA']
+      }
+    })).toMatchObject({
+      allowed: false,
+      reason: 'not_included'
+    })
+  })
+
+  it('falls back to adapter defaultModel when the selected model is excluded', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterModelCompatibility({
+      adapter: 'codex',
+      model: 'serviceA,modelX',
+      adapterConfig: {
+        defaultModel: 'serviceB,modelBOnly',
+        excludeModels: ['serviceA,modelX']
+      },
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknownDefaultModel: false
+    })).toMatchObject({
+      model: 'serviceB,modelBOnly',
+      warning: {
+        adapter: 'codex',
+        requestedModel: 'serviceA,modelX',
+        resolvedModel: 'serviceB,modelBOnly',
+        reason: 'excluded'
+      }
+    })
+  })
+
+  it('returns an error when adapter rules reject the model and no defaultModel exists', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterModelCompatibility({
+      adapter: 'codex',
+      model: 'serviceB,modelX',
+      adapterConfig: {
+        includeModels: ['serviceA']
+      },
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknownDefaultModel: false
+    })).toMatchObject({
+      error: {
+        type: 'missing_default_model',
+        adapter: 'codex',
+        requestedModel: 'serviceB,modelX',
+        reason: 'not_included'
+      }
+    })
   })
 })

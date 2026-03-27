@@ -5,13 +5,16 @@ import { callHook } from '#~/hooks/call.js'
 import type { HookInputs } from '#~/hooks/type.js'
 import type { TaskDetail } from '#~/types.js'
 import {
-  getAdapterConfiguredModel,
   listServiceModels,
+  mergeAdapterConfigs,
   normalizeNonEmptyString,
+  resolveAdapterConfiguredDefaultModel,
+  resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
   resolveModelDefaultAdapter,
   resolveModelSelection
 } from '#~/utils/model-selection.js'
+import type { AdapterModelFallbackError } from '#~/utils/model-selection.js'
 import { buildAdapterAssetPlan } from '#~/utils/workspace-assets.js'
 
 import { prepare } from './prepare'
@@ -22,16 +25,43 @@ const pickFirstNonEmptyString = (values: unknown[]) =>
     .map(normalizeNonEmptyString)
     .find((value): value is string => value != null)
 
+const formatAdapterModelRuleSuffix = (params: {
+  includeModels?: string[]
+  excludeModels?: string[]
+}) => {
+  const parts = []
+  if (params.includeModels != null && params.includeModels.length > 0) {
+    parts.push(`includeModels=${params.includeModels.join(', ')}`)
+  }
+  if (params.excludeModels != null && params.excludeModels.length > 0) {
+    parts.push(`excludeModels=${params.excludeModels.join(', ')}`)
+  }
+  return parts.length > 0 ? ` (${parts.join('; ')})` : ''
+}
+
+const formatAdapterModelFallbackError = (error: AdapterModelFallbackError) => {
+  const ruleSuffix = formatAdapterModelRuleSuffix({
+    includeModels: error.includeModels,
+    excludeModels: error.excludeModels
+  })
+
+  if (error.type === 'missing_default_model') {
+    return `Model "${error.requestedModel}" is not allowed for adapter "${error.adapter}"${ruleSuffix}. Configure adapters.${error.adapter}.defaultModel to continue.`
+  }
+
+  return `Adapter "${error.adapter}" defaultModel "${error.defaultModel}" is also not allowed${ruleSuffix}.`
+}
+
 const resolveQuerySelection = (params: {
   config: AdapterCtx['configs'][0]
   userConfig: AdapterCtx['configs'][1]
   inputAdapter?: string
   inputModel?: string
 }) => {
-  const mergedAdapters = {
-    ...(params.config?.adapters ?? {}),
-    ...(params.userConfig?.adapters ?? {})
-  }
+  const mergedAdapters = mergeAdapterConfigs(
+    params.config?.adapters as Record<string, unknown> | undefined,
+    params.userConfig?.adapters as Record<string, unknown> | undefined
+  )
   const mergedModels = {
     ...(params.config?.models ?? {}),
     ...(params.userConfig?.models ?? {})
@@ -40,7 +70,7 @@ const resolveQuerySelection = (params: {
     ...(params.config?.modelServices ?? {}),
     ...(params.userConfig?.modelServices ?? {})
   }
-  const availableAdapters = Object.keys(mergedAdapters)
+  const availableAdapters = Object.keys(mergedAdapters ?? {})
   const serviceModels = listServiceModels(mergedModelServices)
   const explicitAdapter = normalizeNonEmptyString(params.inputAdapter)
   const explicitModel = resolveModelSelection({
@@ -86,15 +116,13 @@ const resolveQuerySelection = (params: {
   )
 
   const resolveModelForAdapter = (adapter: string | undefined) => {
-    const adapterConfiguredModel = getAdapterConfiguredModel(
-      adapter != null ? mergedAdapters[adapter as keyof typeof mergedAdapters] : undefined
-    )
-    return resolveModelSelection({
-      value: adapterConfiguredModel,
+    const adapterConfiguredModel = resolveAdapterConfiguredDefaultModel({
+      adapterConfig: adapter != null ? mergedAdapters?.[adapter] : undefined,
       serviceModels,
       preferredServiceKey: mergedDefaultModelService,
       preserveUnknown: true
-    }) ?? resolvedDefaultModel
+    })
+    return adapterConfiguredModel ?? resolvedDefaultModel
   }
 
   if (explicitModel != null) {
@@ -164,9 +192,37 @@ export const run = async (
     throw new Error('No adapter found in config, please set adapters in config file')
   }
 
+  const mergedAdapters = mergeAdapterConfigs(
+    config?.adapters as Record<string, unknown> | undefined,
+    userConfig?.adapters as Record<string, unknown> | undefined
+  )
+  const mergedModelServices = {
+    ...(config?.modelServices ?? {}),
+    ...(userConfig?.modelServices ?? {})
+  }
+  const serviceModels = listServiceModels(mergedModelServices)
+  const mergedDefaultModelService = pickFirstNonEmptyString(
+    [
+      userConfig?.defaultModelService,
+      config?.defaultModelService
+    ]
+  )
+  const compatibilityResult = resolveAdapterModelCompatibility({
+    adapter: adapterType,
+    model: resolvedSelection.model,
+    adapterConfig: mergedAdapters?.[adapterType],
+    serviceModels,
+    preferredServiceKey: mergedDefaultModelService,
+    preserveUnknownDefaultModel: true
+  })
+  if (compatibilityResult.error) {
+    throw new Error(formatAdapterModelFallbackError(compatibilityResult.error))
+  }
+
   const adapter = await loadAdapter(adapterType)
   await adapter.init?.(ctx)
-  const resolvedModel = resolvedSelection.model
+  const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
+  const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
 
   const originalOnEvent = adapterOptions.onEvent
   const supportedAssetPlanAdapters = new Set(['claude-code', 'codex', 'opencode'])
@@ -207,6 +263,7 @@ export const run = async (
         data: {
           ...event.data,
           adapter: adapterType,
+          selectionWarnings: selectionWarnings ?? event.data.selectionWarnings,
           assetDiagnostics: assetPlan?.diagnostics ?? event.data.assetDiagnostics
         }
       })

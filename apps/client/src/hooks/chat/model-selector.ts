@@ -1,10 +1,12 @@
 import type { AdapterBuiltinModel, ModelMetadataConfig } from '@vibe-forge/core'
 import {
   buildServiceModelSelector,
-  getAdapterConfiguredModel,
+  mergeAdapterConfigs,
   listServiceModels,
   normalizeNonEmptyString,
   parseServiceModelSelector,
+  resolveAdapterConfiguredDefaultModel,
+  resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
   resolveModelDefaultAdapter,
   resolveModelSelection,
@@ -15,9 +17,11 @@ import type { ServiceModelEntry } from '@vibe-forge/core/utils/model-selection'
 export type { ServiceModelEntry }
 export {
   buildServiceModelSelector,
+  mergeAdapterConfigs,
   listServiceModels,
   normalizeNonEmptyString,
   parseServiceModelSelector,
+  resolveAdapterModelCompatibility,
   resolveServiceModelSelector
 }
 
@@ -122,17 +126,14 @@ export const resolveModelForChatAdapterSelection = (params: {
   fallbackBuiltinModels?: Iterable<string>
   serviceModels: ServiceModelEntry[]
 }) => {
-  const adapterConfiguredModel = getAdapterConfiguredModel(
-    params.adapter != null ? params.adapters?.[params.adapter] : undefined
-  )
-  const resolvedAdapterModel = resolveChatModelSelection({
-    value: adapterConfiguredModel,
+  const adapterConfiguredModel = resolveAdapterConfiguredDefaultModel({
+    adapterConfig: params.adapter != null ? params.adapters?.[params.adapter] : undefined,
     builtinModels: params.builtinModels,
     serviceModels: params.serviceModels,
-    defaultModelService: params.defaultModelService,
+    preferredServiceKey: params.defaultModelService,
     preserveUnknown: false
   })
-  if (resolvedAdapterModel) return resolvedAdapterModel
+  if (adapterConfiguredModel) return adapterConfiguredModel
 
   return resolveDefaultChatModelSelection({
     defaultModel: params.defaultModel,
