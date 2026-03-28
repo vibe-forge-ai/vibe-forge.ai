@@ -36,6 +36,7 @@ describe('report command', () => {
 
     await fs.mkdir(path.join(cwd, '.ai/logs'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.claude'), { recursive: true })
+    await fs.mkdir(path.join(cwd, '.ai/.mock/.config/opencode/node_modules'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.vf'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.bun'), { recursive: true })
     await fs.writeFile(path.join(cwd, '.ai/.mock/.claude.json.backup.1774599210661'), '{}')
@@ -44,6 +45,7 @@ describe('report command', () => {
     expect(await collectReportTargets(cwd)).toEqual([
       '.ai/logs',
       '.ai/.mock/.claude',
+      '.ai/.mock/.config',
       '.ai/.mock/.vf',
       '.ai/.mock/.claude.json.backup.1774599210661'
     ])
@@ -56,19 +58,21 @@ describe('report command', () => {
     await fs.mkdir(path.join(cwd, '.ai/logs'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/caches'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.claude'), { recursive: true })
+    await fs.mkdir(path.join(cwd, '.ai/.mock/.config/opencode/plugins'), { recursive: true })
+    await fs.mkdir(path.join(cwd, '.ai/.mock/.config/opencode/node_modules/pkg'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.codex'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.vf'), { recursive: true })
     await fs.mkdir(path.join(cwd, '.ai/.mock/.bun'), { recursive: true })
-    await fs.mkdir(path.join(cwd, '.ai/.mock/.config'), { recursive: true })
 
     await fs.writeFile(path.join(cwd, '.ai/logs/session.log'), 'log data')
     await fs.writeFile(path.join(cwd, '.ai/caches/task.json'), '{"ok":true}')
     await fs.writeFile(path.join(cwd, '.ai/.mock/.claude/settings.json'), '{"mock":true}')
+    await fs.writeFile(path.join(cwd, '.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js'), 'export {}')
+    await fs.writeFile(path.join(cwd, '.ai/.mock/.config/opencode/node_modules/pkg/index.js'), 'module.exports = {}')
     await fs.writeFile(path.join(cwd, '.ai/.mock/.codex/hooks.json'), '{"hook":true}')
     await fs.writeFile(path.join(cwd, '.ai/.mock/.vf/state.json'), '{"state":true}')
     await fs.writeFile(path.join(cwd, '.ai/.mock/.claude.json.backup.1774599210661'), '{"backup":true}')
     await fs.writeFile(path.join(cwd, '.ai/.mock/.bun/install.log'), 'skip me')
-    await fs.writeFile(path.join(cwd, '.ai/.mock/.config/config.json'), '{"skip":true}')
 
     const result = await runReportCommand({ cwd, filename: 'bundle' })
 
@@ -82,11 +86,12 @@ describe('report command', () => {
     expect(archiveListing).toContain('.ai/logs/session.log')
     expect(archiveListing).toContain('.ai/caches/task.json')
     expect(archiveListing).toContain('.ai/.mock/.claude/settings.json')
+    expect(archiveListing).toContain('.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js')
     expect(archiveListing).toContain('.ai/.mock/.codex/hooks.json')
     expect(archiveListing).toContain('.ai/.mock/.vf/state.json')
     expect(archiveListing).toContain('.ai/.mock/.claude.json.backup.1774599210661')
     expect(archiveListing).not.toContain('.ai/.mock/.bun/install.log')
-    expect(archiveListing).not.toContain('.ai/.mock/.config/config.json')
+    expect(archiveListing).not.toContain('.ai/.mock/.config/opencode/node_modules/pkg/index.js')
     expect(logSpy).toHaveBeenCalledWith(`Report archive created: ${result!.archivePath}`)
   })
 

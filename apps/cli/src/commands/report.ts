@@ -10,10 +10,15 @@ const REPORT_TARGETS = ['.ai/logs', '.ai/caches'] as const
 const REPORT_MOCK_TARGETS = [
   '.ai/.mock/.claude',
   '.ai/.mock/.claude-code-router',
+  '.ai/.mock/.config',
   '.ai/.mock/.codex',
   '.ai/.mock/.vf'
 ] as const
 const REPORT_MOCK_FILE_PREFIX = '.claude.json'
+const REPORT_TAR_EXCLUDES = [
+  '.ai/.mock/.config/**/node_modules',
+  '.ai/.mock/.config/**/node_modules/*'
+] as const
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -105,7 +110,14 @@ const createTarArchive = async (cwd: string, archivePath: string, sources: strin
   await fs.mkdir(path.dirname(archivePath), { recursive: true })
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn('tar', ['-czf', archivePath, '-C', cwd, ...sources], {
+    const child = spawn('tar', [
+      '-czf',
+      archivePath,
+      ...REPORT_TAR_EXCLUDES.map(pattern => `--exclude=${pattern}`),
+      '-C',
+      cwd,
+      ...sources
+    ], {
       cwd,
       stdio: ['ignore', 'ignore', 'pipe']
     })
