@@ -2,9 +2,9 @@
 
 ## 文档入口
 
-- `.ai/rules/docs/HOOKS.md`
+- `.ai/rules/HOOKS.md`
   - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
-- `.ai/rules/docs/HOOKS-REFERENCE.md`
+- `.ai/rules/HOOKS-REFERENCE.md`
   - 真实 CLI 验证命令、维护经验、共用实现入口
 - `apps/cli/src/AGENTS.md`
   - CLI hook bridge、`call-hook.js` 与 session logger 入口

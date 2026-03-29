@@ -12,11 +12,11 @@
 ## 文档入口
 
 - 通用方案与事件矩阵：[`HOOKS.md`](./HOOKS.md)
-- hooks runtime 维护说明：[`packages/hooks/AGENTS.md`](../packages/hooks/AGENTS.md)
-- CLI hook bridge 维护说明：[`apps/cli/src/AGENTS.md`](../apps/cli/src/AGENTS.md)
-- Codex adapter 维护说明：[`packages/adapters/codex/AGENTS.md`](../packages/adapters/codex/AGENTS.md)
-- Claude Code adapter 维护说明：[`packages/adapters/claude-code/AGENTS.md`](../packages/adapters/claude-code/AGENTS.md)
-- OpenCode adapter 维护说明：[`packages/adapters/opencode/AGENTS.md`](../packages/adapters/opencode/AGENTS.md)
+- hooks runtime 维护说明：[`packages/hooks/AGENTS.md`](../../packages/hooks/AGENTS.md)
+- CLI hook bridge 维护说明：[`apps/cli/src/AGENTS.md`](../../apps/cli/src/AGENTS.md)
+- Codex adapter 维护说明：[`packages/adapters/codex/AGENTS.md`](../../packages/adapters/codex/AGENTS.md)
+- Claude Code adapter 维护说明：[`packages/adapters/claude-code/AGENTS.md`](../../packages/adapters/claude-code/AGENTS.md)
+- OpenCode adapter 维护说明：[`packages/adapters/opencode/AGENTS.md`](../../packages/adapters/opencode/AGENTS.md)
 
 ## 真实 CLI 验证
 

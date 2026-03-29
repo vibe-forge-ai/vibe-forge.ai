@@ -25,8 +25,8 @@ The adapter drives Codex in two modes:
 
 Cross-reference these docs first when touching hooks:
 
-- `.ai/rules/docs/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
-- `.ai/rules/docs/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
+- `.ai/rules/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
+- `.ai/rules/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
 - `apps/cli/src/AGENTS.md` — CLI hook bridge entry and `call-hook.js` routing
 
 Primary implementation entrypoints for Codex hooks:

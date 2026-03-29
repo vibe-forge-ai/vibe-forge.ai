@@ -34,6 +34,15 @@
 - `packages/workspace-assets`
   - workspace asset 领域层。
   - 负责 workspace assets 发现、hook 插件资产投影、prompt asset 选择与 adapter asset plan 组装。
+- `packages/channels/lark`
+  - 当前的 channel 实现包。
+  - 基于 `core` 的 channel DSL 提供 channel definition / connection，供 server runtime 与 client 配置界面复用。
+- `packages/adapters/*`
+  - adapter 实现包族。
+  - 当前包括 `codex`、`claude-code`、`opencode`；由 task runtime 按包名解析执行，也向 client 暴露 schema / icon 等元数据。
+- `packages/plugins/*`
+  - hook plugin 实现包族。
+  - 当前包括 `logger`、`chrome-devtools`；由 hooks runtime 解析执行，部分包也向 client 暴露 tool schema。
 - `packages/hooks`
   - 独立的 hooks runtime 包。
   - 暴露 `vf-call-hook`。
@@ -102,6 +111,64 @@ flowchart LR
 
   Task --> WorkspaceAssets
   Task --> Hooks
+```
+
+## 层级示意图（无连线）
+
+这张图只表达分层归属，不表达依赖关系。
+
+```mermaid
+flowchart TB
+  classDef ghost fill:transparent,stroke:transparent,color:transparent;
+
+  subgraph L1["应用层"]
+    direction LR
+    CLI["apps/cli"]
+    Server["apps/server"]
+    Client["apps/client"]
+  end
+
+  subgraph L2["入口与公共 API"]
+    direction LR
+    AppRuntime["packages/app-runtime"]
+    Core["packages/core"]
+    Hooks["packages/hooks"]
+  end
+
+  subgraph L3["运行时编排层"]
+    direction LR
+    Task["packages/task"]
+    MCP["packages/mcp"]
+    Benchmark["packages/benchmark"]
+  end
+
+  subgraph L4["扩展实现层"]
+    direction LR
+    WorkspaceAssets["packages/workspace-assets"]
+    ChannelLark["packages/channels/lark"]
+    AdapterCodex["packages/adapters/codex"]
+    AdapterClaude["packages/adapters/claude-code"]
+    AdapterOpenCode["packages/adapters/opencode"]
+    PluginLogger["packages/plugins/logger"]
+    PluginChrome["packages/plugins/chrome-devtools"]
+  end
+
+  subgraph L5["基础层"]
+    direction LR
+    Helper["packages/cli-helper"]
+    Register["packages/register"]
+    Config["packages/config"]
+    DefinitionLoader["packages/definition-loader"]
+    Utils["packages/utils"]
+    Types["packages/types"]
+  end
+
+  CLI --> AppRuntime
+  AppRuntime --> Task
+  Task --> WorkspaceAssets
+  WorkspaceAssets --> Helper
+
+  linkStyle default stroke:transparent,fill:none,color:transparent;
 ```
 
 ## 分层图（含基础层）
@@ -235,6 +302,160 @@ flowchart LR
   MCP --> Types
   MCP --> Utils
 ```
+
+## 完整包关系图（含 channels / adapters / plugins）
+
+这张图补充展示扩展实现包。
+
+- 实线：静态 workspace 依赖或直接消费关系
+- 虚线：运行时按包名解析，不一定体现在 `package.json`
+
+```mermaid
+flowchart LR
+  subgraph L1["应用层"]
+    direction TB
+    CLI["apps/cli"]
+    Server["apps/server"]
+    Client["apps/client"]
+  end
+
+  subgraph L2["入口与公共 API"]
+    direction TB
+    AppRuntime["packages/app-runtime"]
+    Core["packages/core"]
+    Hooks["packages/hooks"]
+  end
+
+  subgraph L3["运行时编排层"]
+    direction TB
+    Task["packages/task"]
+    MCP["packages/mcp"]
+    Benchmark["packages/benchmark"]
+  end
+
+  subgraph L4["扩展实现层"]
+    direction TB
+    WorkspaceAssets["packages/workspace-assets"]
+    ChannelLark["packages/channels/lark"]
+    AdapterCodex["packages/adapters/codex"]
+    AdapterClaude["packages/adapters/claude-code"]
+    AdapterOpenCode["packages/adapters/opencode"]
+    PluginLogger["packages/plugins/logger"]
+    PluginChrome["packages/plugins/chrome-devtools"]
+  end
+
+  subgraph L5["基础层"]
+    direction TB
+    Helper["packages/cli-helper"]
+    Register["packages/register"]
+    Config["packages/config"]
+    DefinitionLoader["packages/definition-loader"]
+    Utils["packages/utils"]
+    Types["packages/types"]
+  end
+
+  CLI --> Helper
+  CLI --> AppRuntime
+  CLI --> Core
+  CLI --> Hooks
+
+  Server --> AppRuntime
+  Server --> Core
+  Server --> ChannelLark
+  Server --> Config
+  Server --> DefinitionLoader
+  Server --> Utils
+
+  Client --> Core
+  Client --> ChannelLark
+  Client --> AdapterCodex
+  Client --> AdapterClaude
+  Client --> AdapterOpenCode
+  Client --> PluginChrome
+
+  Helper --> Register
+
+  AppRuntime --> Task
+  AppRuntime --> MCP
+  AppRuntime --> Benchmark
+
+  Benchmark --> Task
+  Benchmark --> Types
+
+  MCP --> Task
+  MCP --> Hooks
+  MCP --> Config
+  MCP --> Utils
+  MCP --> Types
+  MCP --> Register
+
+  Task --> WorkspaceAssets
+  Task --> Hooks
+  Task --> Config
+  Task --> Utils
+  Task --> Types
+
+  WorkspaceAssets --> Config
+  WorkspaceAssets --> DefinitionLoader
+  WorkspaceAssets --> Utils
+  WorkspaceAssets --> Types
+
+  ChannelLark --> Core
+
+  AdapterCodex --> Core
+  AdapterCodex --> Hooks
+  AdapterCodex --> Utils
+  AdapterCodex --> Types
+
+  AdapterClaude --> Core
+  AdapterClaude --> Hooks
+  AdapterClaude --> Utils
+  AdapterClaude --> Types
+
+  AdapterOpenCode --> Core
+  AdapterOpenCode --> DefinitionLoader
+  AdapterOpenCode --> Hooks
+  AdapterOpenCode --> Utils
+  AdapterOpenCode --> Types
+
+  PluginLogger --> Core
+  PluginLogger --> Hooks
+  PluginLogger --> Types
+
+  PluginChrome --> Core
+  PluginChrome --> Hooks
+  PluginChrome --> Types
+
+  Hooks --> Config
+  Hooks --> Utils
+  Hooks --> Types
+  Hooks --> Register
+  Hooks -. runtime loads .-> PluginLogger
+  Hooks -. runtime loads .-> PluginChrome
+
+  Core --> Types
+  Core --> Utils
+
+  DefinitionLoader --> Types
+  DefinitionLoader --> Utils
+
+  Task -. runtime resolves .-> AdapterCodex
+  Task -. runtime resolves .-> AdapterClaude
+  Task -. runtime resolves .-> AdapterOpenCode
+```
+
+## 依赖图工具建议
+
+如果要把这类图进一步自动化，优先考虑下面两个 npm 工具：
+
+- `dependency-cruiser`
+  - 更适合 monorepo 和 TypeScript。
+  - 可以输出 `dot`、`mermaid`、`html`，也能顺手做分层约束检查。
+- `madge`
+  - 更轻量，适合快速看 import graph 和循环依赖。
+
+但对这个仓库来说，真正想维护的是“workspace package 级别”的图，而不是“文件 import 级别”的图。  
+所以当前更稳的方式仍然是：用一个小脚本读取各个 `package.json` 的 workspace 依赖，再手工收敛成 Mermaid 图。这样更容易控制分层语义，也不会把文件级别的噪音一起带进来。
 
 ## 启动链路
 

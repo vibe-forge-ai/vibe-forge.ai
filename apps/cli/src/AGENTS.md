@@ -20,8 +20,8 @@ config、cache、definition、workspace asset 共享 contract 位于 `@vibe-forg
 
 文档交叉入口：
 
-- `.ai/rules/docs/HOOKS.md`
-- `.ai/rules/docs/HOOKS-REFERENCE.md`
+- `.ai/rules/HOOKS.md`
+- `.ai/rules/HOOKS-REFERENCE.md`
 - `packages/types/AGENTS.md`
 - `packages/app-runtime/AGENTS.md`
 - `packages/workspace-assets/AGENTS.md`

@@ -16,7 +16,7 @@ pnpm install
 pnpm start
 ```
 
-该命令等价于运行 [start.sh](../start.sh)，会分别启动：
+该命令等价于运行 [start.sh](../../start.sh)，会分别启动：
 
 - `npx vfui-server`（后端）
 - `npx vfui-client`（前端）
@@ -46,17 +46,17 @@ npx vitest run <path>
 
 - 架构说明：[ARCHITECTURE.md](./ARCHITECTURE.md)
 - 重构待办：[REFACTOR-TODO.md](./REFACTOR-TODO.md)
-- CLI 维护说明：[`apps/cli/src/AGENTS.md`](../apps/cli/src/AGENTS.md)
-- Types 维护说明：[`packages/types/AGENTS.md`](../packages/types/AGENTS.md)
-- App Runtime 维护说明：[`packages/app-runtime/AGENTS.md`](../packages/app-runtime/AGENTS.md)
-- Definition Loader 维护说明：[`packages/definition-loader/AGENTS.md`](../packages/definition-loader/AGENTS.md)
-- Workspace Assets 维护说明：[`packages/workspace-assets/AGENTS.md`](../packages/workspace-assets/AGENTS.md)
-- Task 维护说明：[`packages/task/AGENTS.md`](../packages/task/AGENTS.md)
-- Benchmark 维护说明：[`packages/benchmark/AGENTS.md`](../packages/benchmark/AGENTS.md)
-- Config 维护说明：[`packages/config/AGENTS.md`](../packages/config/AGENTS.md)
-- Utils 维护说明：[`packages/utils/AGENTS.md`](../packages/utils/AGENTS.md)
-- Hooks 维护说明：[`packages/hooks/AGENTS.md`](../packages/hooks/AGENTS.md)
-- MCP 维护说明：[`packages/mcp/AGENTS.md`](../packages/mcp/AGENTS.md)
+- CLI 维护说明：[`apps/cli/src/AGENTS.md`](../../apps/cli/src/AGENTS.md)
+- Types 维护说明：[`packages/types/AGENTS.md`](../../packages/types/AGENTS.md)
+- App Runtime 维护说明：[`packages/app-runtime/AGENTS.md`](../../packages/app-runtime/AGENTS.md)
+- Definition Loader 维护说明：[`packages/definition-loader/AGENTS.md`](../../packages/definition-loader/AGENTS.md)
+- Workspace Assets 维护说明：[`packages/workspace-assets/AGENTS.md`](../../packages/workspace-assets/AGENTS.md)
+- Task 维护说明：[`packages/task/AGENTS.md`](../../packages/task/AGENTS.md)
+- Benchmark 维护说明：[`packages/benchmark/AGENTS.md`](../../packages/benchmark/AGENTS.md)
+- Config 维护说明：[`packages/config/AGENTS.md`](../../packages/config/AGENTS.md)
+- Utils 维护说明：[`packages/utils/AGENTS.md`](../../packages/utils/AGENTS.md)
+- Hooks 维护说明：[`packages/hooks/AGENTS.md`](../../packages/hooks/AGENTS.md)
+- MCP 维护说明：[`packages/mcp/AGENTS.md`](../../packages/mcp/AGENTS.md)
 - Hooks 文档：[HOOKS.md](./HOOKS.md)
 - 共享类型层：`packages/types/src/*`
   - 包含 `Config`、adapter contract / loader、MCP contract、session / websocket 等共享类型

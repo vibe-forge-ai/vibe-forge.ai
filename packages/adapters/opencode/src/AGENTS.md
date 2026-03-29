@@ -3,8 +3,8 @@
 hooks 相关改动先交叉看：
 
 - `../AGENTS.md`
-- `.ai/rules/docs/HOOKS.md`
-- `.ai/rules/docs/HOOKS-REFERENCE.md`
+- `.ai/rules/HOOKS.md`
+- `.ai/rules/HOOKS-REFERENCE.md`
 
 ## 入口层
 

@@ -4,18 +4,18 @@
 
 优先阅读：
 
-- `.ai/rules/coding_style.md`
-- `.ai/rules/architecture.md`
-- `.ai/rules/maintenance.md`
+- `.ai/rules/RULE-CODING-STYLE.md`
+- `.ai/rules/RULE-ARCHITECTURE.md`
+- `.ai/rules/RULE-MAINTENANCE.md`
 
 按任务继续阅读：
 
-- 仓库架构与分层：`.ai/rules/docs/ARCHITECTURE.md`
-- 仓库开发与贡献：`.ai/rules/docs/DEVELOPMENT.md`
-- 项目接入方式：`.ai/rules/docs/USAGE.md`
-- hooks 方案与维护：`.ai/rules/docs/HOOKS.md`、`.ai/rules/docs/HOOKS-REFERENCE.md`
-- benchmark 方案与规划：`.ai/rules/docs/BENCHMARK.md`、`.ai/rules/docs/BENCHMARK-PLAN.md`
-- 当前重构待办：`.ai/rules/docs/REFACTOR-TODO.md`
+- 仓库架构与分层：`.ai/rules/ARCHITECTURE.md`
+- 仓库开发与贡献：`.ai/rules/DEVELOPMENT.md`
+- 项目接入方式：`.ai/rules/USAGE.md`
+- hooks 方案与维护：`.ai/rules/HOOKS.md`、`.ai/rules/HOOKS-REFERENCE.md`
+- benchmark 方案与规划：`.ai/rules/BENCHMARK.md`、`.ai/rules/BENCHMARK-PLAN.md`
+- 当前重构待办：`.ai/rules/REFACTOR-TODO.md`
 - 发布与更新日志：`changelog/`
 
 维护约定：
