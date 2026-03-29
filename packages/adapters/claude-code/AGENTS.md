@@ -2,10 +2,10 @@
 
 ## 文档入口
 
-- `docs/HOOKS.md`
+- `.ai/rules/docs/HOOKS.md`
   - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
-- `docs/HOOKS-REFERENCE.md`
-  - 真实 CLI 验证命令、本次改造经验、共用实现入口
+- `.ai/rules/docs/HOOKS-REFERENCE.md`
+  - 真实 CLI 验证命令、维护经验、共用实现入口
 - `apps/cli/src/AGENTS.md`
   - CLI hook bridge、`call-hook.js` 与 session logger 入口
 
@@ -22,7 +22,7 @@
   - 适合排查 `npx vf init`、mock home、router restart 一类问题
 - `src/runtime/native-hooks.ts`
   - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 native hooks 配置
-  - Claude Code 的原生 hooks 最终会回调 `packages/core/call-hook.js`
+  - Claude Code 的原生 hooks 最终会回调 `packages/hooks/call-hook.js`
 - `src/ccr/default-config.ts`
   - 生成 CCR 默认配置
   - 决定默认注入哪些 transformer、provider/router 如何路由
@@ -44,17 +44,17 @@
   - adapter 初始化阶段写 mock home、生成 CCR 配置、必要时重启 router
 - `src/hook-bridge.ts`
   - 负责把 Claude native payload 翻译成统一 hook 协议
-- `packages/core/call-hook.js`
+- `packages/hooks/call-hook.js`
 - `apps/cli/src/hooks/index.ts`
-- `packages/core/src/hooks/native.ts`
-- `packages/core/src/hooks/bridge.ts`
-- `packages/core/src/controllers/task/run.ts`
+- `packages/hooks/src/native.ts`
+- `packages/hooks/src/bridge.ts`
+- `packages/task/src/run.ts`
 
 职责边界要保持清楚：
 
 - Claude adapter 负责 native settings 写入、运行参数装配和 Claude 协议翻译
-- CLI hook bridge 只负责把入口分发到 adapter / core
-- core 负责插件执行、日志、native/bridge 去重
+- CLI hook bridge 只负责把入口分发到 adapter / hooks runtime
+- hooks runtime 负责插件执行与日志，task runtime 负责 native/bridge 去重
 
 ## 真实 CLI 验证
 
@@ -92,7 +92,7 @@ node apps/cli/cli.js \
 - `.ai/logs/<ctxId>/<sessionId>.log.md` 出现 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `.ai/.mock/.claude/settings.json` 仍指向 Vibe Forge 托管 hook bridge
 
-这次开发里，Claude 额外要记住两点：
+Claude 维护时优先检查两点：
 
 - 仓库默认不提交项目级 `.claude/settings.json`；Claude 托管入口是 `.ai/.mock/.claude/settings.json`
 - 但如果用户自己加了项目级 `.claude/settings.json`，Claude 仍会和 mock home settings 一起加载，容易出现双触发
@@ -118,9 +118,10 @@ node apps/cli/cli.js \
 
 先读：
 
-- `packages/core/src/utils/create-logger.ts`
+- `packages/utils/src/create-logger.ts`
+- `packages/utils/src/log-level.ts`
 - `packages/core/src/env.ts`
-- `packages/core/src/controllers/task/prepare.ts`
+- `packages/task/src/prepare.ts`
 
 再回到本 adapter：
 
@@ -156,7 +157,8 @@ node apps/cli/cli.js \
 - `apps/cli/src/hooks/index.ts`
 - `src/hook-bridge.ts`
 - `src/runtime/native-hooks.ts`
-- `packages/core/src/utils/create-logger.ts`
+- `packages/utils/src/create-logger.ts`
+- `packages/utils/src/log-level.ts`
 - `packages/core/src/env.ts`
 
 关键事实：
@@ -170,6 +172,7 @@ node apps/cli/cli.js \
 先读：
 
 - `apps/server/src/utils/logger.ts`
+- `packages/utils/src/log-level.ts`
 - `packages/core/src/env.ts`
 
 关键事实：
@@ -206,17 +209,17 @@ node apps/cli/cli.js \
 ### 场景 C: 根据日志类型决定继续看哪里
 
 - 如果是主会话日志中的 `__D__` / `Claude Code CLI stdout`
-  - 继续看 `packages/core/src/*logger*` 与 `src/runtime/session.ts`
+  - 继续看 `packages/utils/src/create-logger.ts`、`packages/utils/src/log-level.ts` 与 `src/runtime/session.ts`
 - 如果是 `adapter-claude-code/*.log.md`
   - 继续看 `src/ccr/default-config.ts` 与 `src/ccr-transformers/*.js`
 - 如果根本没有生成会话日志
-  - 回到 CLI 入口与 `packages/core/src/controllers/task/prepare.ts`
+  - 回到 CLI 入口与 `packages/task/src/prepare.ts`
 
 ## 经验约定
 
 - 先确认问题属于哪一层：
   - CLI 入口
-  - core logger
+  - shared session logger
   - adapter runtime
   - CCR transformer
   - server pino
@@ -224,6 +227,6 @@ node apps/cli/cli.js \
 - 不要把 “主会话 debug 是否展示” 和 “transformer 是否写文件” 当成同一个开关。
 
 - 修改日志策略后，至少回归：
-  - `pnpm exec vitest run packages/core/__tests__/create-logger.spec.ts packages/core/__tests__/env.spec.ts`
+  - `pnpm exec vitest run packages/utils/__tests__/create-logger.spec.ts packages/utils/__tests__/log-level.spec.ts packages/core/__tests__/env.spec.ts`
   - `pnpm exec vitest run packages/adapters/claude-code/__tests__/default-config.spec.ts`
   - `pnpm exec tsc -p tsconfig.json --noEmit`

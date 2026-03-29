@@ -13,8 +13,9 @@
 
 ## 2. 总体实施原则
 
-- benchmark 的领域能力统一下沉到 `packages/core`
-- CLI 和后端都直接复用 `packages/core` 的 benchmark controller
+- benchmark 的领域能力统一下沉到 `packages/benchmark`
+- CLI 和后端通过 `@vibe-forge/app-runtime` 复用 benchmark runtime
+- 前端共享 contract 直接复用 `@vibe-forge/types`
 - 前端不直接操作文件系统，只通过后端接口读取配置、发起运行、展示结果
 - benchmark 运行目录遵循现有规范：
   - case 输入目录：`.ai/benchmark/<category>/<title>/`
@@ -26,7 +27,7 @@
 
 ### 3.1 中间层
 
-中间层放在 `packages/core/src/controllers/benchmark/`，负责承接 benchmark 的核心领域能力。
+中间层放在 `packages/benchmark/src/`，负责承接 benchmark 的核心领域能力。
 
 建议拆分为以下模块：
 
@@ -61,7 +62,7 @@
   - 负责读写 `.ai/results/.../result.json`
   - 提供最近结果查询和结果汇总
 - `index.ts`
-  - 对外暴露统一 controller API
+  - 对外暴露统一 benchmark API
 
 ### 3.2 后端
 
@@ -72,14 +73,14 @@
 
 后端只做以下职责：
 
-- 调用 `packages/core` 的 benchmark controller
+- 调用 `@vibe-forge/app-runtime`
 - 维护运行态任务列表
 - 向前端暴露 HTTP 查询与启动接口
 - 在需要时向 websocket 广播运行进度
 
 ### 3.3 CLI
 
-CLI 直接复用 `packages/core` 的 benchmark controller，不单独实现跑分逻辑。建议新增：
+CLI 通过 `@vibe-forge/app-runtime` 复用 benchmark runtime，不单独实现跑分逻辑。建议新增：
 
 - `apps/cli/src/commands/benchmark.ts`
 - 在 `apps/cli/src/cli.ts` 注册 `benchmark` 子命令
@@ -322,17 +323,17 @@ CLI 复用方式：
 
 建议新增目录：
 
-- `packages/core/src/controllers/benchmark/`
+- `packages/benchmark/src/`
 
 需要改动的现有文件：
 
-- `packages/core/src/index.ts`
+- `packages/benchmark/src/index.ts`
 
 ## 7. 推荐开发顺序
 
 建议按下面顺序推进：
 
-1. 先做 `packages/core` 中间层
+1. 先做 `packages/benchmark` 中间层
 2. 再做 CLI 跑通本地 benchmark
 3. 再做后端 API
 4. 最后做前端页面
@@ -347,14 +348,14 @@ CLI 复用方式：
 
 ### 里程碑 A：可运行
 
-- core 可发现 case
-- core 可跑单 case
-- core 可写 `result.json`
+- benchmark 包可发现 case
+- benchmark 包可跑单 case
+- benchmark 包可写 `result.json`
 - CLI 可调用
 
 ### 里程碑 B：可批量
 
-- core 可跑 category
+- benchmark 包可跑 category
 - 支持 category 内并发
 - 结果可汇总
 
@@ -378,7 +379,7 @@ CLI 复用方式：
 
 ## 10. 结论
 
-本次规划建议以 `packages/core` 为 benchmark 领域中台，CLI 与后端全部复用这层能力，前端只负责配置展示、任务发起和结果查看。
+本次规划建议以 `packages/benchmark` 为 benchmark 领域中台，CLI、后端与前端共享类型全部复用这层能力，前端只负责配置展示、任务发起和结果查看。
 
 如果按该顺序推进，最短路径是：
 

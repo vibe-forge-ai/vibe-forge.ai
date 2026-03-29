@@ -2,10 +2,10 @@
 
 ## 文档入口
 
-- `docs/HOOKS.md`
+- `.ai/rules/docs/HOOKS.md`
   - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
-- `docs/HOOKS-REFERENCE.md`
-  - 真实 CLI 验证命令、本次改造经验、共用实现入口
+- `.ai/rules/docs/HOOKS-REFERENCE.md`
+  - 真实 CLI 验证命令、维护经验、共用实现入口
 - `apps/cli/src/AGENTS.md`
   - CLI hook bridge 与 `call-hook.js` 入口
 
@@ -28,8 +28,6 @@
 
 - `src/runtime/native-hooks.ts`
   - 负责 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js`
-- `packages/core/call-hook.js`
-  - OpenCode 托管 plugin 最终回调到这里，再进入共享 hook runtime
 - `src/runtime/session/skill-config.ts`
   - base config、plugins、skills 镜像到 session config dir
 - `src/runtime/session/child-env.ts`
@@ -38,15 +36,17 @@
   - `opencode run --format json` 事件流消费与最终文本提取
 - `src/runtime/common/tools.ts`
   - `opencode run` 参数构造
-- `packages/core/src/hooks/native.ts`
-- `packages/core/src/hooks/bridge.ts`
-- `packages/core/src/controllers/task/run.ts`
+- `packages/hooks/call-hook.js`
+  - OpenCode 托管 plugin 最终回调到这里，再进入共享 hook runtime
+- `packages/hooks/src/native.ts`
+- `packages/hooks/src/bridge.ts`
+- `packages/task/src/run.ts`
 
 维护时保持这条边界：
 
 - OpenCode adapter 负责 plugin/config dir/session env
 - CLI 或 upstream 事件流负责把 tool 事件送出来
-- core 负责统一 hook runtime 和去重
+- hooks runtime 负责统一插件执行，task runtime 负责去重
 
 ## 真实 CLI 验证
 
@@ -103,7 +103,7 @@ packages/adapters/opencode/node_modules/.bin/opencode run \
 - `.ai/logs/<ctxId>/<sessionId>.log.md` 出现 `SessionStart` / `PreToolUse` / `PostToolUse` / `Stop`
 - `.ai/.mock/.config/opencode/opencode.json` 与 `plugins/vibe-forge-hooks.js` 仍落在 mock config dir
 
-OpenCode 这次改造最关键的经验：
+OpenCode 维护时优先记住：
 
 - 优先把 `opencode run --format json` 当成稳定基线，不要再依赖最终 stdout 文本猜事件
 - session config 不要只靠 `OPENCODE_CONFIG_CONTENT`，优先写真实 `opencode.json`
@@ -115,4 +115,4 @@ OpenCode 这次改造最关键的经验：
 - 新增逻辑先判断属于“映射层”还是“运行时层”，不要再把两类职责混回一个文件
 - 需要 mock `child_process` 的测试，mock 定义放在各自 spec 顶部；helper 不直接持有全局 mock 状态
 - 修改 adapter 行为时，至少补一条对应的 runtime 或 common 回归测试
-- OpenCode 的 native hooks 通过 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js` 接入，不再直接依赖 stdout 文本桥接
+- OpenCode 的 native hooks 通过 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js` 接入；stdout 文本桥接只负责会话输出，不承担 native hooks

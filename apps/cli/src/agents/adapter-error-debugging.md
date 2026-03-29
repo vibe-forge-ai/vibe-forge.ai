@@ -112,7 +112,7 @@ fatal error 不只是“打印出来”，还必须保证：
 如果事件对了、退出码错了，优先检查：
 
 - `apps/cli/src/commands/run.ts`
-- `apps/cli/cli-helper.js`
+- `packages/cli-helper/loader.js`
 
 经验：这两个契约必须分开验证。只看 `stream-json` 的输出，很容易误判为“修好了”。
 
@@ -225,7 +225,7 @@ npx vf --print "trigger bad request" \
 
 常见落点：
 
-- CLI 退出语义：`apps/cli/cli-helper.js`
+- CLI 退出语义：`packages/cli-helper/loader.js`
 - `run --print` 打印与退出：`apps/cli/src/commands/run.ts`
 - `claude-code` 事件归一化：`packages/adapters/claude-code/src/protocol/incoming.ts`
 - `codex` 流式错误归一化：`packages/adapters/codex/src/protocol/incoming.ts`

@@ -1,5 +1,8 @@
 # Server Src 目录说明
 
+server 侧的 task / benchmark app-facing 入口位于 `@vibe-forge/app-runtime`。
+桌面通知 helper 位于 `@vibe-forge/utils/system`。
+
 - index.ts：服务启动入口，只负责组装 Koa、HTTP Server、WebSocket 挂载与配置装载
 - routes/：HTTP 传输层，只处理请求校验、状态码和响应格式，不承载运行态状态
 - websocket/：WebSocket 传输层，只处理连接、协议消息解析与生命周期回调

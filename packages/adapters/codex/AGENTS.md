@@ -25,8 +25,8 @@ The adapter drives Codex in two modes:
 
 Cross-reference these docs first when touching hooks:
 
-- `docs/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
-- `docs/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
+- `.ai/rules/docs/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
+- `.ai/rules/docs/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
 - `apps/cli/src/AGENTS.md` — CLI hook bridge entry and `call-hook.js` routing
 
 Primary implementation entrypoints for Codex hooks:
@@ -39,17 +39,17 @@ Primary implementation entrypoints for Codex hooks:
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
   - translates Codex native payloads into Vibe Forge hook input/output
-- `packages/core/call-hook.js`
+- `packages/hooks/call-hook.js`
 - `apps/cli/src/hooks/index.ts`
-- `packages/core/src/hooks/native.ts`
-- `packages/core/src/hooks/bridge.ts`
-- `packages/core/src/controllers/task/run.ts`
+- `packages/hooks/src/native.ts`
+- `packages/hooks/src/bridge.ts`
+- `packages/task/src/run.ts`
 
 Keep the ownership split clean:
 
 - adapter layer: writes Codex-native config, passes runtime env, and owns Codex protocol translation
 - CLI bridge: only dispatches into the adapter-owned bridge/runtime entry
-- core hooks runtime: loads workspace plugins and applies native/bridge dedupe
+- hooks runtime: loads workspace plugins; task runtime applies native/bridge dedupe
 
 ### Real CLI smoke
 
@@ -84,12 +84,12 @@ Validation checklist:
 - `.ai/logs/<ctxId>/<sessionId>.log.md` contains `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`
 - `.ai/.mock/.codex/hooks.json` still points to the managed Vibe Forge bridge
 
-Codex-specific lessons from this work:
+Codex maintenance notes:
 
 - native hooks should stay entirely inside mock home; do not write to the real Codex home
 - Codex 2026-03-27 official hooks docs say `~/.codex/hooks.json` and `<repo>/.codex/hooks.json` are both loaded, so project-level managed hooks must be deduped before writing mock-home hooks
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
-- when native hooks are active, bridge duplicates must stay disabled in `packages/core/src/controllers/task/run.ts`
+- when native hooks are active, bridge duplicates must stay disabled in `packages/task/src/run.ts`
 
 ---
 
@@ -99,7 +99,7 @@ Adapter-specific options live under `adapters.codex` in your vibe-forge config.
 
 ```ts
 // .ai.config.ts / .ai.dev.config.ts
-import { defineConfig } from '@vibe-forge/core'
+import { defineConfig } from '@vibe-forge/config'
 
 export default defineConfig({
   adapters: {

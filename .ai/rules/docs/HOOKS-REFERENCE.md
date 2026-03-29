@@ -3,7 +3,7 @@
 这份文档面向维护者，回答四类问题：
 
 1. 真实 CLI 应该怎么验证，而不是只跑单元测试。
-2. 本次 hooks 改造过程中踩过哪些坑。
+2. 维护 hooks 时哪些问题最容易踩坑。
 3. 三家 adapter 的实现入口分别在哪里。
 4. 后续继续演进时，怎样尽量保持 clean 和可维护。
 
@@ -11,7 +11,8 @@
 
 ## 文档入口
 
-- 通用方案与事件矩阵：[`docs/HOOKS.md`](./HOOKS.md)
+- 通用方案与事件矩阵：[`HOOKS.md`](./HOOKS.md)
+- hooks runtime 维护说明：[`packages/hooks/AGENTS.md`](../packages/hooks/AGENTS.md)
 - CLI hook bridge 维护说明：[`apps/cli/src/AGENTS.md`](../apps/cli/src/AGENTS.md)
 - Codex adapter 维护说明：[`packages/adapters/codex/AGENTS.md`](../packages/adapters/codex/AGENTS.md)
 - Claude Code adapter 维护说明：[`packages/adapters/claude-code/AGENTS.md`](../packages/adapters/claude-code/AGENTS.md)
@@ -185,17 +186,27 @@ packages/adapters/opencode/node_modules/.bin/opencode run \
 
 ### 共用层
 
-- `packages/core/src/hooks/native.ts`
+- `packages/hooks/src/native.ts`
   - mock home、托管脚本路径、native 配置写入的共用 helper
-- `packages/core/src/hooks/bridge.ts`
+- `packages/hooks/src/bridge.ts`
   - 结构化 `tool_use/tool_result` 到统一 hook 事件的桥接
-- `packages/core/src/controllers/task/run.ts`
+- `packages/hooks/src/runtime.ts`
+  - 统一读取 hook 输入、装载插件、执行 middleware 链
+- `packages/config/src/load.ts`
+  - 通用配置加载、变量替换与缓存
+- `packages/utils/src/create-logger.ts`
+  - markdown logger
+- `packages/utils/src/log-level.ts`
+  - log level 解析
+- `packages/utils/src/string-transform.ts`
+  - hook 输入 key 转换
+- `packages/task/src/run.ts`
   - native / bridge 去重策略
-- `packages/core/src/utils/workspace-assets.ts`
+- `packages/workspace-assets/src/adapter-asset-plan.ts`
   - workspace hook 插件、native 资产、overlay 规划
 - `apps/cli/src/hooks/*.ts`
   - CLI 侧 hook 入口
-- `apps/cli/call-hook.js`
+- `packages/hooks/call-hook.js`
 - `packages/adapters/codex/src/hook-bridge.ts`
 - `packages/adapters/claude-code/src/hook-bridge.ts`
 - `scripts/run-tools.mjs`

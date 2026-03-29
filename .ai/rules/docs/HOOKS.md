@@ -8,7 +8,7 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 
 这意味着三家 adapter 可以共享同一套 `plugins.<name>` hook 插件实现，不需要为每个 agent 单独写一套业务逻辑。
 
-维护与排查参考见 [`docs/HOOKS-REFERENCE.md`](./HOOKS-REFERENCE.md)。
+维护与排查参考见 [`HOOKS-REFERENCE.md`](./HOOKS-REFERENCE.md)。
 
 ## 初始化后会生成什么
 
@@ -25,7 +25,7 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 
 - 这些文件都只写到 mock home，不污染用户真实 home。
 - OpenCode 不再把真实的 `~/.config/opencode` 整个软链进 mock home，而是把用户已有配置镜像进 mock config dir，再叠加托管 plugin。
-- 三家的 native 配置最终都会回调 `@vibe-forge/cli/call-hook.js`，再进入 `packages/core/src/hooks`。
+- 三家的 native 配置最终都会回调 `@vibe-forge/hooks/call-hook.js`，共享 runtime 位于 `packages/hooks/src/*`，运行时直接通过 `@vibe-forge/config` 读取配置，并通过 `@vibe-forge/utils` 处理 logger / log-level / 输入转换。
 - Codex 按 2026-03-27 官方 hooks 文档会同时加载 `~/.codex/hooks.json` 和 `<repo>/.codex/hooks.json`；托管 mock-home hooks 时要避免和项目级 managed hooks 重复。
 
 ## 事件支持矩阵
@@ -52,7 +52,7 @@ Vibe Forge 现在对 `claude-code`、`codex`、`opencode` 统一采用一套 nat
 进入 Vibe Forge hook runtime 的输入会补齐这些统一字段：
 
 - `adapter`: `claude-code` / `codex` / `opencode`
-- `runtime`: `cli` / `server` / 其他 `AdapterQueryOptions.runtime` 值
+- `runtime`: `cli` / `server` / `mcp`
 - `hookSource`: `native` 或 `bridge`
 - `canBlock`: 当前事件是否还能真正阻止动作继续
 
@@ -149,7 +149,7 @@ plugins:
 - `.ai/logs/<ctxId>/<sessionId>.log.md` 是否出现对应 hook 事件
 - `.ai/.mock` 下的托管配置是否仍指向 Vibe Forge 的 hook bridge 脚本
 
-更细的真实命令、经验总结和实现入口，统一收在 [`docs/HOOKS-REFERENCE.md`](./HOOKS-REFERENCE.md)。
+更细的真实命令、经验总结和实现入口，统一收在 [`HOOKS-REFERENCE.md`](./HOOKS-REFERENCE.md)。
 
 ## 设计取舍
 
