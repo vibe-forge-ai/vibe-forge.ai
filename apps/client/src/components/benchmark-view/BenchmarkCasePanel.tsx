@@ -5,7 +5,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { MarkdownContent } from '#~/components/MarkdownContent'
-import type { BenchmarkCase, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/core'
+import type { BenchmarkCase, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
 
 import { formatTimestamp, getResultStatusMeta } from './utils.js'
 

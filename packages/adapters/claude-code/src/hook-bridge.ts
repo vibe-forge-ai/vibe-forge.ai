@@ -1,8 +1,8 @@
 import process from 'node:process'
 
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import type { HookInput, HookInputs } from '@vibe-forge/core/hooks'
-import { executeHookInput, readHookInput } from '@vibe-forge/core/hooks'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
+import type { HookInput, HookInputs } from '@vibe-forge/hooks'
+import { executeHookInput, readHookInput } from '@vibe-forge/hooks'
 
 const runtime = process.env.__VF_CLAUDE_HOOK_RUNTIME__ as AdapterQueryOptions['runtime'] | undefined
 const taskSessionId = process.env.__VF_CLAUDE_TASK_SESSION_ID__?.trim()
@@ -50,17 +50,17 @@ export const runClaudeHookBridge = async () => {
     const input = await readHookInput() as HookInput
     const hookInput = mapClaudeHookInputToVibeForge(input)
     if (hookInput == null) {
-      console.log(JSON.stringify({ continue: true }))
+      process.stdout.write(`${JSON.stringify({ continue: true })}\n`)
       return
     }
 
     const result = await executeHookInput(hookInput)
-    console.log(JSON.stringify(result))
+    process.stdout.write(`${JSON.stringify(result)}\n`)
   } catch (error) {
-    console.log(JSON.stringify({
+    process.stdout.write(`${JSON.stringify({
       continue: true,
       systemMessage: `vibe-forge claude hook bridge error: ${String(error)}`
-    }))
+    })}\n`)
   }
 }
 

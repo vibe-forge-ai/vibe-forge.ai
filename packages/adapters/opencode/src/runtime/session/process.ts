@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import type { AdapterCtx } from '@vibe-forge/types'
 
 import { extractOpenCodeSessionRecords, selectOpenCodeSessionByTitle } from '../common'
 import { execFileAsync } from './shared'

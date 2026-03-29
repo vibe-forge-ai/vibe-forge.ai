@@ -1,5 +1,5 @@
 import type { AskUserQuestionParams, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
-import type { AdapterSession } from '@vibe-forge/core/adapter'
+import type { AdapterSession } from '@vibe-forge/types'
 import { WebSocket as WebSocketImpl } from 'ws'
 import type { WebSocket } from 'ws'
 

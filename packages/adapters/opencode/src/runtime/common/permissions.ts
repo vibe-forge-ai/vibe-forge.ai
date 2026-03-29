@@ -1,4 +1,4 @@
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
 
 import { findPermissionEntry, isPermissionValue } from './permission-node'
 import type { PermissionNode, PermissionRecord, PermissionValue } from './permission-node'

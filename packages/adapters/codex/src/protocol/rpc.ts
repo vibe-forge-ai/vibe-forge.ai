@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process'
 import readline from 'node:readline'
 
-import type { Logger } from '@vibe-forge/core/utils/create-logger'
+import type { Logger } from '@vibe-forge/utils/create-logger'
 
 import type { CodexNotification, CodexRequest, CodexResponse } from '#~/types.js'
 

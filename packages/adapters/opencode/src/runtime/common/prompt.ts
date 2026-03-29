@@ -1,7 +1,7 @@
 import { isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { AdapterMessageContent } from '@vibe-forge/core/adapter'
+import type { AdapterMessageContent } from '@vibe-forge/types'
 
 export const resolveLocalAttachmentPath = (value: string) => {
   if (value.startsWith('file://')) {

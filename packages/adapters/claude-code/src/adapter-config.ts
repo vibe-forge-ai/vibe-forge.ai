@@ -1,6 +1,6 @@
 export {}
 
-declare module '@vibe-forge/core' {
+declare module '@vibe-forge/types' {
   interface Cache {
     'adapter.claude-code.mcp': Record<string, unknown>
     'adapter.claude-code.settings': Record<string, unknown>

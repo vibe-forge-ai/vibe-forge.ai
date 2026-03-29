@@ -4,7 +4,7 @@ import { Badge, Button, Empty, Input, Tooltip, Tree, Typography } from 'antd'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/core'
+import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/types'
 
 import type { TreeNodeCase } from './types.js'
 import { getResultStatusMeta } from './utils.js'

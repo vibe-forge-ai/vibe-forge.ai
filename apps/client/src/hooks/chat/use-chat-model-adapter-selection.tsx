@@ -11,7 +11,7 @@ import type {
   ModelMetadataConfig,
   ModelServiceConfig,
   RecommendedModelConfig
-} from '@vibe-forge/core'
+} from '@vibe-forge/types'
 import {
   buildServiceModelSelector,
   listServiceModels,

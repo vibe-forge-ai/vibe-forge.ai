@@ -2,8 +2,8 @@ import { lstat, mkdir, readdir, rm, symlink } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { DefinitionLoader } from '@vibe-forge/core/utils/definition-loader'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import { DefinitionLoader } from '@vibe-forge/definition-loader'
 
 const filterResolvedSkills = async (
   cwd: string,

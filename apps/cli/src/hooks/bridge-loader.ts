@@ -3,8 +3,8 @@ export {
   readInstalledAdapterScopeEntries,
   resolveActiveNativeHookBridge,
   resolvePreferredNativeHookBridgePackage
-} from '@vibe-forge/core/hooks'
+} from '@vibe-forge/hooks'
 export type {
   NativeHookBridgeLoaderDeps,
   NativeHookBridgeModule
-} from '@vibe-forge/core/hooks'
+} from '@vibe-forge/hooks'

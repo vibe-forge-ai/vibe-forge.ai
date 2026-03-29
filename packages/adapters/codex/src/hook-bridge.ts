@@ -1,8 +1,8 @@
 import process from 'node:process'
 
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import type { HookInput, HookOutput, HookOutputs } from '@vibe-forge/core/hooks'
-import { executeHookInput, readHookInput } from '@vibe-forge/core/hooks'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
+import type { HookInput, HookOutput, HookOutputs } from '@vibe-forge/hooks'
+import { executeHookInput, readHookInput } from '@vibe-forge/hooks'
 
 type NativeCodexHookEventName = 'PreToolUse' | 'PostToolUse' | 'SessionStart' | 'UserPromptSubmit' | 'Stop'
 
@@ -223,12 +223,12 @@ export const runCodexHookBridge = async () => {
     const input = await readHookInput() as NativeCodexHookInput
     const hookInput = mapCodexHookInputToVibeForge(input)
     const result = await executeHookInput(hookInput)
-    console.log(JSON.stringify(mapVibeForgeHookOutputToCodex(input.hookEventName, result)))
+    process.stdout.write(`${JSON.stringify(mapVibeForgeHookOutputToCodex(input.hookEventName, result))}\n`)
   } catch (error) {
-    console.log(JSON.stringify({
+    process.stdout.write(`${JSON.stringify({
       continue: true,
       systemMessage: `vibe-forge codex hook bridge error: ${String(error)}`
-    }))
+    })}\n`)
   }
 }
 

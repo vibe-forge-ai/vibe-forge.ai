@@ -1,4 +1,4 @@
-import type { BenchmarkCase, BenchmarkResult } from '@vibe-forge/core'
+import type { BenchmarkCase, BenchmarkResult } from '@vibe-forge/types'
 
 export interface BenchmarkQueryParams extends Record<string, string> {
   category: string

@@ -1,13 +1,12 @@
 export {}
 
-declare module '@vibe-forge/core' {
+declare module '@vibe-forge/types' {
   interface Cache {
     'adapter.opencode.session': {
       opencodeSessionId?: string
       title?: string
     }
   }
-
   interface AdapterMap {
     opencode: {
       agent?: string

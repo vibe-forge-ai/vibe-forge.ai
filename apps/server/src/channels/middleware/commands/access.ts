@@ -1,4 +1,4 @@
-import { updateConfigFile } from '@vibe-forge/core'
+import { updateConfigFile } from '@vibe-forge/config'
 import type { ChannelAccessConfig } from '@vibe-forge/core/channel'
 
 import type { ChannelContext } from '../@types'

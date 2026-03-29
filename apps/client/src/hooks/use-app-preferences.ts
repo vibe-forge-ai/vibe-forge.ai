@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { ConfigResponse } from '@vibe-forge/core'
+import type { ConfigResponse } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
 import { themeAtom } from '#~/store'

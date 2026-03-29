@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx, AdapterEvent, AdapterOutputEvent, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterEvent, AdapterOutputEvent, AdapterQueryOptions } from '@vibe-forge/types'
 import type { CodexSessionBase } from './session-common'
 
 import { AgentMessageAccumulator, CommandOutputAccumulator, handleIncomingNotification } from '#~/protocol/incoming.js'

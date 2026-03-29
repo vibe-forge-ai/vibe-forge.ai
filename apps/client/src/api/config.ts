@@ -1,4 +1,5 @@
-import type { ConfigResponse, ConfigSource } from '@vibe-forge/core'
+import type { ConfigSource } from '@vibe-forge/core'
+import type { ConfigResponse } from '@vibe-forge/types'
 
 import { fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse } from './types'

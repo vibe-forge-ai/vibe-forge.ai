@@ -1,4 +1,4 @@
-import type { HookContext, HookInputs, HookOutputs, Plugin } from '@vibe-forge/core/hooks'
+import type { HookContext, HookInputs, HookOutputs, Plugin } from '@vibe-forge/hooks'
 
 export const callPluginHook = async <K extends keyof HookInputs>(
   eventName: K,

@@ -1,0 +1,37 @@
+{
+  "name": "@vibe-forge/definition-loader",
+  "version": "0.7.5",
+  "description": "Shared definition loading and prompt generation utilities for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/definition-loader/__tests__"
+  },
+  "dependencies": {
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
+    "fast-glob": "^3.3.3",
+    "front-matter": "^4.0.2"
+  }
+}

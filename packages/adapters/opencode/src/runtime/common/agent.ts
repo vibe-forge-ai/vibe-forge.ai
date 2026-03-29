@@ -1,4 +1,4 @@
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
 
 export const resolveOpenCodeAgent = (params: {
   agent?: string

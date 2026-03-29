@@ -3,14 +3,13 @@ import process from 'node:process'
 import { Option } from 'commander'
 import type { Command, OptionValueSource } from 'commander'
 
+import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
 import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/core/adapter'
-import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
-import { callHook } from '@vibe-forge/core/hooks'
-import { uuid } from '@vibe-forge/core/utils/uuid'
-
-import { extractTextFromMessage } from '#~/mcp-sync/index.js'
-import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '#~/system-prompt.js'
+import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/types'
+import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
+import { callHook } from '@vibe-forge/hooks'
+import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
+import { uuid } from '@vibe-forge/utils/uuid'
 
 import { extraOptions } from './@core/extra-options'
 
@@ -36,6 +35,7 @@ interface RunOptions {
   includeSkill?: string[]
   excludeSkill?: string[]
   injectDefaultSystemPrompt?: boolean
+  defaultVibeForgeMcpServer?: boolean
 }
 
 export const createSessionExitController = <T extends { kill(): void }>(params?: {
@@ -89,6 +89,7 @@ export function registerRunCommand(program: Command) {
     .option('--entity <entity>', 'Load entity definition')
     .option('--include-mcp-server <server...>', 'Include MCP server')
     .option('--exclude-mcp-server <server...>', 'Exclude MCP server')
+    .option('--no-default-vibe-forge-mcp-server', 'Do not enable the built-in Vibe Forge MCP server')
     .option('--include-tool <tool...>', 'Include tool')
     .option('--exclude-tool <tool...>', 'Exclude tool')
     .option('--include-skill <skill...>', 'Include skill')
@@ -176,6 +177,10 @@ export function registerRunCommand(program: Command) {
         mode: opts.print ? 'stream' : 'direct',
         tools,
         mcpServers,
+        useDefaultVibeForgeMcpServer: resolveDefaultVibeForgeMcpServerOption(
+          opts.defaultVibeForgeMcpServer,
+          command.getOptionValueSource('defaultVibeForgeMcpServer')
+        ),
         promptAssetIds: resolvedConfig.promptAssetIds,
         skills: opts.includeSkill || opts.excludeSkill
           ? {
@@ -208,6 +213,11 @@ export function registerRunCommand(program: Command) {
 }
 
 export const resolveInjectDefaultSystemPromptOption = (
+  value: boolean | undefined,
+  source: OptionValueSource | undefined
+) => source === 'default' ? undefined : value
+
+export const resolveDefaultVibeForgeMcpServerOption = (
   value: boolean | undefined,
   source: OptionValueSource | undefined
 ) => source === 'default' ? undefined : value

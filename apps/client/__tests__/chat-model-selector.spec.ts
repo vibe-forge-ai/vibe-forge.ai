@@ -10,7 +10,7 @@ import {
   resolveModelForChatAdapterSelection,
   resolveServiceModelSelector
 } from '#~/hooks/chat/model-selector'
-import type { AdapterBuiltinModel, ModelMetadataConfig, ModelServiceConfig } from '@vibe-forge/core'
+import type { AdapterBuiltinModel, ModelMetadataConfig, ModelServiceConfig } from '@vibe-forge/types'
 
 const modelServices: Record<string, ModelServiceConfig> = {
   serviceA: {

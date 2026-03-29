@@ -2,7 +2,7 @@ import { existsSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 
-import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import type { AdapterCtx } from '@vibe-forge/types'
 
 const require = createRequire(import.meta.url ?? __filename)
 const adapterPackageDir = dirname(require.resolve('@vibe-forge/adapter-opencode/package.json'))

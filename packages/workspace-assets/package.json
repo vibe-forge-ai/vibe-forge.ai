@@ -1,0 +1,42 @@
+{
+  "name": "@vibe-forge/workspace-assets",
+  "version": "0.7.5",
+  "description": "Workspace asset resolution and adapter asset planning for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/workspace-assets/__tests__"
+  },
+  "dependencies": {
+    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/definition-loader": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
+    "fast-glob": "^3.3.3",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
+  }
+}

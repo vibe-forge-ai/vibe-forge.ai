@@ -1,9 +1,9 @@
 import { execFile } from 'node:child_process'
 
 import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterCtx } from '@vibe-forge/core/adapter'
-import { omitAdapterCommonConfig } from '@vibe-forge/core/utils/model-selection'
-import { uuid } from '@vibe-forge/core/utils/uuid'
+import type { AdapterCtx } from '@vibe-forge/types'
+import { omitAdapterCommonConfig } from '@vibe-forge/utils'
+import { uuid } from '@vibe-forge/utils/uuid'
 
 export interface OpenCodeAdapterConfig {
   agent?: string

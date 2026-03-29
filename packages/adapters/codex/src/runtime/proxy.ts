@@ -1,5 +1,5 @@
-import { createLogger } from '@vibe-forge/core/utils/create-logger'
-import type { Logger } from '@vibe-forge/core/utils/create-logger'
+import { createLogger } from '@vibe-forge/utils/create-logger'
+import type { Logger } from '@vibe-forge/utils/create-logger'
 import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'

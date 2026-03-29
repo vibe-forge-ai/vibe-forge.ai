@@ -22,15 +22,6 @@
         "require": "./dist/index.js"
       }
     },
-    "./adapter": {
-      "__vibe-forge__": {
-        "default": "./src/adapter/index.ts"
-      },
-      "default": {
-        "import": "./dist/adapter.mjs",
-        "require": "./dist/adapter.js"
-      }
-    },
     "./channel": {
       "__vibe-forge__": {
         "default": "./src/channel.ts"
@@ -49,46 +40,11 @@
         "require": "./dist/schema.js"
       }
     },
-    "./hooks": {
-      "__vibe-forge__": {
-        "default": "./src/hooks/index.ts"
-      },
-      "default": {
-        "import": "./dist/hooks/index.mjs",
-        "require": "./dist/hooks/index.js"
-      }
-    },
-    "./call-hook.js": "./call-hook.js",
-    "./utils/*": {
-      "__vibe-forge__": {
-        "default": "./src/utils/*.ts"
-      },
-      "default": {
-        "import": "./dist/utils/*.mjs",
-        "require": "./dist/utils/*.js"
-      }
-    },
-    "./controllers/*": {
-      "__vibe-forge__": {
-        "default": "./src/controllers/*/index.ts"
-      },
-      "default": {
-        "import": "./dist/controllers/*/index.mjs",
-        "require": "./dist/controllers/*/index.js"
-      }
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/register": "workspace:^",
-    "fast-glob": "^3.3.3",
-    "front-matter": "^4.0.2",
-    "js-yaml": "^4.1.1",
-    "node-notifier": "^10.0.1",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
     "zod": "^3.24.1"
-  },
-  "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/node-notifier": "^8.0.5"
   }
 }

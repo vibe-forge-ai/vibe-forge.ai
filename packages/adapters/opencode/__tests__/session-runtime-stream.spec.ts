@@ -2,7 +2,7 @@ import { execFile, spawn } from 'node:child_process'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { createOpenCodeSession } from '#~/runtime/session.js'
 
@@ -48,9 +48,11 @@ describe('createOpenCodeSession stream runtime', () => {
     expect(spawnMock.mock.calls[0]?.[1]).toEqual([
       'run',
       '--format',
-      'default',
+      'json',
       '--title',
       'Vibe Forge:session-1',
+      '--dir',
+      '/tmp',
       'Reply with exactly pong.'
     ])
     expect(events.map(event => event.type)).toEqual(['init', 'message', 'stop'])

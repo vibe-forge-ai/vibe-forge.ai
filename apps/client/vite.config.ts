@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 import react from '@vitejs/plugin-react'
@@ -15,6 +16,10 @@ export default defineConfig({
   root: '.',
   base: clientBase,
   resolve: {
+    alias: {
+      '@vibe-forge/utils/model-selection': fileURLToPath(new URL('../../packages/utils/src/model-selection.ts', import.meta.url)),
+      '@vibe-forge/utils': fileURLToPath(new URL('../../packages/utils/src/index.ts', import.meta.url))
+    },
     conditions: ['browser', '__vibe-forge__', 'module', 'import', 'development']
   },
   server: {

@@ -1,4 +1,4 @@
-import type { AdapterMessageContent } from '@vibe-forge/core/adapter'
+import type { AdapterMessageContent } from '@vibe-forge/types'
 
 import type { ClaudeCodeContent } from '../types'
 

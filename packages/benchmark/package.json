@@ -1,0 +1,35 @@
+{
+  "name": "@vibe-forge/benchmark",
+  "version": "0.7.5",
+  "description": "Benchmark discovery and execution for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@vibe-forge/task": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "fast-glob": "^3.3.3",
+    "front-matter": "^4.0.2",
+    "zod": "^3.24.1"
+  }
+}

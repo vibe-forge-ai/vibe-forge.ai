@@ -27,6 +27,8 @@
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/plugin-chrome-devtools": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
     "@vitejs/plugin-react": "^5.1.2",
     "antd": "^5.20.0",
     "dayjs": "^1.11.19",

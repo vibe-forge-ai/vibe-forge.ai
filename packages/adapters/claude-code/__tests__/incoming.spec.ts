@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { handleIncomingEvent } from '../src/protocol/incoming'
 

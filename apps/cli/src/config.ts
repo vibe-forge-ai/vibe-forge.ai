@@ -1,1 +1,1 @@
-export { defineConfig } from '@vibe-forge/core'
+export { defineConfig } from '@vibe-forge/config'

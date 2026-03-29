@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { createClaudeSession } from '../src/runtime/session'
 

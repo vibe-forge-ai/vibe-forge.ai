@@ -1,4 +1,4 @@
-import type { Config, ModelServiceConfig } from '@vibe-forge/core'
+import type { Config, ModelServiceConfig } from '@vibe-forge/types'
 
 import { resolveTransformerPath } from './paths'
 

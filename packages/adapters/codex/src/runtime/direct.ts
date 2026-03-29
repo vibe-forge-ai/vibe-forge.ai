@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
 import type { CodexSessionBase } from './session-common'
 
 import { buildFeatureArgs, toCodexOutboundApprovalPolicy } from './session-common'

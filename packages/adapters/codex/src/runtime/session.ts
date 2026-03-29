@@ -1,4 +1,4 @@
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 
 import { createDirectCodexSession } from './direct'
 import { resolveSessionBase } from './session-common'

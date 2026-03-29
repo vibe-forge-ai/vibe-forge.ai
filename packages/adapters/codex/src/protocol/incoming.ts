@@ -1,6 +1,6 @@
 import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { uuid } from '@vibe-forge/core/utils/uuid'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
+import { uuid } from '@vibe-forge/utils/uuid'
 
 import type {
   CodexItemAgentMessage,

@@ -1,4 +1,4 @@
-import type { BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/core'
+import type { BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
 
 // ─── Formatting ───────────────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ import type {
   AdapterOutputEvent,
   AdapterQueryOptions,
   AdapterSession
-} from '@vibe-forge/core/adapter'
+} from '@vibe-forge/types'
 
 import { resolveOpenCodeBinaryPath } from '../../paths'
 import {

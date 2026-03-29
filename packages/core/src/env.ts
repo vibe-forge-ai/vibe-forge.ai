@@ -1,6 +1,10 @@
 import { env as processEnv } from 'node:process'
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+import type { LogLevel } from '@vibe-forge/utils/log-level'
+import { normalizeLogLevel } from '@vibe-forge/utils/log-level'
+
+export type { LogLevel } from '@vibe-forge/utils/log-level'
+export { normalizeLogLevel, resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 
 export interface ServerEnv {
   __VF_PROJECT_AI_SERVER_HOST__: string
@@ -14,30 +18,6 @@ export interface ServerEnv {
   __VF_PROJECT_AI_CLIENT_MODE__?: 'dev' | 'static'
   __VF_PROJECT_AI_CLIENT_BASE__?: string
   __VF_PROJECT_AI_CLIENT_DIST_PATH__?: string
-}
-
-const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const satisfies readonly LogLevel[]
-
-export function normalizeLogLevel(value: unknown): LogLevel | undefined {
-  if (typeof value !== 'string') return undefined
-  const normalized = value.trim().toLowerCase()
-  return LOG_LEVELS.includes(normalized as LogLevel)
-    ? normalized as LogLevel
-    : undefined
-}
-
-export function resolveServerLogLevel(
-  env: {
-    __VF_PROJECT_AI_SERVER_LOG_LEVEL__?: unknown
-    __VF_PROJECT_AI_SERVER_DEBUG__?: unknown
-  },
-  fallback: LogLevel = 'info'
-): LogLevel {
-  if (env.__VF_PROJECT_AI_SERVER_DEBUG__ === true || env.__VF_PROJECT_AI_SERVER_DEBUG__ === 'true') {
-    return 'debug'
-  }
-
-  return normalizeLogLevel(env.__VF_PROJECT_AI_SERVER_LOG_LEVEL__) ?? fallback
 }
 
 export function loadEnv(): ServerEnv {

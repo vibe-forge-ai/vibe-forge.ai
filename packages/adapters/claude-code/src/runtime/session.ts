@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { uuid } from '@vibe-forge/core/utils/uuid'
+import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/types'
+import { uuid } from '@vibe-forge/utils/uuid'
 
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'

@@ -1,8 +1,8 @@
-import type { AdapterBuiltinModel, ModelMetadataConfig } from '@vibe-forge/core'
+import type { AdapterBuiltinModel, ModelMetadataConfig, ServiceModelEntry } from '@vibe-forge/types'
 import {
   buildServiceModelSelector,
-  mergeAdapterConfigs,
   listServiceModels,
+  mergeAdapterConfigs,
   normalizeNonEmptyString,
   parseServiceModelSelector,
   resolveAdapterConfiguredDefaultModel,
@@ -11,14 +11,13 @@ import {
   resolveModelDefaultAdapter,
   resolveModelSelection,
   resolveServiceModelSelector
-} from '@vibe-forge/core/utils/model-selection'
-import type { ServiceModelEntry } from '@vibe-forge/core/utils/model-selection'
+} from '@vibe-forge/utils/model-selection'
 
 export type { ServiceModelEntry }
 export {
   buildServiceModelSelector,
-  mergeAdapterConfigs,
   listServiceModels,
+  mergeAdapterConfigs,
   normalizeNonEmptyString,
   parseServiceModelSelector,
   resolveAdapterModelCompatibility,

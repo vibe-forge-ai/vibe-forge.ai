@@ -1,6 +1,5 @@
 import process from 'node:process'
 
-import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/core'
 import {
   getBenchmarkCase,
   listBenchmarkCases,
@@ -8,8 +7,9 @@ import {
   readBenchmarkResult,
   runBenchmarkCase,
   runBenchmarkCategory
-} from '@vibe-forge/core/controllers/benchmark'
+} from '@vibe-forge/app-runtime'
 import type { Command } from 'commander'
+import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/types'
 
 interface BenchmarkRunOptions {
   category: string

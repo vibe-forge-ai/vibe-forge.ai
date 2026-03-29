@@ -1,5 +1,5 @@
 import type { TaskDetail } from '@vibe-forge/core'
-import { getCache } from '@vibe-forge/core/utils/cache'
+import { getCache } from '@vibe-forge/utils/cache'
 import type { Command } from 'commander'
 import fs from 'node:fs/promises'
 import path from 'node:path'

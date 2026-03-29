@@ -1,0 +1,47 @@
+{
+  "name": "@vibe-forge/mcp",
+  "version": "0.7.5",
+  "description": "Vibe Forge MCP server",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "vibe-forge-mcp": "./cli.js",
+    "vf-mcp": "./cli.js"
+  },
+  "scripts": {
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/mcp/__tests__"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@vibe-forge/cli-helper": "workspace:^",
+    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/hooks": "workspace:^",
+    "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/task": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
+    "commander": "^12.1.0",
+    "zod": "^3.24.1"
+  }
+}

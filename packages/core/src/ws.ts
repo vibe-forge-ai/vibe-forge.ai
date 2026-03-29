@@ -1,13 +1,4 @@
-import type { AdapterErrorData, SessionInfo } from './adapter/index.js'
-import type { AskUserQuestionParams, ChatMessage } from './types.js'
+import type { AskUserQuestionParams, WSEvent as SharedWSEvent, AdapterErrorData, SessionInfo  } from '@vibe-forge/types'
 
-export type WSEvent =
-  | { type: 'error'; data: AdapterErrorData; message?: string }
-  | { type: 'message'; message: ChatMessage }
-  | { type: 'session_info'; info: SessionInfo }
-  | { type: 'tool_result'; toolCallId: string; output: any; isError: boolean }
-  | { type: 'adapter_result'; result: any; usage?: any }
-  | { type: 'adapter_event'; data: any }
-  | { type: 'session_updated'; session: any }
-  | { type: 'interaction_request'; id: string; payload: AskUserQuestionParams }
-  | { type: 'interaction_response'; id: string; data: string | string[] }
+
+export type WSEvent = SharedWSEvent<AdapterErrorData, SessionInfo, any, AskUserQuestionParams>

@@ -6,15 +6,11 @@ import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deleteBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
-import { updateConfigFile } from '@vibe-forge/core'
+import { updateConfigFile } from '@vibe-forge/config'
 
-vi.mock('@vibe-forge/core', async () => {
-  const actual = await vi.importActual<typeof import('@vibe-forge/core')>('@vibe-forge/core')
-  return {
-    ...actual,
-    updateConfigFile: vi.fn().mockResolvedValue(undefined)
-  }
-})
+vi.mock('@vibe-forge/config', () => ({
+  updateConfigFile: vi.fn().mockResolvedValue(undefined)
+}))
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()

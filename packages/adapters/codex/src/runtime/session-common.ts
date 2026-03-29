@@ -3,10 +3,9 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import type { ModelServiceConfig } from '@vibe-forge/core'
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
-import { createLogger } from '@vibe-forge/core/utils/create-logger'
+import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig  } from '@vibe-forge/types'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import { createLogger } from '@vibe-forge/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'

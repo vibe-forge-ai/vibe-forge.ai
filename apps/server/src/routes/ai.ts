@@ -3,8 +3,8 @@ import process from 'node:process'
 
 import Router from '@koa/router'
 
-import type { Definition, Entity, Rule, Spec } from '@vibe-forge/core/utils/definition-loader'
-import { DefinitionLoader } from '@vibe-forge/core/utils/definition-loader'
+import { DefinitionLoader } from '@vibe-forge/definition-loader'
+import type { Definition, Entity, Rule, Spec } from '@vibe-forge/types'
 
 import { badRequest, internalServerError, isHttpError, notFound } from '#~/utils/http.js'
 

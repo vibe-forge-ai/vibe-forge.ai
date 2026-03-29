@@ -14,7 +14,7 @@ import {
   startBenchmarkRun
 } from '#~/api.js'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
-import type { BenchmarkCase } from '@vibe-forge/core'
+import type { BenchmarkCase } from '@vibe-forge/types'
 
 import { BenchmarkCasePanel } from './BenchmarkCasePanel.js'
 import { BenchmarkSidebar } from './BenchmarkSidebar.js'

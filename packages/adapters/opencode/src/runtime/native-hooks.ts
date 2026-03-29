@@ -2,13 +2,13 @@ import { access, mkdir, readdir, rm, symlink, writeFile } from 'node:fs/promises
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
-import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import type { AdapterCtx } from '@vibe-forge/types'
 import {
   hasManagedHookPlugins,
   prepareManagedHookRuntime,
   resolveManagedHookScriptPath,
   writeJsonFile
-} from '@vibe-forge/core/hooks'
+} from '@vibe-forge/hooks'
 
 const MANAGED_PLUGIN_FILE_NAME = 'vibe-forge-hooks.js'
 const DEFAULT_OPENCODE_CONFIG = {

@@ -1,4 +1,4 @@
-import type { AdapterCtx, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterQueryOptions, AdapterSession } from '@vibe-forge/types'
 
 import { createDirectOpenCodeSession } from './session/direct'
 import { createStreamOpenCodeSession } from './session/stream'

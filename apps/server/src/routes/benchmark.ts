@@ -3,7 +3,6 @@ import process from 'node:process'
 
 import Router from '@koa/router'
 
-import type { BenchmarkRunSummary } from '@vibe-forge/core'
 import {
   getBenchmarkCase,
   listBenchmarkCases,
@@ -12,7 +11,8 @@ import {
   readBenchmarkResult,
   runBenchmarkCase,
   runBenchmarkCategory
-} from '@vibe-forge/core/controllers/benchmark'
+} from '@vibe-forge/app-runtime'
+import type { BenchmarkRunSummary } from '@vibe-forge/types'
 
 import { badRequest, notFound } from '#~/utils/http.js'
 

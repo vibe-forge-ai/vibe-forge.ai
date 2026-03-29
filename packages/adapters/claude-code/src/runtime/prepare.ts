@@ -1,5 +1,5 @@
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
 import { resolveAdapterCliPath } from '../ccr/paths'
 

@@ -1,4 +1,4 @@
-import type { AdapterBuiltinModel } from '@vibe-forge/core'
+import type { AdapterBuiltinModel } from '@vibe-forge/types'
 
 export const builtinModels: AdapterBuiltinModel[] = [
   {

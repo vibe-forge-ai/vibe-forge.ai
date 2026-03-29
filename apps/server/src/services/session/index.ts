@@ -2,9 +2,9 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 
 import { v4 as uuidv4 } from 'uuid'
 
+import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
 import type { ChatMessage, ChatMessageContent, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
-import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/core/adapter'
-import { generateAdapterQueryOptions, run } from '@vibe-forge/core/controllers/task'
+import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'

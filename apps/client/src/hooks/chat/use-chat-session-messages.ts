@@ -4,7 +4,8 @@ import { useSWRConfig } from 'swr'
 
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
-import type { AskUserQuestionParams, ChatMessage, Session, SessionInfo, WSEvent } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
+import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
 import type { PermissionMode } from './use-chat-permission-mode'
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {

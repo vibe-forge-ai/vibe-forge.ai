@@ -4,7 +4,8 @@ import { cwd as processCwd } from 'node:process'
 
 import pino from 'pino'
 
-import { loadEnv, resolveServerLogLevel } from '@vibe-forge/core'
+import { loadEnv } from '@vibe-forge/core'
+import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 
 const env = loadEnv()
 const logLevel = resolveServerLogLevel(env)

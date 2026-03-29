@@ -1,7 +1,7 @@
 export { default as chromeDevtools } from './hooks'
 
-declare module '@vibe-forge/core' {
-  interface PluginMap {
+declare module '@vibe-forge/types' {
+  interface HookPluginMap {
     'chrome-devtools': {}
   }
 }

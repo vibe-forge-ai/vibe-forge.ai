@@ -1,0 +1,303 @@
+import process from 'node:process'
+
+import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
+import { callHook } from '@vibe-forge/hooks'
+import { generateAdapterQueryOptions, run } from '@vibe-forge/task'
+import type { ChatMessage, McpTaskOutputEvent, McpTaskSession, SessionPermissionMode } from '@vibe-forge/types'
+import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
+
+import { fetchSessionMessages, postSessionEvent } from '#~/sync.js'
+
+interface ServerSyncState {
+  sessionId: string
+  lastEventIndex: number
+  lastAssistantMessageId?: string
+  seenMessageIds: Set<string>
+  poller?: NodeJS.Timeout
+}
+
+export interface TaskInfo {
+  taskId: string
+  adapter?: string
+  description: string
+  type?: 'default' | 'spec' | 'entity'
+  name?: string
+  permissionMode?: SessionPermissionMode
+  background?: boolean
+  status: 'running' | 'completed' | 'failed'
+  exitCode?: number
+  logs: string[]
+  session?: McpTaskSession
+  createdAt: number
+  onStop?: () => void
+  serverSync?: ServerSyncState
+}
+
+export class TaskManager {
+  private tasks: Map<string, TaskInfo> = new Map()
+
+  public async startTask(options: {
+    taskId: string
+    description: string
+    type?: 'default' | 'spec' | 'entity'
+    name?: string
+    permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+    adapter?: string
+    background?: boolean
+    enableServerSync?: boolean
+  }): Promise<{ taskId: string; logs?: string[] }> {
+    const { taskId, adapter, description, type, name, permissionMode, background = true, enableServerSync } = options
+
+    // Initialize Task Info
+    const taskInfo: TaskInfo = {
+      taskId,
+      adapter,
+      description,
+      type,
+      name,
+      permissionMode,
+      background,
+      status: 'running',
+      logs: [],
+      createdAt: Date.now()
+    }
+    if (enableServerSync) {
+      taskInfo.serverSync = {
+        sessionId: taskId,
+        lastEventIndex: 0,
+        seenMessageIds: new Set()
+      }
+    }
+    this.tasks.set(taskId, taskInfo)
+
+    try {
+      // Resolve Config
+      const promptType = type !== 'default' ? type : undefined
+      const promptName = name
+      const promptCWD = process.cwd()
+      const [data, resolvedConfig] = await generateAdapterQueryOptions(
+        promptType,
+        promptName,
+        promptCWD
+      )
+      const env = {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
+      }
+      await callHook('GenerateSystemPrompt', {
+        cwd: promptCWD,
+        sessionId: taskId,
+        type: promptType,
+        name: promptName,
+        data
+      }, env)
+
+      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(promptCWD)
+
+      // Start Task
+      const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? taskId
+      const { session } = await run({
+        adapter,
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          __VF_PROJECT_AI_CTX_ID__: ctxId
+        }
+      }, {
+        type: 'create',
+        runtime: 'mcp',
+        mode: 'stream',
+        sessionId: taskId,
+        systemPrompt: mergeSystemPrompts({
+          generatedSystemPrompt: resolvedConfig.systemPrompt,
+          injectDefaultSystemPrompt
+        }),
+        permissionMode,
+        tools: resolvedConfig.tools,
+        skills: resolvedConfig.skills,
+        mcpServers: resolvedConfig.mcpServers,
+        promptAssetIds: resolvedConfig.promptAssetIds,
+        onEvent: (event: McpTaskOutputEvent) => {
+          this.handleEvent(taskId, event)
+        }
+      })
+      // Store session for control
+      const task = this.tasks.get(taskId)
+      if (task) {
+        task.session = session
+        // Send initial prompt (description)
+        session.emit({
+          type: 'message',
+          content: [{ type: 'text', text: description }]
+        })
+        this.startServerPolling(taskId)
+      }
+
+      if (!background) {
+        // Wait for completion
+        await new Promise<void>((resolve) => {
+          const task = this.tasks.get(taskId)
+          if (!task) {
+            resolve()
+            return
+          }
+          // Check if already finished
+          if (task.status !== 'running') {
+            resolve()
+            return
+          }
+          // Register callback
+          task.onStop = resolve
+        })
+        return { taskId, logs: taskInfo.logs }
+      }
+    } catch (err) {
+      const task = this.tasks.get(taskId)
+      if (task) {
+        task.status = 'failed'
+        task.logs.push(`Failed to start task: ${err instanceof Error ? err.message : String(err)}`)
+        task.onStop?.()
+      }
+      throw err
+    }
+
+    return { taskId }
+  }
+
+  private handleEvent(taskId: string, event: McpTaskOutputEvent) {
+    const task = this.tasks.get(taskId)
+    if (!task) return
+
+    void this.syncEvent(task, event)
+
+    switch (event.type) {
+      case 'message': {
+        const message = event.data as ChatMessage
+        if (message?.id) {
+          task.serverSync?.seenMessageIds.add(message.id)
+        }
+        if (message?.role === 'assistant' && message.id) {
+          if (task.serverSync) {
+            task.serverSync.lastAssistantMessageId = message.id
+          }
+        }
+        const content = event.data.content
+        let text = ''
+        if (typeof content === 'string') {
+          text = content
+        } else if (Array.isArray(content)) {
+          text = content.map(c => c.type === 'text' ? c.text : '').join('')
+        }
+        if (text) {
+          task.logs.push(text)
+        }
+        break
+      }
+      case 'error': {
+        task.logs.push(event.data.message)
+        if (event.data.fatal !== false) {
+          task.status = 'failed'
+          this.stopServerPolling(taskId)
+          task.onStop?.()
+        }
+        break
+      }
+      case 'stop': {
+        if (task.status === 'failed') {
+          this.stopServerPolling(taskId)
+          task.onStop?.()
+          break
+        }
+        task.status = 'completed'
+        this.stopServerPolling(taskId)
+        task.onStop?.()
+        break
+      }
+      case 'exit':
+        task.status = event.data.exitCode === 0 ? 'completed' : 'failed'
+        task.exitCode = event.data.exitCode ?? undefined
+        task.logs.push(`Process exited with code ${event.data.exitCode}`)
+        this.stopServerPolling(taskId)
+        task.onStop?.()
+        break
+    }
+  }
+
+  private startServerPolling(taskId: string) {
+    const task = this.tasks.get(taskId)
+    if (!task?.serverSync) return
+    if (task.serverSync.poller) return
+
+    const poll = async () => {
+      const current = this.tasks.get(taskId)
+      if (!current?.serverSync || !current.session) return
+      try {
+        const events = await fetchSessionMessages(current.serverSync.sessionId)
+        const startIndex = current.serverSync.lastEventIndex
+        const newEvents = events.slice(startIndex)
+        current.serverSync.lastEventIndex = events.length
+
+        for (const ev of newEvents) {
+          if (ev.type !== 'message') continue
+          if (ev.message.role !== 'user') continue
+          if (ev.message.id && current.serverSync.seenMessageIds.has(ev.message.id)) {
+            continue
+          }
+          if (ev.message.id) {
+            current.serverSync.seenMessageIds.add(ev.message.id)
+          }
+          const text = extractTextFromMessage(ev.message).trim()
+          if (text === '') continue
+          current.session.emit({
+            type: 'message',
+            content: [{ type: 'text', text }],
+            parentUuid: current.serverSync.lastAssistantMessageId
+          })
+        }
+      } catch {}
+    }
+
+    task.serverSync.poller = setInterval(() => {
+      void poll()
+    }, 1000)
+    void poll()
+  }
+
+  private stopServerPolling(taskId: string) {
+    const task = this.tasks.get(taskId)
+    if (task?.serverSync?.poller) {
+      clearInterval(task.serverSync.poller)
+      task.serverSync.poller = undefined
+    }
+  }
+
+  private async syncEvent(task: TaskInfo, event: McpTaskOutputEvent) {
+    if (!task.serverSync) return
+    try {
+      await postSessionEvent(task.serverSync.sessionId, event as unknown as Record<string, unknown>)
+    } catch (err) {
+      task.logs.push(`Sync event failed: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  public getTask(taskId: string): TaskInfo | undefined {
+    return this.tasks.get(taskId)
+  }
+
+  public getAllTasks(): TaskInfo[] {
+    return Array.from(this.tasks.values())
+  }
+
+  public stopTask(taskId: string): boolean {
+    const task = this.tasks.get(taskId)
+    if (task && task.session) {
+      task.session.kill()
+      task.logs.push('Task stopped by user')
+      task.status = 'failed' // or 'stopped' if we had that status
+      this.stopServerPolling(taskId)
+      if (task.onStop) task.onStop()
+      return true
+    }
+    return false
+  }
+}

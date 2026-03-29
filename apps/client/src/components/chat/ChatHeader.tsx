@@ -1,6 +1,6 @@
 import './ChatHeader.scss'
 
-import type { SessionInfo } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
 import { App, Button, Dropdown, Radio } from 'antd'
 import type { MenuProps } from 'antd'
 import { useAtomValue } from 'jotai'

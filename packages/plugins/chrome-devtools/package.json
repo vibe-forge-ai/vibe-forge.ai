@@ -43,6 +43,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:*"
+    "@vibe-forge/core": "workspace:*",
+    "@vibe-forge/hooks": "workspace:*",
+    "@vibe-forge/types": "workspace:*"
   }
 }

@@ -1,6 +1,6 @@
 import './adapter-config'
 
-import { defineAdapter } from '@vibe-forge/core/adapter'
+import { defineAdapter } from '@vibe-forge/types'
 
 import { initOpenCodeAdapter } from './runtime/init'
 import { createOpenCodeSession } from './runtime/session'

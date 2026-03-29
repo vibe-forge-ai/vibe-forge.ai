@@ -24,20 +24,23 @@
   "bin": {
     "vibe-forge": "./cli.js",
     "vforge": "./cli.js",
-    "vf": "./cli.js",
-    "vf-call-hook": "./call-hook.js"
+    "vf": "./cli.js"
   },
   "scripts": {
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/cli/__tests__"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@vibe-forge/app-runtime": "workspace:^",
+    "@vibe-forge/cli-helper": "workspace:^",
+    "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.3",
-    "node-notifier": "^10.0.1",
-    "zod": "^3.24.1"
+    "node-notifier": "^10.0.1"
   },
   "devDependencies": {
     "@types/node-notifier": "^8.0.5"

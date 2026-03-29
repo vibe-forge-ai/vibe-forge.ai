@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
 import { prepareClaudeExecution } from '../src/runtime/prepare'
 

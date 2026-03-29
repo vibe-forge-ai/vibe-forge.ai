@@ -15,7 +15,7 @@ vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
 }))
 
-vi.mock('@vibe-forge/core/controllers/task', () => ({
+vi.mock('@vibe-forge/app-runtime', () => ({
   generateAdapterQueryOptions: mocks.generateAdapterQueryOptions,
   run: mocks.run
 }))

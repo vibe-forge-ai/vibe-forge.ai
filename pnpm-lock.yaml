@@ -58,6 +58,9 @@ importers:
       '@vibe-forge/server':
         specifier: workspace:*
         version: link:apps/server
+      '@vibe-forge/task':
+        specifier: workspace:*
+        version: link:packages/task
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -79,15 +82,30 @@ importers:
 
   apps/cli:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.25.3
-        version: 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@vibe-forge/app-runtime':
+        specifier: workspace:^
+        version: link:../../packages/app-runtime
+      '@vibe-forge/cli-helper':
+        specifier: workspace:^
+        version: link:../../packages/cli-helper
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../../packages/config
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../../packages/hooks
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../packages/types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -97,9 +115,6 @@ importers:
       node-notifier:
         specifier: ^10.0.1
         version: 10.0.1
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
     devDependencies:
       '@types/node-notifier':
         specifier: ^8.0.5
@@ -131,6 +146,12 @@ importers:
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../packages/types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
       '@vitejs/plugin-react':
         specifier: ^5.1.2
         version: 5.1.2(vite@5.4.21(@types/node@22.18.12)(sass@1.97.2))
@@ -207,15 +228,30 @@ importers:
       '@koa/router':
         specifier: ^12.0.0
         version: 12.0.2
+      '@vibe-forge/app-runtime':
+        specifier: workspace:^
+        version: link:../../packages/app-runtime
       '@vibe-forge/channel-lark':
         specifier: workspace:^
         version: link:../../packages/channels/lark
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../../packages/config
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/definition-loader':
+        specifier: workspace:^
+        version: link:../../packages/definition-loader
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../packages/types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
       better-sqlite3:
         specifier: ^12.6.0
         version: 12.6.0
@@ -283,6 +319,15 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../utils
 
   packages/adapters/codex:
     dependencies:
@@ -292,15 +337,66 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../utils
 
   packages/adapters/opencode:
     dependencies:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core
+      '@vibe-forge/definition-loader':
+        specifier: workspace:^
+        version: link:../../definition-loader
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../utils
       opencode-ai:
         specifier: 1.3.2
         version: 1.3.2
+
+  packages/app-runtime:
+    dependencies:
+      '@vibe-forge/benchmark':
+        specifier: workspace:^
+        version: link:../benchmark
+      '@vibe-forge/mcp':
+        specifier: workspace:^
+        version: link:../mcp
+      '@vibe-forge/task':
+        specifier: workspace:^
+        version: link:../task
+
+  packages/benchmark:
+    dependencies:
+      '@vibe-forge/task':
+        specifier: workspace:^
+        version: link:../task
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
+      front-matter:
+        specifier: ^4.0.2
+        version: 4.0.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/channels/lark:
     dependencies:
@@ -314,45 +410,127 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
-  packages/core:
+  packages/cli-helper:
     dependencies:
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../register
+
+  packages/config:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
+    devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+
+  packages/core:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
+  packages/definition-loader:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
       front-matter:
         specifier: ^4.0.2
         version: 4.0.2
-      js-yaml:
-        specifier: ^4.1.1
-        version: 4.1.1
-      node-notifier:
-        specifier: ^10.0.1
-        version: 10.0.1
+
+  packages/hooks:
+    dependencies:
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../config
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../register
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+    devDependencies:
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
+
+  packages/mcp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.25.3
+        version: 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@vibe-forge/cli-helper':
+        specifier: workspace:^
+        version: link:../cli-helper
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../config
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../hooks
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../register
+      '@vibe-forge/task':
+        specifier: workspace:^
+        version: link:../task
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       zod:
         specifier: ^3.24.1
         version: 3.25.76
-    devDependencies:
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      '@types/node-notifier':
-        specifier: ^8.0.5
-        version: 8.0.5
 
   packages/plugins/chrome-devtools:
     dependencies:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../core
+      '@vibe-forge/hooks':
+        specifier: workspace:*
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:*
+        version: link:../../types
 
   packages/plugins/logger:
     dependencies:
       '@vibe-forge/core':
         specifier: workspace:*
         version: link:../../core
+      '@vibe-forge/hooks':
+        specifier: workspace:*
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:*
+        version: link:../../types
 
   packages/register:
     dependencies:
@@ -363,7 +541,71 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0(esbuild@0.27.2)
 
+  packages/task:
+    dependencies:
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../config
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../hooks
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@vibe-forge/workspace-assets':
+        specifier: workspace:^
+        version: link:../workspace-assets
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
   packages/tsconfigs: {}
+
+  packages/types: {}
+
+  packages/utils:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      node-notifier:
+        specifier: ^10.0.1
+        version: 10.0.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/node-notifier':
+        specifier: ^8.0.5
+        version: 8.0.5
+
+  packages/workspace-assets:
+    dependencies:
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../config
+      '@vibe-forge/definition-loader':
+        specifier: workspace:^
+        version: link:../definition-loader
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
+    devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
 
 packages:
 
@@ -3313,10 +3555,6 @@ packages:
     resolution: {integrity: sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==, tarball: https://registry.npmjs.org/js-yaml/-/js-yaml-3.14.2.tgz}
     hasBin: true
 
-  js-yaml@4.1.0:
-    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==, tarball: https://registry.npmjs.org/js-yaml/-/js-yaml-4.1.0.tgz}
-    hasBin: true
-
   js-yaml@4.1.1:
     resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==, tarball: https://registry.npmjs.org/js-yaml/-/js-yaml-4.1.1.tgz}
     hasBin: true
@@ -5609,7 +5847,7 @@ snapshots:
       globals: 14.0.0
       ignore: 5.3.2
       import-fresh: 3.3.1
-      js-yaml: 4.1.0
+      js-yaml: 4.1.1
       minimatch: 3.1.2
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
@@ -6837,7 +7075,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.2
       on-finished: 2.4.1
-      qs: 6.14.1
+      qs: 6.15.0
       raw-body: 3.0.2
       type-is: 2.0.1
     transitivePeerDependencies:
@@ -7734,7 +7972,7 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.14.1
+      qs: 6.15.0
       range-parser: 1.2.1
       router: 2.2.0
       send: 1.2.1
@@ -8232,10 +8470,6 @@ snapshots:
     dependencies:
       argparse: 1.0.10
       esprima: 4.0.1
-
-  js-yaml@4.1.0:
-    dependencies:
-      argparse: 2.0.1
 
   js-yaml@4.1.1:
     dependencies:

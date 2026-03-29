@@ -53,6 +53,9 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "2.1.27",
     "@musistudio/claude-code-router": "1.0.43",
-    "@vibe-forge/core": "workspace:^"
+    "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/hooks": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^"
   }
 }

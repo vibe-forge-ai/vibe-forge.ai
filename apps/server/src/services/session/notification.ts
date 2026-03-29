@@ -1,5 +1,6 @@
-import type { Config, NotificationTrigger, Session, SessionStatus } from '@vibe-forge/core'
-import { systemController } from '@vibe-forge/core'
+import type { Session, SessionStatus } from '@vibe-forge/core'
+import type { Config, NotificationTrigger } from '@vibe-forge/types'
+import { notify } from '@vibe-forge/utils/system'
 
 import { loadMergedConfig } from '#~/services/config/index.js'
 
@@ -60,7 +61,7 @@ export async function maybeNotifySession(
   const sound = eventConfig?.sound
   const resolvedSound = typeof sound === 'string' && sound.trim() !== '' ? sound.trim() : undefined
 
-  await systemController.notify({
+  await notify({
     title,
     description,
     sound: resolvedSound,

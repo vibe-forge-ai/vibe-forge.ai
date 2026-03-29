@@ -1,7 +1,7 @@
 import Router from '@koa/router'
 
 import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
-import type { SessionInfo, SessionInitInfo } from '@vibe-forge/core/adapter'
+import type { SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'

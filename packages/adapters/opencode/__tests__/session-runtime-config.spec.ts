@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/core/adapter'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { createOpenCodeSession } from '#~/runtime/session.js'
 

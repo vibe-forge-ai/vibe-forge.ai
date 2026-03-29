@@ -1,4 +1,4 @@
-import type { ModelServiceConfig } from '@vibe-forge/core'
+import type { ModelServiceConfig } from '@vibe-forge/types'
 
 import { asPlainRecord, normalizeStringRecord } from './object-utils'
 

@@ -1,0 +1,33 @@
+{
+  "name": "@vibe-forge/app-runtime",
+  "version": "0.7.5",
+  "description": "App-facing runtime facade for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@vibe-forge/benchmark": "workspace:^",
+    "@vibe-forge/mcp": "workspace:^",
+    "@vibe-forge/task": "workspace:^"
+  }
+}

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/core/adapter'
+import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, AdapterSession } from '@vibe-forge/types'
 
 import { resolveOpenCodeBinaryPath } from '../../paths'
 import { buildOpenCodeRunArgs, buildOpenCodeSessionTitle, resolveOpenCodeAgent } from '../common'

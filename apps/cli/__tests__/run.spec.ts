@@ -7,6 +7,7 @@ import {
   getPrintableAssistantText,
   handlePrintEvent,
   registerRunCommand,
+  resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText
 } from '#~/commands/run.js'
@@ -49,6 +50,8 @@ describe('run command print output', () => {
   it('treats commander default values as no CLI override for negative boolean flags', () => {
     expect(resolveInjectDefaultSystemPromptOption(true, 'default')).toBeUndefined()
     expect(resolveInjectDefaultSystemPromptOption(false, 'cli')).toBe(false)
+    expect(resolveDefaultVibeForgeMcpServerOption(true, 'default')).toBeUndefined()
+    expect(resolveDefaultVibeForgeMcpServerOption(false, 'cli')).toBe(false)
   })
 
   it('defers process exit until the session handle is bound', () => {

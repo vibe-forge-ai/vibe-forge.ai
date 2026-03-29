@@ -1,0 +1,120 @@
+{
+  "name": "@vibe-forge/utils",
+  "version": "0.7.5",
+  "description": "Shared runtime utilities for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./cache": {
+      "__vibe-forge__": {
+        "default": "./src/cache.ts"
+      },
+      "default": {
+        "import": "./dist/cache.mjs",
+        "require": "./dist/cache.js"
+      }
+    },
+    "./create-logger": {
+      "__vibe-forge__": {
+        "default": "./src/create-logger.ts"
+      },
+      "default": {
+        "import": "./dist/create-logger.mjs",
+        "require": "./dist/create-logger.js"
+      }
+    },
+    "./chat-message": {
+      "__vibe-forge__": {
+        "default": "./src/chat-message.ts"
+      },
+      "default": {
+        "import": "./dist/chat-message.mjs",
+        "require": "./dist/chat-message.js"
+      }
+    },
+    "./document-path": {
+      "__vibe-forge__": {
+        "default": "./src/document-path.ts"
+      },
+      "default": {
+        "import": "./dist/document-path.mjs",
+        "require": "./dist/document-path.js"
+      }
+    },
+    "./log-level": {
+      "__vibe-forge__": {
+        "default": "./src/log-level.ts"
+      },
+      "default": {
+        "import": "./dist/log-level.mjs",
+        "require": "./dist/log-level.js"
+      }
+    },
+    "./model-selection": {
+      "__vibe-forge__": {
+        "default": "./src/model-selection.ts"
+      },
+      "default": {
+        "import": "./dist/model-selection.mjs",
+        "require": "./dist/model-selection.js"
+      }
+    },
+    "./string-transform": {
+      "__vibe-forge__": {
+        "default": "./src/string-transform.ts"
+      },
+      "default": {
+        "import": "./dist/string-transform.mjs",
+        "require": "./dist/string-transform.js"
+      }
+    },
+    "./system": {
+      "__vibe-forge__": {
+        "default": "./src/system.ts"
+      },
+      "default": {
+        "import": "./dist/system.mjs",
+        "require": "./dist/system.js"
+      }
+    },
+    "./uuid": {
+      "__vibe-forge__": {
+        "default": "./src/uuid.ts"
+      },
+      "default": {
+        "import": "./dist/uuid.mjs",
+        "require": "./dist/uuid.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/utils/__tests__"
+  },
+  "dependencies": {
+    "@vibe-forge/types": "workspace:^",
+    "node-notifier": "^10.0.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node-notifier": "^8.0.5"
+  }
+}

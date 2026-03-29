@@ -1,4 +1,4 @@
-import { definePlugin } from '@vibe-forge/core/hooks'
+import { definePlugin } from '@vibe-forge/hooks'
 
 const asRecord = (value: unknown): Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)

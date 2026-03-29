@@ -1,8 +1,8 @@
 import { cwd as processCwd, env as processEnv } from 'node:process'
 
-import type { Config } from '@vibe-forge/core'
-import { loadConfig } from '@vibe-forge/core'
-import { mergeAdapterConfigs } from '@vibe-forge/core/utils/model-selection'
+import { buildConfigJsonVariables as buildWorkspaceConfigJsonVariables, loadConfig } from '@vibe-forge/config'
+import type { Config } from '@vibe-forge/types'
+import { mergeAdapterConfigs } from '@vibe-forge/utils'
 
 export function getWorkspaceFolder() {
   return processEnv.__VF_PROJECT_WORKSPACE_FOLDER__ ?? processCwd()
@@ -11,11 +11,7 @@ export function getWorkspaceFolder() {
 export function buildConfigJsonVariables(
   workspaceFolder = getWorkspaceFolder()
 ): Record<string, string | null | undefined> {
-  return {
-    ...processEnv,
-    WORKSPACE_FOLDER: workspaceFolder,
-    __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder
-  }
+  return buildWorkspaceConfigJsonVariables(workspaceFolder, processEnv)
 }
 
 const mergeRecord = <T>(left?: Record<string, T>, right?: Record<string, T>) => {
@@ -52,7 +48,8 @@ export function mergeConfigs(project?: Config, user?: Config): Config {
 
 export async function loadConfigSources() {
   const workspaceFolder = getWorkspaceFolder()
-  const [projectConfig, userConfig] = await loadConfig({
+  const [projectConfig, userConfig] = await loadConfig<Config>({
+    cwd: workspaceFolder,
     jsonVariables: buildConfigJsonVariables(workspaceFolder)
   })
   return {

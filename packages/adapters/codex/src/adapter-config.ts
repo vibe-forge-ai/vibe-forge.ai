@@ -1,6 +1,6 @@
 export {}
 
-declare module '@vibe-forge/core' {
+declare module '@vibe-forge/types' {
   interface AdapterMap {
     'codex': {
       /**
@@ -61,7 +61,9 @@ declare module '@vibe-forge/core' {
       >
     }
   }
+}
 
+declare module '@vibe-forge/types' {
   interface Cache {
     'adapter.codex.threads': Record<string, string>
   }

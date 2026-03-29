@@ -4,7 +4,7 @@ import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
-import type { ConfigResponse } from '@vibe-forge/core'
+import type { ConfigResponse } from '@vibe-forge/types'
 
 const ADAPTER_STORAGE_KEY = 'vf_chat_adapter'
 

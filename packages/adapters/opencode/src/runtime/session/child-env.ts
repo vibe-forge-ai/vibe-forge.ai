@@ -2,9 +2,8 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import type { Config, ModelServiceConfig } from '@vibe-forge/core'
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/core/adapter'
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/core/hooks'
+import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig  } from '@vibe-forge/types'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord } from '../common/object-utils'

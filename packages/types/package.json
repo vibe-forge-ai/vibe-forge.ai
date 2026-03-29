@@ -1,0 +1,17 @@
+{
+  "name": "@vibe-forge/types",
+  "version": "0.7.5",
+  "description": "Shared types for Vibe Forge",
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  }
+}

@@ -1,6 +1,6 @@
 import './ConfigAboutSection.scss'
 
-import type { AboutInfo } from '@vibe-forge/core'
+import type { AboutInfo } from '@vibe-forge/types'
 import { useTranslation } from 'react-i18next'
 
 export const AboutSection = ({ value }: { value?: AboutInfo }) => {

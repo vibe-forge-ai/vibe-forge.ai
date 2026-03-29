@@ -3,8 +3,8 @@ import { resolve } from 'node:path'
 
 import Router from '@koa/router'
 
-import type { AdapterBuiltinModel, Config } from '@vibe-forge/core'
-import { updateConfigFile } from '@vibe-forge/core'
+import { updateConfigFile } from '@vibe-forge/config'
+import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
 
 import { getWorkspaceFolder, loadMergedConfig } from '#~/services/config/index.js'
 import { badRequest, internalServerError } from '#~/utils/http.js'

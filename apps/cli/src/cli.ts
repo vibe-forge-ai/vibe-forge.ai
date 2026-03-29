@@ -8,7 +8,6 @@ import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
-import { registerMcpCommand } from './commands/mcp'
 import { registerReportCommand } from './commands/report'
 import { registerRunCommand } from './commands/run'
 import { registerStopCommand } from './commands/stop'
@@ -22,7 +21,6 @@ program
 registerRunCommand(program)
 
 registerBenchmarkCommand(program)
-registerMcpCommand(program)
 registerClearCommand(program)
 registerListCommand(program)
 registerReportCommand(program)

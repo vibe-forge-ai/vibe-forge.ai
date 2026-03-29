@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { AboutInfo, ConfigResponse, ConfigSource } from '@vibe-forge/core'
+import type { ConfigSource } from '@vibe-forge/core'
+import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
 
 import { getApiErrorMessage, getConfig, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'

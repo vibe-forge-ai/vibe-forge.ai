@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
-import type { AdapterCtx } from '@vibe-forge/core/adapter'
+import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'

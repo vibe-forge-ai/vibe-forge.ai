@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
-import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/core'
+import type {
+  AdapterBuiltinModel,
+  ConfigResponse,
+  ModelServiceConfig,
+  RecommendedModelConfig
+} from '@vibe-forge/types'
 import {
   buildServiceModelSelector,
   listServiceModels,
