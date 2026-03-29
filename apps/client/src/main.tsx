@@ -1,5 +1,6 @@
 import 'devicon/devicon.min.css'
 
+import './styles/material-symbols-rounded.scss'
 import './styles/global.scss'
 import './i18n'
 
