@@ -1,0 +1,840 @@
+{
+  "bundle": {
+    "cwd": "<workspace>",
+    "enabledPlugins": {
+      "demo": true,
+      "legacy": false,
+      "logger": true,
+      "telemetry": true
+    },
+    "extraKnownMarketplaces": {
+      "internal": {
+        "source": {
+          "source": "git",
+          "url": "https://plugins.internal.example.com"
+        }
+      }
+    },
+    "defaultIncludeMcpServers": [
+      "browser",
+      "docs"
+    ],
+    "defaultExcludeMcpServers": [
+      "notes"
+    ],
+    "rules": [
+      {
+        "id": "rule:.ai/rules/review.md",
+        "kind": "rule",
+        "origin": "project",
+        "scope": "workspace",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "review",
+          "path": "<workspace>/.ai/rules/review.md",
+          "attributes": {
+            "always": true,
+            "description": "项目评审规则"
+          },
+          "body": "必须检查发布改动的回归风险。"
+        }
+      },
+      {
+        "id": "rule:.ai/plugins/demo/rules/security.md",
+        "kind": "rule",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "security",
+          "path": "<workspace>/.ai/plugins/demo/rules/security.md",
+          "attributes": {
+            "description": "插件安全规则"
+          },
+          "body": "上线前要检查权限与密钥暴露。"
+        }
+      }
+    ],
+    "specs": [
+      {
+        "id": "spec:.ai/specs/release/index.md",
+        "kind": "spec",
+        "origin": "project",
+        "scope": "workspace",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "release",
+          "path": "<workspace>/.ai/specs/release/index.md",
+          "attributes": {
+            "description": "正式发布流程",
+            "mcpServers": {
+              "exclude": [
+                "browser"
+              ],
+              "include": [
+                "docs",
+                "browser"
+              ]
+            },
+            "rules": [
+              ".ai/rules/review.md"
+            ],
+            "skills": [
+              "research"
+            ],
+            "tools": {
+              "include": [
+                "Read",
+                "Edit"
+              ]
+            }
+          },
+          "body": "执行正式发布，并整理变更摘要。"
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": "entity:.ai/entities/architect/README.md",
+        "kind": "entity",
+        "origin": "project",
+        "scope": "workspace",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "architect",
+          "path": "<workspace>/.ai/entities/architect/README.md",
+          "attributes": {
+            "description": "负责拆解方案的实体"
+          },
+          "body": "把发布任务拆解成执行步骤。"
+        }
+      }
+    ],
+    "skills": [
+      {
+        "id": "skill:.ai/skills/research/SKILL.md",
+        "kind": "skill",
+        "origin": "project",
+        "scope": "workspace",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "research",
+          "path": "<workspace>/.ai/skills/research/SKILL.md",
+          "attributes": {
+            "description": "检索资料"
+          },
+          "body": "先阅读 README.md，再补充结论。"
+        }
+      },
+      {
+        "id": "skill:.ai/plugins/demo/skills/audit/SKILL.md",
+        "kind": "skill",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "definition": {
+          "identifier": "audit",
+          "path": "<workspace>/.ai/plugins/demo/skills/audit/SKILL.md",
+          "attributes": {
+            "description": "审计输出"
+          },
+          "body": "检查最终输出是否覆盖风险项。"
+        }
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "mcpServer:.ai/plugins/demo/mcp/browser.json",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "name": "browser",
+        "config": {
+          "args": [
+            "browser-mcp"
+          ],
+          "command": "npx"
+        }
+      },
+      {
+        "id": "mcpServer:project:docs",
+        "origin": "config",
+        "scope": "project",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "name": "docs",
+        "config": {
+          "args": [
+            "docs-server"
+          ],
+          "command": "npx"
+        }
+      },
+      {
+        "id": "mcpServer:user:notes",
+        "origin": "config",
+        "scope": "user",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "name": "notes",
+        "config": {
+          "args": [
+            "tools/notes-mcp.js"
+          ],
+          "command": "node"
+        }
+      }
+    ],
+    "hookPlugins": [
+      {
+        "id": "hookPlugin:project:logger",
+        "origin": "config",
+        "scope": "project",
+        "pluginId": "logger",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "packageName": "logger",
+        "config": {
+          "level": "info"
+        }
+      },
+      {
+        "id": "hookPlugin:user:telemetry",
+        "origin": "config",
+        "scope": "user",
+        "pluginId": "telemetry",
+        "enabled": true,
+        "targets": [
+          "claude-code",
+          "codex",
+          "opencode"
+        ],
+        "packageName": "telemetry",
+        "config": {
+          "mode": "summary"
+        }
+      }
+    ],
+    "claudeNativePlugins": [
+      {
+        "id": "nativePlugin:claude-code:demo",
+        "kind": "nativePlugin",
+        "origin": "config",
+        "scope": "project",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "claude-code"
+        ],
+        "name": "demo"
+      },
+      {
+        "id": "nativePlugin:claude-code:legacy",
+        "kind": "nativePlugin",
+        "origin": "config",
+        "scope": "project",
+        "pluginId": "legacy",
+        "enabled": false,
+        "targets": [
+          "claude-code"
+        ],
+        "name": "legacy"
+      },
+      {
+        "id": "nativePlugin:claude-code:logger",
+        "kind": "nativePlugin",
+        "origin": "config",
+        "scope": "project",
+        "pluginId": "logger",
+        "enabled": true,
+        "targets": [
+          "claude-code"
+        ],
+        "name": "logger"
+      },
+      {
+        "id": "nativePlugin:claude-code:telemetry",
+        "kind": "nativePlugin",
+        "origin": "config",
+        "scope": "project",
+        "pluginId": "telemetry",
+        "enabled": true,
+        "targets": [
+          "claude-code"
+        ],
+        "name": "telemetry"
+      }
+    ],
+    "opencodeOverlayAssets": [
+      {
+        "id": "agent:.ai/plugins/demo/opencode/agents/release-helper.md",
+        "kind": "agent",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "opencode"
+        ],
+        "entryName": "release-helper.md",
+        "sourcePath": "<workspace>/.ai/plugins/demo/opencode/agents/release-helper.md",
+        "targetSubpath": "agents/release-helper.md"
+      },
+      {
+        "id": "command:.ai/plugins/demo/opencode/commands/review.md",
+        "kind": "command",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "opencode"
+        ],
+        "entryName": "review.md",
+        "sourcePath": "<workspace>/.ai/plugins/demo/opencode/commands/review.md",
+        "targetSubpath": "commands/review.md"
+      },
+      {
+        "id": "mode:.ai/plugins/demo/opencode/modes/strict.md",
+        "kind": "mode",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "opencode"
+        ],
+        "entryName": "strict.md",
+        "sourcePath": "<workspace>/.ai/plugins/demo/opencode/modes/strict.md",
+        "targetSubpath": "modes/strict.md"
+      },
+      {
+        "id": "nativePlugin:.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+        "kind": "nativePlugin",
+        "origin": "plugin",
+        "scope": "workspace",
+        "pluginId": "demo",
+        "enabled": true,
+        "targets": [
+          "opencode"
+        ],
+        "entryName": "demo-plugin.js",
+        "sourcePath": "<workspace>/.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+        "targetSubpath": "plugins/demo-plugin.js"
+      }
+    ]
+  },
+  "selection": {
+    "resolution": {
+      "rules": [
+        {
+          "identifier": "review",
+          "path": "<workspace>/.ai/rules/review.md",
+          "attributes": {
+            "always": true,
+            "description": "项目评审规则"
+          },
+          "body": "必须检查发布改动的回归风险。"
+        },
+        {
+          "identifier": "security",
+          "path": "<workspace>/.ai/plugins/demo/rules/security.md",
+          "attributes": {
+            "description": "插件安全规则"
+          },
+          "body": "上线前要检查权限与密钥暴露。"
+        },
+        {
+          "identifier": "review",
+          "path": "<workspace>/.ai/rules/review.md",
+          "attributes": {
+            "always": true,
+            "description": "项目评审规则"
+          },
+          "body": "必须检查发布改动的回归风险。"
+        }
+      ],
+      "targetSkills": [
+        {
+          "identifier": "research",
+          "path": "<workspace>/.ai/skills/research/SKILL.md",
+          "attributes": {
+            "description": "检索资料"
+          },
+          "body": "先阅读 README.md，再补充结论。"
+        }
+      ],
+      "entities": [
+        {
+          "identifier": "architect",
+          "path": "<workspace>/.ai/entities/architect/README.md",
+          "attributes": {
+            "description": "负责拆解方案的实体"
+          },
+          "body": "把发布任务拆解成执行步骤。"
+        }
+      ],
+      "skills": [
+        {
+          "identifier": "research",
+          "path": "<workspace>/.ai/skills/research/SKILL.md",
+          "attributes": {
+            "description": "检索资料"
+          },
+          "body": "先阅读 README.md，再补充结论。"
+        }
+      ],
+      "specs": [
+        {
+          "identifier": "release",
+          "path": "<workspace>/.ai/specs/release/index.md",
+          "attributes": {
+            "description": "正式发布流程",
+            "mcpServers": {
+              "exclude": [
+                "browser"
+              ],
+              "include": [
+                "docs",
+                "browser"
+              ]
+            },
+            "rules": [
+              ".ai/rules/review.md"
+            ],
+            "skills": [
+              "research"
+            ],
+            "tools": {
+              "include": [
+                "Read",
+                "Edit"
+              ]
+            }
+          },
+          "body": "执行正式发布，并整理变更摘要。"
+        }
+      ],
+      "targetBody": "执行正式发布，并整理变更摘要。",
+      "promptAssetIds": [
+        "entity:.ai/entities/architect/README.md",
+        "rule:.ai/plugins/demo/rules/security.md",
+        "rule:.ai/rules/review.md",
+        "skill:.ai/skills/research/SKILL.md",
+        "spec:.ai/specs/release/index.md"
+      ]
+    },
+    "options": {
+      "systemPrompt": "<system-prompt>\n项目系统规则如下：\n  - review：项目评审规则\n<rule-content>\n必须检查发布改动的回归风险。\n</rule-content>\n--------------------\n\n  - security：插件安全规则\n--------------------\n\n  - review：项目评审规则\n<rule-content>\n必须检查发布改动的回归风险。\n</rule-content>\n--------------------\n\n</system-prompt>\n\n\n技能相关信息如下，通过阅读以下内容了解技能的详细信息：\n- 技能名称：research\n- 技能介绍：检索资料\n- 技能文件资源路径：.ai/skills/research\n- 资源内容：\n<skill-content>\n先阅读 README.md，再补充结论。\n</skill-content>\n资源内容中的文件路径相对「技能文件资源路径」路径，通过读取相关工具按照实际需要进行阅读。\n\n\n\n\n<system-prompt>\n项目存在如下实体：\n  - architect：负责拆解方案的实体\n\n解决用户问题时，需根据用户需求可以通过 run-tasks 工具指定为实体后，自行调度多个不同类型的实体来完成工作。\n</system-prompt>\n\n\n<skills>\n  - research：检索资料\n\n</skills>\n\n\n<system-prompt>\n你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n\n- 永远不要单独完成代码开发工作\n- 必须要协调其他的开发人员来完成任务\n- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n\n根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 `load-spec` mcp tool 完成工作流程的加载。\n- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n- 通过参数的描述以及实际应用场景决定怎么传入参数\n项目存在如下工作流程：\n- 流程名称：release\n  - 介绍：正式发布流程\n  - 标识：release\n  - 参数：\n    - 无\n\n</system-prompt>\n\n\n执行正式发布，并整理变更摘要。",
+      "tools": {
+        "include": [
+          "Edit",
+          "Read"
+        ]
+      },
+      "mcpServers": {
+        "include": [
+          "browser",
+          "docs"
+        ],
+        "exclude": [
+          "browser"
+        ]
+      },
+      "promptAssetIds": [
+        "entity:.ai/entities/architect/README.md",
+        "rule:.ai/plugins/demo/rules/security.md",
+        "rule:.ai/rules/review.md",
+        "skill:.ai/skills/research/SKILL.md",
+        "spec:.ai/specs/release/index.md"
+      ]
+    }
+  },
+  "plans": {
+    "claude-code": {
+      "adapter": "claude-code",
+      "mcpServers": {
+        "docs": {
+          "args": [
+            "docs-server"
+          ],
+          "command": "npx"
+        }
+      },
+      "overlays": [],
+      "native": {
+        "enabledPlugins": {
+          "demo": true,
+          "legacy": false,
+          "logger": true,
+          "telemetry": true
+        },
+        "extraKnownMarketplaces": {
+          "internal": {
+            "source": {
+              "source": "git",
+              "url": "https://plugins.internal.example.com"
+            }
+          }
+        }
+      },
+      "diagnostics": [
+        {
+          "assetId": "entity:.ai/entities/architect/README.md",
+          "adapter": "claude-code",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "hookPlugin:project:logger",
+          "adapter": "claude-code",
+          "status": "native",
+          "reason": "Mapped into the isolated Claude Code native hooks bridge under .ai/.mock/.claude/settings.json."
+        },
+        {
+          "assetId": "hookPlugin:user:telemetry",
+          "adapter": "claude-code",
+          "status": "native",
+          "reason": "Mapped into the isolated Claude Code native hooks bridge under .ai/.mock/.claude/settings.json."
+        },
+        {
+          "assetId": "mcpServer:project:docs",
+          "adapter": "claude-code",
+          "status": "native",
+          "reason": "Mapped into native MCP settings."
+        },
+        {
+          "assetId": "rule:.ai/plugins/demo/rules/security.md",
+          "adapter": "claude-code",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "rule:.ai/rules/review.md",
+          "adapter": "claude-code",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "skill:.ai/skills/research/SKILL.md",
+          "adapter": "claude-code",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "spec:.ai/specs/release/index.md",
+          "adapter": "claude-code",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        }
+      ]
+    },
+    "codex": {
+      "adapter": "codex",
+      "mcpServers": {
+        "docs": {
+          "args": [
+            "docs-server"
+          ],
+          "command": "npx"
+        }
+      },
+      "overlays": [],
+      "native": {
+        "codexHooks": {
+          "supportedEvents": [
+            "SessionStart",
+            "UserPromptSubmit",
+            "PreToolUse",
+            "PostToolUse",
+            "Stop"
+          ]
+        }
+      },
+      "diagnostics": [
+        {
+          "assetId": "agent:.ai/plugins/demo/opencode/agents/release-helper.md",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "No stable native Codex mapping exists for this asset kind in V1."
+        },
+        {
+          "assetId": "command:.ai/plugins/demo/opencode/commands/review.md",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "No stable native Codex mapping exists for this asset kind in V1."
+        },
+        {
+          "assetId": "entity:.ai/entities/architect/README.md",
+          "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "hookPlugin:project:logger",
+          "adapter": "codex",
+          "status": "native",
+          "reason": "Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop."
+        },
+        {
+          "assetId": "hookPlugin:user:telemetry",
+          "adapter": "codex",
+          "status": "native",
+          "reason": "Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop."
+        },
+        {
+          "assetId": "mcpServer:project:docs",
+          "adapter": "codex",
+          "status": "translated",
+          "reason": "Translated into adapter-specific MCP configuration."
+        },
+        {
+          "assetId": "mode:.ai/plugins/demo/opencode/modes/strict.md",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "No stable native Codex mapping exists for this asset kind in V1."
+        },
+        {
+          "assetId": "nativePlugin:.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "No stable native Codex mapping exists for this asset kind in V1."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:demo",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:logger",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:telemetry",
+          "adapter": "codex",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "rule:.ai/plugins/demo/rules/security.md",
+          "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "rule:.ai/rules/review.md",
+          "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "skill:.ai/skills/research/SKILL.md",
+          "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "spec:.ai/specs/release/index.md",
+          "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        }
+      ]
+    },
+    "opencode": {
+      "adapter": "opencode",
+      "mcpServers": {
+        "docs": {
+          "args": [
+            "docs-server"
+          ],
+          "command": "npx"
+        }
+      },
+      "overlays": [
+        {
+          "assetId": "agent:.ai/plugins/demo/opencode/agents/release-helper.md",
+          "kind": "agent",
+          "sourcePath": "<workspace>/.ai/plugins/demo/opencode/agents/release-helper.md",
+          "targetPath": "agents/release-helper.md"
+        },
+        {
+          "assetId": "command:.ai/plugins/demo/opencode/commands/review.md",
+          "kind": "command",
+          "sourcePath": "<workspace>/.ai/plugins/demo/opencode/commands/review.md",
+          "targetPath": "commands/review.md"
+        },
+        {
+          "assetId": "mode:.ai/plugins/demo/opencode/modes/strict.md",
+          "kind": "mode",
+          "sourcePath": "<workspace>/.ai/plugins/demo/opencode/modes/strict.md",
+          "targetPath": "modes/strict.md"
+        },
+        {
+          "assetId": "nativePlugin:.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+          "kind": "nativePlugin",
+          "sourcePath": "<workspace>/.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+          "targetPath": "plugins/demo-plugin.js"
+        },
+        {
+          "assetId": "skill:.ai/skills/research/SKILL.md",
+          "kind": "skill",
+          "sourcePath": "<workspace>/.ai/skills/research",
+          "targetPath": "skills/research"
+        }
+      ],
+      "native": {},
+      "diagnostics": [
+        {
+          "assetId": "agent:.ai/plugins/demo/opencode/agents/release-helper.md",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset."
+        },
+        {
+          "assetId": "command:.ai/plugins/demo/opencode/commands/review.md",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset."
+        },
+        {
+          "assetId": "entity:.ai/entities/architect/README.md",
+          "adapter": "opencode",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "hookPlugin:project:logger",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins."
+        },
+        {
+          "assetId": "hookPlugin:user:telemetry",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins."
+        },
+        {
+          "assetId": "mcpServer:project:docs",
+          "adapter": "opencode",
+          "status": "translated",
+          "reason": "Translated into adapter-specific MCP configuration."
+        },
+        {
+          "assetId": "mode:.ai/plugins/demo/opencode/modes/strict.md",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset."
+        },
+        {
+          "assetId": "nativePlugin:.ai/plugins/demo/opencode/plugins/demo-plugin.js",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:demo",
+          "adapter": "opencode",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:logger",
+          "adapter": "opencode",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "nativePlugin:claude-code:telemetry",
+          "adapter": "opencode",
+          "status": "skipped",
+          "reason": "Claude marketplace plugin settings do not have a native mapping for this adapter."
+        },
+        {
+          "assetId": "rule:.ai/plugins/demo/rules/security.md",
+          "adapter": "opencode",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "rule:.ai/rules/review.md",
+          "adapter": "opencode",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "skill:.ai/skills/research/SKILL.md",
+          "adapter": "opencode",
+          "status": "native",
+          "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native skill."
+        },
+        {
+          "assetId": "skill:.ai/skills/research/SKILL.md",
+          "adapter": "opencode",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "spec:.ai/specs/release/index.md",
+          "adapter": "opencode",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        }
+      ]
+    }
+  }
+}

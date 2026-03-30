@@ -17,7 +17,11 @@
   - `resolvePromptAssetSelection()`
 - `src/adapter-asset-plan.ts`
   - `buildAdapterAssetPlan()`
-- `__tests__/workspace-assets.spec.ts`
+- `__tests__/bundle.spec.ts`
+- `__tests__/prompt-selection.spec.ts`
+- `__tests__/adapter-asset-plan.spec.ts`
+- `__tests__/workspace-assets.snapshot.spec.ts`
+- `__tests__/__snapshots__/workspace-assets-rich.snapshot.json`
 
 ## 当前边界
 
@@ -35,4 +39,5 @@
 - 只维护 workspace asset 领域逻辑；定义文档读取留在 `@vibe-forge/definition-loader`，cache 留在 `@vibe-forge/utils`。
 - 文档路径规范化与命名规则复用 `@vibe-forge/utils/document-path`，不要在本包重复维护。
 - 共享 contract 继续依赖 `@vibe-forge/types`，不要把 task / hooks / mcp 逻辑反向塞进来。
-- 新增 asset 类型、prompt 选择规则或 adapter 投影时，先补 `__tests__/workspace-assets.spec.ts`。
+- 新增 asset 类型、prompt 选择规则或 adapter 投影时，优先补对应职责下的 spec 文件，不要继续把单测堆回一个综合 spec。
+- 影响 bundle / prompt selection / adapter plan 整体投影时，同步检查 `workspace-assets-rich.snapshot.json`；必要时用 `pnpm -C packages/workspace-assets test -- --update` 更新快照。
