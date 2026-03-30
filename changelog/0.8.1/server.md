@@ -1,23 +1,17 @@
-# 0.8.1
+# @vibe-forge/server 0.8.1
 
 发布日期：2026-03-30
 
 ## 发布范围
 
-- 发布 `@vibe-forge/client@0.8.1`
 - 发布 `@vibe-forge/server@0.8.1`
 
 ## 主要变更
 
-- 将 Client 中 Material Symbols Rounded 图标字体从 Google Fonts 远端依赖切换为本地资源
-- 移除 `fonts.googleapis.com` / `fonts.gstatic.com` 的运行时加载，降低外网依赖
-- 保持现有 Material Symbols 变量字体能力，继续支持 `FILL` 等图标样式切换
 - 将 Server 侧 SQLite 访问从 `better-sqlite3` 迁移到 Node.js 官方 `node:sqlite`
 - 移除 `better-sqlite3` 原生依赖，降低安装和编译门槛
 - 补充 Server DB 连接、事务与 schema 迁移相关测试，覆盖迁移后的主要回归面
 
 ## 兼容性说明
 
-- Client 无接口变更
-- 对离线环境、受限网络环境和自托管部署更友好
 - Server 运行环境需使用支持 `node:sqlite` 的 Node.js 22.5+
