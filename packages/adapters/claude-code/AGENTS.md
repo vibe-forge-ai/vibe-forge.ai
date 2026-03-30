@@ -50,18 +50,37 @@
 - CLI hook bridge 只负责把入口分发到 adapter / hooks runtime
 - hooks runtime 负责插件执行与日志，task runtime 负责 native/bridge 去重
 
-## 当前维护约定
+## 维护经验
 
-- `./hook-bridge` 包导出直接落到 `src/hooks/bridge.ts`，不要再额外引入根级透传文件占位。
-- `serviceKey,modelName` 形式的模型通过 `src/ccr/daemon.ts` 复用 `.ai/.mock/.claude-code-router` 后台进程；普通 Claude 模型保持直连。
-- 升级外部依赖时：
+### 1. 优先让导出直接指向真实实现
+
+- 原则：如果包导出可以直接落到真实实现文件，就不要为了“路径好看”再增加一层只做转发的空壳文件。
+- 这样做的好处：
+  - 减少无意义的兼容层，避免后续维护时遗漏真实入口。
+  - `npm pack --dry-run`、子路径导出检查和源码检索都更直接。
+- 本包里的例子：
+  - `./hook-bridge` 直接指向 `src/hooks/bridge.ts`，不再保留根级透传文件。
+  - Claude 协议类型统一收口在 `src/protocol/types.ts`，不再散放在根目录。
+
+### 2. 后台基础设施优先复用，不要按调用包一层壳
+
+- 原则：如果某个后台组件本身已经有稳定的配置、pid 和健康检查机制，优先复用常驻进程，而不是在每次调用时再套一层启动包装。
+- 这样做的好处：
+  - 更容易控制启动时机、配置变更和重启条件。
+  - 更容易把“业务会话”和“后台基础设施”拆开维护。
+- 本包里的例子：
+  - `serviceKey,modelName` 模型通过 `src/ccr/daemon.ts` 复用 `.ai/.mock/.claude-code-router` 后台进程。
+  - Claude 会话本身始终直接启动 `claude`，router 参数通过 session settings 注入，而不是继续依赖 `ccr code` 包装层。
+
+### 3. 依赖升级要按角色区分激进度
+
+- 原则：不要对所有外部依赖一律“跟最新”。核心上游 CLI、兼容层、路由层的升级策略应按维护风险分别制定。
+- 这样做的好处：
+  - 避免把高频变化但低兼容风险的依赖，和维护信号较弱的桥接依赖绑成同一升级节奏。
+  - 出问题时更容易判断是上游 CLI 变化，还是中间层兼容问题。
+- 本包里的例子：
   - `@anthropic-ai/claude-code` 默认跟进最新稳定版。
-  - `@musistudio/claude-code-router` 默认保持在最新 `1.x`，除非已经确认 `2.x` 具备明确维护信号且需要其新能力。
-- `@vibe-forge/adapter-claude-code` 单包发布时，优先按以下顺序执行：
-  - 跑 `packages/adapters/claude-code/__tests__`
-  - 执行 `npm pack --dry-run`
-  - 用 `pnpm tools publish-plan -- --package @vibe-forge/adapter-claude-code --json` 确认计划
-  - 发布记录写到 `changelog/<version>/adapter-claude-code.md`
+  - `@musistudio/claude-code-router` 默认保持在最新 `1.x`，除非已经确认 `2.x` 有明确维护信号且当前需求必须依赖其新能力。
 
 ## 真实 CLI 验证
 

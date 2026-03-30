@@ -28,3 +28,8 @@ Release tag 约定：
 - 单包发布使用 `pkg/<normalized-package-name>/v<version>`
   - `normalized-package-name` 规则：去掉包名中的 `@`，并将 `/` 替换为 `-`
   - 例如 `@vibe-forge/server@0.8.1` 使用 tag `pkg/vibe-forge-server/v0.8.1`
+
+单包发布记录补充约定：
+
+- 如果单包发布包含外部依赖升级，变更摘要里应明确写出关键依赖的目标版本。
+- 如果单包发布包含导出路径、打包入口、后台运行方式之类的包装层调整，兼容性说明里应明确写出用户可见影响。
