@@ -2,7 +2,7 @@ import type { Session, SessionStatus } from '@vibe-forge/core'
 import type { Config, NotificationTrigger } from '@vibe-forge/types'
 import { notify } from '@vibe-forge/utils/system'
 
-import { loadMergedConfig } from '#~/services/config/index.js'
+import { loadConfigState } from '#~/services/config/index.js'
 
 const toNotificationTrigger = (status: SessionStatus): NotificationTrigger | undefined => {
   if (status === 'completed' || status === 'failed' || status === 'terminated' || status === 'waiting_input') {
@@ -43,7 +43,7 @@ export async function maybeNotifySession(
   const notificationTrigger = toNotificationTrigger(nextStatus)
   if (notificationTrigger == null) return
 
-  const { mergedConfig } = await loadMergedConfig()
+  const { mergedConfig } = await loadConfigState()
   const { notifications, interfaceLanguage } = mergedConfig
 
   if (notifications?.disabled === true) return

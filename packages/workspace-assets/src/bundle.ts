@@ -1,21 +1,14 @@
 import process from 'node:process'
 
 import {
-  buildConfigJsonVariables,
   DEFAULT_VIBE_FORGE_MCP_SERVER_NAME,
+  buildConfigJsonVariables,
   loadConfig,
   resolveDefaultVibeForgeMcpServerConfig
 } from '@vibe-forge/config'
 import { DefinitionLoader } from '@vibe-forge/definition-loader'
-import type {
-  Config,
-  WorkspaceAsset,
-  WorkspaceAssetBundle
-} from '@vibe-forge/types'
-import {
-  resolveDocumentName,
-  resolveSpecIdentifier
-} from '@vibe-forge/utils'
+import type { Config, WorkspaceAsset, WorkspaceAssetBundle } from '@vibe-forge/types'
+import { resolveDocumentName, resolveSpecIdentifier } from '@vibe-forge/utils'
 
 import {
   createDocumentAsset,
@@ -33,7 +26,7 @@ import {
 } from './plugin-assets'
 
 const readConfigForWorkspace = async (cwd: string) => {
-  return loadConfig<Config>({
+  return loadConfig({
     cwd,
     jsonVariables: buildConfigJsonVariables(cwd, process.env)
   })

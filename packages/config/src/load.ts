@@ -1,15 +1,35 @@
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
+import type { Config } from '@vibe-forge/types'
 import { load } from 'js-yaml'
+
+import { mergeConfigs } from './merge'
 
 export interface LoadConfigOptions {
   cwd?: string
   jsonVariables?: Record<string, string | null | undefined>
   disableDevConfig?: boolean
 }
+
+interface ConfigWithExtend {
+  extend?: string | string[]
+}
+
+const CONFIG_FILE_EXTENSIONS = new Set([
+  '.json',
+  '.yaml',
+  '.yml'
+])
+
+const PACKAGE_DEFAULT_CONFIG_FILES = [
+  '.ai.config.json',
+  '.ai.config.yaml',
+  '.ai.config.yml'
+]
 
 const serializeJsonVariables = (value: Record<string, string | null | undefined>) => (
   JSON.stringify(
@@ -27,6 +47,23 @@ const resolveConfigCacheKey = (options: LoadConfigOptions) => {
 
 const resolveConfigPath = (cwd: string, filePath: string) => resolve(cwd, filePath)
 
+const isExistingFilePath = (filePath: string) => {
+  if (!existsSync(filePath)) return false
+
+  try {
+    return statSync(filePath).isFile()
+  } catch {
+    return false
+  }
+}
+
+const replaceJsonVariables = (
+  content: string,
+  jsonVariables: Record<string, string | null | undefined>
+) => (
+  content.replace(/\$\{(\w+)\}/g, (_, key) => jsonVariables[key] ?? `$\{${key}}`)
+)
+
 export const buildConfigJsonVariables = (
   cwd: string,
   env: Record<string, string | null | undefined> = process.env
@@ -36,25 +73,190 @@ export const buildConfigJsonVariables = (
   __VF_PROJECT_WORKSPACE_FOLDER__: cwd
 })
 
-const loadJSConfig = async <TConfig>(
-  cwd: string,
-  paths: string[]
-) => {
-  for (const path of paths) {
-    try {
-      const configPath = resolveConfigPath(cwd, path)
-      if (!existsSync(configPath)) {
-        continue
-      }
-      // eslint-disable-next-line ts/no-require-imports
-      return (require(configPath)?.default ?? {}) as TConfig
-    } catch (e) {
-      console.error(`Failed to load config file ${path}: ${e}`)
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null &&
+  typeof value === 'object' &&
+  !Array.isArray(value)
+)
+
+const toExtendPaths = (value: unknown) => {
+  if (typeof value === 'string' && value.trim() !== '') {
+    return [value.trim()]
+  }
+
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+    .map(item => item.trim())
+}
+
+const omitExtendField = (value: Config) => {
+  const { extend: _extend, ...rest } = value as Config & ConfigWithExtend
+  return rest as Config
+}
+
+const resolveExtendCandidates = (configPath: string, extendPath: string) => {
+  const resolvedPath = resolve(dirname(configPath), extendPath)
+  if (extname(resolvedPath) !== '') return [resolvedPath]
+
+  return [
+    resolvedPath,
+    `${resolvedPath}.json`,
+    `${resolvedPath}.yaml`,
+    `${resolvedPath}.yml`
+  ]
+}
+
+const parsePackageSpecifier = (specifier: string) => {
+  if (
+    specifier.trim() === '' ||
+    specifier.startsWith('.') ||
+    specifier.startsWith('/') ||
+    /^[a-z]:[\\/]/i.test(specifier)
+  ) {
+    return undefined
+  }
+
+  const segments = specifier.split('/')
+  if (segments.length === 0) return undefined
+
+  if (specifier.startsWith('@')) {
+    const [scope, name, ...rest] = segments
+    if (!scope || !name) return undefined
+
+    return {
+      packageName: `${scope}/${name}`,
+      subpath: rest.length > 0 ? rest.join('/') : undefined
     }
+  }
+
+  const [name, ...rest] = segments
+  if (!name) return undefined
+
+  return {
+    packageName: name,
+    subpath: rest.length > 0 ? rest.join('/') : undefined
   }
 }
 
-const loadJSONConfig = async <TConfig>(
+const resolveConfigCandidatesFromBasePath = (basePath: string) => (
+  extname(basePath) !== ''
+    ? [basePath]
+    : [
+      basePath,
+      `${basePath}.json`,
+      `${basePath}.yaml`,
+      `${basePath}.yml`
+    ]
+)
+
+const resolveDependencyExtendPath = (configPath: string, extendPath: string) => {
+  const resolver = createRequire(configPath)
+
+  try {
+    const directResolvedPath = resolver.resolve(extendPath)
+    if (
+      isExistingFilePath(directResolvedPath) &&
+      CONFIG_FILE_EXTENSIONS.has(extname(directResolvedPath).toLowerCase())
+    ) {
+      return directResolvedPath
+    }
+  } catch {}
+
+  const parsed = parsePackageSpecifier(extendPath)
+  if (parsed == null) return undefined
+
+  try {
+    const packageJsonPath = resolver.resolve(`${parsed.packageName}/package.json`)
+    const packageRoot = dirname(packageJsonPath)
+
+    if (parsed.subpath == null) {
+      return PACKAGE_DEFAULT_CONFIG_FILES
+        .map(fileName => resolve(packageRoot, fileName))
+        .find(candidate => isExistingFilePath(candidate))
+    }
+
+    return resolveConfigCandidatesFromBasePath(resolve(packageRoot, parsed.subpath))
+      .find(candidate => isExistingFilePath(candidate))
+  } catch {
+    return undefined
+  }
+}
+
+const resolveExistingExtendPath = (configPath: string, extendPath: string) => (
+  resolveExtendCandidates(configPath, extendPath)
+    .find(candidate => isExistingFilePath(candidate)) ??
+    resolveDependencyExtendPath(configPath, extendPath)
+)
+
+const readConfigFile = async (
+  configPath: string,
+  jsonVariables: Record<string, string | null | undefined>
+) => {
+  const configContent = await readFile(configPath, 'utf-8')
+  const configResolvedContent = replaceJsonVariables(configContent, jsonVariables)
+  const extension = extname(configPath).toLowerCase()
+
+  if (extension === '.json') {
+    return JSON.parse(configResolvedContent) as unknown
+  }
+
+  if (extension === '.yaml' || extension === '.yml') {
+    return load(configResolvedContent) as unknown
+  }
+
+  throw new Error(`Unsupported config file extension "${extension || '<none>'}"`)
+}
+
+const loadResolvedConfigFile = async (
+  configPath: string,
+  jsonVariables: Record<string, string | null | undefined>,
+  loadingStack: Set<string>
+): Promise<Config> => {
+  if (loadingStack.has(configPath)) {
+    throw new Error(`Circular config extend detected: ${
+      [
+        ...loadingStack,
+        configPath
+      ].join(' -> ')
+    }`)
+  }
+
+  const rawConfig = await readConfigFile(
+    configPath,
+    jsonVariables
+  ) as Config & ConfigWithExtend
+
+  if (!isRecord(rawConfig)) {
+    throw new Error(`Config file "${configPath}" must resolve to an object`)
+  }
+
+  const nextLoadingStack = new Set(loadingStack)
+  nextLoadingStack.add(configPath)
+
+  let mergedExtendedConfig: Config | undefined
+  for (const extendPath of toExtendPaths(rawConfig.extend)) {
+    const extendedConfigPath = resolveExistingExtendPath(configPath, extendPath)
+    if (extendedConfigPath == null) {
+      throw new Error(`Extended config "${extendPath}" not found from "${configPath}"`)
+    }
+
+    const extendedConfig = await loadResolvedConfigFile(
+      extendedConfigPath,
+      jsonVariables,
+      nextLoadingStack
+    )
+    mergedExtendedConfig = mergeConfigs(mergedExtendedConfig, extendedConfig)
+  }
+
+  return mergeConfigs(
+    mergedExtendedConfig,
+    omitExtendField(rawConfig)
+  ) ?? omitExtendField(rawConfig)
+}
+
+const loadConfigFromPaths = async (
   cwd: string,
   paths: string[],
   jsonVariables: Record<string, string | null | undefined>
@@ -62,34 +264,15 @@ const loadJSONConfig = async <TConfig>(
   for (const path of paths) {
     try {
       const configPath = resolveConfigPath(cwd, path)
-      if (!existsSync(configPath)) {
+      if (!isExistingFilePath(configPath)) {
         continue
       }
-      const configContent = await readFile(configPath, 'utf-8')
-      const configResolvedContent = configContent
-        .replace(/\$\{(\w+)\}/g, (_, key) => jsonVariables[key] ?? `$\{${key}}`)
-      return JSON.parse(configResolvedContent) as TConfig
-    } catch (e) {
-      console.error(`Failed to load config file ${path}: ${e}`)
-    }
-  }
-}
 
-const loadYAMLConfig = async <TConfig>(
-  cwd: string,
-  paths: string[],
-  jsonVariables: Record<string, string | null | undefined>
-) => {
-  for (const path of paths) {
-    try {
-      const configPath = resolveConfigPath(cwd, path)
-      if (!existsSync(configPath)) {
-        continue
-      }
-      const configContent = await readFile(configPath, 'utf-8')
-      const configResolvedContent = configContent
-        .replace(/\$\{(\w+)\}/g, (_, key) => jsonVariables[key] ?? `$\{${key}}`)
-      return load(configResolvedContent) as TConfig
+      return await loadResolvedConfigFile(
+        configPath,
+        jsonVariables,
+        new Set()
+      )
     } catch (e) {
       console.error(`Failed to load config file ${path}: ${e}`)
     }
@@ -112,75 +295,59 @@ export const resetConfigCache = (cwd?: string) => {
   }
 }
 
-export const loadConfig = <TConfig = Record<string, unknown>>(
-  options: LoadConfigOptions = {}
-) => {
+export const loadConfig = (options: LoadConfigOptions = {}) => {
   const cacheKey = resolveConfigCacheKey(options)
   const cachedConfig = configCache.get(cacheKey)
   if (cachedConfig != null) {
-    return cachedConfig as Promise<readonly [TConfig | undefined, TConfig | undefined]>
+    return cachedConfig as Promise<readonly [Config | undefined, Config | undefined]>
   }
 
   const cwd = options.cwd ?? process.cwd()
-  const shouldLoadDevConfig = (
-    options.disableDevConfig !== true &&
+  const shouldLoadDevConfig = options.disableDevConfig !== true &&
     process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
-  )
 
   const nextConfig = (async () =>
     [
-      await loadJSONConfig<TConfig>(
+      await loadConfigFromPaths(
         cwd,
         [
           './.ai.config.json',
-          './infra/.ai.config.json'
+          './infra/.ai.config.json',
+          './.ai.config.yaml',
+          './.ai.config.yml',
+          './infra/.ai.config.yaml',
+          './infra/.ai.config.yml'
         ],
         options.jsonVariables ?? {}
-      ) ??
-        await loadYAMLConfig<TConfig>(
-          cwd,
-          [
-            './.ai.config.yaml',
-            './.ai.config.yml',
-            './infra/.ai.config.yaml',
-            './infra/.ai.config.yml'
-          ],
-          options.jsonVariables ?? {}
-        ),
+      ),
       shouldLoadDevConfig
-        ? await loadJSONConfig<TConfig>(
+        ? await loadConfigFromPaths(
           cwd,
           [
             './.ai.dev.config.json',
-            './infra/.ai.dev.config.json'
+            './infra/.ai.dev.config.json',
+            './.ai.dev.config.yaml',
+            './.ai.dev.config.yml',
+            './infra/.ai.dev.config.yaml',
+            './infra/.ai.dev.config.yml'
           ],
           options.jsonVariables ?? {}
-        ) ??
-          await loadYAMLConfig<TConfig>(
-            cwd,
-            [
-              './.ai.dev.config.yaml',
-              './.ai.dev.config.yml',
-              './infra/.ai.dev.config.yaml',
-              './infra/.ai.dev.config.yml'
-            ],
-            options.jsonVariables ?? {}
-          )
+        )
         : undefined
     ] as const)()
   configCache.set(cacheKey, nextConfig)
   return nextConfig
 }
 
-export const loadAdapterConfig = async <TAdapterConfig = unknown>(
+export const loadAdapterConfig = async (
   name: string,
   options: LoadConfigOptions = {}
 ) => {
-  const [projectConfig, userConfig] = await loadConfig<{
-    adapters?: Record<string, TAdapterConfig>
-  }>(options)
+  const [projectConfig, userConfig] = await loadConfig(options)
+  const projectAdapters = projectConfig?.adapters as Record<string, unknown> | undefined
+  const userAdapters = userConfig?.adapters as Record<string, unknown> | undefined
   return {
-    ...(projectConfig?.adapters?.[name] ?? {}),
-    ...(userConfig?.adapters?.[name] ?? {})
-  } as TAdapterConfig
+    ...(projectAdapters?.[name] as Record<string, unknown> | undefined ?? {}),
+    ...(userAdapters?.[name] as Record<string, unknown> | undefined ?? {})
+  } as Record<string, unknown>
 }

@@ -6,7 +6,7 @@ import Router from '@koa/router'
 import { updateConfigFile } from '@vibe-forge/config'
 import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
 
-import { getWorkspaceFolder, loadMergedConfig } from '#~/services/config/index.js'
+import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
 import { badRequest, internalServerError } from '#~/utils/http.js'
 
 const sanitize = (value: unknown): unknown => {
@@ -117,7 +117,7 @@ export function configRouter(): Router {
 
   router.get('/', async (ctx) => {
     try {
-      const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadMergedConfig()
+      const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadConfigState()
       const urls = {
         repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
         docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',

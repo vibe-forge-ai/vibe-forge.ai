@@ -10,9 +10,11 @@ export interface AdapterConfigCommon {
 
 export type AdapterConfigEntry<T> = T & AdapterConfigCommon
 
-export type AdapterConfigMap = Partial<{
-  [K in keyof AdapterMap]: AdapterConfigEntry<AdapterMap[K]>
-}>
+export type AdapterConfigMap = Partial<
+  {
+    [K in keyof AdapterMap]: AdapterConfigEntry<AdapterMap[K]>
+  }
+>
 
 export interface AdapterBuiltinModel {
   value: string
@@ -62,6 +64,7 @@ export interface NotificationConfig {
 }
 
 export interface Config {
+  extend?: string | string[]
   baseDir?: string
   adapters?: AdapterConfigMap
   models?: Record<string, ModelMetadataConfig>

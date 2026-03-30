@@ -415,6 +415,9 @@ importers:
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1

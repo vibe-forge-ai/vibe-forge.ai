@@ -21,7 +21,7 @@ export async function loadInjectDefaultSystemPromptValue(
 ) {
   if (cliValue != null) return cliValue
 
-  const [projectConfig, userConfig] = await loadConfig<Config>({
+  const [projectConfig, userConfig] = await loadConfig({
     cwd,
     jsonVariables: buildConfigJsonVariables(cwd, process.env)
   })

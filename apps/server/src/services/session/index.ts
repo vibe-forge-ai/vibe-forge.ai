@@ -8,7 +8,7 @@ import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
-import { loadMergedConfig } from '#~/services/config/index.js'
+import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
 import {
@@ -116,7 +116,7 @@ export async function startAdapterSession(
       : [resolvedConfig.systemPrompt, options.systemPrompt]
         .filter(Boolean)
         .join('\n\n')
-    const { mergedConfig } = await loadMergedConfig().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
+    const { mergedConfig } = await loadConfigState().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
     const { modelLanguage } = mergedConfig
     const languagePrompt = modelLanguage == null
       ? undefined

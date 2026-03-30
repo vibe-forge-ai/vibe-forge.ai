@@ -7,7 +7,7 @@ import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
-  loadMergedConfig: vi.fn(),
+  loadConfigState: vi.fn(),
   handleChannelSessionEvent: vi.fn()
 }))
 
@@ -25,7 +25,7 @@ vi.mock('#~/channels/index.js', () => ({
 }))
 
 vi.mock('#~/services/config/index.js', () => ({
-  loadMergedConfig: mocks.loadMergedConfig
+  loadConfigState: mocks.loadConfigState
 }))
 
 vi.mock('#~/services/session/notification.js', () => ({
@@ -96,7 +96,7 @@ describe('startAdapterSession', () => {
         mcpServers: undefined
       }
     ])
-    mocks.loadMergedConfig.mockResolvedValue({ mergedConfig: {} })
+    mocks.loadConfigState.mockResolvedValue({ mergedConfig: {} })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
   })
 

@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {

@@ -1,16 +1,12 @@
 import process from 'node:process'
 
-import {
-  buildConfigJsonVariables,
-  loadConfig,
-  resolveUseDefaultVibeForgeMcpServer
-} from '@vibe-forge/config'
-import type { AdapterCtx, AdapterQueryOptions, Config  } from '@vibe-forge/types'
-import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
+import { buildConfigJsonVariables, loadConfig, resolveUseDefaultVibeForgeMcpServer } from '@vibe-forge/config'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { getCache, setCache } from '@vibe-forge/utils/cache'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 import { uuid } from '@vibe-forge/utils/uuid'
+import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
 import type { RunTaskOptions } from '#~/type.js'
 
@@ -51,7 +47,7 @@ export const prepare = async (
   )
 
   const jsonVariables = buildConfigJsonVariables(cwd, env)
-  const [config, userConfig] = await loadConfig<Config>({ cwd, jsonVariables })
+  const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
   const assets = await resolveWorkspaceAssetBundle({
     cwd,
     configs: [config, userConfig],

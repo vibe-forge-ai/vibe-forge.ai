@@ -6,14 +6,9 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 import { transformCamelKey } from '@vibe-forge/utils/string-transform'
 
-import type { HookContext, Plugin, PluginConfig } from './context'
+import type { HookContext, Plugin } from './context'
 import { resolvePlugins } from './loader'
 import type { HookInput, HookInputs, HookOutputCore, HookOutputs } from './type'
-
-interface HookRuntimeConfig {
-  plugins?: PluginConfig
-  enabledPlugins?: Record<string, boolean>
-}
 
 export const callPluginHook = async <K extends keyof HookInputs>(
   eventName: K,
@@ -103,7 +98,7 @@ export const executeHookInput = async (
 
   resetConfigCache(workspaceFolder)
   const jsonVariables = buildConfigJsonVariables(workspaceFolder, env)
-  const [config, userConfig] = await loadConfig<HookRuntimeConfig>({
+  const [config, userConfig] = await loadConfig({
     cwd: workspaceFolder,
     jsonVariables
   })

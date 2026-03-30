@@ -29,16 +29,16 @@
   - `${ENV_VAR}` 变量替换
   - workspace 级缓存与 cache reset
   - `defineConfig()` typed helper
+  - project/user/extend config merge 策略
   - 默认 system prompt 开关解析与合并策略
   - 默认内建 MCP 开关与 package 解析
 - 本包不负责：
   - `Config` 业务 schema 定义本身
-  - project/user config merge 策略
   - adapter / hook / server 的消费语义
 
 ## 维护约定
 
-- 保持 loader 泛型化；不要为了某个消费方把 `core`、`hooks` 或 `server` 的 schema 直接引进来。
+- `loadConfig()` 返回共享 `Config`；不要再给 loader 加消费方专用泛型。
 - `defineConfig()` / system prompt helper 只消费共享 `Config` 类型，不在这里重新定义 schema。
-- merge 逻辑放在消费方，不要在这里偷偷塞业务规则；`updateConfigFile()` 只处理配置文件持久化和受控字段更新。
+- merge 逻辑集中在 config 包内维护；`updateConfigFile()` 只处理配置文件持久化和受控字段更新。
 - 新增环境变量替换、默认 system prompt 规则或缓存规则时，先补 `__tests__/*`。

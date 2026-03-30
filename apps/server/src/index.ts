@@ -5,7 +5,7 @@ import Koa from 'koa'
 
 import { loadEnv } from '@vibe-forge/core'
 
-import { loadConfigSources } from '#~/services/config/index.js'
+import { loadConfigState } from '#~/services/config/index.js'
 
 import { initChannels } from './channels'
 import { initMiddlewares } from './middlewares'
@@ -21,7 +21,7 @@ async function init() {
   const server = http.createServer((req, res) => {
     void handler(req, res)
   })
-  const { projectConfig, userConfig } = await loadConfigSources()
+  const { projectConfig, userConfig } = await loadConfigState()
   const configs = [projectConfig, userConfig] as const
 
   return { app, env, server, configs }
