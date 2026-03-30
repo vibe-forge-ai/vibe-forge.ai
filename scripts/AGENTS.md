@@ -17,6 +17,16 @@
   - 更新对应 case 的 file snapshot
 - `pnpm tools publish-plan -- [args]`
   - 透传到 `scripts/publish-plan-core.mjs`
+  - 先用于确认发布范围和顺序，不要把它当成自动决定“哪些包应该发布”的唯一依据
+
+## publish-plan 使用备注
+
+- `publish-plan` 负责基于显式包选择和内部依赖生成发布顺序。
+- 是否应该发布某个包，先看该包自上次版本更新以来是否有运行时代码或发布元数据变更。
+- 纯测试、snapshot、AGENTS、普通文档改动通常不应触发该包发布，也不应据此扩大依赖闭包。
+- 传入 `--bump` 时，即使没有 `--publish`，脚本也会直接修改目标包的 `package.json` 版本号。
+- 所以只做计划试算时，优先先跑不带 `--bump` 的命令；若必须带 `--bump`，确保工作区干净，或准备好丢弃试算改动。
+- 单包发布完成后，tag 需要额外按 `pkg/<normalized-package-name>/v<version>` 规则补齐；整体发布继续使用 `v<version>`。
 
 ## adapter-e2e 结构
 
