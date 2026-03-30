@@ -63,6 +63,8 @@ npx vitest run <path>
 - 用 `npm view <pkg> version` 确认 registry 当前版本，避免重复发已存在版本。
 - 用 `npm whoami` 确认当前 npm 登录态。
 - 在目标包目录执行 `npm pack --dry-run` 检查最终打包内容。
+- 如果是单包发布且包含外部依赖升级或发布元数据调整，记得同步提交根 `pnpm-lock.yaml`。
+- 如果包存在子路径导出，`npm pack --dry-run` 时要确认导出目标的真实文件已经进入 tarball；不要依赖额外的空壳透传文件占位。
 
 发布后的记录约定：
 
