@@ -82,6 +82,16 @@
   - `@anthropic-ai/claude-code` 默认跟进最新稳定版。
   - `@musistudio/claude-code-router` 默认保持在最新 `1.x`，除非已经确认 `2.x` 有明确维护信号且当前需求必须依赖其新能力。
 
+### 4. 主会话 binary 不能依赖系统 PATH
+
+- 原则：Claude 主会话和 CCR 都应该从 adapter 自己的依赖树解析可执行文件，不要把主会话写成裸 `claude` 然后依赖系统 `PATH`。
+- 这样做的好处：
+  - 避免命中全局安装、其他工作区或旧版本包里的 Claude binary。
+  - 排查 `Invalid API key`、`Please run /login` 这类看起来像鉴权问题、实则是“跑错 binary”的场景时，定位更直接。
+- 本包里的例子：
+  - `src/ccr/paths.ts` 统一负责从依赖包 `package.json/bin` 解析 `claude` 和 `ccr`。
+  - `src/claude/prepare.ts` 返回给 session 的 `cliPath` 应始终来自 `resolveClaudeCliPath()`，不要回退成系统 `PATH` 上的裸命令。
+
 ## 真实 CLI 验证
 
 不要只看 unit test。至少跑一轮真实 Claude Code：
