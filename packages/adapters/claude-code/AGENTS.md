@@ -50,6 +50,19 @@
 - CLI hook bridge 只负责把入口分发到 adapter / hooks runtime
 - hooks runtime 负责插件执行与日志，task runtime 负责 native/bridge 去重
 
+## 当前维护约定
+
+- `./hook-bridge` 包导出直接落到 `src/hooks/bridge.ts`，不要再额外引入根级透传文件占位。
+- `serviceKey,modelName` 形式的模型通过 `src/ccr/daemon.ts` 复用 `.ai/.mock/.claude-code-router` 后台进程；普通 Claude 模型保持直连。
+- 升级外部依赖时：
+  - `@anthropic-ai/claude-code` 默认跟进最新稳定版。
+  - `@musistudio/claude-code-router` 默认保持在最新 `1.x`，除非已经确认 `2.x` 具备明确维护信号且需要其新能力。
+- `@vibe-forge/adapter-claude-code` 单包发布时，优先按以下顺序执行：
+  - 跑 `packages/adapters/claude-code/__tests__`
+  - 执行 `npm pack --dry-run`
+  - 用 `pnpm tools publish-plan -- --package @vibe-forge/adapter-claude-code --json` 确认计划
+  - 发布记录写到 `changelog/<version>/adapter-claude-code.md`
+
 ## 真实 CLI 验证
 
 不要只看 unit test。至少跑一轮真实 Claude Code：

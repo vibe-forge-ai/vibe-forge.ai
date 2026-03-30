@@ -71,6 +71,7 @@ npx vitest run <path>
 - 整体发布 tag 使用 `v<version>`。
 - 单包发布 tag 使用 `pkg/<normalized-package-name>/v<version>`。
 - `normalized-package-name` 规则见 `changelog/AGENTS.md`。
+- 如果本次发布暴露出新的稳定经验或踩坑结论，发布完成后应同步更新对应包的 `AGENTS.md` 或本手册，避免下次重复确认同一决策。
 
 ## 项目规范
 
