@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { automationSchemaModule } from '../../src/db/automation/schema'
@@ -6,9 +5,11 @@ import { channelSessionsSchemaModule } from '../../src/db/channelSessions/schema
 import { initSchema } from '../../src/db/schema'
 import type { SchemaModule } from '../../src/db/schema'
 import { sessionsSchemaModule } from '../../src/db/sessions/schema'
+import { createSqliteDatabase } from '../../src/db/sqlite'
+import type { SqliteDatabase } from '../../src/db/sqlite'
 
 describe('db schema modules', () => {
-  let sqlite: Database.Database | undefined
+  let sqlite: SqliteDatabase | undefined
 
   afterEach(() => {
     sqlite?.close()
@@ -16,7 +17,7 @@ describe('db schema modules', () => {
   })
 
   it('supports injected schema modules', () => {
-    sqlite = new Database(':memory:')
+    sqlite = createSqliteDatabase(':memory:')
     const customSchemaModule: SchemaModule = {
       name: 'custom',
       apply({ exec }) {
@@ -33,7 +34,7 @@ describe('db schema modules', () => {
   })
 
   it('migrates missing columns in domain schema modules', () => {
-    sqlite = new Database(':memory:')
+    sqlite = createSqliteDatabase(':memory:')
     sqlite.exec(`
       CREATE TABLE sessions (
         id TEXT PRIMARY KEY,

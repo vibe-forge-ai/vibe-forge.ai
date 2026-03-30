@@ -3,10 +3,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { env as processEnv } from 'node:process'
 
-import Database from 'better-sqlite3'
+import { createSqliteDatabase } from './sqlite'
+import type { SqliteDatabase } from './sqlite'
 
 export interface DbConnection {
-  db: Database.Database
+  db: SqliteDatabase
   dbPath: string
 }
 
@@ -32,6 +33,6 @@ export function createConnection(): DbConnection {
 
   return {
     dbPath,
-    db: new Database(dbPath)
+    db: createSqliteDatabase(dbPath)
   }
 }

@@ -1,6 +1,6 @@
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from '../sqlite'
 
-export function createTagsRepo(db: Database.Database) {
+export function createTagsRepo(db: SqliteDatabase) {
   const replace = (sessionId: string, tags: string[]) => {
     const transaction = db.transaction(() => {
       db.prepare('DELETE FROM session_tags WHERE sessionId = ?').run(sessionId)

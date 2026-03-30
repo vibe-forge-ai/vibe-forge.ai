@@ -1,5 +1,6 @@
 import type { SessionPermissionMode } from '@vibe-forge/core'
-import type Database from 'better-sqlite3'
+
+import type { SqliteDatabase } from '../sqlite'
 
 export interface ChannelSessionRow {
   channelType: string
@@ -24,7 +25,7 @@ export interface ChannelPreferenceRow {
   updatedAt: number
 }
 
-export function createChannelSessionsRepo(db: Database.Database) {
+export function createChannelSessionsRepo(db: SqliteDatabase) {
   const get = (
     channelType: string,
     sessionType: string,

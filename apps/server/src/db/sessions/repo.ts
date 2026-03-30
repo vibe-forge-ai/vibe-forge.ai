@@ -1,9 +1,9 @@
-import type Database from 'better-sqlite3'
 import { v4 as uuidv4 } from 'uuid'
 
 import type { Session } from '@vibe-forge/core'
 
 import { buildUpdateStatement } from '../repo.utils'
+import type { SqliteDatabase } from '../sqlite'
 
 interface SessionRow {
   id: string
@@ -65,7 +65,7 @@ function mapSessionRow(row: SessionRow): Session {
   }
 }
 
-export function createSessionsRepo(db: Database.Database) {
+export function createSessionsRepo(db: SqliteDatabase) {
   const list = (filter: 'active' | 'archived' | 'all' = 'active'): Session[] => {
     let whereClause = ''
     if (filter === 'active') {
@@ -140,7 +140,13 @@ export function createSessionsRepo(db: Database.Database) {
     const stmt = db.prepare(
       'INSERT INTO sessions (id, parentSessionId, title, createdAt, status) VALUES (?, ?, ?, ?, ?)'
     )
-    stmt.run(session.id, session.parentSessionId ?? null, session.title, session.createdAt, session.status)
+    stmt.run(
+      session.id,
+      session.parentSessionId ?? null,
+      session.title ?? null,
+      session.createdAt,
+      session.status ?? null
+    )
     return session
   }
 

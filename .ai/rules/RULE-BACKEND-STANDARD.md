@@ -13,7 +13,7 @@ globs: apps/server/src/**/*, apps/cli/src/**/*
 ## 数据处理 (Server)
 
 - 使用 `src/db/index.ts` 导出的 `getDb()` 获取数据库实例。
-- 数据持久化基于 `better-sqlite3`。
+- 数据持久化基于 Node.js 内置的 `node:sqlite`。
 - 所有的 SQL 操作应在对应的 Repo 中封装，避免在 Router 中直接编写 SQL。
 - Schema 初始化必须通过 `src/db/schema.ts` 提供的注入式编排器完成；每个领域的建表和迁移单独维护在 `src/db/*.schema.ts`。
 - 复杂的业务逻辑应从路由处理函数中提取。

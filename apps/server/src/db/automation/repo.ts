@@ -1,7 +1,7 @@
-import type Database from 'better-sqlite3'
 import { v4 as uuidv4 } from 'uuid'
 
 import { buildUpdateStatement } from '../repo.utils'
+import type { SqliteDatabase } from '../sqlite'
 
 export interface AutomationRule {
   id: string
@@ -148,7 +148,7 @@ function mapAutomationTaskRow(row: AutomationTaskRow): AutomationTask {
   }
 }
 
-export function createAutomationRepo(db: Database.Database) {
+export function createAutomationRepo(db: SqliteDatabase) {
   const listRules = (): AutomationRule[] => {
     const stmt = db.prepare('SELECT * FROM automation_rules ORDER BY createdAt DESC')
     const rows = stmt.all() as AutomationRuleRow[]

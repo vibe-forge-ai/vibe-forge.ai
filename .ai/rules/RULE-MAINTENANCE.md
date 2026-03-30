@@ -58,5 +58,5 @@
 ## 注意事项
 
 - **持久化**: 数据库文件默认存储在 `~/.vf/db.sqlite`，可以使用标准的 SQLite 客户端进行查看和维护。
-- **原生依赖**: `better-sqlite3` 是原生依赖，安装时需确保环境具备编译能力。在 `pnpm` 模式下已通过 `onlyBuiltDependencies` 进行配置。
+- **SQLite 运行时**: Server 侧数据库已切换为 Node.js 内置的 `node:sqlite`，运行环境需使用支持该模块的 Node.js 22.5+。
 - **类型安全**: 共享类型建议在各自目录的 `types.ts` 中定义，保持前后端接口定义一致。

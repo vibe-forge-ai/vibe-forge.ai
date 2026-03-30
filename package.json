@@ -49,8 +49,7 @@
       "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest"
     },
     "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "better-sqlite3"
+      "@parcel/watcher"
     ]
   }
 }

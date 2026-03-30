@@ -1,7 +1,7 @@
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from './sqlite'
 
 export interface SchemaContext {
-  db: Database.Database
+  db: SqliteDatabase
   exec: (sql: string) => void
   getColumns: (tableName: string) => string[]
   ensureColumn: (tableName: string, columnName: string, definition: string) => void
@@ -12,7 +12,7 @@ export interface SchemaModule {
   apply: (context: SchemaContext) => void
 }
 
-function createSchemaContext(db: Database.Database): SchemaContext {
+function createSchemaContext(db: SqliteDatabase): SchemaContext {
   const getColumns = (tableName: string) => {
     const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>
     return rows.map(row => row.name)
@@ -33,7 +33,7 @@ function createSchemaContext(db: Database.Database): SchemaContext {
   }
 }
 
-export function initSchema(db: Database.Database, modules: readonly SchemaModule[]) {
+export function initSchema(db: SqliteDatabase, modules: readonly SchemaModule[]) {
   const context = createSchemaContext(db)
   for (const module of modules) {
     module.apply(context)

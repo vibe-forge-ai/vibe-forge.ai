@@ -1,5 +1,3 @@
-import type Database from 'better-sqlite3'
-
 import { createAutomationRepo } from './automation/repo'
 import type {
   AutomationRule,
@@ -18,15 +16,16 @@ import { createMessagesRepo } from './sessions/messages.repo'
 import { createSessionsRepo } from './sessions/repo'
 import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
+import type { SqliteDatabase } from './sqlite'
 
 const dbSchemaModules = [sessionsSchemaModule, channelSessionsSchemaModule, automationSchemaModule] as const
 
 export interface SqliteDbOptions {
-  db?: Database.Database
+  db?: SqliteDatabase
 }
 
 export class SqliteDb {
-  private db: Database.Database
+  private db: SqliteDatabase
   private sessions: ReturnType<typeof createSessionsRepo>
   private messages: ReturnType<typeof createMessagesRepo>
   private channelSessions: ReturnType<typeof createChannelSessionsRepo>

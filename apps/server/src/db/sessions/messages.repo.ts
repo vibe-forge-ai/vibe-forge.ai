@@ -1,8 +1,8 @@
-import type Database from 'better-sqlite3'
-
 import { safeJsonStringify } from '#~/utils/json.js'
 
-export function createMessagesRepo(db: Database.Database) {
+import type { SqliteDatabase } from '../sqlite'
+
+export function createMessagesRepo(db: SqliteDatabase) {
   const save = (sessionId: string, data: unknown) => {
     const stmt = db.prepare('INSERT INTO messages (sessionId, data, createdAt) VALUES (?, ?, ?)')
     stmt.run(sessionId, safeJsonStringify(data), Date.now())

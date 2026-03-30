@@ -27,7 +27,6 @@
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
-    "better-sqlite3": "^12.6.0",
     "cron-parser": "^4.9.0",
     "koa": "^2.15.0",
     "koa-bodyparser": "^4.3.0",
@@ -38,7 +37,6 @@
     "ws": "^8.17.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/koa": "^3.0.1",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-send": "^4.1.5",

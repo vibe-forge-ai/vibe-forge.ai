@@ -1,16 +1,17 @@
-import Database from 'better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SqliteDb } from '#~/db/index.js'
+import { createSqliteDatabase } from '#~/db/sqlite.js'
+import type { SqliteDatabase } from '#~/db/sqlite.js'
 
 describe('sqliteDb', () => {
-  let sqlite: Database.Database
+  let sqlite: SqliteDatabase
   let db: SqliteDb
 
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-03-18T00:00:00.000Z'))
-    sqlite = new Database(':memory:')
+    sqlite = createSqliteDatabase(':memory:')
     db = new SqliteDb({ db: sqlite })
   })
 
@@ -169,5 +170,142 @@ describe('sqliteDb', () => {
       lastRunAt: 123,
       lastSessionId: 'session-root'
     })
+  })
+
+  it('replaces automation triggers and tasks atomically and exposes rule details with runs', () => {
+    db.createAutomationRule({
+      id: 'rule-1',
+      name: 'Nightly run',
+      description: null,
+      type: 'cron',
+      intervalMs: null,
+      webhookKey: null,
+      cronExpression: '0 0 * * *',
+      prompt: 'do work',
+      enabled: true,
+      createdAt: Date.now(),
+      lastRunAt: null,
+      lastSessionId: null
+    })
+
+    db.replaceAutomationTriggers('rule-1', [
+      {
+        id: 'trigger-1',
+        type: 'cron',
+        cronExpression: '0 0 * * *'
+      }
+    ])
+    db.replaceAutomationTasks('rule-1', [
+      {
+        id: 'task-1',
+        title: 'Task A',
+        prompt: 'Summarize activity'
+      }
+    ])
+
+    db.createSession('Automation run', 'session-run', 'completed')
+    db.updateSessionLastMessages('session-run', 'assistant summary', 'user request')
+    db.createAutomationRun('rule-1', 'session-run', 'task-1', 'Task A')
+
+    expect(db.getAutomationRuleDetail('rule-1')).toEqual({
+      id: 'rule-1',
+      name: 'Nightly run',
+      description: null,
+      type: 'cron',
+      intervalMs: null,
+      webhookKey: null,
+      cronExpression: '0 0 * * *',
+      prompt: 'do work',
+      enabled: true,
+      createdAt: Date.now(),
+      lastRunAt: null,
+      lastSessionId: null,
+      triggers: [
+        {
+          id: 'trigger-1',
+          ruleId: 'rule-1',
+          type: 'cron',
+          intervalMs: null,
+          cronExpression: '0 0 * * *',
+          webhookKey: null,
+          createdAt: Date.now()
+        }
+      ],
+      tasks: [
+        {
+          id: 'task-1',
+          ruleId: 'rule-1',
+          title: 'Task A',
+          prompt: 'Summarize activity',
+          createdAt: Date.now()
+        }
+      ]
+    })
+    expect(db.listAutomationRuns('rule-1')).toEqual([
+      {
+        id: expect.any(String),
+        ruleId: 'rule-1',
+        sessionId: 'session-run',
+        runAt: Date.now(),
+        taskId: 'task-1',
+        taskTitle: 'Task A',
+        status: 'completed',
+        title: 'Automation run',
+        lastMessage: 'assistant summary',
+        lastUserMessage: 'user request'
+      }
+    ])
+  })
+
+  it('rolls back trigger replacement when a later insert fails', () => {
+    db.createAutomationRule({
+      id: 'rule-1',
+      name: 'Nightly run',
+      description: null,
+      type: 'interval',
+      intervalMs: 3000,
+      webhookKey: null,
+      cronExpression: null,
+      prompt: 'do work',
+      enabled: true,
+      createdAt: Date.now(),
+      lastRunAt: null,
+      lastSessionId: null
+    })
+
+    db.replaceAutomationTriggers('rule-1', [
+      {
+        id: 'trigger-existing',
+        type: 'interval',
+        intervalMs: 3000
+      }
+    ])
+
+    expect(() =>
+      db.replaceAutomationTriggers('rule-1', [
+        {
+          id: 'trigger-duplicate',
+          type: 'interval',
+          intervalMs: 1000
+        },
+        {
+          id: 'trigger-duplicate',
+          type: 'cron',
+          cronExpression: '* * * * *'
+        }
+      ])
+    ).toThrowError()
+
+    expect(db.listAutomationTriggers('rule-1')).toEqual([
+      {
+        id: 'trigger-existing',
+        ruleId: 'rule-1',
+        type: 'interval',
+        intervalMs: 3000,
+        cronExpression: null,
+        webhookKey: null,
+        createdAt: Date.now()
+      }
+    ])
   })
 })
