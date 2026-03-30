@@ -64,14 +64,17 @@
 ### 单包发布
 
 1. 确认该包自上次发布以来存在应计入发版范围的变更。
-2. 更新目标包 `package.json` 版本号。
-3. 补对应的 `changelog/<version>/<package>.md`。
-4. 如果需要，更新锁文件或其它发布元数据。
-5. 执行发布前最小检查清单。
-6. 提交 release commit。
-7. 执行 `pnpm tools publish-plan -- --package <pkg> --publish`。
-8. 发布成功后补 tag。
-9. 如果形成了新的稳定经验，回写文档。
+2. 区分 alpha / 正式版：
+   - alpha / 预发布可以基于功能分支直接发布，用于下游联调验证。
+   - 正式版应先把发布内容合入默认分支，再从默认分支对应提交发布，避免出现“npm 正式版已发布，但 GitHub 默认分支还没有这次变更”。
+3. 更新目标包 `package.json` 版本号。
+4. 补对应的 `changelog/<version>/<package>.md`。
+5. 如果需要，更新锁文件或其它发布元数据。
+6. 执行发布前最小检查清单。
+7. 提交 release commit。
+8. 若是正式版，先完成默认分支合入，再执行 `pnpm tools publish-plan -- --package <pkg> --publish`。
+9. 发布成功后补 tag。
+10. 如果形成了新的稳定经验，回写文档。
 
 ### 整体发布
 
