@@ -17,30 +17,12 @@
   - 更新对应 case 的 file snapshot
 - `pnpm tools publish-plan -- [args]`
   - 透传到 `scripts/publish-plan-core.mjs`
-  - 先用于确认发布范围和顺序，不要把它当成自动决定“哪些包应该发布”的唯一依据
+  - 发布规则、检查清单和 tag 约定统一见 `.ai/rules/RELEASE.md`
 
 ## publish-plan 使用备注
 
-- `publish-plan` 负责基于显式包选择和内部依赖生成发布顺序。
-- 是否应该发布某个包，先看该包自上次版本更新以来是否有运行时代码或发布元数据变更。
-- 纯测试、snapshot、AGENTS、普通文档改动通常不应触发该包发布，也不应据此扩大依赖闭包。
-- 传入 `--bump` 时，即使没有 `--publish`，脚本也会直接修改目标包的 `package.json` 版本号。
-- 所以只做计划试算时，优先先跑不带 `--bump` 的命令；若必须带 `--bump`，确保工作区干净，或准备好丢弃试算改动。
-- 单包发布完成后，tag 需要额外按 `pkg/<normalized-package-name>/v<version>` 规则补齐；整体发布继续使用 `v<version>`。
-
-单包正式发布前的最小检查清单：
-
-- 先跑目标包相关测试，不要只看仓库全量状态。
-- 用 `npm view <pkg> version` 确认 registry 当前版本，避免重复发版。
-- 用 `npm whoami` 确认当前 npm 登录态。
-- 在目标包目录执行 `npm pack --dry-run` 检查最终 tarball 内容。
-- 如果本次发布包含外部依赖升级或发布元数据变化，记得同步提交根 `pnpm-lock.yaml`。
-- 如果包存在子路径导出，`npm pack --dry-run` 时要确认导出目标的真实文件已经进入 tarball，不要依赖额外的空壳透传文件占位。
-
-发布完成后的收尾约定：
-
-- 补齐对应的单包 tag 或整体 tag。
-- 如果本次发布暴露出新的稳定经验或踩坑结论，优先回写到对应包的 `AGENTS.md`；跨包通用规则再写回仓库级文档。
+- `publish-plan` 只负责基于显式包选择和内部依赖生成发布顺序。
+- 所有“是否该发布、怎么发布、发布后怎么收尾”的规则统一见 `.ai/rules/RELEASE.md`。
 
 ## adapter-e2e 结构
 

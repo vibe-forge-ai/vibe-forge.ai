@@ -44,32 +44,14 @@ npx vitest run <path>
 
 ## 发布实践
 
-发布前先明确范围，不要直接把所有最近提交等价成“都要发布”：
+所有发布相关规则统一维护在 [RELEASE.md](./RELEASE.md)：
 
-- 先以最近一次版本更新或发布提交为基线做 diff，确认这段时间哪些 workspace 包真的发生了变化。
-- 只有运行时代码变更、发布元数据变更（如 `package.json` version / exports / deps）才应计入发版范围。
-- 纯测试、snapshot、AGENTS、普通文档改动默认不进入发版范围，也不应因此级联发布依赖方。
-- 如果某个包本身不发布，就不要因为它的测试改动把依赖闭包上的上层包一起带入发布计划。
-
-单包发布与整体发布分开处理：
-
-- 整体发布：通常发布一组 public workspace 包，并在 `changelog/<version>/readme.md` 记录。
-- 单包发布：只发布明确选中的包，并在 `changelog/<version>/<package>.md` 记录。
-- 同一个版本目录下可以同时存在多个单包发布记录，例如 `client.md`、`server.md`。
-
-发布前建议执行的检查：
-
-- 用 `pnpm tools publish-plan -- ...` 先确认发布顺序和候选包。
-- 用 `npm view <pkg> version` 确认 registry 当前版本，避免重复发已存在版本。
-- 用 `npm whoami` 确认当前 npm 登录态。
-- 在目标包目录执行 `npm pack --dry-run` 检查最终打包内容。
-
-发布后的记录约定：
-
-- 整体发布 tag 使用 `v<version>`。
-- 单包发布 tag 使用 `pkg/<normalized-package-name>/v<version>`。
-- `normalized-package-name` 规则见 `changelog/AGENTS.md`。
-- 具体的单包发布检查清单见 `scripts/AGENTS.md`；changelog 记录方式见 `changelog/AGENTS.md`。
+- 发布范围判断
+- 单包发布与整体发布
+- publish-plan 使用
+- changelog 记录方式
+- tag 约定
+- 发布前后检查与经验沉淀
 
 ## 项目规范
 
