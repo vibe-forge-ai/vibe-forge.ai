@@ -3,11 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
 const mocks = vi.hoisted(() => ({
-  ensureClaudeCodeRouterReady: vi.fn()
+  ensureClaudeCodeRouterReady: vi.fn(),
+  resolveClaudeCliPath: vi.fn()
 }))
 
 vi.mock('../src/ccr/daemon', () => ({
   ensureClaudeCodeRouterReady: mocks.ensureClaudeCodeRouterReady
+}))
+
+vi.mock('../src/ccr/paths', () => ({
+  resolveClaudeCliPath: mocks.resolveClaudeCliPath
 }))
 
 import { prepareClaudeExecution } from '../src/claude/prepare'
@@ -37,6 +42,7 @@ const createCtx = (resumeState?: { canResume: boolean }) =>
 describe('prepareClaudeExecution', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.resolveClaudeCliPath.mockReturnValue('/mock/bin/claude')
     mocks.ensureClaudeCodeRouterReady.mockResolvedValue({
       host: '127.0.0.1',
       port: 4123,
@@ -55,7 +61,7 @@ describe('prepareClaudeExecution', () => {
     })
 
     expect(result.executionType).toBe('create')
-    expect(result.cliPath).toBe('claude')
+    expect(result.cliPath).toBe('/mock/bin/claude')
     expect(result.args).toContain('--session-id')
     expect(result.args).toContain(sessionId)
     expect(result.args).not.toContain('--resume')
@@ -71,7 +77,7 @@ describe('prepareClaudeExecution', () => {
     })
 
     expect(result.executionType).toBe('resume')
-    expect(result.cliPath).toBe('claude')
+    expect(result.cliPath).toBe('/mock/bin/claude')
     expect(result.args).toContain('--resume')
     expect(result.args).toContain(sessionId)
     expect(result.args).not.toContain('--session-id')
@@ -88,7 +94,7 @@ describe('prepareClaudeExecution', () => {
       onEvent: vi.fn()
     })
 
-    expect(result.cliPath).toBe('claude')
+    expect(result.cliPath).toBe('/mock/bin/claude')
     expect(result.args).toContain('--model')
     expect(result.args).toContain('gpt-responses,gpt-5.2-codex-2026-01-14')
     expect(result.env.ANTHROPIC_BASE_URL).toBeUndefined()
@@ -105,6 +111,17 @@ describe('prepareClaudeExecution', () => {
         })
       })
     )
+  })
+
+  it('resolves the claude cli path from adapter dependencies instead of PATH', async () => {
+    await prepareClaudeExecution(createCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      onEvent: vi.fn()
+    })
+
+    expect(mocks.resolveClaudeCliPath).toHaveBeenCalledTimes(1)
   })
 
   it('keeps native Claude execution untouched for non-CCR models', async () => {

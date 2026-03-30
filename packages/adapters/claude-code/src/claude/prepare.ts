@@ -2,6 +2,7 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
+import { resolveClaudeCliPath } from '../ccr/paths'
 
 interface ClaudeExecutionSettings {
   [key: string]: unknown
@@ -198,7 +199,7 @@ export const prepareClaudeExecution = async (
   }
 
   return {
-    cliPath: 'claude',
+    cliPath: resolveClaudeCliPath(),
     args,
     env: executionEnv,
     cwd,
