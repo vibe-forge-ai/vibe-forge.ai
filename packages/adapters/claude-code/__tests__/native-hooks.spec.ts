@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ensureClaudeNativeHooksInstalled } from '../src/runtime/native-hooks'
+import { ensureClaudeNativeHooksInstalled } from '../src/hooks/native'
 
 const tempDirs: string[] = []
 

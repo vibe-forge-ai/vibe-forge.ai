@@ -11,22 +11,16 @@
 
 ## 目录职责
 
-- `src/runtime/prepare.ts`
-  - 组装 Claude Code / CCR 的执行参数
-  - 处理 session mode、settings、mcp config、model 与运行环境
-- `src/runtime/session.ts`
-  - adapter 主运行入口
-  - 负责 spawn CLI、消费 stdout/stderr、把事件转成 adapter output
-- `src/runtime/init.ts`
-  - adapter 初始化逻辑
-  - 适合排查 `npx vf init`、mock home、router restart 一类问题
-- `src/runtime/native-hooks.ts`
-  - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 native hooks 配置
-  - Claude Code 的原生 hooks 最终会回调 `packages/hooks/call-hook.js`
-- `src/ccr/default-config.ts`
-  - 生成 CCR 默认配置
-  - 决定默认注入哪些 transformer、provider/router 如何路由
-- `src/ccr-transformers/*.js`
+- `src/claude/*.ts`
+  - Claude CLI 会话生命周期
+  - `prepare.ts` 组装执行参数与 settings，`session.ts` 负责 spawn/stream，`init.ts` 只做 adapter 初始化
+- `src/hooks/*.ts`
+  - Claude native hooks 的托管配置与 bridge 逻辑
+  - `native.ts` 写 `.ai/.mock/.claude/settings.json`，`bridge.ts` 把 Claude payload 翻译成统一 hook 协议
+- `src/ccr/*.ts`
+  - Claude Code Router 的配置、路径解析与 daemon 复用
+  - `config.ts` 生成 router 配置，`daemon.ts` 负责 pid 检查、按需重启与 ready wait
+- `src/ccr/transformers/*.js`
   - CCR 请求/响应变换层
   - 这里的日志是 adapter 内部排查日志，不等同于主会话 logger.debug
 - `src/protocol/*.ts`
@@ -36,13 +30,13 @@
 
 ## Hooks 维护入口
 
-- `src/runtime/native-hooks.ts`
+- `src/hooks/native.ts`
   - 负责把 `.ai/.mock/.claude/settings.json` 写成托管 hooks 配置
-- `src/runtime/prepare.ts`
+- `src/claude/prepare.ts`
   - 注入 session 运行参数、native hook env、settings 与 mcp config
-- `src/runtime/init.ts`
-  - adapter 初始化阶段写 mock home、生成 CCR 配置、必要时重启 router
-- `src/hook-bridge.ts`
+- `src/claude/init.ts`
+  - adapter 初始化阶段安装 Claude native hooks；router 生命周期由 `src/ccr/daemon.ts` 接管
+- `src/hooks/bridge.ts`
   - 负责把 Claude native payload 翻译成统一 hook 协议
 - `packages/hooks/call-hook.js`
 - `apps/cli/src/hooks/index.ts`
@@ -104,8 +98,8 @@ Claude 维护时优先检查两点：
 
 先读：
 
-- `src/runtime/prepare.ts`
-- `src/runtime/session.ts`
+- `src/claude/prepare.ts`
+- `src/claude/session.ts`
 - `src/protocol/incoming.ts`
 
 重点确认：
@@ -125,7 +119,7 @@ Claude 维护时优先检查两点：
 
 再回到本 adapter：
 
-- `src/runtime/session.ts`
+- `src/claude/session.ts`
 
 关键事实：
 
@@ -137,17 +131,17 @@ Claude 维护时优先检查两点：
 
 先读：
 
-- `src/ccr/default-config.ts`
-- `src/ccr-transformers/logger.js`
-- `src/ccr-transformers/openai-polyfill.js`
-- `src/ccr-transformers/gemini-open-router-polyfill.js`
-- `src/ccr-transformers/kimi-thinking-polyfill.js`
+- `src/ccr/config.ts`
+- `src/ccr/transformers/logger.js`
+- `src/ccr/transformers/openai-polyfill.js`
+- `src/ccr/transformers/gemini-open-router-polyfill.js`
+- `src/ccr/transformers/kimi-thinking-polyfill.js`
 
 关键事实：
 
 - transformer 日志文件：`.ai/logs/<ctxId>/<sessionId>/adapter-claude-code/*.log.md`
 - 这是 CCR 内部诊断日志，和主会话 `.log.md` 的 debug 开关是两套概念
-- 排查“为什么某个 transformer 没生效”时，优先看 `default-config.ts` 里是否被注入
+- 排查“为什么某个 transformer 没生效”时，优先看 `config.ts` 里是否被注入
 
 ### 4. `npx vf init`、hook、plugin logger 的日志级别不对
 
@@ -155,8 +149,8 @@ Claude 维护时优先检查两点：
 
 - `apps/cli/src/commands/init.ts`
 - `apps/cli/src/hooks/index.ts`
-- `src/hook-bridge.ts`
-- `src/runtime/native-hooks.ts`
+- `src/hooks/bridge.ts`
+- `src/hooks/native.ts`
 - `packages/utils/src/create-logger.ts`
 - `packages/utils/src/log-level.ts`
 - `packages/core/src/env.ts`
@@ -209,9 +203,9 @@ Claude 维护时优先检查两点：
 ### 场景 C: 根据日志类型决定继续看哪里
 
 - 如果是主会话日志中的 `__D__` / `Claude Code CLI stdout`
-  - 继续看 `packages/utils/src/create-logger.ts`、`packages/utils/src/log-level.ts` 与 `src/runtime/session.ts`
+  - 继续看 `packages/utils/src/create-logger.ts`、`packages/utils/src/log-level.ts` 与 `src/claude/session.ts`
 - 如果是 `adapter-claude-code/*.log.md`
-  - 继续看 `src/ccr/default-config.ts` 与 `src/ccr-transformers/*.js`
+  - 继续看 `src/ccr/config.ts` 与 `src/ccr/transformers/*.js`
 - 如果根本没有生成会话日志
   - 回到 CLI 入口与 `packages/task/src/prepare.ts`
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { generateDefaultCCRConfigJSON } from '../src/ccr/default-config'
+import { generateDefaultCCRConfigJSON } from '../src/ccr/config'
 
 describe('generateDefaultCCRConfigJSON', () => {
   const baseUserConfig = {
@@ -112,6 +112,27 @@ describe('generateDefaultCCRConfigJSON', () => {
     }
 
     expect(config.API_TIMEOUT_MS).toBe(120000)
+  })
+
+  it('preserves explicit CCR router network options', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: baseUserConfig,
+      adapterOptions: {
+        ccrOptions: {
+          PORT: '4123',
+          APIKEY: 'router-key'
+        }
+      }
+    })
+
+    const config = JSON.parse(raw) as {
+      PORT?: string
+      APIKEY?: string
+    }
+
+    expect(config.PORT).toBe('4123')
+    expect(config.APIKEY).toBe('router-key')
   })
 
   it('adds a maxtoken transformer for model service maxOutputTokens without clobbering existing transformers', () => {

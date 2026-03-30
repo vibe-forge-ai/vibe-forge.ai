@@ -10,7 +10,7 @@ import type {
   ClaudeCodeErrorResultEvent,
   ClaudeCodeIncomingEvent,
   ClaudeCodeUserEvent
-} from '../types'
+} from '../protocol/types'
 import { prepareClaudeExecution } from './prepare'
 
 const stripAnsiSequences = (value: string) => {

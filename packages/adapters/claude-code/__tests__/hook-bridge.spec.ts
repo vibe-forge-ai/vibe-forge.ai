@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { mapClaudeHookInputToVibeForge } from '../src/hook-bridge'
+import { mapClaudeHookInputToVibeForge } from '../src/hooks/bridge'
 
 describe('claude native hook bridge helpers', () => {
   it('maps supported Claude native hooks into the unified hook shape', () => {

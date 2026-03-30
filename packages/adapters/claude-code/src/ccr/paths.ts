@@ -23,9 +23,14 @@ export const resolveAdapterCliPath = () => {
 }
 
 export const resolveTransformerPath = (relativePath: string) => {
-  const distPath = resolve(adapterPackageDir, 'dist/ccr-transformers', relativePath)
-  if (existsSync(distPath)) return distPath
-  const srcPath = resolve(adapterPackageDir, 'src/ccr-transformers', relativePath)
-  if (existsSync(srcPath)) return srcPath
-  return resolve(adapterPackageDir, 'ccr-transformers', relativePath)
+  const candidates = [
+    resolve(adapterPackageDir, 'dist/ccr/transformers', relativePath),
+    resolve(adapterPackageDir, 'dist/ccr-transformers', relativePath),
+    resolve(adapterPackageDir, 'src/ccr/transformers', relativePath),
+    resolve(adapterPackageDir, 'src/ccr-transformers', relativePath),
+    resolve(adapterPackageDir, 'ccr/transformers', relativePath),
+    resolve(adapterPackageDir, 'ccr-transformers', relativePath)
+  ]
+
+  return candidates.find(candidate => existsSync(candidate)) ?? candidates[0]
 }

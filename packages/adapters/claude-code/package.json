@@ -41,11 +41,11 @@
     },
     "./hook-bridge": {
       "__vibe-forge__": {
-        "default": "./src/hook-bridge.ts"
+        "default": "./src/hooks/bridge.ts"
       },
       "default": {
-        "import": "./dist/hook-bridge.mjs",
-        "require": "./dist/hook-bridge.js"
+        "import": "./dist/hooks/bridge.mjs",
+        "require": "./dist/hooks/bridge.js"
       }
     },
     "./package.json": "./package.json"

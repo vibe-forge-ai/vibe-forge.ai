@@ -1,8 +1,8 @@
 import process from 'node:process'
 
-import type { AdapterQueryOptions } from '@vibe-forge/types'
 import type { HookInput, HookInputs } from '@vibe-forge/hooks'
 import { executeHookInput, readHookInput } from '@vibe-forge/hooks'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
 
 const runtime = process.env.__VF_CLAUDE_HOOK_RUNTIME__ as AdapterQueryOptions['runtime'] | undefined
 const taskSessionId = process.env.__VF_CLAUDE_TASK_SESSION_ID__?.trim()

@@ -1,6 +1,6 @@
 import type { AdapterMessageContent } from '@vibe-forge/types'
 
-import type { ClaudeCodeContent } from '../types'
+import type { ClaudeCodeContent } from './types'
 
 export const prefixToolName = (name: string) => (
   name.startsWith('adapter:claude-code:') ? name : `adapter:claude-code:${name}`

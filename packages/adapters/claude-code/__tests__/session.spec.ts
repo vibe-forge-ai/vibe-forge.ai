@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AdapterOutputEvent } from '@vibe-forge/types'
 
-import { createClaudeSession } from '../src/runtime/session'
+import { createClaudeSession } from '../src/claude/session'
 
 const mocks = vi.hoisted(() => ({
   prepareClaudeExecution: vi.fn()
@@ -16,7 +16,7 @@ vi.mock('node:child_process', () => ({
   spawn: vi.fn()
 }))
 
-vi.mock('../src/runtime/prepare', () => ({
+vi.mock('../src/claude/prepare', () => ({
   prepareClaudeExecution: mocks.prepareClaudeExecution
 }))
 

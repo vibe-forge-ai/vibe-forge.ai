@@ -6,7 +6,7 @@ import type {
   ClaudeCodeContentToolResult,
   ClaudeCodeContentToolUse,
   ClaudeCodeIncomingEvent
-} from '../types'
+} from './types'
 import { prefixToolName } from './content'
 
 export const handleIncomingEvent = (

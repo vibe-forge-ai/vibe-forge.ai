@@ -1,9 +1,39 @@
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 
-import { resolveAdapterCliPath } from '../ccr/paths'
+import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 
-export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
+interface ClaudeExecutionSettings {
+  [key: string]: unknown
+  mcpServers: Record<string, unknown>
+  permissions: {
+    allow: string[]
+    deny: string[]
+    ask: string[]
+    defaultMode?: AdapterQueryOptions['permissionMode']
+  }
+  defaultIncludeMcpServers: string[]
+  defaultExcludeMcpServers: string[]
+  plansDirectory: string
+  env: Record<string, string | null | undefined>
+  companyAnnouncements: string[]
+  enabledPlugins: Record<string, boolean>
+  extraKnownMarketplaces: Record<string, unknown>
+}
+
+interface PreparedClaudeExecution {
+  cliPath: string
+  args: string[]
+  env: Record<string, string | null | undefined>
+  cwd: string
+  sessionId: string
+  executionType: 'create' | 'resume'
+}
+
+export const prepareClaudeExecution = async (
+  ctx: AdapterCtx,
+  options: AdapterQueryOptions
+): Promise<PreparedClaudeExecution> => {
   const { env, cwd, cache, configs: [config, userConfig] } = ctx
   const assetPlan = options.assetPlan
   const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
@@ -21,7 +51,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
   const resumeState = await cache.get('adapter.claude-code.resume-state')
   const executionType = type === 'resume' && resumeState?.canResume === true ? 'resume' : 'create'
 
-  const settings = {
+  const settings: ClaudeExecutionSettings = {
     mcpServers: assetPlan?.mcpServers ?? {
       ...config?.mcpServers,
       ...userConfig?.mcpServers
@@ -63,7 +93,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
           __VF_CLAUDE_TASK_SESSION_ID__: sessionId
         }
         : {})
-    },
+    } as Record<string, string | null | undefined>,
     companyAnnouncements: [
       ...(config?.announcements ?? []),
       ...(userConfig?.announcements ?? [])
@@ -75,6 +105,17 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     extraKnownMarketplaces: assetPlan?.native.extraKnownMarketplaces ?? {
       ...(config?.extraKnownMarketplaces ?? {}),
       ...(userConfig?.extraKnownMarketplaces ?? {})
+    }
+  }
+  const useCCR = typeof model === 'string' && model.includes(',')
+  if (useCCR) {
+    const router = await ensureClaudeCodeRouterReady(ctx)
+    settings.env = {
+      ...settings.env,
+      ANTHROPIC_BASE_URL: `http://${router.host}:${router.port}`,
+      ANTHROPIC_AUTH_TOKEN: router.apiKey,
+      ANTHROPIC_API_KEY: '',
+      API_TIMEOUT_MS: String(router.apiTimeoutMs)
     }
   }
   const { mcpServers, ...unresolvedSettings } = settings
@@ -113,22 +154,7 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     settings
   )
 
-  // Routing: model with "," → CCR proxy; model without "," → native claude binary.
-  //   "serviceKey,modelName" → ccr code ... --model serviceKey,modelName
-  //   "opus" / undefined     → claude ... --model opus  (or omit --model)
-  const useCCR = typeof model === 'string' && model.includes(',')
-
-  let cliPath: string
-  const prefixArgs: string[] = []
-  if (useCCR) {
-    cliPath = resolveAdapterCliPath()
-    prefixArgs.push('code')
-  } else {
-    cliPath = 'claude'
-  }
-
   const args: string[] = [
-    ...prefixArgs,
     ...(description
       ? [JSON.stringify(
         `${(
@@ -159,20 +185,22 @@ export const prepareClaudeExecution = async (ctx: AdapterCtx, options: AdapterQu
     )
   }
 
+  const executionEnv: Record<string, string | null | undefined> = {
+    ...env,
+    ...(nativeHooksAvailable
+      ? {
+        __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
+        [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
+        __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
+        __VF_CLAUDE_TASK_SESSION_ID__: sessionId
+      }
+      : {})
+  }
+
   return {
-    cliPath: cliPath!,
+    cliPath: 'claude',
     args,
-    env: {
-      ...env,
-      ...(nativeHooksAvailable
-        ? {
-          __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
-          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
-          __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
-          __VF_CLAUDE_TASK_SESSION_ID__: sessionId
-        }
-        : {})
-    },
+    env: executionEnv,
     cwd,
     sessionId,
     executionType
