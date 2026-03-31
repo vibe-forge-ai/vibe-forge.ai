@@ -3,8 +3,8 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig  } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
@@ -14,6 +14,7 @@ import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxySer
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
 export type CodexOutboundApprovalPolicy = 'never' | 'untrusted' | 'on-request'
+export type CodexReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh'
 
 /**
  * Map a single vibe-forge `AdapterMessageContent` item to zero or one Codex input items.
@@ -90,6 +91,24 @@ const normalizePositiveInteger = (value: unknown): number | undefined => (
     : undefined
 )
 
+const normalizeCodexReasoningEffort = (value: unknown): CodexReasoningEffort | undefined => (
+  value === 'low' || value === 'medium' || value === 'high' || value === 'xhigh'
+    ? value
+    : undefined
+)
+
+const mapPublicEffortToCodex = (value: AdapterQueryOptions['effort']): CodexReasoningEffort | undefined => (
+  value === 'max'
+    ? 'xhigh'
+    : value === 'low' || value === 'medium' || value === 'high'
+    ? value
+    : undefined
+)
+
+const mapCodexEffortToPublic = (value: CodexReasoningEffort | undefined): AdapterQueryOptions['effort'] => (
+  value === 'xhigh' ? 'max' : value
+)
+
 const resolveRoutedServiceKey = (rawModel: string | undefined) => {
   const normalizedRawModel = rawModel?.trim()
   if (normalizedRawModel == null || !normalizedRawModel.includes(',')) return undefined
@@ -110,6 +129,39 @@ const normalizeProviderBaseUrl = (apiBaseUrl: string | undefined, wireApi: strin
 const toTomlInlineTable = (obj: Record<string, string>) =>
   `{${Object.entries(obj).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}}`
 
+const encodeCodexConfigValue = (value: unknown): string | undefined => {
+  if (typeof value === 'string') return toToml(value)
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) {
+    if (value.every(item => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')) {
+      return JSON.stringify(value)
+    }
+    return undefined
+  }
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value).filter((entry) =>
+      typeof entry[1] === 'string' || typeof entry[1] === 'number' || typeof entry[1] === 'boolean'
+    )
+    if (entries.length === 0 || entries.length !== Object.keys(value).length) return undefined
+    return `{${
+      entries.map(([key, item]) => `${key} = ${typeof item === 'string' ? JSON.stringify(item) : String(item)}`).join(
+        ', '
+      )
+    }}`
+  }
+  return undefined
+}
+
+const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>) => {
+  const args: string[] = []
+  for (const [key, value] of Object.entries(overrides)) {
+    const encoded = encodeCodexConfigValue(value)
+    if (encoded == null) continue
+    args.push('-c', `${key}=${encoded}`)
+  }
+  return args
+}
+
 /**
  * Derive the `-c key=value` overrides and API-key env injections needed to map
  * vibe-forge `systemPrompt` and `modelServices` onto codex configuration.
@@ -127,13 +179,31 @@ function buildCodexConfigOverrides(params: {
     ctxId: string
     sessionId: string
   }
+  proxyDiagnostics?: {
+    requestedModel?: string
+    runtime?: string
+    sessionType?: string
+    permissionMode?: string
+    approvalPolicy?: string
+    sandboxPolicy?: string
+    useYolo?: boolean
+    requestedEffort?: string
+    effectiveEffort?: string
+  }
 }): {
   args: string[]
   fingerprintArgs: string[]
   resolvedModel: string | undefined
   resolvedMaxOutputTokens: number | null | undefined
 } {
-  const { systemPrompt, rawModel, modelServices, proxyBaseUrl, proxyLogContext } = params
+  const {
+    systemPrompt,
+    rawModel,
+    modelServices,
+    proxyBaseUrl,
+    proxyLogContext,
+    proxyDiagnostics
+  } = params
   const args: string[] = []
   const fingerprintArgs: string[] = []
   const normalizedRawModel = rawModel?.trim()
@@ -182,7 +252,13 @@ function buildCodexConfigOverrides(params: {
           ...(Object.keys(normalizedHeaders).length > 0 ? { headers: normalizedHeaders } : {}),
           ...(Object.keys(normalizedQueryParams).length > 0 ? { queryParams: normalizedQueryParams } : {}),
           ...(normalizedMaxOutputTokens != null ? { maxOutputTokens: normalizedMaxOutputTokens } : {}),
-          ...(proxyLogContext != null ? { logContext: proxyLogContext } : {})
+          ...(proxyLogContext != null ? { logContext: proxyLogContext } : {}),
+          diagnostics: {
+            ...proxyDiagnostics,
+            routedServiceKey: serviceKey,
+            resolvedModel: modelId || undefined,
+            wireApi: wireApi ?? 'responses'
+          }
         })
         pushArgs(`${prefix}.base_url=${toToml(proxyBaseUrl)}`)
         pushFingerprintArgs(`${prefix}.base_url=${toToml(normalizedBaseUrl)}`)
@@ -293,6 +369,8 @@ export interface CodexSessionBase {
   configOverrideArgs: string[]
   resolvedModel: string | undefined
   resolvedMaxOutputTokens: number | null | undefined
+  effectiveEffort: AdapterQueryOptions['effort']
+  turnEffort?: CodexReasoningEffort
   threadCacheKey: string
   cachedThreadId: string | undefined
 }
@@ -388,11 +466,18 @@ export async function resolveSessionBase(
 
   const {
     sandboxPolicy: configSandboxPolicy,
-    features: configFeatures
+    effort: configuredEffort,
+    features: configFeatures,
+    configOverrides: configOverridesValue
   } = {
     ...(config?.adapters?.codex ?? {}),
     ...(userConfig?.adapters?.codex ?? {})
-  } as { sandboxPolicy?: CodexSandboxPolicy; features?: Record<string, boolean> }
+  } as {
+    sandboxPolicy?: CodexSandboxPolicy
+    effort?: AdapterQueryOptions['effort']
+    features?: Record<string, boolean>
+    configOverrides?: Record<string, unknown>
+  }
 
   const useYolo = shouldUseYolo(options.permissionMode)
   const approvalPolicy = resolveApprovalPolicy(options.permissionMode)
@@ -405,6 +490,14 @@ export async function resolveSessionBase(
     ...(config?.modelServices ?? {}),
     ...(userConfig?.modelServices ?? {})
   }
+
+  const configOverrides = isPlainObject(configOverridesValue) ? configOverridesValue : {}
+  const nativeReasoningEffort = normalizeCodexReasoningEffort(configOverrides.model_reasoning_effort)
+  const requestedEffort = options.effort ?? configuredEffort
+  const requestedReasoningEffort = mapPublicEffortToCodex(requestedEffort)
+  const effectiveEffort = nativeReasoningEffort != null
+    ? mapCodexEffortToPublic(nativeReasoningEffort)
+    : requestedEffort
 
   const routedServiceKey = resolveRoutedServiceKey(options.model)
   const routedService = routedServiceKey != null ? mergedModelServices[routedServiceKey] : undefined
@@ -446,8 +539,29 @@ export async function resolveSessionBase(
         ctxId: ctx.ctxId,
         sessionId: options.sessionId ?? 'default'
       }
+      : undefined,
+    proxyDiagnostics: proxyBaseUrl != null
+      ? {
+        runtime: options.runtime,
+        sessionType: options.type,
+        permissionMode: options.permissionMode,
+        approvalPolicy,
+        sandboxPolicy: sandboxPolicy.type,
+        useYolo,
+        requestedModel: options.model,
+        requestedEffort,
+        effectiveEffort
+      }
       : undefined
   })
+
+  const nativeConfigOverrideArgs = buildNativeConfigOverrideArgs(configOverrides)
+  configOverrideArgs.push(...nativeConfigOverrideArgs)
+  configFingerprintArgs.push(...nativeConfigOverrideArgs)
+  if (nativeReasoningEffort == null && requestedReasoningEffort != null) {
+    configOverrideArgs.push('-c', `model_reasoning_effort=${toToml(requestedReasoningEffort)}`)
+    configFingerprintArgs.push('-c', `model_reasoning_effort=${toToml(requestedReasoningEffort)}`)
+  }
 
   const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? {
     ...(config?.mcpServers ?? {}),
@@ -497,6 +611,8 @@ export async function resolveSessionBase(
     configOverrideArgs,
     resolvedModel,
     resolvedMaxOutputTokens,
+    effectiveEffort,
+    turnEffort: nativeReasoningEffort == null ? requestedReasoningEffort : undefined,
     threadCacheKey,
     cachedThreadId
   }

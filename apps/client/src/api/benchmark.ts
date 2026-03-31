@@ -8,6 +8,7 @@ export interface BenchmarkRunRequest {
   concurrency?: number
   adapter?: string
   model?: string
+  effort?: 'low' | 'medium' | 'high' | 'max'
   systemPrompt?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
 }

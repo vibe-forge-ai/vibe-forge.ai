@@ -1,6 +1,6 @@
-import type { TaskRuntime } from './common'
-import type { Config } from './config'
 import type { Cache } from './cache'
+import type { EffortLevel, TaskRuntime } from './common'
+import type { Config } from './config'
 import type { Logger } from './logger'
 import type { ChatMessage, ChatMessageContent } from './message'
 import type { AdapterModelFallbackWarning } from './model-selection'
@@ -31,6 +31,7 @@ export interface SessionInitInfo {
   uuid: string
   model: string
   adapter?: string
+  effort?: EffortLevel
   version: string
   tools: string[]
   slashCommands: string[]
@@ -72,6 +73,7 @@ export interface AdapterQueryOptions {
   runtime: TaskRuntime
   sessionId: string
   model?: string
+  effort?: EffortLevel
   mode?: 'stream' | 'direct'
   systemPrompt?: string
   appendSystemPrompt?: boolean

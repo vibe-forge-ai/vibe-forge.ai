@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
+import { useChatEffort } from './use-chat-effort'
 import { useChatInteraction } from './use-chat-interaction'
 import { useChatModelAdapterSelection } from './use-chat-model-adapter-selection'
 import { useChatPermissionMode } from './use-chat-permission-mode'
@@ -28,6 +29,7 @@ export function useChatSession({
     adapterLocked: session?.id != null
   })
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
+  const { effort, setEffort, effortOptions } = useChatEffort()
   const { activeView, setActiveView } = useChatView()
   const { interactionRequest, setInteractionRequest, handleInteractionResponse } = useChatInteraction({
     sessionId: session?.id
@@ -35,11 +37,14 @@ export function useChatSession({
   const { messages, setMessages, sessionInfo, isReady, connectionError, retryConnection } = useChatSessionMessages({
     session,
     modelForQuery: selectedModelWithService,
+    effort,
     permissionMode,
     adapter: selectedAdapter,
     setInteractionRequest
   })
-  const lastObservedSessionRef = useRef<Pick<Session, 'id' | 'model' | 'permissionMode' | 'adapter'> | null>(null)
+  const lastObservedSessionRef = useRef<Pick<Session, 'id' | 'model' | 'permissionMode' | 'adapter' | 'effort'> | null>(
+    null
+  )
   const isThinking = session?.status === 'running'
 
   useEffect(() => {
@@ -62,19 +67,26 @@ export function useChatSession({
       setPermissionMode(session.permissionMode)
     }
 
+    if (sessionChanged || previous?.effort !== session.effort) {
+      setEffort(session.effort)
+    }
+
     lastObservedSessionRef.current = {
       id: session.id,
       model: session.model,
       permissionMode: session.permissionMode,
-      adapter: session.adapter
+      adapter: session.adapter,
+      effort: session.effort
     }
   }, [
     session?.adapter,
+    session?.effort,
     session?.id,
     session?.model,
     session?.permissionMode,
     applySessionSelection,
-    setPermissionMode,
+    setEffort,
+    setPermissionMode
   ])
 
   return {
@@ -94,6 +106,9 @@ export function useChatSession({
     selectedModel,
     modelForQuery: selectedModelWithService,
     setSelectedModel,
+    effort,
+    setEffort,
+    effortOptions,
     permissionMode,
     setPermissionMode,
     permissionModeOptions,

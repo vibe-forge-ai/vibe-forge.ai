@@ -10,6 +10,7 @@ declare module '@vibe-forge/types' {
   }
   interface AdapterMap {
     'claude-code': {
+      effort?: 'low' | 'medium' | 'high' | 'max'
       ccrOptions?: {
         LOG?: boolean
         PORT?: string
@@ -27,6 +28,8 @@ declare module '@vibe-forge/types' {
         longContext?: string[]
       }
       apiTimeout?: number
+      settingsContent?: Record<string, unknown>
+      nativeEnv?: Record<string, string>
     }
   }
 }

@@ -21,7 +21,12 @@ declare module '@vibe-forge/types' {
         version?: string
       }
       /** Reasoning effort level for supported models. */
-      effort?: 'low' | 'medium' | 'high'
+      effort?: 'low' | 'medium' | 'high' | 'max'
+      /**
+       * Raw Codex config overrides encoded as dotted keys and values,
+       * serialized to repeated `-c key=value` flags.
+       */
+      configOverrides?: Record<string, unknown>
       /**
        * Maximum completion tokens allowed for each turn in stream mode.
        * Useful when upstream Responses-compatible providers apply a low default.

@@ -1,5 +1,5 @@
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 
@@ -27,8 +27,33 @@ interface PreparedClaudeExecution {
   env: Record<string, string | null | undefined>
   cwd: string
   sessionId: string
+  effort?: AdapterQueryOptions['effort']
   executionType: 'create' | 'resume'
 }
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value != null && typeof value === 'object' && !Array.isArray(value)
+
+const deepMerge = (
+  base: Record<string, unknown>,
+  override: Record<string, unknown>
+): Record<string, unknown> => {
+  const merged: Record<string, unknown> = { ...base }
+  for (const [key, value] of Object.entries(override)) {
+    if (isPlainObject(value) && isPlainObject(merged[key])) {
+      merged[key] = deepMerge(merged[key] as Record<string, unknown>, value)
+      continue
+    }
+    merged[key] = value
+  }
+  return merged
+}
+
+const normalizeEffort = (value: unknown): AdapterQueryOptions['effort'] => (
+  value === 'low' || value === 'medium' || value === 'high' || value === 'max'
+    ? value
+    : undefined
+)
 
 export const prepareClaudeExecution = async (
   ctx: AdapterCtx,
@@ -38,6 +63,7 @@ export const prepareClaudeExecution = async (
   const assetPlan = options.assetPlan
   const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
   const {
+    effort,
     description,
     sessionId,
     model,
@@ -50,8 +76,29 @@ export const prepareClaudeExecution = async (
   } = options
   const resumeState = await cache.get('adapter.claude-code.resume-state')
   const executionType = type === 'resume' && resumeState?.canResume === true ? 'resume' : 'create'
+  const mergedAdapterConfig = {
+    ...(config?.adapters?.['claude-code'] ?? {}),
+    ...(userConfig?.adapters?.['claude-code'] ?? {})
+  } as {
+    effort?: AdapterQueryOptions['effort']
+    settingsContent?: Record<string, unknown>
+    nativeEnv?: Record<string, string>
+  }
+  const requestedEffort = effort ?? mergedAdapterConfig.effort
+  const settingsContent = isPlainObject(mergedAdapterConfig.settingsContent)
+    ? mergedAdapterConfig.settingsContent
+    : {}
+  const nativeEnv = isPlainObject(mergedAdapterConfig.nativeEnv)
+    ? Object.fromEntries(
+      Object.entries(mergedAdapterConfig.nativeEnv).filter((entry): entry is [string, string] =>
+        typeof entry[1] === 'string'
+      )
+    )
+    : {}
+  const nativeEnvEffort = normalizeEffort(nativeEnv.CLAUDE_CODE_EFFORT_LEVEL)
+  const settingsContentEffort = normalizeEffort(settingsContent.effortLevel)
 
-  const settings: ClaudeExecutionSettings = {
+  let settings: ClaudeExecutionSettings = {
     mcpServers: assetPlan?.mcpServers ?? {
       ...config?.mcpServers,
       ...userConfig?.mcpServers
@@ -107,6 +154,17 @@ export const prepareClaudeExecution = async (
       ...(userConfig?.extraKnownMarketplaces ?? {})
     }
   }
+  if (
+    nativeEnvEffort == null &&
+    settingsContentEffort == null &&
+    (requestedEffort === 'low' || requestedEffort === 'medium' || requestedEffort === 'high')
+  ) {
+    settings = {
+      ...settings,
+      effortLevel: requestedEffort
+    }
+  }
+  settings = deepMerge(settings, settingsContent) as ClaudeExecutionSettings
   const useCCR = typeof model === 'string' && model.includes(',')
   if (useCCR) {
     const router = await ensureClaudeCodeRouterReady(ctx)
@@ -187,6 +245,14 @@ export const prepareClaudeExecution = async (
 
   const executionEnv: Record<string, string | null | undefined> = {
     ...env,
+    ...(
+      requestedEffort === 'max' &&
+        nativeEnvEffort == null &&
+        settingsContentEffort == null
+        ? { CLAUDE_CODE_EFFORT_LEVEL: 'max' }
+        : {}
+    ),
+    ...nativeEnv,
     ...(nativeHooksAvailable
       ? {
         __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
@@ -203,6 +269,7 @@ export const prepareClaudeExecution = async (
     env: executionEnv,
     cwd,
     sessionId,
+    effort: nativeEnvEffort ?? settingsContentEffort ?? requestedEffort,
     executionType
   }
 }

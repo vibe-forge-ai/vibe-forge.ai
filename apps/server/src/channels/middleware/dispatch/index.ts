@@ -28,6 +28,7 @@ export const dispatchMiddleware: ChannelMiddleware = async (ctx, next) => {
       initialContent: hasContent ? ctx.contentItems : undefined,
       shouldStart: true,
       adapter: ctx.channelAdapter,
+      effort: ctx.channelEffort,
       permissionMode: ctx.channelPermissionMode,
       tags: buildChannelTags(inbound),
       systemPrompt: await buildSessionSystemPrompt(inbound, config, connection)

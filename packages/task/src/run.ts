@@ -1,8 +1,13 @@
-import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, AdapterModelFallbackError, TaskDetail  } from '@vibe-forge/types'
-import { loadAdapter } from '@vibe-forge/types'
 import { callHook, createAdapterHookBridge } from '@vibe-forge/hooks'
 import type { HookInputs } from '@vibe-forge/hooks'
-import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
+import type {
+  AdapterCtx,
+  AdapterModelFallbackError,
+  AdapterOutputEvent,
+  AdapterQueryOptions,
+  TaskDetail
+} from '@vibe-forge/types'
+import { loadAdapter } from '@vibe-forge/types'
 import {
   listServiceModels,
   mergeAdapterConfigs,
@@ -10,9 +15,11 @@ import {
   resolveAdapterConfiguredDefaultModel,
   resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
+  resolveEffectiveEffort,
   resolveModelDefaultAdapter,
   resolveModelSelection
 } from '@vibe-forge/utils'
+import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
 
 import { prepare } from '#~/prepare.js'
 import type { RunTaskOptions } from '#~/type.js'
@@ -104,12 +111,12 @@ const resolveQuerySelection = (params: {
 
   const resolveAdapterForModel = (model: string) => (
     explicitAdapter ??
-    resolveModelDefaultAdapter({
-      model,
-      models: mergedModels
-    }) ??
-    mergedDefaultAdapter ??
-    availableAdapters[0]
+      resolveModelDefaultAdapter({
+        model,
+        models: mergedModels
+      }) ??
+      mergedDefaultAdapter ??
+      availableAdapters[0]
   )
 
   const resolveModelForAdapter = (adapter: string | undefined) => {
@@ -220,9 +227,27 @@ export const run = async (
   await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
+  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'opencode'])
+  const supportsEffort = supportedEffortAdapters.has(adapterType)
+  if (!supportsEffort && adapterOptions.effort != null) {
+    throw new Error(`Adapter "${adapterType}" does not support effort`)
+  }
+  const { effort: resolvedEffort } = supportsEffort
+    ? resolveEffectiveEffort({
+      explicitEffort: adapterOptions.effort,
+      model: resolvedModel,
+      adapter: adapterType,
+      configEffort: userConfig?.effort ?? config?.effort,
+      adapters: mergedAdapters,
+      models: {
+        ...(config?.models ?? {}),
+        ...(userConfig?.models ?? {})
+      }
+    })
+    : { effort: undefined as undefined }
 
   const originalOnEvent = adapterOptions.onEvent
-  const supportedAssetPlanAdapters = new Set(['claude-code', 'codex', 'opencode'])
+  const supportedAssetPlanAdapters = supportedEffortAdapters
   const assetPlan = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
     ? undefined
     : buildAdapterAssetPlan({
@@ -260,6 +285,7 @@ export const run = async (
         data: {
           ...event.data,
           adapter: adapterType,
+          effort: resolvedEffort ?? event.data.effort,
           selectionWarnings: selectionWarnings ?? event.data.selectionWarnings,
           assetDiagnostics: assetPlan?.diagnostics ?? event.data.assetDiagnostics
         }
@@ -307,6 +333,7 @@ export const run = async (
       ...adapterOptions,
       assetPlan,
       description,
+      effort: resolvedEffort,
       model: resolvedModel,
       onEvent: wrappedOnEvent
     }

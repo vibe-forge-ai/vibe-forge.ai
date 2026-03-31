@@ -40,6 +40,7 @@ export const createStreamOpenCodeSession = async (
   const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
   const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.titlePrefix)
   const systemPromptFile = await ensureSystemPromptFile(ctx, options)
+  const childEnv = await buildChildEnv({ ctx, options, adapterConfig, systemPromptFile })
   const cachedSession = options.type === 'resume' ? await ctx.cache.get('adapter.opencode.session') : undefined
 
   if (options.type === 'create') await ctx.cache.set('adapter.opencode.session', { title })
@@ -48,7 +49,8 @@ export const createStreamOpenCodeSession = async (
     type: 'init',
     data: {
       uuid: options.sessionId,
-      model: options.model ?? 'default',
+      model: childEnv.cliModel ?? options.model ?? 'default',
+      effort: childEnv.effort,
       version: 'unknown',
       tools: DEFAULT_OPENCODE_TOOLS,
       slashCommands: [],
@@ -84,7 +86,7 @@ export const createStreamOpenCodeSession = async (
   const runTurn = async (content: Extract<AdapterEvent, { type: 'message' }>, allowRetry: boolean): Promise<void> => {
     if (destroyed) return
     const normalized = normalizeOpenCodePrompt(content.content)
-    const { cliModel, env } = await buildChildEnv({ ctx, options, adapterConfig, systemPromptFile })
+    const { cliModel, env } = childEnv
 
     if (opencodeSessionId == null && options.type === 'resume') {
       opencodeSessionId = await findOpenCodeSessionId({

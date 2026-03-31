@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
-import type { SessionInfo } from '@vibe-forge/types'
 import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
 import { MessageItem } from './messages/MessageItem'
@@ -41,6 +42,9 @@ export function ChatHistoryView({
   selectedModel,
   modelForQuery,
   onModelChange,
+  effort,
+  effortOptions,
+  onEffortChange,
   permissionMode,
   permissionModeOptions,
   onPermissionModeChange,
@@ -65,6 +69,9 @@ export function ChatHistoryView({
   selectedModel?: string
   modelForQuery?: string
   onModelChange: (model: string) => void
+  effort: ChatEffort
+  effortOptions: Array<{ value: ChatEffort; label: React.ReactNode }>
+  onEffortChange: (effort: ChatEffort) => void
   permissionMode: PermissionMode
   permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
   onPermissionModeChange: (mode: PermissionMode) => void
@@ -82,6 +89,7 @@ export function ChatHistoryView({
     session,
     modelForQuery,
     hasAvailableModels,
+    effort,
     permissionMode,
     adapter: selectedAdapter,
     onClearMessages
@@ -211,6 +219,9 @@ export function ChatHistoryView({
           modelOptions={modelOptions}
           selectedModel={selectedModel}
           onModelChange={onModelChange}
+          effort={effort}
+          effortOptions={effortOptions}
+          onEffortChange={onEffortChange}
           permissionMode={permissionMode}
           permissionModeOptions={permissionModeOptions}
           onPermissionModeChange={onPermissionModeChange}

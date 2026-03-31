@@ -38,6 +38,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
 
     const sessionId = params.get('sessionId') ?? uuidv4()
     const model = params.get('model') ?? undefined
+    const effort = params.get('effort') ?? undefined
     const systemPrompt = params.get('systemPrompt') ?? undefined
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
     const permissionMode = params.get('permissionMode') ?? undefined
@@ -67,6 +68,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       } else if (shouldAutoStartAdapter) {
         const cached = await startAdapterSession(sessionId, {
           model,
+          effort: effort as 'low' | 'medium' | 'high' | 'max' | undefined,
           systemPrompt,
           appendSystemPrompt,
           permissionMode: permissionMode as

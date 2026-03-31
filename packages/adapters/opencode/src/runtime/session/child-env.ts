@@ -2,11 +2,11 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig  } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
-import { asPlainRecord } from '../common/object-utils'
+import { asPlainRecord, deepMerge } from '../common/object-utils'
 import { toProcessEnv } from './shared'
 import type { OpenCodeAdapterConfig } from './shared'
 import { ensureOpenCodeConfigDir } from './skill-config'
@@ -96,15 +96,26 @@ export const buildChildEnv = async (params: {
     systemPromptFile: params.systemPromptFile,
     providerConfig
   })
+  const requestedEffort = params.options.effort ?? params.adapterConfig.effort
+  const effortConfig = buildOpenCodeEffortConfig({
+    cliModel,
+    rawModel: params.options.model,
+    effort: requestedEffort,
+    inlineConfigContent
+  })
+  const finalConfigContent = effortConfig.patch == null
+    ? inlineConfigContent
+    : deepMerge(inlineConfigContent, effortConfig.patch)
 
   if (configDir != null) {
     const configPath = resolve(configDir, 'opencode.json')
     await rm(configPath, { force: true })
-    await writeFile(configPath, `${JSON.stringify(inlineConfigContent, null, 2)}\n`, 'utf8')
+    await writeFile(configPath, `${JSON.stringify(finalConfigContent, null, 2)}\n`, 'utf8')
   }
 
   return {
     cliModel,
+    effort: effortConfig.effectiveEffort,
     env: toProcessEnv({
       ...process.env,
       ...params.ctx.env,
@@ -118,10 +129,196 @@ export const buildChildEnv = async (params: {
         }
         : {}),
       ...(configDir == null
-        ? { OPENCODE_CONFIG_CONTENT: JSON.stringify(inlineConfigContent) }
+        ? { OPENCODE_CONFIG_CONTENT: JSON.stringify(finalConfigContent) }
         : {}),
       ...(configDir != null ? { OPENCODE_CONFIG_DIR: configDir } : {})
     })
+  }
+}
+
+const OPENAI_EFFORT_MAP = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  max: 'xhigh'
+} as const
+
+const GEMINI_BUDGET_MAP = {
+  low: 2048,
+  medium: 8192,
+  high: 16384,
+  max: 32768
+} as const
+
+const normalizeEffort = (value: unknown): AdapterQueryOptions['effort'] => (
+  value === 'low' || value === 'medium' || value === 'high' || value === 'max'
+    ? value
+    : undefined
+)
+
+const resolveOpenCodeModelTarget = (value: string | undefined) => {
+  const normalized = value?.trim()
+  if (normalized == null || normalized === '' || normalized === 'default') return undefined
+  if (normalized.includes('/')) {
+    const slashIndex = normalized.indexOf('/')
+    const provider = normalized.slice(0, slashIndex).trim()
+    const model = normalized.slice(slashIndex + 1).trim()
+    if (provider !== '' && model !== '') {
+      return { provider, model }
+    }
+  }
+
+  if (normalized.startsWith('gpt-') || normalized.startsWith('o')) {
+    return { provider: 'openai', model: normalized }
+  }
+  if (normalized.startsWith('claude')) {
+    return { provider: 'anthropic', model: normalized }
+  }
+  if (normalized.startsWith('gemini')) {
+    return { provider: 'google', model: normalized }
+  }
+
+  return undefined
+}
+
+const getProviderModelOptions = (
+  config: Record<string, unknown>,
+  target: { provider: string; model: string }
+) => {
+  const provider = asPlainRecord(asPlainRecord(config.provider)?.[target.provider])
+  const model = asPlainRecord(asPlainRecord(provider?.models)?.[target.model])
+  return asPlainRecord(model?.options)
+}
+
+const resolveExistingOpenCodeEffort = (
+  config: Record<string, unknown>,
+  target: { provider: string; model: string }
+): AdapterQueryOptions['effort'] => {
+  const options = getProviderModelOptions(config, target)
+  if (options == null) return undefined
+
+  if (typeof options.reasoningEffort === 'string') {
+    if (options.reasoningEffort === 'xhigh') return 'max'
+    return normalizeEffort(options.reasoningEffort)
+  }
+  if (typeof options.effort === 'string') {
+    return normalizeEffort(options.effort)
+  }
+  const thinking = asPlainRecord(options.thinking)
+  if (thinking?.type === 'enabled' && typeof thinking.budgetTokens === 'number') {
+    return 'max'
+  }
+  const thinkingConfig = asPlainRecord(options.thinkingConfig)
+  if (typeof thinkingConfig?.thinkingLevel === 'string') {
+    if (thinkingConfig.thinkingLevel === 'high') return 'max'
+    return thinkingConfig.thinkingLevel === 'medium'
+      ? 'medium'
+      : thinkingConfig.thinkingLevel === 'low'
+      ? 'low'
+      : undefined
+  }
+  if (typeof thinkingConfig?.thinkingBudget === 'number') {
+    if (thinkingConfig.thinkingBudget >= GEMINI_BUDGET_MAP.max) return 'max'
+    if (thinkingConfig.thinkingBudget >= GEMINI_BUDGET_MAP.high) return 'high'
+    if (thinkingConfig.thinkingBudget >= GEMINI_BUDGET_MAP.medium) return 'medium'
+    return 'low'
+  }
+
+  return undefined
+}
+
+const buildProviderPatch = (
+  target: { provider: string; model: string },
+  options: Record<string, unknown>
+) => ({
+  provider: {
+    [target.provider]: {
+      models: {
+        [target.model]: {
+          options
+        }
+      }
+    }
+  }
+})
+
+const buildOpenCodeEffortConfig = (params: {
+  cliModel?: string
+  rawModel?: string
+  effort?: AdapterQueryOptions['effort']
+  inlineConfigContent: Record<string, unknown>
+}) => {
+  const effort = normalizeEffort(params.effort)
+  if (effort == null) {
+    return {
+      patch: undefined,
+      effectiveEffort: undefined as AdapterQueryOptions['effort']
+    }
+  }
+
+  const target = resolveOpenCodeModelTarget(params.cliModel ?? params.rawModel)
+  if (target == null) {
+    return {
+      patch: undefined,
+      effectiveEffort: undefined as AdapterQueryOptions['effort']
+    }
+  }
+
+  const existingEffort = resolveExistingOpenCodeEffort(params.inlineConfigContent, target)
+  if (existingEffort != null) {
+    return {
+      patch: undefined,
+      effectiveEffort: existingEffort
+    }
+  }
+
+  if (target.provider === 'openai') {
+    return {
+      patch: buildProviderPatch(target, { reasoningEffort: OPENAI_EFFORT_MAP[effort] }),
+      effectiveEffort: effort
+    }
+  }
+
+  if (target.provider === 'anthropic') {
+    return effort === 'max'
+      ? {
+        patch: buildProviderPatch(target, {
+          thinking: {
+            type: 'enabled',
+            budgetTokens: 32000
+          }
+        }),
+        effectiveEffort: effort
+      }
+      : {
+        patch: buildProviderPatch(target, { effort }),
+        effectiveEffort: effort
+      }
+  }
+
+  if (target.provider === 'google') {
+    return target.model.includes('2.5')
+      ? {
+        patch: buildProviderPatch(target, {
+          thinkingConfig: {
+            thinkingBudget: GEMINI_BUDGET_MAP[effort]
+          }
+        }),
+        effectiveEffort: effort
+      }
+      : {
+        patch: buildProviderPatch(target, {
+          thinkingConfig: {
+            thinkingLevel: effort === 'max' ? 'high' : effort
+          }
+        }),
+        effectiveEffort: effort
+      }
+  }
+
+  return {
+    patch: undefined,
+    effectiveEffort: undefined as AdapterQueryOptions['effort']
   }
 }
 

@@ -510,6 +510,12 @@
         "boolean": "开关",
         "object": "对象",
         "array": "数组"
+      },
+      "effort": {
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "max": "最高"
       }
     },
     "fields": {
@@ -517,6 +523,10 @@
         "baseDir": {
           "label": "工作目录",
           "desc": "配置文件和缓存的默认目录"
+        },
+        "effort": {
+          "label": "默认思考强度",
+          "desc": "未指定时默认使用的 effort 等级"
         },
         "defaultAdapter": {
           "label": "默认适配器",

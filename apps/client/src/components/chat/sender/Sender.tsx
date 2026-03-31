@@ -6,9 +6,10 @@ import React, { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
-import type { SessionInfo } from '@vibe-forge/types'
 import type { AskUserQuestionParams, ChatMessageContent, SessionStatus } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
 import { isShortcutMatch } from '../../../utils/shortcutUtils'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
@@ -76,6 +77,9 @@ export function Sender({
   modelOptions,
   selectedModel,
   onModelChange,
+  effort,
+  effortOptions,
+  onEffortChange,
   permissionMode,
   permissionModeOptions,
   onPermissionModeChange,
@@ -99,6 +103,9 @@ export function Sender({
   modelOptions?: ModelSelectGroup[]
   selectedModel?: string
   onModelChange?: (model: string) => void
+  effort: ChatEffort
+  effortOptions: Array<{ value: ChatEffort; label: React.ReactNode }>
+  onEffortChange: (effort: ChatEffort) => void
   permissionMode: PermissionMode
   permissionModeOptions: Array<{ value: PermissionMode; label: React.ReactNode }>
   onPermissionModeChange: (mode: PermissionMode) => void
@@ -138,6 +145,8 @@ export function Sender({
     : 'mod+enter'
 
   const isThinking = sessionStatus === 'running'
+  const supportsEffort = selectedAdapter === 'codex' || selectedAdapter === 'claude-code' ||
+    selectedAdapter === 'opencode'
   const groupedTools: SenderToolGroup[] = sessionInfo != null && sessionInfo.type === 'init'
     ? ([
       {
@@ -721,7 +730,10 @@ export function Sender({
                       <div className='asset-warning-tooltip'>
                         <div className='asset-warning-tooltip__title'>{t('chat.selectionWarningsTitle')}</div>
                         {selectionWarnings.slice(0, 5).map((warning: SessionSelectionWarning, index: number) => (
-                          <div key={`${warning.adapter}:${warning.requestedModel}:${index}`} className='asset-warning-tooltip__item'>
+                          <div
+                            key={`${warning.adapter}:${warning.requestedModel}:${index}`}
+                            className='asset-warning-tooltip__item'
+                          >
                             <span>{formatSelectionWarning(warning)}</span>
                           </div>
                         ))}
@@ -737,7 +749,9 @@ export function Sender({
                       <span className='info-item-leading'>
                         <span className='material-symbols-rounded'>warning</span>
                       </span>
-                      <span className='info-text'>{t('chat.selectionWarningsCount', { count: selectionWarnings.length })}</span>
+                      <span className='info-text'>
+                        {t('chat.selectionWarningsCount', { count: selectionWarnings.length })}
+                      </span>
                     </div>
                   </Tooltip>
                 )}
@@ -825,6 +839,22 @@ export function Sender({
               }}
               popupMatchSelectWidth={false}
             />
+
+            {supportsEffort && (
+              <Select
+                className='effort-select'
+                classNames={{ popup: { root: 'effort-select-popup' } }}
+                value={effort}
+                options={effortOptions}
+                showSearch={false}
+                allowClear={false}
+                disabled={modelUnavailable || isThinking}
+                onChange={(value) => onEffortChange(value)}
+                placeholder='Effort'
+                optionLabelProp='label'
+                popupMatchSelectWidth={false}
+              />
+            )}
 
             <Select
               className='permission-mode-select'

@@ -13,6 +13,7 @@ export async function createSessionWithInitialMessage(options: {
   shouldStart?: boolean
   tags?: string[]
   model?: string
+  effort?: 'low' | 'medium' | 'high' | 'max'
   promptType?: 'spec' | 'entity'
   promptName?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
@@ -28,6 +29,7 @@ export async function createSessionWithInitialMessage(options: {
     shouldStart = true,
     tags,
     model,
+    effort,
     promptType,
     promptName,
     permissionMode,
@@ -36,8 +38,8 @@ export async function createSessionWithInitialMessage(options: {
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
-  if (model !== undefined || permissionMode !== undefined || adapter !== undefined) {
-    db.updateSession(session.id, { model, permissionMode, adapter })
+  if (model !== undefined || effort !== undefined || permissionMode !== undefined || adapter !== undefined) {
+    db.updateSession(session.id, { model, effort, permissionMode, adapter })
     const updatedSession = db.getSession(session.id)
     if (updatedSession) {
       Object.assign(session, updatedSession)
@@ -56,7 +58,10 @@ export async function createSessionWithInitialMessage(options: {
 
   if ((initialMessage || initialContent) && shouldStart) {
     try {
-      await startAdapterSession(session.id, { model, promptType, promptName, permissionMode, systemPrompt, adapter })
+      await startAdapterSession(
+        session.id,
+        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter }
+      )
       if (initialContent) {
         processUserMessage(session.id, initialContent)
       } else if (initialMessage) {

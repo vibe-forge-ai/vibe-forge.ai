@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ModelMetadataConfig, ModelServiceConfig } from '@vibe-forge/types'
 import {
   doesModelMatchSelector,
   evaluateAdapterModelRules,
@@ -8,10 +7,13 @@ import {
   resolveAdapterConfiguredDefaultModel,
   resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
+  resolveEffectiveEffort,
+  resolveModelConfiguredEffort,
   resolveModelDefaultAdapter,
   resolveModelMetadata,
   resolveModelSelection
 } from '#~/model-selection.js'
+import type { ModelMetadataConfig, ModelServiceConfig } from '@vibe-forge/types'
 
 const modelServices: Record<string, ModelServiceConfig> = {
   serviceA: {
@@ -43,7 +45,7 @@ describe('model selection utilities', () => {
     })).toEqual({ defaultAdapter: 'claude-code' })
   })
 
-  it('ignores invalid selector keys and falls back to service entries', () => {
+  it('falls back from exact selector to plain model metadata before service entries', () => {
     const models: Record<string, ModelMetadataConfig> = {
       modelX: { defaultAdapter: 'codex' },
       serviceB: { defaultAdapter: 'claude-code' }
@@ -52,7 +54,24 @@ describe('model selection utilities', () => {
     expect(resolveModelDefaultAdapter({
       model: 'serviceB,modelX',
       models
-    })).toBe('claude-code')
+    })).toBe('codex')
+  })
+
+  it('resolves exact selector metadata before plain model and service metadata', () => {
+    const models: Record<string, ModelMetadataConfig> = {
+      serviceA: { effort: 'low' },
+      modelX: { effort: 'medium' },
+      'serviceA,modelX': { effort: 'high' }
+    }
+
+    expect(resolveModelConfiguredEffort({
+      model: 'serviceA,modelX',
+      models
+    })).toBe('high')
+    expect(resolveModelConfiguredEffort({
+      model: 'serviceB,modelX',
+      models
+    })).toBe('medium')
   })
 
   it('resolves raw models through the preferred default service', () => {
@@ -179,6 +198,59 @@ describe('model selection utilities', () => {
         requestedModel: 'serviceB,modelX',
         reason: 'not_included'
       }
+    })
+  })
+
+  it('resolves effort in explicit > model > adapter > config order', () => {
+    expect(resolveEffectiveEffort({
+      explicitEffort: 'max',
+      model: 'serviceA,modelX',
+      adapter: 'codex',
+      configEffort: 'low',
+      adapters: {
+        codex: { effort: 'medium' }
+      },
+      models: {
+        'serviceA,modelX': { effort: 'high' }
+      }
+    })).toEqual({
+      effort: 'max',
+      source: 'explicit'
+    })
+
+    expect(resolveEffectiveEffort({
+      model: 'serviceA,modelX',
+      adapter: 'codex',
+      configEffort: 'low',
+      adapters: {
+        codex: { effort: 'medium' }
+      },
+      models: {
+        'serviceA,modelX': { effort: 'high' }
+      }
+    })).toEqual({
+      effort: 'high',
+      source: 'model'
+    })
+
+    expect(resolveEffectiveEffort({
+      model: 'serviceA,modelAOnly',
+      adapter: 'codex',
+      configEffort: 'low',
+      adapters: {
+        codex: { effort: 'medium' }
+      }
+    })).toEqual({
+      effort: 'medium',
+      source: 'adapter'
+    })
+
+    expect(resolveEffectiveEffort({
+      adapter: 'codex',
+      configEffort: 'low'
+    })).toEqual({
+      effort: 'low',
+      source: 'config'
     })
   })
 })

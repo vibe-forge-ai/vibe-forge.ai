@@ -2,9 +2,9 @@ import { PassThrough } from 'node:stream'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AdapterCtx, WorkspaceAssetBundle  } from '@vibe-forge/types'
-import type { Logger } from '@vibe-forge/utils/create-logger'
 import { run } from '#~/run.js'
+import type { AdapterCtx, WorkspaceAssetBundle } from '@vibe-forge/types'
+import type { Logger } from '@vibe-forge/utils/create-logger'
 
 const {
   prepareMock,
@@ -156,6 +156,64 @@ describe('task run adapter init', () => {
     expect(initMock).toHaveBeenCalledTimes(1)
     expect(initMock).toHaveBeenCalledWith(ctx)
     expect(queryMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves effort with explicit > model > adapter > config precedence', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      effort: 'low',
+      adapters: createAdapters({
+        codex: {
+          effort: 'medium'
+        }
+      }),
+      models: {
+        'serviceA,modelX': {
+          effort: 'high'
+        }
+      },
+      modelServices: {
+        serviceA: {
+          apiBaseUrl: 'https://service-a.example.com',
+          apiKey: 'token-a',
+          models: ['modelX']
+        }
+      }
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-effort',
+      model: 'serviceA,modelX',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      effort: 'high'
+    })
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-effort-explicit',
+      model: 'serviceA,modelX',
+      effort: 'max',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[1]?.[1]).toMatchObject({
+      effort: 'max'
+    })
   })
 
   it('attaches the adapter asset plan to query options', async () => {

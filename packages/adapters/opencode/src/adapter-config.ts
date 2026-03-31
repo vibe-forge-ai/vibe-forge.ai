@@ -9,6 +9,7 @@ declare module '@vibe-forge/types' {
   }
   interface AdapterMap {
     opencode: {
+      effort?: 'low' | 'medium' | 'high' | 'max'
       agent?: string
       planAgent?: string | false
       titlePrefix?: string

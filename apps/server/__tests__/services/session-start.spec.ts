@@ -68,6 +68,7 @@ describe('startAdapterSession', () => {
       status: 'completed',
       model: 'gpt-4o',
       adapter: 'codex',
+      effort: 'medium',
       permissionMode: 'default'
     }
 
@@ -112,6 +113,7 @@ describe('startAdapterSession', () => {
         runId: 'run-same',
         model: 'gpt-4o',
         adapter: 'codex',
+        effort: 'medium',
         permissionMode: 'default'
       }
     }
@@ -120,6 +122,7 @@ describe('startAdapterSession', () => {
     const result = await startAdapterSession('sess-1', {
       model: 'gpt-4o',
       adapter: 'codex',
+      effort: 'medium',
       permissionMode: 'default'
     })
 
@@ -204,6 +207,50 @@ describe('startAdapterSession', () => {
       })
     )
     expect(newKill).not.toHaveBeenCalled()
+  })
+
+  it('restarts the runtime when effort changes', async () => {
+    const oldKill = vi.fn()
+    const oldEmit = vi.fn()
+    const newKill = vi.fn()
+    const newEmit = vi.fn()
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: oldKill,
+          emit: oldEmit
+        }
+      }
+    })
+
+    const initialRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      effort: 'medium',
+      permissionMode: 'default'
+    })
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: newKill,
+          emit: newEmit
+        }
+      }
+    })
+
+    const restartedRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      effort: 'high',
+      permissionMode: 'default'
+    })
+
+    expect(oldKill).toHaveBeenCalledOnce()
+    expect(restartedRuntime).not.toBe(initialRuntime)
+    expect(restartedRuntime.config?.effort).toBe('high')
+    expect(currentSession.effort).toBe('high')
   })
 
   it('marks the session as failed when adapter startup throws', async () => {

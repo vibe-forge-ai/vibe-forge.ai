@@ -91,6 +91,7 @@ export function sessionsRouter(): Router {
       parentSessionId,
       start,
       model,
+      effort,
       promptType,
       promptName,
       permissionMode,
@@ -103,6 +104,7 @@ export function sessionsRouter(): Router {
       parentSessionId?: string
       start?: boolean
       model?: string
+      effort?: 'low' | 'medium' | 'high' | 'max'
       promptType?: 'spec' | 'entity'
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
@@ -116,6 +118,7 @@ export function sessionsRouter(): Router {
       id,
       shouldStart: start !== false,
       model,
+      effort,
       promptType,
       promptName,
       permissionMode,
