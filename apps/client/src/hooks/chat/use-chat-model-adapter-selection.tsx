@@ -67,7 +67,9 @@ export function useChatModelAdapterSelection({
   adapterLocked?: boolean
 } = {}) {
   const { t } = useTranslation()
-  const [selectedAdapter, setSelectedAdapter] = useState<string | undefined>(() => readStorageValue(ADAPTER_STORAGE_KEY))
+  const [selectedAdapter, setSelectedAdapter] = useState<string | undefined>(() =>
+    readStorageValue(ADAPTER_STORAGE_KEY)
+  )
   const [selectedModel, setSelectedModel] = useState<string | undefined>(() => readStorageValue(MODEL_STORAGE_KEY))
   const [selectionDriver, setSelectionDriver] = useState<SelectionDriver>(() => readSelectionDriver())
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
@@ -124,15 +126,18 @@ export function useChatModelAdapterSelection({
     })
   }, [availableAdapters, defaultAdapter])
 
-  const resolveSelectableModel = useCallback((value?: string, builtinModels?: Iterable<string>, preserveUnknown = false) => {
-    return resolveChatModelSelection({
-      value,
-      builtinModels,
-      serviceModels: availableServiceModels,
-      defaultModelService,
-      preserveUnknown
-    })
-  }, [availableServiceModels, defaultModelService])
+  const resolveSelectableModel = useCallback(
+    (value?: string, builtinModels?: Iterable<string>, preserveUnknown = false) => {
+      return resolveChatModelSelection({
+        value,
+        builtinModels,
+        serviceModels: availableServiceModels,
+        defaultModelService,
+        preserveUnknown
+      })
+    },
+    [availableServiceModels, defaultModelService]
+  )
 
   const resolveModelForAdapter = useCallback((adapter?: string) => {
     const builtinModels = buildBuiltinModelValues(
@@ -225,7 +230,8 @@ export function useChatModelAdapterSelection({
     }
 
     if (selectionDriver === 'model') {
-      const nextModelCandidate = resolveSelectableModel(selectedModel, allBuiltinModelValues, false) ?? resolvedDefaultModel
+      const nextModelCandidate = resolveSelectableModel(selectedModel, allBuiltinModelValues, false) ??
+        resolvedDefaultModel
       const nextAdapter = resolveAdapterForModel(nextModelCandidate) ?? resolveAdapterValue(selectedAdapter)
       const nextModel = resolveCompatibleModelForAdapter(nextAdapter, nextModelCandidate)
       setSelectedModel((prev) => prev === nextModel ? prev : nextModel)

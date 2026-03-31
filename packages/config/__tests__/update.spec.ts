@@ -12,14 +12,21 @@ describe('updateConfigFile', () => {
 
     try {
       const configPath = path.join(tempDir, '.ai.config.json')
-      await writeFile(configPath, JSON.stringify({
-        modelServices: {
-          openai: {
-            apiKey: 'secret-key',
-            baseURL: 'https://example.com'
-          }
-        }
-      }, null, 2))
+      await writeFile(
+        configPath,
+        JSON.stringify(
+          {
+            modelServices: {
+              openai: {
+                apiKey: 'secret-key',
+                baseURL: 'https://example.com'
+              }
+            }
+          },
+          null,
+          2
+        )
+      )
 
       const result = await updateConfigFile({
         workspaceFolder: tempDir,

@@ -42,8 +42,8 @@ const isNativeHookBridgeModule = (value: unknown): value is NativeHookBridgeModu
   if (value == null || typeof value !== 'object') return false
 
   return (
-    typeof (value as NativeHookBridgeModule).isNativeHookEnv === 'function'
-    && typeof (value as NativeHookBridgeModule).runHookBridge === 'function'
+    typeof (value as NativeHookBridgeModule).isNativeHookEnv === 'function' &&
+    typeof (value as NativeHookBridgeModule).runHookBridge === 'function'
   )
 }
 
@@ -52,8 +52,8 @@ export const readInstalledAdapterScopeEntries = (scopeDir: string) => {
 
   return readdirSync(scopeDir, { withFileTypes: true })
     .filter(entry => (
-      entry.name.startsWith(ADAPTER_PREFIX)
-      && (entry.isDirectory() || entry.isSymbolicLink())
+      entry.name.startsWith(ADAPTER_PREFIX) &&
+      (entry.isDirectory() || entry.isSymbolicLink())
     ))
     .map(entry => entry.name)
 }

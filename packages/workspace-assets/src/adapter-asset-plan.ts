@@ -74,8 +74,8 @@ export function buildAdapterAssetPlan(params: {
     const nativeHookReason = params.adapter === 'claude-code'
       ? 'Mapped into the isolated Claude Code native hooks bridge under .ai/.mock/.claude/settings.json.'
       : params.adapter === 'codex'
-        ? 'Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop.'
-        : 'Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins.'
+      ? 'Mapped into the isolated Codex native hooks bridge for SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, and Stop.'
+      : 'Mapped into the isolated OpenCode native hook plugin bridge under .ai/.mock/.config/opencode/plugins.'
     diagnostics.push({
       assetId: hookPlugin.id,
       adapter: params.adapter,
@@ -154,21 +154,21 @@ export function buildAdapterAssetPlan(params: {
     overlays,
     native: params.adapter === 'claude-code'
       ? {
-          enabledPlugins: params.bundle.enabledPlugins,
-          extraKnownMarketplaces: params.bundle.extraKnownMarketplaces
-        }
+        enabledPlugins: params.bundle.enabledPlugins,
+        extraKnownMarketplaces: params.bundle.extraKnownMarketplaces
+      }
       : params.adapter === 'codex' && params.bundle.hookPlugins.length > 0
-        ? {
-            codexHooks: {
-              supportedEvents: [
-                'SessionStart',
-                'UserPromptSubmit',
-                'PreToolUse',
-                'PostToolUse',
-                'Stop'
-              ]
-            }
-          }
-        : {}
+      ? {
+        codexHooks: {
+          supportedEvents: [
+            'SessionStart',
+            'UserPromptSubmit',
+            'PreToolUse',
+            'PostToolUse',
+            'Stop'
+          ]
+        }
+      }
+      : {}
   }
 }

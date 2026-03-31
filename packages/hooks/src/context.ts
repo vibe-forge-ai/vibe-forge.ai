@@ -1,5 +1,5 @@
-import type { Logger } from '@vibe-forge/utils/create-logger'
 import type { HookPluginConfig } from '@vibe-forge/types'
+import type { Logger } from '@vibe-forge/utils/create-logger'
 
 import type { HookInputs, HookOutputs } from './type'
 

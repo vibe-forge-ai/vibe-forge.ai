@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { createMcpTools } from '#~/tools/index.js'
 import wait from '#~/tools/general/wait.js'
+import { createMcpTools } from '#~/tools/index.js'
 
 import { createToolTester } from './mcp-test-utils.js'
 

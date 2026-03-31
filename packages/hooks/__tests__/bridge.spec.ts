@@ -3,7 +3,7 @@ import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createAdapterHookBridge } from '#~/bridge.js'
-import type { HookLogger, HookBridgeSession } from '#~/index.js'
+import type { HookBridgeSession, HookLogger } from '#~/index.js'
 import type { ChatMessage } from '@vibe-forge/types'
 
 const { callHookMock } = vi.hoisted(() => ({

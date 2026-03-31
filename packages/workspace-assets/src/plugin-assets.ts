@@ -1,16 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
 
-import { glob } from 'fast-glob'
 import type { Config, WorkspaceAsset, WorkspaceAssetAdapter } from '@vibe-forge/types'
 import { resolveRelativePath } from '@vibe-forge/utils'
+import { glob } from 'fast-glob'
 import yaml from 'js-yaml'
 
+import { isPluginEnabled, resolvePluginIdFromPath } from './helpers'
 import type { WorkspaceOpenCodeOverlayAsset } from './internal-types'
-import {
-  isPluginEnabled,
-  resolvePluginIdFromPath
-} from './helpers'
 
 const parseStructuredDocument = async (path: string) => {
   const raw = await readFile(path, 'utf8')

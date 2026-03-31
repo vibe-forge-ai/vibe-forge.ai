@@ -43,7 +43,9 @@ const resolveCliEntrypoint = () => {
     return distEntrypoint
   }
 
-  throw new Error('CLI entrypoint not found. Set __VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ or __VF_PROJECT_CLI_BIN_DIST_ENTRY__.')
+  throw new Error(
+    'CLI entrypoint not found. Set __VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ or __VF_PROJECT_CLI_BIN_DIST_ENTRY__.'
+  )
 }
 
 if (!process.env.__IS_LOADER_CLI__) {
@@ -99,7 +101,8 @@ if (!process.env.__IS_LOADER_CLI__) {
 } else {
   process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
   process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? process.cwd()
-  process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ ?? process.env.__VF_PROJECT_PACKAGE_DIR__
+  process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ ??
+    process.env.__VF_PROJECT_PACKAGE_DIR__
 
   require(resolveCliEntrypoint())
 }

@@ -155,9 +155,9 @@ const createToolCaseExpectations = (
       ...(adapter === 'codex'
         ? []
         : [
-            { event: 'PreToolUse', count: 1 },
-            { event: 'PostToolUse', count: 1 }
-          ])
+          { event: 'PreToolUse', count: 1 },
+          { event: 'PostToolUse', count: 1 }
+        ])
     ],
     mockTrace: {
       minRequests: 2,

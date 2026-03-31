@@ -49,7 +49,9 @@ describe('cli-helper loader wrapper', () => {
     const entryPath = resolve(process.cwd(), 'packages/cli-helper/entry.js')
     const result = spawnSync(
       process.execPath,
-      ['-e', `
+      [
+        '-e',
+        `
 const Module = require('node:module')
 const entryPath = ${JSON.stringify(entryPath)}
 const originalLoad = Module._load
@@ -79,7 +81,8 @@ require(entryPath).runCliPackageEntrypoint({
   sourceEntry: './src/custom-cli',
   distEntry: './dist/custom-cli.js'
 })
-      `],
+      `
+      ],
       {
         cwd: workspaceDir,
         env: {

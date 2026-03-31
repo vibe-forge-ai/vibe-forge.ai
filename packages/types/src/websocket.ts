@@ -5,7 +5,7 @@ export type WSEvent<
   TAdapterErrorData = unknown,
   TSessionInfo = unknown,
   TSession = unknown,
-  TInteractionPayload = AskUserQuestionParams
+  TInteractionPayload = AskUserQuestionParams,
 > =
   | { type: 'error'; data: TAdapterErrorData; message?: string }
   | { type: 'message'; message: ChatMessage }

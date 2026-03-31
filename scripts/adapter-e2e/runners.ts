@@ -1,6 +1,6 @@
-import process from 'node:process'
 import { readdir, rm } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 
 import {
   buildBaseEnv,
@@ -31,12 +31,16 @@ const resetCodexMockState = async () => {
   const codexHome = path.resolve(mockHome, '.codex')
   const entries = await readdir(codexHome, { withFileTypes: true }).catch(() => [])
 
-  await Promise.all(entries
-    .filter(entry => isCodexTransientEntry(entry.name))
-    .map(entry => rm(path.resolve(codexHome, entry.name), {
-      force: true,
-      recursive: true
-    })))
+  await Promise.all(
+    entries
+      .filter(entry => isCodexTransientEntry(entry.name))
+      .map(entry =>
+        rm(path.resolve(codexHome, entry.name), {
+          force: true,
+          recursive: true
+        })
+      )
+  )
 }
 
 export const runWrappedAdapter = async (

@@ -57,10 +57,12 @@ export const runClaudeHookBridge = async () => {
     const result = await executeHookInput(hookInput)
     process.stdout.write(`${JSON.stringify(result)}\n`)
   } catch (error) {
-    process.stdout.write(`${JSON.stringify({
-      continue: true,
-      systemMessage: `vibe-forge claude hook bridge error: ${String(error)}`
-    })}\n`)
+    process.stdout.write(`${
+      JSON.stringify({
+        continue: true,
+        systemMessage: `vibe-forge claude hook bridge error: ${String(error)}`
+      })
+    }\n`)
   }
 }
 

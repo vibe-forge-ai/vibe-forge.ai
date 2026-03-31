@@ -1,6 +1,5 @@
 import { resolve } from 'node:path'
 
-import type { AdapterCtx } from '@vibe-forge/types'
 import {
   buildNodeScriptCommand,
   hasManagedHookPlugins,
@@ -11,6 +10,7 @@ import {
   writeJsonFile
 } from '@vibe-forge/hooks'
 import type { NativeHookMatcherGroup } from '@vibe-forge/hooks'
+import type { AdapterCtx } from '@vibe-forge/types'
 
 export const CLAUDE_NATIVE_HOOK_EVENTS = [
   'SessionStart',

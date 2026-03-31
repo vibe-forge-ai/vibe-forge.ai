@@ -1,4 +1,4 @@
-import type { AdapterQueryOptions, Config  } from '@vibe-forge/types'
+import type { AdapterQueryOptions, Config } from '@vibe-forge/types'
 
 const filterMcpServers = (
   mcpServers: Config['mcpServers'] | undefined,

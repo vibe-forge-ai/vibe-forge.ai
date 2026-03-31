@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
 import { notify, notifyOptionsSchema } from '#~/system.js'
+import { describe, expect, it, vi } from 'vitest'
 
 const notifierNotify = vi.hoisted(() => vi.fn())
 

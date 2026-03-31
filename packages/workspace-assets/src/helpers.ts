@@ -30,6 +30,6 @@ export const toAssetScope = (origin: WorkspaceAsset['origin']): WorkspaceAsset['
   origin === 'config'
     ? 'project'
     : origin === 'fallback'
-      ? 'adapter'
-      : 'workspace'
+    ? 'adapter'
+    : 'workspace'
 )

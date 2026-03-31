@@ -3,8 +3,6 @@ import { readFile } from 'node:fs/promises'
 import { basename, dirname, relative, resolve } from 'node:path'
 import process from 'node:process'
 
-import { glob } from 'fast-glob'
-import fm from 'front-matter'
 import type {
   Definition,
   Entity,
@@ -15,12 +13,9 @@ import type {
   Skill,
   Spec
 } from '@vibe-forge/types'
-import {
-  normalizePath,
-  resolveDocumentName,
-  resolvePromptPath,
-  resolveSpecIdentifier
-} from '@vibe-forge/utils'
+import { normalizePath, resolveDocumentName, resolvePromptPath, resolveSpecIdentifier } from '@vibe-forge/utils'
+import { glob } from 'fast-glob'
+import fm from 'front-matter'
 
 /**
  * 以结构化的方式加载本地文档数据

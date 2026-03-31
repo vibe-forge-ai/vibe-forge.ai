@@ -71,10 +71,12 @@ const collectMockReportTargets = async (cwd: string) => {
   try {
     const entries = await fs.readdir(mockRoot, { withFileTypes: true })
     const mockFiles = entries
-      .filter(entry => entry.isFile() && (
-        entry.name === REPORT_MOCK_FILE_PREFIX ||
-        entry.name.startsWith(`${REPORT_MOCK_FILE_PREFIX}.backup`)
-      ))
+      .filter(entry =>
+        entry.isFile() && (
+          entry.name === REPORT_MOCK_FILE_PREFIX ||
+          entry.name.startsWith(`${REPORT_MOCK_FILE_PREFIX}.backup`)
+        )
+      )
       .map(entry => `.ai/.mock/${entry.name}`)
       .sort((left, right) => left.localeCompare(right))
 

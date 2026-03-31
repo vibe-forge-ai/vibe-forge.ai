@@ -2,8 +2,8 @@ import { execFile, spawn } from 'node:child_process'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { createOpenCodeSession } from '#~/runtime/session.js'
 
