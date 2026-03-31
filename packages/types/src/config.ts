@@ -1,5 +1,5 @@
 import type { EffortLevel } from './common'
-import type { HookPluginConfig } from './plugin'
+import type { PluginConfig } from './plugin'
 
 export interface AdapterMap {}
 
@@ -124,26 +124,7 @@ export interface Config {
     customInstructions?: string
     injectDefaultSystemPrompt?: boolean
   }
-  plugins?: HookPluginConfig
-  enabledPlugins?: Record<string, boolean>
-  extraKnownMarketplaces?: Record<
-    string,
-    {
-      source:
-        | {
-          source: 'github'
-          repo: string
-        }
-        | {
-          source: 'git'
-          url: string
-        }
-        | {
-          source: 'directory'
-          path: string
-        }
-    }
-  >
+  plugins?: PluginConfig
 }
 
 export interface AboutInfo {
@@ -181,8 +162,6 @@ export interface ConfigSection {
   adapterBuiltinModels?: Record<string, AdapterBuiltinModel[]>
   plugins?: {
     plugins?: Config['plugins']
-    enabledPlugins?: Config['enabledPlugins']
-    extraKnownMarketplaces?: Config['extraKnownMarketplaces']
   }
   mcp?: {
     mcpServers?: Config['mcpServers']

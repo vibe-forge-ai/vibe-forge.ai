@@ -1,4 +1,3 @@
-import type { HookPluginConfig } from '@vibe-forge/types'
 import type { Logger } from '@vibe-forge/utils/create-logger'
 
 import type { HookInputs, HookOutputs } from './type'
@@ -22,7 +21,3 @@ export type Plugin =
   }
 
 export const definePlugin = (plugin: Partial<Plugin>) => plugin
-
-export type PluginConfig =
-  | (Partial<Plugin> | (() => Partial<Plugin>))[]
-  | HookPluginConfig

@@ -31,6 +31,7 @@
   "dependencies": {
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
+    "@vibe-forge/workspace-assets": "workspace:^",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2"
   }

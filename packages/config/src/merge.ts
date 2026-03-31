@@ -100,11 +100,11 @@ const mergePluginConfigs = (
   left?: Config['plugins'],
   right?: Config['plugins']
 ) => {
-  if (!isRecord(left) || !isRecord(right)) {
-    return right ?? left
-  }
-
-  return mergeRecord(left, right) as Config['plugins']
+  const merged = [
+    ...(left ?? []),
+    ...(right ?? [])
+  ]
+  return merged.length > 0 ? merged : undefined
 }
 
 export function mergeConfigs(left: undefined, right: undefined): undefined
@@ -141,12 +141,7 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.conversation as Record<string, unknown> | undefined
     ) as Config['conversation'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    plugins: mergePluginConfigs(left?.plugins, right?.plugins),
-    enabledPlugins: mergeRecord(left?.enabledPlugins, right?.enabledPlugins),
-    extraKnownMarketplaces: mergeRecord(
-      left?.extraKnownMarketplaces,
-      right?.extraKnownMarketplaces
-    )
+    plugins: mergePluginConfigs(left?.plugins, right?.plugins)
   }
 
   return merged as T

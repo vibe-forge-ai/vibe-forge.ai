@@ -93,6 +93,7 @@ export interface AdapterQueryOptions {
   }
   extraOptions?: string[]
   promptAssetIds?: string[]
+  assetBundle?: WorkspaceAssetBundle
   assetPlan?: AdapterAssetPlan
   onEvent: (event: AdapterOutputEvent) => void
 }

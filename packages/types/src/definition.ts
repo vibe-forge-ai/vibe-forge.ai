@@ -1,3 +1,5 @@
+import type { PluginOverlayConfig } from './plugin'
+
 export interface Filter {
   include?: string[]
   exclude?: string[]
@@ -23,6 +25,7 @@ export interface Spec {
   skills?: string[]
   mcpServers?: Filter
   tools?: Filter
+  plugins?: PluginOverlayConfig
 }
 
 export interface LocalRuleReference {
@@ -55,6 +58,7 @@ export interface Entity {
   skills?: string[] | SkillSelection
   mcpServers?: Filter
   tools?: Filter
+  plugins?: PluginOverlayConfig
 }
 
 export interface Skill {
@@ -67,4 +71,6 @@ export interface Definition<T> {
   path: string
   body: string
   attributes: T
+  resolvedName?: string
+  resolvedInstancePath?: string
 }

@@ -102,7 +102,6 @@ export const SectionForm = ({
     if (sectionKey === 'channels') return t('config.editor.newChannelName')
     if (sectionKey === 'adapters') return t('config.editor.newAdapterName')
     if (sectionKey === 'plugins') {
-      if (field.path.join('.') === 'extraKnownMarketplaces') return t('config.editor.newMarketplaceName')
       return t('config.editor.newPluginName')
     }
     if (sectionKey === 'mcp') return t('config.editor.newMcpServerName')

@@ -63,6 +63,7 @@ export const ensureOpenCodeConfigDir = async (params: {
         .map((entry) => [basename(entry.targetPath), entry.sourcePath] as const)
     )
     : await filterResolvedSkills(params.ctx.cwd, params.options.skills)
+  if (baseConfigDir == null && resolvedSkills.size === 0 && planOverlays.length === 0) return undefined
 
   const configDir = resolve(
     params.ctx.cwd,

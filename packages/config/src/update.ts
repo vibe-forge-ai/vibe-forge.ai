@@ -155,17 +155,6 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
     }
     case 'plugins': {
       updateField('plugins', sectionValue.plugins as Config['plugins'])
-      updateField(
-        'enabledPlugins',
-        mergeMaskedValues(sectionValue.enabledPlugins, config.enabledPlugins) as Config['enabledPlugins']
-      )
-      updateField(
-        'extraKnownMarketplaces',
-        mergeMaskedValues(
-          sectionValue.extraKnownMarketplaces,
-          config.extraKnownMarketplaces
-        ) as Config['extraKnownMarketplaces']
-      )
       return nextConfig
     }
     case 'mcp': {

@@ -19,6 +19,13 @@ const writeDocument = async (filePath: string, content: string) => {
   await writeFile(filePath, content)
 }
 
+const installPluginPackage = async (workspace: string, packageName: string, files: Record<string, string>) => {
+  const packageDir = join(workspace, 'node_modules', ...packageName.split('/'))
+  await Promise.all(Object.entries(files).map(async ([relativePath, content]) => {
+    await writeDocument(join(packageDir, relativePath), content)
+  }))
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
@@ -103,14 +110,39 @@ describe('definitionLoader', () => {
     expect(prompt).not.toContain('hidden')
   })
 
-  it('loads plugin directory specs and README based entities consistently', async () => {
+  it('loads npm plugin specs and README based entities consistently', async () => {
     const workspace = await createWorkspace()
     const loader = new DefinitionLoader(workspace)
 
     await writeDocument(
-      join(workspace, '.ai/plugins/demo/specs/ship/index.md'),
-      '---\ndescription: 插件发布流程\n---\n执行插件发布'
+      join(workspace, '.ai.config.json'),
+      JSON.stringify({
+        plugins: [
+          {
+            id: 'demo'
+          }
+        ]
+      })
     )
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        exports: {
+          '.': './index.js',
+          './package.json': './package.json'
+        }
+      }, null, 2),
+      'index.js': [
+        'module.exports = {',
+        '  __vibeForgePluginManifest: true,',
+        '  assets: {',
+        '    specs: "./specs"',
+        '  }',
+        '};',
+        ''
+      ].join('\n'),
+      'specs/ship/index.md': '---\ndescription: 插件发布流程\n---\n执行插件发布'
+    })
     await writeDocument(
       join(workspace, '.ai/entities/reviewer/README.md'),
       '---\ndescription: 代码审查实体\n---\n负责代码审查'
@@ -125,7 +157,7 @@ describe('definitionLoader', () => {
     const planner = await loader.loadEntity('planner')
     const entities = await loader.loadDefaultEntities()
 
-    expect(pluginSpec?.path).toContain('/.ai/plugins/demo/specs/ship/index.md')
+    expect(pluginSpec?.path).toContain('/node_modules/@vibe-forge/plugin-demo/specs/ship/index.md')
     expect(reviewer?.path).toContain('/.ai/entities/reviewer/README.md')
     expect(planner?.path).toContain('/.ai/entities/planner.md')
     expect(entities.map((entity: (typeof entities)[number]) => entity.path)).toEqual([
