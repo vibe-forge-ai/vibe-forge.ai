@@ -4,13 +4,13 @@
 
 优先阅读：
 
-- `.ai/rules/RULE-CODING-STYLE.md`
-- `.ai/rules/RULE-ARCHITECTURE.md`
-- `.ai/rules/RULE-MAINTENANCE.md`
+- `.ai/rules/CODING-STYLE.md`
+- `.ai/rules/ARCHITECTURE.md`
+- `.ai/rules/MAINTENANCE.md`
 
 按任务继续阅读：
 
-- 仓库架构与分层：`.ai/rules/ARCHITECTURE.md`
+- 前端 / 后端约束：`.ai/rules/FRONTEND-STANDARD.md`、`.ai/rules/BACKEND-STANDARD.md`
 - 仓库开发与贡献：`.ai/rules/DEVELOPMENT.md`
 - 项目接入方式：`.ai/rules/USAGE.md`
 - hooks 方案与维护：`.ai/rules/HOOKS.md`、`.ai/rules/HOOKS-REFERENCE.md`
@@ -21,5 +21,6 @@
 维护约定：
 
 - 以 `.ai/rules/` 为统一文档入口，不再以仓库根 `docs/` 作为主入口。
+- 顶层文件只做总览与导航；超过一屏的细节继续拆到同名子目录，保持渐进式披露。
 - 更新日志统一维护在仓库根目录 `changelog/`，按版本目录组织。
 - AGENTS 与文档只描述现状，不记录迁移历史。

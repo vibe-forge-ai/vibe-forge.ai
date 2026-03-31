@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # 项目维护指南 (Maintenance)
 
 ## 开发环境启动
