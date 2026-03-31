@@ -55,6 +55,9 @@ importers:
       '@vibe-forge/plugin-logger':
         specifier: workspace:*
         version: link:packages/plugins/logger
+      '@vibe-forge/plugin-standard-dev':
+        specifier: workspace:*
+        version: link:packages/plugins/standard-dev
       '@vibe-forge/server':
         specifier: workspace:*
         version: link:apps/server
@@ -528,6 +531,12 @@ importers:
       '@vibe-forge/types':
         specifier: workspace:*
         version: link:../../types
+
+  packages/plugins/standard-dev:
+    dependencies:
+      '@vibe-forge/core':
+        specifier: workspace:*
+        version: link:../../core
 
   packages/register:
     dependencies:
