@@ -1,10 +1,12 @@
-import { createLogger } from '@vibe-forge/utils/create-logger'
-import type { Logger } from '@vibe-forge/utils/create-logger'
 import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
+
+import { createLogger } from '@vibe-forge/utils/create-logger'
+import type { Logger } from '@vibe-forge/utils/create-logger'
 
 export const CODEX_PROXY_META_HEADER_NAME = 'X-Vibe-Forge-Proxy-Meta'
 type CodexProxyLogger = Logger
@@ -15,12 +17,28 @@ interface CodexProxyLogContext {
   sessionId: string
 }
 
+export interface CodexProxyDiagnostics {
+  routedServiceKey?: string
+  requestedModel?: string
+  resolvedModel?: string
+  runtime?: string
+  sessionType?: string
+  permissionMode?: string
+  approvalPolicy?: string
+  sandboxPolicy?: string
+  useYolo?: boolean
+  requestedEffort?: string
+  effectiveEffort?: string
+  wireApi?: string
+}
+
 export interface CodexProxyMeta {
   upstreamBaseUrl: string
   queryParams?: Record<string, string>
   headers?: Record<string, string>
   maxOutputTokens?: number
   logContext?: CodexProxyLogContext
+  diagnostics?: CodexProxyDiagnostics
 }
 
 const REQUEST_HEADERS_TO_DROP = new Set([
@@ -51,6 +69,22 @@ const RESPONSE_HEADERS_TO_DROP = new Set([
 let proxyServerPromise: Promise<{ baseUrl: string }> | undefined
 let proxyServerLogger: CodexProxyLogger | undefined
 const requestLoggerCache = new Map<string, CodexProxyLogger>()
+let proxyRequestCounter = 0
+
+const REDACTED_VALUE = '[REDACTED]'
+const SENSITIVE_LOG_KEY_PATTERNS = [
+  /^authorization$/i,
+  /^proxy-authorization$/i,
+  /^cookie$/i,
+  /^set-cookie$/i,
+  /^x-api-key$/i,
+  /^api[-_]?key$/i,
+  /^key$/i,
+  /token$/i,
+  /secret$/i,
+  /password$/i,
+  /signature$/i
+]
 
 export const encodeCodexProxyMeta = (meta: CodexProxyMeta) =>
   Buffer.from(JSON.stringify(meta), 'utf8').toString('base64url')
@@ -81,12 +115,19 @@ const looksLikeJsonPayload = (buffer: Buffer) => {
   return text.startsWith('{') || text.startsWith('[')
 }
 
+interface PreparedUpstreamBody {
+  body: string | Buffer | undefined
+  injectedMaxOutputTokens?: number
+}
+
 const maybeInjectMaxOutputTokens = (
   requestBodyBuffer: Buffer,
   req: IncomingMessage,
   proxyMeta: CodexProxyMeta
-): string | Buffer | undefined => {
-  if (requestBodyBuffer.length === 0) return undefined
+): PreparedUpstreamBody => {
+  if (requestBodyBuffer.length === 0) {
+    return { body: undefined }
+  }
 
   const normalizedMaxOutputTokens = (
       typeof proxyMeta.maxOutputTokens === 'number' &&
@@ -96,26 +137,33 @@ const maybeInjectMaxOutputTokens = (
     ? Math.floor(proxyMeta.maxOutputTokens)
     : undefined
 
-  if (normalizedMaxOutputTokens == null) return requestBodyBuffer
+  if (normalizedMaxOutputTokens == null) {
+    return { body: requestBodyBuffer }
+  }
 
   const contentType = normalizeContentType(req.headers['content-type'])
   const shouldInspectJson = contentType === 'application/json' ||
     contentType?.endsWith('+json') === true ||
     looksLikeJsonPayload(requestBodyBuffer)
 
-  if (!shouldInspectJson) return requestBodyBuffer
+  if (!shouldInspectJson) {
+    return { body: requestBodyBuffer }
+  }
 
   const requestBodyText = requestBodyBuffer.toString('utf8')
 
   try {
     const parsedBody = JSON.parse(requestBodyText) as unknown
     if (!isPlainObject(parsedBody) || parsedBody.max_output_tokens != null) {
-      return requestBodyText
+      return { body: requestBodyText }
     }
     parsedBody.max_output_tokens = normalizedMaxOutputTokens
-    return JSON.stringify(parsedBody)
+    return {
+      body: JSON.stringify(parsedBody),
+      injectedMaxOutputTokens: normalizedMaxOutputTokens
+    }
   } catch {
-    return requestBodyText
+    return { body: requestBodyText }
   }
 }
 
@@ -163,6 +211,163 @@ const normalizeHeaderValue = (value: string | string[] | undefined) => (
   Array.isArray(value) ? value.join(', ') : value
 )
 
+const isSensitiveLogKey = (key: string) => (
+  SENSITIVE_LOG_KEY_PATTERNS.some(pattern => pattern.test(key))
+)
+
+const sanitizeForLog = (value: unknown, keyHint?: string): unknown => {
+  if (keyHint != null && isSensitiveLogKey(keyHint)) {
+    return REDACTED_VALUE
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => sanitizeForLog(item))
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, sanitizeForLog(item, key)])
+    )
+  }
+  return value
+}
+
+const sanitizeHeaderEntriesForLog = (
+  entries: Iterable<[string, string]>
+) =>
+  Object.fromEntries(
+    Array.from(entries, ([key, value]) => [key, isSensitiveLogKey(key) ? REDACTED_VALUE : value])
+  )
+
+const sanitizeIncomingHeadersForLog = (
+  headers: IncomingMessage['headers'],
+  excludedKeys: ReadonlySet<string> = new Set()
+) =>
+  Object.fromEntries(
+    Object.entries(headers)
+      .map(([key, value]) => [key, normalizeHeaderValue(value)] as const)
+      .filter((entry): entry is [string, string] => entry[1] != null)
+      .filter(([key]) => !excludedKeys.has(key.toLowerCase()))
+      .map(([key, value]) => [key, isSensitiveLogKey(key) ? REDACTED_VALUE : value] as const)
+  )
+
+const appendRecordValue = (
+  record: Record<string, string | string[]>,
+  key: string,
+  value: string
+) => {
+  const current = record[key]
+  if (current == null) {
+    record[key] = value
+    return
+  }
+  if (Array.isArray(current)) {
+    current.push(value)
+    return
+  }
+  record[key] = [current, value]
+}
+
+const sanitizeSearchParamsForLog = (searchParams: URLSearchParams) => {
+  const record: Record<string, string | string[]> = {}
+  for (const [key, value] of searchParams.entries()) {
+    appendRecordValue(
+      record,
+      key,
+      isSensitiveLogKey(key) ? REDACTED_VALUE : value
+    )
+  }
+  return record
+}
+
+const sanitizeStringRecordForLog = (record: Record<string, string>) => (
+  Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [key, isSensitiveLogKey(key) ? REDACTED_VALUE : value])
+  )
+)
+
+const toBodyBuffer = (body: string | Buffer | undefined) => {
+  if (body == null) return undefined
+  if (typeof body === 'string') return Buffer.from(body)
+  return body
+}
+
+const isTextualContentType = (contentType: string | undefined) => (
+  contentType == null ||
+  contentType.startsWith('text/') ||
+  contentType === 'application/x-www-form-urlencoded' ||
+  contentType === 'application/xml' ||
+  contentType === 'application/graphql' ||
+  contentType === 'application/javascript' ||
+  contentType === 'application/x-ndjson' ||
+  contentType === 'application/json' ||
+  contentType?.endsWith('+json') === true ||
+  contentType?.endsWith('+xml') === true
+)
+
+interface SerializedBodyForLog {
+  byteLength: number
+  format: 'empty' | 'json' | 'form' | 'text' | 'binary'
+  json?: unknown
+  form?: Record<string, string | string[]>
+  text?: string
+  base64?: string
+}
+
+const serializeBodyForLog = (
+  body: string | Buffer | undefined,
+  contentType: string | undefined
+): SerializedBodyForLog => {
+  const buffer = toBodyBuffer(body)
+  if (buffer == null || buffer.length === 0) {
+    return {
+      byteLength: 0,
+      format: 'empty'
+    }
+  }
+
+  const bodyText = buffer.toString('utf8')
+  const shouldTreatAsJson = contentType === 'application/json' ||
+    contentType?.endsWith('+json') === true ||
+    looksLikeJsonPayload(buffer)
+
+  if (shouldTreatAsJson) {
+    try {
+      return {
+        byteLength: buffer.length,
+        format: 'json',
+        json: sanitizeForLog(JSON.parse(bodyText) as unknown)
+      }
+    } catch {
+      return {
+        byteLength: buffer.length,
+        format: 'text',
+        text: bodyText
+      }
+    }
+  }
+
+  if (contentType === 'application/x-www-form-urlencoded') {
+    return {
+      byteLength: buffer.length,
+      format: 'form',
+      form: sanitizeSearchParamsForLog(new URLSearchParams(bodyText))
+    }
+  }
+
+  if (isTextualContentType(contentType)) {
+    return {
+      byteLength: buffer.length,
+      format: 'text',
+      text: bodyText
+    }
+  }
+
+  return {
+    byteLength: buffer.length,
+    format: 'binary',
+    base64: buffer.toString('base64')
+  }
+}
+
 const summarizeProxyMeta = (proxyMeta: CodexProxyMeta) => ({
   upstreamBaseUrl: proxyMeta.upstreamBaseUrl,
   queryParamKeys: Object.keys(proxyMeta.queryParams ?? {}),
@@ -180,7 +385,24 @@ const summarizeRequest = (req: IncomingMessage) => ({
 const summarizeUpstreamUrl = (upstreamUrl: URL) => ({
   upstreamOrigin: upstreamUrl.origin,
   upstreamPath: upstreamUrl.pathname,
-  queryParamKeys: Array.from(new Set(upstreamUrl.searchParams.keys()))
+  upstreamQueryParams: sanitizeSearchParamsForLog(upstreamUrl.searchParams)
+})
+
+const summarizeLocalUrl = (requestUrl: string) => {
+  const localUrl = new URL(requestUrl, 'http://127.0.0.1')
+  return {
+    requestPath: localUrl.pathname,
+    requestQueryParams: sanitizeSearchParamsForLog(localUrl.searchParams)
+  }
+}
+
+const summarizeProxyMetaForLog = (proxyMeta: CodexProxyMeta) => ({
+  upstreamBaseUrl: proxyMeta.upstreamBaseUrl,
+  queryParams: sanitizeStringRecordForLog(proxyMeta.queryParams ?? {}),
+  headers: sanitizeStringRecordForLog(proxyMeta.headers ?? {}),
+  maxOutputTokens: proxyMeta.maxOutputTokens,
+  diagnostics: sanitizeForLog(proxyMeta.diagnostics),
+  logContext: proxyMeta.logContext
 })
 
 const getErrorCause = (err: unknown) => (
@@ -239,7 +461,12 @@ const handleProxyRequest = async (
     writeJsonError(res, 400, 'Failed to read request body')
     return
   }
-  const upstreamBody = maybeInjectMaxOutputTokens(requestBodyBuffer, req, proxyMeta)
+  const requestId = `proxy-${++proxyRequestCounter}`
+  const requestStartedAt = Date.now()
+  const requestUrl = req.url ?? '/responses'
+  const requestContentType = normalizeContentType(req.headers['content-type'])
+  const preparedUpstreamBody = maybeInjectMaxOutputTokens(requestBodyBuffer, req, proxyMeta)
+  const upstreamBody = preparedUpstreamBody.body
 
   const upstreamHeaders = new Headers()
   for (const [key, value] of Object.entries(req.headers)) {
@@ -254,16 +481,33 @@ const handleProxyRequest = async (
     upstreamHeaders.set(key, value)
   }
 
-  const requestUrl = req.url ?? '/responses'
   const upstreamUrl = buildUpstreamUrl(
     proxyMeta.upstreamBaseUrl,
     requestUrl,
     proxyMeta.queryParams ?? {}
   )
-  requestLogger?.debug('[codex proxy] forwarding request', {
+  requestLogger?.info('[codex proxy] request received', {
+    requestId,
     ...summarizeRequest(req),
-    ...summarizeProxyMeta(proxyMeta),
-    ...summarizeUpstreamUrl(upstreamUrl)
+    ...summarizeLocalUrl(requestUrl),
+    proxyMeta: summarizeProxyMetaForLog(proxyMeta),
+    incomingHeaders: sanitizeIncomingHeadersForLog(
+      req.headers,
+      new Set([CODEX_PROXY_META_HEADER_NAME.toLowerCase()])
+    ),
+    incomingBody: serializeBodyForLog(requestBodyBuffer, requestContentType)
+  })
+  requestLogger?.info('[codex proxy] forwarding request', {
+    requestId,
+    ...summarizeRequest(req),
+    ...summarizeLocalUrl(requestUrl),
+    ...summarizeUpstreamUrl(upstreamUrl),
+    upstreamHeaders: sanitizeHeaderEntriesForLog(upstreamHeaders.entries()),
+    upstreamBody: serializeBodyForLog(upstreamBody, requestContentType),
+    proxyMutations: {
+      requestBodyChanged: !Buffer.from(requestBodyBuffer).equals(toBodyBuffer(upstreamBody) ?? Buffer.alloc(0)),
+      injectedMaxOutputTokens: preparedUpstreamBody.injectedMaxOutputTokens ?? null
+    }
   })
   const abortController = new AbortController()
   const abortRequest = () => abortController.abort()
@@ -288,29 +532,79 @@ const handleProxyRequest = async (
       body: toFetchBody(upstreamBody),
       signal: abortController.signal
     })
-    if (!upstreamResponse.ok) {
-      requestLogger?.warn('[codex proxy] upstream returned error status', {
-        ...summarizeRequest(req),
-        ...summarizeProxyMeta(proxyMeta),
-        ...summarizeUpstreamUrl(upstreamUrl),
-        status: upstreamResponse.status,
-        statusText: upstreamResponse.statusText
-      })
-    }
+    const responseContentType = normalizeContentType(upstreamResponse.headers.get('content-type') ?? undefined)
+    const shouldCaptureResponseBody = upstreamResponse.status >= 400 && responseContentType !== 'text/event-stream'
+    const responseBodyForLogPromise = shouldCaptureResponseBody
+      ? upstreamResponse.clone().text()
+        .then(text => serializeBodyForLog(text, responseContentType))
+        .catch(() => undefined)
+      : Promise.resolve(undefined)
 
     const responseHeaders = new Headers()
     upstreamResponse.headers.forEach((value, key) => {
       if (RESPONSE_HEADERS_TO_DROP.has(key.toLowerCase())) return
       responseHeaders.set(key, value)
     })
+    requestLogger?.info('[codex proxy] upstream response received', {
+      requestId,
+      ...summarizeUpstreamUrl(upstreamUrl),
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      durationMs: Date.now() - requestStartedAt,
+      responseHeaders: sanitizeHeaderEntriesForLog(responseHeaders.entries())
+    })
     res.writeHead(upstreamResponse.status, Object.fromEntries(responseHeaders.entries()))
 
     if (upstreamResponse.body == null) {
+      const responseBodyForLog = await responseBodyForLogPromise
+      const completedLog = {
+        requestId,
+        ...summarizeUpstreamUrl(upstreamUrl),
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        durationMs: Date.now() - requestStartedAt,
+        responseBodyBytes: 0,
+        ...(responseBodyForLog != null ? { responseBody: responseBodyForLog } : {})
+      }
+      if (upstreamResponse.ok) {
+        requestLogger?.info('[codex proxy] request completed', completedLog)
+      } else {
+        requestLogger?.warn('[codex proxy] upstream returned error status', completedLog)
+      }
       res.end()
       return
     }
 
-    Readable.fromWeb(upstreamResponse.body as NodeReadableStream).pipe(res)
+    const responseStream = Readable.fromWeb(upstreamResponse.body as NodeReadableStream)
+    let responseBodyBytes = 0
+    responseStream.on('data', (chunk: unknown) => {
+      if (typeof chunk === 'string') {
+        responseBodyBytes += Buffer.byteLength(chunk)
+        return
+      }
+      if (chunk instanceof Uint8Array) {
+        responseBodyBytes += chunk.byteLength
+        return
+      }
+      responseBodyBytes += Buffer.byteLength(String(chunk))
+    })
+
+    await pipeline(responseStream, res)
+    const responseBodyForLog = await responseBodyForLogPromise
+    const completedLog = {
+      requestId,
+      ...summarizeUpstreamUrl(upstreamUrl),
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      durationMs: Date.now() - requestStartedAt,
+      responseBodyBytes,
+      ...(responseBodyForLog != null ? { responseBody: responseBodyForLog } : {})
+    }
+    if (upstreamResponse.ok) {
+      requestLogger?.info('[codex proxy] request completed', completedLog)
+    } else {
+      requestLogger?.warn('[codex proxy] upstream returned error status', completedLog)
+    }
   } catch (err) {
     if (abortController.signal.aborted) {
       res.end()
@@ -319,6 +613,7 @@ const handleProxyRequest = async (
     requestLogger?.error('[codex proxy] upstream request failed', {
       err,
       cause: getErrorCause(err),
+      requestId,
       ...summarizeRequest(req),
       ...summarizeProxyMeta(proxyMeta),
       ...summarizeUpstreamUrl(upstreamUrl)
