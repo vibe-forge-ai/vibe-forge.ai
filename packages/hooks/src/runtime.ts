@@ -106,7 +106,6 @@ export const executeHookInput = async (
     ...await resolvePlugins(workspaceFolder, config?.plugins),
     ...await resolvePlugins(workspaceFolder, userConfig?.plugins)
   ]
-  ]
 
   return callPluginHook(
     input.hookEventName as keyof HookInputs,
