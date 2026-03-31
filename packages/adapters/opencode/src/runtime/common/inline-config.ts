@@ -1,4 +1,4 @@
-import type { AdapterQueryOptions, Config  } from '@vibe-forge/types'
+import type { AdapterQueryOptions, Config } from '@vibe-forge/types'
 
 import { mapMcpServersToOpenCode } from './mcp'
 import { deepMerge } from './object-utils'

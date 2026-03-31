@@ -3,6 +3,7 @@ export type {
   ChatMessage,
   ChatMessageContent,
   ConfigSource,
+  EffortLevel,
   Project,
   Session,
   SessionPermissionMode,

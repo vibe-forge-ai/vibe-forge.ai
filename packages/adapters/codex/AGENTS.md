@@ -257,6 +257,13 @@ When routed model services use the local proxy, adapter-specific proxy logs are 
 
 This mirrors the adapter-scoped logging layout used by the Claude Code Router transformers. Proxy logs are separate from the main task/session log file and include structured request/response diagnostics without dumping sensitive query parameter values or credentials.
 
+Each proxied request now logs:
+
+- the full incoming request headers/body that Codex sent to the local proxy
+- the final upstream URL, headers, and body after vibe-forge mutations such as `max_output_tokens` injection
+- adapter-side routing context encoded in proxy metadata, including routed service, requested/resolved model, runtime, permission policy, and effort
+- response headers plus full non-stream error bodies when the upstream provider returns a failure status
+
 ---
 
 ## Permission / approval policy

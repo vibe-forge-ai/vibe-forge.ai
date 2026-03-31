@@ -454,7 +454,7 @@ flowchart LR
 - `madge`
   - 更轻量，适合快速看 import graph 和循环依赖。
 
-但对这个仓库来说，真正想维护的是“workspace package 级别”的图，而不是“文件 import 级别”的图。  
+但对这个仓库来说，真正想维护的是“workspace package 级别”的图，而不是“文件 import 级别”的图。\
 所以当前更稳的方式仍然是：用一个小脚本读取各个 `package.json` 的 workspace 依赖，再手工收敛成 Mermaid 图。这样更容易控制分层语义，也不会把文件级别的噪音一起带进来。
 
 ## 启动链路

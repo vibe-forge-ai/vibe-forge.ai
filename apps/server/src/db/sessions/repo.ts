@@ -20,6 +20,7 @@ interface SessionRow {
   model: string | null
   adapter: string | null
   permissionMode: string | null
+  effort: string | null
 }
 
 type SessionUpdate = Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
@@ -40,7 +41,8 @@ const sessionUpdateFields = [
   { key: 'status' },
   { key: 'model' },
   { key: 'adapter' },
-  { key: 'permissionMode' }
+  { key: 'permissionMode' },
+  { key: 'effort' }
 ] as const satisfies ReadonlyArray<{
   key: keyof SessionUpdate
   toParam?: (value: any) => string | number | null
@@ -61,7 +63,8 @@ function mapSessionRow(row: SessionRow): Session {
     status: (row.status as any) ?? undefined,
     model: row.model ?? undefined,
     adapter: row.adapter ?? undefined,
-    permissionMode: (row.permissionMode as any) ?? undefined
+    permissionMode: (row.permissionMode as any) ?? undefined,
+    effort: (row.effort as any) ?? undefined
   }
 }
 

@@ -21,6 +21,7 @@ export async function createSession(
     id?: string
     promptType?: 'spec' | 'entity'
     promptName?: string
+    effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
   }
@@ -38,6 +39,7 @@ export async function createSession(
       id: options?.id,
       promptType: options?.promptType,
       promptName: options?.promptName,
+      effort: options?.effort,
       permissionMode: options?.permissionMode,
       adapter: options?.adapter
     })

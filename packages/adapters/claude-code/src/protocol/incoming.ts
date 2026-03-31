@@ -1,17 +1,18 @@
 import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterQueryOptions } from '@vibe-forge/types'
 
+import { prefixToolName } from './content'
 import type {
   ClaudeCodeContentText,
   ClaudeCodeContentToolResult,
   ClaudeCodeContentToolUse,
   ClaudeCodeIncomingEvent
 } from './types'
-import { prefixToolName } from './content'
 
 export const handleIncomingEvent = (
   data: ClaudeCodeIncomingEvent,
-  onEvent: AdapterQueryOptions['onEvent']
+  onEvent: AdapterQueryOptions['onEvent'],
+  effort?: AdapterQueryOptions['effort']
 ) => {
   const emitResultError = (params: {
     message: string
@@ -34,6 +35,7 @@ export const handleIncomingEvent = (
         data: {
           uuid: data.uuid,
           model: data.model,
+          effort,
           version: data.claude_code_version,
           tools: (data.tools) as string[],
           slashCommands: (data.slash_commands) as string[],

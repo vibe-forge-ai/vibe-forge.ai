@@ -28,6 +28,7 @@ export const handleInboundEvent = async (
     sessionId: undefined,
     channelAdapter: undefined,
     channelPermissionMode: undefined,
+    channelEffort: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -86,7 +87,8 @@ export const handleInboundEvent = async (
         channelId: inbound.channelId,
         channelKey,
         adapter,
-        permissionMode: ctx.channelPermissionMode
+        permissionMode: ctx.channelPermissionMode,
+        effort: ctx.channelEffort
       })
     },
     getChannelPermissionModePreference: () => ctx.channelPermissionMode,
@@ -98,7 +100,21 @@ export const handleInboundEvent = async (
         channelId: inbound.channelId,
         channelKey,
         adapter: ctx.channelAdapter,
-        permissionMode
+        permissionMode,
+        effort: ctx.channelEffort
+      })
+    },
+    getChannelEffortPreference: () => ctx.channelEffort,
+    setChannelEffortPreference: (effort) => {
+      ctx.channelEffort = effort
+      getDb().upsertChannelPreference({
+        channelType: inbound.channelType,
+        sessionType: inbound.sessionType,
+        channelId: inbound.channelId,
+        channelKey,
+        adapter: ctx.channelAdapter,
+        permissionMode: ctx.channelPermissionMode,
+        effort
       })
     }
   }

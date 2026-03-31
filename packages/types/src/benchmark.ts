@@ -1,3 +1,4 @@
+import type { EffortLevel } from './common'
 import type { SessionPermissionMode } from './session'
 
 export interface BenchmarkFrontmatter {
@@ -90,6 +91,7 @@ export type BenchmarkPermissionMode = SessionPermissionMode
 export interface BenchmarkAgentOptions {
   adapter?: string
   model?: string
+  effort?: EffortLevel
   systemPrompt?: string
   permissionMode?: BenchmarkPermissionMode
   runtime?: 'cli' | 'server'

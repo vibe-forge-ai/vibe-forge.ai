@@ -99,6 +99,7 @@ export function benchmarkRouter(): Router {
       concurrency?: number
       adapter?: string
       model?: string
+      effort?: 'low' | 'medium' | 'high' | 'max'
       systemPrompt?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     }
@@ -146,6 +147,7 @@ export function benchmarkRouter(): Router {
             title,
             adapter: body.adapter,
             model: body.model,
+            effort: body.effort,
             systemPrompt: body.systemPrompt,
             permissionMode: body.permissionMode,
             runtime: 'server',
@@ -178,6 +180,7 @@ export function benchmarkRouter(): Router {
           concurrency: body.concurrency,
           adapter: body.adapter,
           model: body.model,
+          effort: body.effort,
           systemPrompt: body.systemPrompt,
           permissionMode: body.permissionMode,
           runtime: 'server',

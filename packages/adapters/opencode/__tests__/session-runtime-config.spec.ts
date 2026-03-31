@@ -230,4 +230,111 @@ describe('createOpenCodeSession runtime config', () => {
       }
     })
   })
+
+  it('injects reasoning effort for OpenAI models when configured', async () => {
+    mockExecFileJsonResponses(execFileMock, [
+      { id: 'sess_effort', title: 'Vibe Forge:session-effort', updatedAt: '2026-03-26T00:00:00.000Z' }
+    ])
+    spawnMock.mockImplementation(() => makeProc({ stdout: 'effort\n' }))
+
+    const { ctx } = makeCtx({
+      configs: [{
+        adapters: {
+          opencode: {
+            effort: 'high'
+          }
+        }
+      }, undefined]
+    })
+
+    await createOpenCodeSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-effort',
+      model: 'openai/gpt-5',
+      description: 'effort',
+      onEvent: () => {}
+    } as any)
+
+    await flushAsyncWork()
+
+    const configDir = (spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }).env?.OPENCODE_CONFIG_DIR
+    const sessionConfig = JSON.parse(
+      configDir ? await readFile(join(configDir, 'opencode.json'), 'utf8') : '{}'
+    ) as {
+      provider?: {
+        openai?: {
+          models?: {
+            'gpt-5'?: {
+              options?: {
+                reasoningEffort?: string
+              }
+            }
+          }
+        }
+      }
+    }
+
+    expect(sessionConfig.provider?.openai?.models?.['gpt-5']?.options?.reasoningEffort).toBe('high')
+  })
+
+  it('does not override native configContent effort settings', async () => {
+    mockExecFileJsonResponses(execFileMock, [
+      { id: 'sess_native_effort', title: 'Vibe Forge:session-native-effort', updatedAt: '2026-03-26T00:00:00.000Z' }
+    ])
+    spawnMock.mockImplementation(() => makeProc({ stdout: 'native effort\n' }))
+
+    const { ctx } = makeCtx({
+      configs: [{
+        adapters: {
+          opencode: {
+            configContent: {
+              provider: {
+                openai: {
+                  models: {
+                    'gpt-5': {
+                      options: {
+                        reasoningEffort: 'xhigh'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, undefined]
+    })
+
+    await createOpenCodeSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-native-effort',
+      model: 'openai/gpt-5',
+      effort: 'low',
+      description: 'effort',
+      onEvent: () => {}
+    } as any)
+
+    await flushAsyncWork()
+
+    const configDir = (spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }).env?.OPENCODE_CONFIG_DIR
+    const sessionConfig = JSON.parse(
+      configDir ? await readFile(join(configDir, 'opencode.json'), 'utf8') : '{}'
+    ) as {
+      provider?: {
+        openai?: {
+          models?: {
+            'gpt-5'?: {
+              options?: {
+                reasoningEffort?: string
+              }
+            }
+          }
+        }
+      }
+    }
+
+    expect(sessionConfig.provider?.openai?.models?.['gpt-5']?.options?.reasoningEffort).toBe('xhigh')
+  })
 })

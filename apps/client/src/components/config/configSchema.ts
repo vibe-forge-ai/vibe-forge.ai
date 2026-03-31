@@ -48,6 +48,19 @@ export const configGroupMeta: Record<string, Record<string, { labelKey: string }
 export const configSchema: Record<string, FieldSpec[]> = {
   general: [
     { path: ['baseDir'], type: 'string', defaultValue: '.ai', icon: 'folder', group: 'base' },
+    {
+      path: ['effort'],
+      type: 'select',
+      defaultValue: '',
+      icon: 'psychology',
+      group: 'base',
+      options: [
+        { value: 'low', label: 'config.options.effort.low' },
+        { value: 'medium', label: 'config.options.effort.medium' },
+        { value: 'high', label: 'config.options.effort.high' },
+        { value: 'max', label: 'config.options.effort.max' }
+      ]
+    },
     { path: ['defaultAdapter'], type: 'select', defaultValue: '', icon: 'settings_input_component', group: 'base' },
     { path: ['defaultModelService'], type: 'select', defaultValue: '', icon: 'hub', group: 'base' },
     { path: ['defaultModel'], type: 'select', defaultValue: '', icon: 'model_training', group: 'base' },

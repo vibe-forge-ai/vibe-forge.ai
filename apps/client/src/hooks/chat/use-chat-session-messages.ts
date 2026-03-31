@@ -4,8 +4,9 @@ import { useSWRConfig } from 'swr'
 
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
-import type { SessionInfo } from '@vibe-forge/types'
 import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
+import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {
@@ -38,12 +39,14 @@ const applyToolResultEvent = (currentMessages: ChatMessage[], data: WSEvent): Ch
 export function useChatSessionMessages({
   session,
   modelForQuery,
+  effort,
   permissionMode,
   adapter,
   setInteractionRequest
 }: {
   session?: Session
   modelForQuery?: string
+  effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
@@ -57,6 +60,7 @@ export function useChatSessionMessages({
   const [retryCount, setRetryCount] = useState(0)
   const isInitialLoadRef = useRef<boolean>(true)
   const lastConnectedModelRef = useRef<string | undefined>(undefined)
+  const lastConnectedEffortRef = useRef<string | undefined>(undefined)
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
   const expectedCloseRef = useRef(false)
@@ -80,6 +84,7 @@ export function useChatSessionMessages({
     if (session?.id == null || session.id === '') {
       setIsReady(true)
       lastConnectedModelRef.current = undefined
+      lastConnectedEffortRef.current = undefined
       lastConnectedPermissionModeRef.current = undefined
       lastConnectedAdapterRef.current = undefined
       return
@@ -153,6 +158,10 @@ export function useChatSessionMessages({
       lastConnectedModelRef.current != null &&
       normalizedModel !== lastConnectedModelRef.current &&
       session?.status !== 'running'
+    const normalizedEffort = effort === 'default' ? '' : effort
+    const effortChanged = lastConnectedEffortRef.current != null &&
+      normalizedEffort !== lastConnectedEffortRef.current &&
+      session?.status !== 'running'
     const normalizedPermissionMode = permissionMode ?? ''
     const permissionModeChanged = permissionMode != null &&
       lastConnectedPermissionModeRef.current != null &&
@@ -163,13 +172,14 @@ export function useChatSessionMessages({
       lastConnectedAdapterRef.current != null &&
       normalizedAdapter !== lastConnectedAdapterRef.current &&
       session?.status !== 'running'
-    if (modelChanged || permissionModeChanged || adapterChanged) {
+    if (modelChanged || effortChanged || permissionModeChanged || adapterChanged) {
       expectedCloseRef.current = true
       setConnectionError(null)
       connectionManager.send(session.id, { type: 'terminate_session' })
       connectionManager.close(session.id)
     }
     lastConnectedModelRef.current = normalizedModel
+    lastConnectedEffortRef.current = normalizedEffort
     lastConnectedPermissionModeRef.current = normalizedPermissionMode
     lastConnectedAdapterRef.current = normalizedAdapter
 
@@ -179,6 +189,9 @@ export function useChatSessionMessages({
       const connectionParams: Record<string, string> = {}
       if (modelForQuery) {
         connectionParams.model = modelForQuery
+      }
+      if (effort !== 'default') {
+        connectionParams.effort = effort
       }
       if (permissionMode) {
         connectionParams.permissionMode = permissionMode
@@ -272,7 +285,7 @@ export function useChatSessionMessages({
           setConnectionError((current) => current ?? t('chat.connectionClosed'))
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
-    }, (modelChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
+    }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
 
     return () => {
       isDisposed = true
@@ -281,6 +294,7 @@ export function useChatSessionMessages({
     }
   }, [
     adapter,
+    effort,
     modelForQuery,
     mutate,
     permissionMode,

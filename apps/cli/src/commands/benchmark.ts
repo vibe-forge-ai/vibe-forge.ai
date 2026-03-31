@@ -8,8 +8,8 @@ import {
   runBenchmarkCase,
   runBenchmarkCategory
 } from '@vibe-forge/app-runtime'
-import type { Command } from 'commander'
 import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/types'
+import type { Command } from 'commander'
 
 interface BenchmarkRunOptions {
   category: string
@@ -17,6 +17,7 @@ interface BenchmarkRunOptions {
   concurrency?: string
   adapter?: string
   model?: string
+  effort?: 'low' | 'medium' | 'high' | 'max'
   systemPrompt?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
 }
@@ -106,6 +107,7 @@ export function registerBenchmarkCommand(program: Command) {
     .option('--concurrency <count>', 'Category concurrency', '2')
     .option('--adapter <adapter>', 'Adapter to use')
     .option('--model <model>', 'Model to use')
+    .option('--effort <effort>', 'Effort to use (low, medium, high, max)')
     .option('--system-prompt <prompt>', 'Additional system prompt')
     .option('--permission-mode <mode>', 'Permission mode')
     .action(async (opts: BenchmarkRunOptions) => {
@@ -116,6 +118,7 @@ export function registerBenchmarkCommand(program: Command) {
           title: opts.title,
           adapter: opts.adapter,
           model: opts.model,
+          effort: opts.effort,
           systemPrompt: opts.systemPrompt,
           permissionMode: opts.permissionMode,
           runtime: 'cli',
@@ -131,6 +134,7 @@ export function registerBenchmarkCommand(program: Command) {
         concurrency: Number.isNaN(concurrency) ? 2 : concurrency,
         adapter: opts.adapter,
         model: opts.model,
+        effort: opts.effort,
         systemPrompt: opts.systemPrompt,
         permissionMode: opts.permissionMode,
         runtime: 'cli',

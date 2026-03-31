@@ -7,12 +7,14 @@ import { useSWRConfig } from 'swr'
 import { createSession, getApiErrorMessage } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
+import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
 export function useChatSessionActions({
   session,
   modelForQuery,
   hasAvailableModels,
+  effort,
   permissionMode,
   adapter,
   onClearMessages
@@ -20,6 +22,7 @@ export function useChatSessionActions({
   session?: Session
   modelForQuery?: string
   hasAvailableModels: boolean
+  effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
   onClearMessages: () => void
@@ -47,6 +50,7 @@ export function useChatSessionActions({
       setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
+          effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter
         })
@@ -81,6 +85,7 @@ export function useChatSessionActions({
     message,
     mutate,
     navigate,
+    effort,
     permissionMode,
     modelForQuery,
     session?.id,
@@ -98,6 +103,7 @@ export function useChatSessionActions({
       setIsCreating(true)
       try {
         const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
+          effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter
         })
@@ -132,6 +138,7 @@ export function useChatSessionActions({
     message,
     mutate,
     navigate,
+    effort,
     permissionMode,
     modelForQuery,
     session?.id,

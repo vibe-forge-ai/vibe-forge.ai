@@ -9,5 +9,6 @@ export const resolveSessionMiddleware: ChannelMiddleware = async (ctx, next) => 
   ctx.sessionId = result?.sessionId
   ctx.channelAdapter = preference?.adapter
   ctx.channelPermissionMode = preference?.permissionMode
+  ctx.channelEffort = preference?.effort
   await next()
 }

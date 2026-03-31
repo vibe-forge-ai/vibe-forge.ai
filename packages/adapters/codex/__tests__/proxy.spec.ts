@@ -200,11 +200,16 @@ describe('codex proxy', () => {
     const cwd = await mkdtemp(join(tmpdir(), 'vf-codex-proxy-log-'))
     tempDirs.push(cwd)
 
-    const upstream = createServer((_req, res) => {
+    const upstream = createServer(async (_req, res) => {
+      await new Promise(resolve => setTimeout(resolve, 25))
       res.writeHead(500, {
         'Content-Type': 'application/json'
       })
-      res.end(JSON.stringify({ error: 'upstream failed' }))
+      res.end(JSON.stringify({
+        error: {
+          message: 'upstream failed'
+        }
+      }))
     })
     upstreamServers.push(upstream)
 
@@ -226,12 +231,29 @@ describe('codex proxy', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: 'Bearer test-key',
         [CODEX_PROXY_META_HEADER_NAME]: encodeCodexProxyMeta({
           upstreamBaseUrl: `http://127.0.0.1:${upstreamAddress.port}`,
+          maxOutputTokens: 8192,
+          queryParams: {
+            'api-version': '2025-04-01-preview'
+          },
+          headers: {
+            'X-Tenant': 'tenant-1'
+          },
           logContext: {
             cwd,
             ctxId: 'ctx-1',
             sessionId: 'session-1'
+          },
+          diagnostics: {
+            routedServiceKey: 'azure',
+            requestedModel: 'azure,gpt-5.4',
+            resolvedModel: 'gpt-5.4',
+            requestedEffort: 'max',
+            effectiveEffort: 'max',
+            runtime: 'server',
+            sessionType: 'create'
           }
         })
       },
@@ -246,6 +268,14 @@ describe('codex proxy', () => {
 
     const logPath = join(cwd, '.ai', 'logs', 'ctx-1', 'session-1', 'adapter-codex', 'proxy.log.md')
     const logContent = await readFile(logPath, 'utf8')
+    expect(logContent).toContain('[codex proxy] request received')
+    expect(logContent).toContain('[codex proxy] forwarding request')
     expect(logContent).toContain('[codex proxy] upstream returned error status')
+    expect(logContent).toContain('"requestedModel": "azure,gpt-5.4"')
+    expect(logContent).toContain('"effectiveEffort": "max"')
+    expect(logContent).toContain('"authorization": "[REDACTED]"')
+    expect(logContent).toContain('"api-version": "2025-04-01-preview"')
+    expect(logContent).toContain('"max_output_tokens": 8192')
+    expect(logContent).toContain('"message": "upstream failed"')
   })
 })

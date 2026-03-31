@@ -1,29 +1,19 @@
 import { basename, dirname } from 'node:path'
 
-import { glob } from 'fast-glob'
 import type {
   RuleReference,
   SkillSelection,
   WorkspaceAsset,
   WorkspaceAssetAdapter,
-  WorkspaceAssetKind,
   WorkspaceAssetBundle,
+  WorkspaceAssetKind,
   WorkspaceSkillSelection
 } from '@vibe-forge/types'
-import {
-  normalizePath,
-  resolveDocumentName,
-  resolveRelativePath,
-  resolveSpecIdentifier
-} from '@vibe-forge/utils'
+import { normalizePath, resolveDocumentName, resolveRelativePath, resolveSpecIdentifier } from '@vibe-forge/utils'
+import { glob } from 'fast-glob'
 
+import { assetOriginPriority, isPluginEnabled, resolvePluginIdFromPath, toAssetScope } from './helpers'
 import type { WorkspaceDocumentAsset, WorkspaceDocumentPayload } from './internal-types'
-import {
-  assetOriginPriority,
-  isPluginEnabled,
-  resolvePluginIdFromPath,
-  toAssetScope
-} from './helpers'
 
 const isLocalRuleReference = (
   rule: RuleReference
@@ -63,7 +53,7 @@ export const createDocumentAsset = <
 }
 
 export const dedupeDocumentAssets = <
-  TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>
+  TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>,
 >(
   assets: TAsset[],
   enabledPlugins: Record<string, boolean>
@@ -79,7 +69,7 @@ const compareDocumentAssetPriority = (
 }
 
 export const dedupeDocumentAssetsByIdentifier = <
-  TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>
+  TAsset extends Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>,
 >(
   assets: TAsset[],
   resolveIdentifier: (asset: TAsset) => string
@@ -167,16 +157,16 @@ export const resolveIncludedSkillNames = (selection: string[] | SkillSelection) 
   Array.isArray(selection)
     ? selection
     : selection.type === 'include'
-      ? selection.list
-      : []
+    ? selection.list
+    : []
 )
 
 export const resolveExcludedSkillNames = (selection: string[] | SkillSelection) => (
   Array.isArray(selection)
     ? []
     : selection.type === 'exclude'
-      ? selection.list
-      : []
+    ? selection.list
+    : []
 )
 
 export const resolveSelectedRuleAssets = async (

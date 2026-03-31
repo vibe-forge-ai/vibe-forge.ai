@@ -45,6 +45,7 @@ const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
 const buildSections = (config: Config | undefined) => {
   const {
     baseDir,
+    effort,
     defaultAdapter,
     defaultModelService,
     defaultModel,
@@ -60,6 +61,7 @@ const buildSections = (config: Config | undefined) => {
   return {
     general: {
       baseDir,
+      effort,
       defaultAdapter,
       defaultModelService,
       defaultModel,

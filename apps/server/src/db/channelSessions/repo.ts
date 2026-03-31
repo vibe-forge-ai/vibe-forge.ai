@@ -1,4 +1,4 @@
-import type { SessionPermissionMode } from '@vibe-forge/core'
+import type { EffortLevel, SessionPermissionMode } from '@vibe-forge/core'
 
 import type { SqliteDatabase } from '../sqlite'
 
@@ -21,6 +21,7 @@ export interface ChannelPreferenceRow {
   channelKey: string
   adapter?: string
   permissionMode?: SessionPermissionMode
+  effort?: EffortLevel
   createdAt: number
   updatedAt: number
 }
@@ -89,7 +90,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     channelId: string
   ): ChannelPreferenceRow | undefined => {
     const stmt = db.prepare(`
-      SELECT channelType, sessionType, channelId, channelKey, adapter, permissionMode, createdAt, updatedAt
+      SELECT channelType, sessionType, channelId, channelKey, adapter, permissionMode, effort, createdAt, updatedAt
       FROM channel_preferences
       WHERE channelType = ? AND sessionType = ? AND channelId = ?
     `)
@@ -102,11 +103,12 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
       INSERT INTO channel_preferences (
         channelType, sessionType, channelId, channelKey, adapter, permissionMode, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET
         channelKey = excluded.channelKey,
         adapter = excluded.adapter,
         permissionMode = excluded.permissionMode,
+        effort = excluded.effort,
         updatedAt = excluded.updatedAt
     `)
     stmt.run(
@@ -116,6 +118,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
       row.channelKey,
       row.adapter ?? null,
       row.permissionMode ?? null,
+      row.effort ?? null,
       now,
       now
     )

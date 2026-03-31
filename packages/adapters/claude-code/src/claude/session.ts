@@ -41,7 +41,7 @@ const stripAnsiSequences = (value: string) => {
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
-  const { cliPath, args, env, cwd, sessionId, executionType } = await prepareClaudeExecution(ctx, options)
+  const { cliPath, args, env, cwd, sessionId, effort, executionType } = await prepareClaudeExecution(ctx, options)
   let didEmitFatalError = false
 
   const emitEvent = (event: Parameters<typeof onEvent>[0]) => {
@@ -119,7 +119,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
             ) {
               void markResumeReady()
             }
-            handleIncomingEvent(parsed, emitEvent)
+            handleIncomingEvent(parsed, emitEvent, effort)
           } catch (err) {
             console.error('Failed to parse JSON:', trimmed, err)
           }

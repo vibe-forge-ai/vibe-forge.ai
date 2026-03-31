@@ -37,6 +37,7 @@ export async function createStreamCodexSession(
     configOverrideArgs,
     resolvedModel,
     resolvedMaxOutputTokens,
+    turnEffort,
     threadCacheKey,
     cachedThreadId
   } = base
@@ -47,7 +48,6 @@ export async function createStreamCodexSession(
 
   const {
     experimentalApi = false,
-    effort,
     maxOutputTokens: adapterMaxOutputTokens,
     clientInfo: rawClientInfo = {}
   } = {
@@ -55,7 +55,6 @@ export async function createStreamCodexSession(
     ...(userConfig?.adapters?.codex ?? {})
   } as {
     experimentalApi?: boolean
-    effort?: string
     maxOutputTokens?: number
     clientInfo?: { name?: string; title?: string; version?: string }
   }
@@ -206,7 +205,7 @@ export async function createStreamCodexSession(
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
       ...(model ? { model } : {}),
-      ...(effort ? { effort } : {}),
+      ...(turnEffort ? { effort: turnEffort } : {}),
       ...(typeof maxOutputTokens === 'number' ? { maxOutputTokens } : {})
     }
 

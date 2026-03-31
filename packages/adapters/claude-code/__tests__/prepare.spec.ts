@@ -170,4 +170,91 @@ describe('prepareClaudeExecution', () => {
       })
     )
   })
+
+  it('maps unified effort into settings for low/medium/high values', async () => {
+    const ctx = createCtx()
+
+    const result = await prepareClaudeExecution(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      effort: 'high',
+      onEvent: vi.fn()
+    })
+
+    expect(result.effort).toBe('high')
+    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBeUndefined()
+    expect(ctx.cache.set).toHaveBeenCalledWith(
+      'adapter.claude-code.settings',
+      expect.objectContaining({
+        effortLevel: 'high'
+      })
+    )
+  })
+
+  it('lets native settingsContent override unified effort', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: {
+        'claude-code': {
+          settingsContent: {
+            effortLevel: 'low'
+          }
+        }
+      }
+    }, undefined]
+
+    const result = await prepareClaudeExecution(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      effort: 'high',
+      onEvent: vi.fn()
+    })
+
+    expect(result.effort).toBe('low')
+    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBeUndefined()
+    expect(ctx.cache.set).toHaveBeenCalledWith(
+      'adapter.claude-code.settings',
+      expect.objectContaining({
+        effortLevel: 'low'
+      })
+    )
+  })
+
+  it('uses env-based effort for max unless native env already overrides it', async () => {
+    const ctx = createCtx()
+    const result = await prepareClaudeExecution(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      effort: 'max',
+      onEvent: vi.fn()
+    })
+
+    expect(result.effort).toBe('max')
+    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('max')
+
+    const ctxWithNativeEnv = createCtx()
+    ctxWithNativeEnv.configs = [{
+      adapters: {
+        'claude-code': {
+          nativeEnv: {
+            CLAUDE_CODE_EFFORT_LEVEL: 'medium'
+          }
+        }
+      }
+    }, undefined]
+
+    const overridden = await prepareClaudeExecution(ctxWithNativeEnv, {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      effort: 'max',
+      onEvent: vi.fn()
+    })
+
+    expect(overridden.effort).toBe('medium')
+    expect(overridden.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('medium')
+  })
 })

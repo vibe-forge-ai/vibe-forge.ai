@@ -4,10 +4,10 @@ import { Option } from 'commander'
 import type { Command, OptionValueSource } from 'commander'
 
 import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
-import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/types'
 import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
+import type { ChatMessage } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/hooks'
+import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/types'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 import { uuid } from '@vibe-forge/utils/uuid'
 
@@ -20,6 +20,7 @@ export type RunOutputFormat = (typeof RUN_OUTPUT_FORMATS)[number]
 interface RunOptions {
   print: boolean
   model?: string
+  effort?: 'low' | 'medium' | 'high' | 'max'
   adapter?: string
   systemPrompt?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
@@ -71,6 +72,7 @@ export function registerRunCommand(program: Command) {
     .argument('[description...]')
     .option('--print', 'Run in direct mode with printed output', false)
     .option('--model <model>', 'Model to use')
+    .option('--effort <effort>', 'Effort to use (low, medium, high, max)')
     .option('--adapter <adapter>', 'Adapter to use')
     .option('--system-prompt <prompt>', 'System prompt')
     .option(
@@ -172,6 +174,7 @@ export function registerRunCommand(program: Command) {
         runtime: 'cli',
         sessionId,
         model: opts.model,
+        effort: opts.effort,
         systemPrompt: finalSystemPrompt,
         permissionMode: opts.permissionMode,
         mode: opts.print ? 'stream' : 'direct',

@@ -3,7 +3,14 @@ import { cwd as processCwd, env as processEnv } from 'node:process'
 import { v4 as uuidv4 } from 'uuid'
 
 import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
-import type { ChatMessage, ChatMessageContent, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
+import type {
+  ChatMessage,
+  ChatMessageContent,
+  EffortLevel,
+  Session,
+  SessionPermissionMode,
+  WSEvent
+} from '@vibe-forge/core'
 import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
@@ -31,6 +38,7 @@ export async function startAdapterSession(
   sessionId: string,
   options: {
     model?: string
+    effort?: EffortLevel
     systemPrompt?: string
     appendSystemPrompt?: boolean
     permissionMode?: SessionPermissionMode
@@ -46,6 +54,7 @@ export async function startAdapterSession(
   const existing = db.getSession(sessionId)
   const resolvedModel = options.model ?? existing?.model
   const resolvedAdapter = options.adapter ?? existing?.adapter
+  const resolvedEffort = options.effort ?? existing?.effort
   const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
   const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
   const type = hasHistory && !adapterChanged ? 'resume' : 'create'
@@ -54,9 +63,11 @@ export async function startAdapterSession(
   if (cached != null) {
     const currentModel = cached.config?.model ?? existing?.model
     const currentAdapter = cached.config?.adapter ?? existing?.adapter
+    const currentEffort = cached.config?.effort ?? existing?.effort
     const currentPermissionMode = cached.config?.permissionMode ?? existing?.permissionMode
     const configChanged = currentModel !== resolvedModel ||
       currentAdapter !== resolvedAdapter ||
+      currentEffort !== resolvedEffort ||
       currentPermissionMode !== resolvedPermissionMode
 
     if (!configChanged) {
@@ -70,6 +81,8 @@ export async function startAdapterSession(
       resolvedModel,
       currentAdapter,
       resolvedAdapter,
+      currentEffort,
+      resolvedEffort,
       currentPermissionMode,
       resolvedPermissionMode
     }, '[server] Restarting adapter process due to session config change')
@@ -87,11 +100,13 @@ export async function startAdapterSession(
 
   if (
     resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
+    resolvedEffort !== existing?.effort ||
     resolvedPermissionMode !== existing?.permissionMode
   ) {
     updateAndNotifySession(sessionId, {
       model: resolvedModel,
       adapter: resolvedAdapter,
+      effort: resolvedEffort,
       permissionMode: resolvedPermissionMode
     })
   }
@@ -136,6 +151,7 @@ export async function startAdapterSession(
       runtime: 'server',
       sessionId,
       model: resolvedModel,
+      effort: resolvedEffort,
       systemPrompt: mergedSystemPrompt,
       permissionMode: resolvedPermissionMode,
       appendSystemPrompt: options.appendSystemPrompt ?? true,
@@ -172,6 +188,7 @@ export async function startAdapterSession(
                 adapter: typeof (event.data as any).adapter === 'string'
                   ? (event.data as any).adapter
                   : resolvedAdapter,
+                effort: resolvedEffort,
                 permissionMode: resolvedPermissionMode
               })
               applyEvent({
@@ -257,6 +274,7 @@ export async function startAdapterSession(
         runId,
         model: resolvedModel,
         adapter: resolvedAdapter,
+        effort: resolvedEffort,
         permissionMode: resolvedPermissionMode
       })
     )

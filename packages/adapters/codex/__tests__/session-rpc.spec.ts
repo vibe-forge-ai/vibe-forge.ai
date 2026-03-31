@@ -5,8 +5,8 @@ import { spawn } from 'node:child_process'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AdapterOutputEvent } from '@vibe-forge/types'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
 
 import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
 import { createCodexSession } from '#~/runtime/session.js'
@@ -269,6 +269,48 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('maps public max effort to xhigh for stream turn/start requests', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-effort-stream',
+      effort: 'max',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const initialTurnRequest = receivedLines.find(line => line.method === 'turn/start')
+    expect(initialTurnRequest?.params.effort).toBe('xhigh')
+
+    session.kill()
+  })
+
+  it('applies model_reasoning_effort via direct-mode config overrides', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'cli',
+      mode: 'direct',
+      sessionId: 'session-effort-direct',
+      effort: 'high',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    expect(overrides).toContain('model_reasoning_effort="high"')
+
+    session.kill()
+  })
+
   it('enables native codex hooks and injects runtime metadata when available', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()
@@ -380,6 +422,8 @@ describe('createCodexSession RPC approval policy mapping', () => {
         type: 'create',
         runtime: 'server',
         sessionId: 'session-provider-options',
+        permissionMode: 'plan',
+        effort: 'high',
         model: 'azure,gpt-5.4',
         description: 'Reply with pong.',
         onEvent: () => {}
@@ -406,6 +450,20 @@ describe('createCodexSession RPC approval policy mapping', () => {
       },
       queryParams: {
         'api-version': '2025-04-01-preview'
+      },
+      diagnostics: {
+        routedServiceKey: 'azure',
+        requestedModel: 'azure,gpt-5.4',
+        resolvedModel: 'gpt-5.4',
+        runtime: 'server',
+        sessionType: 'create',
+        permissionMode: 'plan',
+        approvalPolicy: 'onRequest',
+        sandboxPolicy: 'workspaceWrite',
+        useYolo: false,
+        requestedEffort: 'high',
+        effectiveEffort: 'high',
+        wireApi: 'responses'
       }
     })
 

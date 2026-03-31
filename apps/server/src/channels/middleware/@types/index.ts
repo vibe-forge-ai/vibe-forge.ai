@@ -1,4 +1,4 @@
-import type { ChatMessageContent, ConfigSource, Session, SessionPermissionMode } from '@vibe-forge/core'
+import type { ChatMessageContent, ConfigSource, EffortLevel, Session, SessionPermissionMode } from '@vibe-forge/core'
 import type {
   ChannelBaseConfig,
   ChannelConnection,
@@ -27,6 +27,8 @@ export interface ChannelContext {
   channelAdapter: string | undefined
   /** Channel-level preferred permission mode used when the next session is created */
   channelPermissionMode: SessionPermissionMode | undefined
+  /** Channel-level preferred effort used when the next session is created */
+  channelEffort: EffortLevel | undefined
   /** Parsed rich content items from inbound.raw, if any */
   contentItems: ChatMessageContent[] | undefined
   /** Normalized text stripped of @-tags and speaker prefixes, used for command matching */
@@ -50,7 +52,7 @@ export interface ChannelContext {
   /** Restart the current session (kill + start) */
   restartSession: () => Promise<void>
   /** Update session fields in DB */
-  updateSession: (updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode'>>) => void
+  updateSession: (updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode' | 'effort'>>) => void
   /** Read the adapter preference for the next session created in this channel */
   getChannelAdapterPreference: () => string | undefined
   /** Persist the adapter preference for the next session created in this channel */
@@ -59,6 +61,10 @@ export interface ChannelContext {
   getChannelPermissionModePreference: () => SessionPermissionMode | undefined
   /** Persist the permission mode preference for the next session created in this channel */
   setChannelPermissionModePreference: (permissionMode: SessionPermissionMode | undefined) => void
+  /** Read the effort preference for the next session created in this channel */
+  getChannelEffortPreference: () => EffortLevel | undefined
+  /** Persist the effort preference for the next session created in this channel */
+  setChannelEffortPreference: (effort: EffortLevel | undefined) => void
 }
 
 export type ChannelMiddleware = (ctx: ChannelContext, next: () => Promise<void>) => Promise<void>

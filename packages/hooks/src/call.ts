@@ -2,8 +2,8 @@ import { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 
-import type { HookInputs, HookOutputs } from './type'
 import { resolveManagedHookScriptPath } from './native'
+import type { HookInputs, HookOutputs } from './type'
 
 export type HookEventName = keyof HookInputs
 

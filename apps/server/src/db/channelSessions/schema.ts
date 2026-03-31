@@ -27,6 +27,7 @@ export const channelSessionsSchemaModule: SchemaModule = {
         channelKey TEXT NOT NULL,
         adapter TEXT,
         permissionMode TEXT,
+        effort TEXT,
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
         PRIMARY KEY (channelType, sessionType, channelId)
@@ -41,6 +42,7 @@ export const channelSessionsSchemaModule: SchemaModule = {
     if (getColumns('channel_preferences').length > 0) {
       ensureColumn('channel_preferences', 'adapter', 'TEXT')
       ensureColumn('channel_preferences', 'permissionMode', 'TEXT')
+      ensureColumn('channel_preferences', 'effort', 'TEXT')
     }
   }
 }

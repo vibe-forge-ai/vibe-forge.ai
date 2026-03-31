@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
 import { generateAdapterQueryOptions, listBenchmarkCases, run } from '#~/index.js'
+import { describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   generateAdapterQueryOptions: vi.fn(),

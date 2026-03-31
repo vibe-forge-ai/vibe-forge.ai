@@ -1,8 +1,8 @@
 import process from 'node:process'
 
-import type { AdapterQueryOptions } from '@vibe-forge/types'
 import type { HookInput, HookOutput, HookOutputs } from '@vibe-forge/hooks'
 import { executeHookInput, readHookInput } from '@vibe-forge/hooks'
+import type { AdapterQueryOptions } from '@vibe-forge/types'
 
 type NativeCodexHookEventName = 'PreToolUse' | 'PostToolUse' | 'SessionStart' | 'UserPromptSubmit' | 'Stop'
 
@@ -75,7 +75,9 @@ const applyOutputFields = (
   const result: Record<string, unknown> = {}
   if (supported.continue && typeof output.continue === 'boolean') result.continue = output.continue
   if (supported.stopReason && typeof output.stopReason === 'string') result.stopReason = output.stopReason
-  if (supported.suppressOutput && typeof output.suppressOutput === 'boolean') result.suppressOutput = output.suppressOutput
+  if (supported.suppressOutput && typeof output.suppressOutput === 'boolean') {
+    result.suppressOutput = output.suppressOutput
+  }
   if (supported.systemMessage && typeof output.systemMessage === 'string') result.systemMessage = output.systemMessage
   return result
 }
@@ -225,10 +227,12 @@ export const runCodexHookBridge = async () => {
     const result = await executeHookInput(hookInput)
     process.stdout.write(`${JSON.stringify(mapVibeForgeHookOutputToCodex(input.hookEventName, result))}\n`)
   } catch (error) {
-    process.stdout.write(`${JSON.stringify({
-      continue: true,
-      systemMessage: `vibe-forge codex hook bridge error: ${String(error)}`
-    })}\n`)
+    process.stdout.write(`${
+      JSON.stringify({
+        continue: true,
+        systemMessage: `vibe-forge codex hook bridge error: ${String(error)}`
+      })
+    }\n`)
   }
 }
 

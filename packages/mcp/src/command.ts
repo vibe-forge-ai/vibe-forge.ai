@@ -4,9 +4,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Command } from 'commander'
 
-import type { McpOptions } from './types'
 import { createMcpTools } from './tools'
 import { createFilteredRegister, shouldEnableCategory } from './tools/proxy'
+import type { McpOptions } from './types'
 
 export const configureMcpCommand = (command: Command, version: string) => (
   command

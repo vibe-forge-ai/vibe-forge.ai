@@ -98,6 +98,7 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
   switch (section) {
     case 'general': {
       updateField('baseDir', sectionValue.baseDir as Config['baseDir'])
+      updateField('effort', sectionValue.effort as Config['effort'])
       updateField('defaultAdapter', sectionValue.defaultAdapter as Config['defaultAdapter'])
       updateField('defaultModelService', sectionValue.defaultModelService as Config['defaultModelService'])
       updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'])

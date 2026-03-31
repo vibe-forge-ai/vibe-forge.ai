@@ -1,3 +1,4 @@
+import type { EffortLevel } from './common'
 import type { HookPluginConfig } from './plugin'
 
 export interface AdapterMap {}
@@ -44,6 +45,7 @@ export interface RecommendedModelConfig {
 
 export interface ModelMetadataConfig {
   defaultAdapter?: string
+  effort?: EffortLevel
 }
 
 export type LanguageCode = 'zh' | 'en'
@@ -66,6 +68,7 @@ export interface NotificationConfig {
 export interface Config {
   extend?: string | string[]
   baseDir?: string
+  effort?: EffortLevel
   adapters?: AdapterConfigMap
   models?: Record<string, ModelMetadataConfig>
   defaultAdapter?: keyof AdapterMap
@@ -158,6 +161,7 @@ export interface AboutInfo {
 export interface ConfigSection {
   general?: {
     baseDir?: Config['baseDir']
+    effort?: Config['effort']
     defaultAdapter?: Config['defaultAdapter']
     defaultModelService?: Config['defaultModelService']
     defaultModel?: Config['defaultModel']

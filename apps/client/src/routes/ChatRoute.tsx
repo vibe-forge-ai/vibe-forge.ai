@@ -61,6 +61,9 @@ function ChatRouteView({
     selectedModel,
     modelForQuery,
     setSelectedModel,
+    effort,
+    setEffort,
+    effortOptions,
     permissionMode,
     setPermissionMode,
     permissionModeOptions,
@@ -106,6 +109,9 @@ function ChatRouteView({
           selectedModel={selectedModel}
           modelForQuery={modelForQuery}
           onModelChange={setSelectedModel}
+          effort={effort}
+          effortOptions={effortOptions}
+          onEffortChange={setEffort}
           permissionMode={permissionMode}
           permissionModeOptions={permissionModeOptions}
           onPermissionModeChange={setPermissionMode}

@@ -16,7 +16,8 @@ export const sessionsSchemaModule: SchemaModule = {
         status TEXT,
         model TEXT,
         adapter TEXT,
-        permissionMode TEXT
+        permissionMode TEXT,
+        effort TEXT
       );
 
       CREATE TABLE IF NOT EXISTS messages (
@@ -52,5 +53,6 @@ export const sessionsSchemaModule: SchemaModule = {
     ensureColumn('sessions', 'model', 'TEXT')
     ensureColumn('sessions', 'adapter', 'TEXT')
     ensureColumn('sessions', 'permissionMode', 'TEXT')
+    ensureColumn('sessions', 'effort', 'TEXT')
   }
 }

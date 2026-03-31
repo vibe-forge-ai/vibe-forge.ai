@@ -6,6 +6,7 @@ import { omitAdapterCommonConfig } from '@vibe-forge/utils'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 export interface OpenCodeAdapterConfig {
+  effort?: 'low' | 'medium' | 'high' | 'max'
   agent?: string
   planAgent?: string | false
   titlePrefix?: string

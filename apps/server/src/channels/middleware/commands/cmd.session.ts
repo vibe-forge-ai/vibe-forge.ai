@@ -1,4 +1,4 @@
-import type { Session, SessionPermissionMode } from '@vibe-forge/core'
+import type { EffortLevel, Session, SessionPermissionMode } from '@vibe-forge/core'
 
 import type { ChannelContext } from '../@types'
 import { defineMessages } from '../i18n'
@@ -10,7 +10,8 @@ defineMessages('zh', {
   'cmd.reset.description': '归档并解绑当前会话',
   'cmd.stop.description': '停止当前运行中的会话',
   'cmd.permissionMode.description': '设置当前会话权限模式，或在无会话时设置下一次会话的权限模式',
-  'cmd.get.description': '查看当前会话的模型、适配器或权限模式',
+  'cmd.effort.description': '设置当前会话 effort，或在无会话时设置下一次会话的 effort',
+  'cmd.get.description': '查看当前会话的模型、适配器、权限模式或 effort',
   'cmd.set.description': '修改当前会话的模型，或在无会话时设置下一次会话的适配器',
   'choice.session.getField.model.title': '模型',
   'choice.session.getField.model.description': '读取当前会话使用的模型名称。',
@@ -18,10 +19,22 @@ defineMessages('zh', {
   'choice.session.getField.adapter.description': '读取当前会话绑定的适配器。',
   'choice.session.getField.permissionMode.title': '权限模式',
   'choice.session.getField.permissionMode.description': '读取当前会话的权限策略。',
+  'choice.session.getField.effort.title': 'Effort',
+  'choice.session.getField.effort.description': '读取当前会话的显式 effort 设置。',
   'choice.session.setField.model.title': '模型',
   'choice.session.setField.model.description': '修改当前会话的模型并立即重启。',
   'choice.session.setField.adapter.title': '适配器',
   'choice.session.setField.adapter.description': '在当前频道无会话时，设置下一次创建会话使用的适配器。',
+  'choice.session.effort.default.title': '默认',
+  'choice.session.effort.default.description': '清除显式 effort，回退到配置默认值。',
+  'choice.session.effort.low.title': '低',
+  'choice.session.effort.low.description': '使用较低的思考强度。',
+  'choice.session.effort.medium.title': '中',
+  'choice.session.effort.medium.description': '使用中等思考强度。',
+  'choice.session.effort.high.title': '高',
+  'choice.session.effort.high.description': '使用较高思考强度。',
+  'choice.session.effort.max.title': '最高',
+  'choice.session.effort.max.description': '使用最高思考强度。',
   'choice.session.permissionMode.default.title': '默认',
   'choice.session.permissionMode.default.description': '使用适配器默认的权限行为。',
   'choice.session.permissionMode.acceptEdits.title': '接受编辑',
@@ -40,6 +53,7 @@ defineMessages('zh', {
   'session.adapter': ({ adapter }) => `适配器：${adapter}`,
   'session.messageCount': ({ count }) => `上下文消息数：${count}`,
   'session.permissionMode': ({ mode }) => `权限模式：${mode}`,
+  'session.effort': ({ effort }) => `Effort：${effort}`,
   'session.starred': ({ starred }) => `星标：${starred}`,
   'session.archived': ({ archived }) => `归档：${archived}`,
   'session.tags': ({ tags }) => `标签：${tags}`,
@@ -51,6 +65,8 @@ defineMessages('zh', {
   'set.permissionMode.success': ({ mode }) => `已将权限模式设置为 ${mode}。`,
   'set.permissionMode.pending.success': ({ mode }) =>
     `已将下次会话的权限模式设置为 ${mode}。请发送下一条消息创建新会话。`,
+  'set.effort.success': ({ effort }) => `已将 effort 设置为 ${effort}。`,
+  'set.effort.pending.success': ({ effort }) => `已将下次会话的 effort 设置为 ${effort}。请发送下一条消息创建新会话。`,
   'set.model.success': ({ model }) => `已设置模型为 ${model}，并重启当前会话。`,
   'set.adapter.pending.success': ({ adapter }) => `已将下次会话的适配器设置为 ${adapter}。请发送下一条消息创建新会话。`,
   'set.adapter.requiresReset': '当前频道已有会话，无法切换适配器。请先执行 /reset 重置会话，再设置适配器。'
@@ -62,7 +78,8 @@ defineMessages('en', {
   'cmd.stop.description': 'Stop the current running session',
   'cmd.permissionMode.description':
     'Set the current session permission mode, or set the next-session permission mode when no session is bound',
-  'cmd.get.description': 'View current session model, adapter, or permission mode',
+  'cmd.effort.description': 'Set the current session effort, or set the next-session effort when no session is bound',
+  'cmd.get.description': 'View current session model, adapter, permission mode, or effort',
   'cmd.set.description':
     'Set the current session model, or set the adapter for the next session when no session is bound',
   'choice.session.getField.model.title': 'Model',
@@ -71,11 +88,23 @@ defineMessages('en', {
   'choice.session.getField.adapter.description': 'Read the adapter currently bound to the session.',
   'choice.session.getField.permissionMode.title': 'Permission mode',
   'choice.session.getField.permissionMode.description': 'Read the current session permission strategy.',
+  'choice.session.getField.effort.title': 'Effort',
+  'choice.session.getField.effort.description': 'Read the current explicit effort setting.',
   'choice.session.setField.model.title': 'Model',
   'choice.session.setField.model.description': 'Change the session model and restart immediately.',
   'choice.session.setField.adapter.title': 'Adapter',
   'choice.session.setField.adapter.description':
     'When no session is bound in this channel, set the adapter used for the next session.',
+  'choice.session.effort.default.title': 'Default',
+  'choice.session.effort.default.description': 'Clear the explicit effort and fall back to config defaults.',
+  'choice.session.effort.low.title': 'Low',
+  'choice.session.effort.low.description': 'Use a lower reasoning effort.',
+  'choice.session.effort.medium.title': 'Medium',
+  'choice.session.effort.medium.description': 'Use a medium reasoning effort.',
+  'choice.session.effort.high.title': 'High',
+  'choice.session.effort.high.description': 'Use a higher reasoning effort.',
+  'choice.session.effort.max.title': 'Max',
+  'choice.session.effort.max.description': 'Use the highest reasoning effort.',
   'choice.session.permissionMode.default.title': 'Default',
   'choice.session.permissionMode.default.description': 'Use the adapter default permission behavior.',
   'choice.session.permissionMode.acceptEdits.title': 'Accept edits',
@@ -94,6 +123,7 @@ defineMessages('en', {
   'session.adapter': ({ adapter }) => `Adapter: ${adapter}`,
   'session.messageCount': ({ count }) => `Context messages: ${count}`,
   'session.permissionMode': ({ mode }) => `Permission mode: ${mode}`,
+  'session.effort': ({ effort }) => `Effort: ${effort}`,
   'session.starred': ({ starred }) => `Starred: ${starred}`,
   'session.archived': ({ archived }) => `Archived: ${archived}`,
   'session.tags': ({ tags }) => `Tags: ${tags}`,
@@ -105,6 +135,9 @@ defineMessages('en', {
   'set.permissionMode.success': ({ mode }) => `Permission mode set to ${mode}.`,
   'set.permissionMode.pending.success': ({ mode }) =>
     `Permission mode for the next session set to ${mode}. Send the next message to create a new session.`,
+  'set.effort.success': ({ effort }) => `Effort set to ${effort}.`,
+  'set.effort.pending.success': ({ effort }) =>
+    `Effort for the next session set to ${effort}. Send the next message to create a new session.`,
   'set.model.success': ({ model }) => `Model set to ${model}. Session restarted.`,
   'set.adapter.pending.success': ({ adapter }) =>
     `Adapter for the next session set to ${adapter}. Send the next message to create a new session.`,
@@ -142,8 +175,38 @@ const PERMISSION_MODE_CHOICES = [
   }
 ] as const satisfies readonly CommandArgumentChoice<SessionPermissionMode>[]
 
+type EffortArgument = EffortLevel | 'default'
+
+const EFFORT_CHOICES = [
+  {
+    value: 'default',
+    title: 'choice.session.effort.default.title',
+    description: 'choice.session.effort.default.description'
+  },
+  {
+    value: 'low',
+    title: 'choice.session.effort.low.title',
+    description: 'choice.session.effort.low.description'
+  },
+  {
+    value: 'medium',
+    title: 'choice.session.effort.medium.title',
+    description: 'choice.session.effort.medium.description'
+  },
+  {
+    value: 'high',
+    title: 'choice.session.effort.high.title',
+    description: 'choice.session.effort.high.description'
+  },
+  {
+    value: 'max',
+    title: 'choice.session.effort.max.title',
+    description: 'choice.session.effort.max.description'
+  }
+] as const satisfies readonly CommandArgumentChoice<EffortArgument>[]
+
 type SetField = 'model' | 'adapter'
-type GetField = 'model' | 'adapter' | 'permissionMode'
+type GetField = 'model' | 'adapter' | 'permissionMode' | 'effort'
 
 const SET_FIELD_CHOICES = [
   {
@@ -173,6 +236,11 @@ const GET_FIELD_CHOICES = [
     value: 'permissionMode',
     title: 'choice.session.getField.permissionMode.title',
     description: 'choice.session.getField.permissionMode.description'
+  },
+  {
+    value: 'effort',
+    title: 'choice.session.getField.effort.title',
+    description: 'choice.session.getField.effort.description'
   }
 ] as const satisfies readonly CommandArgumentChoice<GetField>[]
 
@@ -187,7 +255,7 @@ const getBoundSessionOrReply = async (ctx: ChannelContext): Promise<Session | un
 
 const restartSessionWithReply = async (
   ctx: ChannelContext,
-  updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode'>>,
+  updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode' | 'effort'>>,
   message: string
 ) => {
   ctx.updateSession(updates)
@@ -211,6 +279,7 @@ const formatSessionSummary = (ctx: ChannelContext) => {
     ctx.t('session.adapter', { adapter: session.adapter ?? ctx.t('label.notSet') }),
     ctx.t('session.messageCount', { count: session.messageCount ?? 0 }),
     ctx.t('session.permissionMode', { mode: session.permissionMode ?? ctx.t('label.notSet') }),
+    ctx.t('session.effort', { effort: session.effort ?? ctx.t('label.notSet') }),
     ctx.t('session.starred', { starred: session.isStarred ? ctx.t('label.yes') : ctx.t('label.no') }),
     ctx.t('session.archived', { archived: session.isArchived ? ctx.t('label.yes') : ctx.t('label.no') }),
     ctx.t('session.tags', { tags: formatList(ctx, session.tags) })
@@ -270,6 +339,27 @@ export const sessionCommands = () => [
       )
     }),
 
+  command<ChannelContext>('effort')
+    .description('cmd.effort.description')
+    .adminOnly()
+    .argument(requiredArg('effort', { choices: EFFORT_CHOICES }))
+    .action(async ({ ctx, args: [effort] }) => {
+      const nextEffort = effort === 'default' ? undefined : effort
+      const effortLabel = nextEffort ?? ctx.t('choice.session.effort.default.title')
+      const session = ctx.getBoundSession()
+      if (!ctx.sessionId || !session) {
+        ctx.setChannelEffortPreference(nextEffort)
+        await ctx.reply(ctx.t('set.effort.pending.success', { effort: effortLabel }))
+        return
+      }
+
+      await restartSessionWithReply(
+        ctx,
+        { effort: nextEffort },
+        ctx.t('set.effort.success', { effort: effortLabel })
+      )
+    }),
+
   command<ChannelContext>('get')
     .description('cmd.get.description')
     .argument(requiredArg('field', { choices: GET_FIELD_CHOICES }))
@@ -285,6 +375,13 @@ export const sessionCommands = () => [
         const session = await getBoundSessionOrReply(ctx)
         if (!session) return
         await ctx.reply(ctx.t('session.model', { model: session.model ?? ctx.t('label.notSet') }))
+        return
+      }
+
+      if (field === 'effort') {
+        const session = ctx.getBoundSession()
+        const effort = session?.effort ?? ctx.getChannelEffortPreference()
+        await ctx.reply(ctx.t('session.effort', { effort: effort ?? ctx.t('label.notSet') }))
         return
       }
 

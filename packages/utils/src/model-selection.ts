@@ -2,6 +2,7 @@ import type {
   AdapterConfigCommon,
   AdapterModelCompatibilityResult,
   AdapterModelRuleRejectionReason,
+  EffortLevel,
   ModelMetadataConfig,
   ModelServiceConfig,
   ServiceModelEntry
@@ -30,6 +31,12 @@ const asStringArray = (value: unknown) => (
 
 export const normalizeNonEmptyString = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
+)
+
+export const normalizeEffortLevel = (value: unknown): EffortLevel | undefined => (
+  value === 'low' || value === 'medium' || value === 'high' || value === 'max'
+    ? value
+    : undefined
 )
 
 export const buildServiceModelSelector = (serviceKey: string, modelName: string) => `${serviceKey},${modelName}`
@@ -178,17 +185,19 @@ export const resolveModelMetadata = (params: {
   model?: string
   models?: Record<string, ModelMetadataConfig>
 }) => {
-  const parsed = parseServiceModelSelector(normalizeNonEmptyString(params.model))
-  if (!parsed) return undefined
+  const normalizedModel = normalizeNonEmptyString(params.model)
+  if (!normalizedModel) return undefined
 
-  const exactMetadata = params.models?.[parsed.selectorValue]
-  if (exactMetadata != null && typeof exactMetadata === 'object' && !Array.isArray(exactMetadata)) {
-    return exactMetadata
-  }
+  const parsed = parseServiceModelSelector(normalizedModel)
+  const candidates = parsed == null
+    ? [normalizedModel]
+    : [parsed.selectorValue, parsed.modelName, parsed.serviceKey]
 
-  const serviceMetadata = params.models?.[parsed.serviceKey]
-  if (serviceMetadata != null && typeof serviceMetadata === 'object' && !Array.isArray(serviceMetadata)) {
-    return serviceMetadata
+  for (const key of candidates) {
+    const metadata = params.models?.[key]
+    if (metadata != null && typeof metadata === 'object' && !Array.isArray(metadata)) {
+      return metadata
+    }
   }
 
   return undefined
@@ -199,8 +208,13 @@ export const resolveModelDefaultAdapter = (params: {
   models?: Record<string, ModelMetadataConfig>
 }) => normalizeNonEmptyString(resolveModelMetadata(params)?.defaultAdapter)
 
+export const resolveModelConfiguredEffort = (params: {
+  model?: string
+  models?: Record<string, ModelMetadataConfig>
+}) => normalizeEffortLevel(resolveModelMetadata(params)?.effort)
+
 export const mergeAdapterConfigs = <
-  T extends Record<string, unknown> | undefined
+  T extends Record<string, unknown> | undefined,
 >(
   left: T,
   right: T
@@ -228,6 +242,10 @@ export const getAdapterConfiguredDefaultModel = (adapterConfig: unknown) => {
   return normalizeNonEmptyString(record.defaultModel) ?? normalizeNonEmptyString(record.model)
 }
 
+export const getAdapterConfiguredEffort = (adapterConfig: unknown) => (
+  normalizeEffortLevel(asRecord(adapterConfig).effort)
+)
+
 export const getAdapterConfiguredIncludeModels = (adapterConfig: unknown) => (
   asStringArray(asRecord(adapterConfig).includeModels)
 )
@@ -251,6 +269,57 @@ export const resolveAdapterConfiguredDefaultModel = (params: {
     preferredServiceKey: params.preferredServiceKey,
     preserveUnknown: params.preserveUnknown
   })
+}
+
+export const resolveEffectiveEffort = (params: {
+  explicitEffort?: unknown
+  model?: string
+  adapter?: string
+  configEffort?: unknown
+  adapters?: Record<string, unknown>
+  models?: Record<string, ModelMetadataConfig>
+}) => {
+  const explicitEffort = normalizeEffortLevel(params.explicitEffort)
+  if (explicitEffort != null) {
+    return {
+      effort: explicitEffort,
+      source: 'explicit' as const
+    }
+  }
+
+  const modelEffort = resolveModelConfiguredEffort({
+    model: params.model,
+    models: params.models
+  })
+  if (modelEffort != null) {
+    return {
+      effort: modelEffort,
+      source: 'model' as const
+    }
+  }
+
+  const adapterEffort = params.adapter == null
+    ? undefined
+    : getAdapterConfiguredEffort(params.adapters?.[params.adapter])
+  if (adapterEffort != null) {
+    return {
+      effort: adapterEffort,
+      source: 'adapter' as const
+    }
+  }
+
+  const configEffort = normalizeEffortLevel(params.configEffort)
+  if (configEffort != null) {
+    return {
+      effort: configEffort,
+      source: 'config' as const
+    }
+  }
+
+  return {
+    effort: undefined,
+    source: undefined
+  }
 }
 
 export const doesModelMatchSelector = (params: {
