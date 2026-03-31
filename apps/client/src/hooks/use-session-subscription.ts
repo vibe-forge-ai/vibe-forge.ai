@@ -71,14 +71,37 @@ export function useSessionSubscription() {
   useEffect(() => {
     let disposed = false
     let socket: WebSocket | undefined
-    let reconnectTimer: ReturnType<typeof setTimeout> | undefined
+    let connectTimer: ReturnType<typeof setTimeout> | undefined
+
+    const closeSocket = (target: WebSocket | undefined) => {
+      if (!target) return
+      if (target.readyState === WebSocket.CLOSED || target.readyState === WebSocket.CLOSING) {
+        return
+      }
+      if (target.readyState === WebSocket.CONNECTING) {
+        target.addEventListener('open', () => target.close(), { once: true })
+        return
+      }
+      target.close()
+    }
+
+    const scheduleConnect = (delay = 0) => {
+      if (disposed) return
+      if (connectTimer) {
+        clearTimeout(connectTimer)
+      }
+      connectTimer = setTimeout(() => {
+        connectTimer = undefined
+        connect()
+      }, delay)
+    }
 
     const connect = () => {
       if (disposed) return
 
       socket = createSocket({
         onMessage: (data: WSEvent) => {
-          if (data.type !== 'session_updated') return
+          if (disposed || data.type !== 'session_updated') return
           const updatedSession = data.session as SessionUpdate
 
           void mutate('/api/sessions', (prev: SessionListResponse | undefined) => {
@@ -91,22 +114,22 @@ export function useSessionSubscription() {
         },
         onClose: () => {
           if (disposed) return
-          reconnectTimer = setTimeout(connect, 1000)
+          scheduleConnect(1000)
         },
         onError: () => {
-          socket?.close()
+          closeSocket(socket)
         }
       }, { subscribe: 'sessions' })
     }
 
-    connect()
+    scheduleConnect()
 
     return () => {
       disposed = true
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer)
+      if (connectTimer) {
+        clearTimeout(connectTimer)
       }
-      socket?.close()
+      closeSocket(socket)
     }
   }, [mutate])
 }

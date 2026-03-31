@@ -13,7 +13,7 @@ const getGlobalRuntimeEnv = () => {
 const normalizeBase = (value?: string) => {
   let base = value?.trim() ?? ''
   if (!base) {
-    return '/ui/'
+    base = import.meta.env.BASE_URL || '/'
   }
   if (!base.startsWith('/')) {
     base = `/${base}`
