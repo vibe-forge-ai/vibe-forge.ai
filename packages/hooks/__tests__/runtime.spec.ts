@@ -100,6 +100,62 @@ describe('hook runtime', () => {
     expect(logContent).toContain('[plugin.logger]')
   })
 
+  it('formats plugin logger payloads as yaml with folded multiline strings', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-yaml-'))
+    tempDirs.push(workspace)
+    await installLoggerPluginPackage(workspace)
+
+    await writeFile(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify({
+        plugins: [
+          {
+            id: 'logger'
+          }
+        ]
+      })
+    )
+
+    const result = await callHook(
+      'TaskStart',
+      {
+        cwd: workspace,
+        sessionId: 'session-yaml',
+        adapter: 'codex',
+        options: { cwd: workspace },
+        adapterOptions: {
+          sessionId: 'session-yaml',
+          runtime: 'cli',
+          type: 'create',
+          systemPrompt: '1233\n456'
+        }
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-yaml-hook',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toEqual({ continue: true })
+
+    const logFiles = await fg('.ai/logs/ctx-yaml-hook/**/*.log.md', {
+      cwd: workspace,
+      absolute: true
+    })
+    expect(logFiles).toHaveLength(1)
+
+    const logContent = await readFile(logFiles[0], 'utf-8')
+    expect(logContent).toContain('[TaskStart]')
+    expect(logContent).toContain('[plugin.logger]')
+    expect(logContent).toContain('```yaml')
+    expect(logContent).toContain('adapterOptions:')
+    expect(logContent).toContain('  systemPrompt: >-')
+    expect(logContent).toContain('    1233')
+    expect(logContent).toContain('    456')
+  })
+
   it('skips plugins that are explicitly disabled in config', async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-disabled-'))
     tempDirs.push(workspace)

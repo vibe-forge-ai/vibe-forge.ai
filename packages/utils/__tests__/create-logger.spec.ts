@@ -115,6 +115,30 @@ describe('createLogger', () => {
     const canonicalPath = join(cwd, '.ai/logs/task-1/session-1.log.md')
     const content = await readFile(canonicalPath, 'utf8')
     expect(content).toContain('__D__ Claude Code CLI stdout:')
-    expect(content).toContain('"line": "debug enabled"')
+    expect(content).toContain('```yaml')
+    expect(content).toContain('line: debug enabled')
+  })
+
+  it('renders multiline strings as folded yaml blocks', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
+    tempDirs.push(cwd)
+
+    const logger = createLogger(cwd, 'task-1', 'session-1')
+    logger.info('task payload', {
+      a: {
+        b: '1233\n456'
+      }
+    })
+    await new Promise<void>((resolve) => {
+      logger.stream.end(() => resolve())
+    })
+
+    const canonicalPath = join(cwd, '.ai/logs/task-1/session-1.log.md')
+    const content = await readFile(canonicalPath, 'utf8')
+    expect(content).toContain('```yaml')
+    expect(content).toContain('a:')
+    expect(content).toContain('  b: >-')
+    expect(content).toContain('    1233')
+    expect(content).toContain('    456')
   })
 })
