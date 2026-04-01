@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及 benchmark 目录结构、执行模型、judge 规则和结果格式时加载的 benchmark 方案说明。
+---
+
 # Benchmark 技术方案
 
 本文件是 benchmark 方案入口页，只保留目标、范围和阅读顺序；细节拆到 `benchmark/`。

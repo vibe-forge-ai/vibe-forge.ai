@@ -10,6 +10,7 @@ export interface Rule {
   description?: string
   globs?: string | string[]
   always?: boolean
+  alwaysApply?: boolean
 }
 
 export interface Spec {

@@ -1,5 +1,6 @@
 ---
 alwaysApply: true
+description: 仓库基础架构总览，说明分层、依赖边界、运行链路与 server 职责分工。
 ---
 
 # 架构说明

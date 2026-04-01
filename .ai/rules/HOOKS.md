@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及 hooks 方案、托管配置、事件矩阵或启用与排查时加载的 hooks 入口说明。
+---
+
 # 通用 Hooks 方案
 
 本文件是 hooks 方案入口页；统一语义和实现细节拆到 `hooks/`，更深的维护细节继续看 [HOOKS-REFERENCE.md](./HOOKS-REFERENCE.md)。

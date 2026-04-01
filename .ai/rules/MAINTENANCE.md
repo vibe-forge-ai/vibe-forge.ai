@@ -1,5 +1,6 @@
 ---
 alwaysApply: true
+description: 仓库通用维护与验证规则，包含启动、lint、格式化、类型检查、测试与常见维护入口。
 ---
 
 # 项目维护指南 (Maintenance)

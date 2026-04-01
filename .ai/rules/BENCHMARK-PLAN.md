@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及 benchmark 落地拆分、阶段目标、开发顺序与里程碑时加载的规划文档。
+---
+
 # Benchmark 实施规划
 
 本文件是 benchmark 落地规划入口页，只保留阶段总览；细节拆到 `benchmark-plan/`。

@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及本仓库开发、启动本地环境、执行测试或定位各 package 入口时加载的开发说明。
+---
+
 # 本仓库开发与贡献
 
 本文件只描述如何参与本仓库开发；如何把 Vibe Forge 接入你的项目，请见 [USAGE.md](./USAGE.md)。

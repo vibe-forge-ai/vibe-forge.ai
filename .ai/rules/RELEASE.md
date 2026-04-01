@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及发版范围、publish-plan、changelog、tag 或正式发布流程时加载的发布规则。
+---
+
 # 发布规则
 
 本文件是发布入口页；判断范围、执行步骤和 tag / changelog 细节拆到 `release/`。

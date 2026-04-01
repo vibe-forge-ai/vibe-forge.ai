@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 仅在处理项目接入、安装、运行 Vibe Forge 服务、CLI 用法或插件资产时加载的接入文档。
+---
+
 # 在自己项目中使用
 
 本文件是接入入口页；安装、运行和 CLI 细节拆到 `usage/`。

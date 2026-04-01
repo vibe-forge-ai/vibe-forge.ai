@@ -1,6 +1,11 @@
 ---
 alwaysApply: false
-globs: apps/server/src/**/*, apps/cli/src/**/*
+description: 仅在修改 apps/server、apps/cli 的路由、服务、数据库、适配器或 MCP 工具时加载的后端规范。
+globs:
+  - apps/server/src/**/*
+  - apps/server/__tests__/**/*
+  - apps/cli/src/**/*
+  - apps/cli/__tests__/**/*
 ---
 
 # 后端开发规范 (Backend Development)
