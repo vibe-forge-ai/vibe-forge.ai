@@ -28,6 +28,10 @@
   - 当前 npm 插件的共享资产层已经可被 `claude-code`、`codex`、`opencode` 共同消费
   - 但原生插件生态兼容目前只有 `opencode` 已接入 `agents / commands / modes / plugins` overlay
   - 后续需要明确 Claude / Codex 是否要支持各自的 native plugin format，以及如何与统一 asset plan、diagnostics、hooks bridge 协同
+- 收敛全仓真实类型检查基线
+  - 统一以 `pnpm typecheck` 作为类型检查入口，不再用裸 `pnpm exec tsc --noEmit` 代替 monorepo 分层检查
+  - 当前基线仍有未收敛的 typecheck 错误，主要位于 `apps/cli/src/commands/clear.ts`、`apps/server/src/db/automation/repo.ts`、`apps/server/src/db/sessions/repo.ts`、`apps/server/src/db/sqlite.ts`
+  - 后续需要单独清理这些与当前插件分支无关的报错，再恢复全量 typecheck 绿灯
 
 ## 执行原则
 
