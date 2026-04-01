@@ -105,6 +105,7 @@ adapters:
             plugins: [
               {
                 id: 'chrome',
+                enabled: false,
                 options: {
                   headless: true
                 }
@@ -189,6 +190,7 @@ shortcuts:
           },
           {
             id: 'chrome',
+            enabled: false,
             options: {
               headless: true
             }

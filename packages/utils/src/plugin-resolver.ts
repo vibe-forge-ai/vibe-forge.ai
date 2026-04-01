@@ -108,6 +108,10 @@ const normalizeScope = (value: unknown) => (
     : undefined
 )
 
+const normalizeEnabled = (value: unknown) => (
+  typeof value === 'boolean' ? value : undefined
+)
+
 const normalizePluginInstanceConfig = (
   value: unknown,
   path: string
@@ -126,6 +130,9 @@ const normalizePluginInstanceConfig = (
   if ('options' in value && value.options != null && !isRecord(value.options)) {
     throw new Error(`Invalid plugin instance at ${path}. "options" must be an object.`)
   }
+  if ('enabled' in value && value.enabled != null && typeof value.enabled !== 'boolean') {
+    throw new Error(`Invalid plugin instance at ${path}. "enabled" must be a boolean.`)
+  }
   if ('children' in value && value.children != null && !Array.isArray(value.children)) {
     throw new Error(`Invalid plugin instance at ${path}. "children" must be an array.`)
   }
@@ -136,6 +143,7 @@ const normalizePluginInstanceConfig = (
 
   return {
     id,
+    ...(normalizeEnabled(value.enabled) != null ? { enabled: normalizeEnabled(value.enabled) } : {}),
     ...(normalizeScope(value.scope) != null ? { scope: normalizeScope(value.scope) } : {}),
     ...(isRecord(value.options) ? { options: value.options } : {}),
     ...(children != null ? { children } : {})
@@ -332,7 +340,7 @@ const resolveInstance = async (
     }))
 
   const childConfigs = [
-    ...explicitChildren,
+    ...explicitChildren.filter(child => child.enabled !== false),
     ...autoChildren
   ]
 
@@ -404,11 +412,12 @@ export const resolveConfiguredPluginInstances = async (params: {
     params.plugins,
     params.overlaySource != null ? `${params.overlaySource}.plugins` : 'plugins'
   )
+  const enabledPluginConfigs = (pluginConfigs ?? []).filter(plugin => plugin.enabled !== false)
   const instances: ResolvedPluginInstance[] = []
-  for (let index = 0; index < (pluginConfigs ?? []).length; index++) {
+  for (let index = 0; index < enabledPluginConfigs.length; index++) {
     instances.push(await resolveInstance({
       cwd: params.cwd,
-      config: pluginConfigs![index],
+      config: enabledPluginConfigs[index]!,
       instancePath: String(index),
       overlaySource: params.overlaySource
     }))

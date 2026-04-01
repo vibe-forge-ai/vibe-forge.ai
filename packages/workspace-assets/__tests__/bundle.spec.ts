@@ -84,4 +84,61 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     expect(disabledBundle.mcpServers).not.toHaveProperty('vibe-forge')
   })
+
+  it('skips disabled plugin instances and lets disabled child overrides suppress default child activation', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        version: '1.0.0'
+      }, null, 2),
+      'skills/research/SKILL.md': '---\ndescription: 检索资料\n---\n阅读 README.md'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-bundle', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-bundle',
+        version: '1.0.0'
+      }, null, 2),
+      'index.js': [
+        'module.exports = {',
+        '  __vibeForgePluginManifest: true,',
+        '  children: {',
+        '    review: {',
+        '      source: { type: "package", id: "@vibe-forge/plugin-review" },',
+        '      activation: "default"',
+        '    }',
+        '  }',
+        '}',
+        ''
+      ].join('\n')
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-review', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-review',
+        version: '1.0.0'
+      }, null, 2),
+      'skills/audit/SKILL.md': '---\ndescription: 代码审计\n---\n检查 child plugin 是否启用'
+    })
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: 'demo', scope: 'demo', enabled: false },
+          {
+            id: 'bundle',
+            scope: 'bundle',
+            children: [
+              { id: 'review', enabled: false }
+            ]
+          }
+        ]
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.skills).toEqual([])
+    expect(bundle.pluginInstances.map(instance => instance.packageId)).toEqual(['@vibe-forge/plugin-bundle'])
+  })
 })

@@ -1,5 +1,6 @@
 export interface PluginChildConfig {
   id: string
+  enabled?: boolean
   scope?: string
   options?: Record<string, unknown>
   children?: PluginChildConfig[]

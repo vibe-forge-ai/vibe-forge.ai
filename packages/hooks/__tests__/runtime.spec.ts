@@ -100,6 +100,52 @@ describe('hook runtime', () => {
     expect(logContent).toContain('[plugin.logger]')
   })
 
+  it('skips plugins that are explicitly disabled in config', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-disabled-'))
+    tempDirs.push(workspace)
+    await installLoggerPluginPackage(workspace)
+
+    await writeFile(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify({
+        plugins: [
+          {
+            id: 'logger',
+            enabled: false
+          }
+        ]
+      })
+    )
+
+    const result = await callHook(
+      'TaskStart',
+      {
+        cwd: workspace,
+        sessionId: 'session-disabled',
+        adapter: 'codex',
+        options: { cwd: workspace },
+        adapterOptions: { sessionId: 'session-disabled', runtime: 'cli', type: 'create' }
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-disabled-hook',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toEqual({ continue: true })
+
+    const logFiles = await fg('.ai/logs/ctx-disabled-hook/**/*.log.md', {
+      cwd: workspace,
+      absolute: true
+    })
+    expect(logFiles).toHaveLength(1)
+
+    const logContent = await readFile(logFiles[0], 'utf-8')
+    expect(logContent).not.toContain('[plugin.logger]')
+  })
+
   it('continues without loading plugins when the config file cannot be parsed', async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-legacy-'))
     tempDirs.push(workspace)

@@ -32,6 +32,7 @@ describe('mergeConfigs', () => {
         plugins: [
           {
             id: 'logger',
+            enabled: false,
             options: {
               level: 'info'
             }
@@ -95,6 +96,7 @@ describe('mergeConfigs', () => {
     expect(merged.plugins).toEqual([
       {
         id: 'logger',
+        enabled: false,
         options: {
           level: 'info'
         }
