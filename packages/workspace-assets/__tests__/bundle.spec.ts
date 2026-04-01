@@ -25,7 +25,8 @@ describe('resolveWorkspaceAssetBundle', () => {
       'package.json': JSON.stringify({
         name: '@vibe-forge/plugin-logger',
         version: '1.0.0'
-      }, null, 2)
+      }, null, 2),
+      'hooks.js': 'module.exports = {}\n'
     })
 
     const bundle = await resolveWorkspaceAssetBundle({
@@ -44,12 +45,10 @@ describe('resolveWorkspaceAssetBundle', () => {
     expect(Object.keys(bundle.mcpServers)).toEqual(['demo/browser'])
     expect(bundle.hookPlugins).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        packageId: '@vibe-forge/plugin-demo'
-      }),
-      expect.objectContaining({
         packageId: '@vibe-forge/plugin-logger'
       })
     ]))
+    expect(bundle.hookPlugins).toHaveLength(1)
     expect(bundle.opencodeOverlayAssets).toEqual(expect.arrayContaining([
       expect.objectContaining({
         kind: 'command',
@@ -140,5 +139,75 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     expect(bundle.skills).toEqual([])
     expect(bundle.pluginInstances.map(instance => instance.packageId)).toEqual(['@vibe-forge/plugin-bundle'])
+  })
+
+  it('lets later config layers disable matching plugin instances by id and scope', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-logger',
+        version: '1.0.0'
+      }, null, 2),
+      'hooks.js': 'module.exports = {}\n'
+    })
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [
+        {
+          plugins: [
+            { id: 'logger' }
+          ]
+        },
+        {
+          plugins: [
+            { id: 'logger', enabled: false }
+          ]
+        }
+      ],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.pluginConfigs).toEqual([
+      { id: 'logger', enabled: false }
+    ])
+    expect(bundle.pluginInstances).toEqual([])
+    expect(bundle.hookPlugins).toEqual([])
+  })
+
+  it('surfaces invalid plugin manifests instead of silently falling back to directory scanning', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-bad-manifest', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-bad-manifest',
+        version: '1.0.0',
+        exports: {
+          '.': './index.js'
+        }
+      }, null, 2),
+      'index.js': [
+        'module.exports = {',
+        '  __vibeForgePluginManifest: true,',
+        '  scope: "bad",',
+        '  assets: {',
+        '    skills: "./custom-skills"',
+        '  }',
+        '}',
+        ''
+      ].join('\n'),
+      'custom-skills/research/SKILL.md': '---\ndescription: 检索资料\n---\n阅读 README.md'
+    })
+
+    await expect(resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: '@vibe-forge/plugin-bad-manifest' }
+        ]
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })).rejects.toThrow('Failed to load plugin manifest for @vibe-forge/plugin-bad-manifest')
   })
 })

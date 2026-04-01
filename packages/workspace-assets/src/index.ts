@@ -42,6 +42,7 @@ import {
   mergePluginConfigs,
   normalizePluginConfig,
   resolveConfiguredPluginInstances,
+  resolvePluginHooksEntryPath,
   type ResolvedPluginInstance
 } from '@vibe-forge/utils/plugin-resolver'
 import { glob } from 'fast-glob'
@@ -646,10 +647,7 @@ const resolvePluginOverlay = (
   const overlayList = normalizePluginConfig(overlay.list, 'plugins overlay list') ?? []
   return overlay.mode === 'override'
     ? overlayList
-    : [
-      ...(basePlugins ?? []),
-      ...overlayList
-    ]
+    : mergePluginConfigs(basePlugins, overlayList)
 }
 
 const generateRulesPrompt = (rules: Definition<Rule>[]) => {
@@ -910,7 +908,7 @@ export async function resolveWorkspaceAssetBundle(params: {
   }
 
   const hookPlugins = flattenedPluginInstances
-    .filter(instance => instance.packageId != null)
+    .filter(instance => instance.packageId != null && resolvePluginHooksEntryPath(params.cwd, instance.packageId) != null)
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 

@@ -21,6 +21,17 @@ const normalizeOptions = (value: unknown): Record<string, unknown> => (
 
 const createWorkspaceRequire = (cwd: string) => createRequire(resolve(cwd, '__vibe_forge_plugin_loader__.cjs'))
 
+const isMissingPackageEntryError = (error: unknown) => {
+  if (!isRecord(error)) return false
+  const code = typeof error.code === 'string' ? error.code : undefined
+  const message = typeof error.message === 'string' ? error.message : ''
+  return (
+    code === 'MODULE_NOT_FOUND' ||
+    code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' ||
+    message.includes('No "exports" main defined')
+  )
+}
+
 const shouldTryPrefixedPackageId = (id: string) => (
   !id.startsWith('@') &&
   !id.startsWith('.') &&
@@ -162,23 +173,49 @@ export const normalizePluginConfig = (
   return plugins.map((plugin, index) => normalizePluginInstanceConfig(plugin, `${path}[${index}]`))
 }
 
-const resolvePackageReference = (cwd: string, id: string): ResolvedPluginReference => {
+const resolveInstalledPackageRoot = (cwd: string, packageId: string) => {
   const workspaceRequire = createWorkspaceRequire(cwd)
+  const lookupPaths = workspaceRequire.resolve.paths(packageId) ?? []
+  const packageSegments = packageId.split('/')
+
+  for (const lookupPath of lookupPaths) {
+    const packageJsonPath = resolve(lookupPath, ...packageSegments, 'package.json')
+    if (existsSync(packageJsonPath)) {
+      return dirname(packageJsonPath)
+    }
+  }
+
+  return undefined
+}
+
+const resolveOptionalPackageEntryPath = (
+  cwd: string,
+  specifier: string
+) => {
+  const workspaceRequire = createWorkspaceRequire(cwd)
+  try {
+    return workspaceRequire.resolve(specifier)
+  } catch (error) {
+    if (isMissingPackageEntryError(error)) return undefined
+    throw error
+  }
+}
+
+const resolvePackageReference = (cwd: string, id: string): ResolvedPluginReference => {
   const candidates = shouldTryPrefixedPackageId(id)
     ? [id, `@vibe-forge/plugin-${id}`]
     : [id]
 
   for (const candidate of candidates) {
-    try {
-      const packageJsonPath = workspaceRequire.resolve(`${candidate}/package.json`)
+    const rootDir = resolveInstalledPackageRoot(cwd, candidate)
+    if (rootDir != null) {
       return {
         sourceType: 'package',
         requestId: id,
         packageId: candidate,
         resolvedBy: candidate === id ? 'direct' : 'vibe-forge-prefix',
-        rootDir: dirname(packageJsonPath)
+        rootDir
       }
-    } catch {
     }
   }
 
@@ -189,15 +226,23 @@ const loadManifest = (
   cwd: string,
   packageId: string
 ) => {
+  const rootEntryPath = resolveOptionalPackageEntryPath(cwd, packageId)
+  if (rootEntryPath == null) return undefined
+
   const workspaceRequire = createWorkspaceRequire(cwd)
   try {
     // eslint-disable-next-line ts/no-require-imports
-    const mod = workspaceRequire(packageId)
+    const mod = workspaceRequire(rootEntryPath)
     return toPluginManifest(mod?.default ?? mod)
-  } catch {
-    return undefined
+  } catch (error) {
+    throw new Error(`Failed to load plugin manifest for ${packageId}.`, { cause: error })
   }
 }
+
+export const resolvePluginHooksEntryPath = (
+  cwd: string,
+  packageId: string
+) => resolveOptionalPackageEntryPath(cwd, `${packageId}/hooks`)
 
 const resolveDirectoryPath = (baseDir: string, path: string) => (
   path.startsWith('/') ? path : resolve(baseDir, path)
@@ -396,10 +441,15 @@ export const mergePluginConfigs = (
   projectPlugins: PluginConfig | undefined,
   userPlugins: PluginConfig | undefined
 ): PluginConfig | undefined => {
-  const merged = [
-    ...(normalizePluginConfig(projectPlugins, 'project.plugins') ?? []),
-    ...(normalizePluginConfig(userPlugins, 'user.plugins') ?? [])
-  ]
+  const merged = [...(normalizePluginConfig(projectPlugins, 'project.plugins') ?? [])]
+  for (const plugin of normalizePluginConfig(userPlugins, 'user.plugins') ?? []) {
+    for (let index = merged.length - 1; index >= 0; index--) {
+      if (merged[index].id === plugin.id && merged[index].scope === plugin.scope) {
+        merged.splice(index, 1)
+      }
+    }
+    merged.push(plugin)
+  }
   return merged.length > 0 ? merged : undefined
 }
 

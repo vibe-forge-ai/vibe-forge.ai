@@ -128,8 +128,7 @@ describe('definitionLoader', () => {
       'package.json': JSON.stringify({
         name: '@vibe-forge/plugin-demo',
         exports: {
-          '.': './index.js',
-          './package.json': './package.json'
+          '.': './index.js'
         }
       }, null, 2),
       'index.js': [

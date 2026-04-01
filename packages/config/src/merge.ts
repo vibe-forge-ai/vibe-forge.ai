@@ -1,5 +1,5 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs, normalizePluginConfig } from '@vibe-forge/utils'
+import { mergeAdapterConfigs, mergePluginConfigs } from '@vibe-forge/utils'
 
 const hasOwnKeys = (value: Record<string, unknown>) => Object.keys(value).length > 0
 
@@ -96,19 +96,6 @@ const mergePermissions = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
-const mergePluginConfigs = (
-  left?: Config['plugins'],
-  right?: Config['plugins']
-) => {
-  const normalizedLeft = normalizePluginConfig(left, 'plugins')
-  const normalizedRight = normalizePluginConfig(right, 'plugins')
-  const merged = [
-    ...(normalizedLeft ?? []),
-    ...(normalizedRight ?? [])
-  ]
-  return merged.length > 0 ? merged : undefined
-}
-
 export function mergeConfigs(left: undefined, right: undefined): undefined
 export function mergeConfigs<T extends Partial<Config>>(left: T, right: T): T
 export function mergeConfigs<T extends Partial<Config>>(left: T | undefined, right: T): T
@@ -143,7 +130,7 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.conversation as Record<string, unknown> | undefined
     ) as Config['conversation'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    plugins: mergePluginConfigs(left?.plugins, right?.plugins)
+    plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins']
   }
 
   return merged as T
