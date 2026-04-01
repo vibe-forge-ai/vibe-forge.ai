@@ -1,43 +1,19 @@
-const fs = require('node:fs')
-const path = require('node:path')
-const process = require('node:process')
-
-const writeDebugLog = (message, data = null) => {
-  const timestamp = new Date().toISOString()
-  try {
-    const logMessage = data
-      ? `# [${timestamp}] ${message}:\n` +
-        '```json\n' +
-        `${JSON.stringify(data, null, 2)}\n` +
-        '```\n'
-      : `# [${timestamp}] ${message}\n`
-    const logPath = path.join(
-      process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
-      '.ai',
-      'logs',
-      process.env.__VF_PROJECT_AI_CTX_ID__,
-      process.env.__VF_PROJECT_AI_SESSION_ID__,
-      'adapter-claude-code',
-      'openai-polyfill.js.log.md'
-    )
-    if (!fs.existsSync(logPath)) {
-      fs.mkdirSync(path.dirname(logPath), { recursive: true })
-    }
-
-    fs.appendFileSync(logPath, logMessage)
-  } catch (error) {
-    fs.appendFileSync(
-      path.join(__dirname, 'temp.log.md'),
-      `# [${timestamp}] ${error}\n`
-    )
-    // 静默处理写入错误，避免影响正常流程
-  }
-}
+const {
+  stripRequestLogContextMarker,
+  writeRequestDebugLog
+} = require('./log-context')
 
 class OpenAIResponsesTransformer {
   name = 'openai-responses'
-  transformRequestIn(request) {
-    writeDebugLog('OpenAIResponsesTransformer transformRequestIn', request)
+  transformRequestIn(request, provider, context) {
+    stripRequestLogContextMarker(request, context)
+    writeRequestDebugLog(
+      'openai-polyfill.js.log.md',
+      'OpenAIResponsesTransformer transformRequestIn',
+      request,
+      context,
+      request
+    )
     delete request.temperature
     delete request.max_tokens
 
@@ -128,9 +104,12 @@ class OpenAIResponsesTransformer {
       input.push(message)
     })
 
-    writeDebugLog(
+    writeRequestDebugLog(
+      'openai-polyfill.js.log.md',
       'OpenAIResponsesTransformer transformRequestIn resolved input',
-      input
+      input,
+      context,
+      request
     )
     request.input = input
     delete request.messages
@@ -183,14 +162,16 @@ class OpenAIResponsesTransformer {
     return request
   }
 
-  async transformResponseOut(response) {
+  async transformResponseOut(response, context) {
     const contentType = response.headers.get('Content-Type') || ''
 
     if (contentType.includes('application/json')) {
       const jsonResponse = await response.json()
-      writeDebugLog(
+      writeRequestDebugLog(
+        'openai-polyfill.js.log.md',
         'OpenAIResponsesTransformer transformResponseOut application/json',
-        jsonResponse
+        jsonResponse,
+        context
       )
 
       // 检查是否为responses API格式的JSON响应

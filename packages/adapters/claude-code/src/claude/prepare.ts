@@ -30,6 +30,18 @@ interface PreparedClaudeExecution {
   executionType: 'create' | 'resume'
 }
 
+const CCR_REQUEST_LOG_CONTEXT_TAG = 'VF-CCR-LOG-CONTEXT'
+
+const buildCCRRequestLogContextMarker = (params: {
+  ctxId: string
+  sessionId: string
+}) => {
+  const encoded = Buffer
+    .from(JSON.stringify(params), 'utf8')
+    .toString('base64url')
+  return `<${CCR_REQUEST_LOG_CONTEXT_TAG}>${encoded}</${CCR_REQUEST_LOG_CONTEXT_TAG}>`
+}
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value != null && typeof value === 'object' && !Array.isArray(value)
 
@@ -227,10 +239,21 @@ export const prepareClaudeExecution = async (
 
   if (model != null && model !== '') args.push('--model', model)
 
-  if (systemPrompt != null && systemPrompt !== '') {
+  const effectiveSystemPrompt = useCCR
+    ? [
+      buildCCRRequestLogContextMarker({
+        ctxId: ctx.ctxId,
+        sessionId
+      }),
+      systemPrompt
+    ].filter((value): value is string => typeof value === 'string' && value !== '')
+      .join('\n')
+    : systemPrompt
+
+  if (effectiveSystemPrompt != null && effectiveSystemPrompt !== '') {
     args.push(
       appendSystemPrompt ? '--append-system-prompt' : '--system-prompt',
-      systemPrompt.replace(/`/g, "'")
+      effectiveSystemPrompt.replace(/`/g, "'")
     )
   }
 

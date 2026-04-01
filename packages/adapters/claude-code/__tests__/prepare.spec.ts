@@ -111,6 +111,29 @@ describe('prepareClaudeExecution', () => {
         })
       })
     )
+    expect(result.args).toContain('--append-system-prompt')
+    expect(result.args).toEqual(expect.arrayContaining([
+      expect.stringMatching(
+        /^<VF-CCR-LOG-CONTEXT>[A-Za-z0-9_-]+<\/VF-CCR-LOG-CONTEXT>$/
+      )
+    ]))
+  })
+
+  it('prepends the CCR log-context marker ahead of the system prompt', async () => {
+    const result = await prepareClaudeExecution(createCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId,
+      model: 'gpt-responses,gpt-5.2-codex-2026-01-14',
+      systemPrompt: 'Follow repo rules',
+      onEvent: vi.fn()
+    })
+
+    const promptIndex = result.args.indexOf('--append-system-prompt')
+    expect(promptIndex).toBeGreaterThan(-1)
+    expect(result.args[promptIndex + 1]).toMatch(
+      /^<VF-CCR-LOG-CONTEXT>[A-Za-z0-9_-]+<\/VF-CCR-LOG-CONTEXT>\nFollow repo rules$/
+    )
   })
 
   it('resolves the claude cli path from adapter dependencies instead of PATH', async () => {
