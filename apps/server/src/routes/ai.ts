@@ -52,6 +52,10 @@ const resolveRuleName = (rule: Definition<Rule>) => {
   return fileName.replace(/\.[^/.]+$/, '')
 }
 
+const resolveRuleAlways = (attributes: Rule) => (
+  attributes.always ?? attributes.alwaysApply ?? false
+)
+
 const toTagList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string')
@@ -210,12 +214,11 @@ export function aiRouter(): Router {
         rules: rules.map((rule: Definition<Rule>) => {
           const name = resolveRuleName(rule)
           const description = rule.attributes.description ?? getFirstNonEmptyLine(rule.body) ?? name
-          const alwaysApply = (rule.attributes as { alwaysApply?: boolean }).alwaysApply
           return {
             id: toRelativePath(rule.path, workspaceRoot),
             name,
             description,
-            always: rule.attributes.always ?? alwaysApply ?? true,
+            always: resolveRuleAlways(rule.attributes),
             globs: toStringList(
               (rule.attributes as { globs?: unknown; glob?: unknown }).globs ??
                 (rule.attributes as { globs?: unknown; glob?: unknown }).glob
@@ -247,13 +250,12 @@ export function aiRouter(): Router {
 
       const name = resolveRuleName(rule)
       const description = rule.attributes.description ?? getFirstNonEmptyLine(rule.body) ?? name
-      const alwaysApply = (rule.attributes as { alwaysApply?: boolean }).alwaysApply
       ctx.body = {
         rule: {
           id: toRelativePath(rule.path, workspaceRoot),
           name,
           description,
-          always: rule.attributes.always ?? alwaysApply ?? true,
+          always: resolveRuleAlways(rule.attributes),
           globs: toStringList(
             (rule.attributes as { globs?: unknown; glob?: unknown }).globs ??
               (rule.attributes as { globs?: unknown; glob?: unknown }).glob

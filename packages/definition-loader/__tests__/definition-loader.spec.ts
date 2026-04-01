@@ -21,9 +21,11 @@ const writeDocument = async (filePath: string, content: string) => {
 
 const installPluginPackage = async (workspace: string, packageName: string, files: Record<string, string>) => {
   const packageDir = join(workspace, 'node_modules', ...packageName.split('/'))
-  await Promise.all(Object.entries(files).map(async ([relativePath, content]) => {
-    await writeDocument(join(packageDir, relativePath), content)
-  }))
+  await Promise.all(
+    Object.entries(files).map(async ([relativePath, content]) => {
+      await writeDocument(join(packageDir, relativePath), content)
+    })
+  )
 }
 
 afterEach(async () => {
@@ -110,6 +112,35 @@ describe('definitionLoader', () => {
     expect(prompt).not.toContain('hidden')
   })
 
+  it('treats alwaysApply rules as embedded system rules', () => {
+    const cwd = '/workspace/project'
+    const loader = new DefinitionLoader(cwd)
+
+    const prompt = loader.generateRulesPrompt([
+      {
+        path: join(cwd, '.ai/rules/base.md'),
+        body: '始终检查导入边界。',
+        attributes: {
+          description: '基础规则',
+          alwaysApply: true
+        }
+      },
+      {
+        path: join(cwd, '.ai/rules/optional.md'),
+        body: '仅在特定任务参考。',
+        attributes: {
+          description: '按需规则',
+          alwaysApply: false
+        }
+      }
+    ])
+
+    expect(prompt).toContain('base：基础规则')
+    expect(prompt).toContain('<rule-content>\n始终检查导入边界。\n</rule-content>')
+    expect(prompt).toContain('optional：按需规则')
+    expect(prompt).not.toContain('仅在特定任务参考。')
+  })
+
   it('loads npm plugin specs and README based entities consistently', async () => {
     const workspace = await createWorkspace()
     const loader = new DefinitionLoader(workspace)
@@ -125,12 +156,16 @@ describe('definitionLoader', () => {
       })
     )
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        exports: {
-          '.': './index.js'
-        }
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          exports: {
+            '.': './index.js'
+          }
+        },
+        null,
+        2
+      ),
       'index.js': [
         'module.exports = {',
         '  __vibeForgePluginManifest: true,',

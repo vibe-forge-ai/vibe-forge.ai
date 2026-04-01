@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 当任务涉及 hooks 深度维护、真实 CLI 验证、实现入口或经验复盘时加载的 hooks 参考文档。
+---
+
 # Hooks 开发与维护参考
 
 本文件是 hooks 深度维护入口页；命令、实现入口和经验总结拆到 `hooks-reference/`。

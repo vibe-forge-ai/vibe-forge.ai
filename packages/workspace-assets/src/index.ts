@@ -3,8 +3,8 @@ import { basename, dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import {
-  buildConfigJsonVariables,
   DEFAULT_VIBE_FORGE_MCP_SERVER_NAME,
+  buildConfigJsonVariables,
   loadConfig,
   resolveDefaultVibeForgeMcpServerConfig
 } from '@vibe-forge/config'
@@ -42,9 +42,9 @@ import {
   mergePluginConfigs,
   normalizePluginConfig,
   resolveConfiguredPluginInstances,
-  resolvePluginHooksEntryPath,
-  type ResolvedPluginInstance
+  resolvePluginHooksEntryPath
 } from '@vibe-forge/utils/plugin-resolver'
+import type { ResolvedPluginInstance } from '@vibe-forge/utils/plugin-resolver'
 import { glob } from 'fast-glob'
 import fm from 'front-matter'
 import yaml from 'js-yaml'
@@ -87,6 +87,10 @@ const resolveDocumentDescription = (
   const trimmedDescription = explicitDescription?.trim()
   return trimmedDescription || getFirstNonEmptyLine(body) || fallbackName || ''
 }
+
+const isAlwaysRule = (attributes: Pick<Rule, 'always' | 'alwaysApply'>) => (
+  attributes.always ?? attributes.alwaysApply ?? false
+)
 
 const resolveDefinitionName = <T extends { name?: string }>(
   definition: Definition<T>,
@@ -197,7 +201,9 @@ const createDocumentAsset = <
   const displayName = resolveDisplayName(name, params.scope)
 
   return {
-    id: `${params.kind}:${params.origin}:${params.instance?.instancePath ?? 'workspace'}:${displayName}:${resolveRelativePath(params.cwd, params.definition.path)}`,
+    id: `${params.kind}:${params.origin}:${params.instance?.instancePath ?? 'workspace'}:${displayName}:${
+      resolveRelativePath(params.cwd, params.definition.path)
+    }`,
     kind: params.kind,
     name,
     displayName,
@@ -225,7 +231,9 @@ const createMcpAsset = (params: {
 }) => {
   const displayName = resolveDisplayName(params.name, params.scope)
   return {
-    id: `mcpServer:${params.origin}:${params.instance?.instancePath ?? 'workspace'}:${displayName}:${resolveRelativePath(params.cwd, params.sourcePath)}`,
+    id: `mcpServer:${params.origin}:${params.instance?.instancePath ?? 'workspace'}:${displayName}:${
+      resolveRelativePath(params.cwd, params.sourcePath)
+    }`,
     kind: 'mcpServer',
     name: params.name,
     displayName,
@@ -271,7 +279,9 @@ const createOpenCodeOverlayAsset = <TKind extends OpenCodeOverlayKind>(params: {
   targetSubpath: string
   instance: ResolvedPluginInstance
 }): OpenCodeOverlayAsset<TKind> => ({
-  id: `${params.kind}:plugin:${params.instance.instancePath}:${resolveDisplayName(params.entryName, params.instance.scope)}:${resolveRelativePath(params.cwd, params.sourcePath)}`,
+  id: `${params.kind}:plugin:${params.instance.instancePath}:${
+    resolveDisplayName(params.entryName, params.instance.scope)
+  }:${resolveRelativePath(params.cwd, params.sourcePath)}`,
   kind: params.kind,
   name: params.entryName,
   displayName: resolveDisplayName(params.entryName, params.instance.scope),
@@ -315,11 +325,21 @@ const scanInstanceDocuments = async (instance: ResolvedPluginInstance) => {
 
   const [rulePaths, skillPaths, specPaths, entityDocPaths, entityJsonPaths, mcpPaths] = await Promise.all([
     glob(['*.md'], { cwd: resolveAssetRoot(assets?.rules, 'rules'), absolute: true }).catch(() => [] as string[]),
-    glob(['*/SKILL.md'], { cwd: resolveAssetRoot(assets?.skills, 'skills'), absolute: true }).catch(() => [] as string[]),
-    glob(['*.md', '*/index.md'], { cwd: resolveAssetRoot(assets?.specs, 'specs'), absolute: true }).catch(() => [] as string[]),
-    glob(['*.md', '*/README.md'], { cwd: resolveAssetRoot(assets?.entities, 'entities'), absolute: true }).catch(() => [] as string[]),
-    glob(['*/index.json'], { cwd: resolveAssetRoot(assets?.entities, 'entities'), absolute: true }).catch(() => [] as string[]),
-    glob(['*.json', '*.yaml', '*.yml'], { cwd: resolveAssetRoot(assets?.mcp, 'mcp'), absolute: true }).catch(() => [] as string[])
+    glob(['*/SKILL.md'], { cwd: resolveAssetRoot(assets?.skills, 'skills'), absolute: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*.md', '*/index.md'], { cwd: resolveAssetRoot(assets?.specs, 'specs'), absolute: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*.md', '*/README.md'], { cwd: resolveAssetRoot(assets?.entities, 'entities'), absolute: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*/index.json'], { cwd: resolveAssetRoot(assets?.entities, 'entities'), absolute: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*.json', '*.yaml', '*.yml'], { cwd: resolveAssetRoot(assets?.mcp, 'mcp'), absolute: true }).catch(() =>
+      [] as string[]
+    )
   ])
 
   return {
@@ -336,22 +356,31 @@ const toOpenCodeOverlayEntries = (
   kind: OpenCodeOverlayKind,
   targetDir: 'agents' | 'commands' | 'modes' | 'plugins',
   paths: string[]
-): OpenCodeOverlayAssetEntry[] => paths.map((sourcePath) => ({
-  kind,
-  sourcePath,
-  entryName: basename(sourcePath, extname(sourcePath)),
-  targetSubpath: `${targetDir}/${basename(sourcePath)}`
-}))
+): OpenCodeOverlayAssetEntry[] =>
+  paths.map((sourcePath) => ({
+    kind,
+    sourcePath,
+    entryName: basename(sourcePath, extname(sourcePath)),
+    targetSubpath: `${targetDir}/${basename(sourcePath)}`
+  }))
 
 const scanInstanceOpenCodeOverlays = async (
   instance: ResolvedPluginInstance
 ) => {
   const opencodeRoot = resolve(instance.rootDir, 'opencode')
   const [agentPaths, commandPaths, modePaths, nativePluginPaths] = await Promise.all([
-    glob(['*.md'], { cwd: resolve(opencodeRoot, 'agents'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
-    glob(['*.md'], { cwd: resolve(opencodeRoot, 'commands'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
-    glob(['*.md'], { cwd: resolve(opencodeRoot, 'modes'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
-    glob(['**/*'], { cwd: resolve(opencodeRoot, 'plugins'), absolute: true, onlyFiles: true }).catch(() => [] as string[])
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'agents'), absolute: true, onlyFiles: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'commands'), absolute: true, onlyFiles: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'modes'), absolute: true, onlyFiles: true }).catch(() =>
+      [] as string[]
+    ),
+    glob(['**/*'], { cwd: resolve(opencodeRoot, 'plugins'), absolute: true, onlyFiles: true }).catch(() =>
+      [] as string[]
+    )
   ])
 
   return [
@@ -374,11 +403,14 @@ const definitionWithResolvedName = <TDefinition>(
 
 const toDocumentDefinitions = <TDefinition>(
   assets: Array<DocumentAsset<TDefinition>>
-) => assets.map(asset => definitionWithResolvedName(
-  asset.payload.definition,
-  asset.displayName,
-  asset.instancePath
-))
+) =>
+  assets.map(asset =>
+    definitionWithResolvedName(
+      asset.payload.definition,
+      asset.displayName,
+      asset.instancePath
+    )
+  )
 
 const assertNoDocumentConflicts = (
   assets: Array<Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>>
@@ -388,7 +420,9 @@ const assertNoDocumentConflicts = (
     const key = `${asset.kind}:${asset.displayName}`
     const existing = seen.get(key)
     if (existing != null) {
-      throw new Error(`Duplicate ${asset.kind} asset ${asset.displayName} from ${existing.sourcePath} and ${asset.sourcePath}`)
+      throw new Error(
+        `Duplicate ${asset.kind} asset ${asset.displayName} from ${existing.sourcePath} and ${asset.sourcePath}`
+      )
     }
     seen.set(key, asset)
   }
@@ -418,7 +452,9 @@ const resolveUniqueAssetByName = <TAsset extends Extract<WorkspaceAsset, { kind:
     return unscopedMatches[0]
   }
   if (matches.length > 1) {
-    throw new Error(`Ambiguous asset reference ${name}. Candidates: ${matches.map(match => match.displayName).join(', ')}`)
+    throw new Error(
+      `Ambiguous asset reference ${name}. Candidates: ${matches.map(match => match.displayName).join(', ')}`
+    )
   }
   return matches[0]
 }
@@ -472,18 +508,21 @@ const resolveNamedAssets = <TAsset extends Extract<WorkspaceAsset, { kind: Docum
 
 const toRuleSelectionRefs = (
   refs: RuleReference[] | string[] | undefined
-) => (refs ?? []).flatMap((ref) => {
-  if (typeof ref === 'string') return [ref]
-  if (ref.type === 'remote') return []
-  return [ref.path]
-})
+) =>
+  (refs ?? []).flatMap((ref) => {
+    if (typeof ref === 'string') return [ref]
+    if (ref.type === 'remote') return []
+    return [ref.path]
+  })
 
 const createRemoteRuleDefinition = (
   rule: Extract<RuleReference, { type: 'remote' }>,
   index: number
 ): Definition<Rule> => {
   const tags = Array.isArray(rule.tags)
-    ? rule.tags.filter((value): value is string => typeof value === 'string' && value.trim() !== '').map(value => value.trim())
+    ? rule.tags.filter((value): value is string => typeof value === 'string' && value.trim() !== '').map(value =>
+      value.trim()
+    )
     : []
   const description = rule.desc?.trim() || (
     tags.length > 0
@@ -605,8 +644,10 @@ const resolveSelectedMcpNames = (
   selection: WorkspaceMcpSelection | undefined
 ) => {
   const allAssets = Object.values(bundle.mcpServers)
-  const includeRefs = selection?.include ?? (bundle.defaultIncludeMcpServers.length > 0 ? bundle.defaultIncludeMcpServers : undefined)
-  const excludeRefs = selection?.exclude ?? (bundle.defaultExcludeMcpServers.length > 0 ? bundle.defaultExcludeMcpServers : undefined)
+  const includeRefs = selection?.include ??
+    (bundle.defaultIncludeMcpServers.length > 0 ? bundle.defaultIncludeMcpServers : undefined)
+  const excludeRefs = selection?.exclude ??
+    (bundle.defaultExcludeMcpServers.length > 0 ? bundle.defaultExcludeMcpServers : undefined)
 
   const resolveRefs = (refs: string[] | undefined) => {
     if (refs == null || refs.length === 0) return undefined
@@ -621,7 +662,9 @@ const resolveSelectedMcpNames = (
       const matches = allAssets.filter(item => item.name === ref || item.displayName === ref)
       if (matches.length === 0) throw new Error(`Failed to resolve MCP server ${ref}`)
       if (matches.length > 1) {
-        throw new Error(`Ambiguous MCP server reference ${ref}. Candidates: ${matches.map(match => match.displayName).join(', ')}`)
+        throw new Error(
+          `Ambiguous MCP server reference ${ref}. Candidates: ${matches.map(match => match.displayName).join(', ')}`
+        )
       }
       return matches[0].displayName
     }))
@@ -655,7 +698,7 @@ const generateRulesPrompt = (rules: Definition<Rule>[]) => {
     .map((rule) => {
       const name = resolveDefinitionName(rule)
       const desc = resolveDocumentDescription(rule.body, rule.attributes.description, name)
-      const content = rule.attributes.always && rule.body.trim()
+      const content = isAlwaysRule(rule.attributes) && rule.body.trim()
         ? `<rule-content>\n${rule.body.trim()}\n</rule-content>\n`
         : ''
       return `  - ${name}：${desc}\n${content}--------------------\n`
@@ -792,7 +835,9 @@ export async function resolveWorkspaceAssetBundle(params: {
   const localScan = await scanWorkspaceDocuments(params.cwd)
   const flattenedPluginInstances = flattenPluginInstances(pluginInstances)
   const pluginScans = await Promise.all(flattenedPluginInstances.map(instance => scanInstanceDocuments(instance)))
-  const pluginOverlayScans = await Promise.all(flattenedPluginInstances.map(instance => scanInstanceOpenCodeOverlays(instance)))
+  const pluginOverlayScans = await Promise.all(
+    flattenedPluginInstances.map(instance => scanInstanceOpenCodeOverlays(instance))
+  )
 
   const assets: WorkspaceAsset[] = []
 
@@ -807,14 +852,16 @@ export async function resolveWorkspaceAssetBundle(params: {
       parser != null ? parser(path) : parseFrontmatterDocument(path)
     )))
     assets.push(
-      ...definitions.map(definition => createDocumentAsset({
-        cwd: params.cwd,
-        kind,
-        definition,
-        origin,
-        scope: instance?.scope,
-        instance
-      }))
+      ...definitions.map(definition =>
+        createDocumentAsset({
+          cwd: params.cwd,
+          kind,
+          definition,
+          origin,
+          scope: instance?.scope,
+          instance
+        })
+      )
     )
   }
 
@@ -862,25 +909,31 @@ export async function resolveWorkspaceAssetBundle(params: {
   for (const [name, configValue] of Object.entries(config?.mcpServers ?? {})) {
     if (configValue.enabled === false) continue
     const { enabled: _enabled, ...nextConfig } = configValue
-    addMcpAsset(createMcpAsset({
-      cwd: params.cwd,
-      name,
-      config: nextConfig as NonNullable<Config['mcpServers']>[string],
-      origin: 'workspace',
-      sourcePath: resolve(params.cwd, '.ai.config.json')
-    }), { overwrite: true })
+    addMcpAsset(
+      createMcpAsset({
+        cwd: params.cwd,
+        name,
+        config: nextConfig as NonNullable<Config['mcpServers']>[string],
+        origin: 'workspace',
+        sourcePath: resolve(params.cwd, '.ai.config.json')
+      }),
+      { overwrite: true }
+    )
   }
 
   for (const [name, configValue] of Object.entries(userConfig?.mcpServers ?? {})) {
     if (configValue.enabled === false) continue
     const { enabled: _enabled, ...nextConfig } = configValue
-    addMcpAsset(createMcpAsset({
-      cwd: params.cwd,
-      name,
-      config: nextConfig as NonNullable<Config['mcpServers']>[string],
-      origin: 'workspace',
-      sourcePath: resolve(params.cwd, '.ai.dev.config.json')
-    }), { overwrite: true })
+    addMcpAsset(
+      createMcpAsset({
+        cwd: params.cwd,
+        name,
+        config: nextConfig as NonNullable<Config['mcpServers']>[string],
+        origin: 'workspace',
+        sourcePath: resolve(params.cwd, '.ai.dev.config.json')
+      }),
+      { overwrite: true }
+    )
   }
 
   for (let index = 0; index < flattenedPluginInstances.length; index++) {
@@ -908,19 +961,23 @@ export async function resolveWorkspaceAssetBundle(params: {
   }
 
   const hookPlugins = flattenedPluginInstances
-    .filter(instance => instance.packageId != null && resolvePluginHooksEntryPath(params.cwd, instance.packageId) != null)
+    .filter(instance =>
+      instance.packageId != null && resolvePluginHooksEntryPath(params.cwd, instance.packageId) != null
+    )
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 
   const opencodeOverlayAssets = flattenedPluginInstances.flatMap((instance, index) => (
-    pluginOverlayScans[index].map((entry) => createOpenCodeOverlayAsset({
-      cwd: params.cwd,
-      kind: entry.kind,
-      sourcePath: entry.sourcePath,
-      entryName: entry.entryName,
-      targetSubpath: entry.targetSubpath,
-      instance
-    }))
+    pluginOverlayScans[index].map((entry) =>
+      createOpenCodeOverlayAsset({
+        cwd: params.cwd,
+        kind: entry.kind,
+        sourcePath: entry.sourcePath,
+        entryName: entry.entryName,
+        targetSubpath: entry.targetSubpath,
+        instance
+      })
+    )
   ))
   assets.push(...opencodeOverlayAssets)
 
@@ -928,7 +985,9 @@ export async function resolveWorkspaceAssetBundle(params: {
 
   const rules = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'rule' }> => asset.kind === 'rule')
   const specs = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'spec' }> => asset.kind === 'spec')
-  const entities = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'entity' }> => asset.kind === 'entity')
+  const entities = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'entity' }> =>
+    asset.kind === 'entity'
+  )
   const skills = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'skill' }> => asset.kind === 'skill')
 
   assertNoDocumentConflicts([...rules, ...specs, ...entities, ...skills])
@@ -1034,13 +1093,20 @@ export async function resolvePromptAssetSelection(params: {
       )
       for (const asset of selection.assets) {
         promptAssetIds.add(asset.id)
-        ruleDefinitions.set(asset.id, definitionWithResolvedName({
-          ...asset.payload.definition,
-          attributes: {
-            ...asset.payload.definition.attributes,
-            always: true
-          }
-        }, asset.displayName, asset.instancePath))
+        ruleDefinitions.set(
+          asset.id,
+          definitionWithResolvedName(
+            {
+              ...asset.payload.definition,
+              attributes: {
+                ...asset.payload.definition.attributes,
+                always: true
+              }
+            },
+            asset.displayName,
+            asset.instancePath
+          )
+        )
       }
       selection.remoteDefinitions.forEach((definition) => {
         ruleDefinitions.set(definition.path, definition)

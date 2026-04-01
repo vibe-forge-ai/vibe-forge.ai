@@ -1,6 +1,9 @@
 ---
 alwaysApply: false
-globs: apps/client/src/**/*
+description: 仅在修改 apps/client 前端界面、路由、样式、主题或国际化时加载的前端规范。
+globs:
+  - apps/client/src/**/*
+  - apps/client/__tests__/**/*
 ---
 
 # 前端开发规范

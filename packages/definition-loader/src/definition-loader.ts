@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, relative, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 import process from 'node:process'
 
 import type {
@@ -49,6 +49,10 @@ const resolveDocumentDescription = (
   const trimmedDescription = explicitDescription?.trim()
   return trimmedDescription || getFirstNonEmptyLine(body) || fallbackName || ''
 }
+
+const isAlwaysRule = (attributes: Pick<Rule, 'always' | 'alwaysApply'>) => (
+  attributes.always ?? attributes.alwaysApply ?? false
+)
 
 const toNonEmptyStringArray = (values: unknown): string[] => {
   if (!Array.isArray(values)) return []
@@ -150,7 +154,11 @@ const resolveUniqueDefinition = <TDefinition extends { name?: string }>(
   const matches = definitions.filter(definition => resolveIdentifier(definition) === ref)
   if (matches.length === 0) return undefined
   if (matches.length > 1) {
-    throw new Error(`Ambiguous asset reference ${ref}. Candidates: ${matches.map(item => item.resolvedName ?? resolveIdentifier(item)).join(', ')}`)
+    throw new Error(
+      `Ambiguous asset reference ${ref}. Candidates: ${
+        matches.map(item => item.resolvedName ?? resolveIdentifier(item)).join(', ')
+      }`
+    )
   }
   return matches[0]
 }
@@ -238,7 +246,7 @@ export class DefinitionLoader {
         const { path, body, attributes } = rule
         const name = resolveDefinitionName(rule)
         const desc = resolveDocumentDescription(body, attributes.description, name)
-        const content = attributes.always && body.trim()
+        const content = isAlwaysRule(attributes) && body.trim()
           ? `<rule-content>\n${body.trim()}\n</rule-content>\n`
           : ''
         return `  - ${name}：${desc}\n${content}--------------------\n`
@@ -264,7 +272,13 @@ export class DefinitionLoader {
     if (skills == null) return allSkills
 
     return skills
-      .map(skillRef => resolveUniqueDefinition(allSkills, skillRef, skill => resolveDocumentName(skill.path, skill.attributes.name, ['skill.md'])))
+      .map(skillRef =>
+        resolveUniqueDefinition(
+          allSkills,
+          skillRef,
+          skill => resolveDocumentName(skill.path, skill.attributes.name, ['skill.md'])
+        )
+      )
       .filter((skill): skill is Definition<Skill> => skill != null)
   }
 
@@ -381,7 +395,11 @@ export class DefinitionLoader {
       resolvedName: entity.displayName,
       resolvedInstancePath: entity.instancePath
     }))
-    return resolveUniqueDefinition(entities, name, entity => resolveEntityIdentifier(entity.path, entity.attributes.name))
+    return resolveUniqueDefinition(
+      entities,
+      name,
+      entity => resolveEntityIdentifier(entity.path, entity.attributes.name)
+    )
   }
 
   private async loadEntityFromJson(jsonPath: string): Promise<Definition<Entity>> {

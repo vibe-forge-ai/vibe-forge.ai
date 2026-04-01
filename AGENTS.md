@@ -1,6 +1,6 @@
 # Repo Reading Guide
 
-开始处理仓库前，先读 `.ai/rules/` 下的规则与维护文档。
+开始处理仓库前，先读 `.ai/rules/` 下 `alwaysApply: true` 的基础规则与维护文档；其他文档按任务结合 `description` / `globs` 按需继续阅读。
 
 优先阅读：
 

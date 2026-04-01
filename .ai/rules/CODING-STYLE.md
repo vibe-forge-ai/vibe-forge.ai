@@ -1,5 +1,6 @@
 ---
 alwaysApply: true
+description: 跨仓库通用代码风格规则，约束 import 顺序、路径写法、命名与目录组织。
 ---
 
 # 代码风格指导
