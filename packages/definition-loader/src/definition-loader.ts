@@ -387,7 +387,7 @@ export class DefinitionLoader {
     }))
   }
 
-  generateSpecRoutePrompt(specsDocuments: Definition<Spec>[]): string {
+  generateSpecRoutePrompt(specsDocuments: Definition<Spec>[], options?: { active?: boolean }): string {
     const specsRouteStr = specsDocuments
       .filter(({ attributes }) => attributes.always !== false)
       .map((definition) => {
@@ -411,14 +411,21 @@ export class DefinitionLoader {
         )
       })
       .join('\n')
+
+    const activeIdentityPrompt = options?.active
+      ? (
+          '你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n' +
+          '\n' +
+          '- 永远不要单独完成代码开发工作\n' +
+          '- 必须要协调其他的开发人员来完成任务\n' +
+          '- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n' +
+          '\n'
+        )
+      : ''
+
     return (
       '<system-prompt>\n' +
-      '你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n' +
-      '\n' +
-      '- 永远不要单独完成代码开发工作\n' +
-      '- 必须要协调其他的开发人员来完成任务\n' +
-      '- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n' +
-      '\n' +
+      activeIdentityPrompt +
       '根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 `load-spec` mcp tool 完成工作流程的加载。\n' +
       '- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n' +
       '- 通过参数的描述以及实际应用场景决定怎么传入参数\n' +

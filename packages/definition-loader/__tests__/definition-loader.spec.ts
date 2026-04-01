@@ -85,8 +85,26 @@ describe('definitionLoader', () => {
     expect(prompt).toContain('介绍：发布流程')
     expect(prompt).toContain('标识：release')
     expect(prompt).toContain('    - version：版本号')
+    expect(prompt).not.toContain('项目推进管理大师')
     expect(prompt).not.toContain('.ai/specs/release/index.md')
     expect(prompt).not.toContain('internal')
+  })
+
+  it('injects spec identity guidance only for active spec sessions', () => {
+    const cwd = '/workspace/project'
+    const loader = new DefinitionLoader(cwd)
+
+    const prompt = loader.generateSpecRoutePrompt([
+      {
+        path: join(cwd, '.ai/specs/release/index.md'),
+        body: '发布流程',
+        attributes: {}
+      }
+    ], { active: true })
+
+    expect(prompt).toContain('项目推进管理大师')
+    expect(prompt).toContain('永远不要单独完成代码开发工作')
+    expect(prompt).toContain('流程名称：release')
   })
 
   it('generates rule prompts with markdown headings and alwaysApply compatibility', () => {

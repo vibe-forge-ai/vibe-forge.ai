@@ -237,6 +237,61 @@ describe('resolvePromptAssetSelection', () => {
     expect(options.systemPrompt).not.toContain('先读 README.md')
   })
 
+  it('keeps spec route guidance without default identity in normal mode', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/specs/release/index.md'),
+      [
+        '---',
+        'description: 发布流程',
+        '---',
+        '执行发布'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: undefined
+    })
+
+    expect(options.systemPrompt).toContain('项目存在如下工作流程')
+    expect(options.systemPrompt).toContain('流程名称：release')
+    expect(options.systemPrompt).not.toContain('项目推进管理大师')
+  })
+
+  it('injects spec identity guidance when a spec is actively selected', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/specs/release/index.md'),
+      [
+        '---',
+        'description: 发布流程',
+        '---',
+        '执行发布'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'spec',
+      name: 'release'
+    })
+
+    expect(options.systemPrompt).toContain('项目推进管理大师')
+    expect(options.systemPrompt).toContain('永远不要单独完成代码开发工作')
+    expect(options.systemPrompt).toContain('流程名称：release')
+  })
+
   it('embeds referenced skills for entity mode and removes them from route guidance', async () => {
     const workspace = await createWorkspace()
 
