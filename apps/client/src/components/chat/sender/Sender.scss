@@ -451,6 +451,7 @@
 
 .adapter-select,
 .model-select,
+.effort-select,
 .permission-mode-select {
   .ant-select-selector {
     height: 28px !important;
@@ -499,10 +500,15 @@
   min-width: 160px;
 }
 
+.effort-select {
+  min-width: 72px;
+}
+
 .permission-mode-select {
   min-width: 120px;
 }
 
+.effort-select-popup,
 .permission-mode-select-popup {
   .ant-select-item-option-content {
     font-size: 12px;
