@@ -10,11 +10,12 @@ const getGlobalRuntimeEnv = () => {
   return globalScope.__VF_PROJECT_AI_RUNTIME_ENV__
 }
 
+const pickNonEmptyValue = (...values: Array<string | undefined>) => (
+  values.find((value) => typeof value === 'string' && value.trim() !== '')
+)
+
 const normalizeBase = (value?: string) => {
-  let base = value?.trim() ?? ''
-  if (!base) {
-    base = '/ui'
-  }
+  let base = value?.trim() ?? '/ui'
   if (!base.startsWith('/')) {
     base = `/${base}`
   }
@@ -37,10 +38,18 @@ const normalizePath = (value?: string) => {
 
 export const getRuntimeEnv = (): RuntimeEnv => getGlobalRuntimeEnv() ?? {}
 
-export const getClientBase = () =>
-  normalizeBase(
-    getRuntimeEnv().__VF_PROJECT_AI_CLIENT_BASE__ ?? import.meta.env.__VF_PROJECT_AI_CLIENT_BASE__
+export const resolveClientBase = (...values: Array<string | undefined>) => (
+  normalizeBase(pickNonEmptyValue(...values))
+)
+
+export const getClientBase = () => (
+  resolveClientBase(
+    getRuntimeEnv().__VF_PROJECT_AI_CLIENT_BASE__,
+    import.meta.env.__VF_PROJECT_AI_CLIENT_BASE__,
+    import.meta.env.BASE_URL,
+    '/ui'
   )
+)
 
 export const getServerHostEnv = () =>
   getRuntimeEnv().__VF_PROJECT_AI_SERVER_HOST__ ??
