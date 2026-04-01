@@ -14,9 +14,9 @@ import type {
   Spec
 } from '@vibe-forge/types'
 import { normalizePath, resolveDocumentName, resolvePromptPath, resolveSpecIdentifier } from '@vibe-forge/utils'
+import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 import { glob } from 'fast-glob'
 import fm from 'front-matter'
-
 /**
  * 以结构化的方式加载本地文档数据
  */
@@ -110,6 +110,51 @@ const createRemoteRuleDefinition = (
   }
 }
 
+const resolveEntityIdentifier = (path: string, explicitName?: string) => {
+  return resolveDocumentName(path, explicitName, ['readme.md', 'index.json'])
+}
+
+const resolveDefinitionName = <T extends { name?: string }>(
+  definition: Definition<T>,
+  indexFileNames: string[] = []
+) => definition.resolvedName?.trim() || resolveDocumentName(definition.path, definition.attributes.name, indexFileNames)
+
+const parseScopedReference = (value: string) => {
+  if (
+    value.startsWith('./') ||
+    value.startsWith('../') ||
+    value.startsWith('/') ||
+    value.endsWith('.md') ||
+    value.endsWith('.json')
+  ) {
+    return undefined
+  }
+  const separatorIndex = value.indexOf('/')
+  if (separatorIndex <= 0) return undefined
+  return {
+    scope: value.slice(0, separatorIndex),
+    name: value.slice(separatorIndex + 1)
+  }
+}
+
+const resolveUniqueDefinition = <TDefinition extends { name?: string }>(
+  definitions: Definition<TDefinition>[],
+  ref: string,
+  resolveIdentifier: (definition: Definition<TDefinition>) => string
+) => {
+  const scoped = parseScopedReference(ref)
+  if (scoped != null) {
+    return definitions.find(definition => definition.resolvedName === ref)
+  }
+
+  const matches = definitions.filter(definition => resolveIdentifier(definition) === ref)
+  if (matches.length === 0) return undefined
+  if (matches.length > 1) {
+    throw new Error(`Ambiguous asset reference ${ref}. Candidates: ${matches.map(item => item.resolvedName ?? resolveIdentifier(item)).join(', ')}`)
+  }
+  return matches[0]
+}
+
 export class DefinitionLoader {
   private readonly cwd: string
 
@@ -179,17 +224,19 @@ export class DefinitionLoader {
   }
 
   async loadDefaultRules(): Promise<Definition<Rule>[]> {
-    return this.loadRules([
-      '.ai/rules/*.md',
-      '.ai/plugins/*/rules/*.md'
-    ])
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    return bundle.rules.map(rule => ({
+      ...rule.payload.definition,
+      resolvedName: rule.displayName,
+      resolvedInstancePath: rule.instancePath
+    }))
   }
 
   generateRulesPrompt(rules: Definition<Rule>[]): string {
     const rulesPrompt = rules
       .map((rule) => {
         const { path, body, attributes } = rule
-        const name = resolveDocumentName(path, attributes.name)
+        const name = resolveDefinitionName(rule)
         const desc = resolveDocumentDescription(body, attributes.description, name)
         const content = attributes.always && body.trim()
           ? `<rule-content>\n${body.trim()}\n</rule-content>\n`
@@ -208,18 +255,17 @@ export class DefinitionLoader {
   }
 
   async loadSkills(skills?: string[]): Promise<Definition<Skill>[]> {
-    const patterns = [
-      '.ai/skills/*/SKILL.md',
-      '.ai/plugins/*/skills/*/SKILL.md'
-    ]
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    const allSkills = bundle.skills.map(skill => ({
+      ...skill.payload.definition,
+      resolvedName: skill.displayName,
+      resolvedInstancePath: skill.instancePath
+    }))
+    if (skills == null) return allSkills
 
-    let paths = await this.scan(patterns)
-
-    if (skills) {
-      paths = paths.filter(path => skills.includes(basename(dirname(path))))
-    }
-
-    return loadLocalDocuments<Skill>(paths)
+    return skills
+      .map(skillRef => resolveUniqueDefinition(allSkills, skillRef, skill => resolveDocumentName(skill.path, skill.attributes.name, ['skill.md'])))
+      .filter((skill): skill is Definition<Skill> => skill != null)
   }
 
   async loadDefaultSkills(): Promise<Definition<Skill>[]> {
@@ -230,7 +276,7 @@ export class DefinitionLoader {
     return skills
       .map((skill) => {
         const { path, body, attributes } = skill
-        const name = resolveDocumentName(path, attributes.name, ['skill.md'])
+        const name = resolveDefinitionName(skill, ['skill.md'])
         const desc = resolveDocumentDescription(body, attributes.description, name)
         return (
           '技能相关信息如下，通过阅读以下内容了解技能的详细信息：\n' +
@@ -255,8 +301,9 @@ export class DefinitionLoader {
         skills
           .filter(({ attributes: { always } }) => always !== false)
           .map(
-            ({ path, body, attributes }) => {
-              const name = resolveDocumentName(path, attributes.name, ['skill.md'])
+            (definition) => {
+              const { body, attributes } = definition
+              const name = resolveDefinitionName(definition, ['skill.md'])
               const desc = resolveDocumentDescription(body, attributes.description, name)
               return `  - ${name}：${desc}\n`
             }
@@ -268,40 +315,32 @@ export class DefinitionLoader {
   }
 
   async loadSpec(name: string): Promise<Definition<Spec> | undefined> {
-    const patterns = [
-      `.ai/specs/${name}.md`,
-      `.ai/specs/${name}/index.md`,
-      `.ai/plugins/*/specs/${name}.md`,
-      `.ai/plugins/*/specs/${name}/index.md`
-    ]
-    const paths = await this.scan(patterns)
-    if (paths.length === 0) return undefined
-
-    const projectPath = paths.find(p => p.includes('/.ai/specs/'))
-    const targetPath = projectPath || paths[0]
-
-    const [doc] = await loadLocalDocuments<Spec>([targetPath])
-    return doc
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    const specs = bundle.specs.map(spec => ({
+      ...spec.payload.definition,
+      resolvedName: spec.displayName,
+      resolvedInstancePath: spec.instancePath
+    }))
+    return resolveUniqueDefinition(specs, name, spec => resolveSpecIdentifier(spec.path, spec.attributes.name))
   }
 
   async loadDefaultSpecs(): Promise<Definition<Spec>[]> {
-    const patterns = [
-      '.ai/specs/*.md',
-      '.ai/specs/*/index.md',
-      '.ai/plugins/*/specs/*.md',
-      '.ai/plugins/*/specs/*/index.md'
-    ]
-    const paths = await this.scan(patterns)
-    return loadLocalDocuments<Spec>(paths)
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    return bundle.specs.map(spec => ({
+      ...spec.payload.definition,
+      resolvedName: spec.displayName,
+      resolvedInstancePath: spec.instancePath
+    }))
   }
 
   generateSpecRoutePrompt(specsDocuments: Definition<Spec>[]): string {
     const specsRouteStr = specsDocuments
       .filter(({ attributes }) => attributes.always !== false)
-      .map(({ path, body, attributes }) => {
-        const name = resolveDocumentName(path, attributes.name, ['index.md'])
+      .map((definition) => {
+        const { path, body, attributes } = definition
+        const name = resolveDefinitionName(definition, ['index.md'])
         const desc = resolveDocumentDescription(body, attributes.description, name)
-        const identifier = resolveSpecIdentifier(path, attributes.name)
+        const identifier = definition.resolvedName?.trim() || resolveSpecIdentifier(path, attributes.name)
         const params = attributes.params ?? []
         const paramsPrompt = params.length > 0
           ? params
@@ -336,32 +375,13 @@ export class DefinitionLoader {
   }
 
   async loadEntity(name: string): Promise<Definition<Entity> | undefined> {
-    const jsonPatterns = [
-      `.ai/entities/${name}/index.json`,
-      `.ai/plugins/*/entities/${name}/index.json`
-    ]
-    const jsonPaths = await this.scan(jsonPatterns)
-
-    if (jsonPaths.length > 0) {
-      const projectPath = jsonPaths.find(p => p.includes('/.ai/entities/'))
-      const targetPath = projectPath || jsonPaths[0]
-      return this.loadEntityFromJson(targetPath)
-    }
-
-    const patterns = [
-      `.ai/entities/${name}.md`,
-      `.ai/entities/${name}/README.md`,
-      `.ai/plugins/*/entities/${name}.md`,
-      `.ai/plugins/*/entities/${name}/README.md`
-    ]
-    const paths = await this.scan(patterns)
-    if (paths.length === 0) return undefined
-
-    const projectPath = paths.find(p => p.includes('/.ai/entities/'))
-    const targetPath = projectPath || paths[0]
-
-    const [doc] = await loadLocalDocuments<Entity>([targetPath])
-    return doc
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    const entities = bundle.entities.map(entity => ({
+      ...entity.payload.definition,
+      resolvedName: entity.displayName,
+      resolvedInstancePath: entity.instancePath
+    }))
+    return resolveUniqueDefinition(entities, name, entity => resolveEntityIdentifier(entity.path, entity.attributes.name))
   }
 
   private async loadEntityFromJson(jsonPath: string): Promise<Definition<Entity>> {
@@ -392,26 +412,12 @@ export class DefinitionLoader {
   }
 
   async loadDefaultEntities(): Promise<Definition<Entity>[]> {
-    const mdPatterns = [
-      '.ai/entities/*.md',
-      '.ai/entities/*/README.md',
-      '.ai/plugins/*/entities/*.md',
-      '.ai/plugins/*/entities/*/README.md'
-    ]
-    const jsonPatterns = [
-      '.ai/entities/*/index.json',
-      '.ai/plugins/*/entities/*/index.json'
-    ]
-
-    const [mdPaths, jsonPaths] = await Promise.all([
-      this.scan(mdPatterns),
-      this.scan(jsonPatterns)
-    ])
-
-    const mdDocs = await loadLocalDocuments<Entity>(mdPaths)
-    const jsonDocs = await Promise.all(jsonPaths.map(p => this.loadEntityFromJson(p)))
-
-    return [...mdDocs, ...jsonDocs]
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    return bundle.entities.map(entity => ({
+      ...entity.payload.definition,
+      resolvedName: entity.displayName,
+      resolvedInstancePath: entity.instancePath
+    }))
   }
 
   generateEntitiesRoutePrompt(entities: Definition<Entity>[]): string {
@@ -421,8 +427,9 @@ export class DefinitionLoader {
       `${
         entities
           .filter(({ attributes }) => attributes.always !== false)
-          .map(({ path, attributes, body }) => {
-            const name = resolveDocumentName(path, attributes.name, ['readme.md', 'index.json'])
+          .map((definition) => {
+            const { attributes, body } = definition
+            const name = resolveDefinitionName(definition, ['readme.md', 'index.json'])
             const desc = resolveDocumentDescription(body, attributes.description, name)
             return `  - ${name}：${desc}\n`
           })

@@ -1,5 +1,6 @@
 import type { Config } from './config'
 import type { Definition, Entity, Filter, Rule, Skill, Spec } from './definition'
+import type { PluginConfig, ResolvedPluginInstanceMetadata } from './plugin'
 
 export type WorkspaceAssetKind =
   | 'rule'
@@ -8,13 +9,11 @@ export type WorkspaceAssetKind =
   | 'skill'
   | 'mcpServer'
   | 'hookPlugin'
-  | 'nativePlugin'
   | 'agent'
   | 'command'
   | 'mode'
-
+  | 'nativePlugin'
 export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'opencode'
-
 export type AssetDiagnosticStatus = 'native' | 'translated' | 'prompt' | 'skipped'
 
 export interface AssetDiagnostic {
@@ -22,37 +21,38 @@ export interface AssetDiagnostic {
   adapter: WorkspaceAssetAdapter
   status: AssetDiagnosticStatus
   reason: string
+  packageId?: string
+  scope?: string
+  instancePath?: string
+  origin: 'workspace' | 'plugin'
+  resolvedBy?: string
+  taskOverlaySource?: string
 }
 
 export interface AdapterOverlayEntry {
   assetId: string
-  kind: Extract<WorkspaceAssetKind, 'skill' | 'nativePlugin' | 'agent' | 'command' | 'mode'>
+  kind: 'skill' | 'agent' | 'command' | 'mode' | 'nativePlugin'
   sourcePath: string
   targetPath: string
 }
 
-type WorkspaceAssetOrigin = 'project' | 'plugin' | 'config' | 'fallback'
-type WorkspaceAssetScope = 'workspace' | 'project' | 'user' | 'adapter'
-
 interface WorkspaceAssetBase<TKind extends WorkspaceAssetKind, TPayload> {
   id: string
   kind: TKind
-  pluginId?: string
-  origin: WorkspaceAssetOrigin
-  scope: WorkspaceAssetScope
-  enabled: boolean
-  targets: WorkspaceAssetAdapter[]
+  name: string
+  displayName: string
+  scope?: string
+  origin: 'workspace' | 'plugin'
+  sourcePath: string
+  instancePath?: string
+  packageId?: string
+  resolvedBy?: string
+  taskOverlaySource?: string
   payload: TPayload
 }
 
 interface WorkspaceDocumentPayload<TDefinition> {
   definition: TDefinition
-  sourcePath: string
-}
-
-interface WorkspaceHookPluginPayload {
-  packageName?: string
-  config: unknown
 }
 
 interface WorkspaceMcpPayload {
@@ -60,15 +60,14 @@ interface WorkspaceMcpPayload {
   config: NonNullable<Config['mcpServers']>[string]
 }
 
-interface WorkspaceOverlayPayload {
-  sourcePath: string
-  entryName: string
-  targetSubpath: string
+interface WorkspaceHookPluginPayload {
+  packageName?: string
+  config: unknown
 }
 
-interface WorkspaceConfigNativePluginPayload {
-  name: string
-  enabled: boolean
+interface WorkspaceOpenCodeOverlayPayload {
+  entryName: string
+  targetSubpath: string
 }
 
 export type WorkspaceAsset =
@@ -78,13 +77,15 @@ export type WorkspaceAsset =
   | WorkspaceAssetBase<'skill', WorkspaceDocumentPayload<Definition<Skill>>>
   | WorkspaceAssetBase<'mcpServer', WorkspaceMcpPayload>
   | WorkspaceAssetBase<'hookPlugin', WorkspaceHookPluginPayload>
-  | WorkspaceAssetBase<'nativePlugin', WorkspaceConfigNativePluginPayload | WorkspaceOverlayPayload>
-  | WorkspaceAssetBase<'agent', WorkspaceOverlayPayload>
-  | WorkspaceAssetBase<'command', WorkspaceOverlayPayload>
-  | WorkspaceAssetBase<'mode', WorkspaceOverlayPayload>
+  | WorkspaceAssetBase<'agent', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'command', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'mode', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'nativePlugin', WorkspaceOpenCodeOverlayPayload>
 
 export interface WorkspaceAssetBundle {
   cwd: string
+  pluginConfigs?: PluginConfig
+  pluginInstances: ResolvedPluginInstanceMetadata[]
   assets: WorkspaceAsset[]
   rules: Array<Extract<WorkspaceAsset, { kind: 'rule' }>>
   specs: Array<Extract<WorkspaceAsset, { kind: 'spec' }>>
@@ -92,8 +93,7 @@ export interface WorkspaceAssetBundle {
   skills: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>
   mcpServers: Record<string, Extract<WorkspaceAsset, { kind: 'mcpServer' }>>
   hookPlugins: Array<Extract<WorkspaceAsset, { kind: 'hookPlugin' }>>
-  enabledPlugins: Record<string, boolean>
-  extraKnownMarketplaces: Config['extraKnownMarketplaces']
+  opencodeOverlayAssets: Array<Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' | 'nativePlugin' }>>
   defaultIncludeMcpServers: string[]
   defaultExcludeMcpServers: string[]
 }
@@ -123,6 +123,7 @@ export interface ResolvedPromptAssetOptions {
   tools?: Filter
   mcpServers?: WorkspaceMcpSelection
   promptAssetIds?: string[]
+  assetBundle?: WorkspaceAssetBundle
 }
 
 export interface AdapterAssetPlan {
@@ -130,11 +131,4 @@ export interface AdapterAssetPlan {
   diagnostics: AssetDiagnostic[]
   mcpServers: Record<string, NonNullable<Config['mcpServers']>[string]>
   overlays: AdapterOverlayEntry[]
-  native: {
-    enabledPlugins?: Record<string, boolean>
-    extraKnownMarketplaces?: Config['extraKnownMarketplaces']
-    codexHooks?: {
-      supportedEvents: string[]
-    }
-  }
 }

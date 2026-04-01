@@ -7,6 +7,7 @@
 - [安装与准备](./usage/install.md)
 - [启动服务](./usage/runtime.md)
 - [CLI 与示例](./usage/cli.md)
+- [插件与数据资产](./usage/plugins.md)
 
 ## 接入目标
 

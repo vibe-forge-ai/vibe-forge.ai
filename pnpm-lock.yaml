@@ -55,6 +55,9 @@ importers:
       '@vibe-forge/plugin-logger':
         specifier: workspace:*
         version: link:packages/plugins/logger
+      '@vibe-forge/plugin-standard-dev':
+        specifier: workspace:*
+        version: link:packages/plugins/standard-dev
       '@vibe-forge/server':
         specifier: workspace:*
         version: link:apps/server
@@ -446,6 +449,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../utils
+      '@vibe-forge/workspace-assets':
+        specifier: workspace:^
+        version: link:../workspace-assets
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -529,6 +535,8 @@ importers:
         specifier: workspace:*
         version: link:../../types
 
+  packages/plugins/standard-dev: {}
+
   packages/register:
     dependencies:
       dotenv:
@@ -584,9 +592,6 @@ importers:
       '@vibe-forge/config':
         specifier: workspace:^
         version: link:../config
-      '@vibe-forge/definition-loader':
-        specifier: workspace:^
-        version: link:../definition-loader
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
@@ -596,6 +601,9 @@ importers:
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
+      front-matter:
+        specifier: ^4.0.2
+        version: 4.0.2
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1

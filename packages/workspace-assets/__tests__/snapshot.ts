@@ -16,18 +16,7 @@ import type {
 } from '@vibe-forge/types'
 import { resolveDocumentName, resolveSpecIdentifier } from '@vibe-forge/utils'
 
-import { isOpenCodeOverlayAsset } from '#~/internal-types.js'
-
 const sortStrings = (values: string[]) => [...values].sort((left, right) => left.localeCompare(right))
-
-const isConfigNativePluginAsset = (
-  asset: Extract<WorkspaceAsset, { kind: 'nativePlugin' }>
-): asset is Extract<WorkspaceAsset, { kind: 'nativePlugin' }> & {
-  payload: {
-    name: string
-    enabled: boolean
-  }
-} => !isOpenCodeOverlayAsset(asset)
 
 const sanitizeValue = (
   value: string,
@@ -99,104 +88,73 @@ const summarizeDefinition = (
   body: definition.body.trim()
 })
 
-const summarizeDocumentAsset = (
-  asset: Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>,
+const buildSnapshotAssetId = (
+  asset: WorkspaceAsset,
   cwd: string
+) => (
+  `${asset.kind}:${asset.origin}:${asset.instancePath ?? 'workspace'}:${asset.displayName}:${sanitizeValue(asset.sourcePath, cwd)}`
+)
+
+const summarizeBaseAsset = (
+  asset: WorkspaceAsset,
+  cwd: string,
+  assetIdMap?: Map<string, string>
 ) => ({
-  id: asset.id,
+  id: assetIdMap?.get(asset.id) ?? buildSnapshotAssetId(asset, cwd),
   kind: asset.kind,
+  name: asset.name,
+  displayName: asset.displayName,
   origin: asset.origin,
   scope: asset.scope,
-  pluginId: asset.pluginId,
-  enabled: asset.enabled,
-  targets: sortStrings(asset.targets),
+  sourcePath: sanitizeValue(asset.sourcePath, cwd),
+  instancePath: asset.instancePath,
+  packageId: asset.packageId,
+  resolvedBy: asset.resolvedBy,
+  taskOverlaySource: asset.taskOverlaySource
+})
+
+const summarizeDocumentAsset = (
+  asset: Extract<WorkspaceAsset, { kind: 'rule' | 'spec' | 'entity' | 'skill' }>,
+  cwd: string,
+  assetIdMap?: Map<string, string>
+) => ({
+  ...summarizeBaseAsset(asset, cwd, assetIdMap),
   definition: summarizeDefinition(asset.kind, asset.payload.definition, cwd)
 })
 
 const summarizeMcpServer = (
   asset: Extract<WorkspaceAsset, { kind: 'mcpServer' }>,
-  cwd: string
+  cwd: string,
+  assetIdMap?: Map<string, string>
 ) => ({
-  id: asset.id,
-  origin: asset.origin,
-  scope: asset.scope,
-  pluginId: asset.pluginId,
-  enabled: asset.enabled,
-  targets: sortStrings(asset.targets),
-  name: asset.payload.name,
+  ...summarizeBaseAsset(asset, cwd, assetIdMap),
   config: normalizeValue(asset.payload.config, cwd)
 })
 
 const summarizeHookPlugin = (
   asset: Extract<WorkspaceAsset, { kind: 'hookPlugin' }>,
-  cwd: string
+  cwd: string,
+  assetIdMap?: Map<string, string>
 ) => ({
-  id: asset.id,
-  origin: asset.origin,
-  scope: asset.scope,
-  pluginId: asset.pluginId,
-  enabled: asset.enabled,
-  targets: sortStrings(asset.targets),
+  ...summarizeBaseAsset(asset, cwd, assetIdMap),
   packageName: asset.payload.packageName,
   config: normalizeValue(asset.payload.config, cwd)
 })
 
-const summarizeNativePlugin = (
-  asset: Extract<WorkspaceAsset, { kind: 'nativePlugin' }>,
-  cwd: string
-) => {
-  if (isOpenCodeOverlayAsset(asset)) {
-    return {
-      id: asset.id,
-      kind: asset.kind,
-      origin: asset.origin,
-      scope: asset.scope,
-      pluginId: asset.pluginId,
-      enabled: asset.enabled,
-      targets: sortStrings(asset.targets),
-      entryName: asset.payload.entryName,
-      sourcePath: sanitizeValue(asset.payload.sourcePath, cwd),
-      targetSubpath: asset.payload.targetSubpath
-    }
-  }
+const summarizeOpenCodeOverlayAsset = (
+  asset: Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' | 'nativePlugin' }>,
+  cwd: string,
+  assetIdMap?: Map<string, string>
+) => ({
+  ...summarizeBaseAsset(asset, cwd, assetIdMap),
+  entryName: asset.payload.entryName,
+  targetSubpath: asset.payload.targetSubpath
+})
 
-  return {
-    id: asset.id,
-    kind: asset.kind,
-    origin: asset.origin,
-    scope: asset.scope,
-    pluginId: asset.pluginId,
-    enabled: asset.enabled,
-    targets: sortStrings(asset.targets),
-    name: isConfigNativePluginAsset(asset) ? asset.payload.name : undefined
-  }
-}
-
-const summarizeOverlayAsset = (
-  asset:
-    | Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' }>
-    | Extract<WorkspaceAsset, { kind: 'nativePlugin' }>,
-  cwd: string
-) => {
-  if (!isOpenCodeOverlayAsset(asset)) {
-    return summarizeNativePlugin(asset, cwd)
-  }
-
-  return {
-    id: asset.id,
-    kind: asset.kind,
-    origin: asset.origin,
-    scope: asset.scope,
-    pluginId: asset.pluginId,
-    enabled: asset.enabled,
-    targets: sortStrings(asset.targets),
-    entryName: asset.payload.entryName,
-    sourcePath: sanitizeValue(asset.payload.sourcePath, cwd),
-    targetSubpath: asset.payload.targetSubpath
-  }
-}
-
-const summarizeDiagnostics = (diagnostics: AssetDiagnostic[]) => (
+const summarizeDiagnostics = (
+  diagnostics: AssetDiagnostic[],
+  assetIdMap: Map<string, string>
+) => (
   [...diagnostics]
     .sort((left, right) => {
       const assetIdDiff = left.assetId.localeCompare(right.assetId)
@@ -204,29 +162,31 @@ const summarizeDiagnostics = (diagnostics: AssetDiagnostic[]) => (
       return left.status.localeCompare(right.status)
     })
     .map(diagnostic => ({
-      assetId: diagnostic.assetId,
+      assetId: assetIdMap.get(diagnostic.assetId) ?? diagnostic.assetId,
       adapter: diagnostic.adapter,
       status: diagnostic.status,
-      reason: diagnostic.reason
+      reason: diagnostic.reason,
+      scope: diagnostic.scope,
+      packageId: diagnostic.packageId
     }))
 )
 
 const summarizePlan = (
   plan: AdapterAssetPlan,
-  cwd: string
+  cwd: string,
+  assetIdMap: Map<string, string>
 ) => ({
   adapter: plan.adapter,
   mcpServers: normalizeValue(plan.mcpServers, cwd),
   overlays: [...plan.overlays]
     .sort((left, right) => left.assetId.localeCompare(right.assetId))
     .map(entry => ({
-      assetId: entry.assetId,
+      assetId: assetIdMap.get(entry.assetId) ?? entry.assetId,
       kind: entry.kind,
       sourcePath: sanitizeValue(entry.sourcePath, cwd),
       targetPath: entry.targetPath
     })),
-  native: normalizeValue(plan.native, cwd),
-  diagnostics: summarizeDiagnostics(plan.diagnostics)
+  diagnostics: summarizeDiagnostics(plan.diagnostics, assetIdMap)
 })
 
 const summarizeSelection = (
@@ -237,7 +197,8 @@ const summarizeSelection = (
     mcpServers?: Filter
     promptAssetIds?: string[]
   },
-  cwd: string
+  cwd: string,
+  assetIdMap: Map<string, string>
 ) => ({
   resolution: {
     rules: resolution.rules.map(rule => summarizeDefinition('rule', rule, cwd)),
@@ -246,13 +207,15 @@ const summarizeSelection = (
     skills: resolution.skills.map(skill => summarizeDefinition('skill', skill, cwd)),
     specs: resolution.specs.map(spec => summarizeDefinition('spec', spec, cwd)),
     targetBody: resolution.targetBody.trim(),
-    promptAssetIds: sortStrings(resolution.promptAssetIds)
+    promptAssetIds: sortStrings(resolution.promptAssetIds.map(assetId => assetIdMap.get(assetId) ?? assetId))
   },
   options: {
     systemPrompt: options.systemPrompt?.trim(),
     tools: sortFilter(options.tools),
     mcpServers: sortFilter(options.mcpServers),
-    promptAssetIds: options.promptAssetIds == null ? undefined : sortStrings(options.promptAssetIds)
+    promptAssetIds: options.promptAssetIds == null
+      ? undefined
+      : sortStrings(options.promptAssetIds.map(assetId => assetIdMap.get(assetId) ?? assetId))
   }
 })
 
@@ -271,56 +234,39 @@ export const serializeWorkspaceAssetsSnapshot = (params: {
   plans: AdapterAssetPlan[]
 }) => {
   const { bundle, cwd } = params
-  const overlayAssets = bundle.assets.filter((
-    asset
-  ): asset is
-    | Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' }>
-    | Extract<WorkspaceAsset, { kind: 'nativePlugin' }> => (
-      asset.kind === 'agent' ||
-      asset.kind === 'command' ||
-      asset.kind === 'mode' ||
-      (asset.kind === 'nativePlugin' && isOpenCodeOverlayAsset(asset))
-    )
-  )
-  const claudeNativePlugins = bundle.assets.filter((
-    asset
-  ): asset is Extract<WorkspaceAsset, { kind: 'nativePlugin' }> => (
-    asset.kind === 'nativePlugin' && !isOpenCodeOverlayAsset(asset)
-  ))
+  const assetIdMap = new Map(bundle.assets.map(asset => [asset.id, buildSnapshotAssetId(asset, cwd)]))
 
   const snapshot = {
     bundle: {
       cwd: '<workspace>',
-      enabledPlugins: normalizeValue(bundle.enabledPlugins, cwd),
-      extraKnownMarketplaces: normalizeValue(bundle.extraKnownMarketplaces, cwd),
+      pluginConfigs: normalizeValue(bundle.pluginConfigs, cwd),
+      pluginInstances: normalizeValue(bundle.pluginInstances, cwd),
       defaultIncludeMcpServers: sortStrings(bundle.defaultIncludeMcpServers),
       defaultExcludeMcpServers: sortStrings(bundle.defaultExcludeMcpServers),
-      rules: bundle.rules.map(rule => summarizeDocumentAsset(rule, cwd)),
-      specs: bundle.specs.map(spec => summarizeDocumentAsset(spec, cwd)),
-      entities: bundle.entities.map(entity => summarizeDocumentAsset(entity, cwd)),
-      skills: bundle.skills.map(skill => summarizeDocumentAsset(skill, cwd)),
+      rules: bundle.rules.map(rule => summarizeDocumentAsset(rule, cwd, assetIdMap)),
+      specs: bundle.specs.map(spec => summarizeDocumentAsset(spec, cwd, assetIdMap)),
+      entities: bundle.entities.map(entity => summarizeDocumentAsset(entity, cwd, assetIdMap)),
+      skills: bundle.skills.map(skill => summarizeDocumentAsset(skill, cwd, assetIdMap)),
       mcpServers: Object.values(bundle.mcpServers)
         .sort((left, right) => left.payload.name.localeCompare(right.payload.name))
-        .map(server => summarizeMcpServer(server, cwd)),
+        .map(server => summarizeMcpServer(server, cwd, assetIdMap)),
       hookPlugins: bundle.hookPlugins
         .sort((left, right) => left.id.localeCompare(right.id))
-        .map(plugin => summarizeHookPlugin(plugin, cwd)),
-      claudeNativePlugins: claudeNativePlugins
+        .map(plugin => summarizeHookPlugin(plugin, cwd, assetIdMap)),
+      opencodeOverlayAssets: bundle.opencodeOverlayAssets
         .sort((left, right) => left.id.localeCompare(right.id))
-        .map(asset => summarizeNativePlugin(asset, cwd)),
-      opencodeOverlayAssets: overlayAssets
-        .sort((left, right) => left.id.localeCompare(right.id))
-        .map(asset => summarizeOverlayAsset(asset, cwd))
+        .map(asset => summarizeOpenCodeOverlayAsset(asset, cwd, assetIdMap))
     },
     selection: summarizeSelection(
       params.selection.resolution,
       params.selection.options,
-      cwd
+      cwd,
+      assetIdMap
     ),
     plans: Object.fromEntries(
       [...params.plans]
         .sort((left, right) => left.adapter.localeCompare(right.adapter))
-        .map(plan => [plan.adapter, summarizePlan(plan, cwd)])
+        .map(plan => [plan.adapter, summarizePlan(plan, cwd, assetIdMap)])
     )
   }
 

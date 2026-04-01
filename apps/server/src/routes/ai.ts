@@ -20,6 +20,8 @@ const toRelativePath = (absolutePath: string, cwd: string) => {
 }
 
 const resolveSpecName = (spec: Definition<Spec>) => {
+  const resolvedName = spec.resolvedName?.trim()
+  if (resolvedName) return resolvedName
   const name = spec.attributes.name?.trim()
   if (name) return name
   const fileName = basename(spec.path)
@@ -30,6 +32,8 @@ const resolveSpecName = (spec: Definition<Spec>) => {
 }
 
 const resolveEntityName = (entity: Definition<Entity>) => {
+  const resolvedName = entity.resolvedName?.trim()
+  if (resolvedName) return resolvedName
   const name = entity.attributes.name?.trim()
   if (name) return name
   const fileName = basename(entity.path)
@@ -40,6 +44,8 @@ const resolveEntityName = (entity: Definition<Entity>) => {
 }
 
 const resolveRuleName = (rule: Definition<Rule>) => {
+  const resolvedName = rule.resolvedName?.trim()
+  if (resolvedName) return resolvedName
   const name = rule.attributes.name?.trim()
   if (name) return name
   const fileName = basename(rule.path)

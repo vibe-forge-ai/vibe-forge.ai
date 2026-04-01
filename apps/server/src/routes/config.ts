@@ -80,9 +80,7 @@ const buildSections = (config: Config | undefined) => {
     adapters: sanitize(config?.adapters),
     adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
     plugins: sanitize({
-      plugins: config?.plugins,
-      enabledPlugins: config?.enabledPlugins,
-      extraKnownMarketplaces: config?.extraKnownMarketplaces
+      plugins: config?.plugins
     }),
     mcp: sanitize({
       mcpServers: config?.mcpServers,

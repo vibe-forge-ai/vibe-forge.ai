@@ -1,5 +1,5 @@
 import type { EffortLevel } from './common'
-import type { HookPluginConfig } from './plugin'
+import type { PluginConfig } from './plugin'
 
 export interface AdapterMap {}
 
@@ -124,26 +124,20 @@ export interface Config {
     customInstructions?: string
     injectDefaultSystemPrompt?: boolean
   }
-  plugins?: HookPluginConfig
-  enabledPlugins?: Record<string, boolean>
-  extraKnownMarketplaces?: Record<
-    string,
-    {
-      source:
-        | {
-          source: 'github'
-          repo: string
-        }
-        | {
-          source: 'git'
-          url: string
-        }
-        | {
-          source: 'directory'
-          path: string
-        }
-    }
-  >
+  /**
+   * 当前 workspace 默认启用的插件实例列表。
+   *
+   * 插件包需要先安装到当前项目中，运行时不会自动安装缺失依赖。
+   *
+   * @example
+   * ```json
+   * [
+   *   { "id": "standard-dev", "scope": "std" },
+   *   { "id": "logger", "enabled": false }
+   * ]
+   * ```
+   */
+  plugins?: PluginConfig
 }
 
 export interface AboutInfo {
@@ -181,8 +175,6 @@ export interface ConfigSection {
   adapterBuiltinModels?: Record<string, AdapterBuiltinModel[]>
   plugins?: {
     plugins?: Config['plugins']
-    enabledPlugins?: Config['enabledPlugins']
-    extraKnownMarketplaces?: Config['extraKnownMarketplaces']
   }
   mcp?: {
     mcpServers?: Config['mcpServers']

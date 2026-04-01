@@ -8,9 +8,15 @@
     "codex": {},
     "opencode": {}
   },
-  "plugins": {
-    "logger": {}
-  },
+  "plugins": [
+    {
+      "id": "logger"
+    },
+    {
+      "id": "standard-dev",
+      "scope": "std"
+    }
+  ],
   "modelServices": {
     "hook-smoke-mock": {
       "title": "Hook Smoke Mock",

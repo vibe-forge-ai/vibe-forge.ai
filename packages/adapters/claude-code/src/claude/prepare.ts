@@ -18,8 +18,6 @@ interface ClaudeExecutionSettings {
   plansDirectory: string
   env: Record<string, string | null | undefined>
   companyAnnouncements: string[]
-  enabledPlugins: Record<string, boolean>
-  extraKnownMarketplaces: Record<string, unknown>
 }
 
 interface PreparedClaudeExecution {
@@ -145,15 +143,7 @@ export const prepareClaudeExecution = async (
     companyAnnouncements: [
       ...(config?.announcements ?? []),
       ...(userConfig?.announcements ?? [])
-    ],
-    enabledPlugins: assetPlan?.native.enabledPlugins ?? {
-      ...(config?.enabledPlugins ?? {}),
-      ...(userConfig?.enabledPlugins ?? {})
-    },
-    extraKnownMarketplaces: assetPlan?.native.extraKnownMarketplaces ?? {
-      ...(config?.extraKnownMarketplaces ?? {}),
-      ...(userConfig?.extraKnownMarketplaces ?? {})
-    }
+    ]
   }
   if (
     nativeEnvEffort == null &&

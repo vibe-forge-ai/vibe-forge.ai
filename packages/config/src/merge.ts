@@ -1,5 +1,5 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs } from '@vibe-forge/utils'
+import { mergeAdapterConfigs, mergePluginConfigs } from '@vibe-forge/utils'
 
 const hasOwnKeys = (value: Record<string, unknown>) => Object.keys(value).length > 0
 
@@ -96,17 +96,6 @@ const mergePermissions = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
-const mergePluginConfigs = (
-  left?: Config['plugins'],
-  right?: Config['plugins']
-) => {
-  if (!isRecord(left) || !isRecord(right)) {
-    return right ?? left
-  }
-
-  return mergeRecord(left, right) as Config['plugins']
-}
-
 export function mergeConfigs(left: undefined, right: undefined): undefined
 export function mergeConfigs<T extends Partial<Config>>(left: T, right: T): T
 export function mergeConfigs<T extends Partial<Config>>(left: T | undefined, right: T): T
@@ -141,12 +130,7 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.conversation as Record<string, unknown> | undefined
     ) as Config['conversation'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    plugins: mergePluginConfigs(left?.plugins, right?.plugins),
-    enabledPlugins: mergeRecord(left?.enabledPlugins, right?.enabledPlugins),
-    extraKnownMarketplaces: mergeRecord(
-      left?.extraKnownMarketplaces,
-      right?.extraKnownMarketplaces
-    )
+    plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins']
   }
 
   return merged as T

@@ -300,6 +300,7 @@ function buildCodexConfigOverrides(params: {
  * Build `-c mcp_servers.<name>.*` overrides for each filtered MCP server.
  */
 function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
+  const toTomlKey = (name: string) => /^[A-Za-z0-9_-]+$/.test(name) ? name : JSON.stringify(name)
   const args: string[] = []
   for (const [name, server] of Object.entries(servers)) {
     const {
@@ -315,7 +316,7 @@ function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
       url?: string
       headers?: Record<string, string>
     }
-    const prefix = `mcp_servers.${name}`
+    const prefix = `mcp_servers.${toTomlKey(name)}`
 
     if (typeof command === 'string') {
       args.push('-c', `${prefix}.command=${toToml(command)}`)
@@ -563,10 +564,32 @@ export async function resolveSessionBase(
     configFingerprintArgs.push('-c', `model_reasoning_effort=${toToml(requestedReasoningEffort)}`)
   }
 
-  const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? {
-    ...(config?.mcpServers ?? {}),
-    ...(userConfig?.mcpServers ?? {})
-  }
+  const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? (() => {
+    const mergedMcpServers = {
+      ...(config?.mcpServers ?? {}),
+      ...(userConfig?.mcpServers ?? {})
+    }
+    const defaultInclude = [
+      ...(config?.defaultIncludeMcpServers ?? []),
+      ...(userConfig?.defaultIncludeMcpServers ?? [])
+    ]
+    const defaultExclude = [
+      ...(config?.defaultExcludeMcpServers ?? []),
+      ...(userConfig?.defaultExcludeMcpServers ?? [])
+    ]
+    const includeMcpServers = options.mcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
+    const excludeMcpServers = options.mcpServers?.exclude ?? (defaultExclude.length > 0 ? defaultExclude : undefined)
+
+    const nextServers: Record<string, unknown> = {}
+    for (const [key, server] of Object.entries(mergedMcpServers)) {
+      if ((server as { enabled?: boolean }).enabled === false) continue
+      if (includeMcpServers && !includeMcpServers.includes(key)) continue
+      if (excludeMcpServers?.includes(key)) continue
+      const { enabled: _enabled, ...serverConfig } = server as { enabled?: boolean; [k: string]: unknown }
+      nextServers[key] = serverConfig
+    }
+    return nextServers
+  })()
 
   const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers)
   configOverrideArgs.push(...mcpConfigArgs)

@@ -8,6 +8,12 @@
 pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
 
+如果需要在项目里启用插件，还需要把对应插件包一起安装到当前 workspace：
+
+```bash
+pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
+```
+
 如果你想显式调用独立 `vf-mcp` 二进制：
 
 ```bash

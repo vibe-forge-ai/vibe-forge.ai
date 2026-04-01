@@ -117,6 +117,7 @@ export class TaskManager {
         skills: resolvedConfig.skills,
         mcpServers: resolvedConfig.mcpServers,
         promptAssetIds: resolvedConfig.promptAssetIds,
+        assetBundle: resolvedConfig.assetBundle,
         onEvent: (event: McpTaskOutputEvent) => {
           this.handleEvent(taskId, event)
         }

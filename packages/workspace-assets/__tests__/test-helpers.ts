@@ -17,6 +17,17 @@ export const writeDocument = async (filePath: string, content: string) => {
   await writeFile(filePath, content)
 }
 
+export const installPluginPackage = async (
+  workspace: string,
+  packageName: string,
+  files: Record<string, string>
+) => {
+  const packageDir = join(workspace, 'node_modules', ...packageName.split('/'))
+  await Promise.all(Object.entries(files).map(async ([relativePath, content]) => {
+    await writeDocument(join(packageDir, relativePath), content)
+  }))
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })

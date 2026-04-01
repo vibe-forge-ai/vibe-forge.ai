@@ -21,6 +21,7 @@
     "@vibe-forge/cli": "workspace:*",
     "@vibe-forge/client": "workspace:*",
     "@vibe-forge/plugin-logger": "workspace:*",
+    "@vibe-forge/plugin-standard-dev": "workspace:*",
     "@vibe-forge/server": "workspace:*",
     "@vibe-forge/task": "workspace:*",
     "commander": "^12.1.0",

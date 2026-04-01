@@ -158,6 +158,7 @@ export async function startAdapterSession(
       tools: resolvedConfig.tools,
       mcpServers: resolvedConfig.mcpServers,
       promptAssetIds: resolvedConfig.promptAssetIds,
+      assetBundle: resolvedConfig.assetBundle,
       onEvent: (event: AdapterOutputEvent) => {
         if (activeAdapterRunStore.get(sessionId) !== runId) {
           return

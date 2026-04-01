@@ -309,30 +309,9 @@ export const configSchema: Record<string, FieldSpec[]> = {
   plugins: [
     {
       path: ['plugins'],
-      type: 'record',
-      recordKind: 'json',
-      defaultValue: {},
+      type: 'json',
+      defaultValue: [],
       icon: 'extension'
-    },
-    {
-      path: ['enabledPlugins'],
-      type: 'record',
-      recordKind: 'boolean',
-      defaultValue: {},
-      group: 'base',
-      icon: 'toggle_on',
-      labelKey: 'config.fields.plugins.enabled.label',
-      descriptionKey: 'config.fields.plugins.enabled.desc'
-    },
-    {
-      path: ['extraKnownMarketplaces'],
-      type: 'record',
-      recordKind: 'json',
-      defaultValue: {},
-      group: 'base',
-      icon: 'storefront',
-      labelKey: 'config.fields.plugins.marketplaces.label',
-      descriptionKey: 'config.fields.plugins.marketplaces.desc'
     }
   ],
   mcp: [

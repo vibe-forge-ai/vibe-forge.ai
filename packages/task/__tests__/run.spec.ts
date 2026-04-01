@@ -49,6 +49,8 @@ const createLogger = (): Logger => ({
 
 const createAssets = (): WorkspaceAssetBundle => ({
   cwd: '/tmp/project',
+  pluginConfigs: undefined,
+  pluginInstances: [],
   assets: [],
   rules: [],
   specs: [],
@@ -56,8 +58,7 @@ const createAssets = (): WorkspaceAssetBundle => ({
   skills: [],
   mcpServers: {},
   hookPlugins: [],
-  enabledPlugins: {},
-  extraKnownMarketplaces: {},
+  opencodeOverlayAssets: [],
   defaultIncludeMcpServers: [],
   defaultExcludeMcpServers: []
 })
@@ -218,22 +219,40 @@ describe('task run adapter init', () => {
 
   it('attaches the adapter asset plan to query options', async () => {
     const ctx = createCtx()
-    ctx.assets.assets = [
-      {
-        id: 'nativePlugin:claude-code:logger',
-        kind: 'nativePlugin',
-        pluginId: 'logger',
-        origin: 'config',
-        scope: 'project',
-        enabled: true,
-        targets: ['claude-code'],
-        payload: {
-          name: 'logger',
-          enabled: true
+    const skillAsset = {
+      id: 'skill:workspace:workspace:research:.ai/skills/research/SKILL.md',
+      kind: 'skill' as const,
+      name: 'research',
+      displayName: 'research',
+      origin: 'workspace' as const,
+      sourcePath: '/tmp/project/.ai/skills/research/SKILL.md',
+      payload: {
+        definition: {
+          path: '/tmp/project/.ai/skills/research/SKILL.md',
+          body: '阅读 README.md',
+          attributes: {}
         }
       }
-    ]
-    ctx.assets.enabledPlugins = { logger: true }
+    }
+    const commandAsset = {
+      id: 'command:plugin:0:demo/review:node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md',
+      kind: 'command' as const,
+      name: 'review',
+      displayName: 'demo/review',
+      scope: 'demo',
+      origin: 'plugin' as const,
+      sourcePath: '/tmp/project/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md',
+      instancePath: '0',
+      packageId: '@vibe-forge/plugin-demo',
+      resolvedBy: 'vibe-forge-prefix',
+      payload: {
+        entryName: 'review',
+        targetSubpath: 'commands/review.md'
+      }
+    }
+    ctx.assets.assets = [skillAsset, commandAsset]
+    ctx.assets.skills = [skillAsset]
+    ctx.assets.opencodeOverlayAssets = [commandAsset]
     prepareMock.mockResolvedValue([ctx])
 
     await run({
@@ -244,7 +263,7 @@ describe('task run adapter init', () => {
       type: 'create',
       runtime: 'server',
       sessionId: 'session-assets',
-      promptAssetIds: ['skill:.ai/skills/research/SKILL.md'],
+      promptAssetIds: [skillAsset.id],
       onEvent: vi.fn()
     })
 
@@ -254,11 +273,11 @@ describe('task run adapter init', () => {
         adapter: 'codex',
         diagnostics: expect.arrayContaining([
           expect.objectContaining({
-            assetId: 'skill:.ai/skills/research/SKILL.md',
+            assetId: skillAsset.id,
             status: 'prompt'
           }),
           expect.objectContaining({
-            assetId: 'nativePlugin:claude-code:logger',
+            assetId: commandAsset.id,
             status: 'skipped'
           })
         ])

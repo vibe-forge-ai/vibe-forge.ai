@@ -77,6 +77,15 @@
         "require": "./dist/model-selection.js"
       }
     },
+    "./plugin-resolver": {
+      "__vibe-forge__": {
+        "default": "./src/plugin-resolver.ts"
+      },
+      "default": {
+        "import": "./dist/plugin-resolver.mjs",
+        "require": "./dist/plugin-resolver.js"
+      }
+    },
     "./string-transform": {
       "__vibe-forge__": {
         "default": "./src/string-transform.ts"

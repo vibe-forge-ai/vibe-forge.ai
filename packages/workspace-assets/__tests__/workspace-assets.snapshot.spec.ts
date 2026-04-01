@@ -8,7 +8,7 @@ import type { Config } from '@vibe-forge/types'
 import { buildAdapterAssetPlan, resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '#~/index.js'
 
 import { serializeWorkspaceAssetsSnapshot } from './snapshot'
-import { createWorkspace, writeDocument } from './test-helpers'
+import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
 
 const resolveSnapshotPath = (name: string) => (
   fileURLToPath(new URL(`./__snapshots__/${name}.snapshot.json`, import.meta.url))
@@ -19,43 +19,33 @@ describe('workspace assets snapshots', () => {
     const workspace = await createWorkspace()
 
     const projectConfig: Config = {
-      plugins: {
-        logger: {
-          level: 'info'
+      plugins: [
+        {
+          id: 'logger'
+        },
+        {
+          id: 'demo',
+          scope: 'demo'
         }
-      },
-      enabledPlugins: {
-        logger: true,
-        demo: true,
-        legacy: false,
-        telemetry: true
-      },
+      ],
       mcpServers: {
         docs: {
           command: 'npx',
           args: ['docs-server']
         }
       },
-      defaultIncludeMcpServers: ['docs', 'browser'],
-      extraKnownMarketplaces: {
-        internal: {
-          source: {
-            source: 'git',
-            url: 'https://plugins.internal.example.com'
-          }
-        }
-      }
+      defaultIncludeMcpServers: ['docs', 'demo/browser']
     }
 
     const userConfig: Config = {
-      plugins: {
-        telemetry: {
-          mode: 'summary'
+      plugins: [
+        {
+          id: 'telemetry',
+          options: {
+            mode: 'summary'
+          }
         }
-      },
-      enabledPlugins: {
-        telemetry: true
-      },
+      ],
       mcpServers: {
         notes: {
           command: 'node',
@@ -65,6 +55,56 @@ describe('workspace assets snapshots', () => {
       defaultExcludeMcpServers: ['notes']
     }
 
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        version: '1.0.0'
+      }, null, 2),
+      'rules/security.md': [
+        '---',
+        'description: 插件安全规则',
+        '---',
+        '上线前要检查权限与密钥暴露。'
+      ].join('\n'),
+      'specs/release/index.md': [
+        '---',
+        'description: 插件发布流程',
+        '---',
+        '插件 release 不应直接替代项目 release。'
+      ].join('\n'),
+      'skills/audit/SKILL.md': [
+        '---',
+        'description: 审计输出',
+        '---',
+        '检查最终输出是否覆盖风险项。'
+      ].join('\n'),
+      'mcp/browser.json': JSON.stringify(
+        {
+          name: 'browser',
+          command: 'npx',
+          args: ['browser-mcp']
+        },
+        null,
+        2
+      ),
+      'opencode/agents/release-helper.md': '# release-helper\n',
+      'opencode/commands/review.md': '# review\n',
+      'opencode/modes/strict.md': '# strict\n',
+      'opencode/plugins/demo-plugin.js': 'export default {}\n'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-logger',
+        version: '1.0.0'
+      }, null, 2)
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-telemetry', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-telemetry',
+        version: '1.0.0'
+      }, null, 2)
+    })
+
     await writeDocument(
       join(workspace, '.ai/rules/review.md'),
       [
@@ -73,25 +113,6 @@ describe('workspace assets snapshots', () => {
         'always: true',
         '---',
         '必须检查发布改动的回归风险。'
-      ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/rules/review.md'),
-      [
-        '---',
-        'description: 插件评审规则',
-        'always: true',
-        '---',
-        '这是插件内的 review 规则，不应覆盖项目规则。'
-      ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/rules/security.md'),
-      [
-        '---',
-        'description: 插件安全规则',
-        '---',
-        '上线前要检查权限与密钥暴露。'
       ].join('\n')
     )
     await writeDocument(
@@ -106,24 +127,15 @@ describe('workspace assets snapshots', () => {
         'mcpServers:',
         '  include:',
         '    - docs',
-        '    - browser',
+        '    - demo/browser',
         '  exclude:',
-        '    - browser',
+        '    - demo/browser',
         'tools:',
         '  include:',
         '    - Read',
         '    - Edit',
         '---',
         '执行正式发布，并整理变更摘要。'
-      ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/specs/release/index.md'),
-      [
-        '---',
-        'description: 插件发布流程',
-        '---',
-        '插件 release 不应覆盖项目 release。'
       ].join('\n')
     )
     await writeDocument(
@@ -143,52 +155,6 @@ describe('workspace assets snapshots', () => {
         '---',
         '先阅读 README.md，再补充结论。'
       ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/skills/research/SKILL.md'),
-      [
-        '---',
-        'description: 插件 research',
-        '---',
-        '插件 research 不应覆盖项目 skill。'
-      ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/skills/audit/SKILL.md'),
-      [
-        '---',
-        'description: 审计输出',
-        '---',
-        '检查最终输出是否覆盖风险项。'
-      ].join('\n')
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/mcp/browser.json'),
-      JSON.stringify(
-        {
-          name: 'browser',
-          command: 'npx',
-          args: ['browser-mcp']
-        },
-        null,
-        2
-      )
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/plugins/demo-plugin.js'),
-      'export default {};\n'
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/agents/release-helper.md'),
-      '# release-helper\n'
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/commands/review.md'),
-      '# review\n'
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/modes/strict.md'),
-      '# strict\n'
     )
 
     const bundle = await resolveWorkspaceAssetBundle({
