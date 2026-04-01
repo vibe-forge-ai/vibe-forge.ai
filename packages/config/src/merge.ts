@@ -1,5 +1,5 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs } from '@vibe-forge/utils'
+import { mergeAdapterConfigs, normalizePluginConfig } from '@vibe-forge/utils'
 
 const hasOwnKeys = (value: Record<string, unknown>) => Object.keys(value).length > 0
 
@@ -100,9 +100,11 @@ const mergePluginConfigs = (
   left?: Config['plugins'],
   right?: Config['plugins']
 ) => {
+  const normalizedLeft = normalizePluginConfig(left, 'plugins')
+  const normalizedRight = normalizePluginConfig(right, 'plugins')
   const merged = [
-    ...(left ?? []),
-    ...(right ?? [])
+    ...(normalizedLeft ?? []),
+    ...(normalizedRight ?? [])
   ]
   return merged.length > 0 ? merged : undefined
 }

@@ -5,61 +5,60 @@ import { describe, expect, it } from 'vitest'
 
 import { resolveWorkspaceAssetBundle } from '#~/index.js'
 
-import { createWorkspace, writeDocument } from './test-helpers'
+import { createWorkspace, installPluginPackage } from './test-helpers'
 
 describe('resolveWorkspaceAssetBundle', () => {
-  it('treats enabledPlugins as a global asset switch', async () => {
+  it('loads npm plugin assets via the package-id fallback and exposes OpenCode overlays', async () => {
     const workspace = await createWorkspace()
 
-    await writeDocument(
-      join(workspace, '.ai.config.json'),
-      JSON.stringify({
-        plugins: {
-          logger: {}
-        },
-        enabledPlugins: {
-          logger: false,
-          demo: false
-        }
-      })
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/skills/research/SKILL.md'),
-      '---\ndescription: 检索资料\n---\n阅读 README.md'
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/rules/review.md'),
-      '---\ndescription: 评审规则\n---\n必须检查风险'
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/mcp/browser.json'),
-      JSON.stringify({ command: 'npx', args: ['browser-server'] })
-    )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/commands/review.md'),
-      '# review'
-    )
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        version: '1.0.0'
+      }, null, 2),
+      'skills/research/SKILL.md': '---\ndescription: 检索资料\n---\n阅读 README.md',
+      'rules/review.md': '---\ndescription: 评审规则\n---\n必须检查风险',
+      'mcp/browser.json': JSON.stringify({ command: 'npx', args: ['browser-server'] }, null, 2),
+      'opencode/commands/review.md': '# review\n'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-logger',
+        version: '1.0.0'
+      }, null, 2)
+    })
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
       configs: [{
-        plugins: {
-          logger: {}
-        },
-        enabledPlugins: {
-          logger: false,
-          demo: false
-        }
+        plugins: [
+          { id: 'demo', scope: 'demo' },
+          { id: 'logger' }
+        ]
       }, undefined],
       useDefaultVibeForgeMcpServer: false
     })
 
-    expect(bundle.skills).toHaveLength(0)
-    expect(bundle.rules).toHaveLength(0)
-    expect(Object.keys(bundle.mcpServers)).toHaveLength(0)
-    expect(bundle.hookPlugins).toHaveLength(0)
-    expect(bundle.assets.some((asset: (typeof bundle.assets)[number]) => asset.pluginId === 'demo' && asset.enabled))
-      .toBe(false)
+    expect(bundle.skills.map(asset => asset.displayName)).toEqual(['demo/research'])
+    expect(bundle.rules.map(asset => asset.displayName)).toEqual(['demo/review'])
+    expect(Object.keys(bundle.mcpServers)).toEqual(['demo/browser'])
+    expect(bundle.hookPlugins).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        packageId: '@vibe-forge/plugin-demo'
+      }),
+      expect.objectContaining({
+        packageId: '@vibe-forge/plugin-logger'
+      })
+    ]))
+    expect(bundle.opencodeOverlayAssets).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'command',
+        sourcePath: expect.stringContaining('/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md'),
+        payload: expect.objectContaining({
+          targetSubpath: 'commands/review.md'
+        })
+      })
+    ]))
   })
 
   it('adds the built-in Vibe Forge MCP server when enabled and omits it when disabled', async () => {

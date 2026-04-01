@@ -2,7 +2,17 @@ import type { Config } from './config'
 import type { Definition, Entity, Filter, Rule, Skill, Spec } from './definition'
 import type { PluginConfig, ResolvedPluginInstanceMetadata } from './plugin'
 
-export type WorkspaceAssetKind = 'rule' | 'spec' | 'entity' | 'skill' | 'mcpServer' | 'hookPlugin'
+export type WorkspaceAssetKind =
+  | 'rule'
+  | 'spec'
+  | 'entity'
+  | 'skill'
+  | 'mcpServer'
+  | 'hookPlugin'
+  | 'agent'
+  | 'command'
+  | 'mode'
+  | 'nativePlugin'
 export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'opencode'
 export type AssetDiagnosticStatus = 'native' | 'translated' | 'prompt' | 'skipped'
 
@@ -21,7 +31,7 @@ export interface AssetDiagnostic {
 
 export interface AdapterOverlayEntry {
   assetId: string
-  kind: 'skill'
+  kind: 'skill' | 'agent' | 'command' | 'mode' | 'nativePlugin'
   sourcePath: string
   targetPath: string
 }
@@ -55,6 +65,11 @@ interface WorkspaceHookPluginPayload {
   config: unknown
 }
 
+interface WorkspaceOpenCodeOverlayPayload {
+  entryName: string
+  targetSubpath: string
+}
+
 export type WorkspaceAsset =
   | WorkspaceAssetBase<'rule', WorkspaceDocumentPayload<Definition<Rule>>>
   | WorkspaceAssetBase<'spec', WorkspaceDocumentPayload<Definition<Spec>>>
@@ -62,6 +77,10 @@ export type WorkspaceAsset =
   | WorkspaceAssetBase<'skill', WorkspaceDocumentPayload<Definition<Skill>>>
   | WorkspaceAssetBase<'mcpServer', WorkspaceMcpPayload>
   | WorkspaceAssetBase<'hookPlugin', WorkspaceHookPluginPayload>
+  | WorkspaceAssetBase<'agent', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'command', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'mode', WorkspaceOpenCodeOverlayPayload>
+  | WorkspaceAssetBase<'nativePlugin', WorkspaceOpenCodeOverlayPayload>
 
 export interface WorkspaceAssetBundle {
   cwd: string
@@ -74,6 +93,7 @@ export interface WorkspaceAssetBundle {
   skills: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>
   mcpServers: Record<string, Extract<WorkspaceAsset, { kind: 'mcpServer' }>>
   hookPlugins: Array<Extract<WorkspaceAsset, { kind: 'hookPlugin' }>>
+  opencodeOverlayAssets: Array<Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' | 'nativePlugin' }>>
   defaultIncludeMcpServers: string[]
   defaultExcludeMcpServers: string[]
 }

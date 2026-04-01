@@ -29,11 +29,14 @@ describe('mergeConfigs', () => {
             }
           }
         },
-        plugins: {
-          logger: {
-            level: 'info'
+        plugins: [
+          {
+            id: 'logger',
+            options: {
+              level: 'info'
+            }
           }
-        }
+        ]
       },
       {
         adapters: {
@@ -56,11 +59,14 @@ describe('mergeConfigs', () => {
             }
           }
         },
-        plugins: {
-          chrome: {
-            headless: true
+        plugins: [
+          {
+            id: 'chrome',
+            options: {
+              headless: true
+            }
           }
-        }
+        ]
       }
     )
 
@@ -86,13 +92,19 @@ describe('mergeConfigs', () => {
       title: 'Base Title',
       description: 'Child Description'
     })
-    expect(merged.plugins).toEqual({
-      logger: {
-        level: 'info'
+    expect(merged.plugins).toEqual([
+      {
+        id: 'logger',
+        options: {
+          level: 'info'
+        }
       },
-      chrome: {
-        headless: true
+      {
+        id: 'chrome',
+        options: {
+          headless: true
+        }
       }
-    })
+    ])
   })
 })

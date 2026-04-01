@@ -73,8 +73,9 @@ notifications:
     completed:
       title: Base Title
 plugins:
-  logger:
-    level: info
+  - id: logger
+    options:
+      level: info
 adapters:
   codex:
     defaultModel: gpt-4.1
@@ -101,11 +102,14 @@ adapters:
                 }
               }
             },
-            plugins: {
-              chrome: {
-                headless: true
+            plugins: [
+              {
+                id: 'chrome',
+                options: {
+                  headless: true
+                }
               }
-            },
+            ],
             adapters: {
               codex: {
                 excludeModels: ['gpt-4.1-mini']
@@ -120,9 +124,14 @@ adapters:
         path.join(tempDir, 'user-base.json'),
         JSON.stringify(
           {
-            enabledPlugins: {
-              logger: true
-            },
+            plugins: [
+              {
+                id: 'telemetry',
+                options: {
+                  mode: 'summary'
+                }
+              }
+            ],
             shortcuts: {
               openConfig: 'cmd+,'
             }
@@ -136,8 +145,8 @@ adapters:
         `
 extend:
   - ./user-base.json
-enabledPlugins:
-  chrome: false
+plugins:
+  - id: review
 shortcuts:
   newSession: cmd+n
 `
@@ -171,14 +180,20 @@ shortcuts:
             }
           }
         },
-        plugins: {
-          logger: {
-            level: 'info'
+        plugins: [
+          {
+            id: 'logger',
+            options: {
+              level: 'info'
+            }
           },
-          chrome: {
-            headless: true
+          {
+            id: 'chrome',
+            options: {
+              headless: true
+            }
           }
-        },
+        ],
         adapters: {
           codex: {
             defaultModel: 'gpt-4.1',
@@ -188,16 +203,57 @@ shortcuts:
       })
       expect(projectConfig?.extend).toBeUndefined()
       expect(userConfig).toMatchObject({
-        enabledPlugins: {
-          logger: true,
-          chrome: false
-        },
+        plugins: [
+          {
+            id: 'telemetry',
+            options: {
+              mode: 'summary'
+            }
+          },
+          {
+            id: 'review'
+          }
+        ],
         shortcuts: {
           openConfig: 'cmd+,',
           newSession: 'cmd+n'
         }
       })
       expect(userConfig?.extend).toBeUndefined()
+    } finally {
+      resetConfigCache()
+      await rm(tempDir, { force: true, recursive: true })
+    }
+  })
+
+  it('throws a clear error for legacy object-map plugin configs in extend chains', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-legacy-plugins-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, 'legacy.json'),
+        JSON.stringify({
+          plugins: {
+            logger: {
+              level: 'info'
+            }
+          }
+        }, null, 2)
+      )
+      await writeFile(
+        path.join(tempDir, '.ai.config.json'),
+        JSON.stringify({
+          extend: './legacy.json'
+        }, null, 2)
+      )
+
+      resetConfigCache()
+      const [projectConfig] = await loadConfig({
+        cwd: tempDir,
+        jsonVariables: {}
+      })
+
+      expect(projectConfig).toBeUndefined()
     } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })

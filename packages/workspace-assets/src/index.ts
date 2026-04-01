@@ -49,10 +49,17 @@ import fm from 'front-matter'
 import yaml from 'js-yaml'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
+type OpenCodeOverlayKind = Extract<WorkspaceAssetKind, 'agent' | 'command' | 'mode' | 'nativePlugin'>
 type DocumentAsset<TDefinition> = Extract<WorkspaceAsset, { kind: DocumentAssetKind }> & {
   payload: {
     definition: TDefinition & { path: string }
   }
+}
+interface OpenCodeOverlayAssetEntry {
+  kind: OpenCodeOverlayKind
+  sourcePath: string
+  entryName: string
+  targetSubpath: string
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -253,6 +260,31 @@ const createHookPluginAsset = (
   }
 } satisfies Extract<WorkspaceAsset, { kind: 'hookPlugin' }>)
 
+const createOpenCodeOverlayAsset = <TKind extends OpenCodeOverlayKind>(params: {
+  cwd: string
+  kind: TKind
+  sourcePath: string
+  entryName: string
+  targetSubpath: string
+  instance: ResolvedPluginInstance
+}) => ({
+  id: `${params.kind}:plugin:${params.instance.instancePath}:${resolveDisplayName(params.entryName, params.instance.scope)}:${resolveRelativePath(params.cwd, params.sourcePath)}`,
+  kind: params.kind,
+  name: params.entryName,
+  displayName: resolveDisplayName(params.entryName, params.instance.scope),
+  scope: params.instance.scope,
+  origin: 'plugin' as const,
+  sourcePath: params.sourcePath,
+  instancePath: params.instance.instancePath,
+  packageId: params.instance.packageId,
+  resolvedBy: params.instance.resolvedBy,
+  taskOverlaySource: params.instance.overlaySource,
+  payload: {
+    entryName: params.entryName,
+    targetSubpath: params.targetSubpath
+  }
+} satisfies Extract<WorkspaceAsset, { kind: TKind }>)
+
 const scanWorkspaceDocuments = async (cwd: string) => {
   const [rulePaths, skillPaths, specPaths, entityDocPaths, entityJsonPaths, mcpPaths] = await Promise.all([
     glob(['.ai/rules/*.md'], { cwd, absolute: true }),
@@ -295,6 +327,36 @@ const scanInstanceDocuments = async (instance: ResolvedPluginInstance) => {
     entityJsonPaths,
     mcpPaths
   }
+}
+
+const toOpenCodeOverlayEntries = (
+  kind: OpenCodeOverlayKind,
+  targetDir: 'agents' | 'commands' | 'modes' | 'plugins',
+  paths: string[]
+): OpenCodeOverlayAssetEntry[] => paths.map((sourcePath) => ({
+  kind,
+  sourcePath,
+  entryName: basename(sourcePath, extname(sourcePath)),
+  targetSubpath: `${targetDir}/${basename(sourcePath)}`
+}))
+
+const scanInstanceOpenCodeOverlays = async (
+  instance: ResolvedPluginInstance
+) => {
+  const opencodeRoot = resolve(instance.rootDir, 'opencode')
+  const [agentPaths, commandPaths, modePaths, nativePluginPaths] = await Promise.all([
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'agents'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'commands'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
+    glob(['*.md'], { cwd: resolve(opencodeRoot, 'modes'), absolute: true, onlyFiles: true }).catch(() => [] as string[]),
+    glob(['**/*'], { cwd: resolve(opencodeRoot, 'plugins'), absolute: true, onlyFiles: true }).catch(() => [] as string[])
+  ])
+
+  return [
+    ...toOpenCodeOverlayEntries('agent', 'agents', agentPaths),
+    ...toOpenCodeOverlayEntries('command', 'commands', commandPaths),
+    ...toOpenCodeOverlayEntries('mode', 'modes', modePaths),
+    ...toOpenCodeOverlayEntries('nativePlugin', 'plugins', nativePluginPaths)
+  ]
 }
 
 const definitionWithResolvedName = <TDefinition>(
@@ -348,6 +410,10 @@ const resolveUniqueAssetByName = <TAsset extends Extract<WorkspaceAsset, { kind:
 ) => {
   const matches = assets.filter(asset => asset.name === name)
   if (matches.length === 0) return undefined
+  const unscopedMatches = matches.filter(asset => asset.scope == null)
+  if (unscopedMatches.length === 1) {
+    return unscopedMatches[0]
+  }
   if (matches.length > 1) {
     throw new Error(`Ambiguous asset reference ${name}. Candidates: ${matches.map(match => match.displayName).join(', ')}`)
   }
@@ -726,6 +792,7 @@ export async function resolveWorkspaceAssetBundle(params: {
   const localScan = await scanWorkspaceDocuments(params.cwd)
   const flattenedPluginInstances = flattenPluginInstances(pluginInstances)
   const pluginScans = await Promise.all(flattenedPluginInstances.map(instance => scanInstanceDocuments(instance)))
+  const pluginOverlayScans = await Promise.all(flattenedPluginInstances.map(instance => scanInstanceOpenCodeOverlays(instance)))
 
   const assets: WorkspaceAsset[] = []
 
@@ -845,6 +912,18 @@ export async function resolveWorkspaceAssetBundle(params: {
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 
+  const opencodeOverlayAssets = flattenedPluginInstances.flatMap((instance, index) => (
+    pluginOverlayScans[index].map((entry) => createOpenCodeOverlayAsset({
+      cwd: params.cwd,
+      kind: entry.kind,
+      sourcePath: entry.sourcePath,
+      entryName: entry.entryName,
+      targetSubpath: entry.targetSubpath,
+      instance
+    }))
+  ))
+  assets.push(...opencodeOverlayAssets)
+
   assets.push(...mcpAssets.values())
 
   const rules = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'rule' }> => asset.kind === 'rule')
@@ -866,6 +945,7 @@ export async function resolveWorkspaceAssetBundle(params: {
     skills,
     mcpServers: Object.fromEntries(Array.from(mcpAssets.values()).map(asset => [asset.displayName, asset])),
     hookPlugins,
+    opencodeOverlayAssets,
     defaultIncludeMcpServers: [
       ...(config?.defaultIncludeMcpServers ?? []),
       ...(userConfig?.defaultIncludeMcpServers ?? [])
@@ -1097,13 +1177,68 @@ export function buildAdapterAssetPlan(params: {
     })
   })
 
+  const selectedSkillAssets = resolveSelectedSkillAssets(params.bundle.skills, params.options.skills)
+  if (params.adapter === 'opencode') {
+    selectedSkillAssets.forEach((asset) => {
+      diagnostics.push({
+        assetId: asset.id,
+        adapter: params.adapter,
+        status: 'native',
+        reason: 'Mirrored into OPENCODE_CONFIG_DIR as a native skill.',
+        packageId: asset.packageId,
+        scope: asset.scope,
+        instancePath: asset.instancePath,
+        origin: asset.origin,
+        resolvedBy: asset.resolvedBy,
+        taskOverlaySource: asset.taskOverlaySource
+      })
+    })
+    params.bundle.opencodeOverlayAssets.forEach((asset) => {
+      diagnostics.push({
+        assetId: asset.id,
+        adapter: params.adapter,
+        status: 'native',
+        reason: 'Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.',
+        packageId: asset.packageId,
+        scope: asset.scope,
+        instancePath: asset.instancePath,
+        origin: asset.origin,
+        resolvedBy: asset.resolvedBy,
+        taskOverlaySource: asset.taskOverlaySource
+      })
+    })
+  } else if (params.adapter === 'codex') {
+    params.bundle.opencodeOverlayAssets.forEach((asset) => {
+      diagnostics.push({
+        assetId: asset.id,
+        adapter: params.adapter,
+        status: 'skipped',
+        reason: 'No stable native Codex mapping exists for this asset kind in V1.',
+        packageId: asset.packageId,
+        scope: asset.scope,
+        instancePath: asset.instancePath,
+        origin: asset.origin,
+        resolvedBy: asset.resolvedBy,
+        taskOverlaySource: asset.taskOverlaySource
+      })
+    })
+  }
+
   const overlays: AdapterOverlayEntry[] = params.adapter === 'opencode'
-    ? resolveSelectedSkillAssets(params.bundle.skills, params.options.skills).map((asset) => ({
+    ? [
+      ...selectedSkillAssets.map((asset) => ({
       assetId: asset.id,
       kind: 'skill',
       sourcePath: dirname(asset.sourcePath),
       targetPath: `skills/${asset.displayName.replaceAll('/', '__')}`
-    }))
+    })),
+      ...params.bundle.opencodeOverlayAssets.map((asset) => ({
+        assetId: asset.id,
+        kind: asset.kind,
+        sourcePath: asset.sourcePath,
+        targetPath: asset.payload.targetSubpath
+      }))
+    ]
     : []
 
   return {

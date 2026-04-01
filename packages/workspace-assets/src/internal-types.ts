@@ -1,3 +1,3 @@
 import type { WorkspaceAsset } from '@vibe-forge/types'
 
-export const isOpenCodeOverlayAsset = (_asset: WorkspaceAsset) => false
+export const isOpenCodeOverlayAsset = (asset: WorkspaceAsset) => asset.kind === 'nativePlugin'

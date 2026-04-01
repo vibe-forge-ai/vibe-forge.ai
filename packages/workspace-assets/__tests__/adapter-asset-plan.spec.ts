@@ -4,29 +4,25 @@ import { describe, expect, it } from 'vitest'
 
 import { buildAdapterAssetPlan, resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '#~/index.js'
 
-import { createWorkspace, writeDocument } from './test-helpers'
+import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
 
 describe('buildAdapterAssetPlan', () => {
-  it('builds codex diagnostics for prompt, mcp, native hooks, and unsupported claude native plugins', async () => {
+  it('builds codex diagnostics for prompt, mcp, hook plugins, and unsupported opencode assets', async () => {
     const workspace = await createWorkspace()
 
-    await writeDocument(
-      join(workspace, '.ai.config.json'),
-      JSON.stringify({
-        plugins: {
-          logger: {}
-        },
-        enabledPlugins: {
-          logger: true
-        },
-        mcpServers: {
-          docs: {
-            command: 'npx',
-            args: ['docs-server']
-          }
-        }
-      })
-    )
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-logger',
+        version: '1.0.0'
+      }, null, 2)
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        version: '1.0.0'
+      }, null, 2),
+      'opencode/commands/review.md': '# review\n'
+    })
     await writeDocument(
       join(workspace, '.ai/skills/research/SKILL.md'),
       '---\ndescription: 检索资料\n---\n阅读 README.md'
@@ -35,12 +31,10 @@ describe('buildAdapterAssetPlan', () => {
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
       configs: [{
-        plugins: {
-          logger: {}
-        },
-        enabledPlugins: {
-          logger: true
-        },
+        plugins: [
+          { id: 'logger' },
+          { id: 'demo', scope: 'demo' }
+        ],
         mcpServers: {
           docs: {
             command: 'npx',
@@ -50,6 +44,15 @@ describe('buildAdapterAssetPlan', () => {
       }, undefined],
       useDefaultVibeForgeMcpServer: false
     })
+    const researchSkillId = bundle.skills.find(asset => asset.name === 'research')?.id
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+    const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
+    const docsMcpId = bundle.mcpServers.docs?.id
+    expect(researchSkillId).toBeDefined()
+    expect(loggerHookPluginId).toBeDefined()
+    expect(demoCommandId).toBeDefined()
+    expect(docsMcpId).toBeDefined()
+
     const [, resolvedOptions] = await resolvePromptAssetSelection({
       bundle,
       type: undefined,
@@ -73,32 +76,26 @@ describe('buildAdapterAssetPlan', () => {
     })
 
     expect(plan.mcpServers).toHaveProperty('docs')
-    expect(plan.native.codexHooks?.supportedEvents).toEqual([
-      'SessionStart',
-      'UserPromptSubmit',
-      'PreToolUse',
-      'PostToolUse',
-      'Stop'
-    ])
     expect(plan.diagnostics).toEqual(expect.arrayContaining([
       expect.objectContaining({
+        assetId: researchSkillId,
         adapter: 'codex',
         status: 'prompt'
       }),
       expect.objectContaining({
         adapter: 'codex',
         status: 'native',
-        assetId: 'hookPlugin:project:logger'
+        assetId: loggerHookPluginId
       }),
       expect.objectContaining({
         adapter: 'codex',
         status: 'translated',
-        assetId: 'mcpServer:project:docs'
+        assetId: docsMcpId
       }),
       expect.objectContaining({
         adapter: 'codex',
         status: 'skipped',
-        assetId: 'nativePlugin:claude-code:logger'
+        assetId: demoCommandId
       })
     ]))
   })
@@ -106,18 +103,25 @@ describe('buildAdapterAssetPlan', () => {
   it('builds opencode overlays for skills and native commands', async () => {
     const workspace = await createWorkspace()
 
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify({
+        name: '@vibe-forge/plugin-demo',
+        version: '1.0.0'
+      }, null, 2),
+      'opencode/commands/review.md': '# review\n'
+    })
     await writeDocument(
       join(workspace, '.ai/skills/research/SKILL.md'),
       '---\ndescription: 检索资料\n---\n阅读 README.md'
     )
-    await writeDocument(
-      join(workspace, '.ai/plugins/demo/opencode/commands/review.md'),
-      '# review'
-    )
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
-      configs: [undefined, undefined],
+      configs: [{
+        plugins: [
+          { id: 'demo', scope: 'demo' }
+        ]
+      }, undefined],
       useDefaultVibeForgeMcpServer: false
     })
     const plan = buildAdapterAssetPlan({
@@ -129,6 +133,7 @@ describe('buildAdapterAssetPlan', () => {
         }
       }
     })
+    const commandAsset = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')
 
     expect(plan.overlays).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -138,6 +143,13 @@ describe('buildAdapterAssetPlan', () => {
       expect.objectContaining({
         kind: 'command',
         targetPath: 'commands/review.md'
+      })
+    ]))
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        assetId: commandAsset?.id,
+        adapter: 'opencode',
+        status: 'native'
       })
     ]))
   })

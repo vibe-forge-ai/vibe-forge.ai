@@ -33,7 +33,7 @@ export const resolvePlugins = async (
   cwd: string,
   config: PluginConfig | undefined
 ): Promise<Partial<Plugin>[]> => {
-  if ((config?.length ?? 0) === 0) return []
+  if (config == null) return []
 
   const instances = flattenPluginInstances(
     await resolveConfiguredPluginInstances({
