@@ -47,10 +47,12 @@ describe('definitionLoader', () => {
       }
     ])
 
-    expect(prompt).toContain('技能名称：research')
-    expect(prompt).toContain('技能介绍：检索项目信息')
-    expect(prompt).toContain('技能文件资源路径：.ai/skills/research')
-    expect(prompt).not.toContain('/workspace/project/.ai/skills/research')
+    expect(prompt).toContain('项目已加载如下技能模块')
+    expect(prompt).toContain('# research')
+    expect(prompt).toContain('> 技能介绍：检索项目信息')
+    expect(prompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(prompt).toContain('<skill-content>')
+    expect(prompt).not.toContain('/workspace/project/.ai/skills/research/SKILL.md')
   })
 
   it('generates spec routes with logical identifiers instead of file paths', () => {
@@ -113,7 +115,8 @@ describe('definitionLoader', () => {
     expect(prompt).toContain('> # 标题')
     expect(prompt).toContain('> 正文')
     expect(prompt).toContain('# summary-only')
-    expect(prompt).toContain('> 只展示摘要')
+    expect(prompt).toContain('> 适用场景：只展示摘要')
+    expect(prompt).toContain('> 规则文件路径：.ai/rules/summary-only.md')
     expect(prompt).not.toContain('> 不应该内联')
     expect(prompt).not.toContain('--------------------')
   })
@@ -169,8 +172,31 @@ describe('definitionLoader', () => {
     expect(prompt).toContain('# base')
     expect(prompt).toContain('> 始终检查导入边界。')
     expect(prompt).toContain('# optional')
-    expect(prompt).toContain('> 按需规则')
+    expect(prompt).toContain('> 适用场景：按需规则')
+    expect(prompt).toContain('> 规则文件路径：.ai/rules/optional.md')
     expect(prompt).not.toContain('仅在特定任务参考。')
+  })
+
+  it('generates skill routes with file guidance and without embedded bodies', () => {
+    const cwd = '/workspace/project'
+    const loader = new DefinitionLoader(cwd)
+
+    const prompt = loader.generateSkillsRoutePrompt([
+      {
+        path: join(cwd, '.ai/skills/research/SKILL.md'),
+        body: '阅读 README.md\n',
+        attributes: {
+          description: '检索项目信息'
+        }
+      }
+    ])
+
+    expect(prompt).toContain('# research')
+    expect(prompt).toContain('> 技能介绍：检索项目信息')
+    expect(prompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(prompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
+    expect(prompt).not.toContain('<skill-content>')
+    expect(prompt).not.toContain('阅读 README.md')
   })
 
   it('loads npm plugin specs and README based entities consistently', async () => {

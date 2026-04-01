@@ -14,7 +14,8 @@ describe('buildAdapterAssetPlan', () => {
       'package.json': JSON.stringify({
         name: '@vibe-forge/plugin-logger',
         version: '1.0.0'
-      }, null, 2)
+      }, null, 2),
+      'hooks.js': 'module.exports = {}\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
       'package.json': JSON.stringify({
@@ -26,6 +27,10 @@ describe('buildAdapterAssetPlan', () => {
     await writeDocument(
       join(workspace, '.ai/skills/research/SKILL.md'),
       '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/review/SKILL.md'),
+      '---\ndescription: 代码评审\n---\n检查风险'
     )
 
     const bundle = await resolveWorkspaceAssetBundle({
@@ -45,10 +50,12 @@ describe('buildAdapterAssetPlan', () => {
       useDefaultVibeForgeMcpServer: false
     })
     const researchSkillId = bundle.skills.find(asset => asset.name === 'research')?.id
+    const reviewSkillId = bundle.skills.find(asset => asset.name === 'review')?.id
     const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
     const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
     const docsMcpId = bundle.mcpServers.docs?.id
     expect(researchSkillId).toBeDefined()
+    expect(reviewSkillId).toBeDefined()
     expect(loggerHookPluginId).toBeDefined()
     expect(demoCommandId).toBeDefined()
     expect(docsMcpId).toBeDefined()
@@ -96,6 +103,13 @@ describe('buildAdapterAssetPlan', () => {
         adapter: 'codex',
         status: 'skipped',
         assetId: demoCommandId
+      })
+    ]))
+    expect(plan.diagnostics).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        assetId: reviewSkillId,
+        adapter: 'codex',
+        status: 'prompt'
       })
     ]))
   })

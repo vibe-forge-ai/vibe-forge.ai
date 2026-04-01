@@ -62,7 +62,7 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).toContain('你是 API 开发实体')
   })
 
-  it('loads explicitly included skills into the generated system prompt', async () => {
+  it('keeps explicitly included skills as route guidance in normal mode', async () => {
     const workspace = await createWorkspace()
 
     await writeDocument(
@@ -85,10 +85,14 @@ describe('generateAdapterQueryOptions', () => {
       }
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('技能名称：research')
-    expect(resolvedConfig.systemPrompt).toContain('技能介绍：检索资料')
-    expect(resolvedConfig.systemPrompt).toContain('research：检索资料')
-    expect(resolvedConfig.systemPrompt).not.toContain('review：代码评审')
+    expect(resolvedConfig.systemPrompt).not.toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# research')
+    expect(resolvedConfig.systemPrompt).toContain('> 技能介绍：检索资料')
+    expect(resolvedConfig.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(resolvedConfig.systemPrompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
+    expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
+    expect(resolvedConfig.systemPrompt).not.toContain('# review')
   })
 
   it('removes excluded skills from the generated skill routes', async () => {
@@ -114,9 +118,11 @@ describe('generateAdapterQueryOptions', () => {
       }
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('research：检索资料')
-    expect(resolvedConfig.systemPrompt).not.toContain('review：代码评审')
-    expect(resolvedConfig.systemPrompt).not.toContain('技能名称：review')
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# research')
+    expect(resolvedConfig.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(resolvedConfig.systemPrompt).not.toContain('# review')
+    expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
   })
 
   it('supports entity skill include selectors', async () => {
@@ -151,9 +157,14 @@ describe('generateAdapterQueryOptions', () => {
       workspace
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('技能名称：review')
-    expect(resolvedConfig.systemPrompt).toContain('review：代码评审')
-    expect(resolvedConfig.systemPrompt).not.toContain('技能名称：research')
+    expect(resolvedConfig.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).toContain('# review')
+    expect(resolvedConfig.systemPrompt).toContain('> 技能介绍：代码评审')
+    expect(resolvedConfig.systemPrompt).toContain('<skill-content>')
+    expect(resolvedConfig.systemPrompt).toContain('检查风险')
+    expect(resolvedConfig.systemPrompt).not.toContain('<skills>\n# review')
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# research')
   })
 
   it('supports entity skill exclude selectors', async () => {
@@ -188,7 +199,13 @@ describe('generateAdapterQueryOptions', () => {
       workspace
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('research：检索资料')
-    expect(resolvedConfig.systemPrompt).not.toContain('技能名称：review')
+    expect(resolvedConfig.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).toContain('# research')
+    expect(resolvedConfig.systemPrompt).toContain('<skill-content>')
+    expect(resolvedConfig.systemPrompt).toContain('阅读 README.md')
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# review')
+    expect(resolvedConfig.systemPrompt).not.toContain('<skills>\n# research')
+    expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>\n检查风险\n</skill-content>')
   })
 })

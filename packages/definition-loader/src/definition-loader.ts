@@ -62,6 +62,32 @@ const toMarkdownBlockquote = (content: string) => (
     .join('\n')
 )
 
+const buildOptionalRuleGuidance = (cwd: string, rule: Definition<Rule>) => {
+  const name = resolveDefinitionName(rule)
+  const desc = resolveDocumentDescription(rule.body, rule.attributes.description, name)
+  return [
+    `适用场景：${desc}`,
+    `规则文件路径：${resolvePromptPath(cwd, rule.path)}`,
+    '仅在任务满足上述场景时，再阅读该规则文件。'
+  ].join('\n')
+}
+
+const buildSkillSummary = (
+  cwd: string,
+  skill: Definition<Skill>,
+  guidance: string
+) => {
+  const name = resolveDefinitionName(skill, ['skill.md'])
+  const desc = resolveDocumentDescription(skill.body, skill.attributes.description, name)
+  return toMarkdownBlockquote(
+    [
+      `技能介绍：${desc}`,
+      `技能文件路径：${resolvePromptPath(cwd, skill.path)}`,
+      guidance
+    ].join('\n')
+  )
+}
+
 const toNonEmptyStringArray = (values: unknown): string[] => {
   if (!Array.isArray(values)) return []
   return values
@@ -251,12 +277,11 @@ export class DefinitionLoader {
   generateRulesPrompt(rules: Definition<Rule>[]): string {
     const rulesPrompt = rules
       .map((rule) => {
-        const { path, body, attributes } = rule
+        const { body, attributes } = rule
         const name = resolveDefinitionName(rule)
-        const desc = resolveDocumentDescription(body, attributes.description, name)
         const content = isAlwaysRule(attributes) && body.trim()
           ? body.trim()
-          : desc
+          : buildOptionalRuleGuidance(this.cwd, rule)
         return `# ${name}\n\n${toMarkdownBlockquote(content)}`
       })
       .filter(Boolean)
@@ -295,45 +320,52 @@ export class DefinitionLoader {
   }
 
   generateSkillsPrompt(skills: Definition<Skill>[]): string {
-    return skills
+    const modules = skills
       .map((skill) => {
-        const { path, body, attributes } = skill
         const name = resolveDefinitionName(skill, ['skill.md'])
-        const desc = resolveDocumentDescription(body, attributes.description, name)
-        return (
-          '技能相关信息如下，通过阅读以下内容了解技能的详细信息：\n' +
-          `- 技能名称：${name}\n` +
-          `- 技能介绍：${desc}\n` +
-          `- 技能文件资源路径：${resolvePromptPath(this.cwd, dirname(path))}\n` +
-          '- 资源内容：\n' +
-          '<skill-content>\n' +
-          `${body.trim()}\n` +
-          '</skill-content>\n' +
-          '资源内容中的文件路径相对「技能文件资源路径」路径，通过读取相关工具按照实际需要进行阅读。\n'
-        )
+        return [
+          `# ${name}`,
+          '',
+          buildSkillSummary(
+            this.cwd,
+            skill,
+            '资源内容中的相对路径相对该技能文件所在目录解析。'
+          ),
+          '',
+          '<skill-content>',
+          skill.body.trim(),
+          '</skill-content>'
+        ].join('\n')
       })
       .filter(Boolean)
-      .join('\n')
+      .join('\n\n')
+
+    if (modules === '') return ''
+
+    return `<system-prompt>\n项目已加载如下技能模块：\n${modules}\n</system-prompt>\n`
   }
 
   generateSkillsRoutePrompt(skills: Definition<Skill>[]): string {
-    return (
-      '<skills>\n' +
-      `${
-        skills
-          .filter(({ attributes: { always } }) => always !== false)
-          .map(
-            (definition) => {
-              const { body, attributes } = definition
-              const name = resolveDefinitionName(definition, ['skill.md'])
-              const desc = resolveDocumentDescription(body, attributes.description, name)
-              return `  - ${name}：${desc}\n`
-            }
+    const modules = skills
+      .filter(({ attributes: { always } }) => always !== false)
+      .map((definition) => {
+        const name = resolveDefinitionName(definition, ['skill.md'])
+        return [
+          `# ${name}`,
+          '',
+          buildSkillSummary(
+            this.cwd,
+            definition,
+            '默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
           )
-          .join('')
-      }\n` +
-      '</skills>\n'
-    )
+        ].join('\n')
+      })
+      .filter(Boolean)
+      .join('\n\n')
+
+    if (modules === '') return ''
+
+    return `<skills>\n${modules}\n</skills>\n`
   }
 
   async loadSpec(name: string): Promise<Definition<Spec> | undefined> {

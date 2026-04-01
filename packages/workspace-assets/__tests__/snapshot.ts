@@ -23,7 +23,9 @@ const sanitizeValue = (
   cwd: string
 ) => (
   value
+    .replaceAll(`/private${cwd}`, '<workspace>')
     .replaceAll(cwd, '<workspace>')
+    .replaceAll(`/private${process.execPath}`, '<node-path>')
     .replaceAll(process.execPath, '<node-path>')
 )
 

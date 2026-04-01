@@ -60,6 +60,7 @@ describe('workspace assets snapshots', () => {
         name: '@vibe-forge/plugin-demo',
         version: '1.0.0'
       }, null, 2),
+      'hooks.js': 'module.exports = {}\n',
       'rules/security.md': [
         '---',
         'description: 插件安全规则',
@@ -96,13 +97,15 @@ describe('workspace assets snapshots', () => {
       'package.json': JSON.stringify({
         name: '@vibe-forge/plugin-logger',
         version: '1.0.0'
-      }, null, 2)
+      }, null, 2),
+      'hooks.js': 'module.exports = {}\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-telemetry', {
       'package.json': JSON.stringify({
         name: '@vibe-forge/plugin-telemetry',
         version: '1.0.0'
-      }, null, 2)
+      }, null, 2),
+      'hooks.js': 'module.exports = {}\n'
     })
 
     await writeDocument(

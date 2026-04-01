@@ -25,7 +25,7 @@
         "packageId": "@vibe-forge/plugin-logger",
         "requestId": "logger",
         "resolvedBy": "vibe-forge-prefix",
-        "rootDir": "/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+        "rootDir": "<workspace>/node_modules/@vibe-forge/plugin-logger",
         "sourceType": "package"
       },
       {
@@ -36,7 +36,7 @@
         "packageId": "@vibe-forge/plugin-demo",
         "requestId": "demo",
         "resolvedBy": "vibe-forge-prefix",
-        "rootDir": "/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+        "rootDir": "<workspace>/node_modules/@vibe-forge/plugin-demo",
         "scope": "demo",
         "sourceType": "package"
       },
@@ -50,7 +50,7 @@
         "packageId": "@vibe-forge/plugin-telemetry",
         "requestId": "telemetry",
         "resolvedBy": "vibe-forge-prefix",
-        "rootDir": "/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+        "rootDir": "<workspace>/node_modules/@vibe-forge/plugin-telemetry",
         "sourceType": "package"
       }
     ],
@@ -80,19 +80,19 @@
         }
       },
       {
-        "id": "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+        "id": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
         "kind": "rule",
         "name": "security",
         "displayName": "demo/security",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
         "definition": {
           "identifier": "security",
-          "path": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "path": "<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "attributes": {
             "description": "插件安全规则"
           },
@@ -139,19 +139,19 @@
         }
       },
       {
-        "id": "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+        "id": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
         "kind": "spec",
         "name": "release",
         "displayName": "demo/release",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
         "definition": {
           "identifier": "release",
-          "path": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "path": "<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "attributes": {
             "description": "插件发布流程"
           },
@@ -195,19 +195,19 @@
         }
       },
       {
-        "id": "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
+        "id": "skill:plugin:1:demo/audit:<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
         "kind": "skill",
         "name": "audit",
         "displayName": "demo/audit",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
         "definition": {
           "identifier": "audit",
-          "path": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
+          "path": "<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
           "attributes": {
             "description": "审计输出"
           },
@@ -217,13 +217,13 @@
     ],
     "mcpServers": [
       {
-        "id": "mcpServer:plugin:1:demo/browser:/private<workspace>/node_modules/@vibe-forge/plugin-demo/mcp/browser.json",
+        "id": "mcpServer:plugin:1:demo/browser:<workspace>/node_modules/@vibe-forge/plugin-demo/mcp/browser.json",
         "kind": "mcpServer",
         "name": "browser",
         "displayName": "demo/browser",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/mcp/browser.json",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/mcp/browser.json",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -265,12 +265,12 @@
     ],
     "hookPlugins": [
       {
-        "id": "hookPlugin:plugin:0:logger:/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+        "id": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
         "kind": "hookPlugin",
         "name": "logger",
         "displayName": "logger",
         "origin": "plugin",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-logger",
         "instancePath": "0",
         "packageId": "@vibe-forge/plugin-logger",
         "resolvedBy": "vibe-forge-prefix",
@@ -278,13 +278,13 @@
         "config": {}
       },
       {
-        "id": "hookPlugin:plugin:1:demo/demo:/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+        "id": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
         "kind": "hookPlugin",
         "name": "demo",
         "displayName": "demo/demo",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -292,12 +292,12 @@
         "config": {}
       },
       {
-        "id": "hookPlugin:plugin:2:telemetry:/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+        "id": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
         "kind": "hookPlugin",
         "name": "telemetry",
         "displayName": "telemetry",
         "origin": "plugin",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-telemetry",
         "instancePath": "2",
         "packageId": "@vibe-forge/plugin-telemetry",
         "resolvedBy": "vibe-forge-prefix",
@@ -309,13 +309,13 @@
     ],
     "opencodeOverlayAssets": [
       {
-        "id": "agent:plugin:1:demo/release-helper:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+        "id": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
         "kind": "agent",
         "name": "release-helper",
         "displayName": "demo/release-helper",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -323,13 +323,13 @@
         "targetSubpath": "agents/release-helper.md"
       },
       {
-        "id": "command:plugin:1:demo/review:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+        "id": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
         "kind": "command",
         "name": "review",
         "displayName": "demo/review",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -337,13 +337,13 @@
         "targetSubpath": "commands/review.md"
       },
       {
-        "id": "mode:plugin:1:demo/strict:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+        "id": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
         "kind": "mode",
         "name": "strict",
         "displayName": "demo/strict",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -351,13 +351,13 @@
         "targetSubpath": "modes/strict.md"
       },
       {
-        "id": "nativePlugin:plugin:1:demo/demo-plugin:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+        "id": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
         "kind": "nativePlugin",
         "name": "demo-plugin",
         "displayName": "demo/demo-plugin",
         "origin": "plugin",
         "scope": "demo",
-        "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+        "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
         "instancePath": "1",
         "packageId": "@vibe-forge/plugin-demo",
         "resolvedBy": "vibe-forge-prefix",
@@ -380,7 +380,7 @@
         },
         {
           "identifier": "security",
-          "path": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "path": "<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "attributes": {
             "description": "插件安全规则"
           },
@@ -449,7 +449,7 @@
         },
         {
           "identifier": "release",
-          "path": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "path": "<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "attributes": {
             "description": "插件发布流程"
           },
@@ -459,16 +459,15 @@
       "targetBody": "执行正式发布，并整理变更摘要。",
       "promptAssetIds": [
         "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
-        "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+        "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
         "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
-        "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
         "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
-        "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+        "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
         "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md"
       ]
     },
     "options": {
-      "systemPrompt": "<system-prompt>\n项目系统规则如下：\n  - review：项目评审规则\n<rule-content>\n必须检查发布改动的回归风险。\n</rule-content>\n--------------------\n\n  - demo/security：插件安全规则\n--------------------\n\n</system-prompt>\n\n\n技能相关信息如下，通过阅读以下内容了解技能的详细信息：\n- 技能名称：research\n- 技能介绍：检索资料\n- 技能文件资源路径：.ai/skills/research\n- 资源内容：\n<skill-content>\n先阅读 README.md，再补充结论。\n</skill-content>\n资源内容中的文件路径相对「技能文件资源路径」路径，通过读取相关工具按照实际需要进行阅读。\n\n\n\n<system-prompt>\n项目存在如下实体：\n  - architect：负责拆解方案的实体\n\n解决用户问题时，需根据用户需求可以通过 run-tasks 工具指定为实体后，自行调度多个不同类型的实体来完成工作。\n</system-prompt>\n\n\n<skills>\n  - research：检索资料\n\n</skills>\n\n\n<system-prompt>\n你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n\n- 永远不要单独完成代码开发工作\n- 必须要协调其他的开发人员来完成任务\n- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n\n根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 `load-spec` mcp tool 完成工作流程的加载。\n- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n- 通过参数的描述以及实际应用场景决定怎么传入参数\n项目存在如下工作流程：\n- 流程名称：release\n  - 介绍：正式发布流程\n  - 标识：release\n  - 参数：\n    - 无\n\n- 流程名称：demo/release\n  - 介绍：插件发布流程\n  - 标识：demo/release\n  - 参数：\n    - 无\n\n</system-prompt>\n\n\n执行正式发布，并整理变更摘要。",
+      "systemPrompt": "<system-prompt>\n项目系统规则如下：\n# review\n\n> 必须检查发布改动的回归风险。\n\n# demo/security\n\n> 适用场景：插件安全规则\n> 规则文件路径：node_modules/@vibe-forge/plugin-demo/rules/security.md\n> 仅在任务满足上述场景时，再阅读该规则文件。\n</system-prompt>\n\n\n<system-prompt>\n项目已加载如下技能模块：\n# research\n\n> 技能介绍：检索资料\n> 技能文件路径：.ai/skills/research/SKILL.md\n> 资源内容中的相对路径相对该技能文件所在目录解析。\n\n<skill-content>\n先阅读 README.md，再补充结论。\n</skill-content>\n</system-prompt>\n\n\n<system-prompt>\n项目存在如下实体：\n  - architect：负责拆解方案的实体\n\n解决用户问题时，需根据用户需求可以通过 run-tasks 工具指定为实体后，自行调度多个不同类型的实体来完成工作。\n</system-prompt>\n\n\n\n\n<system-prompt>\n你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n\n- 永远不要单独完成代码开发工作\n- 必须要协调其他的开发人员来完成任务\n- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n\n根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 `load-spec` mcp tool 完成工作流程的加载。\n- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n- 通过参数的描述以及实际应用场景决定怎么传入参数\n项目存在如下工作流程：\n- 流程名称：release\n  - 介绍：正式发布流程\n  - 标识：release\n  - 参数：\n    - 无\n\n- 流程名称：demo/release\n  - 介绍：插件发布流程\n  - 标识：demo/release\n  - 参数：\n    - 无\n\n</system-prompt>\n\n\n执行正式发布，并整理变更摘要。",
       "tools": {
         "include": [
           "Edit",
@@ -486,11 +485,10 @@
       },
       "promptAssetIds": [
         "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
-        "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+        "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
         "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
-        "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
         "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
-        "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+        "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
         "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md"
       ]
     }
@@ -515,14 +513,14 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "hookPlugin:plugin:0:logger:/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+          "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "claude-code",
           "status": "native",
           "reason": "Mapped into the Claude Code native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
         {
-          "assetId": "hookPlugin:plugin:1:demo/demo:/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+          "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "claude-code",
           "status": "native",
           "reason": "Mapped into the Claude Code native hooks bridge.",
@@ -530,7 +528,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "hookPlugin:plugin:2:telemetry:/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+          "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "claude-code",
           "status": "native",
           "reason": "Mapped into the Claude Code native hooks bridge.",
@@ -543,7 +541,7 @@
           "reason": "Mapped into adapter MCP settings."
         },
         {
-          "assetId": "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "claude-code",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",
@@ -557,21 +555,13 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
-          "adapter": "claude-code",
-          "status": "prompt",
-          "reason": "Mapped into the generated system prompt.",
-          "scope": "demo",
-          "packageId": "@vibe-forge/plugin-demo"
-        },
-        {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "claude-code",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "claude-code",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",
@@ -599,7 +589,7 @@
       "overlays": [],
       "diagnostics": [
         {
-          "assetId": "agent:plugin:1:demo/release-helper:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+          "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "adapter": "codex",
           "status": "skipped",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
@@ -607,7 +597,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "command:plugin:1:demo/review:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+          "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "adapter": "codex",
           "status": "skipped",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
@@ -621,14 +611,14 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "hookPlugin:plugin:0:logger:/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+          "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "codex",
           "status": "native",
           "reason": "Mapped into the Codex native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
         {
-          "assetId": "hookPlugin:plugin:1:demo/demo:/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+          "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "codex",
           "status": "native",
           "reason": "Mapped into the Codex native hooks bridge.",
@@ -636,7 +626,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "hookPlugin:plugin:2:telemetry:/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+          "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "codex",
           "status": "native",
           "reason": "Mapped into the Codex native hooks bridge.",
@@ -649,7 +639,7 @@
           "reason": "Translated into adapter-specific MCP configuration."
         },
         {
-          "assetId": "mode:plugin:1:demo/strict:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+          "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "adapter": "codex",
           "status": "skipped",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
@@ -657,7 +647,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "adapter": "codex",
           "status": "skipped",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
@@ -665,7 +655,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "codex",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",
@@ -679,21 +669,13 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
-          "adapter": "codex",
-          "status": "prompt",
-          "reason": "Mapped into the generated system prompt.",
-          "scope": "demo",
-          "packageId": "@vibe-forge/plugin-demo"
-        },
-        {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "codex",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "codex",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",
@@ -720,27 +702,27 @@
       },
       "overlays": [
         {
-          "assetId": "agent:plugin:1:demo/release-helper:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+          "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "kind": "agent",
-          "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+          "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "targetPath": "agents/release-helper.md"
         },
         {
-          "assetId": "command:plugin:1:demo/review:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+          "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "kind": "command",
-          "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+          "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "targetPath": "commands/review.md"
         },
         {
-          "assetId": "mode:plugin:1:demo/strict:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+          "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "kind": "mode",
-          "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+          "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "targetPath": "modes/strict.md"
         },
         {
-          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "kind": "nativePlugin",
-          "sourcePath": "/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+          "sourcePath": "<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "targetPath": "plugins/demo-plugin.js"
         },
         {
@@ -752,7 +734,7 @@
       ],
       "diagnostics": [
         {
-          "assetId": "agent:plugin:1:demo/release-helper:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+          "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
@@ -760,7 +742,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "command:plugin:1:demo/review:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+          "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
@@ -774,14 +756,14 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "hookPlugin:plugin:0:logger:/private<workspace>/node_modules/@vibe-forge/plugin-logger",
+          "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mapped into the OpenCode native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
         {
-          "assetId": "hookPlugin:plugin:1:demo/demo:/private<workspace>/node_modules/@vibe-forge/plugin-demo",
+          "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mapped into the OpenCode native hooks bridge.",
@@ -789,7 +771,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "hookPlugin:plugin:2:telemetry:/private<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+          "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mapped into the OpenCode native hooks bridge.",
@@ -802,7 +784,7 @@
           "reason": "Translated into adapter-specific MCP configuration."
         },
         {
-          "assetId": "mode:plugin:1:demo/strict:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+          "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
@@ -810,7 +792,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:/private<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "adapter": "opencode",
           "status": "native",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
@@ -818,7 +800,7 @@
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
-          "assetId": "rule:plugin:1:demo/security:/private<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "opencode",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",
@@ -830,14 +812,6 @@
           "adapter": "opencode",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt."
-        },
-        {
-          "assetId": "skill:plugin:1:demo/audit:/private<workspace>/node_modules/@vibe-forge/plugin-demo/skills/audit/SKILL.md",
-          "adapter": "opencode",
-          "status": "prompt",
-          "reason": "Mapped into the generated system prompt.",
-          "scope": "demo",
-          "packageId": "@vibe-forge/plugin-demo"
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
@@ -852,7 +826,7 @@
           "reason": "Mapped into the generated system prompt."
         },
         {
-          "assetId": "spec:plugin:1:demo/release:/private<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "opencode",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt.",

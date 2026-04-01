@@ -105,6 +105,32 @@ const toMarkdownBlockquote = (content: string) => (
     .join('\n')
 )
 
+const buildOptionalRuleGuidance = (cwd: string, rule: Definition<Rule>) => {
+  const name = resolveDefinitionName(rule)
+  const desc = resolveDocumentDescription(rule.body, rule.attributes.description, name)
+  return [
+    `适用场景：${desc}`,
+    `规则文件路径：${resolvePromptPath(cwd, rule.path)}`,
+    '仅在任务满足上述场景时，再阅读该规则文件。'
+  ].join('\n')
+}
+
+const buildSkillSummary = (
+  cwd: string,
+  skill: Definition<Skill>,
+  guidance: string
+) => {
+  const name = resolveDefinitionName(skill, ['skill.md'])
+  const desc = resolveDocumentDescription(skill.body, skill.attributes.description, name)
+  return toMarkdownBlockquote(
+    [
+      `技能介绍：${desc}`,
+      `技能文件路径：${resolvePromptPath(cwd, skill.path)}`,
+      guidance
+    ].join('\n')
+  )
+}
+
 const resolveEntityIdentifier = (path: string, explicitName?: string) => (
   resolveDocumentName(path, explicitName, ['readme.md', 'index.json'])
 )
@@ -701,14 +727,13 @@ const resolvePluginOverlay = (
     : mergePluginConfigs(basePlugins, overlayList)
 }
 
-const generateRulesPrompt = (rules: Definition<Rule>[]) => {
+const generateRulesPrompt = (cwd: string, rules: Definition<Rule>[]) => {
   const rulesPrompt = rules
     .map((rule) => {
       const name = resolveDefinitionName(rule)
-      const desc = resolveDocumentDescription(rule.body, rule.attributes.description, name)
       const content = isAlwaysRule(rule.attributes) && rule.body.trim()
         ? rule.body.trim()
-        : desc
+        : buildOptionalRuleGuidance(cwd, rule)
       return `# ${name}\n\n${toMarkdownBlockquote(content)}`
     })
     .filter(Boolean)
@@ -717,41 +742,54 @@ const generateRulesPrompt = (rules: Definition<Rule>[]) => {
   return `<system-prompt>\n项目系统规则如下：\n${rulesPrompt}\n</system-prompt>\n`
 }
 
-const generateSkillsPrompt = (cwd: string, skills: Definition<Skill>[]) => (
-  skills
+const generateSkillsPrompt = (cwd: string, skills: Definition<Skill>[]) => {
+  const modules = skills
     .map((skill) => {
       const name = resolveDefinitionName(skill, ['skill.md'])
-      const desc = resolveDocumentDescription(skill.body, skill.attributes.description, name)
       return [
-        '技能相关信息如下，通过阅读以下内容了解技能的详细信息：',
-        `- 技能名称：${name}`,
-        `- 技能介绍：${desc}`,
-        `- 技能文件资源路径：${resolvePromptPath(cwd, dirname(skill.path))}`,
-        '- 资源内容：',
+        `# ${name}`,
+        '',
+        buildSkillSummary(
+          cwd,
+          skill,
+          '资源内容中的相对路径相对该技能文件所在目录解析。'
+        ),
+        '',
         '<skill-content>',
         skill.body.trim(),
-        '</skill-content>',
-        '资源内容中的文件路径相对「技能文件资源路径」路径，通过读取相关工具按照实际需要进行阅读。'
+        '</skill-content>'
       ].join('\n')
     })
     .filter(Boolean)
-    .join('\n')
-)
+    .join('\n\n')
 
-const generateSkillsRoutePrompt = (skills: Definition<Skill>[]) => (
-  '<skills>\n' +
-  `${
-    skills
-      .filter(({ attributes: { always } }) => always !== false)
-      .map((skill) => {
-        const name = resolveDefinitionName(skill, ['skill.md'])
-        const desc = resolveDocumentDescription(skill.body, skill.attributes.description, name)
-        return `  - ${name}：${desc}\n`
-      })
-      .join('')
-  }\n` +
-  '</skills>\n'
-)
+  if (modules === '') return ''
+
+  return `<system-prompt>\n项目已加载如下技能模块：\n${modules}\n</system-prompt>\n`
+}
+
+const generateSkillsRoutePrompt = (cwd: string, skills: Definition<Skill>[]) => {
+  const modules = skills
+    .filter(({ attributes: { always } }) => always !== false)
+    .map((skill) => {
+      const name = resolveDefinitionName(skill, ['skill.md'])
+      return [
+        `# ${name}`,
+        '',
+        buildSkillSummary(
+          cwd,
+          skill,
+          '默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
+        )
+      ].join('\n')
+    })
+    .filter(Boolean)
+    .join('\n\n')
+
+  if (modules === '') return ''
+
+  return `<skills>\n${modules}\n</skills>\n`
+}
 
 const generateSpecRoutePrompt = (specs: Definition<Spec>[]) => {
   const specsRouteStr = specs
@@ -1078,7 +1116,7 @@ export async function resolvePromptAssetSelection(params: {
   const promptAssetIds = new Set<string>([
     ...effectiveBundle.rules.map(asset => asset.id),
     ...effectiveBundle.specs.map(asset => asset.id),
-    ...effectiveBundle.skills.map(asset => asset.id),
+    ...selectedSkillAssets.map(asset => asset.id),
     ...(params.type !== 'entity' ? effectiveBundle.entities.map(asset => asset.id) : [])
   ])
   const ruleDefinitions = new Map<string, Definition<Rule>>(
@@ -1121,10 +1159,13 @@ export async function resolvePromptAssetSelection(params: {
       })
     }
 
-    const includedRefs = resolveIncludedSkillRefs(attributes.skills as string[] | SkillSelection | undefined)
-    const excludedRefs = resolveExcludedSkillRefs(attributes.skills as string[] | SkillSelection | undefined)
-    const includedAssets = includedRefs != null && includedRefs.length > 0
-      ? resolveNamedAssets(effectiveBundle.skills, includedRefs, targetInstancePath)
+    const skillSelection = attributes.skills as string[] | SkillSelection | undefined
+    const includedRefs = resolveIncludedSkillRefs(skillSelection)
+    const excludedRefs = resolveExcludedSkillRefs(skillSelection)
+    const includedAssets = skillSelection == null
+      ? []
+      : includedRefs != null
+      ? (includedRefs.length > 0 ? resolveNamedAssets(effectiveBundle.skills, includedRefs, targetInstancePath) : [])
       : effectiveBundle.skills
     const excludedIds = new Set(
       resolveNamedAssets(effectiveBundle.skills, excludedRefs, targetInstancePath).map(asset => asset.id)
@@ -1140,7 +1181,7 @@ export async function resolvePromptAssetSelection(params: {
 
   const rules = Array.from(ruleDefinitions.values())
   const targetSkills = toDocumentDefinitions(targetSkillsAssets)
-  const selectedSkillsPrompt = toDocumentDefinitions(
+  const routedSkills = toDocumentDefinitions(
     selectedSkillAssets.filter(skill => !targetSkillsAssets.some(target => target.id === skill.id))
   )
   const entities = params.type !== 'entity'
@@ -1150,11 +1191,10 @@ export async function resolvePromptAssetSelection(params: {
   const specs = toDocumentDefinitions(effectiveBundle.specs)
 
   options.systemPrompt = [
-    generateRulesPrompt(rules),
+    generateRulesPrompt(effectiveBundle.cwd, rules),
     generateSkillsPrompt(effectiveBundle.cwd, targetSkills),
-    generateSkillsPrompt(effectiveBundle.cwd, selectedSkillsPrompt),
     generateEntitiesRoutePrompt(entities),
-    generateSkillsRoutePrompt(toDocumentDefinitions(selectedSkillAssets)),
+    generateSkillsRoutePrompt(effectiveBundle.cwd, routedSkills),
     generateSpecRoutePrompt(specs),
     targetBody
   ].join('\n\n')
