@@ -97,6 +97,14 @@ const resolveDefinitionName = <T extends { name?: string }>(
   indexFileNames: string[] = []
 ) => definition.resolvedName?.trim() || resolveDocumentName(definition.path, definition.attributes.name, indexFileNames)
 
+const toMarkdownBlockquote = (content: string) => (
+  content
+    .trim()
+    .split('\n')
+    .map(line => line === '' ? '>' : `> ${line}`)
+    .join('\n')
+)
+
 const resolveEntityIdentifier = (path: string, explicitName?: string) => (
   resolveDocumentName(path, explicitName, ['readme.md', 'index.json'])
 )
@@ -699,12 +707,12 @@ const generateRulesPrompt = (rules: Definition<Rule>[]) => {
       const name = resolveDefinitionName(rule)
       const desc = resolveDocumentDescription(rule.body, rule.attributes.description, name)
       const content = isAlwaysRule(rule.attributes) && rule.body.trim()
-        ? `<rule-content>\n${rule.body.trim()}\n</rule-content>\n`
-        : ''
-      return `  - ${name}：${desc}\n${content}--------------------\n`
+        ? rule.body.trim()
+        : desc
+      return `# ${name}\n\n${toMarkdownBlockquote(content)}`
     })
     .filter(Boolean)
-    .join('\n')
+    .join('\n\n')
 
   return `<system-prompt>\n项目系统规则如下：\n${rulesPrompt}\n</system-prompt>\n`
 }

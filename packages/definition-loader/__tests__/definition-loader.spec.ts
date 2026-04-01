@@ -87,6 +87,37 @@ describe('definitionLoader', () => {
     expect(prompt).not.toContain('internal')
   })
 
+  it('generates rule prompts with markdown headings and alwaysApply compatibility', () => {
+    const cwd = '/workspace/project'
+    const loader = new DefinitionLoader(cwd)
+
+    const prompt = loader.generateRulesPrompt([
+      {
+        path: join(cwd, '.ai/rules/required.md'),
+        body: '# 标题\n\n正文',
+        attributes: {
+          alwaysApply: true
+        }
+      },
+      {
+        path: join(cwd, '.ai/rules/summary-only.md'),
+        body: '不应该内联',
+        attributes: {
+          description: '只展示摘要',
+          alwaysApply: false
+        }
+      }
+    ])
+
+    expect(prompt).toContain('# required')
+    expect(prompt).toContain('> # 标题')
+    expect(prompt).toContain('> 正文')
+    expect(prompt).toContain('# summary-only')
+    expect(prompt).toContain('> 只展示摘要')
+    expect(prompt).not.toContain('> 不应该内联')
+    expect(prompt).not.toContain('--------------------')
+  })
+
   it('generates entity routes from summaries instead of full bodies', () => {
     const cwd = '/workspace/project'
     const loader = new DefinitionLoader(cwd)
@@ -135,9 +166,10 @@ describe('definitionLoader', () => {
       }
     ])
 
-    expect(prompt).toContain('base：基础规则')
-    expect(prompt).toContain('<rule-content>\n始终检查导入边界。\n</rule-content>')
-    expect(prompt).toContain('optional：按需规则')
+    expect(prompt).toContain('# base')
+    expect(prompt).toContain('> 始终检查导入边界。')
+    expect(prompt).toContain('# optional')
+    expect(prompt).toContain('> 按需规则')
     expect(prompt).not.toContain('仅在特定任务参考。')
   })
 

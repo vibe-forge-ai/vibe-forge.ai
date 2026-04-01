@@ -54,6 +54,14 @@ const isAlwaysRule = (attributes: Pick<Rule, 'always' | 'alwaysApply'>) => (
   attributes.always ?? attributes.alwaysApply ?? false
 )
 
+const toMarkdownBlockquote = (content: string) => (
+  content
+    .trim()
+    .split('\n')
+    .map(line => line === '' ? '>' : `> ${line}`)
+    .join('\n')
+)
+
 const toNonEmptyStringArray = (values: unknown): string[] => {
   if (!Array.isArray(values)) return []
   return values
@@ -247,12 +255,12 @@ export class DefinitionLoader {
         const name = resolveDefinitionName(rule)
         const desc = resolveDocumentDescription(body, attributes.description, name)
         const content = isAlwaysRule(attributes) && body.trim()
-          ? `<rule-content>\n${body.trim()}\n</rule-content>\n`
-          : ''
-        return `  - ${name}：${desc}\n${content}--------------------\n`
+          ? body.trim()
+          : desc
+        return `# ${name}\n\n${toMarkdownBlockquote(content)}`
       })
       .filter(Boolean)
-      .join('\n')
+      .join('\n\n')
 
     return (
       '<system-prompt>\n' +
