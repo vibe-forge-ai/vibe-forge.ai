@@ -62,6 +62,8 @@ interface OpenCodeOverlayAssetEntry {
   targetSubpath: string
 }
 
+type OpenCodeOverlayAsset<TKind extends OpenCodeOverlayKind> = Extract<WorkspaceAsset, { kind: TKind }>
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
@@ -267,7 +269,7 @@ const createOpenCodeOverlayAsset = <TKind extends OpenCodeOverlayKind>(params: {
   entryName: string
   targetSubpath: string
   instance: ResolvedPluginInstance
-}) => ({
+}): OpenCodeOverlayAsset<TKind> => ({
   id: `${params.kind}:plugin:${params.instance.instancePath}:${resolveDisplayName(params.entryName, params.instance.scope)}:${resolveRelativePath(params.cwd, params.sourcePath)}`,
   kind: params.kind,
   name: params.entryName,
@@ -283,7 +285,7 @@ const createOpenCodeOverlayAsset = <TKind extends OpenCodeOverlayKind>(params: {
     entryName: params.entryName,
     targetSubpath: params.targetSubpath
   }
-} satisfies Extract<WorkspaceAsset, { kind: TKind }>)
+} as OpenCodeOverlayAsset<TKind>)
 
 const scanWorkspaceDocuments = async (cwd: string) => {
   const [rulePaths, skillPaths, specPaths, entityDocPaths, entityJsonPaths, mcpPaths] = await Promise.all([
@@ -1226,13 +1228,13 @@ export function buildAdapterAssetPlan(params: {
 
   const overlays: AdapterOverlayEntry[] = params.adapter === 'opencode'
     ? [
-      ...selectedSkillAssets.map((asset) => ({
-      assetId: asset.id,
-      kind: 'skill',
-      sourcePath: dirname(asset.sourcePath),
-      targetPath: `skills/${asset.displayName.replaceAll('/', '__')}`
-    })),
-      ...params.bundle.opencodeOverlayAssets.map((asset) => ({
+      ...selectedSkillAssets.map((asset): AdapterOverlayEntry => ({
+        assetId: asset.id,
+        kind: 'skill',
+        sourcePath: dirname(asset.sourcePath),
+        targetPath: `skills/${asset.displayName.replaceAll('/', '__')}`
+      })),
+      ...params.bundle.opencodeOverlayAssets.map((asset): AdapterOverlayEntry => ({
         assetId: asset.id,
         kind: asset.kind,
         sourcePath: asset.sourcePath,
