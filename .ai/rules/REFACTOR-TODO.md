@@ -24,6 +24,10 @@
   - 原则是 `apps/client` 这类 UI 包只依赖共享 contract，不依赖运行逻辑包
 - 继续收紧 `core` 的职责
   - 保持 `core` 只承载公共 API 壳，不回流业务编排逻辑
+- 为 Claude / Codex 补齐原生插件兼容层
+  - 当前 npm 插件的共享资产层已经可被 `claude-code`、`codex`、`opencode` 共同消费
+  - 但原生插件生态兼容目前只有 `opencode` 已接入 `agents / commands / modes / plugins` overlay
+  - 后续需要明确 Claude / Codex 是否要支持各自的 native plugin format，以及如何与统一 asset plan、diagnostics、hooks bridge 协同
 
 ## 执行原则
 
