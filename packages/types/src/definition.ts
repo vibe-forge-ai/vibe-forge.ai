@@ -25,6 +25,12 @@ export interface Spec {
   skills?: string[]
   mcpServers?: Filter
   tools?: Filter
+  /**
+   * 当前 `spec` 对项目插件列表的任务级覆盖。
+   *
+   * 适用于给某个工作流程临时追加插件，或完全替换默认插件图。
+   * 这层覆盖只影响当前任务。
+   */
   plugins?: PluginOverlayConfig
 }
 
@@ -58,6 +64,12 @@ export interface Entity {
   skills?: string[] | SkillSelection
   mcpServers?: Filter
   tools?: Filter
+  /**
+   * 当前 `entity` 对项目插件列表的任务级覆盖。
+   *
+   * 这层覆盖会先影响当前任务的 effective plugin graph，
+   * 再继续参与 rules / skills / MCP 等依赖解析。
+   */
   plugins?: PluginOverlayConfig
 }
 

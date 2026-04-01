@@ -124,6 +124,19 @@ export interface Config {
     customInstructions?: string
     injectDefaultSystemPrompt?: boolean
   }
+  /**
+   * 当前 workspace 默认启用的插件实例列表。
+   *
+   * 插件包需要先安装到当前项目中，运行时不会自动安装缺失依赖。
+   *
+   * @example
+   * ```json
+   * [
+   *   { "id": "standard-dev", "scope": "std" },
+   *   { "id": "logger", "enabled": false }
+   * ]
+   * ```
+   */
   plugins?: PluginConfig
 }
 
