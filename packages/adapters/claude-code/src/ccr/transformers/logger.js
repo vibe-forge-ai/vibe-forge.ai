@@ -1,5 +1,4 @@
 const {
-  stripRequestLogContextMarker,
   writeRequestDebugLog
 } = require('./log-context')
 
@@ -7,7 +6,6 @@ class LoggerTransformer {
   name = 'logger'
 
   transformRequestIn(request, provider, context) {
-    stripRequestLogContextMarker(request, context)
     writeRequestDebugLog('logger.js.log.md', 'request', request, context, request)
     return request
   }

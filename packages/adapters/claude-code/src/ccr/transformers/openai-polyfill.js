@@ -1,12 +1,10 @@
 const {
-  stripRequestLogContextMarker,
   writeRequestDebugLog
 } = require('./log-context')
 
 class OpenAIResponsesTransformer {
   name = 'openai-responses'
   transformRequestIn(request, provider, context) {
-    stripRequestLogContextMarker(request, context)
     writeRequestDebugLog(
       'openai-polyfill.js.log.md',
       'OpenAIResponsesTransformer transformRequestIn',

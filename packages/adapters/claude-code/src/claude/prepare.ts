@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 
@@ -30,16 +33,31 @@ interface PreparedClaudeExecution {
   executionType: 'create' | 'resume'
 }
 
-const CCR_REQUEST_LOG_CONTEXT_TAG = 'VF-CCR-LOG-CONTEXT'
+const resolveCCRRequestLogContextPath = (cwd: string, sessionId: string) =>
+  join(
+    cwd,
+    '.ai',
+    '.mock',
+    '.claude-code-router',
+    'request-log-context',
+    `${sessionId}.json`
+  )
 
-const buildCCRRequestLogContextMarker = (params: {
+const persistCCRRequestLogContext = async (params: {
+  cwd: string
   ctxId: string
   sessionId: string
 }) => {
-  const encoded = Buffer
-    .from(JSON.stringify(params), 'utf8')
-    .toString('base64url')
-  return `<${CCR_REQUEST_LOG_CONTEXT_TAG}>${encoded}</${CCR_REQUEST_LOG_CONTEXT_TAG}>`
+  const filePath = resolveCCRRequestLogContextPath(params.cwd, params.sessionId)
+  await mkdir(dirname(filePath), { recursive: true })
+  await writeFile(
+    filePath,
+    JSON.stringify({
+      ctxId: params.ctxId,
+      sessionId: params.sessionId
+    }),
+    'utf8'
+  )
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -178,6 +196,11 @@ export const prepareClaudeExecution = async (
       ANTHROPIC_API_KEY: '',
       API_TIMEOUT_MS: String(router.apiTimeoutMs)
     }
+    await persistCCRRequestLogContext({
+      cwd,
+      ctxId: ctx.ctxId,
+      sessionId
+    })
   }
   const { mcpServers, ...unresolvedSettings } = settings
   unresolvedSettings.permissions.allow = [
@@ -239,21 +262,10 @@ export const prepareClaudeExecution = async (
 
   if (model != null && model !== '') args.push('--model', model)
 
-  const effectiveSystemPrompt = useCCR
-    ? [
-      buildCCRRequestLogContextMarker({
-        ctxId: ctx.ctxId,
-        sessionId
-      }),
-      systemPrompt
-    ].filter((value): value is string => typeof value === 'string' && value !== '')
-      .join('\n')
-    : systemPrompt
-
-  if (effectiveSystemPrompt != null && effectiveSystemPrompt !== '') {
+  if (systemPrompt != null && systemPrompt !== '') {
     args.push(
       appendSystemPrompt ? '--append-system-prompt' : '--system-prompt',
-      effectiveSystemPrompt.replace(/`/g, "'")
+      systemPrompt.replace(/`/g, "'")
     )
   }
 

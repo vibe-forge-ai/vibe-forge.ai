@@ -1,5 +1,4 @@
 const {
-  stripRequestLogContextMarker,
   writeRequestDebugLog
 } = require('./log-context')
 
@@ -131,8 +130,6 @@ class GeminiTransformer {
   }
 
   async transformRequestIn(request, provider, context) {
-    stripRequestLogContextMarker(request, context)
-
     // Extract signature from previous conversation messages
     if (request.messages && Array.isArray(request.messages)) {
       for (const message of request.messages) {

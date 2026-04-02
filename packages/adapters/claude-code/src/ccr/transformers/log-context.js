@@ -2,131 +2,119 @@ const fs = require('node:fs')
 const path = require('node:path')
 const process = require('node:process')
 
-const CCR_REQUEST_LOG_CONTEXT_TAG = 'VF-CCR-LOG-CONTEXT'
-const CCR_REQUEST_LOG_CONTEXT_RE = new RegExp(
-  `<${CCR_REQUEST_LOG_CONTEXT_TAG}>([A-Za-z0-9_-]+)</${CCR_REQUEST_LOG_CONTEXT_TAG}>\\n?`,
-  'g'
-)
+const CLAUDE_CODE_SESSION_HEADER = 'x-claude-code-session-id'
 
-const isTextObject = (value) =>
-  value != null &&
-  typeof value === 'object' &&
-  typeof value.text === 'string'
+const resolveCCRRequestLogContextPath = (workspace, sessionId) =>
+  path.join(
+    workspace,
+    '.ai',
+    '.mock',
+    '.claude-code-router',
+    'request-log-context',
+    `${sessionId}.json`
+  )
 
-const collectTextTargets = (request) => {
-  const targets = []
+const readHeaderValue = (headers, name) => {
+  if (headers == null) return undefined
 
-  const pushTarget = (container, key) => {
-    if (container == null) return
-
-    const value = container[key]
-    if (typeof value === 'string') {
-      targets.push({ container, key })
-      return
-    }
-
-    if (isTextObject(value)) {
-      targets.push({ container: value, key: 'text' })
-      return
-    }
-
-    if (!Array.isArray(value)) return
-
-    value.forEach((item, index) => {
-      if (typeof item === 'string') {
-        targets.push({ container: value, key: index })
-        return
-      }
-
-      if (isTextObject(item)) {
-        targets.push({ container: item, key: 'text' })
-      }
-    })
+  if (typeof headers.get === 'function') {
+    const value = headers.get(name)
+    return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
   }
 
-  pushTarget(request, 'instructions')
-  pushTarget(request, 'system')
+  if (typeof headers !== 'object') return undefined
 
-  if (Array.isArray(request?.messages)) {
-    request.messages.forEach((message) => {
-      if (message?.role !== 'system') return
-      pushTarget(message, 'content')
-    })
-  }
-
-  if (Array.isArray(request?.input)) {
-    request.input.forEach((entry) => {
-      if (entry?.role !== 'system') return
-      pushTarget(entry, 'content')
-    })
-  }
-
-  return targets
-}
-
-const parseRequestLogContext = (text) => {
-  if (typeof text !== 'string') return undefined
-
-  for (const match of text.matchAll(CCR_REQUEST_LOG_CONTEXT_RE)) {
-    try {
-      const parsed = JSON.parse(
-        Buffer.from(match[1], 'base64url').toString('utf8')
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() !== name) continue
+    if (typeof value === 'string' && value.trim() !== '') return value.trim()
+    if (Array.isArray(value)) {
+      const firstValue = value.find(
+        (entry) => typeof entry === 'string' && entry.trim() !== ''
       )
-      if (
-        parsed != null &&
-        typeof parsed === 'object' &&
-        typeof parsed.ctxId === 'string' &&
-        typeof parsed.sessionId === 'string'
-      ) {
-        return parsed
-      }
-    } catch {}
+      if (typeof firstValue === 'string') return firstValue.trim()
+    }
   }
 
   return undefined
 }
 
-const resolveRequestLogContext = (context, request) => {
+const resolveRequestSessionId = (context) => {
+  const req = context?.req
+  const headerSessionId = [
+    req?.headers,
+    req?.raw?.headers,
+    req?.request?.headers
+  ]
+    .map((headers) => readHeaderValue(headers, CLAUDE_CODE_SESSION_HEADER))
+    .find((value) => typeof value === 'string' && value !== '')
+
+  if (typeof headerSessionId === 'string' && headerSessionId !== '') {
+    return headerSessionId
+  }
+
+  return typeof req?.sessionId === 'string' && req.sessionId !== ''
+    ? req.sessionId
+    : undefined
+}
+
+const resolveStoredRequestLogContext = (sessionId) => {
+  const workspace = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+  if (
+    typeof workspace !== 'string' ||
+    workspace === '' ||
+    typeof sessionId !== 'string' ||
+    sessionId === ''
+  ) {
+    return undefined
+  }
+
+  try {
+    const parsed = JSON.parse(
+      fs.readFileSync(resolveCCRRequestLogContextPath(workspace, sessionId), 'utf8')
+    )
+    if (
+      parsed != null &&
+      typeof parsed === 'object' &&
+      typeof parsed.ctxId === 'string' &&
+      typeof parsed.sessionId === 'string'
+    ) {
+      return parsed
+    }
+  } catch {}
+
+  return undefined
+}
+
+const resolveRequestLogContext = (context) => {
   const req = context?.req
 
   if (req?.vfLogContext) {
     return req.vfLogContext
   }
 
-  const source = request ?? req?.body
-  if (source == null) return undefined
+  const sessionId = resolveRequestSessionId(context)
+  const resolved = resolveStoredRequestLogContext(sessionId) ??
+    (
+      typeof sessionId === 'string' && sessionId !== ''
+        ? {
+          ctxId: sessionId,
+          sessionId
+        }
+        : undefined
+    )
 
-  for (const target of collectTextTargets(source)) {
-    const parsed = parseRequestLogContext(target.container[target.key])
-    if (!parsed) continue
-
-    if (req != null) {
-      req.vfLogContext = parsed
-      if (typeof req.sessionId !== 'string' || req.sessionId === '') {
-        req.sessionId = parsed.sessionId
-      }
+  if (resolved != null && req != null) {
+    req.vfLogContext = resolved
+    if (typeof req.sessionId !== 'string' || req.sessionId === '') {
+      req.sessionId = resolved.sessionId
     }
-
-    return parsed
   }
 
-  return undefined
-}
-
-const stripRequestLogContextMarker = (request, context) => {
-  resolveRequestLogContext(context, request)
-
-  collectTextTargets(request).forEach(({ container, key }) => {
-    const value = container[key]
-    if (typeof value !== 'string') return
-    container[key] = value.replace(CCR_REQUEST_LOG_CONTEXT_RE, '')
-  })
-
-  return request
+  return resolved
 }
 
 const resolveRequestLogPath = (fileName, context, request) => {
-  const logContext = resolveRequestLogContext(context, request)
+  const logContext = resolveRequestLogContext(context)
   const workspace = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
   const ctxId = logContext?.ctxId ?? process.env.__VF_PROJECT_AI_CTX_ID__
   const sessionId = logContext?.sessionId ?? process.env.__VF_PROJECT_AI_SESSION_ID__
@@ -175,6 +163,5 @@ const writeRequestDebugLog = (fileName, message, data = null, context, request) 
 
 module.exports = {
   resolveRequestLogContext,
-  stripRequestLogContextMarker,
   writeRequestDebugLog
 }

@@ -1,6 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
+import { prepareClaudeExecution } from '../src/claude/prepare'
 
 const mocks = vi.hoisted(() => ({
   ensureClaudeCodeRouterReady: vi.fn(),
@@ -15,14 +20,29 @@ vi.mock('../src/ccr/paths', () => ({
   resolveClaudeCliPath: mocks.resolveClaudeCliPath
 }))
 
-import { prepareClaudeExecution } from '../src/claude/prepare'
-
 const sessionId = '6cd99e50-d3be-4070-b408-8133cfc42750'
+const createdDirs = new Set<string>()
+
+const resolveRequestLogContextPath = (cwd: string, sessionId: string) =>
+  join(
+    cwd,
+    '.ai',
+    '.mock',
+    '.claude-code-router',
+    'request-log-context',
+    `${sessionId}.json`
+  )
+
+const createCwd = () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'vf-claude-prepare-'))
+  createdDirs.add(cwd)
+  return cwd
+}
 
 const createCtx = (resumeState?: { canResume: boolean }) =>
   ({
     ctxId: 'test-ctx',
-    cwd: '/tmp/workspace',
+    cwd: createCwd(),
     env: {},
     cache: {
       get: vi.fn(async (key: string) => (
@@ -49,6 +69,13 @@ describe('prepareClaudeExecution', () => {
       apiKey: 'router-key',
       apiTimeoutMs: 120000
     })
+  })
+
+  afterEach(() => {
+    createdDirs.forEach((cwd) => {
+      rmSync(cwd, { force: true, recursive: true })
+    })
+    createdDirs.clear()
   })
 
   it('falls back to create mode when no resume state exists', async () => {
@@ -111,16 +138,17 @@ describe('prepareClaudeExecution', () => {
         })
       })
     )
-    expect(result.args).toContain('--append-system-prompt')
-    expect(result.args).toEqual(expect.arrayContaining([
-      expect.stringMatching(
-        /^<VF-CCR-LOG-CONTEXT>[A-Za-z0-9_-]+<\/VF-CCR-LOG-CONTEXT>$/
-      )
-    ]))
+    expect(
+      JSON.parse(readFileSync(resolveRequestLogContextPath(ctx.cwd, sessionId), 'utf8'))
+    ).toEqual({
+      ctxId: 'test-ctx',
+      sessionId
+    })
   })
 
-  it('prepends the CCR log-context marker ahead of the system prompt', async () => {
-    const result = await prepareClaudeExecution(createCtx(), {
+  it('keeps the system prompt untouched while persisting request log context for CCR', async () => {
+    const ctx = createCtx()
+    const result = await prepareClaudeExecution(ctx, {
       type: 'create',
       runtime: 'server',
       sessionId,
@@ -131,9 +159,13 @@ describe('prepareClaudeExecution', () => {
 
     const promptIndex = result.args.indexOf('--append-system-prompt')
     expect(promptIndex).toBeGreaterThan(-1)
-    expect(result.args[promptIndex + 1]).toMatch(
-      /^<VF-CCR-LOG-CONTEXT>[A-Za-z0-9_-]+<\/VF-CCR-LOG-CONTEXT>\nFollow repo rules$/
-    )
+    expect(result.args[promptIndex + 1]).toBe('Follow repo rules')
+    expect(
+      JSON.parse(readFileSync(resolveRequestLogContextPath(ctx.cwd, sessionId), 'utf8'))
+    ).toEqual({
+      ctxId: 'test-ctx',
+      sessionId
+    })
   })
 
   it('resolves the claude cli path from adapter dependencies instead of PATH', async () => {

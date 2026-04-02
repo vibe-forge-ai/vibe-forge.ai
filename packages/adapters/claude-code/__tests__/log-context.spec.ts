@@ -1,86 +1,80 @@
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
 const {
-  resolveRequestLogContext,
-  stripRequestLogContextMarker
+  resolveRequestLogContext
 } = require('../src/ccr/transformers/log-context.js')
 
-const buildMarker = (payload: { ctxId: string, sessionId: string }) =>
-  `<VF-CCR-LOG-CONTEXT>${
-    Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url')
-  }</VF-CCR-LOG-CONTEXT>`
+const createdDirs = new Set<string>()
+
+const createWorkspace = () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'vf-claude-log-context-'))
+  createdDirs.add(cwd)
+  return cwd
+}
+
+const writeRequestLogContext = (workspace: string, payload: { ctxId: string, sessionId: string }) => {
+  const filePath = join(
+    workspace,
+    '.ai',
+    '.mock',
+    '.claude-code-router',
+    'request-log-context',
+    `${payload.sessionId}.json`
+  )
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, JSON.stringify(payload), 'utf8')
+}
 
 describe('ccr request log context', () => {
-  it('resolves request-scoped ctx/session ids from the injected system marker', () => {
-    const request = {
-      messages: [
-        {
-          role: 'system',
-          content: [
-            {
-              type: 'text',
-              text: `${buildMarker({
-                ctxId: 'ctx-123',
-                sessionId: 'session-456'
-              })}\nFollow repo rules`
-            }
-          ]
-        }
-      ]
-    }
-    const context = {
-      req: {}
-    }
+  afterEach(() => {
+    createdDirs.forEach((cwd) => {
+      rmSync(cwd, { force: true, recursive: true })
+    })
+    createdDirs.clear()
+    delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+  })
 
-    const parsed = resolveRequestLogContext(context, request)
+  it('resolves ctx/session ids from the claude session header and stored mapping', () => {
+    const workspace = createWorkspace()
+    process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = workspace
+    writeRequestLogContext(workspace, {
+      ctxId: 'ctx-from-store',
+      sessionId: 'session-from-header'
+    })
+
+    const parsed = resolveRequestLogContext({
+      req: {
+        headers: {
+          'x-claude-code-session-id': 'session-from-header'
+        }
+      }
+    })
 
     expect(parsed).toEqual({
-      ctxId: 'ctx-123',
-      sessionId: 'session-456'
-    })
-    expect(context.req).toMatchObject({
-      sessionId: 'session-456',
-      vfLogContext: {
-        ctxId: 'ctx-123',
-        sessionId: 'session-456'
-      }
+      ctxId: 'ctx-from-store',
+      sessionId: 'session-from-header'
     })
   })
 
-  it('strips the injected system marker before forwarding the request', () => {
-    const request = {
-      messages: [
-        {
-          role: 'system',
-          content: [
-            {
-              type: 'text',
-              text: `${buildMarker({
-                ctxId: 'ctx-123',
-                sessionId: 'session-456'
-              })}\nFollow repo rules`
-            }
-          ]
-        }
-      ]
-    }
+  it('falls back to request session id when stored mapping is absent', () => {
     const context = {
-      req: {}
+      req: {
+        sessionId: 'session-from-request'
+      }
     }
 
-    stripRequestLogContextMarker(request, context)
+    const parsed = resolveRequestLogContext(context)
 
-    expect(request.messages[0].content[0].text).toBe('Follow repo rules')
-    expect(context.req).toMatchObject({
-      sessionId: 'session-456',
-      vfLogContext: {
-        ctxId: 'ctx-123',
-        sessionId: 'session-456'
-      }
+    expect(parsed).toEqual({
+      ctxId: 'session-from-request',
+      sessionId: 'session-from-request'
     })
   })
 })
