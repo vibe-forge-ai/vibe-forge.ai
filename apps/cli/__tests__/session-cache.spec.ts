@@ -7,7 +7,13 @@ import { Command } from 'commander'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registerListCommand } from '#~/commands/list.js'
-import { formatResumeCommand, listCliSessions, resolveCliSession, writeCliSessionRecord } from '#~/session-cache.js'
+import {
+  formatResumeCommand,
+  listCliSessions,
+  resolveCliSession,
+  resolveCliSessionAdapter,
+  writeCliSessionRecord
+} from '#~/session-cache.js'
 
 const tempDirs: string[] = []
 const originalCwd = process.cwd()
@@ -37,8 +43,9 @@ describe('session cache utilities', () => {
         description: 'Inspect README',
         createdAt: 1,
         updatedAt: 2,
+        resolvedAdapter: 'codex',
         taskOptions: {
-          adapter: 'codex',
+          adapter: 'claude-code',
           cwd,
           ctxId: 'ctx-alpha'
         },
@@ -68,6 +75,7 @@ describe('session cache utilities', () => {
 
     const resolved = await resolveCliSession(cwd, 'session-a')
     expect(resolved.resume?.ctxId).toBe('ctx-alpha')
+    expect(resolveCliSessionAdapter(resolved)).toBe('codex')
     expect(formatResumeCommand('session-alpha')).toBe('vf --resume session-alpha')
   })
 
@@ -102,9 +110,10 @@ describe('session cache utilities', () => {
 })
 
 describe('list command', () => {
-  it('prints a useful table with resume commands', async () => {
+  it('prints a compact table by default and shows next-step hints', async () => {
     const cwd = await createTempDir()
     const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     await writeCliSessionRecord(cwd, 'ctx-demo', 'session-demo', {
       resume: {
@@ -115,6 +124,7 @@ describe('list command', () => {
         description: 'Review CLI resume flow',
         createdAt: 10,
         updatedAt: 20,
+        resolvedAdapter: 'codex',
         taskOptions: {
           adapter: 'codex',
           cwd,
@@ -150,7 +160,79 @@ describe('list command', () => {
       expect.objectContaining({
         Session: 'session-demo',
         Status: 'running',
-        Resume: 'vf --resume session-demo'
+        Description: 'Review CLI resume flow'
+      })
+    ])
+    expect(Object.keys(tableSpy.mock.calls[0]?.[0]?.[0] ?? {})).toEqual([
+      'Session',
+      'Status',
+      'Updated',
+      'Description'
+    ])
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Resume latest: vf --resume session-demo')
+    )
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Stop a running session: vf stop session-demo')
+    )
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('More columns: vf list --view default')
+    )
+  })
+
+  it('prints full view rows with helper commands', async () => {
+    const cwd = await createTempDir()
+    const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await writeCliSessionRecord(cwd, 'ctx-demo', 'session-demo', {
+      resume: {
+        version: 1,
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        cwd,
+        description: 'Review CLI resume flow',
+        createdAt: 10,
+        updatedAt: 20,
+        resolvedAdapter: 'codex',
+        taskOptions: {
+          adapter: 'codex',
+          cwd,
+          ctxId: 'ctx-demo'
+        },
+        adapterOptions: {
+          runtime: 'cli',
+          sessionId: 'session-demo',
+          mode: 'direct',
+          model: 'gpt-5.4'
+        },
+        outputFormat: 'text'
+      },
+      detail: {
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        status: 'running',
+        pid: 123,
+        startTime: 10,
+        description: 'Review CLI resume flow',
+        adapter: 'codex',
+        model: 'gpt-5.4'
+      }
+    })
+
+    process.chdir(cwd)
+    const program = new Command()
+    registerListCommand(program)
+    await program.parseAsync(['list', '--view', 'full'], { from: 'user' })
+
+    expect(tableSpy).toHaveBeenCalledTimes(1)
+    expect(tableSpy.mock.calls[0]?.[0]).toEqual([
+      expect.objectContaining({
+        Session: 'session-demo',
+        Context: 'ctx-demo',
+        Resume: 'vf --resume session-demo',
+        Stop: 'vf stop session-demo',
+        Kill: 'vf kill session-demo'
       })
     ])
   })
@@ -158,6 +240,7 @@ describe('list command', () => {
   it('supports filtering to running sessions only', async () => {
     const cwd = await createTempDir()
     const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
 
     await writeCliSessionRecord(cwd, 'ctx-running', 'session-running', {
       resume: {
@@ -167,6 +250,7 @@ describe('list command', () => {
         cwd,
         createdAt: 10,
         updatedAt: 20,
+        resolvedAdapter: 'codex',
         taskOptions: { cwd, ctxId: 'ctx-running' },
         adapterOptions: { runtime: 'cli', sessionId: 'session-running', mode: 'direct' },
         outputFormat: 'text'
@@ -187,6 +271,7 @@ describe('list command', () => {
         cwd,
         createdAt: 11,
         updatedAt: 21,
+        resolvedAdapter: 'claude-code',
         taskOptions: { cwd, ctxId: 'ctx-done' },
         adapterOptions: { runtime: 'cli', sessionId: 'session-done', mode: 'direct' },
         outputFormat: 'text'

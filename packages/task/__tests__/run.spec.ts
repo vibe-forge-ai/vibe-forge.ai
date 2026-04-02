@@ -159,6 +159,31 @@ describe('task run adapter init', () => {
     expect(queryMock).toHaveBeenCalledTimes(1)
   })
 
+  it('returns the resolved adapter used for the session', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        codex: {},
+        'claude-code': {}
+      }),
+      defaultAdapter: 'claude-code'
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    const result = await run({
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-resolved-adapter',
+      description: 'hello',
+      onEvent: vi.fn()
+    })
+
+    expect(result.resolvedAdapter).toBe('claude-code')
+  })
+
   it('resolves effort with explicit > model > adapter > config precedence', async () => {
     const ctx = createCtx()
     ctx.configs = [{

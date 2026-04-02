@@ -7,10 +7,12 @@
 - `npx vf run --help`
 - `npx vf-mcp --help`
 - `vf run`：执行一次任务
-- `vf --resume <sessionId>`：恢复已有 CLI 会话，固定参数从 `.ai/caches/` 对应会话读取
+- `vf --resume <sessionId>`：恢复已有 CLI 会话，固定参数和已解析 adapter 都从 `.ai/caches/` 对应会话读取
 - `vf-mcp`：启动独立 MCP stdio server
 - `vf-call-hook`：从标准输入读取 hook payload 并执行 hooks runtime
-- `vf list` / `vf ls`：列出历史任务缓存
+- `vf list` / `vf ls`：以 compact 视图列出历史任务缓存
+- `vf list --view default`：展示 adapter / model 等常用列
+- `vf list --view full`：展示上下文、PID 与辅助命令列
 - `vf list --running`：只看当前仍在运行的 CLI 会话
 - `vf clear`：清理本地日志与缓存
 - `vf stop <sessionId>`：优雅停止正在运行的 CLI 会话
@@ -47,5 +49,7 @@ npx vf run --adapter codex --print "读取 README 并给出一个三步改进建
 
 ```bash
 npx vf list
+npx vf list --view default
+npx vf list --view full
 npx vf --resume <sessionId>
 ```

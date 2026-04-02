@@ -25,6 +25,8 @@ program
     `
 Examples:
   vf "读取 README 并给出改进建议"
+  vf list
+  vf list --view full
   vf --resume <sessionId>
   vf list --running
 `

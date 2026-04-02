@@ -18,6 +18,7 @@ import {
   isCliSessionStopActive,
   readCliSessionControl,
   resolveCliSession,
+  resolveCliSessionAdapter,
   writeCliSessionRecord
 } from '#~/session-cache.js'
 import type { CliSessionResumeRecord } from '#~/session-cache.js'
@@ -167,10 +168,12 @@ const configureRunCommand = (command: Command) => {
 Examples:
   vf "实现一个新的 list 筛选"
   vf run --adapter codex --print "读取 README 并总结"
+  vf list --view default
   vf --resume <sessionId>
 
 Notes:
   When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
+  The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
 `
     )
     .action(async (descriptionArgs: string[], opts: RunOptions, command: Command) => {
@@ -209,6 +212,9 @@ Notes:
           : undefined
 
         const cachedSession = await initialResumeRecord
+        const cachedAdapter = cachedSession == null
+          ? undefined
+          : (resolveCliSessionAdapter(cachedSession) || undefined)
         const sessionId = cachedSession?.resume?.sessionId ?? generatedSessionId
         const ctxId = cachedSession?.resume?.ctxId ?? runTaskOptions?.ctxId ?? sessionId
         const outputFormat = getOutputFormat(
@@ -326,10 +332,13 @@ Notes:
             description: description || cachedSession?.resume?.description,
             createdAt: cachedSession?.resume?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
-            taskOptions: cachedSession?.resume?.taskOptions ?? {
-              adapter: runTaskOptions?.adapter,
-              cwd,
-              ctxId
+            resolvedAdapter: cachedSession?.resume?.resolvedAdapter ?? cachedAdapter,
+            taskOptions: {
+              ...(cachedSession?.resume?.taskOptions ?? {
+                cwd,
+                ctxId
+              }),
+              adapter: cachedAdapter ?? runTaskOptions?.adapter
             },
             adapterOptions: cachedAdapterOptions,
             outputFormat
@@ -340,7 +349,7 @@ Notes:
             status: 'pending',
             startTime: cachedSession?.detail?.startTime ?? Date.now(),
             description: description || cachedSession?.detail?.description || cachedSession?.resume?.description,
-            adapter: cachedSession?.detail?.adapter ?? cachedSession?.resume?.taskOptions.adapter,
+            adapter: cachedSession?.detail?.adapter ?? cachedAdapter,
             model: cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
           }
         }
@@ -357,12 +366,14 @@ Notes:
           return persistQueue
         }
         const updateInitRecord = (info: SessionInitInfo, pid: number | undefined) => {
+          const resolvedAdapter = info.adapter ?? record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter
           record.resume = {
             ...record.resume,
             updatedAt: Date.now(),
+            resolvedAdapter,
             taskOptions: {
               ...record.resume.taskOptions,
-              adapter: info.adapter ?? record.resume.taskOptions.adapter
+              adapter: resolvedAdapter
             },
             adapterOptions: {
               ...record.resume.adapterOptions,
@@ -374,7 +385,7 @@ Notes:
             ...record.detail,
             status: 'running',
             pid: pid ?? record.detail.pid,
-            adapter: info.adapter ?? record.detail.adapter,
+            adapter: resolvedAdapter ?? record.detail.adapter,
             model: info.model ?? record.detail.model
           }
           void persistRecord()
@@ -412,8 +423,8 @@ Notes:
           })()
         }
 
-        const { session } = await run({
-          adapter: record.resume.taskOptions.adapter,
+        const { session, resolvedAdapter } = await run({
+          adapter: record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter,
           cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
           ctxId,
           env: process.env
@@ -442,10 +453,19 @@ Notes:
           }
         })
         boundSession = session
+        record.resume = {
+          ...record.resume,
+          resolvedAdapter: resolvedAdapter ?? record.resume.resolvedAdapter,
+          taskOptions: {
+            ...record.resume.taskOptions,
+            adapter: resolvedAdapter ?? record.resume.taskOptions.adapter
+          }
+        }
         record.detail = {
           ...record.detail,
           pid: session.pid ?? record.detail.pid,
-          status: record.detail.status === 'pending' ? 'running' : record.detail.status
+          status: record.detail.status === 'pending' ? 'running' : record.detail.status,
+          adapter: resolvedAdapter ?? record.detail.adapter
         }
         void persistRecord()
         exitController.bindSession(session)
