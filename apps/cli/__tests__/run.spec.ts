@@ -11,7 +11,8 @@ import {
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
-  resolveRunMode
+  resolveRunMode,
+  shouldPrintResumeHint
 } from '#~/commands/run.js'
 
 describe('run command print output', () => {
@@ -95,10 +96,8 @@ describe('run command print output', () => {
       kill: () => {
         killCount += 1
       },
-      emit: (event) => {
-        if (event.type === 'stop') {
-          stopCount += 1
-        }
+      stop: () => {
+        stopCount += 1
       }
     })
     controller.requestExit(0)
@@ -122,15 +121,28 @@ describe('run command print output', () => {
       kill: () => {
         killCount += 1
       },
-      emit: (event) => {
-        if (event.type === 'stop') {
-          stopCount += 1
-        }
+      stop: () => {
+        stopCount += 1
       }
     })
 
     expect(killCount).toBe(0)
     expect(stopCount).toBe(1)
+  })
+
+  it('falls back to kill when successful exit is requested without adapter stop support', () => {
+    let killCount = 0
+    const controller = createSessionExitController()
+
+    controller.bindSession({
+      kill: () => {
+        killCount += 1
+      }
+    })
+
+    controller.requestExit(0)
+
+    expect(killCount).toBe(1)
   })
 
   it('keeps cached stream mode when resume does not override print behavior', () => {
@@ -337,36 +349,19 @@ describe('run command print output', () => {
     expect(requestExit).not.toHaveBeenCalled()
   })
 
-  it('suppresses fatal exit errors after a successful stop was already requested', () => {
-    const log = vi.fn()
-    const errorLog = vi.fn()
-    const requestExit = vi.fn()
-
-    const nextState = handlePrintEvent({
-      event: {
-        type: 'error',
-        data: {
-          message: 'Process exited with code 143',
-          details: { exitCode: 143 },
-          fatal: true
-        }
-      },
-      outputFormat: 'text',
-      lastAssistantText: 'final answer',
-      didExitAfterError: false,
-      suppressFatalError: true,
-      log,
-      errorLog,
-      requestExit
-    })
-
-    expect(nextState).toEqual({
-      lastAssistantText: 'final answer',
-      didExitAfterError: false
-    })
-    expect(log).not.toHaveBeenCalled()
-    expect(errorLog).not.toHaveBeenCalled()
-    expect(requestExit).not.toHaveBeenCalled()
+  it('suppresses the resume hint for successful print sessions', () => {
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: true,
+      status: 'completed'
+    })).toBe(false)
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: true,
+      status: 'failed'
+    })).toBe(true)
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: false,
+      status: 'completed'
+    })).toBe(true)
   })
 
   it('rejects unsupported output format values at parse time', async () => {

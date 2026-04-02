@@ -57,7 +57,7 @@ interface ActiveCliSessionRecord {
 
 interface ExitControllableSession {
   kill(): void
-  emit?: (event: { type: 'stop' }) => void
+  stop?(): void
 }
 
 export const createSessionExitController = <T extends ExitControllableSession>(params?: {
@@ -69,8 +69,8 @@ export const createSessionExitController = <T extends ExitControllableSession>(p
   let didExit = false
   const exit = params?.exit ?? process.exit
   const signalSessionExit = (target: T) => {
-    if (pendingExitCode === 0 && typeof target.emit === 'function') {
-      target.emit({ type: 'stop' })
+    if (pendingExitCode === 0 && typeof target.stop === 'function') {
+      target.stop()
       return
     }
     target.kill()
@@ -417,20 +417,23 @@ Notes:
               ...record.resume,
               updatedAt: endedAt
             }
+            const status = persistedDetail?.status === 'stopped' || isCliSessionStopActive(control, endedAt)
+              ? 'stopped'
+              : exitCode === 0
+              ? 'completed'
+              : 'failed'
             record.detail = {
               ...record.detail,
               endTime: endedAt,
               exitCode,
-              status: persistedDetail?.status === 'stopped' || isCliSessionStopActive(control, endedAt)
-                ? 'stopped'
-                : exitCode === 0
-                ? 'completed'
-                : 'failed'
+              status
             }
             await persistRecord()
             await persistQueue
             await clearCliSessionControl(cwd, ctxId, sessionId)
-            console.error(formatResumeCommand(sessionId))
+            if (shouldPrintResumeHint({ shouldPrintOutput, status })) {
+              console.error(formatResumeCommand(sessionId))
+            }
             exitController.handleSessionExit(exitCode)
           })()
         }
@@ -447,15 +450,11 @@ Notes:
               updateInitRecord(event.data, boundSession?.pid)
             }
             if (shouldPrintOutput) {
-              const shouldSuppressFatalError = event.type === 'error' &&
-                event.data.fatal !== false &&
-                exitController.getPendingExitCode() === 0
               const nextState = handlePrintEvent({
                 event,
                 outputFormat,
                 lastAssistantText,
                 didExitAfterError,
-                suppressFatalError: shouldSuppressFatalError,
                 log: (message) => console.log(message),
                 errorLog: (message) => console.error(message),
                 requestExit: (code) => exitController.requestExit(code)
@@ -533,12 +532,16 @@ export const getAdapterErrorMessage = (data: AdapterErrorData) => {
   return details ? `${data.message}\n${details}` : data.message
 }
 
+export const shouldPrintResumeHint = (input: {
+  shouldPrintOutput: boolean
+  status: TaskDetail['status']
+}) => !(input.shouldPrintOutput && input.status === 'completed')
+
 export const handlePrintEvent = (input: {
   event: AdapterOutputEvent
   outputFormat: RunOutputFormat
   lastAssistantText: string | undefined
   didExitAfterError: boolean
-  suppressFatalError?: boolean
   log: (message: string) => void
   errorLog: (message: string) => void
   requestExit: (code: number) => void
@@ -549,12 +552,6 @@ export const handlePrintEvent = (input: {
 
   if (input.event.type === 'error') {
     const isFatal = input.event.data.fatal !== false
-    if (isFatal && input.suppressFatalError) {
-      return {
-        lastAssistantText: nextAssistantText,
-        didExitAfterError: input.didExitAfterError
-      }
-    }
 
     switch (input.outputFormat) {
       case 'stream-json':

@@ -235,6 +235,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
 
     return {
       kill: () => proc.kill(),
+      stop: () => proc.stdin.end(),
       emit,
       pid: proc.pid
     }

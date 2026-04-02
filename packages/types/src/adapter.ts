@@ -100,6 +100,7 @@ export interface AdapterQueryOptions {
 
 export interface AdapterSession {
   kill: () => void
+  stop?: () => void
   emit: (event: AdapterEvent) => void
   pid?: number
 }
