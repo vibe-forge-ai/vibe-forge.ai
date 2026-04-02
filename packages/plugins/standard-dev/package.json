@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/plugin-standard-dev",
-  "version": "0.7.0",
+  "version": "0.8.4",
   "exports": {
     "./package.json": "./package.json"
   }
