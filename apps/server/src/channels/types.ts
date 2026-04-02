@@ -24,6 +24,6 @@ export interface ChannelSessionBinding {
 
 export interface ChannelManager {
   states: Map<string, ChannelRuntimeState>
-  handleSessionEvent: (sessionId: string, event: WSEvent) => Promise<void>
+  handleSessionEvent: (sessionId: string, event: WSEvent) => Promise<boolean>
   closeAll: () => Promise<void>
 }

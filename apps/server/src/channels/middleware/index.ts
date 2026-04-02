@@ -10,6 +10,7 @@ import { channelCommandMiddleware } from './commands'
 import { deduplicateMiddleware } from './deduplicate'
 import { dispatchMiddleware } from './dispatch'
 import { i18nMiddleware } from './i18n'
+import { interactionResponseMiddleware } from './interaction-response'
 import { parseContentMiddleware } from './parse-content'
 import { resolveSessionMiddleware } from './resolve-session'
 
@@ -20,6 +21,7 @@ export const pipeline = compose<ChannelContext>(
   accessControlMiddleware,
   resolveSessionMiddleware,
   channelCommandMiddleware,
+  interactionResponseMiddleware,
   ackMiddleware,
   adminGateMiddleware,
   dispatchMiddleware,

@@ -122,12 +122,16 @@ describe('sqliteDb', () => {
       sessionType: 'direct',
       channelId: 'channel-1',
       channelKey: 'key-1',
-      adapter: 'codex'
+      adapter: 'codex',
+      permissionMode: 'bypassPermissions',
+      effort: 'high'
     })
 
     expect(db.getChannelPreference('lark', 'direct', 'channel-1')).toEqual(expect.objectContaining({
       channelKey: 'key-1',
-      adapter: 'codex'
+      adapter: 'codex',
+      permissionMode: 'bypassPermissions',
+      effort: 'high'
     }))
   })
 

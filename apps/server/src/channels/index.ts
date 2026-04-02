@@ -89,6 +89,6 @@ export const initChannels = async (
 }
 
 export const handleChannelSessionEvent = async (sessionId: string, event: WSEvent) => {
-  if (!channelManager) return
-  await channelManager.handleSessionEvent(sessionId, event)
+  if (!channelManager) return false
+  return await channelManager.handleSessionEvent(sessionId, event)
 }

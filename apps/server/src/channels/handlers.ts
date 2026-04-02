@@ -5,6 +5,7 @@ import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import { getSessionLogger } from '#~/utils/logger.js'
 
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
@@ -127,20 +128,84 @@ export const handleSessionEvent = async (
   sessionId: string,
   event: WSEvent
 ) => {
-  if (event.type !== 'message' || event.message.role !== 'assistant') return
+  const binding = resolveBinding(sessionId)
+  if (!binding) return false
+  const state = states.get(binding.channelKey)
+  if (!state?.connection) return false
+  const receiveId = binding.replyReceiveId ?? binding.channelId
+  const receiveIdType = binding.replyReceiveIdType ?? 'chat_id'
+  const serverLogger = getSessionLogger(sessionId, 'server')
+
+  if (event.type === 'interaction_request') {
+    const unack = consumePendingUnack(sessionId)
+    if (unack) {
+      await unack().catch(() => undefined)
+    }
+
+    const language = state.config?.language ?? 'zh'
+    const options = event.payload.options ?? []
+    const hasDescriptions = options.some(option => (option.description?.trim() ?? '') !== '')
+    const lines = [event.payload.question.trim()]
+
+    if (options.length > 0) {
+      lines.push('')
+      lines.push(language === 'en' ? 'Options:' : '可选项：')
+      lines.push(...options.map((option) => {
+        if ((option.description?.trim() ?? '') === '') {
+          return `- ${option.label}`
+        }
+        return `- ${option.label}: ${option.description}`
+      }))
+    }
+
+    lines.push('')
+    if (event.payload.multiselect) {
+      lines.push(language === 'en'
+        ? 'Multiple selections are allowed. Reply with labels separated by commas or new lines.'
+        : '支持多选，请直接回复选项文本，多个选项可用逗号、顿号或换行分隔。')
+    } else if (options.length > 0) {
+      lines.push(language === 'en'
+        ? 'Reply with the option label, or tap a quick action if one is shown below.'
+        : '请直接回复选项文本；如果下方出现快捷气泡，也可以直接点击。')
+    } else {
+      lines.push(language === 'en' ? 'Please reply directly in plain text.' : '请直接回复文字内容。')
+    }
+
+    const text = lines.join('\n')
+    const result = await state.connection.sendMessage({ receiveId, receiveIdType, text })
+
+    if (
+      !event.payload.multiselect &&
+      options.length > 0 &&
+      result?.messageId != null &&
+      state.connection.pushFollowUps
+    ) {
+      await state.connection.pushFollowUps({
+        messageId: result.messageId,
+        followUps: options.map(option => ({ content: option.label }))
+      })
+    }
+
+    serverLogger.info({
+      sessionId,
+      interactionId: event.id,
+      receiveId,
+      optionCount: options.length,
+      hasDescriptions,
+      pushedFollowUps: !event.payload.multiselect && options.length > 0 && result?.messageId != null
+    }, '[channel] Delivered interaction request to bound channel')
+    return true
+  }
+
+  if (event.type !== 'message' || event.message.role !== 'assistant') return false
   const text = extractTextFromMessage(event.message)
-  if (text == null || text === '') return
+  if (text == null || text === '') return false
 
   const unack = consumePendingUnack(sessionId)
   if (unack) {
     await unack().catch(() => undefined)
   }
 
-  const binding = resolveBinding(sessionId)
-  if (!binding) return
-  const state = states.get(binding.channelKey)
-  if (!state?.connection) return
-  const receiveId = binding.replyReceiveId ?? binding.channelId
-  const receiveIdType = binding.replyReceiveIdType ?? 'chat_id'
   await state.connection.sendMessage({ receiveId, receiveIdType, text })
+  return true
 }

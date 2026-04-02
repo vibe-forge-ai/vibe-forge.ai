@@ -15,6 +15,16 @@
   - 跑 `scripts/__tests__/adapter-e2e/adapter-e2e.spec.ts`
 - `pnpm tools adapter-e2e test [selection] --update`
   - 更新对应 case 的 file snapshot
+- `pnpm tools chrome-debug targets [--port 9222]`
+  - 查看本机 Chrome DevTools 目标页，确认当前 remote debugging 端口上有哪些页面
+- `pnpm tools chrome-debug messenger-conversations`
+  - 列出当前 Feishu messenger 页里左侧可见的会话候选；如果用户没有明确指定目标会话，先跑这个命令再向用户确认
+- `pnpm tools chrome-debug messenger-send <conversation> <message>`
+  - 在当前 Feishu messenger 页里按会话名点开会话并发送一条消息
+- `pnpm tools chrome-debug messenger-click-reply <conversation> <messageSnippet>`
+  - 在当前 Feishu messenger 页里悬停某条消息，并点击它的 reply 按钮
+- `pnpm tools chrome-debug messenger-click-text <conversation> <text>`
+  - 在当前 Feishu messenger 页里按可见文本点击一个右侧会话内的按钮或快捷气泡
 - `pnpm tools publish-plan -- [args]`
   - 透传到 `scripts/publish-plan-core.mjs`
   - 发布规则、检查清单和 tag 约定统一见 `.ai/rules/RELEASE.md`
@@ -28,6 +38,8 @@
 
 - `scripts/adapter-e2e/harness.ts`
   - suite 生命周期
+- `scripts/chrome-debug.ts`
+  - Chrome DevTools 本地调试 helper，负责枚举目标页、连接 CDP 和执行 messenger 发送动作
 - `scripts/adapter-e2e/runners.ts`
   - Codex / Claude / OpenCode 的真实运行路径
 - `scripts/adapter-e2e/log.ts`

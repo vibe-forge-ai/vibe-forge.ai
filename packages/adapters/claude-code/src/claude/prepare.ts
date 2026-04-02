@@ -84,6 +84,8 @@ const normalizeEffort = (value: unknown): AdapterQueryOptions['effort'] => (
     : undefined
 )
 
+const uniqueStrings = (values: string[]) => [...new Set(values)]
+
 export const prepareClaudeExecution = async (
   ctx: AdapterCtx,
   options: AdapterQueryOptions
@@ -212,6 +214,15 @@ export const prepareClaudeExecution = async (
     ...(inputToolsRule?.exclude ?? [])
   ]
 
+  if (options.runtime === 'server') {
+    unresolvedSettings.permissions.allow = (unresolvedSettings.permissions.allow ?? [])
+      .filter(name => name !== 'AskUserQuestion')
+    unresolvedSettings.permissions.deny = uniqueStrings([
+      ...(unresolvedSettings.permissions.deny ?? []),
+      'AskUserQuestion'
+    ])
+  }
+
   const includeMcpServers = inputMCPServersRule?.include ?? settings.defaultIncludeMcpServers
   const excludeMcpServers = inputMCPServersRule?.exclude ?? settings.defaultExcludeMcpServers
   if ((includeMcpServers?.length ?? 0) > 0) {
@@ -253,6 +264,16 @@ export const prepareClaudeExecution = async (
     '--settings',
     settingsCachePath
   ].filter((a) => typeof a === 'string')
+
+  if (permissionMode === 'bypassPermissions') {
+    args.push('--dangerously-skip-permissions')
+  } else if (
+    permissionMode != null &&
+    permissionMode !== '' &&
+    permissionMode !== 'default'
+  ) {
+    args.push('--permission-mode', permissionMode)
+  }
 
   if (executionType === 'create') {
     args.push('--session-id', sessionId)

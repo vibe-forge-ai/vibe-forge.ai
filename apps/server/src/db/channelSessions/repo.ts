@@ -101,7 +101,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     const now = Date.now()
     const stmt = db.prepare(`
       INSERT INTO channel_preferences (
-        channelType, sessionType, channelId, channelKey, adapter, permissionMode, createdAt, updatedAt
+        channelType, sessionType, channelId, channelKey, adapter, permissionMode, effort, createdAt, updatedAt
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET

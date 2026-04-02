@@ -4,6 +4,15 @@ import process from 'node:process'
 import { parseAdapterE2ESelection } from './__tests__/adapter-e2e/cases'
 import { runAdapterE2ESuite } from './adapter-e2e/harness'
 import { runProcess } from './adapter-e2e/runtime'
+import {
+  getDefaultChromeDebugPageUrlSubstring,
+  parsePositiveIntegerOption,
+  runChromeDebugMessengerConversations,
+  runChromeDebugMessengerClickReply,
+  runChromeDebugMessengerClickText,
+  runChromeDebugMessengerSend,
+  runChromeDebugTargets
+} from './chrome-debug'
 
 const runVitestAdapterE2E = async (input: {
   selection: string | undefined
@@ -44,12 +53,22 @@ interface ScriptsCliDeps {
     updateSnapshots: boolean
     verbose: boolean
   }) => Promise<void>
+  runChromeDebugTargets: typeof runChromeDebugTargets
+  runChromeDebugMessengerConversations: typeof runChromeDebugMessengerConversations
+  runChromeDebugMessengerSend: typeof runChromeDebugMessengerSend
+  runChromeDebugMessengerClickReply: typeof runChromeDebugMessengerClickReply
+  runChromeDebugMessengerClickText: typeof runChromeDebugMessengerClickText
   runPublishPlan: (args: string[]) => Promise<unknown>
 }
 
 const defaultDeps: ScriptsCliDeps = {
   runAdapterSuite: runAdapterE2ESuite,
   runAdapterVitest: runVitestAdapterE2E,
+  runChromeDebugTargets,
+  runChromeDebugMessengerConversations,
+  runChromeDebugMessengerSend,
+  runChromeDebugMessengerClickReply,
+  runChromeDebugMessengerClickText,
   runPublishPlan: async (args) => {
     const { runPublishPlanCli } = await import('./publish-plan-core.mjs')
     return runPublishPlanCli(args)
@@ -95,6 +114,122 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
         selection: parseAdapterE2ESelection(selection),
         updateSnapshots: options.update ?? false,
         verbose: options.verbose ?? false
+      })
+    })
+
+  const chromeDebugCommand = program
+    .command('chrome-debug')
+    .description('Inspect and drive a locally running Chrome DevTools target')
+
+  chromeDebugCommand
+    .command('targets')
+    .description('List Chrome DevTools targets on a local debugging port')
+    .option('--port <port>', 'Chrome remote debugging port', value => parsePositiveIntegerOption(value, 'port'), 9222)
+    .option('--json', 'Print targets as JSON', false)
+    .action(async (options: {
+      json?: boolean
+      port: number
+    }) => {
+      await deps.runChromeDebugTargets({
+        port: options.port,
+        json: options.json ?? false
+      })
+    })
+
+  chromeDebugCommand
+    .command('messenger-conversations')
+    .description('List visible Feishu messenger conversations on the current page')
+    .option('--port <port>', 'Chrome remote debugging port', value => parsePositiveIntegerOption(value, 'port'), 9222)
+    .option(
+      '--page-url-substring <substring>',
+      'Match the messenger page by URL substring',
+      getDefaultChromeDebugPageUrlSubstring()
+    )
+    .action(async (options: {
+      pageUrlSubstring: string
+      port: number
+    }) => {
+      await deps.runChromeDebugMessengerConversations({
+        port: options.port,
+        pageUrlSubstring: options.pageUrlSubstring
+      })
+    })
+
+  chromeDebugCommand
+    .command('messenger-send <conversation> <message>')
+    .description('Open a Feishu messenger conversation and send a message')
+    .option('--port <port>', 'Chrome remote debugging port', value => parsePositiveIntegerOption(value, 'port'), 9222)
+    .option(
+      '--page-url-substring <substring>',
+      'Match the messenger page by URL substring',
+      getDefaultChromeDebugPageUrlSubstring()
+    )
+    .option('--replace-draft', 'Replace any existing draft text in the composer', false)
+    .option('--settle-ms <ms>', 'Wait time after clicking send', value => parsePositiveIntegerOption(value, 'settle-ms'), 1500)
+    .action(async (conversation: string, message: string, options: {
+      pageUrlSubstring: string
+      port: number
+      replaceDraft?: boolean
+      settleMs: number
+    }) => {
+      await deps.runChromeDebugMessengerSend({
+        port: options.port,
+        pageUrlSubstring: options.pageUrlSubstring,
+        conversation,
+        message,
+        replaceDraft: options.replaceDraft ?? false,
+        settleMs: options.settleMs
+      })
+    })
+
+  chromeDebugCommand
+    .command('messenger-click-reply <conversation> <messageSnippet>')
+    .description('Hover a Feishu message bubble and click its reply action')
+    .option('--port <port>', 'Chrome remote debugging port', value => parsePositiveIntegerOption(value, 'port'), 9222)
+    .option(
+      '--page-url-substring <substring>',
+      'Match the messenger page by URL substring',
+      getDefaultChromeDebugPageUrlSubstring()
+    )
+    .option('--reply-index <index>', 'Pick the nth visible reply button near the hovered bubble', value => parsePositiveIntegerOption(value, 'reply-index'), 1)
+    .option('--settle-ms <ms>', 'Wait time after clicking reply', value => parsePositiveIntegerOption(value, 'settle-ms'), 1000)
+    .action(async (conversation: string, messageSnippet: string, options: {
+      pageUrlSubstring: string
+      port: number
+      replyIndex: number
+      settleMs: number
+    }) => {
+      await deps.runChromeDebugMessengerClickReply({
+        port: options.port,
+        pageUrlSubstring: options.pageUrlSubstring,
+        conversation,
+        messageSnippet,
+        replyIndex: options.replyIndex,
+        settleMs: options.settleMs
+      })
+    })
+
+  chromeDebugCommand
+    .command('messenger-click-text <conversation> <text>')
+    .description('Click a visible messenger UI element by exact text')
+    .option('--port <port>', 'Chrome remote debugging port', value => parsePositiveIntegerOption(value, 'port'), 9222)
+    .option(
+      '--page-url-substring <substring>',
+      'Match the messenger page by URL substring',
+      getDefaultChromeDebugPageUrlSubstring()
+    )
+    .option('--settle-ms <ms>', 'Wait time after clicking the text target', value => parsePositiveIntegerOption(value, 'settle-ms'), 1000)
+    .action(async (conversation: string, text: string, options: {
+      pageUrlSubstring: string
+      port: number
+      settleMs: number
+    }) => {
+      await deps.runChromeDebugMessengerClickText({
+        port: options.port,
+        pageUrlSubstring: options.pageUrlSubstring,
+        conversation,
+        text,
+        settleMs: options.settleMs
       })
     })
 

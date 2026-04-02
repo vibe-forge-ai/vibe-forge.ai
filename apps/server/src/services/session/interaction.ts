@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { AskUserQuestionParams, WSEvent } from '@vibe-forge/core'
 
+import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { updateAndNotifySession } from '#~/services/session/index.js'
@@ -14,6 +15,29 @@ import {
   notifySessionUpdated,
   setPendingSessionInteraction
 } from '#~/services/session/runtime.js'
+import { getSessionLogger } from '#~/utils/logger.js'
+
+const canDeliverInteraction = (sessionId: string) => {
+  const runtime = getSessionConnectionState(sessionId)
+  if (runtime == null) {
+    return {
+      runtime,
+      hasActiveWebSocket: false,
+      hasChannelBinding: false,
+      deliverable: false
+    }
+  }
+
+  const hasActiveWebSocket = runtime.sockets.size > 0
+  const hasChannelBinding = getDb().getChannelSessionBySessionId(sessionId) != null
+
+  return {
+    runtime,
+    hasActiveWebSocket,
+    hasChannelBinding,
+    deliverable: hasActiveWebSocket || hasChannelBinding
+  }
+}
 
 export function getSessionInteraction(sessionId: string) {
   return getSessionConnectionState(sessionId)?.currentInteraction
@@ -33,11 +57,19 @@ export function clearSessionInteraction(sessionId: string, interactionId: string
   }
 }
 
-export function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
+export async function requestInteraction(params: AskUserQuestionParams): Promise<string | string[]> {
   const { sessionId } = params
-  const runtime = getSessionConnectionState(sessionId)
+  const delivery = canDeliverInteraction(sessionId)
+  const runtime = delivery.runtime
+  const serverLogger = getSessionLogger(sessionId, 'server')
 
-  if (runtime == null || runtime.sockets.size === 0) {
+  if (runtime == null || !delivery.deliverable) {
+    serverLogger.warn({
+      sessionId,
+      hasRuntime: runtime != null,
+      hasActiveWebSocket: delivery.hasActiveWebSocket,
+      hasChannelBinding: delivery.hasChannelBinding
+    }, '[interaction] Interaction request rejected because no delivery path is active')
     return Promise.reject(new Error(`Session ${sessionId} is not active`))
   }
 
@@ -49,7 +81,40 @@ export function requestInteraction(params: AskUserQuestionParams): Promise<strin
   }
 
   runtime.currentInteraction = { id: interactionId, payload: params }
+  serverLogger.info({
+    sessionId,
+    interactionId,
+    question: params.question,
+    optionCount: params.options?.length ?? 0,
+    multiselect: params.multiselect ?? false,
+    hasActiveWebSocket: delivery.hasActiveWebSocket,
+    hasChannelBinding: delivery.hasChannelBinding
+  }, '[interaction] Queued interaction request')
   emitRuntimeEvent(runtime, event, { recordMessage: false })
+
+  let deliveredToChannel = false
+  if (delivery.hasChannelBinding) {
+    try {
+      deliveredToChannel = await handleChannelSessionEvent(sessionId, event)
+    } catch (error) {
+      serverLogger.warn({
+        sessionId,
+        interactionId,
+        error: error instanceof Error ? error.message : String(error)
+      }, '[interaction] Channel delivery failed for interaction request')
+    }
+  }
+
+  if (!delivery.hasActiveWebSocket && !deliveredToChannel) {
+    runtime.currentInteraction = undefined
+    serverLogger.warn({
+      sessionId,
+      interactionId,
+      hasActiveWebSocket: delivery.hasActiveWebSocket,
+      hasChannelBinding: delivery.hasChannelBinding
+    }, '[interaction] Interaction request rejected because no delivery path is active')
+    return Promise.reject(new Error(`Session ${sessionId} is not active`))
+  }
 
   updateAndNotifySession(sessionId, { status: 'waiting_input' })
 
@@ -67,10 +132,16 @@ export function requestInteraction(params: AskUserQuestionParams): Promise<strin
 }
 
 export function handleInteractionResponse(sessionId: string, interactionId: string, data: unknown) {
+  const serverLogger = getSessionLogger(sessionId, 'server')
   const sessionData = getDb().getSession(sessionId)
   const isExternalSession = sessionData?.parentSessionId != null
 
   if (isExternalSession) {
+    serverLogger.info({
+      sessionId,
+      interactionId,
+      response: data
+    }, '[interaction] Handling external interaction response')
     clearSessionInteraction(sessionId, interactionId)
     const event: WSEvent = { type: 'interaction_response', id: interactionId, data: data as string | string[] }
     applySessionEvent(sessionId, event, {
@@ -84,12 +155,21 @@ export function handleInteractionResponse(sessionId: string, interactionId: stri
 
   const pending = getPendingSessionInteraction(interactionId)
   if (pending == null) {
+    serverLogger.warn({
+      sessionId,
+      interactionId
+    }, '[interaction] Interaction response arrived without a pending waiter')
     return
   }
 
   clearTimeout(pending.timer)
   clearSessionInteraction(sessionId, interactionId)
   updateAndNotifySession(sessionId, { status: 'running' })
+  serverLogger.info({
+    sessionId,
+    interactionId,
+    response: data
+  }, '[interaction] Resolved interaction response')
   pending.resolve(data as string | string[])
   deletePendingSessionInteraction(interactionId)
 }

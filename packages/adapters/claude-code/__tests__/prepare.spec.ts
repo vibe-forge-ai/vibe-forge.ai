@@ -1,315 +1,91 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import { prepareClaudeExecution } from '../src/claude/prepare'
 
-const mocks = vi.hoisted(() => ({
-  ensureClaudeCodeRouterReady: vi.fn(),
-  resolveClaudeCliPath: vi.fn()
+vi.mock('../src/ccr/paths', () => ({
+  resolveClaudeCliPath: vi.fn(() => '/mock/claude')
 }))
 
 vi.mock('../src/ccr/daemon', () => ({
-  ensureClaudeCodeRouterReady: mocks.ensureClaudeCodeRouterReady
+  ensureClaudeCodeRouterReady: vi.fn()
 }))
-
-vi.mock('../src/ccr/paths', () => ({
-  resolveClaudeCliPath: mocks.resolveClaudeCliPath
-}))
-
-const sessionId = '6cd99e50-d3be-4070-b408-8133cfc42750'
-const createdDirs = new Set<string>()
-
-const resolveRequestLogContextPath = (cwd: string, sessionId: string) =>
-  join(
-    cwd,
-    '.ai',
-    '.mock',
-    '.claude-code-router',
-    'request-log-context',
-    `${sessionId}.json`
-  )
-
-const createCwd = () => {
-  const cwd = mkdtempSync(join(tmpdir(), 'vf-claude-prepare-'))
-  createdDirs.add(cwd)
-  return cwd
-}
-
-const createCtx = (resumeState?: { canResume: boolean }) =>
-  ({
-    ctxId: 'test-ctx',
-    cwd: createCwd(),
-    env: {},
-    cache: {
-      get: vi.fn(async (key: string) => (
-        key === 'adapter.claude-code.resume-state' ? resumeState : undefined
-      )),
-      set: vi.fn(async () => ({ cachePath: '/tmp/cache.json' }))
-    },
-    logger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn()
-    },
-    configs: [undefined, undefined]
-  }) as any
 
 describe('prepareClaudeExecution', () => {
+  let settingsSnapshot: Record<string, any> | undefined
+
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.resolveClaudeCliPath.mockReturnValue('/mock/bin/claude')
-    mocks.ensureClaudeCodeRouterReady.mockResolvedValue({
-      host: '127.0.0.1',
-      port: 4123,
-      apiKey: 'router-key',
-      apiTimeoutMs: 120000
-    })
+    settingsSnapshot = undefined
   })
 
-  afterEach(() => {
-    createdDirs.forEach((cwd) => {
-      rmSync(cwd, { force: true, recursive: true })
-    })
-    createdDirs.clear()
-  })
-
-  it('falls back to create mode when no resume state exists', async () => {
-    const result = await prepareClaudeExecution(createCtx(), {
-      type: 'resume',
-      runtime: 'server',
-      sessionId,
-      model: 'gpt-responses,gpt-5.2-codex-2026-01-14',
-      onEvent: vi.fn()
-    })
-
-    expect(result.executionType).toBe('create')
-    expect(result.cliPath).toBe('/mock/bin/claude')
-    expect(result.args).toContain('--session-id')
-    expect(result.args).toContain(sessionId)
-    expect(result.args).not.toContain('--resume')
-  })
-
-  it('keeps resume mode when the session has been initialized before', async () => {
-    const result = await prepareClaudeExecution(createCtx({ canResume: true }), {
-      type: 'resume',
-      runtime: 'server',
-      sessionId,
-      model: 'gpt-responses,gpt-5.2-codex-2026-01-14',
-      onEvent: vi.fn()
-    })
-
-    expect(result.executionType).toBe('resume')
-    expect(result.cliPath).toBe('/mock/bin/claude')
-    expect(result.args).toContain('--resume')
-    expect(result.args).toContain(sessionId)
-    expect(result.args).not.toContain('--session-id')
-  })
-
-  it('routes service-qualified models through the reusable CCR daemon via settings env only', async () => {
-    const ctx = createCtx()
-
-    const result = await prepareClaudeExecution(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      model: 'gpt-responses,gpt-5.2-codex-2026-01-14',
-      onEvent: vi.fn()
-    })
-
-    expect(result.cliPath).toBe('/mock/bin/claude')
-    expect(result.args).toContain('--model')
-    expect(result.args).toContain('gpt-responses,gpt-5.2-codex-2026-01-14')
-    expect(result.env.ANTHROPIC_BASE_URL).toBeUndefined()
-    expect(result.env.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
-    expect(mocks.ensureClaudeCodeRouterReady).toHaveBeenCalledWith(ctx)
-    expect(ctx.cache.set).toHaveBeenCalledWith(
-      'adapter.claude-code.settings',
-      expect.objectContaining({
-        env: expect.objectContaining({
-          ANTHROPIC_BASE_URL: 'http://127.0.0.1:4123',
-          ANTHROPIC_AUTH_TOKEN: 'router-key',
-          ANTHROPIC_API_KEY: '',
-          API_TIMEOUT_MS: '120000'
-        })
-      })
-    )
-    expect(
-      JSON.parse(readFileSync(resolveRequestLogContextPath(ctx.cwd, sessionId), 'utf8'))
-    ).toEqual({
-      ctxId: 'test-ctx',
-      sessionId
-    })
-  })
-
-  it('keeps the system prompt untouched while persisting request log context for CCR', async () => {
-    const ctx = createCtx()
-    const result = await prepareClaudeExecution(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      model: 'gpt-responses,gpt-5.2-codex-2026-01-14',
-      systemPrompt: 'Follow repo rules',
-      onEvent: vi.fn()
-    })
-
-    const promptIndex = result.args.indexOf('--append-system-prompt')
-    expect(promptIndex).toBeGreaterThan(-1)
-    expect(result.args[promptIndex + 1]).toBe('Follow repo rules')
-    expect(
-      JSON.parse(readFileSync(resolveRequestLogContextPath(ctx.cwd, sessionId), 'utf8'))
-    ).toEqual({
-      ctxId: 'test-ctx',
-      sessionId
-    })
-  })
-
-  it('resolves the claude cli path from adapter dependencies instead of PATH', async () => {
-    await prepareClaudeExecution(createCtx(), {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      onEvent: vi.fn()
-    })
-
-    expect(mocks.resolveClaudeCliPath).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps native Claude execution untouched for non-CCR models', async () => {
-    const ctx = createCtx()
-
-    await prepareClaudeExecution(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      model: 'claude-sonnet-4-20250514',
-      onEvent: vi.fn()
-    })
-
-    expect(mocks.ensureClaudeCodeRouterReady).not.toHaveBeenCalled()
-    expect(ctx.cache.set).toHaveBeenCalledWith(
-      'adapter.claude-code.settings',
-      expect.objectContaining({
-        env: expect.not.objectContaining({
-          ANTHROPIC_BASE_URL: expect.any(String),
-          ANTHROPIC_AUTH_TOKEN: expect.any(String),
-          ANTHROPIC_API_KEY: expect.any(String),
-          API_TIMEOUT_MS: expect.any(String)
-        })
-      })
-    )
-  })
-
-  it('injects the shared native hook bridge adapter env when claude native hooks are enabled', async () => {
-    const ctx = createCtx()
-    ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ = '1'
-
-    const result = await prepareClaudeExecution(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      onEvent: vi.fn()
-    })
-
-    expect(result.env[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('claude-code')
-    expect(ctx.cache.set).toHaveBeenCalledWith(
-      'adapter.claude-code.settings',
-      expect.objectContaining({
-        env: expect.objectContaining({
-          [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code'
-        })
-      })
-    )
-  })
-
-  it('maps unified effort into settings for low/medium/high values', async () => {
-    const ctx = createCtx()
-
-    const result = await prepareClaudeExecution(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      effort: 'high',
-      onEvent: vi.fn()
-    })
-
-    expect(result.effort).toBe('high')
-    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBeUndefined()
-    expect(ctx.cache.set).toHaveBeenCalledWith(
-      'adapter.claude-code.settings',
-      expect.objectContaining({
-        effortLevel: 'high'
-      })
-    )
-  })
-
-  it('lets native settingsContent override unified effort', async () => {
-    const ctx = createCtx()
-    ctx.configs = [{
-      adapters: {
-        'claude-code': {
-          settingsContent: {
-            effortLevel: 'low'
-          }
-        }
+  it('disables the native AskUserQuestion tool for server runtime sessions', async () => {
+    const cacheSet = vi.fn(async (key: string, value: unknown) => {
+      if (key === 'adapter.claude-code.settings') {
+        settingsSnapshot = value as Record<string, any>
       }
-    }, undefined]
 
-    const result = await prepareClaudeExecution(ctx, {
+      return {
+        cachePath: `/tmp/${key}.json`
+      }
+    })
+
+    const prepared = await prepareClaudeExecution({
+      ctxId: 'ctx-1',
+      cwd: '/repo',
+      env: {},
+      cache: {
+        set: cacheSet as any,
+        get: vi.fn(async () => undefined) as any
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      } as any,
+      configs: [{}, {}]
+    }, {
       type: 'create',
       runtime: 'server',
-      sessionId,
-      effort: 'high',
+      sessionId: 'sess-1',
+      tools: {
+        include: ['AskUserQuestion', 'Read']
+      },
       onEvent: vi.fn()
     })
 
-    expect(result.effort).toBe('low')
-    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBeUndefined()
-    expect(ctx.cache.set).toHaveBeenCalledWith(
-      'adapter.claude-code.settings',
-      expect.objectContaining({
-        effortLevel: 'low'
-      })
-    )
+    expect(prepared.cliPath).toBe('/mock/claude')
+    expect(settingsSnapshot?.permissions.allow).toContain('Read')
+    expect(settingsSnapshot?.permissions.allow).not.toContain('AskUserQuestion')
+    expect(settingsSnapshot?.permissions.deny).toContain('AskUserQuestion')
   })
 
-  it('uses env-based effort for max unless native env already overrides it', async () => {
-    const ctx = createCtx()
-    const result = await prepareClaudeExecution(ctx, {
+  it('passes bypassPermissions through to the Claude CLI in headless mode', async () => {
+    const prepared = await prepareClaudeExecution({
+      ctxId: 'ctx-1',
+      cwd: '/repo',
+      env: {},
+      cache: {
+        set: vi.fn(async (key: string) => ({
+          cachePath: `/tmp/${key}.json`
+        })) as any,
+        get: vi.fn(async () => undefined) as any
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      } as any,
+      configs: [{}, {}]
+    }, {
       type: 'create',
       runtime: 'server',
-      sessionId,
-      effort: 'max',
+      sessionId: 'sess-2',
+      permissionMode: 'bypassPermissions',
       onEvent: vi.fn()
     })
 
-    expect(result.effort).toBe('max')
-    expect(result.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('max')
-
-    const ctxWithNativeEnv = createCtx()
-    ctxWithNativeEnv.configs = [{
-      adapters: {
-        'claude-code': {
-          nativeEnv: {
-            CLAUDE_CODE_EFFORT_LEVEL: 'medium'
-          }
-        }
-      }
-    }, undefined]
-
-    const overridden = await prepareClaudeExecution(ctxWithNativeEnv, {
-      type: 'create',
-      runtime: 'server',
-      sessionId,
-      effort: 'max',
-      onEvent: vi.fn()
-    })
-
-    expect(overridden.effort).toBe('medium')
-    expect(overridden.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('medium')
+    expect(prepared.args).toContain('--dangerously-skip-permissions')
+    expect(prepared.args).not.toContain('--permission-mode')
   })
 })

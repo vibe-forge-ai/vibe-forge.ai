@@ -49,12 +49,35 @@ export default defineRegister(({ registerTool }) => {
         throw new Error(`Failed to ask user question: ${response.statusText} - ${errorText}`)
       }
 
-      const result = await response.json()
+      const result = await response.json() as { data?: unknown; result?: unknown } | unknown
+      const body = (
+        result != null &&
+        typeof result === 'object' &&
+        'data' in result
+          ? (result as { data?: unknown }).data
+          : result
+      )
+      const answer = (
+        body != null &&
+        typeof body === 'object' &&
+        'result' in body
+          ? (body as { result?: unknown }).result
+          : body
+      )
+
+      if (answer == null) {
+        throw new Error('AskUserQuestion returned an empty result')
+      }
+
+      const text = Array.isArray(answer)
+        ? answer.map(item => String(item)).join('\n')
+        : String(answer)
+
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(result.result)
+            text
           }
         ]
       }

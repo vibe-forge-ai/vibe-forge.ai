@@ -1,11 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import askUser from '#~/tools/interaction/ask-user.js'
 import wait from '#~/tools/general/wait.js'
 import { createMcpTools } from '#~/tools/index.js'
 
 import { createToolTester } from './mcp-test-utils.js'
 
 describe('mcp tools integration', () => {
+  beforeEach(() => {
+    process.env.__VF_PROJECT_AI_SESSION_ID__ = 'sess-1'
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  afterEach(() => {
+    delete process.env.__VF_PROJECT_AI_SESSION_ID__
+    vi.unstubAllGlobals()
+  })
+
   it('registers task tools by default', () => {
     expect(createMcpTools()).toHaveProperty('task')
   })
@@ -44,6 +55,41 @@ describe('mcp tools integration', () => {
       // Min is 0ms
       await expect(tester.callTool('wait', { ms: -1 }))
         .rejects.toThrow()
+    })
+  })
+
+  describe('AskUserQuestion tool', () => {
+    it('returns scalar answers as plain text content', async () => {
+      const tester = createToolTester()
+      askUser(tester.mockRegister)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { result: '米饭' } })
+      } as Response)
+
+      const result = await tester.callTool('AskUserQuestion', {
+        question: '今晚吃了什么？',
+        options: [{ label: '米饭' }]
+      }) as any
+
+      expect(result.content).toEqual([{ type: 'text', text: '米饭' }])
+    })
+
+    it('returns multiselect answers as newline-separated text', async () => {
+      const tester = createToolTester()
+      askUser(tester.mockRegister)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { result: ['米饭', '面条'] } })
+      } as Response)
+
+      const result = await tester.callTool('AskUserQuestion', {
+        question: '今晚吃了什么？',
+        options: [{ label: '米饭' }, { label: '面条' }],
+        multiselect: true
+      }) as any
+
+      expect(result.content).toEqual([{ type: 'text', text: '米饭\n面条' }])
     })
   })
 })
