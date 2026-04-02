@@ -7,17 +7,20 @@ import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
 import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
 import type { ChatMessage } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/hooks'
-import type { AdapterErrorData, AdapterOutputEvent } from '@vibe-forge/types'
+import type { AdapterErrorData, AdapterOutputEvent, SessionInitInfo, TaskDetail } from '@vibe-forge/types'
+import { getCache } from '@vibe-forge/utils/cache'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 import { uuid } from '@vibe-forge/utils/uuid'
 
+import { formatResumeCommand, resolveCliSession, writeCliSessionRecord } from '#~/session-cache.js'
+import type { CliSessionResumeRecord } from '#~/session-cache.js'
 import { extraOptions } from './@core/extra-options'
 
 export const RUN_OUTPUT_FORMATS = ['text', 'json', 'stream-json'] as const
 
 export type RunOutputFormat = (typeof RUN_OUTPUT_FORMATS)[number]
 
-interface RunOptions {
+export interface RunOptions {
   print: boolean
   model?: string
   effort?: 'low' | 'medium' | 'high' | 'max'
@@ -25,7 +28,7 @@ interface RunOptions {
   systemPrompt?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   sessionId?: string
-  resume?: boolean
+  resume?: string
   spec?: string
   entity?: string
   outputFormat?: RunOutputFormat
@@ -39,12 +42,18 @@ interface RunOptions {
   defaultVibeForgeMcpServer?: boolean
 }
 
+interface ActiveCliSessionRecord {
+  resume: CliSessionResumeRecord
+  detail: TaskDetail
+}
+
 export const createSessionExitController = <T extends { kill(): void }>(params?: {
   exit?: (code: number) => never | void
 }) => {
   let session: T | undefined
   let pendingExitCode: number | undefined
   let didRequestExit = false
+  let didExit = false
   const exit = params?.exit ?? process.exit
 
   return {
@@ -52,25 +61,74 @@ export const createSessionExitController = <T extends { kill(): void }>(params?:
       session = nextSession
       if (pendingExitCode == null) return
       session.kill()
-      exit(pendingExitCode)
     },
     requestExit(code: number) {
       if (didRequestExit) return
       didRequestExit = true
+      pendingExitCode = code
       if (session != null) {
         session.kill()
-        exit(code)
-        return
       }
-      pendingExitCode = code
+    },
+    handleSessionExit(code: number) {
+      if (didExit) return
+      didExit = true
+      exit(pendingExitCode ?? code)
+    },
+    getPendingExitCode() {
+      return pendingExitCode
     }
   }
 }
 
-export function registerRunCommand(program: Command) {
-  program
+const getOutputFormat = (
+  value: RunOutputFormat | undefined,
+  source: OptionValueSource | undefined,
+  fallback: RunOutputFormat
+) => source === 'default' ? fallback : (value ?? 'text')
+
+const getRunMode = (print: boolean): 'stream' | 'direct' => print ? 'stream' : 'direct'
+
+export const resolveRunMode = (
+  print: boolean,
+  source: OptionValueSource | undefined,
+  fallback: 'stream' | 'direct'
+) => source === 'default' ? fallback : getRunMode(print)
+
+export const getDisallowedResumeFlags = (
+  opts: RunOptions,
+  command: Command
+) => {
+  const disallowed: string[] = []
+
+  if (opts.adapter) disallowed.push('--adapter')
+  if (opts.model) disallowed.push('--model')
+  if (opts.effort) disallowed.push('--effort')
+  if (opts.systemPrompt) disallowed.push('--system-prompt')
+  if (opts.permissionMode) disallowed.push('--permission-mode')
+  if (opts.sessionId) disallowed.push('--session-id')
+  if (opts.spec) disallowed.push('--spec')
+  if (opts.entity) disallowed.push('--entity')
+  if ((opts.includeMcpServer?.length ?? 0) > 0) disallowed.push('--include-mcp-server')
+  if ((opts.excludeMcpServer?.length ?? 0) > 0) disallowed.push('--exclude-mcp-server')
+  if ((opts.includeTool?.length ?? 0) > 0) disallowed.push('--include-tool')
+  if ((opts.excludeTool?.length ?? 0) > 0) disallowed.push('--exclude-tool')
+  if ((opts.includeSkill?.length ?? 0) > 0) disallowed.push('--include-skill')
+  if ((opts.excludeSkill?.length ?? 0) > 0) disallowed.push('--exclude-skill')
+  if (command.getOptionValueSource('injectDefaultSystemPrompt') !== 'default') {
+    disallowed.push('--no-inject-default-system-prompt')
+  }
+  if (command.getOptionValueSource('defaultVibeForgeMcpServer') !== 'default') {
+    disallowed.push('--no-default-vibe-forge-mcp-server')
+  }
+
+  return disallowed
+}
+
+const configureRunCommand = (command: Command) => {
+  command
     .argument('[description...]')
-    .option('--print', 'Run in direct mode with printed output', false)
+    .option('--print', 'Print assistant output to stdout', false)
     .option('--model <model>', 'Model to use')
     .option('--effort <effort>', 'Effort to use (low, medium, high, max)')
     .option('--adapter <adapter>', 'Adapter to use')
@@ -81,7 +139,7 @@ export function registerRunCommand(program: Command) {
     )
     .option('--permission-mode <mode>', 'Permission mode (default, acceptEdits, plan, dontAsk, bypassPermissions)')
     .option('--session-id <id>', 'Session ID')
-    .option('--resume', 'Resume existing session', false)
+    .option('--resume <id>', 'Resume an existing session by session id')
     .addOption(
       new Option('--output-format <format>', 'Output format')
         .choices([...RUN_OUTPUT_FORMATS])
@@ -96,108 +154,267 @@ export function registerRunCommand(program: Command) {
     .option('--exclude-tool <tool...>', 'Exclude tool')
     .option('--include-skill <skill...>', 'Include skill')
     .option('--exclude-skill <skill...>', 'Exclude skill')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  vf "实现一个新的 list 筛选"
+  vf run --adapter codex --print "读取 README 并总结"
+  vf --resume <sessionId>
+
+Notes:
+  When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
+`
+    )
     .action(async (descriptionArgs: string[], opts: RunOptions, command: Command) => {
       const description = descriptionArgs.join(' ')
       let lastAssistantText: string | undefined
       let didExitAfterError = false
       const exitController = createSessionExitController()
+      const cwd = process.cwd()
+      const generatedSessionId = opts.sessionId ?? uuid()
 
       if (opts.spec && opts.entity) {
         console.error('Error: --spec and --entity are mutually exclusive.')
         process.exit(1)
       }
 
-      const sessionId = opts.sessionId ?? uuid()
-      const type = opts.resume ? 'resume' : 'create'
+      const isResume = opts.resume != null
+      const outputFormatSource = command.getOptionValueSource('outputFormat')
+      const printSource = command.getOptionValueSource('print')
 
-      const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
-      const promptName = opts.spec || opts.entity
-      const promptCWD = process.cwd()
-      const [data, resolvedConfig] = await generateAdapterQueryOptions(
-        promptType,
-        promptName,
-        promptCWD,
-        opts.includeSkill || opts.excludeSkill
-          ? {
-            skills: {
-              include: opts.includeSkill,
-              exclude: opts.excludeSkill
-            }
+      const runTaskOptions = isResume
+        ? undefined
+        : {
+          adapter: opts.adapter,
+          cwd,
+          ctxId: process.env.__VF_PROJECT_AI_CTX_ID__ ?? generatedSessionId
+        }
+
+      const initialResumeRecord = isResume
+        ? (() => {
+          const disallowedFlags = getDisallowedResumeFlags(opts, command)
+          if (disallowedFlags.length > 0) {
+            throw new Error(`Resume mode does not accept ${disallowedFlags.join(', ')}.`)
           }
-          : undefined
+          return resolveCliSession(cwd, opts.resume!)
+        })()
+        : undefined
+
+      const cachedSession = await initialResumeRecord
+      const sessionId = cachedSession?.resume?.sessionId ?? generatedSessionId
+      const ctxId = cachedSession?.resume?.ctxId ?? runTaskOptions?.ctxId ?? sessionId
+      const outputFormat = getOutputFormat(
+        opts.outputFormat,
+        outputFormatSource,
+        cachedSession?.resume?.outputFormat ?? 'text'
       )
-      const env = {
-        ...process.env,
-        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+
+      const adapterOptions = cachedSession?.resume != null
+        ? {
+          ...cachedSession.resume.adapterOptions,
+          type: 'resume' as const,
+          description,
+          mode: resolveRunMode(
+            opts.print,
+            printSource,
+            cachedSession.resume.adapterOptions.mode ?? 'direct'
+          ),
+          extraOptions
+        }
+        : await (async () => {
+          const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
+          const promptName = opts.spec || opts.entity
+          const [data, resolvedConfig] = await generateAdapterQueryOptions(
+            promptType,
+            promptName,
+            cwd,
+            opts.includeSkill || opts.excludeSkill
+              ? {
+                skills: {
+                  include: opts.includeSkill,
+                  exclude: opts.excludeSkill
+                }
+              }
+              : undefined
+          )
+          const env = {
+            ...process.env,
+            __VF_PROJECT_AI_CTX_ID__: ctxId
+          }
+          await callHook('GenerateSystemPrompt', {
+            cwd,
+            sessionId,
+            type: promptType,
+            name: promptName,
+            data
+          }, env)
+
+          const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
+            cwd,
+            resolveInjectDefaultSystemPromptOption(
+              opts.injectDefaultSystemPrompt,
+              command.getOptionValueSource('injectDefaultSystemPrompt')
+            )
+          )
+
+          const finalSystemPrompt = mergeSystemPrompts({
+            generatedSystemPrompt: resolvedConfig.systemPrompt,
+            userSystemPrompt: opts.systemPrompt,
+            injectDefaultSystemPrompt
+          })
+
+          const tools = mergeListConfig(
+            resolvedConfig.tools,
+            opts.includeTool,
+            opts.excludeTool
+          )
+
+          const mcpServers = mergeListConfig(
+            resolvedConfig.mcpServers,
+            opts.includeMcpServer,
+            opts.excludeMcpServer
+          )
+
+          return {
+            type: 'create' as const,
+            description,
+            runtime: 'cli' as const,
+            sessionId,
+            model: opts.model,
+            effort: opts.effort,
+            systemPrompt: finalSystemPrompt,
+            permissionMode: opts.permissionMode,
+            mode: getRunMode(opts.print),
+            tools,
+            mcpServers,
+            useDefaultVibeForgeMcpServer: resolveDefaultVibeForgeMcpServerOption(
+              opts.defaultVibeForgeMcpServer,
+              command.getOptionValueSource('defaultVibeForgeMcpServer')
+            ),
+            promptAssetIds: resolvedConfig.promptAssetIds,
+            skills: opts.includeSkill || opts.excludeSkill
+              ? {
+                include: opts.includeSkill,
+                exclude: opts.excludeSkill
+              }
+              : undefined,
+            extraOptions,
+            assetBundle: resolvedConfig.assetBundle
+          }
+        })()
+      const shouldPrintOutput = adapterOptions.mode === 'stream'
+      const {
+        type: _adapterType,
+        description: _adapterDescription,
+        ...cachedAdapterOptions
+      } = adapterOptions
+
+      const record: ActiveCliSessionRecord = {
+        resume: {
+          version: 1 as const,
+          ctxId,
+          sessionId,
+          cwd: cachedSession?.resume?.cwd ?? cwd,
+          description: description || cachedSession?.resume?.description,
+          createdAt: cachedSession?.resume?.createdAt ?? Date.now(),
+          updatedAt: Date.now(),
+          taskOptions: cachedSession?.resume?.taskOptions ?? {
+            adapter: runTaskOptions?.adapter,
+            cwd,
+            ctxId
+          },
+          adapterOptions: cachedAdapterOptions,
+          outputFormat
+        },
+        detail: {
+          ctxId,
+          sessionId,
+          status: 'pending',
+          startTime: cachedSession?.detail?.startTime ?? Date.now(),
+          description: description || cachedSession?.detail?.description || cachedSession?.resume?.description,
+          adapter: cachedSession?.detail?.adapter ?? cachedSession?.resume?.taskOptions.adapter,
+          model: cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
+        }
       }
-      await callHook('GenerateSystemPrompt', {
-        cwd: promptCWD,
-        sessionId,
-        type: promptType,
-        name: promptName,
-        data
-      }, env)
 
-      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
-        promptCWD,
-        resolveInjectDefaultSystemPromptOption(
-          opts.injectDefaultSystemPrompt,
-          command.getOptionValueSource('injectDefaultSystemPrompt')
-        )
-      )
+      let persistQueue = Promise.resolve()
+      const persistRecord = () => {
+        persistQueue = persistQueue
+          .catch(() => {})
+          .then(() => writeCliSessionRecord(cwd, ctxId, sessionId, record))
+          .catch((error) => {
+            const message = error instanceof Error ? error.message : String(error)
+            console.error(`[vf] Failed to update session cache: ${message}`)
+          })
+        return persistQueue
+      }
+      const updateInitRecord = (info: SessionInitInfo, pid: number | undefined) => {
+        record.resume = {
+          ...record.resume,
+          updatedAt: Date.now(),
+          taskOptions: {
+            ...record.resume.taskOptions,
+            adapter: info.adapter ?? record.resume.taskOptions.adapter
+          },
+          adapterOptions: {
+            ...record.resume.adapterOptions,
+            model: info.model,
+            effort: info.effort ?? record.resume.adapterOptions.effort
+          }
+        }
+        record.detail = {
+          ...record.detail,
+          status: 'running',
+          pid: pid ?? record.detail.pid,
+          adapter: info.adapter ?? record.detail.adapter,
+          model: info.model ?? record.detail.model
+        }
+        void persistRecord()
+      }
 
-      const finalSystemPrompt = mergeSystemPrompts({
-        generatedSystemPrompt: resolvedConfig.systemPrompt,
-        userSystemPrompt: opts.systemPrompt,
-        injectDefaultSystemPrompt
-      })
+      await persistRecord()
 
-      const tools = mergeListConfig(
-        resolvedConfig.tools,
-        opts.includeTool,
-        opts.excludeTool
-      )
-
-      const mcpServers = mergeListConfig(
-        resolvedConfig.mcpServers,
-        opts.includeMcpServer,
-        opts.excludeMcpServer
-      )
+      let boundSession: { kill(): void; pid?: number } | undefined
+      const handleExit = (exitCode: number) => {
+        void (async () => {
+          const persistedDetail = await getCache(cwd, ctxId, sessionId, 'detail')
+          record.resume = {
+            ...record.resume,
+            updatedAt: Date.now()
+          }
+          record.detail = {
+            ...record.detail,
+            endTime: Date.now(),
+            exitCode,
+            status: persistedDetail?.status === 'stopped'
+              ? 'stopped'
+              : exitCode === 0
+              ? 'completed'
+              : 'failed'
+          }
+          await persistRecord()
+          await persistQueue
+          console.error(formatResumeCommand(sessionId))
+          exitController.handleSessionExit(exitCode)
+        })()
+      }
 
       const { session } = await run({
-        adapter: opts.adapter,
-        cwd: process.cwd(),
+        adapter: record.resume.taskOptions.adapter,
+        cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
+        ctxId,
         env: process.env
       }, {
-        type,
-        description,
-        runtime: 'cli',
-        sessionId,
-        model: opts.model,
-        effort: opts.effort,
-        systemPrompt: finalSystemPrompt,
-        permissionMode: opts.permissionMode,
-        mode: opts.print ? 'stream' : 'direct',
-        tools,
-        mcpServers,
-        useDefaultVibeForgeMcpServer: resolveDefaultVibeForgeMcpServerOption(
-          opts.defaultVibeForgeMcpServer,
-          command.getOptionValueSource('defaultVibeForgeMcpServer')
-        ),
-        promptAssetIds: resolvedConfig.promptAssetIds,
-        skills: opts.includeSkill || opts.excludeSkill
-          ? {
-            include: opts.includeSkill,
-            exclude: opts.excludeSkill
-          }
-          : undefined,
-        extraOptions,
-        assetBundle: resolvedConfig.assetBundle,
+        ...adapterOptions,
         onEvent: (event: AdapterOutputEvent) => {
-          if (opts.print) {
+          if (event.type === 'init') {
+            updateInitRecord(event.data, boundSession?.pid)
+          }
+          if (shouldPrintOutput) {
             const nextState = handlePrintEvent({
               event,
-              outputFormat: opts.outputFormat ?? 'text',
+              outputFormat,
               lastAssistantText,
               didExitAfterError,
               log: (message) => console.log(message),
@@ -208,12 +425,27 @@ export function registerRunCommand(program: Command) {
             didExitAfterError = nextState.didExitAfterError
           }
           if (event.type === 'exit') {
-            exitController.requestExit(event.data.exitCode ?? 0)
+            handleExit(exitController.getPendingExitCode() ?? event.data.exitCode ?? 0)
           }
         }
       })
+      boundSession = session
+      record.detail = {
+        ...record.detail,
+        pid: session.pid ?? record.detail.pid,
+        status: record.detail.status === 'pending' ? 'running' : record.detail.status
+      }
+      void persistRecord()
       exitController.bindSession(session)
     })
+}
+
+export function registerRunCommand(program: Command) {
+  configureRunCommand(
+    program
+      .command('run')
+      .description('Run or resume a session')
+  )
 }
 
 export const resolveInjectDefaultSystemPromptOption = (

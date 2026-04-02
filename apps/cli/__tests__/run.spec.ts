@@ -4,12 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createSessionExitController,
   getAdapterErrorMessage,
+  getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
-  resolvePrintableStopText
+  resolvePrintableStopText,
+  resolveRunMode
 } from '#~/commands/run.js'
 
 describe('run command print output', () => {
@@ -54,7 +56,7 @@ describe('run command print output', () => {
     expect(resolveDefaultVibeForgeMcpServerOption(false, 'cli')).toBe(false)
   })
 
-  it('defers process exit until the session handle is bound', () => {
+  it('defers process exit until the adapter emits exit after a pending stop request', () => {
     const calls: number[] = []
     const controller = createSessionExitController({
       exit: (code) => {
@@ -73,10 +75,13 @@ describe('run command print output', () => {
     })
 
     expect(killCount).toBe(1)
+    expect(calls).toEqual([])
+
+    controller.handleSessionExit(0)
     expect(calls).toEqual([1])
   })
 
-  it('exits immediately when the session handle is already bound', () => {
+  it('uses the pending requested exit code when the session is already bound', () => {
     const calls: number[] = []
     let killCount = 0
     const controller = createSessionExitController({
@@ -93,7 +98,32 @@ describe('run command print output', () => {
     controller.requestExit(0)
 
     expect(killCount).toBe(1)
+    expect(calls).toEqual([])
+
+    controller.handleSessionExit(2)
     expect(calls).toEqual([0])
+  })
+
+  it('keeps cached stream mode when resume does not override print behavior', () => {
+    expect(resolveRunMode(false, 'default', 'stream')).toBe('stream')
+    expect(resolveRunMode(true, 'cli', 'direct')).toBe('stream')
+  })
+
+  it('rejects startup-only flags when resuming a cached session', () => {
+    const command = new Command()
+    command
+      .option('--adapter <adapter>')
+      .option('--session-id <id>')
+      .option('--no-inject-default-system-prompt')
+      .option('--no-default-vibe-forge-mcp-server')
+
+    command.parse(['--adapter', 'codex', '--session-id', 'abc'], { from: 'user' })
+
+    expect(getDisallowedResumeFlags({
+      print: false,
+      adapter: 'codex',
+      sessionId: 'abc'
+    }, command)).toEqual(['--adapter', '--session-id'])
   })
 
   it('prints the last assistant text for text output mode on stop', () => {
@@ -287,8 +317,7 @@ describe('run command print output', () => {
     registerRunCommand(program)
 
     await expect(program.parseAsync([
-      'node',
-      'vf',
+      'run',
       '--output-format',
       'invalid-format'
     ], { from: 'user' })).rejects.toMatchObject({

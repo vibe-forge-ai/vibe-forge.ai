@@ -35,7 +35,7 @@ export interface RunClearCommandOptions {
 }
 
 async function collectClearTargets(cwd: string) {
-  const benchmarkLogDirs = await fg(BENCHMARK_LOG_PATTERNS, {
+  const benchmarkLogDirs = await fg([...BENCHMARK_LOG_PATTERNS], {
     cwd,
     onlyDirectories: true,
     deep: 10
@@ -47,7 +47,7 @@ async function collectClearTargets(cwd: string) {
     deep: 2
   })
 
-  const claudeCodeRouterLogFiles = await fg(CLAUDE_CODE_ROUTER_LOG_FILE_PATTERNS, {
+  const claudeCodeRouterLogFiles = await fg([...CLAUDE_CODE_ROUTER_LOG_FILE_PATTERNS], {
     cwd,
     onlyFiles: true,
     deep: 1
