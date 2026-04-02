@@ -14,7 +14,7 @@ export interface SchemaModule {
 
 function createSchemaContext(db: SqliteDatabase): SchemaContext {
   const getColumns = (tableName: string) => {
-    const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>
+    const rows = db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>()
     return rows.map(row => row.name)
   }
 

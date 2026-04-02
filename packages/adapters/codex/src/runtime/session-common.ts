@@ -300,7 +300,7 @@ function buildCodexConfigOverrides(params: {
  * Build `-c mcp_servers.<name>.*` overrides for each filtered MCP server.
  */
 function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
-  const toTomlKey = (name: string) => /^[A-Za-z0-9_-]+$/.test(name) ? name : JSON.stringify(name)
+  const toTomlKey = (name: string) => /^[\w-]+$/.test(name) ? name : JSON.stringify(name)
   const args: string[] = []
   for (const [name, server] of Object.entries(servers)) {
     const {

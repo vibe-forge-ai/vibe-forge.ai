@@ -10,7 +10,7 @@ export function createMessagesRepo(db: SqliteDatabase) {
 
   const list = (sessionId: string): unknown[] => {
     const stmt = db.prepare('SELECT data FROM messages WHERE sessionId = ? ORDER BY id ASC')
-    const rows = stmt.all(sessionId) as { data: string }[]
+    const rows = stmt.all<{ data: string }>(sessionId)
     return rows.map(r => JSON.parse(r.data) as unknown)
   }
 

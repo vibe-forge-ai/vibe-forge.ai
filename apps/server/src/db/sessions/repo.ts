@@ -82,7 +82,7 @@ export function createSessionsRepo(db: SqliteDatabase) {
       ${whereClause}
       ORDER BY isStarred DESC, createdAt DESC
     `)
-    const rows = stmt.all() as SessionRow[]
+    const rows = stmt.all<SessionRow>()
     return rows.map(mapSessionRow)
   }
 
@@ -91,7 +91,7 @@ export function createSessionsRepo(db: SqliteDatabase) {
       ${SESSION_SELECT}
       WHERE s.id = ?
     `)
-    const row = stmt.get(id) as (SessionRow | undefined)
+    const row = stmt.get<SessionRow>(id)
     if (row == null) return undefined
     return mapSessionRow(row)
   }
@@ -123,7 +123,7 @@ export function createSessionsRepo(db: SqliteDatabase) {
       if (!currentId) continue
       updateStmt.run(isArchived ? 1 : 0, currentId)
       updatedIds.push(currentId)
-      const rows = stmt.all(currentId) as { id: string }[]
+      const rows = stmt.all<{ id: string }>(currentId)
       for (const row of rows) {
         stack.push(row.id)
       }

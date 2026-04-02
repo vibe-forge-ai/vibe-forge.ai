@@ -24,6 +24,7 @@
     "@vibe-forge/plugin-standard-dev": "workspace:*",
     "@vibe-forge/server": "workspace:*",
     "@vibe-forge/task": "workspace:*",
+    "baseline-browser-mapping": "2.10.13",
     "commander": "^12.1.0",
     "dprint": "^0.50.2",
     "esbuild-register": "^3.6.0",
