@@ -52,6 +52,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     sessionId: 'sess-abc',
     channelAdapter: undefined,
     channelPermissionMode: undefined,
+    channelEffort: undefined,
     contentItems: undefined,
     commandText: '',
     defineMessages,
@@ -86,6 +87,10 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
         adapter: ctx.channelAdapter,
         permissionMode
       })
+    }),
+    getChannelEffortPreference: vi.fn(() => ctx.channelEffort),
+    setChannelEffortPreference: vi.fn((effort) => {
+      ctx.channelEffort = effort
     }),
     ...overrides
   }
@@ -445,7 +450,7 @@ describe('session setting commands', () => {
     const ctx = makeCtx({ commandText: '/get', config: { type: 'lark' } as any })
     await channelCommandMiddleware(ctx, vi.fn())
     expect(ctx.reply).toHaveBeenCalledWith(
-      '缺少参数：<field>\n可选值：\n- model：模型，读取当前会话使用的模型名称。\n- adapter：适配器，读取当前会话绑定的适配器。\n- permissionMode：权限模式，读取当前会话的权限策略。\n用法：/get <field:model|adapter|permissionMode>'
+      '缺少参数：<field>\n可选值：\n- model：模型，读取当前会话使用的模型名称。\n- adapter：适配器，读取当前会话绑定的适配器。\n- permissionMode：权限模式，读取当前会话的权限策略。\n- effort：Effort，读取当前会话的显式 effort 设置。\n用法：/get <field:model|adapter|permissionMode|effort>'
     )
   })
 

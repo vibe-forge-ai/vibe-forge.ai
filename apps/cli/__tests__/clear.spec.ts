@@ -1,5 +1,4 @@
-import { access } from 'node:fs/promises'
-import fs from 'node:fs/promises'
+import fs, { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 

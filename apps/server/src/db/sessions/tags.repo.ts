@@ -7,7 +7,10 @@ export function createTagsRepo(db: SqliteDatabase) {
 
       for (const tagName of tags) {
         db.prepare('INSERT OR IGNORE INTO tags (name) VALUES (?)').run(tagName)
-        const tag = db.prepare('SELECT id FROM tags WHERE name = ?').get(tagName) as { id: number }
+        const tag = db.prepare('SELECT id FROM tags WHERE name = ?').get<{ id: number }>(tagName)
+        if (tag == null) {
+          throw new Error(`Failed to resolve tag id for ${tagName}.`)
+        }
         db.prepare('INSERT OR IGNORE INTO session_tags (sessionId, tagId) VALUES (?, ?)').run(sessionId, tag.id)
       }
     })

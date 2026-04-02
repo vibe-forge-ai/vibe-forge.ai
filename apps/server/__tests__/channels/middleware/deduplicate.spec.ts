@@ -17,6 +17,7 @@ const makeCtx = (messageId = 'msg1'): ChannelContext => ({
   sessionId: undefined,
   channelAdapter: undefined,
   channelPermissionMode: undefined,
+  channelEffort: undefined,
   contentItems: undefined,
   commandText: '',
   defineMessages,
@@ -31,7 +32,9 @@ const makeCtx = (messageId = 'msg1'): ChannelContext => ({
   getChannelAdapterPreference: vi.fn(),
   setChannelAdapterPreference: vi.fn(),
   getChannelPermissionModePreference: vi.fn(),
-  setChannelPermissionModePreference: vi.fn()
+  setChannelPermissionModePreference: vi.fn(),
+  getChannelEffortPreference: vi.fn(),
+  setChannelEffortPreference: vi.fn()
 })
 
 beforeEach(() => vi.clearAllMocks())

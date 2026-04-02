@@ -76,14 +76,12 @@ describe('db schema modules', () => {
 
     initSchema(sqlite, [sessionsSchemaModule, channelSessionsSchemaModule, automationSchemaModule])
 
-    const sessionColumns = sqlite.prepare('PRAGMA table_info(sessions)').all() as Array<{ name: string }>
-    const channelColumns = sqlite.prepare('PRAGMA table_info(channel_sessions)').all() as Array<{ name: string }>
-    const channelPreferenceColumns = sqlite.prepare('PRAGMA table_info(channel_preferences)').all() as Array<
-      { name: string }
-    >
-    const automationRuleColumns = sqlite.prepare('PRAGMA table_info(automation_rules)').all() as Array<{ name: string }>
-    const automationTaskColumns = sqlite.prepare('PRAGMA table_info(automation_tasks)').all() as Array<{ name: string }>
-    const automationRunColumns = sqlite.prepare('PRAGMA table_info(automation_runs)').all() as Array<{ name: string }>
+    const sessionColumns = sqlite.prepare('PRAGMA table_info(sessions)').all<{ name: string }>()
+    const channelColumns = sqlite.prepare('PRAGMA table_info(channel_sessions)').all<{ name: string }>()
+    const channelPreferenceColumns = sqlite.prepare('PRAGMA table_info(channel_preferences)').all<{ name: string }>()
+    const automationRuleColumns = sqlite.prepare('PRAGMA table_info(automation_rules)').all<{ name: string }>()
+    const automationTaskColumns = sqlite.prepare('PRAGMA table_info(automation_tasks)').all<{ name: string }>()
+    const automationRunColumns = sqlite.prepare('PRAGMA table_info(automation_runs)').all<{ name: string }>()
 
     expect(sessionColumns.map(column => column.name)).toEqual(expect.arrayContaining([
       'parentSessionId',

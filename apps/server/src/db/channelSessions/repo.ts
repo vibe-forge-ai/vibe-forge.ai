@@ -37,7 +37,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
       FROM channel_sessions
       WHERE channelType = ? AND sessionType = ? AND channelId = ?
     `)
-    return stmt.get(channelType, sessionType, channelId) as ChannelSessionRow | undefined
+    return stmt.get<ChannelSessionRow>(channelType, sessionType, channelId)
   }
 
   const getBySessionId = (sessionId: string): ChannelSessionRow | undefined => {
@@ -48,7 +48,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
       ORDER BY updatedAt DESC
       LIMIT 1
     `)
-    return stmt.get(sessionId) as ChannelSessionRow | undefined
+    return stmt.get<ChannelSessionRow>(sessionId)
   }
 
   const upsert = (row: Omit<ChannelSessionRow, 'createdAt' | 'updatedAt'>) => {
@@ -94,7 +94,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
       FROM channel_preferences
       WHERE channelType = ? AND sessionType = ? AND channelId = ?
     `)
-    return stmt.get(channelType, sessionType, channelId) as ChannelPreferenceRow | undefined
+    return stmt.get<ChannelPreferenceRow>(channelType, sessionType, channelId)
   }
 
   const upsertPreference = (row: Omit<ChannelPreferenceRow, 'createdAt' | 'updatedAt'>) => {

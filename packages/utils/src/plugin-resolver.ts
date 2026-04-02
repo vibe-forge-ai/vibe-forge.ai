@@ -167,7 +167,7 @@ export const normalizePluginConfig = (
 ): PluginConfig | undefined => {
   if (plugins == null) return undefined
   if (!Array.isArray(plugins)) {
-    throw new Error(`Invalid ${path} config. "plugins" must be an array of plugin instances; the legacy object map format is no longer supported.`)
+    throw new TypeError(`Invalid ${path} config. "plugins" must be an array of plugin instances; the legacy object map format is no longer supported.`)
   }
 
   return plugins.map((plugin, index) => normalizePluginInstanceConfig(plugin, `${path}[${index}]`))
@@ -231,7 +231,6 @@ const loadManifest = (
 
   const workspaceRequire = createWorkspaceRequire(cwd)
   try {
-    // eslint-disable-next-line ts/no-require-imports
     const mod = workspaceRequire(rootEntryPath)
     return toPluginManifest(mod?.default ?? mod)
   } catch (error) {

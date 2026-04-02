@@ -1,12 +1,15 @@
 import { createRequire } from 'node:module'
+import type {
+  DatabaseSync as NodeDatabaseSync,
+  DatabaseSyncOptions,
+  StatementSync
+} from 'node:sqlite'
 
-const require = createRequire(import.meta.url)
+const require = createRequire(__filename)
 const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite')
 
-type DatabaseSyncOptions = import('node:sqlite').DatabaseSyncOptions
-type StatementSync = import('node:sqlite').StatementSync
-
 export type SqliteBindValue = null | number | bigint | string | NodeJS.ArrayBufferView
+type SqliteRow = object
 
 export interface SqliteRunResult {
   changes: number
@@ -14,12 +17,12 @@ export interface SqliteRunResult {
 }
 
 export interface SqliteStatement {
-  all: (...params: SqliteBindValue[]) => Record<string, unknown>[]
-  get: (...params: SqliteBindValue[]) => Record<string, unknown> | undefined
+  all: <TRow extends SqliteRow = SqliteRow>(...params: SqliteBindValue[]) => TRow[]
+  get: <TRow extends SqliteRow = SqliteRow>(...params: SqliteBindValue[]) => TRow | undefined
   run: (...params: SqliteBindValue[]) => SqliteRunResult
 }
 
-type SqliteTransactionFn = (...args: unknown[]) => unknown
+type SqliteTransactionFn = (...args: any[]) => unknown
 
 export interface SqliteDatabase {
   close: () => void
@@ -28,21 +31,21 @@ export interface SqliteDatabase {
   transaction: <T extends SqliteTransactionFn>(fn: T) => T
 }
 
-function cloneRow(row: Record<string, unknown>) {
+function cloneRow<TRow extends SqliteRow>(row: TRow): TRow {
   return { ...row }
 }
 
 class NodeSqliteStatement implements SqliteStatement {
   constructor(private readonly statement: StatementSync) {}
 
-  all(...params: SqliteBindValue[]) {
+  all<TRow extends SqliteRow = SqliteRow>(...params: SqliteBindValue[]) {
     return this.statement
       .all(...params)
-      .map(row => cloneRow(row as Record<string, unknown>))
+      .map(row => cloneRow(row as TRow))
   }
 
-  get(...params: SqliteBindValue[]) {
-    const row = this.statement.get(...params) as Record<string, unknown> | undefined
+  get<TRow extends SqliteRow = SqliteRow>(...params: SqliteBindValue[]) {
+    const row = this.statement.get(...params) as TRow | undefined
     return row == null ? undefined : cloneRow(row)
   }
 
@@ -58,7 +61,7 @@ class NodeSqliteStatement implements SqliteStatement {
 class NodeSqliteDatabase implements SqliteDatabase {
   private savepointId = 0
 
-  constructor(private readonly database: DatabaseSync) {}
+  constructor(private readonly database: NodeDatabaseSync) {}
 
   close() {
     if (this.database.isOpen) {

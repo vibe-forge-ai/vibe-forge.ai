@@ -88,7 +88,7 @@ adapters:
             extend: './base.yaml',
             defaultModel: 'project-model',
             env: {
-              API_KEY: '${TEST_API_KEY}'
+              API_KEY: `\${TEST_API_KEY}`
             },
             permissions: {
               allow: ['Edit']

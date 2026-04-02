@@ -151,14 +151,14 @@ function mapAutomationTaskRow(row: AutomationTaskRow): AutomationTask {
 export function createAutomationRepo(db: SqliteDatabase) {
   const listRules = (): AutomationRule[] => {
     const stmt = db.prepare('SELECT * FROM automation_rules ORDER BY createdAt DESC')
-    const rows = stmt.all() as AutomationRuleRow[]
+    const rows = stmt.all<AutomationRuleRow>()
     return rows.map(mapAutomationRuleRow)
   }
 
   const listRuleDetails = (): AutomationRuleDetail[] => {
     const rules = listRules()
-    const triggerRows = db.prepare('SELECT * FROM automation_triggers').all() as AutomationTriggerRow[]
-    const taskRows = db.prepare('SELECT * FROM automation_tasks').all() as AutomationTaskRow[]
+    const triggerRows = db.prepare('SELECT * FROM automation_triggers').all<AutomationTriggerRow>()
+    const taskRows = db.prepare('SELECT * FROM automation_tasks').all<AutomationTaskRow>()
     const triggerMap = new Map<string, AutomationTrigger[]>()
     const taskMap = new Map<string, AutomationTask[]>()
     for (const row of triggerRows) {
@@ -180,20 +180,20 @@ export function createAutomationRepo(db: SqliteDatabase) {
 
   const getRule = (id: string): AutomationRule | undefined => {
     const stmt = db.prepare('SELECT * FROM automation_rules WHERE id = ?')
-    const row = stmt.get(id) as AutomationRuleRow | undefined
+    const row = stmt.get<AutomationRuleRow>(id)
     if (row == null) return undefined
     return mapAutomationRuleRow(row)
   }
 
   const listTriggers = (ruleId: string): AutomationTrigger[] => {
     const stmt = db.prepare('SELECT * FROM automation_triggers WHERE ruleId = ? ORDER BY createdAt ASC')
-    const rows = stmt.all(ruleId) as AutomationTriggerRow[]
+    const rows = stmt.all<AutomationTriggerRow>(ruleId)
     return rows.map(mapAutomationTriggerRow)
   }
 
   const listTasks = (ruleId: string): AutomationTask[] => {
     const stmt = db.prepare('SELECT * FROM automation_tasks WHERE ruleId = ? ORDER BY createdAt ASC')
-    const rows = stmt.all(ruleId) as AutomationTaskRow[]
+    const rows = stmt.all<AutomationTaskRow>(ruleId)
     return rows.map(mapAutomationTaskRow)
   }
 
@@ -244,7 +244,7 @@ export function createAutomationRepo(db: SqliteDatabase) {
 
   const getTrigger = (id: string): AutomationTrigger | undefined => {
     const stmt = db.prepare('SELECT * FROM automation_triggers WHERE id = ?')
-    const row = stmt.get(id) as AutomationTriggerRow | undefined
+    const row = stmt.get<AutomationTriggerRow>(id)
     if (!row) return undefined
     return mapAutomationTriggerRow(row)
   }
@@ -328,7 +328,7 @@ export function createAutomationRepo(db: SqliteDatabase) {
       ORDER BY r.createdAt DESC
       LIMIT ?
     `)
-    const rows = stmt.all(ruleId, limit) as Array<{
+    const rows = stmt.all<{
       id: string
       ruleId: string
       sessionId: string
@@ -339,7 +339,7 @@ export function createAutomationRepo(db: SqliteDatabase) {
       title?: string | null
       lastMessage?: string | null
       lastUserMessage?: string | null
-    }>
+    }>(ruleId, limit)
     return rows.map(row => ({
       id: row.id,
       ruleId: row.ruleId,

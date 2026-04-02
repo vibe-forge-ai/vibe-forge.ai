@@ -32,6 +32,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   sessionId: 'sess-abc',
   channelAdapter: undefined,
   channelPermissionMode: undefined,
+  channelEffort: undefined,
   contentItems: undefined,
   commandText: '',
   defineMessages,
@@ -47,6 +48,8 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   setChannelAdapterPreference: vi.fn(),
   getChannelPermissionModePreference: vi.fn(),
   setChannelPermissionModePreference: vi.fn(),
+  getChannelEffortPreference: vi.fn(),
+  setChannelEffortPreference: vi.fn(),
   ...overrides
 })
 

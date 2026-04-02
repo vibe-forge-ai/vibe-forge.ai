@@ -824,16 +824,14 @@ const generateSpecRoutePrompt = (specs: Definition<Spec>[], options?: { active?:
       )
     : ''
 
-  return (
-    '<system-prompt>\n' +
-    activeIdentityPrompt +
-    '根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 `load-spec` mcp tool 完成工作流程的加载。\n' +
-    '- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n' +
-    '- 通过参数的描述以及实际应用场景决定怎么传入参数\n' +
-    '项目存在如下工作流程：\n' +
-    `${specsRouteStr}\n` +
-    '</system-prompt>\n'
-  )
+  return `<system-prompt>
+${activeIdentityPrompt}根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 \`load-spec\` mcp tool 完成工作流程的加载。
+- 根据实际需求传入标识，这不是路径，只能使用工具进行加载
+- 通过参数的描述以及实际应用场景决定怎么传入参数
+项目存在如下工作流程：
+${specsRouteStr}
+</system-prompt>
+`
 }
 
 const generateEntitiesRoutePrompt = (entities: Definition<Entity>[]) => (
