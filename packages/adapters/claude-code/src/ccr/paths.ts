@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, resolve } from 'node:path'
+import { dirname, extname, resolve } from 'node:path'
 
 const require = createRequire(import.meta.url ?? __filename)
 
@@ -55,15 +55,60 @@ export const resolveClaudeCliPath = () => {
   return resolvePackageBinPath('@anthropic-ai/claude-code', 'claude')
 }
 
-export const resolveTransformerPath = (relativePath: string) => {
+const resolveTransformerCandidateNames = (name: string) => {
+  const extension = extname(name)
+  const baseName = extension === '' ? name : name.slice(0, -extension.length)
+
+  return {
+    source: [
+      `${baseName}.ts`,
+      `${baseName}.js`
+    ],
+    dist: [
+      `${baseName}.js`,
+      `${baseName}.mjs`,
+      `${baseName}.cjs`
+    ]
+  }
+}
+
+export const resolveTransformerRuntimePreloadPath = () => {
   const adapterPackageDir = resolvePackageDir('@vibe-forge/adapter-claude-code')
   const candidates = [
-    resolve(adapterPackageDir, 'dist/ccr/transformers', relativePath),
-    resolve(adapterPackageDir, 'dist/ccr-transformers', relativePath),
-    resolve(adapterPackageDir, 'src/ccr/transformers', relativePath),
-    resolve(adapterPackageDir, 'src/ccr-transformers', relativePath),
-    resolve(adapterPackageDir, 'ccr/transformers', relativePath),
-    resolve(adapterPackageDir, 'ccr-transformers', relativePath)
+    resolve(adapterPackageDir, '../../register/preload.js'),
+    resolve(adapterPackageDir, '../../register/esbuild.js')
+  ]
+
+  const localRuntimePath = candidates.find(candidate => existsSync(candidate))
+  if (localRuntimePath != null) {
+    return toRealPath(localRuntimePath)
+  }
+
+  try {
+    return toRealPath(require.resolve('esbuild-register'))
+  } catch {
+    return undefined
+  }
+}
+
+export const resolveTransformerPath = (name: string) => {
+  const adapterPackageDir = resolvePackageDir('@vibe-forge/adapter-claude-code')
+  const candidateNames = resolveTransformerCandidateNames(name)
+  const candidates = [
+    ...[
+      'src/ccr/transformers',
+      'src/ccr-transformers',
+      'ccr/transformers',
+      'ccr-transformers'
+    ].flatMap(baseDir => candidateNames.source.map(relativePath => (
+      resolve(adapterPackageDir, baseDir, relativePath)
+    ))),
+    ...[
+      'dist/ccr/transformers',
+      'dist/ccr-transformers'
+    ].flatMap(baseDir => candidateNames.dist.map(relativePath => (
+      resolve(adapterPackageDir, baseDir, relativePath)
+    )))
   ]
 
   return candidates.find(candidate => existsSync(candidate)) ?? candidates[0]

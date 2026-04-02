@@ -177,7 +177,9 @@ describe('generateDefaultCCRConfigJSON', () => {
       transformers: Array<{ path: string }>
     }
 
-    expect(config.transformers.some(item => item.path.endsWith('logger.js'))).toBe(true)
+    expect(config.transformers.some(item => item.path.endsWith('logger.ts'))).toBe(true)
+    expect(config.transformers.some(item => item.path.endsWith('openai-polyfill.ts'))).toBe(true)
+    expect(config.transformers.some(item => item.path.endsWith('gemini-open-router-polyfill.ts'))).toBe(true)
   })
 
   it('allows disabling logger transformer explicitly', () => {
@@ -195,6 +197,6 @@ describe('generateDefaultCCRConfigJSON', () => {
       transformers: Array<{ path: string }>
     }
 
-    expect(config.transformers.some(item => item.path.endsWith('logger.js'))).toBe(false)
+    expect(config.transformers.some(item => item.path.endsWith('logger.ts'))).toBe(false)
   })
 })

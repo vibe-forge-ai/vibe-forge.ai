@@ -1,6 +1,5 @@
-const {
-  writeRequestDebugLog
-} = require('./log-context')
+// @ts-nocheck
+import { writeRequestDebugLog } from './log-context'
 
 class GeminiTransformer {
   name = 'gemini-schema-cleaner'

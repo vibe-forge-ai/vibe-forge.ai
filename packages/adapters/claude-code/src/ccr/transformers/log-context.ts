@@ -1,8 +1,13 @@
-const fs = require('node:fs')
-const path = require('node:path')
-const process = require('node:process')
+// @ts-nocheck
+import fs from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+
+import { formatLoggerEntry } from '@vibe-forge/utils'
 
 const CLAUDE_CODE_SESSION_HEADER = 'x-claude-code-session-id'
+const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 const resolveCCRRequestLogContextPath = (workspace, sessionId) =>
   path.join(
@@ -85,7 +90,7 @@ const resolveStoredRequestLogContext = (sessionId) => {
   return undefined
 }
 
-const resolveRequestLogContext = (context) => {
+export const resolveRequestLogContext = (context) => {
   const req = context?.req
 
   if (req?.vfLogContext) {
@@ -127,7 +132,7 @@ const resolveRequestLogPath = (fileName, context, request) => {
     typeof sessionId !== 'string' ||
     sessionId === ''
   ) {
-    return path.join(__dirname, 'temp.log.md')
+    return path.join(CURRENT_DIR, 'temp.log.md')
   }
 
   return path.join(
@@ -141,27 +146,18 @@ const resolveRequestLogPath = (fileName, context, request) => {
   )
 }
 
-const writeRequestDebugLog = (fileName, message, data = null, context, request) => {
-  const timestamp = new Date().toISOString()
+export const writeRequestDebugLog = (fileName, message, data = null, context, request) => {
   try {
-    const logMessage = data
-      ? `# [${timestamp}] ${message}:\n` +
-        '```json\n' +
-        `${JSON.stringify(data, null, 2)}\n` +
-        '```\n'
-      : `# [${timestamp}] ${message}\n`
     const logPath = resolveRequestLogPath(fileName, context, request)
     fs.mkdirSync(path.dirname(logPath), { recursive: true })
-    fs.appendFileSync(logPath, logMessage)
+    fs.appendFileSync(
+      logPath,
+      formatLoggerEntry('D', data == null ? [message] : [message, data])
+    )
   } catch (error) {
     fs.appendFileSync(
-      path.join(__dirname, 'temp.log.md'),
-      `# [${timestamp}] ${error}\n`
+      path.join(CURRENT_DIR, 'temp.log.md'),
+      formatLoggerEntry('E', [error])
     )
   }
-}
-
-module.exports = {
-  resolveRequestLogContext,
-  writeRequestDebugLog
 }

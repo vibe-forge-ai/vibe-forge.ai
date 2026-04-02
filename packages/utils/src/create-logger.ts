@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
@@ -21,7 +22,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 }
 
 const YAML_INDENT = '  '
-const YAML_RESERVED_PATTERN = /^(?:[-+]?\.inf|\.nan|[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?|true|false|null|~|y|n|yes|no|on|off)$/i
+const YAML_RESERVED_PATTERN = /^(?:[-+]?\.inf|\.nan|[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:e[-+]?\d+)?|true|false|null|[~yn]|yes|no|on|off)$/i
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null &&
@@ -78,7 +79,7 @@ const toYamlLogValue = (value: unknown, stack = new WeakSet<object>()): YamlLogV
     }
   }
   if (ArrayBuffer.isView(value)) {
-    return Array.from(value as ArrayLike<number>)
+    return Array.from(value as unknown as ArrayLike<number>)
   }
   if (value instanceof Map) {
     if (stack.has(value)) return '[Circular]'
@@ -183,7 +184,7 @@ const renderYamlLines = (value: YamlLogValue, indentLevel = 0): string[] => {
     })
   }
 
-  return Object.entries(value)
+  return Object.entries(value as Record<string, YamlLogValue>)
     .flatMap(([key, entryValue]) => {
       const renderedKey = formatYamlKey(key)
       if (typeof entryValue === 'string' && isMultilineString(entryValue)) {
@@ -206,6 +207,36 @@ const renderYamlLines = (value: YamlLogValue, indentLevel = 0): string[] => {
 
 const formatStructuredLogValue = (value: unknown) => (
   renderYamlLines(toYamlLogValue(value)).join('\n')
+)
+
+export const formatLoggerMessage = (...args: unknown[]) => (
+  args
+    .map((arg) => {
+      if (typeof arg === 'string') {
+        return arg
+      }
+      if (arg instanceof Error) {
+        return (
+          '\n```text\n' +
+          `${arg.stack}\n` +
+          '```'
+        )
+      }
+      return (
+        '\n```yaml\n' +
+        `${formatStructuredLogValue(arg)}\n` +
+        '```'
+      )
+    })
+    .join(' ')
+)
+
+export const formatLoggerEntry = (
+  tag: string,
+  args: unknown[],
+  now = new Date().toLocaleString()
+) => (
+  `# [${now}] __${tag}__ ${formatLoggerMessage(...args)}\n`
 )
 
 export const createLogger = (
@@ -236,38 +267,17 @@ export const createLogger = (
     if (LOG_LEVEL_PRIORITY[currentLevel] < LOG_LEVEL_PRIORITY[level]) {
       return
     }
-    const msg = args
-      .map((arg) => {
-        if (typeof arg === 'string') {
-          return arg
-        }
-        if (arg instanceof Error) {
-          return (
-            '\n```text\n' +
-            `${arg.stack}\n` +
-            '```'
-          )
-        }
-        return (
-          '\n```yaml\n' +
-          `${formatStructuredLogValue(arg)}\n` +
-          '```'
-        )
-      })
-      .join(' ')
     const now = new Date().toLocaleString()
     if (loggerStream.writableEnded) {
       const tempLoggerStream = createWriteStream(loggerFilePath, {
         flags: 'a'
       })
-      tempLoggerStream.write(
-        `# [${now}] __E__ UNEXPECTED LOGGER STREAM ENDED\n`
-      )
-      tempLoggerStream.write(`# [${now}] __${tag}__ ${msg}\n`)
+      tempLoggerStream.write(formatLoggerEntry('E', ['UNEXPECTED LOGGER STREAM ENDED'], now))
+      tempLoggerStream.write(formatLoggerEntry(tag, args, now))
       tempLoggerStream.end()
       return
     }
-    loggerStream.write(`# [${now}] __${tag}__ ${msg}\n`)
+    loggerStream.write(formatLoggerEntry(tag, args, now))
   }
   return {
     stream: loggerStream,

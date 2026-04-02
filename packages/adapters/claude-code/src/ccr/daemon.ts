@@ -9,7 +9,7 @@ import type { AdapterCtx, Config } from '@vibe-forge/types'
 import { omitAdapterCommonConfig } from '@vibe-forge/utils'
 
 import { generateDefaultCCRConfigJSON } from './config'
-import { resolveAdapterCliPath } from './paths'
+import { resolveAdapterCliPath, resolveTransformerRuntimePreloadPath } from './paths'
 
 const DEFAULT_ROUTER_HOST = '127.0.0.1'
 const DEFAULT_ROUTER_PORT = 3456
@@ -28,6 +28,7 @@ export interface ClaudeCodeRouterConnection {
 export interface ClaudeCodeRouterDeps {
   isProcessAlive: (pid: number) => boolean
   resolveCliPath: () => string
+  resolveRuntimePreloadPath: () => string | undefined
   spawnDetached: (params: {
     cliPath: string
     cwd: string
@@ -66,6 +67,29 @@ const parseRouterConnection = (configText: string): ClaudeCodeRouterConnection =
       : 'test',
     apiTimeoutMs: normalizePositiveInteger(config.API_TIMEOUT_MS) ?? DEFAULT_ROUTER_API_TIMEOUT_MS
   }
+}
+
+const usesTypeScriptTransformers = (configText: string) => {
+  try {
+    const config = JSON.parse(configText) as {
+      transformers?: Array<{ path?: unknown }>
+    }
+    return config.transformers?.some(
+      transformer => typeof transformer.path === 'string' && transformer.path.endsWith('.ts')
+    ) ?? false
+  } catch {
+    return false
+  }
+}
+
+const mergeNodeOptions = (baseValue: string | undefined, additions: string[]) => {
+  const existingParts = (baseValue ?? '').split(/\s+/).filter(Boolean)
+  const merged = [
+    ...additions,
+    ...existingParts
+  ]
+
+  return Array.from(new Set(merged)).join(' ').trim()
 }
 
 const readPidFile = async (pidPath: string) => {
@@ -166,6 +190,7 @@ const waitForReadyDefault: ClaudeCodeRouterDeps['waitForReady'] = async (
 
 const defaultRouterDeps: ClaudeCodeRouterDeps = {
   resolveCliPath: resolveAdapterCliPath,
+  resolveRuntimePreloadPath: resolveTransformerRuntimePreloadPath,
   isProcessAlive: isProcessAliveDefault,
   spawnDetached: spawnDetachedDefault,
   stopProcess: stopProcessDefault,
@@ -195,11 +220,19 @@ export const ensureClaudeCodeRouterReady = async (
     userConfig,
     adapterOptions
   })
-  const connection = parseRouterConnection(configText)
-  const { configPath, mockHome, pidPath } = buildRouterPaths(cwd)
   const routerDeps = {
     ...defaultRouterDeps,
     ...deps
+  }
+  const hasTypeScriptTransformers = usesTypeScriptTransformers(configText)
+  const runtimePreloadPath = hasTypeScriptTransformers
+    ? routerDeps.resolveRuntimePreloadPath()
+    : undefined
+  const connection = parseRouterConnection(configText)
+  const { configPath, mockHome, pidPath } = buildRouterPaths(cwd)
+
+  if (hasTypeScriptTransformers && runtimePreloadPath == null) {
+    throw new Error('Failed to resolve CCR TypeScript runtime preload')
   }
 
   await mkdir(dirname(configPath), { recursive: true })
@@ -231,14 +264,23 @@ export const ensureClaudeCodeRouterReady = async (
   if (!isRunning) {
     const cliPath = routerDeps.resolveCliPath()
     await access(cliPath)
+    const spawnEnv: NodeJS.ProcessEnv = {
+      ...process.env,
+      ...env,
+      HOME: mockHome
+    }
+
+    if (runtimePreloadPath != null) {
+      spawnEnv.NODE_OPTIONS = mergeNodeOptions(spawnEnv.NODE_OPTIONS, [
+        '--conditions=__vibe-forge__',
+        `--require=${runtimePreloadPath}`
+      ])
+    }
+
     await routerDeps.spawnDetached({
       cliPath,
       cwd,
-      env: {
-        ...process.env,
-        ...env,
-        HOME: mockHome
-      }
+      env: spawnEnv
     })
   }
 

@@ -57,6 +57,7 @@ describe('ensureClaudeCodeRouterReady', () => {
   })
 
   afterEach(async () => {
+    vi.unstubAllEnvs()
     await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
   })
 
@@ -68,6 +69,7 @@ describe('ensureClaudeCodeRouterReady', () => {
 
     const connection = await ensureClaudeCodeRouterReady(ctx, {
       resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => false),
       spawnDetached,
       stopProcess: vi.fn(async () => undefined),
@@ -95,10 +97,34 @@ describe('ensureClaudeCodeRouterReady', () => {
       cwd: workspace,
       env: expect.objectContaining({
         TEST_ENV: 'router',
-        HOME: mockHome
+        HOME: mockHome,
+        NODE_OPTIONS: '--conditions=__vibe-forge__ --require=/mock/register/preload.js'
       })
     })
     expect(waitForReady).toHaveBeenCalledWith(4123, 15000)
+  })
+
+  it('preserves existing NODE_OPTIONS when preloading the TypeScript transformer runtime', async () => {
+    const workspace = await createWorkspace()
+    const ctx = createCtx(workspace)
+    const spawnDetached = vi.fn(async () => undefined)
+    vi.stubEnv('NODE_OPTIONS', '--trace-warnings')
+
+    await ensureClaudeCodeRouterReady(ctx, {
+      resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
+      isProcessAlive: vi.fn(() => false),
+      spawnDetached,
+      stopProcess: vi.fn(async () => undefined),
+      waitForReady: vi.fn(async () => undefined)
+    })
+
+    expect(spawnDetached).toHaveBeenCalledTimes(1)
+    const spawnArgs = spawnDetached.mock.calls[0] as unknown as [{ env: NodeJS.ProcessEnv }]
+    const spawnEnv = spawnArgs[0]?.env
+    expect(spawnEnv.NODE_OPTIONS).toContain('--conditions=__vibe-forge__')
+    expect(spawnEnv.NODE_OPTIONS).toContain('--require=/mock/register/preload.js')
+    expect(spawnEnv.NODE_OPTIONS).toContain('--trace-warnings')
   })
 
   it('restarts the daemon when the pid file is stale', async () => {
@@ -113,6 +139,7 @@ describe('ensureClaudeCodeRouterReady', () => {
 
     await ensureClaudeCodeRouterReady(ctx, {
       resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive,
       spawnDetached,
       stopProcess: vi.fn(async () => undefined),
@@ -144,6 +171,7 @@ describe('ensureClaudeCodeRouterReady', () => {
 
     const connection = await ensureClaudeCodeRouterReady(ctx, {
       resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => true),
       spawnDetached,
       stopProcess,
@@ -192,6 +220,7 @@ describe('ensureClaudeCodeRouterReady', () => {
 
     const connection = await ensureClaudeCodeRouterReady(ctx, {
       resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => true),
       spawnDetached,
       stopProcess,

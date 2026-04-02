@@ -20,7 +20,7 @@
 - `src/ccr/*.ts`
   - Claude Code Router 的配置、路径解析与 daemon 复用
   - `config.ts` 生成 router 配置，`daemon.ts` 负责 pid 检查、按需重启与 ready wait
-- `src/ccr/transformers/*.js`
+- `src/ccr/transformers/*.ts`
   - CCR 请求/响应变换层
   - 这里的日志是 adapter 内部排查日志，不等同于主会话 logger.debug
 - `src/protocol/*.ts`
@@ -174,10 +174,10 @@ Claude 维护时优先检查两点：
 先读：
 
 - `src/ccr/config.ts`
-- `src/ccr/transformers/logger.js`
-- `src/ccr/transformers/openai-polyfill.js`
-- `src/ccr/transformers/gemini-open-router-polyfill.js`
-- `src/ccr/transformers/kimi-thinking-polyfill.js`
+- `src/ccr/transformers/logger.ts`
+- `src/ccr/transformers/openai-polyfill.ts`
+- `src/ccr/transformers/gemini-open-router-polyfill.ts`
+- `src/ccr/transformers/kimi-thinking-polyfill.ts`
 
 关键事实：
 
@@ -247,7 +247,7 @@ Claude 维护时优先检查两点：
 - 如果是主会话日志中的 `__D__` / `Claude Code CLI stdout`
   - 继续看 `packages/utils/src/create-logger.ts`、`packages/utils/src/log-level.ts` 与 `src/claude/session.ts`
 - 如果是 `adapter-claude-code/*.log.md`
-  - 继续看 `src/ccr/config.ts` 与 `src/ccr/transformers/*.js`
+  - 继续看 `src/ccr/config.ts` 与 `src/ccr/transformers/*.ts`
 - 如果根本没有生成会话日志
   - 回到 CLI 入口与 `packages/task/src/prepare.ts`
 
