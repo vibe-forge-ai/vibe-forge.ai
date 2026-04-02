@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { writeRequestDebugLog } from './log-context'
+import { writeRequestDebugLog, writeResponseDebugLog } from './log-context'
 
 class LoggerTransformer {
   name = 'logger'
@@ -9,8 +9,8 @@ class LoggerTransformer {
     return request
   }
 
-  transformResponseOut(response, context) {
-    writeRequestDebugLog('logger.js.log.md', 'response', response, context)
+  async transformResponseOut(response, context) {
+    await writeResponseDebugLog('logger.js.log.md', 'response', response, context)
     return response
   }
 }

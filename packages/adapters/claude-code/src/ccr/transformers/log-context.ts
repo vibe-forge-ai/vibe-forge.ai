@@ -161,3 +161,280 @@ export const writeRequestDebugLog = (fileName, message, data = null, context, re
     )
   }
 }
+
+const parseResponseDebugBody = (bodyText, contentType) => {
+  if (typeof bodyText !== 'string' || bodyText === '') {
+    return null
+  }
+
+  if (typeof contentType === 'string' && contentType.includes('application/json')) {
+    try {
+      return JSON.parse(bodyText)
+    } catch {}
+  }
+
+  if (typeof contentType === 'string' && contentType.includes('text/event-stream')) {
+    return parseEventStreamDebugBody(bodyText)
+  }
+
+  return bodyText
+}
+
+const parseEventStreamEvents = (bodyText) => {
+  const chunks = bodyText
+    .replace(/\r\n/g, '\n')
+    .split('\n\n')
+    .map(chunk => chunk.trim())
+    .filter(Boolean)
+
+  return chunks.map((chunk) => {
+    const lines = chunk.split('\n')
+    const eventLines = []
+    const dataLines = []
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventLines.push(line.slice('event:'.length).trim())
+        continue
+      }
+      if (line.startsWith('data:')) {
+        dataLines.push(line.slice('data:'.length).trimStart())
+      }
+    }
+
+    const dataText = dataLines.join('\n')
+    if (dataText === '[DONE]') {
+      return {
+        event: eventLines[0],
+        type: 'done',
+        data: '[DONE]'
+      }
+    }
+
+    try {
+      return {
+        event: eventLines[0],
+        type: 'json',
+        data: JSON.parse(dataText)
+      }
+    } catch {
+      return {
+        event: eventLines[0],
+        type: 'text',
+        data: dataText === '' ? chunk : dataText
+      }
+    }
+  })
+}
+
+const appendStreamText = (currentValue, nextValue) => {
+  if (nextValue == null) return currentValue
+  if (typeof nextValue === 'string') {
+    return `${typeof currentValue === 'string' ? currentValue : ''}${nextValue}`
+  }
+  if (Array.isArray(nextValue)) {
+    const baseValue = Array.isArray(currentValue)
+      ? currentValue
+      : currentValue == null
+      ? []
+      : [currentValue]
+    return [...baseValue, ...nextValue]
+  }
+  return nextValue
+}
+
+const assembleChatCompletionStream = (events) => {
+  const jsonEvents = events
+    .filter(event => event.type === 'json' && event.data?.object === 'chat.completion.chunk')
+    .map(event => event.data)
+
+  if (jsonEvents.length === 0) {
+    return undefined
+  }
+
+  const choices = new Map()
+
+  for (const chunk of jsonEvents) {
+    for (const choice of chunk.choices ?? []) {
+      const state = choices.get(choice.index) ?? {
+        index: choice.index,
+        role: undefined,
+        content: '',
+        thinking: {},
+        annotations: [],
+        toolCalls: new Map(),
+        finishReason: null
+      }
+
+      const delta = choice.delta ?? {}
+      if (typeof delta.role === 'string' && delta.role !== '') {
+        state.role = delta.role
+      }
+      if (delta.content != null) {
+        state.content = appendStreamText(state.content, delta.content)
+      }
+      if (Array.isArray(delta.annotations) && delta.annotations.length > 0) {
+        state.annotations.push(...delta.annotations)
+      }
+      if (delta.thinking != null && typeof delta.thinking === 'object') {
+        if (typeof delta.thinking.content === 'string') {
+          state.thinking.content = `${state.thinking.content ?? ''}${delta.thinking.content}`
+        }
+        if (typeof delta.thinking.signature === 'string' && delta.thinking.signature !== '') {
+          state.thinking.signature = delta.thinking.signature
+        }
+      }
+      if (Array.isArray(delta.tool_calls)) {
+        for (const toolCallDelta of delta.tool_calls) {
+          const toolIndex = toolCallDelta.index ?? 0
+          const toolState = state.toolCalls.get(toolIndex) ?? {
+            index: toolIndex,
+            id: undefined,
+            type: undefined,
+            function: {
+              name: undefined,
+              arguments: ''
+            }
+          }
+
+          if (typeof toolCallDelta.id === 'string' && toolCallDelta.id !== '') {
+            toolState.id = toolCallDelta.id
+          }
+          if (typeof toolCallDelta.type === 'string' && toolCallDelta.type !== '') {
+            toolState.type = toolCallDelta.type
+          }
+          if (toolCallDelta.function != null && typeof toolCallDelta.function === 'object') {
+            if (
+              typeof toolCallDelta.function.name === 'string' &&
+              toolCallDelta.function.name !== ''
+            ) {
+              toolState.function.name = toolCallDelta.function.name
+            }
+            if (
+              typeof toolCallDelta.function.arguments === 'string' &&
+              toolCallDelta.function.arguments !== ''
+            ) {
+              toolState.function.arguments = `${toolState.function.arguments}${toolCallDelta.function.arguments}`
+            }
+          }
+
+          state.toolCalls.set(toolIndex, toolState)
+        }
+      }
+      if (choice.finish_reason != null) {
+        state.finishReason = choice.finish_reason
+      }
+
+      choices.set(choice.index, state)
+    }
+  }
+
+  return {
+    type: 'chat.completion.chunk',
+    choices: Array.from(choices.values())
+      .sort((left, right) => left.index - right.index)
+      .map((choice) => {
+        const resolvedChoice = {
+          index: choice.index,
+          role: choice.role ?? 'assistant',
+          finishReason: choice.finishReason
+        }
+
+        if (
+          choice.content != null &&
+          (
+            (typeof choice.content === 'string' && choice.content !== '') ||
+            (Array.isArray(choice.content) && choice.content.length > 0)
+          )
+        ) {
+          resolvedChoice.content = choice.content
+        }
+
+        if (
+          choice.thinking.content != null ||
+          choice.thinking.signature != null
+        ) {
+          resolvedChoice.thinking = choice.thinking
+        }
+        if (choice.annotations.length > 0) {
+          resolvedChoice.annotations = choice.annotations
+        }
+        if (choice.toolCalls.size > 0) {
+          resolvedChoice.toolCalls = Array.from(choice.toolCalls.values())
+            .sort((left, right) => left.index - right.index)
+        }
+
+        return resolvedChoice
+      })
+  }
+}
+
+const parseEventStreamDebugBody = (bodyText) => {
+  const events = parseEventStreamEvents(bodyText)
+  const assembled = assembleChatCompletionStream(events)
+  const doneFromChoices = assembled?.choices?.some(choice => choice.finishReason != null) ?? false
+
+  return {
+    type: 'event-stream',
+    eventCount: events.length,
+    done: events.some(event => event.type === 'done') || doneFromChoices,
+    ...(assembled != null
+      ? { assembled }
+      : {
+          events: events.map((event) => ({
+            ...(event.event != null ? { event: event.event } : {}),
+            type: event.type,
+            data: event.data
+          }))
+        })
+  }
+}
+
+const createResponseDebugPayload = async (response) => {
+  if (response == null || typeof response !== 'object') {
+    return response
+  }
+
+  const contentType = typeof response.headers?.get === 'function'
+    ? response.headers.get('Content-Type') ?? ''
+    : ''
+  const payload = {
+    status: response.status,
+    statusText: response.statusText,
+    headers: typeof response.headers?.entries === 'function'
+      ? Object.fromEntries(response.headers.entries())
+      : {}
+  }
+
+  if (typeof response.clone !== 'function' || typeof response.body === 'undefined') {
+    return payload
+  }
+
+  try {
+    const bodyText = await response.clone().text()
+    return {
+      ...payload,
+      body: parseResponseDebugBody(bodyText, contentType)
+    }
+  } catch (error) {
+    return {
+      ...payload,
+      bodyReadError: error instanceof Error ? error.message : String(error)
+    }
+  }
+}
+
+export const writeResponseDebugLog = async (fileName, message, response, context, request) => {
+  try {
+    const payload = await createResponseDebugPayload(response)
+    writeRequestDebugLog(fileName, message, payload, context, request)
+  } catch (error) {
+    writeRequestDebugLog(
+      fileName,
+      `${message} [response log error]`,
+      { error: error instanceof Error ? error.message : String(error) },
+      context,
+      request
+    )
+  }
+}

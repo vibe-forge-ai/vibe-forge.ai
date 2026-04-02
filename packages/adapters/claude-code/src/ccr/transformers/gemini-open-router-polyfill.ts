@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { writeRequestDebugLog } from './log-context'
+import { writeRequestDebugLog, writeResponseDebugLog } from './log-context'
 
 class GeminiTransformer {
   name = 'gemini-schema-cleaner'
@@ -223,12 +223,6 @@ class GeminiTransformer {
   }
 
   async transformResponseOut(response, context) {
-    writeRequestDebugLog(
-      'gemini-open-router-polyfill.js.log.md',
-      'Response Out:',
-      response,
-      context
-    )
     if (response.headers.get('Content-Type')?.includes('application/json')) {
       const rawJsonResponse = await response.json()
 
@@ -236,13 +230,26 @@ class GeminiTransformer {
       this.extractSignatureFromResponse(rawJsonResponse)
 
       // Return the original response
-      return new Response(JSON.stringify(rawJsonResponse), {
+      const resolvedResponse = new Response(JSON.stringify(rawJsonResponse), {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers
       })
+      await writeResponseDebugLog(
+        'gemini-open-router-polyfill.js.log.md',
+        'Response Out:',
+        resolvedResponse,
+        context
+      )
+      return resolvedResponse
     } else if (response.headers.get('Content-Type')?.includes('stream')) {
       if (!response.body) {
+        await writeResponseDebugLog(
+          'gemini-open-router-polyfill.js.log.md',
+          'Response Out:',
+          response,
+          context
+        )
         return response
       }
 
@@ -298,14 +305,27 @@ class GeminiTransformer {
         }
       })
 
-      return new Response(newStream, {
+      const resolvedResponse = new Response(newStream, {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers
       })
+      await writeResponseDebugLog(
+        'gemini-open-router-polyfill.js.log.md',
+        'Response Out:',
+        resolvedResponse,
+        context
+      )
+      return resolvedResponse
     }
 
     // Default case: return original response
+    await writeResponseDebugLog(
+      'gemini-open-router-polyfill.js.log.md',
+      'Response Out:',
+      response,
+      context
+    )
     return response
   }
 }

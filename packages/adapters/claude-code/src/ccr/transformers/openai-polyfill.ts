@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { writeRequestDebugLog } from './log-context'
+import { writeRequestDebugLog, writeResponseDebugLog } from './log-context'
 
 class OpenAIResponsesTransformer {
   name = 'openai-responses'
@@ -164,32 +164,46 @@ class OpenAIResponsesTransformer {
 
     if (contentType.includes('application/json')) {
       const jsonResponse = await response.json()
-      writeRequestDebugLog(
-        'openai-polyfill.js.log.md',
-        'OpenAIResponsesTransformer transformResponseOut application/json',
-        jsonResponse,
-        context
-      )
 
       // 检查是否为responses API格式的JSON响应
       if (jsonResponse.object === 'response' && jsonResponse.output) {
         // 将responses格式转换为chat格式
         const chatResponse = this.convertResponseToChat(jsonResponse)
-        return new Response(JSON.stringify(chatResponse), {
+        const resolvedResponse = new Response(JSON.stringify(chatResponse), {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers
         })
+        await writeResponseDebugLog(
+          'openai-polyfill.js.log.md',
+          'OpenAIResponsesTransformer transformResponseOut',
+          resolvedResponse,
+          context
+        )
+        return resolvedResponse
       }
 
       // 不是responses API格式，保持原样
-      return new Response(JSON.stringify(jsonResponse), {
+      const resolvedResponse = new Response(JSON.stringify(jsonResponse), {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers
       })
+      await writeResponseDebugLog(
+        'openai-polyfill.js.log.md',
+        'OpenAIResponsesTransformer transformResponseOut',
+        resolvedResponse,
+        context
+      )
+      return resolvedResponse
     } else if (contentType.includes('text/event-stream')) {
       if (!response.body) {
+        await writeResponseDebugLog(
+          'openai-polyfill.js.log.md',
+          'OpenAIResponsesTransformer transformResponseOut',
+          response,
+          context
+        )
         return response
       }
 
@@ -552,7 +566,7 @@ class OpenAIResponsesTransformer {
         }
       })
 
-      return new Response(stream, {
+      const resolvedResponse = new Response(stream, {
         status: response.status,
         statusText: response.statusText,
         headers: {
@@ -562,8 +576,21 @@ class OpenAIResponsesTransformer {
           'Access-Control-Allow-Origin': '*'
         }
       })
+      await writeResponseDebugLog(
+        'openai-polyfill.js.log.md',
+        'OpenAIResponsesTransformer transformResponseOut',
+        resolvedResponse,
+        context
+      )
+      return resolvedResponse
     }
 
+    await writeResponseDebugLog(
+      'openai-polyfill.js.log.md',
+      'OpenAIResponsesTransformer transformResponseOut',
+      response,
+      context
+    )
     return response
   }
 
