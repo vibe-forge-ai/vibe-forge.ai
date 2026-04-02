@@ -65,12 +65,18 @@ export const createStreamOpenCodeSession = async (
   let currentKill: (() => void) | undefined
   let opencodeSessionId = cachedSession?.opencodeSessionId
   let didEmitFatalError = false
+  let didEmitExit = false
 
   const emitEvent = (event: AdapterOutputEvent) => {
     if (event.type === 'error' && event.data.fatal !== false) {
       didEmitFatalError = true
     }
     options.onEvent(event)
+  }
+  const emitExit = (data: { exitCode: number; stderr?: string }) => {
+    if (didEmitExit) return
+    didEmitExit = true
+    emitEvent({ type: 'exit', data })
   }
 
   const emitUnexpectedExit = (error: unknown) => {
@@ -80,7 +86,7 @@ export const createStreamOpenCodeSession = async (
     currentKill = undefined
     ctx.logger.error('OpenCode session turn failed unexpectedly', { err: error })
     emitEvent({ type: 'error', data: toAdapterErrorData(error) })
-    emitEvent({ type: 'exit', data: { exitCode: 1, stderr: getErrorMessage(error) } })
+    emitExit({ exitCode: 1, stderr: getErrorMessage(error) })
   }
 
   const runTurn = async (content: Extract<AdapterEvent, { type: 'message' }>, allowRetry: boolean): Promise<void> => {
@@ -154,7 +160,7 @@ export const createStreamOpenCodeSession = async (
           })
         })
       }
-      emitEvent({ type: 'exit', data: { exitCode: result.exitCode, stderr: result.stderr || result.stdout } })
+      emitExit({ exitCode: result.exitCode, stderr: result.stderr || result.stdout })
       return
     }
 
@@ -198,6 +204,14 @@ export const createStreamOpenCodeSession = async (
     kill: () => {
       destroyed = true
       currentKill?.()
+    },
+    stop: () => {
+      if (destroyed) return
+      destroyed = true
+      currentKill?.()
+      if (currentPid == null) {
+        emitExit({ exitCode: 0 })
+      }
     },
     emit: (event) => {
       if (destroyed) return

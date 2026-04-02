@@ -55,7 +55,12 @@ interface ActiveCliSessionRecord {
   detail: TaskDetail
 }
 
-export const createSessionExitController = <T extends { kill(): void }>(params?: {
+interface ExitControllableSession {
+  kill(): void
+  stop?(): void
+}
+
+export const createSessionExitController = <T extends ExitControllableSession>(params?: {
   exit?: (code: number) => never | void
 }) => {
   let session: T | undefined
@@ -63,19 +68,26 @@ export const createSessionExitController = <T extends { kill(): void }>(params?:
   let didRequestExit = false
   let didExit = false
   const exit = params?.exit ?? process.exit
+  const signalSessionExit = (target: T) => {
+    if (pendingExitCode === 0 && typeof target.stop === 'function') {
+      target.stop()
+      return
+    }
+    target.kill()
+  }
 
   return {
     bindSession(nextSession: T) {
       session = nextSession
       if (pendingExitCode == null) return
-      session.kill()
+      signalSessionExit(session)
     },
     requestExit(code: number) {
       if (didRequestExit) return
       didRequestExit = true
       pendingExitCode = code
       if (session != null) {
-        session.kill()
+        signalSessionExit(session)
       }
     },
     handleSessionExit(code: number) {
@@ -393,7 +405,7 @@ Notes:
 
         await persistRecord()
 
-        let boundSession: { kill(): void; pid?: number } | undefined
+        let boundSession: (ExitControllableSession & { pid?: number }) | undefined
         const handleExit = (exitCode: number) => {
           void (async () => {
             const endedAt = Date.now()
@@ -405,20 +417,23 @@ Notes:
               ...record.resume,
               updatedAt: endedAt
             }
+            const status = persistedDetail?.status === 'stopped' || isCliSessionStopActive(control, endedAt)
+              ? 'stopped'
+              : exitCode === 0
+              ? 'completed'
+              : 'failed'
             record.detail = {
               ...record.detail,
               endTime: endedAt,
               exitCode,
-              status: persistedDetail?.status === 'stopped' || isCliSessionStopActive(control, endedAt)
-                ? 'stopped'
-                : exitCode === 0
-                ? 'completed'
-                : 'failed'
+              status
             }
             await persistRecord()
             await persistQueue
             await clearCliSessionControl(cwd, ctxId, sessionId)
-            console.error(formatResumeCommand(sessionId))
+            if (shouldPrintResumeHint({ shouldPrintOutput, status })) {
+              console.error(formatResumeCommand(sessionId))
+            }
             exitController.handleSessionExit(exitCode)
           })()
         }
@@ -516,6 +531,11 @@ export const getAdapterErrorMessage = (data: AdapterErrorData) => {
 
   return details ? `${data.message}\n${details}` : data.message
 }
+
+export const shouldPrintResumeHint = (input: {
+  shouldPrintOutput: boolean
+  status: TaskDetail['status']
+}) => !(input.shouldPrintOutput && input.status === 'completed')
 
 export const handlePrintEvent = (input: {
   event: AdapterOutputEvent

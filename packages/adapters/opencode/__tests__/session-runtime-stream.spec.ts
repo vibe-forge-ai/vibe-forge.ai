@@ -63,6 +63,29 @@ describe('createOpenCodeSession stream runtime', () => {
     })
   })
 
+  it('emits exit when stop() is called after a successful stream turn', async () => {
+    mockExecFileJsonResponses(execFileMock, [
+      { id: 'sess_stop', title: 'Vibe Forge:session-stop', updatedAt: '2026-03-26T00:00:00.000Z' }
+    ])
+    spawnMock.mockImplementation(() => makeProc({ stdout: 'pong\n' }))
+
+    const events: AdapterOutputEvent[] = []
+    const { ctx } = makeCtx()
+    const session = await createOpenCodeSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-stop',
+      description: 'Reply with exactly pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    await flushAsyncWork()
+    session.stop?.()
+
+    expect(events.map(event => event.type)).toEqual(['init', 'message', 'stop', 'exit'])
+    expect(events.at(-1)).toEqual({ type: 'exit', data: { exitCode: 0 } })
+  })
+
   it('reuses the cached OpenCode session id for later turns', async () => {
     mockExecFileJsonResponses(execFileMock, [{
       id: 'sess_1',

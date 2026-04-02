@@ -11,7 +11,8 @@ import {
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
-  resolveRunMode
+  resolveRunMode,
+  shouldPrintResumeHint
 } from '#~/commands/run.js'
 
 describe('run command print output', () => {
@@ -81,9 +82,10 @@ describe('run command print output', () => {
     expect(calls).toEqual([1])
   })
 
-  it('uses the pending requested exit code when the session is already bound', () => {
+  it('signals adapter stop instead of kill for a successful exit request', () => {
     const calls: number[] = []
     let killCount = 0
+    let stopCount = 0
     const controller = createSessionExitController({
       exit: (code) => {
         calls.push(code)
@@ -93,15 +95,54 @@ describe('run command print output', () => {
     controller.bindSession({
       kill: () => {
         killCount += 1
+      },
+      stop: () => {
+        stopCount += 1
       }
     })
     controller.requestExit(0)
 
-    expect(killCount).toBe(1)
+    expect(killCount).toBe(0)
+    expect(stopCount).toBe(1)
     expect(calls).toEqual([])
 
     controller.handleSessionExit(2)
     expect(calls).toEqual([0])
+  })
+
+  it('signals adapter stop after bind when success exit was requested early', () => {
+    let killCount = 0
+    let stopCount = 0
+    const controller = createSessionExitController()
+
+    controller.requestExit(0)
+
+    controller.bindSession({
+      kill: () => {
+        killCount += 1
+      },
+      stop: () => {
+        stopCount += 1
+      }
+    })
+
+    expect(killCount).toBe(0)
+    expect(stopCount).toBe(1)
+  })
+
+  it('falls back to kill when successful exit is requested without adapter stop support', () => {
+    let killCount = 0
+    const controller = createSessionExitController()
+
+    controller.bindSession({
+      kill: () => {
+        killCount += 1
+      }
+    })
+
+    controller.requestExit(0)
+
+    expect(killCount).toBe(1)
   })
 
   it('keeps cached stream mode when resume does not override print behavior', () => {
@@ -306,6 +347,21 @@ describe('run command print output', () => {
     expect(log.mock.calls[1]?.[0]).toContain('"type": "message"')
     expect(log.mock.calls[2]?.[0]).toContain('"type": "stop"')
     expect(requestExit).not.toHaveBeenCalled()
+  })
+
+  it('suppresses the resume hint for successful print sessions', () => {
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: true,
+      status: 'completed'
+    })).toBe(false)
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: true,
+      status: 'failed'
+    })).toBe(true)
+    expect(shouldPrintResumeHint({
+      shouldPrintOutput: false,
+      status: 'completed'
+    })).toBe(true)
   })
 
   it('rejects unsupported output format values at parse time', async () => {
