@@ -215,6 +215,7 @@ describe('list command', () => {
 
   it('rejects unsupported list status filters', async () => {
     const cwd = await createTempDir()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await writeCliSessionRecord(cwd, 'ctx-demo', 'session-demo', {
       resume: {
@@ -235,7 +236,8 @@ describe('list command', () => {
     registerListCommand(program)
 
     await expect(program.parseAsync(['list', '--status', 'weird'], { from: 'user' })).rejects.toThrow(
-      'Unsupported status'
+      'process.exit'
     )
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Unsupported status "weird"'))
   })
 })

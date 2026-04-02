@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import type { RunTaskOptions } from '@vibe-forge/app-runtime'
 import type { AdapterQueryOptions, TaskDetail } from '@vibe-forge/types'
-import { getCache, setCache } from '@vibe-forge/utils/cache'
+import { getCache, getCachePath, setCache } from '@vibe-forge/utils/cache'
 
 export type CliOutputFormat = 'text' | 'json' | 'stream-json'
 
@@ -25,9 +25,16 @@ export interface CliSessionRecord {
   detail?: TaskDetail
 }
 
+export interface CliSessionControlRecord {
+  signal: 'SIGTERM' | 'SIGKILL'
+  requestedAt: number
+  expiresAt: number
+}
+
 declare module '@vibe-forge/types' {
   interface Cache {
     'cli-session': CliSessionResumeRecord
+    'cli-session-control': CliSessionControlRecord
     detail: TaskDetail
   }
 }
@@ -133,3 +140,29 @@ export const writeCliSessionRecord = async (
       : setCache(cwd, ctxId, sessionId, 'detail', record.detail)
   ])
 }
+
+export const readCliSessionControl = (
+  cwd: string,
+  ctxId: string,
+  sessionId: string
+) => getCache(cwd, ctxId, sessionId, 'cli-session-control')
+
+export const writeCliSessionControl = (
+  cwd: string,
+  ctxId: string,
+  sessionId: string,
+  control: CliSessionControlRecord
+) => setCache(cwd, ctxId, sessionId, 'cli-session-control', control)
+
+export const clearCliSessionControl = async (
+  cwd: string,
+  ctxId: string,
+  sessionId: string
+) => {
+  await fs.rm(getCachePath(cwd, ctxId, sessionId, 'cli-session-control'), { force: true })
+}
+
+export const isCliSessionStopActive = (
+  control: CliSessionControlRecord | undefined,
+  endedAt: number
+) => control != null && endedAt <= control.expiresAt

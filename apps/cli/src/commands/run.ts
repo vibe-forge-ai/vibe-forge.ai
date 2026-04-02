@@ -12,7 +12,14 @@ import { getCache } from '@vibe-forge/utils/cache'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 import { uuid } from '@vibe-forge/utils/uuid'
 
-import { formatResumeCommand, resolveCliSession, writeCliSessionRecord } from '#~/session-cache.js'
+import {
+  clearCliSessionControl,
+  formatResumeCommand,
+  isCliSessionStopActive,
+  readCliSessionControl,
+  resolveCliSession,
+  writeCliSessionRecord
+} from '#~/session-cache.js'
 import type { CliSessionResumeRecord } from '#~/session-cache.js'
 import { extraOptions } from './@core/extra-options'
 
@@ -167,276 +174,286 @@ Notes:
 `
     )
     .action(async (descriptionArgs: string[], opts: RunOptions, command: Command) => {
-      const description = descriptionArgs.join(' ')
-      let lastAssistantText: string | undefined
-      let didExitAfterError = false
-      const exitController = createSessionExitController()
-      const cwd = process.cwd()
-      const generatedSessionId = opts.sessionId ?? uuid()
+      try {
+        const description = descriptionArgs.join(' ')
+        let lastAssistantText: string | undefined
+        let didExitAfterError = false
+        const exitController = createSessionExitController()
+        const cwd = process.cwd()
+        const generatedSessionId = opts.sessionId ?? uuid()
 
-      if (opts.spec && opts.entity) {
-        console.error('Error: --spec and --entity are mutually exclusive.')
-        process.exit(1)
-      }
-
-      const isResume = opts.resume != null
-      const outputFormatSource = command.getOptionValueSource('outputFormat')
-      const printSource = command.getOptionValueSource('print')
-
-      const runTaskOptions = isResume
-        ? undefined
-        : {
-          adapter: opts.adapter,
-          cwd,
-          ctxId: process.env.__VF_PROJECT_AI_CTX_ID__ ?? generatedSessionId
+        if (opts.spec && opts.entity) {
+          throw new Error('--spec and --entity are mutually exclusive.')
         }
 
-      const initialResumeRecord = isResume
-        ? (() => {
-          const disallowedFlags = getDisallowedResumeFlags(opts, command)
-          if (disallowedFlags.length > 0) {
-            throw new Error(`Resume mode does not accept ${disallowedFlags.join(', ')}.`)
-          }
-          return resolveCliSession(cwd, opts.resume!)
-        })()
-        : undefined
+        const isResume = opts.resume != null
+        const outputFormatSource = command.getOptionValueSource('outputFormat')
+        const printSource = command.getOptionValueSource('print')
 
-      const cachedSession = await initialResumeRecord
-      const sessionId = cachedSession?.resume?.sessionId ?? generatedSessionId
-      const ctxId = cachedSession?.resume?.ctxId ?? runTaskOptions?.ctxId ?? sessionId
-      const outputFormat = getOutputFormat(
-        opts.outputFormat,
-        outputFormatSource,
-        cachedSession?.resume?.outputFormat ?? 'text'
-      )
-
-      const adapterOptions = cachedSession?.resume != null
-        ? {
-          ...cachedSession.resume.adapterOptions,
-          type: 'resume' as const,
-          description,
-          mode: resolveRunMode(
-            opts.print,
-            printSource,
-            cachedSession.resume.adapterOptions.mode ?? 'direct'
-          ),
-          extraOptions
-        }
-        : await (async () => {
-          const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
-          const promptName = opts.spec || opts.entity
-          const [data, resolvedConfig] = await generateAdapterQueryOptions(
-            promptType,
-            promptName,
+        const runTaskOptions = isResume
+          ? undefined
+          : {
+            adapter: opts.adapter,
             cwd,
-            opts.includeSkill || opts.excludeSkill
-              ? {
-                skills: {
+            ctxId: process.env.__VF_PROJECT_AI_CTX_ID__ ?? generatedSessionId
+          }
+
+        const initialResumeRecord = isResume
+          ? (() => {
+            const disallowedFlags = getDisallowedResumeFlags(opts, command)
+            if (disallowedFlags.length > 0) {
+              throw new Error(`Resume mode does not accept ${disallowedFlags.join(', ')}.`)
+            }
+            return resolveCliSession(cwd, opts.resume!)
+          })()
+          : undefined
+
+        const cachedSession = await initialResumeRecord
+        const sessionId = cachedSession?.resume?.sessionId ?? generatedSessionId
+        const ctxId = cachedSession?.resume?.ctxId ?? runTaskOptions?.ctxId ?? sessionId
+        const outputFormat = getOutputFormat(
+          opts.outputFormat,
+          outputFormatSource,
+          cachedSession?.resume?.outputFormat ?? 'text'
+        )
+
+        const adapterOptions = cachedSession?.resume != null
+          ? {
+            ...cachedSession.resume.adapterOptions,
+            type: 'resume' as const,
+            description,
+            mode: resolveRunMode(
+              opts.print,
+              printSource,
+              cachedSession.resume.adapterOptions.mode ?? 'direct'
+            ),
+            extraOptions
+          }
+          : await (async () => {
+            const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
+            const promptName = opts.spec || opts.entity
+            const [data, resolvedConfig] = await generateAdapterQueryOptions(
+              promptType,
+              promptName,
+              cwd,
+              opts.includeSkill || opts.excludeSkill
+                ? {
+                  skills: {
+                    include: opts.includeSkill,
+                    exclude: opts.excludeSkill
+                  }
+                }
+                : undefined
+            )
+            const env = {
+              ...process.env,
+              __VF_PROJECT_AI_CTX_ID__: ctxId
+            }
+            await callHook('GenerateSystemPrompt', {
+              cwd,
+              sessionId,
+              type: promptType,
+              name: promptName,
+              data
+            }, env)
+
+            const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
+              cwd,
+              resolveInjectDefaultSystemPromptOption(
+                opts.injectDefaultSystemPrompt,
+                command.getOptionValueSource('injectDefaultSystemPrompt')
+              )
+            )
+
+            const finalSystemPrompt = mergeSystemPrompts({
+              generatedSystemPrompt: resolvedConfig.systemPrompt,
+              userSystemPrompt: opts.systemPrompt,
+              injectDefaultSystemPrompt
+            })
+
+            const tools = mergeListConfig(
+              resolvedConfig.tools,
+              opts.includeTool,
+              opts.excludeTool
+            )
+
+            const mcpServers = mergeListConfig(
+              resolvedConfig.mcpServers,
+              opts.includeMcpServer,
+              opts.excludeMcpServer
+            )
+
+            return {
+              type: 'create' as const,
+              description,
+              runtime: 'cli' as const,
+              sessionId,
+              model: opts.model,
+              effort: opts.effort,
+              systemPrompt: finalSystemPrompt,
+              permissionMode: opts.permissionMode,
+              mode: getRunMode(opts.print),
+              tools,
+              mcpServers,
+              useDefaultVibeForgeMcpServer: resolveDefaultVibeForgeMcpServerOption(
+                opts.defaultVibeForgeMcpServer,
+                command.getOptionValueSource('defaultVibeForgeMcpServer')
+              ),
+              promptAssetIds: resolvedConfig.promptAssetIds,
+              skills: opts.includeSkill || opts.excludeSkill
+                ? {
                   include: opts.includeSkill,
                   exclude: opts.excludeSkill
                 }
-              }
-              : undefined
-          )
-          const env = {
-            ...process.env,
-            __VF_PROJECT_AI_CTX_ID__: ctxId
-          }
-          await callHook('GenerateSystemPrompt', {
-            cwd,
+                : undefined,
+              extraOptions,
+              assetBundle: resolvedConfig.assetBundle
+            }
+          })()
+        const shouldPrintOutput = adapterOptions.mode === 'stream'
+        const {
+          type: _adapterType,
+          description: _adapterDescription,
+          ...cachedAdapterOptions
+        } = adapterOptions
+
+        const record: ActiveCliSessionRecord = {
+          resume: {
+            version: 1 as const,
+            ctxId,
             sessionId,
-            type: promptType,
-            name: promptName,
-            data
-          }, env)
-
-          const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
-            cwd,
-            resolveInjectDefaultSystemPromptOption(
-              opts.injectDefaultSystemPrompt,
-              command.getOptionValueSource('injectDefaultSystemPrompt')
-            )
-          )
-
-          const finalSystemPrompt = mergeSystemPrompts({
-            generatedSystemPrompt: resolvedConfig.systemPrompt,
-            userSystemPrompt: opts.systemPrompt,
-            injectDefaultSystemPrompt
-          })
-
-          const tools = mergeListConfig(
-            resolvedConfig.tools,
-            opts.includeTool,
-            opts.excludeTool
-          )
-
-          const mcpServers = mergeListConfig(
-            resolvedConfig.mcpServers,
-            opts.includeMcpServer,
-            opts.excludeMcpServer
-          )
-
-          return {
-            type: 'create' as const,
-            description,
-            runtime: 'cli' as const,
+            cwd: cachedSession?.resume?.cwd ?? cwd,
+            description: description || cachedSession?.resume?.description,
+            createdAt: cachedSession?.resume?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+            taskOptions: cachedSession?.resume?.taskOptions ?? {
+              adapter: runTaskOptions?.adapter,
+              cwd,
+              ctxId
+            },
+            adapterOptions: cachedAdapterOptions,
+            outputFormat
+          },
+          detail: {
+            ctxId,
             sessionId,
-            model: opts.model,
-            effort: opts.effort,
-            systemPrompt: finalSystemPrompt,
-            permissionMode: opts.permissionMode,
-            mode: getRunMode(opts.print),
-            tools,
-            mcpServers,
-            useDefaultVibeForgeMcpServer: resolveDefaultVibeForgeMcpServerOption(
-              opts.defaultVibeForgeMcpServer,
-              command.getOptionValueSource('defaultVibeForgeMcpServer')
-            ),
-            promptAssetIds: resolvedConfig.promptAssetIds,
-            skills: opts.includeSkill || opts.excludeSkill
-              ? {
-                include: opts.includeSkill,
-                exclude: opts.excludeSkill
-              }
-              : undefined,
-            extraOptions,
-            assetBundle: resolvedConfig.assetBundle
-          }
-        })()
-      const shouldPrintOutput = adapterOptions.mode === 'stream'
-      const {
-        type: _adapterType,
-        description: _adapterDescription,
-        ...cachedAdapterOptions
-      } = adapterOptions
-
-      const record: ActiveCliSessionRecord = {
-        resume: {
-          version: 1 as const,
-          ctxId,
-          sessionId,
-          cwd: cachedSession?.resume?.cwd ?? cwd,
-          description: description || cachedSession?.resume?.description,
-          createdAt: cachedSession?.resume?.createdAt ?? Date.now(),
-          updatedAt: Date.now(),
-          taskOptions: cachedSession?.resume?.taskOptions ?? {
-            adapter: runTaskOptions?.adapter,
-            cwd,
-            ctxId
-          },
-          adapterOptions: cachedAdapterOptions,
-          outputFormat
-        },
-        detail: {
-          ctxId,
-          sessionId,
-          status: 'pending',
-          startTime: cachedSession?.detail?.startTime ?? Date.now(),
-          description: description || cachedSession?.detail?.description || cachedSession?.resume?.description,
-          adapter: cachedSession?.detail?.adapter ?? cachedSession?.resume?.taskOptions.adapter,
-          model: cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
-        }
-      }
-
-      let persistQueue = Promise.resolve()
-      const persistRecord = () => {
-        persistQueue = persistQueue
-          .catch(() => {})
-          .then(() => writeCliSessionRecord(cwd, ctxId, sessionId, record))
-          .catch((error) => {
-            const message = error instanceof Error ? error.message : String(error)
-            console.error(`[vf] Failed to update session cache: ${message}`)
-          })
-        return persistQueue
-      }
-      const updateInitRecord = (info: SessionInitInfo, pid: number | undefined) => {
-        record.resume = {
-          ...record.resume,
-          updatedAt: Date.now(),
-          taskOptions: {
-            ...record.resume.taskOptions,
-            adapter: info.adapter ?? record.resume.taskOptions.adapter
-          },
-          adapterOptions: {
-            ...record.resume.adapterOptions,
-            model: info.model,
-            effort: info.effort ?? record.resume.adapterOptions.effort
+            status: 'pending',
+            startTime: cachedSession?.detail?.startTime ?? Date.now(),
+            description: description || cachedSession?.detail?.description || cachedSession?.resume?.description,
+            adapter: cachedSession?.detail?.adapter ?? cachedSession?.resume?.taskOptions.adapter,
+            model: cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
           }
         }
-        record.detail = {
-          ...record.detail,
-          status: 'running',
-          pid: pid ?? record.detail.pid,
-          adapter: info.adapter ?? record.detail.adapter,
-          model: info.model ?? record.detail.model
+
+        let persistQueue = Promise.resolve()
+        const persistRecord = () => {
+          persistQueue = persistQueue
+            .catch(() => {})
+            .then(() => writeCliSessionRecord(cwd, ctxId, sessionId, record))
+            .catch((error) => {
+              const message = error instanceof Error ? error.message : String(error)
+              console.error(`[vf] Failed to update session cache: ${message}`)
+            })
+          return persistQueue
         }
-        void persistRecord()
-      }
-
-      await persistRecord()
-
-      let boundSession: { kill(): void; pid?: number } | undefined
-      const handleExit = (exitCode: number) => {
-        void (async () => {
-          const persistedDetail = await getCache(cwd, ctxId, sessionId, 'detail')
+        const updateInitRecord = (info: SessionInitInfo, pid: number | undefined) => {
           record.resume = {
             ...record.resume,
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
+            taskOptions: {
+              ...record.resume.taskOptions,
+              adapter: info.adapter ?? record.resume.taskOptions.adapter
+            },
+            adapterOptions: {
+              ...record.resume.adapterOptions,
+              model: info.model,
+              effort: info.effort ?? record.resume.adapterOptions.effort
+            }
           }
           record.detail = {
             ...record.detail,
-            endTime: Date.now(),
-            exitCode,
-            status: persistedDetail?.status === 'stopped'
-              ? 'stopped'
-              : exitCode === 0
-              ? 'completed'
-              : 'failed'
+            status: 'running',
+            pid: pid ?? record.detail.pid,
+            adapter: info.adapter ?? record.detail.adapter,
+            model: info.model ?? record.detail.model
           }
-          await persistRecord()
-          await persistQueue
-          console.error(formatResumeCommand(sessionId))
-          exitController.handleSessionExit(exitCode)
-        })()
-      }
-
-      const { session } = await run({
-        adapter: record.resume.taskOptions.adapter,
-        cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
-        ctxId,
-        env: process.env
-      }, {
-        ...adapterOptions,
-        onEvent: (event: AdapterOutputEvent) => {
-          if (event.type === 'init') {
-            updateInitRecord(event.data, boundSession?.pid)
-          }
-          if (shouldPrintOutput) {
-            const nextState = handlePrintEvent({
-              event,
-              outputFormat,
-              lastAssistantText,
-              didExitAfterError,
-              log: (message) => console.log(message),
-              errorLog: (message) => console.error(message),
-              requestExit: (code) => exitController.requestExit(code)
-            })
-            lastAssistantText = nextState.lastAssistantText
-            didExitAfterError = nextState.didExitAfterError
-          }
-          if (event.type === 'exit') {
-            handleExit(exitController.getPendingExitCode() ?? event.data.exitCode ?? 0)
-          }
+          void persistRecord()
         }
-      })
-      boundSession = session
-      record.detail = {
-        ...record.detail,
-        pid: session.pid ?? record.detail.pid,
-        status: record.detail.status === 'pending' ? 'running' : record.detail.status
+
+        await persistRecord()
+
+        let boundSession: { kill(): void; pid?: number } | undefined
+        const handleExit = (exitCode: number) => {
+          void (async () => {
+            const endedAt = Date.now()
+            const [persistedDetail, control] = await Promise.all([
+              getCache(cwd, ctxId, sessionId, 'detail'),
+              readCliSessionControl(cwd, ctxId, sessionId)
+            ])
+            record.resume = {
+              ...record.resume,
+              updatedAt: endedAt
+            }
+            record.detail = {
+              ...record.detail,
+              endTime: endedAt,
+              exitCode,
+              status: persistedDetail?.status === 'stopped' || isCliSessionStopActive(control, endedAt)
+                ? 'stopped'
+                : exitCode === 0
+                ? 'completed'
+                : 'failed'
+            }
+            await persistRecord()
+            await persistQueue
+            await clearCliSessionControl(cwd, ctxId, sessionId)
+            console.error(formatResumeCommand(sessionId))
+            exitController.handleSessionExit(exitCode)
+          })()
+        }
+
+        const { session } = await run({
+          adapter: record.resume.taskOptions.adapter,
+          cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
+          ctxId,
+          env: process.env
+        }, {
+          ...adapterOptions,
+          onEvent: (event: AdapterOutputEvent) => {
+            if (event.type === 'init') {
+              updateInitRecord(event.data, boundSession?.pid)
+            }
+            if (shouldPrintOutput) {
+              const nextState = handlePrintEvent({
+                event,
+                outputFormat,
+                lastAssistantText,
+                didExitAfterError,
+                log: (message) => console.log(message),
+                errorLog: (message) => console.error(message),
+                requestExit: (code) => exitController.requestExit(code)
+              })
+              lastAssistantText = nextState.lastAssistantText
+              didExitAfterError = nextState.didExitAfterError
+            }
+            if (event.type === 'exit') {
+              handleExit(exitController.getPendingExitCode() ?? event.data.exitCode ?? 0)
+            }
+          }
+        })
+        boundSession = session
+        record.detail = {
+          ...record.detail,
+          pid: session.pid ?? record.detail.pid,
+          status: record.detail.status === 'pending' ? 'running' : record.detail.status
+        }
+        void persistRecord()
+        exitController.bindSession(session)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(message)
+        process.exit(1)
       }
-      void persistRecord()
-      exitController.bindSession(session)
     })
 }
 

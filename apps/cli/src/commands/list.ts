@@ -45,70 +45,76 @@ export function registerListCommand(program: Command) {
     .option('--running', 'Show only running sessions', false)
     .option('--status <status...>', `Filter by status (${TASK_STATUSES.join(', ')})`)
     .action(async (opts: ListOptions) => {
-      const records = await listCliSessions(process.cwd())
-      if (records.length === 0) {
-        console.log('No cached sessions found.')
-        return
-      }
-
-      const requestedStatuses = new Set<TaskDetail['status']>()
-      if (opts.running) requestedStatuses.add('running')
-      for (const status of opts.status ?? []) {
-        if (!isTaskStatus(status)) {
-          throw new Error(`Unsupported status "${status}". Expected one of: ${TASK_STATUSES.join(', ')}`)
+      try {
+        const records = await listCliSessions(process.cwd())
+        if (records.length === 0) {
+          console.log('No cached sessions found.')
+          return
         }
-        requestedStatuses.add(status)
-      }
 
-      const limit = opts.all
-        ? records.length
-        : Math.max(1, Number.parseInt(opts.limit ?? '20', 10) || 20)
-      const rows = records
-        .filter((record) => (
-          requestedStatuses.size === 0 ||
-          (record.detail?.status != null && requestedStatuses.has(record.detail.status))
-        ))
-        .slice(0, limit)
-        .map((record) => {
-          const sessionId = record.resume?.sessionId ?? record.detail?.sessionId ?? ''
-          const ctxId = record.resume?.ctxId ?? record.detail?.ctxId ?? ''
-
-          return {
-            sessionId,
-            ctxId,
-            status: record.detail?.status ?? 'unknown',
-            adapter: record.detail?.adapter ?? record.resume?.taskOptions.adapter ?? '',
-            model: record.detail?.model ?? record.resume?.adapterOptions.model ?? '',
-            updatedAt: getUpdatedAt({
-              detailStartTime: record.detail?.startTime,
-              detailEndTime: record.detail?.endTime,
-              resumeUpdatedAt: record.resume?.updatedAt
-            }),
-            pid: record.detail?.pid,
-            description: record.detail?.description ?? record.resume?.description ?? '',
-            resumeCommand: sessionId === '' ? '' : formatResumeCommand(sessionId)
+        const requestedStatuses = new Set<TaskDetail['status']>()
+        if (opts.running) requestedStatuses.add('running')
+        for (const status of opts.status ?? []) {
+          if (!isTaskStatus(status)) {
+            throw new Error(`Unsupported status "${status}". Expected one of: ${TASK_STATUSES.join(', ')}`)
           }
-        })
+          requestedStatuses.add(status)
+        }
 
-      if (rows.length === 0) {
-        console.log('No cached sessions matched the requested filters.')
-        return
+        const limit = opts.all
+          ? records.length
+          : Math.max(1, Number.parseInt(opts.limit ?? '20', 10) || 20)
+        const rows = records
+          .filter((record) => (
+            requestedStatuses.size === 0 ||
+            (record.detail?.status != null && requestedStatuses.has(record.detail.status))
+          ))
+          .slice(0, limit)
+          .map((record) => {
+            const sessionId = record.resume?.sessionId ?? record.detail?.sessionId ?? ''
+            const ctxId = record.resume?.ctxId ?? record.detail?.ctxId ?? ''
+
+            return {
+              sessionId,
+              ctxId,
+              status: record.detail?.status ?? 'unknown',
+              adapter: record.detail?.adapter ?? record.resume?.taskOptions.adapter ?? '',
+              model: record.detail?.model ?? record.resume?.adapterOptions.model ?? '',
+              updatedAt: getUpdatedAt({
+                detailStartTime: record.detail?.startTime,
+                detailEndTime: record.detail?.endTime,
+                resumeUpdatedAt: record.resume?.updatedAt
+              }),
+              pid: record.detail?.pid,
+              description: record.detail?.description ?? record.resume?.description ?? '',
+              resumeCommand: sessionId === '' ? '' : formatResumeCommand(sessionId)
+            }
+          })
+
+        if (rows.length === 0) {
+          console.log('No cached sessions matched the requested filters.')
+          return
+        }
+
+        if (opts.json) {
+          console.log(JSON.stringify(rows, null, 2))
+          return
+        }
+
+        console.table(rows.map((row) => ({
+          Session: row.sessionId,
+          Status: row.status,
+          Adapter: row.adapter,
+          Model: row.model,
+          Updated: row.updatedAt === 0 ? '' : new Date(row.updatedAt).toLocaleString(),
+          PID: row.pid ?? '',
+          Description: truncate(row.description, 60),
+          Resume: row.resumeCommand
+        })))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(message)
+        process.exit(1)
       }
-
-      if (opts.json) {
-        console.log(JSON.stringify(rows, null, 2))
-        return
-      }
-
-      console.table(rows.map((row) => ({
-        Session: row.sessionId,
-        Status: row.status,
-        Adapter: row.adapter,
-        Model: row.model,
-        Updated: row.updatedAt === 0 ? '' : new Date(row.updatedAt).toLocaleString(),
-        PID: row.pid ?? '',
-        Description: truncate(row.description, 60),
-        Resume: row.resumeCommand
-      })))
     })
 }
