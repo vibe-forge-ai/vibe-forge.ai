@@ -11,9 +11,13 @@
 
 ## 入口
 
-- `src/definition-loader.ts`
+- `src/index.ts`
   - `DefinitionLoader`
+- `src/definition-utils.ts`
   - `loadLocalDocuments()`
+  - 定义文档解析、名称/引用解析
+- `src/prompt-builders.ts`
+  - rules / skills / specs / entities prompt 片段生成
 - `__tests__/definition-loader.spec.ts`
 
 ## 当前边界

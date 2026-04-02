@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { DefinitionLoader } from '#~/definition-loader.js'
+import { DefinitionLoader } from '#~/index.js'
 
 const tempDirs: string[] = []
 
