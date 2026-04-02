@@ -55,7 +55,12 @@ interface ActiveCliSessionRecord {
   detail: TaskDetail
 }
 
-export const createSessionExitController = <T extends { kill(): void }>(params?: {
+interface ExitControllableSession {
+  kill(): void
+  emit?: (event: { type: 'stop' }) => void
+}
+
+export const createSessionExitController = <T extends ExitControllableSession>(params?: {
   exit?: (code: number) => never | void
 }) => {
   let session: T | undefined
@@ -63,19 +68,26 @@ export const createSessionExitController = <T extends { kill(): void }>(params?:
   let didRequestExit = false
   let didExit = false
   const exit = params?.exit ?? process.exit
+  const signalSessionExit = (target: T) => {
+    if (pendingExitCode === 0 && typeof target.emit === 'function') {
+      target.emit({ type: 'stop' })
+      return
+    }
+    target.kill()
+  }
 
   return {
     bindSession(nextSession: T) {
       session = nextSession
       if (pendingExitCode == null) return
-      session.kill()
+      signalSessionExit(session)
     },
     requestExit(code: number) {
       if (didRequestExit) return
       didRequestExit = true
       pendingExitCode = code
       if (session != null) {
-        session.kill()
+        signalSessionExit(session)
       }
     },
     handleSessionExit(code: number) {
@@ -393,7 +405,7 @@ Notes:
 
         await persistRecord()
 
-        let boundSession: { kill(): void; pid?: number } | undefined
+        let boundSession: (ExitControllableSession & { pid?: number }) | undefined
         const handleExit = (exitCode: number) => {
           void (async () => {
             const endedAt = Date.now()
@@ -435,11 +447,15 @@ Notes:
               updateInitRecord(event.data, boundSession?.pid)
             }
             if (shouldPrintOutput) {
+              const shouldSuppressFatalError = event.type === 'error' &&
+                event.data.fatal !== false &&
+                exitController.getPendingExitCode() === 0
               const nextState = handlePrintEvent({
                 event,
                 outputFormat,
                 lastAssistantText,
                 didExitAfterError,
+                suppressFatalError: shouldSuppressFatalError,
                 log: (message) => console.log(message),
                 errorLog: (message) => console.error(message),
                 requestExit: (code) => exitController.requestExit(code)
@@ -522,6 +538,7 @@ export const handlePrintEvent = (input: {
   outputFormat: RunOutputFormat
   lastAssistantText: string | undefined
   didExitAfterError: boolean
+  suppressFatalError?: boolean
   log: (message: string) => void
   errorLog: (message: string) => void
   requestExit: (code: number) => void
@@ -532,6 +549,12 @@ export const handlePrintEvent = (input: {
 
   if (input.event.type === 'error') {
     const isFatal = input.event.data.fatal !== false
+    if (isFatal && input.suppressFatalError) {
+      return {
+        lastAssistantText: nextAssistantText,
+        didExitAfterError: input.didExitAfterError
+      }
+    }
 
     switch (input.outputFormat) {
       case 'stream-json':

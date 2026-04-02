@@ -81,9 +81,10 @@ describe('run command print output', () => {
     expect(calls).toEqual([1])
   })
 
-  it('uses the pending requested exit code when the session is already bound', () => {
+  it('signals adapter stop instead of kill for a successful exit request', () => {
     const calls: number[] = []
     let killCount = 0
+    let stopCount = 0
     const controller = createSessionExitController({
       exit: (code) => {
         calls.push(code)
@@ -93,15 +94,43 @@ describe('run command print output', () => {
     controller.bindSession({
       kill: () => {
         killCount += 1
+      },
+      emit: (event) => {
+        if (event.type === 'stop') {
+          stopCount += 1
+        }
       }
     })
     controller.requestExit(0)
 
-    expect(killCount).toBe(1)
+    expect(killCount).toBe(0)
+    expect(stopCount).toBe(1)
     expect(calls).toEqual([])
 
     controller.handleSessionExit(2)
     expect(calls).toEqual([0])
+  })
+
+  it('signals adapter stop after bind when success exit was requested early', () => {
+    let killCount = 0
+    let stopCount = 0
+    const controller = createSessionExitController()
+
+    controller.requestExit(0)
+
+    controller.bindSession({
+      kill: () => {
+        killCount += 1
+      },
+      emit: (event) => {
+        if (event.type === 'stop') {
+          stopCount += 1
+        }
+      }
+    })
+
+    expect(killCount).toBe(0)
+    expect(stopCount).toBe(1)
   })
 
   it('keeps cached stream mode when resume does not override print behavior', () => {
@@ -305,6 +334,38 @@ describe('run command print output', () => {
     expect(log.mock.calls[0]?.[0]).toContain('"type": "init"')
     expect(log.mock.calls[1]?.[0]).toContain('"type": "message"')
     expect(log.mock.calls[2]?.[0]).toContain('"type": "stop"')
+    expect(requestExit).not.toHaveBeenCalled()
+  })
+
+  it('suppresses fatal exit errors after a successful stop was already requested', () => {
+    const log = vi.fn()
+    const errorLog = vi.fn()
+    const requestExit = vi.fn()
+
+    const nextState = handlePrintEvent({
+      event: {
+        type: 'error',
+        data: {
+          message: 'Process exited with code 143',
+          details: { exitCode: 143 },
+          fatal: true
+        }
+      },
+      outputFormat: 'text',
+      lastAssistantText: 'final answer',
+      didExitAfterError: false,
+      suppressFatalError: true,
+      log,
+      errorLog,
+      requestExit
+    })
+
+    expect(nextState).toEqual({
+      lastAssistantText: 'final answer',
+      didExitAfterError: false
+    })
+    expect(log).not.toHaveBeenCalled()
+    expect(errorLog).not.toHaveBeenCalled()
     expect(requestExit).not.toHaveBeenCalled()
   })
 
