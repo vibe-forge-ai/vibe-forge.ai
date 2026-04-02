@@ -339,5 +339,9 @@ export const run = async (
     }
   )
 
-  return { session: hookBridge.wrapSession(session), ctx }
+  return {
+    session: hookBridge.wrapSession(session),
+    ctx,
+    resolvedAdapter: adapterType
+  }
 }

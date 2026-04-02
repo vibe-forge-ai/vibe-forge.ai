@@ -15,6 +15,7 @@ export interface CliSessionResumeRecord {
   description?: string
   createdAt: number
   updatedAt: number
+  resolvedAdapter?: string
   taskOptions: RunTaskOptions
   adapterOptions: Omit<AdapterQueryOptions, 'description' | 'onEvent' | 'type'>
   outputFormat: CliOutputFormat
@@ -59,6 +60,37 @@ const getRecordUpdatedAt = (record: CliSessionRecord) =>
 const isSessionDirNameMatch = (value: string, target: string) => value === target || value.startsWith(target)
 
 export const formatResumeCommand = (sessionId: string) => `vf --resume ${sessionId}`
+export const formatStopCommand = (sessionId: string) => `vf stop ${sessionId}`
+export const formatKillCommand = (sessionId: string) => `vf kill ${sessionId}`
+export const formatListCommand = (params?: {
+  running?: boolean
+  view?: string
+}) => {
+  const args = ['vf', 'list']
+  if (params?.running) args.push('--running')
+  if (params?.view != null && params.view !== '') args.push('--view', params.view)
+  return args.join(' ')
+}
+
+export const resolveCliSessionId = (record: CliSessionRecord) =>
+  record.resume?.sessionId ?? record.detail?.sessionId ?? ''
+
+export const resolveCliSessionCtxId = (record: CliSessionRecord) =>
+  record.resume?.ctxId ?? record.detail?.ctxId ?? ''
+
+export const resolveCliSessionAdapter = (record: CliSessionRecord) =>
+  record.resume?.resolvedAdapter ??
+    record.detail?.adapter ??
+    record.resume?.taskOptions.adapter ??
+    ''
+
+export const resolveCliSessionModel = (record: CliSessionRecord) =>
+  record.detail?.model ?? record.resume?.adapterOptions.model ?? ''
+
+export const resolveCliSessionDescription = (record: CliSessionRecord) =>
+  record.detail?.description ?? record.resume?.description ?? ''
+
+export const resolveCliSessionUpdatedAt = (record: CliSessionRecord) => getRecordUpdatedAt(record)
 
 export const listCliSessions = async (cwd: string): Promise<CliSessionRecord[]> => {
   const cacheRoot = path.resolve(cwd, CACHE_ROOT)
@@ -115,14 +147,14 @@ export const resolveCliSession = async (cwd: string, id: string): Promise<CliSes
   if (prefixMatches.length === 1) return prefixMatches[0]!
   if (prefixMatches.length > 1) {
     const candidates = prefixMatches
-      .map((record) => record.resume?.sessionId ?? record.detail?.sessionId)
+      .map(resolveCliSessionId)
       .filter((value): value is string => value != null)
       .slice(0, 5)
       .join(', ')
     throw new Error(`Session id "${id}" is ambiguous: ${candidates}`)
   }
 
-  throw new Error(`Session "${id}" not found. Use "vf list" to inspect available sessions.`)
+  throw new Error(`Session "${id}" not found. Use "${formatListCommand({ view: 'full' })}" to inspect available sessions.`)
 }
 
 export const writeCliSessionRecord = async (
