@@ -8,6 +8,8 @@ description: 仓库通用维护与验证规则，包含启动、lint、格式化
 本文件保留常用维护入口；日志消费与排查经验见：
 
 - [日志消费与排查](./maintenance/logs.md)
+- [消息级操作开发经验](./maintenance/message-actions.md)
+- [消息级操作维护工具](./maintenance/tooling.md)
 
 ## 开发环境启动
 
@@ -34,6 +36,8 @@ description: 仓库通用维护与验证规则，包含启动、lint、格式化
   - 场景：在重构或修改共享包 (`packages/core`) 后，确保全量类型安全。
 - **提交信息检查**: `pnpm tools commitmsg-check <base> <head>`
   - 场景：在 CI 中校验一个 commit range 内的提交标题是否符合 Conventional Commit 约定；GitHub merge commit 例外。
+- **消息级操作回归**: `pnpm tools message-actions verify`
+  - 场景：修改消息级 `编辑 / 撤回 / 分叉 / 复制原文` 后，固定跑一遍质量检查与回归测试组合，并拿到真实 Chrome 回归清单。
 - **单元测试**: `pnpm -C apps/client test` / `pnpm -C apps/cli test` / `npx vitest run <path>`
   - 场景：修改核心逻辑或 API 适配器后验证功能正确性。
   - 注意：运行单个用例或目录时需使用 `vitest run <path>`，不要直接执行 `vitest <path>`。

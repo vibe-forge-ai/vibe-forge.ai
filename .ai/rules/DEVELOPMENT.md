@@ -37,6 +37,7 @@ pnpm exec eslint .
 pnpm exec dprint check
 pnpm exec dprint fmt
 pnpm typecheck
+pnpm tools message-actions verify
 pnpm tools commitmsg-check <base> <head>
 pnpm -C apps/cli test
 pnpm -C packages/hooks test
