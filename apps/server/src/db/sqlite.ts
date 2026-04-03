@@ -1,9 +1,5 @@
 import { createRequire } from 'node:module'
-import type {
-  DatabaseSync as NodeDatabaseSync,
-  DatabaseSyncOptions,
-  StatementSync
-} from 'node:sqlite'
+import type { DatabaseSync as NodeDatabaseSync, DatabaseSyncOptions, StatementSync } from 'node:sqlite'
 
 const require = createRequire(__filename)
 const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite')

@@ -43,11 +43,13 @@ const collectTextFragments = (value: unknown, visited = new WeakSet<object>()): 
   visited.add(value)
 
   const record = value as Record<string, unknown>
-  return [...new Set(
-    Object.entries(record)
-      .filter((entry) => /text|content|message|reason|error/i.test(entry[0]))
-      .flatMap((entry) => collectTextFragments(entry[1], visited))
-  )]
+  return [
+    ...new Set(
+      Object.entries(record)
+        .filter((entry) => /text|content|message|reason|error/i.test(entry[0]))
+        .flatMap((entry) => collectTextFragments(entry[1], visited))
+    )
+  ]
 }
 
 const collectDeniedTools = (value: unknown): string[] => {
@@ -58,14 +60,16 @@ const collectDeniedTools = (value: unknown): string[] => {
     return []
   }
 
-  return [...new Set(
-    Object.entries(value)
-      .filter((entry) =>
-        /tool/i.test(entry[0]) &&
-        isNonEmptyString(entry[1])
-      )
-      .map((entry) => entry[1].trim())
-  )]
+  return [
+    ...new Set(
+      Object.entries(value)
+        .filter((entry) =>
+          /tool/i.test(entry[0]) &&
+          isNonEmptyString(entry[1])
+        )
+        .map((entry) => entry[1].trim())
+    )
+  ]
 }
 
 const normalizePermissionDenials = (items: unknown[]) => {

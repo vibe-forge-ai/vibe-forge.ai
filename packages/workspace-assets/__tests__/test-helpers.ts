@@ -23,9 +23,11 @@ export const installPluginPackage = async (
   files: Record<string, string>
 ) => {
   const packageDir = join(workspace, 'node_modules', ...packageName.split('/'))
-  await Promise.all(Object.entries(files).map(async ([relativePath, content]) => {
-    await writeDocument(join(packageDir, relativePath), content)
-  }))
+  await Promise.all(
+    Object.entries(files).map(async ([relativePath, content]) => {
+      await writeDocument(join(packageDir, relativePath), content)
+    })
+  )
 }
 
 afterEach(async () => {

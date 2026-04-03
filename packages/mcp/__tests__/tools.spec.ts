@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import askUser from '#~/tools/interaction/ask-user.js'
 import wait from '#~/tools/general/wait.js'
 import { createMcpTools } from '#~/tools/index.js'
+import askUser from '#~/tools/interaction/ask-user.js'
 
 import { createToolTester } from './mcp-test-utils.js'
 

@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
@@ -20,7 +20,7 @@ const createWorkspace = () => {
   return cwd
 }
 
-const writeRequestLogContext = (workspace: string, payload: { ctxId: string, sessionId: string }) => {
+const writeRequestLogContext = (workspace: string, payload: { ctxId: string; sessionId: string }) => {
   const filePath = join(
     workspace,
     '.ai',
@@ -86,7 +86,6 @@ describe('ccr request log context', () => {
       ctxId: 'ctx-yaml',
       sessionId: 'session-yaml'
     })
-
     ;(writeRequestDebugLog as (...args: unknown[]) => void)(
       'shared-logger.log.md',
       'request payload',
@@ -135,24 +134,27 @@ describe('ccr request log context', () => {
       sessionId: 'session-stream'
     })
 
-    const response = new Response(new ReadableStream({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode(
-          'data: {"object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"foo"},"finish_reason":null}]}\n\n'
-        ))
-        controller.enqueue(new TextEncoder().encode(
-          'data: {"object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"bar","thinking":{"content":"baz"}},"finish_reason":"stop"}]}\n\n'
-        ))
-        controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
-        controller.close()
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(
+            'data: {"object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"foo"},"finish_reason":null}]}\n\n'
+          ))
+          controller.enqueue(new TextEncoder().encode(
+            'data: {"object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"bar","thinking":{"content":"baz"}},"finish_reason":"stop"}]}\n\n'
+          ))
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+          controller.close()
+        }
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream'
+        },
+        status: 200,
+        statusText: 'OK'
       }
-    }), {
-      headers: {
-        'Content-Type': 'text/event-stream'
-      },
-      status: 200,
-      statusText: 'OK'
-    })
+    )
 
     await writeResponseDebugLog(
       'stream-response.log.md',

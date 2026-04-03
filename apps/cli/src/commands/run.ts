@@ -17,6 +17,8 @@ import { createSessionExitController } from './run/session-exit-controller'
 import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './run/types'
 
 export {
+  RUN_INPUT_FORMATS,
+  RUN_OUTPUT_FORMATS,
   createSessionExitController,
   getAdapterErrorMessage,
   getDisallowedResumeFlags,
@@ -28,8 +30,6 @@ export {
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
   resolveRunMode,
-  RUN_INPUT_FORMATS,
-  RUN_OUTPUT_FORMATS,
   shouldPrintResumeHint
 }
 export type { RunInputFormat, RunOptions, RunOutputFormat } from './run/types'

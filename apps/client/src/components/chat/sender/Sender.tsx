@@ -13,8 +13,8 @@ import type { SessionInfo } from '@vibe-forge/types'
 import { isShortcutMatch } from '../../../utils/shortcutUtils'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
-import { shouldHideSenderForInteraction } from './interaction-request'
 import { ThinkingStatus } from './ThinkingStatus'
+import { shouldHideSenderForInteraction } from './interaction-request'
 
 const { TextArea } = Input
 
@@ -669,258 +669,260 @@ export function Sender({
       )}
       {!hideSender && (
         <div className='chat-input-container'>
-        {connectionError && connectionError.trim() !== '' && (
-          <div className='connection-error-banner'>
-            <div className='connection-error-content'>
-              <span className='material-symbols-rounded'>error</span>
-              <div className='connection-error-copy'>
-                <div className='connection-error-title'>{t('chat.connectionErrorTitle')}</div>
-                <div className='connection-error-message'>{connectionError}</div>
+          {connectionError && connectionError.trim() !== '' && (
+            <div className='connection-error-banner'>
+              <div className='connection-error-content'>
+                <span className='material-symbols-rounded'>error</span>
+                <div className='connection-error-copy'>
+                  <div className='connection-error-title'>{t('chat.connectionErrorTitle')}</div>
+                  <div className='connection-error-message'>{connectionError}</div>
+                </div>
               </div>
+              <Button size='small' onClick={onRetryConnection}>
+                {t('chat.retryConnection')}
+              </Button>
             </div>
-            <Button size='small' onClick={onRetryConnection}>
-              {t('chat.retryConnection')}
-            </Button>
-          </div>
-        )}
-        {modelUnavailable && (
-          <div className='model-unavailable'>
-            {t('chat.modelConfigRequired')}
-          </div>
-        )}
-        {pendingImages.length > 0 && (
-          <div className='pending-images'>
-            {pendingImages.map(img => (
-              <div key={img.id} className='pending-image'>
-                <img src={img.url} alt={img.name ?? 'image'} />
-                <div className='pending-image-remove' onClick={() => handleRemovePendingImage(img.id)}>
-                  <span className='material-symbols-rounded'>close</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {showCompletion && (
-          <CompletionMenu
-            items={completionItems}
-            selectedIndex={selectedIndex}
-            onSelect={handleSelectCompletion}
-            onClose={() => setShowCompletion(false)}
-          />
-        )}
-        <TextArea
-          ref={textareaRef}
-          className='chat-input-textarea'
-          placeholder={placeholder ?? interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          autoSize={{ minRows: 1, maxRows: 10 }}
-          variant='borderless'
-          disabled={modelUnavailable}
-        />
-
-        <div className='chat-input-toolbar'>
-          <input
-            ref={fileInputRef}
-            type='file'
-            accept='image/*'
-            multiple
-            onChange={handleImageFileChange}
-            className='file-input-hidden'
-          />
-          <div className='toolbar-left'>
-            <Tooltip title={t('chat.tooltipSlashCommands')}>
-              <span>
-                <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
-                  <span className='material-symbols-rounded'>terminal</span>
-                </div>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('chat.tooltipMentionAgents')}>
-              <span>
-                <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
-                  <span className='material-symbols-rounded'>smart_toy</span>
-                </div>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('chat.tooltipInjectContext')}>
-              <span>
-                <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
-                  <span className='material-symbols-rounded'>description</span>
-                </div>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('chat.tooltipUploadImages')}>
-              <span>
-                <div className='toolbar-btn' onClick={handleImageUpload}>
-                  <span className='material-symbols-rounded'>image</span>
-                </div>
-              </span>
-            </Tooltip>
-
-            {sessionInfo != null && sessionInfo.type === 'init' && (
-              <div className='session-info-toolbar'>
-                {selectionWarnings.length > 0 && (
-                  <Tooltip
-                    placement='topLeft'
-                    title={
-                      <div className='asset-warning-tooltip'>
-                        <div className='asset-warning-tooltip__title'>{t('chat.selectionWarningsTitle')}</div>
-                        {selectionWarnings.slice(0, 5).map((warning: SessionSelectionWarning, index: number) => (
-                          <div
-                            key={`${warning.adapter}:${warning.requestedModel}:${index}`}
-                            className='asset-warning-tooltip__item'
-                          >
-                            <span>{formatSelectionWarning(warning)}</span>
-                          </div>
-                        ))}
-                        {selectionWarnings.length > 5 && (
-                          <div className='asset-warning-tooltip__more'>
-                            {t('chat.assetWarningsMore', { count: selectionWarnings.length - 5 })}
-                          </div>
-                        )}
-                      </div>
-                    }
-                  >
-                    <div className='info-item asset-warning-item'>
-                      <span className='info-item-leading'>
-                        <span className='material-symbols-rounded'>warning</span>
-                      </span>
-                      <span className='info-text'>
-                        {t('chat.selectionWarningsCount', { count: selectionWarnings.length })}
-                      </span>
-                    </div>
-                  </Tooltip>
-                )}
-                {assetWarnings.length > 0 && (
-                  <Tooltip
-                    placement='topLeft'
-                    title={
-                      <div className='asset-warning-tooltip'>
-                        <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
-                        {assetWarnings.slice(0, 5).map((warning: SessionAssetDiagnostic) => (
-                          <div key={warning.assetId} className='asset-warning-tooltip__item'>
-                            <code>{warning.assetId}</code>
-                            <span>{warning.reason}</span>
-                          </div>
-                        ))}
-                        {assetWarnings.length > 5 && (
-                          <div className='asset-warning-tooltip__more'>
-                            {t('chat.assetWarningsMore', { count: assetWarnings.length - 5 })}
-                          </div>
-                        )}
-                      </div>
-                    }
-                  >
-                    <div className='info-item asset-warning-item'>
-                      <span className='info-item-leading'>
-                        <span className='material-symbols-rounded'>warning</span>
-                      </span>
-                      <span className='info-text'>{t('chat.assetWarningsCount', { count: assetWarnings.length })}</span>
-                    </div>
-                  </Tooltip>
-                )}
-                <Cascader
-                  open={showToolsList}
-                  options={toolCascaderOptions}
-                  expandTrigger='hover'
-                  placement='topLeft'
-                  allowClear={false}
-                  popupClassName='sender-tools-cascader-popup'
-                  onOpenChange={setShowToolsList}
-                  onChange={() => setShowToolsList(false)}
-                >
-                  <div className={`info-item ${showToolsList ? 'active' : ''}`}>
-                    <span className='info-item-leading'>
-                      <span className='material-symbols-rounded'>build</span>
-                    </span>
-                    <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
-                    <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
+          )}
+          {modelUnavailable && (
+            <div className='model-unavailable'>
+              {t('chat.modelConfigRequired')}
+            </div>
+          )}
+          {pendingImages.length > 0 && (
+            <div className='pending-images'>
+              {pendingImages.map(img => (
+                <div key={img.id} className='pending-image'>
+                  <img src={img.url} alt={img.name ?? 'image'} />
+                  <div className='pending-image-remove' onClick={() => handleRemovePendingImage(img.id)}>
+                    <span className='material-symbols-rounded'>close</span>
                   </div>
-                </Cascader>
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {showCompletion && (
+            <CompletionMenu
+              items={completionItems}
+              selectedIndex={selectedIndex}
+              onSelect={handleSelectCompletion}
+              onClose={() => setShowCompletion(false)}
+            />
+          )}
+          <TextArea
+            ref={textareaRef}
+            className='chat-input-textarea'
+            placeholder={placeholder ?? interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            autoSize={{ minRows: 1, maxRows: 10 }}
+            variant='borderless'
+            disabled={modelUnavailable}
+          />
 
-          <div className='toolbar-right'>
-            {adapterOptions && adapterOptions.length > 1 && (
+          <div className='chat-input-toolbar'>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='image/*'
+              multiple
+              onChange={handleImageFileChange}
+              className='file-input-hidden'
+            />
+            <div className='toolbar-left'>
+              <Tooltip title={t('chat.tooltipSlashCommands')}>
+                <span>
+                  <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
+                    <span className='material-symbols-rounded'>terminal</span>
+                  </div>
+                </span>
+              </Tooltip>
+              <Tooltip title={t('chat.tooltipMentionAgents')}>
+                <span>
+                  <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
+                    <span className='material-symbols-rounded'>smart_toy</span>
+                  </div>
+                </span>
+              </Tooltip>
+              <Tooltip title={t('chat.tooltipInjectContext')}>
+                <span>
+                  <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
+                    <span className='material-symbols-rounded'>description</span>
+                  </div>
+                </span>
+              </Tooltip>
+              <Tooltip title={t('chat.tooltipUploadImages')}>
+                <span>
+                  <div className='toolbar-btn' onClick={handleImageUpload}>
+                    <span className='material-symbols-rounded'>image</span>
+                  </div>
+                </span>
+              </Tooltip>
+
+              {sessionInfo != null && sessionInfo.type === 'init' && (
+                <div className='session-info-toolbar'>
+                  {selectionWarnings.length > 0 && (
+                    <Tooltip
+                      placement='topLeft'
+                      title={
+                        <div className='asset-warning-tooltip'>
+                          <div className='asset-warning-tooltip__title'>{t('chat.selectionWarningsTitle')}</div>
+                          {selectionWarnings.slice(0, 5).map((warning: SessionSelectionWarning, index: number) => (
+                            <div
+                              key={`${warning.adapter}:${warning.requestedModel}:${index}`}
+                              className='asset-warning-tooltip__item'
+                            >
+                              <span>{formatSelectionWarning(warning)}</span>
+                            </div>
+                          ))}
+                          {selectionWarnings.length > 5 && (
+                            <div className='asset-warning-tooltip__more'>
+                              {t('chat.assetWarningsMore', { count: selectionWarnings.length - 5 })}
+                            </div>
+                          )}
+                        </div>
+                      }
+                    >
+                      <div className='info-item asset-warning-item'>
+                        <span className='info-item-leading'>
+                          <span className='material-symbols-rounded'>warning</span>
+                        </span>
+                        <span className='info-text'>
+                          {t('chat.selectionWarningsCount', { count: selectionWarnings.length })}
+                        </span>
+                      </div>
+                    </Tooltip>
+                  )}
+                  {assetWarnings.length > 0 && (
+                    <Tooltip
+                      placement='topLeft'
+                      title={
+                        <div className='asset-warning-tooltip'>
+                          <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
+                          {assetWarnings.slice(0, 5).map((warning: SessionAssetDiagnostic) => (
+                            <div key={warning.assetId} className='asset-warning-tooltip__item'>
+                              <code>{warning.assetId}</code>
+                              <span>{warning.reason}</span>
+                            </div>
+                          ))}
+                          {assetWarnings.length > 5 && (
+                            <div className='asset-warning-tooltip__more'>
+                              {t('chat.assetWarningsMore', { count: assetWarnings.length - 5 })}
+                            </div>
+                          )}
+                        </div>
+                      }
+                    >
+                      <div className='info-item asset-warning-item'>
+                        <span className='info-item-leading'>
+                          <span className='material-symbols-rounded'>warning</span>
+                        </span>
+                        <span className='info-text'>
+                          {t('chat.assetWarningsCount', { count: assetWarnings.length })}
+                        </span>
+                      </div>
+                    </Tooltip>
+                  )}
+                  <Cascader
+                    open={showToolsList}
+                    options={toolCascaderOptions}
+                    expandTrigger='hover'
+                    placement='topLeft'
+                    allowClear={false}
+                    popupClassName='sender-tools-cascader-popup'
+                    onOpenChange={setShowToolsList}
+                    onChange={() => setShowToolsList(false)}
+                  >
+                    <div className={`info-item ${showToolsList ? 'active' : ''}`}>
+                      <span className='info-item-leading'>
+                        <span className='material-symbols-rounded'>build</span>
+                      </span>
+                      <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
+                      <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
+                    </div>
+                  </Cascader>
+                </div>
+              )}
+            </div>
+
+            <div className='toolbar-right'>
+              {adapterOptions && adapterOptions.length > 1 && (
+                <Select
+                  className='adapter-select'
+                  classNames={{ popup: { root: 'adapter-select-popup' } }}
+                  value={selectedAdapter}
+                  options={adapterOptions}
+                  showSearch={false}
+                  allowClear={false}
+                  disabled={adapterLocked || modelUnavailable || isThinking}
+                  onChange={(value) => onAdapterChange?.(value)}
+                  placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
+                  optionLabelProp='label'
+                  popupMatchSelectWidth={false}
+                />
+              )}
+
               <Select
-                className='adapter-select'
-                classNames={{ popup: { root: 'adapter-select-popup' } }}
-                value={selectedAdapter}
-                options={adapterOptions}
-                showSearch={false}
+                className='model-select'
+                classNames={{ popup: { root: 'model-select-popup' } }}
+                value={selectedModel}
+                options={modelOptions ?? []}
+                showSearch
                 allowClear={false}
-                disabled={adapterLocked || modelUnavailable || isThinking}
-                onChange={(value) => onAdapterChange?.(value)}
-                placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
-                optionLabelProp='label'
+                disabled={modelUnavailable || isThinking}
+                onChange={(value) => onModelChange?.(value)}
+                placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
+                optionLabelProp='displayLabel'
+                filterOption={(input, option) => {
+                  const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
+                  return searchText.toLowerCase().includes(input.toLowerCase())
+                }}
                 popupMatchSelectWidth={false}
               />
-            )}
 
-            <Select
-              className='model-select'
-              classNames={{ popup: { root: 'model-select-popup' } }}
-              value={selectedModel}
-              options={modelOptions ?? []}
-              showSearch
-              allowClear={false}
-              disabled={modelUnavailable || isThinking}
-              onChange={(value) => onModelChange?.(value)}
-              placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
-              optionLabelProp='displayLabel'
-              filterOption={(input, option) => {
-                const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
-                return searchText.toLowerCase().includes(input.toLowerCase())
-              }}
-              popupMatchSelectWidth={false}
-            />
+              {supportsEffort && (
+                <Select
+                  className='effort-select'
+                  classNames={{ popup: { root: 'effort-select-popup' } }}
+                  value={effort}
+                  options={effortOptions}
+                  showSearch={false}
+                  allowClear={false}
+                  disabled={modelUnavailable || isThinking}
+                  onChange={(value) => onEffortChange(value)}
+                  placeholder={t('chat.effortSelectPlaceholder')}
+                  optionLabelProp='label'
+                  popupMatchSelectWidth={false}
+                />
+              )}
 
-            {supportsEffort && (
               <Select
-                className='effort-select'
-                classNames={{ popup: { root: 'effort-select-popup' } }}
-                value={effort}
-                options={effortOptions}
+                className='permission-mode-select'
+                classNames={{ popup: { root: 'permission-mode-select-popup' } }}
+                value={permissionMode}
+                options={permissionModeOptions}
                 showSearch={false}
                 allowClear={false}
                 disabled={modelUnavailable || isThinking}
-                onChange={(value) => onEffortChange(value)}
-                placeholder={t('chat.effortSelectPlaceholder')}
+                onChange={(value) => onPermissionModeChange(value)}
+                placeholder={t('chat.permissionModeSelectPlaceholder')}
                 optionLabelProp='label'
                 popupMatchSelectWidth={false}
               />
-            )}
 
-            <Select
-              className='permission-mode-select'
-              classNames={{ popup: { root: 'permission-mode-select-popup' } }}
-              value={permissionMode}
-              options={permissionModeOptions}
-              showSearch={false}
-              allowClear={false}
-              disabled={modelUnavailable || isThinking}
-              onChange={(value) => onPermissionModeChange(value)}
-              placeholder={t('chat.permissionModeSelectPlaceholder')}
-              optionLabelProp='label'
-              popupMatchSelectWidth={false}
-            />
-
-            <div
-              className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${
-                isThinking ? 'thinking' : ''
-              } ${modelUnavailable ? 'disabled' : ''}`}
-              onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : handleSend)}
-            >
-              <span className='material-symbols-rounded'>
-                {isThinking ? 'stop_circle' : 'send'}
-              </span>
+              <div
+                className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${
+                  isThinking ? 'thinking' : ''
+                } ${modelUnavailable ? 'disabled' : ''}`}
+                onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : handleSend)}
+              >
+                <span className='material-symbols-rounded'>
+                  {isThinking ? 'stop_circle' : 'send'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       )}
       {!hideSender && (

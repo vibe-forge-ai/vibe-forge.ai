@@ -33,7 +33,9 @@ describe('loadChannelAgentRules', () => {
 
   it('falls back to the project root file when .ai/rules is missing', async () => {
     readFileMock.mockImplementation(async (path) => {
-      if (String(path).endsWith('AGENTS.channel.lark.md') && !String(path).includes('.ai/rules/')) return '  root rules  '
+      if (String(path).endsWith('AGENTS.channel.lark.md') && !String(path).includes('.ai/rules/')) {
+        return '  root rules  '
+      }
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
     })
 

@@ -56,10 +56,14 @@ describe('workspace assets snapshots', () => {
     }
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n',
       'rules/security.md': [
         '---',
@@ -94,17 +98,25 @@ describe('workspace assets snapshots', () => {
       'opencode/plugins/demo-plugin.js': 'export default {}\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-logger',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-telemetry', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-telemetry',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-telemetry',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n'
     })
 

@@ -100,15 +100,19 @@ export const resolveTransformerPath = (name: string) => {
       'src/ccr-transformers',
       'ccr/transformers',
       'ccr-transformers'
-    ].flatMap(baseDir => candidateNames.source.map(relativePath => (
-      resolve(adapterPackageDir, baseDir, relativePath)
-    ))),
+    ].flatMap(baseDir =>
+      candidateNames.source.map(relativePath => (
+        resolve(adapterPackageDir, baseDir, relativePath)
+      ))
+    ),
     ...[
       'dist/ccr/transformers',
       'dist/ccr-transformers'
-    ].flatMap(baseDir => candidateNames.dist.map(relativePath => (
-      resolve(adapterPackageDir, baseDir, relativePath)
-    )))
+    ].flatMap(baseDir =>
+      candidateNames.dist.map(relativePath => (
+        resolve(adapterPackageDir, baseDir, relativePath)
+      ))
+    )
   ]
 
   return candidates.find(candidate => existsSync(candidate)) ?? candidates[0]

@@ -17,6 +17,10 @@ export default config(
       'packages/adapters/opencode/__tests__/**/*.js'
     ],
     stylistic: false,
+    rules: {
+      'perfectionist/sort-named-exports': 'off',
+      'perfectionist/sort-named-imports': 'off'
+    },
     typescript: {
       overrides: {
         'ts/no-namespace': 'off',

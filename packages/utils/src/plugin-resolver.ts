@@ -42,7 +42,8 @@ const shouldTryPrefixedPackageId = (id: string) => (
 const toPluginManifest = (value: unknown): PluginManifest | undefined => {
   if (!isRecord(value)) return undefined
 
-  const manifestLike = value.__vibeForgePluginManifest === true || 'assets' in value || 'children' in value || 'scope' in value
+  const manifestLike = value.__vibeForgePluginManifest === true || 'assets' in value || 'children' in value ||
+    'scope' in value
   if (!manifestLike) return undefined
 
   if ('scope' in value) {
@@ -68,7 +69,9 @@ const toPluginManifest = (value: unknown): PluginManifest | undefined => {
           if (!isRecord(source) || (source.type !== 'package' && source.type !== 'directory')) {
             throw new Error(`Invalid child plugin source for ${key}`)
           }
-          if (typeof child.activation !== 'string' || (child.activation !== 'default' && child.activation !== 'optional')) {
+          if (
+            typeof child.activation !== 'string' || (child.activation !== 'default' && child.activation !== 'optional')
+          ) {
             throw new Error(`Invalid child plugin activation for ${key}`)
           }
           if ('scope' in child) {
@@ -167,7 +170,9 @@ export const normalizePluginConfig = (
 ): PluginConfig | undefined => {
   if (plugins == null) return undefined
   if (!Array.isArray(plugins)) {
-    throw new TypeError(`Invalid ${path} config. "plugins" must be an array of plugin instances; the legacy object map format is no longer supported.`)
+    throw new TypeError(
+      `Invalid ${path} config. "plugins" must be an array of plugin instances; the legacy object map format is no longer supported.`
+    )
   }
 
   return plugins.map((plugin, index) => normalizePluginInstanceConfig(plugin, `${path}[${index}]`))
@@ -294,9 +299,9 @@ const resolveChildReference = (
   parent: ResolvedPluginInstance,
   childConfig: PluginChildConfig
 ): {
-    reference: ResolvedPluginReference
-    manifestChild?: PluginManifestChildDefinition
-  } => {
+  reference: ResolvedPluginReference
+  manifestChild?: PluginManifestChildDefinition
+} => {
   const manifestChild = parent.childDefinitions[childConfig.id]
   if (manifestChild == null) {
     return {
@@ -377,7 +382,9 @@ const resolveInstance = async (
 
   const explicitChildren = config.children ?? []
   const autoChildren: PluginChildConfig[] = Object.entries(childDefinitions)
-    .filter(([childId, child]) => child.activation === 'default' && !hasExplicitChildOverride(explicitChildren, childId))
+    .filter(([childId, child]) =>
+      child.activation === 'default' && !hasExplicitChildOverride(explicitChildren, childId)
+    )
     .map(([childId, child]) => ({
       id: childId,
       options: child.options
@@ -392,28 +399,30 @@ const resolveInstance = async (
   const children: ResolvedPluginInstance[] = []
   for (let index = 0; index < childConfigs.length; index++) {
     const child = childConfigs[index]
-    children.push(await resolveInstance({
-      cwd,
-      config: child,
-      instancePath: `${instancePath}.children.${index}`,
-      overlaySource,
-      inheritedScope: scope,
-      parent: {
-        requestId: config.id,
-        packageId: reference.packageId,
-        sourceType: reference.sourceType,
-        rootDir: reference.rootDir,
-        scope,
-        options,
-        manifest,
-        instancePath,
-        resolvedBy: reference.resolvedBy,
+    children.push(
+      await resolveInstance({
+        cwd,
+        config: child,
+        instancePath: `${instancePath}.children.${index}`,
         overlaySource,
-        childDefinitions,
-        children: []
-      },
-      ancestorKeys: nextAncestorKeys
-    }))
+        inheritedScope: scope,
+        parent: {
+          requestId: config.id,
+          packageId: reference.packageId,
+          sourceType: reference.sourceType,
+          rootDir: reference.rootDir,
+          scope,
+          options,
+          manifest,
+          instancePath,
+          resolvedBy: reference.resolvedBy,
+          overlaySource,
+          childDefinitions,
+          children: []
+        },
+        ancestorKeys: nextAncestorKeys
+      })
+    )
   }
 
   return {
@@ -464,12 +473,14 @@ export const resolveConfiguredPluginInstances = async (params: {
   const enabledPluginConfigs = (pluginConfigs ?? []).filter(plugin => plugin.enabled !== false)
   const instances: ResolvedPluginInstance[] = []
   for (let index = 0; index < enabledPluginConfigs.length; index++) {
-    instances.push(await resolveInstance({
-      cwd: params.cwd,
-      config: enabledPluginConfigs[index]!,
-      instancePath: String(index),
-      overlaySource: params.overlaySource
-    }))
+    instances.push(
+      await resolveInstance({
+        cwd: params.cwd,
+        config: enabledPluginConfigs[index]!,
+        instancePath: String(index),
+        overlaySource: params.overlaySource
+      })
+    )
   }
   return instances
 }
