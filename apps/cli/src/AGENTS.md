@@ -146,4 +146,4 @@ hooks 相关问题先按这条链路看：
 - 如果只想看本次日志，先 `touch /tmp/<marker>` 再执行命令
 - `run --print` 的最终 session 行为由 task + adapter 决定，CLI 只负责入口编排，不要在 CLI 里追完整生命周期
 - CLI loader 共享实现位置：`packages/cli-helper/loader.js`
-- 适配器错误 / `stream-json` 冒烟流程见：`agents/adapter-error-debugging.md`
+- 适配器错误 / `stream-json` 冒烟流程见：`.ai/rules/adapter-error-debugging.md`

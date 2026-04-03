@@ -26,7 +26,7 @@ channels/
     dispatch/           创建新 session 或向已有 session 转发消息
       index.ts            dispatchMiddleware 实现
       prompt/             会话启动时 systemPrompt 组装
-        agent-rules.ts      读取 AGENTS.channel.<type>.md 规则文件
+        agent-rules.ts      读取 `.ai/rules/AGENTS.channel.<type>.md` 规则文件
         context.ts          生成频道上下文（平台名、bot 名称、admin 列表）
         index.ts            buildSessionSystemPrompt（汇总所有 prompt 片段）
 ```
@@ -83,7 +83,7 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 
 1. `config.systemPrompt` — 配置文件中直接写的提示词
 2. `buildChannelContextPrompt()` — 自动生成（平台名 / bot 名 / admin 列表）
-3. `loadChannelAgentRules()` — 读取 `AGENTS.channel.<channelType>.md`（项目根目录或 `.ai/rules/`）
+3. `loadChannelAgentRules()` — 优先读取 `.ai/rules/AGENTS.channel.<channelType>.md`，兼容回退到项目根目录同名文件
 4. `connection.generateSystemPrompt()` — 频道连接实现动态生成（如调平台 API）
 
 最终再与 `startAdapterSession` 内部的 spec/entity prompt 和语言提示合并。
