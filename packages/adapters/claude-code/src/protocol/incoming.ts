@@ -9,6 +9,91 @@ import type {
   ClaudeCodeIncomingEvent
 } from './types'
 
+const PERMISSION_REQUIRED_CODE = 'permission_required'
+
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
+
+const isPermissionDeniedText = (value: string | undefined) => {
+  if (value == null) return false
+  const normalized = value.trim()
+  if (normalized === '') return false
+
+  return (
+    (/permission/i.test(normalized) && /(denied|required|grant|approval|authorized?)/i.test(normalized)) ||
+    /权限|授权/.test(normalized)
+  )
+}
+
+const collectTextFragments = (value: unknown, visited = new WeakSet<object>()): string[] => {
+  if (isNonEmptyString(value)) {
+    return [value.trim()]
+  }
+
+  if (Array.isArray(value)) {
+    return [...new Set(value.flatMap(item => collectTextFragments(item, visited)))]
+  }
+
+  if (value == null || typeof value !== 'object') {
+    return []
+  }
+
+  if (visited.has(value)) {
+    return []
+  }
+  visited.add(value)
+
+  const record = value as Record<string, unknown>
+  return [...new Set(
+    Object.entries(record)
+      .filter((entry) => /text|content|message|reason|error/i.test(entry[0]))
+      .flatMap((entry) => collectTextFragments(entry[1], visited))
+  )]
+}
+
+const collectDeniedTools = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return [...new Set(value.flatMap(collectDeniedTools))]
+  }
+  if (value == null || typeof value !== 'object') {
+    return []
+  }
+
+  return [...new Set(
+    Object.entries(value)
+      .filter((entry) =>
+        /tool/i.test(entry[0]) &&
+        isNonEmptyString(entry[1])
+      )
+      .map((entry) => entry[1].trim())
+  )]
+}
+
+const normalizePermissionDenials = (items: unknown[]) => {
+  return items
+    .map((item) => {
+      if (isNonEmptyString(item)) {
+        return {
+          message: item.trim(),
+          deniedTools: [] as string[]
+        }
+      }
+      if (item == null || typeof item !== 'object') {
+        return undefined
+      }
+
+      const record = item as Record<string, unknown>
+      const messages = Object.entries(record)
+        .filter((entry) => /message|reason|error/i.test(entry[0]) && isNonEmptyString(entry[1]))
+        .map((entry) => String(entry[1]).trim())
+      const fallbackMessage = messages.find(message => message !== '')
+      return {
+        message: fallbackMessage ?? 'Permission required to continue',
+        deniedTools: collectDeniedTools(record)
+      }
+    })
+    .filter((item): item is { message: string; deniedTools: string[] } => item != null)
+}
+
 export const handleIncomingEvent = (
   data: ClaudeCodeIncomingEvent,
   onEvent: AdapterQueryOptions['onEvent'],
@@ -16,12 +101,14 @@ export const handleIncomingEvent = (
 ) => {
   const emitResultError = (params: {
     message: string
+    code?: string
     details?: Record<string, unknown>
   }) => {
     onEvent({
       type: 'error',
       data: {
         message: params.message,
+        code: params.code,
         details: params.details,
         fatal: true
       }
@@ -100,6 +187,23 @@ export const handleIncomingEvent = (
         createdAt: Date.now()
       }
       onEvent({ type: 'message', data: resultMessage })
+
+      const textFragments = collectTextFragments(toolResultPart.content)
+      const permissionText = textFragments.find(isPermissionDeniedText)
+      if ((toolResultPart.is_error ?? false) && permissionText != null) {
+        emitResultError({
+          message: 'Permission required to continue',
+          code: PERMISSION_REQUIRED_CODE,
+          details: {
+            toolUseId: toolResultPart.tool_use_id,
+            permissionDenials: [{
+              message: permissionText,
+              deniedTools: collectDeniedTools(toolResultPart.content)
+            }],
+            rawPermissionDenial: toolResultPart.content
+          }
+        })
+      }
     }
   }
 
@@ -116,8 +220,12 @@ export const handleIncomingEvent = (
   if (data.type === 'result') {
     if (data.subtype === 'error_during_execution') {
       const errors = Array.isArray(data.errors) ? data.errors.filter(error => error.trim() !== '') : []
+      const permissionRequired = errors.some(isPermissionDeniedText)
       emitResultError({
-        message: errors[0] ?? 'Claude Code execution failed',
+        message: permissionRequired
+          ? 'Permission required to continue'
+          : (errors[0] ?? 'Claude Code execution failed'),
+        code: permissionRequired ? PERMISSION_REQUIRED_CODE : undefined,
         details: {
           errors,
           sessionId: data.session_id
@@ -131,8 +239,13 @@ export const handleIncomingEvent = (
     }
 
     if (data.is_error) {
+      const permissionDenials = normalizePermissionDenials(data.permission_denials)
+      const permissionRequired = permissionDenials.length > 0 || isPermissionDeniedText(data.result)
       emitResultError({
-        message: data.result !== '' ? data.result : 'Claude Code execution failed',
+        message: permissionRequired
+          ? 'Permission required to continue'
+          : (data.result !== '' ? data.result : 'Claude Code execution failed'),
+        code: permissionRequired ? PERMISSION_REQUIRED_CODE : undefined,
         details: {
           sessionId: data.session_id,
           durationMs: data.duration_ms,
@@ -140,7 +253,8 @@ export const handleIncomingEvent = (
           numTurns: data.num_turns,
           totalCostUsd: data.total_cost_usd,
           usage: data.usage,
-          permissionDenials: data.permission_denials
+          permissionDenials,
+          rawPermissionDenials: data.permission_denials
         }
       })
     }

@@ -7,6 +7,7 @@ import { killSession, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
+import { buildInteractionText } from './interaction'
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
 import { defineMessages } from './middleware/i18n'
@@ -145,34 +146,9 @@ export const handleSessionEvent = async (
     const language = state.config?.language ?? 'zh'
     const options = event.payload.options ?? []
     const hasDescriptions = options.some(option => (option.description?.trim() ?? '') !== '')
-    const lines = [event.payload.question.trim()]
-
-    if (options.length > 0) {
-      lines.push('')
-      lines.push(language === 'en' ? 'Options:' : '可选项：')
-      lines.push(...options.map((option) => {
-        if ((option.description?.trim() ?? '') === '') {
-          return `- ${option.label}`
-        }
-        return `- ${option.label}: ${option.description}`
-      }))
-    }
-
-    lines.push('')
-    if (event.payload.multiselect) {
-      lines.push(language === 'en'
-        ? 'Multiple selections are allowed. Reply with labels separated by commas or new lines.'
-        : '支持多选，请直接回复选项文本，多个选项可用逗号、顿号或换行分隔。')
-    } else if (options.length > 0) {
-      lines.push(language === 'en'
-        ? 'Reply with the option label, or tap a quick action if one is shown below.'
-        : '请直接回复选项文本；如果下方出现快捷气泡，也可以直接点击。')
-    } else {
-      lines.push(language === 'en' ? 'Please reply directly in plain text.' : '请直接回复文字内容。')
-    }
-
-    const text = lines.join('\n')
+    const text = buildInteractionText(language, event.payload)
     const result = await state.connection.sendMessage({ receiveId, receiveIdType, text })
+    let followUpsPushed = false
 
     if (
       !event.payload.multiselect &&
@@ -180,10 +156,21 @@ export const handleSessionEvent = async (
       result?.messageId != null &&
       state.connection.pushFollowUps
     ) {
-      await state.connection.pushFollowUps({
-        messageId: result.messageId,
-        followUps: options.map(option => ({ content: option.label }))
-      })
+      try {
+        await state.connection.pushFollowUps({
+          messageId: result.messageId,
+          followUps: options.map(option => ({ content: option.label }))
+        })
+        followUpsPushed = true
+      } catch (error) {
+        serverLogger.warn({
+          sessionId,
+          interactionId: event.id,
+          receiveId,
+          messageId: result.messageId,
+          error: error instanceof Error ? error.message : String(error)
+        }, '[channel] Failed to push follow-up actions for interaction request')
+      }
     }
 
     serverLogger.info({
@@ -192,7 +179,7 @@ export const handleSessionEvent = async (
       receiveId,
       optionCount: options.length,
       hasDescriptions,
-      pushedFollowUps: !event.payload.multiselect && options.length > 0 && result?.messageId != null
+      pushedFollowUps: followUpsPushed
     }, '[channel] Delivered interaction request to bound channel')
     return true
   }

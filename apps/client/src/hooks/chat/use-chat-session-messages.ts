@@ -6,6 +6,7 @@ import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
+import { applyInteractionStateEvent } from './interaction-state'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
@@ -64,6 +65,7 @@ export function useChatSessionMessages({
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
   const expectedCloseRef = useRef(false)
+  const interactionRequestRef = useRef<{ id: string; payload: AskUserQuestionParams } | null>(null)
 
   const retryConnection = useCallback(() => {
     if (session?.id == null || session.id === '') return
@@ -79,6 +81,7 @@ export function useChatSessionMessages({
     setIsReady(false)
     setConnectionError(null)
     setInteractionRequest(null)
+    interactionRequestRef.current = null
     isInitialLoadRef.current = true
 
     if (session?.id == null || session.id === '') {
@@ -109,9 +112,8 @@ export function useChatSessionMessages({
           }, false)
         }
 
-        if (res.interaction) {
-          setInteractionRequest(res.interaction)
-        }
+        interactionRequestRef.current = res.interaction ?? null
+        setInteractionRequest(interactionRequestRef.current)
 
         let currentMessages: ChatMessage[] = []
         let currentSessionInfo: SessionInfo | null = null
@@ -207,6 +209,11 @@ export function useChatSessionMessages({
         },
         onMessage(data: WSEvent) {
           if (isDisposed) return
+          const nextInteraction = applyInteractionStateEvent(interactionRequestRef.current, data)
+          if (nextInteraction !== interactionRequestRef.current) {
+            interactionRequestRef.current = nextInteraction
+            setInteractionRequest(nextInteraction)
+          }
           if (data.type === 'error') {
             setConnectionError(data.data?.message ?? data.message ?? 'Unknown error')
             return
@@ -269,7 +276,7 @@ export function useChatSessionMessages({
           }
 
           if (data.type === 'interaction_request') {
-            setInteractionRequest({ id: data.id, payload: data.payload })
+            return
           }
         },
         onError() {

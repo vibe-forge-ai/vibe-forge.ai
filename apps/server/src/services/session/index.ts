@@ -11,14 +11,16 @@ import type {
   SessionPermissionMode,
   WSEvent
 } from '@vibe-forge/core'
-import type { AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
+import type { AdapterErrorData, AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
+import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
 import {
+  type AdapterSessionRuntime,
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
@@ -27,12 +29,121 @@ import {
   getAdapterSessionRuntime,
   getExternalSessionRuntime,
   notifySessionUpdated,
+  parkAdapterSessionRuntime,
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()
+export const adapterSessionStartStore = new Map<string, Promise<AdapterSessionRuntime>>()
+const pendingPermissionRecoveryStore = new Map<string, { runId: string }>()
+const PERMISSION_REQUIRED_CODE = 'permission_required'
+const PERMISSION_DECISION_CANCEL = 'cancel'
+
+const buildPermissionRecoveryPrompt = (params: {
+  adapter?: string
+  currentMode?: SessionPermissionMode
+  error: AdapterErrorData
+}) => {
+  if (params.currentMode === 'bypassPermissions') {
+    return undefined
+  }
+
+  const details = params.error.details != null && typeof params.error.details === 'object'
+    ? params.error.details as Record<string, unknown>
+    : undefined
+  const permissionDenials = Array.isArray(details?.permissionDenials)
+    ? details.permissionDenials as Array<Record<string, unknown>>
+    : []
+  const deniedTools = [...new Set(
+    permissionDenials.flatMap((entry) => Array.isArray(entry?.deniedTools) ? entry.deniedTools : [])
+  )]
+  const reasons = [...new Set(
+    permissionDenials
+      .map((entry) => typeof entry?.message === 'string' ? entry.message.trim() : '')
+      .filter(message => message !== '')
+  )]
+  const suggestedMode: SessionPermissionMode = params.currentMode === 'dontAsk' ? 'bypassPermissions' : 'dontAsk'
+
+  return {
+    sessionId: '',
+    kind: 'permission' as const,
+    question: deniedTools.length > 0
+      ? `当前任务需要额外权限才能继续，涉及工具：${deniedTools.join('、')}。是否授权后继续？`
+      : '当前任务需要额外权限才能继续。是否授权后继续？',
+    options: [
+      {
+        label: `继续并切换到 ${suggestedMode}`,
+        value: suggestedMode,
+        description: suggestedMode === 'dontAsk'
+          ? '尽量直接执行，不再额外询问。'
+          : '跳过大部分权限检查，风险最高。'
+      },
+      ...(suggestedMode === 'dontAsk'
+        ? [{
+            label: '继续并切换到 bypassPermissions',
+            value: 'bypassPermissions',
+            description: '跳过大部分权限检查，风险最高。'
+          }]
+        : []),
+      {
+        label: '取消',
+        value: PERMISSION_DECISION_CANCEL,
+        description: '保持当前权限模式，结束这次被拦截的操作。'
+      }
+    ],
+    permissionContext: {
+      adapter: params.adapter,
+      currentMode: params.currentMode,
+      suggestedMode,
+      deniedTools,
+      reasons
+    }
+  }
+}
+
+const resolvePermissionDecision = (
+  answer: string | string[],
+  options: Array<{ label: string; value?: string }>
+): SessionPermissionMode | typeof PERMISSION_DECISION_CANCEL | undefined => {
+  const normalizedAnswer = Array.isArray(answer) ? answer[0] : answer
+  if (typeof normalizedAnswer !== 'string') return undefined
+
+  const raw = normalizedAnswer.trim()
+  if (raw === '') return undefined
+
+  const matched = options.find(option => option.label === raw || option.value === raw)
+  const resolved = matched?.value ?? matched?.label ?? raw
+
+  if (resolved === PERMISSION_DECISION_CANCEL) return PERMISSION_DECISION_CANCEL
+  if (
+    resolved === 'default' ||
+    resolved === 'acceptEdits' ||
+    resolved === 'plan' ||
+    resolved === 'dontAsk' ||
+    resolved === 'bypassPermissions'
+  ) {
+    return resolved
+  }
+
+  return undefined
+}
+
+const emitSessionError = (sessionId: string, data: AdapterErrorData) => {
+  const event: WSEvent = {
+    type: 'error',
+    data,
+    message: data.message
+  }
+
+  applySessionEvent(sessionId, event, {
+    broadcast: (ev) => broadcastSessionEvent(sessionId, ev),
+    onSessionUpdated: (session) => {
+      notifySessionUpdated(sessionId, session)
+    }
+  })
+}
 
 export async function startAdapterSession(
   sessionId: string,
@@ -47,106 +158,112 @@ export async function startAdapterSession(
     adapter?: string
   } = {}
 ) {
-  const db = getDb()
-  const historyMessages = db.getMessages(sessionId) as WSEvent[]
-  const hasHistory = historyMessages.length > 0
-  const serverLogger = getSessionLogger(sessionId, 'server')
-  const existing = db.getSession(sessionId)
-  const resolvedModel = options.model ?? existing?.model
-  const resolvedAdapter = options.adapter ?? existing?.adapter
-  const resolvedEffort = options.effort ?? existing?.effort
-  const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
-  const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
-  const type = hasHistory && !adapterChanged ? 'resume' : 'create'
+  const inFlight = adapterSessionStartStore.get(sessionId)
+  if (inFlight != null) {
+    return inFlight
+  }
 
-  const cached = getAdapterSessionRuntime(sessionId)
-  if (cached != null) {
-    const currentModel = cached.config?.model ?? existing?.model
-    const currentAdapter = cached.config?.adapter ?? existing?.adapter
-    const currentEffort = cached.config?.effort ?? existing?.effort
-    const currentPermissionMode = cached.config?.permissionMode ?? existing?.permissionMode
-    const configChanged = currentModel !== resolvedModel ||
-      currentAdapter !== resolvedAdapter ||
-      currentEffort !== resolvedEffort ||
-      currentPermissionMode !== resolvedPermissionMode
+  const startPromise = (async () => {
+    const db = getDb()
+    const historyMessages = db.getMessages(sessionId) as WSEvent[]
+    const hasHistory = historyMessages.length > 0
+    const serverLogger = getSessionLogger(sessionId, 'server')
+    const existing = db.getSession(sessionId)
+    const resolvedModel = options.model ?? existing?.model
+    const resolvedAdapter = options.adapter ?? existing?.adapter
+    const resolvedEffort = options.effort ?? existing?.effort
+    const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
+    const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
+    const type = hasHistory && !adapterChanged ? 'resume' : 'create'
 
-    if (!configChanged) {
-      serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
-      return cached
+    const cached = getAdapterSessionRuntime(sessionId)
+    if (cached != null) {
+      const currentModel = cached.config?.model
+      const currentAdapter = cached.config?.adapter
+      const currentEffort = cached.config?.effort
+      const currentPermissionMode = cached.config?.permissionMode
+      const configChanged = currentModel !== resolvedModel ||
+        currentAdapter !== resolvedAdapter ||
+        currentEffort !== resolvedEffort ||
+        currentPermissionMode !== resolvedPermissionMode
+
+      if (!configChanged) {
+        serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
+        return cached
+      }
+
+      serverLogger.info({
+        sessionId,
+        currentModel,
+        resolvedModel,
+        currentAdapter,
+        resolvedAdapter,
+        currentEffort,
+        resolvedEffort,
+        currentPermissionMode,
+        resolvedPermissionMode
+      }, '[server] Restarting adapter process due to session config change')
+      activeAdapterRunStore.delete(sessionId)
+      cached.session.kill()
+      deleteAdapterSessionRuntime(sessionId)
     }
 
-    serverLogger.info({
-      sessionId,
-      currentModel,
-      resolvedModel,
-      currentAdapter,
-      resolvedAdapter,
-      currentEffort,
-      resolvedEffort,
-      currentPermissionMode,
-      resolvedPermissionMode
-    }, '[server] Restarting adapter process due to session config change')
-    activeAdapterRunStore.delete(sessionId)
-    cached.session.kill()
-    deleteAdapterSessionRuntime(sessionId)
-  }
+    serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
 
-  serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
-
-  if (existing == null) {
-    serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
-    db.createSession(undefined, sessionId)
-  }
-
-  if (
-    resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
-    resolvedEffort !== existing?.effort ||
-    resolvedPermissionMode !== existing?.permissionMode
-  ) {
-    updateAndNotifySession(sessionId, {
-      model: resolvedModel,
-      adapter: resolvedAdapter,
-      effort: resolvedEffort,
-      permissionMode: resolvedPermissionMode
-    })
-  }
-
-  const connectionState = takeExternalSessionRuntime(sessionId) ?? createSessionConnectionState()
-  const runId = uuidv4()
-  activeAdapterRunStore.set(sessionId, runId)
-
-  try {
-    const promptCwd = processCwd()
-    const [data, resolvedConfig] = await generateAdapterQueryOptions(
-      options.promptType,
-      options.promptName,
-      promptCwd
-    )
-    const env = {
-      ...processEnv,
-      __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+    if (existing == null) {
+      serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
+      db.createSession(undefined, sessionId)
     }
-    const finalSystemPrompt = options.appendSystemPrompt === false
-      ? (options.systemPrompt ?? resolvedConfig.systemPrompt)
-      : [resolvedConfig.systemPrompt, options.systemPrompt]
-        .filter(Boolean)
-        .join('\n\n')
-    const { mergedConfig } = await loadConfigState().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
-    const { modelLanguage } = mergedConfig
-    const languagePrompt = modelLanguage == null
-      ? undefined
-      : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
-    const mergedSystemPrompt = [
-      finalSystemPrompt,
-      languagePrompt
-    ].filter(Boolean).join('\n\n')
-    let sawFatalError = false
 
-    const { session } = await run({
-      env,
-      cwd: promptCwd,
-      adapter: resolvedAdapter
-    }, {
+    if (
+      resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
+      resolvedEffort !== existing?.effort ||
+      resolvedPermissionMode !== existing?.permissionMode
+    ) {
+      updateAndNotifySession(sessionId, {
+        model: resolvedModel,
+        adapter: resolvedAdapter,
+        effort: resolvedEffort,
+        permissionMode: resolvedPermissionMode
+      })
+    }
+
+    const connectionState = takeExternalSessionRuntime(sessionId) ?? createSessionConnectionState()
+    const runId = uuidv4()
+    activeAdapterRunStore.set(sessionId, runId)
+
+    try {
+      const promptCwd = processCwd()
+      const [data, resolvedConfig] = await generateAdapterQueryOptions(
+        options.promptType,
+        options.promptName,
+        promptCwd
+      )
+      const env = {
+        ...processEnv,
+        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+      }
+      const finalSystemPrompt = options.appendSystemPrompt === false
+        ? (options.systemPrompt ?? resolvedConfig.systemPrompt)
+        : [resolvedConfig.systemPrompt, options.systemPrompt]
+          .filter(Boolean)
+          .join('\n\n')
+      const { mergedConfig } = await loadConfigState().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
+      const { modelLanguage } = mergedConfig
+      const languagePrompt = modelLanguage == null
+        ? undefined
+        : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
+      const mergedSystemPrompt = [
+        finalSystemPrompt,
+        languagePrompt
+      ].filter(Boolean).join('\n\n')
+      let sawFatalError = false
+
+      const { session } = await run({
+        env,
+        cwd: promptCwd,
+        adapter: resolvedAdapter
+      }, {
       type,
       runtime: 'server',
       sessionId,
@@ -203,6 +320,12 @@ export async function startAdapterSession(
             break
           case 'message':
             if ('role' in (event.data as any)) {
+              if (
+                pendingPermissionRecoveryStore.get(sessionId)?.runId === runId &&
+                (event.data as any).role === 'assistant'
+              ) {
+                break
+              }
               applyEvent({
                 type: 'message',
                 message: event.data
@@ -210,6 +333,90 @@ export async function startAdapterSession(
             }
             break
           case 'error':
+            if (
+              event.data.code === PERMISSION_REQUIRED_CODE &&
+              pendingPermissionRecoveryStore.get(sessionId)?.runId === runId
+            ) {
+              break
+            }
+            if (
+              event.data.code === PERMISSION_REQUIRED_CODE &&
+              !pendingPermissionRecoveryStore.has(sessionId) &&
+              canRequestInteraction(sessionId)
+            ) {
+              const permissionPrompt = buildPermissionRecoveryPrompt({
+                adapter: resolvedAdapter,
+                currentMode: resolvedPermissionMode,
+                error: event.data
+              })
+
+              if (permissionPrompt != null) {
+                pendingPermissionRecoveryStore.set(sessionId, { runId })
+                void requestInteraction({
+                  ...permissionPrompt,
+                  sessionId
+                })
+                  .then(async (answer) => {
+                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                      return
+                    }
+
+                    pendingPermissionRecoveryStore.delete(sessionId)
+                    const nextPermissionMode = resolvePermissionDecision(answer, permissionPrompt.options ?? [])
+                    if (nextPermissionMode == null || nextPermissionMode === PERMISSION_DECISION_CANCEL) {
+                      emitSessionError(sessionId, {
+                        message: '用户取消了本次权限授权，任务未继续执行。',
+                        code: 'permission_request_declined',
+                        fatal: true
+                      })
+                      return
+                    }
+
+                    try {
+                      updateAndNotifySession(sessionId, {
+                        permissionMode: nextPermissionMode,
+                        status: 'running'
+                      })
+                      const recovered = await startAdapterSession(sessionId, {
+                        permissionMode: nextPermissionMode
+                      })
+                      recovered.session.emit({
+                        type: 'message',
+                        content: [
+                          {
+                            type: 'text',
+                            text: `权限模式已更新为 ${nextPermissionMode}。请继续刚才被权限拦截的工作，并重试被阻止的操作。`
+                          }
+                        ]
+                      })
+                    } catch (error) {
+                      emitSessionError(sessionId, {
+                        message: '权限已更新，但恢复会话失败。',
+                        code: 'permission_recovery_failed',
+                        details: error instanceof Error ? { message: error.message } : { error: String(error) },
+                        fatal: true
+                      })
+                    }
+                  })
+                  .catch((error) => {
+                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                      return
+                    }
+
+                    pendingPermissionRecoveryStore.delete(sessionId)
+                    emitSessionError(sessionId, {
+                      message: error instanceof Error && error.message.includes('timed out')
+                        ? '权限确认已超时，任务未继续执行。'
+                        : '权限确认失败，任务未继续执行。',
+                      code: 'permission_request_failed',
+                      details: error instanceof Error ? { message: error.message } : { error: String(error) },
+                      fatal: true
+                    })
+                  })
+                break
+              }
+            }
+
             if (event.data.fatal !== false) {
               sawFatalError = true
             }
@@ -221,6 +428,14 @@ export async function startAdapterSession(
             break
           case 'exit': {
             const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
+            if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+              parkAdapterSessionRuntime(sessionId)
+              if (activeAdapterRunStore.get(sessionId) === runId) {
+                activeAdapterRunStore.delete(sessionId)
+              }
+              break
+            }
+
             updateAndNotifySession(sessionId, {
               status: exitCode === 0 ? 'completed' : 'failed'
             })
@@ -259,6 +474,9 @@ export async function startAdapterSession(
             break
           }
           case 'stop': {
+            if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+              break
+            }
             const latestSession = getDb().getSession(sessionId)
             if (latestSession?.status !== 'failed') {
               updateAndNotifySession(sessionId, { status: 'completed' })
@@ -267,25 +485,36 @@ export async function startAdapterSession(
           }
         }
       }
-    })
-
-    return setAdapterSessionRuntime(
-      sessionId,
-      bindAdapterSessionRuntime(connectionState, session, {
-        runId,
-        model: resolvedModel,
-        adapter: resolvedAdapter,
-        effort: resolvedEffort,
-        permissionMode: resolvedPermissionMode
       })
-    )
-  } catch (err) {
-    if (activeAdapterRunStore.get(sessionId) === runId) {
-      activeAdapterRunStore.delete(sessionId)
+
+      return setAdapterSessionRuntime(
+        sessionId,
+        bindAdapterSessionRuntime(connectionState, session, {
+          runId,
+          model: resolvedModel,
+          adapter: resolvedAdapter,
+          effort: resolvedEffort,
+          permissionMode: resolvedPermissionMode
+        })
+      )
+    } catch (err) {
+      if (activeAdapterRunStore.get(sessionId) === runId) {
+        activeAdapterRunStore.delete(sessionId)
+      }
+      updateAndNotifySession(sessionId, { status: 'failed' })
+      serverLogger.error({ err, sessionId }, '[server] session init error')
+      throw err
     }
-    updateAndNotifySession(sessionId, { status: 'failed' })
-    serverLogger.error({ err, sessionId }, '[server] session init error')
-    throw err
+  })()
+
+  adapterSessionStartStore.set(sessionId, startPromise)
+
+  try {
+    return await startPromise
+  } finally {
+    if (adapterSessionStartStore.get(sessionId) === startPromise) {
+      adapterSessionStartStore.delete(sessionId)
+    }
   }
 }
 

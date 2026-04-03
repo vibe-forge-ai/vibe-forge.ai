@@ -6,9 +6,18 @@ const Schema = z.object({
   question: z.string().describe('The question to ask the user'),
   options: z.array(z.object({
     label: z.string().describe('The label of the option'),
+    value: z.string().optional().describe('Stable value returned when the option is chosen'),
     description: z.string().optional().describe('The description of the option')
   })).optional().describe('The options for the user to select from'),
-  multiselect: z.boolean().optional().describe('Whether the user can select multiple options')
+  multiselect: z.boolean().optional().describe('Whether the user can select multiple options'),
+  kind: z.enum(['question', 'permission']).optional().describe('UI hint for how to present the interaction'),
+  permissionContext: z.object({
+    adapter: z.string().optional(),
+    currentMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional(),
+    suggestedMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional(),
+    deniedTools: z.array(z.string()).optional(),
+    reasons: z.array(z.string()).optional()
+  }).optional().describe('Extra context for permission escalation prompts')
 })
 
 export default defineRegister(({ registerTool }) => {
@@ -20,7 +29,7 @@ export default defineRegister(({ registerTool }) => {
       inputSchema: Schema
     },
     async (args) => {
-      const { question, options, multiselect } = args
+      const { question, options, multiselect, kind, permissionContext } = args
       const sessionId = process.env.__VF_PROJECT_AI_SESSION_ID__
 
       if (!sessionId) {
@@ -40,7 +49,9 @@ export default defineRegister(({ registerTool }) => {
           sessionId,
           question,
           options,
-          multiselect
+          multiselect,
+          kind,
+          permissionContext
         })
       })
 

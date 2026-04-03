@@ -68,6 +68,22 @@ export function deleteAdapterSessionRuntime(sessionId: string) {
   adapterSessionStore.delete(sessionId)
 }
 
+export function parkAdapterSessionRuntime(sessionId: string) {
+  const runtime = adapterSessionStore.get(sessionId)
+  if (runtime == null) {
+    return undefined
+  }
+
+  const parked: SessionConnectionState = {
+    sockets: runtime.sockets,
+    messages: runtime.messages,
+    currentInteraction: runtime.currentInteraction
+  }
+  externalSessionStore.set(sessionId, parked)
+  adapterSessionStore.delete(sessionId)
+  return parked
+}
+
 export function getExternalSessionRuntime(sessionId: string) {
   return externalSessionStore.get(sessionId)
 }

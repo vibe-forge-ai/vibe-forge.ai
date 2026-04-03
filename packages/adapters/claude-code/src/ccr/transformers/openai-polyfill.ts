@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { writeRequestDebugLog, writeResponseDebugLog } from './log-context'
+import { sanitizeOpenAIResponsesInputValue } from './openai-input'
 
 class OpenAIResponsesTransformer {
   name = 'openai-responses'
@@ -74,7 +75,7 @@ class OpenAIResponsesTransformer {
       }
 
       if (message.role === 'tool') {
-        const toolMessage = { ...message }
+        const toolMessage = sanitizeOpenAIResponsesInputValue({ ...message })
         toolMessage.type = 'function_call_output'
         toolMessage.call_id = message.tool_call_id
         toolMessage.output = message.content
@@ -98,7 +99,7 @@ class OpenAIResponsesTransformer {
         return
       }
 
-      input.push(message)
+      input.push(sanitizeOpenAIResponsesInputValue(message))
     })
 
     writeRequestDebugLog(

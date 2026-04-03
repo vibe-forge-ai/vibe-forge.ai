@@ -1,11 +1,12 @@
 import process from 'node:process'
+import { createInterface } from 'node:readline'
 
 import { Option } from 'commander'
 import type { Command, OptionValueSource } from 'commander'
 
 import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
 import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
-import type { ChatMessage } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import { callHook } from '@vibe-forge/hooks'
 import type { AdapterErrorData, AdapterOutputEvent, SessionInitInfo, TaskDetail } from '@vibe-forge/types'
 import { getCache } from '@vibe-forge/utils/cache'
@@ -25,8 +26,10 @@ import type { CliSessionResumeRecord } from '#~/session-cache.js'
 import { extraOptions } from './@core/extra-options'
 
 export const RUN_OUTPUT_FORMATS = ['text', 'json', 'stream-json'] as const
+export const RUN_INPUT_FORMATS = ['text', 'json', 'stream-json'] as const
 
 export type RunOutputFormat = (typeof RUN_OUTPUT_FORMATS)[number]
+export type RunInputFormat = (typeof RUN_INPUT_FORMATS)[number]
 
 export interface RunOptions {
   print: boolean
@@ -40,6 +43,7 @@ export interface RunOptions {
   spec?: string
   entity?: string
   outputFormat?: RunOutputFormat
+  inputFormat?: RunInputFormat
   includeMcpServer?: string[]
   excludeMcpServer?: string[]
   includeTool?: string[]
@@ -58,6 +62,11 @@ interface ActiveCliSessionRecord {
 interface ExitControllableSession {
   kill(): void
   stop?(): void
+}
+
+interface CliInputControlEvent {
+  type: 'message' | 'interrupt' | 'stop'
+  content?: string | ChatMessageContent[]
 }
 
 export const createSessionExitController = <T extends ExitControllableSession>(params?: {
@@ -165,6 +174,10 @@ const configureRunCommand = (command: Command) => {
         .choices([...RUN_OUTPUT_FORMATS])
         .default('text')
     )
+    .addOption(
+      new Option('--input-format <format>', 'Input format for print mode stdin control')
+        .choices([...RUN_INPUT_FORMATS])
+    )
     .option('--spec <spec>', 'Load spec definition')
     .option('--entity <entity>', 'Load entity definition')
     .option('--include-mcp-server <server...>', 'Include MCP server')
@@ -193,12 +206,16 @@ Notes:
         const description = descriptionArgs.join(' ')
         let lastAssistantText: string | undefined
         let didExitAfterError = false
+        let inputClosed = false
         const exitController = createSessionExitController()
         const cwd = process.cwd()
         const generatedSessionId = opts.sessionId ?? uuid()
 
         if (opts.spec && opts.entity) {
           throw new Error('--spec and --entity are mutually exclusive.')
+        }
+        if (opts.inputFormat != null && !opts.print) {
+          throw new Error('--input-format is only supported together with --print.')
         }
 
         const isResume = opts.resume != null
@@ -406,6 +423,7 @@ Notes:
         await persistRecord()
 
         let boundSession: (ExitControllableSession & { pid?: number }) | undefined
+        let stopInputBridge: (() => void) | undefined
         const handleExit = (exitCode: number) => {
           void (async () => {
             const endedAt = Date.now()
@@ -431,6 +449,7 @@ Notes:
             await persistRecord()
             await persistQueue
             await clearCliSessionControl(cwd, ctxId, sessionId)
+            stopInputBridge?.()
             if (shouldPrintResumeHint({ shouldPrintOutput, status })) {
               console.error(formatResumeCommand(sessionId))
             }
@@ -455,6 +474,7 @@ Notes:
                 outputFormat,
                 lastAssistantText,
                 didExitAfterError,
+                stopExitsStreamJson: outputFormat === 'stream-json' && opts.inputFormat != null && inputClosed,
                 log: (message) => console.log(message),
                 errorLog: (message) => console.error(message),
                 requestExit: (code) => exitController.requestExit(code)
@@ -484,6 +504,20 @@ Notes:
         }
         void persistRecord()
         exitController.bindSession(session)
+        if (shouldPrintOutput && opts.inputFormat != null) {
+          stopInputBridge = attachInputBridge({
+            format: opts.inputFormat,
+            session,
+            stdin: process.stdin,
+            onError: (message) => {
+              console.error(message)
+              exitController.requestExit(1)
+            },
+            onInputClosed: () => {
+              inputClosed = true
+            }
+          })
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(message)
@@ -523,6 +557,18 @@ export const resolvePrintableStopText = (
 ) => getPrintableAssistantText(message) ?? lastAssistantText
 
 export const getAdapterErrorMessage = (data: AdapterErrorData) => {
+  if (data.code === 'permission_required') {
+    const details = data.details != null && typeof data.details === 'object'
+      ? data.details as { permissionDenials?: Array<{ message?: string; deniedTools?: string[] }> }
+      : undefined
+    const deniedTools = [...new Set(
+      (details?.permissionDenials ?? []).flatMap(item => Array.isArray(item.deniedTools) ? item.deniedTools : [])
+    )]
+    return deniedTools.length > 0
+      ? `${data.message}\nDenied tools: ${deniedTools.join(', ')}`
+      : data.message
+  }
+
   const details = data.details == null
     ? undefined
     : typeof data.details === 'string'
@@ -537,11 +583,161 @@ export const shouldPrintResumeHint = (input: {
   status: TaskDetail['status']
 }) => !(input.shouldPrintOutput && input.status === 'completed')
 
+const isChatTextContent = (value: unknown): value is Extract<ChatMessageContent, { type: 'text' }> => (
+  value != null &&
+  typeof value === 'object' &&
+  (value as { type?: unknown }).type === 'text' &&
+  typeof (value as { text?: unknown }).text === 'string'
+)
+
+const isChatImageContent = (value: unknown): value is Extract<ChatMessageContent, { type: 'image' }> => (
+  value != null &&
+  typeof value === 'object' &&
+  (value as { type?: unknown }).type === 'image' &&
+  typeof (value as { url?: unknown }).url === 'string'
+)
+
+const normalizeChatInputContent = (value: unknown): string | ChatMessageContent[] => {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    const items = value.filter((item): item is ChatMessageContent => isChatTextContent(item) || isChatImageContent(item))
+    if (items.length > 0) {
+      return items
+    }
+  }
+
+  throw new Error('Unsupported message content. Use a string or an array of text/image content items.')
+}
+
+export const parseCliInputControlEvent = (value: unknown): CliInputControlEvent => {
+  if (typeof value === 'string') {
+    return {
+      type: 'message',
+      content: value
+    }
+  }
+
+  if (Array.isArray(value)) {
+    return {
+      type: 'message',
+      content: normalizeChatInputContent(value)
+    }
+  }
+
+  if (value == null || typeof value !== 'object') {
+    throw new Error('Invalid input payload. Expected a string, array, or object.')
+  }
+
+  const record = value as Record<string, unknown>
+  const type = typeof record.type === 'string' ? record.type : 'message'
+  if (type === 'interrupt') {
+    return { type: 'interrupt' }
+  }
+  if (type === 'stop') {
+    return { type: 'stop' }
+  }
+  if (type === 'message' || type === 'user_message') {
+    const content = record.content ?? record.text ?? record.message
+    if (content == null) {
+      throw new Error('Message input requires "content" or "text".')
+    }
+    return {
+      type: 'message',
+      content: normalizeChatInputContent(content)
+    }
+  }
+
+  throw new Error(`Unsupported input event type: ${type}`)
+}
+
+const dispatchCliInputControlEvent = (
+  session: { emit: (event: { type: 'message'; content: ChatMessageContent[] } | { type: 'interrupt' } | { type: 'stop' }) => void },
+  event: CliInputControlEvent
+) => {
+  if (event.type === 'interrupt') {
+    session.emit({ type: 'interrupt' })
+    return
+  }
+  if (event.type === 'stop') {
+    session.emit({ type: 'stop' })
+    return
+  }
+
+  const content = typeof event.content === 'string'
+    ? [{ type: 'text', text: event.content } satisfies ChatMessageContent]
+    : event.content
+
+  session.emit({
+    type: 'message',
+    content
+  })
+}
+
+const attachInputBridge = (params: {
+  format: RunInputFormat
+  session: { emit: (event: { type: 'message'; content: ChatMessageContent[] } | { type: 'interrupt' } | { type: 'stop' }) => void }
+  stdin: NodeJS.ReadStream
+  onError: (message: string) => void
+  onInputClosed: () => void
+}) => {
+  const { format, session, stdin, onError, onInputClosed } = params
+  stdin.setEncoding('utf8')
+
+  if (format === 'stream-json') {
+    const rl = createInterface({ input: stdin, crlfDelay: Infinity })
+    const onEnd = () => {
+      onInputClosed()
+    }
+    rl.on('line', (line) => {
+      const trimmed = line.trim()
+      if (trimmed === '') return
+      try {
+        dispatchCliInputControlEvent(session, parseCliInputControlEvent(JSON.parse(trimmed)))
+      } catch (error) {
+        onError(error instanceof Error ? error.message : String(error))
+      }
+    })
+    stdin.once('end', onEnd)
+    return () => {
+      stdin.off('end', onEnd)
+      rl.close()
+    }
+  }
+
+  const chunks: string[] = []
+  const onData = (chunk: string | Buffer) => {
+    chunks.push(String(chunk))
+  }
+  const onEnd = () => {
+    const raw = chunks.join('')
+    if (raw.trim() !== '') {
+      try {
+        const payload = format === 'json' ? JSON.parse(raw) : raw
+        dispatchCliInputControlEvent(session, parseCliInputControlEvent(payload))
+      } catch (error) {
+        onError(error instanceof Error ? error.message : String(error))
+      }
+    }
+    onInputClosed()
+  }
+
+  stdin.on('data', onData)
+  stdin.once('end', onEnd)
+  return () => {
+    stdin.off('data', onData)
+    stdin.off('end', onEnd)
+  }
+}
+
 export const handlePrintEvent = (input: {
   event: AdapterOutputEvent
   outputFormat: RunOutputFormat
   lastAssistantText: string | undefined
   didExitAfterError: boolean
+  stopExitsStreamJson?: boolean
   log: (message: string) => void
   errorLog: (message: string) => void
   requestExit: (code: number) => void
@@ -599,6 +795,9 @@ export const handlePrintEvent = (input: {
   switch (input.outputFormat) {
     case 'stream-json':
       input.log(JSON.stringify(input.event, null, 2))
+      if (input.event.type === 'stop' && input.stopExitsStreamJson === true && !input.didExitAfterError) {
+        input.requestExit(0)
+      }
       return {
         lastAssistantText: nextAssistantText,
         didExitAfterError: input.didExitAfterError

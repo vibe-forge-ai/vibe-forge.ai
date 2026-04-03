@@ -378,12 +378,13 @@ const buildSelectMessengerConversationExpression = (conversation: string) => `
     let row = parent;
     while (row && row !== document.body) {
       const rect = row.getBoundingClientRect();
+      const rightEdge = rect.x + rect.width;
       const isConversationRow = (
         rect.width >= 160 &&
         rect.height >= 36 &&
         rect.height <= 120 &&
         rect.x >= window.innerWidth * 0.15 &&
-        rect.x <= window.innerWidth * 0.7
+        rightEdge <= window.innerWidth * 0.55
       );
 
       if (isConversationRow) {
@@ -449,36 +450,88 @@ const buildListMessengerConversationsExpression = () => `
   ${buildVisibilityHelpersExpression()}
   const rows = [];
   const seen = new Set();
-  const normalizeText = (value) => String(value ?? '').trim().replace(/\\n+/g, ' | ');
+  const normalizeLines = (value) => String(value ?? '')
+    .split('\\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const ignoredTitles = new Set([
+    '开启读屏标签',
+    '读屏标签已关闭',
+    '搜索',
+    '(⌘+K)',
+    '消息',
+    '知识问答',
+    '会议',
+    '日历',
+    '云文档',
+    '通讯录',
+    '邮箱',
+    '任务',
+    '工作台',
+    '下载飞书客户端',
+    '分组',
+    '免打扰',
+    '未读',
+    '标记',
+    '@我',
+    '标签',
+    '单聊',
+    '群组',
+    '话题',
+    '已完成',
+    '展开'
+  ]);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 
-  for (const element of document.querySelectorAll('*')) {
-    if (!(element instanceof Element) || !isVisible(element)) continue;
-    const rect = element.getBoundingClientRect();
-    if (
-      rect.width < 160 ||
-      rect.height < 36 ||
-      rect.height > 120 ||
-      rect.x > window.innerWidth * 0.7 ||
-      rect.y < 48
-    ) {
-      continue;
+  while (walker.nextNode()) {
+    const currentNode = walker.currentNode;
+    const text = currentNode.textContent?.trim();
+    if (!text || ignoredTitles.has(text)) continue;
+
+    const parent = currentNode.parentElement;
+    if (!parent || !isVisible(parent)) continue;
+
+    let row = parent;
+    while (row && row !== document.body) {
+      const rect = row.getBoundingClientRect();
+      const rightEdge = rect.x + rect.width;
+      const isConversationRow = (
+        rect.width >= 160 &&
+        rect.height >= 36 &&
+        rect.height <= 140 &&
+        rect.x >= window.innerWidth * 0.08 &&
+        rightEdge <= window.innerWidth * 0.55 &&
+        rect.y >= 140
+      );
+
+      if (isConversationRow) {
+        const lines = normalizeLines(row.innerText);
+        const title = lines[0] ?? '';
+        const preview = lines.join(' | ');
+
+        if (
+          title === '' ||
+          title.length > 80 ||
+          ignoredTitles.has(title) ||
+          /^\\d+$/.test(title)
+        ) {
+          break;
+        }
+
+        const key = [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)].join(':');
+        if (!seen.has(key)) {
+          seen.add(key);
+          rows.push({
+            title,
+            preview: preview.slice(0, 200),
+            rect: serializeRect(rect)
+          });
+        }
+        break;
+      }
+
+      row = row.parentElement;
     }
-
-    const preview = normalizeText(element.innerText);
-    if (preview === '' || !preview.includes('|')) continue;
-
-    const title = preview.split('|')[0]?.trim() ?? '';
-    if (title === '' || title.length > 80) continue;
-
-    const key = [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)].join(':');
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    rows.push({
-      title,
-      preview: preview.slice(0, 200),
-      rect: serializeRect(rect)
-    });
   }
 
   return {
