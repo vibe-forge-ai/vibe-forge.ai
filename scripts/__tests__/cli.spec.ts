@@ -13,6 +13,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -34,6 +35,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -64,6 +66,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan
     })
 
@@ -82,6 +85,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -103,6 +107,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend,
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -138,6 +143,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -164,6 +170,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply,
       runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -198,6 +205,7 @@ describe('scripts cli', () => {
       runChromeDebugMessengerSend: vi.fn(async () => {}),
       runChromeDebugMessengerClickReply: vi.fn(async () => {}),
       runChromeDebugMessengerClickText,
+      runMessageActionsVerify: vi.fn(async () => {}),
       runPublishPlan: vi.fn(async () => ({}))
     })
 
@@ -216,6 +224,27 @@ describe('scripts cli', () => {
       conversation: '二介',
       text: '/help --page=2',
       settleMs: 1000
+    })
+  })
+
+  it('dispatches message actions verification with quiet mode', async () => {
+    const runMessageActionsVerify = vi.fn(async () => {})
+    const cli = createScriptsCli({
+      runAdapterSuite: vi.fn(async () => []),
+      runAdapterVitest: vi.fn(async () => {}),
+      runChromeDebugTargets: vi.fn(async () => {}),
+      runChromeDebugMessengerConversations: vi.fn(async () => {}),
+      runChromeDebugMessengerSend: vi.fn(async () => {}),
+      runChromeDebugMessengerClickReply: vi.fn(async () => {}),
+      runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify,
+      runPublishPlan: vi.fn(async () => ({}))
+    })
+
+    await cli.parseAsync(['node', 'vf-dev', 'message-actions', 'verify', '--quiet'])
+
+    expect(runMessageActionsVerify).toHaveBeenCalledWith({
+      quiet: true
     })
   })
 })

@@ -13,6 +13,7 @@ import {
   runChromeDebugMessengerSend,
   runChromeDebugTargets
 } from './chrome-debug'
+import { runMessageActionsVerify } from './message-actions'
 
 const runVitestAdapterE2E = async (input: {
   selection: string | undefined
@@ -62,6 +63,7 @@ interface ScriptsCliDeps {
   runChromeDebugMessengerSend: typeof runChromeDebugMessengerSend
   runChromeDebugMessengerClickReply: typeof runChromeDebugMessengerClickReply
   runChromeDebugMessengerClickText: typeof runChromeDebugMessengerClickText
+  runMessageActionsVerify: typeof runMessageActionsVerify
   runPublishPlan: (args: string[]) => Promise<unknown>
 }
 
@@ -91,6 +93,7 @@ const defaultDeps: ScriptsCliDeps = {
   runChromeDebugMessengerSend,
   runChromeDebugMessengerClickReply,
   runChromeDebugMessengerClickText,
+  runMessageActionsVerify,
   runPublishPlan: async (args) => {
     const { runPublishPlanCli } = await import('./publish-plan-core.mjs')
     return runPublishPlanCli(args)
@@ -276,6 +279,22 @@ export const createScriptsCli = (inputDeps: Partial<ScriptsCliDeps> = {}) => {
         conversation,
         text,
         settleMs: options.settleMs
+      })
+    })
+
+  const messageActionsCommand = program
+    .command('message-actions')
+    .description('Run reusable verification flows for message-level chat actions')
+
+  messageActionsCommand
+    .command('verify')
+    .description('Run code-quality and regression checks for message edit/recall/fork changes')
+    .option('--quiet', 'Do not stream child command output', false)
+    .action(async (options: {
+      quiet?: boolean
+    }) => {
+      await deps.runMessageActionsVerify({
+        quiet: options.quiet ?? false
       })
     })
 
