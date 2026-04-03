@@ -157,8 +157,7 @@ export async function requestInteraction(params: AskUserQuestionParams): Promise
 
 export function handleInteractionResponse(sessionId: string, interactionId: string, data: unknown) {
   const serverLogger = getSessionLogger(sessionId, 'server')
-  const sessionData = getDb().getSession(sessionId)
-  const isExternalSession = sessionData?.parentSessionId != null
+  const isExternalSession = getDb().getSessionRuntimeState(sessionId)?.runtimeKind === 'external'
 
   if (isExternalSession) {
     serverLogger.info({

@@ -52,6 +52,7 @@
     "deleteConfirm": "确定要删除选中的 {{count}} 个会话吗？",
     "deleteSuccess": "删除成功",
     "deleteFailed": "删除失败",
+    "operationFailed": "操作失败",
     "star": "收藏",
     "unstar": "取消收藏",
     "addTag": "标签",
@@ -380,6 +381,21 @@
       "receiveReply": "收到回复",
       "destroyLabel": "销毁 {{name}}（{{end}}）",
       "rangeLabel": "{{name}}（{{start}} → {{end}}）"
+    },
+    "messageActions": {
+      "copy": "复制原文",
+      "copySuccess": "消息原文已复制",
+      "copyFailed": "复制消息原文失败",
+      "edit": "编辑消息",
+      "editInProgress": "已有一条消息正在编辑，请先发送或取消当前编辑",
+      "saveEdit": "保存并分叉",
+      "recall": "撤回到此处",
+      "fork": "从此处分叉"
+    },
+    "messageFooter": {
+      "tokens": "Token 数",
+      "copyTimestampSuccess": "ISO 时间已复制到剪贴板",
+      "copyTimestampTitle": "双击复制 ISO 时间并在控制台输出消息结构"
     },
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
     "newSessionGuide": {

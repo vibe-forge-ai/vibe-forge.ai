@@ -62,6 +62,10 @@ describe('session service', () => {
       saveMessage,
       getMessages,
       getSession: vi.fn(() => currentSession),
+      getSessionRuntimeState: vi.fn(() => ({
+        runtimeKind: 'interactive',
+        historySeedPending: false
+      })),
       updateSession
     } as any)
   })

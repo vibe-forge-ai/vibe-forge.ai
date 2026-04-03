@@ -10,6 +10,9 @@ export const sessionsSchemaModule: SchemaModule = {
         title TEXT,
         lastMessage TEXT,
         lastUserMessage TEXT,
+        runtimeKind TEXT NOT NULL DEFAULT 'interactive',
+        historySeed TEXT,
+        historySeedPending INTEGER NOT NULL DEFAULT 0,
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
         isArchived INTEGER DEFAULT 0,
@@ -49,10 +52,24 @@ export const sessionsSchemaModule: SchemaModule = {
     ensureColumn('sessions', 'parentSessionId', 'TEXT')
     ensureColumn('sessions', 'lastMessage', 'TEXT')
     ensureColumn('sessions', 'lastUserMessage', 'TEXT')
+    ensureColumn('sessions', 'runtimeKind', 'TEXT')
+    ensureColumn('sessions', 'historySeed', 'TEXT')
+    ensureColumn('sessions', 'historySeedPending', 'INTEGER DEFAULT 0')
     ensureColumn('sessions', 'status', 'TEXT')
     ensureColumn('sessions', 'model', 'TEXT')
     ensureColumn('sessions', 'adapter', 'TEXT')
     ensureColumn('sessions', 'permissionMode', 'TEXT')
     ensureColumn('sessions', 'effort', 'TEXT')
+    exec(`
+      UPDATE sessions
+      SET runtimeKind = CASE
+        WHEN runtimeKind IS NULL AND parentSessionId IS NOT NULL THEN 'external'
+        WHEN runtimeKind IS NULL THEN 'interactive'
+        ELSE runtimeKind
+      END;
+
+      UPDATE sessions
+      SET historySeedPending = COALESCE(historySeedPending, 0);
+    `)
   }
 }

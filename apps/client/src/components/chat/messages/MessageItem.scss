@@ -9,6 +9,11 @@
     display: flex;
     flex-direction: column;
     max-width: 90%;
+
+    &.is-editing {
+      width: 100%;
+      max-width: 100%;
+    }
   }
 
   .bubble {
@@ -30,6 +35,10 @@
       user-select: none;
       cursor: pointer;
     }
+  }
+
+  .message-inline-editor {
+    width: 100%;
   }
 
   &.chat-message-user {
@@ -56,6 +65,39 @@
   &:first-child {
     margin-top: 0;
   }
+
+  &.is-editing {
+    .message-body-container {
+      align-items: stretch;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+}
+
+.msg-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--sub-text-color, inherit);
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+
+  &:hover {
+    background: var(--tag-hover-bg, rgba(127, 127, 127, .12));
+    color: var(--text-color, inherit);
+  }
+
+  .material-symbols-rounded {
+    font-size: 16px;
+    line-height: 1;
+  }
 }
 
 .chat-message-user {
@@ -72,6 +114,13 @@
     padding: 8px 12px;
     border-radius: 16px 0 16px 16px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+
+    &.is-editing {
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+      width: 100%;
+    }
   }
 
   &.consecutive .bubble {
@@ -94,6 +143,10 @@
     padding: 0;
     max-width: 100%;
     width: 100%;
+
+    &.is-editing {
+      width: 100%;
+    }
   }
 }
 

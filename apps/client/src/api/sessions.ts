@@ -54,6 +54,26 @@ export async function forkSession(id: string, title?: string): Promise<{ session
   })
 }
 
+export async function branchSessionFromMessage(
+  sessionId: string,
+  messageId: string,
+  action: 'fork' | 'recall' | 'edit',
+  options?: {
+    content?: string | ChatMessageContent[]
+    title?: string
+  }
+): Promise<{ session: Session }> {
+  return fetchApiJson<{ session: Session }>(`/api/sessions/${sessionId}/messages/${messageId}/branch`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      action,
+      content: options?.content,
+      title: options?.title
+    })
+  })
+}
+
 export async function getSessionMessages(
   id: string,
   limit?: number

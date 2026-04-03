@@ -4,6 +4,10 @@
   background-color: var(--bg-color);
 }
 
+.chat-input-wrapper--inline-edit {
+  width: 100%;
+}
+
 .chat-input-wrapper--permission {
   .interaction-panel {
     max-height: none;
@@ -221,6 +225,10 @@
   }
 }
 
+.chat-input-container--inline-edit {
+  width: 100%;
+}
+
 .file-input-hidden {
   display: none;
 }
@@ -390,6 +398,14 @@
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .toolbar-right--inline-edit {
+    gap: 8px;
+
+    .ant-btn {
+      border-radius: 8px;
+    }
   }
 
   .toolbar-btn {

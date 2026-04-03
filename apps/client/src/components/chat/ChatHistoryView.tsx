@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import { App } from 'antd'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
@@ -82,10 +83,20 @@ export function ChatHistoryView({
   hasAvailableModels: boolean
 }) {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     messagesLength: messages.length
   })
-  const { isCreating, send, sendContent, interrupt, clearMessages } = useChatSessionActions({
+  const {
+    isCreating,
+    send,
+    sendContent,
+    editMessage,
+    forkMessage,
+    interrupt,
+    clearMessages,
+    recallMessage
+  } = useChatSessionActions({
     session,
     modelForQuery,
     hasAvailableModels,
@@ -95,6 +106,7 @@ export function ChatHistoryView({
     onClearMessages
   })
   const initialScrollDoneRef = useRef(false)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -141,6 +153,7 @@ export function ChatHistoryView({
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
+    setEditingMessageId(null)
   }, [session?.id])
   useEffect(() => {
     if (!initialScrollDoneRef.current && isReady) {
@@ -153,6 +166,23 @@ export function ChatHistoryView({
       scrollToBottom('auto')
     }
   }, [messages.length, scrollToBottom, showScrollBottom])
+  const handleStartEditing = (messageId: string) => {
+    let isBlocked = false
+
+    setEditingMessageId((current) => {
+      if (current != null && current !== messageId) {
+        isBlocked = true
+        return current
+      }
+
+      return messageId
+    })
+
+    if (isBlocked) {
+      void message.warning(t('chat.messageActions.editInProgress'))
+    }
+  }
+  const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
 
   return (
@@ -172,6 +202,17 @@ export function ChatHistoryView({
                   key={item.message.id || index}
                   msg={item.message}
                   isFirstInGroup={item.isFirstInGroup}
+                  sessionInfo={sessionInfo}
+                  isEditing={editingMessageId === item.message.id}
+                  isSessionBusy={isCreating || session?.status === 'running' || session?.status === 'waiting_input'}
+                  onEditMessage={editMessage}
+                  onForkMessage={forkMessage}
+                  onRecallMessage={recallMessage}
+                  onStartEditing={handleStartEditing}
+                  onCancelEditing={(messageId) => {
+                    setEditingMessageId((current) => current === messageId ? null : current)
+                  }}
+                  sessionId={session?.id}
                 />
               )
             } else if (item.type === 'tool-group') {
@@ -202,35 +243,37 @@ export function ChatHistoryView({
       )}
 
       <CurrentTodoList messages={messages} />
-      <div className='sender-container'>
-        <Sender
-          onSend={handleSend}
-          onSendContent={handleSendContent}
-          adapterLocked={session?.id != null}
-          sessionStatus={isCreating ? 'running' : session?.status}
-          onInterrupt={interrupt}
-          onClear={clearMessages}
-          sessionInfo={sessionInfo}
-          connectionError={connectionError}
-          onRetryConnection={onRetryConnection}
-          interactionRequest={interactionRequest}
-          onInteractionResponse={onInteractionResponse}
-          placeholder={placeholder}
-          modelOptions={modelOptions}
-          selectedModel={selectedModel}
-          onModelChange={onModelChange}
-          effort={effort}
-          effortOptions={effortOptions}
-          onEffortChange={onEffortChange}
-          permissionMode={permissionMode}
-          permissionModeOptions={permissionModeOptions}
-          onPermissionModeChange={onPermissionModeChange}
-          selectedAdapter={selectedAdapter}
-          adapterOptions={adapterOptions}
-          onAdapterChange={onAdapterChange}
-          modelUnavailable={modelUnavailable}
-        />
-      </div>
+      {!isInlineEditing && (
+        <div className='sender-container'>
+          <Sender
+            onSend={handleSend}
+            onSendContent={handleSendContent}
+            adapterLocked={session?.id != null}
+            sessionStatus={isCreating ? 'running' : session?.status}
+            onInterrupt={interrupt}
+            onClear={clearMessages}
+            sessionInfo={sessionInfo}
+            connectionError={connectionError}
+            onRetryConnection={onRetryConnection}
+            interactionRequest={interactionRequest}
+            onInteractionResponse={onInteractionResponse}
+            placeholder={placeholder}
+            modelOptions={modelOptions}
+            selectedModel={selectedModel}
+            onModelChange={onModelChange}
+            effort={effort}
+            effortOptions={effortOptions}
+            onEffortChange={onEffortChange}
+            permissionMode={permissionMode}
+            permissionModeOptions={permissionModeOptions}
+            onPermissionModeChange={onPermissionModeChange}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            modelUnavailable={modelUnavailable}
+          />
+        </div>
+      )}
     </>
   )
 }

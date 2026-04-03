@@ -22,6 +22,7 @@ export interface AdapterSessionConfig {
   adapter?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
+  seededFromHistory?: boolean
 }
 
 export interface AdapterSessionRuntime extends SessionConnectionState {

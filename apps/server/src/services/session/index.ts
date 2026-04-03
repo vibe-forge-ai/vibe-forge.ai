@@ -20,7 +20,6 @@ import { applySessionEvent } from '#~/services/session/events.js'
 import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
 import {
-  type AdapterSessionRuntime,
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
@@ -33,6 +32,7 @@ import {
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
+import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()
@@ -169,10 +169,14 @@ export async function startAdapterSession(
     const hasHistory = historyMessages.length > 0
     const serverLogger = getSessionLogger(sessionId, 'server')
     const existing = db.getSession(sessionId)
+    const runtimeState = db.getSessionRuntimeState(sessionId)
     const resolvedModel = options.model ?? existing?.model
     const resolvedAdapter = options.adapter ?? existing?.adapter
     const resolvedEffort = options.effort ?? existing?.effort
     const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
+    const seededFromHistory = runtimeState?.historySeedPending === true &&
+      runtimeState.historySeed != null &&
+      runtimeState.historySeed.trim() !== ''
     const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
     const type = hasHistory && !adapterChanged ? 'resume' : 'create'
 
@@ -212,7 +216,9 @@ export async function startAdapterSession(
 
     if (existing == null) {
       serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
-      db.createSession(undefined, sessionId)
+      db.createSession(undefined, sessionId, undefined, undefined, {
+        runtimeKind: 'interactive'
+      })
     }
 
     if (
@@ -255,6 +261,7 @@ export async function startAdapterSession(
         : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
       const mergedSystemPrompt = [
         finalSystemPrompt,
+        seededFromHistory ? runtimeState?.historySeed?.trim() : undefined,
         languagePrompt
       ].filter(Boolean).join('\n\n')
       let sawFatalError = false
@@ -487,6 +494,10 @@ export async function startAdapterSession(
       }
       })
 
+      if (seededFromHistory) {
+        db.updateSessionRuntimeState(sessionId, { historySeedPending: false })
+      }
+
       return setAdapterSessionRuntime(
         sessionId,
         bindAdapterSessionRuntime(connectionState, session, {
@@ -494,7 +505,8 @@ export async function startAdapterSession(
           model: resolvedModel,
           adapter: resolvedAdapter,
           effort: resolvedEffort,
-          permissionMode: resolvedPermissionMode
+          permissionMode: resolvedPermissionMode,
+          seededFromHistory
         })
       )
     } catch (err) {
@@ -544,7 +556,8 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   db.saveMessage(sessionId, ev)
 
   const currentSessionData = db.getSession(sessionId)
-  const isExternalSession = currentSessionData?.parentSessionId != null
+  const runtimeState = db.getSessionRuntimeState(sessionId)
+  const isExternalSession = runtimeState?.runtimeKind === 'external'
   const updates: Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>> = {
     lastMessage: summaryText,
     lastUserMessage: summaryText,
@@ -592,7 +605,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   runtime.session.emit({
     type: 'message',
     content: contentItems,
-    parentUuid
+    parentUuid: runtime.config?.seededFromHistory === true ? undefined : parentUuid
   })
 }
 
