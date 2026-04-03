@@ -4,6 +4,14 @@
   background-color: var(--bg-color);
 }
 
+.chat-input-wrapper--permission {
+  .interaction-panel {
+    max-height: none;
+    overflow-y: visible;
+    margin-bottom: 0;
+  }
+}
+
 .interaction-panel {
   display: flex;
   flex-direction: column;
@@ -119,7 +127,7 @@
 
   &__option-description {
     margin-top: 4px;
-    color: var(--sub-text-color);
+    color: var(--placeholder-color, #9ca3af);
     font-size: 12px;
   }
 }

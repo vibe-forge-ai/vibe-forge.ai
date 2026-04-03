@@ -13,6 +13,7 @@ import type { SessionInfo } from '@vibe-forge/types'
 import { isShortcutMatch } from '../../../utils/shortcutUtils'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
+import { shouldHideSenderForInteraction } from './interaction-request'
 import { ThinkingStatus } from './ThinkingStatus'
 
 const { TextArea } = Input
@@ -593,18 +594,19 @@ export function Sender({
   const permissionContext = interactionRequest?.payload.kind === 'permission'
     ? interactionRequest.payload.permissionContext
     : undefined
+  const hideSender = shouldHideSenderForInteraction(interactionRequest)
   const deniedTools = permissionContext?.deniedTools?.filter(tool => tool.trim() !== '') ?? []
   const reasons = permissionContext?.reasons?.filter(reason => reason.trim() !== '') ?? []
 
   return (
-    <div className='chat-input-wrapper'>
+    <div className={`chat-input-wrapper ${hideSender ? 'chat-input-wrapper--permission' : ''}`.trim()}>
       {isThinking && <ThinkingStatus />}
       {interactionRequest != null && (
         <div className='interaction-panel'>
           {permissionContext != null && (
             <div className='interaction-panel__badge'>
               <span className='material-symbols-rounded'>lock</span>
-              <span>权限请求</span>
+              <span>{t('chat.permissionRequestBadge')}</span>
             </div>
           )}
           <div className='interaction-question'>
@@ -615,20 +617,20 @@ export function Sender({
               <div className='interaction-panel__meta'>
                 {permissionContext.currentMode != null && permissionContext.currentMode !== '' && (
                   <div className='interaction-panel__meta-item'>
-                    <span className='interaction-panel__meta-label'>当前模式</span>
+                    <span className='interaction-panel__meta-label'>{t('chat.permissionCurrentMode')}</span>
                     <code>{permissionContext.currentMode}</code>
                   </div>
                 )}
                 {permissionContext.suggestedMode != null && permissionContext.suggestedMode !== '' && (
                   <div className='interaction-panel__meta-item'>
-                    <span className='interaction-panel__meta-label'>建议模式</span>
+                    <span className='interaction-panel__meta-label'>{t('chat.permissionSuggestedMode')}</span>
                     <code>{permissionContext.suggestedMode}</code>
                   </div>
                 )}
               </div>
               {deniedTools.length > 0 && (
                 <div className='interaction-panel__section'>
-                  <div className='interaction-panel__section-title'>受限工具</div>
+                  <div className='interaction-panel__section-title'>{t('chat.permissionDeniedTools')}</div>
                   <div className='interaction-panel__chips'>
                     {deniedTools.map(tool => (
                       <code key={tool} className='interaction-panel__chip'>{tool}</code>
@@ -638,7 +640,7 @@ export function Sender({
               )}
               {reasons.length > 0 && (
                 <div className='interaction-panel__section'>
-                  <div className='interaction-panel__section-title'>原因</div>
+                  <div className='interaction-panel__section-title'>{t('chat.permissionReasons')}</div>
                   <div className='interaction-panel__reasons'>
                     {reasons.map(reason => (
                       <div key={reason} className='interaction-panel__reason'>{reason}</div>
@@ -665,7 +667,8 @@ export function Sender({
           ))}
         </div>
       )}
-      <div className='chat-input-container'>
+      {!hideSender && (
+        <div className='chat-input-container'>
         {connectionError && connectionError.trim() !== '' && (
           <div className='connection-error-banner'>
             <div className='connection-error-content'>
@@ -728,28 +731,28 @@ export function Sender({
             className='file-input-hidden'
           />
           <div className='toolbar-left'>
-            <Tooltip title='快捷指令'>
+            <Tooltip title={t('chat.tooltipSlashCommands')}>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
                   <span className='material-symbols-rounded'>terminal</span>
                 </div>
               </span>
             </Tooltip>
-            <Tooltip title='提及代理'>
+            <Tooltip title={t('chat.tooltipMentionAgents')}>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
                   <span className='material-symbols-rounded'>smart_toy</span>
                 </div>
               </span>
             </Tooltip>
-            <Tooltip title='注入上下文'>
+            <Tooltip title={t('chat.tooltipInjectContext')}>
               <span>
                 <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
                   <span className='material-symbols-rounded'>description</span>
                 </div>
               </span>
             </Tooltip>
-            <Tooltip title='上传图片'>
+            <Tooltip title={t('chat.tooltipUploadImages')}>
               <span>
                 <div className='toolbar-btn' onClick={handleImageUpload}>
                   <span className='material-symbols-rounded'>image</span>
@@ -886,7 +889,7 @@ export function Sender({
                 allowClear={false}
                 disabled={modelUnavailable || isThinking}
                 onChange={(value) => onEffortChange(value)}
-                placeholder='Effort'
+                placeholder={t('chat.effortSelectPlaceholder')}
                 optionLabelProp='label'
                 popupMatchSelectWidth={false}
               />
@@ -901,7 +904,7 @@ export function Sender({
               allowClear={false}
               disabled={modelUnavailable || isThinking}
               onChange={(value) => onPermissionModeChange(value)}
-              placeholder='权限模式'
+              placeholder={t('chat.permissionModeSelectPlaceholder')}
               optionLabelProp='label'
               popupMatchSelectWidth={false}
             />
@@ -918,10 +921,13 @@ export function Sender({
             </div>
           </div>
         </div>
-      </div>
-      <div className='chat-input-hint'>
-        {t('chat.hint')}
-      </div>
+        </div>
+      )}
+      {!hideSender && (
+        <div className='chat-input-hint'>
+          {t('chat.hint')}
+        </div>
+      )}
     </div>
   )
 }
