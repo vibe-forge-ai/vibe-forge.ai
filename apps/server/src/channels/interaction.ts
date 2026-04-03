@@ -14,7 +14,7 @@ export const splitInteractionSelections = (value: string) =>
 export const normalizeInteractionToken = (value: string) =>
   value
     .trim()
-    .replace(/^[`"'“”‘’(\[]+|[`"'“”‘’)\].,，。!！?？:：；;]+$/g, '')
+    .replace(/^[`"'“”‘’([]+|[`"'“”‘’)\].,，。!！?？:：；;]+$/g, '')
     .replace(/\s+/g, ' ')
     .toLowerCase()
 
@@ -48,7 +48,9 @@ export const resolveInteractionSelection = (
   if (normalized === '') return undefined
 
   const exactMatched = options.find((option) => {
-    const candidates = [option.label, option.value].filter((candidate): candidate is string => (candidate?.trim() ?? '') !== '')
+    const candidates = [option.label, option.value].filter((candidate): candidate is string =>
+      (candidate?.trim() ?? '') !== ''
+    )
     return candidates.some(candidate => normalizeInteractionToken(candidate) === normalized)
   })
   if (exactMatched) {
@@ -60,7 +62,9 @@ export const resolveInteractionSelection = (
   }
 
   const looseMatched = options.filter((option) => {
-    const candidates = [option.label, option.value].filter((candidate): candidate is string => (candidate?.trim() ?? '') !== '')
+    const candidates = [option.label, option.value].filter((candidate): candidate is string =>
+      (candidate?.trim() ?? '') !== ''
+    )
     return candidates.some((candidate) => {
       const normalizedCandidate = normalizeInteractionToken(candidate)
       return normalizedCandidate !== '' && (
@@ -133,6 +137,7 @@ export const buildInteractionText = (
   payload: AskUserQuestionParams
 ) => {
   const permissionContext = payload.kind === 'permission' ? payload.permissionContext : undefined
+  const permissionReasons = permissionContext?.reasons ?? []
   const lines = [
     ...(payload.kind === 'permission'
       ? [isEnglish(language) ? '[Permission Request]' : '[权限请求]']
@@ -141,18 +146,22 @@ export const buildInteractionText = (
   ]
 
   if ((permissionContext?.currentMode ?? '').trim() !== '') {
-    lines.push(isEnglish(language)
-      ? `Current mode: ${permissionContext?.currentMode}`
-      : `当前模式：${permissionContext?.currentMode}`)
+    lines.push(
+      isEnglish(language)
+        ? `Current mode: ${permissionContext?.currentMode}`
+        : `当前模式：${permissionContext?.currentMode}`
+    )
   }
   if ((permissionContext?.suggestedMode ?? '').trim() !== '') {
-    lines.push(isEnglish(language)
-      ? `Suggested mode: ${permissionContext?.suggestedMode}`
-      : `建议模式：${permissionContext?.suggestedMode}`)
+    lines.push(
+      isEnglish(language)
+        ? `Suggested mode: ${permissionContext?.suggestedMode}`
+        : `建议模式：${permissionContext?.suggestedMode}`
+    )
   }
-  if ((permissionContext?.reasons?.length ?? 0) > 0) {
+  if (permissionReasons.length > 0) {
     lines.push(isEnglish(language) ? 'Reason:' : '原因：')
-    lines.push(...permissionContext.reasons.map(reason => `- ${reason}`))
+    lines.push(...permissionReasons.map(reason => `- ${reason}`))
   }
 
   lines.push(...buildInteractionOptionLines(language, payload.options ?? []))

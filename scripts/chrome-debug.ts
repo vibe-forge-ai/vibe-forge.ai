@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 interface ChromeDebugTarget {
   id: string
   type: string
@@ -183,17 +185,15 @@ export interface ChromeDebugMessengerClickTextInput {
 
 const DEFAULT_PAGE_URL_SUBSTRING = '/next/messenger'
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim() !== ''
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
 
 const stringifyWebSocketMessage = (value: string | ArrayBuffer | Blob | ArrayBufferView) => {
   if (typeof value === 'string') return value
   if (value instanceof ArrayBuffer) return Buffer.from(value).toString('utf8')
   if (ArrayBuffer.isView(value)) return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8')
-  throw new Error('Unsupported WebSocket payload type')
+  throw new TypeError('Unsupported WebSocket payload type')
 }
 
 const sleep = async (ms: number) =>
@@ -203,7 +203,7 @@ const sleep = async (ms: number) =>
 
 const parseChromeDebugTargets = (value: unknown): ChromeDebugTarget[] => {
   if (!Array.isArray(value)) {
-    throw new Error('Chrome DevTools target list returned an unexpected payload.')
+    throw new TypeError('Chrome DevTools target list returned an unexpected payload.')
   }
 
   return value.flatMap((item) => {
@@ -285,7 +285,9 @@ const createChromeCdpClient = async (webSocketDebuggerUrl: string) => {
 
     if (isRecord(parsed.error)) {
       const errorInfo = parsed.error as ChromeDebugProtocolError
-      task.reject(new Error(`Chrome DevTools error ${errorInfo.code ?? 'unknown'}: ${errorInfo.message ?? 'unknown error'}`))
+      task.reject(
+        new Error(`Chrome DevTools error ${errorInfo.code ?? 'unknown'}: ${errorInfo.message ?? 'unknown error'}`)
+      )
       return
     }
 
@@ -311,7 +313,10 @@ const createChromeCdpClient = async (webSocketDebuggerUrl: string) => {
       })
 
       const resultPromise = new Promise<TResult>((resolve, reject) => {
-        pending.set(id, { resolve, reject })
+        pending.set(id, {
+          resolve: value => resolve(value as TResult),
+          reject
+        })
       })
 
       socket.send(payload)
@@ -1120,11 +1125,14 @@ export const runChromeDebugMessengerConversations = async (input: ChromeDebugMes
     await client.send('Page.bringToFront')
     await client.send('Runtime.enable')
 
-    const conversationsResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationListSnapshot>>('Runtime.evaluate', {
-      expression: buildListMessengerConversationsExpression(),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const conversationsResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationListSnapshot>>(
+      'Runtime.evaluate',
+      {
+        expression: buildListMessengerConversationsExpression(),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const conversations = conversationsResult.result?.value
 
     return {
@@ -1152,27 +1160,38 @@ export const runChromeDebugMessengerSend = async (input: ChromeDebugMessengerSen
     await client.send('Page.bringToFront')
     await client.send('Runtime.enable')
 
-    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>('Runtime.evaluate', {
-      expression: buildSelectMessengerConversationExpression(input.conversation),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>(
+      'Runtime.evaluate',
+      {
+        expression: buildSelectMessengerConversationExpression(input.conversation),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const selectedConversation = selectedConversationResult.result?.value
 
-    if (selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null) {
+    if (
+      selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null
+    ) {
       throw new Error(`Conversation "${input.conversation}" was not found on the current messenger page.`)
     }
 
     await sleep(800)
 
-    const composerLocationResult = await client.send<ChromeDebugEvaluateResult<MessengerComposerLocation>>('Runtime.evaluate', {
-      expression: buildLocateMessengerComposerExpression(),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const composerLocationResult = await client.send<ChromeDebugEvaluateResult<MessengerComposerLocation>>(
+      'Runtime.evaluate',
+      {
+        expression: buildLocateMessengerComposerExpression(),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const composerLocation = composerLocationResult.result?.value
 
-    if (composerLocation == null || composerLocation.found !== true || composerLocation.editor == null || composerLocation.sendButton == null) {
+    if (
+      composerLocation == null || composerLocation.found !== true || composerLocation.editor == null ||
+      composerLocation.sendButton == null
+    ) {
       throw new Error('Messenger composer was not found on the current page.')
     }
 
@@ -1188,17 +1207,22 @@ export const runChromeDebugMessengerSend = async (input: ChromeDebugMessengerSen
     }
 
     if (focusState.blocked) {
-      throw new Error(`Messenger composer already contains draft text: "${focusState.previousValue}". Re-run with --replace-draft to overwrite it.`)
+      throw new Error(
+        `Messenger composer already contains draft text: "${focusState.previousValue}". Re-run with --replace-draft to overwrite it.`
+      )
     }
 
     await client.send('Input.insertText', { text: input.message })
     await sleep(200)
 
-    const sendButtonClickResult = await client.send<ChromeDebugEvaluateResult<MessengerSendButtonClickResult>>('Runtime.evaluate', {
-      expression: buildClickMessengerSendButtonExpression(),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const sendButtonClickResult = await client.send<ChromeDebugEvaluateResult<MessengerSendButtonClickResult>>(
+      'Runtime.evaluate',
+      {
+        expression: buildClickMessengerSendButtonExpression(),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const sendButtonClick = sendButtonClickResult.result?.value
 
     if (sendButtonClick == null || sendButtonClick.found !== true || sendButtonClick.sendButton == null) {
@@ -1243,24 +1267,32 @@ export const runChromeDebugMessengerClickReply = async (input: ChromeDebugMessen
     await client.send('Page.bringToFront')
     await client.send('Runtime.enable')
 
-    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>('Runtime.evaluate', {
-      expression: buildSelectMessengerConversationExpression(input.conversation),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>(
+      'Runtime.evaluate',
+      {
+        expression: buildSelectMessengerConversationExpression(input.conversation),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const selectedConversation = selectedConversationResult.result?.value
 
-    if (selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null) {
+    if (
+      selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null
+    ) {
       throw new Error(`Conversation "${input.conversation}" was not found on the current messenger page.`)
     }
 
     await sleep(800)
 
-    const selectedBubbleResult = await client.send<ChromeDebugEvaluateResult<MessengerBubbleSelection>>('Runtime.evaluate', {
-      expression: buildSelectMessengerBubbleExpression(input.messageSnippet),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const selectedBubbleResult = await client.send<ChromeDebugEvaluateResult<MessengerBubbleSelection>>(
+      'Runtime.evaluate',
+      {
+        expression: buildSelectMessengerBubbleExpression(input.messageSnippet),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const selectedBubble = selectedBubbleResult.result?.value
 
     if (selectedBubble == null || selectedBubble.found !== true || selectedBubble.bubble == null) {
@@ -1287,14 +1319,17 @@ export const runChromeDebugMessengerClickReply = async (input: ChromeDebugMessen
 
     await sleep(250)
 
-    const replyButtonResult = await client.send<ChromeDebugEvaluateResult<MessengerReplyButtonClickResult>>('Runtime.evaluate', {
-      expression: buildClickMessengerReplyButtonExpression({
-        bubbleRect: selectedBubble.bubble.rect,
-        replyIndex: input.replyIndex
-      }),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const replyButtonResult = await client.send<ChromeDebugEvaluateResult<MessengerReplyButtonClickResult>>(
+      'Runtime.evaluate',
+      {
+        expression: buildClickMessengerReplyButtonExpression({
+          bubbleRect: selectedBubble.bubble.rect,
+          replyIndex: input.replyIndex
+        }),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const replyButton = replyButtonResult.result?.value
 
     if (replyButton == null || replyButton.found !== true || replyButton.replyButton == null) {
@@ -1303,11 +1338,14 @@ export const runChromeDebugMessengerClickReply = async (input: ChromeDebugMessen
 
     await sleep(input.settleMs)
 
-    const composerSnapshotResult = await client.send<ChromeDebugEvaluateResult<MessengerReplyComposerSnapshot>>('Runtime.evaluate', {
-      expression: buildMessengerReplyComposerSnapshotExpression(input.messageSnippet),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const composerSnapshotResult = await client.send<ChromeDebugEvaluateResult<MessengerReplyComposerSnapshot>>(
+      'Runtime.evaluate',
+      {
+        expression: buildMessengerReplyComposerSnapshotExpression(input.messageSnippet),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const composerSnapshot = composerSnapshotResult.result?.value
 
     return {
@@ -1339,31 +1377,38 @@ export const runChromeDebugMessengerClickText = async (input: ChromeDebugMesseng
     await client.send('Page.bringToFront')
     await client.send('Runtime.enable')
 
-    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>('Runtime.evaluate', {
-      expression: buildSelectMessengerConversationExpression(input.conversation),
-      returnByValue: true,
-      awaitPromise: true
-    })
+    const selectedConversationResult = await client.send<ChromeDebugEvaluateResult<MessengerConversationSelection>>(
+      'Runtime.evaluate',
+      {
+        expression: buildSelectMessengerConversationExpression(input.conversation),
+        returnByValue: true,
+        awaitPromise: true
+      }
+    )
     const selectedConversation = selectedConversationResult.result?.value
 
-    if (selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null) {
+    if (
+      selectedConversation == null || selectedConversation.found !== true || selectedConversation.conversation == null
+    ) {
       throw new Error(`Conversation "${input.conversation}" was not found on the current messenger page.`)
     }
 
     await sleep(800)
 
-    const clickResult = await client.send<ChromeDebugEvaluateResult<{
-      found: boolean
-      clicked?: {
-        rect: {
-          x: number
-          y: number
-          width: number
-          height: number
+    const clickResult = await client.send<
+      ChromeDebugEvaluateResult<{
+        found: boolean
+        clicked?: {
+          rect: {
+            x: number
+            y: number
+            width: number
+            height: number
+          }
+          preview: string
         }
-        preview: string
-      }
-    }>>('Runtime.evaluate', {
+      }>
+    >('Runtime.evaluate', {
       expression: buildClickMessengerTextExpression(input.text),
       returnByValue: true,
       awaitPromise: true

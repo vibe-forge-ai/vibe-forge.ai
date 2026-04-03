@@ -33,188 +33,55 @@ afterEach(async () => {
 })
 
 describe('definitionLoader', () => {
-  it('generates skill prompts with stable names, descriptions and relative paths', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
+  it('loads local and remote rule references with overridden descriptions', async () => {
+    const workspace = await createWorkspace()
+    const loader = new DefinitionLoader(workspace)
+    const baseDir = join(workspace, '.ai/entities/api-developer')
 
-    const prompt = loader.generateSkillsPrompt([
-      {
-        path: join(cwd, '.ai/skills/research/SKILL.md'),
-        body: '阅读 README.md\n',
-        attributes: {
-          description: '检索项目信息'
+    await writeDocument(
+      join(baseDir, 'rules/migrate.md'),
+      '---\ndescription: 文件内描述\n---\n遵循新的 API 迁移流程'
+    )
+
+    const rules = await loader.loadRules(
+      [
+        {
+          path: './rules/migrate.md',
+          desc: '迁移老范式的 API 代码到新范式'
+        },
+        {
+          type: 'remote',
+          tags: ['business', 'api-develop']
         }
-      }
-    ])
+      ],
+      { baseDir }
+    )
 
-    expect(prompt).toContain('项目已加载如下技能模块')
-    expect(prompt).toContain('# research')
-    expect(prompt).toContain('> 技能介绍：检索项目信息')
-    expect(prompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
-    expect(prompt).toContain('<skill-content>')
-    expect(prompt).not.toContain('/workspace/project/.ai/skills/research/SKILL.md')
+    expect(rules).toHaveLength(2)
+    expect(rules[0]?.path).toBe(join(baseDir, 'rules/migrate.md'))
+    expect(rules[0]?.attributes.description).toBe('迁移老范式的 API 代码到新范式')
+    expect(rules[1]?.path).toBe('remote-rule-2.md')
+    expect(rules[1]?.body).toContain('Knowledge base tags: business, api-develop')
   })
 
-  it('generates spec routes with logical identifiers instead of file paths', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
+  it('loads and filters workspace skills by logical name', async () => {
+    const workspace = await createWorkspace()
+    const loader = new DefinitionLoader(workspace)
 
-    const prompt = loader.generateSpecRoutePrompt([
-      {
-        path: join(cwd, '.ai/specs/release/index.md'),
-        body: '发布流程\n执行发布任务',
-        attributes: {
-          params: [
-            {
-              name: 'version',
-              description: '版本号'
-            }
-          ]
-        }
-      },
-      {
-        path: join(cwd, '.ai/specs/internal.md'),
-        body: '内部流程',
-        attributes: {
-          always: false
-        }
-      }
-    ])
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/review/SKILL.md'),
+      '---\ndescription: 代码评审\n---\n检查风险'
+    )
 
-    expect(prompt).toContain('流程名称：release')
-    expect(prompt).toContain('介绍：发布流程')
-    expect(prompt).toContain('标识：release')
-    expect(prompt).toContain('    - version：版本号')
-    expect(prompt).not.toContain('项目推进管理大师')
-    expect(prompt).not.toContain('.ai/specs/release/index.md')
-    expect(prompt).not.toContain('internal')
-  })
+    const allSkills = await loader.loadDefaultSkills()
+    const selectedSkills = await loader.loadSkills(['review'])
 
-  it('injects spec identity guidance only for active spec sessions', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
-
-    const prompt = loader.generateSpecRoutePrompt([
-      {
-        path: join(cwd, '.ai/specs/release/index.md'),
-        body: '发布流程',
-        attributes: {}
-      }
-    ], { active: true })
-
-    expect(prompt).toContain('项目推进管理大师')
-    expect(prompt).toContain('永远不要单独完成代码开发工作')
-    expect(prompt).toContain('流程名称：release')
-  })
-
-  it('generates rule prompts with markdown headings and alwaysApply compatibility', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
-
-    const prompt = loader.generateRulesPrompt([
-      {
-        path: join(cwd, '.ai/rules/required.md'),
-        body: '# 标题\n\n正文',
-        attributes: {
-          alwaysApply: true
-        }
-      },
-      {
-        path: join(cwd, '.ai/rules/summary-only.md'),
-        body: '不应该内联',
-        attributes: {
-          description: '只展示摘要',
-          alwaysApply: false
-        }
-      }
-    ])
-
-    expect(prompt).toContain('# required')
-    expect(prompt).toContain('> # 标题')
-    expect(prompt).toContain('> 正文')
-    expect(prompt).toContain('# summary-only')
-    expect(prompt).toContain('> 适用场景：只展示摘要')
-    expect(prompt).toContain('> 规则文件路径：.ai/rules/summary-only.md')
-    expect(prompt).not.toContain('> 不应该内联')
-    expect(prompt).not.toContain('--------------------')
-  })
-
-  it('generates entity routes from summaries instead of full bodies', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
-
-    const prompt = loader.generateEntitiesRoutePrompt([
-      {
-        path: join(cwd, '.ai/entities/reviewer/README.md'),
-        body: '负责代码审查\n需要关注变更风险',
-        attributes: {}
-      },
-      {
-        path: join(cwd, '.ai/entities/hidden.md'),
-        body: '不应暴露',
-        attributes: {
-          name: 'hidden',
-          always: false
-        }
-      }
-    ])
-
-    expect(prompt).toContain('reviewer：负责代码审查')
-    expect(prompt).not.toContain('需要关注变更风险')
-    expect(prompt).not.toContain('hidden')
-  })
-
-  it('treats alwaysApply rules as embedded system rules', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
-
-    const prompt = loader.generateRulesPrompt([
-      {
-        path: join(cwd, '.ai/rules/base.md'),
-        body: '始终检查导入边界。',
-        attributes: {
-          description: '基础规则',
-          alwaysApply: true
-        }
-      },
-      {
-        path: join(cwd, '.ai/rules/optional.md'),
-        body: '仅在特定任务参考。',
-        attributes: {
-          description: '按需规则',
-          alwaysApply: false
-        }
-      }
-    ])
-
-    expect(prompt).toContain('# base')
-    expect(prompt).toContain('> 始终检查导入边界。')
-    expect(prompt).toContain('# optional')
-    expect(prompt).toContain('> 适用场景：按需规则')
-    expect(prompt).toContain('> 规则文件路径：.ai/rules/optional.md')
-    expect(prompt).not.toContain('仅在特定任务参考。')
-  })
-
-  it('generates skill routes with file guidance and without embedded bodies', () => {
-    const cwd = '/workspace/project'
-    const loader = new DefinitionLoader(cwd)
-
-    const prompt = loader.generateSkillsRoutePrompt([
-      {
-        path: join(cwd, '.ai/skills/research/SKILL.md'),
-        body: '阅读 README.md\n',
-        attributes: {
-          description: '检索项目信息'
-        }
-      }
-    ])
-
-    expect(prompt).toContain('# research')
-    expect(prompt).toContain('> 技能介绍：检索项目信息')
-    expect(prompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
-    expect(prompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
-    expect(prompt).not.toContain('<skill-content>')
-    expect(prompt).not.toContain('阅读 README.md')
+    expect(allSkills.map(skill => skill.resolvedName)).toEqual(['research', 'review'])
+    expect(selectedSkills.map(skill => skill.resolvedName)).toEqual(['review'])
   })
 
   it('loads npm plugin specs and README based entities consistently', async () => {

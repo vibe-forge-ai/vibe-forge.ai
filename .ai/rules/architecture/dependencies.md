@@ -14,6 +14,7 @@ flowchart LR
   Server["apps/server"] --> AppRuntime
   Server --> Core
   Server --> Config["packages/config"]
+  Server --> DefinitionCore["packages/definition-core"]
   Server --> DefinitionLoader["packages/definition-loader"]
   Server --> Utils["packages/utils"]
 
@@ -39,6 +40,14 @@ flowchart LR
 
   Core --> Types
   Core --> Utils
+
+  DefinitionLoader --> DefinitionCore
+  DefinitionLoader --> WorkspaceAssets
+
+  WorkspaceAssets --> DefinitionCore
+  WorkspaceAssets --> Config
+  WorkspaceAssets --> Utils
+  WorkspaceAssets --> Types
 ```
 
 ## 依赖方向
@@ -46,7 +55,8 @@ flowchart LR
 - 应用层依赖 runtime / core，不反向。
 - `task` 是 adapter 的运行时入口；adapter 由运行时解析，不让 app 直接编排。
 - `hooks`、`mcp`、`benchmark` 共享 `config` / `utils` / `types`，避免各自复制协议。
-- `workspace-assets`、`definition-loader` 是 task 侧的领域支撑层。
+- `definition-core` 是 definition 领域共享语义层；Server 可直接消费。
+- `definition-loader` 负责 definition 文档加载，`workspace-assets` 负责 workspace asset 投影与 prompt 组装。
 
 ## 扩展实现
 
