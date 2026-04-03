@@ -14,6 +14,7 @@ const processUserMessage = vi.fn()
 const interruptSession = vi.fn()
 const killSession = vi.fn()
 const getSession = vi.fn()
+const getSessionRuntimeState = vi.fn()
 
 let connectionHandler: ((ws: any, req: any) => Promise<void>) | undefined
 
@@ -35,7 +36,8 @@ vi.mock('ws', () => {
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn(() => ({
-    getSession
+    getSession,
+    getSessionRuntimeState
   }))
 }))
 
@@ -70,6 +72,10 @@ describe('setupWebSocket', () => {
     vi.clearAllMocks()
     connectionHandler = undefined
     getAdapterSessionRuntime.mockReturnValue(undefined)
+    getSessionRuntimeState.mockReturnValue({
+      runtimeKind: 'interactive',
+      historySeedPending: false
+    })
 
     const { setupWebSocket } = await import('#~/websocket/server.js')
     setupWebSocket({} as Server, {

@@ -55,7 +55,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     try {
       const db = getDb()
       const sessionData = db.getSession(sessionId)
-      const isExternalSession = sessionData?.parentSessionId != null
+      const sessionRuntimeState = db.getSessionRuntimeState(sessionId)
+      const isExternalSession = sessionRuntimeState?.runtimeKind === 'external'
       const cachedRuntime = getAdapterSessionRuntime(sessionId)
       const shouldAutoStartAdapter = sessionData == null ||
         sessionData.status === 'running' ||
@@ -117,8 +118,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
           void processUserMessage(sessionId, content)
         } else if (msg.type === 'interrupt') {
           serverLogger.info({ sessionId }, '[server] Received interrupt request')
-          const sessionData = getDb().getSession(sessionId)
-          if (sessionData?.parentSessionId == null) {
+          const sessionRuntimeState = getDb().getSessionRuntimeState(sessionId)
+          if (sessionRuntimeState?.runtimeKind !== 'external') {
             interruptSession(sessionId)
           }
         } else if (msg.type === 'terminate_session') {

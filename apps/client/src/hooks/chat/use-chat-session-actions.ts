@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
-import { createSession, getApiErrorMessage } from '#~/api.js'
+import { branchSessionFromMessage, createSession, getApiErrorMessage } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import type { ChatEffort } from './use-chat-effort'
@@ -34,6 +34,20 @@ export function useChatSessionActions({
   const [isCreating, setIsCreating] = useState(false)
   const isThinking = isCreating || session?.status === 'running'
 
+  const insertSessionIntoCache = useCallback(async (newSession: Session) => {
+    await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+      if (!prev?.sessions) {
+        return { sessions: [newSession] }
+      }
+
+      const withoutCurrent = prev.sessions.filter((item) => item.id !== newSession.id)
+      return {
+        ...prev,
+        sessions: [newSession, ...withoutCurrent]
+      }
+    }, false)
+  }, [mutate])
+
   useEffect(() => {
     if (!isCreating || session?.id == null || session.id === '') return
     setIsCreating(false)
@@ -55,13 +69,7 @@ export function useChatSessionActions({
           adapter
         })
 
-        await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
-          if (!prev?.sessions) return { sessions: [newSession] }
-          return {
-            ...prev,
-            sessions: [newSession, ...prev.sessions]
-          }
-        }, false)
+        await insertSessionIntoCache(newSession)
 
         void navigate(`/session/${newSession.id}`)
         return true
@@ -108,13 +116,7 @@ export function useChatSessionActions({
           adapter
         })
 
-        await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
-          if (!prev?.sessions) return { sessions: [newSession] }
-          return {
-            ...prev,
-            sessions: [newSession, ...prev.sessions]
-          }
-        }, false)
+        await insertSessionIntoCache(newSession)
 
         void navigate(`/session/${newSession.id}`)
         return true
@@ -134,9 +136,9 @@ export function useChatSessionActions({
   }, [
     adapter,
     hasAvailableModels,
+    insertSessionIntoCache,
     isThinking,
     message,
-    mutate,
     navigate,
     effort,
     permissionMode,
@@ -157,12 +159,48 @@ export function useChatSessionActions({
     void message.success('Messages cleared')
   }, [message, onClearMessages])
 
+  const runMessageAction = useCallback(async (
+    messageId: string,
+    action: 'fork' | 'recall' | 'edit',
+    options?: { content?: string | ChatMessageContent[] }
+  ) => {
+    if (session?.id == null || session.id === '') {
+      return false
+    }
+
+    try {
+      const { session: newSession } = await branchSessionFromMessage(session.id, messageId, action, options)
+      await insertSessionIntoCache(newSession)
+      void navigate(`/session/${newSession.id}`)
+      return true
+    } catch (err) {
+      console.error(err)
+      void message.error(getApiErrorMessage(err, t('common.operationFailed')))
+      return false
+    }
+  }, [insertSessionIntoCache, message, navigate, session?.id, t])
+
+  const forkMessage = useCallback((messageId: string) => {
+    return runMessageAction(messageId, 'fork')
+  }, [runMessageAction])
+
+  const recallMessage = useCallback((messageId: string) => {
+    return runMessageAction(messageId, 'recall')
+  }, [runMessageAction])
+
+  const editMessage = useCallback((messageId: string, content: string | ChatMessageContent[]) => {
+    return runMessageAction(messageId, 'edit', { content })
+  }, [runMessageAction])
+
   return {
     isCreating,
     isThinking,
     send,
     sendContent,
+    editMessage,
+    forkMessage,
     interrupt,
-    clearMessages
+    clearMessages,
+    recallMessage
   }
 }

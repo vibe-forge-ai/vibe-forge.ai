@@ -63,6 +63,8 @@ describe('startAdapterSession', () => {
   const saveMessage = vi.fn()
   const createSession = vi.fn()
   const updateSession = vi.fn()
+  const getSessionRuntimeState = vi.fn()
+  const updateSessionRuntimeState = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -88,13 +90,19 @@ describe('startAdapterSession', () => {
     updateSession.mockImplementation((_id: string, updates: Record<string, unknown>) => {
       currentSession = { ...currentSession, ...updates }
     })
+    getSessionRuntimeState.mockReturnValue({
+      runtimeKind: 'interactive',
+      historySeedPending: false
+    })
 
     vi.mocked(getDb).mockReturnValue({
       getMessages,
       saveMessage,
       getSession: vi.fn(() => currentSession),
+      getSessionRuntimeState,
       createSession,
-      updateSession
+      updateSession,
+      updateSessionRuntimeState
     } as any)
 
     mocks.generateAdapterQueryOptions.mockResolvedValue([
@@ -401,6 +409,41 @@ describe('startAdapterSession', () => {
       systemPrompt: 'custom prompt',
       appendSystemPrompt: false
     }))
+  })
+
+  it('injects pending history seed only for the first restart of a branched session', async () => {
+    getSessionRuntimeState.mockReturnValue({
+      runtimeKind: 'interactive',
+      historySeed: '历史上下文',
+      historySeedPending: true
+    })
+    mocks.generateAdapterQueryOptions.mockResolvedValueOnce([
+      {},
+      {
+        systemPrompt: 'generated prompt',
+        tools: undefined,
+        mcpServers: undefined
+      }
+    ])
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+
+    const runtime = await startAdapterSession('sess-1', {
+      adapter: 'codex'
+    })
+
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      type: 'create'
+    }))
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      systemPrompt: 'generated prompt\n\n历史上下文'
+    }))
+    expect(updateSessionRuntimeState).toHaveBeenCalledWith('sess-1', { historySeedPending: false })
+    expect(runtime.config?.seededFromHistory).toBe(true)
   })
 
   it('keeps the session failed when a fatal error is followed by stop', async () => {
