@@ -11,17 +11,25 @@ describe('buildAdapterAssetPlan', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-logger',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'opencode/commands/review.md': '# review\n'
     })
     await writeDocument(
@@ -118,10 +126,14 @@ describe('buildAdapterAssetPlan', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'opencode/commands/review.md': '# review\n'
     })
     await writeDocument(

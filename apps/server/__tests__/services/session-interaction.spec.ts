@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
-import { getSessionInteraction, handleInteractionResponse, requestInteraction } from '#~/services/session/interaction.js'
 import { updateAndNotifySession } from '#~/services/session/index.js'
+import {
+  getSessionInteraction,
+  handleInteractionResponse,
+  requestInteraction
+} from '#~/services/session/interaction.js'
 import { adapterSessionStore, createSessionConnectionState, externalSessionStore } from '#~/services/session/runtime.js'
 
 vi.mock('#~/channels/index.js', () => ({
@@ -79,10 +83,13 @@ describe('session interaction service', () => {
 
     const interactionId = adapterRuntime.currentInteraction?.id
     expect(interactionId).toBeTruthy()
-    expect(vi.mocked(handleChannelSessionEvent)).toHaveBeenCalledWith('sess-1', expect.objectContaining({
-      type: 'interaction_request',
-      id: interactionId
-    }))
+    expect(vi.mocked(handleChannelSessionEvent)).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'interaction_request',
+        id: interactionId
+      })
+    )
     await Promise.resolve()
     expect(vi.mocked(updateAndNotifySession)).toHaveBeenCalledWith('sess-1', { status: 'waiting_input' })
 

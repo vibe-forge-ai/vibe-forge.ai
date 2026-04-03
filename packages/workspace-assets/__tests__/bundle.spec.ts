@@ -11,20 +11,28 @@ describe('resolveWorkspaceAssetBundle', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'skills/research/SKILL.md': '---\ndescription: 检索资料\n---\n阅读 README.md',
       'rules/review.md': '---\ndescription: 评审规则\n---\n必须检查风险',
       'mcp/browser.json': JSON.stringify({ command: 'npx', args: ['browser-server'] }, null, 2),
       'opencode/commands/review.md': '# review\n'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-logger',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n'
     })
 
@@ -87,17 +95,25 @@ describe('resolveWorkspaceAssetBundle', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'skills/research/SKILL.md': '---\ndescription: 检索资料\n---\n阅读 README.md'
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-bundle', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-bundle',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-bundle',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'index.js': [
         'module.exports = {',
         '  __vibeForgePluginManifest: true,',
@@ -112,10 +128,14 @@ describe('resolveWorkspaceAssetBundle', () => {
       ].join('\n')
     })
     await installPluginPackage(workspace, '@vibe-forge/plugin-review', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-review',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-review',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'skills/audit/SKILL.md': '---\ndescription: 代码审计\n---\n检查 child plugin 是否启用'
     })
 
@@ -144,10 +164,14 @@ describe('resolveWorkspaceAssetBundle', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-logger',
-        version: '1.0.0'
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
       'hooks.js': 'module.exports = {}\n'
     })
 
@@ -179,13 +203,17 @@ describe('resolveWorkspaceAssetBundle', () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-bad-manifest', {
-      'package.json': JSON.stringify({
-        name: '@vibe-forge/plugin-bad-manifest',
-        version: '1.0.0',
-        exports: {
-          '.': './index.js'
-        }
-      }, null, 2),
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-bad-manifest',
+          version: '1.0.0',
+          exports: {
+            '.': './index.js'
+          }
+        },
+        null,
+        2
+      ),
       'index.js': [
         'module.exports = {',
         '  __vibeForgePluginManifest: true,',

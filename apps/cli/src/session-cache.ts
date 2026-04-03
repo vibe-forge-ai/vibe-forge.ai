@@ -75,8 +75,7 @@ export const formatListCommand = (params?: {
 export const resolveCliSessionId = (record: CliSessionRecord) =>
   record.resume?.sessionId ?? record.detail?.sessionId ?? ''
 
-export const resolveCliSessionCtxId = (record: CliSessionRecord) =>
-  record.resume?.ctxId ?? record.detail?.ctxId ?? ''
+export const resolveCliSessionCtxId = (record: CliSessionRecord) => record.resume?.ctxId ?? record.detail?.ctxId ?? ''
 
 export const resolveCliSessionAdapter = (record: CliSessionRecord) =>
   record.resume?.resolvedAdapter ??
@@ -154,7 +153,9 @@ export const resolveCliSession = async (cwd: string, id: string): Promise<CliSes
     throw new Error(`Session id "${id}" is ambiguous: ${candidates}`)
   }
 
-  throw new Error(`Session "${id}" not found. Use "${formatListCommand({ view: 'full' })}" to inspect available sessions.`)
+  throw new Error(
+    `Session "${id}" not found. Use "${formatListCommand({ view: 'full' })}" to inspect available sessions.`
+  )
 }
 
 export const writeCliSessionRecord = async (

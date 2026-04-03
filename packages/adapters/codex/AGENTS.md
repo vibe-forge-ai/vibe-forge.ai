@@ -40,7 +40,7 @@ Primary implementation entrypoints for Codex hooks:
 - `src/hook-bridge.ts`
   - translates Codex native payloads into Vibe Forge hook input/output
 - `packages/hooks/call-hook.js`
-- `apps/cli/src/hooks/index.ts`
+- `packages/hooks/src/entry.ts`
 - `packages/hooks/src/native.ts`
 - `packages/hooks/src/bridge.ts`
 - `packages/task/src/run.ts`

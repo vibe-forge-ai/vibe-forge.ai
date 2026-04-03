@@ -1,36 +1,20 @@
 import { relative } from 'node:path'
 import process from 'node:process'
 
-import type { Definition, Entity, Rule, RuleReference, Skill, Spec } from '@vibe-forge/types'
-import { resolveDocumentName, resolveSpecIdentifier } from '@vibe-forge/utils'
-import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
-
-import { glob } from 'fast-glob'
-
 import {
   createRemoteRuleDefinition,
   isLocalRuleReference,
   isRemoteRuleReference,
-  loadLocalDocuments,
   resolveEntityIdentifier,
-  resolveRulePattern,
-  resolveUniqueDefinition
-} from './definition-utils'
-import {
-  generateEntitiesRoutePrompt,
-  generateRulesPrompt,
-  generateSkillsPrompt,
-  generateSkillsRoutePrompt,
-  generateSpecRoutePrompt
-} from './prompt-builders'
+  resolveSkillIdentifier,
+  resolveSpecIdentifier
+} from '@vibe-forge/definition-core'
+import type { Definition, Entity, Rule, RuleReference, Skill, Spec } from '@vibe-forge/types'
+import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
-export {
-  isAlwaysRule,
-  loadLocalDocuments,
-  resolveDefinitionName,
-  resolveDocumentDescription,
-  resolveEntityIdentifier
-} from './definition-utils'
+import { glob } from 'fast-glob'
+
+import { loadLocalDocuments, resolveRulePattern, resolveUniqueDefinition } from './definition-utils'
 
 interface WorkspaceDefinitionAsset<TDefinition extends { name?: string }> {
   payload: {
@@ -69,6 +53,12 @@ export class DefinitionLoader {
     })
   }
 
+  private async loadMatchedDocuments<TDefinition extends object>(
+    pattern: string
+  ): Promise<Definition<TDefinition>[]> {
+    return loadLocalDocuments<TDefinition>(await this.scan([pattern]))
+  }
+
   async loadRules(
     rules: RuleReference[],
     options?: {
@@ -82,11 +72,7 @@ export class DefinitionLoader {
       if (typeof rule === 'string') {
         const pattern = resolveRulePattern(rule, baseDir)
         if (!pattern) continue
-        definitions.push(
-          ...await loadLocalDocuments<Rule>(
-            await this.scan([pattern])
-          )
-        )
+        definitions.push(...await this.loadMatchedDocuments<Rule>(pattern))
         continue
       }
 
@@ -100,9 +86,7 @@ export class DefinitionLoader {
       const pattern = resolveRulePattern(rule.path, baseDir)
       if (!pattern) continue
 
-      const docs = await loadLocalDocuments<Rule>(
-        await this.scan([pattern])
-      )
+      const docs = await this.loadMatchedDocuments<Rule>(pattern)
 
       definitions.push(
         ...docs.map((doc) => ({
@@ -140,10 +124,6 @@ export class DefinitionLoader {
     return this.loadWorkspaceDefinitions(bundle => bundle.rules)
   }
 
-  generateRulesPrompt(rules: Definition<Rule>[]): string {
-    return generateRulesPrompt(this.cwd, rules)
-  }
-
   async loadSkills(skills?: string[]): Promise<Definition<Skill>[]> {
     const allSkills = await this.loadWorkspaceDefinitions(bundle => bundle.skills)
     if (skills == null) return allSkills
@@ -153,7 +133,7 @@ export class DefinitionLoader {
         resolveUniqueDefinition(
           allSkills,
           skillRef,
-          skill => resolveDocumentName(skill.path, skill.attributes.name, ['skill.md'])
+          skill => resolveSkillIdentifier(skill.path, skill.attributes.name)
         )
       )
       .filter((skill): skill is Definition<Skill> => skill != null)
@@ -161,14 +141,6 @@ export class DefinitionLoader {
 
   async loadDefaultSkills(): Promise<Definition<Skill>[]> {
     return this.loadSkills()
-  }
-
-  generateSkillsPrompt(skills: Definition<Skill>[]): string {
-    return generateSkillsPrompt(this.cwd, skills)
-  }
-
-  generateSkillsRoutePrompt(skills: Definition<Skill>[]): string {
-    return generateSkillsRoutePrompt(this.cwd, skills)
   }
 
   async loadSpec(name: string): Promise<Definition<Spec> | undefined> {
@@ -183,10 +155,6 @@ export class DefinitionLoader {
     return this.loadWorkspaceDefinitions(bundle => bundle.specs)
   }
 
-  generateSpecRoutePrompt(specsDocuments: Definition<Spec>[], options?: { active?: boolean }): string {
-    return generateSpecRoutePrompt(specsDocuments, options)
-  }
-
   async loadEntity(name: string): Promise<Definition<Entity> | undefined> {
     return this.loadNamedWorkspaceDefinition(
       name,
@@ -197,9 +165,5 @@ export class DefinitionLoader {
 
   async loadDefaultEntities(): Promise<Definition<Entity>[]> {
     return this.loadWorkspaceDefinitions(bundle => bundle.entities)
-  }
-
-  generateEntitiesRoutePrompt(entities: Definition<Entity>[]): string {
-    return generateEntitiesRoutePrompt(entities)
   }
 }

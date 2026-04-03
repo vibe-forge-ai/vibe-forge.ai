@@ -1,7 +1,7 @@
 {
   "name": "@vibe-forge/definition-loader",
   "version": "0.9.0",
-  "description": "Shared definition loading and prompt generation utilities for Vibe Forge",
+  "description": "Shared definition loading utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -29,6 +29,7 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/definition-loader/__tests__"
   },
   "dependencies": {
+    "@vibe-forge/definition-core": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "@vibe-forge/workspace-assets": "workspace:^",

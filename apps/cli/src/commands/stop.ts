@@ -27,7 +27,9 @@ Examples:
         })
         console.log(result.message)
         console.log(
-          `Tips:\n  Check running sessions: ${formatListCommand({ running: true })}\n  Resume later: ${formatResumeCommand(sessionId)}`
+          `Tips:\n  Check running sessions: ${formatListCommand({ running: true })}\n  Resume later: ${
+            formatResumeCommand(sessionId)
+          }`
         )
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

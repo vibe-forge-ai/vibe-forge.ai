@@ -43,9 +43,9 @@ describe('resolvePromptAssetSelection', () => {
     expect(options.systemPrompt).toContain('# base')
     expect(options.systemPrompt).toContain('> 始终检查公共边界。')
     expect(options.systemPrompt).toContain('# optional')
-    expect(options.systemPrompt).toContain('> 适用场景：按需参考规则')
-    expect(options.systemPrompt).toContain('> 规则文件路径：.ai/rules/optional.md')
-    expect(options.systemPrompt).toContain('> 仅在任务满足上述场景时，再阅读该规则文件。')
+    expect(options.systemPrompt).toContain('> Use when: 按需参考规则')
+    expect(options.systemPrompt).toContain('> Rule file path: .ai/rules/optional.md')
+    expect(options.systemPrompt).toContain('> Only read this rule file when the task matches the scenario above.')
     expect(options.systemPrompt).not.toContain('> 只有在特定场景才需要展开。')
   })
 
@@ -144,8 +144,8 @@ describe('resolvePromptAssetSelection', () => {
     expect(resolvedOptions.systemPrompt).toContain('> 正文第一行')
     expect(resolvedOptions.systemPrompt).toContain('> 正文第二行')
     expect(resolvedOptions.systemPrompt).toContain('# summary-only')
-    expect(resolvedOptions.systemPrompt).toContain('> 适用场景：只展示摘要')
-    expect(resolvedOptions.systemPrompt).toContain('> 规则文件路径：.ai/rules/summary-only.md')
+    expect(resolvedOptions.systemPrompt).toContain('> Use when: 只展示摘要')
+    expect(resolvedOptions.systemPrompt).toContain('> Rule file path: .ai/rules/summary-only.md')
     expect(resolvedOptions.systemPrompt).not.toContain('> 不应该出现在引用正文里')
     expect(resolvedOptions.systemPrompt).not.toContain('--------------------')
   })
@@ -194,14 +194,16 @@ describe('resolvePromptAssetSelection', () => {
     })
 
     expect(data.targetSkills.map(skill => skill.resolvedName ?? skill.attributes.name)).toEqual(['research'])
-    expect(options.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(options.systemPrompt).toContain('The following skill modules are loaded for the project')
     expect(options.systemPrompt).toContain('# research')
-    expect(options.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(options.systemPrompt).toContain('<skill-content>')
     expect(options.systemPrompt).toContain('先读 README.md')
     expect(options.systemPrompt).toContain('# review')
-    expect(options.systemPrompt).toContain('> 技能文件路径：.ai/skills/review/SKILL.md')
-    expect(options.systemPrompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
+    expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/review/SKILL.md')
+    expect(options.systemPrompt).toContain(
+      '> Do not preload the body by default; read the corresponding skill file only when the task clearly requires it.'
+    )
     expect(options.systemPrompt).not.toContain('<skill-content>\n检查回归风险\n</skill-content>')
   })
 
@@ -228,11 +230,13 @@ describe('resolvePromptAssetSelection', () => {
     })
 
     expect(data.targetSkills).toEqual([])
-    expect(options.systemPrompt).not.toContain('项目已加载如下技能模块')
+    expect(options.systemPrompt).not.toContain('The following skill modules are loaded for the project')
     expect(options.systemPrompt).toContain('<skills>')
     expect(options.systemPrompt).toContain('# research')
-    expect(options.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
-    expect(options.systemPrompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
+    expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
+    expect(options.systemPrompt).toContain(
+      '> Do not preload the body by default; read the corresponding skill file only when the task clearly requires it.'
+    )
     expect(options.systemPrompt).not.toContain('<skill-content>')
     expect(options.systemPrompt).not.toContain('先读 README.md')
   })
@@ -259,9 +263,9 @@ describe('resolvePromptAssetSelection', () => {
       type: undefined
     })
 
-    expect(options.systemPrompt).toContain('项目存在如下工作流程')
-    expect(options.systemPrompt).toContain('流程名称：release')
-    expect(options.systemPrompt).not.toContain('项目推进管理大师')
+    expect(options.systemPrompt).toContain('The project includes the following workflows')
+    expect(options.systemPrompt).toContain('Workflow name: release')
+    expect(options.systemPrompt).not.toContain('professional project execution manager')
   })
 
   it('injects spec identity guidance when a spec is actively selected', async () => {
@@ -287,9 +291,9 @@ describe('resolvePromptAssetSelection', () => {
       name: 'release'
     })
 
-    expect(options.systemPrompt).toContain('项目推进管理大师')
-    expect(options.systemPrompt).toContain('永远不要单独完成代码开发工作')
-    expect(options.systemPrompt).toContain('流程名称：release')
+    expect(options.systemPrompt).toContain('professional project execution manager')
+    expect(options.systemPrompt).toContain('Never complete code development work alone')
+    expect(options.systemPrompt).toContain('Workflow name: release')
   })
 
   it('embeds referenced skills for entity mode and removes them from route guidance', async () => {
@@ -336,14 +340,14 @@ describe('resolvePromptAssetSelection', () => {
     })
 
     expect(data.targetSkills.map(skill => skill.resolvedName ?? skill.attributes.name)).toEqual(['review'])
-    expect(options.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(options.systemPrompt).toContain('The following skill modules are loaded for the project')
     expect(options.systemPrompt).toContain('# review')
     expect(options.systemPrompt).toContain('<skill-content>')
     expect(options.systemPrompt).toContain('检查回归风险')
     expect(options.systemPrompt).not.toContain('<skills>\n# review')
     expect(options.systemPrompt).toContain('<skills>')
     expect(options.systemPrompt).toContain('# research')
-    expect(options.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(options.systemPrompt).not.toContain('<skill-content>\n先读 README.md\n</skill-content>')
   })
 
@@ -380,9 +384,9 @@ describe('resolvePromptAssetSelection', () => {
     })
 
     expect(data.targetSkills).toEqual([])
-    expect(options.systemPrompt).not.toContain('项目已加载如下技能模块')
+    expect(options.systemPrompt).not.toContain('The following skill modules are loaded for the project')
     expect(options.systemPrompt).toContain('# research')
-    expect(options.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(options.systemPrompt).not.toContain('先读 README.md')
   })
 })

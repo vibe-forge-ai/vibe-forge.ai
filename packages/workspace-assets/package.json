@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/definition-core": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "fast-glob": "^3.3.3",

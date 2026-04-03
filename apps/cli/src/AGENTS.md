@@ -34,7 +34,7 @@ config、cache、definition、workspace asset 共享 contract 位于 `@vibe-forg
 优先入口：
 
 - `commands/run.ts`
-- `hooks/index.ts`
+- `../../packages/hooks/src/entry.ts`
 - `../../packages/cli-helper/loader.js`
 - `../../packages/hooks/call-hook.js`
 
@@ -45,7 +45,7 @@ hooks 相关问题先按这条链路看：
 - `packages/hooks/call-hook.js`
   - 通用 hook 进程入口
   - 负责把 `HOME` 指到工作区 `.ai/.mock`，再执行 hooks runtime
-- `apps/cli/src/hooks/index.ts`
+- `packages/hooks/src/entry.ts`
   - 动态发现已安装 adapter 的 `./hook-bridge`，命中 active env 后执行，否则回退默认 `runHookCli()`
 - `packages/hooks/src/runtime.ts`
   - 默认 hook runtime，负责读取输入、装载插件、执行 middleware
@@ -146,4 +146,4 @@ hooks 相关问题先按这条链路看：
 - 如果只想看本次日志，先 `touch /tmp/<marker>` 再执行命令
 - `run --print` 的最终 session 行为由 task + adapter 决定，CLI 只负责入口编排，不要在 CLI 里追完整生命周期
 - CLI loader 共享实现位置：`packages/cli-helper/loader.js`
-- 适配器错误 / `stream-json` 冒烟流程见：`agents/adapter-error-debugging.md`
+- 适配器错误 / `stream-json` 冒烟流程见：`.ai/rules/adapter-error-debugging.md`

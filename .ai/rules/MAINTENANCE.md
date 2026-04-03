@@ -23,13 +23,17 @@ description: 仓库通用维护与验证规则，包含启动、lint、格式化
 
 在进行任何提交或重大修改前，应运行以下指令确保代码质量：
 
-- **Lint 检查**: `npx eslint .`
+- **Lint 检查**: `pnpm exec eslint .`
   - 场景：检查代码风格、潜在错误和类型安全（如 `strict-boolean-expressions`）。
   - 注意：项目使用 `@antfu/eslint-config`，对 `Promise` 处理、`any` 使用和显式空值检查有严格要求。
-- **代码格式化**: `npx dprint fmt`
+- **格式检查**: `pnpm exec dprint check`
+  - 场景：在 CI 或提交前校验格式是否已按 `dprint.json` 对齐。
+- **代码格式化**: `pnpm exec dprint fmt`
   - 场景：统一代码格式。
-- **类型检查**: `pnpm -r exec tsc --noEmit`
+- **类型检查**: `pnpm typecheck`
   - 场景：在重构或修改共享包 (`packages/core`) 后，确保全量类型安全。
+- **提交信息检查**: `pnpm tools commitmsg-check <base> <head>`
+  - 场景：在 CI 中校验一个 commit range 内的提交标题是否符合 Conventional Commit 约定；GitHub merge commit 例外。
 - **单元测试**: `pnpm -C apps/client test` / `pnpm -C apps/cli test` / `npx vitest run <path>`
   - 场景：修改核心逻辑或 API 适配器后验证功能正确性。
   - 注意：运行单个用例或目录时需使用 `vitest run <path>`，不要直接执行 `vitest <path>`。

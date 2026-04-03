@@ -26,8 +26,11 @@
   padding: 10px;
   border: 1px solid rgba(217, 119, 6, .18);
   border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 251, 235, .9), rgba(255, 255, 255, .96));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 251, 235, .9),
+    rgba(255, 255, 255, .96)
+  );
 
   &__badge {
     display: inline-flex;

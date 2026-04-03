@@ -61,20 +61,16 @@ export default defineRegister(({ registerTool }) => {
       }
 
       const result = await response.json() as { data?: unknown; result?: unknown } | unknown
-      const body = (
-        result != null &&
-        typeof result === 'object' &&
-        'data' in result
-          ? (result as { data?: unknown }).data
-          : result
-      )
-      const answer = (
-        body != null &&
-        typeof body === 'object' &&
-        'result' in body
-          ? (body as { result?: unknown }).result
-          : body
-      )
+      const body = result != null &&
+          typeof result === 'object' &&
+          'data' in result
+        ? (result as { data?: unknown }).data
+        : result
+      const answer = body != null &&
+          typeof body === 'object' &&
+          'result' in body
+        ? (body as { result?: unknown }).result
+        : body
 
       if (answer == null) {
         throw new Error('AskUserQuestion returned an empty result')

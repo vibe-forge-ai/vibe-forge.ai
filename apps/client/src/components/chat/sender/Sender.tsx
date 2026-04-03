@@ -737,13 +737,13 @@ export function Sender({
           {permissionContext != null && (
             <div className='interaction-panel__context'>
               <div className='interaction-panel__meta'>
-                {permissionContext.currentMode != null && permissionContext.currentMode !== '' && (
+                {permissionContext.currentMode != null && (
                   <div className='interaction-panel__meta-item'>
                     <span className='interaction-panel__meta-label'>{t('chat.permissionCurrentMode')}</span>
                     <code>{permissionContext.currentMode}</code>
                   </div>
                 )}
-                {permissionContext.suggestedMode != null && permissionContext.suggestedMode !== '' && (
+                {permissionContext.suggestedMode != null && (
                   <div className='interaction-panel__meta-item'>
                     <span className='interaction-panel__meta-label'>{t('chat.permissionSuggestedMode')}</span>
                     <code>{permissionContext.suggestedMode}</code>

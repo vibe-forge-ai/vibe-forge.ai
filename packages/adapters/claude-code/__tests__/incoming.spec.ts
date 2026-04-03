@@ -183,7 +183,7 @@ describe('claude-code incoming error handling', () => {
           type: 'tool_result',
           tool_use_id: 'tool-1',
           is_error: true,
-          content: 'Claude requested permissions to write to /tmp/test.js, but you haven\'t granted it yet.'
+          content: "Claude requested permissions to write to /tmp/test.js, but you haven't granted it yet."
         }]
       }
     }, (event: AdapterOutputEvent) => events.push(event))
@@ -197,7 +197,7 @@ describe('claude-code incoming error handling', () => {
           content: [{
             type: 'tool_result',
             tool_use_id: 'tool-1',
-            content: 'Claude requested permissions to write to /tmp/test.js, but you haven\'t granted it yet.',
+            content: "Claude requested permissions to write to /tmp/test.js, but you haven't granted it yet.",
             is_error: true
           }],
           createdAt: expect.any(Number)
@@ -211,10 +211,11 @@ describe('claude-code incoming error handling', () => {
           details: {
             toolUseId: 'tool-1',
             permissionDenials: [{
-              message: 'Claude requested permissions to write to /tmp/test.js, but you haven\'t granted it yet.',
+              message: "Claude requested permissions to write to /tmp/test.js, but you haven't granted it yet.",
               deniedTools: []
             }],
-            rawPermissionDenial: 'Claude requested permissions to write to /tmp/test.js, but you haven\'t granted it yet.'
+            rawPermissionDenial:
+              "Claude requested permissions to write to /tmp/test.js, but you haven't granted it yet."
           },
           fatal: true
         }

@@ -52,33 +52,35 @@ const makeRuntimeState = (
     pushFollowUps?: ReturnType<typeof vi.fn>
     language?: 'zh' | 'en'
   } = {}
-) => new Map([
-  ['test', {
-    key: 'test',
-    type: 'lark',
-    status: 'connected',
-    config: {
+) =>
+  new Map([
+    ['test', {
+      key: 'test',
       type: 'lark',
-      language: input.language ?? 'zh'
-    },
-    connection: {
-      sendMessage: input.sendMessage ?? vi.fn().mockResolvedValue({ messageId: 'om_default' }),
-      pushFollowUps: input.pushFollowUps ?? vi.fn().mockResolvedValue(undefined)
-    }
-  } as any]
-])
+      status: 'connected',
+      config: {
+        type: 'lark',
+        language: input.language ?? 'zh'
+      },
+      connection: {
+        sendMessage: input.sendMessage ?? vi.fn().mockResolvedValue({ messageId: 'om_default' }),
+        pushFollowUps: input.pushFollowUps ?? vi.fn().mockResolvedValue(undefined)
+      }
+    } as any]
+  ])
 
 const makeInteractionRequestEvent = (
   payload: Record<string, unknown>,
   id = 'interaction-1'
-) => ({
-  type: 'interaction_request',
-  id,
-  payload: {
-    sessionId: 'sess-1',
-    ...payload
-  }
-}) as any
+) =>
+  ({
+    type: 'interaction_request',
+    id,
+    payload: {
+      sessionId: 'sess-1',
+      ...payload
+    }
+  }) as any
 
 describe('channel handlers', () => {
   beforeEach(() => {
