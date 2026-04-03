@@ -30,7 +30,10 @@ export const getInteractionResponseMode = (kind: InteractionKind) => {
 
 export const resolveInteractionSelection = (
   rawSelection: string,
-  options: InteractionOption[]
+  options: InteractionOption[],
+  input: {
+    allowLooseMatch?: boolean
+  } = {}
 ) => {
   const trimmed = rawSelection.trim()
   if (trimmed === '') return undefined
@@ -50,6 +53,10 @@ export const resolveInteractionSelection = (
   })
   if (exactMatched) {
     return exactMatched.value ?? exactMatched.label
+  }
+
+  if (input.allowLooseMatch === false) {
+    return undefined
   }
 
   const looseMatched = options.filter((option) => {

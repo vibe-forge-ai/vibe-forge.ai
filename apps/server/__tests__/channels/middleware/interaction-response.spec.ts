@@ -197,4 +197,23 @@ describe('interactionResponseMiddleware', () => {
     expect(vi.mocked(handleInteractionResponse)).toHaveBeenCalledWith('sess-1', 'interaction-1', '刚吃了烧烤')
     expect(ctx.reply).not.toHaveBeenCalled()
   })
+
+  it('preserves detailed free-text answers instead of collapsing them into fuzzy option matches', async () => {
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '今晚吃了什么？',
+      options: [
+        { label: '米饭' },
+        { label: '面条' },
+        { label: '还没吃' }
+      ]
+    }))
+    const ctx = makeCtx({
+      commandText: '刚吃了面条和烧烤'
+    })
+
+    await interactionResponseMiddleware(ctx, vi.fn())
+
+    expect(vi.mocked(handleInteractionResponse)).toHaveBeenCalledWith('sess-1', 'interaction-1', '刚吃了面条和烧烤')
+    expect(ctx.reply).not.toHaveBeenCalled()
+  })
 })

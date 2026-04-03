@@ -86,11 +86,11 @@ const resolveFreeformInteractionResponse = (
 ) => {
   if (input.multiselect) {
     return splitInteractionSelections(input.responseText).map((selection) => {
-      return resolveInteractionSelection(selection, input.options) ?? selection
+      return resolveInteractionSelection(selection, input.options, { allowLooseMatch: false }) ?? selection
     })
   }
 
-  return resolveInteractionSelection(input.responseText, input.options) ?? input.responseText
+  return resolveInteractionSelection(input.responseText, input.options, { allowLooseMatch: false }) ?? input.responseText
 }
 
 export const interactionResponseMiddleware: ChannelMiddleware = async (ctx, next) => {
