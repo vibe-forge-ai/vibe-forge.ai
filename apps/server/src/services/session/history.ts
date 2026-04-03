@@ -3,8 +3,8 @@ import type { ChatMessage, ChatMessageContent, Session, WSEvent } from '@vibe-fo
 import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
-import { safeJsonStringify } from '#~/utils/json.js'
 import { badRequest, notFound } from '#~/utils/http.js'
+import { safeJsonStringify } from '#~/utils/json.js'
 
 export type MessageBranchAction = 'fork' | 'recall' | 'edit'
 

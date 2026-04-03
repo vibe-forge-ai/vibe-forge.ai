@@ -16,7 +16,9 @@ vi.mock('#~/db/index.js', async () => {
 })
 
 vi.mock('#~/services/session/runtime.js', async () => {
-  const actual = await vi.importActual<typeof import('#~/services/session/runtime.js')>('#~/services/session/runtime.js')
+  const actual = await vi.importActual<typeof import('#~/services/session/runtime.js')>(
+    '#~/services/session/runtime.js'
+  )
   return {
     ...actual,
     notifySessionUpdated: vi.fn()
@@ -348,10 +350,12 @@ describe('session history branching', () => {
       }
     })
 
-    expect(() => branchSessionFromMessage({
-      sessionId: original.id,
-      messageId: 'assistant-1',
-      action: 'fork'
-    })).toThrowError('Only user messages can be forked')
+    expect(() =>
+      branchSessionFromMessage({
+        sessionId: original.id,
+        messageId: 'assistant-1',
+        action: 'fork'
+      })
+    ).toThrowError('Only user messages can be forked')
   })
 })

@@ -12,7 +12,11 @@ import { Sender } from '../sender/Sender'
 import { ToolRenderer } from '../tools/core/ToolRenderer'
 import { MessageFooter } from './MessageFooter'
 
-type EditableMessageContent = string | ChatMessageContent[]
+type EditableMessageItem =
+  | Extract<ChatMessageContent, { type: 'text' }>
+  | Extract<ChatMessageContent, { type: 'image' }>
+
+type EditableMessageContent = string | EditableMessageItem[]
 
 interface MessageItemProps {
   msg: ChatMessage
@@ -26,6 +30,10 @@ interface MessageItemProps {
   onForkMessage: (messageId: string) => Promise<boolean>
   onStartEditing: (messageId: string) => void
   onCancelEditing: (messageId: string) => void
+}
+
+const isEditableMessageItem = (item: ChatMessageContent): item is EditableMessageItem => {
+  return item.type === 'text' || item.type === 'image'
 }
 
 const cloneEditableMessageContent = (content: EditableMessageContent) => {
@@ -48,7 +56,7 @@ const cloneEditableMessageContent = (content: EditableMessageContent) => {
   })
 }
 
-const normalizeEditableMessageContent = (content: EditableMessageContent | undefined) => {
+const normalizeEditableMessageContent = (content: string | ChatMessageContent[] | undefined) => {
   if (content == null) {
     return undefined
   }
@@ -58,8 +66,12 @@ const normalizeEditableMessageContent = (content: EditableMessageContent | undef
     return trimmed === '' ? undefined : trimmed
   }
 
-  const normalized: ChatMessageContent[] = []
+  const normalized: EditableMessageItem[] = []
   for (const item of content) {
+    if (!isEditableMessageItem(item)) {
+      return undefined
+    }
+
     if (item.type === 'text') {
       const text = item.text.trim()
       if (text !== '') {
@@ -95,7 +107,7 @@ const getEditableMessageContent = (message: ChatMessage) => {
     return undefined
   }
 
-  const editableItems = message.content.filter((item) => item.type === 'text' || item.type === 'image')
+  const editableItems = message.content.filter(isEditableMessageItem)
   if (editableItems.length !== message.content.length || editableItems.length === 0) {
     return undefined
   }
@@ -230,7 +242,7 @@ function MessageItemComponent({
     onStartEditing(msg.id)
   }
 
-  const handleSubmitEdit = async (nextContent: EditableMessageContent) => {
+  const submitEditedContent = async (nextContent: string | ChatMessageContent[]) => {
     const normalizedNextContent = normalizeEditableMessageContent(nextContent)
     if (normalizedNextContent == null || isSameEditableMessageContent(normalizedNextContent, editableContent)) {
       onCancelEditing(msg.id)
@@ -247,6 +259,14 @@ function MessageItemComponent({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleSubmitEditText = async (nextText: string) => {
+    return submitEditedContent(nextText)
+  }
+
+  const handleSubmitEditContent = async (nextContent: ChatMessageContent[]) => {
+    return submitEditedContent(nextContent)
   }
 
   const handleCopyRawText = async () => {
@@ -272,23 +292,23 @@ function MessageItemComponent({
         <div className={`bubble ${isEditing ? 'is-editing' : ''}`}>
           {isEditing
             ? (
-                <div className='message-inline-editor'>
-                  <Sender
-                    variant='inline-edit'
-                    sessionInfo={sessionInfo}
-                    initialContent={editableContent}
-                    submitLabel={t('chat.send')}
-                    submitLoading={isSubmitting}
-                    autoFocus
-                    onCancel={() => {
-                      onCancelEditing(msg.id)
-                    }}
-                    onSend={handleSubmitEdit}
-                    onSendContent={handleSubmitEdit}
-                    onInterrupt={() => {}}
-                  />
-                </div>
-              )
+              <div className='message-inline-editor'>
+                <Sender
+                  variant='inline-edit'
+                  sessionInfo={sessionInfo}
+                  initialContent={editableContent}
+                  submitLabel={t('chat.send')}
+                  submitLoading={isSubmitting}
+                  autoFocus
+                  onCancel={() => {
+                    onCancelEditing(msg.id)
+                  }}
+                  onSend={handleSubmitEditText}
+                  onSendContent={handleSubmitEditContent}
+                  onInterrupt={() => {}}
+                />
+              </div>
+            )
             : content}
         </div>
         {!isEditing && (

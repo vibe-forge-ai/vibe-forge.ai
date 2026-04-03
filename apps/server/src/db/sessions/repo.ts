@@ -93,7 +93,9 @@ function mapSessionRow(row: SessionRow): Session {
   }
 }
 
-function mapSessionRuntimeState(row: Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>): SessionRuntimeState {
+function mapSessionRuntimeState(
+  row: Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>
+): SessionRuntimeState {
   return {
     runtimeKind: row.runtimeKind === 'external' ? 'external' : 'interactive',
     historySeed: row.historySeed ?? undefined,
