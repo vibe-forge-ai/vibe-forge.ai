@@ -1,5 +1,6 @@
 import process from 'node:process'
 
+import { resolveDocumentName, resolveSpecIdentifier } from '@vibe-forge/definition-core'
 import type {
   AdapterAssetPlan,
   AssetDiagnostic,
@@ -14,7 +15,6 @@ import type {
   WorkspaceAssetBundle,
   WorkspaceAssetKind
 } from '@vibe-forge/types'
-import { resolveDocumentName, resolveSpecIdentifier } from '@vibe-forge/utils'
 
 const sortStrings = (values: string[]) => [...values].sort((left, right) => left.localeCompare(right))
 
@@ -94,7 +94,9 @@ const buildSnapshotAssetId = (
   asset: WorkspaceAsset,
   cwd: string
 ) => (
-  `${asset.kind}:${asset.origin}:${asset.instancePath ?? 'workspace'}:${asset.displayName}:${sanitizeValue(asset.sourcePath, cwd)}`
+  `${asset.kind}:${asset.origin}:${asset.instancePath ?? 'workspace'}:${asset.displayName}:${
+    sanitizeValue(asset.sourcePath, cwd)
+  }`
 )
 
 const summarizeBaseAsset = (

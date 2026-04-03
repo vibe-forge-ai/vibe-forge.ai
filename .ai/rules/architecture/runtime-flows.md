@@ -11,7 +11,7 @@
 5. `@vibe-forge/app-runtime.generateAdapterQueryOptions()`
 6. `@vibe-forge/app-runtime.run()`
 7. `packages/task/src/prepare.ts`
-8. `@vibe-forge/config`、`@vibe-forge/utils`、`@vibe-forge/definition-loader`、`@vibe-forge/workspace-assets` 完成 config、logger、definition 文档、workspace assets 与默认 MCP 装配
+8. `@vibe-forge/config`、`@vibe-forge/utils`、`@vibe-forge/definition-loader`、`@vibe-forge/definition-core`、`@vibe-forge/workspace-assets` 完成 config、logger、definition 文档、definition 语义、workspace assets 与默认 MCP 装配
 9. adapter query
 
 ## `vf-mcp`

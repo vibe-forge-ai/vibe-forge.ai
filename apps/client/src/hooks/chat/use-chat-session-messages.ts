@@ -276,7 +276,7 @@ export function useChatSessionMessages({
           }
 
           if (data.type === 'interaction_request') {
-            return
+            setInteractionRequest(data)
           }
         },
         onError() {

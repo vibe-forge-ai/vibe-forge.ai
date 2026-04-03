@@ -19,7 +19,7 @@ const isPermissionDeniedText = (value: string | undefined) => {
   if (normalized === '') return false
 
   return (
-    (/permission/i.test(normalized) && /(denied|required|grant|approval|authorized?)/i.test(normalized)) ||
+    (/permission/i.test(normalized) && /denied|required|grant|approval|authorized?/i.test(normalized)) ||
     /权限|授权/.test(normalized)
   )
 }

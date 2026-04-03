@@ -19,8 +19,8 @@ import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
+import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import {
-  type AdapterSessionRuntime,
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,

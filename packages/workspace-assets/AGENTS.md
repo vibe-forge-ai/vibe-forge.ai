@@ -15,6 +15,8 @@
   - `resolveWorkspaceAssetBundle()`
 - `src/prompt-selection.ts`
   - `resolvePromptAssetSelection()`
+- `src/prompt-builders.ts`
+  - rules / skills / specs / entities prompt 文本渲染
 - `src/adapter-asset-plan.ts`
   - `buildAdapterAssetPlan()`
 - `__tests__/bundle.spec.ts`
@@ -28,6 +30,7 @@
 - 本包负责：
   - workspace asset bundle 组装
   - prompt asset 选择
+  - prompt 文本拼装
   - adapter asset plan 组装
 - 本包不负责：
   - 定义文档发现与解析
@@ -37,7 +40,7 @@
 ## 维护约定
 
 - 只维护 workspace asset 领域逻辑；定义文档读取留在 `@vibe-forge/definition-loader`，cache 留在 `@vibe-forge/utils`。
-- 文档路径规范化与命名规则复用 `@vibe-forge/utils/document-path`，不要在本包重复维护。
+- 通用路径处理复用 `@vibe-forge/utils`；definition 名称/标识/摘要与 remote rule 投影复用 `@vibe-forge/definition-core`；prompt builder 仍留在本包内维护。
 - 共享 contract 继续依赖 `@vibe-forge/types`，不要把 task / hooks / mcp 逻辑反向塞进来。
 - 新增 asset 类型、prompt 选择规则或 adapter 投影时，优先补对应职责下的 spec 文件，不要继续把单测堆回一个综合 spec。
 - 影响 bundle / prompt selection / adapter plan 整体投影时，同步检查 `workspace-assets-rich.snapshot.json`；必要时用 `pnpm -C packages/workspace-assets test -- --update` 更新快照。

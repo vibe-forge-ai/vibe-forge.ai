@@ -58,7 +58,7 @@ describe('mcp tools integration', () => {
     })
   })
 
-  describe('AskUserQuestion tool', () => {
+  describe('askUserQuestion tool', () => {
     it('returns scalar answers as plain text content', async () => {
       const tester = createToolTester()
       askUser(tester.mockRegister)
