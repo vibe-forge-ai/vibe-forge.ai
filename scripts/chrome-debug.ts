@@ -314,7 +314,7 @@ const createChromeCdpClient = async (webSocketDebuggerUrl: string) => {
 
       const resultPromise = new Promise<TResult>((resolve, reject) => {
         pending.set(id, {
-          resolve: value => resolve(value as TResult),
+          resolve: value => resolve(value as TResult | PromiseLike<TResult>),
           reject
         })
       })

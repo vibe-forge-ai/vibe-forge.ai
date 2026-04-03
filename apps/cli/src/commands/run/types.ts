@@ -43,16 +43,9 @@ export interface ExitControllableSession {
 }
 
 export type CliInputControlEvent =
-  | {
-    type: 'message'
-    content: string | ChatMessageContent[]
-  }
-  | {
-    type: 'interrupt'
-  }
-  | {
-    type: 'stop'
-  }
+  | { type: 'message'; content: string | ChatMessageContent[] }
+  | { type: 'interrupt' }
+  | { type: 'stop' }
 
 export interface CliInputSession {
   emit(
