@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/definition-loader",
-  "version": "0.8.4",
+  "version": "0.9.0",
   "description": "Shared definition loading and prompt generation utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {
