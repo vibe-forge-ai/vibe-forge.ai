@@ -435,6 +435,9 @@ describe('startAdapterSession', () => {
     })
 
     expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      type: 'create'
+    }))
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
       systemPrompt: 'generated prompt\n\n历史上下文'
     }))
     expect(updateSessionRuntimeState).toHaveBeenCalledWith('sess-1', { historySeedPending: false })

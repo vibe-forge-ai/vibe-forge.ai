@@ -178,7 +178,7 @@ export async function startAdapterSession(
       runtimeState.historySeed != null &&
       runtimeState.historySeed.trim() !== ''
     const adapterChanged = existing?.adapter != null && resolvedAdapter != null && existing.adapter !== resolvedAdapter
-    const type = hasHistory && !adapterChanged ? 'resume' : 'create'
+    const type = !seededFromHistory && hasHistory && !adapterChanged ? 'resume' : 'create'
 
     const cached = getAdapterSessionRuntime(sessionId)
     if (cached != null) {
