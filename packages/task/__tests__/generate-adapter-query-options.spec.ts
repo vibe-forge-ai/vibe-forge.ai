@@ -85,13 +85,13 @@ describe('generateAdapterQueryOptions', () => {
       }
     )
 
-    expect(resolvedConfig.systemPrompt).not.toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).not.toContain('The following skill modules are loaded for the project')
     expect(resolvedConfig.systemPrompt).toContain('<skills>')
     expect(resolvedConfig.systemPrompt).toContain('# research')
-    expect(resolvedConfig.systemPrompt).toContain('> 技能介绍：检索资料')
-    expect(resolvedConfig.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill description: 检索资料')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(resolvedConfig.systemPrompt).toContain(
-      '> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
+      '> Do not preload the body by default; read the corresponding skill file only when the task clearly requires it.'
     )
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
     expect(resolvedConfig.systemPrompt).not.toContain('# review')
@@ -122,7 +122,7 @@ describe('generateAdapterQueryOptions', () => {
 
     expect(resolvedConfig.systemPrompt).toContain('<skills>')
     expect(resolvedConfig.systemPrompt).toContain('# research')
-    expect(resolvedConfig.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(resolvedConfig.systemPrompt).not.toContain('# review')
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
   })
@@ -159,9 +159,9 @@ describe('generateAdapterQueryOptions', () => {
       workspace
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).toContain('The following skill modules are loaded for the project')
     expect(resolvedConfig.systemPrompt).toContain('# review')
-    expect(resolvedConfig.systemPrompt).toContain('> 技能介绍：代码评审')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill description: 代码评审')
     expect(resolvedConfig.systemPrompt).toContain('<skill-content>')
     expect(resolvedConfig.systemPrompt).toContain('检查风险')
     expect(resolvedConfig.systemPrompt).not.toContain('<skills>\n# review')
@@ -201,7 +201,7 @@ describe('generateAdapterQueryOptions', () => {
       workspace
     )
 
-    expect(resolvedConfig.systemPrompt).toContain('项目已加载如下技能模块')
+    expect(resolvedConfig.systemPrompt).toContain('The following skill modules are loaded for the project')
     expect(resolvedConfig.systemPrompt).toContain('# research')
     expect(resolvedConfig.systemPrompt).toContain('<skill-content>')
     expect(resolvedConfig.systemPrompt).toContain('阅读 README.md')

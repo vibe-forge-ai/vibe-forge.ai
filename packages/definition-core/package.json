@@ -1,7 +1,7 @@
 {
-  "name": "@vibe-forge/definition-loader",
+  "name": "@vibe-forge/definition-core",
   "version": "0.9.0",
-  "description": "Shared definition loading utilities for Vibe Forge",
+  "description": "Shared definition-domain helpers for Vibe Forge",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -26,14 +26,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/definition-loader/__tests__"
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/definition-core/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/definition-core": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^",
-    "@vibe-forge/workspace-assets": "workspace:^",
-    "fast-glob": "^3.3.3",
-    "front-matter": "^4.0.2"
+    "@vibe-forge/types": "workspace:^"
   }
 }

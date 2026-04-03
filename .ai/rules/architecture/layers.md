@@ -23,8 +23,9 @@
 - `packages/core`：schema、channel DSL、env、ws 类型和统一导出。
 - `packages/config`：`.ai.config.*` / `.ai.dev.config.*` 查找、变量替换、缓存重置、配置写回。
 - `packages/utils`：logger、log level、字符串 key 转换、uuid、cache、message text 提取。
-- `packages/definition-loader`：rules / skills / specs / entities 发现与 prompt 片段生成。
-- `packages/workspace-assets`：workspace assets 发现、hook 插件资产投影、prompt asset 选择。
+- `packages/definition-core`：definition 名称 / 标识 / 摘要语义、rule `always` 兼容、remote rule reference 投影。
+- `packages/definition-loader`：rules / skills / specs / entities 发现、读取与解析。
+- `packages/workspace-assets`：workspace assets 发现、hook 插件资产投影、prompt asset 选择与 prompt 文本拼装。
 - `packages/register`：运行前预加载辅助层。
 
 ## 扩展实现层

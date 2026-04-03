@@ -193,7 +193,7 @@ const stringifyWebSocketMessage = (value: string | ArrayBuffer | Blob | ArrayBuf
   if (typeof value === 'string') return value
   if (value instanceof ArrayBuffer) return Buffer.from(value).toString('utf8')
   if (ArrayBuffer.isView(value)) return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8')
-  throw new Error('Unsupported WebSocket payload type')
+  throw new TypeError('Unsupported WebSocket payload type')
 }
 
 const sleep = async (ms: number) =>
@@ -314,7 +314,7 @@ const createChromeCdpClient = async (webSocketDebuggerUrl: string) => {
 
       const resultPromise = new Promise<TResult>((resolve, reject) => {
         pending.set(id, {
-          resolve: value => resolve(value as TResult),
+          resolve: value => resolve(value as TResult | PromiseLike<TResult>),
           reject
         })
       })

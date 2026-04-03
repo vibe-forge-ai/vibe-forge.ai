@@ -39,7 +39,7 @@
 - `src/hooks/bridge.ts`
   - 负责把 Claude native payload 翻译成统一 hook 协议
 - `packages/hooks/call-hook.js`
-- `apps/cli/src/hooks/index.ts`
+- `packages/hooks/src/entry.ts`
 - `packages/hooks/src/native.ts`
 - `packages/hooks/src/bridge.ts`
 - `packages/task/src/run.ts`
@@ -190,7 +190,7 @@ Claude 维护时优先检查两点：
 先读：
 
 - `apps/cli/src/commands/init.ts`
-- `apps/cli/src/hooks/index.ts`
+- `packages/hooks/src/entry.ts`
 - `src/hooks/bridge.ts`
 - `src/hooks/native.ts`
 - `packages/utils/src/create-logger.ts`

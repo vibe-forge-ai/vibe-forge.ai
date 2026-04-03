@@ -1,7 +1,7 @@
 # Utils Package
 
 `@vibe-forge/utils` 承载跨 runtime 共用的基础 helper。
-当前收口的是 markdown logger、log level 解析、字符串 key 转换、文档路径/命名 helper、uuid、chat-message helper、cache、model selection 和系统通知工具。
+当前收口的是 markdown logger、log level 解析、字符串 key 转换、路径 helper、uuid、chat-message helper、cache、model selection 和系统通知工具。
 
 ## 先看哪里
 
@@ -12,7 +12,7 @@
 - `src/string-transform.ts`
   - 对象 key 转换 helper
 - `src/document-path.ts`
-  - definition / workspace 共享的路径规范化与命名规则
+  - workspace 共享的路径规范化 helper
 - `src/model-selection.ts`
   - model service、defaultModel、adapter/model 兼容性处理
 - `src/cache.ts`
@@ -30,7 +30,7 @@
   - 通用 logger 实现
   - 通用 log level 解析
   - 通用对象 key transform
-  - 通用文档路径与命名 helper
+  - 通用路径 helper
   - 通用 cache helper
   - 通用 model selection helper
   - 通用 system helper

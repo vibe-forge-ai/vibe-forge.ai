@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   listInstalledAdapterPackages,
   readInstalledAdapterScopeEntries,
-  resolveActiveNativeHookBridge
-} from '#~/hooks/bridge-loader.js'
-import { runHookEntrypoint } from '#~/hooks/entry.js'
+  resolveActiveNativeHookBridge,
+  runManagedHookEntrypoint
+} from '@vibe-forge/hooks'
 
 const tempDirs: string[] = []
 
@@ -122,7 +122,7 @@ describe('hook entrypoint', () => {
     const runHookBridge = vi.fn()
     const runHookCli = vi.fn()
 
-    await runHookEntrypoint({
+    await runManagedHookEntrypoint({
       resolveActiveNativeHookBridge: () => ({
         isNativeHookEnv: () => true,
         runHookBridge
@@ -137,7 +137,7 @@ describe('hook entrypoint', () => {
   it('falls back to the default hook cli when no native bridge is active', async () => {
     const runHookCli = vi.fn()
 
-    await runHookEntrypoint({
+    await runManagedHookEntrypoint({
       resolveActiveNativeHookBridge: () => undefined,
       runHookCli
     })
@@ -149,7 +149,7 @@ describe('hook entrypoint', () => {
     const runHookCli = vi.fn()
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    await runHookEntrypoint({
+    await runManagedHookEntrypoint({
       resolveActiveNativeHookBridge: () => {
         throw new Error('load failed')
       },

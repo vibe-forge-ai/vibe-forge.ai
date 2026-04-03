@@ -21,24 +21,26 @@ afterEach(() => {
 })
 
 describe('loadChannelAgentRules', () => {
-  it('returns content from the project root file when it exists', async () => {
+  it('returns content from the .ai/rules file when it exists', async () => {
     readFileMock.mockImplementation(async (path) => {
-      if (String(path).endsWith('AGENTS.channel.lark.md')) return 'root rules'
+      if (String(path).includes('.ai/rules/AGENTS.channel.lark.md')) return 'ai rules'
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+
+    const result = await loadChannelAgentRules('lark')
+    expect(result).toBe('ai rules')
+  })
+
+  it('falls back to the project root file when .ai/rules is missing', async () => {
+    readFileMock.mockImplementation(async (path) => {
+      if (String(path).endsWith('AGENTS.channel.lark.md') && !String(path).includes('.ai/rules/')) {
+        return '  root rules  '
+      }
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
     })
 
     const result = await loadChannelAgentRules('lark')
     expect(result).toBe('root rules')
-  })
-
-  it('falls back to .ai/rules/ when root file is missing', async () => {
-    readFileMock.mockImplementation(async (path) => {
-      if (String(path).includes('.ai/rules/')) return '  rules in ai folder  '
-      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-    })
-
-    const result = await loadChannelAgentRules('lark')
-    expect(result).toBe('rules in ai folder')
   })
 
   it('returns undefined when neither file exists', async () => {
@@ -50,12 +52,12 @@ describe('loadChannelAgentRules', () => {
 
   it('skips a file whose content is blank and tries the next', async () => {
     readFileMock.mockImplementation(async (path) => {
-      if (!String(path).includes('.ai/rules/')) return '   '
-      return 'fallback rules'
+      if (String(path).includes('.ai/rules/')) return '   '
+      return 'fallback root rules'
     })
 
     const result = await loadChannelAgentRules('lark')
-    expect(result).toBe('fallback rules')
+    expect(result).toBe('fallback root rules')
   })
 
   it('uses the channelType in the filename', async () => {

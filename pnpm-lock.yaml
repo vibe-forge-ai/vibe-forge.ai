@@ -246,6 +246,9 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/definition-core':
+        specifier: workspace:^
+        version: link:../../packages/definition-core
       '@vibe-forge/definition-loader':
         specifier: workspace:^
         version: link:../../packages/definition-loader
@@ -444,8 +447,17 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
+  packages/definition-core:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+
   packages/definition-loader:
     dependencies:
+      '@vibe-forge/definition-core':
+        specifier: workspace:^
+        version: link:../definition-core
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
@@ -595,6 +607,9 @@ importers:
       '@vibe-forge/config':
         specifier: workspace:^
         version: link:../config
+      '@vibe-forge/definition-core':
+        specifier: workspace:^
+        version: link:../definition-core
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types

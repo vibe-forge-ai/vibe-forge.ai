@@ -82,10 +82,12 @@ npx vitest run <path>
   - 包含 `defineConfig()`、config loader、config writer、默认 system prompt helper
 - 通用工具层：`packages/utils/src/index.ts`
   - 包含 logger、log-level、document-path、uuid、chat-message、cache 和 system helper
+- definition 领域共享语义层：`packages/definition-core/src/index.ts`
+  - 包含名称/标识/摘要解析、rule reference 语义与 remote rule 投影
 - 定义文档加载层：`packages/definition-loader/src/index.ts`
-  - 包含 rules / skills / specs / entities 的发现、读取与 prompt 片段生成
+  - 包含 rules / skills / specs / entities 的发现、读取与解析
 - workspace asset 层：`packages/workspace-assets/src/index.ts`
-  - 包含 workspace bundle、prompt asset 选择和 adapter asset plan
+  - 包含 workspace bundle、prompt asset 选择、prompt 组装和 adapter asset plan
 - app-facing runtime facade：`packages/app-runtime/src/index.ts`
 - 任务执行层：`packages/task/src/index.ts`
 - Benchmark 领域层：`packages/benchmark/src/index.ts`
