@@ -1,13 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import type {
-  Definition,
-  LocalRuleReference,
-  RemoteRuleReference,
-  Rule,
-  RuleReference
-} from '@vibe-forge/types'
+import type { Definition, LocalRuleReference, RemoteRuleReference, Rule, RuleReference } from '@vibe-forge/types'
 import { normalizePath, resolveDocumentName } from '@vibe-forge/utils'
 import fm from 'front-matter'
 

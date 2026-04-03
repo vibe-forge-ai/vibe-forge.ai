@@ -1,5 +1,5 @@
-import { createInterface } from 'node:readline'
 import type { Buffer } from 'node:buffer'
+import { createInterface } from 'node:readline'
 
 import type { ChatMessageContent } from '@vibe-forge/core'
 
@@ -92,7 +92,7 @@ const dispatchCliInputControlEvent = (
 
   const content = typeof event.content === 'string'
     ? [{ type: 'text', text: event.content } satisfies ChatMessageContent]
-    : event.content
+    : event.content ?? []
 
   session.emit({
     type: 'message',

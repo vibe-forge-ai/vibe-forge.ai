@@ -1,10 +1,6 @@
 import { relative } from 'node:path'
 
-import {
-  isAlwaysRule,
-  resolveDefinitionName,
-  resolveDocumentDescription
-} from '@vibe-forge/definition-loader'
+import { isAlwaysRule, resolveDefinitionName, resolveDocumentDescription } from '@vibe-forge/definition-loader'
 import type { Definition, Entity, Rule, Spec } from '@vibe-forge/types'
 
 const toRelativePath = (absolutePath: string, cwd: string) => {

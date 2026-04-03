@@ -31,7 +31,7 @@ const { values, update } = useQueryParams({
   omit: {
     rule: value => value === '',
     q: value => value === '',
-    status: value => value === 'all',
-  },
+    status: value => value === 'all'
+  }
 })
 ```

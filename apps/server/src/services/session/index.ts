@@ -19,8 +19,8 @@ import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
+import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import {
-  type AdapterSessionRuntime,
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
@@ -56,14 +56,18 @@ const buildPermissionRecoveryPrompt = (params: {
   const permissionDenials = Array.isArray(details?.permissionDenials)
     ? details.permissionDenials as Array<Record<string, unknown>>
     : []
-  const deniedTools = [...new Set(
-    permissionDenials.flatMap((entry) => Array.isArray(entry?.deniedTools) ? entry.deniedTools : [])
-  )]
-  const reasons = [...new Set(
-    permissionDenials
-      .map((entry) => typeof entry?.message === 'string' ? entry.message.trim() : '')
-      .filter(message => message !== '')
-  )]
+  const deniedTools = [
+    ...new Set(
+      permissionDenials.flatMap((entry) => Array.isArray(entry?.deniedTools) ? entry.deniedTools : [])
+    )
+  ]
+  const reasons = [
+    ...new Set(
+      permissionDenials
+        .map((entry) => typeof entry?.message === 'string' ? entry.message.trim() : '')
+        .filter(message => message !== '')
+    )
+  ]
   const suggestedMode: SessionPermissionMode = params.currentMode === 'dontAsk' ? 'bypassPermissions' : 'dontAsk'
 
   return {
@@ -82,10 +86,10 @@ const buildPermissionRecoveryPrompt = (params: {
       },
       ...(suggestedMode === 'dontAsk'
         ? [{
-            label: '继续并切换到 bypassPermissions',
-            value: 'bypassPermissions',
-            description: '跳过大部分权限检查，风险最高。'
-          }]
+          label: '继续并切换到 bypassPermissions',
+          value: 'bypassPermissions',
+          description: '跳过大部分权限检查，风险最高。'
+        }]
         : []),
       {
         label: '取消',
@@ -264,227 +268,228 @@ export async function startAdapterSession(
         cwd: promptCwd,
         adapter: resolvedAdapter
       }, {
-      type,
-      runtime: 'server',
-      sessionId,
-      model: resolvedModel,
-      effort: resolvedEffort,
-      systemPrompt: mergedSystemPrompt,
-      permissionMode: resolvedPermissionMode,
-      appendSystemPrompt: options.appendSystemPrompt ?? true,
-      tools: resolvedConfig.tools,
-      mcpServers: resolvedConfig.mcpServers,
-      promptAssetIds: resolvedConfig.promptAssetIds,
-      assetBundle: resolvedConfig.assetBundle,
-      onEvent: (event: AdapterOutputEvent) => {
-        if (activeAdapterRunStore.get(sessionId) !== runId) {
-          return
-        }
+        type,
+        runtime: 'server',
+        sessionId,
+        model: resolvedModel,
+        effort: resolvedEffort,
+        systemPrompt: mergedSystemPrompt,
+        permissionMode: resolvedPermissionMode,
+        appendSystemPrompt: options.appendSystemPrompt ?? true,
+        tools: resolvedConfig.tools,
+        mcpServers: resolvedConfig.mcpServers,
+        promptAssetIds: resolvedConfig.promptAssetIds,
+        assetBundle: resolvedConfig.assetBundle,
+        onEvent: (event: AdapterOutputEvent) => {
+          if (activeAdapterRunStore.get(sessionId) !== runId) {
+            return
+          }
 
-        const broadcast = (ev: WSEvent) => {
-          serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
-          emitRuntimeEvent(connectionState, ev)
-        }
+          const broadcast = (ev: WSEvent) => {
+            serverLogger.info({ event: 'broadcast', data: ev }, 'Broadcasting event')
+            emitRuntimeEvent(connectionState, ev)
+          }
 
-        const applyEvent = (ev: WSEvent) => {
-          applySessionEvent(sessionId, ev, {
-            broadcast,
-            onSessionUpdated: (session) => {
-              notifySessionUpdated(sessionId, session)
-            }
-          })
-          void handleChannelSessionEvent(sessionId, ev).catch(() => undefined)
-        }
+          const applyEvent = (ev: WSEvent) => {
+            applySessionEvent(sessionId, ev, {
+              broadcast,
+              onSessionUpdated: (session) => {
+                notifySessionUpdated(sessionId, session)
+              }
+            })
+            void handleChannelSessionEvent(sessionId, ev).catch(() => undefined)
+          }
 
-        switch (event.type) {
-          case 'init':
-            if ('model' in (event.data as any)) {
-              updateAndNotifySession(sessionId, {
-                model: typeof (event.data as any).model === 'string'
-                  ? (event.data as any).model
-                  : resolvedModel,
-                adapter: typeof (event.data as any).adapter === 'string'
-                  ? (event.data as any).adapter
-                  : resolvedAdapter,
-                effort: resolvedEffort,
-                permissionMode: resolvedPermissionMode
-              })
-              applyEvent({
-                type: 'session_info',
-                info: {
-                  type: 'init',
-                  ...(event.data as any)
-                } as SessionInfo
-              })
-            }
-            break
-          case 'message':
-            if ('role' in (event.data as any)) {
+          switch (event.type) {
+            case 'init':
+              if ('model' in (event.data as any)) {
+                updateAndNotifySession(sessionId, {
+                  model: typeof (event.data as any).model === 'string'
+                    ? (event.data as any).model
+                    : resolvedModel,
+                  adapter: typeof (event.data as any).adapter === 'string'
+                    ? (event.data as any).adapter
+                    : resolvedAdapter,
+                  effort: resolvedEffort,
+                  permissionMode: resolvedPermissionMode
+                })
+                applyEvent({
+                  type: 'session_info',
+                  info: {
+                    type: 'init',
+                    ...(event.data as any)
+                  } as SessionInfo
+                })
+              }
+              break
+            case 'message':
+              if ('role' in (event.data as any)) {
+                if (
+                  pendingPermissionRecoveryStore.get(sessionId)?.runId === runId &&
+                  (event.data as any).role === 'assistant'
+                ) {
+                  break
+                }
+                applyEvent({
+                  type: 'message',
+                  message: event.data
+                })
+              }
+              break
+            case 'error':
               if (
-                pendingPermissionRecoveryStore.get(sessionId)?.runId === runId &&
-                (event.data as any).role === 'assistant'
+                event.data.code === PERMISSION_REQUIRED_CODE &&
+                pendingPermissionRecoveryStore.get(sessionId)?.runId === runId
               ) {
                 break
               }
-              applyEvent({
-                type: 'message',
-                message: event.data
-              })
-            }
-            break
-          case 'error':
-            if (
-              event.data.code === PERMISSION_REQUIRED_CODE &&
-              pendingPermissionRecoveryStore.get(sessionId)?.runId === runId
-            ) {
-              break
-            }
-            if (
-              event.data.code === PERMISSION_REQUIRED_CODE &&
-              !pendingPermissionRecoveryStore.has(sessionId) &&
-              canRequestInteraction(sessionId)
-            ) {
-              const permissionPrompt = buildPermissionRecoveryPrompt({
-                adapter: resolvedAdapter,
-                currentMode: resolvedPermissionMode,
-                error: event.data
-              })
-
-              if (permissionPrompt != null) {
-                pendingPermissionRecoveryStore.set(sessionId, { runId })
-                void requestInteraction({
-                  ...permissionPrompt,
-                  sessionId
+              if (
+                event.data.code === PERMISSION_REQUIRED_CODE &&
+                !pendingPermissionRecoveryStore.has(sessionId) &&
+                canRequestInteraction(sessionId)
+              ) {
+                const permissionPrompt = buildPermissionRecoveryPrompt({
+                  adapter: resolvedAdapter,
+                  currentMode: resolvedPermissionMode,
+                  error: event.data
                 })
-                  .then(async (answer) => {
-                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
-                      return
-                    }
 
-                    pendingPermissionRecoveryStore.delete(sessionId)
-                    const nextPermissionMode = resolvePermissionDecision(answer, permissionPrompt.options ?? [])
-                    if (nextPermissionMode == null || nextPermissionMode === PERMISSION_DECISION_CANCEL) {
-                      emitSessionError(sessionId, {
-                        message: '用户取消了本次权限授权，任务未继续执行。',
-                        code: 'permission_request_declined',
-                        fatal: true
-                      })
-                      return
-                    }
+                if (permissionPrompt != null) {
+                  pendingPermissionRecoveryStore.set(sessionId, { runId })
+                  void requestInteraction({
+                    ...permissionPrompt,
+                    sessionId
+                  })
+                    .then(async (answer) => {
+                      if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                        return
+                      }
 
-                    try {
-                      updateAndNotifySession(sessionId, {
-                        permissionMode: nextPermissionMode,
-                        status: 'running'
-                      })
-                      const recovered = await startAdapterSession(sessionId, {
-                        permissionMode: nextPermissionMode
-                      })
-                      recovered.session.emit({
-                        type: 'message',
-                        content: [
-                          {
-                            type: 'text',
-                            text: `权限模式已更新为 ${nextPermissionMode}。请继续刚才被权限拦截的工作，并重试被阻止的操作。`
-                          }
-                        ]
-                      })
-                    } catch (error) {
+                      pendingPermissionRecoveryStore.delete(sessionId)
+                      const nextPermissionMode = resolvePermissionDecision(answer, permissionPrompt.options ?? [])
+                      if (nextPermissionMode == null || nextPermissionMode === PERMISSION_DECISION_CANCEL) {
+                        emitSessionError(sessionId, {
+                          message: '用户取消了本次权限授权，任务未继续执行。',
+                          code: 'permission_request_declined',
+                          fatal: true
+                        })
+                        return
+                      }
+
+                      try {
+                        updateAndNotifySession(sessionId, {
+                          permissionMode: nextPermissionMode,
+                          status: 'running'
+                        })
+                        const recovered = await startAdapterSession(sessionId, {
+                          permissionMode: nextPermissionMode
+                        })
+                        recovered.session.emit({
+                          type: 'message',
+                          content: [
+                            {
+                              type: 'text',
+                              text:
+                                `权限模式已更新为 ${nextPermissionMode}。请继续刚才被权限拦截的工作，并重试被阻止的操作。`
+                            }
+                          ]
+                        })
+                      } catch (error) {
+                        emitSessionError(sessionId, {
+                          message: '权限已更新，但恢复会话失败。',
+                          code: 'permission_recovery_failed',
+                          details: error instanceof Error ? { message: error.message } : { error: String(error) },
+                          fatal: true
+                        })
+                      }
+                    })
+                    .catch((error) => {
+                      if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                        return
+                      }
+
+                      pendingPermissionRecoveryStore.delete(sessionId)
                       emitSessionError(sessionId, {
-                        message: '权限已更新，但恢复会话失败。',
-                        code: 'permission_recovery_failed',
+                        message: error instanceof Error && error.message.includes('timed out')
+                          ? '权限确认已超时，任务未继续执行。'
+                          : '权限确认失败，任务未继续执行。',
+                        code: 'permission_request_failed',
                         details: error instanceof Error ? { message: error.message } : { error: String(error) },
                         fatal: true
                       })
-                    }
-                  })
-                  .catch((error) => {
-                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
-                      return
-                    }
-
-                    pendingPermissionRecoveryStore.delete(sessionId)
-                    emitSessionError(sessionId, {
-                      message: error instanceof Error && error.message.includes('timed out')
-                        ? '权限确认已超时，任务未继续执行。'
-                        : '权限确认失败，任务未继续执行。',
-                      code: 'permission_request_failed',
-                      details: error instanceof Error ? { message: error.message } : { error: String(error) },
-                      fatal: true
                     })
-                  })
+                  break
+                }
+              }
+
+              if (event.data.fatal !== false) {
+                sawFatalError = true
+              }
+              applyEvent({
+                type: 'error',
+                data: event.data,
+                message: event.data.message
+              })
+              break
+            case 'exit': {
+              const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
+              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+                parkAdapterSessionRuntime(sessionId)
+                if (activeAdapterRunStore.get(sessionId) === runId) {
+                  activeAdapterRunStore.delete(sessionId)
+                }
                 break
               }
-            }
 
-            if (event.data.fatal !== false) {
-              sawFatalError = true
-            }
-            applyEvent({
-              type: 'error',
-              data: event.data,
-              message: event.data.message
-            })
-            break
-          case 'exit': {
-            const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
-            if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
-              parkAdapterSessionRuntime(sessionId)
+              updateAndNotifySession(sessionId, {
+                status: exitCode === 0 ? 'completed' : 'failed'
+              })
+              if (exitCode !== 0 && !sawFatalError) {
+                emitRuntimeEvent(connectionState, {
+                  type: 'error',
+                  data: {
+                    message: stderr !== ''
+                      ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+                      : `Process exited with code ${exitCode}`,
+                    details: stderr !== '' ? { stderr } : undefined,
+                    fatal: true
+                  },
+                  message: stderr !== ''
+                    ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+                    : `Process exited with code ${exitCode}`
+                }, { recordMessage: false })
+              }
+
+              deleteAdapterSessionRuntime(sessionId)
               if (activeAdapterRunStore.get(sessionId) === runId) {
                 activeAdapterRunStore.delete(sessionId)
               }
               break
             }
-
-            updateAndNotifySession(sessionId, {
-              status: exitCode === 0 ? 'completed' : 'failed'
-            })
-            if (exitCode !== 0 && !sawFatalError) {
-              emitRuntimeEvent(connectionState, {
-                type: 'error',
-                data: {
-                  message: stderr !== ''
-                    ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
-                    : `Process exited with code ${exitCode}`,
-                  details: stderr !== '' ? { stderr } : undefined,
-                  fatal: true
-                },
-                message: stderr !== ''
-                  ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
-                  : `Process exited with code ${exitCode}`
-              }, { recordMessage: false })
-            }
-
-            deleteAdapterSessionRuntime(sessionId)
-            if (activeAdapterRunStore.get(sessionId) === runId) {
-              activeAdapterRunStore.delete(sessionId)
-            }
-            break
-          }
-          case 'summary': {
-            const summaryData = event.data as { summary: string; leafUuid: string }
-            applyEvent({
-              type: 'session_info',
-              info: {
-                type: 'summary',
-                summary: summaryData.summary,
-                leafUuid: summaryData.leafUuid
-              }
-            })
-            break
-          }
-          case 'stop': {
-            if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+            case 'summary': {
+              const summaryData = event.data as { summary: string; leafUuid: string }
+              applyEvent({
+                type: 'session_info',
+                info: {
+                  type: 'summary',
+                  summary: summaryData.summary,
+                  leafUuid: summaryData.leafUuid
+                }
+              })
               break
             }
-            const latestSession = getDb().getSession(sessionId)
-            if (latestSession?.status !== 'failed') {
-              updateAndNotifySession(sessionId, { status: 'completed' })
+            case 'stop': {
+              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+                break
+              }
+              const latestSession = getDb().getSession(sessionId)
+              if (latestSession?.status !== 'failed') {
+                updateAndNotifySession(sessionId, { status: 'completed' })
+              }
+              break
             }
-            break
           }
         }
-      }
       })
 
       return setAdapterSessionRuntime(

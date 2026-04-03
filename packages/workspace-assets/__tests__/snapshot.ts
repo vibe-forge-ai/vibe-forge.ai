@@ -94,7 +94,9 @@ const buildSnapshotAssetId = (
   asset: WorkspaceAsset,
   cwd: string
 ) => (
-  `${asset.kind}:${asset.origin}:${asset.instancePath ?? 'workspace'}:${asset.displayName}:${sanitizeValue(asset.sourcePath, cwd)}`
+  `${asset.kind}:${asset.origin}:${asset.instancePath ?? 'workspace'}:${asset.displayName}:${
+    sanitizeValue(asset.sourcePath, cwd)
+  }`
 )
 
 const summarizeBaseAsset = (

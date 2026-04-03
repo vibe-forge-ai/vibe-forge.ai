@@ -8,8 +8,8 @@ import {
   splitInteractionSelections
 } from '#~/channels/interaction.js'
 
-import { syncChannelSessionBinding } from './bind-session'
 import type { ChannelContext, ChannelMiddleware } from './@types'
+import { syncChannelSessionBinding } from './bind-session'
 
 const buildInteractionInvalidReply = (
   ctx: ChannelContext,
@@ -90,7 +90,8 @@ const resolveFreeformInteractionResponse = (
     })
   }
 
-  return resolveInteractionSelection(input.responseText, input.options, { allowLooseMatch: false }) ?? input.responseText
+  return resolveInteractionSelection(input.responseText, input.options, { allowLooseMatch: false }) ??
+    input.responseText
 }
 
 export const interactionResponseMiddleware: ChannelMiddleware = async (ctx, next) => {

@@ -267,11 +267,7 @@ export const prepareClaudeExecution = async (
 
   if (permissionMode === 'bypassPermissions') {
     args.push('--dangerously-skip-permissions')
-  } else if (
-    permissionMode != null &&
-    permissionMode !== '' &&
-    permissionMode !== 'default'
-  ) {
+  } else if (permissionMode != null && permissionMode !== 'default') {
     args.push('--permission-mode', permissionMode)
   }
 

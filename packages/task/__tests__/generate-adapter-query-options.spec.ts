@@ -90,7 +90,9 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).toContain('# research')
     expect(resolvedConfig.systemPrompt).toContain('> 技能介绍：检索资料')
     expect(resolvedConfig.systemPrompt).toContain('> 技能文件路径：.ai/skills/research/SKILL.md')
-    expect(resolvedConfig.systemPrompt).toContain('> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。')
+    expect(resolvedConfig.systemPrompt).toContain(
+      '> 默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
+    )
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
     expect(resolvedConfig.systemPrompt).not.toContain('# review')
   })

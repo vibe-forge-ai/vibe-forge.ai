@@ -33,9 +33,11 @@ pnpm start
 常用命令：
 
 ```bash
-npx eslint .
-npx dprint fmt
-pnpm -r exec tsc --noEmit
+pnpm exec eslint .
+pnpm exec dprint check
+pnpm exec dprint fmt
+pnpm typecheck
+pnpm tools commitmsg-check <base> <head>
 pnpm -C apps/cli test
 pnpm -C packages/hooks test
 pnpm -C packages/mcp test

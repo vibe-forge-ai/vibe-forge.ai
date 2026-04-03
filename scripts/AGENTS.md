@@ -25,6 +25,8 @@
   - 在当前 Feishu messenger 页里悬停某条消息，并点击它的 reply 按钮
 - `pnpm tools chrome-debug messenger-click-text <conversation> <text>`
   - 在当前 Feishu messenger 页里按可见文本点击一个右侧会话内的按钮或快捷气泡
+- `pnpm tools commitmsg-check [base] [head]`
+  - 校验一个 git range 里的 commit title 是否符合 Conventional Commit；GitHub 默认 merge commit 例外
 - `pnpm tools publish-plan -- [args]`
   - 透传到 `scripts/publish-plan-core.mjs`
   - 发布规则、检查清单和 tag 约定统一见 `.ai/rules/RELEASE.md`

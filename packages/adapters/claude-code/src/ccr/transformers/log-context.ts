@@ -381,12 +381,12 @@ const parseEventStreamDebugBody = (bodyText) => {
     ...(assembled != null
       ? { assembled }
       : {
-          events: events.map((event) => ({
-            ...(event.event != null ? { event: event.event } : {}),
-            type: event.type,
-            data: event.data
-          }))
-        })
+        events: events.map((event) => ({
+          ...(event.event != null ? { event: event.event } : {}),
+          type: event.type,
+          data: event.data
+        }))
+      })
   }
 }
 

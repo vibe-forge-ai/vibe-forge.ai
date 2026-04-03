@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { interactionResponseMiddleware } from '#~/channels/middleware/interaction-response.js'
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
+import { interactionResponseMiddleware } from '#~/channels/middleware/interaction-response.js'
 import { getSessionInteraction, handleInteractionResponse } from '#~/services/session/interaction.js'
 
 import { syncChannelSessionBinding } from '#~/channels/middleware/bind-session.js'
@@ -22,8 +22,10 @@ vi.mock('#~/utils/logger.js', () => ({
   }))
 }))
 
-const invalidSingleReply = '未识别你的回复，请回复以下任一选项的文本或序号：\n1. 继续并切换到 dontAsk\n2. 继续并切换到 bypassPermissions\n3. 取消'
-const invalidMultiReply = '未识别这些选项：好的。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n1. 米饭\n2. 面条\n3. 还没吃'
+const invalidSingleReply =
+  '未识别你的回复，请回复以下任一选项的文本或序号：\n1. 继续并切换到 dontAsk\n2. 继续并切换到 bypassPermissions\n3. 取消'
+const invalidMultiReply =
+  '未识别这些选项：好的。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n1. 米饭\n2. 面条\n3. 还没吃'
 
 const makeInteraction = (payload: Record<string, unknown>) => ({
   id: 'interaction-1',
@@ -75,8 +77,10 @@ describe('interactionResponseMiddleware', () => {
     vi.clearAllMocks()
     defineMessages('zh', {
       'interaction.response.empty': '当前问题只接受文本回复，请直接回复文字。',
-      'interaction.response.invalidSingle': ({ choices }) => `未识别你的回复，请回复以下任一选项的文本或序号：\n${choices}`,
-      'interaction.response.invalidMulti': ({ invalid, choices }) => `未识别这些选项：${invalid}。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n${choices}`
+      'interaction.response.invalidSingle': ({ choices }) =>
+        `未识别你的回复，请回复以下任一选项的文本或序号：\n${choices}`,
+      'interaction.response.invalidMulti': ({ invalid, choices }) =>
+        `未识别这些选项：${invalid}。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n${choices}`
     })
   })
 

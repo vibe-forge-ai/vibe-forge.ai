@@ -22,7 +22,8 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 }
 
 const YAML_INDENT = '  '
-const YAML_RESERVED_PATTERN = /^(?:[-+]?\.inf|\.nan|[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:e[-+]?\d+)?|true|false|null|[~yn]|yes|no|on|off)$/i
+const YAML_RESERVED_PATTERN =
+  /^(?:[-+]?\.inf|\.nan|[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:e[-+]?\d+)?|true|false|null|[~yn]|yes|no|on|off)$/i
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null &&

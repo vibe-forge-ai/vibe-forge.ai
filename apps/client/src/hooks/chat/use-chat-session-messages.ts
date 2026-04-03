@@ -272,11 +272,6 @@ export function useChatSessionMessages({
 
           if (data.type === 'tool_result') {
             setMessages((current) => applyToolResultEvent(current, data))
-            return
-          }
-
-          if (data.type === 'interaction_request') {
-            return
           }
         },
         onError() {

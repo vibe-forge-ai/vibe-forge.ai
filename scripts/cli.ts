@@ -7,9 +7,9 @@ import { runProcess } from './adapter-e2e/runtime'
 import {
   getDefaultChromeDebugPageUrlSubstring,
   parsePositiveIntegerOption,
-  runChromeDebugMessengerConversations,
   runChromeDebugMessengerClickReply,
   runChromeDebugMessengerClickText,
+  runChromeDebugMessengerConversations,
   runChromeDebugMessengerSend,
   runChromeDebugTargets
 } from './chrome-debug'
@@ -53,6 +53,10 @@ interface ScriptsCliDeps {
     updateSnapshots: boolean
     verbose: boolean
   }) => Promise<void>
+  runCommitMessageCheck: (input: {
+    base?: string
+    head?: string
+  }) => Promise<void>
   runChromeDebugTargets: typeof runChromeDebugTargets
   runChromeDebugMessengerConversations: typeof runChromeDebugMessengerConversations
   runChromeDebugMessengerSend: typeof runChromeDebugMessengerSend
@@ -64,6 +68,24 @@ interface ScriptsCliDeps {
 const defaultDeps: ScriptsCliDeps = {
   runAdapterSuite: runAdapterE2ESuite,
   runAdapterVitest: runVitestAdapterE2E,
+  runCommitMessageCheck: async (input) => {
+    const args = ['scripts/check-commit-messages.mjs']
+    if (input.base != null) {
+      args.push(input.base)
+      args.push(input.head ?? 'HEAD')
+    }
+
+    const result = await runProcess({
+      command: process.execPath,
+      args,
+      env: process.env,
+      passthroughStdIO: true
+    })
+
+    if (result.code !== 0) {
+      process.exitCode = result.code
+    }
+  },
   runChromeDebugTargets,
   runChromeDebugMessengerConversations,
   runChromeDebugMessengerSend,
@@ -75,7 +97,11 @@ const defaultDeps: ScriptsCliDeps = {
   }
 }
 
-export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
+export const createScriptsCli = (inputDeps: Partial<ScriptsCliDeps> = {}) => {
+  const deps: ScriptsCliDeps = {
+    ...defaultDeps,
+    ...inputDeps
+  }
   const program = new Command()
 
   program
@@ -165,7 +191,12 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
       getDefaultChromeDebugPageUrlSubstring()
     )
     .option('--replace-draft', 'Replace any existing draft text in the composer', false)
-    .option('--settle-ms <ms>', 'Wait time after clicking send', value => parsePositiveIntegerOption(value, 'settle-ms'), 1500)
+    .option(
+      '--settle-ms <ms>',
+      'Wait time after clicking send',
+      value => parsePositiveIntegerOption(value, 'settle-ms'),
+      1500
+    )
     .action(async (conversation: string, message: string, options: {
       pageUrlSubstring: string
       port: number
@@ -191,8 +222,18 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
       'Match the messenger page by URL substring',
       getDefaultChromeDebugPageUrlSubstring()
     )
-    .option('--reply-index <index>', 'Pick the nth visible reply button near the hovered bubble', value => parsePositiveIntegerOption(value, 'reply-index'), 1)
-    .option('--settle-ms <ms>', 'Wait time after clicking reply', value => parsePositiveIntegerOption(value, 'settle-ms'), 1000)
+    .option(
+      '--reply-index <index>',
+      'Pick the nth visible reply button near the hovered bubble',
+      value => parsePositiveIntegerOption(value, 'reply-index'),
+      1
+    )
+    .option(
+      '--settle-ms <ms>',
+      'Wait time after clicking reply',
+      value => parsePositiveIntegerOption(value, 'settle-ms'),
+      1000
+    )
     .action(async (conversation: string, messageSnippet: string, options: {
       pageUrlSubstring: string
       port: number
@@ -218,7 +259,12 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
       'Match the messenger page by URL substring',
       getDefaultChromeDebugPageUrlSubstring()
     )
-    .option('--settle-ms <ms>', 'Wait time after clicking the text target', value => parsePositiveIntegerOption(value, 'settle-ms'), 1000)
+    .option(
+      '--settle-ms <ms>',
+      'Wait time after clicking the text target',
+      value => parsePositiveIntegerOption(value, 'settle-ms'),
+      1000
+    )
     .action(async (conversation: string, text: string, options: {
       pageUrlSubstring: string
       port: number
@@ -230,6 +276,16 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
         conversation,
         text,
         settleMs: options.settleMs
+      })
+    })
+
+  program
+    .command('commitmsg-check [base] [head]')
+    .description('Validate commit subjects in a git revision range')
+    .action(async (base: string | undefined, head: string | undefined) => {
+      await deps.runCommitMessageCheck({
+        base,
+        head
       })
     })
 
@@ -246,7 +302,7 @@ export const createScriptsCli = (deps: ScriptsCliDeps = defaultDeps) => {
 
 export const runScriptsCli = async (
   argv = process.argv,
-  deps: ScriptsCliDeps = defaultDeps
+  deps: Partial<ScriptsCliDeps> = defaultDeps
 ) => {
   await createScriptsCli(deps).parseAsync(argv)
 }

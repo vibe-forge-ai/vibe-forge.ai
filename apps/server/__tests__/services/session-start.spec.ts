@@ -142,7 +142,9 @@ describe('startAdapterSession', () => {
   })
 
   it('deduplicates concurrent start requests for the same session', async () => {
-    let resolveRun: ((value: { session: { emit: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> } }) => void) | undefined
+    let resolveRun:
+      | ((value: { session: { emit: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> } }) => void)
+      | undefined
     const emit = vi.fn()
     const kill = vi.fn()
 
@@ -656,11 +658,14 @@ describe('startAdapterSession', () => {
       }
     })
 
-    expect(saveMessage).not.toHaveBeenCalledWith('sess-1', expect.objectContaining({
-      type: 'message',
-      message: expect.objectContaining({
-        id: 'assist-permission-followup'
+    expect(saveMessage).not.toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'message',
+        message: expect.objectContaining({
+          id: 'assist-permission-followup'
+        })
       })
-    }))
+    )
   })
 })

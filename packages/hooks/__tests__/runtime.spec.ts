@@ -17,35 +17,45 @@ const writeDocument = async (filePath: string, content: string) => {
 const installLoggerPluginPackage = async (workspace: string) => {
   const packageDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-logger')
   await Promise.all([
-    writeDocument(join(packageDir, 'package.json'), JSON.stringify({
-      name: '@vibe-forge/plugin-logger',
-      version: '1.0.0'
-    }, null, 2)),
-    writeDocument(join(packageDir, 'hooks.js'), [
-      'const REDACTED = "[REDACTED]"',
-      'const SENSITIVE = /api[-_]?key|token|secret|authorization|password|cookie|session[-_]?token|bearer/i',
-      'const asRecord = (value) => (value && typeof value === "object" && !Array.isArray(value) ? value : {})',
-      'const sanitizeEnv = (value) => ({ redacted: true, count: Object.keys(asRecord(value)).length, keys: Object.keys(asRecord(value)).sort() })',
-      'const sanitize = (value, key, seen = new WeakSet()) => {',
-      '  if (key === "env") return sanitizeEnv(value)',
-      '  if (key && SENSITIVE.test(key)) return REDACTED',
-      '  if (Array.isArray(value)) return value.map((item) => sanitize(item, undefined, seen))',
-      '  if (value && typeof value === "object") {',
-      '    if (seen.has(value)) return "[Circular]"',
-      '    seen.add(value)',
-      '    return Object.fromEntries(Object.entries(value).map(([entryKey, entryValue]) => [entryKey, sanitize(entryValue, entryKey, seen)]))',
-      '  }',
-      '  return value',
-      '}',
-      'module.exports = {',
-      '  name: "logger",',
-      '  TaskStart: async ({ logger }, input, next) => {',
-      '    logger.info(sanitize(input))',
-      '    return next()',
-      '  }',
-      '}',
-      ''
-    ].join('\n'))
+    writeDocument(
+      join(packageDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      )
+    ),
+    writeDocument(
+      join(packageDir, 'hooks.js'),
+      [
+        'const REDACTED = "[REDACTED]"',
+        'const SENSITIVE = /api[-_]?key|token|secret|authorization|password|cookie|session[-_]?token|bearer/i',
+        'const asRecord = (value) => (value && typeof value === "object" && !Array.isArray(value) ? value : {})',
+        'const sanitizeEnv = (value) => ({ redacted: true, count: Object.keys(asRecord(value)).length, keys: Object.keys(asRecord(value)).sort() })',
+        'const sanitize = (value, key, seen = new WeakSet()) => {',
+        '  if (key === "env") return sanitizeEnv(value)',
+        '  if (key && SENSITIVE.test(key)) return REDACTED',
+        '  if (Array.isArray(value)) return value.map((item) => sanitize(item, undefined, seen))',
+        '  if (value && typeof value === "object") {',
+        '    if (seen.has(value)) return "[Circular]"',
+        '    seen.add(value)',
+        '    return Object.fromEntries(Object.entries(value).map(([entryKey, entryValue]) => [entryKey, sanitize(entryValue, entryKey, seen)]))',
+        '  }',
+        '  return value',
+        '}',
+        'module.exports = {',
+        '  name: "logger",',
+        '  TaskStart: async ({ logger }, input, next) => {',
+        '    logger.info(sanitize(input))',
+        '    return next()',
+        '  }',
+        '}',
+        ''
+      ].join('\n')
+    )
   ])
 }
 

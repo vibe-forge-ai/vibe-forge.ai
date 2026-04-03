@@ -234,19 +234,27 @@ shortcuts:
     try {
       await writeFile(
         path.join(tempDir, 'legacy.json'),
-        JSON.stringify({
-          plugins: {
-            logger: {
-              level: 'info'
+        JSON.stringify(
+          {
+            plugins: {
+              logger: {
+                level: 'info'
+              }
             }
-          }
-        }, null, 2)
+          },
+          null,
+          2
+        )
       )
       await writeFile(
         path.join(tempDir, '.ai.config.json'),
-        JSON.stringify({
-          extend: './legacy.json'
-        }, null, 2)
+        JSON.stringify(
+          {
+            extend: './legacy.json'
+          },
+          null,
+          2
+        )
       )
 
       resetConfigCache()

@@ -1,11 +1,7 @@
 import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
 import { resolvePromptPath, resolveSpecIdentifier } from '@vibe-forge/utils'
 
-import {
-  isAlwaysRule,
-  resolveDefinitionName,
-  resolveDocumentDescription
-} from './definition-utils'
+import { isAlwaysRule, resolveDefinitionName, resolveDocumentDescription } from './definition-utils'
 
 const toMarkdownBlockquote = (content: string) => (
   content
@@ -62,19 +58,21 @@ export const generateRulesPrompt = (cwd: string, rules: Definition<Rule>[]) => {
 
 export const generateSkillsPrompt = (cwd: string, skills: Definition<Skill>[]) => {
   const modules = skills
-    .map((skill) => [
-      `# ${resolveDefinitionName(skill, ['skill.md'])}`,
-      '',
-      buildSkillSummary(
-        cwd,
-        skill,
-        '资源内容中的相对路径相对该技能文件所在目录解析。'
-      ),
-      '',
-      '<skill-content>',
-      skill.body.trim(),
-      '</skill-content>'
-    ].join('\n'))
+    .map((skill) =>
+      [
+        `# ${resolveDefinitionName(skill, ['skill.md'])}`,
+        '',
+        buildSkillSummary(
+          cwd,
+          skill,
+          '资源内容中的相对路径相对该技能文件所在目录解析。'
+        ),
+        '',
+        '<skill-content>',
+        skill.body.trim(),
+        '</skill-content>'
+      ].join('\n')
+    )
     .filter(Boolean)
     .join('\n\n')
 
@@ -86,15 +84,17 @@ export const generateSkillsPrompt = (cwd: string, skills: Definition<Skill>[]) =
 export const generateSkillsRoutePrompt = (cwd: string, skills: Definition<Skill>[]) => {
   const modules = skills
     .filter(({ attributes: { always } }) => always !== false)
-    .map((skill) => [
-      `# ${resolveDefinitionName(skill, ['skill.md'])}`,
-      '',
-      buildSkillSummary(
-        cwd,
-        skill,
-        '默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
-      )
-    ].join('\n'))
+    .map((skill) =>
+      [
+        `# ${resolveDefinitionName(skill, ['skill.md'])}`,
+        '',
+        buildSkillSummary(
+          cwd,
+          skill,
+          '默认无需预先加载正文；仅在任务明确需要该技能时，再读取对应技能文件。'
+        )
+      ].join('\n')
+    )
     .filter(Boolean)
     .join('\n\n')
 
@@ -112,7 +112,8 @@ export const generateSpecRoutePrompt = (
     .map((definition) => {
       const name = resolveDefinitionName(definition, ['index.md'])
       const desc = resolveDocumentDescription(definition.body, definition.attributes.description, name)
-      const identifier = definition.resolvedName?.trim() || resolveSpecIdentifier(definition.path, definition.attributes.name)
+      const identifier = definition.resolvedName?.trim() ||
+        resolveSpecIdentifier(definition.path, definition.attributes.name)
       const params = definition.attributes.params ?? []
       const paramsPrompt = params.length > 0
         ? params
@@ -132,19 +133,17 @@ export const generateSpecRoutePrompt = (
 
   const activeIdentityPrompt = options?.active
     ? (
-        '你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n' +
-        '\n' +
-        '- 永远不要单独完成代码开发工作\n' +
-        '- 必须要协调其他的开发人员来完成任务\n' +
-        '- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n' +
-        '\n'
-      )
+      '你是一个专业的项目推进管理大师，能够熟练指导其他实体来为你的目标工作。对你的预期是：\n' +
+      '\n' +
+      '- 永远不要单独完成代码开发工作\n' +
+      '- 必须要协调其他的开发人员来完成任务\n' +
+      '- 必须让他们按照目标进行完成，不要偏离目标，检查他们任务完成后的汇报内容是否符合要求\n' +
+      '\n'
+    )
     : ''
 
   return (
-    `<system-prompt>\n${
-      activeIdentityPrompt
-    }根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 \`load-spec\` mcp tool 完成工作流程的加载。\n` +
+    `<system-prompt>\n${activeIdentityPrompt}根据用户需要以及实际的开发目标来决定使用不同的工作流程，调用 \`load-spec\` mcp tool 完成工作流程的加载。\n` +
     '- 根据实际需求传入标识，这不是路径，只能使用工具进行加载\n' +
     '- 通过参数的描述以及实际应用场景决定怎么传入参数\n' +
     '项目存在如下工作流程：\n' +
