@@ -34,7 +34,7 @@ config、cache、definition、workspace asset 共享 contract 位于 `@vibe-forg
 优先入口：
 
 - `commands/run.ts`
-- `hooks/index.ts`
+- `../../packages/hooks/src/entry.ts`
 - `../../packages/cli-helper/loader.js`
 - `../../packages/hooks/call-hook.js`
 
@@ -45,7 +45,7 @@ hooks 相关问题先按这条链路看：
 - `packages/hooks/call-hook.js`
   - 通用 hook 进程入口
   - 负责把 `HOME` 指到工作区 `.ai/.mock`，再执行 hooks runtime
-- `apps/cli/src/hooks/index.ts`
+- `packages/hooks/src/entry.ts`
   - 动态发现已安装 adapter 的 `./hook-bridge`，命中 active env 后执行，否则回退默认 `runHookCli()`
 - `packages/hooks/src/runtime.ts`
   - 默认 hook runtime，负责读取输入、装载插件、执行 middleware

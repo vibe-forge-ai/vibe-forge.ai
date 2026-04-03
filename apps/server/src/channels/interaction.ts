@@ -133,6 +133,7 @@ export const buildInteractionText = (
   payload: AskUserQuestionParams
 ) => {
   const permissionContext = payload.kind === 'permission' ? payload.permissionContext : undefined
+  const permissionReasons = permissionContext?.reasons ?? []
   const lines = [
     ...(payload.kind === 'permission'
       ? [isEnglish(language) ? '[Permission Request]' : '[权限请求]']
@@ -150,9 +151,9 @@ export const buildInteractionText = (
       ? `Suggested mode: ${permissionContext?.suggestedMode}`
       : `建议模式：${permissionContext?.suggestedMode}`)
   }
-  if ((permissionContext?.reasons?.length ?? 0) > 0) {
+  if (permissionReasons.length > 0) {
     lines.push(isEnglish(language) ? 'Reason:' : '原因：')
-    lines.push(...permissionContext.reasons.map(reason => `- ${reason}`))
+    lines.push(...permissionReasons.map(reason => `- ${reason}`))
   }
 
   lines.push(...buildInteractionOptionLines(language, payload.options ?? []))
