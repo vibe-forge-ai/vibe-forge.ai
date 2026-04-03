@@ -7,6 +7,7 @@ import {
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
+  parseCliInputControlEvent,
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
@@ -165,6 +166,29 @@ describe('run command print output', () => {
       adapter: 'codex',
       sessionId: 'abc'
     }, command)).toEqual(['--adapter', '--session-id'])
+  })
+
+  it('parses structured stream-json input into a message control event', () => {
+    expect(parseCliInputControlEvent({
+      type: 'message',
+      content: [
+        { type: 'text', text: 'hello' }
+      ]
+    })).toEqual({
+      type: 'message',
+      content: [
+        { type: 'text', text: 'hello' }
+      ]
+    })
+  })
+
+  it('parses interrupt control input', () => {
+    expect(parseCliInputControlEvent({ type: 'interrupt' })).toEqual({ type: 'interrupt' })
+  })
+
+  it('rejects unsupported control input payloads', () => {
+    expect(() => parseCliInputControlEvent({ type: 'message' })).toThrow('Message input requires "content" or "text".')
+    expect(() => parseCliInputControlEvent({ type: 'unknown' })).toThrow('Unsupported input event type: unknown')
   })
 
   it('prints the last assistant text for text output mode on stop', () => {
@@ -347,6 +371,27 @@ describe('run command print output', () => {
     expect(log.mock.calls[1]?.[0]).toContain('"type": "message"')
     expect(log.mock.calls[2]?.[0]).toContain('"type": "stop"')
     expect(requestExit).not.toHaveBeenCalled()
+  })
+
+  it('exits on stop in stream-json mode after stdin has been exhausted', () => {
+    const log = vi.fn()
+    const errorLog = vi.fn()
+    const requestExit = vi.fn()
+
+    handlePrintEvent({
+      event: { type: 'stop' },
+      outputFormat: 'stream-json',
+      lastAssistantText: 'stream body',
+      didExitAfterError: false,
+      stopExitsStreamJson: true,
+      log,
+      errorLog,
+      requestExit
+    })
+
+    expect(log).toHaveBeenCalledTimes(1)
+    expect(log.mock.calls[0]?.[0]).toContain('"type": "stop"')
+    expect(requestExit).toHaveBeenCalledWith(0)
   })
 
   it('suppresses the resume hint for successful print sessions', () => {

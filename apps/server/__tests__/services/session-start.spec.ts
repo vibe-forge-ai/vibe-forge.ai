@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
+import { adapterSessionStartStore, processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
   loadConfigState: vi.fn(),
-  handleChannelSessionEvent: vi.fn()
+  handleChannelSessionEvent: vi.fn(),
+  requestInteraction: vi.fn(),
+  canRequestInteraction: vi.fn()
 }))
 
 vi.mock('#~/db/index.js', () => ({
@@ -26,6 +28,11 @@ vi.mock('#~/channels/index.js', () => ({
 
 vi.mock('#~/services/config/index.js', () => ({
   loadConfigState: mocks.loadConfigState
+}))
+
+vi.mock('#~/services/session/interaction.js', () => ({
+  requestInteraction: mocks.requestInteraction,
+  canRequestInteraction: mocks.canRequestInteraction
 }))
 
 vi.mock('#~/services/session/notification.js', () => ({
@@ -59,6 +66,7 @@ describe('startAdapterSession', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    adapterSessionStartStore.clear()
     adapterSessionStore.clear()
     externalSessionStore.clear()
 
@@ -99,6 +107,8 @@ describe('startAdapterSession', () => {
     ])
     mocks.loadConfigState.mockResolvedValue({ mergedConfig: {} })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
+    mocks.requestInteraction.mockReset()
+    mocks.canRequestInteraction.mockReturnValue(false)
   })
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
@@ -129,6 +139,45 @@ describe('startAdapterSession', () => {
     expect(result).toBe(runtime)
     expect(mocks.run).not.toHaveBeenCalled()
     expect(runtime.session.kill).not.toHaveBeenCalled()
+  })
+
+  it('deduplicates concurrent start requests for the same session', async () => {
+    let resolveRun: ((value: { session: { emit: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> } }) => void) | undefined
+    const emit = vi.fn()
+    const kill = vi.fn()
+
+    mocks.run.mockImplementationOnce(async () => {
+      return new Promise((resolve) => {
+        resolveRun = resolve as typeof resolveRun
+      })
+    })
+
+    const first = startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+    const second = startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    await vi.waitFor(() => {
+      expect(mocks.run).toHaveBeenCalledTimes(1)
+      expect(resolveRun).toBeTypeOf('function')
+    })
+
+    resolveRun?.({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    const [firstRuntime, secondRuntime] = await Promise.all([first, second])
+    expect(firstRuntime).toBe(secondRuntime)
+    expect(mocks.run).toHaveBeenCalledTimes(1)
   })
 
   it('restarts the runtime when adapter changes and ignores stale exit events', async () => {
@@ -251,6 +300,59 @@ describe('startAdapterSession', () => {
     expect(restartedRuntime).not.toBe(initialRuntime)
     expect(restartedRuntime.config?.effort).toBe('high')
     expect(currentSession.effort).toBe('high')
+  })
+
+  it('restarts the runtime when the persisted session is updated but the cached permission mode is still stale', async () => {
+    const oldKill = vi.fn()
+    const oldEmit = vi.fn()
+    const newKill = vi.fn()
+    const newEmit = vi.fn()
+
+    currentSession = {
+      ...currentSession,
+      permissionMode: undefined
+    }
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: oldKill,
+          emit: oldEmit
+        }
+      }
+    })
+
+    const initialRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: undefined
+    })
+
+    expect(initialRuntime.config?.permissionMode).toBeUndefined()
+
+    currentSession = {
+      ...currentSession,
+      permissionMode: 'bypassPermissions'
+    }
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: newKill,
+          emit: newEmit
+        }
+      }
+    })
+
+    const restartedRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'bypassPermissions'
+    })
+
+    expect(oldKill).toHaveBeenCalledOnce()
+    expect(restartedRuntime).not.toBe(initialRuntime)
+    expect(restartedRuntime.config?.permissionMode).toBe('bypassPermissions')
   })
 
   it('marks the session as failed when adapter startup throws', async () => {
@@ -416,5 +518,149 @@ describe('startAdapterSession', () => {
       content: [{ type: 'text', text: 'follow up' }],
       parentUuid: 'assist-1'
     })
+  })
+
+  it('turns permission errors into an interaction and recovers with a higher permission mode', async () => {
+    const resumedEmit = vi.fn()
+    let onEvent: ((event: any) => void) | undefined
+
+    mocks.canRequestInteraction.mockReturnValue(true)
+    mocks.requestInteraction.mockResolvedValueOnce('dontAsk')
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockResolvedValueOnce({
+        session: {
+          emit: resumedEmit,
+          kill: vi.fn()
+        }
+      })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    onEvent?.({
+      type: 'error',
+      data: {
+        message: 'Permission required to continue',
+        code: 'permission_required',
+        details: {
+          permissionDenials: [
+            {
+              message: 'Write requires approval',
+              deniedTools: ['Write']
+            }
+          ]
+        },
+        fatal: true
+      }
+    })
+    onEvent?.({
+      type: 'exit',
+      data: {
+        exitCode: 1,
+        stderr: 'permission blocked'
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(currentSession.permissionMode).toBe('dontAsk')
+      expect(resumedEmit).toHaveBeenCalledWith({
+        type: 'message',
+        content: [{
+          type: 'text',
+          text: '权限模式已更新为 dontAsk。请继续刚才被权限拦截的工作，并重试被阻止的操作。'
+        }]
+      })
+    })
+
+    expect(mocks.requestInteraction).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: 'sess-1',
+      kind: 'permission',
+      permissionContext: expect.objectContaining({
+        currentMode: 'default',
+        deniedTools: ['Write'],
+        suggestedMode: 'dontAsk'
+      })
+    }))
+  })
+
+  it('suppresses follow-up assistant messages while a permission recovery prompt is pending', async () => {
+    let onEvent: ((event: any) => void) | undefined
+
+    mocks.canRequestInteraction.mockReturnValue(true)
+    mocks.requestInteraction.mockResolvedValueOnce('dontAsk')
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockResolvedValueOnce({
+        session: {
+          emit: vi.fn(),
+          kill: vi.fn()
+        }
+      })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    onEvent?.({
+      type: 'error',
+      data: {
+        message: 'Permission required to continue',
+        code: 'permission_required',
+        details: {
+          permissionDenials: [
+            {
+              message: 'Write requires approval',
+              deniedTools: ['Write']
+            }
+          ]
+        },
+        fatal: true
+      }
+    })
+    onEvent?.({
+      type: 'message',
+      data: {
+        id: 'assist-permission-followup',
+        role: 'assistant',
+        content: '请先授权写文件',
+        createdAt: Date.now()
+      }
+    })
+    onEvent?.({
+      type: 'exit',
+      data: {
+        exitCode: 1,
+        stderr: 'permission blocked'
+      }
+    })
+
+    expect(saveMessage).not.toHaveBeenCalledWith('sess-1', expect.objectContaining({
+      type: 'message',
+      message: expect.objectContaining({
+        id: 'assist-permission-followup'
+      })
+    }))
   })
 })

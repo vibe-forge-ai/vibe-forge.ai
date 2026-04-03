@@ -590,38 +590,74 @@ export function Sender({
     }
   }
 
+  const permissionContext = interactionRequest?.payload.kind === 'permission'
+    ? interactionRequest.payload.permissionContext
+    : undefined
+  const deniedTools = permissionContext?.deniedTools?.filter(tool => tool.trim() !== '') ?? []
+  const reasons = permissionContext?.reasons?.filter(reason => reason.trim() !== '') ?? []
+
   return (
     <div className='chat-input-wrapper'>
       {isThinking && <ThinkingStatus />}
       {interactionRequest != null && (
-        <div
-          className='interaction-panel'
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            marginBottom: '10px',
-            gap: '8px',
-            padding: '8px',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            backgroundColor: 'var(--bg-color)'
-          }}
-        >
-          <div className='interaction-question' style={{ fontWeight: 'bold' }}>
+        <div className='interaction-panel'>
+          {permissionContext != null && (
+            <div className='interaction-panel__badge'>
+              <span className='material-symbols-rounded'>lock</span>
+              <span>权限请求</span>
+            </div>
+          )}
+          <div className='interaction-question'>
             {interactionRequest.payload.question}
           </div>
+          {permissionContext != null && (
+            <div className='interaction-panel__context'>
+              <div className='interaction-panel__meta'>
+                {permissionContext.currentMode != null && permissionContext.currentMode !== '' && (
+                  <div className='interaction-panel__meta-item'>
+                    <span className='interaction-panel__meta-label'>当前模式</span>
+                    <code>{permissionContext.currentMode}</code>
+                  </div>
+                )}
+                {permissionContext.suggestedMode != null && permissionContext.suggestedMode !== '' && (
+                  <div className='interaction-panel__meta-item'>
+                    <span className='interaction-panel__meta-label'>建议模式</span>
+                    <code>{permissionContext.suggestedMode}</code>
+                  </div>
+                )}
+              </div>
+              {deniedTools.length > 0 && (
+                <div className='interaction-panel__section'>
+                  <div className='interaction-panel__section-title'>受限工具</div>
+                  <div className='interaction-panel__chips'>
+                    {deniedTools.map(tool => (
+                      <code key={tool} className='interaction-panel__chip'>{tool}</code>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {reasons.length > 0 && (
+                <div className='interaction-panel__section'>
+                  <div className='interaction-panel__section-title'>原因</div>
+                  <div className='interaction-panel__reasons'>
+                    {reasons.map(reason => (
+                      <div key={reason} className='interaction-panel__reason'>{reason}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {interactionRequest.payload.options?.map((option: NonNullable<AskUserQuestionParams['options']>[number]) => (
             <Button
-              key={option.label}
+              key={option.value ?? option.label}
               block
-              style={{ height: 'auto', textAlign: 'left', display: 'block', padding: '8px 12px' }}
-              onClick={() => onInteractionResponse?.(interactionRequest.id, option.label)}
+              className='interaction-panel__option'
+              onClick={() => onInteractionResponse?.(interactionRequest.id, option.value ?? option.label)}
             >
-              <div style={{ fontWeight: 500 }}>{option.label}</div>
+              <div className='interaction-panel__option-label'>{option.label}</div>
               {option.description && (
-                <div style={{ fontSize: '12px', color: 'var(--sub-text-color)', marginTop: '4px' }}>
+                <div className='interaction-panel__option-description'>
                   {option.description}
                 </div>
               )}

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
-import { handleInteractionResponse, requestInteraction } from '#~/services/session/interaction.js'
+import { getSessionInteraction, handleInteractionResponse, requestInteraction } from '#~/services/session/interaction.js'
 import { updateAndNotifySession } from '#~/services/session/index.js'
 import { adapterSessionStore, createSessionConnectionState, externalSessionStore } from '#~/services/session/runtime.js'
 
@@ -28,6 +28,7 @@ vi.mock('#~/utils/logger.js', () => ({
 describe('session interaction service', () => {
   const getChannelSessionBySessionId = vi.fn()
   const getSession = vi.fn()
+  const getMessages = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,10 +40,12 @@ describe('session interaction service', () => {
       id: 'sess-1',
       status: 'running'
     })
+    getMessages.mockReturnValue([])
 
     vi.mocked(getDb).mockReturnValue({
       getChannelSessionBySessionId,
-      getSession
+      getSession,
+      getMessages
     } as any)
   })
 
@@ -124,5 +127,75 @@ describe('session interaction service', () => {
 
     expect(adapterRuntime.currentInteraction).toBeUndefined()
     expect(vi.mocked(updateAndNotifySession)).not.toHaveBeenCalledWith('sess-1', { status: 'waiting_input' })
+  })
+
+  it('reconstructs the latest pending interaction from stored session events', () => {
+    getMessages.mockReturnValue([
+      {
+        type: 'interaction_request',
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否继续？'
+        }
+      },
+      {
+        type: 'interaction_response',
+        id: 'interaction-1',
+        data: '取消'
+      },
+      {
+        type: 'interaction_request',
+        id: 'interaction-2',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否升级权限？',
+          kind: 'permission',
+          options: [
+            { label: '继续', value: 'dontAsk' }
+          ]
+        }
+      }
+    ])
+
+    expect(getSessionInteraction('sess-1')).toEqual({
+      id: 'interaction-2',
+      payload: {
+        sessionId: 'sess-1',
+        question: '是否升级权限？',
+        kind: 'permission',
+        options: [
+          { label: '继续', value: 'dontAsk' }
+        ]
+      }
+    })
+  })
+
+  it('does not resurrect older interaction requests once a newer response was recorded', () => {
+    getMessages.mockReturnValue([
+      {
+        type: 'interaction_request',
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '第一个问题'
+        }
+      },
+      {
+        type: 'interaction_request',
+        id: 'interaction-2',
+        payload: {
+          sessionId: 'sess-1',
+          question: '第二个问题'
+        }
+      },
+      {
+        type: 'interaction_response',
+        id: 'interaction-2',
+        data: '已处理'
+      }
+    ])
+
+    expect(getSessionInteraction('sess-1')).toBeUndefined()
   })
 })

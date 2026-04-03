@@ -22,6 +22,17 @@ vi.mock('#~/utils/logger.js', () => ({
   }))
 }))
 
+const invalidSingleReply = '未识别你的回复，请回复以下任一选项的文本或序号：\n1. 继续并切换到 dontAsk\n2. 继续并切换到 bypassPermissions\n3. 取消'
+const invalidMultiReply = '未识别这些选项：好的。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n1. 米饭\n2. 面条\n3. 还没吃'
+
+const makeInteraction = (payload: Record<string, unknown>) => ({
+  id: 'interaction-1',
+  payload: {
+    sessionId: 'sess-1',
+    ...payload
+  }
+} as any)
+
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   channelKey: 'lark:test',
   inbound: {
@@ -63,7 +74,9 @@ describe('interactionResponseMiddleware', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     defineMessages('zh', {
-      'interaction.response.empty': '当前问题只接受文本回复，请直接回复文字。'
+      'interaction.response.empty': '当前问题只接受文本回复，请直接回复文字。',
+      'interaction.response.invalidSingle': ({ choices }) => `未识别你的回复，请回复以下任一选项的文本或序号：\n${choices}`,
+      'interaction.response.invalidMulti': ({ invalid, choices }) => `未识别这些选项：${invalid}。\n请回复以下选项的文本或序号，多个选项可用逗号、顿号或换行分隔：\n${choices}`
     })
   })
 
@@ -92,13 +105,9 @@ describe('interactionResponseMiddleware', () => {
   })
 
   it('replies when the pending interaction response is empty', async () => {
-    vi.mocked(getSessionInteraction).mockReturnValue({
-      id: 'interaction-1',
-      payload: {
-        sessionId: 'sess-1',
-        question: '晚上吃了什么？'
-      }
-    } as any)
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '晚上吃了什么？'
+    }))
     const ctx = makeCtx({
       commandText: '   ',
       reply: vi.fn().mockResolvedValue(undefined)
@@ -108,5 +117,84 @@ describe('interactionResponseMiddleware', () => {
 
     expect(ctx.reply).toHaveBeenCalledWith('当前问题只接受文本回复，请直接回复文字。')
     expect(vi.mocked(handleInteractionResponse)).not.toHaveBeenCalled()
+  })
+
+  it('resolves single-select replies by option number', async () => {
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '继续吗？',
+      options: [
+        { label: '继续并切换到 dontAsk', value: 'dontAsk' },
+        { label: '取消', value: 'cancel' }
+      ],
+      kind: 'permission'
+    }))
+    const ctx = makeCtx({
+      commandText: '1'
+    })
+
+    await interactionResponseMiddleware(ctx, vi.fn())
+
+    expect(vi.mocked(handleInteractionResponse)).toHaveBeenCalledWith('sess-1', 'interaction-1', 'dontAsk')
+  })
+
+  it('replies with a retry hint when single-select text does not match any option', async () => {
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '继续吗？',
+      options: [
+        { label: '继续并切换到 dontAsk', value: 'dontAsk' },
+        { label: '继续并切换到 bypassPermissions', value: 'bypassPermissions' },
+        { label: '取消', value: 'cancel' }
+      ],
+      kind: 'permission'
+    }))
+    const ctx = makeCtx({
+      commandText: '好的'
+    })
+
+    await interactionResponseMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledWith(invalidSingleReply)
+    expect(vi.mocked(handleInteractionResponse)).not.toHaveBeenCalled()
+    expect(ctx.inbound.ack).not.toHaveBeenCalled()
+  })
+
+  it('rejects multi-select replies that contain invalid selections', async () => {
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '晚上吃了什么？',
+      multiselect: true,
+      options: [
+        { label: '米饭' },
+        { label: '面条' },
+        { label: '还没吃' }
+      ],
+      kind: 'permission'
+    }))
+    const ctx = makeCtx({
+      commandText: '米饭，好的'
+    })
+
+    await interactionResponseMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledWith(invalidMultiReply)
+    expect(vi.mocked(handleInteractionResponse)).not.toHaveBeenCalled()
+  })
+
+  it('accepts free-text answers for question interactions even when options exist', async () => {
+    vi.mocked(getSessionInteraction).mockReturnValue(makeInteraction({
+      question: '今晚吃了什么？',
+      options: [
+        { label: '米饭' },
+        { label: '面条' },
+        { label: '还没吃' }
+      ]
+    }))
+    const ctx = makeCtx({
+      commandText: '刚吃了烧烤'
+    })
+
+    await interactionResponseMiddleware(ctx, vi.fn())
+
+    expect(vi.mocked(handleInteractionResponse)).toHaveBeenCalledWith('sess-1', 'interaction-1', '刚吃了烧烤')
+    expect(ctx.reply).not.toHaveBeenCalled()
   })
 })

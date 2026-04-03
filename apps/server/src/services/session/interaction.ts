@@ -39,8 +39,32 @@ const canDeliverInteraction = (sessionId: string) => {
   }
 }
 
+export const canRequestInteraction = (sessionId: string) => canDeliverInteraction(sessionId).deliverable
+
 export function getSessionInteraction(sessionId: string) {
-  return getSessionConnectionState(sessionId)?.currentInteraction
+  const current = getSessionConnectionState(sessionId)?.currentInteraction
+  if (current != null) {
+    return current
+  }
+
+  const messages = getDb().getMessages(sessionId) as WSEvent[]
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const event = messages[index]
+    if (event == null) continue
+
+    if (event.type === 'interaction_response') {
+      return undefined
+    }
+
+    if (event.type === 'interaction_request') {
+      return {
+        id: event.id,
+        payload: event.payload
+      }
+    }
+  }
+
+  return undefined
 }
 
 export function setSessionInteraction(sessionId: string, interaction: { id: string; payload: AskUserQuestionParams }) {
