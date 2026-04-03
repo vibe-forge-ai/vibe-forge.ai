@@ -52,6 +52,7 @@
     "deleteConfirm": "Are you sure you want to delete the selected {{count}} chats?",
     "deleteSuccess": "Deleted successfully",
     "deleteFailed": "Failed to delete",
+    "operationFailed": "Operation failed",
     "star": "Star",
     "unstar": "Unstar",
     "addTag": "Tag",
@@ -379,6 +380,21 @@
       "receiveReply": "Reply received",
       "destroyLabel": "Destroy {{name}} @ {{end}}",
       "rangeLabel": "{{name}} ({{start}} → {{end}})"
+    },
+    "messageActions": {
+      "copy": "Copy raw text",
+      "copySuccess": "Raw message copied",
+      "copyFailed": "Failed to copy raw message",
+      "edit": "Edit message",
+      "editInProgress": "A message is already being edited. Send or cancel it first.",
+      "saveEdit": "Save as branch",
+      "recall": "Recall to here",
+      "fork": "Fork from here"
+    },
+    "messageFooter": {
+      "tokens": "Tokens",
+      "copyTimestampSuccess": "Copied ISO timestamp",
+      "copyTimestampTitle": "Double-click to copy the ISO timestamp and log the message payload"
     },
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
     "newSessionGuide": {

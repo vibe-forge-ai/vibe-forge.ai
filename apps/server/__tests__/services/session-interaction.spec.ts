@@ -49,7 +49,11 @@ describe('session interaction service', () => {
     vi.mocked(getDb).mockReturnValue({
       getChannelSessionBySessionId,
       getSession,
-      getMessages
+      getMessages,
+      getSessionRuntimeState: vi.fn(() => ({
+        runtimeKind: 'interactive',
+        historySeedPending: false
+      }))
     } as any)
   })
 

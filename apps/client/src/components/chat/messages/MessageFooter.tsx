@@ -1,26 +1,33 @@
 import type { ChatMessage } from '@vibe-forge/core'
 import { App } from 'antd'
-import React from 'react'
+import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function MessageFooter({
   msg,
-  isUser
+  isUser,
+  children
 }: {
   msg: ChatMessage
   isUser: boolean
+  children?: ReactNode
 }) {
+  const { t, i18n } = useTranslation()
   const { message } = App.useApp()
+  const timestampLocale = i18n.resolvedLanguage?.startsWith('zh') === true ? 'zh-CN' : 'en-US'
+  const totalTokens = msg.usage != null ? msg.usage.input_tokens + msg.usage.output_tokens : undefined
 
   return (
     <div className='msg-footer'>
+      {children}
       {isUser && msg.model != null && (
         <span className='msg-model'>
           {msg.model.split(',').pop()}
         </span>
       )}
-      {isUser && msg.usage != null && (
+      {isUser && totalTokens != null && (
         <span className='msg-usage'>
-          Tokens: {msg.usage.input_tokens + msg.usage.output_tokens}
+          {t('chat.messageFooter.tokens')}: {totalTokens}
         </span>
       )}
       <span
@@ -29,11 +36,11 @@ export function MessageFooter({
           // eslint-disable-next-line no-console
           console.log('Debug Message:', msg)
           void navigator.clipboard.writeText(new Date(msg.createdAt).toISOString())
-          void message.success('ISO 时间已复制到剪贴板')
+          void message.success(t('chat.messageFooter.copyTimestampSuccess'))
         }}
-        title='双击复制 ISO 时间 (控制台打印消息结构)'
+        title={t('chat.messageFooter.copyTimestampTitle')}
       >
-        {new Date(msg.createdAt).toLocaleString('zh-CN', {
+        {new Date(msg.createdAt).toLocaleString(timestampLocale, {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',

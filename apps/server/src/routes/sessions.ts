@@ -6,7 +6,8 @@ import type { SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { applySessionEvent } from '#~/services/session/events.js'
-import { killSession, updateAndNotifySession } from '#~/services/session/index.js'
+import { branchSessionFromMessage } from '#~/services/session/history.js'
+import { killSession, processUserMessage, updateAndNotifySession } from '#~/services/session/index.js'
 import {
   clearSessionInteraction,
   getSessionInteraction,
@@ -328,6 +329,35 @@ export function sessionsRouter(): Router {
       notifySessionUpdated(id, { id, isDeleted: true })
     }
     ctx.body = { ok: true, removed }
+  })
+
+  router.post('/:id/messages/:messageId/branch', (ctx) => {
+    const { id, messageId } = ctx.params as { id: string; messageId: string }
+    const { action, content, title } = ctx.request.body as {
+      action?: 'fork' | 'recall' | 'edit'
+      content?: string | ChatMessageContent[]
+      title?: string
+    }
+
+    if (action !== 'fork' && action !== 'recall' && action !== 'edit') {
+      throw badRequest('Invalid message action', { action }, 'invalid_message_action')
+    }
+
+    const branchResult = branchSessionFromMessage({
+      sessionId: id,
+      messageId,
+      action,
+      content,
+      title
+    })
+
+    if (branchResult.replayContent != null) {
+      void processUserMessage(branchResult.session.id, branchResult.replayContent).catch((error) => {
+        console.error('[sessions] failed to continue branched session:', error)
+      })
+    }
+
+    ctx.body = { session: db.getSession(branchResult.session.id) ?? branchResult.session }
   })
 
   router.post('/:id/fork', (ctx) => {

@@ -5,12 +5,23 @@ import type { Session } from '@vibe-forge/core'
 import { buildUpdateStatement } from '../repo.utils'
 import type { SqliteDatabase } from '../sqlite'
 
+export type SessionRuntimeKind = 'interactive' | 'external'
+
+export interface SessionRuntimeState {
+  runtimeKind: SessionRuntimeKind
+  historySeed?: string
+  historySeedPending: boolean
+}
+
 interface SessionRow {
   id: string
   parentSessionId: string | null
   title: string | null
   lastMessage: string | null
   lastUserMessage: string | null
+  runtimeKind: string | null
+  historySeed: string | null
+  historySeedPending: number | null
   createdAt: number
   messageCount: number
   isStarred: number
@@ -24,6 +35,11 @@ interface SessionRow {
 }
 
 type SessionUpdate = Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
+type SessionRuntimeUpdate = Partial<{
+  runtimeKind: SessionRuntimeKind
+  historySeed: string | null
+  historySeedPending: boolean
+}>
 
 const SESSION_SELECT = `
   SELECT s.*,
@@ -48,6 +64,15 @@ const sessionUpdateFields = [
   toParam?: (value: any) => string | number | null
 }>
 
+const sessionRuntimeUpdateFields = [
+  { key: 'runtimeKind' },
+  { key: 'historySeed', toParam: value => value ?? null },
+  { key: 'historySeedPending', toParam: value => value ? 1 : 0 }
+] as const satisfies ReadonlyArray<{
+  key: keyof SessionRuntimeUpdate
+  toParam?: (value: any) => string | number | null
+}>
+
 function mapSessionRow(row: SessionRow): Session {
   return {
     id: row.id,
@@ -65,6 +90,16 @@ function mapSessionRow(row: SessionRow): Session {
     adapter: row.adapter ?? undefined,
     permissionMode: (row.permissionMode as any) ?? undefined,
     effort: (row.effort as any) ?? undefined
+  }
+}
+
+function mapSessionRuntimeState(
+  row: Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>
+): SessionRuntimeState {
+  return {
+    runtimeKind: row.runtimeKind === 'external' ? 'external' : 'interactive',
+    historySeed: row.historySeed ?? undefined,
+    historySeedPending: row.historySeedPending === 1
   }
 }
 
@@ -104,6 +139,14 @@ export function createSessionsRepo(db: SqliteDatabase) {
     stmt.run(...statement.params)
   }
 
+  const updateRuntimeState = (id: string, updates: SessionRuntimeUpdate) => {
+    const statement = buildUpdateStatement('sessions', 'id', id, updates, sessionRuntimeUpdateFields)
+    if (!statement) return
+
+    const stmt = db.prepare(statement.sql)
+    stmt.run(...statement.params)
+  }
+
   const setStarred = (id: string, isStarred: boolean) => {
     update(id, { isStarred })
   }
@@ -132,7 +175,13 @@ export function createSessionsRepo(db: SqliteDatabase) {
     return updatedIds
   }
 
-  const create = (title?: string, id?: string, status?: string, parentSessionId?: string): Session => {
+  const create = (
+    title?: string,
+    id?: string,
+    status?: string,
+    parentSessionId?: string,
+    options: Partial<SessionRuntimeState> = {}
+  ): Session => {
     const session: Session = {
       id: id ?? uuidv4(),
       parentSessionId: parentSessionId ?? undefined,
@@ -140,13 +189,28 @@ export function createSessionsRepo(db: SqliteDatabase) {
       createdAt: Date.now(),
       status: (status as any) ?? undefined
     }
-    const stmt = db.prepare(
-      'INSERT INTO sessions (id, parentSessionId, title, createdAt, status) VALUES (?, ?, ?, ?, ?)'
-    )
+    const runtimeKind = options.runtimeKind ?? (parentSessionId != null ? 'external' : 'interactive')
+    const historySeed = options.historySeed ?? null
+    const historySeedPending = options.historySeedPending === true ? 1 : 0
+    const stmt = db.prepare(`
+      INSERT INTO sessions (
+        id,
+        parentSessionId,
+        title,
+        runtimeKind,
+        historySeed,
+        historySeedPending,
+        createdAt,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `)
     stmt.run(
       session.id,
       session.parentSessionId ?? null,
       session.title ?? null,
+      runtimeKind,
+      historySeed,
+      historySeedPending,
       session.createdAt,
       session.status ?? null
     )
@@ -167,17 +231,26 @@ export function createSessionsRepo(db: SqliteDatabase) {
     return result.changes > 0
   }
 
+  const getRuntimeState = (id: string): SessionRuntimeState | undefined => {
+    const stmt = db.prepare('SELECT runtimeKind, historySeed, historySeedPending FROM sessions WHERE id = ?')
+    const row = stmt.get<Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>>(id)
+    if (row == null) return undefined
+    return mapSessionRuntimeState(row)
+  }
+
   return {
     archiveTree,
     create,
     get,
+    getRuntimeState,
     list,
     remove,
     setArchived,
     setLastMessages,
     setStarred,
     setTitle,
-    update
+    update,
+    updateRuntimeState
   }
 }
 

@@ -53,7 +53,11 @@ describe('sqliteDb', () => {
     expect(stored?.tags?.slice().sort()).toEqual(['alpha', 'beta'])
     expect(db.getMessages(root.id)).toEqual([{ role: 'user', content: 'hello' }])
 
-    const child = db.createSession('Child session', 'session-child', 'completed', root.id)
+    const child = db.createSession('Child session', 'session-child', 'completed', root.id, {
+      runtimeKind: 'interactive',
+      historySeed: 'seed prompt',
+      historySeedPending: true
+    })
     db.copyMessages(root.id, child.id)
 
     expect(db.getMessages(child.id)).toEqual([{ role: 'user', content: 'hello' }])
@@ -63,6 +67,11 @@ describe('sqliteDb', () => {
       status: 'completed',
       messageCount: 1
     }))
+    expect(db.getSessionRuntimeState(child.id)).toEqual({
+      runtimeKind: 'interactive',
+      historySeed: 'seed prompt',
+      historySeedPending: true
+    })
   })
 
   it('archives a session tree without affecting unrelated sessions', () => {

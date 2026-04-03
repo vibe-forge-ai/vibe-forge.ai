@@ -31,6 +31,7 @@ export { createProject, listProjects } from './api/projects'
 
 // 会话与消息 API
 export {
+  branchSessionFromMessage,
   createSession,
   deleteSession,
   forkSession,

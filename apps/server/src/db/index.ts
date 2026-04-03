@@ -14,6 +14,7 @@ import { createConnection } from './connection'
 import { initSchema } from './schema'
 import { createMessagesRepo } from './sessions/messages.repo'
 import { createSessionsRepo } from './sessions/repo'
+import type { SessionRuntimeState } from './sessions/repo'
 import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
 import type { SqliteDatabase } from './sqlite'
@@ -50,8 +51,16 @@ export class SqliteDb {
     return this.sessions.get(id)
   }
 
+  getSessionRuntimeState(id: string) {
+    return this.sessions.getRuntimeState(id)
+  }
+
   updateSession(id: string, updates: Parameters<typeof this.sessions.update>[1]) {
     return this.sessions.update(id, updates)
+  }
+
+  updateSessionRuntimeState(id: string, updates: Partial<SessionRuntimeState>) {
+    return this.sessions.updateRuntimeState(id, updates)
   }
 
   updateSessionStarred(id: string, isStarred: boolean) {
@@ -106,8 +115,14 @@ export class SqliteDb {
     return this.messages.copy(fromSessionId, toSessionId)
   }
 
-  createSession(title?: string, id?: string, status?: string, parentSessionId?: string) {
-    return this.sessions.create(title, id, status, parentSessionId)
+  createSession(
+    title?: string,
+    id?: string,
+    status?: string,
+    parentSessionId?: string,
+    options: Partial<SessionRuntimeState> = {}
+  ) {
+    return this.sessions.create(title, id, status, parentSessionId, options)
   }
 
   updateSessionTitle(id: string, title: string) {
