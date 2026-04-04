@@ -5,15 +5,8 @@ import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
-import type {
-  AdapterBuiltinModel,
-  ConfigResponse,
-  ModelMetadataConfig,
-  ModelServiceConfig,
-  RecommendedModelConfig
-} from '@vibe-forge/types'
+import type { AdapterBuiltinModel, ConfigResponse, ModelMetadataConfig } from '@vibe-forge/types'
 import {
-  buildServiceModelSelector,
   listServiceModels,
   normalizeNonEmptyString,
   resolveAdapterForChatModelSelection,
@@ -21,19 +14,22 @@ import {
   resolveChatAdapterSelection,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
-  resolveModelForChatAdapterSelection,
-  resolveServiceModelSelector
+  resolveModelForChatAdapterSelection
 } from './model-selector'
+import { buildModelSelectorData } from './model-selector-data'
+import type { ModelSelectGroupData, ModelSelectOptionData } from './model-selector-data'
 
-export interface ModelSelectOption {
-  value: string
+export interface ModelSelectOption extends ModelSelectOptionData {
   label: React.ReactNode
-  searchText: string
-  displayLabel: string
 }
 
 export interface ModelSelectGroup {
+  key: string
   label: React.ReactNode
+  options: ModelSelectOption[]
+}
+
+export interface ModelSelectMenuGroup extends Omit<ModelSelectGroupData, 'options'> {
   options: ModelSelectOption[]
 }
 
@@ -369,183 +365,77 @@ export function useChatModelAdapterSelection({
     })
   }, [availableAdapters])
 
-  const modelServiceEntries = useMemo(() => Object.entries(mergedModelServices), [mergedModelServices])
-  const modelToService = useMemo(() => {
-    const map = new Map<string, { key: string; title: string }>()
-    for (const entry of availableServiceModels) {
-      const serviceValue = mergedModelServices[entry.serviceKey]
-      const serviceTitle = serviceValue?.title?.trim() !== '' ? serviceValue?.title ?? '' : entry.serviceKey
-      if (!map.has(entry.model)) {
-        map.set(entry.model, { key: entry.serviceKey, title: serviceTitle })
-      }
-    }
-    return map
-  }, [availableServiceModels, mergedModelServices])
-
-  const modelOptions = useMemo<ModelSelectGroup[]>(() => {
-    const buildOption = (params: {
-      value: string
-      title: string
-      description?: string
-      serviceKey?: string
-      serviceTitle?: string
-    }) => {
-      const description = params.description?.trim()
-      const label = (
+  const decorateModelOption = useCallback((option: ModelSelectOptionData): ModelSelectOption => {
+    return {
+      ...option,
+      label: (
         <div className='model-option'>
-          <div className='model-option-title'>{params.title}</div>
-          {description && <div className='model-option-desc'>{description}</div>}
+          <div className='model-option-title'>{option.title}</div>
+          {option.description && <div className='model-option-desc'>{option.description}</div>}
         </div>
       )
-      const searchText = [
-        params.title,
-        params.value,
-        params.serviceTitle,
-        params.serviceKey,
-        description
-      ]
-        .filter(Boolean)
-        .join(' ')
-      return {
-        value: params.value,
-        label,
-        searchText,
-        displayLabel: params.title
-      }
     }
+  }, [])
 
-    const resolveFirstAlias = (modelsAlias: Record<string, string[]> | undefined, model: string) => {
-      if (!modelsAlias) return undefined
-      for (const [alias, aliasModels] of Object.entries(modelsAlias)) {
-        if (!Array.isArray(aliasModels)) continue
-        if (aliasModels.includes(model)) return alias
-      }
-      return undefined
-    }
-
-    const serviceGroups = modelServiceEntries
-      .map(([serviceKey, serviceValue]) => {
-        const service = (serviceValue != null && typeof serviceValue === 'object')
-          ? serviceValue as ModelServiceConfig
-          : undefined
-        const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
-        const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
-        const serviceDescription = service?.description
-        const models = Array.isArray(service?.models)
-          ? service.models.filter((item: unknown): item is string => typeof item === 'string')
-          : []
-        if (models.length === 0) return null
-        const options = models.map((model: string) => {
-          const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
-          const title = alias ?? model
-          const description = alias ? model : serviceTitle
-          return buildOption({
-            value: buildServiceModelSelector(serviceKey, model),
-            title,
-            description,
-            serviceKey,
-            serviceTitle
-          })
+  const modelSelectorData = useMemo(() => {
+    return buildModelSelectorData({
+      activeBuiltinModels,
+      availableServiceModels,
+      defaultModelService,
+      mergedModelServices,
+      recommendedModels,
+      recommendedGroupTitle: t('chat.modelGroupRecommended', { defaultValue: '推荐模型' }),
+      builtinGroupTitle: (adapterKey) =>
+        t('chat.modelGroupBuiltin', {
+          adapter: adapterKey,
+          defaultValue: `${adapterKey} (Default)`
         })
-        return {
-          label: (
-            <div className='model-group-label'>
-              <div className='model-group-title'>{groupTitle}</div>
-              {serviceDescription && <div className='model-group-desc'>{serviceDescription}</div>}
-            </div>
-          ),
-          options
-        }
-      })
-      .filter((item): item is NonNullable<typeof item> => item != null)
-
-    const recommendedOptions = recommendedModels
-      .filter((item) => {
-        if (item.placement && item.placement !== 'modelSelector') return false
-        return resolveServiceModelSelector({
-          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
-          serviceModels: availableServiceModels,
-          preferredServiceKey: item.service ?? defaultModelService
-        }) != null
-      })
-      .map((item) => {
-        const serviceInfo = item.service ? mergedModelServices[item.service] : undefined
-        const serviceTitle = item.service
-          ? (serviceInfo?.title?.trim() !== '' ? serviceInfo?.title ?? '' : item.service)
-          : modelToService.get(item.model)?.title
-        const alias = item.service
-          ? resolveFirstAlias(serviceInfo?.modelsAlias as Record<string, string[]> | undefined, item.model)
-          : undefined
-        const title = item.title?.trim() !== '' ? item.title ?? '' : (alias ?? item.model)
-        const description = item.description?.trim() !== ''
-          ? item.description
-          : serviceTitle
-        const value = resolveServiceModelSelector({
-          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
-          serviceModels: availableServiceModels,
-          preferredServiceKey: item.service ?? defaultModelService
-        }) ?? item.model
-        return buildOption({
-          value,
-          title,
-          description,
-          serviceKey: item.service ?? modelToService.get(item.model)?.key,
-          serviceTitle
-        })
-      })
-
-    const groups = []
-    if (recommendedOptions.length > 0) {
-      const recommendedTitle = t('chat.modelGroupRecommended', { defaultValue: '推荐模型' })
-      groups.push({
-        label: (
-          <div className='model-group-label'>
-            <div className='model-group-title'>{recommendedTitle}</div>
-          </div>
-        ),
-        options: recommendedOptions
-      })
-    }
-
-    for (const [adapterKey, models] of Object.entries(activeBuiltinModels)) {
-      if (!Array.isArray(models) || models.length === 0) continue
-      const adapterTitle = t('chat.modelGroupBuiltin', {
-        adapter: adapterKey,
-        defaultValue: `${adapterKey} (Default)`
-      })
-      groups.push({
-        label: (
-          <div className='model-group-label'>
-            <div className='model-group-title'>{adapterTitle}</div>
-          </div>
-        ),
-        options: models.map(model =>
-          buildOption({
-            value: model.value,
-            title: model.title,
-            description: model.description
-          })
-        )
-      })
-    }
-
-    return [...groups, ...serviceGroups]
+    })
   }, [
     activeBuiltinModels,
     availableServiceModels,
     defaultModelService,
     mergedModelServices,
-    modelServiceEntries,
-    modelToService,
     recommendedModels,
     t
   ])
+
+  const modelSearchOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.searchOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.searchOptions])
+
+  const recommendedModelOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.recommendedOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.recommendedOptions])
+
+  const modelMenuGroups = useMemo<ModelSelectMenuGroup[]>(() => {
+    return modelSelectorData.moreModelGroups.map(group => ({
+      ...group,
+      options: group.options.map(decorateModelOption)
+    }))
+  }, [decorateModelOption, modelSelectorData.moreModelGroups])
+
+  const modelOptions = useMemo<ModelSelectGroup[]>(() => {
+    return modelSelectorData.flatGroups.map(group => ({
+      key: group.key,
+      label: (
+        <div className='model-group-label'>
+          <div className='model-group-title'>{group.title}</div>
+          {group.description && <div className='model-group-desc'>{group.description}</div>}
+        </div>
+      ),
+      options: group.options.map(decorateModelOption)
+    }))
+  }, [decorateModelOption, modelSelectorData.flatGroups])
 
   return {
     adapterOptions,
     applySessionSelection,
     hasAvailableModels,
+    modelMenuGroups,
     modelOptions,
+    modelSearchOptions,
+    recommendedModelOptions,
     selectedAdapter,
     selectedModel,
     selectedModelWithService,

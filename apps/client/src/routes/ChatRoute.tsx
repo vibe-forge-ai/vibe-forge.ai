@@ -57,7 +57,9 @@ function ChatRouteView({
     handleInteractionResponse,
     setMessages,
     placeholder,
-    modelOptions,
+    modelMenuGroups,
+    modelSearchOptions,
+    recommendedModelOptions,
     selectedModel,
     modelForQuery,
     setSelectedModel,
@@ -105,7 +107,9 @@ function ChatRouteView({
           setMessages={setMessages}
           onClearMessages={() => setMessages([])}
           placeholder={placeholder}
-          modelOptions={modelOptions}
+          modelMenuGroups={modelMenuGroups}
+          modelSearchOptions={modelSearchOptions}
+          recommendedModelOptions={recommendedModelOptions}
           selectedModel={selectedModel}
           modelForQuery={modelForQuery}
           onModelChange={setSelectedModel}

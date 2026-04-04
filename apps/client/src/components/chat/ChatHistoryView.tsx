@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
@@ -14,18 +15,6 @@ import { MessageItem } from './messages/MessageItem'
 import { processMessages } from './messages/message-utils'
 import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
-
-interface ModelSelectOption {
-  value: string
-  label: React.ReactNode
-  searchText: string
-  displayLabel: string
-}
-
-interface ModelSelectGroup {
-  label: React.ReactNode
-  options: ModelSelectOption[]
-}
 
 export function ChatHistoryView({
   isReady,
@@ -39,7 +28,9 @@ export function ChatHistoryView({
   setMessages,
   onClearMessages,
   placeholder,
-  modelOptions,
+  modelMenuGroups,
+  modelSearchOptions,
+  recommendedModelOptions,
   selectedModel,
   modelForQuery,
   onModelChange,
@@ -66,7 +57,9 @@ export function ChatHistoryView({
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   onClearMessages: () => void
   placeholder?: string
-  modelOptions: ModelSelectGroup[]
+  modelMenuGroups: ModelSelectMenuGroup[]
+  modelSearchOptions: ModelSelectOption[]
+  recommendedModelOptions: ModelSelectOption[]
   selectedModel?: string
   modelForQuery?: string
   onModelChange: (model: string) => void
@@ -258,7 +251,9 @@ export function ChatHistoryView({
             interactionRequest={interactionRequest}
             onInteractionResponse={onInteractionResponse}
             placeholder={placeholder}
-            modelOptions={modelOptions}
+            modelMenuGroups={modelMenuGroups}
+            modelSearchOptions={modelSearchOptions}
+            recommendedModelOptions={recommendedModelOptions}
             selectedModel={selectedModel}
             onModelChange={onModelChange}
             effort={effort}

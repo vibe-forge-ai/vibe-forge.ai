@@ -18,12 +18,14 @@ export function useChatSession({
   const {
     adapterOptions,
     applySessionSelection,
+    modelMenuGroups,
     selectedAdapter,
     selectedModel,
     selectedModelWithService,
     setSelectedModel,
     setSelectedAdapter,
-    modelOptions,
+    modelSearchOptions,
+    recommendedModelOptions,
     hasAvailableModels
   } = useChatModelAdapterSelection({
     adapterLocked: session?.id != null
@@ -102,7 +104,9 @@ export function useChatSession({
     handleInteractionResponse,
     setMessages,
     placeholder: !session?.id ? t('chat.newSessionPlaceholder') : undefined,
-    modelOptions,
+    modelMenuGroups,
+    modelSearchOptions,
+    recommendedModelOptions,
     selectedModel,
     modelForQuery: selectedModelWithService,
     setSelectedModel,

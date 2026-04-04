@@ -1,14 +1,15 @@
 import './Sender.scss'
 
-import { App, Button, Input, Popover, Select, Tooltip } from 'antd'
-import type { RefSelectProps } from 'antd'
+import { App, Button, Input, Menu, Popover, Select, Tooltip } from 'antd'
+import type { MenuProps, RefSelectProps } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useComposerControlShortcuts } from '#~/hooks/chat/use-composer-control-shortcuts'
 import { useRovingFocusList } from '#~/hooks/use-roving-focus-list'
@@ -23,19 +24,6 @@ import { buildMessageContent, getInitialComposerState } from './content-attachme
 import { shouldHideSenderForInteraction } from './interaction-request'
 
 const { TextArea } = Input
-
-interface ModelSelectOption {
-  value: string
-  label: React.ReactNode
-  searchText: string
-  displayLabel: string
-}
-
-interface ModelSelectGroup {
-  label: React.ReactNode
-  options: ModelSelectOption[]
-}
-
 type SenderVariant = 'default' | 'inline-edit'
 
 type SenderInitialContent = string | ChatMessageContent[] | undefined
@@ -88,7 +76,9 @@ export function Sender({
   submitLabel,
   submitLoading = false,
   autoFocus = false,
-  modelOptions,
+  modelMenuGroups,
+  modelSearchOptions,
+  recommendedModelOptions,
   selectedModel,
   onModelChange,
   effort = 'default',
@@ -120,7 +110,9 @@ export function Sender({
   submitLabel?: string
   submitLoading?: boolean
   autoFocus?: boolean
-  modelOptions?: ModelSelectGroup[]
+  modelMenuGroups?: ModelSelectMenuGroup[]
+  modelSearchOptions?: ModelSelectOption[]
+  recommendedModelOptions?: ModelSelectOption[]
   selectedModel?: string
   onModelChange?: (model: string) => void
   effort?: ChatEffort
@@ -147,6 +139,7 @@ export function Sender({
   const [showEffortSelect, setShowEffortSelect] = useState(false)
   const [showReferenceActions, setShowReferenceActions] = useState(false)
   const [showPermissionActions, setShowPermissionActions] = useState(false)
+  const [modelSearchValue, setModelSearchValue] = useState('')
   const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false)
   const [menuFocusTarget, setMenuFocusTarget] = useState<MenuFocusTarget>(null)
   const [showContextPicker, setShowContextPicker] = useState(false)
@@ -182,6 +175,7 @@ export function Sender({
     setShowEffortSelect(false)
     setShowReferenceActions(false)
     setShowPermissionActions(false)
+    setModelSearchValue('')
     setShouldRestoreFocus(false)
     setMenuFocusTarget(null)
     setShowContextPicker(false)
@@ -373,6 +367,12 @@ export function Sender({
     }
   }, [shouldRestoreFocus, showContextPicker, showEffortSelect, showModelSelect, showReferenceActions])
 
+  useEffect(() => {
+    if (!showModelSelect && modelSearchValue !== '') {
+      setModelSearchValue('')
+    }
+  }, [modelSearchValue, showModelSelect])
+
   const handleSend = async () => {
     if (isBusy) return
     if (input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0) return
@@ -526,6 +526,7 @@ export function Sender({
     }
     setShowEffortSelect(false)
     closeReferenceActions()
+    setModelSearchValue('')
     setShowModelSelect(true)
     focusSelectControl(modelSelectRef)
   }
@@ -1018,6 +1019,141 @@ export function Sender({
       </span>
     )
   }))
+  const hasModelSearchQuery = modelSearchValue.trim() !== ''
+
+  const handleModelSelection = (value: string) => {
+    onModelChange?.(value)
+    setShowModelSelect(false)
+    setModelSearchValue('')
+    queueTextareaFocusRestore()
+  }
+
+  const handleModelMenuClick: MenuProps['onClick'] = ({ key, domEvent }) => {
+    domEvent.preventDefault()
+    if (typeof key !== 'string' || key === 'more-models') return
+    handleModelSelection(key)
+  }
+
+  const renderModelMenuTooltip = useCallback((description?: string) => {
+    if (!description) {
+      return null
+    }
+
+    return (
+      <span className='model-menu-tooltip-content'>
+        {description}
+      </span>
+    )
+  }, [])
+
+  const renderCompactModelMenuLabel = useCallback((option: ModelSelectOption) => {
+    const label = (
+      <span className='model-select-menu-item-label'>
+        <span className='model-select-menu-item-title'>{option.displayLabel}</span>
+      </span>
+    )
+
+    if (!option.description) {
+      return label
+    }
+
+    return (
+      <Tooltip
+        title={renderModelMenuTooltip(option.description)}
+        placement='left'
+        classNames={{ root: 'model-menu-tooltip' }}
+        mouseEnterDelay={.35}
+        destroyOnHidden
+      >
+        {label}
+      </Tooltip>
+    )
+  }, [renderModelMenuTooltip])
+
+  const renderModelMenuGroupLabel = useCallback((group: ModelSelectMenuGroup) => {
+    const label = (
+      <span className='model-menu-group-label'>
+        <span className='model-menu-group-title'>{group.title}</span>
+      </span>
+    )
+
+    if (!group.description) {
+      return label
+    }
+
+    return (
+      <Tooltip
+        title={renderModelMenuTooltip(group.description)}
+        placement='left'
+        classNames={{ root: 'model-menu-tooltip' }}
+        mouseEnterDelay={.35}
+        destroyOnHidden
+      >
+        {label}
+      </Tooltip>
+    )
+  }, [renderModelMenuTooltip])
+
+  const modelMenuItems = useMemo<MenuProps['items']>(() => {
+    const recommendedItems = (recommendedModelOptions ?? []).map(option => ({
+      key: option.value,
+      label: renderCompactModelMenuLabel(option),
+      className: 'model-select-menu-item'
+    }))
+
+    const moreModelChildren = (modelMenuGroups ?? [])
+      .filter(group => group.options.length > 0)
+      .map(group => ({
+        key: group.key,
+        label: renderModelMenuGroupLabel(group),
+        popupClassName: 'model-select-submenu-popup',
+        children: group.options.map(option => ({
+          key: option.value,
+          label: renderCompactModelMenuLabel(option),
+          className: 'model-select-menu-item'
+        }))
+      }))
+
+    if (moreModelChildren.length === 0) {
+      return recommendedItems
+    }
+
+    return [
+      ...recommendedItems,
+      {
+        key: 'more-models',
+        label: <span className='model-more-menu-label'>{t('chat.modelMoreModels')}</span>,
+        popupClassName: 'model-select-submenu-popup',
+        children: moreModelChildren
+      }
+    ]
+  }, [modelMenuGroups, recommendedModelOptions, renderCompactModelMenuLabel, renderModelMenuGroupLabel, t])
+
+  const renderModelPopup = (menu: React.ReactElement) => {
+    if (hasModelSearchQuery || modelMenuItems == null || modelMenuItems.length === 0) {
+      return menu
+    }
+
+    return (
+      <div
+        className='model-select-browser'
+        onMouseDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+      >
+        <Menu
+          className='model-select-menu'
+          mode='vertical'
+          selectable
+          selectedKeys={selectedModel ? [selectedModel] : []}
+          triggerSubMenuAction='hover'
+          items={modelMenuItems}
+          onClick={handleModelMenuClick}
+        />
+      </div>
+    )
+  }
 
   const composerControlShortcuts = useComposerControlShortcuts({
     enabled: !hideSender && !showContextPicker && !isInlineEdit,
@@ -1371,15 +1507,12 @@ export function Sender({
                       classNames={{ popup: { root: 'model-select-popup' } }}
                       open={showModelSelect}
                       value={selectedModel}
-                      options={modelOptions ?? []}
+                      options={modelSearchOptions ?? []}
                       showSearch
+                      searchValue={modelSearchValue}
                       allowClear={false}
                       disabled={modelUnavailable || isThinking}
-                      onChange={(value) => {
-                        onModelChange?.(value)
-                        setShowModelSelect(false)
-                        queueTextareaFocusRestore()
-                      }}
+                      onChange={handleModelSelection}
                       onOpenChange={(nextOpen) => {
                         if (nextOpen) {
                           setShowEffortSelect(false)
@@ -1389,12 +1522,14 @@ export function Sender({
                         }
                         setShowModelSelect(nextOpen)
                       }}
+                      onSearch={setModelSearchValue}
                       placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
                       optionLabelProp='displayLabel'
                       filterOption={(input, option) => {
                         const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
                         return searchText.toLowerCase().includes(input.toLowerCase())
                       }}
+                      popupRender={renderModelPopup}
                       popupMatchSelectWidth={false}
                       suffixIcon={renderSelectArrow(toggleModelSelectorFromArrow)}
                     />
