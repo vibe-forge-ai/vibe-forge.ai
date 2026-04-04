@@ -55,6 +55,32 @@
 - 浏览器验证不要强依赖易变按钮文案。
 - 更稳妥的是依赖 `aria-label`、稳定类名或结构断言。
 
+## Sender / 浮层调试经验
+
+- `Sender.tsx` 同时组合了 `Tooltip`、`Popover`、`Select` 和自定义 trigger；一旦外层包装组件不透传 `ref` 或 DOM props，触发器很容易直接失效。
+- 包装触发器时不要用无效 DOM 结构，例如 `span` 包 `div`；这类 nesting warning 往往伴随点击异常。
+- 同一个控件如果既有 tooltip 又有 popup，popup 打开时要显式禁用 tooltip；否则 hover 层会抢事件或扰乱 focus。
+- 自定义 select 箭头后，必须分别验证：
+  - 文本区能打开
+  - 箭头区能打开
+  - 关闭后 focus 回输入框
+- sender 的颜色改动要谨慎收窄 selector，避免把下面这些一起误伤：
+  - 最高推理强度图标
+  - 权限菜单勾选图标
+  - 发送按钮
+  - disabled / hover / selected 态
+- 通用 tooltip 的字号、min-height 这类全局表面样式，优先改 `src/styles/global.scss` 或主题配置，不要只在 sender 局部覆盖。
+- 调 tooltip / popover / 主题样式后，先 reload 页面，再看 computed style 和 console warning；隐藏浮层节点和旧 bundle warning 很容易导致误判。
+
+## Sender 最小回归清单
+
+1. `更多` 主菜单能打开，权限二级菜单能展开。
+2. 模型和推理强度的文本区、箭头区都能打开。
+3. popup 打开时不会叠出自己的 tooltip。
+4. popup 关闭后输入框重新获得 focus。
+5. reload 后没有 React DOM nesting warning，也没有 Ant deprecation warning。
+6. 同时检查浅色 / 深色主题下的 tooltip、勾选图标、推理强度图标和发送按钮。
+
 ## 推荐调试顺序
 
 1. 先看 `ChatHistoryView.tsx`，确认父层状态是不是放对了。

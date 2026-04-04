@@ -178,6 +178,13 @@ fatal error 不只是“打印出来”，还必须保证：
 - 这个回退只在“当前 worktree 没有本地文件”时生效；一旦当前 worktree 自己提供了文件，就以当前 worktree 为准。
 - 如果改了主 worktree 的 `.env` 或 `.ai.dev.config.*`，需要重启服务端进程，不能只刷新浏览器。
 
+### Worktree 旧进程串线
+
+- 如果当前 worktree 的 provider 表现和本地配置不一致，优先检查是不是连到了别的 worktree 还活着的旧 server / router。
+- 固定端口最容易出问题；先核对当前 worktree 的 router 配置文件和监听端口，再看实际请求落到哪个进程。
+- `/api/config`、router 配置文件和进程日志三处都要对齐；只看浏览器报错很容易误判成 adapter 映射问题。
+- 如果确认串线，先停掉旧实例，再重启当前 worktree 的 server / router。
+
 ### `ak not exist: \${BYT...}` 的判断方法
 
 现象：

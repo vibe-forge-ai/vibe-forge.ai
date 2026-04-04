@@ -65,6 +65,9 @@ const permissionModeIconMap: Record<PermissionMode, string> = {
 }
 
 const isActivationKey = (key: string) => key === 'Enter' || key === ' '
+const isSelectArrowTarget = (target: EventTarget | null) => {
+  return target instanceof HTMLElement && target.closest('.ant-select-arrow') != null
+}
 
 export function Sender({
   onSend,
@@ -560,6 +563,18 @@ export function Sender({
       return
     }
 
+    openEffortSelector()
+  }
+
+  const handleModelBodyTriggerMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    openModelSelector()
+  }
+
+  const handleEffortBodyTriggerMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     openEffortSelector()
   }
 
@@ -1270,8 +1285,8 @@ export function Sender({
                         }}
                         placement='rightTop'
                         trigger={['hover', 'click']}
-                        overlayClassName='reference-actions-submenu-popover'
-                        destroyTooltipOnHide
+                        classNames={{ root: 'reference-actions-submenu-popover' }}
+                        destroyOnHidden
                         arrow={false}
                       >
                         <button
@@ -1306,14 +1321,15 @@ export function Sender({
                 onOpenChange={handleReferenceOpenChange}
                 placement='topLeft'
                 trigger='click'
-                overlayClassName='reference-actions-popover'
-                destroyTooltipOnHide
+                classNames={{ root: 'reference-actions-popover' }}
+                destroyOnHidden
                 arrow={false}
               >
                 <ShortcutTooltip
                   shortcut={composerControlShortcuts.switchPermissionMode}
                   isMac={isMac}
-                  title={(shortcut) => t('chat.referenceActionsShortcutTooltip', { shortcut })}
+                  title={t('chat.referenceActionsShortcutTooltip')}
+                  enabled={!showReferenceActions}
                 >
                   <div
                     ref={referenceTriggerRef}
@@ -1336,42 +1352,53 @@ export function Sender({
                 <ShortcutTooltip
                   shortcut={composerControlShortcuts.switchModel}
                   isMac={isMac}
-                  title={(shortcut) => t('chat.modelShortcutTooltip', { shortcut })}
+                  title={t('chat.modelShortcutTooltip')}
                   targetClassName='sender-control-tooltip-target'
+                  enabled={!showModelSelect}
                 >
-                  <Select
-                    ref={modelSelectRef}
-                    className='model-select'
-                    classNames={{ popup: { root: 'model-select-popup' } }}
-                    open={showModelSelect}
-                    value={selectedModel}
-                    options={modelOptions ?? []}
-                    showSearch
-                    allowClear={false}
-                    disabled={modelUnavailable || isThinking}
-                    onChange={(value) => {
-                      onModelChange?.(value)
-                      setShowModelSelect(false)
-                      queueTextareaFocusRestore()
-                    }}
-                    onOpenChange={(nextOpen) => {
-                      if (nextOpen) {
-                        setShowEffortSelect(false)
-                        closeReferenceActions()
-                      } else {
+                  <div className='sender-select-shell'>
+                    {!showModelSelect && !(modelUnavailable || isThinking) && (
+                      <button
+                        type='button'
+                        className='sender-select-body-trigger'
+                        aria-label={t('chat.modelShortcutTooltip')}
+                        onMouseDown={handleModelBodyTriggerMouseDown}
+                      />
+                    )}
+                    <Select
+                      ref={modelSelectRef}
+                      className='model-select'
+                      classNames={{ popup: { root: 'model-select-popup' } }}
+                      open={showModelSelect}
+                      value={selectedModel}
+                      options={modelOptions ?? []}
+                      showSearch
+                      allowClear={false}
+                      disabled={modelUnavailable || isThinking}
+                      onChange={(value) => {
+                        onModelChange?.(value)
+                        setShowModelSelect(false)
                         queueTextareaFocusRestore()
-                      }
-                      setShowModelSelect(nextOpen)
-                    }}
-                    placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
-                    optionLabelProp='displayLabel'
-                    filterOption={(input, option) => {
-                      const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
-                      return searchText.toLowerCase().includes(input.toLowerCase())
-                    }}
-                    popupMatchSelectWidth={false}
-                    suffixIcon={renderSelectArrow(toggleModelSelectorFromArrow)}
-                  />
+                      }}
+                      onOpenChange={(nextOpen) => {
+                        if (nextOpen) {
+                          setShowEffortSelect(false)
+                          closeReferenceActions()
+                        } else {
+                          queueTextareaFocusRestore()
+                        }
+                        setShowModelSelect(nextOpen)
+                      }}
+                      placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
+                      optionLabelProp='displayLabel'
+                      filterOption={(input, option) => {
+                        const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
+                        return searchText.toLowerCase().includes(input.toLowerCase())
+                      }}
+                      popupMatchSelectWidth={false}
+                      suffixIcon={renderSelectArrow(toggleModelSelectorFromArrow)}
+                    />
+                  </div>
                 </ShortcutTooltip>
               )}
 
@@ -1379,38 +1406,49 @@ export function Sender({
                 <ShortcutTooltip
                   shortcut={composerControlShortcuts.switchEffort}
                   isMac={isMac}
-                  title={(shortcut) => t('chat.effortShortcutTooltip', { shortcut })}
+                  title={t('chat.effortShortcutTooltip')}
                   targetClassName='sender-control-tooltip-target'
+                  enabled={!showEffortSelect}
                 >
-                  <Select
-                    ref={effortSelectRef}
-                    className='effort-select'
-                    classNames={{ popup: { root: 'effort-select-popup' } }}
-                    open={showEffortSelect}
-                    value={effort}
-                    options={decoratedEffortOptions}
-                    showSearch={false}
-                    allowClear={false}
-                    disabled={modelUnavailable || isThinking}
-                    onChange={(value) => {
-                      onEffortChange?.(value)
-                      setShowEffortSelect(false)
-                      queueTextareaFocusRestore()
-                    }}
-                    onOpenChange={(nextOpen) => {
-                      if (nextOpen) {
-                        setShowModelSelect(false)
-                        closeReferenceActions()
-                      } else {
+                  <div className='sender-select-shell'>
+                    {!showEffortSelect && !(modelUnavailable || isThinking) && (
+                      <button
+                        type='button'
+                        className='sender-select-body-trigger'
+                        aria-label={t('chat.effortShortcutTooltip')}
+                        onMouseDown={handleEffortBodyTriggerMouseDown}
+                      />
+                    )}
+                    <Select
+                      ref={effortSelectRef}
+                      className='effort-select'
+                      classNames={{ popup: { root: 'effort-select-popup' } }}
+                      open={showEffortSelect}
+                      value={effort}
+                      options={decoratedEffortOptions}
+                      showSearch={false}
+                      allowClear={false}
+                      disabled={modelUnavailable || isThinking}
+                      onChange={(value) => {
+                        onEffortChange?.(value)
+                        setShowEffortSelect(false)
                         queueTextareaFocusRestore()
-                      }
-                      setShowEffortSelect(nextOpen)
-                    }}
-                    placeholder={t('chat.effortSelectPlaceholder')}
-                    optionLabelProp='label'
-                    popupMatchSelectWidth={false}
-                    suffixIcon={renderSelectArrow(toggleEffortSelectorFromArrow)}
-                  />
+                      }}
+                      onOpenChange={(nextOpen) => {
+                        if (nextOpen) {
+                          setShowModelSelect(false)
+                          closeReferenceActions()
+                        } else {
+                          queueTextareaFocusRestore()
+                        }
+                        setShowEffortSelect(nextOpen)
+                      }}
+                      placeholder={t('chat.effortSelectPlaceholder')}
+                      optionLabelProp='label'
+                      popupMatchSelectWidth={false}
+                      suffixIcon={renderSelectArrow(toggleEffortSelectorFromArrow)}
+                    />
+                  </div>
                 </ShortcutTooltip>
               )}
             </div>
@@ -1428,13 +1466,13 @@ export function Sender({
                       value={selectedAdapter}
                       options={adapterOptions}
                       showSearch={false}
-                      showArrow={false}
                       allowClear={false}
                       disabled={adapterLocked || modelUnavailable || isThinking}
                       onChange={(value) => onAdapterChange?.(value)}
                       placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
                       optionLabelProp='label'
                       popupMatchSelectWidth={false}
+                      suffixIcon={null}
                     />
                   </span>
                 </Tooltip>
@@ -1471,7 +1509,7 @@ export function Sender({
                   <ShortcutTooltip
                     shortcut={resolvedSendShortcut}
                     isMac={isMac}
-                    title={(shortcut) => t('chat.sendShortcutTooltip', { shortcut })}
+                    title={t('chat.sendShortcutTooltip')}
                     targetClassName='sender-control-tooltip-target'
                     enabled={!isThinking}
                   >

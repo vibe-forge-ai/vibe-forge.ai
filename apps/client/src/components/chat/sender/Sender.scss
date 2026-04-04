@@ -959,6 +959,24 @@
   align-items: center;
 }
 
+.sender-select-shell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sender-select-body-trigger {
+  position: absolute;
+  inset: 0 28px 0 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sender-control-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
 .adapter-option {
   display: inline-flex;
   align-items: center;
@@ -1157,27 +1175,18 @@ html.dark {
 }
 
 .chat-send-btn {
-  min-width: 32px;
-  height: 26px;
-  padding: 0 7px;
+  width: var(--sender-control-height);
+  min-width: var(--sender-control-height);
+  height: var(--sender-control-height);
+  padding: 0;
   border-radius: var(--sender-control-radius);
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--primary-color, #6366f1) 34%,
-      var(--sub-border-color) 66%
-    );
-  background: color-mix(
-    in srgb,
-    var(--primary-color, #6366f1) 12%,
-    var(--bg-color) 88%
-  );
+  border: 1px solid var(--border-color);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all .2s;
-  color: var(--primary-color, #6366f1);
   align-self: center;
   flex-shrink: 0;
 
@@ -1186,7 +1195,8 @@ html.dark {
     align-items: center;
     justify-content: center;
     line-height: 1;
-    font-size: 18px;
+    font-size: 17px;
+    transition: transform .2s ease;
   }
 
   &:hover {
@@ -1196,30 +1206,26 @@ html.dark {
       var(--primary-color, #6366f1) 48%,
       var(--sub-border-color) 52%
     );
-    background: color-mix(
-      in srgb,
-      var(--primary-color, #6366f1) 18%,
-      var(--bg-color) 82%
-    );
+    background: transparent;
+  }
+
+  &:not(.thinking):hover .material-symbols-rounded {
+    transform: rotate(-45deg);
   }
 
   &.active {
-    color: #fff;
+    color: var(--primary-color, #6366f1);
     border-color: var(--primary-color, #6366f1);
-    background: var(--primary-color, #6366f1);
+    background: transparent;
 
     &:hover {
-      color: #fff;
+      color: var(--primary-color, #6366f1);
       border-color: color-mix(
         in srgb,
         var(--primary-color, #6366f1) 84%,
         #000 16%
       );
-      background: color-mix(
-        in srgb,
-        var(--primary-color, #6366f1) 86%,
-        #000 14%
-      );
+      background: transparent;
     }
   }
 
@@ -1247,7 +1253,7 @@ html.dark {
     color: #9ca3af;
     cursor: not-allowed;
     border-color: var(--border-color);
-    background: var(--tag-bg, #f9fafb);
+    background: transparent;
     opacity: .72;
 
     &:hover {

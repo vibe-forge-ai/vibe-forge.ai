@@ -8,6 +8,11 @@ export interface ShortcutSpec {
   shiftKey: boolean
 }
 
+export interface ShortcutDisplayToken {
+  value: string
+  compact: boolean
+}
+
 const normalizeKey = (key: string) => {
   if (key === ' ') return 'space'
   return key.toLowerCase()
@@ -67,6 +72,69 @@ export const formatShortcutLabel = (shortcut: string | undefined, isMac: boolean
     if (token.length === 1) return token.toUpperCase()
     return token.charAt(0).toUpperCase() + token.slice(1)
   }).join('+')
+}
+
+export const getShortcutDisplayTokens = (shortcut: string | undefined, isMac: boolean): ShortcutDisplayToken[] => {
+  if (shortcut == null || shortcut.trim() === '') return []
+
+  const tokens = shortcut.split('+').map(token => token.trim()).filter(Boolean)
+  return tokens.map((token) => {
+    const lower = token.toLowerCase()
+
+    if (lower === 'mod') {
+      return { value: isMac ? '⌘' : 'Ctrl', compact: isMac }
+    }
+    if (lower === 'cmd' || lower === 'command' || lower === 'meta') {
+      return { value: '⌘', compact: true }
+    }
+    if (lower === 'ctrl' || lower === 'control') {
+      return { value: isMac ? '⌃' : 'Ctrl', compact: isMac }
+    }
+    if (lower === 'alt' || lower === 'option') {
+      return { value: isMac ? '⌥' : 'Alt', compact: isMac }
+    }
+    if (lower === 'shift') {
+      return { value: isMac ? '⇧' : 'Shift', compact: isMac }
+    }
+    if (lower === 'space') {
+      return { value: 'Space', compact: false }
+    }
+    if (lower === 'enter') {
+      return { value: 'Enter', compact: false }
+    }
+    if (lower === 'escape' || lower === 'esc') {
+      return { value: isMac ? '⎋' : 'Esc', compact: isMac }
+    }
+    if (lower === 'tab') {
+      return { value: isMac ? '⇥' : 'Tab', compact: isMac }
+    }
+    if (lower === 'backspace') {
+      return { value: isMac ? '⌫' : 'Backspace', compact: isMac }
+    }
+    if (lower === 'delete' || lower === 'del') {
+      return { value: isMac ? '⌦' : 'Delete', compact: isMac }
+    }
+    if (lower === 'arrowup') {
+      return { value: '↑', compact: true }
+    }
+    if (lower === 'arrowdown') {
+      return { value: '↓', compact: true }
+    }
+    if (lower === 'arrowleft') {
+      return { value: '←', compact: true }
+    }
+    if (lower === 'arrowright') {
+      return { value: '→', compact: true }
+    }
+    if (token.length === 1) {
+      return { value: token.toUpperCase(), compact: true }
+    }
+
+    return {
+      value: token.charAt(0).toUpperCase() + token.slice(1),
+      compact: false
+    }
+  })
 }
 
 export const isShortcutMatch = (

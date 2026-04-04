@@ -15,6 +15,7 @@ globs:
 - [组件与数据](./frontend-standard/components.md)
 - [样式与类名](./frontend-standard/styles.md)
 - [主题与国际化](./frontend-standard/theme-i18n.md)
+- [调试与回归](./frontend-standard/debugging.md)
 
 ## 核心约束
 
@@ -23,3 +24,4 @@ globs:
 - 静态样式不要写在 `style={{...}}` 里。
 - 颜色、间距、圆角等全局设计 token 统一走 CSS 变量。
 - UI 文本统一走 i18n，不在组件里硬编码中文。
+- 浮层、tooltip、popover、select、focus 相关改动，必须补真实 Chrome 回归，不要只依赖静态检查。

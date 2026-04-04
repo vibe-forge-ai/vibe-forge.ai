@@ -37,6 +37,11 @@
 - API 请求统一走 `src/api/`，避免在组件里直接手写 `fetch`。
 - 能复用的状态逻辑优先抽到 hooks，不在 route 和 view 间复制业务逻辑。
 
+前端调试入口：
+
+- 如果任务涉及 tooltip / popover / select / theme / sender，优先补读 `../../.ai/rules/frontend-standard/debugging.md`。
+- 样式和交互问题不要只看代码；至少做一次真实 Chrome 的 computed style、open state 和 focus 回归。
+
 ## 聊天消息操作维护
 
 如果任务涉及聊天消息级交互，优先读这些入口：
@@ -47,6 +52,7 @@
   - 单条消息的 `编辑 / 撤回 / 分叉 / 复制原文` UI，以及 inline edit 挂载点。
 - `src/components/chat/sender/Sender.tsx`
   - 底部 sender 和 inline edit 共用的 composer；图片上传和资源型输入都从这里走。
+- 如果涉及 sender / 浮层组合，还要同步看 `src/components/chat/AGENTS.md` 里的 sender 调试经验。
 - `src/hooks/chat/use-chat-session-actions.ts`
   - 消息操作的前端 action 入口。
 - `src/api/sessions.ts`

@@ -100,3 +100,11 @@ html.dark {
   background-color: var(--primary-color);
   color: #ffffff;
 }
+
+.ant-tooltip {
+  .ant-tooltip-inner {
+    font-size: 12px;
+    line-height: 1.4;
+    min-height: 28px;
+  }
+}
