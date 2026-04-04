@@ -117,6 +117,11 @@ export interface Config {
   shortcuts?: {
     newSession?: string
     openConfig?: string
+    sendMessage?: string
+    clearInput?: string
+    switchModel?: string
+    switchEffort?: string
+    switchPermissionMode?: string
   }
   notifications?: NotificationConfig
   conversation?: {

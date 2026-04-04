@@ -17,6 +17,7 @@ import { configRouter } from './config'
 import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
 import { uiRouter } from './ui'
+import { workspaceRouter } from './workspace'
 
 const DEFAULT_CLIENT_BASE = '/ui/'
 const DEFAULT_BASE_PLACEHOLDER = '/__VF_PROJECT_AI_CLIENT_BASE__/'
@@ -83,7 +84,8 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/api/automation', router: automationRouter() },
-    { prefix: '/api/config', router: configRouter() }
+    { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/workspace', router: workspaceRouter() }
   ]
 
   const clientMode = env.__VF_PROJECT_AI_CLIENT_MODE__

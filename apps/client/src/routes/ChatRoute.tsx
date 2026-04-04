@@ -130,6 +130,7 @@ function ChatRouteView({
       {activeView === 'settings' && session?.id && (
         <ChatSettingsView
           session={session}
+          sessionInfo={sessionInfo}
           onClose={() => setActiveView('history')}
         />
       )}

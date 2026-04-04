@@ -1,6 +1,11 @@
+import { createHash } from 'node:crypto'
+
 import type { Config, ModelServiceConfig } from '@vibe-forge/types'
 
 import { resolveTransformerPath } from './paths'
+
+const DEFAULT_ROUTER_PORT_RANGE_START = 20000
+const DEFAULT_ROUTER_PORT_RANGE_SIZE = 20000
 
 const getServiceQueryParams = (service: ModelServiceConfig) => {
   const extra = (service.extra ?? {}) as {
@@ -34,6 +39,12 @@ const normalizePositiveInteger = (value: unknown): number | undefined => (
     ? Math.floor(value)
     : undefined
 )
+
+export const resolveDefaultClaudeCodeRouterPort = (cwd: string) => {
+  const digest = createHash('sha256').update(cwd).digest()
+  const hashValue = digest.readUInt32BE(0)
+  return DEFAULT_ROUTER_PORT_RANGE_START + (hashValue % DEFAULT_ROUTER_PORT_RANGE_SIZE)
+}
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -238,7 +249,7 @@ export const generateDefaultCCRConfigJSON = (params: {
   userConfig?: Config
   adapterOptions?: NonNullable<Config['adapters']>['claude-code']
 }) => {
-  const { config, userConfig, adapterOptions } = params
+  const { cwd, config, userConfig, adapterOptions } = params
   const modelServices = {
     ...(config?.modelServices ?? {}),
     ...(userConfig?.modelServices ?? {})
@@ -254,6 +265,9 @@ export const generateDefaultCCRConfigJSON = (params: {
     modelServices,
     adapterOptions
   })
+  const routerPort = normalizePositiveInteger(
+    (adapterOptions?.ccrOptions as Record<string, unknown> | undefined)?.PORT
+  ) ?? resolveDefaultClaudeCodeRouterPort(cwd)
   const transformers = [
     {
       path: resolveTransformerPath('gemini-open-router-polyfill')
@@ -267,6 +281,7 @@ export const generateDefaultCCRConfigJSON = (params: {
   ]
   return JSON.stringify(
     {
+      PORT: String(routerPort),
       ...(adapterOptions?.ccrOptions ?? {}),
       ...(apiTimeoutMs != null ? { API_TIMEOUT_MS: apiTimeoutMs } : {}),
       transformers,

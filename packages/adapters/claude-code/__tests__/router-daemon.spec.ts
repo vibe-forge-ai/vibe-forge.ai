@@ -4,7 +4,10 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { generateDefaultCCRConfigJSON } from '../src/ccr/config'
+import {
+  generateDefaultCCRConfigJSON,
+  resolveDefaultClaudeCodeRouterPort
+} from '../src/ccr/config'
 import { ensureClaudeCodeRouterReady } from '../src/ccr/daemon'
 
 const tempDirs: string[] = []
@@ -102,6 +105,37 @@ describe('ensureClaudeCodeRouterReady', () => {
       })
     })
     expect(waitForReady).toHaveBeenCalledWith(4123, 15000)
+  })
+
+  it('uses the workspace-derived port when CCR config does not specify one', async () => {
+    const workspace = await createWorkspace()
+    const ctx = createCtx(workspace, {
+      adapters: {
+        'claude-code': {}
+      }
+    })
+    const spawnDetached = vi.fn(async () => undefined)
+    const waitForReady = vi.fn(async () => undefined)
+
+    const connection = await ensureClaudeCodeRouterReady(ctx, {
+      resolveCliPath: () => '/bin/sh',
+      resolveRuntimePreloadPath: () => '/mock/register/preload.js',
+      isProcessAlive: vi.fn(() => false),
+      spawnDetached,
+      stopProcess: vi.fn(async () => undefined),
+      waitForReady
+    })
+
+    const { configPath } = getRouterPaths(workspace)
+    const config = JSON.parse(await readFile(configPath, 'utf8')) as {
+      PORT?: string
+    }
+    const expectedPort = resolveDefaultClaudeCodeRouterPort(workspace)
+
+    expect(connection.port).toBe(expectedPort)
+    expect(config.PORT).toBe(String(expectedPort))
+    expect(waitForReady).toHaveBeenCalledWith(expectedPort, 15000)
+    expect(spawnDetached).toHaveBeenCalledTimes(1)
   })
 
   it('preserves existing NODE_OPTIONS when preloading the TypeScript transformer runtime', async () => {

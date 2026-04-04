@@ -321,7 +321,31 @@
     "tooltipMentionAgents": "提及代理",
     "tooltipInjectContext": "注入上下文",
     "tooltipUploadImages": "上传图片",
+    "tooltipReferenceActions": "更多",
+    "referenceActionsShortcutTooltip": "更多 / 权限模式（{{shortcut}}）",
+    "modelShortcutTooltip": "切换模型（{{shortcut}}）",
+    "effortShortcutTooltip": "切换推理强度（{{shortcut}}）",
+    "sendShortcutTooltip": "发送消息（{{shortcut}}）",
+    "adapterLockedTooltip": "创建会话后适配器会锁定",
+    "referenceActionsShort": "更多",
+    "referenceActionsTitle": "更多",
+    "referenceActionsDescription": "添加照片、文件和权限相关设置。",
+    "referenceAttachments": "添加照片和文件",
+    "referenceAttachmentsDescription": "选择图片或项目文件作为引用内容。",
+    "referencePermission": "权限模式",
+    "referencePermissionDescription": "控制工具执行前的授权策略。",
+    "referenceImage": "图片",
+    "referenceImageDescription": "从本地选择图片并附在消息中。",
+    "referenceFile": "文件",
+    "referenceFileDescription": "从当前项目目录树中选择要引用的文件。",
     "effortSelectPlaceholder": "推理强度",
+    "effortLabels": {
+      "default": "默认",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "max": "最高"
+    },
     "permissionModeSelectPlaceholder": "权限模式",
     "assetWarningsTitle": "兼容性提示",
     "assetWarningsCount": "{{count}} 个资产告警",
@@ -334,8 +358,16 @@
     "imageTooLarge": "图片大小不能超过 5MB",
     "imageReadFailed": "图片读取失败",
     "imageNotSupportedInInteraction": "当前交互不支持图片",
+    "fileNotSupportedInInteraction": "当前交互不支持文件上下文",
+    "contextPickerTitle": "引用文件",
+    "contextPickerDescription": "从当前项目目录树中选择一个或多个文件。",
+    "contextPickerConfirm": "引用文件",
+    "contextPickerLoading": "正在加载项目目录树...",
+    "contextPickerEmpty": "当前目录下没有可选文件",
+    "contextPickerLoadFailed": "项目目录树加载失败",
     "modelGroupRecommended": "推荐模型",
     "availableTools": "可用工具",
+    "availableToolsEmpty": "当前会话没有可展示的工具。",
     "toolGroupChromeDevtools": "ChromeDevtools",
     "toolGroupSystem": "系统",
     "toolsCount": "{{count}} 个工具",
@@ -843,6 +875,18 @@
         "clearInput": {
           "label": "清空输入框",
           "desc": "清空输入框内容的快捷键"
+        },
+        "switchModel": {
+          "label": "切换模型",
+          "desc": "激活模型选择框并支持键盘切换"
+        },
+        "switchEffort": {
+          "label": "切换推理强度",
+          "desc": "激活推理强度选择框并支持键盘切换"
+        },
+        "switchPermissionMode": {
+          "label": "切换权限等级",
+          "desc": "打开权限模式菜单并支持键盘切换"
         }
       }
     },

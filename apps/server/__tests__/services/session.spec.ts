@@ -162,4 +162,37 @@ describe('session service', () => {
       })
     )
   })
+
+  it('summarizes file-only user messages with the selected workspace path', async () => {
+    const socket = { readyState: 1, send: vi.fn() } as any
+    const emit = vi.fn()
+    getMessages.mockReturnValue([])
+
+    adapterSessionStore.set('sess-1', {
+      session: {
+        emit,
+        kill: vi.fn()
+      } as any,
+      sockets: new Set([socket]),
+      messages: []
+    })
+
+    await processUserMessage('sess-1', [
+      { type: 'file', path: 'apps/client/src/main.tsx', name: 'main.tsx' }
+    ])
+
+    expect(updateSession).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        title: 'Context file: apps/client/src/main.tsx',
+        lastMessage: 'Context file: apps/client/src/main.tsx',
+        lastUserMessage: 'Context file: apps/client/src/main.tsx'
+      })
+    )
+    expect(emit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{ type: 'file', path: 'apps/client/src/main.tsx', name: 'main.tsx' }],
+      parentUuid: undefined
+    })
+  })
 })

@@ -45,6 +45,11 @@ const buildTextFromMessage = (message: ChatMessage) => {
         continue
       }
 
+      if (item.type === 'file') {
+        parts.push(`[文件:${item.path}]`)
+        continue
+      }
+
       if (item.type === 'tool_use') {
         const input = stringifySeedValue(item.input)
         parts.push(input !== '' ? `[工具调用:${item.name}] ${input}` : `[工具调用:${item.name}]`)

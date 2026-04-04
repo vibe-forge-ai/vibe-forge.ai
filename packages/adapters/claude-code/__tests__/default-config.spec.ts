@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { generateDefaultCCRConfigJSON } from '../src/ccr/config'
+import {
+  generateDefaultCCRConfigJSON,
+  resolveDefaultClaudeCodeRouterPort
+} from '../src/ccr/config'
 
 describe('generateDefaultCCRConfigJSON', () => {
   const baseUserConfig = {
@@ -133,6 +136,21 @@ describe('generateDefaultCCRConfigJSON', () => {
 
     expect(config.PORT).toBe('4123')
     expect(config.APIKEY).toBe('router-key')
+  })
+
+  it('assigns a stable workspace-specific CCR port when none is configured', () => {
+    const cwd = '/tmp/project-alpha'
+    const raw = generateDefaultCCRConfigJSON({
+      cwd,
+      userConfig: baseUserConfig
+    })
+
+    const config = JSON.parse(raw) as {
+      PORT?: string
+    }
+
+    expect(config.PORT).toBe(String(resolveDefaultClaudeCodeRouterPort(cwd)))
+    expect(config.PORT).not.toBe('3456')
   })
 
   it('adds a maxtoken transformer for model service maxOutputTokens without clobbering existing transformers', () => {

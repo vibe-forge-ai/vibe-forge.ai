@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -31,6 +32,8 @@ const PACKAGE_DEFAULT_CONFIG_FILES = [
   '.ai.config.yml'
 ]
 
+const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
+
 const serializeJsonVariables = (value: Record<string, string | null | undefined>) => (
   JSON.stringify(
     Object.entries(value)
@@ -46,6 +49,42 @@ const resolveConfigCacheKey = (options: LoadConfigOptions) => {
 }
 
 const resolveConfigPath = (cwd: string, filePath: string) => resolve(cwd, filePath)
+
+const resolvePrimaryWorkspaceFolder = (
+  cwd: string,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const normalizedWorkspaceFolder = resolve(cwd)
+  const explicitPrimaryWorkspaceFolder = env[PRIMARY_WORKSPACE_ENV]?.trim()
+  if (explicitPrimaryWorkspaceFolder) {
+    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
+    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : resolvedPrimaryWorkspaceFolder
+  }
+
+  try {
+    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd,
+      encoding: 'utf8'
+    })
+    if (result.status !== 0) {
+      return undefined
+    }
+
+    const gitCommonDir = result.stdout?.trim()
+    if (!gitCommonDir) {
+      return undefined
+    }
+
+    const primaryWorkspaceFolder = dirname(resolve(cwd, gitCommonDir))
+    return primaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : primaryWorkspaceFolder
+  } catch {
+    return undefined
+  }
+}
 
 const isExistingFilePath = (filePath: string) => {
   if (!existsSync(filePath)) return false
@@ -305,36 +344,60 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
   const cwd = options.cwd ?? process.cwd()
   const shouldLoadDevConfig = options.disableDevConfig !== true &&
     process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
+  const jsonVariables = options.jsonVariables ?? {}
 
-  const nextConfig = (async () =>
-    [
-      await loadConfigFromPaths(
+  const nextConfig = (async () => {
+    const projectConfig = await loadConfigFromPaths(
+      cwd,
+      [
+        './.ai.config.json',
+        './infra/.ai.config.json',
+        './.ai.config.yaml',
+        './.ai.config.yml',
+        './infra/.ai.config.yaml',
+        './infra/.ai.config.yml'
+      ],
+      jsonVariables
+    )
+
+    let userConfig: Config | undefined
+    if (shouldLoadDevConfig) {
+      userConfig = await loadConfigFromPaths(
         cwd,
         [
-          './.ai.config.json',
-          './infra/.ai.config.json',
-          './.ai.config.yaml',
-          './.ai.config.yml',
-          './infra/.ai.config.yaml',
-          './infra/.ai.config.yml'
+          './.ai.dev.config.json',
+          './infra/.ai.dev.config.json',
+          './.ai.dev.config.yaml',
+          './.ai.dev.config.yml',
+          './infra/.ai.dev.config.yaml',
+          './infra/.ai.dev.config.yml'
         ],
-        options.jsonVariables ?? {}
-      ),
-      shouldLoadDevConfig
-        ? await loadConfigFromPaths(
-          cwd,
-          [
-            './.ai.dev.config.json',
-            './infra/.ai.dev.config.json',
-            './.ai.dev.config.yaml',
-            './.ai.dev.config.yml',
-            './infra/.ai.dev.config.yaml',
-            './infra/.ai.dev.config.yml'
-          ],
-          options.jsonVariables ?? {}
-        )
-        : undefined
-    ] as const)()
+        jsonVariables
+      )
+      if (userConfig == null) {
+        const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(cwd)
+        if (primaryWorkspaceFolder != null) {
+          userConfig = await loadConfigFromPaths(
+            primaryWorkspaceFolder,
+            [
+              './.ai.dev.config.json',
+              './infra/.ai.dev.config.json',
+              './.ai.dev.config.yaml',
+              './.ai.dev.config.yml',
+              './infra/.ai.dev.config.yaml',
+              './infra/.ai.dev.config.yml'
+            ],
+            jsonVariables
+          )
+        }
+      }
+    }
+
+    return [
+      projectConfig,
+      userConfig
+    ] as const
+  })()
   configCache.set(cacheKey, nextConfig)
   return nextConfig
 }

@@ -37,6 +37,11 @@ const isChatMessageContent = (value: unknown): value is ChatMessageContent => {
       (value.size == null || typeof value.size === 'number') &&
       (value.mimeType == null || typeof value.mimeType === 'string')
   }
+  if (type === 'file') {
+    return typeof value.path === 'string' &&
+      (value.name == null || typeof value.name === 'string') &&
+      (value.size == null || typeof value.size === 'number')
+  }
   if (type === 'tool_use') {
     return typeof value.id === 'string' && typeof value.name === 'string'
   }

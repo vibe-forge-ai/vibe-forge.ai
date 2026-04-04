@@ -28,6 +28,20 @@ pnpm start
 
 日志输出到 `.logs/`。
 
+### Worktree 启动补充
+
+- 当前 worktree 如果没有本地 `.env` / `.env.dev`，runtime 会回退读取主 worktree 的对应文件。
+- 当前 worktree 如果没有本地 `.ai.dev.config.json` / `.ai.dev.config.yaml`，config loader 会回退读取主 worktree 的 dev config。
+- 回退依据是 Git common dir，也就是和当前 worktree 绑定的主仓库；这样可以避免每次新建 worktree 都重复复制本地私有配置。
+- 如果当前 worktree 有自己的 `.env` 或 `.ai.dev.config.*`，优先使用当前 worktree 的文件，不会被主 worktree 覆盖。
+- 如果主 worktree 也没有这些本地文件，仍然需要你自己补齐，或者显式导出所需环境变量。
+
+### Worktree 启动前检查
+
+- 确认主 worktree 的 `.ai.dev.config.json` 里引用的 model service / adapter 配置仍然有效。
+- 确认主 worktree 的 `.env` 里存在对应密钥，例如 `BYTE_DANCE_GPT_API_KEY`、`BYTE_DANCE_ARK_API_KEY`。
+- 如果刚修改了 `.env` 或 `.ai.dev.config.*`，要重启后端进程；只刷新前端页面不会让子进程重新加载配置。
+
 ## 代码质量
 
 常用命令：

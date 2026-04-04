@@ -55,8 +55,17 @@ export const formatShortcutLabel = (shortcut: string | undefined, isMac: boolean
     if (lower === 'alt' || lower === 'option') return 'Alt'
     if (lower === 'shift') return 'Shift'
     if (lower === 'space') return 'Space'
+    if (lower === 'enter') return 'Enter'
+    if (lower === 'escape' || lower === 'esc') return 'Esc'
+    if (lower === 'tab') return 'Tab'
+    if (lower === 'backspace') return 'Backspace'
+    if (lower === 'delete' || lower === 'del') return 'Delete'
+    if (lower === 'arrowup') return 'Up'
+    if (lower === 'arrowdown') return 'Down'
+    if (lower === 'arrowleft') return 'Left'
+    if (lower === 'arrowright') return 'Right'
     if (token.length === 1) return token.toUpperCase()
-    return token
+    return token.charAt(0).toUpperCase() + token.slice(1)
   }).join('+')
 }
 

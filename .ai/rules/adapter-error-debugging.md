@@ -171,6 +171,33 @@ fatal error 不只是“打印出来”，还必须保证：
 
 经验：临时配置必须可回滚。调试文档里要写“怎么接入”，但更重要的是写“跑完要恢复”。
 
+### Worktree 本地配置回退
+
+- worktree 下如果缺少 `.ai.dev.config.*`，loader 会回退到主 worktree 的 dev config。
+- worktree 下如果缺少 `.env` / `.env.dev`，runtime 会回退到主 worktree 的环境文件。
+- 这个回退只在“当前 worktree 没有本地文件”时生效；一旦当前 worktree 自己提供了文件，就以当前 worktree 为准。
+- 如果改了主 worktree 的 `.env` 或 `.ai.dev.config.*`，需要重启服务端进程，不能只刷新浏览器。
+
+### `ak not exist: \${BYT...}` 的判断方法
+
+现象：
+
+- `claude-code-router` 或上游 provider 返回 `401`
+- 错误里出现 `ak not exist: ${BYT...}`、`${BYTE_DANCE_GPT_API_KEY}` 这类未展开片段
+
+优先结论：
+
+- 这通常不是模型服务本身坏了，而是环境变量没有展开
+- provider 实际收到的是字面量 `${BYTE_DANCE_GPT_API_KEY}`，不是密钥值
+
+优先检查：
+
+- 当前 worktree 或主 worktree 的 `.env` 是否包含 `BYTE_DANCE_GPT_API_KEY`
+- 服务端是不是在补齐 `.env` 之前就已经启动，需要重新拉起
+- `/api/config` 里是否已经读到期望的 dev config，但环境变量仍是字面量占位符
+
+经验：看到 `${BYT...}` 这种截断占位符时，不要先怀疑 adapter 映射。先确认 `.env` 是否真正进入了服务端和 adapter 子进程。
+
 ## 7. 最小可复用工作流
 
 ### 启动本地 mock host

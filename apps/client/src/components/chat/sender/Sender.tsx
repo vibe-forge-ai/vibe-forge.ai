@@ -1,19 +1,25 @@
 import './Sender.scss'
 
-import { App, Button, Cascader, Input, Select, Tooltip } from 'antd'
+import { App, Button, Input, Popover, Select, Tooltip } from 'antd'
+import type { RefSelectProps } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import { useComposerControlShortcuts } from '#~/hooks/chat/use-composer-control-shortcuts'
+import { useRovingFocusList } from '#~/hooks/use-roving-focus-list'
 import type { AskUserQuestionParams, ChatMessageContent, SessionStatus } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
+import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 import { isShortcutMatch } from '../../../utils/shortcutUtils'
 import type { CompletionItem } from './CompletionMenu'
 import { CompletionMenu } from './CompletionMenu'
+import { ContextFilePicker } from './ContextFilePicker'
 import { ThinkingStatus } from './ThinkingStatus'
+import { buildMessageContent, getInitialComposerState } from './content-attachments'
 import { shouldHideSenderForInteraction } from './interaction-request'
 
 const { TextArea } = Input
@@ -30,79 +36,35 @@ interface ModelSelectGroup {
   options: ModelSelectOption[]
 }
 
-interface PendingImage {
-  id: string
-  url: string
-  name?: string
-  size?: number
-  mimeType?: string
-}
-
-type SessionAssetDiagnostic = NonNullable<Extract<SessionInfo, { type: 'init' }>['assetDiagnostics']>[number]
-type SessionSelectionWarning = NonNullable<Extract<SessionInfo, { type: 'init' }>['selectionWarnings']>[number]
-
-interface SenderToolGroup {
-  key: 'chrome-devtools' | 'system'
-  label: string
-  tools: string[]
-}
-
-interface SenderToolOption {
-  value: string
-  label: React.ReactNode
-  children?: SenderToolOption[]
-}
-
 type SenderVariant = 'default' | 'inline-edit'
 
 type SenderInitialContent = string | ChatMessageContent[] | undefined
 
 type SenderSubmitResult = boolean | void
+type ReferenceMenuKey = 'image' | 'file' | 'permission'
+type MenuFocusTarget = 'reference' | 'permission' | null
 
-const formatToolLabel = (tool: string) => {
-  const parts = tool.split('__')
-  return parts[parts.length - 1] || tool
+const renderSelectArrow = (onMouseDown: (event: React.MouseEvent<HTMLSpanElement>) => void) => (
+  <span className='material-symbols-rounded sender-select-arrow' onMouseDown={onMouseDown}>
+    keyboard_arrow_down
+  </span>
+)
+const effortIconMap: Record<ChatEffort, string> = {
+  default: 'auto_awesome',
+  low: 'signal_cellular_alt_1_bar',
+  medium: 'signal_cellular_alt_2_bar',
+  high: 'signal_cellular_alt',
+  max: 'bolt'
+}
+const permissionModeIconMap: Record<PermissionMode, string> = {
+  default: 'tune',
+  acceptEdits: 'edit_note',
+  plan: 'checklist',
+  dontAsk: 'verified_user',
+  bypassPermissions: 'shield_lock'
 }
 
-const getToolGroupIcon = (groupKey: SenderToolGroup['key']) => {
-  return groupKey === 'chrome-devtools' ? 'web_traffic' : 'memory'
-}
-
-const createPendingImageId = (index: number) => `pending-image-${index}`
-
-const getInitialComposerState = (content: SenderInitialContent) => {
-  if (typeof content === 'string') {
-    return {
-      input: content,
-      pendingImages: [] as PendingImage[]
-    }
-  }
-
-  if (!Array.isArray(content)) {
-    return {
-      input: '',
-      pendingImages: [] as PendingImage[]
-    }
-  }
-
-  const textItems = content
-    .filter((item): item is Extract<ChatMessageContent, { type: 'text' }> => item.type === 'text')
-    .map(item => item.text)
-  const imageItems = content
-    .filter((item): item is Extract<ChatMessageContent, { type: 'image' }> => item.type === 'image')
-    .map((item, index) => ({
-      id: createPendingImageId(index),
-      url: item.url,
-      name: item.name,
-      size: item.size,
-      mimeType: item.mimeType
-    }))
-
-  return {
-    input: textItems.join('\n\n'),
-    pendingImages: imageItems
-  }
-}
+const isActivationKey = (key: string) => key === 'Enter' || key === ' '
 
 export function Sender({
   onSend,
@@ -178,24 +140,27 @@ export function Sender({
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [triggerChar, setTriggerChar] = useState<string | null>(null)
 
-  const [showToolsList, setShowToolsList] = useState(false)
+  const [showModelSelect, setShowModelSelect] = useState(false)
+  const [showEffortSelect, setShowEffortSelect] = useState(false)
+  const [showReferenceActions, setShowReferenceActions] = useState(false)
+  const [showPermissionActions, setShowPermissionActions] = useState(false)
+  const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false)
+  const [menuFocusTarget, setMenuFocusTarget] = useState<MenuFocusTarget>(null)
+  const [showContextPicker, setShowContextPicker] = useState(false)
   const textareaRef = useRef<TextAreaRef>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelSelectRef = useRef<RefSelectProps>(null)
+  const effortSelectRef = useRef<RefSelectProps>(null)
+  const referenceTriggerRef = useRef<HTMLDivElement>(null)
+  const focusRestoreTimeoutRef = useRef<number | null>(null)
   const isMac = navigator.platform.includes('Mac')
   const [pendingImages, setPendingImages] = useState(() => getInitialComposerState(initialContent).pendingImages)
+  const [pendingFiles, setPendingFiles] = useState(() => getInitialComposerState(initialContent).pendingFiles)
 
-  const { data: configRes } = useSWR<{
-    sources?: {
-      merged?: {
-        shortcuts?: {
-          sendMessage?: string
-          clearInput?: string
-        }
-      }
-    }
-  }>('/api/config')
-  const sendShortcut = configRes?.sources?.merged?.shortcuts?.sendMessage
-  const clearInputShortcut = configRes?.sources?.merged?.shortcuts?.clearInput
+  const { data: configRes } = useSWR<ConfigResponse>('/api/config')
+  const mergedShortcuts = configRes?.sources?.merged?.shortcuts
+  const sendShortcut = mergedShortcuts?.sendMessage
+  const clearInputShortcut = mergedShortcuts?.clearInput
   const resolvedSendShortcut = sendShortcut != null && sendShortcut.trim() !== ''
     ? sendShortcut
     : 'mod+enter'
@@ -204,11 +169,19 @@ export function Sender({
     const nextState = getInitialComposerState(initialContent)
     setInput(nextState.input)
     setPendingImages(nextState.pendingImages)
+    setPendingFiles(nextState.pendingFiles)
     setDraft('')
     setHistoryIndex(-1)
     setShowCompletion(false)
     setSelectedIndex(0)
     setTriggerChar(null)
+    setShowModelSelect(false)
+    setShowEffortSelect(false)
+    setShowReferenceActions(false)
+    setShowPermissionActions(false)
+    setShouldRestoreFocus(false)
+    setMenuFocusTarget(null)
+    setShowContextPicker(false)
   }, [initialContent])
 
   useEffect(() => {
@@ -232,67 +205,78 @@ export function Sender({
     }
   }, [autoFocus])
 
+  useEffect(() => {
+    return () => {
+      if (focusRestoreTimeoutRef.current != null) {
+        window.clearTimeout(focusRestoreTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const isThinking = !isInlineEdit && sessionStatus === 'running'
   const isBusy = isThinking || submitLoading
   const supportsEffort = selectedAdapter === 'codex' || selectedAdapter === 'claude-code' ||
     selectedAdapter === 'opencode'
-  const groupedTools: SenderToolGroup[] = sessionInfo != null && sessionInfo.type === 'init'
-    ? ([
-      {
-        key: 'chrome-devtools',
-        label: t('chat.toolGroupChromeDevtools'),
-        tools: sessionInfo.tools.filter((tool: string) => tool.startsWith('mcp__ChromeDevtools__'))
-      },
-      {
-        key: 'system',
-        label: t('chat.toolGroupSystem'),
-        tools: sessionInfo.tools.filter((tool: string) => !tool.startsWith('mcp__ChromeDevtools__'))
-      }
-    ] satisfies SenderToolGroup[]).filter((group): group is SenderToolGroup => group.tools.length > 0)
-    : []
-  const assetWarnings = sessionInfo != null && sessionInfo.type === 'init'
-    ? (sessionInfo.assetDiagnostics ?? []).filter((diagnostic: SessionAssetDiagnostic) =>
-      diagnostic.status === 'skipped'
-    )
-    : []
-  const selectionWarnings = sessionInfo != null && sessionInfo.type === 'init'
-    ? (sessionInfo.selectionWarnings ?? [])
-    : []
-  const toolCascaderOptions: SenderToolOption[] = groupedTools.map(group => ({
-    value: group.key,
-    label: (
-      <span className='sender-tool-group-option'>
-        <span className='sender-tool-group-option__icon material-symbols-rounded'>{getToolGroupIcon(group.key)}</span>
-        <span className='sender-tool-group-option__text'>{group.label}</span>
-        <span className='sender-tool-group-option__count'>{group.tools.length}</span>
-      </span>
-    ),
-    children: group.tools.map(tool => ({
-      value: tool,
-      label: (
-        <span className='sender-tool-option'>
-          <span className='sender-tool-option__dot' />
-          <span className='sender-tool-option__text'>{formatToolLabel(tool)}</span>
-        </span>
-      )
-    }))
-  }))
+  const referenceMenuKeys = useMemo<ReferenceMenuKey[]>(() => {
+    const keys: ReferenceMenuKey[] = ['image']
+    if (!isInlineEdit) {
+      keys.push('file')
+    }
+    if (!isInlineEdit && permissionModeOptions.length > 0) {
+      keys.push('permission')
+    }
+    return keys
+  }, [isInlineEdit, permissionModeOptions.length])
+  const permissionMenuKeys = useMemo(() => {
+    return permissionModeOptions.map(option => option.value)
+  }, [permissionModeOptions])
+  const referenceMenuNavigation = useRovingFocusList(referenceMenuKeys, 'image')
+  const permissionMenuNavigation = useRovingFocusList(permissionMenuKeys, permissionMode)
 
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [draft, setDraft] = useState('')
 
-  const formatSelectionWarning = (warning: SessionSelectionWarning) => {
-    const reason = warning.reason === 'excluded'
-      ? t('chat.selectionWarningReasonExcluded')
-      : t('chat.selectionWarningReasonNotIncluded')
+  useEffect(() => {
+    if (permissionMenuKeys.includes(permissionMode)) {
+      permissionMenuNavigation.setActiveKey(permissionMode)
+    }
+  }, [permissionMenuKeys, permissionMenuNavigation, permissionMode])
 
-    return t('chat.selectionWarningFallback', {
-      adapter: warning.adapter,
-      requestedModel: warning.requestedModel,
-      resolvedModel: warning.resolvedModel,
-      reason
+  useEffect(() => {
+    if (menuFocusTarget !== 'reference' || !showReferenceActions || showPermissionActions) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      referenceMenuNavigation.focusKey(referenceMenuNavigation.activeKey ?? referenceMenuKeys[0] ?? null)
+      setMenuFocusTarget(null)
     })
-  }
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [
+    menuFocusTarget,
+    referenceMenuKeys,
+    referenceMenuNavigation,
+    showPermissionActions,
+    showReferenceActions
+  ])
+
+  useEffect(() => {
+    if (menuFocusTarget !== 'permission' || !showReferenceActions || !showPermissionActions) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      permissionMenuNavigation.focusKey(permissionMenuNavigation.activeKey ?? permissionMode)
+      setMenuFocusTarget(null)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [menuFocusTarget, permissionMenuNavigation, permissionMode, showPermissionActions, showReferenceActions])
 
   const readFileAsDataUrl = (file: File) => {
     return new Promise<string>((resolve, reject) => {
@@ -342,14 +326,53 @@ export function Sender({
   const resetComposer = () => {
     setInput('')
     setPendingImages([])
+    setPendingFiles([])
     setDraft('')
     setShowCompletion(false)
     setHistoryIndex(-1)
   }
 
+  const focusTextarea = () => {
+    if (focusRestoreTimeoutRef.current != null) {
+      window.clearTimeout(focusRestoreTimeoutRef.current)
+    }
+
+    focusRestoreTimeoutRef.current = window.setTimeout(() => {
+      window.requestAnimationFrame(() => {
+        const textArea = textareaRef.current?.resizableTextArea?.textArea
+        if (textArea == null || textArea.disabled) {
+          return
+        }
+
+        const length = textArea.value.length
+        textArea.focus()
+        textArea.setSelectionRange(length, length)
+      })
+    }, 80)
+  }
+
+  const queueTextareaFocusRestore = () => {
+    setShouldRestoreFocus(true)
+  }
+
+  useEffect(() => {
+    if (!shouldRestoreFocus || showModelSelect || showEffortSelect || showReferenceActions || showContextPicker) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      focusTextarea()
+      setShouldRestoreFocus(false)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [shouldRestoreFocus, showContextPicker, showEffortSelect, showModelSelect, showReferenceActions])
+
   const handleSend = async () => {
     if (isBusy) return
-    if (input.trim() === '' && pendingImages.length === 0) return
+    if (input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0) return
 
     if (!isInlineEdit && modelUnavailable) {
       void message.warning(t('chat.modelConfigRequired'))
@@ -357,8 +380,10 @@ export function Sender({
     }
 
     if (!isInlineEdit && interactionRequest != null && onInteractionResponse != null) {
-      if (pendingImages.length > 0) {
-        void message.warning(t('chat.imageNotSupportedInInteraction'))
+      if (pendingImages.length > 0 || pendingFiles.length > 0) {
+        void message.warning(
+          pendingImages.length > 0 ? t('chat.imageNotSupportedInInteraction') : t('chat.fileNotSupportedInInteraction')
+        )
         return
       }
       onInteractionResponse(interactionRequest.id, input.trim())
@@ -367,18 +392,8 @@ export function Sender({
     }
 
     let didSubmit = true
-    if (pendingImages.length > 0) {
-      const content: ChatMessageContent[] = []
-      if (input.trim() !== '') {
-        content.push({ type: 'text', text: input.trim() })
-      }
-      content.push(...pendingImages.map((img): ChatMessageContent => ({
-        type: 'image',
-        url: img.url,
-        name: img.name,
-        size: img.size,
-        mimeType: img.mimeType
-      })))
+    if (pendingImages.length > 0 || pendingFiles.length > 0) {
+      const content = buildMessageContent(input, pendingImages, pendingFiles)
       if (isInlineEdit) {
         const result = await onSendContent(content)
         didSubmit = result !== false
@@ -433,6 +448,274 @@ export function Sender({
   const handleRemovePendingImage = (id: string) => {
     setPendingImages(prev => prev.filter(img => img.id !== id))
   }
+
+  const handleRemovePendingFile = (path: string) => {
+    setPendingFiles(prev => prev.filter(file => file.path !== path))
+  }
+
+  const handleOpenContextPicker = () => {
+    if (isBusy || isInlineEdit) return
+    if (!isInlineEdit && modelUnavailable) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
+    if (!isInlineEdit && interactionRequest != null) {
+      void message.warning(t('chat.fileNotSupportedInInteraction'))
+      return
+    }
+    setShowContextPicker(true)
+  }
+
+  const handleContextPickerConfirm = (
+    files: Array<{ path: string; name?: string; size?: number }>
+  ) => {
+    setPendingFiles(files)
+    setShowContextPicker(false)
+    queueTextareaFocusRestore()
+  }
+
+  const closeReferenceActions = ({ restoreFocus = false }: { restoreFocus?: boolean } = {}) => {
+    setShowReferenceActions(false)
+    setShowPermissionActions(false)
+    setMenuFocusTarget(null)
+    if (restoreFocus) {
+      queueTextareaFocusRestore()
+    }
+  }
+
+  const handleReferenceOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && !canOpenReferenceActions) {
+      if (!isInlineEdit && modelUnavailable) {
+        void message.warning(t('chat.modelConfigRequired'))
+      }
+      return
+    }
+    setShowModelSelect(false)
+    setShowEffortSelect(false)
+    if (!nextOpen) {
+      closeReferenceActions({ restoreFocus: true })
+      return
+    }
+    setShowPermissionActions(false)
+    setMenuFocusTarget(null)
+    setShowReferenceActions(true)
+  }
+
+  const handlePermissionModeSelect = (mode: PermissionMode) => {
+    onPermissionModeChange?.(mode)
+    closeReferenceActions({ restoreFocus: true })
+  }
+
+  const handleReferenceImageSelect = () => {
+    closeReferenceActions()
+    handleImageUpload()
+  }
+
+  const focusSelectControl = (selectRef: React.RefObject<RefSelectProps>) => {
+    window.requestAnimationFrame(() => {
+      selectRef.current?.focus?.()
+    })
+  }
+
+  const openModelSelector = () => {
+    if (isInlineEdit || modelUnavailable || isThinking) {
+      return
+    }
+    setShowEffortSelect(false)
+    closeReferenceActions()
+    setShowModelSelect(true)
+    focusSelectControl(modelSelectRef)
+  }
+
+  const openEffortSelector = () => {
+    if (isInlineEdit || modelUnavailable || isThinking || !supportsEffort) {
+      return
+    }
+    setShowModelSelect(false)
+    closeReferenceActions()
+    setShowEffortSelect(true)
+    focusSelectControl(effortSelectRef)
+  }
+
+  const toggleModelSelectorFromArrow = (event: React.MouseEvent<HTMLSpanElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (showModelSelect) {
+      setShowModelSelect(false)
+      queueTextareaFocusRestore()
+      return
+    }
+
+    openModelSelector()
+  }
+
+  const toggleEffortSelectorFromArrow = (event: React.MouseEvent<HTMLSpanElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (showEffortSelect) {
+      setShowEffortSelect(false)
+      queueTextareaFocusRestore()
+      return
+    }
+
+    openEffortSelector()
+  }
+
+  const openPermissionShortcutMenu = () => {
+    if (isInlineEdit || modelUnavailable || isThinking || permissionModeOptions.length === 0) {
+      return
+    }
+    setShowModelSelect(false)
+    setShowEffortSelect(false)
+    setShowReferenceActions(true)
+    setShowPermissionActions(true)
+    referenceMenuNavigation.setActiveKey('permission')
+    permissionMenuNavigation.setActiveKey(permissionMode)
+    setMenuFocusTarget('permission')
+  }
+
+  const handleReferenceMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    key: ReferenceMenuKey
+  ) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      if (key !== 'permission') {
+        setShowPermissionActions(false)
+      }
+      referenceMenuNavigation.moveFocus(1, key)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (key !== 'permission') {
+        setShowPermissionActions(false)
+      }
+      referenceMenuNavigation.moveFocus(-1, key)
+      return
+    }
+
+    if (event.key === 'ArrowRight' && key === 'permission' && permissionModeOptions.length > 0) {
+      event.preventDefault()
+      setShowPermissionActions(true)
+      permissionMenuNavigation.setActiveKey(permissionMode)
+      setMenuFocusTarget('permission')
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeReferenceActions({ restoreFocus: true })
+      return
+    }
+
+    if (!isActivationKey(event.key)) {
+      return
+    }
+
+    event.preventDefault()
+    if (key === 'image') {
+      handleReferenceImageSelect()
+      return
+    }
+    if (key === 'file') {
+      closeReferenceActions()
+      handleOpenContextPicker()
+      return
+    }
+
+    setShowPermissionActions(prev => {
+      const nextOpen = !prev
+      if (nextOpen) {
+        permissionMenuNavigation.setActiveKey(permissionMode)
+        setMenuFocusTarget('permission')
+      }
+      return nextOpen
+    })
+  }
+
+  const handlePermissionMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    key: PermissionMode
+  ) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      permissionMenuNavigation.moveFocus(1, key)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      permissionMenuNavigation.moveFocus(-1, key)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      setShowPermissionActions(false)
+      referenceMenuNavigation.setActiveKey('permission')
+      setMenuFocusTarget('reference')
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeReferenceActions({ restoreFocus: true })
+      return
+    }
+
+    if (!isActivationKey(event.key)) {
+      return
+    }
+
+    event.preventDefault()
+    handlePermissionModeSelect(key)
+  }
+
+  useEffect(() => {
+    if (!showModelSelect && !showEffortSelect && !showReferenceActions) {
+      return
+    }
+
+    const handleWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      if (showReferenceActions) {
+        event.preventDefault()
+        event.stopPropagation()
+        setShowReferenceActions(false)
+        setShowPermissionActions(false)
+        setMenuFocusTarget(null)
+        queueTextareaFocusRestore()
+        return
+      }
+
+      if (showModelSelect) {
+        event.preventDefault()
+        event.stopPropagation()
+        setShowModelSelect(false)
+        queueTextareaFocusRestore()
+        return
+      }
+
+      if (showEffortSelect) {
+        event.preventDefault()
+        event.stopPropagation()
+        setShowEffortSelect(false)
+        queueTextareaFocusRestore()
+      }
+    }
+
+    window.addEventListener('keydown', handleWindowKeyDown, true)
+    return () => {
+      window.removeEventListener('keydown', handleWindowKeyDown, true)
+    }
+  }, [showEffortSelect, showModelSelect, showReferenceActions])
 
   const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = Array.from(event.clipboardData?.items ?? [])
@@ -512,35 +795,29 @@ export function Sender({
     }, 0)
   }
 
-  const handleTriggerClick = (char: string) => {
-    if (textareaRef.current?.resizableTextArea?.textArea == null) return
-    const textArea = textareaRef.current.resizableTextArea.textArea
-    const cursor = textArea.selectionStart
-    const textBefore = input.slice(0, cursor)
-    const textAfter = input.slice(cursor)
-
-    // Check if we need to add a space before the trigger char
-    const needsSpaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ')
-    const trigger = needsSpaceBefore ? ` ${char}` : char
-
-    const newValue = textBefore + trigger + textAfter
-    setInput(newValue)
-
-    setTimeout(() => {
-      if (textareaRef.current?.resizableTextArea?.textArea != null) {
-        const textArea = textareaRef.current.resizableTextArea.textArea
-        const newPos = cursor + trigger.length
-        textArea.focus()
-        textArea.setSelectionRange(newPos, newPos)
-
-        // Trigger handleInputChange logic manually
-        const event = { target: textArea } as unknown as React.ChangeEvent<HTMLTextAreaElement>
-        handleInputChange(event)
-      }
-    }, 0)
-  }
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (showReferenceActions) {
+        e.preventDefault()
+        closeReferenceActions({ restoreFocus: true })
+        return
+      }
+
+      if (showModelSelect) {
+        e.preventDefault()
+        setShowModelSelect(false)
+        queueTextareaFocusRestore()
+        return
+      }
+
+      if (showEffortSelect) {
+        e.preventDefault()
+        setShowEffortSelect(false)
+        queueTextareaFocusRestore()
+        return
+      }
+    }
+
     if (isShortcutMatch(e, resolvedSendShortcut, isMac)) {
       e.preventDefault()
       handleSend()
@@ -622,7 +899,7 @@ export function Sender({
 
     // More shortcuts
     if (e.key === 'Escape') {
-      if (isInlineEdit && input === '' && pendingImages.length === 0 && onCancel != null) {
+      if (isInlineEdit && input === '' && pendingImages.length === 0 && pendingFiles.length === 0 && onCancel != null) {
         e.preventDefault()
         onCancel()
         return
@@ -713,6 +990,40 @@ export function Sender({
   const hideSender = isInlineEdit ? false : shouldHideSenderForInteraction(interactionRequest)
   const deniedTools = permissionContext?.deniedTools?.filter(tool => tool.trim() !== '') ?? []
   const reasons = permissionContext?.reasons?.filter(reason => reason.trim() !== '') ?? []
+  const canOpenReferenceActions = !isBusy && (!modelUnavailable || isInlineEdit)
+  const selectedPermissionOption = permissionModeOptions.find(option => option.value === permissionMode)
+  const decoratedEffortOptions = effortOptions.map(option => ({
+    ...option,
+    label: (
+      <span className={`effort-option effort-option--${option.value}`.trim()}>
+        <span className='material-symbols-rounded effort-option__icon'>{effortIconMap[option.value]}</span>
+        <span className='effort-option__text'>
+          {option.value === 'default' ? t('chat.effortLabels.default') : t(`chat.effortLabels.${option.value}`)}
+        </span>
+      </span>
+    )
+  }))
+
+  const composerControlShortcuts = useComposerControlShortcuts({
+    enabled: !hideSender && !showContextPicker && !isInlineEdit,
+    isMac,
+    shortcuts: mergedShortcuts,
+    onSwitchModel: (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      openModelSelector()
+    },
+    onSwitchEffort: (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      openEffortSelector()
+    },
+    onSwitchPermissionMode: (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      openPermissionShortcutMenu()
+    }
+  })
 
   return (
     <div
@@ -754,7 +1065,7 @@ export function Sender({
                 <div className='interaction-panel__section'>
                   <div className='interaction-panel__section-title'>{t('chat.permissionDeniedTools')}</div>
                   <div className='interaction-panel__chips'>
-                    {deniedTools.map(tool => (
+                    {deniedTools.map((tool: string) => (
                       <code key={tool} className='interaction-panel__chip'>{tool}</code>
                     ))}
                   </div>
@@ -764,7 +1075,7 @@ export function Sender({
                 <div className='interaction-panel__section'>
                   <div className='interaction-panel__section-title'>{t('chat.permissionReasons')}</div>
                   <div className='interaction-panel__reasons'>
-                    {reasons.map(reason => (
+                    {reasons.map((reason: string) => (
                       <div key={reason} className='interaction-panel__reason'>{reason}</div>
                     ))}
                   </div>
@@ -822,6 +1133,21 @@ export function Sender({
               ))}
             </div>
           )}
+          {pendingFiles.length > 0 && (
+            <div className='pending-context-files'>
+              {pendingFiles.map(file => (
+                <div key={file.path} className='pending-context-file'>
+                  <div className='pending-context-file__meta'>
+                    <span className='material-symbols-rounded pending-context-file__icon'>description</span>
+                    <code className='pending-context-file__path'>{file.path}</code>
+                  </div>
+                  <div className='pending-context-file__remove' onClick={() => handleRemovePendingFile(file.path)}>
+                    <span className='material-symbols-rounded'>close</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           {showCompletion && (
             <CompletionMenu
               items={completionItems}
@@ -853,188 +1179,265 @@ export function Sender({
               className='file-input-hidden'
             />
             <div className='toolbar-left'>
-              <Tooltip title={t('chat.tooltipSlashCommands')}>
-                <span>
-                  <div className='toolbar-btn' onClick={() => handleTriggerClick('/')}>
-                    <span className='material-symbols-rounded'>terminal</span>
-                  </div>
-                </span>
-              </Tooltip>
-              <Tooltip title={t('chat.tooltipMentionAgents')}>
-                <span>
-                  <div className='toolbar-btn' onClick={() => handleTriggerClick('@')}>
-                    <span className='material-symbols-rounded'>smart_toy</span>
-                  </div>
-                </span>
-              </Tooltip>
-              <Tooltip title={t('chat.tooltipInjectContext')}>
-                <span>
-                  <div className='toolbar-btn' onClick={() => handleTriggerClick('#')}>
-                    <span className='material-symbols-rounded'>description</span>
-                  </div>
-                </span>
-              </Tooltip>
-              <Tooltip title={t('chat.tooltipUploadImages')}>
-                <span>
-                  <div className='toolbar-btn' onClick={handleImageUpload}>
-                    <span className='material-symbols-rounded'>image</span>
-                  </div>
-                </span>
-              </Tooltip>
-
-              {!isInlineEdit && sessionInfo != null && sessionInfo.type === 'init' && (
-                <div className='session-info-toolbar'>
-                  {selectionWarnings.length > 0 && (
-                    <Tooltip
-                      placement='topLeft'
-                      title={
-                        <div className='asset-warning-tooltip'>
-                          <div className='asset-warning-tooltip__title'>{t('chat.selectionWarningsTitle')}</div>
-                          {selectionWarnings.slice(0, 5).map((warning: SessionSelectionWarning, index: number) => (
-                            <div
-                              key={`${warning.adapter}:${warning.requestedModel}:${index}`}
-                              className='asset-warning-tooltip__item'
-                            >
-                              <span>{formatSelectionWarning(warning)}</span>
-                            </div>
-                          ))}
-                          {selectionWarnings.length > 5 && (
-                            <div className='asset-warning-tooltip__more'>
-                              {t('chat.assetWarningsMore', { count: selectionWarnings.length - 5 })}
-                            </div>
-                          )}
-                        </div>
-                      }
+              <Popover
+                content={
+                  <div className='reference-actions-menu'>
+                    <button
+                      ref={referenceMenuNavigation.registerItem('image')}
+                      type='button'
+                      className='reference-actions-menu-item'
+                      onMouseEnter={() => {
+                        referenceMenuNavigation.setActiveKey('image')
+                        setShowPermissionActions(false)
+                      }}
+                      onFocus={() => referenceMenuNavigation.setActiveKey('image')}
+                      onKeyDown={(event) => handleReferenceMenuKeyDown(event, 'image')}
+                      onClick={() => {
+                        handleReferenceImageSelect()
+                      }}
                     >
-                      <div className='info-item asset-warning-item'>
-                        <span className='info-item-leading'>
-                          <span className='material-symbols-rounded'>warning</span>
-                        </span>
-                        <span className='info-text'>
-                          {t('chat.selectionWarningsCount', { count: selectionWarnings.length })}
-                        </span>
-                      </div>
-                    </Tooltip>
-                  )}
-                  {assetWarnings.length > 0 && (
-                    <Tooltip
-                      placement='topLeft'
-                      title={
-                        <div className='asset-warning-tooltip'>
-                          <div className='asset-warning-tooltip__title'>{t('chat.assetWarningsTitle')}</div>
-                          {assetWarnings.slice(0, 5).map((warning: SessionAssetDiagnostic) => (
-                            <div key={warning.assetId} className='asset-warning-tooltip__item'>
-                              <code>{warning.assetId}</code>
-                              <span>{warning.reason}</span>
-                            </div>
-                          ))}
-                          {assetWarnings.length > 5 && (
-                            <div className='asset-warning-tooltip__more'>
-                              {t('chat.assetWarningsMore', { count: assetWarnings.length - 5 })}
-                            </div>
-                          )}
-                        </div>
-                      }
-                    >
-                      <div className='info-item asset-warning-item'>
-                        <span className='info-item-leading'>
-                          <span className='material-symbols-rounded'>warning</span>
-                        </span>
-                        <span className='info-text'>
-                          {t('chat.assetWarningsCount', { count: assetWarnings.length })}
-                        </span>
-                      </div>
-                    </Tooltip>
-                  )}
-                  <Cascader
-                    open={showToolsList}
-                    options={toolCascaderOptions}
-                    expandTrigger='hover'
-                    placement='topLeft'
-                    allowClear={false}
-                    popupClassName='sender-tools-cascader-popup'
-                    onOpenChange={setShowToolsList}
-                    onChange={() => setShowToolsList(false)}
-                  >
-                    <div className={`info-item ${showToolsList ? 'active' : ''}`}>
-                      <span className='info-item-leading'>
-                        <span className='material-symbols-rounded'>build</span>
+                      <span className='reference-action-option'>
+                        <span className='material-symbols-rounded reference-action-option__icon'>image</span>
+                        <span className='reference-action-option__label'>{t('chat.referenceImage')}</span>
                       </span>
-                      <span className='info-text'>{t('chat.toolsCount', { count: sessionInfo.tools.length })}</span>
-                      <span className='material-symbols-rounded arrow-icon'>keyboard_arrow_up</span>
-                    </div>
-                  </Cascader>
-                </div>
+                    </button>
+                    {!isInlineEdit && (
+                      <button
+                        ref={referenceMenuNavigation.registerItem('file')}
+                        type='button'
+                        className='reference-actions-menu-item'
+                        onMouseEnter={() => {
+                          referenceMenuNavigation.setActiveKey('file')
+                          setShowPermissionActions(false)
+                        }}
+                        onFocus={() => referenceMenuNavigation.setActiveKey('file')}
+                        onKeyDown={(event) => handleReferenceMenuKeyDown(event, 'file')}
+                        onClick={() => {
+                          closeReferenceActions()
+                          handleOpenContextPicker()
+                        }}
+                      >
+                        <span className='reference-action-option'>
+                          <span className='material-symbols-rounded reference-action-option__icon'>description</span>
+                          <span className='reference-action-option__label'>{t('chat.referenceFile')}</span>
+                        </span>
+                      </button>
+                    )}
+                    {!isInlineEdit && permissionModeOptions.length > 0 && (
+                      <Popover
+                        content={
+                          <div className='reference-actions-menu reference-actions-menu--submenu'>
+                            {permissionModeOptions.map(option => (
+                              <button
+                                key={option.value}
+                                ref={permissionMenuNavigation.registerItem(option.value)}
+                                type='button'
+                                className={`reference-actions-menu-item ${
+                                  permissionMode === option.value ? 'is-selected' : ''
+                                }`.trim()}
+                                onMouseEnter={() => permissionMenuNavigation.setActiveKey(option.value)}
+                                onFocus={() => permissionMenuNavigation.setActiveKey(option.value)}
+                                onKeyDown={(event) => handlePermissionMenuKeyDown(event, option.value)}
+                                onClick={() => {
+                                  handlePermissionModeSelect(option.value)
+                                }}
+                              >
+                                <span className='reference-action-option reference-action-option--permission'>
+                                  <span className='material-symbols-rounded reference-action-option__icon'>
+                                    {permissionModeIconMap[option.value]}
+                                  </span>
+                                  <span className='reference-action-option__label'>{option.label}</span>
+                                  {permissionMode === option.value && (
+                                    <span className='material-symbols-rounded reference-action-option__check'>
+                                      check
+                                    </span>
+                                  )}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        }
+                        open={showReferenceActions ? showPermissionActions : false}
+                        onOpenChange={(nextOpen) => {
+                          if (!showReferenceActions) {
+                            return
+                          }
+                          referenceMenuNavigation.setActiveKey('permission')
+                          if (nextOpen) {
+                            permissionMenuNavigation.setActiveKey(permissionMode)
+                          }
+                          setShowPermissionActions(nextOpen)
+                        }}
+                        placement='rightTop'
+                        trigger={['hover', 'click']}
+                        overlayClassName='reference-actions-submenu-popover'
+                        destroyTooltipOnHide
+                        arrow={false}
+                      >
+                        <button
+                          ref={referenceMenuNavigation.registerItem('permission')}
+                          type='button'
+                          className='reference-actions-menu-item reference-actions-menu-item--submenu'
+                          onMouseEnter={() => referenceMenuNavigation.setActiveKey('permission')}
+                          onFocus={() => referenceMenuNavigation.setActiveKey('permission')}
+                          onKeyDown={(event) => handleReferenceMenuKeyDown(event, 'permission')}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            setShowPermissionActions(prev => !prev)
+                          }}
+                        >
+                          <span className='reference-action-option'>
+                            <span className='material-symbols-rounded reference-action-option__icon'>lock</span>
+                            <span className='reference-action-option__label'>{t('chat.referencePermission')}</span>
+                            <span className='reference-action-option__value'>
+                              {selectedPermissionOption?.label}
+                            </span>
+                            <span className='material-symbols-rounded reference-action-option__chevron'>
+                              chevron_right
+                            </span>
+                          </span>
+                        </button>
+                      </Popover>
+                    )}
+                  </div>
+                }
+                open={showReferenceActions}
+                onOpenChange={handleReferenceOpenChange}
+                placement='topLeft'
+                trigger='click'
+                overlayClassName='reference-actions-popover'
+                destroyTooltipOnHide
+                arrow={false}
+              >
+                <ShortcutTooltip
+                  shortcut={composerControlShortcuts.switchPermissionMode}
+                  isMac={isMac}
+                  title={(shortcut) => t('chat.referenceActionsShortcutTooltip', { shortcut })}
+                >
+                  <div
+                    ref={referenceTriggerRef}
+                    className={`toolbar-btn toolbar-btn--reference ${showReferenceActions ? 'active' : ''}`.trim()}
+                    tabIndex={-1}
+                    onClick={canOpenReferenceActions ? undefined : (event) => {
+                      event.preventDefault()
+                      void handleReferenceOpenChange(true)
+                    }}
+                  >
+                    <span className='toolbar-btn__icon-shell'>
+                      <span className='material-symbols-rounded'>add</span>
+                    </span>
+                    <span className='toolbar-btn__text'>{t('chat.referenceActionsShort')}</span>
+                  </div>
+                </ShortcutTooltip>
+              </Popover>
+
+              {!isInlineEdit && (
+                <ShortcutTooltip
+                  shortcut={composerControlShortcuts.switchModel}
+                  isMac={isMac}
+                  title={(shortcut) => t('chat.modelShortcutTooltip', { shortcut })}
+                  targetClassName='sender-control-tooltip-target'
+                >
+                  <Select
+                    ref={modelSelectRef}
+                    className='model-select'
+                    classNames={{ popup: { root: 'model-select-popup' } }}
+                    open={showModelSelect}
+                    value={selectedModel}
+                    options={modelOptions ?? []}
+                    showSearch
+                    allowClear={false}
+                    disabled={modelUnavailable || isThinking}
+                    onChange={(value) => {
+                      onModelChange?.(value)
+                      setShowModelSelect(false)
+                      queueTextareaFocusRestore()
+                    }}
+                    onOpenChange={(nextOpen) => {
+                      if (nextOpen) {
+                        setShowEffortSelect(false)
+                        closeReferenceActions()
+                      } else {
+                        queueTextareaFocusRestore()
+                      }
+                      setShowModelSelect(nextOpen)
+                    }}
+                    placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
+                    optionLabelProp='displayLabel'
+                    filterOption={(input, option) => {
+                      const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
+                      return searchText.toLowerCase().includes(input.toLowerCase())
+                    }}
+                    popupMatchSelectWidth={false}
+                    suffixIcon={renderSelectArrow(toggleModelSelectorFromArrow)}
+                  />
+                </ShortcutTooltip>
+              )}
+
+              {!isInlineEdit && supportsEffort && (
+                <ShortcutTooltip
+                  shortcut={composerControlShortcuts.switchEffort}
+                  isMac={isMac}
+                  title={(shortcut) => t('chat.effortShortcutTooltip', { shortcut })}
+                  targetClassName='sender-control-tooltip-target'
+                >
+                  <Select
+                    ref={effortSelectRef}
+                    className='effort-select'
+                    classNames={{ popup: { root: 'effort-select-popup' } }}
+                    open={showEffortSelect}
+                    value={effort}
+                    options={decoratedEffortOptions}
+                    showSearch={false}
+                    allowClear={false}
+                    disabled={modelUnavailable || isThinking}
+                    onChange={(value) => {
+                      onEffortChange?.(value)
+                      setShowEffortSelect(false)
+                      queueTextareaFocusRestore()
+                    }}
+                    onOpenChange={(nextOpen) => {
+                      if (nextOpen) {
+                        setShowModelSelect(false)
+                        closeReferenceActions()
+                      } else {
+                        queueTextareaFocusRestore()
+                      }
+                      setShowEffortSelect(nextOpen)
+                    }}
+                    placeholder={t('chat.effortSelectPlaceholder')}
+                    optionLabelProp='label'
+                    popupMatchSelectWidth={false}
+                    suffixIcon={renderSelectArrow(toggleEffortSelectorFromArrow)}
+                  />
+                </ShortcutTooltip>
               )}
             </div>
 
             <div className={`toolbar-right ${isInlineEdit ? 'toolbar-right--inline-edit' : ''}`.trim()}>
               {!isInlineEdit && adapterOptions && adapterOptions.length > 1 && (
-                <Select
-                  className='adapter-select'
-                  classNames={{ popup: { root: 'adapter-select-popup' } }}
-                  value={selectedAdapter}
-                  options={adapterOptions}
-                  showSearch={false}
-                  allowClear={false}
-                  disabled={adapterLocked || modelUnavailable || isThinking}
-                  onChange={(value) => onAdapterChange?.(value)}
-                  placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
-                  optionLabelProp='label'
-                  popupMatchSelectWidth={false}
-                />
-              )}
-
-              {!isInlineEdit && (
-                <Select
-                  className='model-select'
-                  classNames={{ popup: { root: 'model-select-popup' } }}
-                  value={selectedModel}
-                  options={modelOptions ?? []}
-                  showSearch
-                  allowClear={false}
-                  disabled={modelUnavailable || isThinking}
-                  onChange={(value) => onModelChange?.(value)}
-                  placeholder={modelUnavailable ? t('chat.modelUnavailable') : t('chat.modelSelectPlaceholder')}
-                  optionLabelProp='displayLabel'
-                  filterOption={(input, option) => {
-                    const searchText = String((option as ModelSelectOption | undefined)?.searchText ?? '')
-                    return searchText.toLowerCase().includes(input.toLowerCase())
-                  }}
-                  popupMatchSelectWidth={false}
-                />
-              )}
-
-              {!isInlineEdit && supportsEffort && (
-                <Select
-                  className='effort-select'
-                  classNames={{ popup: { root: 'effort-select-popup' } }}
-                  value={effort}
-                  options={effortOptions}
-                  showSearch={false}
-                  allowClear={false}
-                  disabled={modelUnavailable || isThinking}
-                  onChange={(value) => onEffortChange?.(value)}
-                  placeholder={t('chat.effortSelectPlaceholder')}
-                  optionLabelProp='label'
-                  popupMatchSelectWidth={false}
-                />
-              )}
-
-              {!isInlineEdit && (
-                <Select
-                  className='permission-mode-select'
-                  classNames={{ popup: { root: 'permission-mode-select-popup' } }}
-                  value={permissionMode}
-                  options={permissionModeOptions}
-                  showSearch={false}
-                  allowClear={false}
-                  disabled={modelUnavailable || isThinking}
-                  onChange={(value) => onPermissionModeChange?.(value)}
-                  placeholder={t('chat.permissionModeSelectPlaceholder')}
-                  optionLabelProp='label'
-                  popupMatchSelectWidth={false}
-                />
+                <Tooltip
+                  title={adapterLocked ? t('chat.adapterLockedTooltip') : undefined}
+                  placement='top'
+                >
+                  <span className='adapter-select-tooltip-target'>
+                    <Select
+                      className={`adapter-select ${adapterLocked ? 'adapter-select--locked' : ''}`.trim()}
+                      classNames={{ popup: { root: 'adapter-select-popup' } }}
+                      value={selectedAdapter}
+                      options={adapterOptions}
+                      showSearch={false}
+                      showArrow={false}
+                      allowClear={false}
+                      disabled={adapterLocked || modelUnavailable || isThinking}
+                      onChange={(value) => onAdapterChange?.(value)}
+                      placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
+                      optionLabelProp='label'
+                      popupMatchSelectWidth={false}
+                    />
+                  </span>
+                </Tooltip>
               )}
 
               {isInlineEdit
@@ -1055,7 +1458,7 @@ export function Sender({
                       type='primary'
                       size='small'
                       loading={submitLoading}
-                      disabled={input.trim() === '' && pendingImages.length === 0}
+                      disabled={input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0}
                       onClick={() => {
                         void handleSend()
                       }}
@@ -1065,26 +1468,40 @@ export function Sender({
                   </>
                 )
                 : (
-                  <div
-                    className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${
-                      isThinking ? 'thinking' : ''
-                    } ${modelUnavailable ? 'disabled' : ''}`}
-                    onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : () => {
-                      void handleSend()
-                    })}
+                  <ShortcutTooltip
+                    shortcut={resolvedSendShortcut}
+                    isMac={isMac}
+                    title={(shortcut) => t('chat.sendShortcutTooltip', { shortcut })}
+                    targetClassName='sender-control-tooltip-target'
+                    enabled={!isThinking}
                   >
-                    <span className='material-symbols-rounded'>
-                      {isThinking ? 'stop_circle' : 'send'}
-                    </span>
-                  </div>
+                    <div
+                      className={`chat-send-btn ${input.trim() !== '' && !modelUnavailable ? 'active' : ''} ${
+                        isThinking ? 'thinking' : ''
+                      } ${modelUnavailable ? 'disabled' : ''}`}
+                      onClick={modelUnavailable ? undefined : (isThinking ? onInterrupt : () => {
+                        void handleSend()
+                      })}
+                    >
+                      <span className='material-symbols-rounded'>
+                        {isThinking ? 'stop_circle' : 'send'}
+                      </span>
+                    </div>
+                  </ShortcutTooltip>
                 )}
             </div>
           </div>
-        </div>
-      )}
-      {!hideSender && !isInlineEdit && (
-        <div className='chat-input-hint'>
-          {t('chat.hint')}
+          {!isInlineEdit && (
+            <ContextFilePicker
+              open={showContextPicker}
+              selectedPaths={pendingFiles.map(file => file.path)}
+              onCancel={() => {
+                setShowContextPicker(false)
+                queueTextareaFocusRestore()
+              }}
+              onConfirm={handleContextPickerConfirm}
+            />
+          )}
         </div>
       )}
     </div>

@@ -189,6 +189,30 @@ html.dark {
   height: auto;
 }
 
+.message-context-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-color);
+}
+
+.message-context-file__icon {
+  font-size: 18px;
+  color: var(--sub-text-color, #6b7280);
+}
+
+.message-context-file__path {
+  min-width: 0;
+  color: var(--text-color);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .markdown-body {
   --border-color: #e5e7eb;
   --code-block-bg: #ffffff;

@@ -191,7 +191,9 @@ function MessageItemComponent({
 
     if (!Array.isArray(msg.content)) return null
 
-    const hasContent = msg.content.some((c: ChatMessageContent) => c.type === 'text' || c.type === 'image') ||
+    const hasContent = msg.content.some((c: ChatMessageContent) => (
+      c.type === 'text' || c.type === 'image' || c.type === 'file'
+    )) ||
       msg.toolCall != null
     if (!hasContent) return null
 
@@ -208,6 +210,14 @@ function MessageItemComponent({
               <a key={i} className='message-image' href={item.url} target='_blank' rel='noreferrer'>
                 <img src={item.url} alt={item.name ?? 'image'} />
               </a>
+            )
+          }
+          if (item.type === 'file') {
+            return (
+              <div key={i} className='message-context-file'>
+                <span className='material-symbols-rounded message-context-file__icon'>description</span>
+                <code className='message-context-file__path'>{item.path}</code>
+              </div>
             )
           }
           return null

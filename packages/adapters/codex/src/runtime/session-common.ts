@@ -20,7 +20,7 @@ export type CodexReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh'
  * Map a single vibe-forge `AdapterMessageContent` item to zero or one Codex input items.
  */
 function mapSingleContentToCodexInput(
-  item: { type: string; text?: string; url?: string; [k: string]: unknown }
+  item: { type: string; text?: string; url?: string; path?: string; [k: string]: unknown }
 ): CodexInputItem | null {
   if (item.type === 'text' && typeof item.text === 'string') {
     return { type: 'text', text: item.text }
@@ -31,6 +31,9 @@ function mapSingleContentToCodexInput(
       return { type: 'text', text: '[Image: base64 data not supported inline]' }
     }
     return { type: 'image', url: item.url }
+  }
+  if (item.type === 'file' && typeof item.path === 'string' && item.path.trim() !== '') {
+    return { type: 'text', text: `Context file: ${item.path}` }
   }
   return null
 }
@@ -351,7 +354,7 @@ export function buildFeatureArgs(features: Record<string, boolean>): string[] {
  * Map an array of vibe-forge `AdapterMessageContent` to Codex `turn/start` input items.
  */
 export function mapContentToCodexInput(
-  content: Array<{ type: string; text?: string; url?: string; [k: string]: unknown }>
+  content: Array<{ type: string; text?: string; url?: string; path?: string; [k: string]: unknown }>
 ): CodexInputItem[] {
   return content
     .map(mapSingleContentToCodexInput)

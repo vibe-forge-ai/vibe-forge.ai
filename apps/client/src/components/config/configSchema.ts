@@ -330,6 +330,9 @@ export const configSchema: Record<string, FieldSpec[]> = {
     { path: ['newSession'], type: 'shortcut', defaultValue: '', icon: 'add_comment' },
     { path: ['openConfig'], type: 'shortcut', defaultValue: '', icon: 'settings' },
     { path: ['sendMessage'], type: 'shortcut', defaultValue: '', icon: 'send' },
-    { path: ['clearInput'], type: 'shortcut', defaultValue: '', icon: 'clear' }
+    { path: ['clearInput'], type: 'shortcut', defaultValue: '', icon: 'clear' },
+    { path: ['switchModel'], type: 'shortcut', defaultValue: '', icon: 'model_training' },
+    { path: ['switchEffort'], type: 'shortcut', defaultValue: '', icon: 'psychology' },
+    { path: ['switchPermissionMode'], type: 'shortcut', defaultValue: '', icon: 'lock' }
   ]
 }

@@ -51,6 +51,47 @@ describe('loadConfig', () => {
     }
   })
 
+  it('falls back to the primary workspace dev config when the current worktree has none', async () => {
+    const primaryDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-primary-'))
+    const worktreeDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-worktree-'))
+    const previousPrimaryWorkspace = process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+
+    try {
+      await writeFile(
+        path.join(worktreeDir, '.ai.config.json'),
+        JSON.stringify({
+          defaultModel: 'project-model'
+        })
+      )
+      await writeFile(
+        path.join(primaryDir, '.ai.dev.config.json'),
+        JSON.stringify({
+          defaultModel: 'primary-dev-model'
+        })
+      )
+
+      process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = primaryDir
+      resetConfigCache()
+
+      const [projectConfig, userConfig] = await loadConfig({
+        cwd: worktreeDir,
+        jsonVariables: {}
+      })
+
+      expect(projectConfig?.defaultModel).toBe('project-model')
+      expect(userConfig?.defaultModel).toBe('primary-dev-model')
+    } finally {
+      if (previousPrimaryWorkspace == null) {
+        delete process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = previousPrimaryWorkspace
+      }
+      resetConfigCache()
+      await rm(primaryDir, { force: true, recursive: true })
+      await rm(worktreeDir, { force: true, recursive: true })
+    }
+  })
+
   it('resolves extend chains with layered merge semantics', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-extend-'))
 
