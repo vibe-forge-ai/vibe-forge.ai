@@ -1,0 +1,54 @@
+.chat-send-btn {
+  width: var(--sender-control-height);
+  min-width: var(--sender-control-height);
+  height: var(--sender-control-height);
+  padding: 0;
+  border-radius: var(--sender-control-radius);
+  border: 1px solid var(--border-color);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .2s;
+  align-self: center;
+  flex-shrink: 0;
+
+  .material-symbols-rounded {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-size: 17px;
+    transition: transform .2s ease;
+  }
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+    border-color: color-mix(
+      in srgb,
+      var(--primary-color, #6366f1) 48%,
+      var(--sub-border-color) 52%
+    );
+  }
+
+  &:not(.thinking):hover .material-symbols-rounded {
+    transform: rotate(-45deg);
+  }
+
+  &.active {
+    color: var(--primary-color, #6366f1);
+    border-color: var(--primary-color, #6366f1);
+  }
+  &.thinking {
+    color: #fff;
+    border-color: #dc2626;
+    background: linear-gradient(180deg, #ef4444, #dc2626);
+  }
+  &.disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+    opacity: .72;
+  }
+}

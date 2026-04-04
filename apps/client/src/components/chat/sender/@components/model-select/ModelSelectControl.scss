@@ -1,0 +1,66 @@
+.model-select {
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    justify-content: flex-start;
+    color: var(--placeholder-color, #9ca3af);
+  }
+
+  &.ant-select-open .ant-select-selection-item,
+  &.ant-select-open .ant-select-selection-placeholder,
+  &.ant-select-open .sender-select-arrow,
+  &:hover .ant-select-selection-item,
+  &:hover .ant-select-selection-placeholder,
+  &:hover .sender-select-arrow,
+  &.ant-select-focused .ant-select-selection-item,
+  &.ant-select-focused .ant-select-selection-placeholder,
+  &.ant-select-focused .sender-select-arrow {
+    color: var(--sender-control-hover-color) !important;
+  }
+}
+
+.model-select-popup {
+  background: var(--bg-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--sender-popup-radius, 8px) !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .12) !important;
+  padding: 6px !important;
+
+  .ant-select-item-group {
+    padding: 6px 8px 2px;
+    color: var(--placeholder-color);
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .ant-select-item-option {
+    min-height: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 3px 8px;
+    border-radius: 8px;
+    color: var(--text-color);
+    font-weight: 400 !important;
+    transition: background-color .18s ease, color .18s ease;
+  }
+
+  .ant-select-item-option-content {
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+  }
+}
+
+.model-select-browser,
+.model-select-menu {
+  min-width: 220px;
+}
+
+.model-menu-tooltip-content {
+  display: inline-block;
+  max-width: 280px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: inherit;
+  opacity: .78;
+}

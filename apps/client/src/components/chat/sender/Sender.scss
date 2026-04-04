@@ -114,6 +114,7 @@ html.dark {
   &::placeholder,
   &::-webkit-input-placeholder {
     color: var(--placeholder-color, #9ca3af) !important;
+    font-size: 13px !important;
     opacity: 1 !important;
   }
 }

@@ -37,6 +37,26 @@
 - API 请求统一走 `src/api/`，避免在组件里直接手写 `fetch`。
 - 能复用的状态逻辑优先抽到 hooks，不在 route 和 view 间复制业务逻辑。
 
+组件与 hook 归档约定：
+
+- 前端业务模块统一遵循 `../../.ai/rules/frontend-standard/module-organization.md`，这不是 sender 私有约定。
+- 模块目录不要长期平铺文件；优先拆成 `@components / @core / @hooks / @types / @utils / @store`。
+- 模块私有 hooks、utils、types、store 放在模块自己的 `@*` 目录中，不和全局 `src/hooks`、`src/utils`、`src/store` 混用。
+- 只有跨模块复用的 hooks、components、utils、store，才提升到 `src/hooks/`、`src/components/`、`src/utils/`、`src/store/`。
+- 如果一个组件明显可被其他页面/模块复用，应放到更公共的 `src/components/` 子目录，而不是继续留在某个页面私有目录。
+- 当前例子：
+  - sender 私有编排逻辑在 `src/components/chat/sender/@hooks/`
+  - sender 私有核心逻辑在 `src/components/chat/sender/@core/`
+  - 聊天共用状态提示在 `src/components/chat/`
+  - 工作区文件选择器在 `src/components/workspace/`
+
+import 约定：
+
+- 遵循 `.ai/rules/CODING-STYLE.md` 的 group 顺序，并在 group 之间保留一个空行。
+- `#~/` 用于 client 包内跨目录引用；不要在组件里持续叠加 `../../`。
+- 模块入口引用自己的 `@components / @core / @hooks / @types / @utils` 时，可以使用模块内相对路径。
+- 子模块内部如果只是引用同子模块兄弟文件，继续用相对路径；跨到别的子模块或更上层职责目录时，优先保证路径语义清晰，不要为了省几层目录把结构打平。
+
 前端调试入口：
 
 - 如果任务涉及 tooltip / popover / select / theme / sender，优先补读 `../../.ai/rules/frontend-standard/debugging.md`。

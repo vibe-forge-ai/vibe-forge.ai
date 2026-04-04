@@ -1,0 +1,149 @@
+import type { ReactNode } from 'react'
+
+import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
+import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+
+import type {
+  SenderToolbarData,
+  SenderToolbarHandlers,
+  SenderToolbarRefs,
+  SenderToolbarState
+} from '../@types/sender-toolbar-types'
+
+import { createSenderToolbarHandlers } from './create-sender-toolbar-handlers'
+
+export const createSenderToolbarBindings = ({
+  attachments,
+  callbacks,
+  composer,
+  resources,
+  selection,
+  ui
+}: {
+  attachments: {
+    handleImageFileChange: SenderToolbarHandlers['onImageFileChange']
+    handleImageUpload: () => void
+    handleOpenContextPicker: () => void
+  }
+  callbacks: {
+    onAdapterChange?: (adapter: string) => void
+    onEffortChange?: (effort: ChatEffort) => void
+    onInterrupt: () => void
+    onModelChange?: (model: string) => void
+    onPermissionModeChange?: (mode: PermissionMode) => void
+    onCancel?: () => void
+    onSend: () => void
+  }
+  composer: { input: string; pendingImageCount: number; pendingFileCount: number }
+  resources: { message: { warning: (content: ReactNode) => Promise<void> | void }; t: (key: string) => string }
+  selection: {
+    adapterOptions?: Array<{ value: string; label: ReactNode }>
+    effort: ChatEffort
+    effortOptions: SenderToolbarData['effortOptions']
+    modelMenuGroups?: ModelSelectMenuGroup[]
+    modelSearchOptions?: ModelSelectOption[]
+    permissionMode: PermissionMode
+    permissionModeOptions: SenderToolbarData['permissionModeOptions']
+    recommendedModelOptions?: ModelSelectOption[]
+    resolvedSendShortcut: string
+    selectedAdapter?: string
+    selectedModel?: string
+  }
+  ui: {
+    adapterLocked: boolean
+    canOpenReferenceActions: boolean
+    composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
+    focusRestore: { queueTextareaFocusRestore: () => void }
+    isInlineEdit: boolean
+    isMac: boolean
+    isThinking: boolean
+    modelUnavailable?: boolean
+    referenceActions: {
+      showReferenceActions: boolean
+      showPermissionActions: boolean
+      setShowReferenceActions: (nextOpen: boolean) => void
+      setShowPermissionActions: (nextOpen: boolean) => void
+      closeReferenceActions: (options?: { restoreFocus?: boolean }) => void
+      handleReferenceMenuKeyDown: SenderToolbarHandlers['onReferenceMenuKeyDown']
+      handlePermissionMenuKeyDown: SenderToolbarHandlers['onPermissionMenuKeyDown']
+      referenceMenuNavigation: SenderToolbarRefs['referenceMenuNavigation']
+      permissionMenuNavigation: SenderToolbarRefs['permissionMenuNavigation']
+    }
+    refs: Pick<SenderToolbarRefs, 'effortSelectRef' | 'fileInputRef' | 'modelSelectRef'>
+    selectOverlays: {
+      showModelSelect: boolean
+      setShowModelSelect: (nextOpen: boolean) => void
+      showEffortSelect: boolean
+      setShowEffortSelect: (nextOpen: boolean) => void
+      modelSearchValue: string
+      setModelSearchValue: (value: string) => void
+      openModelSelector: () => boolean
+      openEffortSelector: () => boolean
+    }
+    submitLabel?: string
+    submitLoading: boolean
+    supportsEffort: boolean
+  }
+}) => {
+  const toolbarState: SenderToolbarState = {
+    isInlineEdit: ui.isInlineEdit,
+    isThinking: ui.isThinking,
+    modelUnavailable: Boolean(ui.modelUnavailable),
+    adapterLocked: ui.adapterLocked,
+    submitLoading: ui.submitLoading,
+    supportsEffort: ui.supportsEffort,
+    canOpenReferenceActions: ui.canOpenReferenceActions,
+    showModelSelect: ui.selectOverlays.showModelSelect,
+    showEffortSelect: ui.selectOverlays.showEffortSelect,
+    showReferenceActions: ui.referenceActions.showReferenceActions,
+    showPermissionActions: ui.referenceActions.showPermissionActions,
+    modelSearchValue: ui.selectOverlays.modelSearchValue,
+    selectedModel: selection.selectedModel,
+    effort: selection.effort,
+    permissionMode: selection.permissionMode,
+    selectedAdapter: selection.selectedAdapter,
+    isMac: ui.isMac,
+    resolvedSendShortcut: selection.resolvedSendShortcut,
+    hasComposerContent: composer.input.trim() !== '' || composer.pendingImageCount > 0 || composer.pendingFileCount > 0,
+    hasSendText: composer.input.trim() !== ''
+  }
+
+  const toolbarData: SenderToolbarData = {
+    modelMenuGroups: selection.modelMenuGroups,
+    modelSearchOptions: selection.modelSearchOptions,
+    recommendedModelOptions: selection.recommendedModelOptions,
+    effortOptions: selection.effortOptions,
+    permissionModeOptions: selection.permissionModeOptions,
+    adapterOptions: selection.adapterOptions,
+    composerControlShortcuts: ui.composerControlShortcuts,
+    submitLabel: ui.submitLabel
+  }
+
+  const toolbarRefs: SenderToolbarRefs = {
+    ...ui.refs,
+    referenceMenuNavigation: ui.referenceActions.referenceMenuNavigation,
+    permissionMenuNavigation: ui.referenceActions.permissionMenuNavigation
+  }
+
+  const toolbarHandlers = createSenderToolbarHandlers({
+    attachments,
+    canOpenReferenceActions: ui.canOpenReferenceActions,
+    focusRestore: ui.focusRestore,
+    isInlineEdit: ui.isInlineEdit,
+    message: resources.message,
+    modelUnavailable: ui.modelUnavailable,
+    onAdapterChange: callbacks.onAdapterChange,
+    onEffortChange: callbacks.onEffortChange,
+    onInterrupt: callbacks.onInterrupt,
+    onModelChange: callbacks.onModelChange,
+    onPermissionModeChange: callbacks.onPermissionModeChange,
+    onCancel: callbacks.onCancel,
+    onSend: callbacks.onSend,
+    referenceActions: ui.referenceActions,
+    selectOverlays: ui.selectOverlays,
+    t: resources.t
+  })
+
+  return { toolbarState, toolbarData, toolbarRefs, toolbarHandlers }
+}

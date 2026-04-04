@@ -1,0 +1,83 @@
+.model-select-menu,
+.model-select-submenu-popup .ant-menu {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.model-select-menu .ant-menu-submenu,
+.model-select-submenu-popup .ant-menu-submenu {
+  display: block;
+  list-style: none;
+}
+
+.model-select-submenu-popup .ant-menu-item,
+.model-select-submenu-popup .ant-menu-submenu {
+  margin: 0 0 4px !important;
+}
+
+.model-select-menu .ant-menu-item,
+.model-select-submenu-popup .ant-menu-item,
+.model-select-menu .ant-menu-submenu-title,
+.model-select-submenu-popup .ant-menu-submenu-title {
+  min-height: 26px;
+  height: 26px !important;
+  margin: 0;
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: 12px;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+.model-select-menu .ant-menu-item,
+.model-select-submenu-popup .ant-menu-item {
+  padding: 3px 8px !important;
+}
+
+.model-select-menu .ant-menu-submenu-title,
+.model-select-submenu-popup .ant-menu-submenu-title {
+  width: 100%;
+  padding: 3px 20px 3px 8px !important;
+}
+
+.model-select-menu .ant-menu-title-content,
+.model-select-submenu-popup .ant-menu-title-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  line-height: 1 !important;
+}
+
+.model-select-menu .ant-menu-item:hover,
+.model-select-menu .ant-menu-submenu-title:hover,
+.model-select-submenu-popup .ant-menu-item:hover,
+.model-select-submenu-popup .ant-menu-submenu-title:hover {
+  background: color-mix(
+    in srgb,
+    var(--primary-soft-bg, #eff6ff) 72%,
+    var(--bg-color) 28%
+  ) !important;
+}
+
+.model-select-menu .ant-menu-item-selected,
+.model-select-menu .ant-menu-item-selected:hover,
+.model-select-submenu-popup .ant-menu-item-selected,
+.model-select-submenu-popup .ant-menu-item-selected:hover {
+  background: color-mix(
+    in srgb,
+    var(--primary-color, #2563eb) 18%,
+    var(--bg-color) 82%
+  ) !important;
+}
+
+.model-select-menu .ant-menu-submenu-arrow,
+.model-select-submenu-popup .ant-menu-submenu-arrow {
+  color: var(--placeholder-color, #9ca3af) !important;
+  inset-inline-end: 8px !important;
+}

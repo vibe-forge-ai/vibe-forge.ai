@@ -12,6 +12,7 @@ globs:
 
 ## 先看这些
 
+- [模块组织](./frontend-standard/module-organization.md)
 - [组件与数据](./frontend-standard/components.md)
 - [样式与类名](./frontend-standard/styles.md)
 - [主题与国际化](./frontend-standard/theme-i18n.md)

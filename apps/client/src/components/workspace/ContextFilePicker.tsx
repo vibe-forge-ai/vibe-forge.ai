@@ -6,7 +6,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { listWorkspaceTree } from '#~/api/workspace'
-import type { PendingContextFile } from './content-attachments'
+
+export interface ContextPickerFile {
+  path: string
+  name?: string
+}
 
 interface ContextFileTreeNode extends DataNode {
   key: string
@@ -48,7 +52,7 @@ const toTreeNodes = (entries: Awaited<ReturnType<typeof listWorkspaceTree>>['ent
     disableCheckbox: entry.type !== 'file'
   }))
 
-const toPendingFiles = (paths: string[]): PendingContextFile[] =>
+const toPendingFiles = (paths: string[]): ContextPickerFile[] =>
   paths.map(path => ({
     path,
     name: path.split('/').pop() ?? path
@@ -65,7 +69,7 @@ export function ContextFilePicker({
   selectedPaths: string[]
   variant?: 'inline' | 'modal'
   onCancel: () => void
-  onConfirm: (files: PendingContextFile[]) => void
+  onConfirm: (files: ContextPickerFile[]) => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()

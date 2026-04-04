@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildMessageContent, getInitialComposerState } from '#~/components/chat/sender/content-attachments'
+import { buildMessageContent, getInitialComposerState } from '#~/components/chat/sender/@core/content-attachments'
 
 describe('sender content attachments helpers', () => {
   it('hydrates pending files from structured content', () => {

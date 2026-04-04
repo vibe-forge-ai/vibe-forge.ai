@@ -1,6 +1,6 @@
 import './SenderAttachments.scss'
 
-import type { PendingContextFile, PendingImage } from './content-attachments'
+import type { PendingContextFile, PendingImage } from '../../@types/sender-composer'
 
 export function SenderAttachments({
   pendingImages,

@@ -1,0 +1,72 @@
+.effort-select-popup {
+  .ant-select-item-group {
+    color: var(--placeholder-color);
+  }
+
+  .ant-select-item-option {
+    min-height: 28px;
+    margin: 0;
+    padding: 4px 8px;
+    border-radius: 8px;
+    color: var(--text-color);
+    font-weight: 400 !important;
+    transition: background-color .18s ease, color .18s ease;
+  }
+
+  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background: color-mix(
+      in srgb,
+      var(--primary-soft-bg, #eff6ff) 72%,
+      var(--bg-color) 28%
+    ) !important;
+  }
+
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+  .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background: color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 18%,
+      var(--bg-color) 82%
+    ) !important;
+  }
+
+  .ant-select-item-option-content {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 400 !important;
+  }
+
+  .effort-option--default .effort-option__icon {
+    color: var(--sub-text-color, #6b7280);
+  }
+
+  .effort-option--low .effort-option__icon {
+    color: color-mix(
+      in srgb,
+      var(--text-color) 40%,
+      var(--sub-text-color, #6b7280) 60%
+    );
+  }
+
+  .effort-option--medium .effort-option__icon {
+    color: #b45309;
+  }
+
+  .effort-option--high .effort-option__icon {
+    color: #d97706;
+  }
+
+  .effort-option--max .effort-option__icon {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+@media (max-width: 960px) {
+  .effort-select {
+    .ant-select-selection-item .effort-option__text,
+    .ant-select-selection-placeholder .effort-option__text {
+      display: none;
+    }
+  }
+}
