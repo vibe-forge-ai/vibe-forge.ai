@@ -235,6 +235,57 @@ describe('session history branching', () => {
     expect(db.getMessages(branched.session.id)).toEqual([events[0], events[1]])
   })
 
+  it('keeps file attachments in the history seed for branched sessions', () => {
+    const original = db.createSession('Original', 'session-root', 'completed')
+    const events: WSEvent[] = [
+      {
+        type: 'message',
+        message: {
+          id: 'user-1',
+          role: 'user',
+          content: [
+            { type: 'text', text: 'inspect these files' },
+            { type: 'file', path: 'apps/server/src/index.ts' }
+          ],
+          createdAt: 1
+        }
+      },
+      {
+        type: 'message',
+        message: {
+          id: 'assistant-1',
+          role: 'assistant',
+          content: 'done',
+          createdAt: 2
+        }
+      },
+      {
+        type: 'message',
+        message: {
+          id: 'user-2',
+          role: 'user',
+          content: 'follow up',
+          createdAt: 3
+        }
+      }
+    ]
+
+    for (const event of events) {
+      db.saveMessage(original.id, event)
+    }
+
+    const branched = branchSessionFromMessage({
+      sessionId: original.id,
+      messageId: 'user-2',
+      action: 'edit',
+      content: 'edited prompt'
+    })
+
+    expect(db.getSessionRuntimeState(branched.session.id)).toEqual(expect.objectContaining({
+      historySeed: expect.stringContaining('[文件:apps/server/src/index.ts]')
+    }))
+  })
+
   it('recalls from a user message by trimming later history into a child session', () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [

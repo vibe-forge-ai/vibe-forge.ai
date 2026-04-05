@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { shouldHideSenderForInteraction } from '#~/components/chat/sender/interaction-request'
+import { shouldHideSenderForInteraction } from '#~/components/chat/sender/@core/interaction-request'
 
 describe('sender interaction request visibility', () => {
   it('hides the sender for permission interactions', () => {

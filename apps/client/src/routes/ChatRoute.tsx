@@ -57,7 +57,12 @@ function ChatRouteView({
     handleInteractionResponse,
     setMessages,
     placeholder,
-    modelOptions,
+    modelMenuGroups,
+    modelSearchOptions,
+    recommendedModelOptions,
+    servicePreviewModelOptions,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue,
     selectedModel,
     modelForQuery,
     setSelectedModel,
@@ -105,7 +110,12 @@ function ChatRouteView({
           setMessages={setMessages}
           onClearMessages={() => setMessages([])}
           placeholder={placeholder}
-          modelOptions={modelOptions}
+          modelMenuGroups={modelMenuGroups}
+          modelSearchOptions={modelSearchOptions}
+          recommendedModelOptions={recommendedModelOptions}
+          servicePreviewModelOptions={servicePreviewModelOptions}
+          onToggleRecommendedModel={toggleRecommendedModel}
+          updatingRecommendedModelValue={updatingRecommendedModelValue}
           selectedModel={selectedModel}
           modelForQuery={modelForQuery}
           onModelChange={setSelectedModel}
@@ -130,6 +140,7 @@ function ChatRouteView({
       {activeView === 'settings' && session?.id && (
         <ChatSettingsView
           session={session}
+          sessionInfo={sessionInfo}
           onClose={() => setActiveView('history')}
         />
       )}

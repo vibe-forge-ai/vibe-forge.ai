@@ -11,6 +11,12 @@ import { deleteSession, getApiErrorMessage, updateSession } from '../../api'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
+import {
+  formatToolLabel,
+  getSessionAssetWarnings,
+  getSessionSelectionWarnings,
+  getSessionToolGroups
+} from './session-metadata'
 
 export type ChatHeaderView = 'history' | 'timeline' | 'settings'
 
@@ -41,11 +47,9 @@ export function ChatHeader({
   const { message } = App.useApp()
   const isSidebarCollapsed = useAtomValue(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
-  const [editTitle, setEditTitle] = useState('')
 
   const summary = sessionInfo?.type === 'summary' ? sessionInfo.summary : null
   const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) ?? sessionTitle
-  const cwd = sessionInfo?.type === 'init' ? sessionInfo.cwd : null
   const displayTitle = (title != null && title !== '')
     ? title
     : (summary != null && summary !== '')
@@ -55,12 +59,6 @@ export function ChatHeader({
     : (lastMessage != null && lastMessage !== '')
     ? lastMessage
     : t('common.newChat')
-
-  useEffect(() => {
-    if (title != null && title !== '') {
-      setEditTitle(title)
-    }
-  }, [title])
 
   const handleToggleStar = async () => {
     if (sessionId == null || sessionId === '') return
@@ -187,11 +185,13 @@ export function SessionSettingsPanel({
   sessionId,
   initialTitle,
   initialTags = [],
+  sessionInfo,
   onClose
 }: {
   sessionId: string
   initialTitle?: string
   initialTags?: string[]
+  sessionInfo: SessionInfo | null
   onClose: () => void
 }) {
   const { t } = useTranslation()
@@ -238,6 +238,23 @@ export function SessionSettingsPanel({
       }
     }
   }, [])
+
+  const toolGroups = useMemo(() => getSessionToolGroups(sessionInfo), [sessionInfo])
+  const assetWarnings = useMemo(() => getSessionAssetWarnings(sessionInfo), [sessionInfo])
+  const selectionWarnings = useMemo(() => getSessionSelectionWarnings(sessionInfo), [sessionInfo])
+
+  const formatSelectionWarning = (warning: (typeof selectionWarnings)[number]) => {
+    const reason = warning.reason === 'excluded'
+      ? t('chat.selectionWarningReasonExcluded')
+      : t('chat.selectionWarningReasonNotIncluded')
+
+    return t('chat.selectionWarningFallback', {
+      adapter: warning.adapter,
+      requestedModel: warning.requestedModel,
+      resolvedModel: warning.resolvedModel,
+      reason
+    })
+  }
 
   const scheduleSave = (nextValue: { title: string; tags: string[] }) => {
     const serialized = JSON.stringify(nextValue ?? {})
@@ -313,6 +330,73 @@ export function SessionSettingsPanel({
         t={t}
         className='session-settings-drawer__form'
       />
+
+      <div className='settings-section session-runtime-section'>
+        <div className='section-header'>
+          <span className='material-symbols-rounded'>build</span>
+          <span>{t('chat.availableTools')}</span>
+        </div>
+
+        {selectionWarnings.length > 0 && (
+          <div className='session-info-note-list'>
+            <div className='session-info-note-list__title'>{t('chat.selectionWarningsTitle')}</div>
+            {selectionWarnings.map((warning, index) => (
+              <div
+                key={`${warning.adapter}:${warning.requestedModel}:${warning.resolvedModel}:${index}`}
+                className='session-info-note session-info-note--warning'
+              >
+                <span className='material-symbols-rounded'>warning</span>
+                <span>{formatSelectionWarning(warning)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {assetWarnings.length > 0 && (
+          <div className='session-info-note-list'>
+            <div className='session-info-note-list__title'>{t('chat.assetWarningsTitle')}</div>
+            {assetWarnings.map((warning) => (
+              <div key={warning.assetId} className='session-info-note'>
+                <span className='material-symbols-rounded'>warning</span>
+                <div className='session-info-note__content'>
+                  <code>{warning.assetId}</code>
+                  <span>{warning.reason}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {toolGroups.length > 0
+          ? (
+            <div className='session-tool-groups'>
+              {toolGroups.map((group) => (
+                <div key={group.key} className='session-tool-group-card'>
+                  <div className='session-tool-group-card__header'>
+                    <div className='session-tool-group-card__title'>
+                      <span className='material-symbols-rounded'>{group.icon}</span>
+                      <span>{t(group.labelKey)}</span>
+                    </div>
+                    <span className='session-tool-group-card__count'>{group.tools.length}</span>
+                  </div>
+                  <div className='session-tool-group-card__list'>
+                    {group.tools.map(tool => (
+                      <div key={tool} className='session-tool-chip'>
+                        <span className='session-tool-chip__dot' />
+                        <code>{formatToolLabel(tool)}</code>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+          : (
+            <div className='session-settings-empty'>
+              {t('chat.availableToolsEmpty')}
+            </div>
+          )}
+      </div>
 
       <div className='settings-footer'>
         <div className='danger-zone'>

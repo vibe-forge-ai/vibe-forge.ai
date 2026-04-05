@@ -17,6 +17,7 @@ import { configRouter } from './config'
 import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
 import { uiRouter } from './ui'
+import { workspaceRouter } from './workspace'
 
 const DEFAULT_CLIENT_BASE = '/ui/'
 const DEFAULT_BASE_PLACEHOLDER = '/__VF_PROJECT_AI_CLIENT_BASE__/'
@@ -83,7 +84,8 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/api/automation', router: automationRouter() },
-    { prefix: '/api/config', router: configRouter() }
+    { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/workspace', router: workspaceRouter() }
   ]
 
   const clientMode = env.__VF_PROJECT_AI_CLIENT_MODE__
@@ -93,15 +95,25 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     : resolveClientDistPath(env.__VF_PROJECT_AI_CLIENT_DIST_PATH__)
   const runtimeScript = createRuntimeScript(env, clientBase)
   if (clientDistPath && clientMode !== 'dev') {
-    routers.push({
-      prefix: clientBase,
-      router: uiRouter({
+    const createStaticUiRouter = () =>
+      uiRouter({
         base: clientBase,
         distPath: clientDistPath,
         runtimeScript,
         basePlaceholder: DEFAULT_BASE_PLACEHOLDER
       })
+
+    routers.push({
+      prefix: clientBase,
+      router: createStaticUiRouter()
     })
+
+    if (clientBase !== DEFAULT_BASE_PLACEHOLDER) {
+      routers.push({
+        prefix: DEFAULT_BASE_PLACEHOLDER,
+        router: createStaticUiRouter()
+      })
+    }
   }
 
   for (const { prefix, router: childRouter } of routers) {

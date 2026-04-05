@@ -2,13 +2,22 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import type {
+  AdapterBuiltinModel,
+  ConfigResponse,
+  ModelMetadataConfig,
+  ModelServiceConfig,
+  RecommendedModelConfig
+} from '@vibe-forge/types'
+
 import { getConfig } from '#~/api.js'
-import type { AdapterBuiltinModel, ConfigResponse, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/types'
 import {
   buildServiceModelSelector,
   listServiceModels,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
+  resolveModelDisplayMetadata,
+  resolveModelServiceTitle,
   resolveServiceModelSelector
 } from './model-selector'
 
@@ -44,6 +53,11 @@ export function useChatModels({
     const services = configRes?.sources?.merged?.modelServices
     return (services ?? {}) as Record<string, ModelServiceConfig>
   }, [configRes?.sources?.merged?.modelServices])
+
+  const mergedModels = useMemo(() => {
+    const models = configRes?.sources?.merged?.models
+    return (models ?? {}) as Record<string, ModelMetadataConfig>
+  }, [configRes?.sources?.merged?.models])
 
   const recommendedModels = useMemo(() => {
     const raw = configRes?.sources?.merged?.general?.recommendedModels
@@ -85,7 +99,10 @@ export function useChatModels({
     const map = new Map<string, { key: string; title: string }>()
     for (const entry of availableServiceModels) {
       const serviceValue = mergedModelServices[entry.serviceKey]
-      const serviceTitle = serviceValue?.title?.trim() !== '' ? serviceValue?.title ?? '' : entry.serviceKey
+      const serviceTitle = resolveModelServiceTitle({
+        serviceKey: entry.serviceKey,
+        service: serviceValue
+      })
       if (!map.has(entry.model)) {
         map.set(entry.model, { key: entry.serviceKey, title: serviceTitle })
       }
@@ -186,21 +203,15 @@ export function useChatModels({
       }
     }
 
-    const resolveFirstAlias = (modelsAlias: Record<string, string[]> | undefined, model: string) => {
-      if (!modelsAlias) return undefined
-      for (const [alias, aliasModels] of Object.entries(modelsAlias)) {
-        if (!Array.isArray(aliasModels)) continue
-        if (aliasModels.includes(model)) return alias
-      }
-      return undefined
-    }
-
     const serviceGroups = modelServiceEntries
       .map(([serviceKey, serviceValue]) => {
         const service = (serviceValue != null && typeof serviceValue === 'object')
           ? serviceValue as ModelServiceConfig
           : undefined
-        const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
+        const serviceTitle = resolveModelServiceTitle({
+          serviceKey,
+          service
+        })
         const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
         const serviceDescription = service?.description
         const models = Array.isArray(service?.models)
@@ -208,11 +219,15 @@ export function useChatModels({
           : []
         if (models.length === 0) return null
         const options = models.map((model: string) => {
-          const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
-          const title = alias ?? model
-          const description = alias ? model : serviceTitle
+          const value = buildServiceModelSelector(serviceKey, model)
+          const metadata = resolveModelDisplayMetadata({
+            model: value,
+            models: mergedModels
+          })
+          const title = metadata?.title ?? metadata?.aliases[0] ?? model
+          const description = metadata?.description ?? serviceTitle
           return buildOption({
-            value: buildServiceModelSelector(serviceKey, model),
+            value,
             title,
             description,
             serviceKey,
@@ -243,17 +258,24 @@ export function useChatModels({
       .map((item) => {
         const serviceInfo = item.service ? mergedModelServices[item.service] : undefined
         const serviceTitle = item.service
-          ? (serviceInfo?.title?.trim() !== '' ? serviceInfo?.title ?? '' : item.service)
+          ? resolveModelServiceTitle({
+            serviceKey: item.service,
+            service: serviceInfo
+          })
           : modelToService.get(item.model)?.title
-        const alias = item.service
-          ? resolveFirstAlias(serviceInfo?.modelsAlias as Record<string, string[]> | undefined, item.model)
-          : undefined
-        const title = item.title?.trim() !== '' ? item.title ?? '' : (alias ?? item.model)
+        const resolvedModel = item.service ? buildServiceModelSelector(item.service, item.model) : item.model
+        const metadata = resolveModelDisplayMetadata({
+          model: resolvedModel,
+          models: mergedModels
+        })
+        const title = item.title?.trim() !== ''
+          ? item.title ?? ''
+          : (metadata?.title ?? metadata?.aliases[0] ?? item.model)
         const description = item.description?.trim() !== ''
           ? item.description
-          : serviceTitle
+          : (metadata?.description ?? serviceTitle)
         const value = resolveServiceModelSelector({
-          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
+          value: resolvedModel,
           serviceModels: availableServiceModels,
           preferredServiceKey: item.service ?? defaultModelService
         }) ?? item.model
@@ -308,6 +330,7 @@ export function useChatModels({
     availableServiceModels,
     defaultModelService,
     modelToService,
+    mergedModels,
     mergedModelServices,
     modelServiceEntries,
     recommendedModels,

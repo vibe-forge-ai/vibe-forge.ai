@@ -18,10 +18,24 @@
   - 消息 footer 的统一承载层。
   - 改 footer 文案或按钮时，优先改这里，不要散落到 `MessageItem`。
 - `sender/Sender.tsx`
-  - 默认 sender 和 inline edit 共用的 composer。
-  - 文本输入、图片上传、工具/模型/权限模式选择都在这里。
+  - 默认 sender 和 inline edit 共用的最外层装配入口。
+  - 只保留 sender 壳层、局部视图拼装和少量同目录引用，不再承载大段状态编排。
 - `sender/Sender.scss`
   - sender 和 inline edit 的共同样式来源。
+- `sender/@components/`
+  - sender 私有的通用视图组件与子模块目录，例如 `sender-toolbar/`、`model-select/`。
+- `sender/@core/`
+  - sender 私有的编排与纯逻辑，例如 toolbar bindings、content 组装、interaction 判断。
+- `sender/@hooks/`
+  - sender 私有的状态编排、快捷键、focus restore、overlay 控制、提交逻辑等 hooks。
+- `sender/@types/`
+  - sender 私有类型定义。
+- `sender/@utils/`
+  - sender 私有常量与轻量工具函数。
+- `ThinkingStatus.tsx`
+  - 聊天域可复用的状态提示组件，不再算 sender 私有视图。
+- `../../components/workspace/ContextFilePicker.tsx`
+  - 工作区文件选择器；如果别的输入入口也要复用目录树选择，直接走这里。
 
 ## 消息级操作的当前约束
 
@@ -31,6 +45,31 @@
 - 同一时间只允许一条消息进入编辑态；冲突时保留当前编辑器并提示用户。
 - `复制原文` 复制的是原始 markdown/text，不是渲染后的可见 DOM 文本。
 - 编辑确认按钮固定使用 `发送`，不要改回实现导向文案。
+
+## Sender 结构约束
+
+- sender 只是当前已按“前端模块通用组织规范”落地的一个示例，不是特殊规则来源。
+- 通用规则入口：`../../../../.ai/rules/frontend-standard/module-organization.md`
+- sender 目录不要长期平铺文件；模块根只保留入口和极少量顶层样式。
+- sender 私有实现按 `@components / @core / @hooks / @types / @utils / @store` 分层。
+- sender 的状态型 hooks 放在 `sender/@hooks/`，不要再回塞到 `Sender.tsx` 或平铺在模块根目录。
+- sender 的纯逻辑和装配放在 `sender/@core/`，不要混进视图组件。
+- sender 的类型定义统一放在 `sender/@types/`，不要散在 core 和 component 里。
+- sender 中如果出现可跨页面或跨模块复用的组件，应提升到更公共的 `src/components/...` 目录，不继续留在 `sender/` 私有目录。
+- sender 相关单文件应尽量收敛在 200 行以内；超过后优先拆视图子组件、hooks、utils、样式文件，而不是继续在原文件加条件分支。
+- 子模块如果已经独立成形，例如 `model-select`、`reference-actions`、`sender-toolbar`，应建子目录，并在子目录内继续按职责拆分，而不是把新的辅助文件继续堆回 sender 根目录。
+
+## Sender import 约定
+
+- `Sender` 及其子组件按固定顺序组织 import：
+  1. 本文件样式
+  2. 第三方依赖
+  3. workspace 包
+  4. `#~/` 绝对路径
+  5. 当前目录相对路径
+- 每个 group 之间保留一个空行。
+- sender 目录内部，同子模块兄弟文件继续使用相对路径。
+- sender 入口或跨子模块引用模块私有实现时，优先显式指向 `@components / @core / @hooks / @types / @utils / @store`，避免重新打平目录边界。
 
 ## 改动时容易漏掉的地方
 
@@ -54,6 +93,32 @@
 
 - 浏览器验证不要强依赖易变按钮文案。
 - 更稳妥的是依赖 `aria-label`、稳定类名或结构断言。
+
+## Sender / 浮层调试经验
+
+- `Sender.tsx` 同时组合了 `Tooltip`、`Popover`、`Select` 和自定义 trigger；一旦外层包装组件不透传 `ref` 或 DOM props，触发器很容易直接失效。
+- 包装触发器时不要用无效 DOM 结构，例如 `span` 包 `div`；这类 nesting warning 往往伴随点击异常。
+- 同一个控件如果既有 tooltip 又有 popup，popup 打开时要显式禁用 tooltip；否则 hover 层会抢事件或扰乱 focus。
+- 自定义 select 箭头后，必须分别验证：
+  - 文本区能打开
+  - 箭头区能打开
+  - 关闭后 focus 回输入框
+- sender 的颜色改动要谨慎收窄 selector，避免把下面这些一起误伤：
+  - 最高推理强度图标
+  - 权限菜单勾选图标
+  - 发送按钮
+  - disabled / hover / selected 态
+- 通用 tooltip 的字号、min-height 这类全局表面样式，优先改 `src/styles/global.scss` 或主题配置，不要只在 sender 局部覆盖。
+- 调 tooltip / popover / 主题样式后，先 reload 页面，再看 computed style 和 console warning；隐藏浮层节点和旧 bundle warning 很容易导致误判。
+
+## Sender 最小回归清单
+
+1. `更多` 主菜单能打开，权限二级菜单能展开。
+2. 模型和推理强度的文本区、箭头区都能打开。
+3. popup 打开时不会叠出自己的 tooltip。
+4. popup 关闭后输入框重新获得 focus。
+5. reload 后没有 React DOM nesting warning，也没有 Ant deprecation warning。
+6. 同时检查浅色 / 深色主题下的 tooltip、勾选图标、推理强度图标和发送按钮。
 
 ## 推荐调试顺序
 

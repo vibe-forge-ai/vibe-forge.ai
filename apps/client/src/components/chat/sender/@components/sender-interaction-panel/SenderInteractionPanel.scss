@@ -1,0 +1,136 @@
+.chat-input-wrapper--permission {
+  .interaction-panel {
+    max-height: none;
+    overflow-y: visible;
+    margin-bottom: 0;
+  }
+}
+
+.interaction-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(217, 119, 6, .18);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 251, 235, .9),
+    rgba(255, 255, 255, .96)
+  );
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, .12);
+    color: #b45309;
+    font-size: 12px;
+    font-weight: 600;
+
+    .material-symbols-rounded {
+      font-size: 14px;
+    }
+  }
+
+  &__context {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(217, 119, 6, .12);
+  }
+
+  &__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  &__meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    code {
+      width: fit-content;
+      max-width: 100%;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .06);
+      color: var(--text-color);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__meta-label,
+  &__section-title {
+    color: var(--sub-text-color, #6b7280);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__chip {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(191, 219, 254, .45);
+    color: #1d4ed8;
+    font-size: 12px;
+  }
+
+  &__reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__reason {
+    color: var(--text-color);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  &__option.ant-btn {
+    height: auto;
+    text-align: left;
+    display: block;
+    padding: 8px 12px;
+  }
+
+  &__option-label {
+    font-weight: 500;
+  }
+
+  &__option-description {
+    margin-top: 4px;
+    color: var(--placeholder-color, #9ca3af);
+    font-size: 12px;
+  }
+}
+
+.interaction-question {
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.5;
+}

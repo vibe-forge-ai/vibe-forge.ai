@@ -28,6 +28,34 @@ pnpm start
 
 日志输出到 `.logs/`。
 
+### Worktree 启动补充
+
+- 当前 worktree 如果没有本地 `.env` / `.env.dev`，runtime 会回退读取主 worktree 的对应文件。
+- 当前 worktree 如果没有本地 `.ai.dev.config.json` / `.ai.dev.config.yaml`，config loader 会回退读取主 worktree 的 dev config。
+- 回退依据是 Git common dir，也就是和当前 worktree 绑定的主仓库；这样可以避免每次新建 worktree 都重复复制本地私有配置。
+- 如果当前 worktree 有自己的 `.env` 或 `.ai.dev.config.*`，优先使用当前 worktree 的文件，不会被主 worktree 覆盖。
+- 如果主 worktree 也没有这些本地文件，仍然需要你自己补齐，或者显式导出所需环境变量。
+
+### Worktree 启动前检查
+
+- 确认主 worktree 的 `.ai.dev.config.json` 里引用的 model service / adapter 配置仍然有效。
+- 确认主 worktree 的 `.env` 里存在对应密钥，例如 `BYTE_DANCE_GPT_API_KEY`、`BYTE_DANCE_ARK_API_KEY`。
+- 如果刚修改了 `.env` 或 `.ai.dev.config.*`，要重启后端进程；只刷新前端页面不会让子进程重新加载配置。
+
+### Worktree 进程与配置串线排查
+
+- 如果当前 worktree 的 provider / adapter 行为和代码、配置不一致，先怀疑连到了别的 worktree 的旧进程，而不是先改业务逻辑。
+- 先核对 `/api/config` 是否反映当前 worktree 预期的 `defaultModelService`、`defaultModel` 和 adapter 配置。
+- 再核对本地 router / mock / adapter 子进程端口是否属于当前 workspace；多个 worktree 共用固定端口时很容易串线。
+- 发现重复实例时，先停掉旧实例，再重启当前 worktree 的 server / router；只刷新前端通常修不好。
+
+### 真实 Chrome 调试补充
+
+- 交互、浮层、focus 和样式问题必须在真实 Chrome 中验证 `computed style`、popup open state 和 `activeElement`，不要只看 SCSS、截图或单测。
+- 调整 tooltip / popover / theme / 全局 token 后，先 reload 页面再采样；隐藏浮层节点和旧 bundle warning 很容易误导判断。
+- 读取 console warning 时，最好在页面 load 完成后重新采样；否则可能读到上一版代码的残留告警。
+- 出现颜色或状态回归时，先对照 `git diff` 或最近可用提交，不要凭印象猜 token。
+
 ## 代码质量
 
 常用命令：

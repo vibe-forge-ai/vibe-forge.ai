@@ -211,6 +211,34 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('maps workspace file attachments into turn/start text input items', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-file-context',
+      onEvent: () => {}
+    } as any)
+
+    session.emit({
+      type: 'message',
+      content: [{ type: 'file', path: 'apps/client/src/main.tsx' }]
+    } as any)
+
+    await waitForWrites()
+
+    const turnRequests = receivedLines.filter(line => line.method === 'turn/start')
+    expect(turnRequests).toHaveLength(1)
+    expect(turnRequests[0]?.params.input).toEqual([
+      { type: 'text', text: 'Context file: apps/client/src/main.tsx' }
+    ])
+
+    session.kill()
+  })
+
   it('keeps never unchanged for outgoing RPC requests', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()

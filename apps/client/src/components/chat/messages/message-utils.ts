@@ -114,7 +114,7 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       }
 
       for (const item of content) {
-        if (item.type === 'text' || item.type === 'image') {
+        if (item.type === 'text' || item.type === 'image' || item.type === 'file') {
           flushTools()
           textParts.push(item)
         } else if (item.type === 'tool_use') {

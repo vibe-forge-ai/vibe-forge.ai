@@ -34,6 +34,20 @@ describe('openCode prompt and session helpers', () => {
     expect(result.files).toEqual(['/tmp/screenshot.png'])
   })
 
+  it('collects workspace file attachments into the file argument list', () => {
+    const result = normalizeOpenCodePrompt([
+      { type: 'text', text: 'Inspect these files' },
+      { type: 'file', path: 'apps/client/src/main.tsx' },
+      { type: 'file', path: '.ai/rules/CODING-STYLE.md' }
+    ] as any)
+
+    expect(result.prompt).toBe('Inspect these files')
+    expect(result.files).toEqual([
+      'apps/client/src/main.tsx',
+      '.ai/rules/CODING-STYLE.md'
+    ])
+  })
+
   it('builds a deterministic session title', () => {
     expect(buildOpenCodeSessionTitle('session-1', 'VF')).toBe('VF:session-1')
   })

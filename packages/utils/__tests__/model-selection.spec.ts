@@ -10,6 +10,7 @@ import {
   resolveEffectiveEffort,
   resolveModelConfiguredEffort,
   resolveModelDefaultAdapter,
+  resolveModelDisplayMetadata,
   resolveModelMetadata,
   resolveModelSelection
 } from '#~/model-selection.js'
@@ -72,6 +73,46 @@ describe('model selection utilities', () => {
       model: 'serviceB,modelX',
       models
     })).toBe('medium')
+  })
+
+  it('uses display metadata only for exact model matches', () => {
+    const models: Record<string, ModelMetadataConfig> = {
+      serviceA: {
+        title: 'Service Title',
+        description: 'Service Description'
+      },
+      modelX: {
+        alias: ['Model X', 'MX'],
+        description: 'Shared Description'
+      },
+      'serviceA,modelAOnly': {
+        title: 'Service A Only',
+        description: 'Exact Description'
+      }
+    }
+
+    expect(resolveModelDisplayMetadata({
+      model: 'serviceB,modelX',
+      models
+    })).toEqual({
+      aliases: ['Model X', 'MX'],
+      title: undefined,
+      description: 'Shared Description'
+    })
+
+    expect(resolveModelDisplayMetadata({
+      model: 'serviceA,modelAOnly',
+      models
+    })).toEqual({
+      aliases: [],
+      title: 'Service A Only',
+      description: 'Exact Description'
+    })
+
+    expect(resolveModelDisplayMetadata({
+      model: 'serviceA,modelBOnly',
+      models
+    })).toBeUndefined()
   })
 
   it('resolves raw models through the preferred default service', () => {

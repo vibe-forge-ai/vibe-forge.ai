@@ -1,0 +1,38 @@
+.shortcut-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: color-mix(
+    in srgb,
+    var(--text-color, #111827) 7%,
+    var(--bg-color, #ffffff) 93%
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--text-color, #111827) 10%,
+      var(--bg-color, #ffffff) 90%
+    );
+  color: var(--sub-text-color, #6b7280);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+  white-space: nowrap;
+}
+
+.shortcut-display__token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 9px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.shortcut-display__token--compact {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+}

@@ -16,6 +16,12 @@ export function extractTextFromMessage(message: ChatMessage): string | undefined
     if (textContent != null && 'text' in textContent) {
       return textContent.text
     }
+    const fileContent = message.content.find((c): c is Extract<ChatMessageContent, { type: 'file' }> =>
+      c.type === 'file'
+    )
+    if (fileContent != null) {
+      return `Context file: ${fileContent.path}`
+    }
   }
   return undefined
 }

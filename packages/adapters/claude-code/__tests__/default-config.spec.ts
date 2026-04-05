@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { generateDefaultCCRConfigJSON } from '../src/ccr/config'
+import { generateDefaultCCRConfigJSON, resolveDefaultClaudeCodeRouterPort } from '../src/ccr/config'
 
 describe('generateDefaultCCRConfigJSON', () => {
   const baseUserConfig = {
@@ -114,6 +114,34 @@ describe('generateDefaultCCRConfigJSON', () => {
     expect(config.API_TIMEOUT_MS).toBe(120000)
   })
 
+  it('resolves configured model aliases from models metadata back to the exact model', () => {
+    const raw = generateDefaultCCRConfigJSON({
+      cwd: '/tmp/project',
+      userConfig: {
+        defaultModelService: 'gateway',
+        defaultModel: 'gpt-5.4',
+        models: {
+          'gateway,gpt-5.4-2026-03-05': {
+            alias: ['gpt-5.4']
+          }
+        },
+        modelServices: {
+          gateway: {
+            apiBaseUrl: 'https://example.test/chat/completions',
+            apiKey: 'gateway-key',
+            models: ['gpt-5.4-2026-03-05']
+          }
+        }
+      }
+    })
+
+    const config = JSON.parse(raw) as {
+      Router: { default: string }
+    }
+
+    expect(config.Router.default).toBe('gateway,gpt-5.4-2026-03-05')
+  })
+
   it('preserves explicit CCR router network options', () => {
     const raw = generateDefaultCCRConfigJSON({
       cwd: '/tmp/project',
@@ -133,6 +161,21 @@ describe('generateDefaultCCRConfigJSON', () => {
 
     expect(config.PORT).toBe('4123')
     expect(config.APIKEY).toBe('router-key')
+  })
+
+  it('assigns a stable workspace-specific CCR port when none is configured', () => {
+    const cwd = '/tmp/project-alpha'
+    const raw = generateDefaultCCRConfigJSON({
+      cwd,
+      userConfig: baseUserConfig
+    })
+
+    const config = JSON.parse(raw) as {
+      PORT?: string
+    }
+
+    expect(config.PORT).toBe(String(resolveDefaultClaudeCodeRouterPort(cwd)))
+    expect(config.PORT).not.toBe('3456')
   })
 
   it('adds a maxtoken transformer for model service maxOutputTokens without clobbering existing transformers', () => {

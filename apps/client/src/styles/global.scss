@@ -47,7 +47,8 @@ html, body, #root, .ant-app {
   --code-bg: #f0f2f4; /* 代码块背景 */
   --code-border: #f1f5f9; /* 代码块边框 */
   --star-color: #f59e0b; /* 收藏/星标颜色 */
-  --primary-color: #6366f1; /* 主色调/主行动强调 */
+  --primary-color: #2563eb; /* 主色调/主行动强调 */
+  --primary-soft-bg: #eff6ff; /* 主色调的弱化背景 */
   --success-color: #0f766e; /* 成功状态颜色 */
   --warning-color: #b45309; /* 警告状态颜色 */
   --primary-text-color: #1d4ed8; /* 链接/强调文字颜色 */
@@ -74,7 +75,8 @@ html.dark {
   --code-bg: #1e293b; /* 代码块背景 */
   --code-border: #334155; /* 代码块边框 */
   --star-color: #ffb81c; /* 收藏/星标颜色 */
-  --primary-color: #818cf8; /* 主色调/主行动强调 */
+  --primary-color: #3b82f6; /* 主色调/主行动强调 */
+  --primary-soft-bg: #111b26; /* 主色调的弱化背景 */
   --success-color: #2dd4bf; /* 成功状态颜色 */
   --warning-color: #f59e0b; /* 警告状态颜色 */
   --primary-text-color: #60a5fa; /* 链接/强调文字颜色 */
@@ -97,4 +99,12 @@ html.dark {
   .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background-color: var(--primary-color);
   color: #ffffff;
+}
+
+.ant-tooltip {
+  .ant-tooltip-inner {
+    font-size: 12px;
+    line-height: 1.4;
+    min-height: 28px;
+  }
 }

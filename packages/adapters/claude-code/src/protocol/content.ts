@@ -54,5 +54,8 @@ export const mapAdapterContentToClaudeContent = (content: AdapterMessageContent[
       }
       return { type: 'text', text: `[Image] ${item.url}` }
     }
+    if (item.type === 'file') {
+      return { type: 'text', text: `Context file: ${item.path}` }
+    }
     return { type: 'text', text: '' }
   })

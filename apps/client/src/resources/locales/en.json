@@ -320,7 +320,34 @@
     "tooltipMentionAgents": "Mention agents",
     "tooltipInjectContext": "Inject context",
     "tooltipUploadImages": "Upload images",
+    "tooltipReferenceActions": "More",
+    "referenceActionsShortcutTooltip": "More / Permission mode",
+    "modelShortcutTooltip": "Switch model",
+    "modelAddRecommendation": "Add to recommended models",
+    "modelAlreadyRecommended": "Already recommended",
+    "modelRemoveRecommendation": "Remove from recommended models",
+    "effortShortcutTooltip": "Switch reasoning effort",
+    "sendShortcutTooltip": "Send message",
+    "adapterLockedTooltip": "Adapters are locked after a session is created",
+    "referenceActionsShort": "More",
+    "referenceActionsTitle": "More",
+    "referenceActionsDescription": "Add photos, files, and permission-related settings.",
+    "referenceAttachments": "Add photos and files",
+    "referenceAttachmentsDescription": "Choose images or project files as references.",
+    "referencePermission": "Permission mode",
+    "referencePermissionDescription": "Control how tool actions are authorized.",
+    "referenceImage": "Image",
+    "referenceImageDescription": "Choose a local image and attach it to the message.",
+    "referenceFile": "File",
+    "referenceFileDescription": "Choose files from the current project tree.",
     "effortSelectPlaceholder": "Effort",
+    "effortLabels": {
+      "default": "Standard",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "max": "Max"
+    },
     "permissionModeSelectPlaceholder": "Permission mode",
     "assetWarningsTitle": "Compatibility notes",
     "assetWarningsCount": "{{count}} asset warnings",
@@ -330,11 +357,22 @@
     "selectionWarningReasonExcluded": "the model is excluded by adapter rules",
     "selectionWarningReasonNotIncluded": "the model is not included by adapter rules",
     "selectionWarningFallback": "Adapter {{adapter}} switched from {{requestedModel}} to {{resolvedModel}} because {{reason}}.",
+    "modelGroupBuiltin": "{{adapter}} built-in models",
+    "modelGroupServices": "Model Services",
     "imageTooLarge": "Image must be smaller than 5MB",
     "imageReadFailed": "Failed to read image",
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
+    "fileNotSupportedInInteraction": "Files are not supported for this interaction",
+    "contextPickerTitle": "Reference files",
+    "contextPickerDescription": "Choose one or more files from the current project tree.",
+    "contextPickerConfirm": "Reference files",
+    "contextPickerLoading": "Loading workspace tree...",
+    "contextPickerEmpty": "No files available in this directory",
+    "contextPickerLoadFailed": "Failed to load workspace tree",
     "modelGroupRecommended": "Recommended Models",
+    "modelMoreModels": "More models",
     "availableTools": "Available Tools",
+    "availableToolsEmpty": "No tools are available for this session yet.",
     "toolGroupChromeDevtools": "ChromeDevtools",
     "toolGroupSystem": "System",
     "toolsCount": "{{count}} tools",
@@ -707,7 +745,7 @@
       "models": {
         "items": {
           "label": "Model Selector Entries",
-          "desc": "Selector metadata keyed by `service` or `service,model`"
+          "desc": "Model metadata keyed by `service` or `service,model`. Display metadata like alias/title/description only applies to exact `model` or `service,model` matches"
         }
       },
       "modelServices": {
@@ -735,10 +773,6 @@
           "models": {
             "label": "Models",
             "desc": "Models supported by this service"
-          },
-          "modelsAlias": {
-            "label": "Model Aliases",
-            "desc": "Alias mapping for models"
           },
           "timeoutMs": {
             "label": "Timeout (ms)",
@@ -842,6 +876,18 @@
         "clearInput": {
           "label": "Clear Input",
           "desc": "Shortcut for clearing the input"
+        },
+        "switchModel": {
+          "label": "Switch Model",
+          "desc": "Open the model selector and navigate it with the keyboard"
+        },
+        "switchEffort": {
+          "label": "Switch Reasoning Effort",
+          "desc": "Open the effort selector and navigate it with the keyboard"
+        },
+        "switchPermissionMode": {
+          "label": "Switch Permission Mode",
+          "desc": "Open the permission menu and navigate it with the keyboard"
         }
       }
     },

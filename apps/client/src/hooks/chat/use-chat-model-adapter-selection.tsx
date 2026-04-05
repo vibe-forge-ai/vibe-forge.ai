@@ -3,8 +3,6 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import { getConfig } from '#~/api.js'
-import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type {
   AdapterBuiltinModel,
   ConfigResponse,
@@ -12,8 +10,11 @@ import type {
   ModelServiceConfig,
   RecommendedModelConfig
 } from '@vibe-forge/types'
+
+import { getConfig, updateConfig } from '#~/api.js'
+import { ModelSelectOptionLabel } from '#~/components/chat/sender/@components/model-select/ModelSelectOptionLabel'
+import { getAdapterDisplay } from '#~/resources/adapters.js'
 import {
-  buildServiceModelSelector,
   listServiceModels,
   normalizeNonEmptyString,
   resolveAdapterForChatModelSelection,
@@ -21,19 +22,31 @@ import {
   resolveChatAdapterSelection,
   resolveChatModelSelection,
   resolveDefaultChatModelSelection,
-  resolveModelForChatAdapterSelection,
-  resolveServiceModelSelector
+  resolveModelForChatAdapterSelection
 } from './model-selector'
+import { buildModelSelectorData } from './model-selector-data'
+import type { ModelSelectGroupData, ModelSelectOptionData } from './model-selector-data'
+import {
+  buildRecommendedModelKey,
+  buildUpdatedUserGeneralSection,
+  isModelSelectorRecommendation,
+  toggleModelSelectorRecommendation
+} from './model-selector-recommendations'
 
-export interface ModelSelectOption {
-  value: string
+export interface ModelSelectOption extends ModelSelectOptionData {
+  canToggleRecommendation: boolean
+  isRecommended: boolean
+  isUserRecommended: boolean
   label: React.ReactNode
-  searchText: string
-  displayLabel: string
 }
 
 export interface ModelSelectGroup {
+  key: string
   label: React.ReactNode
+  options: ModelSelectOption[]
+}
+
+export interface ModelSelectMenuGroup extends Omit<ModelSelectGroupData, 'options'> {
   options: ModelSelectOption[]
 }
 
@@ -72,7 +85,8 @@ export function useChatModelAdapterSelection({
   )
   const [selectedModel, setSelectedModel] = useState<string | undefined>(() => readStorageValue(MODEL_STORAGE_KEY))
   const [selectionDriver, setSelectionDriver] = useState<SelectionDriver>(() => readSelectionDriver())
-  const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const [updatingRecommendedModelValue, setUpdatingRecommendedModelValue] = useState<string | undefined>()
+  const { data: configRes, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
 
   const mergedAdapters = useMemo(() => {
     return (configRes?.sources?.merged?.adapters ?? {}) as Record<string, unknown>
@@ -93,6 +107,40 @@ export function useChatModelAdapterSelection({
       item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
     ))
   }, [configRes?.sources?.merged?.general?.recommendedModels])
+
+  const userRecommendedModels = useMemo(() => {
+    const raw = configRes?.sources?.user?.general?.recommendedModels
+    if (!Array.isArray(raw)) return []
+    return raw.filter((item): item is RecommendedModelConfig => (
+      item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
+    ))
+  }, [configRes?.sources?.user?.general?.recommendedModels])
+
+  const userRecommendedModelKeySet = useMemo(() => {
+    return new Set(
+      userRecommendedModels
+        .filter(isModelSelectorRecommendation)
+        .map(item =>
+          buildRecommendedModelKey({
+            model: item.model,
+            service: item.service
+          })
+        )
+    )
+  }, [userRecommendedModels])
+
+  const mergedRecommendedModelKeySet = useMemo(() => {
+    return new Set(
+      recommendedModels
+        .filter(isModelSelectorRecommendation)
+        .map(item =>
+          buildRecommendedModelKey({
+            model: item.model,
+            service: item.service
+          })
+        )
+    )
+  }, [recommendedModels])
 
   const adapterBuiltinModels = useMemo(() => {
     return (configRes?.sources?.merged?.adapterBuiltinModels ?? {}) as Record<string, AdapterBuiltinModel[]>
@@ -369,187 +417,142 @@ export function useChatModelAdapterSelection({
     })
   }, [availableAdapters])
 
-  const modelServiceEntries = useMemo(() => Object.entries(mergedModelServices), [mergedModelServices])
-  const modelToService = useMemo(() => {
-    const map = new Map<string, { key: string; title: string }>()
-    for (const entry of availableServiceModels) {
-      const serviceValue = mergedModelServices[entry.serviceKey]
-      const serviceTitle = serviceValue?.title?.trim() !== '' ? serviceValue?.title ?? '' : entry.serviceKey
-      if (!map.has(entry.model)) {
-        map.set(entry.model, { key: entry.serviceKey, title: serviceTitle })
-      }
-    }
-    return map
-  }, [availableServiceModels, mergedModelServices])
-
-  const modelOptions = useMemo<ModelSelectGroup[]>(() => {
-    const buildOption = (params: {
-      value: string
-      title: string
-      description?: string
-      serviceKey?: string
-      serviceTitle?: string
-    }) => {
-      const description = params.description?.trim()
-      const label = (
-        <div className='model-option'>
-          <div className='model-option-title'>{params.title}</div>
-          {description && <div className='model-option-desc'>{description}</div>}
-        </div>
-      )
-      const searchText = [
-        params.title,
-        params.value,
-        params.serviceTitle,
-        params.serviceKey,
-        description
-      ]
-        .filter(Boolean)
-        .join(' ')
-      return {
-        value: params.value,
-        label,
-        searchText,
-        displayLabel: params.title
-      }
+  const toggleRecommendedModel = useCallback(async (option: ModelSelectOption) => {
+    const serviceKey = option.serviceKey?.trim()
+    const modelName = option.modelName.trim()
+    if (
+      configRes?.sources == null ||
+      !serviceKey ||
+      modelName === '' ||
+      updatingRecommendedModelValue === option.value
+    ) {
+      return
     }
 
-    const resolveFirstAlias = (modelsAlias: Record<string, string[]> | undefined, model: string) => {
-      if (!modelsAlias) return undefined
-      for (const [alias, aliasModels] of Object.entries(modelsAlias)) {
-        if (!Array.isArray(aliasModels)) continue
-        if (aliasModels.includes(model)) return alias
-      }
-      return undefined
-    }
+    setUpdatingRecommendedModelValue(option.value)
 
-    const serviceGroups = modelServiceEntries
-      .map(([serviceKey, serviceValue]) => {
-        const service = (serviceValue != null && typeof serviceValue === 'object')
-          ? serviceValue as ModelServiceConfig
-          : undefined
-        const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
-        const groupTitle = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
-        const serviceDescription = service?.description
-        const models = Array.isArray(service?.models)
-          ? service.models.filter((item: unknown): item is string => typeof item === 'string')
-          : []
-        if (models.length === 0) return null
-        const options = models.map((model: string) => {
-          const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
-          const title = alias ?? model
-          const description = alias ? model : serviceTitle
-          return buildOption({
-            value: buildServiceModelSelector(serviceKey, model),
-            title,
-            description,
-            serviceKey,
-            serviceTitle
-          })
-        })
-        return {
-          label: (
-            <div className='model-group-label'>
-              <div className='model-group-title'>{groupTitle}</div>
-              {serviceDescription && <div className='model-group-desc'>{serviceDescription}</div>}
-            </div>
-          ),
-          options
+    try {
+      const { recommendedModels: nextRecommendedModels } = toggleModelSelectorRecommendation({
+        currentRecommendedModels: configRes?.sources?.user?.general?.recommendedModels,
+        nextRecommendedModel: {
+          service: serviceKey,
+          model: modelName,
+          placement: 'modelSelector'
         }
       })
-      .filter((item): item is NonNullable<typeof item> => item != null)
-
-    const recommendedOptions = recommendedModels
-      .filter((item) => {
-        if (item.placement && item.placement !== 'modelSelector') return false
-        return resolveServiceModelSelector({
-          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
-          serviceModels: availableServiceModels,
-          preferredServiceKey: item.service ?? defaultModelService
-        }) != null
+      const nextUserGeneralSection = buildUpdatedUserGeneralSection({
+        currentGeneral: configRes?.sources?.user?.general,
+        recommendedModels: nextRecommendedModels
       })
-      .map((item) => {
-        const serviceInfo = item.service ? mergedModelServices[item.service] : undefined
-        const serviceTitle = item.service
-          ? (serviceInfo?.title?.trim() !== '' ? serviceInfo?.title ?? '' : item.service)
-          : modelToService.get(item.model)?.title
-        const alias = item.service
-          ? resolveFirstAlias(serviceInfo?.modelsAlias as Record<string, string[]> | undefined, item.model)
-          : undefined
-        const title = item.title?.trim() !== '' ? item.title ?? '' : (alias ?? item.model)
-        const description = item.description?.trim() !== ''
-          ? item.description
-          : serviceTitle
-        const value = resolveServiceModelSelector({
-          value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
-          serviceModels: availableServiceModels,
-          preferredServiceKey: item.service ?? defaultModelService
-        }) ?? item.model
-        return buildOption({
-          value,
-          title,
-          description,
-          serviceKey: item.service ?? modelToService.get(item.model)?.key,
-          serviceTitle
+
+      await updateConfig('user', 'general', nextUserGeneralSection)
+      await mutate()
+    } catch (error) {
+      console.error('[chat] failed to update recommended models', error)
+    } finally {
+      setUpdatingRecommendedModelValue(undefined)
+    }
+  }, [configRes?.sources?.user?.general, mutate, updatingRecommendedModelValue])
+
+  const decorateModelOption = useCallback((option: ModelSelectOptionData): ModelSelectOption => {
+    const recommendationKey = option.serviceKey == null
+      ? undefined
+      : buildRecommendedModelKey({
+        model: option.modelName,
+        service: option.serviceKey
+      })
+    const decoratedOption: ModelSelectOption = {
+      ...option,
+      canToggleRecommendation: option.serviceKey != null && option.modelName.trim() !== '',
+      isRecommended: recommendationKey != null && mergedRecommendedModelKeySet.has(recommendationKey),
+      isUserRecommended: recommendationKey != null && userRecommendedModelKeySet.has(recommendationKey),
+      label: null
+    }
+
+    decoratedOption.label = (
+      <ModelSelectOptionLabel
+        option={decoratedOption}
+        onToggleRecommendedModel={toggleRecommendedModel}
+        updatingRecommendedModelValue={updatingRecommendedModelValue}
+      />
+    )
+
+    return decoratedOption
+  }, [mergedRecommendedModelKeySet, toggleRecommendedModel, updatingRecommendedModelValue, userRecommendedModelKeySet])
+
+  const modelSelectorData = useMemo(() => {
+    return buildModelSelectorData({
+      activeBuiltinModels,
+      availableServiceModels,
+      defaultModelService,
+      mergedModels,
+      mergedModelServices,
+      recommendedModels,
+      recommendedGroupTitle: t('chat.modelGroupRecommended', { defaultValue: '推荐模型' }),
+      servicePreviewGroupTitle: t('chat.modelGroupServices', { defaultValue: '模型服务' }),
+      builtinGroupTitle: (adapterKey) =>
+        t('chat.modelGroupBuiltin', {
+          adapter: adapterKey,
+          defaultValue: `${adapterKey} (Default)`
         })
-      })
-
-    const groups = []
-    if (recommendedOptions.length > 0) {
-      const recommendedTitle = t('chat.modelGroupRecommended', { defaultValue: '推荐模型' })
-      groups.push({
-        label: (
-          <div className='model-group-label'>
-            <div className='model-group-title'>{recommendedTitle}</div>
-          </div>
-        ),
-        options: recommendedOptions
-      })
-    }
-
-    for (const [adapterKey, models] of Object.entries(activeBuiltinModels)) {
-      if (!Array.isArray(models) || models.length === 0) continue
-      const adapterTitle = t('chat.modelGroupBuiltin', {
-        adapter: adapterKey,
-        defaultValue: `${adapterKey} (Default)`
-      })
-      groups.push({
-        label: (
-          <div className='model-group-label'>
-            <div className='model-group-title'>{adapterTitle}</div>
-          </div>
-        ),
-        options: models.map(model =>
-          buildOption({
-            value: model.value,
-            title: model.title,
-            description: model.description
-          })
-        )
-      })
-    }
-
-    return [...groups, ...serviceGroups]
+    })
   }, [
     activeBuiltinModels,
     availableServiceModels,
     defaultModelService,
+    mergedModels,
     mergedModelServices,
-    modelServiceEntries,
-    modelToService,
     recommendedModels,
     t
   ])
+
+  const modelSearchOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.searchOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.searchOptions])
+
+  const recommendedModelOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.recommendedOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.recommendedOptions])
+
+  const servicePreviewModelOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.servicePreviewOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.servicePreviewOptions])
+
+  const modelMenuGroups = useMemo<ModelSelectMenuGroup[]>(() => {
+    return modelSelectorData.moreModelGroups.map(group => ({
+      ...group,
+      options: group.options.map(decorateModelOption)
+    }))
+  }, [decorateModelOption, modelSelectorData.moreModelGroups])
+
+  const modelOptions = useMemo<ModelSelectGroup[]>(() => {
+    return modelSelectorData.flatGroups.map(group => ({
+      key: group.key,
+      label: (
+        <div className='model-group-label'>
+          <div className='model-group-title'>{group.title}</div>
+          {group.description && <div className='model-group-desc'>{group.description}</div>}
+        </div>
+      ),
+      options: group.options.map(decorateModelOption)
+    }))
+  }, [decorateModelOption, modelSelectorData.flatGroups])
 
   return {
     adapterOptions,
     applySessionSelection,
     hasAvailableModels,
+    modelMenuGroups,
     modelOptions,
+    modelSearchOptions,
+    recommendedModelOptions,
+    servicePreviewModelOptions,
     selectedAdapter,
     selectedModel,
     selectedModelWithService,
     setSelectedAdapter: updateSelectedAdapter,
-    setSelectedModel: updateSelectedModel
+    setSelectedModel: updateSelectedModel,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue
   }
 }

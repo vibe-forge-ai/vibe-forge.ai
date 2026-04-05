@@ -1,0 +1,106 @@
+.toolbar-btn.toolbar-btn--reference {
+  width: auto;
+  gap: 0 !important;
+  padding: 0 6px 0 2px !important;
+  color: var(--placeholder-color, #9ca3af);
+
+  .toolbar-btn__icon-shell {
+    width: auto;
+    min-width: 0;
+    height: 100%;
+  }
+
+  &:hover {
+    color: var(--sender-control-hover-color);
+    background-color: var(--sender-control-hover-bg);
+  }
+
+  &.active {
+    color: var(--sender-control-hover-color);
+    background-color: var(--sender-control-active-bg);
+  }
+}
+
+.reference-actions-popover,
+.reference-actions-submenu-popover {
+  .ant-popover-inner {
+    padding: 6px !important;
+    background: var(--bg-color);
+    border-radius: var(--sender-popup-radius, 8px) !important;
+  }
+
+  .ant-popover-inner-content {
+    padding: 0 !important;
+  }
+}
+
+.reference-actions-menu {
+  min-width: 188px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: 12px;
+  line-height: 1.3333;
+}
+
+.reference-actions-menu--submenu {
+  min-width: 168px;
+
+  .reference-action-option {
+    gap: 8px;
+  }
+}
+
+.reference-actions-menu-item {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.3333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--primary-soft-bg, #eff6ff) 72%,
+      var(--bg-color) 28%
+    );
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &.is-selected {
+    background: color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 18%,
+      var(--bg-color) 82%
+    );
+  }
+}
+
+.reference-action-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.reference-action-option__icon,
+.reference-action-option__check,
+.reference-action-option__chevron {
+  flex-shrink: 0;
+}

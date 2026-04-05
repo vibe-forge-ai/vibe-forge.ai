@@ -29,7 +29,6 @@ export interface ModelServiceConfig {
   apiBaseUrl: string
   apiKey: string
   models?: string[]
-  modelsAlias?: Record<string, string[]>
   timeoutMs?: number
   maxOutputTokens?: number
   extra?: Record<string, unknown>
@@ -44,6 +43,9 @@ export interface RecommendedModelConfig {
 }
 
 export interface ModelMetadataConfig {
+  alias?: string | string[]
+  title?: string
+  description?: string
   defaultAdapter?: string
   effort?: EffortLevel
 }
@@ -117,6 +119,11 @@ export interface Config {
   shortcuts?: {
     newSession?: string
     openConfig?: string
+    sendMessage?: string
+    clearInput?: string
+    switchModel?: string
+    switchEffort?: string
+    switchPermissionMode?: string
   }
   notifications?: NotificationConfig
   conversation?: {

@@ -43,5 +43,7 @@ export {
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
+export type { WorkspaceTreeEntry } from './api/workspace'
+export { listWorkspaceTree } from './api/workspace'
 
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'

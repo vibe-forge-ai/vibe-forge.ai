@@ -32,6 +32,12 @@ export const normalizeOpenCodePrompt = (content: AdapterMessageContent[]) => {
       continue
     }
 
+    if (item.type === 'file') {
+      const filePath = item.path.trim()
+      if (filePath !== '') files.add(filePath)
+      continue
+    }
+
     if (item.type === 'tool_result') {
       promptParts.push(String(item.content))
       continue

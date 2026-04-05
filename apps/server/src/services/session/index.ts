@@ -539,7 +539,25 @@ function extractTextFromContent(content: ChatMessageContent[]) {
   const textItem = content.find(
     (item): item is Extract<ChatMessageContent, { type: 'text' }> => item.type === 'text' && item.text.trim() !== ''
   )
-  return textItem?.text
+  if (textItem != null) {
+    return textItem.text
+  }
+
+  const fileItem = content.find(
+    (item): item is Extract<ChatMessageContent, { type: 'file' }> => item.type === 'file' && item.path.trim() !== ''
+  )
+  if (fileItem != null) {
+    return `Context file: ${fileItem.path}`
+  }
+
+  const imageItem = content.find((item): item is Extract<ChatMessageContent, { type: 'image' }> =>
+    item.type === 'image'
+  )
+  if (imageItem != null) {
+    return imageItem.name?.trim() ? `[图片:${imageItem.name.trim()}]` : '[图片]'
+  }
+
+  return undefined
 }
 
 export async function processUserMessage(sessionId: string, content: string | ChatMessageContent[]) {
@@ -548,7 +566,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   const contentItems: ChatMessageContent[] = Array.isArray(content)
     ? content
     : [{ type: 'text', text: userText }]
-  const summaryText = extractTextFromContent(contentItems) ?? '[图片]'
+  const summaryText = extractTextFromContent(contentItems) ?? '[内容]'
   const userMessage: ChatMessage = {
     id: uuidv4(),
     role: 'user',
