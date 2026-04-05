@@ -25,6 +25,7 @@ export const callHook = async <K extends HookEventName>(
   env: Record<string, unknown> = process.env
 ): Promise<HookOutputs[K]> => {
   const childEnv = pickHookEnv(env)
+  childEnv.__VF_VIBE_FORGE_HOOK_EVENT_NAME__ = hookEventName
   const child = spawn(process.execPath, [resolveManagedHookScriptPath('call-hook.js')], {
     cwd: typeof input.cwd === 'string' ? input.cwd : process.cwd(),
     env: childEnv,
