@@ -40,6 +40,8 @@ export interface SenderToolbarData {
   modelMenuGroups?: ModelSelectMenuGroup[]
   modelSearchOptions?: ModelSelectOption[]
   recommendedModelOptions?: ModelSelectOption[]
+  servicePreviewModelOptions?: ModelSelectOption[]
+  updatingRecommendedModelValue?: string
   effortOptions: Array<{ value: ChatEffort; label: ReactNode }>
   permissionModeOptions: Array<{ value: PermissionMode; label: ReactNode }>
   adapterOptions?: Array<{ value: string; label: ReactNode }>
@@ -72,6 +74,7 @@ export interface SenderToolbarHandlers {
   onQueueTextareaFocusRestore: () => void
   onCloseReferenceActions: () => void
   onModelChange?: (model: string) => void
+  onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   onEffortChange?: (effort: ChatEffort) => void
   onAdapterChange?: (adapter: string) => void
   onSend: () => void

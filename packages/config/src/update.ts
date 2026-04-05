@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, resolve } from 'node:path'
@@ -37,6 +38,44 @@ const userConfigPaths = [
   './infra/.ai.dev.config.yml'
 ]
 
+const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
+
+const resolvePrimaryWorkspaceFolder = (
+  cwd: string,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const normalizedWorkspaceFolder = resolve(cwd)
+  const explicitPrimaryWorkspaceFolder = env[PRIMARY_WORKSPACE_ENV]?.trim()
+  if (explicitPrimaryWorkspaceFolder) {
+    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
+    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : resolvedPrimaryWorkspaceFolder
+  }
+
+  try {
+    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd,
+      encoding: 'utf8'
+    })
+    if (result.status !== 0) {
+      return undefined
+    }
+
+    const gitCommonDir = result.stdout?.trim()
+    if (!gitCommonDir) {
+      return undefined
+    }
+
+    const primaryWorkspaceFolder = dirname(resolve(cwd, gitCommonDir))
+    return primaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : primaryWorkspaceFolder
+  } catch {
+    return undefined
+  }
+}
+
 const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource) => {
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
@@ -45,6 +84,20 @@ const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource
       return resolvedPath
     }
   }
+
+  if (source === 'user') {
+    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
+    if (primaryWorkspaceFolder != null) {
+      for (const path of paths) {
+        const resolvedPath = resolve(primaryWorkspaceFolder, path)
+        if (existsSync(resolvedPath)) {
+          return resolvedPath
+        }
+      }
+      return resolve(primaryWorkspaceFolder, paths[0])
+    }
+  }
+
   return resolve(workspaceFolder, paths[0])
 }
 

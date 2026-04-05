@@ -95,15 +95,25 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     : resolveClientDistPath(env.__VF_PROJECT_AI_CLIENT_DIST_PATH__)
   const runtimeScript = createRuntimeScript(env, clientBase)
   if (clientDistPath && clientMode !== 'dev') {
-    routers.push({
-      prefix: clientBase,
-      router: uiRouter({
+    const createStaticUiRouter = () =>
+      uiRouter({
         base: clientBase,
         distPath: clientDistPath,
         runtimeScript,
         basePlaceholder: DEFAULT_BASE_PLACEHOLDER
       })
+
+    routers.push({
+      prefix: clientBase,
+      router: createStaticUiRouter()
     })
+
+    if (clientBase !== DEFAULT_BASE_PLACEHOLDER) {
+      routers.push({
+        prefix: DEFAULT_BASE_PLACEHOLDER,
+        router: createStaticUiRouter()
+      })
+    }
   }
 
   for (const { prefix, router: childRouter } of routers) {

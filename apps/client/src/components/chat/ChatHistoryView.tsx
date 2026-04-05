@@ -31,6 +31,9 @@ export function ChatHistoryView({
   modelMenuGroups,
   modelSearchOptions,
   recommendedModelOptions,
+  servicePreviewModelOptions,
+  onToggleRecommendedModel,
+  updatingRecommendedModelValue,
   selectedModel,
   modelForQuery,
   onModelChange,
@@ -60,6 +63,9 @@ export function ChatHistoryView({
   modelMenuGroups: ModelSelectMenuGroup[]
   modelSearchOptions: ModelSelectOption[]
   recommendedModelOptions: ModelSelectOption[]
+  servicePreviewModelOptions: ModelSelectOption[]
+  onToggleRecommendedModel: (option: ModelSelectOption) => void | Promise<void>
+  updatingRecommendedModelValue?: string
   selectedModel?: string
   modelForQuery?: string
   onModelChange: (model: string) => void
@@ -254,6 +260,9 @@ export function ChatHistoryView({
             modelMenuGroups={modelMenuGroups}
             modelSearchOptions={modelSearchOptions}
             recommendedModelOptions={recommendedModelOptions}
+            servicePreviewModelOptions={servicePreviewModelOptions}
+            onToggleRecommendedModel={onToggleRecommendedModel}
+            updatingRecommendedModelValue={updatingRecommendedModelValue}
             selectedModel={selectedModel}
             onModelChange={onModelChange}
             effort={effort}

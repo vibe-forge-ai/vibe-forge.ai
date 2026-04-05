@@ -80,6 +80,7 @@ export const buildSenderToolbar = ({
       onEffortChange: props.onEffortChange,
       onInterrupt: props.onInterrupt,
       onModelChange: props.onModelChange,
+      onToggleRecommendedModel: props.onToggleRecommendedModel,
       onPermissionModeChange: props.onPermissionModeChange,
       onCancel: props.onCancel,
       onSend: callbacks.onSend
@@ -95,9 +96,11 @@ export const buildSenderToolbar = ({
       permissionMode: props.permissionMode ?? 'default',
       permissionModeOptions: props.permissionModeOptions ?? [],
       recommendedModelOptions: props.recommendedModelOptions,
+      servicePreviewModelOptions: props.servicePreviewModelOptions,
       resolvedSendShortcut,
       selectedAdapter: props.selectedAdapter,
-      selectedModel: props.selectedModel
+      selectedModel: props.selectedModel,
+      updatingRecommendedModelValue: props.updatingRecommendedModelValue
     },
     ui: {
       adapterLocked: props.adapterLocked ?? false,

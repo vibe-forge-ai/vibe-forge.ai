@@ -31,6 +31,7 @@ export const createSenderToolbarBindings = ({
     onEffortChange?: (effort: ChatEffort) => void
     onInterrupt: () => void
     onModelChange?: (model: string) => void
+    onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
     onPermissionModeChange?: (mode: PermissionMode) => void
     onCancel?: () => void
     onSend: () => void
@@ -46,9 +47,11 @@ export const createSenderToolbarBindings = ({
     permissionMode: PermissionMode
     permissionModeOptions: SenderToolbarData['permissionModeOptions']
     recommendedModelOptions?: ModelSelectOption[]
+    servicePreviewModelOptions?: ModelSelectOption[]
     resolvedSendShortcut: string
     selectedAdapter?: string
     selectedModel?: string
+    updatingRecommendedModelValue?: string
   }
   ui: {
     adapterLocked: boolean
@@ -113,6 +116,8 @@ export const createSenderToolbarBindings = ({
     modelMenuGroups: selection.modelMenuGroups,
     modelSearchOptions: selection.modelSearchOptions,
     recommendedModelOptions: selection.recommendedModelOptions,
+    servicePreviewModelOptions: selection.servicePreviewModelOptions,
+    updatingRecommendedModelValue: selection.updatingRecommendedModelValue,
     effortOptions: selection.effortOptions,
     permissionModeOptions: selection.permissionModeOptions,
     adapterOptions: selection.adapterOptions,
@@ -137,6 +142,7 @@ export const createSenderToolbarBindings = ({
     onEffortChange: callbacks.onEffortChange,
     onInterrupt: callbacks.onInterrupt,
     onModelChange: callbacks.onModelChange,
+    onToggleRecommendedModel: callbacks.onToggleRecommendedModel,
     onPermissionModeChange: callbacks.onPermissionModeChange,
     onCancel: callbacks.onCancel,
     onSend: callbacks.onSend,

@@ -26,6 +26,9 @@ export function useChatSession({
     setSelectedAdapter,
     modelSearchOptions,
     recommendedModelOptions,
+    servicePreviewModelOptions,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue,
     hasAvailableModels
   } = useChatModelAdapterSelection({
     adapterLocked: session?.id != null
@@ -107,6 +110,9 @@ export function useChatSession({
     modelMenuGroups,
     modelSearchOptions,
     recommendedModelOptions,
+    servicePreviewModelOptions,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue,
     selectedModel,
     modelForQuery: selectedModelWithService,
     setSelectedModel,

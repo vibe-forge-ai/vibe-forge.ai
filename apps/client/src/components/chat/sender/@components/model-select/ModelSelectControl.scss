@@ -19,6 +19,9 @@
 }
 
 .model-select-popup {
+  inline-size: fit-content !important;
+  min-inline-size: 220px !important;
+  max-inline-size: calc(100vw - 48px) !important;
   background: var(--bg-color) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: var(--sender-popup-radius, 8px) !important;
@@ -34,12 +37,14 @@
 
   .ant-select-item-option {
     min-height: 26px;
-    height: 26px;
+    height: auto;
     margin: 0;
     padding: 3px 8px;
     border-radius: 8px;
     color: var(--text-color);
     font-weight: 400 !important;
+    line-height: 16px;
+    overflow: visible;
     transition: background-color .18s ease, color .18s ease;
   }
 
@@ -47,12 +52,22 @@
     display: flex;
     align-items: center;
     min-height: 20px;
+    height: auto;
+    width: 100%;
+    overflow: visible;
   }
 }
 
-.model-select-browser,
+.model-select-browser {
+  inline-size: fit-content;
+  min-inline-size: 220px;
+  max-inline-size: calc(100vw - 48px);
+}
+
 .model-select-menu {
-  min-width: 220px;
+  inline-size: fit-content;
+  min-inline-size: 100%;
+  max-inline-size: 100%;
 }
 
 .model-menu-tooltip-content {
@@ -61,6 +76,7 @@
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
+  white-space: pre-line;
   color: inherit;
   opacity: .78;
 }

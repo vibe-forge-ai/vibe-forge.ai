@@ -21,16 +21,24 @@
 .model-select-menu .ant-menu-submenu-title,
 .model-select-submenu-popup .ant-menu-submenu-title {
   min-height: 26px;
-  height: 26px !important;
+  height: auto !important;
+  inline-size: max-content;
+  min-inline-size: 100%;
   margin: 0;
   border-radius: 8px;
   color: var(--text-color);
   font-size: 12px;
   font-weight: 400 !important;
-  line-height: 1 !important;
+  line-height: 16px !important;
   display: flex;
   align-items: center;
+  overflow: visible;
   transition: background-color .18s ease, color .18s ease;
+}
+
+.model-select-menu .ant-menu-item-group-title,
+.model-select-submenu-popup .ant-menu-item-group-title {
+  padding: 6px 8px 2px !important;
 }
 
 .model-select-menu .ant-menu-item,
@@ -40,7 +48,8 @@
 
 .model-select-menu .ant-menu-submenu-title,
 .model-select-submenu-popup .ant-menu-submenu-title {
-  width: 100%;
+  inline-size: max-content;
+  min-inline-size: 100%;
   padding: 3px 20px 3px 8px !important;
 }
 
@@ -50,8 +59,11 @@
   align-items: center;
   flex: 1;
   min-width: 0;
-  height: 100%;
-  line-height: 1 !important;
+  min-height: 20px;
+  height: auto;
+  inline-size: 100%;
+  overflow: visible;
+  line-height: 16px !important;
 }
 
 .model-select-menu .ant-menu-item:hover,

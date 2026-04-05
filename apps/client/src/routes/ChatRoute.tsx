@@ -60,6 +60,9 @@ function ChatRouteView({
     modelMenuGroups,
     modelSearchOptions,
     recommendedModelOptions,
+    servicePreviewModelOptions,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue,
     selectedModel,
     modelForQuery,
     setSelectedModel,
@@ -110,6 +113,9 @@ function ChatRouteView({
           modelMenuGroups={modelMenuGroups}
           modelSearchOptions={modelSearchOptions}
           recommendedModelOptions={recommendedModelOptions}
+          servicePreviewModelOptions={servicePreviewModelOptions}
+          onToggleRecommendedModel={toggleRecommendedModel}
+          updatingRecommendedModelValue={updatingRecommendedModelValue}
           selectedModel={selectedModel}
           modelForQuery={modelForQuery}
           onModelChange={setSelectedModel}

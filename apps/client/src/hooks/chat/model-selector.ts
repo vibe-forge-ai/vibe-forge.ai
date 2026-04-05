@@ -9,6 +9,7 @@ import {
   resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
   resolveModelDefaultAdapter,
+  resolveModelDisplayMetadata,
   resolveModelSelection,
   resolveServiceModelSelector
 } from '@vibe-forge/utils/model-selection'
@@ -21,7 +22,15 @@ export {
   normalizeNonEmptyString,
   parseServiceModelSelector,
   resolveAdapterModelCompatibility,
+  resolveModelDisplayMetadata,
   resolveServiceModelSelector
+}
+
+export const resolveModelServiceTitle = (params: {
+  serviceKey: string
+  service?: { title?: string | null } | null
+}) => {
+  return normalizeNonEmptyString(params.service?.title) ?? params.serviceKey
 }
 
 export const resolveChatModelSelection = (params: {

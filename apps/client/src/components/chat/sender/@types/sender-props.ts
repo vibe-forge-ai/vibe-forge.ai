@@ -31,6 +31,9 @@ export interface SenderProps {
   modelMenuGroups?: ModelSelectMenuGroup[]
   modelSearchOptions?: ModelSelectOption[]
   recommendedModelOptions?: ModelSelectOption[]
+  servicePreviewModelOptions?: ModelSelectOption[]
+  onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
+  updatingRecommendedModelValue?: string
   selectedModel?: string
   onModelChange?: (model: string) => void
   effort?: ChatEffort

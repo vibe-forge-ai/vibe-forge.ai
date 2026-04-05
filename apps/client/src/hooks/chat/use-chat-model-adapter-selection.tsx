@@ -3,9 +3,17 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import { getConfig } from '#~/api.js'
+import type {
+  AdapterBuiltinModel,
+  ConfigResponse,
+  ModelMetadataConfig,
+  ModelServiceConfig,
+  RecommendedModelConfig
+} from '@vibe-forge/types'
+
+import { getConfig, updateConfig } from '#~/api.js'
+import { ModelSelectOptionLabel } from '#~/components/chat/sender/@components/model-select/ModelSelectOptionLabel'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
-import type { AdapterBuiltinModel, ConfigResponse, ModelMetadataConfig } from '@vibe-forge/types'
 import {
   listServiceModels,
   normalizeNonEmptyString,
@@ -18,8 +26,17 @@ import {
 } from './model-selector'
 import { buildModelSelectorData } from './model-selector-data'
 import type { ModelSelectGroupData, ModelSelectOptionData } from './model-selector-data'
+import {
+  buildRecommendedModelKey,
+  buildUpdatedUserGeneralSection,
+  isModelSelectorRecommendation,
+  toggleModelSelectorRecommendation
+} from './model-selector-recommendations'
 
 export interface ModelSelectOption extends ModelSelectOptionData {
+  canToggleRecommendation: boolean
+  isRecommended: boolean
+  isUserRecommended: boolean
   label: React.ReactNode
 }
 
@@ -68,7 +85,8 @@ export function useChatModelAdapterSelection({
   )
   const [selectedModel, setSelectedModel] = useState<string | undefined>(() => readStorageValue(MODEL_STORAGE_KEY))
   const [selectionDriver, setSelectionDriver] = useState<SelectionDriver>(() => readSelectionDriver())
-  const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const [updatingRecommendedModelValue, setUpdatingRecommendedModelValue] = useState<string | undefined>()
+  const { data: configRes, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
 
   const mergedAdapters = useMemo(() => {
     return (configRes?.sources?.merged?.adapters ?? {}) as Record<string, unknown>
@@ -89,6 +107,40 @@ export function useChatModelAdapterSelection({
       item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
     ))
   }, [configRes?.sources?.merged?.general?.recommendedModels])
+
+  const userRecommendedModels = useMemo(() => {
+    const raw = configRes?.sources?.user?.general?.recommendedModels
+    if (!Array.isArray(raw)) return []
+    return raw.filter((item): item is RecommendedModelConfig => (
+      item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
+    ))
+  }, [configRes?.sources?.user?.general?.recommendedModels])
+
+  const userRecommendedModelKeySet = useMemo(() => {
+    return new Set(
+      userRecommendedModels
+        .filter(isModelSelectorRecommendation)
+        .map(item =>
+          buildRecommendedModelKey({
+            model: item.model,
+            service: item.service
+          })
+        )
+    )
+  }, [userRecommendedModels])
+
+  const mergedRecommendedModelKeySet = useMemo(() => {
+    return new Set(
+      recommendedModels
+        .filter(isModelSelectorRecommendation)
+        .map(item =>
+          buildRecommendedModelKey({
+            model: item.model,
+            service: item.service
+          })
+        )
+    )
+  }, [recommendedModels])
 
   const adapterBuiltinModels = useMemo(() => {
     return (configRes?.sources?.merged?.adapterBuiltinModels ?? {}) as Record<string, AdapterBuiltinModel[]>
@@ -365,26 +417,79 @@ export function useChatModelAdapterSelection({
     })
   }, [availableAdapters])
 
-  const decorateModelOption = useCallback((option: ModelSelectOptionData): ModelSelectOption => {
-    return {
-      ...option,
-      label: (
-        <div className='model-option'>
-          <div className='model-option-title'>{option.title}</div>
-          {option.description && <div className='model-option-desc'>{option.description}</div>}
-        </div>
-      )
+  const toggleRecommendedModel = useCallback(async (option: ModelSelectOption) => {
+    const serviceKey = option.serviceKey?.trim()
+    const modelName = option.modelName.trim()
+    if (
+      configRes?.sources == null ||
+      !serviceKey ||
+      modelName === '' ||
+      updatingRecommendedModelValue === option.value
+    ) {
+      return
     }
-  }, [])
+
+    setUpdatingRecommendedModelValue(option.value)
+
+    try {
+      const { recommendedModels: nextRecommendedModels } = toggleModelSelectorRecommendation({
+        currentRecommendedModels: configRes?.sources?.user?.general?.recommendedModels,
+        nextRecommendedModel: {
+          service: serviceKey,
+          model: modelName,
+          placement: 'modelSelector'
+        }
+      })
+      const nextUserGeneralSection = buildUpdatedUserGeneralSection({
+        currentGeneral: configRes?.sources?.user?.general,
+        recommendedModels: nextRecommendedModels
+      })
+
+      await updateConfig('user', 'general', nextUserGeneralSection)
+      await mutate()
+    } catch (error) {
+      console.error('[chat] failed to update recommended models', error)
+    } finally {
+      setUpdatingRecommendedModelValue(undefined)
+    }
+  }, [configRes?.sources?.user?.general, mutate, updatingRecommendedModelValue])
+
+  const decorateModelOption = useCallback((option: ModelSelectOptionData): ModelSelectOption => {
+    const recommendationKey = option.serviceKey == null
+      ? undefined
+      : buildRecommendedModelKey({
+        model: option.modelName,
+        service: option.serviceKey
+      })
+    const decoratedOption: ModelSelectOption = {
+      ...option,
+      canToggleRecommendation: option.serviceKey != null && option.modelName.trim() !== '',
+      isRecommended: recommendationKey != null && mergedRecommendedModelKeySet.has(recommendationKey),
+      isUserRecommended: recommendationKey != null && userRecommendedModelKeySet.has(recommendationKey),
+      label: null
+    }
+
+    decoratedOption.label = (
+      <ModelSelectOptionLabel
+        option={decoratedOption}
+        onToggleRecommendedModel={toggleRecommendedModel}
+        updatingRecommendedModelValue={updatingRecommendedModelValue}
+      />
+    )
+
+    return decoratedOption
+  }, [mergedRecommendedModelKeySet, toggleRecommendedModel, updatingRecommendedModelValue, userRecommendedModelKeySet])
 
   const modelSelectorData = useMemo(() => {
     return buildModelSelectorData({
       activeBuiltinModels,
       availableServiceModels,
       defaultModelService,
+      mergedModels,
       mergedModelServices,
       recommendedModels,
       recommendedGroupTitle: t('chat.modelGroupRecommended', { defaultValue: '推荐模型' }),
+      servicePreviewGroupTitle: t('chat.modelGroupServices', { defaultValue: '模型服务' }),
       builtinGroupTitle: (adapterKey) =>
         t('chat.modelGroupBuiltin', {
           adapter: adapterKey,
@@ -395,6 +500,7 @@ export function useChatModelAdapterSelection({
     activeBuiltinModels,
     availableServiceModels,
     defaultModelService,
+    mergedModels,
     mergedModelServices,
     recommendedModels,
     t
@@ -407,6 +513,10 @@ export function useChatModelAdapterSelection({
   const recommendedModelOptions = useMemo<ModelSelectOption[]>(() => {
     return modelSelectorData.recommendedOptions.map(decorateModelOption)
   }, [decorateModelOption, modelSelectorData.recommendedOptions])
+
+  const servicePreviewModelOptions = useMemo<ModelSelectOption[]>(() => {
+    return modelSelectorData.servicePreviewOptions.map(decorateModelOption)
+  }, [decorateModelOption, modelSelectorData.servicePreviewOptions])
 
   const modelMenuGroups = useMemo<ModelSelectMenuGroup[]>(() => {
     return modelSelectorData.moreModelGroups.map(group => ({
@@ -436,10 +546,13 @@ export function useChatModelAdapterSelection({
     modelOptions,
     modelSearchOptions,
     recommendedModelOptions,
+    servicePreviewModelOptions,
     selectedAdapter,
     selectedModel,
     selectedModelWithService,
     setSelectedAdapter: updateSelectedAdapter,
-    setSelectedModel: updateSelectedModel
+    setSelectedModel: updateSelectedModel,
+    toggleRecommendedModel,
+    updatingRecommendedModelValue
   }
 }

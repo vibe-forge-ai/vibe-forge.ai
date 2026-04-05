@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
 import type { Config, ModelServiceConfig } from '@vibe-forge/types'
+import { resolveModelDisplayMetadata } from '@vibe-forge/utils'
 
 import { resolveTransformerPath } from './paths'
 
@@ -83,17 +84,29 @@ const buildProviderTransformer = (service: ModelServiceConfig) => {
 const normalizeServiceModel = (
   serviceKey: string,
   modelName: string,
-  modelServices: Record<string, ModelServiceConfig>
+  modelServices: Record<string, ModelServiceConfig>,
+  modelMetadata?: Config['models']
 ) => {
   const service = modelServices[serviceKey]
   if (!service) return undefined
   const models = service.models ?? []
-  const aliasEntries = Object.entries(service.modelsAlias ?? {})
-  const aliasFromModel = aliasEntries.find(([, aliases]) => aliases.includes(modelName))?.[0]
-  if (aliasFromModel) return aliasFromModel
-  if (models.includes(modelName)) return modelName
-  const aliasByKey = aliasEntries.find(([alias]) => alias === modelName)?.[0]
-  return aliasByKey
+
+  const resolveModelAliases = (candidate: string) =>
+    resolveModelDisplayMetadata({
+      model: `${serviceKey},${candidate}`,
+      models: modelMetadata
+    })?.aliases ?? []
+
+  if (models.includes(modelName)) {
+    return modelName
+  }
+
+  const aliasedModel = models.find(candidate => resolveModelAliases(candidate).includes(modelName))
+  if (aliasedModel) {
+    return aliasedModel
+  }
+
+  return undefined
 }
 
 const getServicePriority = (
@@ -119,16 +132,17 @@ const resolveModelCandidate = (
   candidate: string,
   params: {
     modelServices: Record<string, ModelServiceConfig>
+    modelMetadata?: Config['models']
     config?: Config
     userConfig?: Config
     defaultService: string
   }
 ) => {
-  const { modelServices, config, userConfig, defaultService } = params
+  const { modelServices, modelMetadata, config, userConfig, defaultService } = params
   if (candidate.includes(',')) {
     const [serviceKey, modelName] = candidate.split(',').map(item => item.trim())
     if (!serviceKey || !modelName) return undefined
-    const normalized = normalizeServiceModel(serviceKey, modelName, modelServices)
+    const normalized = normalizeServiceModel(serviceKey, modelName, modelServices, modelMetadata)
     return normalized ? `${serviceKey},${normalized}` : undefined
   }
   const servicePriority = [
@@ -136,7 +150,7 @@ const resolveModelCandidate = (
     ...getServicePriority(modelServices, config, userConfig)
   ].filter((value, index, array) => array.indexOf(value) === index)
   for (const serviceKey of servicePriority) {
-    const normalized = normalizeServiceModel(serviceKey, candidate, modelServices)
+    const normalized = normalizeServiceModel(serviceKey, candidate, modelServices, modelMetadata)
     if (normalized) return `${serviceKey},${normalized}`
   }
   return undefined
@@ -148,6 +162,10 @@ const resolveDefaultModel = (params: {
   modelServices: Record<string, ModelServiceConfig>
 }) => {
   const { config, userConfig, modelServices } = params
+  const modelMetadata = {
+    ...(config?.models ?? {}),
+    ...(userConfig?.models ?? {})
+  }
   const providers = Object.entries(modelServices).map(([name, configValue]) => ({
     name,
     api_base_url: buildProviderBaseUrl(configValue),
@@ -167,6 +185,7 @@ const resolveDefaultModel = (params: {
   const resolvedByInput = defaultModelInput
     ? resolveModelCandidate(defaultModelInput, {
       modelServices,
+      modelMetadata,
       config,
       userConfig,
       defaultService: defaultModelServiceName
@@ -184,7 +203,12 @@ const resolveDefaultModel = (params: {
   if (!fallbackModelName) {
     throw new Error(`模型服务 ${defaultModelServiceName} 无可用模型`)
   }
-  const normalizedFallback = normalizeServiceModel(defaultModelServiceName, fallbackModelName, modelServices)
+  const normalizedFallback = normalizeServiceModel(
+    defaultModelServiceName,
+    fallbackModelName,
+    modelServices,
+    modelMetadata
+  )
   if (!normalizedFallback) {
     throw new Error(`模型服务 ${defaultModelServiceName} 无可用模型`)
   }
@@ -200,14 +224,16 @@ const resolveRouterModel = (params: {
   defaultModel: string
   defaultService: string
   modelServices: Record<string, ModelServiceConfig>
+  modelMetadata?: Config['models']
   config?: Config
   userConfig?: Config
 }) => {
-  const { fallback, defaultModel, defaultService, modelServices, config, userConfig } = params
+  const { fallback, defaultModel, defaultService, modelServices, modelMetadata, config, userConfig } = params
   if (fallback && fallback.length > 0) {
     for (const candidate of fallback) {
       const resolved = resolveModelCandidate(candidate, {
         modelServices,
+        modelMetadata,
         config,
         userConfig,
         defaultService
@@ -254,6 +280,10 @@ export const generateDefaultCCRConfigJSON = (params: {
     ...(config?.modelServices ?? {}),
     ...(userConfig?.modelServices ?? {})
   }
+  const modelMetadata = {
+    ...(config?.models ?? {}),
+    ...(userConfig?.models ?? {})
+  }
   const { defaultModel, providers, defaultService } = resolveDefaultModel({
     config,
     userConfig,
@@ -292,6 +322,7 @@ export const generateDefaultCCRConfigJSON = (params: {
           defaultModel,
           defaultService,
           modelServices,
+          modelMetadata,
           config,
           userConfig
         }),
@@ -300,6 +331,7 @@ export const generateDefaultCCRConfigJSON = (params: {
           defaultModel,
           defaultService,
           modelServices,
+          modelMetadata,
           config,
           userConfig
         }),
@@ -308,6 +340,7 @@ export const generateDefaultCCRConfigJSON = (params: {
           defaultModel,
           defaultService,
           modelServices,
+          modelMetadata,
           config,
           userConfig
         }),
@@ -316,6 +349,7 @@ export const generateDefaultCCRConfigJSON = (params: {
           defaultModel,
           defaultService,
           modelServices,
+          modelMetadata,
           config,
           userConfig
         })

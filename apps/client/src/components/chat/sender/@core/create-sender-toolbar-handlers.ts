@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 
 import type { SenderToolbarHandlers } from '../@types/sender-toolbar-types'
@@ -16,6 +17,7 @@ export const createSenderToolbarHandlers = ({
   onEffortChange,
   onInterrupt,
   onModelChange,
+  onToggleRecommendedModel,
   onPermissionModeChange,
   onCancel,
   onSend,
@@ -37,6 +39,7 @@ export const createSenderToolbarHandlers = ({
   onEffortChange?: (effort: ChatEffort) => void
   onInterrupt: () => void
   onModelChange?: (model: string) => void
+  onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   onPermissionModeChange?: (mode: PermissionMode) => void
   onCancel?: () => void
   onSend: () => void
@@ -102,6 +105,7 @@ export const createSenderToolbarHandlers = ({
     onQueueTextareaFocusRestore: focusRestore.queueTextareaFocusRestore,
     onCloseReferenceActions: () => referenceActions.closeReferenceActions(),
     onModelChange,
+    onToggleRecommendedModel,
     onEffortChange,
     onAdapterChange,
     onSend,

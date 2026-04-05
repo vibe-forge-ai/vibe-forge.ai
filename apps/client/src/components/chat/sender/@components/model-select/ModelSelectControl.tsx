@@ -43,7 +43,12 @@ export function ModelSelectControl({
   >
   data: Pick<
     SenderToolbarData,
-    'modelMenuGroups' | 'modelSearchOptions' | 'recommendedModelOptions' | 'composerControlShortcuts'
+    | 'modelMenuGroups'
+    | 'modelSearchOptions'
+    | 'recommendedModelOptions'
+    | 'servicePreviewModelOptions'
+    | 'composerControlShortcuts'
+    | 'updatingRecommendedModelValue'
   >
   refs: Pick<SenderToolbarRefs, 'modelSelectRef'>
   handlers: Pick<
@@ -55,12 +60,20 @@ export function ModelSelectControl({
     | 'onQueueTextareaFocusRestore'
     | 'onCloseReferenceActions'
     | 'onModelChange'
+    | 'onToggleRecommendedModel'
   >
 }) {
   const { t } = useTranslation()
   const { isThinking, modelUnavailable, showModelSelect, showEffortSelect, selectedModel, modelSearchValue, isMac } =
     state
-  const { modelMenuGroups, modelSearchOptions, recommendedModelOptions, composerControlShortcuts } = data
+  const {
+    modelMenuGroups,
+    modelSearchOptions,
+    recommendedModelOptions,
+    servicePreviewModelOptions,
+    composerControlShortcuts,
+    updatingRecommendedModelValue
+  } = data
   const { modelSelectRef } = refs
   const {
     onShowModelSelectChange,
@@ -69,7 +82,8 @@ export function ModelSelectControl({
     onOpenModelSelector,
     onQueueTextareaFocusRestore,
     onCloseReferenceActions,
-    onModelChange
+    onModelChange,
+    onToggleRecommendedModel
   } = handlers
 
   const handleModelSelection = (value: string) => {
@@ -81,8 +95,11 @@ export function ModelSelectControl({
   const { renderModelPopup } = useModelSelectBrowser({
     hasModelSearchQuery: modelSearchValue.trim() !== '',
     modelMenuGroups,
+    onToggleRecommendedModel,
     recommendedModelOptions,
+    servicePreviewModelOptions,
     selectedModel,
+    updatingRecommendedModelValue,
     onSelectModel: handleModelSelection
   })
 

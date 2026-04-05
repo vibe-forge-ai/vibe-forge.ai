@@ -5,52 +5,39 @@ import { useTranslation } from 'react-i18next'
 
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 
+import { ModelSelectOptionLabel } from '../@components/model-select/ModelSelectOptionLabel'
+
 export const useModelSelectBrowser = ({
   hasModelSearchQuery,
   modelMenuGroups,
+  onToggleRecommendedModel,
   recommendedModelOptions,
+  servicePreviewModelOptions,
   selectedModel,
+  updatingRecommendedModelValue,
   onSelectModel
 }: {
   hasModelSearchQuery: boolean
   modelMenuGroups?: ModelSelectMenuGroup[]
+  onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   recommendedModelOptions?: ModelSelectOption[]
+  servicePreviewModelOptions?: ModelSelectOption[]
   selectedModel?: string
+  updatingRecommendedModelValue?: string
   onSelectModel: (value: string) => void
 }) => {
   const { t } = useTranslation()
 
-  const renderModelMenuTooltip = useCallback((description?: string) => {
-    if (!description) {
-      return null
-    }
-
-    return <span className='model-menu-tooltip-content'>{description}</span>
-  }, [])
-
   const renderCompactModelMenuLabel = useCallback((option: ModelSelectOption) => {
-    const label = (
-      <span className='model-select-menu-item-label'>
-        <span className='model-select-menu-item-title'>{option.displayLabel}</span>
-      </span>
-    )
-
-    if (!option.description) {
-      return label
-    }
-
     return (
-      <Tooltip
-        title={renderModelMenuTooltip(option.description)}
-        placement='left'
-        classNames={{ root: 'model-menu-tooltip' }}
-        mouseEnterDelay={.35}
-        destroyOnHidden
-      >
-        {label}
-      </Tooltip>
+      <ModelSelectOptionLabel
+        option={option}
+        showServicePrefix
+        onToggleRecommendedModel={onToggleRecommendedModel}
+        updatingRecommendedModelValue={updatingRecommendedModelValue}
+      />
     )
-  }, [renderModelMenuTooltip])
+  }, [onToggleRecommendedModel, updatingRecommendedModelValue])
 
   const renderModelMenuGroupLabel = useCallback((group: ModelSelectMenuGroup) => {
     const label = (
@@ -65,7 +52,7 @@ export const useModelSelectBrowser = ({
 
     return (
       <Tooltip
-        title={renderModelMenuTooltip(group.description)}
+        title={group.description}
         placement='left'
         classNames={{ root: 'model-menu-tooltip' }}
         mouseEnterDelay={.35}
@@ -74,11 +61,17 @@ export const useModelSelectBrowser = ({
         {label}
       </Tooltip>
     )
-  }, [renderModelMenuTooltip])
+  }, [])
 
   const modelMenuItems = useMemo<MenuProps['items']>(() => {
+    const servicePreviewItems = (servicePreviewModelOptions ?? []).map(option => ({
+      key: `service-preview:${option.value}`,
+      label: renderCompactModelMenuLabel(option),
+      className: 'model-select-menu-item'
+    }))
+
     const recommendedItems = (recommendedModelOptions ?? []).map(option => ({
-      key: option.value,
+      key: `recommended:${option.value}`,
       label: renderCompactModelMenuLabel(option),
       className: 'model-select-menu-item'
     }))
@@ -91,17 +84,43 @@ export const useModelSelectBrowser = ({
         popupClassName: 'model-select-submenu-popup',
         children: group.options.map(option => ({
           key: option.value,
-          label: renderCompactModelMenuLabel(option),
+          label: (
+            <ModelSelectOptionLabel
+              option={option}
+              onToggleRecommendedModel={onToggleRecommendedModel}
+              updatingRecommendedModelValue={updatingRecommendedModelValue}
+            />
+          ),
           className: 'model-select-menu-item'
         }))
       }))
 
     if (moreModelChildren.length === 0) {
-      return recommendedItems
+      if (recommendedItems.length === 0) {
+        return servicePreviewItems
+      }
+
+      return [
+        ...servicePreviewItems,
+        {
+          type: 'group',
+          key: 'recommended-group',
+          label: <span className='model-select-section-label'>{t('chat.modelGroupRecommended')}</span>,
+          children: recommendedItems
+        }
+      ]
     }
 
     return [
-      ...recommendedItems,
+      ...servicePreviewItems,
+      ...(recommendedItems.length > 0
+        ? [{
+          type: 'group' as const,
+          key: 'recommended-group',
+          label: <span className='model-select-section-label'>{t('chat.modelGroupRecommended')}</span>,
+          children: recommendedItems
+        }]
+        : []),
       {
         key: 'more-models',
         label: <span className='model-more-menu-label'>{t('chat.modelMoreModels')}</span>,
@@ -109,15 +128,34 @@ export const useModelSelectBrowser = ({
         children: moreModelChildren
       }
     ]
-  }, [modelMenuGroups, recommendedModelOptions, renderCompactModelMenuLabel, renderModelMenuGroupLabel, t])
+  }, [
+    modelMenuGroups,
+    onToggleRecommendedModel,
+    recommendedModelOptions,
+    renderCompactModelMenuLabel,
+    renderModelMenuGroupLabel,
+    servicePreviewModelOptions,
+    t,
+    updatingRecommendedModelValue
+  ])
 
   const handleModelMenuClick: MenuProps['onClick'] = ({ key, domEvent }) => {
     domEvent.preventDefault()
     if (typeof key !== 'string' || key === 'more-models') {
       return
     }
-    onSelectModel(key)
+    onSelectModel(key.replace(/^(service-preview:|recommended:)/, ''))
   }
+
+  const selectedModelMenuKeys = useMemo(() => {
+    if (!selectedModel) return []
+
+    return [
+      selectedModel,
+      `service-preview:${selectedModel}`,
+      `recommended:${selectedModel}`
+    ]
+  }, [selectedModel])
 
   const renderModelPopup = useCallback((menu: React.ReactElement) => {
     if (hasModelSearchQuery || modelMenuItems == null || modelMenuItems.length === 0) {
@@ -136,14 +174,14 @@ export const useModelSelectBrowser = ({
           className='model-select-menu'
           mode='vertical'
           selectable
-          selectedKeys={selectedModel ? [selectedModel] : []}
+          selectedKeys={selectedModelMenuKeys}
           triggerSubMenuAction='hover'
           items={modelMenuItems}
           onClick={handleModelMenuClick}
         />
       </div>
     )
-  }, [hasModelSearchQuery, handleModelMenuClick, modelMenuItems, selectedModel])
+  }, [hasModelSearchQuery, handleModelMenuClick, modelMenuItems, selectedModelMenuKeys])
 
   return {
     renderModelPopup

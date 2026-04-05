@@ -324,6 +324,9 @@
     "tooltipReferenceActions": "更多",
     "referenceActionsShortcutTooltip": "更多 / 权限模式",
     "modelShortcutTooltip": "切换模型",
+    "modelAddRecommendation": "加入推荐模型",
+    "modelAlreadyRecommended": "已在推荐模型中",
+    "modelRemoveRecommendation": "从推荐模型中移除",
     "effortShortcutTooltip": "切换推理强度",
     "sendShortcutTooltip": "发送消息",
     "adapterLockedTooltip": "创建会话后适配器会锁定",
@@ -356,6 +359,7 @@
     "selectionWarningReasonNotIncluded": "该模型不在适配器允许列表中",
     "selectionWarningFallback": "适配器 {{adapter}} 已将模型从 {{requestedModel}} 切换到 {{resolvedModel}}，原因：{{reason}}。",
     "modelGroupBuiltin": "{{adapter}} 内置模型",
+    "modelGroupServices": "模型服务",
     "imageTooLarge": "图片大小不能超过 5MB",
     "imageReadFailed": "图片读取失败",
     "imageNotSupportedInInteraction": "当前交互不支持图片",
@@ -742,7 +746,7 @@
       "models": {
         "items": {
           "label": "模型选择器明细",
-          "desc": "按 `service` 或 `service,model` 选择器配置元信息"
+          "desc": "按 `service` 或 `service,model` 配置模型元信息；展示元数据如 alias/title/description 仅在 `model` 或 `service,model` 精确匹配时生效"
         }
       },
       "modelServices": {
@@ -770,10 +774,6 @@
           "models": {
             "label": "模型列表",
             "desc": "该服务支持的模型名称"
-          },
-          "modelsAlias": {
-            "label": "模型别名",
-            "desc": "模型别名映射"
           },
           "timeoutMs": {
             "label": "超时（毫秒）",

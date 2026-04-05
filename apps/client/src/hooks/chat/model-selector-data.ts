@@ -1,12 +1,25 @@
-import type { AdapterBuiltinModel, ModelServiceConfig, RecommendedModelConfig } from '@vibe-forge/types'
+import type {
+  AdapterBuiltinModel,
+  ModelMetadataConfig,
+  ModelServiceConfig,
+  RecommendedModelConfig
+} from '@vibe-forge/types'
 
 import type { ServiceModelEntry } from './model-selector'
-import { buildServiceModelSelector, resolveServiceModelSelector } from './model-selector'
+import {
+  buildServiceModelSelector,
+  resolveModelDisplayMetadata,
+  resolveModelServiceTitle,
+  resolveServiceModelSelector
+} from './model-selector'
 
 export interface ModelSelectOptionData {
   value: string
   title: string
   description?: string
+  aliases: string[]
+  modelName: string
+  tooltipLines: string[]
   serviceKey?: string
   serviceTitle?: string
   searchText: string
@@ -21,6 +34,7 @@ export interface ModelSelectGroupData {
 }
 
 export interface ModelSelectorData {
+  servicePreviewOptions: ModelSelectOptionData[]
   recommendedOptions: ModelSelectOptionData[]
   moreModelGroups: ModelSelectGroupData[]
   flatGroups: ModelSelectGroupData[]
@@ -31,31 +45,67 @@ export const buildModelSelectorData = (params: {
   activeBuiltinModels: Record<string, AdapterBuiltinModel[]>
   availableServiceModels: ServiceModelEntry[]
   defaultModelService?: string
+  mergedModels: Record<string, ModelMetadataConfig>
   mergedModelServices: Record<string, ModelServiceConfig>
   recommendedModels: RecommendedModelConfig[]
   recommendedGroupTitle: string
+  servicePreviewGroupTitle: string
   builtinGroupTitle: (adapterKey: string) => string
 }): ModelSelectorData => {
+  const sortOptionsByDisplayLabel = (options: ModelSelectOptionData[]) => {
+    return [...options].sort((left, right) => {
+      const labelComparison = left.displayLabel.localeCompare(right.displayLabel, undefined, {
+        sensitivity: 'base'
+      })
+      if (labelComparison !== 0) return labelComparison
+
+      const modelComparison = left.modelName.localeCompare(right.modelName, undefined, {
+        sensitivity: 'base'
+      })
+      if (modelComparison !== 0) return modelComparison
+
+      return left.value.localeCompare(right.value, undefined, {
+        sensitivity: 'base'
+      })
+    })
+  }
+
   const buildOption = (option: {
     value: string
     title: string
+    modelName: string
     description?: string
+    aliases?: string[]
     serviceKey?: string
     serviceTitle?: string
+    searchTerms?: Array<string | undefined>
   }): ModelSelectOptionData => {
     const description = option.description?.trim()
+    const aliases = Array.from(new Set((option.aliases ?? []).filter(Boolean)))
+    const tooltipLines = [
+      ...aliases.filter(alias => alias !== option.title),
+      option.modelName !== option.title ? option.modelName : undefined,
+      description
+    ].filter((item): item is string => Boolean(item))
+
     return {
       value: option.value,
       title: option.title,
       description,
+      aliases,
+      modelName: option.modelName,
+      tooltipLines,
       serviceKey: option.serviceKey,
       serviceTitle: option.serviceTitle,
       searchText: [
         option.title,
+        option.modelName,
         option.value,
         option.serviceTitle,
         option.serviceKey,
-        description
+        description,
+        ...aliases,
+        ...(option.searchTerms ?? [])
       ]
         .filter(Boolean)
         .join(' '),
@@ -63,19 +113,13 @@ export const buildModelSelectorData = (params: {
     }
   }
 
-  const resolveFirstAlias = (modelsAlias: Record<string, string[]> | undefined, model: string) => {
-    if (!modelsAlias) return undefined
-    for (const [alias, aliasModels] of Object.entries(modelsAlias)) {
-      if (!Array.isArray(aliasModels)) continue
-      if (aliasModels.includes(model)) return alias
-    }
-    return undefined
-  }
-
   const modelToService = new Map<string, { key: string; title: string }>()
   for (const entry of params.availableServiceModels) {
     const serviceValue = params.mergedModelServices[entry.serviceKey]
-    const serviceTitle = serviceValue?.title?.trim() !== '' ? serviceValue?.title ?? '' : entry.serviceKey
+    const serviceTitle = resolveModelServiceTitle({
+      serviceKey: entry.serviceKey,
+      service: serviceValue
+    })
     if (!modelToService.has(entry.model)) {
       modelToService.set(entry.model, { key: entry.serviceKey, title: serviceTitle })
     }
@@ -86,7 +130,10 @@ export const buildModelSelectorData = (params: {
       const service = (serviceValue != null && typeof serviceValue === 'object')
         ? serviceValue
         : undefined
-      const serviceTitle = service?.title?.trim() !== '' ? service?.title ?? '' : serviceKey
+      const serviceTitle = resolveModelServiceTitle({
+        serviceKey,
+        service
+      })
       const title = serviceTitle?.trim() !== '' ? serviceTitle : serviceKey
       const models = Array.isArray(service?.models)
         ? service.models.filter((item: unknown): item is string => typeof item === 'string')
@@ -99,13 +146,21 @@ export const buildModelSelectorData = (params: {
         title,
         description: service?.description?.trim() || undefined,
         options: models.map((model) => {
-          const alias = resolveFirstAlias(service?.modelsAlias as Record<string, string[]> | undefined, model)
+          const value = buildServiceModelSelector(serviceKey, model)
+          const metadata = resolveModelDisplayMetadata({
+            model: value,
+            models: params.mergedModels
+          })
+
           return buildOption({
-            value: buildServiceModelSelector(serviceKey, model),
-            title: alias ?? model,
-            description: alias ? model : serviceTitle,
+            value,
+            title: metadata?.title ?? metadata?.aliases[0] ?? model,
+            modelName: model,
+            description: metadata?.description,
+            aliases: metadata?.aliases,
             serviceKey,
-            serviceTitle
+            serviceTitle,
+            searchTerms: [model, ...(metadata?.aliases ?? []), metadata?.title]
           })
         })
       }
@@ -119,13 +174,21 @@ export const buildModelSelectorData = (params: {
       return {
         key: `builtin:${adapterKey}`,
         title: params.builtinGroupTitle(adapterKey),
-        options: models.map((model) =>
-          buildOption({
-            value: model.value,
-            title: model.title,
-            description: model.description
+        options: models.map((model) => {
+          const metadata = resolveModelDisplayMetadata({
+            model: model.value,
+            models: params.mergedModels
           })
-        )
+
+          return buildOption({
+            value: model.value,
+            title: metadata?.title ?? metadata?.aliases[0] ?? model.title,
+            modelName: model.value,
+            description: metadata?.description ?? model.description,
+            aliases: metadata?.aliases,
+            searchTerms: [model.value, ...(metadata?.aliases ?? []), metadata?.title]
+          })
+        })
       }
     })
     .filter((group): group is NonNullable<typeof group> => group != null)
@@ -142,44 +205,51 @@ export const buildModelSelectorData = (params: {
     .map((item) => {
       const serviceInfo = item.service ? params.mergedModelServices[item.service] : undefined
       const serviceTitle = item.service
-        ? (serviceInfo?.title?.trim() !== '' ? serviceInfo?.title ?? '' : item.service)
+        ? resolveModelServiceTitle({
+          serviceKey: item.service,
+          service: serviceInfo
+        })
         : modelToService.get(item.model)?.title
-      const alias = item.service
-        ? resolveFirstAlias(serviceInfo?.modelsAlias as Record<string, string[]> | undefined, item.model)
-        : undefined
+      const resolvedModel = item.service ? buildServiceModelSelector(item.service, item.model) : item.model
+      const metadata = resolveModelDisplayMetadata({
+        model: resolvedModel,
+        models: params.mergedModels
+      })
+      const recommendedTitle = item.title?.trim()
+      const recommendedDescription = item.description?.trim()
       const value = resolveServiceModelSelector({
-        value: item.service ? buildServiceModelSelector(item.service, item.model) : item.model,
+        value: resolvedModel,
         serviceModels: params.availableServiceModels,
         preferredServiceKey: item.service ?? params.defaultModelService
       }) ?? item.model
 
       return buildOption({
         value,
-        title: item.title?.trim() !== '' ? item.title ?? '' : (alias ?? item.model),
-        description: item.description?.trim() !== '' ? item.description : serviceTitle,
+        title: recommendedTitle || metadata?.title || metadata?.aliases[0] || item.model,
+        modelName: item.model,
+        description: recommendedDescription || metadata?.description,
+        aliases: metadata?.aliases,
         serviceKey: item.service ?? modelToService.get(item.model)?.key,
-        serviceTitle
+        serviceTitle,
+        searchTerms: [item.model, ...(metadata?.aliases ?? []), metadata?.title]
       })
     })
 
-  const fallbackRecommendedOptions = configuredRecommendedOptions.length === 0
-    ? serviceGroups
-      .map((group) => {
-        const firstOption = group.options[0]
-        if (!firstOption) return null
-        return {
-          ...firstOption,
-          description: group.description ?? firstOption.description
-        }
-      })
-      .filter((option): option is ModelSelectOptionData => option != null)
-    : []
+  const servicePreviewOptions = serviceGroups
+    .map(group => group.options[0] ?? null)
+    .filter((option): option is ModelSelectOptionData => option != null)
 
-  const recommendedOptions = configuredRecommendedOptions.length > 0
-    ? configuredRecommendedOptions
-    : fallbackRecommendedOptions
+  const recommendedOptions = sortOptionsByDisplayLabel(configuredRecommendedOptions)
 
   const flatGroups: ModelSelectGroupData[] = []
+  if (servicePreviewOptions.length > 0) {
+    flatGroups.push({
+      key: 'service-preview',
+      title: params.servicePreviewGroupTitle,
+      options: servicePreviewOptions
+    })
+  }
+
   if (recommendedOptions.length > 0) {
     flatGroups.push({
       key: 'recommended',
@@ -192,7 +262,13 @@ export const buildModelSelectorData = (params: {
   flatGroups.push(...moreModelGroups)
 
   const searchOptionMap = new Map<string, ModelSelectOptionData>()
-  for (const option of [...recommendedOptions, ...moreModelGroups.flatMap(group => group.options)]) {
+  for (
+    const option of [
+      ...recommendedOptions,
+      ...servicePreviewOptions,
+      ...moreModelGroups.flatMap(group => group.options)
+    ]
+  ) {
     if (!searchOptionMap.has(option.value)) {
       searchOptionMap.set(option.value, option)
     }
@@ -201,6 +277,7 @@ export const buildModelSelectorData = (params: {
   const searchOptions = Array.from(searchOptionMap.values())
 
   return {
+    servicePreviewOptions,
     recommendedOptions,
     moreModelGroups,
     flatGroups,

@@ -166,19 +166,6 @@ export const ModelServicesRecordEditor = ({
                   />
                 </FieldRow>
                 <FieldRow
-                  title={t('config.fields.modelServices.item.modelsAlias.label')}
-                  description={t('config.fields.modelServices.item.modelsAlias.desc')}
-                  icon={getTypeIcon('object')}
-                  layout='stacked'
-                >
-                  <ComplexTextEditor
-                    value={recordValue.modelsAlias ?? {}}
-                    onChange={(next) => {
-                      onChange({ ...value, [key]: { ...recordValue, modelsAlias: next } })
-                    }}
-                  />
-                </FieldRow>
-                <FieldRow
                   title={t('config.fields.modelServices.item.timeoutMs.label')}
                   description={t('config.fields.modelServices.item.timeoutMs.desc')}
                   icon={getTypeIcon('number')}
@@ -262,7 +249,6 @@ export const ModelServicesRecordEditor = ({
                     apiBaseUrl: '',
                     apiKey: '',
                     models: [],
-                    modelsAlias: {},
                     timeoutMs: undefined,
                     maxOutputTokens: undefined,
                     extra: {}

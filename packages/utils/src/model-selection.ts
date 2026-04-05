@@ -39,6 +39,25 @@ export const normalizeEffortLevel = (value: unknown): EffortLevel | undefined =>
     : undefined
 )
 
+export const normalizeModelAliases = (value: unknown) => {
+  if (typeof value === 'string') {
+    const normalized = normalizeNonEmptyString(value)
+    return normalized ? [normalized] : []
+  }
+
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map(item => normalizeNonEmptyString(item))
+        .filter((item): item is string => Boolean(item))
+    )
+  )
+}
+
 export const buildServiceModelSelector = (serviceKey: string, modelName: string) => `${serviceKey},${modelName}`
 
 export const parseServiceModelSelector = (value: string | undefined) => {
@@ -201,6 +220,50 @@ export const resolveModelMetadata = (params: {
   }
 
   return undefined
+}
+
+export const resolveExactModelMetadata = (params: {
+  model?: string
+  models?: Record<string, ModelMetadataConfig>
+}) => {
+  const normalizedModel = normalizeNonEmptyString(params.model)
+  if (!normalizedModel) return undefined
+
+  const parsed = parseServiceModelSelector(normalizedModel)
+  const candidates = parsed == null
+    ? [normalizedModel]
+    : [parsed.selectorValue, parsed.modelName]
+
+  for (const key of candidates) {
+    const metadata = params.models?.[key]
+    if (metadata != null && typeof metadata === 'object' && !Array.isArray(metadata)) {
+      return metadata
+    }
+  }
+
+  return undefined
+}
+
+export const resolveModelDisplayMetadata = (params: {
+  model?: string
+  models?: Record<string, ModelMetadataConfig>
+}) => {
+  const metadata = resolveExactModelMetadata(params)
+  if (!metadata) return undefined
+
+  const aliases = normalizeModelAliases(metadata.alias)
+  const title = normalizeNonEmptyString(metadata.title)
+  const description = normalizeNonEmptyString(metadata.description)
+
+  if (aliases.length === 0 && !title && !description) {
+    return undefined
+  }
+
+  return {
+    aliases,
+    title,
+    description
+  }
 }
 
 export const resolveModelDefaultAdapter = (params: {

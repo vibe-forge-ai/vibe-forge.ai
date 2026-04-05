@@ -323,6 +323,9 @@
     "tooltipReferenceActions": "More",
     "referenceActionsShortcutTooltip": "More / Permission mode",
     "modelShortcutTooltip": "Switch model",
+    "modelAddRecommendation": "Add to recommended models",
+    "modelAlreadyRecommended": "Already recommended",
+    "modelRemoveRecommendation": "Remove from recommended models",
     "effortShortcutTooltip": "Switch reasoning effort",
     "sendShortcutTooltip": "Send message",
     "adapterLockedTooltip": "Adapters are locked after a session is created",
@@ -355,6 +358,7 @@
     "selectionWarningReasonNotIncluded": "the model is not included by adapter rules",
     "selectionWarningFallback": "Adapter {{adapter}} switched from {{requestedModel}} to {{resolvedModel}} because {{reason}}.",
     "modelGroupBuiltin": "{{adapter}} built-in models",
+    "modelGroupServices": "Model Services",
     "imageTooLarge": "Image must be smaller than 5MB",
     "imageReadFailed": "Failed to read image",
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
@@ -741,7 +745,7 @@
       "models": {
         "items": {
           "label": "Model Selector Entries",
-          "desc": "Selector metadata keyed by `service` or `service,model`"
+          "desc": "Model metadata keyed by `service` or `service,model`. Display metadata like alias/title/description only applies to exact `model` or `service,model` matches"
         }
       },
       "modelServices": {
@@ -769,10 +773,6 @@
           "models": {
             "label": "Models",
             "desc": "Models supported by this service"
-          },
-          "modelsAlias": {
-            "label": "Model Aliases",
-            "desc": "Alias mapping for models"
           },
           "timeoutMs": {
             "label": "Timeout (ms)",
