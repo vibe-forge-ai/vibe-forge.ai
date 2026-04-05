@@ -15,7 +15,7 @@
   background-color: var(--input-bg, #f9fafb);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 12px;
   transition: all .2s;
 
   &:focus-within {
@@ -24,13 +24,8 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, .1);
   }
 
-  textarea {
+  .chat-input-monaco {
     color: var(--text-color);
-    background: transparent;
-
-    &::placeholder {
-      color: var(--sub-text-color, #9ca3af);
-    }
   }
 
   .model-unavailable {
@@ -100,21 +95,5 @@ html.dark {
   .chat-input-container {
     --input-bg: #1f1f1f;
     --input-focus-bg: #141414;
-  }
-}
-
-.chat-input-textarea,
-.chat-input-textarea.ant-input {
-  background: transparent !important;
-  padding: 4px 0 !important;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-color) !important;
-
-  &::placeholder,
-  &::-webkit-input-placeholder {
-    color: var(--placeholder-color, #9ca3af) !important;
-    font-size: 13px !important;
-    opacity: 1 !important;
   }
 }

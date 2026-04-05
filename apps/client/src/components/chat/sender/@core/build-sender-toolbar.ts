@@ -34,7 +34,7 @@ export const buildSenderToolbar = ({
   callbacks: { onSend: () => void }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
   composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
-  focusRestore: { queueTextareaFocusRestore: () => void }
+  focusRestore: { queueEditorFocusRestore: () => void }
   isBusy: boolean
   isInlineEdit: boolean
   isMac: boolean

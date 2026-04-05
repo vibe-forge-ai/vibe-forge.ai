@@ -31,7 +31,7 @@ export const createSenderToolbarHandlers = ({
     handleOpenContextPicker: () => void
   }
   canOpenReferenceActions: boolean
-  focusRestore: { queueTextareaFocusRestore: () => void }
+  focusRestore: { queueEditorFocusRestore: () => void }
   isInlineEdit: boolean
   message: { warning: (content: ReactNode) => unknown }
   modelUnavailable?: boolean
@@ -102,7 +102,7 @@ export const createSenderToolbarHandlers = ({
         referenceActions.closeReferenceActions()
       }
     },
-    onQueueTextareaFocusRestore: focusRestore.queueTextareaFocusRestore,
+    onQueueTextareaFocusRestore: focusRestore.queueEditorFocusRestore,
     onCloseReferenceActions: () => referenceActions.closeReferenceActions(),
     onModelChange,
     onToggleRecommendedModel,

@@ -1,12 +1,12 @@
-import type { Dispatch, KeyboardEvent, SetStateAction } from 'react'
+import type { RefObject } from 'react'
 
-import type { CompletionItem } from '#~/components/chat/sender/@components/completion-menu/CompletionMenu'
+import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import { loadChatHistory } from '#~/components/chat/sender/@utils/sender-utils'
 import { isShortcutMatch } from '#~/utils/shortcutUtils'
 
 export const useSenderKeydown = ({
+  editorRef,
   isMac,
-  resolvedSendShortcut,
   clearInputShortcut,
   isInlineEdit,
   input,
@@ -14,7 +14,6 @@ export const useSenderKeydown = ({
   pendingFileCount,
   onCancel,
   onClear,
-  onSend,
   onResetComposer,
   showReferenceActions,
   onCloseReferenceActions,
@@ -23,17 +22,12 @@ export const useSenderKeydown = ({
   showEffortSelect,
   onCloseEffortSelect,
   showCompletion,
-  completionItems,
-  selectedIndex,
-  onCompletionIndexChange,
-  onCompletionSelect,
-  onCompletionClose,
   historyIndex,
   onHistoryNavigate,
   onInputClear
 }: {
+  editorRef: RefObject<SenderEditorHandle | null>
   isMac: boolean
-  resolvedSendShortcut: string
   clearInputShortcut?: string
   isInlineEdit: boolean
   input: string
@@ -41,7 +35,6 @@ export const useSenderKeydown = ({
   pendingFileCount: number
   onCancel?: () => void
   onClear?: () => void
-  onSend: () => void
   onResetComposer: () => void
   showReferenceActions: boolean
   onCloseReferenceActions: () => void
@@ -50,11 +43,6 @@ export const useSenderKeydown = ({
   showEffortSelect: boolean
   onCloseEffortSelect: () => void
   showCompletion: boolean
-  completionItems: CompletionItem[]
-  selectedIndex: number
-  onCompletionIndexChange: Dispatch<SetStateAction<number>>
-  onCompletionSelect: (item: CompletionItem) => void
-  onCompletionClose: () => void
   historyIndex: number
   onHistoryNavigate: (direction: 'up' | 'down') => void
   onInputClear: () => void
@@ -75,9 +63,7 @@ export const useSenderKeydown = ({
       onCloseEffortSelect()
       return
     }
-    if (isShortcutMatch(event, resolvedSendShortcut, isMac)) {
-      event.preventDefault()
-      onSend()
+    if (showCompletion && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
       return
     }
     if (clearInputShortcut?.trim() && isShortcutMatch(event, clearInputShortcut, isMac)) {
@@ -85,38 +71,13 @@ export const useSenderKeydown = ({
       onInputClear()
       return
     }
-    if (showCompletion) {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        onCompletionIndexChange(current => (current + 1) % completionItems.length)
-        return
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        onCompletionIndexChange(current => (current - 1 + completionItems.length) % completionItems.length)
-        return
-      }
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault()
-        const selectedItem = completionItems[selectedIndex]
-        if (selectedItem != null) {
-          onCompletionSelect(selectedItem)
-        }
-        return
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onCompletionClose()
-        return
-      }
-    }
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-      const textarea = event.target as HTMLTextAreaElement
+      const selection = editorRef.current?.getSelection()
       const history = loadChatHistory()
       const currentHistoryValue = historyIndex === -1 ? null : history[historyIndex]
       const textSegment = event.key === 'ArrowUp'
-        ? textarea.value.substring(0, textarea.selectionStart)
-        : textarea.value.substring(textarea.selectionEnd)
+        ? input.substring(0, selection?.start ?? input.length)
+        : input.substring(selection?.end ?? input.length)
       if (!textSegment.includes('\n')) {
         const canMoveUp = event.key === 'ArrowUp' && (input.trim() === '' || input === currentHistoryValue)
         const canMoveDown = event.key === 'ArrowDown' && (historyIndex !== -1 || input === currentHistoryValue)
@@ -147,11 +108,6 @@ export const useSenderKeydown = ({
       }
       onInputClear()
       onClear?.()
-      return
-    }
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault()
-      onSend()
     }
   }
 }

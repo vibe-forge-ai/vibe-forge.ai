@@ -13,6 +13,9 @@ export interface ShortcutDisplayToken {
   compact: boolean
 }
 
+export const SEND_SHORTCUT_DEFAULT = 'cmd+enter'
+export const SEND_SHORTCUT_INVALID_FALLBACK = 'enter'
+
 const normalizeKey = (key: string) => {
   if (key === ' ') return 'space'
   return key.toLowerCase()
@@ -162,4 +165,34 @@ export const getShortcutFromEvent = (
   if (e.altKey) tokens.push('alt')
   tokens.push(key)
   return tokens.join('+')
+}
+
+export const normalizeSendShortcut = (shortcut: string | undefined, isMac: boolean) => {
+  const parsed = parseShortcut(shortcut, isMac)
+
+  if (parsed == null || parsed.key !== 'enter' || parsed.altKey || parsed.ctrlKey) {
+    return null
+  }
+
+  if (!parsed.metaKey && !parsed.shiftKey) {
+    return 'enter'
+  }
+
+  if (!isMac || !parsed.metaKey) {
+    return null
+  }
+
+  if (parsed.shiftKey) {
+    return 'cmd+shift+enter'
+  }
+
+  return 'cmd+enter'
+}
+
+export const resolveSendShortcut = (shortcut: string | undefined, isMac: boolean) => {
+  if (shortcut == null || shortcut.trim() === '') {
+    return isMac ? SEND_SHORTCUT_DEFAULT : SEND_SHORTCUT_INVALID_FALLBACK
+  }
+
+  return normalizeSendShortcut(shortcut, isMac) ?? SEND_SHORTCUT_INVALID_FALLBACK
 }

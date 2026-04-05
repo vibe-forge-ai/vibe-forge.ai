@@ -3,6 +3,7 @@ import './ConfigSectionForm.scss'
 import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
+import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
@@ -297,11 +298,17 @@ export const SectionForm = ({
       }
     } else if (field.type === 'shortcut') {
       const isMac = navigator.platform.includes('Mac')
+      const rawValue = typeof valueToUse === 'string' ? valueToUse : ''
+      const isSendMessageShortcut = field.shortcutKind === 'sendMessage'
       control = (
         <ShortcutInput
-          value={typeof valueToUse === 'string' ? valueToUse : ''}
+          value={rawValue}
+          displayValue={isSendMessageShortcut ? resolveSendShortcut(rawValue, isMac) : undefined}
           onChange={(next) => handleValueChange(next)}
           placeholder={t('config.editor.shortcutPlaceholder')}
+          normalizeShortcut={isSendMessageShortcut
+            ? (next) => normalizeSendShortcut(next, isMac)
+            : undefined}
           isMac={isMac}
           t={t}
         />

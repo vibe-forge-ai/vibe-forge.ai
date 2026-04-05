@@ -20,6 +20,7 @@ export interface FieldSpec {
   path: string[]
   type: FieldValueType
   defaultValue: unknown
+  shortcutKind?: 'sendMessage'
   icon?: string
   options?: FieldOption[]
   placeholderKey?: string
@@ -329,7 +330,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
   shortcuts: [
     { path: ['newSession'], type: 'shortcut', defaultValue: '', icon: 'add_comment' },
     { path: ['openConfig'], type: 'shortcut', defaultValue: '', icon: 'settings' },
-    { path: ['sendMessage'], type: 'shortcut', defaultValue: '', icon: 'send' },
+    { path: ['sendMessage'], type: 'shortcut', shortcutKind: 'sendMessage', defaultValue: '', icon: 'send' },
     { path: ['clearInput'], type: 'shortcut', defaultValue: '', icon: 'clear' },
     { path: ['switchModel'], type: 'shortcut', defaultValue: '', icon: 'model_training' },
     { path: ['switchEffort'], type: 'shortcut', defaultValue: '', icon: 'psychology' },

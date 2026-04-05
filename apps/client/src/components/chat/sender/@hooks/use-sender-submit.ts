@@ -7,7 +7,7 @@ import type { SenderSubmitResult } from '#~/components/chat/sender/@types/sender
 import { saveChatHistoryEntry } from '#~/components/chat/sender/@utils/sender-utils'
 
 export const useSenderSubmit = ({
-  input,
+  getInput,
   pendingImages,
   pendingFiles,
   isBusy,
@@ -21,7 +21,7 @@ export const useSenderSubmit = ({
   t,
   resetComposer
 }: {
-  input: string
+  getInput: () => string
   pendingImages: Parameters<typeof buildMessageContent>[1]
   pendingFiles: Parameters<typeof buildMessageContent>[2]
   isBusy: boolean
@@ -36,6 +36,8 @@ export const useSenderSubmit = ({
   resetComposer: () => void
 }) => {
   return async () => {
+    const input = getInput()
+
     if (isBusy || (input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0)) {
       return
     }

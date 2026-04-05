@@ -1,9 +1,8 @@
-import { Button, Input } from 'antd'
-import type { TextAreaRef } from 'antd/es/input/TextArea'
-import type { RefObject } from 'react'
+import { Button } from 'antd'
+import type { MutableRefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { AskUserQuestionParams } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
 
 import { ContextFilePicker } from '#~/components/workspace/ContextFilePicker'
 
@@ -15,11 +14,11 @@ import type {
 } from '../../@types/sender-toolbar-types'
 
 import type { PendingContextFile } from '../../@types/sender-composer'
-import type { CompletionItem } from '../completion-menu/CompletionMenu'
-import { CompletionMenu } from '../completion-menu/CompletionMenu'
+import type { SenderEditorHandle } from '../../@types/sender-editor'
+import type { SenderCompletionMatch, SenderTokenDecoration } from '../../@utils/sender-completion'
 import { SenderAttachments } from '../sender-attachments/SenderAttachments'
+import { SenderMonacoEditor } from '../sender-monaco-editor/SenderMonacoEditor'
 import { SenderToolbar } from '../sender-toolbar/SenderToolbar'
-const { TextArea } = Input
 
 export function SenderBody({
   isInlineEdit,
@@ -31,18 +30,16 @@ export function SenderBody({
   pendingFiles,
   onRemovePendingImage,
   onRemovePendingFile,
-  showCompletion,
-  completionItems,
-  selectedIndex,
-  onSelectCompletion,
-  onCloseCompletion,
-  textareaRef,
+  editorRef,
+  sessionInfo,
   placeholder,
-  interactionRequest,
   input,
   onInputChange,
+  onCursorChange,
   onKeyDown,
   onPaste,
+  resolveCompletionMatch,
+  resolveTokenDecorations,
   toolbarState,
   toolbarData,
   toolbarRefs,
@@ -60,18 +57,16 @@ export function SenderBody({
   pendingFiles: Parameters<typeof SenderAttachments>[0]['pendingFiles']
   onRemovePendingImage: (id: string) => void
   onRemovePendingFile: (path: string) => void
-  showCompletion: boolean
-  completionItems: CompletionItem[]
-  selectedIndex: number
-  onSelectCompletion: (item: CompletionItem) => void
-  onCloseCompletion: () => void
-  textareaRef: RefObject<TextAreaRef>
+  editorRef: MutableRefObject<SenderEditorHandle | null>
+  sessionInfo?: SessionInfo | null
   placeholder: string
-  interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   input: string
-  onInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void
-  onKeyDown: (event: React.KeyboardEvent) => void
-  onPaste: (event: React.ClipboardEvent<HTMLTextAreaElement>) => void
+  onInputChange: (value: string, cursorOffset: number | null) => void
+  onCursorChange: (cursorOffset: number | null) => void
+  onKeyDown: (event: KeyboardEvent) => void
+  onPaste: (event: ClipboardEvent) => void | Promise<void>
+  resolveCompletionMatch: (value: string, cursorOffset: number | null, sessionInfo?: SessionInfo | null) => SenderCompletionMatch | null
+  resolveTokenDecorations: (value: string) => SenderTokenDecoration[]
   toolbarState: SenderToolbarState
   toolbarData: SenderToolbarData
   toolbarRefs: SenderToolbarRefs
@@ -103,25 +98,20 @@ export function SenderBody({
         onRemovePendingImage={onRemovePendingImage}
         onRemovePendingFile={onRemovePendingFile}
       />
-      {showCompletion && (
-        <CompletionMenu
-          items={completionItems}
-          selectedIndex={selectedIndex}
-          onSelect={onSelectCompletion}
-          onClose={onCloseCompletion}
-        />
-      )}
-      <TextArea
-        ref={textareaRef}
-        className='chat-input-textarea'
-        placeholder={placeholder ?? interactionRequest?.payload.question ?? t('chat.inputPlaceholder')}
+      <SenderMonacoEditor
+        editorRef={editorRef}
+        sessionInfo={sessionInfo}
         value={input}
-        onChange={onInputChange}
+        placeholder={placeholder || t('chat.inputPlaceholder')}
+        disabled={(!isInlineEdit && modelUnavailable) || (isInlineEdit && isBusy)}
+        sendShortcut={toolbarState.resolvedSendShortcut}
+        onSendShortcut={toolbarHandlers.onSend}
+        onInputChange={onInputChange}
+        onCursorChange={onCursorChange}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
-        autoSize={{ minRows: 1, maxRows: 10 }}
-        variant='borderless'
-        disabled={(!isInlineEdit && modelUnavailable) || isBusy}
+        resolveCompletionMatch={resolveCompletionMatch}
+        resolveTokenDecorations={resolveTokenDecorations}
       />
       <SenderToolbar state={toolbarState} data={toolbarData} refs={toolbarRefs} handlers={toolbarHandlers} />
       {!isInlineEdit && (

@@ -70,7 +70,7 @@ export function SenderInteractionPanel({
           )}
         </div>
       )}
-      {interactionRequest.payload.options?.map(option => (
+      {interactionRequest.payload.options?.map((option: { label: string; value?: string; description?: string }) => (
         <Button
           key={option.value ?? option.label}
           block

@@ -6,6 +6,7 @@ import type { ConfigResponse } from '@vibe-forge/types'
 
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useComposerControlShortcuts } from '#~/hooks/chat/use-composer-control-shortcuts'
+import { resolveSendShortcut } from '#~/utils/shortcutUtils'
 
 export const useSenderShortcuts = ({
   enabled,
@@ -36,7 +37,7 @@ export const useSenderShortcuts = ({
 }) => {
   const { data: configRes } = useSWR<ConfigResponse>('/api/config')
   const mergedShortcuts = configRes?.sources?.merged?.shortcuts
-  const resolvedSendShortcut = mergedShortcuts?.sendMessage?.trim() ? mergedShortcuts.sendMessage : 'mod+enter'
+  const resolvedSendShortcut = resolveSendShortcut(mergedShortcuts?.sendMessage, isMac)
 
   const composerControlShortcuts = useComposerControlShortcuts({
     enabled,

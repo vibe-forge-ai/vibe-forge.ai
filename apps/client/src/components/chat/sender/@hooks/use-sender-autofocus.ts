@@ -1,14 +1,14 @@
 import type { RefObject } from 'react'
 import { useEffect } from 'react'
 
-import type { TextAreaRef } from 'antd/es/input/TextArea'
+import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 
 export const useSenderAutofocus = ({
   autoFocus,
-  textareaRef
+  editorRef
 }: {
   autoFocus: boolean
-  textareaRef: RefObject<TextAreaRef>
+  editorRef: RefObject<SenderEditorHandle | null>
 }) => {
   useEffect(() => {
     if (!autoFocus) {
@@ -16,17 +16,19 @@ export const useSenderAutofocus = ({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      const textArea = textareaRef.current?.resizableTextArea?.textArea
-      if (textArea == null) {
+      const editor = editorRef.current
+
+      if (editor == null) {
         return
       }
-      const length = textArea.value.length
-      textArea.focus()
-      textArea.setSelectionRange(length, length)
+
+      const length = editor.getValue().length
+      editor.focus()
+      editor.setSelection({ start: length, end: length })
     })
 
     return () => {
       window.cancelAnimationFrame(frame)
     }
-  }, [autoFocus, textareaRef])
+  }, [autoFocus, editorRef])
 }

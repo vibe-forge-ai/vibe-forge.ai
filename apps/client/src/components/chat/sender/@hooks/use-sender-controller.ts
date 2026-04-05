@@ -24,7 +24,7 @@ import { useSenderSubmit } from './use-sender-submit'
 export const useSenderController = (props: SenderProps) => {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { textareaRef, fileInputRef, modelSelectRef, effortSelectRef } = useSenderRefs()
+  const { editorRef, fileInputRef, modelSelectRef, effortSelectRef } = useSenderRefs()
   const { isInlineEdit, isMac, isThinking, isBusy, supportsEffort } = getSenderRuntimeState(props)
   const composer = useSenderComposerState(props.initialContent)
   const completion = useSenderCompletion({
@@ -32,13 +32,13 @@ export const useSenderController = (props: SenderProps) => {
     input: composer.input,
     setInput: composer.setInput,
     sessionInfo: props.sessionInfo,
-    textareaRef
+    editorRef
   })
   const history = useSenderHistory({
     initialContent: props.initialContent,
     input: composer.input,
     setInput: composer.setInput,
-    textareaRef
+    editorRef
   })
   const attachments = useSenderAttachments({
     initialContent: props.initialContent,
@@ -71,7 +71,7 @@ export const useSenderController = (props: SenderProps) => {
     effortSelectRef
   })
   const focusRestore = useSenderFocusRestore({
-    textareaRef,
+    editorRef,
     suspended: selectOverlays.showModelSelect || selectOverlays.showEffortSelect ||
       referenceActions.showReferenceActions || attachments.showContextPicker
   })
@@ -99,7 +99,7 @@ export const useSenderController = (props: SenderProps) => {
     referenceActions.resetReferenceActions()
   }
   const handleSend = useSenderSubmit({
-    input: composer.input,
+    getInput: () => editorRef.current?.getValue() ?? composer.input,
     pendingImages: composer.pendingImages,
     pendingFiles: composer.pendingFiles,
     isBusy,
@@ -115,12 +115,12 @@ export const useSenderController = (props: SenderProps) => {
   })
   const triggerSend = () => void handleSend()
 
-  useSenderAutofocus({ autoFocus: props.autoFocus === true, textareaRef })
+  useSenderAutofocus({ autoFocus: props.autoFocus === true, editorRef })
   useSenderReferenceFocusRestore({ focusRestore, referenceActions })
 
   const handleKeyDown = useSenderKeydown({
+    editorRef,
     isMac,
-    resolvedSendShortcut,
     clearInputShortcut,
     isInlineEdit,
     input: composer.input,
@@ -128,26 +128,20 @@ export const useSenderController = (props: SenderProps) => {
     pendingFileCount: composer.pendingFiles.length,
     onCancel: props.onCancel,
     onClear: props.onClear,
-    onSend: triggerSend,
     onResetComposer: resetComposer,
     showReferenceActions: referenceActions.showReferenceActions,
     onCloseReferenceActions: () => referenceActions.closeReferenceActions({ restoreFocus: true }),
     showModelSelect: selectOverlays.showModelSelect,
     onCloseModelSelect: () => {
       selectOverlays.setShowModelSelect(false)
-      focusRestore.queueTextareaFocusRestore()
+      focusRestore.queueEditorFocusRestore()
     },
     showEffortSelect: selectOverlays.showEffortSelect,
     onCloseEffortSelect: () => {
       selectOverlays.setShowEffortSelect(false)
-      focusRestore.queueTextareaFocusRestore()
+      focusRestore.queueEditorFocusRestore()
     },
     showCompletion: completion.showCompletion,
-    completionItems: completion.completionItems,
-    selectedIndex: completion.selectedIndex,
-    onCompletionIndexChange: completion.setSelectedIndex,
-    onCompletionSelect: completion.handleSelectCompletion,
-    onCompletionClose: () => completion.setShowCompletion(false),
     historyIndex: history.historyIndex,
     onHistoryNavigate: history.handleHistoryNavigation,
     onInputClear: history.clearInputValue
@@ -192,7 +186,7 @@ export const useSenderController = (props: SenderProps) => {
     modelUnavailable: props.modelUnavailable,
     onRetryConnection: props.onRetryConnection,
     permissionContext,
-    textareaRef,
+    editorRef,
     placeholder: props.placeholder ?? props.interactionRequest?.payload.question ?? t('chat.inputPlaceholder'),
     toolbar
   })

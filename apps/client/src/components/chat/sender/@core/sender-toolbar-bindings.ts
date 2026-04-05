@@ -57,7 +57,7 @@ export const createSenderToolbarBindings = ({
     adapterLocked: boolean
     canOpenReferenceActions: boolean
     composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
-    focusRestore: { queueTextareaFocusRestore: () => void }
+    focusRestore: { queueEditorFocusRestore: () => void }
     isInlineEdit: boolean
     isMac: boolean
     isThinking: boolean

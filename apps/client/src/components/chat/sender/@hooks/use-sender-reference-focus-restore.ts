@@ -4,7 +4,7 @@ export const useSenderReferenceFocusRestore = ({
   focusRestore,
   referenceActions
 }: {
-  focusRestore: { queueTextareaFocusRestore: () => void }
+  focusRestore: { queueEditorFocusRestore: () => void }
   referenceActions: {
     shouldRestoreFocus: boolean
     clearReferenceFocusRestore: () => void
@@ -15,7 +15,7 @@ export const useSenderReferenceFocusRestore = ({
       return
     }
 
-    focusRestore.queueTextareaFocusRestore()
+    focusRestore.queueEditorFocusRestore()
     referenceActions.clearReferenceFocusRestore()
   }, [focusRestore, referenceActions])
 }

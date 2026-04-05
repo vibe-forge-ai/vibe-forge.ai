@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
+    "@monaco-editor/react": "^4.7.0",
     "@vibe-forge/adapter-claude-code": "workspace:^",
     "@vibe-forge/adapter-codex": "workspace:^",
     "@vibe-forge/adapter-opencode": "workspace:^",
@@ -37,6 +38,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "jotai": "^2.16.2",
     "mermaid": "^10.9.1",
+    "monaco-editor": "^0.55.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.5.3",

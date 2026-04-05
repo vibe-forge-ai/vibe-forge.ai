@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { ChangeEvent, ClipboardEvent, RefObject } from 'react'
+import type { ChangeEvent, RefObject } from 'react'
 import { useEffect, useState } from 'react'
 
 import type { MessageInstance } from 'antd/es/message/interface'
@@ -9,6 +9,11 @@ import type { AskUserQuestionParams } from '@vibe-forge/core'
 import type { PendingContextFile, PendingImage } from '#~/components/chat/sender/@types/sender-composer'
 import type { SenderInitialContent } from '#~/components/chat/sender/@types/sender-types'
 import { readFileAsDataUrl } from '#~/components/chat/sender/@utils/sender-utils'
+
+interface ClipboardPasteEvent {
+  clipboardData?: DataTransfer | null
+  preventDefault: () => void
+}
 
 export const useSenderAttachments = ({
   initialContent,
@@ -124,7 +129,7 @@ export const useSenderAttachments = ({
       setPendingFiles(files)
       setShowContextPicker(false)
     },
-    handlePaste: async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    handlePaste: async (event: ClipboardPasteEvent) => {
       const files = Array.from(event.clipboardData?.items ?? [])
         .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
         .map(item => item.getAsFile())
