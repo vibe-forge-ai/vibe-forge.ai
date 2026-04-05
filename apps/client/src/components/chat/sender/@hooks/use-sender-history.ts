@@ -1,8 +1,7 @@
 import type { RefObject } from 'react'
 import { useEffect, useState } from 'react'
 
-import type { TextAreaRef } from 'antd/es/input/TextArea'
-
+import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderInitialContent } from '#~/components/chat/sender/@types/sender-types'
 import { loadChatHistory } from '#~/components/chat/sender/@utils/sender-utils'
 
@@ -10,12 +9,12 @@ export const useSenderHistory = ({
   initialContent,
   input,
   setInput,
-  textareaRef
+  editorRef
 }: {
   initialContent: SenderInitialContent
   input: string
   setInput: (value: string) => void
-  textareaRef: RefObject<TextAreaRef>
+  editorRef: RefObject<SenderEditorHandle | null>
 }) => {
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [draft, setDraft] = useState('')
@@ -59,13 +58,15 @@ export const useSenderHistory = ({
     setInput(nextValue)
 
     setTimeout(() => {
-      const textArea = textareaRef.current?.resizableTextArea?.textArea
-      if (textArea == null) {
+      const editor = editorRef.current
+
+      if (editor == null) {
         return
       }
+
       const length = nextValue.length
-      textArea.setSelectionRange(length, length)
-      textArea.focus()
+      editor.setSelection({ start: length, end: length })
+      editor.focus()
     }, 0)
   }
 

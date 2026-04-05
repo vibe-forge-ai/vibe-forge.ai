@@ -1,16 +1,17 @@
 import { useRef } from 'react'
 
 import type { RefSelectProps } from 'antd'
-import type { TextAreaRef } from 'antd/es/input/TextArea'
+
+import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 
 export const useSenderRefs = () => {
-  const textareaRef = useRef<TextAreaRef>(null)
+  const editorRef = useRef<SenderEditorHandle | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const modelSelectRef = useRef<RefSelectProps>(null)
   const effortSelectRef = useRef<RefSelectProps>(null)
 
   return {
-    textareaRef,
+    editorRef,
     fileInputRef,
     modelSelectRef,
     effortSelectRef

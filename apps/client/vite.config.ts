@@ -16,12 +16,40 @@ export default defineConfig({
   root: '.',
   base: clientBase,
   resolve: {
-    alias: {
-      '@vibe-forge/utils/model-selection': fileURLToPath(
-        new URL('../../packages/utils/src/model-selection.ts', import.meta.url)
-      ),
-      '@vibe-forge/utils': fileURLToPath(new URL('../../packages/utils/src/index.ts', import.meta.url))
-    },
+    alias: [
+      {
+        find: '@vibe-forge/core/channel',
+        replacement: fileURLToPath(new URL('../../packages/core/src/channel.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/plugin-chrome-devtools/schema',
+        replacement: fileURLToPath(new URL('../../packages/plugins/chrome-devtools/src/schema.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/utils/model-selection',
+        replacement: fileURLToPath(new URL('../../packages/utils/src/model-selection.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/utils/log-level',
+        replacement: fileURLToPath(new URL('../../packages/utils/src/log-level.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/channel-lark',
+        replacement: fileURLToPath(new URL('../../packages/channels/lark/src/index.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/core',
+        replacement: fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/types',
+        replacement: fileURLToPath(new URL('../../packages/types/src/index.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/utils',
+        replacement: fileURLToPath(new URL('../../packages/utils/src/index.ts', import.meta.url))
+      }
+    ],
     conditions: ['browser', '__vibe-forge__', 'module', 'import', 'development']
   },
   server: {

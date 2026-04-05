@@ -7,18 +7,23 @@ import { formatShortcutLabel, getShortcutFromEvent } from '../../utils/shortcutU
 
 export const ShortcutInput = ({
   value,
+  displayValue,
   onChange,
   placeholder,
+  normalizeShortcut,
   isMac,
   t
 }: {
   value: string
+  displayValue?: string
   onChange: (nextValue: string) => void
   placeholder: string
+  normalizeShortcut?: (nextValue: string) => string | null
   isMac: boolean
   t: (key: string) => string
 }) => {
-  const label = value.trim() === '' ? '' : formatShortcutLabel(value, isMac)
+  const effectiveValue = (displayValue ?? value).trim()
+  const label = effectiveValue === '' ? '' : formatShortcutLabel(effectiveValue, isMac)
   return (
     <div className='config-shortcut-input'>
       <Input
@@ -33,8 +38,10 @@ export const ShortcutInput = ({
           }
           const nextShortcut = getShortcutFromEvent(event)
           if (nextShortcut == null) return
+          const normalizedShortcut = normalizeShortcut?.(nextShortcut) ?? nextShortcut
+          if (normalizedShortcut == null) return
           event.preventDefault()
-          onChange(nextShortcut)
+          onChange(normalizedShortcut)
         }}
       />
       <Tooltip title={t('config.editor.clearShortcut')}>

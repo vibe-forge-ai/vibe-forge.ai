@@ -1,42 +1,43 @@
 import type { RefObject } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { TextAreaRef } from 'antd/es/input/TextArea'
+import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 
 export const useSenderFocusRestore = ({
-  textareaRef,
+  editorRef,
   suspended = false
 }: {
-  textareaRef: RefObject<TextAreaRef>
+  editorRef: RefObject<SenderEditorHandle | null>
   suspended?: boolean
 }) => {
   const [shouldRestoreFocus, setShouldRestoreFocus] = useState(false)
   const focusRestoreTimeoutRef = useRef<number | null>(null)
 
-  const focusTextarea = useCallback(() => {
+  const focusEditor = useCallback(() => {
     if (focusRestoreTimeoutRef.current != null) {
       window.clearTimeout(focusRestoreTimeoutRef.current)
     }
 
     focusRestoreTimeoutRef.current = window.setTimeout(() => {
       window.requestAnimationFrame(() => {
-        const textArea = textareaRef.current?.resizableTextArea?.textArea
-        if (textArea == null || textArea.disabled) {
+        const editor = editorRef.current
+
+        if (editor == null || editor.isDisabled()) {
           return
         }
 
-        const length = textArea.value.length
-        textArea.focus()
-        textArea.setSelectionRange(length, length)
+        const length = editor.getValue().length
+        editor.focus()
+        editor.setSelection({ start: length, end: length })
       })
     }, 80)
-  }, [textareaRef])
+  }, [editorRef])
 
-  const queueTextareaFocusRestore = useCallback(() => {
+  const queueEditorFocusRestore = useCallback(() => {
     setShouldRestoreFocus(true)
   }, [])
 
-  const clearQueuedTextareaFocusRestore = useCallback(() => {
+  const clearQueuedEditorFocusRestore = useCallback(() => {
     setShouldRestoreFocus(false)
   }, [])
 
@@ -54,18 +55,18 @@ export const useSenderFocusRestore = ({
     }
 
     const timer = window.setTimeout(() => {
-      focusTextarea()
+      focusEditor()
       setShouldRestoreFocus(false)
     }, 0)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [focusTextarea, shouldRestoreFocus, suspended])
+  }, [focusEditor, shouldRestoreFocus, suspended])
 
   return {
-    focusTextarea,
-    queueTextareaFocusRestore,
-    clearQueuedTextareaFocusRestore
+    focusEditor,
+    queueEditorFocusRestore,
+    clearQueuedEditorFocusRestore
   }
 }

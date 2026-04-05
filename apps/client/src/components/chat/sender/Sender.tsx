@@ -41,18 +41,16 @@ export function Sender(props: SenderProps) {
             controller.composer.setPendingImages(prev => prev.filter(image => image.id !== id))}
           onRemovePendingFile={(path) =>
             controller.composer.setPendingFiles(prev => prev.filter(file => file.path !== path))}
-          showCompletion={controller.completion.showCompletion}
-          completionItems={controller.completion.completionItems}
-          selectedIndex={controller.completion.selectedIndex}
-          onSelectCompletion={controller.completion.handleSelectCompletion}
-          onCloseCompletion={() => controller.completion.setShowCompletion(false)}
-          textareaRef={controller.textareaRef}
+          editorRef={controller.editorRef}
+          sessionInfo={props.sessionInfo}
           placeholder={controller.placeholder}
-          interactionRequest={controller.interactionRequest}
           input={controller.composer.input}
           onInputChange={controller.onInputChange}
+          onCursorChange={controller.onCursorChange}
           onKeyDown={controller.handleKeyDown}
           onPaste={controller.attachments.handlePaste}
+          resolveCompletionMatch={controller.completion.resolveCompletionMatch}
+          resolveTokenDecorations={controller.completion.resolveTokenDecorations}
           toolbarState={controller.toolbar.toolbarState}
           toolbarData={controller.toolbar.toolbarData}
           toolbarRefs={controller.toolbar.toolbarRefs}
