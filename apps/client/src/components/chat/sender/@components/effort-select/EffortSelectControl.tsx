@@ -8,13 +8,13 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
-import { effortIconMap } from '../../@utils/sender-constants'
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
   SenderToolbarRefs,
   SenderToolbarState
 } from '../../@types/sender-toolbar-types'
+import { effortIconMap } from '../../@utils/sender-constants'
 
 const renderSelectArrow = (onMouseDown: (event: React.MouseEvent<HTMLSpanElement>) => void) => (
   <span className='material-symbols-rounded sender-select-arrow' onMouseDown={onMouseDown}>
@@ -119,6 +119,7 @@ export function EffortSelectControl({
           placeholder={t('chat.effortSelectPlaceholder')}
           optionLabelProp='label'
           popupMatchSelectWidth={false}
+          menuItemSelectedIcon={<span className='material-symbols-rounded effort-select-check-icon'>check</span>}
           suffixIcon={renderSelectArrow((event) => {
             event.preventDefault()
             event.stopPropagation()
