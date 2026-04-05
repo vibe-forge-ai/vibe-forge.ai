@@ -3,11 +3,13 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
+import type { HookInputs } from './type'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from './native'
 
 export interface NativeHookBridgeModule {
   isNativeHookEnv: () => boolean
   runHookBridge: () => Promise<void> | void
+  supportsHookEvent?: (eventName: keyof HookInputs) => boolean
 }
 
 export interface NativeHookBridgeLoaderDeps {
@@ -20,6 +22,7 @@ export interface NativeHookBridgeLoaderDeps {
 const HOOK_BRIDGE_EXPORT_SUFFIX = '/hook-bridge'
 const ADAPTER_SCOPE = '@vibe-forge'
 const ADAPTER_PREFIX = 'adapter-'
+const HOOK_EVENT_ENV = '__VF_VIBE_FORGE_HOOK_EVENT_NAME__'
 
 const createWorkspaceRequire = () => {
   const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
@@ -45,6 +48,29 @@ const isNativeHookBridgeModule = (value: unknown): value is NativeHookBridgeModu
     typeof (value as NativeHookBridgeModule).isNativeHookEnv === 'function' &&
     typeof (value as NativeHookBridgeModule).runHookBridge === 'function'
   )
+}
+
+const isHookEventName = (value: string): value is keyof HookInputs => (
+  value in ({
+    Notification: true,
+    SessionStart: true,
+    SessionEnd: true,
+    UserPromptSubmit: true,
+    GenerateSystemPrompt: true,
+    StartTasks: true,
+    TaskStart: true,
+    TaskStop: true,
+    PreToolUse: true,
+    PostToolUse: true,
+    Stop: true,
+    SubagentStop: true,
+    PreCompact: true
+  } satisfies Record<keyof HookInputs, true>)
+)
+
+const resolveRequestedHookEventName = (env: NodeJS.ProcessEnv = process.env) => {
+  const value = env[HOOK_EVENT_ENV]?.trim()
+  return value != null && isHookEventName(value) ? value : undefined
 }
 
 export const readInstalledAdapterScopeEntries = (scopeDir: string) => {
@@ -82,13 +108,21 @@ const defaultLoaderDeps: NativeHookBridgeLoaderDeps = {
 
 const tryLoadNativeHookBridge = (
   packageName: string,
-  deps: NativeHookBridgeLoaderDeps
+  deps: NativeHookBridgeLoaderDeps,
+  requestedHookEventName: keyof HookInputs | undefined
 ) => {
   try {
     if (!deps.hasHookBridgeExport(packageName)) return undefined
 
     const bridgeModule = deps.loadHookBridge(packageName)
     if (!isNativeHookBridgeModule(bridgeModule)) return undefined
+    if (
+      requestedHookEventName != null &&
+      typeof bridgeModule.supportsHookEvent === 'function' &&
+      !bridgeModule.supportsHookEvent(requestedHookEventName)
+    ) {
+      return undefined
+    }
     return bridgeModule.isNativeHookEnv() ? bridgeModule : undefined
   } catch {
     return undefined
@@ -114,15 +148,16 @@ export const resolveActiveNativeHookBridge = (
   deps: NativeHookBridgeLoaderDeps = defaultLoaderDeps,
   env: NodeJS.ProcessEnv = process.env
 ) => {
+  const requestedHookEventName = resolveRequestedHookEventName(env)
   const preferredPackage = resolvePreferredNativeHookBridgePackage(env)
   if (preferredPackage) {
-    const preferredBridge = tryLoadNativeHookBridge(preferredPackage, deps)
+    const preferredBridge = tryLoadNativeHookBridge(preferredPackage, deps, requestedHookEventName)
     if (preferredBridge) return preferredBridge
   }
 
   for (const packageName of listInstalledAdapterPackages(deps)) {
     if (packageName === preferredPackage) continue
-    const bridgeModule = tryLoadNativeHookBridge(packageName, deps)
+    const bridgeModule = tryLoadNativeHookBridge(packageName, deps, requestedHookEventName)
     if (bridgeModule) return bridgeModule
   }
 

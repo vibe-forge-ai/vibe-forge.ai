@@ -15,6 +15,7 @@ const tempDirs: string[] = []
 
 afterEach(async () => {
   delete process.env.__VF_VIBE_FORGE_HOOK_BRIDGE_ADAPTER__
+  delete process.env.__VF_VIBE_FORGE_HOOK_EVENT_NAME__
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
@@ -111,6 +112,32 @@ describe('hook bridge loader', () => {
         }
         return packageName === '@vibe-forge/adapter-claude-code' ? fallbackBridge : undefined
       }
+    })
+
+    expect(result).toBe(fallbackBridge)
+  })
+
+  it('skips native bridges that do not support the requested hook event', () => {
+    process.env.__VF_VIBE_FORGE_HOOK_EVENT_NAME__ = 'StartTasks'
+    const unsupportedPreferredBridge = {
+      isNativeHookEnv: () => true,
+      runHookBridge: vi.fn(),
+      supportsHookEvent: () => false
+    }
+    const fallbackBridge = {
+      isNativeHookEnv: () => true,
+      runHookBridge: vi.fn()
+    }
+
+    const result = resolveActiveNativeHookBridge({
+      resolveSearchPaths: () => ['/node_modules'],
+      readAdapterScopeEntries: () => ['adapter-claude-code', 'adapter-codex'],
+      hasHookBridgeExport: () => true,
+      loadHookBridge: (packageName) => (
+        packageName === '@vibe-forge/adapter-claude-code'
+          ? unsupportedPreferredBridge
+          : fallbackBridge
+      )
     })
 
     expect(result).toBe(fallbackBridge)

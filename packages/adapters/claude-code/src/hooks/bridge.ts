@@ -30,6 +30,10 @@ export const isClaudeNativeHookEnv = () => (
   process.env.__VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__ === '1'
 )
 
+export const supportsHookEvent = (eventName: keyof HookInputs) => (
+  SUPPORTED_EVENTS.has(eventName)
+)
+
 const canBlock = (eventName: keyof HookInputs) => BLOCKABLE_EVENTS.has(eventName)
 
 export const mapClaudeHookInputToVibeForge = (input: HookInput) => {

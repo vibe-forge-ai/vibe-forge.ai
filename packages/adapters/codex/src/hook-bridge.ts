@@ -86,6 +86,14 @@ export const isCodexNativeHookEnv = () => (
   process.env.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__ === '1'
 )
 
+export const supportsHookEvent = (eventName: keyof HookOutputs) => (
+  eventName === 'PreToolUse' ||
+  eventName === 'PostToolUse' ||
+  eventName === 'SessionStart' ||
+  eventName === 'UserPromptSubmit' ||
+  eventName === 'Stop'
+)
+
 export const mapCodexHookInputToVibeForge = (input: NativeCodexHookInput): HookInput => {
   const base = {
     cwd: input.cwd,
