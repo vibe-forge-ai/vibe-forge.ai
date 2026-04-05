@@ -6,13 +6,13 @@ import { useTranslation } from 'react-i18next'
 
 import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
 
-import { ReferencePermissionActionsPopover } from './ReferencePermissionActionsPopover'
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
   SenderToolbarRefs,
   SenderToolbarState
 } from '../../@types/sender-toolbar-types'
+import { ReferencePermissionActionsPopover } from './ReferencePermissionActionsPopover'
 
 export function ReferenceActionsControl({
   state,
@@ -56,9 +56,12 @@ export function ReferenceActionsControl({
   const { referenceMenuNavigation, permissionMenuNavigation } = refs
   const {
     onReferenceOpenChange,
+    onShowPermissionActionsChange,
     onOpenContextPicker,
     onReferenceImageSelect,
     onReferenceMenuKeyDown,
+    onPermissionMenuKeyDown,
+    onSelectPermissionMode,
     onCloseReferenceActions
   } = handlers
 
@@ -111,10 +114,10 @@ export function ReferenceActionsControl({
               data={{ permissionModeOptions }}
               refs={{ referenceMenuNavigation, permissionMenuNavigation }}
               handlers={{
-                onShowPermissionActionsChange: handlers.onShowPermissionActionsChange,
+                onShowPermissionActionsChange,
                 onReferenceMenuKeyDown,
-                onPermissionMenuKeyDown: handlers.onPermissionMenuKeyDown,
-                onSelectPermissionMode: handlers.onSelectPermissionMode
+                onPermissionMenuKeyDown,
+                onSelectPermissionMode
               }}
             />
           )}

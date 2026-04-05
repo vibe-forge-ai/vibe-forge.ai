@@ -1,6 +1,47 @@
-import type { ChangeEvent, KeyboardEvent, RefObject } from 'react'
+import type { ChangeEvent, ClipboardEvent, Dispatch, KeyboardEvent, RefObject, SetStateAction } from 'react'
 
 import type { TextAreaRef } from 'antd/es/input/TextArea'
+
+import type { CompletionItem } from '../@components/completion-menu/CompletionMenu'
+import type { PendingContextFile, PendingImage } from '../@types/sender-composer'
+import type { SenderProps } from '../@types/sender-props'
+import type {
+  SenderToolbarData,
+  SenderToolbarHandlers,
+  SenderToolbarRefs,
+  SenderToolbarState
+} from '../@types/sender-toolbar-types'
+
+interface SenderControllerAttachments {
+  handlePaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void | Promise<void>
+  showContextPicker: boolean
+  setShowContextPicker: (nextOpen: boolean) => void
+  handleContextPickerConfirm: (files: PendingContextFile[]) => void
+}
+
+interface SenderControllerCompletion {
+  showCompletion: boolean
+  completionItems: CompletionItem[]
+  selectedIndex: number
+  setShowCompletion: (nextOpen: boolean) => void
+  handleInputChange: (value: string, cursorPosition: number | null) => void
+  handleSelectCompletion: (item: CompletionItem) => void
+}
+
+interface SenderControllerComposer {
+  input: string
+  pendingImages: PendingImage[]
+  pendingFiles: PendingContextFile[]
+  setPendingImages: Dispatch<SetStateAction<PendingImage[]>>
+  setPendingFiles: Dispatch<SetStateAction<PendingContextFile[]>>
+}
+
+interface SenderControllerToolbar {
+  toolbarState: SenderToolbarState
+  toolbarData: SenderToolbarData
+  toolbarRefs: SenderToolbarRefs
+  toolbarHandlers: SenderToolbarHandlers
+}
 
 export const buildSenderControllerResult = ({
   attachments,
@@ -22,18 +63,15 @@ export const buildSenderControllerResult = ({
   textareaRef,
   toolbar
 }: {
-  attachments: {
-    setShowContextPicker: (nextOpen: boolean) => void
-    handleContextPickerConfirm: (files: Array<{ path: string; name?: string; size?: number }>) => void
-  }
-  completion: { handleInputChange: (value: string, selectionStart: number | null) => void }
-  composer: unknown
+  attachments: SenderControllerAttachments
+  completion: SenderControllerCompletion
+  composer: SenderControllerComposer
   connectionError?: string | null
   focusRestore: { queueTextareaFocusRestore: () => void }
   handleKeyDown: (event: KeyboardEvent) => void
   hideSender: boolean
-  interactionRequest?: unknown
-  interactionResponse?: ((id: string, data: string | string[]) => void) | undefined
+  interactionRequest?: SenderProps['interactionRequest']
+  interactionResponse?: SenderProps['onInteractionResponse']
   isBusy: boolean
   isInlineEdit: boolean
   isThinking: boolean
@@ -45,7 +83,7 @@ export const buildSenderControllerResult = ({
   }
   placeholder: string
   textareaRef: RefObject<TextAreaRef>
-  toolbar: unknown
+  toolbar: SenderControllerToolbar
 }) => ({
   isInlineEdit,
   isThinking,
@@ -72,7 +110,7 @@ export const buildSenderControllerResult = ({
     attachments.setShowContextPicker(false)
     focusRestore.queueTextareaFocusRestore()
   },
-  onConfirmContextPicker: (files: Array<{ path: string; name?: string; size?: number }>) => {
+  onConfirmContextPicker: (files: PendingContextFile[]) => {
     attachments.handleContextPickerConfirm(files)
     focusRestore.queueTextareaFocusRestore()
   }

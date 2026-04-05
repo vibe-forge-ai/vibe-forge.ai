@@ -62,11 +62,12 @@ export const useSenderCompletion = ({
     }, 0)
   }
 
-  const handleInputChange = (value: string, cursorPosition: number) => {
+  const handleInputChange = (value: string, cursorPosition: number | null) => {
+    const resolvedCursorPosition = cursorPosition ?? value.length
     setInput(value)
-    const charBeforeCursor = value[cursorPosition - 1]
+    const charBeforeCursor = value[resolvedCursorPosition - 1]
 
-    if (!['/', '@', '#'].includes(charBeforeCursor)) {
+    if (!['/', '@', '#'].includes(charBeforeCursor ?? '')) {
       if (showCompletion && !value.includes(triggerChar ?? '')) {
         setShowCompletion(false)
       }

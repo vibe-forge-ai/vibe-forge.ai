@@ -39,7 +39,7 @@ export const buildSenderToolbar = ({
   isInlineEdit: boolean
   isMac: boolean
   isThinking: boolean
-  message: { warning: (content: ReactNode) => Promise<void> | void }
+  message: { warning: (content: ReactNode) => unknown }
   props: SenderProps
   refs: {
     fileInputRef: RefObject<HTMLInputElement>

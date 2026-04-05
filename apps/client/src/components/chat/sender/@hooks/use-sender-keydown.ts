@@ -1,5 +1,6 @@
-import type { KeyboardEvent } from 'react'
+import type { Dispatch, KeyboardEvent, SetStateAction } from 'react'
 
+import type { CompletionItem } from '#~/components/chat/sender/@components/completion-menu/CompletionMenu'
 import { loadChatHistory } from '#~/components/chat/sender/@utils/sender-utils'
 import { isShortcutMatch } from '#~/utils/shortcutUtils'
 
@@ -49,10 +50,10 @@ export const useSenderKeydown = ({
   showEffortSelect: boolean
   onCloseEffortSelect: () => void
   showCompletion: boolean
-  completionItems: Array<{ value: string }>
+  completionItems: CompletionItem[]
   selectedIndex: number
-  onCompletionIndexChange: (updater: (current: number) => number) => void
-  onCompletionSelect: (item: { value: string }) => void
+  onCompletionIndexChange: Dispatch<SetStateAction<number>>
+  onCompletionSelect: (item: CompletionItem) => void
   onCompletionClose: () => void
   historyIndex: number
   onHistoryNavigate: (direction: 'up' | 'down') => void

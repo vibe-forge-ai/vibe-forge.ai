@@ -37,7 +37,7 @@ export const createSenderToolbarBindings = ({
     onSend: () => void
   }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
-  resources: { message: { warning: (content: ReactNode) => Promise<void> | void }; t: (key: string) => string }
+  resources: { message: { warning: (content: ReactNode) => unknown }; t: (key: string) => string }
   selection: {
     adapterOptions?: Array<{ value: string; label: ReactNode }>
     effort: ChatEffort

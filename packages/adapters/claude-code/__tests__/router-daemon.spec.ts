@@ -4,10 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  generateDefaultCCRConfigJSON,
-  resolveDefaultClaudeCodeRouterPort
-} from '../src/ccr/config'
+import { generateDefaultCCRConfigJSON, resolveDefaultClaudeCodeRouterPort } from '../src/ccr/config'
 import { ensureClaudeCodeRouterReady } from '../src/ccr/daemon'
 
 const tempDirs: string[] = []

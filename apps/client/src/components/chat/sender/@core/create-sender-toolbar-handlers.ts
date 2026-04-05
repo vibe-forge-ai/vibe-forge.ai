@@ -33,7 +33,7 @@ export const createSenderToolbarHandlers = ({
   canOpenReferenceActions: boolean
   focusRestore: { queueTextareaFocusRestore: () => void }
   isInlineEdit: boolean
-  message: { warning: (content: ReactNode) => Promise<void> | void }
+  message: { warning: (content: ReactNode) => unknown }
   modelUnavailable?: boolean
   onAdapterChange?: (adapter: string) => void
   onEffortChange?: (effort: ChatEffort) => void

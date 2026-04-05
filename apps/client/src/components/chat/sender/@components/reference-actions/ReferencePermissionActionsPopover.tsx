@@ -1,13 +1,13 @@
 import { Popover } from 'antd'
 import { useTranslation } from 'react-i18next'
 
-import { permissionModeIconMap } from '../../@utils/sender-constants'
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
   SenderToolbarRefs,
   SenderToolbarState
 } from '../../@types/sender-toolbar-types'
+import { permissionModeIconMap } from '../../@utils/sender-constants'
 
 export function ReferencePermissionActionsPopover({
   state,

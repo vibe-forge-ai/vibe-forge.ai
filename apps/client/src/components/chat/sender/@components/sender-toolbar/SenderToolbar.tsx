@@ -1,6 +1,11 @@
 import './SenderToolbar.scss'
 
-import type { SenderToolbarData, SenderToolbarHandlers, SenderToolbarRefs, SenderToolbarState } from '../../@types/sender-toolbar-types'
+import type {
+  SenderToolbarData,
+  SenderToolbarHandlers,
+  SenderToolbarRefs,
+  SenderToolbarState
+} from '../../@types/sender-toolbar-types'
 
 import { AdapterSelectControl } from '../adapter-select/AdapterSelectControl'
 import { EffortSelectControl } from '../effort-select/EffortSelectControl'

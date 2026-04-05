@@ -10,6 +10,16 @@ import type {
 import type { ServiceModelEntry } from '#~/hooks/chat/model-selector'
 import { buildModelSelectorData } from '#~/hooks/chat/model-selector-data'
 
+const createModelServiceConfig = (config: {
+  title: string
+  description?: string
+  models: string[]
+}): ModelServiceConfig => ({
+  apiBaseUrl: 'https://example.com',
+  apiKey: 'test-key',
+  ...config
+})
+
 describe('buildModelSelectorData', () => {
   it('keeps recommended models at the first level and groups more models by provider', () => {
     const activeBuiltinModels: Record<string, AdapterBuiltinModel[]> = {
@@ -34,15 +44,15 @@ describe('buildModelSelectorData', () => {
       }
     ]
     const mergedModelServices: Record<string, ModelServiceConfig> = {
-      openai: {
+      openai: createModelServiceConfig({
         title: 'OpenAI',
         description: 'General models',
         models: ['gpt-5.4-2026-03-05']
-      },
-      anthropic: {
+      }),
+      anthropic: createModelServiceConfig({
         title: 'Anthropic',
         models: ['claude-sonnet-4-6']
-      }
+      })
     }
     const mergedModels: Record<string, ModelMetadataConfig> = {
       'openai,gpt-5.4-2026-03-05': {
@@ -101,10 +111,10 @@ describe('buildModelSelectorData', () => {
       defaultModelService: 'openai',
       mergedModels: {},
       mergedModelServices: {
-        openai: {
+        openai: createModelServiceConfig({
           title: 'OpenAI',
           models: ['gpt-5.4-2026-03-05']
-        }
+        })
       },
       recommendedModels: [
         {
@@ -153,16 +163,16 @@ describe('buildModelSelectorData', () => {
         }
       },
       mergedModelServices: {
-        openai: {
+        openai: createModelServiceConfig({
           title: 'OpenAI',
           description: 'General models',
           models: ['gpt-5.4-2026-03-05', 'gpt-5.4-mini']
-        },
-        anthropic: {
+        }),
+        anthropic: createModelServiceConfig({
           title: 'Anthropic',
           description: 'Reasoning models',
           models: ['claude-sonnet-4-6']
-        }
+        })
       },
       recommendedModels: [],
       recommendedGroupTitle: 'Recommended Models',
@@ -204,16 +214,16 @@ describe('buildModelSelectorData', () => {
       defaultModelService: 'openai',
       mergedModels: {},
       mergedModelServices: {
-        openai: {
+        openai: createModelServiceConfig({
           title: 'OpenAI',
           description: 'General models',
           models: ['gpt-5.4-2026-03-05']
-        },
-        anthropic: {
+        }),
+        anthropic: createModelServiceConfig({
           title: 'Anthropic',
           description: 'Reasoning models',
           models: ['claude-sonnet-4-6']
-        }
+        })
       },
       recommendedModels: [],
       recommendedGroupTitle: 'Recommended Models',
@@ -260,14 +270,14 @@ describe('buildModelSelectorData', () => {
         }
       },
       mergedModelServices: {
-        gpt: {
+        gpt: createModelServiceConfig({
           title: 'GPT',
           models: ['gpt-5.4-2026-03-05']
-        },
-        ark: {
+        }),
+        ark: createModelServiceConfig({
           title: 'Ark',
           models: ['ep-20250831035308-tt5rn']
-        }
+        })
       },
       recommendedModels: [
         {

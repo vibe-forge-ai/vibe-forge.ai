@@ -7,15 +7,25 @@ import React, { forwardRef, useMemo } from 'react'
 import { formatShortcutLabel } from '#~/utils/shortcutUtils'
 import { ShortcutDisplay } from './ShortcutDisplay'
 
+type ShortcutTooltipTitle = React.ReactNode | ((shortcutLabel: string) => React.ReactNode)
+
 type ShortcutTooltipProps = {
   shortcut?: string
   isMac: boolean
-  title: React.ReactNode | ((shortcutLabel: string) => React.ReactNode)
+  title: ShortcutTooltipTitle
   children: React.ReactNode
   placement?: TooltipPlacement
   enabled?: boolean
   targetClassName?: string
 } & React.ComponentPropsWithoutRef<'div'>
+
+const resolveShortcutTooltipTitle = (title: ShortcutTooltipTitle, shortcutLabel: string) => {
+  if (typeof title === 'function') {
+    return title(shortcutLabel)
+  }
+
+  return title
+}
 
 export const ShortcutTooltip = forwardRef<HTMLDivElement, ShortcutTooltipProps>(({
   shortcut,
@@ -34,7 +44,7 @@ export const ShortcutTooltip = forwardRef<HTMLDivElement, ShortcutTooltipProps>(
       return null
     }
 
-    return typeof title === 'function' ? title(shortcutLabel) : title
+    return resolveShortcutTooltipTitle(title, shortcutLabel)
   }, [enabled, shortcutLabel, title])
 
   const trigger = (

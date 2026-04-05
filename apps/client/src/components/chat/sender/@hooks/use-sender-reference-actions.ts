@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import type {
+  MenuFocusTarget,
+  ReferenceMenuKey,
+  SenderInitialContent
+} from '#~/components/chat/sender/@types/sender-types'
+import { isActivationKey } from '#~/components/chat/sender/@utils/sender-utils'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useRovingFocusList } from '#~/hooks/use-roving-focus-list'
-import type { MenuFocusTarget, ReferenceMenuKey, SenderInitialContent } from '#~/components/chat/sender/@types/sender-types'
-import { isActivationKey } from '#~/components/chat/sender/@utils/sender-utils'
 
 export const useSenderReferenceActions = ({
   initialContent,

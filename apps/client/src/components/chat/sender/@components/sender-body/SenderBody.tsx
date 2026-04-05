@@ -7,15 +7,18 @@ import type { AskUserQuestionParams } from '@vibe-forge/core'
 
 import { ContextFilePicker } from '#~/components/workspace/ContextFilePicker'
 
-import type { SenderToolbarData, SenderToolbarHandlers, SenderToolbarRefs, SenderToolbarState } from '../../@types/sender-toolbar-types'
+import type {
+  SenderToolbarData,
+  SenderToolbarHandlers,
+  SenderToolbarRefs,
+  SenderToolbarState
+} from '../../@types/sender-toolbar-types'
 
+import type { PendingContextFile } from '../../@types/sender-composer'
 import type { CompletionItem } from '../completion-menu/CompletionMenu'
 import { CompletionMenu } from '../completion-menu/CompletionMenu'
 import { SenderAttachments } from '../sender-attachments/SenderAttachments'
 import { SenderToolbar } from '../sender-toolbar/SenderToolbar'
-import type {
-  PendingContextFile
-} from '../../@types/sender-composer'
 const { TextArea } = Input
 
 export function SenderBody({
