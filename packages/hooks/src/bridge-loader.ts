@@ -3,8 +3,8 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
-import type { HookInputs } from './type'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from './native'
+import type { HookInputs } from './type'
 
 export interface NativeHookBridgeModule {
   isNativeHookEnv: () => boolean
