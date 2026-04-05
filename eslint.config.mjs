@@ -1,4 +1,23 @@
 import config from '@antfu/eslint-config'
+import maxLinesBaseline from './eslint.max-lines-baseline.mjs'
+
+const maxLinesRule = [
+  'error',
+  {
+    max: 200,
+    skipBlankLines: false,
+    skipComments: false
+  }
+]
+
+const maxLinesTestRule = [
+  'error',
+  {
+    max: 500,
+    skipBlankLines: false,
+    skipComments: false
+  }
+]
 
 export default config(
   {
@@ -18,6 +37,7 @@ export default config(
     ],
     stylistic: false,
     rules: {
+      'max-lines': maxLinesRule,
       'perfectionist/sort-named-exports': 'off',
       'perfectionist/sort-named-imports': 'off'
     },
@@ -51,6 +71,22 @@ export default config(
       overrides: {
         'test/consistent-test-it': 'off'
       }
+    }
+  },
+  {
+    files: [
+      '**/__tests__/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}',
+      '**/*.{spec,test}.{cjs,cts,js,jsx,mjs,mts,ts,tsx}',
+      'packages/*/tests/**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}'
+    ],
+    rules: {
+      'max-lines': maxLinesTestRule
+    }
+  },
+  {
+    files: maxLinesBaseline,
+    rules: {
+      'max-lines': 'off'
     }
   },
   // test, script and config files
