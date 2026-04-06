@@ -155,9 +155,11 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
 }
 
 .current-todo-item__text {
+  flex: 1;
   min-width: 0;
   font-size: 11px;
   line-height: 1.25;
@@ -165,6 +167,8 @@
 }
 
 .current-todo-item__priority {
+  margin-left: auto;
+  flex-shrink: 0;
   font-size: 12px;
   line-height: 1;
 
