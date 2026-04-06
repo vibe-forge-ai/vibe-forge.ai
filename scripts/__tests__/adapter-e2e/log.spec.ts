@@ -33,6 +33,23 @@ stdout: # Vibe Forge AI
 \`\`\`
 `.trim()
 
+const yamlFixtureLog = `
+# [4/6/2026, 10:38:25 PM] __I__ [TaskStart] [plugin.logger]
+\`\`\`yaml
+adapter: codex
+options:
+  env:
+    redacted: true
+\`\`\`
+# [4/6/2026, 10:38:37 PM] __I__ [UserPromptSubmit] [plugin.logger]
+\`\`\`yaml
+adapter: codex
+hookSource: native
+canBlock: true
+prompt: "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX and nothing else."
+\`\`\`
+`.trim()
+
 const createResult = (): AdapterE2EResult => ({
   caseId: 'codex-read-once',
   adapter: 'codex',
@@ -88,5 +105,27 @@ describe('adapter e2e hook log parsing', () => {
         detail: "> sed -n '1,200p' README.md"
       }
     ])
+  })
+
+  it('parses yaml hook payloads used by the logger plugin', () => {
+    const entries = parseHookLogEntries(yamlFixtureLog)
+    const counts = countHookLogEvents(entries)
+
+    expect(counts.get('TaskStart')).toBe(1)
+    expect(counts.get('UserPromptSubmit')).toBe(1)
+    expect(entries[0]?.payload).toEqual({
+      adapter: 'codex',
+      options: {
+        env: {
+          redacted: true
+        }
+      }
+    })
+    expect(entries[1]?.payload).toEqual({
+      adapter: 'codex',
+      hookSource: 'native',
+      canBlock: true,
+      prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX and nothing else.'
+    })
   })
 })

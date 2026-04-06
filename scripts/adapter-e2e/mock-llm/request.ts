@@ -55,7 +55,7 @@ export const isTitleGenerationRequest = (body: JsonObject) => {
 export const hasToolResult = (body: JsonObject) => (
   getRequestInputs(body).some((item) => {
     const value = asObject(item)
-    return value.type === 'function_call_output' || value.role === 'tool'
+    return value.type === 'function_call_output' || value.type === 'custom_tool_call_output' || value.role === 'tool'
   })
 )
 

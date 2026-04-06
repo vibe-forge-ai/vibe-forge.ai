@@ -9,6 +9,7 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
+import { pickToolCallByName } from '../../adapter-e2e/mock-llm/tooling'
 import { cliPath } from '../../adapter-e2e/runtime'
 import { ADAPTER_E2E_DEFAULTS, ADAPTER_E2E_TARGETS } from '../../adapter-e2e/scenarios'
 import type {
@@ -76,6 +77,16 @@ const resolveModelProvider = (adapter: AdapterE2ETarget) => (
 const createCaseModel = (adapter: AdapterE2ETarget, caseId: string) => (
   `${resolveModelProvider(adapter)},${caseId}`
 )
+
+const appendPromptArgs = (
+  prompt: string,
+  extraArgs: string[]
+) => {
+  if (extraArgs.includes('--')) {
+    return [prompt, ...extraArgs]
+  }
+  return [...extraArgs, prompt]
+}
 
 const createToolCaseMockScenario = (
   scenarioId: string,
@@ -238,8 +249,74 @@ const directAnswerCase = (
   })
 }
 
+const codexApplyPatchCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_APPLY_PATCH'
+  const title = 'Codex apply_patch hook smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-apply-patch-once',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-apply-patch-once'),
+    prompt: 'Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.',
+    extraArgs: ['--', '--enable', 'apply_patch_freeform'],
+    mockScenarios: [
+      createRuleBasedMockScenario({
+        id: 'codex-apply-patch-once',
+        title,
+        finalOutput: output,
+        rules: [
+          defineMockScenarioRule({
+            id: 'title-generation',
+            when: whenTitleGeneration(),
+            respond: messageTurn(title)
+          }),
+          defineMockScenarioRule({
+            id: 'tool-result',
+            when: whenToolResult(),
+            respond: messageTurn(output)
+          }),
+          defineMockScenarioRule({
+            id: 'tool-call',
+            when: andPredicates(
+              whenToolsAvailable(),
+              whenRequestTextIncludes('apply_patch', output)
+            ),
+            respond: (context) => {
+              const tool = pickToolCallByName(context.body, 'apply_patch')
+              return tool == null
+                ? messageTurn(output)
+                : { kind: 'tool', tool }
+            }
+          })
+        ],
+        fallback: messageTurn(output)
+      })
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 1 },
+        { event: 'PostToolUse', minCount: 1 },
+        { event: 'Stop', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['apply_patch'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
 export const ADAPTER_E2E_CASES: AdapterE2ECase[] = [
   toolCase('codex', 'codex-read-once'),
+  codexApplyPatchCase(),
   toolCase('claude-code', 'claude-read-once'),
   toolCase('opencode', 'opencode-read-once'),
   directAnswerCase('codex', 'codex-direct-answer'),
@@ -269,8 +346,7 @@ const buildAdapterArgs = (
       'ChromeDevtools',
       '--session-id',
       sessionId,
-      ...extraArgs,
-      prompt
+      ...appendPromptArgs(prompt, extraArgs)
     ]
   }
 
@@ -291,8 +367,7 @@ const buildAdapterArgs = (
       'bypassPermissions',
       '--session-id',
       sessionId,
-      ...extraArgs,
-      prompt
+      ...appendPromptArgs(prompt, extraArgs)
     ]
   }
 
@@ -308,8 +383,7 @@ const buildAdapterArgs = (
     'ChromeDevtools',
     '--session-id',
     sessionId,
-    ...extraArgs,
-    prompt
+    ...appendPromptArgs(prompt, extraArgs)
   ]
 }
 

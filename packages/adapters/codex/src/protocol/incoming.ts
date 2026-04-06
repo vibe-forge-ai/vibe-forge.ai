@@ -126,6 +126,11 @@ export const handleIncomingNotification = (
     const { item } = params as unknown as ItemStartedParams
     if (item.type === 'commandExecution') {
       const cmdItem = item as CodexItemCommandExecution
+      const command = Array.isArray(cmdItem.command)
+        ? cmdItem.command.join(' ')
+        : typeof cmdItem.command === 'string'
+          ? cmdItem.command
+          : '[command]'
       // Emit a tool_use event so the client sees the command being kicked off
       const msg: ChatMessage = {
         id: cmdItem.id,
@@ -135,7 +140,7 @@ export const handleIncomingNotification = (
           id: cmdItem.id,
           name: prefixToolName('Bash'),
           input: {
-            command: cmdItem.command.join(' '),
+            command,
             cwd: cmdItem.cwd
           }
         }],

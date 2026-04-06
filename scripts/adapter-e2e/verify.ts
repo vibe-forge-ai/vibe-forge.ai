@@ -19,8 +19,37 @@ export const readHookLog = async (input: {
     throw new Error(`Smoke log not found: ${logPath}`)
   }
 
-  const content = await readFile(logPath, 'utf8')
-  if (!content.includes('"redacted": true')) {
+  let content = ''
+  let previousContent = ''
+  let stableReads = 0
+  const deadline = Date.now() + 3_000
+  const requireSessionEnd = input.ctxId.includes('hooks-smoke-codex-')
+
+  while (Date.now() < deadline) {
+    content = await readFile(logPath, 'utf8')
+    if (content === previousContent) {
+      stableReads += 1
+    } else {
+      previousContent = content
+      stableReads = 0
+    }
+
+    const hasStop = content.includes('[Stop]')
+    const hasSessionEnd = content.includes('[SessionEnd]')
+    if (
+      (requireSessionEnd && hasSessionEnd && stableReads >= 2) ||
+      (!requireSessionEnd && (
+        (hasSessionEnd && stableReads >= 2) ||
+        (hasStop && stableReads >= 10)
+      ))
+    ) {
+      break
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+
+  if (!content.includes('"redacted": true') && !content.includes('redacted: true')) {
     throw new Error(`Expected sanitized hook log payload in ${logPath}`)
   }
   if (content.includes('hook-smoke-local')) {

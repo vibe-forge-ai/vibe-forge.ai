@@ -1,19 +1,19 @@
 {
-  "caseId": "codex-direct-answer",
+  "caseId": "codex-apply-patch-once",
   "adapter": "codex",
   "transport": "wrapper",
   "exitCode": 0,
-  "stdout": "E2E_CODEX_DIRECT",
+  "stdout": "E2E_CODEX_APPLY_PATCH",
   "stderr": [
-    "WARN codex_core::models_manager::model_info: Unknown model codex-direct-answer is used. This will use fallback model metadata.",
-    "WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=codex-direct-answer personality=pragmatic",
+    "WARN codex_core::models_manager::model_info: Unknown model codex-apply-patch-once is used. This will use fallback model metadata.",
+    "WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=codex-apply-patch-once personality=pragmatic",
     "WARN codex_core::shell_snapshot: Failed to delete shell snapshot at \"<repo>/.ai/.mock/.codex/shell_snapshots/<uuid>.tmp-<nonce>\": Os { code: 2, kind: NotFound, message: \"No such file or directory\" }"
   ],
   "mockTrace": [
     {
       "path": "/responses",
-      "model": "codex-direct-answer",
-      "request": "Do not use any tool. Reply with exactly E2E_CODEX_DIRECT and nothing else.",
+      "model": "codex-apply-patch-once",
+      "request": "Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.",
       "inputTypes": [
         "message",
         "message",
@@ -29,8 +29,38 @@
         }
       },
       "response": {
+        "kind": "tool",
+        "tool": {
+          "name": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Add File: <repo>/e2e-codex-apply-patch.txt\n+E2E_APPLY_PATCH\n*** End Patch\n"
+          }
+        }
+      }
+    },
+    {
+      "path": "/responses",
+      "model": "codex-apply-patch-once",
+      "request": "Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.",
+      "inputTypes": [
+        "message",
+        "message",
+        "message",
+        "custom_tool_call",
+        "custom_tool_call_output"
+      ],
+      "selectedTool": {
+        "name": "exec_command",
+        "args": {
+          "cmd": "sed -n '1,200p' README.md",
+          "max_output_tokens": 2000,
+          "workdir": "<repo>",
+          "yield_time_ms": 1000
+        }
+      },
+      "response": {
         "kind": "message",
-        "text": "E2E_CODEX_DIRECT"
+        "text": "E2E_CODEX_APPLY_PATCH"
       }
     }
   ],
@@ -56,13 +86,25 @@
         "adapter": "codex",
         "hookSource": "native",
         "canBlock": true,
-        "prompt": "Do not use any tool. Reply with exactly E2E_CODEX_DIRECT and nothing else."
+        "prompt": "Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else."
+      },
+      {
+        "event": "PreToolUse",
+        "header": "codex adapter:codex:ApplyPatch",
+        "toolName": "adapter:codex:ApplyPatch"
       },
       {
         "event": "Stop",
         "adapter": "codex",
         "hookSource": "native",
         "canBlock": true
+      },
+      {
+        "event": "PostToolUse",
+        "adapter": "codex",
+        "hookSource": "bridge",
+        "header": "adapter:codex:ApplyPatch",
+        "toolName": "adapter:codex:ApplyPatch"
       },
       {
         "event": "SessionEnd",

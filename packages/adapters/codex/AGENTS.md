@@ -90,6 +90,7 @@ Codex maintenance notes:
 - Codex 2026-03-27 official hooks docs say `~/.codex/hooks.json` and `<repo>/.codex/hooks.json` are both loaded, so project-level managed hooks must be deduped before writing mock-home hooks
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
 - when native hooks are active, bridge duplicates must stay disabled in `packages/task/src/run.ts`
+- Codex native `PreToolUse` / `PostToolUse` should be treated as Bash-first until official coverage expands; transcript JSONL can supplement non-Bash analytics, but it cannot block or rewrite the live session
 
 ---
 
@@ -169,6 +170,12 @@ session. This lets Codex run native:
 
 Those native events are bridged back into the same Vibe Forge hook runtime used by Claude Code
 and OpenCode. `SessionEnd` still comes from the framework bridge.
+
+Codex limitation:
+
+- today the reliable native `PreToolUse` / `PostToolUse` control surface is still `Bash`
+- if we add transcript JSONL watching for non-Bash tools, treat it as a stats-only side channel
+- JSONL observation does not carry hook return semantics, so it must not be documented or implemented as a blocking substitute for native hooks
 
 ### `effort`
 

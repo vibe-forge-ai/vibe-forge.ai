@@ -90,12 +90,14 @@ export type JsonObject = Record<string, JsonValue | undefined>
 export interface MockToolCall {
   name: string
   args: Record<string, JsonValue>
+  callType?: 'function' | 'custom'
 }
 
 export interface MockToolCandidate {
   name: string
   parameters: JsonObject
   args: Record<string, JsonValue>
+  callType: 'function' | 'custom'
 }
 
 export interface MockScenarioContext {

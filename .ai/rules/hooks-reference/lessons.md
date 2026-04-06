@@ -8,6 +8,7 @@
 - OpenCode 更适合以 JSON 事件流作为稳定执行基线。
 - OpenCode 配置不能只靠 `OPENCODE_CONFIG_CONTENT`，更稳妥的方式是先准备 session config dir，再落真实 `opencode.json`。
 - Claude Code 会叠加项目级和 mock home 两套 settings；排查重复 hook 时不能只看 `.ai/.mock/.claude/settings.json`。
+- Codex transcript JSONL 适合做非 Bash 工具的统计补链路，但它是事后观测，不具备 native hook 返回值语义；不要把它设计成 `PreToolUse` / `PostToolUse` 的等价替身。
 - hooks/logger 不要直接落完整输入对象，尤其是 `env`、`apiKey`、`token`、`secret`、`authorization`。
 - 文档只能写已经验证过的路径；不稳定的路径要明确写成“优先尝试”或“已知问题”。
 

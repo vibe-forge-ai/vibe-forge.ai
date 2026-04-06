@@ -11,6 +11,7 @@ const sanitizeValue = (value: string) => (
   value
     .replaceAll(repoRoot, '<repo>')
     .replaceAll(process.execPath, '<node-path>')
+    .replace(/<repo>\/packages\/(?:core|hooks)\/call-hook\.js/g, '<repo>/packages/<call-hook>/call-hook.js')
     .replace(uuidPattern, '<uuid>')
     .replace(/hooks-smoke-[\w-]+-\d+/g, '<ctxId>')
     .replace(/\.tmp-\d+/g, '.tmp-<nonce>')
@@ -256,6 +257,8 @@ const summarizeStderr = (stderr: string) => {
   for (const line of lines) {
     if (line === '') continue
     if (line.includes('service=bun cmd=') || line.includes('service=bun code=')) continue
+    if (line.includes('skipping startup remote plugin sync because curated marketplace is not ready')) continue
+    if (line.includes('failed to refresh available models: timeout waiting for child process to exit')) continue
 
     const isStructuredLogLine = /^(?:INFO|WARN|ERROR)\s/.test(line)
     if (line.includes('failed to warm featured plugin ids cache')) {
@@ -307,7 +310,6 @@ export const createAdapterE2ESnapshot = (result: AdapterE2EResult) => ({
     model: sanitizeValue(entry.model),
     request: summarizeText(entry.requestText),
     inputTypes: entry.inputTypes,
-    requestedToolCount: entry.requestedToolCount,
     selectedTool: entry.selectedTool == null
       ? undefined
       : {
