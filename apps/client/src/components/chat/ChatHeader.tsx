@@ -1,5 +1,6 @@
 import './ChatHeader.scss'
 
+import type { SessionStatus } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 import { App, Button, Dropdown, Radio } from 'antd'
 import type { MenuProps } from 'antd'
@@ -24,6 +25,7 @@ export function ChatHeader({
   sessionInfo,
   sessionId,
   sessionTitle,
+  sessionStatus,
   isStarred,
   isArchived,
   tags,
@@ -35,6 +37,7 @@ export function ChatHeader({
   sessionInfo: SessionInfo | null
   sessionId?: string
   sessionTitle?: string
+  sessionStatus?: SessionStatus
   isStarred?: boolean
   isArchived?: boolean
   tags?: string[]
@@ -105,13 +108,15 @@ export function ChatHeader({
 
   return (
     <div className={`chat-header ${isSidebarCollapsed ? 'is-collapsed' : ''} ${isResizing ? 'is-resizing' : ''}`}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+      <div className='chat-header-main'>
         <div className='chat-header-info'>
-          <div className='chat-header-title'>
-            {displayTitle}
+          <div className='chat-header-title-row'>
+            <div className='chat-header-title'>
+              {displayTitle}
+            </div>
           </div>
           <div
-            className='chat-header-subtitle'
+            className='chat-header-subtitle chat-header-subtitle--debug'
             onDoubleClick={() => {
               // eslint-disable-next-line no-console
               console.log('Session Full Info:', {
@@ -125,7 +130,6 @@ export function ChatHeader({
                 sessionInfo
               })
             }}
-            style={{ cursor: 'pointer', userSelect: 'all' }}
           >
             {sessionId ?? t('chat.selectModel')}
           </div>

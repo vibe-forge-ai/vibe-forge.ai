@@ -1,3 +1,4 @@
+import type { SessionQueuedMessageMode } from '@vibe-forge/core'
 import type { TFunction } from 'i18next'
 
 import type { MessageInstance } from 'antd/es/message/interface'
@@ -11,6 +12,7 @@ export const useSenderSubmit = ({
   pendingImages,
   pendingFiles,
   isBusy,
+  allowWhileBusy,
   isInlineEdit,
   modelUnavailable,
   interactionRequest,
@@ -25,20 +27,26 @@ export const useSenderSubmit = ({
   pendingImages: Parameters<typeof buildMessageContent>[1]
   pendingFiles: Parameters<typeof buildMessageContent>[2]
   isBusy: boolean
+  allowWhileBusy: boolean
   isInlineEdit: boolean
   modelUnavailable?: boolean
   interactionRequest?: { id: string } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void
-  onSend: (text: string) => SenderSubmitResult | Promise<SenderSubmitResult>
-  onSendContent: (content: ReturnType<typeof buildMessageContent>) => SenderSubmitResult | Promise<SenderSubmitResult>
+  onSend: (text: string, mode?: SessionQueuedMessageMode) => SenderSubmitResult | Promise<SenderSubmitResult>
+  onSendContent: (
+    content: ReturnType<typeof buildMessageContent>,
+    mode?: SessionQueuedMessageMode
+  ) => SenderSubmitResult | Promise<SenderSubmitResult>
   message: MessageInstance
   t: TFunction
   resetComposer: () => void
 }) => {
-  return async () => {
+  return async (mode?: SessionQueuedMessageMode) => {
     const input = getInput()
 
-    if (isBusy || (input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0)) {
+    if (
+      ((isBusy && !allowWhileBusy) || (input.trim() === '' && pendingImages.length === 0 && pendingFiles.length === 0))
+    ) {
       return
     }
     if (!isInlineEdit && modelUnavailable) {
@@ -61,14 +69,14 @@ export const useSenderSubmit = ({
     if (pendingImages.length > 0 || pendingFiles.length > 0) {
       const content = buildMessageContent(input, pendingImages, pendingFiles)
       if (isInlineEdit) {
-        didSubmit = (await onSendContent(content)) !== false
+        didSubmit = (await onSendContent(content, mode)) !== false
       } else {
-        void onSendContent(content)
+        void onSendContent(content, mode)
       }
     } else if (isInlineEdit) {
-      didSubmit = (await onSend(input)) !== false
+      didSubmit = (await onSend(input, mode)) !== false
     } else {
-      void onSend(input)
+      void onSend(input, mode)
     }
 
     if (!didSubmit) {

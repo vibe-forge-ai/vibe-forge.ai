@@ -323,6 +323,13 @@
     "permissionReasons": "原因",
     "permissionExpandOptions": "展开更多选项",
     "permissionCollapseOptions": "收起更多选项",
+    "permissionConfirmOption": "确认选项",
+    "permissionConfirmOptionTooltip": "确认当前高亮的权限选项",
+    "permissionSendBlockedTooltip": "当前正在等待权限选项确认，请先确认上方选项",
+    "permissionSendBlockedError": "当前正在等待权限选项确认，暂时不能发送消息",
+    "interactionOptionNavigation": "选项快速切换",
+    "interactionOptionPrevious": "上一个选项",
+    "interactionOptionNext": "下一个选项",
     "tooltipSlashCommands": "快捷指令",
     "tooltipMentionAgents": "提及代理",
     "tooltipInjectContext": "注入上下文",
@@ -335,6 +342,24 @@
     "modelRemoveRecommendation": "从推荐模型中移除",
     "effortShortcutTooltip": "切换推理强度",
     "sendShortcutTooltip": "发送消息",
+    "queue": {
+      "steerTitle": "等待当前轮结束后发送",
+      "nextTitle": "合适时机发送",
+      "count": "{{count}} 条待发送",
+      "sendAfterTurn": "等待结束后发",
+      "sendNext": "下一轮发",
+      "steerShortcutTooltip": "等待当前轮结束后发送",
+      "nextShortcutTooltip": "在下一个合适时机发送",
+      "attachmentsOnly": "包含待发送的图片或引用",
+      "hasImage": "包含图片",
+      "hasReference": "包含引用",
+      "moveToSteer": "移动到等待当前轮结束后发送",
+      "moveToNext": "移动到合适时机发送",
+      "requeueMessage": "重新入队",
+      "stopCurrentRun": "停止当前执行",
+      "stopShortcutTooltip": "按两次 Esc 停止当前执行",
+      "stopShortcutConfirm": "再按一次 Esc 停止当前执行"
+    },
     "adapterLockedTooltip": "创建会话后适配器会锁定",
     "referenceActionsShort": "更多",
     "referenceActionsTitle": "更多",
@@ -468,9 +493,15 @@
         "footer": "需要更多引导时，可在流程描述中写明使用方式"
       }
     },
+    "attachments": {
+      "pastedImage": "粘贴图片"
+    },
     "todo": {
       "noTasks": "未规划任务",
-      "progress": "任务进度: {{completed}}/{{total}} 已完成"
+      "progress": "任务进度: {{completed}}/{{total}} 已完成",
+      "pendingCount": "{{count}} 待办",
+      "inProgressCount": "{{count}} 进行中",
+      "completedCount": "{{count}} 已完成"
     },
     "tools": {
       "read": "读取文件",

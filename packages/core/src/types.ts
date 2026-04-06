@@ -6,7 +6,10 @@ export type {
   EffortLevel,
   Project,
   Session,
+  SessionMessageQueueState,
   SessionPermissionMode,
+  SessionQueuedMessage,
+  SessionQueuedMessageMode,
   SessionStatus,
   TaskDetail,
   TaskRuntime

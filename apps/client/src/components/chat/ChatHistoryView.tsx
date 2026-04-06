@@ -1,5 +1,5 @@
 import { App } from 'antd'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
@@ -8,12 +8,23 @@ import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
-import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'
+import type {
+  AskUserQuestionParams,
+  ChatMessage,
+  ChatMessageContent,
+  Session,
+  SessionMessageQueueState,
+  SessionQueuedMessage,
+  SessionQueuedMessageMode
+} from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
+import { QueuedMessagesCard } from './QueuedMessagesCard'
 import { MessageItem } from './messages/MessageItem'
 import { processMessages } from './messages/message-utils'
+import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
 import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
 
@@ -23,6 +34,7 @@ export function ChatHistoryView({
   session,
   sessionInfo,
   errorBanner,
+  queuedMessages,
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
@@ -55,6 +67,7 @@ export function ChatHistoryView({
   session?: Session
   sessionInfo: SessionInfo | null
   errorBanner?: ChatErrorBannerState | null
+  queuedMessages: SessionMessageQueueState
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
@@ -91,6 +104,10 @@ export function ChatHistoryView({
     isCreating,
     send,
     sendContent,
+    enqueueContent,
+    removeQueuedContent,
+    moveQueuedContent,
+    reorderQueuedContent,
     editMessage,
     forkMessage,
     interrupt,
@@ -107,6 +124,10 @@ export function ChatHistoryView({
   })
   const initialScrollDoneRef = useRef(false)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [queueMode, setQueueMode] = useState<SessionQueuedMessageMode>('steer')
+  const [queuedDraft, setQueuedDraft] = useState<{ content: ChatMessageContent[] } | null>(null)
+  const [activeInteractionOptionIndex, setActiveInteractionOptionIndex] = useState(0)
+  const interactionOptions = interactionRequest?.payload.options ?? []
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -119,42 +140,118 @@ export function ChatHistoryView({
     }
   }
 
-  const handleSend = async (text: string) => {
-    if (!session?.id) {
-      const optimisticMessage = buildUserMessage(text)
-      setMessages((prev) => [...prev, optimisticMessage])
-      const didSend = await send(text)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+  const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    const resolvedMode = mode ?? queueMode
+
+    if (session?.id && session.status === 'running') {
+      const didQueue = await enqueueContent(resolvedMode, content)
+      if (didQueue && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
       }
-      return
+      return didQueue
     }
 
-    const didSend = await send(text)
-    if (didSend) {
-      setMessages((prev) => [...prev, buildUserMessage(text)])
-    }
-  }
-  const handleSendContent = async (content: ChatMessageContent[]) => {
     if (!session?.id) {
       const optimisticMessage = buildUserMessage(content)
       setMessages((prev) => [...prev, optimisticMessage])
-      const didSend = await sendContent(content)
+      const didSend = await sendContent(content, mode)
       if (!didSend) {
         setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
       }
-      return
+      if (didSend && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didSend
     }
 
-    const didSend = await sendContent(content)
+    const didSend = await sendContent(content, mode)
     if (didSend) {
       setMessages((prev) => [...prev, buildUserMessage(content)])
+      if (queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
     }
+    return didSend
+  }
+
+  const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    const resolvedMode = mode ?? queueMode
+
+    if (session?.id && session.status === 'running') {
+      const didQueue = await enqueueContent(resolvedMode, [{ type: 'text', text: text.trim() }])
+      if (didQueue && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didQueue
+    }
+
+    if (!session?.id) {
+      const optimisticMessage = buildUserMessage(text)
+      setMessages((prev) => [...prev, optimisticMessage])
+      const didSend = await send(text, mode)
+      if (!didSend) {
+        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+      }
+      if (didSend && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didSend
+    }
+
+    const didSend = await send(text, mode)
+    if (didSend) {
+      setMessages((prev) => [...prev, buildUserMessage(text)])
+      if (queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+    }
+    return didSend
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
     setEditingMessageId(null)
+    setQueuedDraft(null)
+    setQueueMode('steer')
   }, [session?.id])
+  useEffect(() => {
+    setActiveInteractionOptionIndex(0)
+  }, [interactionRequest?.id])
+  useEffect(() => {
+    if (interactionOptions.length === 0) {
+      setActiveInteractionOptionIndex(0)
+      return
+    }
+
+    setActiveInteractionOptionIndex((current) => Math.min(current, interactionOptions.length - 1))
+  }, [interactionOptions.length])
+
+  const handleMoveInteractionOption = useCallback((delta: number) => {
+    if (interactionOptions.length === 0) {
+      return
+    }
+
+    setActiveInteractionOptionIndex((current) => getLoopedIndex(current, delta, interactionOptions.length))
+  }, [interactionOptions.length])
+
+  const handleSubmitActiveInteractionOption = useCallback(() => {
+    if (interactionRequest == null) {
+      return
+    }
+
+    const option = interactionOptions[activeInteractionOptionIndex] ?? interactionOptions[0]
+    if (option == null) {
+      return
+    }
+
+    onInteractionResponse(interactionRequest.id, option.value ?? option.label)
+  }, [activeInteractionOptionIndex, interactionOptions, interactionRequest, onInteractionResponse])
+
   useEffect(() => {
     if (!initialScrollDoneRef.current && isReady) {
       scrollToBottom('auto')
@@ -184,6 +281,38 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
+  const handleEditQueuedMessage = async (item: SessionQueuedMessage) => {
+    const removed = await removeQueuedContent(item.id)
+    if (!removed) {
+      return
+    }
+    setQueuedDraft({ content: item.content })
+    setQueueMode('steer')
+  }
+  const handleMoveQueuedMessage = async (item: SessionQueuedMessage, targetMode: SessionQueuedMessageMode) => {
+    await moveQueuedContent(item.id, targetMode)
+  }
+  const isPermissionInteraction = interactionRequest?.payload.kind === 'permission'
+  const interactionPanel = !isInlineEditing && interactionRequest != null
+    ? (
+      <SenderInteractionPanel
+        interactionRequest={interactionRequest}
+        activeOptionIndex={activeInteractionOptionIndex}
+        permissionContext={interactionRequest.payload.kind === 'permission'
+          ? interactionRequest.payload.permissionContext
+          : undefined}
+        deniedTools={interactionRequest.payload.kind === 'permission'
+          ? (interactionRequest.payload.permissionContext?.deniedTools ?? [])
+          : []}
+        reasons={interactionRequest.payload.kind === 'permission'
+          ? (interactionRequest.payload.permissionContext?.reasons ?? [])
+          : []}
+        onActiveOptionIndexChange={setActiveInteractionOptionIndex}
+        onMoveActiveOption={handleMoveInteractionOption}
+        onInteractionResponse={onInteractionResponse}
+      />
+    )
+    : null
 
   return (
     <>
@@ -242,43 +371,81 @@ export function ChatHistoryView({
         </div>
       )}
 
-      <CurrentTodoList messages={messages} />
-      {!isInlineEditing && (
-        <div className='sender-container'>
-          <Sender
-            onSend={handleSend}
-            onSendContent={handleSendContent}
-            adapterLocked={session?.id != null}
-            sessionStatus={isCreating ? 'running' : session?.status}
-            onInterrupt={interrupt}
-            onClear={clearMessages}
-            sessionInfo={sessionInfo}
-            errorBanner={errorBanner}
-            onRetryConnection={onRetryConnection}
-            interactionRequest={interactionRequest}
-            onInteractionResponse={onInteractionResponse}
-            placeholder={placeholder}
-            modelMenuGroups={modelMenuGroups}
-            modelSearchOptions={modelSearchOptions}
-            recommendedModelOptions={recommendedModelOptions}
-            servicePreviewModelOptions={servicePreviewModelOptions}
-            onToggleRecommendedModel={onToggleRecommendedModel}
-            updatingRecommendedModelValue={updatingRecommendedModelValue}
-            selectedModel={selectedModel}
-            onModelChange={onModelChange}
-            effort={effort}
-            effortOptions={effortOptions}
-            onEffortChange={onEffortChange}
-            permissionMode={permissionMode}
-            permissionModeOptions={permissionModeOptions}
-            onPermissionModeChange={onPermissionModeChange}
-            selectedAdapter={selectedAdapter}
-            adapterOptions={adapterOptions}
-            onAdapterChange={onAdapterChange}
-            modelUnavailable={modelUnavailable}
-          />
+      <div className='chat-composer-stack'>
+        <div className='chat-composer-stack__inner'>
+          {isPermissionInteraction && interactionPanel}
+          <CurrentTodoList messages={messages} />
+          {!isInlineEditing && (
+            <QueuedMessagesCard
+              mode='next'
+              items={queuedMessages.next}
+              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+              onDelete={(item) => void removeQueuedContent(item.id)}
+              onEdit={(item) => void handleEditQueuedMessage(item)}
+              onReorder={(ids) => reorderQueuedContent('next', ids)}
+            />
+          )}
+          {!isInlineEditing && (
+            <QueuedMessagesCard
+              mode='steer'
+              items={queuedMessages.steer}
+              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+              onDelete={(item) => void removeQueuedContent(item.id)}
+              onEdit={(item) => void handleEditQueuedMessage(item)}
+              onReorder={(ids) => reorderQueuedContent('steer', ids)}
+            />
+          )}
+          {!isPermissionInteraction && interactionPanel}
+          {!isInlineEditing && (
+            <div className='sender-container'>
+              <Sender
+                onSend={handleSend}
+                onSendContent={handleSendContent}
+                adapterLocked={session?.id != null}
+                sessionStatus={isCreating ? 'running' : session?.status}
+                onInterrupt={interrupt}
+                onClear={clearMessages}
+                sessionInfo={sessionInfo}
+                errorBanner={errorBanner}
+                onRetryConnection={onRetryConnection}
+                interactionRequest={interactionRequest}
+                onInteractionResponse={onInteractionResponse}
+                interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
+                  ? {
+                    optionCount: interactionOptions.length,
+                    activeIndex: activeInteractionOptionIndex,
+                    onMove: handleMoveInteractionOption,
+                    onSubmit: handleSubmitActiveInteractionOption
+                  }
+                  : undefined}
+                initialContent={queuedDraft?.content}
+                placeholder={placeholder}
+                submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
+                modelMenuGroups={modelMenuGroups}
+                modelSearchOptions={modelSearchOptions}
+                recommendedModelOptions={recommendedModelOptions}
+                servicePreviewModelOptions={servicePreviewModelOptions}
+                onToggleRecommendedModel={onToggleRecommendedModel}
+                updatingRecommendedModelValue={updatingRecommendedModelValue}
+                selectedModel={selectedModel}
+                onModelChange={onModelChange}
+                effort={effort}
+                effortOptions={effortOptions}
+                onEffortChange={onEffortChange}
+                permissionMode={permissionMode}
+                permissionModeOptions={permissionModeOptions}
+                onPermissionModeChange={onPermissionModeChange}
+                selectedAdapter={selectedAdapter}
+                adapterOptions={adapterOptions}
+                onAdapterChange={onAdapterChange}
+                modelUnavailable={modelUnavailable}
+                queueMode={queueMode}
+                onQueueModeChange={setQueueMode}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </>
   )
 }

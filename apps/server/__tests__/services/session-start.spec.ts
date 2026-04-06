@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
 import { processUserMessage, resetSessionServiceState, startAdapterSession } from '#~/services/session/index.js'
-import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
+import {
+  adapterSessionStore,
+  createSessionConnectionState,
+  externalSessionStore,
+  notifySessionUpdated
+} from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
@@ -110,6 +115,7 @@ describe('startAdapterSession', () => {
 
     vi.mocked(getDb).mockReturnValue({
       getMessages,
+      listSessionQueuedMessages: vi.fn(() => []),
       saveMessage,
       getSession: vi.fn(() => currentSession),
       getSessionRuntimeState,
@@ -141,12 +147,11 @@ describe('startAdapterSession', () => {
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
     const runtime = {
+      ...createSessionConnectionState(),
       session: {
         emit: vi.fn(),
         kill: vi.fn()
       } as any,
-      sockets: new Set(),
-      messages: [],
       config: {
         runId: 'run-same',
         model: 'gpt-4o',
@@ -584,10 +589,9 @@ describe('startAdapterSession', () => {
         }
       }
     ])
-    externalSessionStore.set('sess-1', {
-      sockets: new Set([passiveSocket as any]),
-      messages: []
-    })
+    const passiveRuntime = createSessionConnectionState()
+    passiveRuntime.sockets.add(passiveSocket as any)
+    externalSessionStore.set('sess-1', passiveRuntime)
     mocks.run.mockResolvedValueOnce({
       session: {
         emit,
