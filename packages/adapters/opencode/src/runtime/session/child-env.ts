@@ -23,6 +23,21 @@ const resolveMergedMcpServers = (ctx: AdapterCtx) =>
     ...(ctx.configs[1]?.mcpServers ?? {})
   }) as Config['mcpServers']
 
+const resolveManagedPermissions = (ctx: AdapterCtx): Config['permissions'] => ({
+  allow: [
+    ...(ctx.configs[0]?.permissions?.allow ?? []),
+    ...(ctx.configs[1]?.permissions?.allow ?? [])
+  ],
+  deny: [
+    ...(ctx.configs[0]?.permissions?.deny ?? []),
+    ...(ctx.configs[1]?.permissions?.deny ?? [])
+  ],
+  ask: [
+    ...(ctx.configs[0]?.permissions?.ask ?? []),
+    ...(ctx.configs[1]?.permissions?.ask ?? [])
+  ]
+})
+
 const resolveMcpServerSelection = (
   ctx: AdapterCtx,
   selection: AdapterQueryOptions['mcpServers']
@@ -93,6 +108,7 @@ export const buildChildEnv = async (params: {
     mcpServers: undefined,
     availableMcpServers: params.options.assetPlan?.mcpServers ??
       mapResolvedMcpServerSelection(params.ctx, params.options),
+    managedPermissions: resolveManagedPermissions(params.ctx),
     systemPromptFile: params.systemPromptFile,
     providerConfig
   })

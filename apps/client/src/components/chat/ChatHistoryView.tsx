@@ -2,6 +2,7 @@ import { App } from 'antd'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -21,7 +22,7 @@ export function ChatHistoryView({
   messages,
   session,
   sessionInfo,
-  connectionError,
+  errorBanner,
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
@@ -53,7 +54,7 @@ export function ChatHistoryView({
   messages: ChatMessage[]
   session?: Session
   sessionInfo: SessionInfo | null
-  connectionError?: string | null
+  errorBanner?: ChatErrorBannerState | null
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
@@ -252,7 +253,7 @@ export function ChatHistoryView({
             onInterrupt={interrupt}
             onClear={clearMessages}
             sessionInfo={sessionInfo}
-            connectionError={connectionError}
+            errorBanner={errorBanner}
             onRetryConnection={onRetryConnection}
             interactionRequest={interactionRequest}
             onInteractionResponse={onInteractionResponse}

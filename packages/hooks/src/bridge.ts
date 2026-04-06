@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatMessageContent, TaskRuntime } from '@vibe-forge/types'
+import type { AdapterInteractionRequest, ChatMessage, ChatMessageContent, TaskRuntime } from '@vibe-forge/types'
 
 import type { HookLogger } from './context'
 import type { HookInputs } from './type'
@@ -19,6 +19,7 @@ export type HookBridgeInputEvent =
 export interface HookBridgeSession {
   kill(): void
   emit(event: HookBridgeInputEvent): void
+  respondInteraction?(interactionId: string, data: string | string[]): void | Promise<void>
   pid?: number
 }
 
@@ -26,6 +27,7 @@ export type HookBridgeOutputEvent =
   | { type: 'init'; data: unknown }
   | { type: 'summary'; data: unknown }
   | { type: 'message'; data: ChatMessage }
+  | { type: 'interaction_request'; data: AdapterInteractionRequest }
   | { type: 'error'; data: unknown }
   | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
@@ -342,7 +344,8 @@ export const createAdapterHookBridge = (params: {
       },
       get pid() {
         return session.pid
-      }
+      },
+      respondInteraction: (interactionId, data) => session.respondInteraction?.(interactionId, data)
     }),
     handleOutput: (event) => {
       if (event.type === 'message' && event.data.role === 'assistant') {

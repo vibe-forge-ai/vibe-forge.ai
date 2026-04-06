@@ -33,7 +33,7 @@ export function Sender(props: SenderProps) {
           isInlineEdit={controller.isInlineEdit}
           isBusy={controller.isBusy}
           modelUnavailable={controller.modelUnavailable}
-          connectionError={controller.connectionError}
+          errorBanner={controller.errorBanner}
           onRetryConnection={controller.onRetryConnection}
           pendingImages={controller.composer.pendingImages}
           pendingFiles={controller.composer.pendingFiles}

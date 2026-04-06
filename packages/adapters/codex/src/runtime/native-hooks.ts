@@ -60,7 +60,7 @@ export const ensureCodexNativeHooksInstalled = async (
   const { env, logger, assets } = ctx
 
   env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ = '0'
-  const enabled = hasManagedHookPlugins({ assets })
+  const enabled = hasManagedHookPlugins({ assets }) || env.__VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__ === '1'
 
   try {
     const { mockHome, nodePath } = prepareManagedHookRuntime(ctx)

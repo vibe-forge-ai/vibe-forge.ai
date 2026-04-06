@@ -3,13 +3,13 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { PendingContextFile, PendingImage } from '../@types/sender-composer'
 import type { SenderEditorHandle } from '../@types/sender-editor'
 import type { SenderProps } from '../@types/sender-props'
-import type { SenderCompletionMatch, SenderTokenDecoration } from '../@utils/sender-completion'
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
   SenderToolbarRefs,
   SenderToolbarState
 } from '../@types/sender-toolbar-types'
+import type { SenderCompletionMatch, SenderTokenDecoration } from '../@utils/sender-completion'
 
 interface SenderControllerAttachments {
   handlePaste: (event: ClipboardEvent) => void | Promise<void>
@@ -22,7 +22,11 @@ interface SenderControllerCompletion {
   showCompletion: boolean
   handleInputChange: (value: string, cursorPosition: number | null) => void
   handleCursorChange: (cursorPosition: number | null) => void
-  resolveCompletionMatch: (value: string, cursorOffset: number | null, sessionInfo?: SenderProps['sessionInfo']) => SenderCompletionMatch | null
+  resolveCompletionMatch: (
+    value: string,
+    cursorOffset: number | null,
+    sessionInfo?: SenderProps['sessionInfo']
+  ) => SenderCompletionMatch | null
   resolveTokenDecorations: (value: string) => SenderTokenDecoration[]
 }
 
@@ -45,7 +49,7 @@ export const buildSenderControllerResult = ({
   attachments,
   completion,
   composer,
-  connectionError,
+  errorBanner,
   focusRestore,
   handleKeyDown,
   hideSender,
@@ -64,7 +68,7 @@ export const buildSenderControllerResult = ({
   attachments: SenderControllerAttachments
   completion: SenderControllerCompletion
   composer: SenderControllerComposer
-  connectionError?: string | null
+  errorBanner?: SenderProps['errorBanner']
   focusRestore: { queueEditorFocusRestore: () => void }
   handleKeyDown: (event: KeyboardEvent) => void
   hideSender: boolean
@@ -98,7 +102,7 @@ export const buildSenderControllerResult = ({
   handleKeyDown,
   interactionRequest,
   interactionResponse,
-  connectionError,
+  errorBanner,
   onRetryConnection,
   modelUnavailable,
   placeholder,

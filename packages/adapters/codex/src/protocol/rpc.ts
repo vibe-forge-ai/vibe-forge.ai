@@ -23,6 +23,7 @@ interface PendingReq {
 }
 
 type NotificationHandler = (method: string, params: Record<string, unknown>) => void
+type RequestHandler = (id: number, method: string, params: Record<string, unknown>) => void
 
 /**
  * Minimal JSON-RPC 2.0 client over a Node.js ChildProcess stdio transport.
@@ -34,6 +35,7 @@ export class CodexRpcClient {
   private idCounter = 0
   private pending = new Map<number, PendingReq>()
   private notificationHandlers: NotificationHandler[] = []
+  private requestHandlers: RequestHandler[] = []
   private rl: readline.Interface
 
   constructor(
@@ -47,8 +49,30 @@ export class CodexRpcClient {
       this.logger.debug('[codex rpc] recv:', { line: trimmed })
       try {
         const msg = JSON.parse(trimmed) as CodexResponse | CodexNotification
+        if ('method' in msg) {
+          const params = (msg.params ?? {}) as Record<string, unknown>
+          if ('id' in msg && typeof msg.id === 'number') {
+            for (const handler of this.requestHandlers) {
+              try {
+                handler(msg.id, msg.method, params)
+              } catch (err) {
+                this.logger.error('[codex rpc] request handler error', { err })
+              }
+            }
+            return
+          }
+
+          for (const handler of this.notificationHandlers) {
+            try {
+              handler(msg.method, params)
+            } catch (err) {
+              this.logger.error('[codex rpc] notification handler error', { err })
+            }
+          }
+          return
+        }
+
         if ('id' in msg && msg.id != null) {
-          // It's a response
           const response = msg as CodexResponse
           const pending = this.pending.get(response.id)
           if (!pending) {
@@ -66,17 +90,6 @@ export class CodexRpcClient {
             )
           } else {
             pending.resolve(response.result)
-          }
-        } else {
-          // It's a notification
-          const notification = msg as CodexNotification
-          const params = (notification.params ?? {}) as Record<string, unknown>
-          for (const handler of this.notificationHandlers) {
-            try {
-              handler(notification.method, params)
-            } catch (err) {
-              this.logger.error('[codex rpc] notification handler error', { err })
-            }
           }
         }
       } catch (err) {
@@ -133,6 +146,10 @@ export class CodexRpcClient {
    */
   onNotification(handler: NotificationHandler): void {
     this.notificationHandlers.push(handler)
+  }
+
+  onRequest(handler: RequestHandler): void {
+    this.requestHandlers.push(handler)
   }
 
   /**

@@ -9,12 +9,12 @@ import { applySessionEvent } from '#~/services/session/events.js'
 import { branchSessionFromMessage } from '#~/services/session/history.js'
 import { killSession, processUserMessage, updateAndNotifySession } from '#~/services/session/index.js'
 import {
-  clearSessionInteraction,
   getSessionInteraction,
+  handleInteractionResponse,
   setSessionInteraction
 } from '#~/services/session/interaction.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
-import { badRequest, methodNotAllowed, notFound } from '#~/utils/http.js'
+import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
 export function sessionsRouter(): Router {
   const router = new Router()
@@ -232,16 +232,14 @@ export function sessionsRouter(): Router {
     }
 
     if (body.type === 'interaction_response' && body.id && body.data != null) {
-      const event: WSEvent = {
-        type: 'interaction_response',
-        id: body.id,
-        data: body.data
+      const handled = handleInteractionResponse(id, body.id, body.data)
+      if (!handled) {
+        throw conflict(
+          'Interaction response is no longer pending',
+          { id: body.id },
+          'interaction_not_pending'
+        )
       }
-      clearSessionInteraction(id, body.id)
-      applySessionEvent(id, event, {
-        broadcast: (ev) => broadcastSessionEvent(id, ev),
-        onSessionUpdated
-      })
       ctx.body = { ok: true }
       return
     }

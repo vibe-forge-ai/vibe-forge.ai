@@ -146,9 +146,11 @@ class ConnectionManager {
     const ws = this.sockets.get(sessionId)
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(typeof data === 'string' ? data : JSON.stringify(data))
-    } else {
-      console.warn(`Cannot send message: Session ${sessionId} not connected or ready`)
+      return true
     }
+
+    console.warn(`Cannot send message: Session ${sessionId} not connected or ready`)
+    return false
   }
 
   private normalizeParams(params: Record<string, string>) {

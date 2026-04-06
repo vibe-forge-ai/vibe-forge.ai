@@ -11,20 +11,38 @@ import type {
   SessionPermissionMode,
   WSEvent
 } from '@vibe-forge/core'
-import type { AdapterErrorData, AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
+import type {
+  AdapterErrorData,
+  AdapterOutputEvent,
+  AskUserQuestionParams,
+  PermissionInteractionDecision,
+  SessionInfo
+} from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
-import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
+import {
+  canRequestInteraction,
+  requestInteraction,
+  resolvePendingInteractionAsCancelled
+} from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
+import {
+  applyPermissionInteractionDecision,
+  buildPermissionInteractionPayload,
+  resolvePermissionDecision as resolveStoredPermissionDecision,
+  resolvePermissionSubjectFromInput,
+  syncPermissionStateMirrorBestEffort
+} from '#~/services/session/permission.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
   createSessionConnectionState,
   deleteAdapterSessionRuntime,
+  deleteExternalSessionRuntime,
   emitRuntimeEvent,
   getAdapterSessionRuntime,
   getExternalSessionRuntime,
@@ -37,98 +55,87 @@ import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()
 export const adapterSessionStartStore = new Map<string, Promise<AdapterSessionRuntime>>()
-const pendingPermissionRecoveryStore = new Map<string, { runId: string }>()
+const pendingPermissionRecoveryStore = new Map<string, { runId: string; interactionId?: string }>()
+const recentPermissionToolUseStore = new Map<string, Map<string, string>>()
 const PERMISSION_REQUIRED_CODE = 'permission_required'
 const PERMISSION_DECISION_CANCEL = 'cancel'
+const PERMISSION_CONTINUE_PROMPT = '权限规则已更新。请继续刚才被权限拦截的工作，并重试被阻止的操作。'
 
-const buildPermissionRecoveryPrompt = (params: {
-  adapter?: string
-  currentMode?: SessionPermissionMode
-  error: AdapterErrorData
-}) => {
-  if (params.currentMode === 'bypassPermissions') {
-    return undefined
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
+
+const uniqueStrings = (values: string[]) => [...new Set(values)]
+
+const getPermissionToolUseCache = (sessionId: string) => {
+  let cache = recentPermissionToolUseStore.get(sessionId)
+  if (cache != null) {
+    return cache
   }
+  cache = new Map<string, string>()
+  recentPermissionToolUseStore.set(sessionId, cache)
+  return cache
+}
 
-  const details = params.error.details != null && typeof params.error.details === 'object'
-    ? params.error.details as Record<string, unknown>
-    : undefined
-  const permissionDenials = Array.isArray(details?.permissionDenials)
-    ? details.permissionDenials as Array<Record<string, unknown>>
-    : []
-  const deniedTools = [
-    ...new Set(
-      permissionDenials.flatMap((entry) => Array.isArray(entry?.deniedTools) ? entry.deniedTools : [])
-    )
-  ]
-  const reasons = [
-    ...new Set(
-      permissionDenials
-        .map((entry) => typeof entry?.message === 'string' ? entry.message.trim() : '')
-        .filter(message => message !== '')
-    )
-  ]
-  const suggestedMode: SessionPermissionMode = params.currentMode === 'dontAsk' ? 'bypassPermissions' : 'dontAsk'
-
-  return {
-    sessionId: '',
-    kind: 'permission' as const,
-    question: deniedTools.length > 0
-      ? `当前任务需要额外权限才能继续，涉及工具：${deniedTools.join('、')}。是否授权后继续？`
-      : '当前任务需要额外权限才能继续。是否授权后继续？',
-    options: [
-      {
-        label: `继续并切换到 ${suggestedMode}`,
-        value: suggestedMode,
-        description: suggestedMode === 'dontAsk'
-          ? '尽量直接执行，不再额外询问。'
-          : '跳过大部分权限检查，风险最高。'
-      },
-      ...(suggestedMode === 'dontAsk'
-        ? [{
-          label: '继续并切换到 bypassPermissions',
-          value: 'bypassPermissions',
-          description: '跳过大部分权限检查，风险最高。'
-        }]
-        : []),
-      {
-        label: '取消',
-        value: PERMISSION_DECISION_CANCEL,
-        description: '保持当前权限模式，结束这次被拦截的操作。'
-      }
-    ],
-    permissionContext: {
-      adapter: params.adapter,
-      currentMode: params.currentMode,
-      suggestedMode,
-      deniedTools,
-      reasons
+const trimPermissionToolUseCache = (cache: Map<string, string>, maxSize = 128) => {
+  while (cache.size > maxSize) {
+    const firstKey = cache.keys().next().value as string | undefined
+    if (firstKey == null) {
+      break
     }
+    cache.delete(firstKey)
   }
 }
 
-const resolvePermissionDecision = (
-  answer: string | string[],
-  options: Array<{ label: string; value?: string }>
-): SessionPermissionMode | typeof PERMISSION_DECISION_CANCEL | undefined => {
+const rememberPermissionToolUses = (sessionId: string, message: unknown) => {
+  if (!isRecord(message) || !Array.isArray(message.content)) {
+    return
+  }
+
+  const cache = getPermissionToolUseCache(sessionId)
+  for (const item of message.content) {
+    if (!isRecord(item) || item.type !== 'tool_use' || !isNonEmptyString(item.id)) {
+      continue
+    }
+
+    const rawName = isNonEmptyString(item.name) ? item.name.trim() : undefined
+    const normalizedToolName = rawName?.startsWith('adapter:')
+      ? rawName.split(':').at(-1)?.trim() ?? rawName
+      : rawName
+    const subject = resolvePermissionSubjectFromInput({
+      toolName: normalizedToolName ?? rawName
+    })
+    if (subject == null) {
+      continue
+    }
+
+    cache.set(item.id.trim(), subject.key)
+  }
+
+  trimPermissionToolUseCache(cache)
+}
+
+const resolvePermissionInteractionDecision = (
+  answer: string | string[]
+): PermissionInteractionDecision | typeof PERMISSION_DECISION_CANCEL | undefined => {
   const normalizedAnswer = Array.isArray(answer) ? answer[0] : answer
   if (typeof normalizedAnswer !== 'string') return undefined
 
   const raw = normalizedAnswer.trim()
   if (raw === '') return undefined
+  if (raw === PERMISSION_DECISION_CANCEL) return PERMISSION_DECISION_CANCEL
 
-  const matched = options.find(option => option.label === raw || option.value === raw)
-  const resolved = matched?.value ?? matched?.label ?? raw
-
-  if (resolved === PERMISSION_DECISION_CANCEL) return PERMISSION_DECISION_CANCEL
   if (
-    resolved === 'default' ||
-    resolved === 'acceptEdits' ||
-    resolved === 'plan' ||
-    resolved === 'dontAsk' ||
-    resolved === 'bypassPermissions'
+    raw === 'allow_once' ||
+    raw === 'allow_session' ||
+    raw === 'allow_project' ||
+    raw === 'deny_once' ||
+    raw === 'deny_session' ||
+    raw === 'deny_project'
   ) {
-    return resolved
+    return raw
   }
 
   return undefined
@@ -147,6 +154,120 @@ const emitSessionError = (sessionId: string, data: AdapterErrorData) => {
       notifySessionUpdated(sessionId, session)
     }
   })
+}
+
+const buildPermissionDeclinedError = (message: string, code = 'permission_request_declined'): AdapterErrorData => ({
+  message,
+  code,
+  fatal: true
+})
+
+const extractPermissionErrorContext = (error: AdapterErrorData) => {
+  const details = isRecord(error.details) ? error.details : {}
+  const rawDeniedTools = new Set<string>()
+  const reasons = new Set<string>()
+
+  const permissionDenials = Array.isArray(details.permissionDenials) ? details.permissionDenials : []
+  for (const denial of permissionDenials) {
+    if (!isRecord(denial)) continue
+    if (isNonEmptyString(denial.message)) {
+      reasons.add(denial.message.trim())
+    }
+    if (Array.isArray(denial.deniedTools)) {
+      for (const tool of denial.deniedTools) {
+        if (isNonEmptyString(tool)) {
+          rawDeniedTools.add(tool.trim())
+        }
+      }
+    }
+  }
+
+  if (Array.isArray(details.deniedTools)) {
+    for (const tool of details.deniedTools) {
+      if (isNonEmptyString(tool)) {
+        rawDeniedTools.add(tool.trim())
+      }
+    }
+  }
+
+  if (isNonEmptyString(details.toolName)) {
+    rawDeniedTools.add(details.toolName.trim())
+  }
+
+  if (isNonEmptyString(error.message)) {
+    reasons.add(error.message.trim())
+  }
+
+  const deniedTools = [...rawDeniedTools]
+  const subjectKeys = uniqueStrings(
+    deniedTools
+      .map(tool => resolvePermissionSubjectFromInput({ toolName: tool })?.key)
+      .filter((key): key is string => key != null && key.trim() !== '')
+  )
+
+  return {
+    subjectKeys,
+    deniedTools,
+    reasons: [...reasons]
+  }
+}
+
+const resolvePermissionErrorContext = (sessionId: string, error: AdapterErrorData) => {
+  const context = extractPermissionErrorContext(error)
+  if (context.subjectKeys.length > 0) {
+    return context
+  }
+
+  const details = isRecord(error.details) ? error.details : {}
+  const toolUseId = isNonEmptyString(details.toolUseId) ? details.toolUseId.trim() : undefined
+  if (toolUseId == null || toolUseId === '') {
+    return context
+  }
+
+  const cachedSubjectKey = recentPermissionToolUseStore.get(sessionId)?.get(toolUseId)
+  if (cachedSubjectKey == null || cachedSubjectKey.trim() === '') {
+    return context
+  }
+
+  return {
+    subjectKeys: uniqueStrings([...context.subjectKeys, cachedSubjectKey]),
+    deniedTools: uniqueStrings([...context.deniedTools, cachedSubjectKey]),
+    reasons: context.reasons
+  }
+}
+
+const resolvePermissionInteractionPayload = (
+  sessionId: string,
+  adapter: string | undefined,
+  permissionMode: SessionPermissionMode | undefined,
+  error: AdapterErrorData
+): AskUserQuestionParams => {
+  const context = resolvePermissionErrorContext(sessionId, error)
+  return buildPermissionInteractionPayload({
+    sessionId,
+    adapter,
+    subjectKeys: context.subjectKeys,
+    deniedTools: context.deniedTools,
+    reasons: context.reasons,
+    currentMode: permissionMode
+  })
+}
+
+export const resetSessionServiceState = () => {
+  activeAdapterRunStore.clear()
+  adapterSessionStartStore.clear()
+  pendingPermissionRecoveryStore.clear()
+  recentPermissionToolUseStore.clear()
+}
+
+const clearPendingPermissionRecovery = (sessionId: string) => {
+  const pending = pendingPermissionRecoveryStore.get(sessionId)
+  if (pending == null) {
+    return undefined
+  }
+
+  pendingPermissionRecoveryStore.delete(sessionId)
+  return pending
 }
 
 export async function startAdapterSession(
@@ -270,6 +391,10 @@ export async function startAdapterSession(
       ].filter(Boolean).join('\n\n')
       let sawFatalError = false
 
+      await syncPermissionStateMirrorBestEffort(sessionId, {
+        adapter: resolvedAdapter
+      })
+
       const { session } = await run({
         env,
         cwd: promptCwd,
@@ -331,6 +456,9 @@ export async function startAdapterSession(
               break
             case 'message':
               if ('role' in (event.data as any)) {
+                if ((event.data as any).role === 'assistant') {
+                  rememberPermissionToolUses(sessionId, event.data)
+                }
                 if (
                   pendingPermissionRecoveryStore.get(sessionId)?.runId === runId &&
                   (event.data as any).role === 'assistant'
@@ -343,6 +471,112 @@ export async function startAdapterSession(
                 })
               }
               break
+            case 'interaction_request': {
+              const interaction = event.data
+              const permissionContext = interaction.payload.kind === 'permission'
+                ? interaction.payload.permissionContext
+                : undefined
+              const subject = permissionContext?.subjectKey != null
+                ? resolvePermissionSubjectFromInput({ toolName: permissionContext.subjectKey })
+                : undefined
+
+              if (typeof session.respondInteraction === 'function') {
+                void (async () => {
+                  try {
+                    if (subject != null) {
+                      const storedDecision = await resolveStoredPermissionDecision({
+                        sessionId,
+                        subject
+                      })
+                      if (activeAdapterRunStore.get(sessionId) !== runId) return
+
+                      if (storedDecision.result === 'allow') {
+                        await session.respondInteraction?.(
+                          interaction.id,
+                          storedDecision.source === 'onceAllow' ? 'allow_once' : 'allow_session'
+                        )
+                        return
+                      }
+
+                      if (storedDecision.result === 'deny') {
+                        await session.respondInteraction?.(
+                          interaction.id,
+                          storedDecision.source === 'projectDeny' ? 'deny_project' : 'deny_session'
+                        )
+                        return
+                      }
+                    }
+
+                    if (!canRequestInteraction(sessionId)) {
+                      await session.respondInteraction?.(interaction.id, PERMISSION_DECISION_CANCEL)
+                      emitSessionError(sessionId, {
+                        message: '权限确认通道不可用，已取消当前操作。',
+                        code: 'permission_request_failed',
+                        fatal: true
+                      })
+                      return
+                    }
+
+                    pendingPermissionRecoveryStore.set(sessionId, {
+                      runId,
+                      interactionId: interaction.id
+                    })
+                    const answer = await requestInteraction(interaction.payload, {
+                      interactionId: interaction.id
+                    })
+                    if (
+                      pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId ||
+                      pendingPermissionRecoveryStore.get(sessionId)?.interactionId !== interaction.id
+                    ) {
+                      return
+                    }
+
+                    pendingPermissionRecoveryStore.delete(sessionId)
+                    const decision = resolvePermissionInteractionDecision(answer)
+                    if (decision == null || decision === PERMISSION_DECISION_CANCEL) {
+                      await session.respondInteraction?.(interaction.id, PERMISSION_DECISION_CANCEL)
+                      emitSessionError(sessionId, buildPermissionDeclinedError('用户取消了本次权限授权。'))
+                      return
+                    }
+
+                    if (decision !== 'deny_once') {
+                      const subjectKey = permissionContext?.subjectKey
+                      if (subjectKey != null && subjectKey.trim() !== '') {
+                        await applyPermissionInteractionDecision({
+                          sessionId,
+                          subjectKeys: [subjectKey],
+                          action: decision
+                        })
+                      }
+                    }
+
+                    await session.respondInteraction?.(interaction.id, decision)
+                  } catch (error) {
+                    if (
+                      pendingPermissionRecoveryStore.get(sessionId)?.runId === runId &&
+                      pendingPermissionRecoveryStore.get(sessionId)?.interactionId === interaction.id
+                    ) {
+                      pendingPermissionRecoveryStore.delete(sessionId)
+                    }
+                    await session.respondInteraction?.(interaction.id, PERMISSION_DECISION_CANCEL)
+                    emitSessionError(sessionId, {
+                      message: error instanceof Error && error.message.includes('timed out')
+                        ? '权限确认已超时，已取消当前操作。'
+                        : '权限确认失败，已取消当前操作。',
+                      code: 'permission_request_failed',
+                      details: error instanceof Error ? { message: error.message } : { error: String(error) },
+                      fatal: true
+                    })
+                  }
+                })()
+                break
+              }
+
+              void requestInteraction(interaction.payload, {
+                interactionId: interaction.id
+              }).catch(() => undefined)
+              break
+            }
             case 'error':
               if (
                 event.data.code === PERMISSION_REQUIRED_CODE &&
@@ -355,78 +589,106 @@ export async function startAdapterSession(
                 !pendingPermissionRecoveryStore.has(sessionId) &&
                 canRequestInteraction(sessionId)
               ) {
-                const permissionPrompt = buildPermissionRecoveryPrompt({
-                  adapter: resolvedAdapter,
-                  currentMode: resolvedPermissionMode,
-                  error: event.data
-                })
+                const permissionPrompt = resolvePermissionInteractionPayload(
+                  sessionId,
+                  resolvedAdapter,
+                  resolvedPermissionMode,
+                  event.data
+                )
 
-                if (permissionPrompt != null) {
-                  pendingPermissionRecoveryStore.set(sessionId, { runId })
-                  void requestInteraction({
-                    ...permissionPrompt,
-                    sessionId
-                  })
-                    .then(async (answer) => {
-                      if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
-                        return
+                pendingPermissionRecoveryStore.set(sessionId, { runId })
+                void requestInteraction(permissionPrompt)
+                  .then(async (answer) => {
+                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                      return
+                    }
+
+                    const { subjectKeys } = resolvePermissionErrorContext(sessionId, event.data)
+                    const decision = resolvePermissionInteractionDecision(answer)
+                    if (decision == null || decision === PERMISSION_DECISION_CANCEL) {
+                      pendingPermissionRecoveryStore.delete(sessionId)
+                      emitSessionError(
+                        sessionId,
+                        buildPermissionDeclinedError('用户取消了本次权限授权，任务未继续执行。')
+                      )
+                      return
+                    }
+
+                    if (decision === 'deny_once') {
+                      pendingPermissionRecoveryStore.delete(sessionId)
+                      emitSessionError(sessionId, buildPermissionDeclinedError('已拒绝本次权限授权，任务未继续执行。'))
+                      return
+                    }
+
+                    if (subjectKeys.length > 0) {
+                      await applyPermissionInteractionDecision({
+                        sessionId,
+                        subjectKeys,
+                        action: decision
+                      })
+                    }
+
+                    if (decision === 'deny_session' || decision === 'deny_project') {
+                      pendingPermissionRecoveryStore.delete(sessionId)
+                      emitSessionError(sessionId, buildPermissionDeclinedError('已记录权限拒绝规则，任务未继续执行。'))
+                      return
+                    }
+
+                    try {
+                      if (activeAdapterRunStore.get(sessionId) === runId) {
+                        activeAdapterRunStore.delete(sessionId)
+                      }
+                      const activeRuntime = getAdapterSessionRuntime(sessionId)
+                      if (activeRuntime?.config?.runId === runId) {
+                        activeRuntime.session.kill()
+                        deleteAdapterSessionRuntime(sessionId)
                       }
 
                       pendingPermissionRecoveryStore.delete(sessionId)
-                      const nextPermissionMode = resolvePermissionDecision(answer, permissionPrompt.options ?? [])
-                      if (nextPermissionMode == null || nextPermissionMode === PERMISSION_DECISION_CANCEL) {
-                        emitSessionError(sessionId, {
-                          message: '用户取消了本次权限授权，任务未继续执行。',
-                          code: 'permission_request_declined',
-                          fatal: true
-                        })
-                        return
-                      }
-
-                      try {
-                        updateAndNotifySession(sessionId, {
-                          permissionMode: nextPermissionMode,
-                          status: 'running'
-                        })
-                        const recovered = await startAdapterSession(sessionId, {
-                          permissionMode: nextPermissionMode
-                        })
-                        recovered.session.emit({
-                          type: 'message',
-                          content: [
-                            {
-                              type: 'text',
-                              text:
-                                `权限模式已更新为 ${nextPermissionMode}。请继续刚才被权限拦截的工作，并重试被阻止的操作。`
-                            }
-                          ]
-                        })
-                      } catch (error) {
-                        emitSessionError(sessionId, {
-                          message: '权限已更新，但恢复会话失败。',
-                          code: 'permission_recovery_failed',
-                          details: error instanceof Error ? { message: error.message } : { error: String(error) },
-                          fatal: true
-                        })
-                      }
-                    })
-                    .catch((error) => {
-                      if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
-                        return
-                      }
-
+                      updateAndNotifySession(sessionId, {
+                        status: 'running'
+                      })
+                      const recovered = await startAdapterSession(sessionId, {
+                        model: resolvedModel,
+                        adapter: resolvedAdapter,
+                        effort: resolvedEffort,
+                        permissionMode: resolvedPermissionMode
+                      })
+                      recovered.session.emit({
+                        type: 'message',
+                        content: [
+                          {
+                            type: 'text',
+                            text: PERMISSION_CONTINUE_PROMPT
+                          }
+                        ]
+                      })
+                    } catch (error) {
                       pendingPermissionRecoveryStore.delete(sessionId)
                       emitSessionError(sessionId, {
-                        message: error instanceof Error && error.message.includes('timed out')
-                          ? '权限确认已超时，任务未继续执行。'
-                          : '权限确认失败，任务未继续执行。',
-                        code: 'permission_request_failed',
+                        message: '权限规则已更新，但恢复会话失败。',
+                        code: 'permission_recovery_failed',
                         details: error instanceof Error ? { message: error.message } : { error: String(error) },
                         fatal: true
                       })
+                    }
+                  })
+                  .catch((error) => {
+                    if (pendingPermissionRecoveryStore.get(sessionId)?.runId !== runId) {
+                      return
+                    }
+
+                    pendingPermissionRecoveryStore.delete(sessionId)
+                    emitSessionError(sessionId, {
+                      message: error instanceof Error && error.message.includes('timed out')
+                        ? '权限确认已超时，任务未继续执行。'
+                        : '权限确认失败，任务未继续执行。',
+                      code: 'permission_request_failed',
+                      details: error instanceof Error ? { message: error.message } : { error: String(error) },
+                      fatal: true
                     })
-                  break
-                }
+                  })
+                break
               }
 
               if (event.data.fatal !== false) {
@@ -447,6 +709,8 @@ export async function startAdapterSession(
                 }
                 break
               }
+
+              recentPermissionToolUseStore.delete(sessionId)
 
               updateAndNotifySession(sessionId, {
                 status: exitCode === 0 ? 'completed' : 'failed'
@@ -648,11 +912,24 @@ export function updateAndNotifySession(
 
 export function killSession(sessionId: string) {
   const cached = getAdapterSessionRuntime(sessionId)
+  const parked = getExternalSessionRuntime(sessionId)
+  const pendingRecovery = clearPendingPermissionRecovery(sessionId)
+  const hadPendingInteraction = resolvePendingInteractionAsCancelled(sessionId, pendingRecovery?.interactionId)
+
   if (cached != null) {
     activeAdapterRunStore.delete(sessionId)
     getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
     cached.session.kill()
     deleteAdapterSessionRuntime(sessionId)
+  }
+
+  if (parked != null) {
+    deleteExternalSessionRuntime(sessionId)
+  }
+
+  recentPermissionToolUseStore.delete(sessionId)
+
+  if (cached != null || parked != null || pendingRecovery != null || hadPendingInteraction) {
     updateAndNotifySession(sessionId, { status: 'terminated' })
   }
 }

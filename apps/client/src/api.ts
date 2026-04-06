@@ -37,6 +37,7 @@ export {
   forkSession,
   getSessionMessages,
   listSessions,
+  respondSessionInteraction,
   updateSession,
   updateSessionTitle
 } from './api/sessions'

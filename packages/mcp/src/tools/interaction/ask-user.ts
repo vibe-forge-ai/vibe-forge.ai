@@ -16,7 +16,11 @@ const Schema = z.object({
     currentMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional(),
     suggestedMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional(),
     deniedTools: z.array(z.string()).optional(),
-    reasons: z.array(z.string()).optional()
+    reasons: z.array(z.string()).optional(),
+    subjectKey: z.string().optional(),
+    subjectLabel: z.string().optional(),
+    scope: z.enum(['tool']).optional(),
+    projectConfigPath: z.string().optional()
   }).optional().describe('Extra context for permission escalation prompts')
 })
 

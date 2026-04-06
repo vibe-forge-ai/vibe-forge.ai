@@ -291,6 +291,9 @@ importers:
       ws:
         specifier: ^8.17.0
         version: 8.19.0
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/koa':
         specifier: ^3.0.1

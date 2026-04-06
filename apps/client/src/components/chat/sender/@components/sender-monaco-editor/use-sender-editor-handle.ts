@@ -1,11 +1,8 @@
+import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 import type { MutableRefObject } from 'react'
 import { useEffect } from 'react'
-import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 
-import type {
-  SenderEditorHandle,
-  SenderEditorSelection
-} from '#~/components/chat/sender/@types/sender-editor'
+import type { SenderEditorHandle, SenderEditorSelection } from '#~/components/chat/sender/@types/sender-editor'
 
 import { getSelectionOffsets, toMonacoRange } from './monaco-runtime'
 

@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
-import { updateAndNotifySession } from '#~/services/session/index.js'
+import { applySessionEvent } from '#~/services/session/events.js'
 import {
   getSessionInteraction,
   handleInteractionResponse,
-  requestInteraction
+  requestInteraction,
+  resolvePendingInteractionAsCancelled
 } from '#~/services/session/interaction.js'
 import { adapterSessionStore, createSessionConnectionState, externalSessionStore } from '#~/services/session/runtime.js'
 
@@ -18,8 +19,8 @@ vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
 }))
 
-vi.mock('#~/services/session/index.js', () => ({
-  updateAndNotifySession: vi.fn()
+vi.mock('#~/services/session/events.js', () => ({
+  applySessionEvent: vi.fn()
 }))
 
 vi.mock('#~/utils/logger.js', () => ({
@@ -91,12 +92,32 @@ describe('session interaction service', () => {
       })
     )
     await Promise.resolve()
-    expect(vi.mocked(updateAndNotifySession)).toHaveBeenCalledWith('sess-1', { status: 'waiting_input' })
+    expect(vi.mocked(applySessionEvent)).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'interaction_request',
+        id: interactionId
+      }),
+      expect.objectContaining({
+        onSessionUpdated: expect.any(Function)
+      })
+    )
 
     handleInteractionResponse('sess-1', interactionId!, '米饭')
 
     await expect(interactionPromise).resolves.toBe('米饭')
-    expect(vi.mocked(updateAndNotifySession)).toHaveBeenLastCalledWith('sess-1', { status: 'running' })
+    expect(vi.mocked(applySessionEvent)).toHaveBeenCalledWith(
+      'sess-1',
+      {
+        type: 'interaction_response',
+        id: interactionId,
+        data: '米饭'
+      },
+      expect.objectContaining({
+        broadcast: expect.any(Function),
+        onSessionUpdated: expect.any(Function)
+      })
+    )
   })
 
   it('rejects interaction requests when neither websocket nor channel delivery is available', async () => {
@@ -137,10 +158,19 @@ describe('session interaction service', () => {
     })).rejects.toThrow('Session sess-1 is not active')
 
     expect(adapterRuntime.currentInteraction).toBeUndefined()
-    expect(vi.mocked(updateAndNotifySession)).not.toHaveBeenCalledWith('sess-1', { status: 'waiting_input' })
+    expect(vi.mocked(applySessionEvent)).not.toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({ type: 'interaction_request' }),
+      expect.anything()
+    )
   })
 
   it('reconstructs the latest pending interaction from stored session events', () => {
+    getSession.mockReturnValue({
+      id: 'sess-1',
+      status: 'waiting_input'
+    })
+
     getMessages.mockReturnValue([
       {
         type: 'interaction_request',
@@ -208,5 +238,154 @@ describe('session interaction service', () => {
     ])
 
     expect(getSessionInteraction('sess-1')).toBeUndefined()
+  })
+
+  it('does not reconstruct interactions after the session leaves waiting_input', () => {
+    getSession.mockReturnValue({
+      id: 'sess-1',
+      status: 'failed'
+    })
+    getMessages.mockReturnValue([
+      {
+        type: 'interaction_request',
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否继续？'
+        }
+      }
+    ])
+
+    expect(getSessionInteraction('sess-1')).toBeUndefined()
+  })
+
+  it('treats sessions parked in the external runtime store as external for interaction responses', () => {
+    const runtime = createSessionConnectionState()
+    runtime.currentInteraction = {
+      id: 'interaction-1',
+      payload: {
+        sessionId: 'sess-1',
+        question: '是否继续？'
+      }
+    }
+    externalSessionStore.set('sess-1', runtime)
+
+    handleInteractionResponse('sess-1', 'interaction-1', '继续')
+
+    expect(runtime.currentInteraction).toBeUndefined()
+    expect(vi.mocked(applySessionEvent)).toHaveBeenCalledWith(
+      'sess-1',
+      {
+        type: 'interaction_response',
+        id: 'interaction-1',
+        data: '继续'
+      },
+      expect.objectContaining({
+        broadcast: expect.any(Function),
+        onSessionUpdated: expect.any(Function)
+      })
+    )
+  })
+
+  it('persists responses for reconstructed waiting_input interactions without a pending waiter', () => {
+    getSession.mockReturnValue({
+      id: 'sess-1',
+      status: 'waiting_input'
+    })
+    getMessages.mockReturnValue([
+      {
+        type: 'interaction_request',
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否继续？'
+        }
+      }
+    ])
+
+    expect(handleInteractionResponse('sess-1', 'interaction-1', '继续')).toBe(true)
+    expect(vi.mocked(applySessionEvent)).toHaveBeenCalledWith(
+      'sess-1',
+      {
+        type: 'interaction_response',
+        id: 'interaction-1',
+        data: '继续'
+      },
+      expect.objectContaining({
+        broadcast: expect.any(Function),
+        onSessionUpdated: expect.any(Function)
+      })
+    )
+  })
+
+  it('can resolve an in-flight interaction as cancelled without emitting a response event', async () => {
+    const runtime = createSessionConnectionState()
+    const adapterRuntime = Object.assign(runtime, {
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+    adapterSessionStore.set('sess-1', adapterRuntime as any)
+    getChannelSessionBySessionId.mockReturnValue({
+      channelType: 'lark',
+      channelId: 'chat_1',
+      sessionId: 'sess-1'
+    })
+
+    const interactionPromise = requestInteraction({
+      sessionId: 'sess-1',
+      question: '是否继续？'
+    })
+
+    await Promise.resolve()
+
+    const interactionId = adapterRuntime.currentInteraction?.id
+    expect(interactionId).toBeTruthy()
+    expect(resolvePendingInteractionAsCancelled('sess-1')).toBe(true)
+
+    await expect(interactionPromise).resolves.toBe('cancel')
+    expect(adapterRuntime.currentInteraction).toBeUndefined()
+    expect(vi.mocked(applySessionEvent)).not.toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'interaction_response',
+        id: interactionId
+      }),
+      expect.anything()
+    )
+  })
+
+  it('rejects stale interaction responses when no pending or persisted interaction matches', () => {
+    getSession.mockReturnValue({
+      id: 'sess-1',
+      status: 'waiting_input'
+    })
+    getMessages.mockReturnValue([
+      {
+        type: 'interaction_request',
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否继续？'
+        }
+      },
+      {
+        type: 'interaction_response',
+        id: 'interaction-1',
+        data: '继续'
+      }
+    ])
+
+    expect(handleInteractionResponse('sess-1', 'interaction-1', '重复提交')).toBe(false)
+    expect(vi.mocked(applySessionEvent)).not.toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'interaction_response',
+        id: 'interaction-1',
+        data: '重复提交'
+      }),
+      expect.anything()
+    )
   })
 })

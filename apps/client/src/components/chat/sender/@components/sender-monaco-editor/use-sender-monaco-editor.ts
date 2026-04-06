@@ -1,14 +1,16 @@
-import type { MutableRefObject } from 'react'
-import { useEffect, useRef, useState } from 'react'
-import type { editor as MonacoEditorNamespace, IDisposable } from 'monaco-editor'
-import type { SessionInfo } from '@vibe-forge/types'
+/* eslint-disable max-lines */
+
 import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '#~/components/chat/sender/@utils/sender-completion'
 import { isShortcutMatch } from '#~/utils/shortcutUtils'
+import type { SessionInfo } from '@vibe-forge/types'
+import type { IDisposable, editor as MonacoEditorNamespace } from 'monaco-editor'
+import type { MutableRefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  MIN_EDITOR_HEIGHT,
   clampEditorHeight,
   getSelectionOffsets,
-  MIN_EDITOR_HEIGHT,
   registerSenderCompletionProvider,
   toMonacoRange
 } from './monaco-runtime'
@@ -41,7 +43,11 @@ export const useSenderMonacoEditor = ({
   onKeyDown: (event: KeyboardEvent) => void
   onPaste: (event: ClipboardEvent) => void | Promise<void>
   sessionInfo?: SessionInfo | null
-  resolveCompletionMatch: (value: string, cursorOffset: number | null, sessionInfo?: SessionInfo | null) => SenderCompletionMatch | null
+  resolveCompletionMatch: (
+    value: string,
+    cursorOffset: number | null,
+    sessionInfo?: SessionInfo | null
+  ) => SenderCompletionMatch | null
   resolveTokenDecorations: (value: string) => SenderTokenDecoration[]
 }) => {
   const themeName = useSenderMonacoTheme()
@@ -106,9 +112,11 @@ export const useSenderMonacoEditor = ({
 
   useEffect(() => {
     return () => {
-      const editor = standaloneEditorRef.current as (MonacoEditorNamespace.IStandaloneCodeEditor & {
-        __vfDispose?: () => void
-      }) | null
+      const editor = standaloneEditorRef.current as
+        | (MonacoEditorNamespace.IStandaloneCodeEditor & {
+          __vfDispose?: () => void
+        })
+        | null
 
       editor?.__vfDispose?.()
       decorationsRef.current?.clear()
@@ -117,7 +125,10 @@ export const useSenderMonacoEditor = ({
     }
   }, [])
 
-  const handleEditorMount = (editor: MonacoEditorNamespace.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
+  const handleEditorMount = (
+    editor: MonacoEditorNamespace.IStandaloneCodeEditor,
+    monaco: typeof import('monaco-editor')
+  ) => {
     standaloneEditorRef.current = editor
     setEditorHeight(clampEditorHeight(editor.getContentHeight()))
     applyDecorations()
@@ -130,11 +141,17 @@ export const useSenderMonacoEditor = ({
     const domNode = editor.getDomNode()
 
     if (domNode != null) {
-      const handleDomPaste = (event: ClipboardEvent) => {
+      const handleDomPaste: EventListener = (event) => {
+        if (!(event instanceof ClipboardEvent)) {
+          return
+        }
         void onPasteRef.current(event)
       }
       const nativeEditContext = domNode.querySelector('.native-edit-context')
-      const handleNativeKeyDown = (event: KeyboardEvent) => {
+      const handleNativeKeyDown: EventListener = (event) => {
+        if (!(event instanceof KeyboardEvent)) {
+          return
+        }
         if (isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))) {
           event.preventDefault()
           event.stopPropagation()
@@ -177,7 +194,6 @@ export const useSenderMonacoEditor = ({
         onKeyDownRef.current(event.browserEvent)
       })
     )
-
     ;(editor as MonacoEditorNamespace.IStandaloneCodeEditor & { __vfDispose?: () => void }).__vfDispose = () => {
       for (const item of disposables) {
         item.dispose()

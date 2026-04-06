@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import { adapterSessionStartStore, processUserMessage, startAdapterSession } from '#~/services/session/index.js'
+import { processUserMessage, resetSessionServiceState, startAdapterSession } from '#~/services/session/index.js'
 import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
   loadConfigState: vi.fn(),
+  updateConfigFile: vi.fn(),
   handleChannelSessionEvent: vi.fn(),
   requestInteraction: vi.fn(),
-  canRequestInteraction: vi.fn()
+  canRequestInteraction: vi.fn(),
+  mkdir: vi.fn(),
+  writeFile: vi.fn()
 }))
 
 vi.mock('#~/db/index.js', () => ({
@@ -27,7 +30,12 @@ vi.mock('#~/channels/index.js', () => ({
 }))
 
 vi.mock('#~/services/config/index.js', () => ({
-  loadConfigState: mocks.loadConfigState
+  loadConfigState: mocks.loadConfigState,
+  getWorkspaceFolder: vi.fn(() => process.cwd())
+}))
+
+vi.mock('@vibe-forge/config', () => ({
+  updateConfigFile: mocks.updateConfigFile
 }))
 
 vi.mock('#~/services/session/interaction.js', () => ({
@@ -37,6 +45,11 @@ vi.mock('#~/services/session/interaction.js', () => ({
 
 vi.mock('#~/services/session/notification.js', () => ({
   maybeNotifySession: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('node:fs/promises', () => ({
+  mkdir: mocks.mkdir,
+  writeFile: mocks.writeFile
 }))
 
 vi.mock('#~/services/session/runtime.js', async () => {
@@ -68,7 +81,7 @@ describe('startAdapterSession', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    adapterSessionStartStore.clear()
+    resetSessionServiceState()
     adapterSessionStore.clear()
     externalSessionStore.clear()
 
@@ -113,10 +126,17 @@ describe('startAdapterSession', () => {
         mcpServers: undefined
       }
     ])
-    mocks.loadConfigState.mockResolvedValue({ mergedConfig: {} })
+    mocks.loadConfigState.mockResolvedValue({
+      workspaceFolder: process.cwd(),
+      projectConfig: {},
+      mergedConfig: {}
+    })
+    mocks.updateConfigFile.mockResolvedValue({ ok: true })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
     mocks.requestInteraction.mockReset()
     mocks.canRequestInteraction.mockReturnValue(false)
+    mocks.mkdir.mockResolvedValue(undefined)
+    mocks.writeFile.mockResolvedValue(undefined)
   })
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
@@ -187,6 +207,28 @@ describe('startAdapterSession', () => {
 
     const [firstRuntime, secondRuntime] = await Promise.all([first, second])
     expect(firstRuntime).toBe(secondRuntime)
+    expect(mocks.run).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not fail adapter startup when permission mirror sync fails', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.writeFile.mockRejectedValueOnce(new Error('readonly filesystem'))
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    const runtime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    expect(runtime.session.emit).toBe(emit)
+    expect(runtime.config?.adapter).toBe('claude-code')
     expect(mocks.run).toHaveBeenCalledTimes(1)
   })
 
@@ -565,12 +607,132 @@ describe('startAdapterSession', () => {
     })
   })
 
-  it('turns permission errors into an interaction and recovers with a higher permission mode', async () => {
+  it('routes codex native approval requests through the same interaction flow', async () => {
+    const respondInteraction = vi.fn()
+    let onEvent: ((event: any) => void) | undefined
+
+    mocks.canRequestInteraction.mockReturnValue(true)
+    mocks.requestInteraction.mockResolvedValueOnce('deny_project')
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      onEvent = adapterOptions.onEvent
+      return {
+        session: {
+          emit: vi.fn(),
+          kill: vi.fn(),
+          respondInteraction
+        }
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    onEvent?.({
+      type: 'interaction_request',
+      data: {
+        id: 'approval-1',
+        payload: {
+          sessionId: 'sess-1',
+          kind: 'permission',
+          question: '允许执行命令 `pnpm test`？',
+          options: [
+            { label: '同意本次', value: 'allow_once' },
+            { label: '拒绝并在当前项目阻止类似调用', value: 'deny_project' }
+          ],
+          permissionContext: {
+            adapter: 'codex',
+            deniedTools: ['Bash'],
+            subjectKey: 'Bash',
+            subjectLabel: 'Bash',
+            scope: 'tool',
+            projectConfigPath: '.ai.config.json'
+          }
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    await vi.waitFor(() => {
+      expect(respondInteraction).toHaveBeenCalledWith('approval-1', 'deny_project')
+    })
+
+    expect(updateSessionRuntimeState).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        permissionState: expect.objectContaining({
+          deny: ['Bash']
+        })
+      })
+    )
+  })
+
+  it('auto-responds to codex native approvals when the session already remembers the tool', async () => {
+    const respondInteraction = vi.fn()
+    let onEvent: ((event: any) => void) | undefined
+
+    getSessionRuntimeState.mockReturnValue({
+      runtimeKind: 'interactive',
+      historySeedPending: false,
+      permissionState: {
+        allow: ['Bash'],
+        deny: [],
+        onceAllow: [],
+        onceDeny: []
+      }
+    })
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      onEvent = adapterOptions.onEvent
+      return {
+        session: {
+          emit: vi.fn(),
+          kill: vi.fn(),
+          respondInteraction
+        }
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    onEvent?.({
+      type: 'interaction_request',
+      data: {
+        id: 'approval-remembered',
+        payload: {
+          sessionId: 'sess-1',
+          kind: 'permission',
+          question: '允许执行命令 `pnpm test`？',
+          permissionContext: {
+            adapter: 'codex',
+            deniedTools: ['Bash'],
+            subjectKey: 'Bash',
+            subjectLabel: 'Bash',
+            scope: 'tool',
+            projectConfigPath: '.ai.config.json'
+          }
+        }
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(respondInteraction).toHaveBeenCalledWith('approval-remembered', 'allow_session')
+    })
+    expect(mocks.requestInteraction).not.toHaveBeenCalled()
+  })
+
+  it('turns permission errors into a remembered allow interaction and restarts with the same permission mode', async () => {
     const resumedEmit = vi.fn()
     let onEvent: ((event: any) => void) | undefined
 
     mocks.canRequestInteraction.mockReturnValue(true)
-    mocks.requestInteraction.mockResolvedValueOnce('dontAsk')
+    mocks.requestInteraction.mockResolvedValueOnce('allow_session')
     mocks.run
       .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
         onEvent = adapterOptions.onEvent
@@ -595,15 +757,35 @@ describe('startAdapterSession', () => {
     })
 
     onEvent?.({
+      type: 'message',
+      data: {
+        id: 'assist-tool-use',
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool-use-1',
+            name: 'adapter:claude-code:Write',
+            input: {
+              file_path: '/tmp/demo.txt',
+              content: 'ok'
+            }
+          }
+        ],
+        createdAt: Date.now()
+      }
+    })
+    onEvent?.({
       type: 'error',
       data: {
         message: 'Permission required to continue',
         code: 'permission_required',
         details: {
+          toolUseId: 'tool-use-1',
           permissionDenials: [
             {
               message: 'Write requires approval',
-              deniedTools: ['Write']
+              deniedTools: []
             }
           ]
         },
@@ -619,23 +801,33 @@ describe('startAdapterSession', () => {
     })
 
     await vi.waitFor(() => {
-      expect(currentSession.permissionMode).toBe('dontAsk')
+      expect(currentSession.permissionMode).toBe('default')
       expect(resumedEmit).toHaveBeenCalledWith({
         type: 'message',
         content: [{
           type: 'text',
-          text: '权限模式已更新为 dontAsk。请继续刚才被权限拦截的工作，并重试被阻止的操作。'
+          text: '权限规则已更新。请继续刚才被权限拦截的工作，并重试被阻止的操作。'
         }]
       })
     })
 
+    expect(updateSessionRuntimeState).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        permissionState: expect.objectContaining({
+          allow: ['Write']
+        })
+      })
+    )
     expect(mocks.requestInteraction).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: 'sess-1',
       kind: 'permission',
       permissionContext: expect.objectContaining({
         currentMode: 'default',
         deniedTools: ['Write'],
-        suggestedMode: 'dontAsk'
+        subjectKey: 'Write',
+        subjectLabel: 'Write',
+        projectConfigPath: '.ai.config.json'
       })
     }))
   })
@@ -644,7 +836,7 @@ describe('startAdapterSession', () => {
     let onEvent: ((event: any) => void) | undefined
 
     mocks.canRequestInteraction.mockReturnValue(true)
-    mocks.requestInteraction.mockResolvedValueOnce('dontAsk')
+    mocks.requestInteraction.mockResolvedValueOnce('allow_once')
     mocks.run
       .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
         onEvent = adapterOptions.onEvent

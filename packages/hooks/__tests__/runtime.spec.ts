@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
+import { resolvePermissionMirrorPath } from '@vibe-forge/utils'
 import fg from 'fast-glob'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -314,5 +315,179 @@ describe('hook runtime', () => {
     expect(logContent).not.toContain(secretApiKey)
     expect(logContent).not.toContain(secretToken)
     expect(logContent).not.toContain('nested-secret')
+  })
+
+  it('returns a remembered deny decision from the builtin permission plugin mirror fallback', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-deny-'))
+    tempDirs.push(workspace)
+
+    await writeDocument(
+      resolvePermissionMirrorPath(workspace, 'claude-code', 'session-deny'),
+      JSON.stringify({
+        permissionState: {
+          allow: [],
+          deny: ['Write'],
+          onceAllow: [],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    const result = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-deny',
+        adapter: 'claude-code',
+        runtime: 'server',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'write'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-deny',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toMatchObject({
+      continue: false,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny'
+      }
+    })
+  })
+
+  it('returns a remembered allow decision from the builtin permission plugin mirror fallback', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-allow-'))
+    tempDirs.push(workspace)
+
+    await writeDocument(
+      resolvePermissionMirrorPath(workspace, 'claude-code', 'session-allow'),
+      JSON.stringify({
+        permissionState: {
+          allow: ['Read'],
+          deny: [],
+          onceAllow: [],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    const result = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-allow',
+        adapter: 'claude-code',
+        runtime: 'server',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'read'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-allow',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toMatchObject({
+      continue: true,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow'
+      }
+    })
+  })
+
+  it('consumes onceAllow decisions from the builtin permission plugin mirror fallback', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-once-allow-'))
+    tempDirs.push(workspace)
+    const mirrorPath = resolvePermissionMirrorPath(workspace, 'claude-code', 'session-once-allow')
+
+    await writeDocument(
+      mirrorPath,
+      JSON.stringify({
+        permissionState: {
+          allow: [],
+          deny: [],
+          onceAllow: ['Write'],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    const first = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-once-allow',
+        adapter: 'claude-code',
+        runtime: 'server',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'write'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-once-allow',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(first).toMatchObject({
+      continue: true,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow'
+      }
+    })
+
+    const persisted = JSON.parse(await readFile(mirrorPath, 'utf8')) as {
+      permissionState?: { onceAllow?: string[] }
+    }
+    expect(persisted.permissionState?.onceAllow ?? []).toEqual([])
+
+    const second = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-once-allow',
+        adapter: 'claude-code',
+        runtime: 'server',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'write'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-once-allow-second',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(second).toEqual({ continue: true })
   })
 })

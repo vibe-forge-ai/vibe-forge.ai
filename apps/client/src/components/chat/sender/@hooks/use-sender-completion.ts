@@ -5,7 +5,10 @@ import type { SessionInfo } from '@vibe-forge/types'
 
 import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderInitialContent } from '#~/components/chat/sender/@types/sender-types'
-import { resolveSenderCompletionMatch, resolveSenderTokenDecorations } from '#~/components/chat/sender/@utils/sender-completion'
+import {
+  resolveSenderCompletionMatch,
+  resolveSenderTokenDecorations
+} from '#~/components/chat/sender/@utils/sender-completion'
 
 export const useSenderCompletion = ({
   initialContent,
@@ -31,9 +34,9 @@ export const useSenderCompletion = ({
   }, [initialContent, resetCompletion])
 
   const syncCompletionState = useCallback((value: string, cursorPosition: number | null) => {
-    const resolvedCursorPosition = cursorPosition
-      ?? editorRef.current?.getSelection()?.end
-      ?? value.length
+    const resolvedCursorPosition = cursorPosition ??
+      editorRef.current?.getSelection()?.end ??
+      value.length
     const nextMatch = resolveSenderCompletionMatch(value, resolvedCursorPosition, sessionInfo)
 
     setShowCompletion((nextMatch?.items.length ?? 0) > 0)

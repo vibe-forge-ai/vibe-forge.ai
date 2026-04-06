@@ -1,6 +1,7 @@
 import type { Cache } from './cache'
 import type { EffortLevel, TaskRuntime } from './common'
 import type { Config } from './config'
+import type { AskUserQuestionParams } from './interaction'
 import type { Logger } from './logger'
 import type { ChatMessage, ChatMessageContent } from './message'
 import type { AdapterModelFallbackWarning } from './model-selection'
@@ -15,10 +16,16 @@ export interface AdapterErrorData {
   fatal?: boolean
 }
 
+export interface AdapterInteractionRequest {
+  id: string
+  payload: AskUserQuestionParams
+}
+
 export type AdapterOutputEvent =
   | { type: 'init'; data: SessionInitInfo }
   | { type: 'summary'; data: SessionSummaryInfo }
   | { type: 'message'; data: ChatMessage }
+  | { type: 'interaction_request'; data: AdapterInteractionRequest }
   | { type: 'error'; data: AdapterErrorData }
   | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
@@ -102,6 +109,7 @@ export interface AdapterSession {
   kill: () => void
   stop?: () => void
   emit: (event: AdapterEvent) => void
+  respondInteraction?: (interactionId: string, data: string | string[]) => void | Promise<void>
   pid?: number
 }
 

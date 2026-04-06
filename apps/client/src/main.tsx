@@ -12,13 +12,18 @@ import { BrowserRouter } from 'react-router-dom'
 import { SWRConfig } from 'swr'
 
 import { fetchApiJson } from '#~/api/base.js'
-import { getClientBase } from '#~/runtime-config.js'
+import { getClientBase, resolveDevDocumentTitle } from '#~/runtime-config.js'
 
 import App from './App'
 
 const root = createRoot(document.getElementById('root')!)
 
 const clientBase = getClientBase()
+
+document.title = resolveDevDocumentTitle(document.title, {
+  isDev: import.meta.env.DEV,
+  gitRef: import.meta.env.__VF_PROJECT_AI_DEV_GIT_REF__
+})
 
 root.render(
   <React.StrictMode>
