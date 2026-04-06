@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import {
   andPredicates,
   createRuleBasedMockScenario,
@@ -258,7 +260,8 @@ const codexApplyPatchCase = (): AdapterE2ECase => {
     title,
     adapter: 'codex',
     model: createCaseModel('codex', 'codex-apply-patch-once'),
-    prompt: 'Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.',
+    prompt:
+      'Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.',
     extraArgs: ['--', '--enable', 'apply_patch_freeform'],
     mockScenarios: [
       createRuleBasedMockScenario({
@@ -323,7 +326,8 @@ const codexTranscriptMcpCase = (): AdapterE2ECase => {
     title,
     adapter: 'codex',
     model: createCaseModel('codex', 'codex-transcript-mcp-bridge'),
-    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.',
+    prompt:
+      'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.',
     codexTranscriptInjection: [
       {
         type: 'response_item',
@@ -386,7 +390,8 @@ const codexTranscriptFileChangeCase = (): AdapterE2ECase => {
     title,
     adapter: 'codex',
     model: createCaseModel('codex', 'codex-transcript-file-change-bridge'),
-    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.',
+    prompt:
+      'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.',
     codexTranscriptInjection: [
       {
         type: 'response_item',

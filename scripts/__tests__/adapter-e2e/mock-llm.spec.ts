@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { buildResponsesToolCall } from '../../adapter-e2e/mock-llm/responses'
 import {
   createRuleBasedMockScenario,
   defineMockScenarioRule,
@@ -10,7 +11,6 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
-import { buildResponsesToolCall } from '../../adapter-e2e/mock-llm/responses'
 import { resolveMockTurn, startMockLlmServer } from '../../adapter-e2e/mock-llm/server'
 import { ADAPTER_E2E_DEFAULTS } from '../../adapter-e2e/scenarios'
 import type { JsonObject, MockLlmServerHandle } from '../../adapter-e2e/types'

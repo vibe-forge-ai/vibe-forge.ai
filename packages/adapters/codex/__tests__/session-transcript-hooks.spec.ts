@@ -100,16 +100,19 @@ describe('createCodexSession transcript hook integration', () => {
   })
 
   it('starts and stops the transcript watcher when native hooks are active', async () => {
-    const session = await createCodexSession(makeCtx({
-      __VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__: '1',
-      __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/vibe-forge-cli'
-    }), {
-      type: 'create',
-      runtime: 'server',
-      sessionId: 'session-native-hooks',
-      description: 'Reply with pong.',
-      onEvent: () => {}
-    } as any)
+    const session = await createCodexSession(
+      makeCtx({
+        __VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__: '1',
+        __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/vibe-forge-cli'
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-native-hooks',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
 
     expect(createCodexTranscriptHookWatcherMock).toHaveBeenCalledWith(expect.objectContaining({
       cwd: '/tmp/project',

@@ -1,4 +1,6 @@
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
+/* eslint-disable max-lines */
+
+import { appendFile, mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -139,6 +141,86 @@ describe('createCodexTranscriptHookWatcher', () => {
         isError: false,
         toolResponse: {
           output: 'Success. Updated the following files:\nA /tmp/project/example.txt\n',
+          metadata: { exit_code: 0 }
+        }
+      }),
+      {}
+    )
+  })
+
+  it('flushes pending transcript tool results before stopping', async () => {
+    const timestamp = createTimestamp()
+    const watcher = createCodexTranscriptHookWatcher({
+      cwd: '/tmp/project',
+      env: {},
+      homeDir,
+      logger: createLogger() as any,
+      runtime: 'server',
+      sessionId: 'vf-session',
+      pollIntervalMs: 1_000
+    })
+
+    watcher.start()
+
+    const transcriptPath = join(sessionsDir, 'rollout-2026-04-06T00-00-00-flush.jsonl')
+    await writeFile(
+      transcriptPath,
+      [
+        JSON.stringify({
+          timestamp,
+          type: 'session_meta',
+          payload: {
+            id: 'codex-session',
+            timestamp,
+            cwd: '/tmp/project'
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'custom_tool_call',
+            call_id: 'call_apply_patch_flush',
+            name: 'apply_patch',
+            input: '*** Begin Patch\n*** Add File: /tmp/project/example.txt\n+hello\n*** End Patch\n'
+          }
+        }),
+        ''
+      ].join('\n')
+    )
+
+    await waitFor(50)
+    await appendFile(
+      transcriptPath,
+      `${
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'custom_tool_call_output',
+            call_id: 'call_apply_patch_flush',
+            output: JSON.stringify({
+              output: 'Success',
+              metadata: { exit_code: 0 }
+            })
+          }
+        })
+      }\n`
+    )
+
+    watcher.stop()
+    await waitFor(50)
+
+    expect(callHookMock).toHaveBeenNthCalledWith(
+      2,
+      'PostToolUse',
+      expect.objectContaining({
+        toolCallId: 'call_apply_patch_flush',
+        toolName: 'adapter:codex:ApplyPatch',
+        transcriptPath,
+        isError: false,
+        toolResponse: {
+          output: 'Success',
           metadata: { exit_code: 0 }
         }
       }),

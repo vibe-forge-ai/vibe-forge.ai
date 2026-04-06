@@ -127,8 +127,8 @@ export const handleIncomingNotification = (
       const command = Array.isArray(cmdItem.command)
         ? cmdItem.command.join(' ')
         : typeof cmdItem.command === 'string'
-          ? cmdItem.command
-          : '[command]'
+        ? cmdItem.command
+        : '[command]'
       // Emit a tool_use event so the client sees the command being kicked off
       const msg: ChatMessage = {
         id: cmdItem.id,

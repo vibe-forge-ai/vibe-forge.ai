@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 export interface ParsedHookLogEntry {
   eventName: string
   headerText?: string
@@ -22,13 +24,13 @@ const parseYamlScalar = (rawValue: string): unknown => {
 
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith('\'') && value.endsWith('\''))
+    (value.startsWith("'") && value.endsWith("'"))
   ) {
     return value
       .slice(1, -1)
       .replace(/\\n/g, '\n')
       .replace(/\\"/g, '"')
-      .replace(/\\'/g, '\'')
+      .replace(/\\'/g, "'")
       .replace(/\\\\/g, '\\')
   }
 
@@ -80,7 +82,7 @@ const parseYamlNode = (
   lines: string[],
   startIndex: number,
   indent: number
-): { value: unknown, nextIndex: number } => {
+): { value: unknown; nextIndex: number } => {
   let index = startIndex
   while (index < lines.length && (lines[index] ?? '').trim() === '') {
     index += 1
