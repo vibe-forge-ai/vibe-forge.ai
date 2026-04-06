@@ -1,9 +1,25 @@
 .pending-attachments {
   display: flex;
+  flex-direction: column;
   gap: 6px;
   padding: 2px 0 8px;
-  flex-wrap: wrap;
   align-items: flex-start;
+}
+
+.pending-attachments__files,
+.pending-attachments__images {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.pending-attachments__files {
+  flex-direction: column;
+}
+
+.pending-attachments__images {
+  flex-wrap: wrap;
 }
 
 .pending-image {
@@ -62,11 +78,11 @@
 
 .pending-context-file {
   display: flex;
-  width: min(100%, 280px);
+  width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 7px 9px;
+  gap: 6px;
+  padding: 5px 8px;
   border: 1px solid rgba(148, 163, 184, .2);
   border-radius: 10px;
   background: var(--tag-bg, #f3f4f6);
@@ -202,6 +218,10 @@ html.dark {
 
 @media (max-width: 640px) {
   .pending-context-file {
+    width: 100%;
+  }
+
+  .pending-attachments__images {
     width: 100%;
   }
 }

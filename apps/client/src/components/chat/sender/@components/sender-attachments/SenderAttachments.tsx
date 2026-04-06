@@ -56,50 +56,62 @@ export function SenderAttachments({
     <>
       {(pendingImages.length > 0 || pendingFiles.length > 0) && (
         <div className='pending-attachments'>
-          {pendingImages.map((image) => {
-            const displayName = image.name ?? t('chat.attachments.pastedImage')
-            const sizeLabel = formatAttachmentSize(image.size)
+          {pendingFiles.length > 0 && (
+            <div className='pending-attachments__files'>
+              {pendingFiles.map((file) => {
+                const sizeLabel = formatAttachmentSize(file.size)
 
-            return (
-              <div key={image.id} className='pending-image'>
-                <img src={image.url} alt={image.name ?? ''} />
-                <div className='pending-image__overlay'>
-                  <div className='pending-image__meta'>
-                    <span className='pending-image__name'>{displayName}</span>
-                    {sizeLabel != null && <span className='pending-image__size'>{sizeLabel}</span>}
+                return (
+                  <div key={file.path} className='pending-context-file'>
+                    <div className='pending-context-file__meta'>
+                      <span className='material-symbols-rounded pending-context-file__icon'>attach_file</span>
+                      <div className='pending-context-file__copy'>
+                        <span className='pending-context-file__name'>{getFileDisplayName(file)}</span>
+                        <code className='pending-context-file__path'>{getFileParentPath(file.path)}</code>
+                      </div>
+                    </div>
+                    <div className='pending-context-file__actions'>
+                      {sizeLabel != null && <span className='pending-context-file__size'>{sizeLabel}</span>}
+                      <button
+                        type='button'
+                        className='pending-context-file__remove'
+                        onClick={() => onRemovePendingFile(file.path)}
+                      >
+                        <span className='material-symbols-rounded'>close</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <button type='button' className='pending-image-remove' onClick={() => onRemovePendingImage(image.id)}>
-                  <span className='material-symbols-rounded'>close</span>
-                </button>
-              </div>
-            )
-          })}
-          {pendingFiles.map((file) => {
-            const sizeLabel = formatAttachmentSize(file.size)
+                )
+              })}
+            </div>
+          )}
+          {pendingImages.length > 0 && (
+            <div className='pending-attachments__images'>
+              {pendingImages.map((image) => {
+                const displayName = image.name ?? t('chat.attachments.pastedImage')
+                const sizeLabel = formatAttachmentSize(image.size)
 
-            return (
-              <div key={file.path} className='pending-context-file'>
-                <div className='pending-context-file__meta'>
-                  <span className='material-symbols-rounded pending-context-file__icon'>attach_file</span>
-                  <div className='pending-context-file__copy'>
-                    <span className='pending-context-file__name'>{getFileDisplayName(file)}</span>
-                    <code className='pending-context-file__path'>{getFileParentPath(file.path)}</code>
+                return (
+                  <div key={image.id} className='pending-image'>
+                    <img src={image.url} alt={image.name ?? ''} />
+                    <div className='pending-image__overlay'>
+                      <div className='pending-image__meta'>
+                        <span className='pending-image__name'>{displayName}</span>
+                        {sizeLabel != null && <span className='pending-image__size'>{sizeLabel}</span>}
+                      </div>
+                    </div>
+                    <button
+                      type='button'
+                      className='pending-image-remove'
+                      onClick={() => onRemovePendingImage(image.id)}
+                    >
+                      <span className='material-symbols-rounded'>close</span>
+                    </button>
                   </div>
-                </div>
-                <div className='pending-context-file__actions'>
-                  {sizeLabel != null && <span className='pending-context-file__size'>{sizeLabel}</span>}
-                  <button
-                    type='button'
-                    className='pending-context-file__remove'
-                    onClick={() => onRemovePendingFile(file.path)}
-                  >
-                    <span className='material-symbols-rounded'>close</span>
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </>
