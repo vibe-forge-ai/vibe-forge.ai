@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import { useEffect, useRef } from 'react'
 
 import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import { loadChatHistory } from '#~/components/chat/sender/@utils/sender-utils'
@@ -9,11 +10,14 @@ export const useSenderKeydown = ({
   isMac,
   clearInputShortcut,
   isInlineEdit,
+  isThinking,
   input,
   pendingImageCount,
   pendingFileCount,
   onCancel,
   onClear,
+  onInterrupt,
+  onInterruptHint,
   onResetComposer,
   showReferenceActions,
   onCloseReferenceActions,
@@ -30,11 +34,14 @@ export const useSenderKeydown = ({
   isMac: boolean
   clearInputShortcut?: string
   isInlineEdit: boolean
+  isThinking: boolean
   input: string
   pendingImageCount: number
   pendingFileCount: number
   onCancel?: () => void
   onClear?: () => void
+  onInterrupt: () => void
+  onInterruptHint: () => void
   onResetComposer: () => void
   showReferenceActions: boolean
   onCloseReferenceActions: () => void
@@ -47,6 +54,14 @@ export const useSenderKeydown = ({
   onHistoryNavigate: (direction: 'up' | 'down') => void
   onInputClear: () => void
 }) => {
+  const interruptConfirmationExpiresAtRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (input !== '' || pendingImageCount > 0 || pendingFileCount > 0 || !isThinking) {
+      interruptConfirmationExpiresAtRef.current = null
+    }
+  }, [input, isThinking, pendingFileCount, pendingImageCount])
+
   return (event: KeyboardEvent) => {
     if (showReferenceActions && event.key === 'Escape') {
       event.preventDefault()
@@ -96,7 +111,23 @@ export const useSenderKeydown = ({
       }
       if (input !== '') {
         event.preventDefault()
+        interruptConfirmationExpiresAtRef.current = null
         onInputClear()
+        return
+      }
+      if (isThinking && pendingImageCount === 0 && pendingFileCount === 0) {
+        event.preventDefault()
+        const now = Date.now()
+        const expiresAt = interruptConfirmationExpiresAtRef.current
+
+        if (expiresAt != null && expiresAt > now) {
+          interruptConfirmationExpiresAtRef.current = null
+          onInterrupt()
+          return
+        }
+
+        interruptConfirmationExpiresAtRef.current = now + 1800
+        onInterruptHint()
       }
       return
     }

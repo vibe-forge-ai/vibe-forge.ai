@@ -72,14 +72,15 @@ export function SenderToolbar({
           submitLoading={state.submitLoading}
           submitLabel={data.submitLabel}
           hasComposerContent={state.hasComposerContent}
-          hasSendText={state.hasSendText}
           modelUnavailable={state.modelUnavailable}
           isThinking={state.isThinking}
           resolvedSendShortcut={state.resolvedSendShortcut}
+          queueSteerShortcut={data.composerControlShortcuts.queueSteer}
+          queueNextShortcut={data.composerControlShortcuts.queueNext}
           isMac={state.isMac}
           onCancel={handlers.onCancel}
           onSend={handlers.onSend}
-          onInterrupt={handlers.onInterrupt}
+          onStop={handlers.onInterrupt}
         />
       </div>
     </div>

@@ -3,7 +3,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 
-import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+import type {
+  AskUserQuestionParams,
+  ChatMessage,
+  ChatMessageContent,
+  Session,
+  SessionMessageQueueState,
+  SessionQueuedMessage,
+  SessionQueuedMessageMode
+} from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
@@ -11,9 +19,9 @@ import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
-
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
+import { QueuedMessagesCard } from './QueuedMessagesCard'
 import { MessageItem } from './messages/MessageItem'
 import { MessageStatusNotice } from './messages/MessageStatusNotice'
 import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
@@ -31,6 +39,7 @@ export function ChatHistoryView({
   targetToolUseId,
   sessionInfo,
   historyStatusNotices,
+  queuedMessages,
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
@@ -65,6 +74,7 @@ export function ChatHistoryView({
   targetToolUseId?: string
   sessionInfo: SessionInfo | null
   historyStatusNotices: ChatHistoryStatusNotice[]
+  queuedMessages: SessionMessageQueueState
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
@@ -103,6 +113,10 @@ export function ChatHistoryView({
     isCreating,
     send,
     sendContent,
+    enqueueContent,
+    removeQueuedContent,
+    moveQueuedContent,
+    reorderQueuedContent,
     editMessage,
     forkMessage,
     interrupt,
@@ -122,6 +136,8 @@ export function ChatHistoryView({
   const handledTargetScrollKeyRef = useRef('')
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [expandedTurnIds, setExpandedTurnIds] = useState<Set<string>>(new Set())
+  const [queueMode, setQueueMode] = useState<SessionQueuedMessageMode>('steer')
+  const [queuedDraft, setQueuedDraft] = useState<{ content: ChatMessageContent[] } | null>(null)
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -134,37 +150,78 @@ export function ChatHistoryView({
     }
   }
 
-  const handleSend = async (text: string) => {
-    if (!session?.id) {
-      const optimisticMessage = buildUserMessage(text)
-      setMessages((prev) => [...prev, optimisticMessage])
-      const didSend = await send(text)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+  const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    const resolvedMode = mode ?? queueMode
+
+    if (session?.id && session.status === 'running') {
+      const didQueue = await enqueueContent(resolvedMode, content)
+      if (didQueue && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
       }
-      return
+      return didQueue
     }
 
-    const didSend = await send(text)
-    if (didSend) {
-      setMessages((prev) => [...prev, buildUserMessage(text)])
-    }
-  }
-  const handleSendContent = async (content: ChatMessageContent[]) => {
     if (!session?.id) {
       const optimisticMessage = buildUserMessage(content)
       setMessages((prev) => [...prev, optimisticMessage])
-      const didSend = await sendContent(content)
+      const didSend = await sendContent(content, mode)
       if (!didSend) {
         setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
       }
-      return
+      if (didSend && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didSend
     }
 
-    const didSend = await sendContent(content)
+    const didSend = await sendContent(content, mode)
     if (didSend) {
       setMessages((prev) => [...prev, buildUserMessage(content)])
+      if (queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
     }
+    return didSend
+  }
+
+  const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    const resolvedMode = mode ?? queueMode
+
+    if (session?.id && session.status === 'running') {
+      const didQueue = await enqueueContent(resolvedMode, [{ type: 'text', text: text.trim() }])
+      if (didQueue && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didQueue
+    }
+
+    if (!session?.id) {
+      const optimisticMessage = buildUserMessage(text)
+      setMessages((prev) => [...prev, optimisticMessage])
+      const didSend = await send(text, mode)
+      if (!didSend) {
+        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
+      }
+      if (didSend && queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+      return didSend
+    }
+
+    const didSend = await send(text, mode)
+    if (didSend) {
+      setMessages((prev) => [...prev, buildUserMessage(text)])
+      if (queuedDraft != null) {
+        setQueuedDraft(null)
+        setQueueMode('steer')
+      }
+    }
+    return didSend
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
@@ -172,6 +229,8 @@ export function ChatHistoryView({
     handledTargetScrollKeyRef.current = ''
     setEditingMessageId(null)
     setExpandedTurnIds(new Set())
+    setQueuedDraft(null)
+    setQueueMode('steer')
   }, [session?.id])
   useEffect(() => {
     if (!initialScrollDoneRef.current && isReady && location.hash === '') {
@@ -237,6 +296,17 @@ export function ChatHistoryView({
     }
     return null
   }, [renderItems])
+  const handleEditQueuedMessage = async (item: SessionQueuedMessage) => {
+    const removed = await removeQueuedContent(item.id)
+    if (!removed) {
+      return
+    }
+    setQueuedDraft({ content: item.content })
+    setQueueMode('steer')
+  }
+  const handleMoveQueuedMessage = async (item: SessionQueuedMessage, targetMode: SessionQueuedMessageMode) => {
+    await moveQueuedContent(item.id, targetMode)
+  }
 
   useEffect(() => {
     const hash = hashAnchorId
@@ -493,6 +563,26 @@ export function ChatHistoryView({
       <div className='chat-composer-stack'>
         <div className='chat-composer-stack__inner'>
           <CurrentTodoList messages={messages} />
+          {!isInlineEditing && (
+            <QueuedMessagesCard
+              mode='next'
+              items={queuedMessages.next}
+              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+              onDelete={(item) => void removeQueuedContent(item.id)}
+              onEdit={(item) => void handleEditQueuedMessage(item)}
+              onReorder={(ids) => reorderQueuedContent('next', ids)}
+            />
+          )}
+          {!isInlineEditing && (
+            <QueuedMessagesCard
+              mode='steer'
+              items={queuedMessages.steer}
+              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+              onDelete={(item) => void removeQueuedContent(item.id)}
+              onEdit={(item) => void handleEditQueuedMessage(item)}
+              onReorder={(ids) => reorderQueuedContent('steer', ids)}
+            />
+          )}
           {!isInlineEditing && interactionRequest != null && (
             <SenderInteractionPanel
               interactionRequest={interactionRequest}
@@ -520,7 +610,9 @@ export function ChatHistoryView({
                 sessionInfo={sessionInfo}
                 interactionRequest={interactionRequest}
                 onInteractionResponse={onInteractionResponse}
+                initialContent={queuedDraft?.content}
                 placeholder={placeholder}
+                submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
                 modelMenuGroups={modelMenuGroups}
                 modelSearchOptions={modelSearchOptions}
                 recommendedModelOptions={recommendedModelOptions}
@@ -539,6 +631,8 @@ export function ChatHistoryView({
                 adapterOptions={adapterOptions}
                 onAdapterChange={onAdapterChange}
                 modelUnavailable={modelUnavailable}
+                queueMode={queueMode}
+                onQueueModeChange={setQueueMode}
               />
             </div>
           )}

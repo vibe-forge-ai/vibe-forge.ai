@@ -35,6 +35,8 @@ export function Sender(props: SenderProps) {
           onCursorChange={controller.onCursorChange}
           onKeyDown={controller.handleKeyDown}
           onPaste={controller.attachments.handlePaste}
+          secondarySendShortcut={controller.secondarySendShortcut}
+          onSecondarySendShortcut={controller.onSecondarySendShortcut}
           resolveCompletionMatch={controller.completion.resolveCompletionMatch}
           resolveTokenDecorations={controller.completion.resolveTokenDecorations}
           toolbarState={controller.toolbar.toolbarState}
