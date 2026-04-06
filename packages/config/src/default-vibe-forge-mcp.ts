@@ -7,6 +7,15 @@ import type { Config } from '@vibe-forge/types'
 
 export const DEFAULT_VIBE_FORGE_MCP_SERVER_NAME = 'vibe-forge'
 
+const DEFAULT_VIBE_FORGE_MCP_ENV_KEYS = [
+  'NODE_PATH',
+  '__VF_PROJECT_WORKSPACE_FOLDER__',
+  '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__',
+  '__VF_PROJECT_PACKAGE_DIR__',
+  '__VF_PROJECT_CLI_PACKAGE_DIR__',
+  '__VF_PROJECT_REAL_HOME__'
+] as const
+
 export const resolveUseDefaultVibeForgeMcpServer = (options: {
   runtimeValue?: boolean
   projectConfig?: Config
@@ -32,13 +41,25 @@ export const resolveDefaultVibeForgeMcpServerConfig = () => {
       ? workspacePackageJsonPath
       : resolvePublishedMcpPackageJsonPath(packageResolver)
     const packageDir = dirname(packageJsonPath)
+    const env = resolveDefaultVibeForgeMcpServerEnv()
     return {
       command: process.execPath,
-      args: [resolve(packageDir, 'cli.js')]
+      args: [resolve(packageDir, 'cli.js')],
+      ...(env != null ? { env } : {})
     } satisfies NonNullable<Config['mcpServers']>[string]
   } catch {
     return undefined
   }
+}
+
+const resolveDefaultVibeForgeMcpServerEnv = () => {
+  const env = Object.fromEntries(
+    DEFAULT_VIBE_FORGE_MCP_ENV_KEYS
+      .map(key => [key, process.env[key]])
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '')
+  )
+
+  return Object.keys(env).length > 0 ? env : undefined
 }
 
 const resolvePublishedMcpPackageJsonPath = (packageResolver: NodeJS.Require) => {
