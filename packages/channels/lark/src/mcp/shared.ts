@@ -85,13 +85,22 @@ const resolvePathFromWorkspace = (workspaceRoot: string, targetPath: string) => 
   isAbsolute(targetPath) ? targetPath : resolvePath(workspaceRoot, targetPath)
 )
 
+const assertPathWithinWorkspaceRoot = (
+  workspaceRoot: string,
+  targetPath: string,
+  label: 'File path' | 'Output path'
+) => {
+  if (!isWithinWorkspaceRoot(workspaceRoot, targetPath)) {
+    throw new Error(`${label} must stay within the workspace root: ${workspaceRoot}`)
+  }
+}
+
 export const resolveExistingFilePath = async (filePath: string) => {
   const workspaceRoot = await getWorkspaceRoot()
   const resolvedPath = resolvePathFromWorkspace(workspaceRoot, filePath)
+  assertPathWithinWorkspaceRoot(workspaceRoot, resolvedPath, 'File path')
   const realFilePath = await realpath(resolvedPath)
-  if (!isWithinWorkspaceRoot(workspaceRoot, realFilePath)) {
-    throw new Error(`File path must stay within the workspace root: ${workspaceRoot}`)
-  }
+  assertPathWithinWorkspaceRoot(workspaceRoot, realFilePath, 'File path')
   return realFilePath
 }
 
@@ -100,11 +109,13 @@ export const createFileReadStream = (filePath: string) => createReadStream(fileP
 export const prepareOutputPath = async (outputPath: string) => {
   const workspaceRoot = await getWorkspaceRoot()
   const resolvedOutputPath = resolvePathFromWorkspace(workspaceRoot, outputPath)
-  await mkdir(dirname(resolvedOutputPath), { recursive: true })
-  const realParentPath = await realpath(dirname(resolvedOutputPath))
-  if (!isWithinWorkspaceRoot(workspaceRoot, realParentPath)) {
-    throw new Error(`Output path must stay within the workspace root: ${workspaceRoot}`)
-  }
+  assertPathWithinWorkspaceRoot(workspaceRoot, resolvedOutputPath, 'Output path')
+  const resolvedParentPath = dirname(resolvedOutputPath)
+  assertPathWithinWorkspaceRoot(workspaceRoot, resolvedParentPath, 'Output path')
+
+  await mkdir(resolvedParentPath, { recursive: true })
+  const realParentPath = await realpath(resolvedParentPath)
+  assertPathWithinWorkspaceRoot(workspaceRoot, realParentPath, 'Output path')
 
   try {
     const outputPathStat = await lstat(resolvedOutputPath)
@@ -112,9 +123,7 @@ export const prepareOutputPath = async (outputPath: string) => {
       throw new Error(`Output path cannot be a symbolic link: ${resolvedOutputPath}`)
     }
     const realOutputPath = await realpath(resolvedOutputPath)
-    if (!isWithinWorkspaceRoot(workspaceRoot, realOutputPath)) {
-      throw new Error(`Output path must stay within the workspace root: ${workspaceRoot}`)
-    }
+    assertPathWithinWorkspaceRoot(workspaceRoot, realOutputPath, 'Output path')
     return realOutputPath
   } catch (error) {
     if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') {
@@ -123,9 +132,7 @@ export const prepareOutputPath = async (outputPath: string) => {
   }
 
   const finalOutputPath = resolvePath(realParentPath, basename(resolvedOutputPath))
-  if (!isWithinWorkspaceRoot(workspaceRoot, finalOutputPath)) {
-    throw new Error(`Output path must stay within the workspace root: ${workspaceRoot}`)
-  }
+  assertPathWithinWorkspaceRoot(workspaceRoot, finalOutputPath, 'Output path')
   return finalOutputPath
 }
 

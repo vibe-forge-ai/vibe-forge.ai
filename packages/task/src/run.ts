@@ -30,6 +30,63 @@ const pickFirstNonEmptyString = (values: unknown[]) =>
     .map(normalizeNonEmptyString)
     .find((value): value is string => value != null)
 
+const resolveEffectiveMcpSelection = (params: {
+  assets?: AdapterCtx['assets']
+  selection?: AdapterQueryOptions['mcpServers']
+}) => ({
+  include: params.selection?.include ??
+    (
+      (params.assets?.defaultIncludeMcpServers.length ?? 0) > 0
+        ? params.assets?.defaultIncludeMcpServers
+        : undefined
+    ),
+  exclude: params.selection?.exclude ??
+    (
+      (params.assets?.defaultExcludeMcpServers.length ?? 0) > 0
+        ? params.assets?.defaultExcludeMcpServers
+        : undefined
+    )
+})
+
+const splitRuntimeMcpSelection = (params: {
+  assets?: AdapterCtx['assets']
+  runtimeServerNames: Set<string>
+  selection?: AdapterQueryOptions['mcpServers']
+}) => {
+  const workspaceServerNames = new Set(Object.keys(params.assets?.mcpServers ?? {}))
+  const effectiveSelection = resolveEffectiveMcpSelection({
+    assets: params.assets,
+    selection: params.selection
+  })
+  const splitRefs = (refs?: string[]) => {
+    const workspaceRefs: string[] = []
+    const runtimeRefs = new Set<string>()
+    for (const ref of refs ?? []) {
+      if (params.runtimeServerNames.has(ref) && !workspaceServerNames.has(ref)) {
+        runtimeRefs.add(ref)
+        continue
+      }
+      workspaceRefs.push(ref)
+    }
+    return { workspaceRefs, runtimeRefs }
+  }
+
+  const include = splitRefs(effectiveSelection.include)
+  const exclude = splitRefs(effectiveSelection.exclude)
+
+  return {
+    workspaceSelection: effectiveSelection.include == null && effectiveSelection.exclude == null
+      ? undefined
+      : {
+        ...(effectiveSelection.include == null ? {} : { include: include.workspaceRefs }),
+        ...(effectiveSelection.exclude == null ? {} : { exclude: exclude.workspaceRefs })
+      },
+    runtimeInclude: effectiveSelection.include == null ? undefined : include.runtimeRefs,
+    runtimeExclude: exclude.runtimeRefs,
+    excludeAllWorkspaceMcp: effectiveSelection.include != null && include.workspaceRefs.length === 0
+  }
+}
+
 const formatAdapterModelRuleSuffix = (params: {
   includeModels?: string[]
   excludeModels?: string[]
@@ -249,17 +306,6 @@ export const run = async (
 
   const originalOnEvent = adapterOptions.onEvent
   const supportedAssetPlanAdapters = supportedEffortAdapters
-  const assetPlanBase = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
-    ? undefined
-    : buildAdapterAssetPlan({
-      adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
-      bundle: ctx.assets,
-      options: {
-        mcpServers: adapterOptions.mcpServers,
-        skills: adapterOptions.skills,
-        promptAssetIds: adapterOptions.promptAssetIds
-      }
-    })
   const runtimeMcpServers = Object.fromEntries(
     Object.entries(adapterOptions.runtimeMcpServers ?? {})
       .filter(([, server]) => server != null && server.enabled !== false)
@@ -268,8 +314,41 @@ export const run = async (
         return [name, resolvedServer]
       })
   ) as Record<string, NonNullable<Config['mcpServers']>[string]>
+  const runtimeMcpSelection = splitRuntimeMcpSelection({
+    assets: ctx.assets,
+    runtimeServerNames: new Set(Object.keys(runtimeMcpServers)),
+    selection: adapterOptions.mcpServers
+  })
+  const assetPlanBaseRaw = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
+    ? undefined
+    : buildAdapterAssetPlan({
+      adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
+      bundle: ctx.assets,
+      options: {
+        mcpServers: runtimeMcpSelection.workspaceSelection,
+        skills: adapterOptions.skills,
+        promptAssetIds: adapterOptions.promptAssetIds
+      }
+    })
+  const workspaceMcpAssetIds = new Set(
+    Object.values(ctx.assets?.mcpServers ?? {}).map(asset => asset.id)
+  )
+  const assetPlanBase = assetPlanBaseRaw == null || !runtimeMcpSelection.excludeAllWorkspaceMcp
+    ? assetPlanBaseRaw
+    : {
+      ...assetPlanBaseRaw,
+      mcpServers: {},
+      diagnostics: assetPlanBaseRaw.diagnostics.filter(diagnostic => !workspaceMcpAssetIds.has(diagnostic.assetId))
+    }
+  const selectedRuntimeMcpServers = Object.fromEntries(
+    Object.entries(runtimeMcpServers)
+      .filter(([name]) => (
+        (runtimeMcpSelection.runtimeInclude == null || runtimeMcpSelection.runtimeInclude.has(name)) &&
+        !runtimeMcpSelection.runtimeExclude.has(name)
+      ))
+  ) as Record<string, NonNullable<Config['mcpServers']>[string]>
   const workspaceMcpServerNames = new Set(Object.keys(assetPlanBase?.mcpServers ?? {}))
-  const shadowedRuntimeMcpServerNames = Object.keys(runtimeMcpServers)
+  const shadowedRuntimeMcpServerNames = Object.keys(selectedRuntimeMcpServers)
     .filter(name => workspaceMcpServerNames.has(name))
   if (shadowedRuntimeMcpServerNames.length > 0) {
     logger.warn({
@@ -277,7 +356,7 @@ export const run = async (
     }, '[mcp] Ignoring session companion MCP servers that would shadow workspace MCP servers')
   }
   const effectiveRuntimeMcpServers = Object.fromEntries(
-    Object.entries(runtimeMcpServers)
+    Object.entries(selectedRuntimeMcpServers)
       .filter(([name]) => !workspaceMcpServerNames.has(name))
   ) as Record<string, NonNullable<Config['mcpServers']>[string]>
   const assetPlan = assetPlanBase == null

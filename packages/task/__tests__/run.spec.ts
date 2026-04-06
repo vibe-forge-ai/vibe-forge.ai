@@ -349,6 +349,95 @@ describe('task run adapter init', () => {
     })
   })
 
+  it('does not inject runtime MCP servers when explicit MCP include filters select other servers', async () => {
+    const ctx = createCtx()
+    ctx.assets.mcpServers.docs = {
+      id: 'mcp-docs',
+      kind: 'mcpServer',
+      name: 'docs',
+      displayName: 'docs',
+      origin: 'workspace',
+      sourcePath: '/tmp/project/.ai/mcp/docs.json',
+      payload: {
+        name: 'docs',
+        config: {
+          command: process.execPath,
+          args: ['/tmp/docs-mcp.js']
+        }
+      }
+    }
+    ctx.assets.assets.push(ctx.assets.mcpServers.docs)
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-runtime-mcp-restricted',
+      mcpServers: {
+        include: ['docs']
+      },
+      runtimeMcpServers: {
+        'channel-lark-default': {
+          command: process.execPath,
+          args: ['/tmp/channel-lark-mcp.js']
+        }
+      },
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      assetPlan: {
+        mcpServers: {
+          docs: {
+            command: process.execPath,
+            args: ['/tmp/docs-mcp.js']
+          }
+        }
+      }
+    })
+    expect(queryMock.mock.calls[0]?.[1]?.assetPlan?.mcpServers).not.toHaveProperty('channel-lark-default')
+  })
+
+  it('allows runtime MCP servers to be explicitly included by name', async () => {
+    const ctx = createCtx()
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-runtime-mcp-include-runtime',
+      mcpServers: {
+        include: ['channel-lark-default']
+      },
+      runtimeMcpServers: {
+        'channel-lark-default': {
+          command: process.execPath,
+          args: ['/tmp/channel-lark-mcp.js']
+        }
+      },
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      assetPlan: {
+        mcpServers: {
+          'channel-lark-default': {
+            command: process.execPath,
+            args: ['/tmp/channel-lark-mcp.js']
+          }
+        }
+      }
+    })
+  })
+
   it('does not let runtime MCP servers shadow workspace MCP servers with the same name', async () => {
     const ctx = createCtx()
     ctx.assets.mcpServers['channel-lark-default'] = {
@@ -377,9 +466,6 @@ describe('task run adapter init', () => {
       type: 'create',
       runtime: 'server',
       sessionId: 'session-runtime-mcp-shadow',
-      mcpServers: {
-        include: ['channel-lark-default']
-      },
       runtimeMcpServers: {
         'channel-lark-default': {
           command: process.execPath,

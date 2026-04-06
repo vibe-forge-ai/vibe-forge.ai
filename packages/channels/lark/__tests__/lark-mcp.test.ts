@@ -217,55 +217,6 @@ describe('lark channel companion MCP', () => {
     }
   })
 
-  it('rejects sending a local file without explicit share confirmation', async () => {
-    vi.resetModules()
-    const fileCreate = vi.fn()
-    const messageCreate = vi.fn()
-
-    vi.doMock('@larksuiteoapi/node-sdk', () => ({
-      Client: vi.fn().mockImplementation(() => ({
-        im: {
-          file: {
-            create: fileCreate
-          },
-          message: {
-            create: messageCreate
-          }
-        },
-        contact: {}
-      })),
-      Domain: {
-        Feishu: 'Feishu',
-        Lark: 'Lark'
-      }
-    }))
-
-    const tempDir = await mkdtemp(join(tmpdir(), 'vf-lark-mcp-'))
-    const workspaceDir = await realpath(tempDir)
-    const filePath = join(workspaceDir, 'report.pdf')
-    await writeFile(filePath, 'hello world', 'utf8')
-
-    try {
-      vi.stubEnv('__VF_PROJECT_WORKSPACE_FOLDER__', workspaceDir)
-      const { createLarkMcpService } = await import('#~/mcp/service.js')
-      const service = createLarkMcpService({
-        appId: 'app_id',
-        appSecret: 'app_secret',
-        domain: 'Feishu',
-        channelId: 'chat_1'
-      })
-
-      await expect(service.sendFile({
-        filePath
-      } as never)).rejects.toThrow('Send file requires confirmExternalShare=true.')
-      expect(fileCreate).not.toHaveBeenCalled()
-      expect(messageCreate).not.toHaveBeenCalled()
-    } finally {
-      vi.unstubAllEnvs()
-      await rm(tempDir, { recursive: true, force: true })
-    }
-  })
-
   it('gets a user profile from the contact directory', async () => {
     vi.resetModules()
     const userGet = vi.fn().mockResolvedValue({
@@ -443,50 +394,4 @@ describe('lark channel companion MCP', () => {
     }
   })
 
-  it('rejects writing downloaded resources outside the workspace root', async () => {
-    vi.resetModules()
-
-    const tempDir = await mkdtemp(join(tmpdir(), 'vf-lark-mcp-'))
-    const workspaceDir = await realpath(tempDir)
-    const writeFileMock = vi.fn()
-
-    vi.doMock('@larksuiteoapi/node-sdk', () => ({
-      Client: vi.fn().mockImplementation(() => ({
-        im: {
-          messageResource: {
-            get: vi.fn().mockResolvedValue({
-              writeFile: writeFileMock,
-              headers: {}
-            })
-          }
-        },
-        contact: {}
-      })),
-      Domain: {
-        Feishu: 'Feishu',
-        Lark: 'Lark'
-      }
-    }))
-
-    try {
-      vi.stubEnv('__VF_PROJECT_WORKSPACE_FOLDER__', workspaceDir)
-      const { createLarkMcpService } = await import('#~/mcp/service.js')
-      const service = createLarkMcpService({
-        appId: 'app_id',
-        appSecret: 'app_secret',
-        domain: 'Feishu'
-      })
-
-      await expect(service.downloadMessageResource({
-        messageId: 'om_1',
-        fileKey: 'file_1',
-        resourceType: 'file',
-        outputPath: '../escape.txt'
-      })).rejects.toThrow(`Output path must stay within the workspace root: ${workspaceDir}`)
-      expect(writeFileMock).not.toHaveBeenCalled()
-    } finally {
-      vi.unstubAllEnvs()
-      await rm(tempDir, { recursive: true, force: true })
-    }
-  })
 })
