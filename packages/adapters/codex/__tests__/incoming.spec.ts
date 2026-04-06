@@ -137,6 +137,25 @@ describe('handleIncomingNotification', () => {
       }
     })
 
+    it('accepts string command payloads defensively', () => {
+      const { events } = dispatch('item/started', {
+        item: {
+          type: 'commandExecution',
+          id: 'cmd-string',
+          command: '*** Begin Patch',
+          cwd: '/tmp',
+          status: 'inProgress'
+        }
+      })
+
+      expect(events).toHaveLength(1)
+      if (events[0].type === 'message') {
+        const content = events[0].data.content as any[]
+        expect(content[0].name).toBe('adapter:codex:Bash')
+        expect(content[0].input.command).toBe('*** Begin Patch')
+      }
+    })
+
     it('emits a tool_use event for WebSearch', () => {
       const { events } = dispatch('item/started', {
         item: { type: 'webSearch', id: 'ws1', query: 'openai codex' }

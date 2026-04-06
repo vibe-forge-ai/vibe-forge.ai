@@ -27,6 +27,12 @@ native hooks 可用时，Vibe Forge 会关闭对应的 bridge 事件，避免同
 - `codex`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `opencode`：`SessionStart` / `PreToolUse` / `PostToolUse` / `Stop`
 
+Codex 补充说明：
+
+- 上面的 `codex` native 去重只适用于官方原生 hooks 真正覆盖到的事件。
+- 如果后续为 Codex 增加 transcript JSONL watcher 来补非 Bash 工具统计，这条链路只能作为观测补充，不能参与 native hook 决策，也不要据此关闭真正可阻断的 native hooks。
+- 换句话说，JSONL watcher 可以补日志和埋点，不能承担 `PreToolUse` / `PostToolUse` 的控流职责。
+
 ## 调试入口
 
 - 优先看 `.ai/.mock` 下的托管配置是否落地。

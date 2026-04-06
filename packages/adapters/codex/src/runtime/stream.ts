@@ -134,7 +134,7 @@ export async function createStreamCodexSession(
     cachedThreadId
   } = base
   const { cache, configs: [config, userConfig] } = ctx
-  const { onEvent, description, sessionId, type: sessionType } = options
+  const { onEvent, description, sessionId, extraOptions, type: sessionType } = options
   const model = resolvedModel
   const rpcApprovalPolicy = toCodexOutboundApprovalPolicy(approvalPolicy)
 
@@ -169,7 +169,8 @@ export async function createStreamCodexSession(
       ...(useYolo ? ['--yolo'] : []),
       'app-server',
       ...configOverrideArgs,
-      ...buildFeatureArgs(features)
+      ...buildFeatureArgs(features),
+      ...(extraOptions ?? [])
     ],
     { env: spawnEnv, cwd, stdio: ['pipe', 'pipe', 'inherit'] }
   )

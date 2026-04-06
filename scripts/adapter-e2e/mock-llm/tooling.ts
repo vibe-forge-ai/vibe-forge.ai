@@ -4,6 +4,10 @@ import { repoRoot } from '../runtime'
 import type { JsonObject, JsonValue, MockToolCall, MockToolCandidate } from '../types'
 import { asArray, asObject } from './request'
 
+const getToolCallType = (tool: JsonObject): MockToolCandidate['callType'] => (
+  tool.type === 'custom' ? 'custom' : 'function'
+)
+
 const getToolName = (tool: JsonObject) => {
   if (typeof tool.name === 'string' && tool.name.trim() !== '') return tool.name
   const func = asObject(tool.function)
@@ -62,6 +66,18 @@ const resolveToolArgs = (
     }
   }
 
+  if (normalized === 'apply_patch') {
+    return {
+      patch: [
+        '*** Begin Patch',
+        `*** Add File: ${path.resolve(repoRoot, 'e2e-codex-apply-patch.txt')}`,
+        '+E2E_APPLY_PATCH',
+        '*** End Patch',
+        ''
+      ].join('\n')
+    }
+  }
+
   return {}
 }
 
@@ -73,6 +89,7 @@ export const getToolCandidates = (body: JsonObject): MockToolCandidate[] => (
       const parameters = getToolParameters(tool)
       return {
         name: name ?? '',
+        callType: getToolCallType(tool),
         parameters,
         args: name == null ? {} : resolveToolArgs(name, parameters)
       }
@@ -92,6 +109,22 @@ export const pickToolCall = (body: JsonObject): MockToolCall | undefined => {
     ? undefined
     : {
       name: preferred.name,
-      args: preferred.args
+      args: preferred.args,
+      callType: preferred.callType
+    }
+}
+
+export const pickToolCallByName = (
+  body: JsonObject,
+  toolName: string
+): MockToolCall | undefined => {
+  const normalizedToolName = toolName.trim().toLowerCase()
+  const candidate = getToolCandidates(body).find(item => item.name.trim().toLowerCase() === normalizedToolName)
+  return candidate == null
+    ? undefined
+    : {
+      name: candidate.name,
+      args: candidate.args,
+      callType: candidate.callType
     }
 }

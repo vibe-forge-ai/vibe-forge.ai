@@ -9,7 +9,8 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
-import { cliPath } from '../../adapter-e2e/runtime'
+import { pickToolCallByName } from '../../adapter-e2e/mock-llm/tooling'
+import { cliPath, repoRoot } from '../../adapter-e2e/runtime'
 import { ADAPTER_E2E_DEFAULTS, ADAPTER_E2E_TARGETS } from '../../adapter-e2e/scenarios'
 import type {
   AdapterE2ECase,
@@ -76,6 +77,16 @@ const resolveModelProvider = (adapter: AdapterE2ETarget) => (
 const createCaseModel = (adapter: AdapterE2ETarget, caseId: string) => (
   `${resolveModelProvider(adapter)},${caseId}`
 )
+
+const appendPromptArgs = (
+  prompt: string,
+  extraArgs: string[]
+) => {
+  if (extraArgs.includes('--')) {
+    return [prompt, ...extraArgs]
+  }
+  return [...extraArgs, prompt]
+}
 
 const createToolCaseMockScenario = (
   scenarioId: string,
@@ -238,8 +249,194 @@ const directAnswerCase = (
   })
 }
 
+const codexApplyPatchCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_APPLY_PATCH'
+  const title = 'Codex apply_patch hook smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-apply-patch-once',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-apply-patch-once'),
+    prompt: 'Use the apply_patch tool exactly once to add a file named e2e-codex-apply-patch.txt with content E2E_APPLY_PATCH, then reply with exactly E2E_CODEX_APPLY_PATCH and nothing else.',
+    extraArgs: ['--', '--enable', 'apply_patch_freeform'],
+    mockScenarios: [
+      createRuleBasedMockScenario({
+        id: 'codex-apply-patch-once',
+        title,
+        finalOutput: output,
+        rules: [
+          defineMockScenarioRule({
+            id: 'title-generation',
+            when: whenTitleGeneration(),
+            respond: messageTurn(title)
+          }),
+          defineMockScenarioRule({
+            id: 'tool-result',
+            when: whenToolResult(),
+            respond: messageTurn(output)
+          }),
+          defineMockScenarioRule({
+            id: 'tool-call',
+            when: andPredicates(
+              whenToolsAvailable(),
+              whenRequestTextIncludes('apply_patch', output)
+            ),
+            respond: (context) => {
+              const tool = pickToolCallByName(context.body, 'apply_patch')
+              return tool == null
+                ? messageTurn(output)
+                : { kind: 'tool', tool }
+            }
+          })
+        ],
+        fallback: messageTurn(output)
+      })
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 1 },
+        { event: 'PostToolUse', minCount: 1 },
+        { event: 'Stop', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['apply_patch'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
+const codexTranscriptMcpCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_MCP_BRIDGE'
+  const title = 'Codex transcript MCP bridge smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-transcript-mcp-bridge',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-transcript-mcp-bridge'),
+    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.',
+    codexTranscriptInjection: [
+      {
+        type: 'response_item',
+        payload: {
+          type: 'mcp_tool_call',
+          call_id: 'call_injected_mcp',
+          server: 'vibe-forge',
+          tool: 'StartTasks',
+          arguments: JSON.stringify({ task: 'bridge smoke' })
+        }
+      },
+      {
+        type: 'response_item',
+        payload: {
+          type: 'mcp_tool_call_output',
+          call_id: 'call_injected_mcp',
+          output: JSON.stringify({
+            success: true,
+            content: [{ type: 'text', text: 'started' }]
+          })
+        }
+      }
+    ],
+    mockScenarios: [
+      createToolCaseMockScenario(
+        'codex-transcript-mcp-bridge',
+        title,
+        output,
+        ['README.md', output]
+      )
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 2 },
+        { event: 'PostToolUse', minCount: 2 },
+        { event: 'Stop', minCount: 1 },
+        { event: 'SessionEnd', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['exec_command'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
+const codexTranscriptFileChangeCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_FILE_CHANGE_BRIDGE'
+  const title = 'Codex transcript file_change bridge smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-transcript-file-change-bridge',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-transcript-file-change-bridge'),
+    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.',
+    codexTranscriptInjection: [
+      {
+        type: 'response_item',
+        payload: {
+          type: 'file_change',
+          status: 'completed',
+          changes: [
+            {
+              kind: 'add',
+              path: `${repoRoot}/.ai/.mock/codex-transcript-file-change.txt`
+            }
+          ]
+        }
+      }
+    ],
+    mockScenarios: [
+      createToolCaseMockScenario(
+        'codex-transcript-file-change-bridge',
+        title,
+        output,
+        ['README.md', output]
+      )
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 2 },
+        { event: 'PostToolUse', minCount: 2 },
+        { event: 'Stop', minCount: 1 },
+        { event: 'SessionEnd', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['exec_command'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
 export const ADAPTER_E2E_CASES: AdapterE2ECase[] = [
   toolCase('codex', 'codex-read-once'),
+  codexApplyPatchCase(),
+  codexTranscriptMcpCase(),
+  codexTranscriptFileChangeCase(),
   toolCase('claude-code', 'claude-read-once'),
   toolCase('opencode', 'opencode-read-once'),
   directAnswerCase('codex', 'codex-direct-answer'),
@@ -269,8 +466,7 @@ const buildAdapterArgs = (
       'ChromeDevtools',
       '--session-id',
       sessionId,
-      ...extraArgs,
-      prompt
+      ...appendPromptArgs(prompt, extraArgs)
     ]
   }
 
@@ -291,8 +487,7 @@ const buildAdapterArgs = (
       'bypassPermissions',
       '--session-id',
       sessionId,
-      ...extraArgs,
-      prompt
+      ...appendPromptArgs(prompt, extraArgs)
     ]
   }
 
@@ -308,8 +503,7 @@ const buildAdapterArgs = (
     'ChromeDevtools',
     '--session-id',
     sessionId,
-    ...extraArgs,
-    prompt
+    ...appendPromptArgs(prompt, extraArgs)
   ]
 }
 
@@ -336,6 +530,7 @@ export const resolveAdapterE2ECase = (
         sessionId,
         extraArgs
       ),
+    codexTranscriptInjection: testCase.codexTranscriptInjection,
     mockScenarios: testCase.mockScenarios ?? [],
     expectations: testCase.expectations ?? {}
   }

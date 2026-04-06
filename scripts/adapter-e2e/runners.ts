@@ -1,4 +1,4 @@
-import { readdir, rm } from 'node:fs/promises'
+import { appendFile, readdir, readFile, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -12,16 +12,23 @@ import {
   realHome,
   repoRoot,
   runProcess,
+  sleep,
   toProviderModel,
   waitForPath
 } from './runtime'
-import type { AdapterE2EHarnessOptions, AdapterE2EResult, ResolvedAdapterE2ECase } from './types'
+import type {
+  AdapterE2EHarnessOptions,
+  AdapterE2EResult,
+  CodexTranscriptInjectionEvent,
+  ResolvedAdapterE2ECase
+} from './types'
 import { collectManagedArtifacts, readHookLog } from './verify'
 
 const isCodexTransientEntry = (name: string) => (
   name === '.tmp' ||
   name === 'history.jsonl' ||
   name === 'log' ||
+  name === 'sessions' ||
   name === 'shell_snapshots' ||
   /^logs_\d+\.sqlite(?:-(?:shm|wal))?$/.test(name) ||
   /^state_\d+\.sqlite(?:-(?:shm|wal))?$/.test(name)
@@ -43,6 +50,71 @@ const resetCodexMockState = async () => {
   )
 }
 
+const walkJsonlFiles = async (dir: string): Promise<string[]> => {
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+  const nested = await Promise.all(
+    entries.map(async (entry) => {
+      const targetPath = path.resolve(dir, entry.name)
+      if (entry.isDirectory()) {
+        return walkJsonlFiles(targetPath)
+      }
+      return entry.isFile() && entry.name.endsWith('.jsonl')
+        ? [targetPath]
+        : []
+    })
+  )
+
+  return nested.flat()
+}
+
+const waitForCodexTranscriptFile = async () => {
+  const sessionsRoot = path.resolve(mockHome, '.codex', 'sessions')
+  const deadline = Date.now() + 10_000
+
+  while (Date.now() < deadline) {
+    const files = await walkJsonlFiles(sessionsRoot)
+    const entries = await Promise.all(
+      files.map(async (filePath) => ({
+        filePath,
+        stats: await stat(filePath).catch(() => undefined)
+      }))
+    )
+
+    const match = entries
+      .filter((entry): entry is { filePath: string; stats: Awaited<ReturnType<typeof stat>> } => (
+        entry.stats != null
+      ))
+      .sort((left, right) => right.stats.mtimeMs - left.stats.mtimeMs)
+      .at(0)
+
+    if (match != null) {
+      const content = await readFile(match.filePath, 'utf8').catch(() => '')
+      if (content.includes('"type":"session_meta"')) {
+        return match.filePath
+      }
+    }
+
+    await sleep(100)
+  }
+
+  return undefined
+}
+
+const injectCodexTranscriptEvents = async (
+  events: CodexTranscriptInjectionEvent[]
+) => {
+  const transcriptPath = await waitForCodexTranscriptFile()
+  if (transcriptPath == null) {
+    throw new Error('Codex transcript file not found for transcript injection')
+  }
+
+  const lines = events.map(event => JSON.stringify({
+    timestamp: new Date().toISOString(),
+    ...event
+  }))
+  await appendFile(transcriptPath, `${lines.join('\n')}\n`)
+}
+
 export const runWrappedAdapter = async (
   testCase: ResolvedAdapterE2ECase,
   mockServerPort: number,
@@ -53,6 +125,12 @@ export const runWrappedAdapter = async (
   if (testCase.adapter === 'codex') {
     await resetCodexMockState()
   }
+  const codexTranscriptInjection = testCase.adapter === 'codex' &&
+    (testCase.codexTranscriptInjection?.length ?? 0) > 0
+    ? injectCodexTranscriptEvents(testCase.codexTranscriptInjection ?? [])
+      .then(() => undefined)
+      .catch(error => error)
+    : undefined
   const result = await runProcess({
     command: process.execPath,
     args: testCase.args(sessionId),
@@ -60,6 +138,10 @@ export const runWrappedAdapter = async (
     timeoutMs: Number(process.env.HOOK_SMOKE_TIMEOUT_MS ?? 180_000),
     passthroughStdIO: options.passthroughStdIO ?? true
   })
+  const injectionError = await codexTranscriptInjection
+  if (injectionError != null) {
+    throw injectionError
+  }
 
   if (result.code !== 0) {
     throw new Error(`${testCase.adapter} smoke exited with code ${result.code}`)

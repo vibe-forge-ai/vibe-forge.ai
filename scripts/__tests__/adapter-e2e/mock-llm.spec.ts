@@ -10,6 +10,7 @@ import {
   whenToolResult,
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
+import { buildResponsesToolCall } from '../../adapter-e2e/mock-llm/responses'
 import { resolveMockTurn, startMockLlmServer } from '../../adapter-e2e/mock-llm/server'
 import { ADAPTER_E2E_DEFAULTS } from '../../adapter-e2e/scenarios'
 import type { JsonObject, MockLlmServerHandle } from '../../adapter-e2e/types'
@@ -176,6 +177,20 @@ describe('mock llm server', () => {
     expect(turn).toEqual({
       kind: 'message',
       text: 'Claude hook smoke'
+    })
+  })
+
+  it('serializes apply_patch as a custom tool call', () => {
+    expect(buildResponsesToolCall({
+      name: 'apply_patch',
+      callType: 'custom',
+      args: {
+        patch: '*** Begin Patch\n*** End Patch\n'
+      }
+    })).toMatchObject({
+      type: 'custom_tool_call',
+      name: 'apply_patch',
+      input: '*** Begin Patch\n*** End Patch\n'
     })
   })
 })

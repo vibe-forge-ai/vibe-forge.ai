@@ -6,6 +6,17 @@ import { writeJson, writeSseEvent } from './http'
 
 export const buildResponsesToolCall = (tool: MockToolCall) => {
   const callId = `call_${randomUUID().replace(/-/g, '')}`
+  if (tool.callType === 'custom') {
+    return {
+      id: callId,
+      type: 'custom_tool_call',
+      status: 'completed',
+      call_id: callId,
+      name: tool.name,
+      input: String(tool.args.patch ?? '')
+    }
+  }
+
   return {
     id: callId,
     type: 'function_call',
@@ -85,33 +96,37 @@ export const writeResponsesResult = (
       item: {
         ...toolCall,
         status: 'in_progress',
-        arguments: ''
+        ...(toolCall.type === 'function_call'
+          ? { arguments: '' }
+          : { input: '' })
       },
       response: {
         id: response.id,
         model: response.model
       }
     })
-    writeSseEvent(res, 'response.function_call_arguments.delta', {
-      type: 'response.function_call_arguments.delta',
-      item_id: toolCall.id,
-      output_index: 0,
-      delta: toolCall.arguments,
-      response: {
-        id: response.id,
-        model: response.model
-      }
-    })
-    writeSseEvent(res, 'response.function_call_arguments.done', {
-      type: 'response.function_call_arguments.done',
-      item_id: toolCall.id,
-      output_index: 0,
-      arguments: toolCall.arguments,
-      response: {
-        id: response.id,
-        model: response.model
-      }
-    })
+    if (toolCall.type === 'function_call') {
+      writeSseEvent(res, 'response.function_call_arguments.delta', {
+        type: 'response.function_call_arguments.delta',
+        item_id: toolCall.id,
+        output_index: 0,
+        delta: toolCall.arguments,
+        response: {
+          id: response.id,
+          model: response.model
+        }
+      })
+      writeSseEvent(res, 'response.function_call_arguments.done', {
+        type: 'response.function_call_arguments.done',
+        item_id: toolCall.id,
+        output_index: 0,
+        arguments: toolCall.arguments,
+        response: {
+          id: response.id,
+          model: response.model
+        }
+      })
+    }
     writeSseEvent(res, 'response.output_item.done', {
       type: 'response.output_item.done',
       output_index: 0,

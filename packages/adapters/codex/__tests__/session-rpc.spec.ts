@@ -372,6 +372,26 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('passes through extra options in stream mode', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-extra-options',
+      description: 'Reply with pong.',
+      extraOptions: ['--enable', 'apply_patch_freeform'],
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs).toEqual(expect.arrayContaining(['--enable', 'apply_patch_freeform']))
+
+    session.kill()
+  })
+
   it('uses codex defaults when model is "default"', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()
