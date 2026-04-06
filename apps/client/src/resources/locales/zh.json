@@ -608,9 +608,15 @@
         "footer": "需要更多引导时，可在流程描述中写明使用方式"
       }
     },
+    "attachments": {
+      "pastedImage": "粘贴图片"
+    },
     "todo": {
       "noTasks": "未规划任务",
-      "progress": "任务进度: {{completed}}/{{total}} 已完成"
+      "progress": "任务进度: {{completed}}/{{total}} 已完成",
+      "pendingCount": "{{count}} 待办",
+      "inProgressCount": "{{count}} 进行中",
+      "completedCount": "{{count}} 已完成"
     },
     "tools": {
       "read": "读取文件",

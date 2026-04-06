@@ -1,6 +1,5 @@
 import './Sender.scss'
 
-import { ThinkingStatus } from '#~/components/chat/ThinkingStatus'
 import { useSenderController } from '#~/components/chat/sender/@hooks/use-sender-controller'
 
 import { SenderBody } from './@components/sender-body/SenderBody'
@@ -18,7 +17,6 @@ export function Sender(props: SenderProps) {
         controller.isInlineEdit ? 'chat-input-wrapper--inline-edit' : ''
       ].filter(Boolean).join(' ')}
     >
-      {controller.isThinking && <ThinkingStatus />}
       {!controller.isInlineEdit && controller.interactionRequest != null && (
         <SenderInteractionPanel
           interactionRequest={controller.interactionRequest}

@@ -489,41 +489,45 @@ export function ChatHistoryView({
         </div>
       )}
 
-      <CurrentTodoList messages={messages} />
-      {!isInlineEditing && (
-        <div className='sender-container'>
-          <Sender
-            onSend={handleSend}
-            onSendContent={handleSendContent}
-            adapterLocked={session?.id != null}
-            sessionStatus={isCreating ? 'running' : session?.status}
-            onInterrupt={interrupt}
-            onClear={clearMessages}
-            sessionInfo={sessionInfo}
-            interactionRequest={interactionRequest}
-            onInteractionResponse={onInteractionResponse}
-            placeholder={placeholder}
-            modelMenuGroups={modelMenuGroups}
-            modelSearchOptions={modelSearchOptions}
-            recommendedModelOptions={recommendedModelOptions}
-            servicePreviewModelOptions={servicePreviewModelOptions}
-            onToggleRecommendedModel={onToggleRecommendedModel}
-            updatingRecommendedModelValue={updatingRecommendedModelValue}
-            selectedModel={selectedModel}
-            onModelChange={onModelChange}
-            effort={effort}
-            effortOptions={effortOptions}
-            onEffortChange={onEffortChange}
-            permissionMode={permissionMode}
-            permissionModeOptions={permissionModeOptions}
-            onPermissionModeChange={onPermissionModeChange}
-            selectedAdapter={selectedAdapter}
-            adapterOptions={adapterOptions}
-            onAdapterChange={onAdapterChange}
-            modelUnavailable={modelUnavailable}
-          />
+      <div className='chat-composer-stack'>
+        <div className='chat-composer-stack__inner'>
+          <CurrentTodoList messages={messages} />
+          {!isInlineEditing && (
+            <div className='sender-container'>
+              <Sender
+                onSend={handleSend}
+                onSendContent={handleSendContent}
+                adapterLocked={session?.id != null}
+                sessionStatus={isCreating ? 'running' : session?.status}
+                onInterrupt={interrupt}
+                onClear={clearMessages}
+                sessionInfo={sessionInfo}
+                interactionRequest={interactionRequest}
+                onInteractionResponse={onInteractionResponse}
+                placeholder={placeholder}
+                modelMenuGroups={modelMenuGroups}
+                modelSearchOptions={modelSearchOptions}
+                recommendedModelOptions={recommendedModelOptions}
+                servicePreviewModelOptions={servicePreviewModelOptions}
+                onToggleRecommendedModel={onToggleRecommendedModel}
+                updatingRecommendedModelValue={updatingRecommendedModelValue}
+                selectedModel={selectedModel}
+                onModelChange={onModelChange}
+                effort={effort}
+                effortOptions={effortOptions}
+                onEffortChange={onEffortChange}
+                permissionMode={permissionMode}
+                permissionModeOptions={permissionModeOptions}
+                onPermissionModeChange={onPermissionModeChange}
+                selectedAdapter={selectedAdapter}
+                adapterOptions={adapterOptions}
+                onAdapterChange={onAdapterChange}
+                modelUnavailable={modelUnavailable}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </>
   )
 }

@@ -607,9 +607,15 @@
         "footer": "Add usage guidance to flow descriptions when needed"
       }
     },
+    "attachments": {
+      "pastedImage": "Pasted image"
+    },
     "todo": {
       "noTasks": "No tasks planned",
-      "progress": "Progress: {{completed}}/{{total}} completed"
+      "progress": "Progress: {{completed}}/{{total}} completed",
+      "pendingCount": "{{count}} todo",
+      "inProgressCount": "{{count}} doing",
+      "completedCount": "{{count}} done"
     },
     "tools": {
       "read": "Read File",

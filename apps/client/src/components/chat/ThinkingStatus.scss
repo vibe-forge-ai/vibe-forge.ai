@@ -1,60 +1,89 @@
 .chat-thinking-status {
+  --thinking-status-bg: var(--input-bg, #f9fafb);
+  --thinking-status-border: rgba(37, 99, 235, .14);
+  --thinking-status-text: var(--sub-text-color, #6b7280);
+  --thinking-status-accent: var(--primary-color, #2563eb);
+
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 0;
-  color: #9ca3af;
+  color: var(--thinking-status-text);
   font-size: 12px;
-  animation: fadeIn .3s ease-in-out;
+  animation: fadeIn .24s ease-out;
 
-  .dot-flashing {
-    position: relative;
-    width: 4px;
-    height: 4px;
-    border-radius: 5px;
-    background-color: #3b82f6;
-    color: #3b82f6;
-    animation: dotFlashing 1s infinite linear alternate;
-    animation-delay: .5s;
-    margin: 0 12px 0 10px;
+  &--inline {
+    padding: 8px 0;
+  }
 
-    &::before, &::after {
-      content: '';
-      display: inline-block;
-      position: absolute;
-      top: 0;
+  &--header {
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--thinking-status-border);
+    border-radius: 999px;
+    background: var(--thinking-status-bg);
+  }
+
+  &--waiting_input {
+    --thinking-status-bg: rgba(245, 158, 11, .12);
+    --thinking-status-border: rgba(245, 158, 11, .18);
+    --thinking-status-accent: #d97706;
+  }
+
+  &__dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--thinking-status-accent);
+    animation: thinkingPulse 1.2s infinite ease-in-out;
+
+    &:nth-child(2) {
+      animation-delay: .18s;
     }
 
-    &::before {
-      left: -8px;
-      width: 4px;
-      height: 4px;
-      border-radius: 5px;
-      background-color: #3b82f6;
-      color: #3b82f6;
-      animation: dotFlashing 1s infinite linear alternate;
-      animation-delay: 0s;
+    &:nth-child(3) {
+      animation-delay: .36s;
     }
+  }
 
-    &::after {
-      left: 8px;
-      width: 4px;
-      height: 4px;
-      border-radius: 5px;
-      background-color: #3b82f6;
-      color: #3b82f6;
-      animation: dotFlashing 1s infinite linear alternate;
-      animation-delay: 1s;
-    }
+  &__icon {
+    font-size: 15px;
+    line-height: 1;
+    color: var(--thinking-status-accent);
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
   }
 }
 
-@keyframes dotFlashing {
+html.dark .chat-thinking-status--header {
+  background: var(--input-bg, #1f1f1f);
+}
+
+@keyframes thinkingPulse {
   0% {
-    background-color: #3b82f6;
+    opacity: .35;
+    transform: translateY(0);
   }
-  50%, 100% {
-    background-color: #e5e7eb;
+
+  35% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+
+  100% {
+    opacity: .35;
+    transform: translateY(0);
   }
 }
 

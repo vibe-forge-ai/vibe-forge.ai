@@ -123,6 +123,7 @@ function ChatRouteView({ session }: { session?: Session }) {
           sessionInfo={sessionInfo}
           sessionId={session.id}
           sessionTitle={session.title}
+          sessionStatus={session.status}
           isStarred={session.isStarred}
           isArchived={session.isArchived}
           tags={session.tags}

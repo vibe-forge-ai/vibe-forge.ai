@@ -1,13 +1,38 @@
 import './CurrentTodoList.scss'
 import type { ChatMessage, ChatMessageContent, ToolInputs } from '@vibe-forge/core'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ChatComposerCard } from './ChatComposerCard'
 
 type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
 
+const getTodoStatusIcon = (status: TodoItem['status']) => {
+  if (status === 'completed') {
+    return 'check_circle'
+  }
+
+  if (status === 'in_progress') {
+    return 'progress_activity'
+  }
+
+  return 'radio_button_unchecked'
+}
+
+const getPriorityIcon = (priority?: TodoItem['priority']) => {
+  if (priority === 'high') {
+    return 'keyboard_double_arrow_up'
+  }
+
+  if (priority === 'medium') {
+    return 'remove'
+  }
+
+  return 'keyboard_double_arrow_down'
+}
+
 export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
   const { t } = useTranslation()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // Find the latest TodoWrite tool use
   let latestTodos: TodoItem[] = []
@@ -38,66 +63,109 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
   if (latestTodos.length === 0) return null
 
   const completedCount = latestTodos.filter(t => t.status === 'completed').length
+  const inProgressCount = latestTodos.filter(t => t.status === 'in_progress').length
   const totalCount = latestTodos.length
+  const pendingCount = totalCount - completedCount - inProgressCount
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
   if (totalCount === 0) {
     return (
       <div className='current-todo-container empty'>
-        <div className='todo-progress-bar empty'>
-          <div className='progress-info'>
-            <span className='material-symbols-rounded'>assignment_late</span>
-            <span className='text'>{t('chat.todo.noTasks')}</span>
-          </div>
-        </div>
+        <ChatComposerCard
+          className='current-todo-panel'
+          summaryClassName='current-todo-summary current-todo-summary--empty'
+          summary={
+            <>
+              <span className='material-symbols-rounded'>assignment_late</span>
+              <span className='current-todo-summary__text'>{t('chat.todo.noTasks')}</span>
+            </>
+          }
+          narrow
+        />
       </div>
     )
   }
 
+  const summaryStats = [
+    pendingCount > 0
+      ? { icon: 'radio_button_unchecked', count: pendingCount, className: 'current-todo-summary__stat' }
+      : null,
+    inProgressCount > 0
+      ? {
+        icon: 'progress_activity',
+        count: inProgressCount,
+        className: 'current-todo-summary__stat current-todo-summary__stat--active'
+      }
+      : null,
+    completedCount > 0
+      ? {
+        icon: 'check_circle',
+        count: completedCount,
+        className: 'current-todo-summary__stat current-todo-summary__stat--done'
+      }
+      : null
+  ].filter((item): item is { icon: string; count: number; className: string } => item != null)
+
   return (
     <div className={`current-todo-container ${isExpanded ? 'expanded' : ''}`}>
-      <div className='todo-progress-bar' onClick={() => setIsExpanded(!isExpanded)}>
-        <div className='progress-info'>
-          <span className='material-symbols-rounded'>assignment</span>
-          <span className='text'>{t('chat.todo.progress', { completed: completedCount, total: totalCount })}</span>
-        </div>
-        <div className='progress-track'>
-          <div
-            className='progress-fill'
-            style={{ width: `${(completedCount / totalCount) * 100}%` }}
-          />
-        </div>
-        <button className='expand-btn'>
-          <span className='material-symbols-rounded'>
-            {isExpanded ? 'expand_more' : 'expand_less'}
-          </span>
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div className='todo-items-overlay'>
-          <div className='todo-items-scroll-container'>
-            {latestTodos.map((todo, idx) => (
-              <div
-                key={todo.id || idx}
-                className={`todo-item-vertical status-${todo.status}`}
-              >
-                <span className='material-symbols-rounded icon'>
-                  {todo.status === 'completed'
-                    ? 'check_circle'
-                    : todo.status === 'in_progress'
-                    ? 'clock_loader_40'
-                    : 'radio_button_unchecked'}
-                </span>
-                <div className='todo-content-wrapper'>
-                  <span className='text'>{todo.content}</span>
-                  {todo.priority != null && todo.priority !== '' &&
-                    <span className={`priority-tag ${todo.priority}`}>{todo.priority}</span>}
-                </div>
-              </div>
-            ))}
+      <ChatComposerCard
+        className='current-todo-panel'
+        summaryClassName='current-todo-summary'
+        expanded={isExpanded}
+        onToggle={() => setIsExpanded(!isExpanded)}
+        progress={
+          <div className='current-todo-progress'>
+            <div
+              className='current-todo-progress__fill'
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
-        </div>
-      )}
+        }
+        narrow
+        summary={
+          <>
+            <div className='current-todo-summary__headline'>
+              <span className='material-symbols-rounded current-todo-summary__icon'>checklist</span>
+              <span className='current-todo-summary__text'>
+                {t('chat.todo.progress', { completed: completedCount, total: totalCount })}
+              </span>
+            </div>
+            <div className='current-todo-summary__meta'>
+              {summaryStats.map(({ icon, count, className }) => (
+                <span key={`${icon}-${count}`} className={className}>
+                  <span className='material-symbols-rounded'>{icon}</span>
+                  <span>{count}</span>
+                </span>
+              ))}
+              <span className='material-symbols-rounded current-todo-summary__chevron'>
+                {isExpanded ? 'expand_less' : 'expand_more'}
+              </span>
+            </div>
+          </>
+        }
+      >
+        <ol className='current-todo-list'>
+          {latestTodos.map((todo, idx) => (
+            <li key={todo.id || idx} className={`current-todo-item current-todo-item--${todo.status}`}>
+              <span className='material-symbols-rounded current-todo-item__status'>
+                {getTodoStatusIcon(todo.status)}
+              </span>
+              <span className='current-todo-item__index'>{idx + 1}.</span>
+              <div className='current-todo-item__body'>
+                <span className='current-todo-item__text'>{todo.content}</span>
+                {todo.priority != null && todo.priority !== '' && (
+                  <span
+                    className={`material-symbols-rounded current-todo-item__priority current-todo-item__priority--${todo.priority}`}
+                    title={todo.priority}
+                  >
+                    {getPriorityIcon(todo.priority)}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </ChatComposerCard>
     </div>
   )
 }
