@@ -42,12 +42,17 @@ export { createProject, listProjects } from './api/projects'
 // 会话与消息 API
 export {
   branchSessionFromMessage,
+  createQueuedMessage,
   createSession,
+  deleteQueuedMessage,
   deleteSession,
   forkSession,
   getSessionMessages,
   listSessions,
   respondSessionInteraction,
+  moveQueuedMessage,
+  reorderQueuedMessages,
+  updateQueuedMessage,
   updateSession,
   updateSessionTitle
 } from './api/sessions'

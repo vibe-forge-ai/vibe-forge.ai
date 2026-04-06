@@ -1,4 +1,4 @@
-import type { AskUserQuestionParams, Session, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
 
 export interface ApiOkResponse {
   ok: boolean
@@ -17,4 +17,5 @@ export interface SessionMessagesResponse {
   messages: WSEvent[]
   session?: Session
   interaction?: SessionInteraction
+  queuedMessages?: SessionMessageQueueState
 }
