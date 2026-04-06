@@ -163,6 +163,31 @@ describe('session service', () => {
     )
   })
 
+  it('terminates parked external sessions that are waiting for interaction', () => {
+    externalSessionStore.set('sess-1', {
+      sockets: new Set(),
+      messages: [],
+      currentInteraction: {
+        id: 'interaction-1',
+        payload: {
+          sessionId: 'sess-1',
+          question: '是否继续？'
+        }
+      }
+    })
+
+    killSession('sess-1')
+
+    expect(externalSessionStore.has('sess-1')).toBe(false)
+    expect(updateSession).toHaveBeenCalledWith('sess-1', { status: 'terminated' })
+    expect(vi.mocked(notifySessionUpdated)).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        status: 'terminated'
+      })
+    )
+  })
+
   it('summarizes file-only user messages with the selected workspace path', async () => {
     const socket = { readyState: 1, send: vi.fn() } as any
     const emit = vi.fn()

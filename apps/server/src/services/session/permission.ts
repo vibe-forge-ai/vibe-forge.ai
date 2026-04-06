@@ -19,6 +19,7 @@ import {
 import type { PermissionToolSubject, SessionPermissionState } from '@vibe-forge/utils'
 import { getDb } from '#~/db/index.js'
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
+import { getSessionLogger } from '#~/utils/logger.js'
 
 export type PermissionStoredDecision = 'allow' | 'deny' | 'ask' | 'inherit'
 
@@ -76,10 +77,27 @@ const getSessionPermissionState = (sessionId: string): SessionPermissionState =>
   )
 )
 
+const syncPermissionStateMirrorBestEffort = async (
+  sessionId: string,
+  input: {
+    adapter?: string
+  } = {}
+) => {
+  try {
+    await syncPermissionStateMirror(sessionId, input)
+  } catch (error) {
+    getSessionLogger(sessionId, 'server').warn({
+      sessionId,
+      adapter: input.adapter,
+      error: error instanceof Error ? error.message : String(error)
+    }, '[permission] Failed to sync permission state mirror')
+  }
+}
+
 const updateSessionPermissionState = async (sessionId: string, state: SessionPermissionState) => {
   const normalized = normalizeSessionPermissionState(state)
   getDb().updateSessionRuntimeState(sessionId, { permissionState: normalized })
-  await syncPermissionStateMirror(sessionId)
+  await syncPermissionStateMirrorBestEffort(sessionId)
   return normalized
 }
 
@@ -116,6 +134,8 @@ export const syncPermissionStateMirror = async (
     'utf8'
   )
 }
+
+export { syncPermissionStateMirrorBestEffort }
 
 const resolveProjectPermissionLists = async (): Promise<ProjectPermissionLists> => {
   const { mergedConfig } = await loadConfigState()

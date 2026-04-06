@@ -13,9 +13,12 @@ const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
   loadConfigState: vi.fn(),
+  updateConfigFile: vi.fn(),
   handleChannelSessionEvent: vi.fn(),
   requestInteraction: vi.fn(),
-  canRequestInteraction: vi.fn()
+  canRequestInteraction: vi.fn(),
+  mkdir: vi.fn(),
+  writeFile: vi.fn()
 }))
 
 vi.mock('#~/db/index.js', () => ({
@@ -36,6 +39,10 @@ vi.mock('#~/services/config/index.js', () => ({
   getWorkspaceFolder: vi.fn(() => process.cwd())
 }))
 
+vi.mock('@vibe-forge/config', () => ({
+  updateConfigFile: mocks.updateConfigFile
+}))
+
 vi.mock('#~/services/session/interaction.js', () => ({
   requestInteraction: mocks.requestInteraction,
   canRequestInteraction: mocks.canRequestInteraction
@@ -43,6 +50,11 @@ vi.mock('#~/services/session/interaction.js', () => ({
 
 vi.mock('#~/services/session/notification.js', () => ({
   maybeNotifySession: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('node:fs/promises', () => ({
+  mkdir: mocks.mkdir,
+  writeFile: mocks.writeFile
 }))
 
 vi.mock('#~/services/session/runtime.js', async () => {
@@ -119,10 +131,17 @@ describe('startAdapterSession', () => {
         mcpServers: undefined
       }
     ])
-    mocks.loadConfigState.mockResolvedValue({ mergedConfig: {} })
+    mocks.loadConfigState.mockResolvedValue({
+      workspaceFolder: process.cwd(),
+      projectConfig: {},
+      mergedConfig: {}
+    })
+    mocks.updateConfigFile.mockResolvedValue({ ok: true })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
     mocks.requestInteraction.mockReset()
     mocks.canRequestInteraction.mockReturnValue(false)
+    mocks.mkdir.mockResolvedValue(undefined)
+    mocks.writeFile.mockResolvedValue(undefined)
   })
 
   it('reuses the cached runtime when adapter config is unchanged', async () => {
@@ -193,6 +212,28 @@ describe('startAdapterSession', () => {
 
     const [firstRuntime, secondRuntime] = await Promise.all([first, second])
     expect(firstRuntime).toBe(secondRuntime)
+    expect(mocks.run).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not fail adapter startup when permission mirror sync fails', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.writeFile.mockRejectedValueOnce(new Error('readonly filesystem'))
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    const runtime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'claude-code',
+      permissionMode: 'default'
+    })
+
+    expect(runtime.session.emit).toBe(emit)
+    expect(runtime.config?.adapter).toBe('claude-code')
     expect(mocks.run).toHaveBeenCalledTimes(1)
   })
 

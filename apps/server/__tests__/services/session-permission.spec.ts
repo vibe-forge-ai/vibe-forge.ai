@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
   getWorkspaceFolder: vi.fn(),
   updateConfigFile: vi.fn(),
   mkdir: vi.fn(),
-  writeFile: vi.fn()
+  writeFile: vi.fn(),
+  getSessionLogger: vi.fn()
 }))
 
 vi.mock('#~/db/index.js', () => ({
@@ -31,6 +32,10 @@ vi.mock('@vibe-forge/config', () => ({
 vi.mock('node:fs/promises', () => ({
   mkdir: mocks.mkdir,
   writeFile: mocks.writeFile
+}))
+
+vi.mock('#~/utils/logger.js', () => ({
+  getSessionLogger: mocks.getSessionLogger
 }))
 
 describe('session permission service', () => {
@@ -89,6 +94,9 @@ describe('session permission service', () => {
     })
     mocks.mkdir.mockResolvedValue(undefined)
     mocks.writeFile.mockResolvedValue(undefined)
+    mocks.getSessionLogger.mockReturnValue({
+      warn: vi.fn()
+    })
   })
 
   it('consumes one-shot deny before any other remembered decision', async () => {
@@ -157,6 +165,32 @@ describe('session permission service', () => {
       result: 'ask',
       source: 'projectAsk'
     }))
+  })
+
+  it('keeps the DB permission state authoritative when mirror sync fails', async () => {
+    runtimeState = {
+      allow: [],
+      deny: [],
+      onceAllow: ['Write'],
+      onceDeny: []
+    }
+    mocks.writeFile.mockRejectedValueOnce(new Error('disk full'))
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'Write',
+        label: 'Write',
+        scope: 'tool'
+      }
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'onceAllow'
+    }))
+    expect(runtimeState.onceAllow).toEqual([])
+    expect(mocks.getSessionLogger).toHaveBeenCalledWith('sess-1', 'server')
   })
 
   it('writes allow_project into project config and removes conflicting managed keys', async () => {

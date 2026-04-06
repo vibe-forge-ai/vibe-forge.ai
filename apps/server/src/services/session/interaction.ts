@@ -99,6 +99,23 @@ export function clearSessionInteraction(sessionId: string, interactionId: string
   }
 }
 
+export function resolvePendingInteractionAsCancelled(sessionId: string, interactionId?: string) {
+  const targetInteractionId = interactionId ?? getSessionConnectionState(sessionId)?.currentInteraction?.id
+  if (targetInteractionId == null || targetInteractionId === '') {
+    return false
+  }
+
+  const pending = getPendingSessionInteraction(targetInteractionId)
+  if (pending != null) {
+    clearTimeout(pending.timer)
+    pending.resolve('cancel')
+    deletePendingSessionInteraction(targetInteractionId)
+  }
+
+  clearSessionInteraction(sessionId, targetInteractionId)
+  return pending != null
+}
+
 export async function requestInteraction(
   params: AskUserQuestionParams,
   options: {

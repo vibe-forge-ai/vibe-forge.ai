@@ -18,14 +18,18 @@ import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
-import { canRequestInteraction, requestInteraction } from '#~/services/session/interaction.js'
+import {
+  canRequestInteraction,
+  requestInteraction,
+  resolvePendingInteractionAsCancelled
+} from '#~/services/session/interaction.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
 import {
   applyPermissionInteractionDecision,
   buildPermissionInteractionPayload,
   resolvePermissionDecision as resolveStoredPermissionDecision,
   resolvePermissionSubjectFromInput,
-  syncPermissionStateMirror
+  syncPermissionStateMirrorBestEffort
 } from '#~/services/session/permission.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import {
@@ -33,6 +37,7 @@ import {
   broadcastSessionEvent,
   createSessionConnectionState,
   deleteAdapterSessionRuntime,
+  deleteExternalSessionRuntime,
   emitRuntimeEvent,
   getAdapterSessionRuntime,
   getExternalSessionRuntime,
@@ -250,6 +255,16 @@ export const resetSessionServiceState = () => {
   recentPermissionToolUseStore.clear()
 }
 
+const clearPendingPermissionRecovery = (sessionId: string) => {
+  const pending = pendingPermissionRecoveryStore.get(sessionId)
+  if (pending == null) {
+    return undefined
+  }
+
+  pendingPermissionRecoveryStore.delete(sessionId)
+  return pending
+}
+
 export async function startAdapterSession(
   sessionId: string,
   options: {
@@ -371,7 +386,7 @@ export async function startAdapterSession(
       ].filter(Boolean).join('\n\n')
       let sawFatalError = false
 
-      await syncPermissionStateMirror(sessionId, {
+      await syncPermissionStateMirrorBestEffort(sessionId, {
         adapter: resolvedAdapter
       })
 
@@ -889,11 +904,24 @@ export function updateAndNotifySession(
 
 export function killSession(sessionId: string) {
   const cached = getAdapterSessionRuntime(sessionId)
+  const parked = getExternalSessionRuntime(sessionId)
+  const pendingRecovery = clearPendingPermissionRecovery(sessionId)
+  const hadPendingInteraction = resolvePendingInteractionAsCancelled(sessionId, pendingRecovery?.interactionId)
+
   if (cached != null) {
     activeAdapterRunStore.delete(sessionId)
     getSessionLogger(sessionId, 'server').info({ sessionId }, '[server] Killing adapter process by request')
     cached.session.kill()
     deleteAdapterSessionRuntime(sessionId)
+  }
+
+  if (parked != null) {
+    deleteExternalSessionRuntime(sessionId)
+  }
+
+  recentPermissionToolUseStore.delete(sessionId)
+
+  if (cached != null || parked != null || pendingRecovery != null || hadPendingInteraction) {
     updateAndNotifySession(sessionId, { status: 'terminated' })
   }
 }

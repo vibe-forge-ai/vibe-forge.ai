@@ -6,6 +6,7 @@ import { applySessionEvent } from '#~/services/session/events.js'
 import {
   getSessionInteraction,
   handleInteractionResponse,
+  resolvePendingInteractionAsCancelled,
   requestInteraction
 } from '#~/services/session/interaction.js'
 import { adapterSessionStore, createSessionConnectionState, externalSessionStore } from '#~/services/session/runtime.js'
@@ -314,6 +315,44 @@ describe('session interaction service', () => {
         broadcast: expect.any(Function),
         onSessionUpdated: expect.any(Function)
       })
+    )
+  })
+
+  it('can resolve an in-flight interaction as cancelled without emitting a response event', async () => {
+    const runtime = createSessionConnectionState()
+    const adapterRuntime = Object.assign(runtime, {
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+    adapterSessionStore.set('sess-1', adapterRuntime as any)
+    getChannelSessionBySessionId.mockReturnValue({
+      channelType: 'lark',
+      channelId: 'chat_1',
+      sessionId: 'sess-1'
+    })
+
+    const interactionPromise = requestInteraction({
+      sessionId: 'sess-1',
+      question: '是否继续？'
+    })
+
+    await Promise.resolve()
+
+    const interactionId = adapterRuntime.currentInteraction?.id
+    expect(interactionId).toBeTruthy()
+    expect(resolvePendingInteractionAsCancelled('sess-1')).toBe(true)
+
+    await expect(interactionPromise).resolves.toBe('cancel')
+    expect(adapterRuntime.currentInteraction).toBeUndefined()
+    expect(vi.mocked(applySessionEvent)).not.toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        type: 'interaction_response',
+        id: interactionId
+      }),
+      expect.anything()
     )
   })
 
