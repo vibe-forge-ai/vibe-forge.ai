@@ -1,6 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import process from 'node:process'
 
 import type { Cache } from '@vibe-forge/types'
 
@@ -29,7 +29,7 @@ export const setCache = async <K extends keyof Cache>(
   } catch {
     await fs.mkdir(cacheDir, { recursive: true })
   }
-  const tempPath = `${cachePath}.${process.pid}.${Date.now()}.tmp`
+  const tempPath = `${cachePath}.${randomUUID()}.tmp`
   await fs.writeFile(tempPath, JSON.stringify(value, null, 2), {
     flag: 'w'
   })
