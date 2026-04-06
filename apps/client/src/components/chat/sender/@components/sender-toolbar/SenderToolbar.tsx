@@ -36,6 +36,10 @@ export function SenderToolbar({
       />
 
       <div className='toolbar-left'>
+        {!state.isInlineEdit && (
+          <AdapterSelectControl state={state} data={data} handlers={handlers} />
+        )}
+
         <ReferenceActionsControl
           state={state}
           data={data}
@@ -63,10 +67,6 @@ export function SenderToolbar({
       </div>
 
       <div className={`toolbar-right ${state.isInlineEdit ? 'toolbar-right--inline-edit' : ''}`.trim()}>
-        {!state.isInlineEdit && (
-          <AdapterSelectControl state={state} data={data} handlers={handlers} />
-        )}
-
         <SenderSubmitAction
           isInlineEdit={state.isInlineEdit}
           submitLoading={state.submitLoading}
