@@ -16,6 +16,14 @@ import { getClientBase, resolveDevDocumentTitle } from '#~/runtime-config.js'
 
 import App from './App'
 
+const gitRefLabel = import.meta.env.__VF_PROJECT_AI_GIT_REF_LABEL__ ?? ''
+
+const appTitle = import.meta.env.DEV && gitRefLabel !== ''
+  ? `Vibe Forge Web [${gitRefLabel}]`
+  : 'Vibe Forge Web'
+
+document.title = appTitle
+
 const root = createRoot(document.getElementById('root')!)
 
 const clientBase = getClientBase()

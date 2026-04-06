@@ -1,4 +1,6 @@
 .chat-input-wrapper {
+  width: 100%;
+  margin: 0;
   border-top: none;
   position: relative;
   background-color: var(--bg-color);
@@ -6,6 +8,7 @@
 
 .chat-input-wrapper--inline-edit {
   width: 100%;
+  margin: 0;
 }
 
 .chat-input-container {

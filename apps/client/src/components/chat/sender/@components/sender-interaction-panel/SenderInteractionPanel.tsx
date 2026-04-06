@@ -1,38 +1,36 @@
 import './SenderInteractionPanel.scss'
 
-import { Button } from 'antd'
-import { useEffect, useState } from 'react'
+import { Button, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 import type { AskUserQuestionParams } from '@vibe-forge/core'
 import type { PermissionInteractionContext } from '@vibe-forge/types'
 
-const primaryOptionValues = new Set(['allow_once', 'allow_session', 'deny_once'])
-
-const getOptionMeta = (value?: string) => {
-  switch (value) {
-    case 'allow_once':
-      return { icon: 'task_alt', tone: 'allow' as const }
-    case 'allow_session':
-      return { icon: 'history_toggle_off', tone: 'allow' as const }
-    case 'allow_project':
-      return { icon: 'folder_managed', tone: 'allow' as const }
-    case 'deny_once':
-      return { icon: 'cancel', tone: 'deny' as const }
-    case 'deny_session':
-      return { icon: 'block', tone: 'deny' as const }
-    case 'deny_project':
-      return { icon: 'folder_off', tone: 'deny' as const }
-    default:
-      return { icon: 'help', tone: 'neutral' as const }
-  }
-}
+const renderInfoButton = (title: string) => (
+  <Tooltip title={title} placement='top' destroyOnHidden>
+    <span
+      className='material-symbols-rounded interaction-panel__info-trigger'
+      aria-label={title}
+      role='img'
+      onMouseDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
+      info
+    </span>
+  </Tooltip>
+)
 
 export function SenderInteractionPanel({
   interactionRequest,
   permissionContext,
   deniedTools,
-  reasons: _reasons,
+  reasons,
   onInteractionResponse
 }: {
   interactionRequest: { id: string; payload: AskUserQuestionParams }
@@ -42,103 +40,74 @@ export function SenderInteractionPanel({
   onInteractionResponse?: (id: string, data: string | string[]) => void
 }) {
   const { t } = useTranslation()
-  const [showAllOptions, setShowAllOptions] = useState(false)
-
-  const toolNames = [
-    permissionContext?.subjectLabel?.trim() ?? '',
-    ...deniedTools.map(tool => tool.trim())
-  ].filter((value, index, values) => value !== '' && values.indexOf(value) === index)
-  const toolSummary = toolNames.join('、')
-  const title = toolSummary === ''
-    ? interactionRequest.payload.question
-    : t('chat.permissionRequestTitleWithTool', { tool: toolSummary })
-  const primaryOptions =
-    interactionRequest.payload.options?.filter(option => primaryOptionValues.has(option.value ?? '')) ?? []
-  const secondaryOptions =
-    interactionRequest.payload.options?.filter(option => !primaryOptionValues.has(option.value ?? '')) ?? []
-
-  useEffect(() => {
-    setShowAllOptions(false)
-  }, [interactionRequest.id])
 
   return (
     <div className='interaction-panel'>
-      <div className='interaction-panel__header'>
-        <div className='interaction-question'>
-          {title}
+      {permissionContext != null && (
+        <div className='interaction-panel__badge'>
+          <span className='material-symbols-rounded'>lock</span>
+          <span>{t('chat.permissionRequestBadge')}</span>
         </div>
+      )}
+      <div className='interaction-question'>
+        {interactionRequest.payload.question}
       </div>
-      <div className='interaction-panel__options'>
-        {primaryOptions.map((option: { label: string; value?: string; description?: string }) => {
-          const meta = getOptionMeta(option.value)
-
-          return (
-            <Button
-              key={option.value ?? option.label}
-              className={[
-                'interaction-panel__option',
-                `interaction-panel__option--${meta.tone}`
-              ].join(' ')}
-              onClick={() => onInteractionResponse?.(interactionRequest.id, option.value ?? option.label)}
-            >
-              <span className='interaction-panel__option-icon material-symbols-rounded'>{meta.icon}</span>
-              <div className='interaction-panel__option-copy'>
-                <div className='interaction-panel__option-text'>
-                  <div className='interaction-panel__option-label'>{option.label}</div>
-                  {option.description && (
-                    <div className='interaction-panel__option-description'>
-                      {option.description}
-                    </div>
-                  )}
+      {permissionContext != null && (
+        <div className='interaction-panel__context'>
+          <div className='interaction-panel__info-list'>
+            {permissionContext.currentMode != null && (
+              <div className='interaction-panel__info-row'>
+                <span className='interaction-panel__meta-label'>{t('chat.permissionCurrentMode')}</span>
+                <code className='interaction-panel__meta-value'>{permissionContext.currentMode}</code>
+              </div>
+            )}
+            {permissionContext.suggestedMode != null && (
+              <div className='interaction-panel__info-row'>
+                <span className='interaction-panel__meta-label'>{t('chat.permissionSuggestedMode')}</span>
+                <code className='interaction-panel__meta-value'>{permissionContext.suggestedMode}</code>
+              </div>
+            )}
+            {deniedTools.length > 0 && (
+              <div className='interaction-panel__info-row interaction-panel__info-row--wrap'>
+                <span className='interaction-panel__meta-label'>{t('chat.permissionDeniedTools')}</span>
+                <div className='interaction-panel__chips'>
+                  {deniedTools.map(tool => (
+                    <code key={tool} className='interaction-panel__chip'>{tool}</code>
+                  ))}
                 </div>
               </div>
-            </Button>
-          )
-        })}
-        {showAllOptions && secondaryOptions.length > 0 && (
-          <div className='interaction-panel__secondary'>
-            {secondaryOptions.map((option: { label: string; value?: string; description?: string }) => {
-              const meta = getOptionMeta(option.value)
-
-              return (
-                <Button
-                  key={option.value ?? option.label}
-                  className={[
-                    'interaction-panel__option',
-                    `interaction-panel__option--${meta.tone}`
-                  ].join(' ')}
-                  onClick={() => onInteractionResponse?.(interactionRequest.id, option.value ?? option.label)}
-                >
-                  <span className='interaction-panel__option-icon material-symbols-rounded'>{meta.icon}</span>
-                  <div className='interaction-panel__option-copy'>
-                    <div className='interaction-panel__option-text'>
-                      <div className='interaction-panel__option-label'>{option.label}</div>
-                      {option.description && (
-                        <div className='interaction-panel__option-description'>
-                          {option.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Button>
-              )
-            })}
+            )}
+            {reasons.length > 0 && (
+              <div className='interaction-panel__info-row interaction-panel__info-row--wrap'>
+                <span className='interaction-panel__meta-label'>{t('chat.permissionReasons')}</span>
+                <div className='interaction-panel__reason-list'>
+                  {reasons.map(reason => (
+                    <span key={reason} className='interaction-panel__reason-pill'>{reason}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {secondaryOptions.length > 0 && (
+        </div>
+      )}
+      <div className='interaction-panel__options'>
+        {interactionRequest.payload.options?.map((option: { label: string; value?: string; description?: string }) => (
           <Button
-            type='text'
-            className='interaction-panel__toggle'
-            onClick={() => setShowAllOptions(current => !current)}
+            key={option.value ?? option.label}
+            block
+            className='interaction-panel__option'
+            onClick={() => onInteractionResponse?.(interactionRequest.id, option.value ?? option.label)}
           >
-            <span className='interaction-panel__toggle-label'>
-              {showAllOptions ? t('chat.permissionCollapseOptions') : t('chat.permissionExpandOptions')}
-            </span>
-            <span className='interaction-panel__toggle-icon material-symbols-rounded'>
-              {showAllOptions ? 'expand_less' : 'expand_more'}
+            <span className='interaction-panel__option-main'>
+              <span className='interaction-panel__option-label'>{option.label}</span>
+              {option.description && (
+                <span className='interaction-panel__option-side'>
+                  {renderInfoButton(option.description)}
+                </span>
+              )}
             </span>
           </Button>
-        )}
+        ))}
       </div>
     </div>
   )
