@@ -3,7 +3,6 @@ import './Sender.scss'
 import { useSenderController } from '#~/components/chat/sender/@hooks/use-sender-controller'
 
 import { SenderBody } from './@components/sender-body/SenderBody'
-import { SenderInteractionPanel } from './@components/sender-interaction-panel/SenderInteractionPanel'
 import type { SenderProps } from './@types/sender-props'
 
 export function Sender(props: SenderProps) {
@@ -17,15 +16,6 @@ export function Sender(props: SenderProps) {
         controller.isInlineEdit ? 'chat-input-wrapper--inline-edit' : ''
       ].filter(Boolean).join(' ')}
     >
-      {!controller.isInlineEdit && controller.interactionRequest != null && (
-        <SenderInteractionPanel
-          interactionRequest={controller.interactionRequest}
-          permissionContext={controller.permissionContext}
-          deniedTools={controller.deniedTools}
-          reasons={controller.reasons}
-          onInteractionResponse={controller.interactionResponse}
-        />
-      )}
       {!controller.hideSender && (
         <SenderBody
           isInlineEdit={controller.isInlineEdit}

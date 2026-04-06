@@ -32,7 +32,7 @@ const getPriorityIcon = (priority?: TodoItem['priority']) => {
 
 export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
   const { t } = useTranslation()
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Find the latest TodoWrite tool use
   let latestTodos: TodoItem[] = []
