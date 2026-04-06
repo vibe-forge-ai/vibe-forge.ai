@@ -3,6 +3,7 @@ import './ToolGroup.scss'
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { MessageFooter } from '../../messages/MessageFooter'
 import { ToolRenderer } from './ToolRenderer'
 
@@ -24,6 +25,8 @@ function ToolGroupComponent({
   footer
 }: ToolGroupProps) {
   const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
+  const isDebugMode = searchParams.get('debug') === 'true'
   const [expanded, setExpanded] = useState(false)
 
   if (items.length === 0) return null
@@ -38,7 +41,7 @@ function ToolGroupComponent({
             resultItem={items[0].resultItem}
           />
         </div>
-        {footer && (
+        {footer && isDebugMode && (
           <div className='tool-group-footer-wrapper'>
             <MessageFooter msg={footer.originalMessage} isUser={false} />
           </div>
@@ -95,7 +98,7 @@ function ToolGroupComponent({
         </div>
       </div>
 
-      {footer && (
+      {footer && isDebugMode && (
         <div className='tool-group-footer-wrapper'>
           <MessageFooter msg={footer.originalMessage} isUser={false} />
         </div>

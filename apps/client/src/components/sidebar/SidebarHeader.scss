@@ -1,18 +1,18 @@
 .sidebar-header {
-  padding: 12px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
 
   .header-bottom {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
 
     .batch-select-wrapper {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -22,28 +22,38 @@
     .search-input {
       border-radius: 6px;
       flex: 1;
-      height: 36px;
+      height: 32px;
+      padding-inline: 8px;
+      font-size: 13px;
+
+      .ant-input {
+        font-size: 13px;
+      }
 
       .search-icon {
-        font-size: 18px;
+        font-size: 16px;
         color: var(--sub-text-color);
         display: inline-flex;
         align-items: center;
         line-height: 1;
       }
+
+      .ant-input-clear-icon {
+        font-size: 12px;
+      }
     }
 
     .batch-actions {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
 
       .action-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         flex-shrink: 0;
         color: var(--sub-text-color);
@@ -53,7 +63,7 @@
         }
 
         .material-symbols-rounded {
-          font-size: 20px;
+          font-size: 18px;
           display: inline-flex;
           align-items: center;
           line-height: 1;
@@ -65,14 +75,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       padding: 0;
       color: var(--sub-text-color);
       flex-shrink: 0;
 
       .material-symbols-rounded {
-        font-size: 20px;
+        font-size: 18px;
       }
     }
   }

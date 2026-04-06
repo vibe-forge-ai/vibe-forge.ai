@@ -9,15 +9,15 @@
     overflow-y: auto;
 
     .session-list {
-      padding: 12px 16px;
+      padding: 8px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
 
       .ant-list-items {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
       }
 
       .session-row {
@@ -27,9 +27,9 @@
           &::before {
             content: '';
             position: absolute;
-            top: -8px;
-            bottom: -8px;
-            left: calc((var(--session-depth, 0) - 1) * 22px + 8px);
+            top: -6px;
+            bottom: -6px;
+            left: calc((var(--session-depth, 0) - 1) * 18px + 7px);
             width: 3px;
             background-color: var(--primary-color);
             border-radius: 2px;
@@ -37,20 +37,20 @@
         }
 
         .session-item {
-          margin-left: calc(var(--session-depth, 0) * 22px);
+          margin-left: calc(var(--session-depth, 0) * 18px);
         }
 
         .session-collapse-row {
-          margin-top: 6px;
-          margin-left: calc(var(--session-depth, 0) * 22px);
+          margin-top: 4px;
+          margin-left: calc(var(--session-depth, 0) * 18px);
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
           color: var(--sub-text-color);
 
           .session-tree-toggle {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             padding: 0;
             display: flex;
             align-items: center;
@@ -58,7 +58,7 @@
             color: var(--sub-text-color);
 
             .material-symbols-rounded {
-              font-size: 18px;
+              font-size: 16px;
               transition: transform .2s ease;
             }
 
@@ -70,11 +70,11 @@
           }
 
           .session-collapse-label {
-            font-size: 11px;
+            font-size: 10px;
           }
 
           .session-collapse-summary {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--sub-text-color);
             opacity: .8;
           }
@@ -84,9 +84,9 @@
   }
 
   .empty-text {
-    padding: 32px 16px;
+    padding: 28px 12px;
     text-align: center;
     color: var(--sub-text-color);
-    font-size: 14px;
+    font-size: 13px;
   }
 }

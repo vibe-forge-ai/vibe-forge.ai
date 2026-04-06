@@ -1,11 +1,13 @@
 import './SessionItem.scss'
 
 import type { Session, SessionStatus } from '@vibe-forge/core'
-import { Badge, Button, Checkbox, List, Tag, Tooltip } from 'antd'
+import { Button, Checkbox, List, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import { getAdapterDisplay } from '#~/resources/adapters.js'
 import 'dayjs/locale/zh-cn'
 
 dayjs.extend(relativeTime)
@@ -58,7 +60,9 @@ export function SessionItem({
     : (session.lastUserMessage != null && session.lastUserMessage !== '')
     ? session.lastUserMessage
     : t('common.newChat')
-  const messageCount = session.messageCount ?? 0
+  const adapterDisplay = session.adapter != null && session.adapter !== ''
+    ? getAdapterDisplay(session.adapter)
+    : undefined
 
   const lastMessageSnippet = useMemo(() => {
     if (session.lastMessage == null || session.lastMessage === '') return null
@@ -145,8 +149,18 @@ export function SessionItem({
     >
       <div className='session-item-content'>
         {!isBatchMode && (
-          <div className='status-indicator'>
-            {getStatusIcon(session.status)}
+          <div className={`session-leading ${adapterDisplay?.icon != null ? 'has-adapter' : ''}`}>
+            {adapterDisplay?.icon != null && (
+              <img
+                className='session-adapter-icon'
+                src={adapterDisplay.icon}
+                alt=''
+                aria-hidden='true'
+              />
+            )}
+            <div className={`status-indicator ${adapterDisplay?.icon != null ? 'is-overlay' : ''}`}>
+              {getStatusIcon(session.status)}
+            </div>
           </div>
         )}
         {isBatchMode && (
@@ -165,109 +179,98 @@ export function SessionItem({
                 {displayTitle}
               </span>
             </div>
-            {!isBatchMode && (
-              <div className='session-item-actions'>
-                <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
-                  <Button
-                    type='text'
-                    size='small'
-                    className={`action-btn ${session.isStarred ? 'starred' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void onStar(session.id, !session.isStarred)
-                    }}
-                    icon={
-                      <span
-                        className={`material-symbols-rounded ${session.isStarred ? 'filled' : ''}`}
-                      >
-                        star
-                      </span>
-                    }
-                  />
-                </Tooltip>
-                <Tooltip title={t('common.archive')}>
-                  <Button
-                    type='text'
-                    size='small'
-                    className='action-btn archive-btn'
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void onArchive(session.id)
-                    }}
-                    icon={<span className='material-symbols-rounded'>archive</span>}
-                  />
-                </Tooltip>
-              </div>
-            )}
+            <div className='session-header-side'>
+              {!isBatchMode && (
+                <>
+                  <Tooltip title={timeDisplay.full}>
+                    <span className='time-display'>
+                      {timeDisplay.relative}
+                    </span>
+                  </Tooltip>
+                  <div className='session-item-actions'>
+                    <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
+                      <Button
+                        type='text'
+                        size='small'
+                        className={`action-btn star-btn ${session.isStarred ? 'starred' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void onStar(session.id, !session.isStarred)
+                        }}
+                        icon={
+                          <span
+                            className={`material-symbols-rounded ${session.isStarred ? 'filled' : ''}`}
+                          >
+                            star
+                          </span>
+                        }
+                      />
+                    </Tooltip>
+                    <Tooltip title={t('common.archive')}>
+                      <Button
+                        type='text'
+                        size='small'
+                        className='action-btn archive-btn'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void onArchive(session.id)
+                        }}
+                        icon={<span className='material-symbols-rounded'>archive</span>}
+                      />
+                    </Tooltip>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           {lastMessageSnippet != null && (
             <div className='last-message'>
               {lastMessageSnippet}
             </div>
           )}
-          <div className='session-meta'>
-            {session.status && (
-              <span
-                className='status-text'
-                style={{ fontSize: '11px', color: 'var(--sub-text-color)', marginRight: '8px' }}
-              >
-                {t(`common.status.${session.status}`)}
-              </span>
-            )}
-            <Tooltip title={timeDisplay.full}>
-              <span className='time-display'>
-                {timeDisplay.relative}
-              </span>
-            </Tooltip>
-          </div>
-          <div className='tags-container'>
-            {session.tags?.map((tag: string) => {
-              const automationTag = parseAutomationTag(tag)
-              if (automationTag) {
-                const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`
+          {session.tags != null && session.tags.length > 0 && (
+            <div className='tags-container'>
+              {session.tags.map((tag: string) => {
+                const automationTag = parseAutomationTag(tag)
+                if (automationTag) {
+                  const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`
+                  return (
+                    <Tooltip
+                      key={tag}
+                      title={automationTag.ruleTitle}
+                    >
+                      <Tag
+                        className='session-tag session-tag--automation'
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <a
+                          className='session-tag__link'
+                          href={href}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {automationTag.ruleTitle}
+                        </a>
+                      </Tag>
+                    </Tooltip>
+                  )
+                }
                 return (
                   <Tooltip
                     key={tag}
-                    title={automationTag.ruleTitle}
+                    title={tag}
                   >
-                    <Tag
-                      className='session-tag session-tag--automation'
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <a
-                        className='session-tag__link'
-                        href={href}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {automationTag.ruleTitle}
-                      </a>
+                    <Tag className='session-tag'>
+                      <span className='session-tag__text'>
+                        {tag}
+                      </span>
                     </Tag>
                   </Tooltip>
                 )
-              }
-              return (
-                <Tooltip
-                  key={tag}
-                  title={tag}
-                >
-                  <Tag className='session-tag'>
-                    <span className='session-tag__text'>
-                      {tag}
-                    </span>
-                  </Tag>
-                </Tooltip>
-              )
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </div>
-
-      {messageCount > 0 && (
-        <Badge
-          count={messageCount > 99 ? '99+' : messageCount}
-          className='session-item-badge'
-        />
-      )}
     </List.Item>
   )
 }

@@ -96,6 +96,15 @@
 
 ## Sender / 浮层调试经验
 
+- `ChatHeader` 需要同时保留显式和隐藏两条调试入口：
+  - 右上角 `更多` 左边的 debug 状态按钮默认隐藏，只有当前 URL 已经带 `debug` query 时才显示；显示后点击按钮切换 URL 上的 `debug` query。
+  - debug 状态切换只在 `debug=true / debug=false` 之间切，不要通过按钮把 `debug` query 直接删掉。
+  - 标题支持隐藏调试入口：连续点击标题 5 次时，同样切换 URL 上的 `debug` 状态；不能只留在 console 里。
+- 只要 URL 上存在 `debug` query，就视为 debug 模式：
+  - `debug=true` 才算真正开启调试模式；`debug=false` 只保留入口，不展示调试内容。
+  - 调试元信息展示在 `settings` 视图，不再展示在标题下面。
+  - 消息时间戳只在 `debug=true` 时展示。
+  - 后续如果继续精简 header 或 settings，也要保留这条 query 驱动的可见调试通路。
 - `Sender.tsx` 同时组合了 `Tooltip`、`Popover`、`Select` 和自定义 trigger；一旦外层包装组件不透传 `ref` 或 DOM props，触发器很容易直接失效。
 - 包装触发器时不要用无效 DOM 结构，例如 `span` 包 `div`；这类 nesting warning 往往伴随点击异常。
 - 同一个控件如果既有 tooltip 又有 popup，popup 打开时要显式禁用 tooltip；否则 hover 层会抢事件或扰乱 focus。

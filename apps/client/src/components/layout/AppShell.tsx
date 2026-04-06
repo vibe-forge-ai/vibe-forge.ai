@@ -28,15 +28,17 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <Layout className={`app-shell ${isDarkMode ? 'app-shell--dark' : ''}`}>
-      <NavRail />
-      {showSidebar && (
-        <Sidebar
-          width={sidebarWidth}
-          activeId={activeSessionId}
-          onSelectSession={onSelectSession}
-          onDeletedSession={onDeletedSession}
-        />
-      )}
+      <div className='app-shell__sidebar-region'>
+        <NavRail />
+        {showSidebar && (
+          <Sidebar
+            width={sidebarWidth}
+            activeId={activeSessionId}
+            onSelectSession={onSelectSession}
+            onDeletedSession={onDeletedSession}
+          />
+        )}
+      </div>
       <Layout.Content className='app-shell__content'>
         {children}
       </Layout.Content>
