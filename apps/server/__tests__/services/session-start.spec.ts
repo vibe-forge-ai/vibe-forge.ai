@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import {
-  adapterSessionStartStore,
-  processUserMessage,
-  resetSessionServiceState,
-  startAdapterSession
-} from '#~/services/session/index.js'
+import { processUserMessage, resetSessionServiceState, startAdapterSession } from '#~/services/session/index.js'
 import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
 
 const mocks = vi.hoisted(() => ({
@@ -665,11 +660,14 @@ describe('startAdapterSession', () => {
       expect(respondInteraction).toHaveBeenCalledWith('approval-1', 'deny_project')
     })
 
-    expect(updateSessionRuntimeState).toHaveBeenCalledWith('sess-1', expect.objectContaining({
-      permissionState: expect.objectContaining({
-        deny: ['Bash']
+    expect(updateSessionRuntimeState).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        permissionState: expect.objectContaining({
+          deny: ['Bash']
+        })
       })
-    }))
+    )
   })
 
   it('auto-responds to codex native approvals when the session already remembers the tool', async () => {
@@ -813,11 +811,14 @@ describe('startAdapterSession', () => {
       })
     })
 
-    expect(updateSessionRuntimeState).toHaveBeenCalledWith('sess-1', expect.objectContaining({
-      permissionState: expect.objectContaining({
-        allow: ['Write']
+    expect(updateSessionRuntimeState).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        permissionState: expect.objectContaining({
+          allow: ['Write']
+        })
       })
-    }))
+    )
     expect(mocks.requestInteraction).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: 'sess-1',
       kind: 'permission',
@@ -902,5 +903,4 @@ describe('startAdapterSession', () => {
       })
     )
   })
-
 })

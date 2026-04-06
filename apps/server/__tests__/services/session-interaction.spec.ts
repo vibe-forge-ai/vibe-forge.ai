@@ -6,8 +6,8 @@ import { applySessionEvent } from '#~/services/session/events.js'
 import {
   getSessionInteraction,
   handleInteractionResponse,
-  resolvePendingInteractionAsCancelled,
-  requestInteraction
+  requestInteraction,
+  resolvePendingInteractionAsCancelled
 } from '#~/services/session/interaction.js'
 import { adapterSessionStore, createSessionConnectionState, externalSessionStore } from '#~/services/session/runtime.js'
 

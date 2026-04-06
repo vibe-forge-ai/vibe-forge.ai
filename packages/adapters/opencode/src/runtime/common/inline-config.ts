@@ -3,11 +3,7 @@ import type { AdapterQueryOptions, Config } from '@vibe-forge/types'
 import { mapMcpServersToOpenCode } from './mcp'
 import { deepMerge } from './object-utils'
 import { mergePermissionNodes, normalizePermissionNode, rewritePermissionMode } from './permission-node'
-import {
-  buildManagedPermissionConfig,
-  buildToolPermissionConfig,
-  mapPermissionModeToOpenCode
-} from './permissions'
+import { buildManagedPermissionConfig, buildToolPermissionConfig, mapPermissionModeToOpenCode } from './permissions'
 import { buildToolConfig } from './tools'
 
 export const buildInlineConfigContent = (params: {

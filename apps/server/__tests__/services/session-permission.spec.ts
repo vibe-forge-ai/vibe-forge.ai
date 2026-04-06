@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  applyPermissionInteractionDecision,
-  resolvePermissionDecision
-} from '#~/services/session/permission.js'
+import { applyPermissionInteractionDecision, resolvePermissionDecision } from '#~/services/session/permission.js'
 import { createEmptySessionPermissionState } from '@vibe-forge/utils'
 
 const mocks = vi.hoisted(() => ({
@@ -55,11 +52,13 @@ describe('session permission service', () => {
       }
     }
 
-    updateSessionRuntimeState.mockImplementation((_sessionId: string, updates: { permissionState?: typeof runtimeState }) => {
-      if (updates.permissionState != null) {
-        runtimeState = updates.permissionState
+    updateSessionRuntimeState.mockImplementation(
+      (_sessionId: string, updates: { permissionState?: typeof runtimeState }) => {
+        if (updates.permissionState != null) {
+          runtimeState = updates.permissionState
+        }
       }
-    })
+    )
 
     mocks.getDb.mockReturnValue({
       getSessionRuntimeState: vi.fn(() => ({
@@ -80,18 +79,20 @@ describe('session permission service', () => {
       projectConfig,
       mergedConfig: projectConfig
     }))
-    mocks.updateConfigFile.mockImplementation(async ({ value }: { value: { permissions?: typeof projectConfig.permissions } }) => {
-      if (value.permissions != null) {
-        projectConfig = {
-          permissions: {
-            allow: [...(value.permissions.allow ?? [])],
-            deny: [...(value.permissions.deny ?? [])],
-            ask: [...(value.permissions.ask ?? [])]
+    mocks.updateConfigFile.mockImplementation(
+      async ({ value }: { value: { permissions?: typeof projectConfig.permissions } }) => {
+        if (value.permissions != null) {
+          projectConfig = {
+            permissions: {
+              allow: [...(value.permissions.allow ?? [])],
+              deny: [...(value.permissions.deny ?? [])],
+              ask: [...(value.permissions.ask ?? [])]
+            }
           }
         }
+        return { ok: true }
       }
-      return { ok: true }
-    })
+    )
     mocks.mkdir.mockResolvedValue(undefined)
     mocks.writeFile.mockResolvedValue(undefined)
     mocks.getSessionLogger.mockReturnValue({

@@ -254,7 +254,9 @@ export function createSessionsRepo(db: SqliteDatabase) {
   }
 
   const getRuntimeState = (id: string): SessionRuntimeState | undefined => {
-    const stmt = db.prepare('SELECT runtimeKind, historySeed, historySeedPending, permissionState FROM sessions WHERE id = ?')
+    const stmt = db.prepare(
+      'SELECT runtimeKind, historySeed, historySeedPending, permissionState FROM sessions WHERE id = ?'
+    )
     const row = stmt.get<Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending' | 'permissionState'>>(id)
     if (row == null) return undefined
     return mapSessionRuntimeState(row)

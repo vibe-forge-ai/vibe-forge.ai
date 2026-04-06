@@ -11,11 +11,12 @@ const clientBase = isDev
   : '/__VF_PROJECT_AI_CLIENT_BASE__/'
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
-const readGit = (args: string[]) => execFileSync('git', args, {
-  cwd: repoRoot,
-  encoding: 'utf8',
-  stdio: ['ignore', 'pipe', 'ignore']
-}).trim()
+const readGit = (args: string[]) =>
+  execFileSync('git', args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore']
+  }).trim()
 
 const resolveDevGitRef = () => {
   try {

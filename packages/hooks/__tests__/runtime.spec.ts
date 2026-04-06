@@ -2,9 +2,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
+import { resolvePermissionMirrorPath } from '@vibe-forge/utils'
 import fg from 'fast-glob'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolvePermissionMirrorPath } from '@vibe-forge/utils'
 
 import { callHook } from '#~/call.js'
 

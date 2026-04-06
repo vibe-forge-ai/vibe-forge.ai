@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { v4 as uuidv4 } from 'uuid'
 
 import type { AskUserQuestionParams, WSEvent } from '@vibe-forge/core'
@@ -8,8 +10,8 @@ import { applySessionEvent } from '#~/services/session/events.js'
 import {
   broadcastSessionEvent,
   deletePendingSessionInteraction,
-  getExternalSessionRuntime,
   emitRuntimeEvent,
+  getExternalSessionRuntime,
   getPendingSessionInteraction,
   getSessionConnectionState,
   notifySessionUpdated,
@@ -201,8 +203,8 @@ export async function requestInteraction(
 
 export function handleInteractionResponse(sessionId: string, interactionId: string, data: unknown) {
   const serverLogger = getSessionLogger(sessionId, 'server')
-  const isExternalSession = getExternalSessionRuntime(sessionId) != null
-    || getDb().getSessionRuntimeState(sessionId)?.runtimeKind === 'external'
+  const isExternalSession = getExternalSessionRuntime(sessionId) != null ||
+    getDb().getSessionRuntimeState(sessionId)?.runtimeKind === 'external'
   const event: WSEvent = { type: 'interaction_response', id: interactionId, data: data as string | string[] }
   const pending = getPendingSessionInteraction(interactionId)
   const hasMatchingStoredInteraction = hasSessionInteraction(sessionId, interactionId)

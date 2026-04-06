@@ -1,12 +1,9 @@
 import Router from '@koa/router'
-import { z } from 'zod'
 import { AskUserQuestionParamsSchema } from '@vibe-forge/core/schema'
+import { z } from 'zod'
 
 import { requestInteraction } from '#~/services/session/interaction.js'
-import {
-  resolvePermissionDecision,
-  resolvePermissionSubjectFromInput
-} from '#~/services/session/permission.js'
+import { resolvePermissionDecision, resolvePermissionSubjectFromInput } from '#~/services/session/permission.js'
 import { badRequest, notFound, requestTimeout } from '#~/utils/http.js'
 
 const PermissionCheckSchema = z.object({

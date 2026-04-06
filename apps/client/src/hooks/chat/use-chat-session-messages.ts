@@ -6,11 +6,11 @@ import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
+import type { ChatErrorBannerState } from './interaction-state'
 import {
   applyInteractionStateEvent,
   findLatestFatalError,
   getFatalSessionError,
-  type ChatErrorBannerState,
   restoreInteractionStateFromHistory
 } from './interaction-state'
 import type { ChatEffort } from './use-chat-effort'
@@ -124,12 +124,14 @@ export function useChatSessionMessages({
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
-      setErrorBanner(restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
-        ? {
+      setErrorBanner(
+        restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
+          ? {
             kind: 'session',
             message: latestFatalError.message
           }
-        : null)
+          : null
+      )
 
       for (const data of events) {
         currentMessages = applyMessageEvent(currentMessages, data)
@@ -273,7 +275,7 @@ export function useChatSessionMessages({
         connectionParams.adapter = adapter
       }
 
-        cleanup = connectionManager.connect(session.id, {
+      cleanup = connectionManager.connect(session.id, {
         onOpen() {
           expectedCloseRef.current = false
           setErrorBanner((current) => current?.kind === 'session' ? current : null)
@@ -376,10 +378,12 @@ export function useChatSessionMessages({
             expectedCloseRef.current = false
             return
           }
-          setErrorBanner((current) => current ?? {
-            kind: 'connection',
-            message: t('chat.connectionClosed')
-          })
+          setErrorBanner((current) =>
+            current ?? {
+              kind: 'connection',
+              message: t('chat.connectionClosed')
+            }
+          )
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
     }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged) ? 200 : 100)

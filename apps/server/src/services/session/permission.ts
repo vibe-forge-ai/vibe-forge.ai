@@ -1,13 +1,18 @@
+/* eslint-disable max-lines */
+
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
+import { getDb } from '#~/db/index.js'
+import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
+import { getSessionLogger } from '#~/utils/logger.js'
 import { updateConfigFile } from '@vibe-forge/config'
 import type {
+  AskUserQuestionParams,
   Config,
-  PermissionInteractionDecision,
   PermissionInteractionContext,
-  SessionPermissionMode,
-  AskUserQuestionParams
+  PermissionInteractionDecision,
+  SessionPermissionMode
 } from '@vibe-forge/types'
 import {
   createEmptySessionPermissionState,
@@ -17,9 +22,6 @@ import {
   splitManagedPermissionKeys
 } from '@vibe-forge/utils'
 import type { PermissionToolSubject, SessionPermissionState } from '@vibe-forge/utils'
-import { getDb } from '#~/db/index.js'
-import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
-import { getSessionLogger } from '#~/utils/logger.js'
 
 export type PermissionStoredDecision = 'allow' | 'deny' | 'ask' | 'inherit'
 
@@ -47,11 +49,12 @@ const PERMISSION_PROJECT_CONFIG_PATH = '.ai.config.json'
 
 const uniqueStrings = (values: string[]) => [...new Set(values)]
 
-const normalizeKeys = (values: string[]) => uniqueStrings(
-  values
-    .map((value) => normalizePermissionToolName(value)?.key ?? value.trim())
-    .filter((value): value is string => value.trim() !== '')
-)
+const normalizeKeys = (values: string[]) =>
+  uniqueStrings(
+    values
+      .map((value) => normalizePermissionToolName(value)?.key ?? value.trim())
+      .filter((value): value is string => value.trim() !== '')
+  )
 
 const removeKeys = (values: string[], keys: Set<string>) => values.filter(value => !keys.has(value.trim()))
 
@@ -124,13 +127,19 @@ export const syncPermissionStateMirror = async (
   await mkdir(dirname(mirrorPath), { recursive: true })
   await writeFile(
     mirrorPath,
-    `${JSON.stringify({
-      sessionId,
-      adapter,
-      permissionState: getSessionPermissionState(sessionId),
-      projectPermissions: buildMirrorProjectPermissions(mergedConfig),
-      updatedAt: Date.now()
-    }, null, 2)}\n`,
+    `${
+      JSON.stringify(
+        {
+          sessionId,
+          adapter,
+          permissionState: getSessionPermissionState(sessionId),
+          projectPermissions: buildMirrorProjectPermissions(mergedConfig),
+          updatedAt: Date.now()
+        },
+        null,
+        2
+      )
+    }\n`,
     'utf8'
   )
 }

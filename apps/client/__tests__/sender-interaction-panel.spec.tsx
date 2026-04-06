@@ -1,7 +1,7 @@
-import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { createInstance } from 'i18next'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const createI18n = async () => {
   const i18n = createInstance()
@@ -61,11 +61,27 @@ const renderPanel = async ({
             question: '当前任务需要使用 Write 才能继续，请选择处理方式。',
             options: [
               { label: '同意本次', value: 'allow_once', description: '仅继续这次被拦截的操作。' },
-              { label: '同意并在当前会话忽略类似调用', value: 'allow_session', description: '本会话内同类工具不再重复询问。' },
-              { label: '同意并在当前项目忽略类似调用', value: 'allow_project', description: '写入 .ai.config.json，后续新会话仍生效。' },
+              {
+                label: '同意并在当前会话忽略类似调用',
+                value: 'allow_session',
+                description: '本会话内同类工具不再重复询问。'
+              },
+              {
+                label: '同意并在当前项目忽略类似调用',
+                value: 'allow_project',
+                description: '写入 .ai.config.json，后续新会话仍生效。'
+              },
               { label: '拒绝本次', value: 'deny_once', description: '拒绝当前这次操作。' },
-              { label: '拒绝并在当前会话阻止类似调用', value: 'deny_session', description: '本会话内同类工具直接拒绝。' },
-              { label: '拒绝并在当前项目阻止类似调用', value: 'deny_project', description: '写入 .ai.config.json，后续新会话仍生效。' }
+              {
+                label: '拒绝并在当前会话阻止类似调用',
+                value: 'deny_session',
+                description: '本会话内同类工具直接拒绝。'
+              },
+              {
+                label: '拒绝并在当前项目阻止类似调用',
+                value: 'deny_project',
+                description: '写入 .ai.config.json，后续新会话仍生效。'
+              }
             ],
             permissionContext: {
               adapter: 'claude-code',

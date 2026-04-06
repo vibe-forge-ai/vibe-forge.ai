@@ -66,7 +66,11 @@ export function SenderBody({
   onCursorChange: (cursorOffset: number | null) => void
   onKeyDown: (event: KeyboardEvent) => void
   onPaste: (event: ClipboardEvent) => void | Promise<void>
-  resolveCompletionMatch: (value: string, cursorOffset: number | null, sessionInfo?: SessionInfo | null) => SenderCompletionMatch | null
+  resolveCompletionMatch: (
+    value: string,
+    cursorOffset: number | null,
+    sessionInfo?: SessionInfo | null
+  ) => SenderCompletionMatch | null
   resolveTokenDecorations: (value: string) => SenderTokenDecoration[]
   toolbarState: SenderToolbarState
   toolbarData: SenderToolbarData

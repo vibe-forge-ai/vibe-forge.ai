@@ -1,5 +1,4 @@
-import type { ChatMessage, ChatMessageContent, TaskRuntime } from '@vibe-forge/types'
-import type { AdapterInteractionRequest } from '@vibe-forge/types'
+import type { AdapterInteractionRequest, ChatMessage, ChatMessageContent, TaskRuntime } from '@vibe-forge/types'
 
 import type { HookLogger } from './context'
 import type { HookInputs } from './type'

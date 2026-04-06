@@ -3,7 +3,7 @@ import process from 'node:process'
 import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
 import { callHook } from '@vibe-forge/hooks'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/task'
-import type { ChatMessage, McpTaskOutputEvent, McpTaskSession, SessionPermissionMode } from '@vibe-forge/types'
+import type { AdapterOutputEvent, ChatMessage, McpTaskSession, SessionPermissionMode } from '@vibe-forge/types'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 
 import { fetchSessionMessages, postSessionEvent } from '#~/sync.js'
@@ -118,7 +118,7 @@ export class TaskManager {
         mcpServers: resolvedConfig.mcpServers,
         promptAssetIds: resolvedConfig.promptAssetIds,
         assetBundle: resolvedConfig.assetBundle,
-        onEvent: (event: McpTaskOutputEvent) => {
+        onEvent: (event: AdapterOutputEvent) => {
           this.handleEvent(taskId, event)
         }
       })
@@ -165,7 +165,7 @@ export class TaskManager {
     return { taskId }
   }
 
-  private handleEvent(taskId: string, event: McpTaskOutputEvent) {
+  private handleEvent(taskId: string, event: AdapterOutputEvent) {
     const task = this.tasks.get(taskId)
     if (!task) return
 
@@ -221,6 +221,8 @@ export class TaskManager {
         this.stopServerPolling(taskId)
         task.onStop?.()
         break
+      default:
+        break
     }
   }
 
@@ -272,7 +274,7 @@ export class TaskManager {
     }
   }
 
-  private async syncEvent(task: TaskInfo, event: McpTaskOutputEvent) {
+  private async syncEvent(task: TaskInfo, event: AdapterOutputEvent) {
     if (!task.serverSync) return
     try {
       await postSessionEvent(task.serverSync.sessionId, event as unknown as Record<string, unknown>)

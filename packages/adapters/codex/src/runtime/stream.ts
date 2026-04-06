@@ -32,14 +32,22 @@ import {
   toCodexOutboundApprovalPolicy
 } from './session-common'
 
-const buildPermissionInteractionOptions = () => ([
+const buildPermissionInteractionOptions = () => [
   { label: '同意本次', value: 'allow_once', description: '仅继续这次被拦截的操作。' },
   { label: '同意并在当前会话忽略类似调用', value: 'allow_session', description: '本会话内同类工具不再重复询问。' },
-  { label: '同意并在当前项目忽略类似调用', value: 'allow_project', description: '写入 .ai.config.json，后续新会话仍生效。' },
+  {
+    label: '同意并在当前项目忽略类似调用',
+    value: 'allow_project',
+    description: '写入 .ai.config.json，后续新会话仍生效。'
+  },
   { label: '拒绝本次', value: 'deny_once', description: '拒绝当前这次操作。' },
   { label: '拒绝并在当前会话阻止类似调用', value: 'deny_session', description: '本会话内同类工具直接拒绝。' },
-  { label: '拒绝并在当前项目阻止类似调用', value: 'deny_project', description: '写入 .ai.config.json，后续新会话仍生效。' }
-])
+  {
+    label: '拒绝并在当前项目阻止类似调用',
+    value: 'deny_project',
+    description: '写入 .ai.config.json，后续新会话仍生效。'
+  }
+]
 
 const buildCodexPermissionInteraction = (params: {
   sessionId: string
@@ -240,7 +248,7 @@ export async function createStreamCodexSession(
         return
       }
 
-      const payload = params as CommandExecApprovalParams
+      const payload = params as unknown as CommandExecApprovalParams
       const interactionId = `codex-approval:${id}`
       pendingApprovals.set(interactionId, {
         rpcId: id,
@@ -269,7 +277,7 @@ export async function createStreamCodexSession(
         return
       }
 
-      const payload = params as FileChangeApprovalParams
+      const payload = params as unknown as FileChangeApprovalParams
       const interactionId = `codex-approval:${id}`
       pendingApprovals.set(interactionId, {
         rpcId: id,
@@ -464,16 +472,19 @@ export async function createStreamCodexSession(
       proc.kill()
     },
     emit,
-    respondInteraction: (interactionId, data) => {
+    respondInteraction: (interactionId: string, data: string | string[]) => {
       const pending = pendingApprovals.get(interactionId)
       if (pending == null) return
 
       pendingApprovals.delete(interactionId)
-      rpc.respond(pending.rpcId, buildCodexApprovalResponse({
+      rpc.respond(
+        pending.rpcId,
+        buildCodexApprovalResponse({
           answer: data,
           availableDecisions: pending.availableDecisions,
           kind: pending.kind
-        }))
+        })
+      )
     },
     pid: proc.pid
   }

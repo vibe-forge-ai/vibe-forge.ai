@@ -1,7 +1,7 @@
 import './SenderInteractionPanel.scss'
 
-import { useEffect, useState } from 'react'
 import { Button } from 'antd'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AskUserQuestionParams } from '@vibe-forge/core'
@@ -52,8 +52,10 @@ export function SenderInteractionPanel({
   const title = toolSummary === ''
     ? interactionRequest.payload.question
     : t('chat.permissionRequestTitleWithTool', { tool: toolSummary })
-  const primaryOptions = interactionRequest.payload.options?.filter(option => primaryOptionValues.has(option.value ?? '')) ?? []
-  const secondaryOptions = interactionRequest.payload.options?.filter(option => !primaryOptionValues.has(option.value ?? '')) ?? []
+  const primaryOptions =
+    interactionRequest.payload.options?.filter(option => primaryOptionValues.has(option.value ?? '')) ?? []
+  const secondaryOptions =
+    interactionRequest.payload.options?.filter(option => !primaryOptionValues.has(option.value ?? '')) ?? []
 
   useEffect(() => {
     setShowAllOptions(false)

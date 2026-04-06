@@ -7,11 +7,10 @@ import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { branchSessionFromMessage } from '#~/services/session/history.js'
-import { handleInteractionResponse } from '#~/services/session/interaction.js'
 import { killSession, processUserMessage, updateAndNotifySession } from '#~/services/session/index.js'
 import {
-  clearSessionInteraction,
   getSessionInteraction,
+  handleInteractionResponse,
   setSessionInteraction
 } from '#~/services/session/interaction.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'

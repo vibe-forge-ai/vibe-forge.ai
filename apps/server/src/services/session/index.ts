@@ -11,8 +11,13 @@ import type {
   SessionPermissionMode,
   WSEvent
 } from '@vibe-forge/core'
-import type { AskUserQuestionParams, PermissionInteractionDecision } from '@vibe-forge/types'
-import type { AdapterErrorData, AdapterOutputEvent, SessionInfo } from '@vibe-forge/types'
+import type {
+  AdapterErrorData,
+  AdapterOutputEvent,
+  AskUserQuestionParams,
+  PermissionInteractionDecision,
+  SessionInfo
+} from '@vibe-forge/types'
 
 import { handleChannelSessionEvent } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
@@ -602,7 +607,10 @@ export async function startAdapterSession(
                     const decision = resolvePermissionInteractionDecision(answer)
                     if (decision == null || decision === PERMISSION_DECISION_CANCEL) {
                       pendingPermissionRecoveryStore.delete(sessionId)
-                      emitSessionError(sessionId, buildPermissionDeclinedError('用户取消了本次权限授权，任务未继续执行。'))
+                      emitSessionError(
+                        sessionId,
+                        buildPermissionDeclinedError('用户取消了本次权限授权，任务未继续执行。')
+                      )
                       return
                     }
 

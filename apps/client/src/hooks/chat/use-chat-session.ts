@@ -36,9 +36,10 @@ export function useChatSession({
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { effort, setEffort, effortOptions } = useChatEffort()
   const { activeView, setActiveView } = useChatView()
-  const { interactionRequest, setInteractionRequest, handleInteractionResponse: submitInteractionResponse } = useChatInteraction({
-    sessionId: session?.id
-  })
+  const { interactionRequest, setInteractionRequest, handleInteractionResponse: submitInteractionResponse } =
+    useChatInteraction({
+      sessionId: session?.id
+    })
   const {
     messages,
     setMessages,

@@ -105,7 +105,7 @@ const mapManagedPermissionKeyToOpenCode = (value: string) => {
   if (normalized in CANONICAL_TO_OPENCODE_PERMISSION_KEY) {
     return CANONICAL_TO_OPENCODE_PERMISSION_KEY[normalized]
   }
-  return /^[_A-Za-z][_A-Za-z0-9-]*$/.test(normalized)
+  return /^[a-z_][\w-]*$/i.test(normalized)
     ? `mcp__${normalized}__*`
     : undefined
 }
@@ -118,11 +118,13 @@ export const buildManagedPermissionConfig = (
   const ask = splitManagedPermissionKeys(permissions?.ask).bare
   const result: PermissionRecord = {}
 
-  for (const [values, decision] of [
-    [allow, 'allow'],
-    [ask, 'ask'],
-    [deny, 'deny']
-  ] as const) {
+  for (
+    const [values, decision] of [
+      [allow, 'allow'],
+      [ask, 'ask'],
+      [deny, 'deny']
+    ] as const
+  ) {
     for (const value of values) {
       const mapped = mapManagedPermissionKeyToOpenCode(value)
       if (mapped == null) continue

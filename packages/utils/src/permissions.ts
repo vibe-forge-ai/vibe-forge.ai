@@ -69,7 +69,7 @@ const uniqueStrings = (values: string[]) => [...new Set(values)]
 
 const normalizeAliasKey = (value: string) => value.replace(/[\s_-]+/g, '').toLowerCase()
 
-const sanitizeBareKey = (value: string) => value.replace(/[^A-Za-z0-9-]+/g, '')
+const sanitizeBareKey = (value: string) => value.replace(/[^a-z0-9-]+/gi, '')
 
 const toTitleCase = (value: string) => (
   value.length === 0 ? value : `${value[0]!.toUpperCase()}${value.slice(1)}`
@@ -87,11 +87,14 @@ export const normalizeSessionPermissionState = (value: unknown): SessionPermissi
     ? value as Record<string, unknown>
     : {}
 
-  const normalizeList = (input: unknown) => uniqueStrings(
-    Array.isArray(input)
-      ? input.filter((item): item is string => typeof item === 'string' && item.trim() !== '').map(item => item.trim())
-      : []
-  )
+  const normalizeList = (input: unknown) =>
+    uniqueStrings(
+      Array.isArray(input)
+        ? input.filter((item): item is string => typeof item === 'string' && item.trim() !== '').map(item =>
+          item.trim()
+        )
+        : []
+    )
 
   return {
     allow: normalizeList(record.allow),
@@ -101,7 +104,7 @@ export const normalizeSessionPermissionState = (value: unknown): SessionPermissi
   }
 }
 
-export const isBarePermissionKey = (value: string) => /^[A-Za-z][A-Za-z0-9-]*$/.test(value)
+export const isBarePermissionKey = (value: string) => /^[a-z][a-z0-9-]*$/i.test(value)
 
 export const splitManagedPermissionKeys = (values: string[] | undefined) => {
   const bare: string[] = []

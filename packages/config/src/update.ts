@@ -134,8 +134,7 @@ const mergeMaskedValues = (incoming: unknown, existing: unknown): unknown => {
   return incoming
 }
 
-const hasOwn = (value: Record<string, unknown>, key: string) =>
-  Object.prototype.hasOwnProperty.call(value, key)
+const hasOwn = (value: Record<string, unknown>, key: string) => Object.prototype.hasOwnProperty.call(value, key)
 
 const updateConfigSection = (config: Config, section: string, value: unknown): Config => {
   const nextConfig: Config = { ...config }
@@ -172,7 +171,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         sectionValue.defaultModelService as Config['defaultModelService'],
         hasOwn(sectionValue, 'defaultModelService')
       )
-      updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'], hasOwn(sectionValue, 'defaultModel'))
+      updateField(
+        'defaultModel',
+        sectionValue.defaultModel as Config['defaultModel'],
+        hasOwn(sectionValue, 'defaultModel')
+      )
       updateField(
         'recommendedModels',
         sectionValue.recommendedModels as Config['recommendedModels'],

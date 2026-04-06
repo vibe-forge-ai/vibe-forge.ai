@@ -121,59 +121,60 @@ const buildAllowOutput = (
 
 export const createBuiltinPermissionPlugin = (
   env: Record<string, string | null | undefined>
-): Partial<Plugin> => definePlugin({
-  name: 'builtin-permissions',
-  PreToolUse: async (_ctx, input, next) => {
-    if (input.hookSource !== 'native' || input.canBlock === false) {
-      return next()
-    }
-    if (input.adapter !== 'claude-code' && input.adapter !== 'opencode') {
-      return next()
-    }
-
-    const host = env.__VF_PROJECT_AI_SERVER_HOST__?.trim()
-    const port = env.__VF_PROJECT_AI_SERVER_PORT__?.trim()
-    const sessionId = input.sessionId.trim()
-    const adapter = input.adapter
-
-    try {
-      if (host != null && host !== '' && port != null && port !== '') {
-        const result = await postPermissionCheck({
-          host,
-          port,
-          sessionId,
-          adapter,
-          toolName: input.toolName
-        })
-        if (result.result === 'deny') {
-          return buildDenyOutput(result.subject)
-        }
-        if (result.result === 'allow') {
-          return buildAllowOutput(result.subject)
-        }
+): Partial<Plugin> =>
+  definePlugin({
+    name: 'builtin-permissions',
+    PreToolUse: async (_ctx, input, next) => {
+      if (input.hookSource !== 'native' || input.canBlock === false) {
         return next()
       }
-    } catch {
-    }
+      if (input.adapter !== 'claude-code' && input.adapter !== 'opencode') {
+        return next()
+      }
 
-    const subject = normalizePermissionToolName(input.toolName)
-    if (subject == null) {
+      const host = env.__VF_PROJECT_AI_SERVER_HOST__?.trim()
+      const port = env.__VF_PROJECT_AI_SERVER_PORT__?.trim()
+      const sessionId = input.sessionId.trim()
+      const adapter = input.adapter
+
+      try {
+        if (host != null && host !== '' && port != null && port !== '') {
+          const result = await postPermissionCheck({
+            host,
+            port,
+            sessionId,
+            adapter,
+            toolName: input.toolName
+          })
+          if (result.result === 'deny') {
+            return buildDenyOutput(result.subject)
+          }
+          if (result.result === 'allow') {
+            return buildAllowOutput(result.subject)
+          }
+          return next()
+        }
+      } catch {
+      }
+
+      const subject = normalizePermissionToolName(input.toolName)
+      if (subject == null) {
+        return next()
+      }
+
+      const fallback = await readMirrorDecision({
+        cwd: input.cwd,
+        adapter,
+        sessionId,
+        subject
+      })
+      if (fallback === 'deny') {
+        return buildDenyOutput(subject)
+      }
+      if (fallback === 'allow') {
+        return buildAllowOutput(subject)
+      }
+
       return next()
     }
-
-    const fallback = await readMirrorDecision({
-      cwd: input.cwd,
-      adapter,
-      sessionId,
-      subject
-    })
-    if (fallback === 'deny') {
-      return buildDenyOutput(subject)
-    }
-    if (fallback === 'allow') {
-      return buildAllowOutput(subject)
-    }
-
-    return next()
-  }
-})
+  })
