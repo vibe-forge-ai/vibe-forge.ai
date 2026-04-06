@@ -39,24 +39,27 @@ export function useSidebarQueryState() {
       search: '',
       tag: '',
       adapter: '',
-      sort: 'desc'
+      sort: ''
     },
     omit: {
       sidebar: (value) => value === '',
       search: (value) => value === '',
       tag: (value) => value === '',
       adapter: (value) => value === '',
-      sort: (value) => value === '' || value === 'desc'
+      sort: (value) => value === ''
     }
   })
 
   const tagFilters = useMemo(() => splitFilterValues(values.tag), [values.tag])
   const adapterFilters = useMemo(() => splitFilterValues(values.adapter), [values.adapter])
   const searchQuery = values.search
-  const sortOrder: SidebarSessionSortOrder = values.sort === 'asc' ? 'asc' : 'desc'
+  const sortSelection: SidebarSessionSortOrder | undefined = values.sort === 'asc' || values.sort === 'desc'
+    ? values.sort
+    : undefined
+  const sortOrder: SidebarSessionSortOrder = sortSelection ?? 'desc'
   const isSidebarCollapsed = values.sidebar === 'collapsed'
   const hasActiveFilterConditions = searchQuery.trim() !== '' || tagFilters.length > 0 || adapterFilters.length > 0
-  const hasActiveSearchControls = hasActiveFilterConditions || sortOrder !== 'desc'
+  const hasActiveSearchControls = hasActiveFilterConditions || sortSelection != null
 
   return {
     adapterFilters,
@@ -70,6 +73,7 @@ export function useSidebarQueryState() {
     setSidebarCollapsed: (collapsed: boolean) => update({ sidebar: collapsed ? 'collapsed' : '' }),
     setTagFilters: (filters: string[]) => update({ tag: joinFilterValues(filters) }),
     sortOrder,
+    sortSelection,
     tagFilters
   }
 }

@@ -16,6 +16,7 @@ interface SidebarHeaderSearchActionsProps {
   selectedCount: number
   shouldShowSearchActions: boolean
   sortOrder: SidebarSessionSortOrder
+  sortSelection?: SidebarSessionSortOrder
   tagFilters: string[]
   totalCount: number
   onAdapterFilterChange: (filters: string[]) => void
@@ -40,6 +41,7 @@ export function SidebarHeaderSearchActions({
   selectedCount,
   shouldShowSearchActions,
   sortOrder,
+  sortSelection,
   tagFilters,
   totalCount,
   onAdapterFilterChange,
@@ -147,8 +149,9 @@ export function SidebarHeaderSearchActions({
               />
               <SidebarHeaderSelectField
                 icon='swap_vert'
+                placeholder={t('common.sort')}
                 options={sortOptions}
-                value={sortOrder}
+                value={sortSelection}
                 onChange={(value) => onSortOrderChange(value as SidebarSessionSortOrder)}
                 suffixIcon={filterSuffixIcon}
               />

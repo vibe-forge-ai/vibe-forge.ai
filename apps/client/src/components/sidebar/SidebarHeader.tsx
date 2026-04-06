@@ -19,6 +19,7 @@ interface SidebarHeaderProps {
   searchQuery: string
   selectedCount: number
   sortOrder: SidebarSessionSortOrder
+  sortSelection?: SidebarSessionSortOrder
   shortcutLabel: string
   tagFilters: string[]
   totalCount: number
@@ -47,6 +48,7 @@ export function SidebarHeader({
   searchQuery,
   selectedCount,
   sortOrder,
+  sortSelection,
   shortcutLabel,
   tagFilters,
   totalCount,
@@ -64,8 +66,7 @@ export function SidebarHeader({
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
   const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
-  const shouldShowSearchActions = !isSidebarCollapsed &&
-    (isSearchActionsOpen || isBatchMode || hasActiveSearchControls)
+  const shouldShowSearchActions = !isSidebarCollapsed && (isSearchActionsOpen || isBatchMode)
 
   return (
     <div className='sidebar-header'>
@@ -129,6 +130,7 @@ export function SidebarHeader({
           selectedCount={selectedCount}
           shouldShowSearchActions={shouldShowSearchActions}
           sortOrder={sortOrder}
+          sortSelection={sortSelection}
           tagFilters={tagFilters}
           totalCount={totalCount}
           onBatchArchive={onBatchArchive}

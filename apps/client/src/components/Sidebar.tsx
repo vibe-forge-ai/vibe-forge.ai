@@ -51,6 +51,7 @@ export function Sidebar({
     setSidebarCollapsed,
     setTagFilters,
     sortOrder,
+    sortSelection,
     tagFilters
   } = useSidebarQueryState()
   const isResizing = useAtomValue(isSidebarResizingAtom)
@@ -306,6 +307,7 @@ export function Sidebar({
           isSidebarCollapsed={isSidebarCollapsed}
           searchQuery={searchQuery}
           sortOrder={sortOrder}
+          sortSelection={sortSelection}
           onSearchChange={setSearchQuery}
           availableTags={availableTags}
           tagFilters={tagFilters}
