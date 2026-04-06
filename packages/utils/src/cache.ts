@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
@@ -28,9 +29,11 @@ export const setCache = async <K extends keyof Cache>(
   } catch {
     await fs.mkdir(cacheDir, { recursive: true })
   }
-  await fs.writeFile(cachePath, JSON.stringify(value, null, 2), {
+  const tempPath = `${cachePath}.${randomUUID()}.tmp`
+  await fs.writeFile(tempPath, JSON.stringify(value, null, 2), {
     flag: 'w'
   })
+  await fs.rename(tempPath, cachePath)
   return { cachePath }
 }
 
@@ -49,5 +52,18 @@ export const getCache = async <K extends keyof Cache>(
     }
     throw error
   }
-  return JSON.parse(await fs.readFile(cachePath, 'utf-8'))
+  const content = await fs.readFile(cachePath, 'utf-8')
+
+  if (content.trim() === '') {
+    return undefined
+  }
+
+  try {
+    return JSON.parse(content) as Cache[K]
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return undefined
+    }
+    throw error
+  }
 }
