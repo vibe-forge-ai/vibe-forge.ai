@@ -219,7 +219,11 @@ export const resolveSelectedMcpNames = (
   const includeRefs = selection?.include ??
     (bundle.defaultIncludeMcpServers.length > 0 ? bundle.defaultIncludeMcpServers : undefined)
   const excludeRefs = selection?.exclude ??
-    (bundle.defaultExcludeMcpServers.length > 0 ? bundle.defaultExcludeMcpServers : undefined)
+    (
+      selection?.include == null && bundle.defaultExcludeMcpServers.length > 0
+        ? bundle.defaultExcludeMcpServers
+        : undefined
+    )
 
   const resolveRefs = (refs: string[] | undefined) => {
     if (refs == null || refs.length === 0) return undefined
