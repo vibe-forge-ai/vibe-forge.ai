@@ -18,6 +18,7 @@ export function SenderMonacoEditor({
   placeholder,
   disabled,
   sendShortcut,
+  sendShortcutDisabled,
   onSendShortcut,
   secondarySendShortcut,
   onSecondarySendShortcut,
@@ -34,6 +35,7 @@ export function SenderMonacoEditor({
   placeholder: string
   disabled: boolean
   sendShortcut: string
+  sendShortcutDisabled?: boolean
   onSendShortcut: () => void
   secondarySendShortcut?: string
   onSecondarySendShortcut?: () => void
@@ -60,6 +62,7 @@ export function SenderMonacoEditor({
     value,
     disabled,
     sendShortcut,
+    sendShortcutDisabled,
     onSendShortcut,
     secondarySendShortcut,
     onSecondarySendShortcut,

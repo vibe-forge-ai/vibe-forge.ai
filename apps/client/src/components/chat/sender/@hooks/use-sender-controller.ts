@@ -80,6 +80,10 @@ export const useSenderController = (props: SenderProps) => {
     interactionRequest: props.interactionRequest,
     isInlineEdit
   })
+  const isPermissionInteraction = !isInlineEdit && props.interactionRequest?.payload.kind === 'permission'
+  const showConfirmInteractionAction = isPermissionInteraction &&
+    (props.interactionOptionNavigation?.optionCount ?? 0) > 0
+  const sendBlockedTooltip = isPermissionInteraction ? t('chat.permissionSendBlockedTooltip') : undefined
   const { clearInputShortcut, composerControlShortcuts, resolvedSendShortcut, queuedMessageShortcuts } =
     useSenderShortcuts({
       enabled: !hideSender && !attachments.showContextPicker && !isInlineEdit,
@@ -116,7 +120,20 @@ export const useSenderController = (props: SenderProps) => {
     t,
     resetComposer
   })
-  const triggerSend = (mode?: 'steer' | 'next') => void handleSend(mode)
+  const handleBlockedSendAttempt = () => {
+    void message.error({
+      content: t('chat.permissionSendBlockedError'),
+      key: 'chat-permission-send-blocked'
+    })
+  }
+  const triggerSend = (mode?: 'steer' | 'next') => {
+    if (isPermissionInteraction) {
+      handleBlockedSendAttempt()
+      return
+    }
+
+    void handleSend(mode)
+  }
 
   useSenderAutofocus({ autoFocus: props.autoFocus === true, editorRef })
   useSenderReferenceFocusRestore({ focusRestore, referenceActions })
@@ -130,8 +147,11 @@ export const useSenderController = (props: SenderProps) => {
     input: composer.input,
     pendingImageCount: composer.pendingImages.length,
     pendingFileCount: composer.pendingFiles.length,
+    interactionOptionCount: props.interactionOptionNavigation?.optionCount ?? 0,
     onCancel: props.onCancel,
     onClear: props.onClear,
+    onInteractionOptionMove: props.interactionOptionNavigation?.onMove,
+    onInteractionOptionSubmit: props.interactionOptionNavigation?.onSubmit,
     onInterrupt: props.onInterrupt,
     onInterruptHint: () => {
       void message.open({
@@ -173,6 +193,11 @@ export const useSenderController = (props: SenderProps) => {
     isInlineEdit,
     isMac,
     isThinking,
+    sendBlocked: isPermissionInteraction,
+    sendBlockedTooltip,
+    showConfirmInteractionAction,
+    confirmInteractionLabel: showConfirmInteractionAction ? t('chat.permissionConfirmOption') : undefined,
+    onConfirmInteractionOption: showConfirmInteractionAction ? props.interactionOptionNavigation?.onSubmit : undefined,
     message,
     props,
     refs: { fileInputRef, modelSelectRef, effortSelectRef },
@@ -202,8 +227,8 @@ export const useSenderController = (props: SenderProps) => {
     permissionContext,
     editorRef,
     placeholder: props.placeholder ?? props.interactionRequest?.payload.question ?? t('chat.inputPlaceholder'),
-    secondarySendShortcut: isThinking ? queuedMessageShortcuts.queueNext : undefined,
-    onSecondarySendShortcut: isThinking
+    secondarySendShortcut: isThinking && !isPermissionInteraction ? queuedMessageShortcuts.queueNext : undefined,
+    onSecondarySendShortcut: isThinking && !isPermissionInteraction
       ? () => {
         void handleSend('next')
       }

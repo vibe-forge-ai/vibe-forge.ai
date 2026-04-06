@@ -61,6 +61,58 @@
     border-color: var(--border-color);
     opacity: .72;
   }
+
+  &.blocked {
+    cursor: not-allowed;
+
+    &:hover {
+      color: #9ca3af;
+      border-color: var(--border-color);
+      background: color-mix(
+        in srgb,
+        var(--bg-color, #fff) 92%,
+        var(--sub-bg-color, #f3f4f6) 8%
+      );
+    }
+
+    .material-symbols-rounded {
+      transform: none;
+    }
+  }
+}
+
+.chat-confirm-btn.ant-btn {
+  height: var(--sender-control-height);
+  padding: 0 10px;
+  border-radius: var(--sender-control-radius);
+  border-color: var(--border-color);
+  background: var(--bg-color, #fff);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .material-symbols-rounded {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  &:hover,
+  &:focus {
+    border-color: color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 38%,
+      var(--border-color) 62%
+    );
+    color: var(--text-color, #1f2937);
+    background: color-mix(
+      in srgb,
+      var(--bg-color, #fff) 90%,
+      var(--sub-bg-color, #eff6ff) 10%
+    );
+  }
 }
 
 .sender-send-tooltip {

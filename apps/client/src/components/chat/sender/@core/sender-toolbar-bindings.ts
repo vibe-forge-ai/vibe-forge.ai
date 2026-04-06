@@ -37,6 +37,7 @@ export const createSenderToolbarBindings = ({
     onPermissionModeChange?: (mode: PermissionMode) => void
     onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
     onCancel?: () => void
+    onConfirmInteractionOption?: () => void
     onSend: (mode?: SessionQueuedMessageMode) => void
   }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
@@ -69,6 +70,9 @@ export const createSenderToolbarBindings = ({
     isInlineEdit: boolean
     isMac: boolean
     isThinking: boolean
+    sendBlocked: boolean
+    sendBlockedTooltip?: string
+    showConfirmInteractionAction: boolean
     modelUnavailable?: boolean
     referenceActions: {
       showReferenceActions: boolean
@@ -93,6 +97,7 @@ export const createSenderToolbarBindings = ({
       openEffortSelector: () => boolean
     }
     submitLabel?: string
+    confirmInteractionLabel?: string
     submitLoading: boolean
     supportsEffort: boolean
   }
@@ -101,6 +106,9 @@ export const createSenderToolbarBindings = ({
     isInlineEdit: ui.isInlineEdit,
     isThinking: ui.isThinking,
     modelUnavailable: Boolean(ui.modelUnavailable),
+    sendBlocked: ui.sendBlocked,
+    sendBlockedTooltip: ui.sendBlockedTooltip,
+    showConfirmInteractionAction: ui.showConfirmInteractionAction,
     adapterLocked: ui.adapterLocked,
     submitLoading: ui.submitLoading,
     supportsEffort: ui.supportsEffort,
@@ -135,7 +143,8 @@ export const createSenderToolbarBindings = ({
       ...ui.composerControlShortcuts,
       ...selection.queuedMessageShortcuts
     },
-    submitLabel: ui.submitLabel
+    submitLabel: ui.submitLabel,
+    confirmInteractionLabel: ui.confirmInteractionLabel
   }
 
   const toolbarRefs: SenderToolbarRefs = {
@@ -159,6 +168,7 @@ export const createSenderToolbarBindings = ({
     onPermissionModeChange: callbacks.onPermissionModeChange,
     onQueueModeChange: callbacks.onQueueModeChange,
     onCancel: callbacks.onCancel,
+    onConfirmInteractionOption: callbacks.onConfirmInteractionOption,
     onSend: callbacks.onSend,
     referenceActions: ui.referenceActions,
     selectOverlays: ui.selectOverlays,

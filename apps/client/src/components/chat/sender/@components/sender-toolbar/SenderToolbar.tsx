@@ -73,12 +73,17 @@ export function SenderToolbar({
           submitLabel={data.submitLabel}
           hasComposerContent={state.hasComposerContent}
           modelUnavailable={state.modelUnavailable}
+          sendBlocked={state.sendBlocked}
+          sendBlockedTooltip={state.sendBlockedTooltip}
+          showConfirmInteractionAction={state.showConfirmInteractionAction}
+          confirmInteractionLabel={data.confirmInteractionLabel}
           isThinking={state.isThinking}
           resolvedSendShortcut={state.resolvedSendShortcut}
           queueSteerShortcut={data.composerControlShortcuts.queueSteer}
           queueNextShortcut={data.composerControlShortcuts.queueNext}
           isMac={state.isMac}
           onCancel={handlers.onCancel}
+          onConfirmInteractionAction={handlers.onConfirmInteractionOption}
           onSend={handlers.onSend}
           onStop={handlers.onInterrupt}
         />

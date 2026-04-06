@@ -172,8 +172,7 @@ describe('session service', () => {
 
   it('terminates parked external sessions that are waiting for interaction', () => {
     externalSessionStore.set('sess-1', {
-      sockets: new Set(),
-      messages: [],
+      ...createSessionConnectionState(),
       currentInteraction: {
         id: 'interaction-1',
         payload: {
