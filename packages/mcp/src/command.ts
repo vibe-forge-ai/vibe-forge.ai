@@ -59,5 +59,5 @@ export const configureMcpCommand = (command: Command, version: string) => (
 )
 
 export function registerMcpCommand(program: Command, version: string) {
-  return configureMcpCommand(program.command('mcp'), version)
+  return configureMcpCommand(program, version)
 }
