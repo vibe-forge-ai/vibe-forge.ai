@@ -19,8 +19,18 @@
 - `pnpm tools adapter-e2e run opencode`
 - `pnpm tools adapter-e2e run all`
 - `pnpm tools adapter-e2e test codex-read-once --update`
+- `pnpm tools adapter-e2e test codex-apply-patch-once --update`
+- `pnpm tools adapter-e2e test codex-transcript-mcp-bridge --update`
+- `pnpm tools adapter-e2e test codex-transcript-file-change-bridge --update`
 - `pnpm tools adapter-e2e test codex-direct-answer --update`
 - `pnpm tools adapter-e2e test all --update`
+
+## Codex 补链路验证
+
+- `codex-apply-patch-once`：验证 `custom_tool_call` / `custom_tool_call_output` 能补出观测型 `PreToolUse` / `PostToolUse`。
+- `codex-transcript-mcp-bridge`：验证 transcript 注入的 `mcp_tool_call` / `mcp_tool_call_output` 能进入统一 hook 日志。
+- `codex-transcript-file-change-bridge`：验证 transcript 注入的 `file_change` 事件能进入统一 hook 日志。
+- 上面两条 transcript 注入 case 只用于验证 bridge 统计链路，不代表这些事件具备 native hook 的阻断语义。
 
 ## 仓库内 smoke 命令
 

@@ -18,9 +18,11 @@
 ## Codex 特别说明
 
 - Codex 官方原生 `PreToolUse` / `PostToolUse` 当前只稳定覆盖 `Bash`。
-- `apply_patch`、`web_search`、MCP、文件变更这类非 Bash 工具，如果要补齐统计，优先走 transcript JSONL 旁路观测。
+- 当前仓库里，Codex transcript JSONL bridge 已验证覆盖 `apply_patch`、`web_search`、MCP、`file_change` 这几类非 Bash 事件。
+- 这几类非 Bash 工具如果要补齐统计，优先走 transcript JSONL 旁路观测。
 - JSONL 旁路只能补“看见了什么工具、何时发生、输入摘要是什么”这类统计事实，不能像原生 hook 那样通过返回值阻断、改写或继续当前会话。
 - 因此 Codex 的非 Bash JSONL 观测事件统一按 `canBlock: false` 处理，即使它们最终映射成统一 hook 日志，也不能冒充 native `PreToolUse` / `PostToolUse`。
+- `dynamicToolCall` 这类 transcript 形态目前还没有仓库内真实样本和集成验证，文档先不把它写成已支持。
 
 ## 统一输入语义
 
