@@ -59,6 +59,20 @@
 - sender 相关单文件应尽量收敛在 200 行以内；超过后优先拆视图子组件、hooks、utils、样式文件，而不是继续在原文件加条件分支。
 - 子模块如果已经独立成形，例如 `model-select`、`reference-actions`、`sender-toolbar`，应建子目录，并在子目录内继续按职责拆分，而不是把新的辅助文件继续堆回 sender 根目录。
 
+## Sender 上方 Composer Card 设计约束
+
+- sender 上方的信息卡片统一视为 `composer card stack`，不要为 TODO、thinking、ask-user-question 各自维护一套独立容器样式。
+- 这类卡片优先复用 `ChatComposerCard`；新信息块先接入统一 card，再谈局部样式差异。
+- `composer card stack` 与 sender 之间默认不留额外空隙；宽度、边框和背景基调保持一致，视觉上应是一组连续的信息层。
+- 堆叠时只有最上方卡片保留上圆角，只有最下方的 sender 保留自己的完整圆角；中间卡片不应出现额外圆角或断开的分组感。
+- sender 上方卡片的展示优先级固定为：`todos`、`steer messages`、`next messages`、`ask user questions`；当前未接入的项也按这个顺序预留。
+- TODO 卡片默认折叠；折叠/展开时只让 body 参与动画，不要让 header 高度跳变。
+- TODO、thinking、ask-user-question 在信息密度上保持一致，优先通过布局收紧层级，不要只靠压缩 `padding` / `margin`。
+- 标题区的图标、字号、字重、行高应复用同一套节奏；ask-user-question 不应出现比 TODO 更重或更大的标题视觉。
+- 卡片表面保持简洁：不加阴影，背景色与 sender 基本一致；需要状态区分时优先用图标、文案和轻量色差，不单独造一套强强调背景。
+- 选项型列表默认纵向一行一个；说明信息放进 tooltip 或其他延迟展示入口，不直接铺在主列表里。
+- 选项 hover 优先做背景色和边框色过渡，避免通过新增/移除 border 造成闪烁或布局抖动。
+
 ## Sender import 约定
 
 - `Sender` 及其子组件按固定顺序组织 import：
