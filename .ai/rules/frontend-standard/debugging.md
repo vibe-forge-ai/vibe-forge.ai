@@ -32,6 +32,14 @@
   - console warning
 - 改完 tooltip / popover / 全局 token 后，先 reload 页面再读指标；隐藏浮层节点和旧 bundle warning 常常会误导判断。
 
+## CDP / Chrome 启动约定
+
+- 需要通过 CDP 调试前端页面时，先确认自己读过本文件，不要只把页面 `open` 到默认浏览器就开始排查。
+- 调试 Chrome 必须从冷启动开始带上 `--remote-debugging-port`；不要指望给一个已经打开的日常 Chrome 追加参数后继续复用。
+- 调试必须使用独立 profile，例如单独的 `--user-data-dir=...`；不要和用户日常使用中的 Chrome profile 混用。
+- 启动后先验 `http://127.0.0.1:<port>/json/version` 可访问，再确认目标页面真的出现在 target 列表里；不要只看“页面已经开着”。
+- 如果仓库里已经沉淀了更细的 Chrome / CDP 操作经验，开始前优先补读对应文档，不要临时猜启动参数。
+
 ## Sender / 浮层最小回归清单
 
 1. `更多` 能打开，且二级权限菜单能独立展开。

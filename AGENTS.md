@@ -18,6 +18,11 @@
 - 当前重构待办：`.ai/rules/REFACTOR-TODO.md`
 - 发布与更新日志：`changelog/`
 
+前端任务补充：
+
+- 只要任务涉及 `apps/client` 的页面交互、样式、浮层、focus、主题、热更新、真实 Chrome 回归或 CDP 调试，除了 `.ai/rules/FRONTEND-STANDARD.md`，还必须继续阅读 `.ai/rules/frontend-standard/debugging.md`。
+- 如果改动范围落在 `apps/client/`，还应继续阅读 `apps/client/AGENTS.md`；如果涉及聊天页 / sender / 消息级交互，再继续阅读 `apps/client/src/components/chat/AGENTS.md`。
+
 维护约定：
 
 - 以 `.ai/rules/` 为统一文档入口，不再以仓库根 `docs/` 作为主入口。
