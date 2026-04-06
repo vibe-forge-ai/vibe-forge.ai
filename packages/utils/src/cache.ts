@@ -49,5 +49,20 @@ export const getCache = async <K extends keyof Cache>(
     }
     throw error
   }
-  return JSON.parse(await fs.readFile(cachePath, 'utf-8'))
+  const content = await fs.readFile(cachePath, 'utf-8')
+
+  if (content.trim() === '') {
+    await fs.rm(cachePath, { force: true })
+    return undefined
+  }
+
+  try {
+    return JSON.parse(content) as Cache[K]
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      await fs.rm(cachePath, { force: true })
+      return undefined
+    }
+    throw error
+  }
 }

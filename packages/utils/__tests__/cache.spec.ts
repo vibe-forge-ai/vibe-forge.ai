@@ -1,6 +1,6 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -33,5 +33,19 @@ describe('cache utils', () => {
 
     expect(writeResult.cachePath).toBe(getCachePath(cwd, 'task-1', 'session-1', 'adapter.codex.threads'))
     expect(readResult).toEqual(expectedValue)
+  })
+
+  it('treats invalid cache json as a cache miss and removes the corrupt file', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-cache-'))
+    tempDirs.push(cwd)
+
+    const cachePath = getCachePath(cwd, 'task-1', 'session-1', 'adapter.codex.threads')
+    await mkdir(dirname(cachePath), { recursive: true })
+    await writeFile(cachePath, '{"broken":', 'utf8')
+
+    const result = await getCache(cwd, 'task-1', 'session-1', 'adapter.codex.threads')
+
+    expect(result).toBeUndefined()
+    await expect(getCache(cwd, 'task-1', 'session-1', 'adapter.codex.threads')).resolves.toBeUndefined()
   })
 })
