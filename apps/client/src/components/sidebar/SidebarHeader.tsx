@@ -29,7 +29,7 @@ interface SidebarHeaderProps {
   onAdapterFilterChange: (filters: string[]) => void
   onCreateSession: () => void
   onSearchChange: (query: string) => void
-  onSortOrderChange: (sort: SidebarSessionSortOrder) => void
+  onSortOrderChange: (sort?: SidebarSessionSortOrder) => void
   onSelectAll: (selected: boolean) => void
   onTagFilterChange: (tags: string[]) => void
   onToggleBatchMode: () => void

@@ -24,7 +24,7 @@ interface SidebarHeaderSearchActionsProps {
   onBatchDelete: () => void
   onBatchStar: () => void
   onSearchChange: (query: string) => void
-  onSortOrderChange: (sort: SidebarSessionSortOrder) => void
+  onSortOrderChange: (sort?: SidebarSessionSortOrder) => void
   onSelectAll: (selected: boolean) => void
   onTagFilterChange: (tags: string[]) => void
   onToggleBatchMode: () => void
@@ -152,7 +152,8 @@ export function SidebarHeaderSearchActions({
                 placeholder={t('common.sort')}
                 options={sortOptions}
                 value={sortSelection}
-                onChange={(value) => onSortOrderChange(value as SidebarSessionSortOrder)}
+                onChange={(value) => onSortOrderChange(value as SidebarSessionSortOrder | undefined)}
+                allowClear
                 suffixIcon={filterSuffixIcon}
               />
             </div>

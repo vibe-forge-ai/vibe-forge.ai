@@ -67,7 +67,7 @@ export function useSidebarQueryState() {
     hasActiveSearchControls,
     isSidebarCollapsed,
     searchQuery,
-    setSortOrder: (sort: SidebarSessionSortOrder) => update({ sort }),
+    setSortOrder: (sort?: SidebarSessionSortOrder) => update({ sort: sort ?? '' }),
     setAdapterFilters: (filters: string[]) => update({ adapter: joinFilterValues(filters) }),
     setSearchQuery: (search: string) => update({ search }),
     setSidebarCollapsed: (collapsed: boolean) => update({ sidebar: collapsed ? 'collapsed' : '' }),
