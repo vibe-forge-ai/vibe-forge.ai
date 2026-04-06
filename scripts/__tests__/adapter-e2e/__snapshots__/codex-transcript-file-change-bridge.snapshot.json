@@ -1,19 +1,19 @@
 {
-  "caseId": "codex-transcript-mcp-bridge",
+  "caseId": "codex-transcript-file-change-bridge",
   "adapter": "codex",
   "transport": "wrapper",
   "exitCode": 0,
-  "stdout": "E2E_CODEX_MCP_BRIDGE",
+  "stdout": "E2E_CODEX_FILE_CHANGE_BRIDGE",
   "stderr": [
-    "WARN codex_core::models_manager::model_info: Unknown model codex-transcript-mcp-bridge is used. This will use fallback model metadata.",
-    "WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=codex-transcript-mcp-bridge personality=pragmatic",
+    "WARN codex_core::models_manager::model_info: Unknown model codex-transcript-file-change-bridge is used. This will use fallback model metadata.",
+    "WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=codex-transcript-file-change-bridge personality=pragmatic",
     "WARN codex_core::shell_snapshot: Failed to delete shell snapshot at \"<repo>/.ai/.mock/.codex/shell_snapshots/<uuid>.tmp-<nonce>\": Os { code: 2, kind: NotFound, message: \"No such file or directory\" }"
   ],
   "mockTrace": [
     {
       "path": "/responses",
-      "model": "codex-transcript-mcp-bridge",
-      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.",
+      "model": "codex-transcript-file-change-bridge",
+      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.",
       "inputTypes": [
         "message",
         "message",
@@ -43,8 +43,8 @@
     },
     {
       "path": "/responses",
-      "model": "codex-transcript-mcp-bridge",
-      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.",
+      "model": "codex-transcript-file-change-bridge",
+      "request": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.",
       "inputTypes": [
         "message",
         "message",
@@ -63,7 +63,7 @@
       },
       "response": {
         "kind": "message",
-        "text": "E2E_CODEX_MCP_BRIDGE"
+        "text": "E2E_CODEX_FILE_CHANGE_BRIDGE"
       }
     }
   ],
@@ -79,29 +79,29 @@
         "redacted": true
       },
       {
-        "event": "PreToolUse",
-        "header": "codex adapter:codex:mcp:vibe-forge:StartTasks",
-        "toolName": "adapter:codex:mcp:vibe-forge:StartTasks"
-      },
-      {
         "event": "SessionStart",
         "adapter": "codex",
         "hookSource": "native",
         "canBlock": true
       },
       {
+        "event": "PreToolUse",
+        "header": "codex adapter:codex:FileChange",
+        "toolName": "adapter:codex:FileChange"
+      },
+      {
         "event": "PostToolUse",
         "adapter": "codex",
         "hookSource": "bridge",
-        "header": "adapter:codex:mcp:vibe-forge:StartTasks",
-        "toolName": "adapter:codex:mcp:vibe-forge:StartTasks"
+        "header": "adapter:codex:FileChange",
+        "toolName": "adapter:codex:FileChange"
       },
       {
         "event": "UserPromptSubmit",
         "adapter": "codex",
         "hookSource": "native",
         "canBlock": true,
-        "prompt": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else."
+        "prompt": "Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else."
       },
       {
         "event": "PreToolUse",

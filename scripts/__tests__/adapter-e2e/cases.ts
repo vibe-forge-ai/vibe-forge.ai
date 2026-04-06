@@ -10,7 +10,7 @@ import {
   whenToolsAvailable
 } from '../../adapter-e2e/mock-llm/rules'
 import { pickToolCallByName } from '../../adapter-e2e/mock-llm/tooling'
-import { cliPath } from '../../adapter-e2e/runtime'
+import { cliPath, repoRoot } from '../../adapter-e2e/runtime'
 import { ADAPTER_E2E_DEFAULTS, ADAPTER_E2E_TARGETS } from '../../adapter-e2e/scenarios'
 import type {
   AdapterE2ECase,
@@ -377,10 +377,66 @@ const codexTranscriptMcpCase = (): AdapterE2ECase => {
   })
 }
 
+const codexTranscriptFileChangeCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_FILE_CHANGE_BRIDGE'
+  const title = 'Codex transcript file_change bridge smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-transcript-file-change-bridge',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-transcript-file-change-bridge'),
+    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_FILE_CHANGE_BRIDGE and nothing else.',
+    codexTranscriptInjection: [
+      {
+        type: 'response_item',
+        payload: {
+          type: 'file_change',
+          status: 'completed',
+          changes: [
+            {
+              kind: 'add',
+              path: `${repoRoot}/.ai/.mock/codex-transcript-file-change.txt`
+            }
+          ]
+        }
+      }
+    ],
+    mockScenarios: [
+      createToolCaseMockScenario(
+        'codex-transcript-file-change-bridge',
+        title,
+        output,
+        ['README.md', output]
+      )
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 2 },
+        { event: 'PostToolUse', minCount: 2 },
+        { event: 'Stop', minCount: 1 },
+        { event: 'SessionEnd', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['exec_command'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
 export const ADAPTER_E2E_CASES: AdapterE2ECase[] = [
   toolCase('codex', 'codex-read-once'),
   codexApplyPatchCase(),
   codexTranscriptMcpCase(),
+  codexTranscriptFileChangeCase(),
   toolCase('claude-code', 'claude-read-once'),
   toolCase('opencode', 'opencode-read-once'),
   directAnswerCase('codex', 'codex-direct-answer'),

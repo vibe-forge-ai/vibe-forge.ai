@@ -67,7 +67,7 @@ const walkJsonlFiles = async (dir: string): Promise<string[]> => {
   return nested.flat()
 }
 
-const waitForCodexTranscriptFile = async (startedAt: number) => {
+const waitForCodexTranscriptFile = async () => {
   const sessionsRoot = path.resolve(mockHome, '.codex', 'sessions')
   const deadline = Date.now() + 10_000
 
@@ -82,8 +82,7 @@ const waitForCodexTranscriptFile = async (startedAt: number) => {
 
     const match = entries
       .filter((entry): entry is { filePath: string; stats: Awaited<ReturnType<typeof stat>> } => (
-        entry.stats != null &&
-        entry.stats.mtimeMs >= startedAt
+        entry.stats != null
       ))
       .sort((left, right) => right.stats.mtimeMs - left.stats.mtimeMs)
       .at(0)
@@ -102,10 +101,9 @@ const waitForCodexTranscriptFile = async (startedAt: number) => {
 }
 
 const injectCodexTranscriptEvents = async (
-  events: CodexTranscriptInjectionEvent[],
-  startedAt: number
+  events: CodexTranscriptInjectionEvent[]
 ) => {
-  const transcriptPath = await waitForCodexTranscriptFile(startedAt)
+  const transcriptPath = await waitForCodexTranscriptFile()
   if (transcriptPath == null) {
     throw new Error('Codex transcript file not found for transcript injection')
   }
@@ -124,13 +122,14 @@ export const runWrappedAdapter = async (
 ): Promise<AdapterE2EResult> => {
   const ctxId = createCtxId(testCase.adapter)
   const sessionId = createSessionId()
-  const startedAt = Date.now()
   if (testCase.adapter === 'codex') {
     await resetCodexMockState()
   }
   const codexTranscriptInjection = testCase.adapter === 'codex' &&
     (testCase.codexTranscriptInjection?.length ?? 0) > 0
-    ? injectCodexTranscriptEvents(testCase.codexTranscriptInjection ?? [], startedAt)
+    ? injectCodexTranscriptEvents(testCase.codexTranscriptInjection ?? [])
+      .then(() => undefined)
+      .catch(error => error)
     : undefined
   const result = await runProcess({
     command: process.execPath,
@@ -139,7 +138,10 @@ export const runWrappedAdapter = async (
     timeoutMs: Number(process.env.HOOK_SMOKE_TIMEOUT_MS ?? 180_000),
     passthroughStdIO: options.passthroughStdIO ?? true
   })
-  await codexTranscriptInjection
+  const injectionError = await codexTranscriptInjection
+  if (injectionError != null) {
+    throw injectionError
+  }
 
   if (result.code !== 0) {
     throw new Error(`${testCase.adapter} smoke exited with code ${result.code}`)
