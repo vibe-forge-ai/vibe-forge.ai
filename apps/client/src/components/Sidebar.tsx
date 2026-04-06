@@ -1,19 +1,19 @@
 import './Sidebar.scss'
 
-import { Button, Tooltip } from 'antd'
-import { useAtom, useAtomValue } from 'jotai'
+import { useAtomValue } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import { useQueryParams } from '#~/hooks/useQueryParams.js'
+import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
+import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type { Session } from '@vibe-forge/core'
 import { deleteSession, updateSession } from '../api'
 import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
-import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../store/index'
+import { isSidebarResizingAtom } from '../store/index'
 import { formatShortcutLabel } from '../utils/shortcutUtils'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
+import { matchesAnyFilterPattern } from './sidebar/filter-utils'
 
 export function Sidebar({
   activeId,
@@ -26,19 +26,21 @@ export function Sidebar({
   onDeletedSession?: (id: string, nextId?: string) => void
   width: number
 }) {
-  const { t } = useTranslation()
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
+  const {
+    adapterFilters,
+    hasActiveFilterConditions,
+    isSidebarCollapsed,
+    searchQuery,
+    setAdapterFilters,
+    setSearchQuery,
+    setSidebarCollapsed,
+    setTagFilters,
+    tagFilters
+  } = useSidebarQueryState()
   const isResizing = useAtomValue(isSidebarResizingAtom)
-  const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const isMac = navigator.platform.includes('Mac')
-  const { values } = useQueryParams<{ tag: string }>({
-    keys: ['tag'],
-    defaults: { tag: '' },
-    omit: { tag: (value) => value === '' }
-  })
-  const tagFilter = values.tag.trim()
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
@@ -62,24 +64,45 @@ export function Sidebar({
     () => formatShortcutLabel(resolvedNewSessionShortcut, isMac),
     [resolvedNewSessionShortcut, isMac]
   )
+  const availableTags = useMemo(() => {
+    return Array.from(
+      new Set(
+        sessions.flatMap((session) => (session.tags ?? []).map((tag) => tag.trim()).filter(Boolean))
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  }, [sessions])
+  const availableAdapters = useMemo(() => {
+    return Array.from(
+      new Set(
+        sessions
+          .map((session) => session.adapter?.trim() ?? '')
+          .filter(Boolean)
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  }, [sessions])
 
   const filteredSessions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return sessions.filter((s: Session) => {
-      if (tagFilter) {
-        const matchesTag = (s.tags ?? []).some((tag: string) => tag.toLowerCase() === tagFilter.toLowerCase())
-        if (!matchesTag) return false
-      }
+      if (!matchesAnyFilterPattern(s.tags ?? [], tagFilters)) return false
+
+      const adapterCandidates = [
+        s.adapter ?? '',
+        s.adapter != null && s.adapter !== '' ? getAdapterDisplay(s.adapter).title : ''
+      ].filter(Boolean)
+      if (!matchesAnyFilterPattern(adapterCandidates, adapterFilters)) return false
+
       if (!query) return true
       return (
         (s.title ?? '').toLowerCase().includes(query) ||
         (s.lastMessage ?? '').toLowerCase().includes(query) ||
         (s.lastUserMessage ?? '').toLowerCase().includes(query) ||
         s.id.toLowerCase().includes(query) ||
-        (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
+        (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query)) ||
+        adapterCandidates.some((candidate) => candidate.toLowerCase().includes(query))
       )
     })
-  }, [sessions, searchQuery, tagFilter])
+  }, [adapterFilters, searchQuery, sessions, tagFilters])
 
   async function handleCreateSession() {
     onSelectSession({ id: '' } as Session, true)
@@ -189,6 +212,32 @@ export function Sidebar({
     }
   }
 
+  const handleBatchDelete = async () => {
+    try {
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => deleteSession(id)))
+      await mutateSessions()
+
+      if (activeId && selectedIds.has(activeId)) {
+        const nextSession = sessions.find(s => !selectedIds.has(s.id))
+        onDeletedSession?.(activeId, nextSession?.id)
+      }
+
+      setSelectedIds(new Set<string>())
+      setIsBatchMode(false)
+    } catch (err) {
+      console.error('Failed to batch delete sessions:', err)
+    }
+  }
+
+  const handleBatchStar = async (isStarred: boolean) => {
+    try {
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => updateSession(id, { isStarred })))
+      await mutateSessions()
+    } catch (err) {
+      console.error('Failed to batch update star status:', err)
+    }
+  }
+
   const toggleBatchMode = () => {
     setIsBatchMode((prev: boolean) => !prev)
     setSelectedIds(new Set<string>())
@@ -233,46 +282,40 @@ export function Sidebar({
         }}
       >
         <SidebarHeader
+          adapterFilters={adapterFilters}
+          availableAdapters={availableAdapters}
+          hasActiveFilterConditions={hasActiveFilterConditions}
+          isSidebarCollapsed={isSidebarCollapsed}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          availableTags={availableTags}
+          tagFilters={tagFilters}
+          onAdapterFilterChange={setAdapterFilters}
+          onTagFilterChange={setTagFilters}
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
+          onToggleSidebarCollapsed={() => setSidebarCollapsed(!isSidebarCollapsed)}
           selectedCount={selectedIds.size}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
           onBatchArchive={() => {
             void handleBatchArchive()
           }}
+          onBatchDelete={() => {
+            void handleBatchDelete()
+          }}
+          onBatchStar={() => {
+            void handleBatchStar(true)
+          }}
           isCreatingSession={isCreatingSession}
+          shortcutLabel={shortcutLabel}
+          createButtonRef={createBtnRef}
           onCreateSession={() => {
             void handleCreateSession()
           }}
         />
-        <div className='sidebar-new-chat'>
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement='right'>
-            <Button
-              ref={createBtnRef}
-              className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
-              type={isCreatingSession ? 'default' : 'primary'}
-              block
-              disabled={!!isCreatingSession}
-              onClick={() => {
-                void handleCreateSession()
-              }}
-            >
-              <span className='btn-content'>
-                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                  {isCreatingSession ? 'chat_bubble' : 'send'}
-                </span>
-                <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
-              </span>
-              <span className='shortcut-tag'>
-                {shortcutLabel}
-              </span>
-            </Button>
-          </Tooltip>
-        </div>
         <SessionList
+          hasActiveFilters={hasActiveFilterConditions}
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}

@@ -36,8 +36,30 @@
           }
         }
 
-        .session-item {
+        .session-row-main {
+          display: flex;
+          align-items: flex-start;
+          gap: 6px;
+        }
+
+        .session-select-toggle {
+          width: 20px;
+          height: 36px;
           margin-left: calc(var(--session-depth, 0) * 18px);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .session-item {
+          flex: 1;
+          min-width: 0;
+          margin-left: calc(var(--session-depth, 0) * 18px);
+        }
+
+        .session-select-toggle + .session-item {
+          margin-left: 0;
         }
 
         .session-collapse-row {

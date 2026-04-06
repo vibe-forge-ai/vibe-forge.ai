@@ -1,128 +1,141 @@
 import './SidebarHeader.scss'
 
-import { Button, Checkbox, Input, Popconfirm, Tooltip } from 'antd'
-import { useAtom } from 'jotai'
-import React from 'react'
+import { Button, Tooltip } from 'antd'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { isSidebarCollapsedAtom } from '#~/store/index.js'
+import { SidebarHeaderSearchActions } from './SidebarHeaderSearchActions'
 
 interface SidebarHeaderProps {
-  searchQuery: string
-  onSearchChange: (query: string) => void
+  adapterFilters: string[]
+  availableAdapters: string[]
+  availableTags: string[]
+  createButtonRef: React.RefObject<HTMLButtonElement | null>
+  hasActiveFilterConditions: boolean
   isBatchMode: boolean
-  onToggleBatchMode: () => void
-  selectedCount: number
-  totalCount: number
-  onSelectAll: (selected: boolean) => void
-  onBatchArchive: () => void
   isCreatingSession: boolean
+  isSidebarCollapsed: boolean
+  searchQuery: string
+  selectedCount: number
+  shortcutLabel: string
+  tagFilters: string[]
+  totalCount: number
+  onBatchArchive: () => void
+  onBatchDelete: () => void
+  onBatchStar: () => void
+  onAdapterFilterChange: (filters: string[]) => void
   onCreateSession: () => void
+  onSearchChange: (query: string) => void
+  onSelectAll: (selected: boolean) => void
+  onTagFilterChange: (tags: string[]) => void
+  onToggleBatchMode: () => void
+  onToggleSidebarCollapsed: () => void
 }
 
 export function SidebarHeader({
-  searchQuery,
-  onSearchChange,
+  adapterFilters,
+  availableAdapters,
+  availableTags,
+  createButtonRef,
+  hasActiveFilterConditions,
   isBatchMode,
-  onToggleBatchMode,
-  selectedCount,
-  totalCount,
-  onSelectAll,
-  onBatchArchive,
   isCreatingSession,
-  onCreateSession
+  isSidebarCollapsed,
+  searchQuery,
+  selectedCount,
+  shortcutLabel,
+  tagFilters,
+  totalCount,
+  onBatchArchive,
+  onBatchDelete,
+  onBatchStar,
+  onAdapterFilterChange,
+  onCreateSession,
+  onSearchChange,
+  onSelectAll,
+  onTagFilterChange,
+  onToggleBatchMode,
+  onToggleSidebarCollapsed
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
-  const isAllSelected = totalCount > 0 && selectedCount === totalCount
+  const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
+  const shouldShowSearchActions = !isSidebarCollapsed &&
+    (isSearchActionsOpen || isBatchMode || hasActiveFilterConditions)
 
   return (
     <div className='sidebar-header'>
-      <div className='header-bottom'>
-        {isBatchMode && (
-          <div className='batch-select-wrapper'>
-            <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
-              <Checkbox
-                checked={isAllSelected}
-                indeterminate={selectedCount > 0 && selectedCount < totalCount}
-                onChange={(e) => onSelectAll(e.target.checked)}
-              />
-            </Tooltip>
-          </div>
-        )}
-        <Input
-          className='search-input'
-          placeholder={t('common.search')}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          prefix={
-            <span className='material-symbols-rounded search-icon'>
-              search
-            </span>
-          }
-          allowClear
-        />
-        <div className='batch-actions'>
-          <Tooltip title={isBatchMode ? t('common.cancelBatch') : t('common.batchMode')}>
+      <div className='header-top'>
+        {!isSidebarCollapsed
+          ? (
             <Button
-              className={`action-btn ${isBatchMode ? 'active' : ''}`}
-              type={isBatchMode ? 'primary' : 'text'}
-              onClick={onToggleBatchMode}
+              ref={createButtonRef}
+              className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+              type={isCreatingSession ? 'default' : 'primary'}
+              block
+              disabled={!!isCreatingSession}
+              onClick={onCreateSession}
             >
-              <span className='material-symbols-rounded'>
-                {isBatchMode ? 'close' : 'checklist'}
+              <span className='btn-content'>
+                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+                  {isCreatingSession ? 'chat_bubble' : 'send'}
+                </span>
+                <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
+              </span>
+              <span className='shortcut-tag'>
+                {shortcutLabel}
               </span>
             </Button>
-          </Tooltip>
-          {isBatchMode && (
-            <Popconfirm
-              title={t('common.archiveConfirm', { count: selectedCount })}
-              onConfirm={onBatchArchive}
-              okText={t('common.confirm')}
-              cancelText={t('common.cancel')}
-              okButtonProps={{ danger: false }}
-              disabled={selectedCount === 0}
-            >
-              <Tooltip title={t('common.batchArchive')}>
-                <Button
-                  className='action-btn'
-                  type='text'
-                  disabled={selectedCount === 0}
-                >
-                  <span className='material-symbols-rounded'>
-                    archive
-                  </span>
-                </Button>
-              </Tooltip>
-            </Popconfirm>
+          )
+          : (
+            <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='right'>
+              <Button
+                className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+                type='text'
+                disabled={!!isCreatingSession}
+                onClick={onCreateSession}
+              >
+                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+                  {isCreatingSession ? 'chat_bubble' : 'send'}
+                </span>
+              </Button>
+            </Tooltip>
           )}
-        </div>
         <Tooltip title={isSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
           <Button
             className='sidebar-collapse-btn'
             type='text'
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onClick={onToggleSidebarCollapsed}
           >
             <span className='material-symbols-rounded'>
               {isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
             </span>
           </Button>
         </Tooltip>
-        {isSidebarCollapsed && (
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='right'>
-            <Button
-              className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
-              type='text'
-              disabled={!!isCreatingSession}
-              onClick={onCreateSession}
-            >
-              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                {isCreatingSession ? 'chat_bubble' : 'send'}
-              </span>
-            </Button>
-          </Tooltip>
-        )}
       </div>
+
+      {!isSidebarCollapsed && (
+        <SidebarHeaderSearchActions
+          adapterFilters={adapterFilters}
+          availableAdapters={availableAdapters}
+          availableTags={availableTags}
+          hasActiveFilterConditions={hasActiveFilterConditions}
+          isBatchMode={isBatchMode}
+          searchQuery={searchQuery}
+          selectedCount={selectedCount}
+          shouldShowSearchActions={shouldShowSearchActions}
+          tagFilters={tagFilters}
+          totalCount={totalCount}
+          onBatchArchive={onBatchArchive}
+          onBatchDelete={onBatchDelete}
+          onBatchStar={onBatchStar}
+          onAdapterFilterChange={onAdapterFilterChange}
+          onSearchChange={onSearchChange}
+          onSelectAll={onSelectAll}
+          onTagFilterChange={onTagFilterChange}
+          onToggleBatchMode={onToggleBatchMode}
+          onToggleSearchActions={() => setIsSearchActionsOpen((prev) => !prev)}
+        />
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import './SessionItem.scss'
 
 import type { Session, SessionStatus } from '@vibe-forge/core'
-import { Button, Checkbox, List, Tag, Tooltip } from 'antd'
+import { Button, List, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { useMemo } from 'react'
@@ -148,30 +148,19 @@ export function SessionItem({
       }`}
     >
       <div className='session-item-content'>
-        {!isBatchMode && (
-          <div className={`session-leading ${adapterDisplay?.icon != null ? 'has-adapter' : ''}`}>
-            {adapterDisplay?.icon != null && (
-              <img
-                className='session-adapter-icon'
-                src={adapterDisplay.icon}
-                alt=''
-                aria-hidden='true'
-              />
-            )}
-            <div className={`status-indicator ${adapterDisplay?.icon != null ? 'is-overlay' : ''}`}>
-              {getStatusIcon(session.status)}
-            </div>
-          </div>
-        )}
-        {isBatchMode && (
-          <div className='batch-checkbox-wrapper'>
-            <Checkbox
-              checked={isSelected}
-              onChange={() => onToggleSelect(session.id)}
-              onClick={(e) => e.stopPropagation()}
+        <div className={`session-leading ${adapterDisplay?.icon != null ? 'has-adapter' : ''}`}>
+          {adapterDisplay?.icon != null && (
+            <img
+              className='session-adapter-icon'
+              src={adapterDisplay.icon}
+              alt=''
+              aria-hidden='true'
             />
+          )}
+          <div className={`status-indicator ${adapterDisplay?.icon != null ? 'is-overlay' : ''}`}>
+            {getStatusIcon(session.status)}
           </div>
-        )}
+        </div>
         <div className={`session-info ${isBatchMode ? '' : 'with-actions'}`}>
           <div className='session-header'>
             <div className='session-title'>

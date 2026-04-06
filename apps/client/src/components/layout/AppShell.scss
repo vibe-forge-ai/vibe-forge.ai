@@ -25,11 +25,16 @@
   min-width: 0;
   min-height: 0;
   padding: 4px 4px 4px 0;
+  transition: padding-left .3s cubic-bezier(.4, 0, .2, 1);
   border-radius: 0;
   background-color: var(--sub-bg-color);
   box-shadow:
     0 16px 40px rgba(15, 23, 42, .05),
     0 2px 8px rgba(15, 23, 42, .04);
+}
+
+.app-shell__content.is-sidebar-collapsed {
+  padding-left: 4px;
 }
 
 .app-shell__content > * {
