@@ -745,4 +745,43 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     session.kill()
   })
+
+  it('lets an explicit MCP include override default excludes', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx({
+      configs: [{
+        mcpServers: {
+          TypeScriptLanguageService: {
+            command: 'node',
+            args: ['tslspmcp']
+          },
+          ProjectAITools: {
+            command: 'node',
+            args: ['project-mcp']
+          }
+        },
+        defaultExcludeMcpServers: ['TypeScriptLanguageService']
+      }, undefined]
+    }), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-include-overrides-default-exclude',
+      mcpServers: {
+        include: ['TypeScriptLanguageService']
+      },
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    expect(getConfigOverride(overrides, 'mcp_servers.TypeScriptLanguageService.command=')).toBe(
+      'mcp_servers.TypeScriptLanguageService.command="node"'
+    )
+    expect(getConfigOverride(overrides, 'mcp_servers.ProjectAITools.command=')).toBeUndefined()
+
+    session.kill()
+  })
 })

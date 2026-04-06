@@ -339,6 +339,40 @@ function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
   return args
 }
 
+const resolveSelectedConfigMcpServers = (params: {
+  configMcpServers?: Record<string, unknown>
+  userConfigMcpServers?: Record<string, unknown>
+  defaultIncludeMcpServers?: string[]
+  defaultExcludeMcpServers?: string[]
+  selectedMcpServers?: AdapterQueryOptions['mcpServers']
+}) => {
+  const mergedMcpServers = {
+    ...(params.configMcpServers ?? {}),
+    ...(params.userConfigMcpServers ?? {})
+  }
+  const defaultInclude = params.defaultIncludeMcpServers ?? []
+  const defaultExclude = params.defaultExcludeMcpServers ?? []
+  const includeMcpServers = params.selectedMcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
+  const excludeMcpServers = params.selectedMcpServers?.exclude ??
+    (
+      params.selectedMcpServers?.include == null && defaultExclude.length > 0
+        ? defaultExclude
+        : undefined
+    )
+
+  const nextServers: Record<string, unknown> = {}
+  Object.entries(mergedMcpServers).forEach(([key, server]) => {
+    const disabled = (server as { enabled?: boolean }).enabled === false
+    const excludedByInclude = includeMcpServers != null && !includeMcpServers.includes(key)
+    const excludedByExclude = excludeMcpServers?.includes(key) === true
+    if (!disabled && !excludedByInclude && !excludedByExclude) {
+      const { enabled: _enabled, ...serverConfig } = server as { enabled?: boolean; [k: string]: unknown }
+      nextServers[key] = serverConfig
+    }
+  })
+  return nextServers
+}
+
 /**
  * Build `--enable <name>` / `--disable <name>` args from a features map.
  */
@@ -567,32 +601,23 @@ export async function resolveSessionBase(
     configFingerprintArgs.push('-c', `model_reasoning_effort=${toToml(requestedReasoningEffort)}`)
   }
 
-  const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? (() => {
-    const mergedMcpServers = {
-      ...(config?.mcpServers ?? {}),
-      ...(userConfig?.mcpServers ?? {})
-    }
-    const defaultInclude = [
+  const selectedConfigMcpServers = resolveSelectedConfigMcpServers({
+    configMcpServers: config?.mcpServers as Record<string, unknown> | undefined,
+    userConfigMcpServers: userConfig?.mcpServers as Record<string, unknown> | undefined,
+    defaultIncludeMcpServers: [
       ...(config?.defaultIncludeMcpServers ?? []),
       ...(userConfig?.defaultIncludeMcpServers ?? [])
-    ]
-    const defaultExclude = [
+    ],
+    defaultExcludeMcpServers: [
       ...(config?.defaultExcludeMcpServers ?? []),
       ...(userConfig?.defaultExcludeMcpServers ?? [])
-    ]
-    const includeMcpServers = options.mcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
-    const excludeMcpServers = options.mcpServers?.exclude ?? (defaultExclude.length > 0 ? defaultExclude : undefined)
-
-    const nextServers: Record<string, unknown> = {}
-    for (const [key, server] of Object.entries(mergedMcpServers)) {
-      if ((server as { enabled?: boolean }).enabled === false) continue
-      if (includeMcpServers && !includeMcpServers.includes(key)) continue
-      if (excludeMcpServers?.includes(key)) continue
-      const { enabled: _enabled, ...serverConfig } = server as { enabled?: boolean; [k: string]: unknown }
-      nextServers[key] = serverConfig
-    }
-    return nextServers
-  })()
+    ],
+    selectedMcpServers: options.mcpServers
+  })
+  const filteredMcpServers: Record<string, unknown> = {
+    ...selectedConfigMcpServers,
+    ...(options.assetPlan?.mcpServers ?? {})
+  }
 
   const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers)
   configOverrideArgs.push(...mcpConfigArgs)
