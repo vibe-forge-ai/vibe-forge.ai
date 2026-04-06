@@ -4,6 +4,7 @@ import { Button, Tooltip } from 'antd'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { SidebarHeaderSearchActions } from './SidebarHeaderSearchActions'
 
 interface SidebarHeaderProps {
@@ -11,12 +12,13 @@ interface SidebarHeaderProps {
   availableAdapters: string[]
   availableTags: string[]
   createButtonRef: React.RefObject<HTMLButtonElement | null>
-  hasActiveFilterConditions: boolean
+  hasActiveSearchControls: boolean
   isBatchMode: boolean
   isCreatingSession: boolean
   isSidebarCollapsed: boolean
   searchQuery: string
   selectedCount: number
+  sortOrder: SidebarSessionSortOrder
   shortcutLabel: string
   tagFilters: string[]
   totalCount: number
@@ -26,6 +28,7 @@ interface SidebarHeaderProps {
   onAdapterFilterChange: (filters: string[]) => void
   onCreateSession: () => void
   onSearchChange: (query: string) => void
+  onSortOrderChange: (sort: SidebarSessionSortOrder) => void
   onSelectAll: (selected: boolean) => void
   onTagFilterChange: (tags: string[]) => void
   onToggleBatchMode: () => void
@@ -37,12 +40,13 @@ export function SidebarHeader({
   availableAdapters,
   availableTags,
   createButtonRef,
-  hasActiveFilterConditions,
+  hasActiveSearchControls,
   isBatchMode,
   isCreatingSession,
   isSidebarCollapsed,
   searchQuery,
   selectedCount,
+  sortOrder,
   shortcutLabel,
   tagFilters,
   totalCount,
@@ -52,6 +56,7 @@ export function SidebarHeader({
   onAdapterFilterChange,
   onCreateSession,
   onSearchChange,
+  onSortOrderChange,
   onSelectAll,
   onTagFilterChange,
   onToggleBatchMode,
@@ -60,7 +65,7 @@ export function SidebarHeader({
   const { t } = useTranslation()
   const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
   const shouldShowSearchActions = !isSidebarCollapsed &&
-    (isSearchActionsOpen || isBatchMode || hasActiveFilterConditions)
+    (isSearchActionsOpen || isBatchMode || hasActiveSearchControls)
 
   return (
     <div className='sidebar-header'>
@@ -118,11 +123,12 @@ export function SidebarHeader({
           adapterFilters={adapterFilters}
           availableAdapters={availableAdapters}
           availableTags={availableTags}
-          hasActiveFilterConditions={hasActiveFilterConditions}
+          hasActiveSearchControls={hasActiveSearchControls}
           isBatchMode={isBatchMode}
           searchQuery={searchQuery}
           selectedCount={selectedCount}
           shouldShowSearchActions={shouldShowSearchActions}
+          sortOrder={sortOrder}
           tagFilters={tagFilters}
           totalCount={totalCount}
           onBatchArchive={onBatchArchive}
@@ -130,6 +136,7 @@ export function SidebarHeader({
           onBatchStar={onBatchStar}
           onAdapterFilterChange={onAdapterFilterChange}
           onSearchChange={onSearchChange}
+          onSortOrderChange={onSortOrderChange}
           onSelectAll={onSelectAll}
           onTagFilterChange={onTagFilterChange}
           onToggleBatchMode={onToggleBatchMode}

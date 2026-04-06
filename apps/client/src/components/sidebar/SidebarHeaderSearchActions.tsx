@@ -1,16 +1,21 @@
-import { Button, Checkbox, Input, Popconfirm, Select, Tooltip } from 'antd'
+import { Button, Input, Tooltip } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
+import { SidebarHeaderBatchActions } from './SidebarHeaderBatchActions'
+import { SidebarHeaderSelectField } from './SidebarHeaderSelectField'
 
 interface SidebarHeaderSearchActionsProps {
   adapterFilters: string[]
   availableAdapters: string[]
   availableTags: string[]
-  hasActiveFilterConditions: boolean
+  hasActiveSearchControls: boolean
   isBatchMode: boolean
   searchQuery: string
   selectedCount: number
   shouldShowSearchActions: boolean
+  sortOrder: SidebarSessionSortOrder
   tagFilters: string[]
   totalCount: number
   onAdapterFilterChange: (filters: string[]) => void
@@ -18,6 +23,7 @@ interface SidebarHeaderSearchActionsProps {
   onBatchDelete: () => void
   onBatchStar: () => void
   onSearchChange: (query: string) => void
+  onSortOrderChange: (sort: SidebarSessionSortOrder) => void
   onSelectAll: (selected: boolean) => void
   onTagFilterChange: (tags: string[]) => void
   onToggleBatchMode: () => void
@@ -28,11 +34,12 @@ export function SidebarHeaderSearchActions({
   adapterFilters,
   availableAdapters,
   availableTags,
-  hasActiveFilterConditions,
+  hasActiveSearchControls,
   isBatchMode,
   searchQuery,
   selectedCount,
   shouldShowSearchActions,
+  sortOrder,
   tagFilters,
   totalCount,
   onAdapterFilterChange,
@@ -40,6 +47,7 @@ export function SidebarHeaderSearchActions({
   onBatchDelete,
   onBatchStar,
   onSearchChange,
+  onSortOrderChange,
   onSelectAll,
   onTagFilterChange,
   onToggleBatchMode,
@@ -49,6 +57,14 @@ export function SidebarHeaderSearchActions({
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
   const toOptions = useMemo(() => (values: string[]) => values.map((value) => ({ label: value, value })), [])
   const filterSuffixIcon = <span className='material-symbols-rounded toolbar-filter-chevron'>expand_more</span>
+  const sortOptions = useMemo(
+    () => [
+      { label: t('automation.sortDesc'), value: 'desc' },
+      { label: t('automation.sortAsc'), value: 'asc' }
+    ],
+    [t]
+  )
+
   return (
     <>
       <div className='header-search-row'>
@@ -64,7 +80,7 @@ export function SidebarHeaderSearchActions({
                 <button
                   type='button'
                   className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
-                    hasActiveFilterConditions ? 'has-active-filters' : ''
+                    hasActiveSearchControls ? 'has-active-filters' : ''
                   }`}
                   aria-label={t('common.searchActions')}
                   onMouseDown={(event) => event.preventDefault()}
@@ -105,93 +121,49 @@ export function SidebarHeaderSearchActions({
                 )}
             </div>
             <div className='header-filter-stack'>
-              <div className='toolbar-filter-control'>
-                <span className='material-symbols-rounded toolbar-filter-icon'>sell</span>
-                <Select
-                  className='toolbar-filter-select'
-                  mode='tags'
-                  placeholder={t('common.allTags')}
-                  options={toOptions(availableTags)}
-                  value={tagFilters}
-                  onChange={onTagFilterChange}
-                  maxTagCount={1}
-                  allowClear
-                  suffixIcon={filterSuffixIcon}
-                  tokenSeparators={[',']}
-                />
-              </div>
-              <div className='toolbar-filter-control'>
-                <span className='material-symbols-rounded toolbar-filter-icon'>extension</span>
-                <Select
-                  className='toolbar-filter-select'
-                  mode='tags'
-                  placeholder={t('common.allAdapters')}
-                  options={toOptions(availableAdapters)}
-                  value={adapterFilters}
-                  onChange={onAdapterFilterChange}
-                  maxTagCount={1}
-                  allowClear
-                  suffixIcon={filterSuffixIcon}
-                  tokenSeparators={[',']}
-                />
-              </div>
+              <SidebarHeaderSelectField
+                icon='sell'
+                mode='tags'
+                placeholder={t('common.allTags')}
+                options={toOptions(availableTags)}
+                value={tagFilters}
+                onChange={(value) => onTagFilterChange(value as string[])}
+                maxTagCount={1}
+                allowClear
+                suffixIcon={filterSuffixIcon}
+                tokenSeparators={[',']}
+              />
+              <SidebarHeaderSelectField
+                icon='extension'
+                mode='tags'
+                placeholder={t('common.allAdapters')}
+                options={toOptions(availableAdapters)}
+                value={adapterFilters}
+                onChange={(value) => onAdapterFilterChange(value as string[])}
+                maxTagCount={1}
+                allowClear
+                suffixIcon={filterSuffixIcon}
+                tokenSeparators={[',']}
+              />
+              <SidebarHeaderSelectField
+                icon='swap_vert'
+                options={sortOptions}
+                value={sortOrder}
+                onChange={(value) => onSortOrderChange(value as SidebarSessionSortOrder)}
+                suffixIcon={filterSuffixIcon}
+              />
             </div>
           </div>
           {isBatchMode && (
-            <div className='header-batch-actions'>
-              <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
-                <label className='batch-select-toggle'>
-                  <Checkbox
-                    checked={isAllSelected}
-                    indeterminate={selectedCount > 0 && selectedCount < totalCount}
-                    onChange={(e) => onSelectAll(e.target.checked)}
-                  />
-                </label>
-              </Tooltip>
-              <Tooltip title={t('common.star')}>
-                <Button
-                  className='sidebar-tool-btn is-icon-only'
-                  type='text'
-                  disabled={selectedCount === 0}
-                  onClick={onBatchStar}
-                  icon={<span className='material-symbols-rounded'>star</span>}
-                />
-              </Tooltip>
-              <Popconfirm
-                title={t('common.archiveConfirm', { count: selectedCount })}
-                onConfirm={onBatchArchive}
-                okText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                okButtonProps={{ danger: false }}
-                disabled={selectedCount === 0}
-              >
-                <Tooltip title={t('common.archive')}>
-                  <Button
-                    className='sidebar-tool-btn is-icon-only'
-                    type='text'
-                    disabled={selectedCount === 0}
-                    icon={<span className='material-symbols-rounded'>archive</span>}
-                  />
-                </Tooltip>
-              </Popconfirm>
-              <Popconfirm
-                title={t('common.deleteConfirm', { count: selectedCount })}
-                onConfirm={onBatchDelete}
-                okText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                okButtonProps={{ danger: true }}
-                disabled={selectedCount === 0}
-              >
-                <Tooltip title={t('common.delete')}>
-                  <Button
-                    className='sidebar-tool-btn is-icon-only is-danger'
-                    type='text'
-                    disabled={selectedCount === 0}
-                    icon={<span className='material-symbols-rounded'>delete</span>}
-                  />
-                </Tooltip>
-              </Popconfirm>
-            </div>
+            <SidebarHeaderBatchActions
+              isAllSelected={isAllSelected}
+              selectedCount={selectedCount}
+              totalCount={totalCount}
+              onBatchArchive={onBatchArchive}
+              onBatchDelete={onBatchDelete}
+              onBatchStar={onBatchStar}
+              onSelectAll={onSelectAll}
+            />
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
+import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type { Session } from '@vibe-forge/core'
 import { deleteSession, updateSession } from '../api'
@@ -16,6 +17,16 @@ import { formatShortcutLabel } from '../utils/shortcutUtils'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 import { matchesAnyFilterPattern } from './sidebar/filter-utils'
+
+const sortSessionsByOrder = (sessions: Session[], sortOrder: SidebarSessionSortOrder) => {
+  return [...sessions].sort((left, right) => {
+    const starredDelta = Number(right.isStarred === true) - Number(left.isStarred === true)
+    if (starredDelta !== 0) return starredDelta
+
+    const createdDelta = (left.createdAt ?? 0) - (right.createdAt ?? 0)
+    return sortOrder === 'asc' ? createdDelta : -createdDelta
+  })
+}
 
 export function Sidebar({
   activeId,
@@ -31,12 +42,15 @@ export function Sidebar({
   const {
     adapterFilters,
     hasActiveFilterConditions,
+    hasActiveSearchControls,
     isSidebarCollapsed,
     searchQuery,
+    setSortOrder,
     setAdapterFilters,
     setSearchQuery,
     setSidebarCollapsed,
     setTagFilters,
+    sortOrder,
     tagFilters
   } = useSidebarQueryState()
   const isResizing = useAtomValue(isSidebarResizingAtom)
@@ -86,7 +100,7 @@ export function Sidebar({
 
   const filteredSessions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    return sessions.filter((s: Session) => {
+    const visibleSessions = sessions.filter((s: Session) => {
       if (!matchesAnyFilterPattern(s.tags ?? [], tagFilters)) return false
 
       const adapterCandidates = [
@@ -105,7 +119,8 @@ export function Sidebar({
         adapterCandidates.some((candidate) => candidate.toLowerCase().includes(query))
       )
     })
-  }, [adapterFilters, searchQuery, sessions, tagFilters])
+    return sortSessionsByOrder(visibleSessions, sortOrder)
+  }, [adapterFilters, searchQuery, sessions, sortOrder, tagFilters])
 
   async function handleCreateSession() {
     onSelectSession({ id: '' } as Session, true)
@@ -287,12 +302,14 @@ export function Sidebar({
         <SidebarHeader
           adapterFilters={adapterFilters}
           availableAdapters={availableAdapters}
-          hasActiveFilterConditions={hasActiveFilterConditions}
+          hasActiveSearchControls={hasActiveSearchControls}
           isSidebarCollapsed={isSidebarCollapsed}
           searchQuery={searchQuery}
+          sortOrder={sortOrder}
           onSearchChange={setSearchQuery}
           availableTags={availableTags}
           tagFilters={tagFilters}
+          onSortOrderChange={setSortOrder}
           onAdapterFilterChange={setAdapterFilters}
           onTagFilterChange={setTagFilters}
           isBatchMode={isBatchMode}
