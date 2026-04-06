@@ -44,6 +44,7 @@ export function useChatSession({
     messages,
     setMessages,
     sessionInfo,
+    queuedMessages,
     isReady,
     errorBanner,
     retryConnection,
@@ -110,6 +111,7 @@ export function useChatSession({
   return {
     messages,
     sessionInfo,
+    queuedMessages,
     interactionRequest,
     isReady,
     errorBanner,

@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr'
 
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
-import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessage, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 import type { ChatErrorBannerState } from './interaction-state'
 import {
@@ -62,6 +62,7 @@ export function useChatSessionMessages({
   const { mutate } = useSWRConfig()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
+  const [queuedMessages, setQueuedMessages] = useState<SessionMessageQueueState>({ steer: [], next: [] })
   const [isReady, setIsReady] = useState(false)
   const [errorBanner, setErrorBanner] = useState<ChatErrorBannerState | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -124,6 +125,7 @@ export function useChatSessionMessages({
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
+      setQueuedMessages(res.queuedMessages ?? { steer: [], next: [] })
       setErrorBanner(
         restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
           ? {
@@ -182,6 +184,7 @@ export function useChatSessionMessages({
   useEffect(() => {
     setMessages([])
     setSessionInfo(null)
+    setQueuedMessages({ steer: [], next: [] })
     setIsReady(false)
     setErrorBanner(null)
     setInteractionRequest(null)
@@ -198,6 +201,7 @@ export function useChatSessionMessages({
       return
     }
 
+    void refreshHistory()
     void refreshHistory()
 
     return () => {
@@ -333,6 +337,11 @@ export function useChatSessionMessages({
             return
           }
 
+          if (data.type === 'session_queue_updated') {
+            setQueuedMessages(data.queue)
+            return
+          }
+
           if (data.type === 'message') {
             setMessages((current) => applyMessageEvent(current, data))
             return
@@ -413,6 +422,7 @@ export function useChatSessionMessages({
     messages,
     setMessages,
     sessionInfo,
+    queuedMessages,
     isReady,
     errorBanner,
     retryConnection,

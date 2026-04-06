@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDb } from '#~/db/index.js'
 import { killSession, processUserMessage } from '#~/services/session/index.js'
 import { maybeNotifySession } from '#~/services/session/notification.js'
-import { adapterSessionStore, externalSessionStore, notifySessionUpdated } from '#~/services/session/runtime.js'
+import {
+  adapterSessionStore,
+  createSessionConnectionState,
+  externalSessionStore,
+  notifySessionUpdated
+} from '#~/services/session/runtime.js'
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
@@ -61,6 +66,7 @@ describe('session service', () => {
     vi.mocked(getDb).mockReturnValue({
       saveMessage,
       getMessages,
+      listSessionQueuedMessages: vi.fn(() => []),
       getSession: vi.fn(() => currentSession),
       getSessionRuntimeState: vi.fn(() => ({
         runtimeKind: 'interactive',
@@ -86,13 +92,15 @@ describe('session service', () => {
     ]
     getMessages.mockReturnValue(messageHistory)
 
+    const runtime = createSessionConnectionState()
+    runtime.sockets.add(socket)
+    runtime.messages = messageHistory
     adapterSessionStore.set('sess-1', {
+      ...runtime,
       session: {
         emit,
         kill: vi.fn()
-      } as any,
-      sockets: new Set([socket]),
-      messages: messageHistory
+      } as any
     })
 
     await processUserMessage('sess-1', 'hello world')
@@ -142,12 +150,11 @@ describe('session service', () => {
     const kill = vi.fn()
 
     adapterSessionStore.set('sess-1', {
+      ...createSessionConnectionState(),
       session: {
         emit: vi.fn(),
         kill
-      } as any,
-      sockets: new Set(),
-      messages: []
+      } as any
     })
 
     killSession('sess-1')
@@ -193,13 +200,14 @@ describe('session service', () => {
     const emit = vi.fn()
     getMessages.mockReturnValue([])
 
+    const runtime = createSessionConnectionState()
+    runtime.sockets.add(socket)
     adapterSessionStore.set('sess-1', {
+      ...runtime,
       session: {
         emit,
         kill: vi.fn()
-      } as any,
-      sockets: new Set([socket]),
-      messages: []
+      } as any
     })
 
     await processUserMessage('sess-1', [
