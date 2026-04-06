@@ -159,6 +159,20 @@ export const buildInteractionText = (
         : `建议模式：${permissionContext?.suggestedMode}`
     )
   }
+  if ((permissionContext?.subjectLabel ?? '').trim() !== '') {
+    lines.push(
+      isEnglish(language)
+        ? `Scope: ${permissionContext?.subjectLabel}`
+        : `审批范围：${permissionContext?.subjectLabel}`
+    )
+  }
+  if ((permissionContext?.projectConfigPath ?? '').trim() !== '') {
+    lines.push(
+      isEnglish(language)
+        ? `Project memory file: ${permissionContext?.projectConfigPath}`
+        : `项目记忆文件：${permissionContext?.projectConfigPath}`
+    )
+  }
   if (permissionReasons.length > 0) {
     lines.push(isEnglish(language) ? 'Reason:' : '原因：')
     lines.push(...permissionReasons.map(reason => `- ${reason}`))

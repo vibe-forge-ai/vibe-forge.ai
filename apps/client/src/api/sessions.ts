@@ -85,6 +85,22 @@ export async function getSessionMessages(
   return fetchApiJson<SessionMessagesResponse>(url)
 }
 
+export async function respondSessionInteraction(
+  sessionId: string,
+  interactionId: string,
+  data: string | string[]
+): Promise<ApiOkResponse> {
+  return fetchApiJson<ApiOkResponse>(`/api/sessions/${sessionId}/events`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      type: 'interaction_response',
+      id: interactionId,
+      data
+    })
+  })
+}
+
 export async function deleteSession(id: string): Promise<ApiRemoveResponse> {
   return fetchApiJsonOrThrow<ApiRemoveResponse>(
     `/api/sessions/${id}`,

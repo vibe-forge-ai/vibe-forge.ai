@@ -5,6 +5,27 @@ export type RuntimeEnv = Partial<{
   __VF_PROJECT_AI_CLIENT_BASE__: string
 }>
 
+export const resolveDevDocumentTitle = (
+  baseTitle: string,
+  input: {
+    isDev: boolean
+    gitRef?: string
+  }
+) => {
+  const normalizedBaseTitle = (baseTitle.trim() === '' ? 'Vibe Forge Web' : baseTitle.trim())
+    .replace(/\s+\[[^\]]+\]$/, '')
+  if (!input.isDev) {
+    return normalizedBaseTitle
+  }
+
+  const gitRef = input.gitRef?.trim()
+  if (gitRef == null || gitRef === '') {
+    return normalizedBaseTitle
+  }
+
+  return `${normalizedBaseTitle} [${gitRef}]`
+}
+
 const getGlobalRuntimeEnv = () => {
   const globalScope = globalThis as { __VF_PROJECT_AI_RUNTIME_ENV__?: RuntimeEnv }
   return globalScope.__VF_PROJECT_AI_RUNTIME_ENV__

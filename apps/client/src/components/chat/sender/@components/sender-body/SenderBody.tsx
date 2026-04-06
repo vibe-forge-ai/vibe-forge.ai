@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { SessionInfo } from '@vibe-forge/types'
 
 import { ContextFilePicker } from '#~/components/workspace/ContextFilePicker'
+import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
 
 import type {
   SenderToolbarData,
@@ -24,7 +25,7 @@ export function SenderBody({
   isInlineEdit,
   isBusy,
   modelUnavailable,
-  connectionError,
+  errorBanner,
   onRetryConnection,
   pendingImages,
   pendingFiles,
@@ -51,7 +52,7 @@ export function SenderBody({
   isInlineEdit: boolean
   isBusy: boolean
   modelUnavailable?: boolean
-  connectionError?: string | null
+  errorBanner?: ChatErrorBannerState | null
   onRetryConnection?: () => void
   pendingImages: Parameters<typeof SenderAttachments>[0]['pendingImages']
   pendingFiles: Parameters<typeof SenderAttachments>[0]['pendingFiles']
@@ -76,19 +77,24 @@ export function SenderBody({
   onConfirmContextPicker: (files: PendingContextFile[]) => void
 }) {
   const { t } = useTranslation()
+  const errorTitle = errorBanner?.kind === 'session'
+    ? t('chat.sessionErrorTitle')
+    : t('chat.connectionErrorTitle')
 
   return (
     <div className={`chat-input-container ${isInlineEdit ? 'chat-input-container--inline-edit' : ''}`.trim()}>
-      {!isInlineEdit && connectionError && connectionError.trim() !== '' && (
+      {!isInlineEdit && errorBanner != null && errorBanner.message.trim() !== '' && (
         <div className='connection-error-banner'>
           <div className='connection-error-content'>
             <span className='material-symbols-rounded'>error</span>
             <div className='connection-error-copy'>
-              <div className='connection-error-title'>{t('chat.connectionErrorTitle')}</div>
-              <div className='connection-error-message'>{connectionError}</div>
+              <div className='connection-error-title'>{errorTitle}</div>
+              <div className='connection-error-message'>{errorBanner.message}</div>
             </div>
           </div>
-          <Button size='small' onClick={onRetryConnection}>{t('chat.retryConnection')}</Button>
+          {errorBanner.kind === 'connection' && onRetryConnection != null && (
+            <Button size='small' onClick={onRetryConnection}>{t('chat.retryConnection')}</Button>
+          )}
         </div>
       )}
       {!isInlineEdit && modelUnavailable && <div className='model-unavailable'>{t('chat.modelConfigRequired')}</div>}

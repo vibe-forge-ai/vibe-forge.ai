@@ -225,4 +225,44 @@ describe('codex rpc client', () => {
       expect(handler).not.toHaveBeenCalled()
     })
   })
+
+  describe('onRequest()', () => {
+    it('dispatches incoming server requests with ids to registered handlers', async () => {
+      const { proc, feedLine } = makeProc()
+      const rpc = new CodexRpcClient(proc, makeMockLogger() as any)
+
+      const handler = vi.fn()
+      rpc.onRequest(handler)
+
+      feedLine({
+        id: 7,
+        method: 'item/commandExecution/requestApproval',
+        params: { itemId: 'cmd-1', command: ['pnpm', 'test'] }
+      })
+
+      await new Promise(r => setTimeout(r, 20))
+
+      expect(handler).toHaveBeenCalledWith(
+        7,
+        'item/commandExecution/requestApproval',
+        expect.objectContaining({
+          itemId: 'cmd-1'
+        })
+      )
+    })
+
+    it('does not dispatch notifications without ids to request handlers', async () => {
+      const { proc, feedLine } = makeProc()
+      const rpc = new CodexRpcClient(proc, makeMockLogger() as any)
+
+      const handler = vi.fn()
+      rpc.onRequest(handler)
+
+      feedLine({ method: 'turn/started', params: { turn: { id: 'turn-1' } } })
+
+      await new Promise(r => setTimeout(r, 20))
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -123,4 +123,68 @@ describe('updateConfigFile', () => {
       await rm(worktreeDir, { recursive: true, force: true })
     }
   })
+
+  it('preserves unrelated general fields when updating only permissions', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-update-'))
+
+    try {
+      const configPath = path.join(tempDir, '.ai.config.json')
+      await writeFile(
+        configPath,
+        JSON.stringify(
+          {
+            announcements: ['hello'],
+            shortcuts: {
+              openConfig: 'mod+,'
+            },
+            permissions: {
+              allow: ['ChromeDevtools'],
+              deny: [],
+              ask: ['Bash(kill:*)']
+            }
+          },
+          null,
+          2
+        )
+      )
+
+      const result = await updateConfigFile({
+        workspaceFolder: tempDir,
+        source: 'project',
+        section: 'general',
+        value: {
+          permissions: {
+            allow: ['Bash'],
+            deny: [],
+            ask: []
+          }
+        }
+      })
+
+      expect(result.updatedConfig.announcements).toEqual(['hello'])
+      expect(result.updatedConfig.shortcuts).toEqual({
+        openConfig: 'mod+,'
+      })
+      expect(result.updatedConfig.permissions).toEqual({
+        allow: ['Bash'],
+        deny: [],
+        ask: []
+      })
+
+      const written = JSON.parse(await readFile(configPath, 'utf-8'))
+      expect(written).toEqual({
+        announcements: ['hello'],
+        shortcuts: {
+          openConfig: 'mod+,'
+        },
+        permissions: {
+          allow: ['Bash'],
+          deny: [],
+          ask: []
+        }
+      })
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
 })

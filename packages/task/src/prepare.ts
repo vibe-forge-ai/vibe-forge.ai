@@ -35,6 +35,7 @@ export const prepare = async (
     __VF_PROJECT_AI_CTX_ID__: ctxId,
     __VF_PROJECT_AI_SESSION_ID__: sessionId,
     __VF_PROJECT_AI_RUN_TYPE__: adapterOptions.runtime,
+    __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: adapterOptions.runtime === 'server' ? '1' : undefined,
     // 移除 NODE_OPTIONS 环境变量，防止干扰子进程的运行环境
     NODE_OPTIONS: undefined
   }

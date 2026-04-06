@@ -6,6 +6,7 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 import { transformCamelKey } from '@vibe-forge/utils/string-transform'
 
+import { createBuiltinPermissionPlugin } from './builtin-permissions'
 import type { HookContext, Plugin } from './context'
 import { resolvePlugins } from './loader'
 import type { HookInput, HookInputs, HookOutputCore, HookOutputs } from './type'
@@ -103,6 +104,7 @@ export const executeHookInput = async (
     jsonVariables
   })
   const plugins = [
+    createBuiltinPermissionPlugin(env),
     ...await resolvePlugins(workspaceFolder, config?.plugins),
     ...await resolvePlugins(workspaceFolder, userConfig?.plugins)
   ]

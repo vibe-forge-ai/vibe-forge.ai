@@ -4,12 +4,24 @@ interface InteractionOption {
   description?: string
 }
 
+export type PermissionInteractionDecision =
+  | 'allow_once'
+  | 'allow_session'
+  | 'allow_project'
+  | 'deny_once'
+  | 'deny_session'
+  | 'deny_project'
+
 export interface PermissionInteractionContext {
   adapter?: string
   currentMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   suggestedMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   deniedTools?: string[]
   reasons?: string[]
+  subjectKey?: string
+  subjectLabel?: string
+  scope?: 'tool'
+  projectConfigPath?: string
 }
 
 export interface AskUserQuestionParams {

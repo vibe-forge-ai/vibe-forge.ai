@@ -159,7 +159,7 @@ export const handleSessionEvent = async (
       try {
         await state.connection.pushFollowUps({
           messageId: result.messageId,
-          followUps: options.map(option => ({ content: option.label }))
+          followUps: options.map(option => ({ content: option.value ?? option.label }))
         })
         followUpsPushed = true
       } catch (error) {

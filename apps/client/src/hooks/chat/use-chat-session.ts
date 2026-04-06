@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
@@ -36,10 +36,18 @@ export function useChatSession({
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { effort, setEffort, effortOptions } = useChatEffort()
   const { activeView, setActiveView } = useChatView()
-  const { interactionRequest, setInteractionRequest, handleInteractionResponse } = useChatInteraction({
+  const { interactionRequest, setInteractionRequest, handleInteractionResponse: submitInteractionResponse } = useChatInteraction({
     sessionId: session?.id
   })
-  const { messages, setMessages, sessionInfo, isReady, connectionError, retryConnection } = useChatSessionMessages({
+  const {
+    messages,
+    setMessages,
+    sessionInfo,
+    isReady,
+    errorBanner,
+    retryConnection,
+    reconcileAfterInteraction
+  } = useChatSessionMessages({
     session,
     modelForQuery: selectedModelWithService,
     effort,
@@ -47,6 +55,10 @@ export function useChatSession({
     adapter: selectedAdapter,
     setInteractionRequest
   })
+  const handleInteractionResponse = useCallback((id: string, data: string | string[]) => {
+    reconcileAfterInteraction()
+    submitInteractionResponse(id, data)
+  }, [reconcileAfterInteraction, submitInteractionResponse])
   const lastObservedSessionRef = useRef<Pick<Session, 'id' | 'model' | 'permissionMode' | 'adapter' | 'effort'> | null>(
     null
   )
@@ -99,7 +111,7 @@ export function useChatSession({
     sessionInfo,
     interactionRequest,
     isReady,
-    connectionError,
+    errorBanner,
     retryConnection,
     isThinking,
     activeView,

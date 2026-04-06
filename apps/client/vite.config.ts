@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
@@ -8,10 +9,44 @@ const isDev = process.env.__VF_PROJECT_AI_CLIENT_MODE__ === 'dev'
 const clientBase = isDev
   ? (process.env.__VF_PROJECT_AI_CLIENT_BASE__ ?? '/')
   : '/__VF_PROJECT_AI_CLIENT_BASE__/'
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+
+const readGit = (args: string[]) => execFileSync('git', args, {
+  cwd: repoRoot,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'ignore']
+}).trim()
+
+const resolveDevGitRef = () => {
+  try {
+    return readGit(['symbolic-ref', '--short', 'HEAD'])
+  } catch {
+    try {
+      return `detached@${readGit(['rev-parse', '--short', 'HEAD'])}`
+    } catch {
+      return ''
+    }
+  }
+}
+
+const devGitRef = isDev ? resolveDevGitRef() : ''
+process.env.__VF_PROJECT_AI_DEV_GIT_REF__ = devGitRef
+const normalizeTitle = (title: string) => title.trim().replace(/\s+\[[^\]]+\]$/, '')
 
 export default defineConfig({
   plugins: [
-    react()
+    react(),
+    {
+      name: 'vibe-forge-dev-document-title',
+      transformIndexHtml(html) {
+        if (!isDev || devGitRef === '') {
+          return html
+        }
+        return html.replace(/<title>([^<]*)<\/title>/, (_match, title: string) => {
+          return `<title>${normalizeTitle(title)} [${devGitRef}]</title>`
+        })
+      }
+    }
   ],
   root: '.',
   base: clientBase,

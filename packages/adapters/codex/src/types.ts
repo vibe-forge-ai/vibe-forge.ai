@@ -267,6 +267,14 @@ export type CommandExecDecision =
 
 export type FileChangeDecision = 'accept' | 'acceptForSession' | 'decline' | 'cancel'
 
+export interface CommandExecutionRequestApprovalResponse {
+  decision: CommandExecDecision
+}
+
+export interface FileChangeRequestApprovalResponse {
+  decision: FileChangeDecision
+}
+
 // ─── Codex input item types ────────────────────────────────────────────────────
 
 export type CodexInputItem =

@@ -1,4 +1,5 @@
-import type { AdapterQueryOptions } from '@vibe-forge/types'
+import type { AdapterQueryOptions, Config } from '@vibe-forge/types'
+import { splitManagedPermissionKeys } from '@vibe-forge/utils'
 
 import { findPermissionEntry, isPermissionValue } from './permission-node'
 import type { PermissionNode, PermissionRecord, PermissionValue } from './permission-node'
@@ -21,6 +22,24 @@ const OPENCODE_PERMISSION_KEYS = [
   'websearch',
   'codesearch'
 ]
+
+const CANONICAL_TO_OPENCODE_PERMISSION_KEY: Record<string, string> = {
+  Bash: 'bash',
+  Read: 'read',
+  Write: 'write',
+  Edit: 'edit',
+  Glob: 'glob',
+  Grep: 'grep',
+  List: 'list',
+  Lsp: 'lsp',
+  Task: 'task',
+  Skill: 'skill',
+  Question: 'question',
+  TodoRead: 'todoread',
+  TodoWrite: 'todowrite',
+  WebFetch: 'webfetch',
+  WebSearch: 'websearch'
+}
 
 export const mapPermissionModeToOpenCode = (
   permissionMode: AdapterQueryOptions['permissionMode']
@@ -78,4 +97,38 @@ export const buildToolPermissionConfig = (
 
   for (const key of excludes) result[key] = 'deny'
   return result
+}
+
+const mapManagedPermissionKeyToOpenCode = (value: string) => {
+  const normalized = value.trim()
+  if (normalized === '') return undefined
+  if (normalized in CANONICAL_TO_OPENCODE_PERMISSION_KEY) {
+    return CANONICAL_TO_OPENCODE_PERMISSION_KEY[normalized]
+  }
+  return /^[_A-Za-z][_A-Za-z0-9-]*$/.test(normalized)
+    ? `mcp__${normalized}__*`
+    : undefined
+}
+
+export const buildManagedPermissionConfig = (
+  permissions: Config['permissions'] | undefined
+): PermissionRecord | undefined => {
+  const allow = splitManagedPermissionKeys(permissions?.allow).bare
+  const deny = splitManagedPermissionKeys(permissions?.deny).bare
+  const ask = splitManagedPermissionKeys(permissions?.ask).bare
+  const result: PermissionRecord = {}
+
+  for (const [values, decision] of [
+    [allow, 'allow'],
+    [ask, 'ask'],
+    [deny, 'deny']
+  ] as const) {
+    for (const value of values) {
+      const mapped = mapManagedPermissionKeyToOpenCode(value)
+      if (mapped == null) continue
+      result[mapped] = decision
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined
 }

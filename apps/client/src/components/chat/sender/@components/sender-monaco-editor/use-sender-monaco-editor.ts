@@ -130,11 +130,17 @@ export const useSenderMonacoEditor = ({
     const domNode = editor.getDomNode()
 
     if (domNode != null) {
-      const handleDomPaste = (event: ClipboardEvent) => {
+      const handleDomPaste: EventListener = (event) => {
+        if (!(event instanceof ClipboardEvent)) {
+          return
+        }
         void onPasteRef.current(event)
       }
       const nativeEditContext = domNode.querySelector('.native-edit-context')
-      const handleNativeKeyDown = (event: KeyboardEvent) => {
+      const handleNativeKeyDown: EventListener = (event) => {
+        if (!(event instanceof KeyboardEvent)) {
+          return
+        }
         if (isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))) {
           event.preventDefault()
           event.stopPropagation()

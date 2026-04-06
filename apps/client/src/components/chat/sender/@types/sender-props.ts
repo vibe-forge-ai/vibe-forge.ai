@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { AskUserQuestionParams, ChatMessageContent, SessionStatus } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
+import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -18,7 +19,7 @@ export interface SenderProps {
   onInterrupt: () => void
   onClear?: () => void
   sessionInfo?: SessionInfo | null
-  connectionError?: string | null
+  errorBanner?: ChatErrorBannerState | null
   onRetryConnection?: () => void
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void

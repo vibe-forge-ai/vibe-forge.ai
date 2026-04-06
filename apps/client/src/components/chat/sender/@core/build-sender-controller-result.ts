@@ -45,7 +45,7 @@ export const buildSenderControllerResult = ({
   attachments,
   completion,
   composer,
-  connectionError,
+  errorBanner,
   focusRestore,
   handleKeyDown,
   hideSender,
@@ -64,7 +64,7 @@ export const buildSenderControllerResult = ({
   attachments: SenderControllerAttachments
   completion: SenderControllerCompletion
   composer: SenderControllerComposer
-  connectionError?: string | null
+  errorBanner?: SenderProps['errorBanner']
   focusRestore: { queueEditorFocusRestore: () => void }
   handleKeyDown: (event: KeyboardEvent) => void
   hideSender: boolean
@@ -98,7 +98,7 @@ export const buildSenderControllerResult = ({
   handleKeyDown,
   interactionRequest,
   interactionResponse,
-  connectionError,
+  errorBanner,
   onRetryConnection,
   modelUnavailable,
   placeholder,

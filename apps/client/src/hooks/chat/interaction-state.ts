@@ -5,6 +5,44 @@ export interface InteractionRequestState {
   payload: AskUserQuestionParams
 }
 
+export interface ChatErrorBannerState {
+  kind: 'connection' | 'session'
+  message: string
+}
+
+export interface FatalSessionErrorState {
+  message: string
+  code?: string
+}
+
+export const getFatalSessionError = (event: WSEvent): FatalSessionErrorState | null => {
+  if (event?.type !== 'error') {
+    return null
+  }
+
+  if (event.data != null && typeof event.data === 'object' && 'fatal' in event.data && event.data.fatal === false) {
+    return null
+  }
+
+  if (event.data != null && typeof event.data === 'object' && 'message' in event.data) {
+    const message = event.data.message
+    if (typeof message === 'string' && message.trim() !== '') {
+      return {
+        message,
+        code: typeof event.data.code === 'string' && event.data.code.trim() !== ''
+          ? event.data.code
+          : undefined
+      }
+    }
+  }
+
+  if (typeof event.message === 'string' && event.message.trim() !== '') {
+    return { message: event.message }
+  }
+
+  return null
+}
+
 export const applyInteractionStateEvent = (
   currentInteraction: InteractionRequestState | null,
   data: WSEvent
@@ -34,4 +72,33 @@ export const applyInteractionStateEvent = (
   }
 
   return currentInteraction
+}
+
+export const restoreInteractionStateFromHistory = (
+  events: WSEvent[],
+  fallbackInteraction: InteractionRequestState | null,
+  sessionStatus?: Session['status']
+) => {
+  let currentInteraction: InteractionRequestState | null = null
+
+  for (const event of events) {
+    currentInteraction = applyInteractionStateEvent(currentInteraction, event)
+  }
+
+  if (currentInteraction != null) {
+    return currentInteraction
+  }
+
+  return sessionStatus === 'waiting_input' ? fallbackInteraction : null
+}
+
+export const findLatestFatalError = (events: WSEvent[]): FatalSessionErrorState | null => {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const resolved = getFatalSessionError(events[index]!)
+    if (resolved != null) {
+      return resolved
+    }
+  }
+
+  return null
 }

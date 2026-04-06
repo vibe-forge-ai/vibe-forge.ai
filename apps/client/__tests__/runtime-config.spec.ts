@@ -1,17 +1,33 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveClientBase } from '#~/runtime-config'
+import { resolveDevDocumentTitle } from '#~/runtime-config'
 
-describe('runtime config', () => {
-  it('prefers explicit runtime config, then custom env, then vite base url, then /ui', () => {
-    expect(resolveClientBase('/runtime', '/custom', '/vite', '/ui')).toBe('/runtime')
-    expect(resolveClientBase(undefined, '/custom', '/vite', '/ui')).toBe('/custom')
-    expect(resolveClientBase(undefined, undefined, '/vite/', '/ui')).toBe('/vite')
-    expect(resolveClientBase(undefined, undefined, undefined, '/ui')).toBe('/ui')
+describe('resolveDevDocumentTitle', () => {
+  it('keeps the base title in production', () => {
+    expect(resolveDevDocumentTitle('Vibe Forge Web', {
+      isDev: false,
+      gitRef: 'codex/feature-a'
+    })).toBe('Vibe Forge Web')
   })
 
-  it('ignores blank values and normalizes trailing slashes', () => {
-    expect(resolveClientBase('   ', '/custom/', '/vite/', '/ui')).toBe('/custom')
-    expect(resolveClientBase(undefined, '', '/', '/ui')).toBe('/')
+  it('appends the git ref in development', () => {
+    expect(resolveDevDocumentTitle('Vibe Forge Web', {
+      isDev: true,
+      gitRef: 'codex/feature-a'
+    })).toBe('Vibe Forge Web [codex/feature-a]')
+  })
+
+  it('falls back to the base title when the git ref is empty', () => {
+    expect(resolveDevDocumentTitle('Vibe Forge Web', {
+      isDev: true,
+      gitRef: '   '
+    })).toBe('Vibe Forge Web')
+  })
+
+  it('replaces an existing trailing dev suffix instead of duplicating it', () => {
+    expect(resolveDevDocumentTitle('Vibe Forge Web [old-branch]', {
+      isDev: true,
+      gitRef: 'codex/feature-a'
+    })).toBe('Vibe Forge Web [codex/feature-a]')
   })
 })

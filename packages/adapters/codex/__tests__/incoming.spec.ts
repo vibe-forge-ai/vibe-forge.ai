@@ -349,22 +349,11 @@ describe('handleIncomingNotification', () => {
     })
   })
 
-  // ── Approvals ──────────────────────────────────────────────────────────────
+  // ── Approvals are handled in stream runtime via JSON-RPC requests ─────────
 
-  describe('item/commandExecution/requestApproval', () => {
-    it('auto-accepts when approvalPolicy is "never"', () => {
-      const rpc = makeMockRpc()
-      dispatch(
-        'item/commandExecution/requestApproval',
-        { id: 99, itemId: 'cmd1', threadId: 'thr_1', turnId: 'turn_1', command: ['rm', '-rf', '/'] },
-        { approvalPolicy: 'never', rpc }
-      )
-
-      expect(rpc.respond).toHaveBeenCalledWith(99, 'accept')
-    })
-
-    it('emits ask_user_question when policy is "unlessTrusted"', () => {
-      const { events } = dispatch(
+  describe('item/*/requestApproval', () => {
+    it('ignores approval requests because stream runtime handles them as JSON-RPC requests', () => {
+      const commandEvents = dispatch(
         'item/commandExecution/requestApproval',
         {
           itemId: 'cmd2',
@@ -375,44 +364,14 @@ describe('handleIncomingNotification', () => {
         },
         { approvalPolicy: 'unlessTrusted' }
       )
-
-      expect(events).toHaveLength(1)
-      if (events[0].type === 'message') {
-        const content = events[0].data.content as any[]
-        expect(content[0].name).toBe('ask_user_question')
-        expect(content[0].input.question).toContain('npm test')
-        expect(content[0].input.question).toContain('Run test suite')
-        expect(content[0].input.options).toHaveLength(3)
-      }
-    })
-  })
-
-  describe('item/fileChange/requestApproval', () => {
-    it('auto-accepts when approvalPolicy is "never"', () => {
-      const rpc = makeMockRpc()
-      dispatch(
-        'item/fileChange/requestApproval',
-        { id: 7, itemId: 'fc1', threadId: 'thr_1', turnId: 'turn_1' },
-        { approvalPolicy: 'never', rpc }
-      )
-
-      expect(rpc.respond).toHaveBeenCalledWith(7, 'accept')
-    })
-
-    it('emits ask_user_question with file-change message when policy is "onRequest"', () => {
-      const { events } = dispatch(
+      const fileChangeEvents = dispatch(
         'item/fileChange/requestApproval',
         { itemId: 'fc2', threadId: 'thr_1', turnId: 'turn_1', reason: 'Update config' },
         { approvalPolicy: 'onRequest' }
       )
 
-      expect(events).toHaveLength(1)
-      if (events[0].type === 'message') {
-        const content = events[0].data.content as any[]
-        expect(content[0].name).toBe('ask_user_question')
-        expect(content[0].input.question).toContain('file changes')
-        expect(content[0].input.question).toContain('Update config')
-      }
+      expect(commandEvents.events).toHaveLength(0)
+      expect(fileChangeEvents.events).toHaveLength(0)
     })
   })
 

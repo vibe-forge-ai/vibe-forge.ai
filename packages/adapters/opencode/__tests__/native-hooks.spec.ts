@@ -73,4 +73,30 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
       $schema: 'https://opencode.ai/config.json'
     })
   })
+
+  it('installs the managed bridge when builtin permission hooks are enabled without user plugins', async () => {
+    const workspace = await createTempDir('opencode-hooks-builtin-')
+    const mockHome = join(workspace, '.ai', '.mock')
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: '1'
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {}
+    } as any
+
+    const installed = await ensureOpenCodeNativeHooksInstalled(ctx)
+    const pluginPath = join(mockHome, '.config', 'opencode', 'plugins', 'vibe-forge-hooks.js')
+
+    expect(installed).toBe(true)
+    expect(ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__).toBe('1')
+    expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+  })
 })

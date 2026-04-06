@@ -174,4 +174,21 @@ describe('openCode permission and tool helpers', () => {
       }
     })
   })
+
+  it('merges bare managed permission keys from .ai.config.json into the OpenCode permission tree', () => {
+    expect(buildInlineConfigContent({
+      managedPermissions: {
+        allow: ['Read', 'ChromeDevtools'],
+        deny: ['Bash'],
+        ask: ['WebFetch', 'path:/tmp/**']
+      }
+    })).toMatchObject({
+      permission: {
+        read: 'allow',
+        bash: 'deny',
+        webfetch: 'ask',
+        'mcp__ChromeDevtools__*': 'allow'
+      }
+    })
+  })
 })

@@ -13,6 +13,7 @@ export const sessionsSchemaModule: SchemaModule = {
         runtimeKind TEXT NOT NULL DEFAULT 'interactive',
         historySeed TEXT,
         historySeedPending INTEGER NOT NULL DEFAULT 0,
+        permissionState TEXT,
         createdAt INTEGER NOT NULL,
         isStarred INTEGER DEFAULT 0,
         isArchived INTEGER DEFAULT 0,
@@ -55,6 +56,7 @@ export const sessionsSchemaModule: SchemaModule = {
     ensureColumn('sessions', 'runtimeKind', 'TEXT')
     ensureColumn('sessions', 'historySeed', 'TEXT')
     ensureColumn('sessions', 'historySeedPending', 'INTEGER DEFAULT 0')
+    ensureColumn('sessions', 'permissionState', 'TEXT')
     ensureColumn('sessions', 'status', 'TEXT')
     ensureColumn('sessions', 'model', 'TEXT')
     ensureColumn('sessions', 'adapter', 'TEXT')
@@ -70,6 +72,9 @@ export const sessionsSchemaModule: SchemaModule = {
 
       UPDATE sessions
       SET historySeedPending = COALESCE(historySeedPending, 0);
+
+      UPDATE sessions
+      SET permissionState = COALESCE(permissionState, '{"allow":[],"deny":[],"onceAllow":[],"onceDeny":[]}');
     `)
   }
 }

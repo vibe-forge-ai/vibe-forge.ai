@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 
 import type { Session } from '@vibe-forge/core'
+import { createEmptySessionPermissionState, normalizeSessionPermissionState } from '@vibe-forge/utils'
+import type { SessionPermissionState } from '@vibe-forge/utils'
 
 import { buildUpdateStatement } from '../repo.utils'
 import type { SqliteDatabase } from '../sqlite'
@@ -11,6 +13,7 @@ export interface SessionRuntimeState {
   runtimeKind: SessionRuntimeKind
   historySeed?: string
   historySeedPending: boolean
+  permissionState: SessionPermissionState
 }
 
 interface SessionRow {
@@ -22,6 +25,7 @@ interface SessionRow {
   runtimeKind: string | null
   historySeed: string | null
   historySeedPending: number | null
+  permissionState: string | null
   createdAt: number
   messageCount: number
   isStarred: number
@@ -39,6 +43,7 @@ type SessionRuntimeUpdate = Partial<{
   runtimeKind: SessionRuntimeKind
   historySeed: string | null
   historySeedPending: boolean
+  permissionState: SessionPermissionState
 }>
 
 const SESSION_SELECT = `
@@ -67,11 +72,24 @@ const sessionUpdateFields = [
 const sessionRuntimeUpdateFields = [
   { key: 'runtimeKind' },
   { key: 'historySeed', toParam: value => value ?? null },
-  { key: 'historySeedPending', toParam: value => value ? 1 : 0 }
+  { key: 'historySeedPending', toParam: value => value ? 1 : 0 },
+  { key: 'permissionState', toParam: value => JSON.stringify(normalizeSessionPermissionState(value)) }
 ] as const satisfies ReadonlyArray<{
   key: keyof SessionRuntimeUpdate
   toParam?: (value: any) => string | number | null
 }>
+
+const parsePermissionState = (value: string | null) => {
+  if (value == null || value.trim() === '') {
+    return createEmptySessionPermissionState()
+  }
+
+  try {
+    return normalizeSessionPermissionState(JSON.parse(value))
+  } catch {
+    return createEmptySessionPermissionState()
+  }
+}
 
 function mapSessionRow(row: SessionRow): Session {
   return {
@@ -94,12 +112,13 @@ function mapSessionRow(row: SessionRow): Session {
 }
 
 function mapSessionRuntimeState(
-  row: Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>
+  row: Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending' | 'permissionState'>
 ): SessionRuntimeState {
   return {
     runtimeKind: row.runtimeKind === 'external' ? 'external' : 'interactive',
     historySeed: row.historySeed ?? undefined,
-    historySeedPending: row.historySeedPending === 1
+    historySeedPending: row.historySeedPending === 1,
+    permissionState: parsePermissionState(row.permissionState)
   }
 }
 
@@ -192,6 +211,7 @@ export function createSessionsRepo(db: SqliteDatabase) {
     const runtimeKind = options.runtimeKind ?? (parentSessionId != null ? 'external' : 'interactive')
     const historySeed = options.historySeed ?? null
     const historySeedPending = options.historySeedPending === true ? 1 : 0
+    const permissionState = JSON.stringify(normalizeSessionPermissionState(options.permissionState))
     const stmt = db.prepare(`
       INSERT INTO sessions (
         id,
@@ -200,9 +220,10 @@ export function createSessionsRepo(db: SqliteDatabase) {
         runtimeKind,
         historySeed,
         historySeedPending,
+        permissionState,
         createdAt,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     stmt.run(
       session.id,
@@ -211,6 +232,7 @@ export function createSessionsRepo(db: SqliteDatabase) {
       runtimeKind,
       historySeed,
       historySeedPending,
+      permissionState,
       session.createdAt,
       session.status ?? null
     )
@@ -232,8 +254,8 @@ export function createSessionsRepo(db: SqliteDatabase) {
   }
 
   const getRuntimeState = (id: string): SessionRuntimeState | undefined => {
-    const stmt = db.prepare('SELECT runtimeKind, historySeed, historySeedPending FROM sessions WHERE id = ?')
-    const row = stmt.get<Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending'>>(id)
+    const stmt = db.prepare('SELECT runtimeKind, historySeed, historySeedPending, permissionState FROM sessions WHERE id = ?')
+    const row = stmt.get<Pick<SessionRow, 'runtimeKind' | 'historySeed' | 'historySeedPending' | 'permissionState'>>(id)
     if (row == null) return undefined
     return mapSessionRuntimeState(row)
   }

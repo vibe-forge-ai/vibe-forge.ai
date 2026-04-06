@@ -147,7 +147,11 @@ describe('channel handlers', () => {
         permissionContext: {
           currentMode: 'default',
           suggestedMode: 'dontAsk',
-          reasons: ['Write requires approval']
+          reasons: ['Write requires approval'],
+          subjectKey: 'Write',
+          subjectLabel: 'Write',
+          scope: 'tool',
+          projectConfigPath: '.ai.config.json'
         }
       }, 'interaction-permission')
     )
@@ -160,12 +164,14 @@ describe('channel handlers', () => {
     }))
     expect(sendMessage.mock.calls[0]?.[0]?.text).toContain('当前模式：default')
     expect(sendMessage.mock.calls[0]?.[0]?.text).toContain('建议模式：dontAsk')
+    expect(sendMessage.mock.calls[0]?.[0]?.text).toContain('审批范围：Write')
+    expect(sendMessage.mock.calls[0]?.[0]?.text).toContain('项目记忆文件：.ai.config.json')
     expect(sendMessage.mock.calls[0]?.[0]?.text).toContain('Write requires approval')
     expect(pushFollowUps).toHaveBeenCalledWith({
       messageId: 'om_permission',
       followUps: [
-        { content: '继续并切换到 dontAsk' },
-        { content: '取消' }
+        { content: 'dontAsk' },
+        { content: 'cancel' }
       ]
     })
   })

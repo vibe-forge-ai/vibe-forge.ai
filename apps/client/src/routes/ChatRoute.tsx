@@ -50,7 +50,7 @@ function ChatRouteView({
     sessionInfo,
     interactionRequest,
     isReady,
-    connectionError,
+    errorBanner,
     retryConnection,
     activeView,
     setActiveView,
@@ -103,7 +103,7 @@ function ChatRouteView({
           messages={messages}
           session={session}
           sessionInfo={sessionInfo}
-          connectionError={connectionError}
+          errorBanner={errorBanner}
           onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}

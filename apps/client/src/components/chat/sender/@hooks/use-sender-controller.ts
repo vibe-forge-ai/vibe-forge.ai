@@ -174,7 +174,7 @@ export const useSenderController = (props: SenderProps) => {
     attachments,
     completion,
     composer,
-    connectionError: props.connectionError,
+    errorBanner: props.errorBanner,
     focusRestore,
     handleKeyDown,
     hideSender,

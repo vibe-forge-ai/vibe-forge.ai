@@ -134,13 +134,23 @@ const mergeMaskedValues = (incoming: unknown, existing: unknown): unknown => {
   return incoming
 }
 
+const hasOwn = (value: Record<string, unknown>, key: string) =>
+  Object.prototype.hasOwnProperty.call(value, key)
+
 const updateConfigSection = (config: Config, section: string, value: unknown): Config => {
   const nextConfig: Config = { ...config }
   const sectionValue = (value != null && typeof value === 'object')
     ? (value as Record<string, unknown>)
     : {}
 
-  const updateField = <T extends keyof Config>(key: T, nextValue: Config[T] | undefined) => {
+  const updateField = <T extends keyof Config>(
+    key: T,
+    nextValue: Config[T] | undefined,
+    shouldUpdate = true
+  ) => {
+    if (!shouldUpdate) {
+      return
+    }
     if (nextValue === undefined) {
       delete nextConfig[key]
     } else {
@@ -150,30 +160,58 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
 
   switch (section) {
     case 'general': {
-      updateField('baseDir', sectionValue.baseDir as Config['baseDir'])
-      updateField('effort', sectionValue.effort as Config['effort'])
-      updateField('defaultAdapter', sectionValue.defaultAdapter as Config['defaultAdapter'])
-      updateField('defaultModelService', sectionValue.defaultModelService as Config['defaultModelService'])
-      updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'])
-      updateField('recommendedModels', sectionValue.recommendedModels as Config['recommendedModels'])
-      updateField('interfaceLanguage', sectionValue.interfaceLanguage as Config['interfaceLanguage'])
-      updateField('modelLanguage', sectionValue.modelLanguage as Config['modelLanguage'])
-      updateField('announcements', sectionValue.announcements as Config['announcements'])
+      updateField('baseDir', sectionValue.baseDir as Config['baseDir'], hasOwn(sectionValue, 'baseDir'))
+      updateField('effort', sectionValue.effort as Config['effort'], hasOwn(sectionValue, 'effort'))
+      updateField(
+        'defaultAdapter',
+        sectionValue.defaultAdapter as Config['defaultAdapter'],
+        hasOwn(sectionValue, 'defaultAdapter')
+      )
+      updateField(
+        'defaultModelService',
+        sectionValue.defaultModelService as Config['defaultModelService'],
+        hasOwn(sectionValue, 'defaultModelService')
+      )
+      updateField('defaultModel', sectionValue.defaultModel as Config['defaultModel'], hasOwn(sectionValue, 'defaultModel'))
+      updateField(
+        'recommendedModels',
+        sectionValue.recommendedModels as Config['recommendedModels'],
+        hasOwn(sectionValue, 'recommendedModels')
+      )
+      updateField(
+        'interfaceLanguage',
+        sectionValue.interfaceLanguage as Config['interfaceLanguage'],
+        hasOwn(sectionValue, 'interfaceLanguage')
+      )
+      updateField(
+        'modelLanguage',
+        sectionValue.modelLanguage as Config['modelLanguage'],
+        hasOwn(sectionValue, 'modelLanguage')
+      )
+      updateField(
+        'announcements',
+        sectionValue.announcements as Config['announcements'],
+        hasOwn(sectionValue, 'announcements')
+      )
       updateField(
         'permissions',
-        mergeMaskedValues(sectionValue.permissions, config.permissions) as Config['permissions']
+        mergeMaskedValues(sectionValue.permissions, config.permissions) as Config['permissions'],
+        hasOwn(sectionValue, 'permissions')
       )
       updateField(
         'env',
-        mergeMaskedValues(sectionValue.env, config.env) as Config['env']
+        mergeMaskedValues(sectionValue.env, config.env) as Config['env'],
+        hasOwn(sectionValue, 'env')
       )
       updateField(
         'notifications',
-        mergeMaskedValues(sectionValue.notifications, config.notifications) as Config['notifications']
+        mergeMaskedValues(sectionValue.notifications, config.notifications) as Config['notifications'],
+        hasOwn(sectionValue, 'notifications')
       )
       updateField(
         'shortcuts',
-        mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts']
+        mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts'],
+        hasOwn(sectionValue, 'shortcuts')
       )
       return nextConfig
     }

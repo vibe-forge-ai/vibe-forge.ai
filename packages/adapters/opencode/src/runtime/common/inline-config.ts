@@ -3,7 +3,11 @@ import type { AdapterQueryOptions, Config } from '@vibe-forge/types'
 import { mapMcpServersToOpenCode } from './mcp'
 import { deepMerge } from './object-utils'
 import { mergePermissionNodes, normalizePermissionNode, rewritePermissionMode } from './permission-node'
-import { buildToolPermissionConfig, mapPermissionModeToOpenCode } from './permissions'
+import {
+  buildManagedPermissionConfig,
+  buildToolPermissionConfig,
+  mapPermissionModeToOpenCode
+} from './permissions'
 import { buildToolConfig } from './tools'
 
 export const buildInlineConfigContent = (params: {
@@ -14,6 +18,7 @@ export const buildInlineConfigContent = (params: {
   tools?: AdapterQueryOptions['tools']
   mcpServers?: AdapterQueryOptions['mcpServers']
   availableMcpServers?: Config['mcpServers']
+  managedPermissions?: Config['permissions']
   systemPromptFile?: string
   providerConfig?: Record<string, unknown>
 }) => {
@@ -23,12 +28,17 @@ export const buildInlineConfigContent = (params: {
   )
   const inheritedPermission = normalizePermissionNode(mergedBaseConfig.permission)
   const hasToolFilter = (params.tools?.include?.length ?? 0) > 0 || (params.tools?.exclude?.length ?? 0) > 0
+  const managedPermissionConfig = buildManagedPermissionConfig(params.managedPermissions)
   const basePermission = params.permissionMode === 'dontAsk' || params.permissionMode === 'bypassPermissions'
     ? rewritePermissionMode(inheritedPermission, params.permissionMode)
     : mergePermissionNodes(inheritedPermission, mapPermissionModeToOpenCode(params.permissionMode))
-  const permission = params.permissionMode == null && !hasToolFilter
+  const managedPermission = mergePermissionNodes(
+    basePermission,
+    managedPermissionConfig
+  )
+  const permission = params.permissionMode == null && !hasToolFilter && managedPermissionConfig == null
     ? undefined
-    : mergePermissionNodes(basePermission, buildToolPermissionConfig(params.tools, basePermission))
+    : mergePermissionNodes(managedPermission, buildToolPermissionConfig(params.tools, managedPermission))
   const tools = buildToolConfig(params.tools)
   const mcp = mapMcpServersToOpenCode(params.availableMcpServers, params.mcpServers)
   const inheritedInstructions = Array.isArray(mergedBaseConfig.instructions)

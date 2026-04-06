@@ -9,8 +9,6 @@ import type {
   CodexItemMcpToolCall,
   CodexItemWebSearch,
   CodexTurnStatus,
-  CommandExecApprovalParams,
-  FileChangeApprovalParams,
   ItemAgentMessageDeltaParams,
   ItemCommandExecutionOutputDeltaParams,
   ItemCompletedParams,
@@ -89,11 +87,11 @@ export class CommandOutputAccumulator {
 export const handleIncomingNotification = (
   method: string,
   params: Record<string, unknown>,
-  rpc: CodexRpcClient,
+  _rpc: CodexRpcClient,
   onEvent: AdapterQueryOptions['onEvent'],
   msgAcc: AgentMessageAccumulator,
   cmdAcc: CommandOutputAccumulator,
-  approvalPolicy: string = 'unlessTrusted'
+  _approvalPolicy: string = 'unlessTrusted'
 ): void => {
   const formatTurnErrorMessage = (
     error?: { message?: string | null; codexErrorInfo?: string | null; additionalDetails?: string | null } | null
@@ -251,74 +249,6 @@ export const handleIncomingNotification = (
       onEvent({ type: 'message', data: resultMsg })
     }
 
-    return
-  }
-
-  // ── Command execution approval ─────────────────────────────────────────────
-  if (method === 'item/commandExecution/requestApproval') {
-    const p = params as unknown as CommandExecApprovalParams & { id?: number }
-    // If the approval policy is 'never', auto-accept
-    if (approvalPolicy === 'never') {
-      // Codex expects us to respond to the server request
-      // The approval request comes in as a server-initiated JSON-RPC request
-      // with an `id`. We use the rpc.respond() method.
-      if (typeof (params as any).id === 'number') {
-        rpc.respond((params as any).id as number, 'accept')
-      }
-      return
-    }
-    // For other policies, emit an ask_user_question event via the tool mechanism
-    const commandStr = p.command?.join(' ') ?? '[command]'
-    const msg: ChatMessage = {
-      id: uuid(),
-      role: 'assistant',
-      content: [{
-        type: 'tool_use',
-        id: `approval:${p.itemId}`,
-        name: 'ask_user_question',
-        input: {
-          question: `Allow command execution?\n\`${commandStr}\`\n${p.reason ? `Reason: ${p.reason}` : ''}`.trim(),
-          options: [
-            { label: 'Accept', description: 'Run this command' },
-            { label: 'Accept for session', description: 'Auto-accept similar commands this session' },
-            { label: 'Decline', description: 'Skip this command' }
-          ]
-        }
-      }],
-      createdAt: Date.now()
-    }
-    onEvent({ type: 'message', data: msg })
-    return
-  }
-
-  // ── File change approval ───────────────────────────────────────────────────
-  if (method === 'item/fileChange/requestApproval') {
-    const p = params as unknown as FileChangeApprovalParams
-    if (approvalPolicy === 'never') {
-      if (typeof (params as any).id === 'number') {
-        rpc.respond((params as any).id as number, 'accept')
-      }
-      return
-    }
-    const msg: ChatMessage = {
-      id: uuid(),
-      role: 'assistant',
-      content: [{
-        type: 'tool_use',
-        id: `approval:${p.itemId}`,
-        name: 'ask_user_question',
-        input: {
-          question: `Allow file changes?${p.reason ? `\nReason: ${p.reason}` : ''}`,
-          options: [
-            { label: 'Accept', description: 'Apply these file changes' },
-            { label: 'Accept for session', description: 'Auto-accept all file changes this session' },
-            { label: 'Decline', description: 'Skip these file changes' }
-          ]
-        }
-      }],
-      createdAt: Date.now()
-    }
-    onEvent({ type: 'message', data: msg })
     return
   }
 
