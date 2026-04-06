@@ -1,6 +1,7 @@
 .sidebar-container {
   display: flex;
   flex-direction: column;
+  position: relative;
   --sidebar-hover-bg: #e5e5e5;
   --sidebar-active-bg: #eff6ff;
   --sidebar-active-text: #2563eb;
@@ -85,11 +86,49 @@
 
   &.collapsed {
     border-right-width: 0 !important;
-    .sidebar-collapse-btn {
-      margin-left: 20px;
-    }
-    .sidebar-new-chat-btn {
-      margin-right: -112px;
+  }
+}
+
+.sidebar-collapsed-header {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.sidebar-collapsed-control {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sub-text-color);
+  border: none;
+  background-color: transparent;
+  transition: background-color .2s ease, color .2s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background-color: var(--nav-hover-bg, #f3f4f6);
+    color: var(--text-color, #111827);
+  }
+
+  &.active {
+    background-color: var(--nav-active-bg, #eff6ff);
+    color: var(--nav-active-text, #2563eb);
+
+    .material-symbols-rounded {
+      font-variation-settings: 'FILL' 1;
     }
   }
 }
@@ -109,4 +148,7 @@ html.dark .sidebar-container {
   --sidebar-active-text: #3b82f6;
   --sidebar-btn-color: #595959;
   --sidebar-btn-hover-bg: #2a1215;
+  --nav-hover-bg: #1a1a1a;
+  --nav-active-bg: #111b26;
+  --nav-active-text: #3b82f6;
 }

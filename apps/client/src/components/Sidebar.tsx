@@ -1,7 +1,9 @@
 import './Sidebar.scss'
 
+import { Button, Tooltip } from 'antd'
 import { useAtomValue } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
@@ -40,6 +42,7 @@ export function Sidebar({
   const isResizing = useAtomValue(isSidebarResizingAtom)
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
+  const { t } = useTranslation()
   const isMac = navigator.platform.includes('Mac')
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
@@ -329,6 +332,34 @@ export function Sidebar({
           onToggleSelect={handleToggleSelect}
         />
       </div>
+      {isSidebarCollapsed && (
+        <div className='sidebar-collapsed-header'>
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='bottom'>
+            <Button
+              ref={createBtnRef}
+              className={`sidebar-collapsed-control ${isCreatingSession ? 'active' : ''}`}
+              type='text'
+              disabled={!!isCreatingSession}
+              onClick={() => {
+                void handleCreateSession()
+              }}
+            >
+              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+                {isCreatingSession ? 'chat_bubble' : 'send'}
+              </span>
+            </Button>
+          </Tooltip>
+          <Tooltip title={t('common.expand')} placement='bottom'>
+            <Button
+              className='sidebar-collapsed-control'
+              type='text'
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <span className='material-symbols-rounded'>dock_to_right</span>
+            </Button>
+          </Tooltip>
+        </div>
+      )}
     </div>
   )
 }

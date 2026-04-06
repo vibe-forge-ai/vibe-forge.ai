@@ -1,7 +1,7 @@
 import { App } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
 
 import { branchSessionFromMessage, createSession, getApiErrorMessage } from '#~/api.js'
@@ -30,9 +30,17 @@ export function useChatSessionActions({
   const { message } = App.useApp()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const { mutate } = useSWRConfig()
   const [isCreating, setIsCreating] = useState(false)
   const isThinking = isCreating || session?.status === 'running'
+
+  const navigateWithCurrentSearch = useCallback((pathname: string) => {
+    void navigate({
+      pathname,
+      search: location.search
+    })
+  }, [location.search, navigate])
 
   const insertSessionIntoCache = useCallback(async (newSession: Session) => {
     await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -71,7 +79,7 @@ export function useChatSessionActions({
 
         await insertSessionIntoCache(newSession)
 
-        void navigate(`/session/${newSession.id}`)
+        navigateWithCurrentSearch(`/session/${newSession.id}`)
         return true
       } catch (err) {
         console.error(err)
@@ -90,9 +98,9 @@ export function useChatSessionActions({
     adapter,
     hasAvailableModels,
     isThinking,
+    insertSessionIntoCache,
     message,
-    mutate,
-    navigate,
+    navigateWithCurrentSearch,
     effort,
     permissionMode,
     modelForQuery,
@@ -118,7 +126,7 @@ export function useChatSessionActions({
 
         await insertSessionIntoCache(newSession)
 
-        void navigate(`/session/${newSession.id}`)
+        navigateWithCurrentSearch(`/session/${newSession.id}`)
         return true
       } catch (err) {
         console.error(err)
@@ -138,8 +146,8 @@ export function useChatSessionActions({
     hasAvailableModels,
     insertSessionIntoCache,
     isThinking,
+    navigateWithCurrentSearch,
     message,
-    navigate,
     effort,
     permissionMode,
     modelForQuery,
@@ -171,14 +179,14 @@ export function useChatSessionActions({
     try {
       const { session: newSession } = await branchSessionFromMessage(session.id, messageId, action, options)
       await insertSessionIntoCache(newSession)
-      void navigate(`/session/${newSession.id}`)
+      navigateWithCurrentSearch(`/session/${newSession.id}`)
       return true
     } catch (err) {
       console.error(err)
       void message.error(getApiErrorMessage(err, t('common.operationFailed')))
       return false
     }
-  }, [insertSessionIntoCache, message, navigate, session?.id, t])
+  }, [insertSessionIntoCache, message, navigateWithCurrentSearch, session?.id, t])
 
   const forkMessage = useCallback((messageId: string) => {
     return runMessageAction(messageId, 'fork')
