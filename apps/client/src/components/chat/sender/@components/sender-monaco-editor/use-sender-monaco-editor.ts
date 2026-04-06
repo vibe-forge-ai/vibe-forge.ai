@@ -28,6 +28,8 @@ export const useSenderMonacoEditor = ({
   disabled,
   sendShortcut,
   onSendShortcut,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   onInputChange,
   onCursorChange,
   onKeyDown,
@@ -42,6 +44,8 @@ export const useSenderMonacoEditor = ({
   disabled: boolean
   sendShortcut: string
   onSendShortcut: () => void
+  secondarySendShortcut?: string
+  onSecondarySendShortcut?: () => void
   onInputChange: (value: string, cursorOffset: number | null) => void
   onCursorChange: (cursorOffset: number | null) => void
   onKeyDown: (event: KeyboardEvent) => void
@@ -61,6 +65,8 @@ export const useSenderMonacoEditor = ({
   const disabledRef = useRef(disabled)
   const sendShortcutRef = useRef(sendShortcut)
   const onSendShortcutRef = useRef(onSendShortcut)
+  const secondarySendShortcutRef = useRef(secondarySendShortcut)
+  const onSecondarySendShortcutRef = useRef(onSecondarySendShortcut)
   const onInputChangeRef = useRef(onInputChange)
   const onCursorChangeRef = useRef(onCursorChange)
   const onKeyDownRef = useRef(onKeyDown)
@@ -72,6 +78,8 @@ export const useSenderMonacoEditor = ({
   disabledRef.current = disabled
   sendShortcutRef.current = sendShortcut
   onSendShortcutRef.current = onSendShortcut
+  secondarySendShortcutRef.current = secondarySendShortcut
+  onSecondarySendShortcutRef.current = onSecondarySendShortcut
   onInputChangeRef.current = onInputChange
   onCursorChangeRef.current = onCursorChange
   onKeyDownRef.current = onKeyDown
@@ -196,6 +204,16 @@ export const useSenderMonacoEditor = ({
       }
       const handleNativeKeyDown: EventListener = (event) => {
         if (!(event instanceof KeyboardEvent)) {
+          return
+        }
+        if (
+          secondarySendShortcutRef.current != null &&
+          onSecondarySendShortcutRef.current != null &&
+          isShortcutMatch(event, secondarySendShortcutRef.current, navigator.platform.includes('Mac'))
+        ) {
+          event.preventDefault()
+          event.stopPropagation()
+          onSecondarySendShortcutRef.current()
           return
         }
         if (isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))) {

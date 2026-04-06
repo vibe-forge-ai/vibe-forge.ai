@@ -62,6 +62,8 @@ export const buildSenderControllerResult = ({
   onRetryConnection,
   permissionContext,
   placeholder,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   editorRef,
   toolbar
 }: {
@@ -84,6 +86,8 @@ export const buildSenderControllerResult = ({
     reasons?: string[]
   }
   placeholder: string
+  secondarySendShortcut?: string
+  onSecondarySendShortcut?: () => void
   editorRef: MutableRefObject<SenderEditorHandle | null>
   toolbar: SenderControllerToolbar
 }) => ({
@@ -106,6 +110,8 @@ export const buildSenderControllerResult = ({
   onRetryConnection,
   modelUnavailable,
   placeholder,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   onInputChange: completion.handleInputChange,
   onCursorChange: completion.handleCursorChange,
   onCancelContextPicker: () => {

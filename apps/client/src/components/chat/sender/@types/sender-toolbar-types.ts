@@ -1,5 +1,6 @@
 import type { ChangeEvent, KeyboardEvent, ReactNode, RefObject } from 'react'
 
+import type { SessionQueuedMessageMode } from '@vibe-forge/core'
 import type { RefSelectProps } from 'antd'
 
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
@@ -11,6 +12,8 @@ export interface SenderToolbarShortcuts {
   switchModel: string
   switchEffort: string
   switchPermissionMode: string
+  queueSteer: string
+  queueNext: string
 }
 
 export interface SenderToolbarState {
@@ -34,6 +37,8 @@ export interface SenderToolbarState {
   resolvedSendShortcut: string
   hasComposerContent: boolean
   hasSendText: boolean
+  queueMode: SessionQueuedMessageMode
+  showQueueModeControl: boolean
 }
 
 export interface SenderToolbarData {
@@ -77,7 +82,8 @@ export interface SenderToolbarHandlers {
   onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   onEffortChange?: (effort: ChatEffort) => void
   onAdapterChange?: (adapter: string) => void
-  onSend: () => void
+  onSend: (mode?: SessionQueuedMessageMode) => void
   onInterrupt: () => void
   onCancel?: () => void
+  onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
 }

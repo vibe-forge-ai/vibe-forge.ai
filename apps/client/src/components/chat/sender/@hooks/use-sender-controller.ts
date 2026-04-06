@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { App } from 'antd'
 import { useTranslation } from 'react-i18next'
 
@@ -79,16 +80,17 @@ export const useSenderController = (props: SenderProps) => {
     interactionRequest: props.interactionRequest,
     isInlineEdit
   })
-  const { clearInputShortcut, composerControlShortcuts, resolvedSendShortcut } = useSenderShortcuts({
-    enabled: !hideSender && !attachments.showContextPicker && !isInlineEdit,
-    isInlineEdit,
-    isMac,
-    isThinking,
-    modelUnavailable: props.modelUnavailable,
-    permissionModeOptions: props.permissionModeOptions ?? [],
-    referenceActions,
-    selectOverlays
-  })
+  const { clearInputShortcut, composerControlShortcuts, resolvedSendShortcut, queuedMessageShortcuts } =
+    useSenderShortcuts({
+      enabled: !hideSender && !attachments.showContextPicker && !isInlineEdit,
+      isInlineEdit,
+      isMac,
+      isThinking,
+      modelUnavailable: props.modelUnavailable,
+      permissionModeOptions: props.permissionModeOptions ?? [],
+      referenceActions,
+      selectOverlays
+    })
 
   const resetComposer = () => {
     composer.resetComposerContent()
@@ -103,6 +105,7 @@ export const useSenderController = (props: SenderProps) => {
     pendingImages: composer.pendingImages,
     pendingFiles: composer.pendingFiles,
     isBusy,
+    allowWhileBusy: isThinking,
     isInlineEdit,
     modelUnavailable: props.modelUnavailable,
     interactionRequest: props.interactionRequest,
@@ -113,7 +116,7 @@ export const useSenderController = (props: SenderProps) => {
     t,
     resetComposer
   })
-  const triggerSend = () => void handleSend()
+  const triggerSend = (mode?: 'steer' | 'next') => void handleSend(mode)
 
   useSenderAutofocus({ autoFocus: props.autoFocus === true, editorRef })
   useSenderReferenceFocusRestore({ focusRestore, referenceActions })
@@ -123,11 +126,21 @@ export const useSenderController = (props: SenderProps) => {
     isMac,
     clearInputShortcut,
     isInlineEdit,
+    isThinking,
     input: composer.input,
     pendingImageCount: composer.pendingImages.length,
     pendingFileCount: composer.pendingFiles.length,
     onCancel: props.onCancel,
     onClear: props.onClear,
+    onInterrupt: props.onInterrupt,
+    onInterruptHint: () => {
+      void message.open({
+        type: 'info',
+        content: t('chat.queue.stopShortcutConfirm'),
+        duration: 1.6,
+        key: 'chat-stop-shortcut-confirm'
+      })
+    },
     onResetComposer: resetComposer,
     showReferenceActions: referenceActions.showReferenceActions,
     onCloseReferenceActions: () => referenceActions.closeReferenceActions({ restoreFocus: true }),
@@ -164,6 +177,7 @@ export const useSenderController = (props: SenderProps) => {
     props,
     refs: { fileInputRef, modelSelectRef, effortSelectRef },
     referenceActions,
+    queuedMessageShortcuts,
     resolvedSendShortcut,
     selectOverlays,
     supportsEffort,
@@ -188,6 +202,12 @@ export const useSenderController = (props: SenderProps) => {
     permissionContext,
     editorRef,
     placeholder: props.placeholder ?? props.interactionRequest?.payload.question ?? t('chat.inputPlaceholder'),
+    secondarySendShortcut: isThinking ? queuedMessageShortcuts.queueNext : undefined,
+    onSecondarySendShortcut: isThinking
+      ? () => {
+        void handleSend('next')
+      }
+      : undefined,
     toolbar
   })
 }

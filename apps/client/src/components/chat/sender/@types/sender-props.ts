@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react'
 
-import type { AskUserQuestionParams, ChatMessageContent, SessionStatus } from '@vibe-forge/core'
+import type {
+  AskUserQuestionParams,
+  ChatMessageContent,
+  SessionQueuedMessageMode,
+  SessionStatus
+} from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
 import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
@@ -11,8 +16,11 @@ import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import type { SenderInitialContent, SenderSubmitResult, SenderVariant } from './sender-types'
 
 export interface SenderProps {
-  onSend: (text: string) => SenderSubmitResult | Promise<SenderSubmitResult>
-  onSendContent: (content: ChatMessageContent[]) => SenderSubmitResult | Promise<SenderSubmitResult>
+  onSend: (text: string, mode?: SessionQueuedMessageMode) => SenderSubmitResult | Promise<SenderSubmitResult>
+  onSendContent: (
+    content: ChatMessageContent[],
+    mode?: SessionQueuedMessageMode
+  ) => SenderSubmitResult | Promise<SenderSubmitResult>
   variant?: SenderVariant
   adapterLocked?: boolean
   sessionStatus?: SessionStatus
@@ -47,4 +55,6 @@ export interface SenderProps {
   adapterOptions?: Array<{ value: string; label: ReactNode }>
   onAdapterChange?: (adapter: string) => void
   modelUnavailable?: boolean
+  queueMode?: SessionQueuedMessageMode
+  onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
 }

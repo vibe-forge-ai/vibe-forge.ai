@@ -21,6 +21,7 @@ export const buildSenderToolbar = ({
   props,
   refs,
   referenceActions,
+  queuedMessageShortcuts,
   resolvedSendShortcut,
   selectOverlays,
   supportsEffort,
@@ -31,9 +32,12 @@ export const buildSenderToolbar = ({
     handleImageUpload: () => void
     handleOpenContextPicker: () => void
   }
-  callbacks: { onSend: () => void }
+  callbacks: { onSend: (mode?: 'steer' | 'next') => void }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
-  composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
+  composerControlShortcuts: Pick<
+    SenderToolbarData['composerControlShortcuts'],
+    'switchEffort' | 'switchModel' | 'switchPermissionMode'
+  >
   focusRestore: { queueEditorFocusRestore: () => void }
   isBusy: boolean
   isInlineEdit: boolean
@@ -57,6 +61,7 @@ export const buildSenderToolbar = ({
     referenceMenuNavigation: SenderToolbarRefs['referenceMenuNavigation']
     permissionMenuNavigation: SenderToolbarRefs['permissionMenuNavigation']
   }
+  queuedMessageShortcuts: Pick<SenderToolbarData['composerControlShortcuts'], 'queueNext' | 'queueSteer'>
   resolvedSendShortcut: string
   selectOverlays: {
     showModelSelect: boolean
@@ -82,6 +87,7 @@ export const buildSenderToolbar = ({
       onModelChange: props.onModelChange,
       onToggleRecommendedModel: props.onToggleRecommendedModel,
       onPermissionModeChange: props.onPermissionModeChange,
+      onQueueModeChange: props.onQueueModeChange,
       onCancel: props.onCancel,
       onSend: callbacks.onSend
     },
@@ -95,6 +101,8 @@ export const buildSenderToolbar = ({
       modelSearchOptions: props.modelSearchOptions,
       permissionMode: props.permissionMode ?? 'default',
       permissionModeOptions: props.permissionModeOptions ?? [],
+      queueMode: props.queueMode ?? 'steer',
+      queuedMessageShortcuts,
       recommendedModelOptions: props.recommendedModelOptions,
       servicePreviewModelOptions: props.servicePreviewModelOptions,
       resolvedSendShortcut,
