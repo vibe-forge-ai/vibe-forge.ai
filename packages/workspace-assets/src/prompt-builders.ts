@@ -155,8 +155,8 @@ export const generateSpecRoutePrompt = (
     : ''
 
   return (
-    `<system-prompt>\n${activeIdentityPrompt}Choose the appropriate workflow based on the user's needs and the actual development goal, and use the \`load-spec\` MCP tool to load it.\n` +
-    '- Pass the identifier based on the actual need. This is not a path; you must load it through the tool.\n' +
+    `<system-prompt>\n${activeIdentityPrompt}Choose the appropriate workflow based on the user's needs and the actual development goal, and use the workflow identifier to locate and load the corresponding definition.\n` +
+    '- Pass the identifier based on the actual need. This is not a path; use the standard workflow loading capability to resolve it.\n' +
     '- Decide how to pass parameters based on their descriptions and actual usage scenarios.\n' +
     'The project includes the following workflows:\n' +
     `${specsRouteStr}\n` +
@@ -178,7 +178,7 @@ export const generateEntitiesRoutePrompt = (entities: Definition<Entity>[]) => {
         })
         .join('')
     }\n` +
-    'When solving user problems, you may specify entities through the `run-tasks` tool as needed and have them coordinate multiple entity types to complete the work.\n' +
+    'When solving user problems, you may specify entities through `vibe-forge.StartTasks` as needed and have them coordinate multiple entity types to complete the work; use `GetTaskInfo` and `wait` to track progress.\n' +
     '</system-prompt>\n'
   )
 }

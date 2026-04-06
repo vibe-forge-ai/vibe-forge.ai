@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import process from 'node:process'
 
 import type { Cache } from '@vibe-forge/types'
 
@@ -28,9 +29,11 @@ export const setCache = async <K extends keyof Cache>(
   } catch {
     await fs.mkdir(cacheDir, { recursive: true })
   }
-  await fs.writeFile(cachePath, JSON.stringify(value, null, 2), {
+  const tempPath = `${cachePath}.${process.pid}.${Date.now()}.tmp`
+  await fs.writeFile(tempPath, JSON.stringify(value, null, 2), {
     flag: 'w'
   })
+  await fs.rename(tempPath, cachePath)
   return { cachePath }
 }
 
@@ -52,7 +55,6 @@ export const getCache = async <K extends keyof Cache>(
   const content = await fs.readFile(cachePath, 'utf-8')
 
   if (content.trim() === '') {
-    await fs.rm(cachePath, { force: true })
     return undefined
   }
 
@@ -60,7 +62,6 @@ export const getCache = async <K extends keyof Cache>(
     return JSON.parse(content) as Cache[K]
   } catch (error) {
     if (error instanceof SyntaxError) {
-      await fs.rm(cachePath, { force: true })
       return undefined
     }
     throw error

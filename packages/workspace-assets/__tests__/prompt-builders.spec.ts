@@ -113,6 +113,8 @@ describe('workspace asset prompt builders', () => {
     expect(prompt).toContain('Workflow name: release')
     expect(prompt).toContain('Identifier: release')
     expect(prompt).toContain('    - version: 版本号')
+    expect(prompt).toContain('use the workflow identifier to locate and load the corresponding definition')
+    expect(prompt).not.toContain('load-spec')
   })
 
   it('builds spec route prompts without exposing file paths', () => {
@@ -144,6 +146,8 @@ describe('workspace asset prompt builders', () => {
     expect(prompt).toContain('Description: 发布流程')
     expect(prompt).toContain('Identifier: release')
     expect(prompt).toContain('    - version: 版本号')
+    expect(prompt).toContain('use the workflow identifier to locate and load the corresponding definition')
+    expect(prompt).not.toContain('load-spec')
     expect(prompt).not.toContain('professional project execution manager')
     expect(prompt).not.toContain('.ai/specs/release/index.md')
     expect(prompt).not.toContain('internal')
@@ -169,6 +173,10 @@ describe('workspace asset prompt builders', () => {
     ])
 
     expect(prompt).toContain('reviewer: 负责代码审查')
+    expect(prompt).toContain('`vibe-forge.StartTasks`')
+    expect(prompt).toContain('`GetTaskInfo`')
+    expect(prompt).toContain('`wait`')
+    expect(prompt).not.toContain('run-tasks')
     expect(prompt).not.toContain('需要关注变更风险')
     expect(prompt).not.toContain('hidden')
   })
