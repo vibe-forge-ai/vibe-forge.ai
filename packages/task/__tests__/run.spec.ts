@@ -310,6 +310,100 @@ describe('task run adapter init', () => {
     })
   })
 
+  it('merges runtime MCP servers into the adapter asset plan', async () => {
+    const ctx = createCtx()
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-runtime-mcp',
+      runtimeMcpServers: {
+        'channel-lark-default': {
+          command: process.execPath,
+          args: ['/tmp/channel-lark-mcp.js'],
+          env: {
+            VF_LARK_APP_ID: 'cli_app'
+          }
+        }
+      },
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      assetPlan: {
+        mcpServers: {
+          'channel-lark-default': {
+            command: process.execPath,
+            args: ['/tmp/channel-lark-mcp.js'],
+            env: {
+              VF_LARK_APP_ID: 'cli_app'
+            }
+          }
+        }
+      }
+    })
+  })
+
+  it('does not let runtime MCP servers shadow workspace MCP servers with the same name', async () => {
+    const ctx = createCtx()
+    ctx.assets.mcpServers['channel-lark-default'] = {
+      id: 'mcp-1',
+      kind: 'mcpServer',
+      name: 'channel-lark-default',
+      displayName: 'channel-lark-default',
+      origin: 'workspace',
+      sourcePath: '/tmp/project/.ai/mcp/channel-lark-default.json',
+      payload: {
+        name: 'channel-lark-default',
+        config: {
+          command: process.execPath,
+          args: ['/tmp/workspace-mcp.js']
+        }
+      }
+    }
+    ctx.assets.assets.push(ctx.assets.mcpServers['channel-lark-default'])
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'codex',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-runtime-mcp-shadow',
+      mcpServers: {
+        include: ['channel-lark-default']
+      },
+      runtimeMcpServers: {
+        'channel-lark-default': {
+          command: process.execPath,
+          args: ['/tmp/channel-lark-mcp.js']
+        }
+      },
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls[0]?.[1]).toMatchObject({
+      assetPlan: {
+        mcpServers: {
+          'channel-lark-default': {
+            command: process.execPath,
+            args: ['/tmp/workspace-mcp.js']
+          }
+        }
+      }
+    })
+    expect(ctx.logger.warn).toHaveBeenCalledWith({
+      runtimeMcpServerNames: ['channel-lark-default']
+    }, '[mcp] Ignoring session companion MCP servers that would shadow workspace MCP servers')
+  })
+
   it('disables overlapping bridge events when claude native hooks are active', async () => {
     const ctx = createCtx()
     ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ = '1'

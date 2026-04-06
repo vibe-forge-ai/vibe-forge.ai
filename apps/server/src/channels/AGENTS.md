@@ -69,6 +69,9 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 | `description`             | `string?`   | 频道说明                                                |
 | `enabled`                 | `boolean?`  | 是否启用，默认 true                                     |
 | `systemPrompt`            | `string?`   | 启动会话时注入的系统提示词                              |
+| `commandPrefix`           | `string?`   | 频道指令前缀，默认 `/`                                  |
+| `language`                | `zh\|en?`   | 频道提示语言，默认 `zh`                                 |
+| `enableSessionMcp`        | `boolean?`  | 是否自动挂载该频道提供的 session companion MCP，默认 true |
 | `access.admins`           | `string[]?` | 管理员 sender ID 列表，豁免所有访问控制，可执行管理指令 |
 | `access.allowPrivateChat` | `boolean?`  | 是否接受私聊，默认 true                                 |
 | `access.allowGroupChat`   | `boolean?`  | 是否接受群聊，默认 true                                 |
@@ -76,6 +79,36 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 | `access.blockedGroups`    | `string[]?` | 群组黑名单（channel ID）                                |
 | `access.allowedSenders`   | `string[]?` | 发送者白名单（sender ID）                               |
 | `access.blockedSenders`   | `string[]?` | 发送者黑名单（sender ID），优先于白名单                 |
+
+## Companion MCP 约定
+
+Channel 包可以可选导出 `@vibe-forge/channel-<type>/mcp` 子入口，用于声明该频道的 session-scoped companion MCP。
+
+- 子入口导出 `resolveChannelSessionMcpServers(config, context)`。
+- 返回值是具体 MCP server 配置数组；server 会在会话启动时解析，而不是在 workspace 资产阶段预注入。
+- companion MCP 只会注入到“从该频道绑定会话启动出来的 adapter session”里，不会影响其他会话。
+- `enableSessionMcp !== false` 时默认启用；频道配置可按 channel key 单独关闭。
+- companion MCP 应优先暴露该频道上下文相关、需要当前会话绑定信息才能安全执行的动作，例如发送消息、查询当前群、处理频道目录对象等。
+- 命名推荐使用 `channel-<type>-<channelKey>` 前缀，避免和用户 workspace 自带的 MCP 重名。
+
+实现约定：
+
+```typescript
+export const resolveChannelSessionMcpServers =
+  defineResolveChannelSessionMcpServers<MyChannelConfig>((config, context) => [
+    {
+      name: `channel-mytype-${context.channelKey}`,
+      config: {
+        command: process.execPath,
+        args: [resolveMcpCliPath()],
+        env: {
+          VF_CHANNEL_SESSION_ID: context.sessionId,
+          VF_CHANNEL_KEY: context.channelKey
+        }
+      }
+    }
+  ])
+```
 
 ## systemPrompt 组装顺序
 

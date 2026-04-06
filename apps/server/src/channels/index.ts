@@ -1,10 +1,11 @@
 import type { WSEvent } from '@vibe-forge/core'
-import type { ChannelBaseConfig, ChannelInboundEvent } from '@vibe-forge/core/channel'
+import type { ChannelBaseConfig, ChannelInboundEvent, ChannelSessionMcpServer } from '@vibe-forge/core/channel'
 
 import { logger } from '#~/utils/logger.js'
 
 import { handleInboundEvent, handleSessionEvent } from './handlers'
 import { loadChannelModule } from './loader'
+import { resolveBinding } from './state'
 import type { ChannelManager, ChannelRuntimeState } from './types'
 
 const collectChannelEntries = (
@@ -91,4 +92,35 @@ export const initChannels = async (
 export const handleChannelSessionEvent = async (sessionId: string, event: WSEvent) => {
   if (!channelManager) return false
   return await channelManager.handleSessionEvent(sessionId, event)
+}
+
+export const resolveChannelSessionMcpServers = async (sessionId: string) => {
+  if (!channelManager) {
+    return {} satisfies Record<string, ChannelSessionMcpServer['config']>
+  }
+
+  const binding = resolveBinding(sessionId)
+  if (binding == null) {
+    return {} satisfies Record<string, ChannelSessionMcpServer['config']>
+  }
+
+  const state = channelManager.states.get(binding.channelKey)
+  if (state?.config == null) {
+    return {} satisfies Record<string, ChannelSessionMcpServer['config']>
+  }
+
+  const mod = loadChannelModule(state.type)
+  const servers = await mod.resolveSessionMcpServers?.(state.config, {
+    sessionId,
+    channelKey: binding.channelKey,
+    channelType: binding.channelType,
+    channelId: binding.channelId,
+    sessionType: binding.sessionType,
+    replyReceiveId: binding.replyReceiveId,
+    replyReceiveIdType: binding.replyReceiveIdType
+  })
+
+  return Object.fromEntries(
+    (servers ?? []).map(server => [server.name, server.config])
+  ) satisfies Record<string, ChannelSessionMcpServer['config']>
 }

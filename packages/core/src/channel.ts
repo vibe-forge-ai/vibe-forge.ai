@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import type { Config } from '@vibe-forge/types'
+
 export interface ChannelMap {}
 
 export type ChannelType = keyof ChannelMap
@@ -47,6 +49,9 @@ export const channelBaseSchema = z.object({
   language: z
     .enum(['zh', 'en']).optional()
     .describe('频道提示语言，默认 zh'),
+  enableSessionMcp: z
+    .boolean().optional()
+    .describe('是否在通过该频道启动的会话中自动挂载该频道提供的 companion MCP，默认 true'),
   // 访问权限控制
   access: channelAccessSchema
     .optional()
@@ -126,6 +131,26 @@ export interface ChannelEventHandlers {
   [event: string]: ChannelEventHandler | ChannelEventHandler<ChannelInboundEvent> | undefined
 }
 
+export interface ChannelSessionMcpContext {
+  sessionId: string
+  channelKey: string
+  channelType: string
+  channelId: string
+  sessionType: string
+  replyReceiveId?: string
+  replyReceiveIdType?: string
+}
+
+export interface ChannelSessionMcpServer {
+  name: string
+  config: NonNullable<Config['mcpServers']>[string]
+}
+
+export type ResolveChannelSessionMcpServersFn<TConfig = unknown> = (
+  config: TConfig,
+  context: ChannelSessionMcpContext
+) => Promise<readonly ChannelSessionMcpServer[] | undefined> | readonly ChannelSessionMcpServer[] | undefined
+
 export interface ChannelDescriptor<
   TConfigSchema extends z.ZodTypeAny = z.ZodTypeAny,
   TMessageSchema extends z.ZodTypeAny = z.ZodTypeAny,
@@ -153,3 +178,7 @@ export type ChannelCreateFn<TConfig = unknown, TMessage = unknown> = (
 export const defineCreateChannelConnection = <TConfigSchema extends z.ZodTypeAny, TMessageSchema extends z.ZodTypeAny>(
   connect: ChannelCreateFn<z.infer<TConfigSchema>, z.infer<TMessageSchema>>
 ): ChannelCreateFn<z.infer<TConfigSchema>, z.infer<TMessageSchema>> => connect
+
+export const defineResolveChannelSessionMcpServers = <TConfig = unknown>(
+  resolve: ResolveChannelSessionMcpServersFn<TConfig>
+): ResolveChannelSessionMcpServersFn<TConfig> => resolve

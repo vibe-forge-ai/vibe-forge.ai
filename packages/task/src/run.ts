@@ -5,6 +5,7 @@ import type {
   AdapterModelFallbackError,
   AdapterOutputEvent,
   AdapterQueryOptions,
+  Config,
   TaskDetail
 } from '@vibe-forge/types'
 import { loadAdapter } from '@vibe-forge/types'
@@ -248,7 +249,7 @@ export const run = async (
 
   const originalOnEvent = adapterOptions.onEvent
   const supportedAssetPlanAdapters = supportedEffortAdapters
-  const assetPlan = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
+  const assetPlanBase = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
     ? undefined
     : buildAdapterAssetPlan({
       adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
@@ -259,6 +260,37 @@ export const run = async (
         promptAssetIds: adapterOptions.promptAssetIds
       }
     })
+  const runtimeMcpServers = Object.fromEntries(
+    Object.entries(adapterOptions.runtimeMcpServers ?? {})
+      .filter(([, server]) => server != null && server.enabled !== false)
+      .map(([name, server]) => {
+        const { enabled: _enabled, ...resolvedServer } = server as NonNullable<Config['mcpServers']>[string]
+        return [name, resolvedServer]
+      })
+  ) as Record<string, NonNullable<Config['mcpServers']>[string]>
+  const workspaceMcpServerNames = new Set(Object.keys(assetPlanBase?.mcpServers ?? {}))
+  const shadowedRuntimeMcpServerNames = Object.keys(runtimeMcpServers)
+    .filter(name => workspaceMcpServerNames.has(name))
+  if (shadowedRuntimeMcpServerNames.length > 0) {
+    logger.warn({
+      runtimeMcpServerNames: shadowedRuntimeMcpServerNames
+    }, '[mcp] Ignoring session companion MCP servers that would shadow workspace MCP servers')
+  }
+  const effectiveRuntimeMcpServers = Object.fromEntries(
+    Object.entries(runtimeMcpServers)
+      .filter(([name]) => !workspaceMcpServerNames.has(name))
+  ) as Record<string, NonNullable<Config['mcpServers']>[string]>
+  const assetPlan = assetPlanBase == null
+    ? undefined
+    : Object.keys(effectiveRuntimeMcpServers).length === 0
+    ? assetPlanBase
+    : {
+      ...assetPlanBase,
+      mcpServers: {
+        ...assetPlanBase.mcpServers,
+        ...effectiveRuntimeMcpServers
+      }
+    }
   const nativeBridgeDisabledEvents: Array<keyof HookInputs> =
     adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS

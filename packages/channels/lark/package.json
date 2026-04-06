@@ -31,11 +31,27 @@
         "require": "./dist/connection.js"
       }
     },
+    "./mcp": {
+      "__vibe-forge__": {
+        "default": "./src/mcp/index.ts"
+      },
+      "default": {
+        "import": "./dist/mcp/index.mjs",
+        "require": "./dist/mcp/index.js"
+      }
+    },
     "./package.json": "./package.json"
+  },
+  "bin": {
+    "vf-channel-lark-mcp": "./mcp.js"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "latest",
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@vibe-forge/cli-helper": "workspace:^",
     "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "commander": "^12.1.0",
     "zod": "^3.24.1"
   }
 }

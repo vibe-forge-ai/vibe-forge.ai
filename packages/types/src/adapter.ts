@@ -89,6 +89,7 @@ export interface AdapterQueryOptions {
     include?: string[]
     exclude?: string[]
   }
+  runtimeMcpServers?: Config['mcpServers']
   useDefaultVibeForgeMcpServer?: boolean
   tools?: {
     include?: string[]

@@ -12,6 +12,7 @@ import type {
   WSEvent
 } from '@vibe-forge/core'
 import type {
+  AdapterQueryOptions,
   AdapterErrorData,
   AdapterOutputEvent,
   AskUserQuestionParams,
@@ -19,7 +20,7 @@ import type {
   SessionInfo
 } from '@vibe-forge/types'
 
-import { handleChannelSessionEvent } from '#~/channels/index.js'
+import { handleChannelSessionEvent, resolveChannelSessionMcpServers } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
 import { applySessionEvent } from '#~/services/session/events.js'
@@ -390,6 +391,19 @@ export async function startAdapterSession(
         languagePrompt
       ].filter(Boolean).join('\n\n')
       let sawFatalError = false
+      let runtimeMcpServers: AdapterQueryOptions['runtimeMcpServers']
+
+      try {
+        const resolvedChannelMcpServers = await resolveChannelSessionMcpServers(sessionId)
+        if (Object.keys(resolvedChannelMcpServers).length > 0) {
+          runtimeMcpServers = resolvedChannelMcpServers
+        }
+      } catch (error) {
+        serverLogger.warn({
+          sessionId,
+          error: error instanceof Error ? error.message : String(error)
+        }, '[channel] Failed to resolve session companion MCP servers')
+      }
 
       await syncPermissionStateMirrorBestEffort(sessionId, {
         adapter: resolvedAdapter
@@ -410,6 +424,7 @@ export async function startAdapterSession(
         appendSystemPrompt: options.appendSystemPrompt ?? true,
         tools: resolvedConfig.tools,
         mcpServers: resolvedConfig.mcpServers,
+        runtimeMcpServers,
         promptAssetIds: resolvedConfig.promptAssetIds,
         assetBundle: resolvedConfig.assetBundle,
         onEvent: (event: AdapterOutputEvent) => {
