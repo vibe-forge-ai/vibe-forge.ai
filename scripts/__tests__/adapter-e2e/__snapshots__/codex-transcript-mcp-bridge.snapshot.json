@@ -79,15 +79,15 @@
         "redacted": true
       },
       {
-        "event": "PreToolUse",
-        "header": "codex adapter:codex:mcp:vibe-forge:StartTasks",
-        "toolName": "adapter:codex:mcp:vibe-forge:StartTasks"
-      },
-      {
         "event": "SessionStart",
         "adapter": "codex",
         "hookSource": "native",
         "canBlock": true
+      },
+      {
+        "event": "PreToolUse",
+        "header": "codex adapter:codex:mcp:vibe-forge:StartTasks",
+        "toolName": "adapter:codex:mcp:vibe-forge:StartTasks"
       },
       {
         "event": "PostToolUse",

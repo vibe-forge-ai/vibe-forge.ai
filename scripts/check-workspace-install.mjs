@@ -1,5 +1,6 @@
 import { access, readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 
 const repoRoot = process.cwd()
 
@@ -21,11 +22,24 @@ const fileExists = async (targetPath) => {
 
 const readJson = async (targetPath) => JSON.parse(await readFile(targetPath, 'utf8'))
 
+const readDirIfExists = async (targetPath) => {
+  try {
+    return await readdir(targetPath, { withFileTypes: true })
+  } catch {
+    return []
+  }
+}
+
 const parseWorkspacePatterns = async () => {
   const content = await readFile(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')
   return content
     .split('\n')
-    .map(line => line.match(/^\s*-\s+(.+?)\s*$/)?.[1] ?? null)
+    .map((line) => {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('- ')) return null
+      const pattern = trimmed.slice(2).trim()
+      return pattern === '' ? null : pattern
+    })
     .filter(Boolean)
 }
 
@@ -51,14 +65,6 @@ const expandSingleStarPattern = async (pattern) => {
   }
 
   return directories
-}
-
-const readDirIfExists = async (targetPath) => {
-  try {
-    return await readdir(targetPath, { withFileTypes: true })
-  } catch {
-    return []
-  }
 }
 
 const listWorkspacePackageDirs = async () => {

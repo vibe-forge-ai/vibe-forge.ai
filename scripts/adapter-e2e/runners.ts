@@ -1,4 +1,4 @@
-import { appendFile, readdir, readFile, rm, stat } from 'node:fs/promises'
+import { appendFile, readFile, readdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -73,17 +73,15 @@ const waitForCodexTranscriptFile = async () => {
 
   while (Date.now() < deadline) {
     const files = await walkJsonlFiles(sessionsRoot)
-    const entries = await Promise.all(
+    const entries = (await Promise.all(
       files.map(async (filePath) => ({
         filePath,
         stats: await stat(filePath).catch(() => undefined)
       }))
-    )
+    ))
+      .flatMap(entry => entry.stats == null ? [] : [{ filePath: entry.filePath, stats: entry.stats }])
 
     const match = entries
-      .filter((entry): entry is { filePath: string; stats: Awaited<ReturnType<typeof stat>> } => (
-        entry.stats != null
-      ))
       .sort((left, right) => right.stats.mtimeMs - left.stats.mtimeMs)
       .at(0)
 
@@ -108,10 +106,12 @@ const injectCodexTranscriptEvents = async (
     throw new Error('Codex transcript file not found for transcript injection')
   }
 
-  const lines = events.map(event => JSON.stringify({
-    timestamp: new Date().toISOString(),
-    ...event
-  }))
+  const lines = events.map(event =>
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      ...event
+    })
+  )
   await appendFile(transcriptPath, `${lines.join('\n')}\n`)
 }
 
@@ -126,7 +126,7 @@ export const runWrappedAdapter = async (
     await resetCodexMockState()
   }
   const codexTranscriptInjection = testCase.adapter === 'codex' &&
-    (testCase.codexTranscriptInjection?.length ?? 0) > 0
+      (testCase.codexTranscriptInjection?.length ?? 0) > 0
     ? injectCodexTranscriptEvents(testCase.codexTranscriptInjection ?? [])
       .then(() => undefined)
       .catch(error => error)

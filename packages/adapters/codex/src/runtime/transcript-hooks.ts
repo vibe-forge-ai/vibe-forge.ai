@@ -1,5 +1,9 @@
+/* eslint-disable max-lines */
+
+import { Buffer } from 'node:buffer'
 import { closeSync, existsSync, openSync, readSync, readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+import process from 'node:process'
 
 import { callHook } from '@vibe-forge/hooks'
 import type { AdapterCtx, TaskRuntime } from '@vibe-forge/types'
@@ -92,8 +96,8 @@ const readRecord = (value: unknown) => (
 
 const readCallId = (payload: Record<string, unknown>) => (
   readString(payload.call_id) ??
-  readString(payload.callId) ??
-  readString(payload.id)
+    readString(payload.callId) ??
+    readString(payload.id)
 )
 
 const buildMcpToolName = (payload: Record<string, unknown>) => {
@@ -266,6 +270,7 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
   private readonly pendingCalls = new Map<string, PendingTranscriptToolCall>()
   private readonly startedAt = Date.now()
   private readonly sessionsDir: string
+  private scanChain: Promise<void> = Promise.resolve()
   private timer: NodeJS.Timeout | undefined
   private stopped = false
 
@@ -277,9 +282,9 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
   start() {
     try {
       this.scanSessionsDir()
-      void this.scanForChanges()
+      this.scheduleScan()
       this.timer = setInterval(() => {
-        void this.scanForChanges()
+        this.scheduleScan()
       }, this.params.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS)
     } catch (error) {
       this.params.logger.warn('[codex transcript hooks] failed to start watcher', error)
@@ -292,6 +297,20 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
       clearInterval(this.timer)
       this.timer = undefined
     }
+    void this.flushAndDispose()
+  }
+
+  private scheduleScan() {
+    this.scanChain = this.scanChain.then(async () => {
+      await this.scanForChanges()
+    })
+  }
+
+  private async flushAndDispose() {
+    await this.scanChain
+    await this.scanForChanges({
+      includeStopped: true
+    })
     this.states.clear()
     this.pendingCalls.clear()
   }
@@ -309,18 +328,19 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
     }
   }
 
-  private async scanForChanges() {
-    if (this.stopped) return
+  private async scanForChanges(options: { includeStopped?: boolean } = {}) {
+    if (this.stopped && options.includeStopped !== true) return
 
     try {
       if (!existsSync(this.sessionsDir)) return
+      const pendingProcesses: Promise<void>[] = []
       walkJsonlFiles(this.sessionsDir, (filePath) => {
         const stat = statSync(filePath)
         const current = this.states.get(filePath)
 
         if (current == null) {
           this.states.set(filePath, { byteOffset: 0, remainder: '' })
-          void this.processFile(filePath)
+          pendingProcesses.push(this.processFile(filePath))
           return
         }
 
@@ -331,9 +351,10 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
         }
 
         if (stat.size > current.byteOffset) {
-          void this.processFile(filePath)
+          pendingProcesses.push(this.processFile(filePath))
         }
       })
+      await Promise.all(pendingProcesses)
     } catch (error) {
       this.params.logger.warn('[codex transcript hooks] failed to scan session transcripts', error)
     }
@@ -403,7 +424,8 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
       const toolName = normalizeToolName(undefined, payloadType, payload)
       if (toolName == null) return
 
-      const callId = readCallId(payload) ?? `${payloadType}:${event.timestamp ?? Date.now().toString(36)}:${state.byteOffset}`
+      const callId = readCallId(payload) ??
+        `${payloadType}:${event.timestamp ?? Date.now().toString(36)}:${state.byteOffset}`
       const toolInput = extractToolInput(payloadType, payload)
       const toolResponse = extractToolResponse(payloadType, payload)
       await this.callObservationalHook('PreToolUse', {
@@ -427,10 +449,10 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
       const rawToolName = typeof payload.name === 'string'
         ? payload.name
         : typeof payload.tool === 'string'
-          ? payload.tool
-          : typeof payload.tool_name === 'string'
-            ? payload.tool_name
-            : undefined
+        ? payload.tool
+        : typeof payload.tool_name === 'string'
+        ? payload.tool_name
+        : undefined
       const toolName = normalizeToolName(rawToolName, payloadType, payload)
       const callId = readCallId(payload)
       if (toolName == null || callId == null) return
@@ -497,6 +519,8 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
   }
 }
 
-export const createCodexTranscriptHookWatcher = (params: CodexTranscriptHookWatcherParams) => (
+export const createCodexTranscriptHookWatcher = (
+  params: CodexTranscriptHookWatcherParams
+): CodexTranscriptHookWatcher => (
   new CodexTranscriptHookWatcherImpl(params)
 )
