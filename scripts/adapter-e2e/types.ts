@@ -163,6 +163,11 @@ export interface MockScenarioRule {
     ) => MockScenarioTurn)
 }
 
+export interface CodexTranscriptInjectionEvent {
+  type: string
+  payload: JsonObject
+}
+
 export interface AdapterE2ECase {
   id: string
   title: string
@@ -171,6 +176,7 @@ export interface AdapterE2ECase {
   model?: string
   allowedTransports?: AdapterTransport[]
   extraArgs?: string[]
+  codexTranscriptInjection?: CodexTranscriptInjectionEvent[]
   mockScenarios?: MockModelScenario[]
   expectations?: AdapterE2ECaseExpectations
 }
@@ -183,6 +189,7 @@ export interface ResolvedAdapterE2ECase {
   model: string
   allowedTransports: AdapterTransport[]
   args: (sessionId: string) => string[]
+  codexTranscriptInjection?: CodexTranscriptInjectionEvent[]
   mockScenarios: MockModelScenario[]
   expectations: AdapterE2ECaseExpectations
 }

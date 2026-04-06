@@ -314,9 +314,73 @@ const codexApplyPatchCase = (): AdapterE2ECase => {
   })
 }
 
+const codexTranscriptMcpCase = (): AdapterE2ECase => {
+  const output = 'E2E_CODEX_MCP_BRIDGE'
+  const title = 'Codex transcript MCP bridge smoke'
+
+  return defineAdapterE2ECase({
+    id: 'codex-transcript-mcp-bridge',
+    title,
+    adapter: 'codex',
+    model: createCaseModel('codex', 'codex-transcript-mcp-bridge'),
+    prompt: 'Use the Read tool exactly once on README.md, then reply with exactly E2E_CODEX_MCP_BRIDGE and nothing else.',
+    codexTranscriptInjection: [
+      {
+        type: 'response_item',
+        payload: {
+          type: 'mcp_tool_call',
+          call_id: 'call_injected_mcp',
+          server: 'vibe-forge',
+          tool: 'StartTasks',
+          arguments: JSON.stringify({ task: 'bridge smoke' })
+        }
+      },
+      {
+        type: 'response_item',
+        payload: {
+          type: 'mcp_tool_call_output',
+          call_id: 'call_injected_mcp',
+          output: JSON.stringify({
+            success: true,
+            content: [{ type: 'text', text: 'started' }]
+          })
+        }
+      }
+    ],
+    mockScenarios: [
+      createToolCaseMockScenario(
+        'codex-transcript-mcp-bridge',
+        title,
+        output,
+        ['README.md', output]
+      )
+    ],
+    expectations: {
+      outputContains: [output],
+      hooks: [
+        { event: 'GenerateSystemPrompt', minCount: 1 },
+        { event: 'TaskStart', minCount: 1 },
+        { event: 'SessionStart', minCount: 1 },
+        { event: 'UserPromptSubmit', minCount: 1 },
+        { event: 'PreToolUse', minCount: 2 },
+        { event: 'PostToolUse', minCount: 2 },
+        { event: 'Stop', minCount: 1 },
+        { event: 'SessionEnd', minCount: 1 }
+      ],
+      mockTrace: {
+        minRequests: 2,
+        requiredToolNames: ['exec_command'],
+        maxToolCalls: 1,
+        finalResponseText: output
+      }
+    }
+  })
+}
+
 export const ADAPTER_E2E_CASES: AdapterE2ECase[] = [
   toolCase('codex', 'codex-read-once'),
   codexApplyPatchCase(),
+  codexTranscriptMcpCase(),
   toolCase('claude-code', 'claude-read-once'),
   toolCase('opencode', 'opencode-read-once'),
   directAnswerCase('codex', 'codex-direct-answer'),
@@ -410,6 +474,7 @@ export const resolveAdapterE2ECase = (
         sessionId,
         extraArgs
       ),
+    codexTranscriptInjection: testCase.codexTranscriptInjection,
     mockScenarios: testCase.mockScenarios ?? [],
     expectations: testCase.expectations ?? {}
   }
