@@ -12,7 +12,6 @@ import { deleteSession, getApiErrorMessage, updateSession } from '../../api'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
-import { ThinkingStatus } from './ThinkingStatus'
 import {
   formatToolLabel,
   getSessionAssetWarnings,
@@ -63,7 +62,6 @@ export function ChatHeader({
     : (lastMessage != null && lastMessage !== '')
     ? lastMessage
     : t('common.newChat')
-  const showRuntimeStatus = sessionStatus === 'running' || sessionStatus === 'waiting_input'
 
   const handleToggleStar = async () => {
     if (sessionId == null || sessionId === '') return
@@ -113,9 +111,6 @@ export function ChatHeader({
       <div className='chat-header-main'>
         <div className='chat-header-info'>
           <div className='chat-header-title-row'>
-            {showRuntimeStatus && (
-              <ThinkingStatus variant='header' status={sessionStatus} />
-            )}
             <div className='chat-header-title'>
               {displayTitle}
             </div>

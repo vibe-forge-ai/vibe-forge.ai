@@ -32,8 +32,6 @@
   - sender 私有类型定义。
 - `sender/@utils/`
   - sender 私有常量与轻量工具函数。
-- `ThinkingStatus.tsx`
-  - 聊天域可复用的状态提示组件，不再算 sender 私有视图。
 - `../../components/workspace/ContextFilePicker.tsx`
   - 工作区文件选择器；如果别的输入入口也要复用目录树选择，直接走这里。
 
