@@ -80,8 +80,58 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
 
-const normalizeToolName = (rawName: string | undefined, payloadType: string) => {
+const readString = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== ''
+    ? value.trim()
+    : undefined
+)
+
+const readRecord = (value: unknown) => (
+  isRecord(value) ? value : undefined
+)
+
+const readCallId = (payload: Record<string, unknown>) => (
+  readString(payload.call_id) ??
+  readString(payload.callId) ??
+  readString(payload.id)
+)
+
+const buildMcpToolName = (payload: Record<string, unknown>) => {
+  const serverName = readString(payload.server) ?? readString(payload.server_name)
+  const toolName = readString(payload.tool) ?? readString(payload.tool_name) ?? readString(payload.name)
+  if (serverName == null || toolName == null) return undefined
+  return `mcp:${serverName}:${toolName}`
+}
+
+const isImmediateToolPayload = (payloadType: string) => (
+  payloadType === 'web_search_call' ||
+  payloadType === 'file_change'
+)
+
+const isPendingToolCallPayload = (payloadType: string) => (
+  payloadType === 'function_call' ||
+  payloadType === 'custom_tool_call' ||
+  payloadType === 'mcp_tool_call'
+)
+
+const isPendingToolResultPayload = (payloadType: string) => (
+  payloadType === 'function_call_output' ||
+  payloadType === 'custom_tool_call_output' ||
+  payloadType === 'mcp_tool_call_output'
+)
+
+const normalizeToolName = (
+  rawName: string | undefined,
+  payloadType: string,
+  payload?: Record<string, unknown>
+) => {
   if (payloadType === 'web_search_call') return 'adapter:codex:WebSearch'
+  if (payloadType === 'file_change') return 'adapter:codex:FileChange'
+
+  if (payloadType === 'mcp_tool_call' && payload != null) {
+    rawName = buildMcpToolName(payload)
+  }
+
   if (rawName == null || rawName.trim() === '') return undefined
 
   const normalizedRawName = rawName.trim()
@@ -115,8 +165,10 @@ const extractToolInput = (payloadType: string, payload: Record<string, unknown>)
   }
 
   if (payloadType === 'function_call') {
-    if (typeof payload.arguments !== 'string') return undefined
-    return parseJson(payload.arguments) ?? { raw: payload.arguments }
+    if (typeof payload.arguments === 'string') {
+      return parseJson(payload.arguments) ?? { raw: payload.arguments }
+    }
+    return readRecord(payload.arguments)
   }
 
   if (payloadType === 'custom_tool_call') {
@@ -125,6 +177,26 @@ const extractToolInput = (payloadType: string, payload: Record<string, unknown>)
       return { patch: payload.input }
     }
     return parseJson(payload.input) ?? { input: payload.input }
+  }
+
+  if (payloadType === 'mcp_tool_call') {
+    if (typeof payload.arguments === 'string') {
+      return parseJson(payload.arguments) ?? { raw: payload.arguments }
+    }
+
+    return readRecord(payload.arguments) ??
+      readRecord(payload.input) ??
+      {
+        server: readString(payload.server) ?? readString(payload.server_name),
+        tool: readString(payload.tool) ?? readString(payload.tool_name) ?? readString(payload.name)
+      }
+  }
+
+  if (payloadType === 'file_change') {
+    return {
+      status: payload.status,
+      changes: Array.isArray(payload.changes) ? payload.changes : []
+    }
   }
 
   return undefined
@@ -138,7 +210,14 @@ const extractToolResponse = (payloadType: string, payload: Record<string, unknow
     }
   }
 
-  if (payloadType === 'function_call_output' || payloadType === 'custom_tool_call_output') {
+  if (payloadType === 'file_change') {
+    return {
+      status: payload.status,
+      changes: Array.isArray(payload.changes) ? payload.changes : []
+    }
+  }
+
+  if (isPendingToolResultPayload(payloadType)) {
     if (typeof payload.output !== 'string') return payload.output
     return parseJson(payload.output) ?? payload.output
   }
@@ -149,8 +228,14 @@ const extractToolResponse = (payloadType: string, payload: Record<string, unknow
 const extractToolError = (toolResponse: unknown) => {
   if (!isRecord(toolResponse)) return false
   if (toolResponse.success === false) return true
+  if (typeof toolResponse.status === 'string') {
+    return toolResponse.status === 'failed' || toolResponse.status === 'declined'
+  }
   if (isRecord(toolResponse.metadata) && typeof toolResponse.metadata.exit_code === 'number') {
     return toolResponse.metadata.exit_code !== 0
+  }
+  if (isRecord(toolResponse.metadata) && typeof toolResponse.metadata.exitCode === 'number') {
+    return toolResponse.metadata.exitCode !== 0
   }
   return false
 }
@@ -314,11 +399,11 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
     const payloadType = typeof payload.type === 'string' ? payload.type : undefined
     if (payloadType == null) return
 
-    if (payloadType === 'web_search_call') {
-      const toolName = normalizeToolName(undefined, payloadType)
+    if (isImmediateToolPayload(payloadType)) {
+      const toolName = normalizeToolName(undefined, payloadType, payload)
       if (toolName == null) return
 
-      const callId = `web-search:${event.timestamp ?? Date.now().toString(36)}:${state.byteOffset}`
+      const callId = readCallId(payload) ?? `${payloadType}:${event.timestamp ?? Date.now().toString(36)}:${state.byteOffset}`
       const toolInput = extractToolInput(payloadType, payload)
       const toolResponse = extractToolResponse(payloadType, payload)
       await this.callObservationalHook('PreToolUse', {
@@ -338,10 +423,16 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
       return
     }
 
-    if (payloadType === 'function_call' || payloadType === 'custom_tool_call') {
-      const rawToolName = typeof payload.name === 'string' ? payload.name : undefined
-      const toolName = normalizeToolName(rawToolName, payloadType)
-      const callId = typeof payload.call_id === 'string' ? payload.call_id : undefined
+    if (isPendingToolCallPayload(payloadType)) {
+      const rawToolName = typeof payload.name === 'string'
+        ? payload.name
+        : typeof payload.tool === 'string'
+          ? payload.tool
+          : typeof payload.tool_name === 'string'
+            ? payload.tool_name
+            : undefined
+      const toolName = normalizeToolName(rawToolName, payloadType, payload)
+      const callId = readCallId(payload)
       if (toolName == null || callId == null) return
 
       const toolInput = extractToolInput(payloadType, payload)
@@ -359,8 +450,8 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
       return
     }
 
-    if (payloadType === 'function_call_output' || payloadType === 'custom_tool_call_output') {
-      const callId = typeof payload.call_id === 'string' ? payload.call_id : undefined
+    if (isPendingToolResultPayload(payloadType)) {
+      const callId = readCallId(payload)
       if (callId == null) return
 
       const pending = this.pendingCalls.get(callId)

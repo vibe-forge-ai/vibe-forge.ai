@@ -267,6 +267,176 @@ describe('createCodexTranscriptHookWatcher', () => {
     )
   })
 
+  it('bridges mcp tool transcript events into observational pre/post hooks', async () => {
+    const timestamp = createTimestamp()
+    const watcher = createCodexTranscriptHookWatcher({
+      cwd: '/tmp/project',
+      env: {},
+      homeDir,
+      logger: createLogger() as any,
+      runtime: 'server',
+      sessionId: 'vf-session',
+      pollIntervalMs: 10
+    })
+
+    watcher.start()
+
+    const transcriptPath = join(sessionsDir, 'rollout-2026-04-06T00-00-00-mcp.jsonl')
+    await writeFile(
+      transcriptPath,
+      [
+        JSON.stringify({
+          timestamp,
+          type: 'session_meta',
+          payload: {
+            id: 'codex-session',
+            timestamp,
+            cwd: '/tmp/project'
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'mcp_tool_call',
+            call_id: 'call_mcp',
+            server: 'vibe-forge',
+            tool: 'StartTasks',
+            arguments: JSON.stringify({ task: 'ship it' })
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'mcp_tool_call_output',
+            call_id: 'call_mcp',
+            output: JSON.stringify({
+              success: true,
+              content: [{ type: 'text', text: 'started' }]
+            })
+          }
+        }),
+        ''
+      ].join('\n')
+    )
+
+    await waitFor(80)
+    watcher.stop()
+
+    expect(callHookMock).toHaveBeenNthCalledWith(
+      1,
+      'PreToolUse',
+      expect.objectContaining({
+        toolCallId: 'call_mcp',
+        toolName: 'adapter:codex:mcp:vibe-forge:StartTasks',
+        toolInput: { task: 'ship it' },
+        transcriptPath
+      }),
+      {}
+    )
+    expect(callHookMock).toHaveBeenNthCalledWith(
+      2,
+      'PostToolUse',
+      expect.objectContaining({
+        toolCallId: 'call_mcp',
+        toolName: 'adapter:codex:mcp:vibe-forge:StartTasks',
+        toolInput: { task: 'ship it' },
+        toolResponse: {
+          success: true,
+          content: [{ type: 'text', text: 'started' }]
+        },
+        transcriptPath,
+        isError: false
+      }),
+      {}
+    )
+  })
+
+  it('emits synthesized observational hooks for file change transcript entries', async () => {
+    const timestamp = createTimestamp()
+    const watcher = createCodexTranscriptHookWatcher({
+      cwd: '/tmp/project',
+      env: {},
+      homeDir,
+      logger: createLogger() as any,
+      runtime: 'server',
+      sessionId: 'vf-session',
+      pollIntervalMs: 10
+    })
+
+    watcher.start()
+
+    const transcriptPath = join(sessionsDir, 'rollout-2026-04-06T00-00-00-file-change.jsonl')
+    await writeFile(
+      transcriptPath,
+      [
+        JSON.stringify({
+          timestamp,
+          type: 'session_meta',
+          payload: {
+            id: 'codex-session',
+            timestamp,
+            cwd: '/tmp/project'
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'file_change',
+            status: 'completed',
+            changes: [
+              { kind: 'add', path: '/tmp/project/example.txt' }
+            ]
+          }
+        }),
+        ''
+      ].join('\n')
+    )
+
+    await waitFor(80)
+    watcher.stop()
+
+    expect(callHookMock).toHaveBeenNthCalledWith(
+      1,
+      'PreToolUse',
+      expect.objectContaining({
+        toolName: 'adapter:codex:FileChange',
+        toolInput: {
+          status: 'completed',
+          changes: [
+            { kind: 'add', path: '/tmp/project/example.txt' }
+          ]
+        },
+        transcriptPath
+      }),
+      {}
+    )
+    expect(callHookMock).toHaveBeenNthCalledWith(
+      2,
+      'PostToolUse',
+      expect.objectContaining({
+        toolName: 'adapter:codex:FileChange',
+        toolInput: {
+          status: 'completed',
+          changes: [
+            { kind: 'add', path: '/tmp/project/example.txt' }
+          ]
+        },
+        toolResponse: {
+          status: 'completed',
+          changes: [
+            { kind: 'add', path: '/tmp/project/example.txt' }
+          ]
+        },
+        transcriptPath,
+        isError: false
+      }),
+      {}
+    )
+  })
+
   it('ignores transcript files from other working directories', async () => {
     const timestamp = createTimestamp()
     const watcher = createCodexTranscriptHookWatcher({
