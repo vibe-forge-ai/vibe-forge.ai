@@ -128,7 +128,7 @@ export function SessionList({
             >
               <div className='session-row-main'>
                 {isBatchMode && (
-                  <label
+                  <div
                     className='session-select-toggle'
                     onClick={(event) => event.stopPropagation()}
                   >
@@ -136,7 +136,7 @@ export function SessionList({
                       checked={selectedIds.has(s.id)}
                       onChange={() => onToggleSelect(s.id)}
                     />
-                  </label>
+                  </div>
                 )}
                 <SessionItem
                   session={s}

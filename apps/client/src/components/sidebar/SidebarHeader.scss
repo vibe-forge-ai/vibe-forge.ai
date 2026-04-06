@@ -1,8 +1,8 @@
 .sidebar-header {
-  padding: 10px 12px;
+  padding: 10px 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   flex-shrink: 0;
 
   .header-top {
@@ -12,12 +12,12 @@
   }
 
   .new-chat-btn {
-    height: 32px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10px;
-    font-size: 13px;
+    padding: 0 8px;
+    font-size: 12px;
     font-weight: 500;
     transition: all .2s cubic-bezier(.4, 0, .2, 1);
 
@@ -71,6 +71,7 @@
 
   .header-search-row {
     display: flex;
+    margin-top: 6px;
   }
 
   .search-input-wrap {
@@ -85,6 +86,14 @@
     border-radius: 6px;
     display: flex;
     align-items: center;
+    border-width: 1px !important;
+    transition: border-color .2s ease, box-shadow .2s ease;
+
+    &.ant-input-affix-wrapper-focused,
+    &:focus-within {
+      border-color: rgba(37, 99, 235, .32) !important;
+      box-shadow: none !important;
+    }
 
     .ant-input {
       font-size: 12px;
@@ -115,6 +124,7 @@
       align-items: center;
       justify-content: center;
       padding: 0;
+      margin-inline-end: -1px;
       border: none;
       background: transparent;
       color: var(--sub-text-color);
@@ -173,7 +183,7 @@
       margin-top .18s ease;
 
     &.is-open {
-      max-height: 140px;
+      max-height: 200px;
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
@@ -191,19 +201,28 @@
   .header-toolbar-row,
   .header-batch-actions {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     min-width: 0;
   }
 
   .header-toolbar-leading {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     flex-shrink: 0;
   }
 
+  .header-filter-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .header-batch-actions {
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
   }
 
   .batch-select-toggle {
@@ -221,26 +240,35 @@
   .toolbar-filter-control {
     flex: 1;
     min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    position: relative;
   }
 
   .toolbar-filter-icon {
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
     font-size: 14px;
     line-height: 1;
     color: var(--sub-text-color);
     flex-shrink: 0;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .toolbar-filter-select {
     flex: 1;
     min-width: 0;
+    width: 100%;
 
     .ant-select-selector {
-      min-height: 28px !important;
-      padding: 1px 6px !important;
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 0 6px 0 28px !important;
       border-radius: 6px !important;
+      border-width: 1px !important;
+      align-items: center !important;
+      transition: border-color .2s ease, box-shadow .2s ease;
     }
 
     .ant-select-selection-search-input,
@@ -251,10 +279,30 @@
 
     .ant-select-selection-overflow {
       gap: 4px;
+      flex-wrap: nowrap;
+      align-items: center;
     }
 
     .ant-select-selection-item {
       border-radius: 999px;
+    }
+
+    .toolbar-filter-chevron {
+      font-size: 14px;
+      line-height: 1;
+      color: var(--sub-text-color);
+      transition: transform .2s ease, color .2s ease;
+    }
+
+    &.ant-select-open .toolbar-filter-chevron {
+      transform: rotate(180deg);
+      color: var(--primary-color);
+    }
+
+    &.ant-select-focused .ant-select-selector,
+    &.ant-select-open .ant-select-selector {
+      border-color: rgba(37, 99, 235, .32) !important;
+      box-shadow: none !important;
     }
   }
 

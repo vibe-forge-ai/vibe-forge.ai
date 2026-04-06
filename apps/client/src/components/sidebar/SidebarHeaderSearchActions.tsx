@@ -48,7 +48,7 @@ export function SidebarHeaderSearchActions({
   const { t } = useTranslation()
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
   const toOptions = useMemo(() => (values: string[]) => values.map((value) => ({ label: value, value })), [])
-
+  const filterSuffixIcon = <span className='material-symbols-rounded toolbar-filter-chevron'>expand_more</span>
   return (
     <>
       <div className='header-search-row'>
@@ -60,37 +60,37 @@ export function SidebarHeaderSearchActions({
             onChange={(e) => onSearchChange(e.target.value)}
             prefix={<span className='material-symbols-rounded search-icon'>search</span>}
             suffix={
-              <button
-                type='button'
-                className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
-                  hasActiveFilterConditions ? 'has-active-filters' : ''
-                }`}
-                aria-label={t('common.searchActions')}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={onToggleSearchActions}
-              >
-                <span className='material-symbols-rounded search-chevron'>expand_more</span>
-              </button>
+              <Tooltip title={t('common.searchActions')}>
+                <button
+                  type='button'
+                  className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
+                    hasActiveFilterConditions ? 'has-active-filters' : ''
+                  }`}
+                  aria-label={t('common.searchActions')}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={onToggleSearchActions}
+                >
+                  <span className='material-symbols-rounded search-chevron'>expand_more</span>
+                </button>
+              </Tooltip>
             }
             allowClear
           />
         </div>
       </div>
-
       <div className={`header-search-actions ${shouldShowSearchActions ? 'is-open' : ''}`}>
         <div className='header-search-actions-inner'>
           <div className='header-toolbar-row'>
             <div className='header-toolbar-leading'>
               {isBatchMode
                 ? (
-                  <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
-                    <label className='batch-select-toggle'>
-                      <Checkbox
-                        checked={isAllSelected}
-                        indeterminate={selectedCount > 0 && selectedCount < totalCount}
-                        onChange={(e) => onSelectAll(e.target.checked)}
-                      />
-                    </label>
+                  <Tooltip title={t('common.cancelBatch')}>
+                    <Button
+                      className='sidebar-tool-btn is-icon-only'
+                      type='text'
+                      onClick={onToggleBatchMode}
+                      icon={<span className='material-symbols-rounded'>close</span>}
+                    />
                   </Tooltip>
                 )
                 : (
@@ -104,47 +104,49 @@ export function SidebarHeaderSearchActions({
                   </Tooltip>
                 )}
             </div>
-
-            <div className='toolbar-filter-control'>
-              <span className='material-symbols-rounded toolbar-filter-icon'>sell</span>
-              <Select
-                className='toolbar-filter-select'
-                mode='tags'
-                placeholder={t('common.allTags')}
-                options={toOptions(availableTags)}
-                value={tagFilters}
-                onChange={onTagFilterChange}
-                maxTagCount={1}
-                allowClear
-                tokenSeparators={[',']}
-              />
-            </div>
-
-            <div className='toolbar-filter-control'>
-              <span className='material-symbols-rounded toolbar-filter-icon'>extension</span>
-              <Select
-                className='toolbar-filter-select'
-                mode='tags'
-                placeholder={t('common.allAdapters')}
-                options={toOptions(availableAdapters)}
-                value={adapterFilters}
-                onChange={onAdapterFilterChange}
-                maxTagCount={1}
-                allowClear
-                tokenSeparators={[',']}
-              />
+            <div className='header-filter-stack'>
+              <div className='toolbar-filter-control'>
+                <span className='material-symbols-rounded toolbar-filter-icon'>sell</span>
+                <Select
+                  className='toolbar-filter-select'
+                  mode='tags'
+                  placeholder={t('common.allTags')}
+                  options={toOptions(availableTags)}
+                  value={tagFilters}
+                  onChange={onTagFilterChange}
+                  maxTagCount={1}
+                  allowClear
+                  suffixIcon={filterSuffixIcon}
+                  tokenSeparators={[',']}
+                />
+              </div>
+              <div className='toolbar-filter-control'>
+                <span className='material-symbols-rounded toolbar-filter-icon'>extension</span>
+                <Select
+                  className='toolbar-filter-select'
+                  mode='tags'
+                  placeholder={t('common.allAdapters')}
+                  options={toOptions(availableAdapters)}
+                  value={adapterFilters}
+                  onChange={onAdapterFilterChange}
+                  maxTagCount={1}
+                  allowClear
+                  suffixIcon={filterSuffixIcon}
+                  tokenSeparators={[',']}
+                />
+              </div>
             </div>
           </div>
-
           {isBatchMode && (
             <div className='header-batch-actions'>
-              <Tooltip title={t('common.cancelBatch')}>
-                <Button
-                  className='sidebar-tool-btn is-icon-only'
-                  type='text'
-                  onClick={onToggleBatchMode}
-                  icon={<span className='material-symbols-rounded'>close</span>}
-                />
+              <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
+                <label className='batch-select-toggle'>
+                  <Checkbox
+                    checked={isAllSelected}
+                    indeterminate={selectedCount > 0 && selectedCount < totalCount}
+                    onChange={(e) => onSelectAll(e.target.checked)}
+                  />
+                </label>
               </Tooltip>
               <Tooltip title={t('common.star')}>
                 <Button

@@ -38,18 +38,26 @@
 
         .session-row-main {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           gap: 6px;
         }
 
         .session-select-toggle {
-          width: 20px;
-          height: 36px;
+          width: 28px;
+          height: 28px;
           margin-left: calc(var(--session-depth, 0) * 18px);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          align-self: center;
+          border-radius: 6px;
+          background-color: var(--bg-color);
+          color: var(--sub-text-color);
+
+          .ant-checkbox-wrapper {
+            margin-inline-start: 0;
+          }
         }
 
         .session-item {
