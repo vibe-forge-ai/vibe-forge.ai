@@ -1,5 +1,4 @@
 /* eslint-disable max-lines */
-
 import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '#~/components/chat/sender/@utils/sender-completion'
 import { isShortcutMatch } from '#~/utils/shortcutUtils'
@@ -16,6 +15,11 @@ import {
 } from './monaco-runtime'
 import { useSenderEditorHandle } from './use-sender-editor-handle'
 import { useSenderMonacoTheme } from './use-sender-monaco-theme'
+
+const hasPastedImageFile = (clipboardData?: DataTransfer | null) => {
+  return Array.from(clipboardData?.items ?? [])
+    .some(item => item.kind === 'file' && item.type.startsWith('image/'))
+}
 
 export const useSenderMonacoEditor = ({
   editorRef,
@@ -141,13 +145,55 @@ export const useSenderMonacoEditor = ({
     const domNode = editor.getDomNode()
 
     if (domNode != null) {
-      const handleDomPaste: EventListener = (event) => {
+      const inputTargets = Array.from(
+        domNode.querySelectorAll<HTMLElement>('.native-edit-context, textarea.inputarea')
+      )
+      const shouldHandleImagePaste = (event: ClipboardEvent, requireFocus: boolean) => {
+        if (!hasPastedImageFile(event.clipboardData)) {
+          return false
+        }
+
+        if (!requireFocus) {
+          return true
+        }
+
+        const activeElement = document.activeElement
+
+        return editor.hasTextFocus() ||
+          (activeElement != null && domNode.contains(activeElement)) ||
+          (event.target instanceof Node && domNode.contains(event.target))
+      }
+      const handleImagePaste = (
+        event: ClipboardEvent,
+        { requireFocus, stopImmediately }: { requireFocus: boolean; stopImmediately: boolean }
+      ) => {
+        if (!shouldHandleImagePaste(event, requireFocus)) {
+          return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        if (stopImmediately) {
+          event.stopImmediatePropagation()
+        }
+
+        void onPasteRef.current(event)
+      }
+      const handleDocumentPaste = (event: ClipboardEvent) => {
+        if (!shouldHandleImagePaste(event, true)) {
+          return
+        }
+
+        handleImagePaste(event, { requireFocus: true, stopImmediately: true })
+      }
+      const handleNativePaste: EventListener = (event) => {
         if (!(event instanceof ClipboardEvent)) {
           return
         }
-        void onPasteRef.current(event)
+
+        handleImagePaste(event, { requireFocus: false, stopImmediately: true })
       }
-      const nativeEditContext = domNode.querySelector('.native-edit-context')
       const handleNativeKeyDown: EventListener = (event) => {
         if (!(event instanceof KeyboardEvent)) {
           return
@@ -159,12 +205,18 @@ export const useSenderMonacoEditor = ({
         }
       }
 
-      domNode.addEventListener('paste', handleDomPaste)
-      nativeEditContext?.addEventListener('keydown', handleNativeKeyDown, true)
+      document.addEventListener('paste', handleDocumentPaste, true)
+      for (const inputTarget of inputTargets) {
+        inputTarget.addEventListener('paste', handleNativePaste, true)
+        inputTarget.addEventListener('keydown', handleNativeKeyDown, true)
+      }
       disposables.push({
         dispose: () => {
-          domNode.removeEventListener('paste', handleDomPaste)
-          nativeEditContext?.removeEventListener('keydown', handleNativeKeyDown, true)
+          document.removeEventListener('paste', handleDocumentPaste, true)
+          for (const inputTarget of inputTargets) {
+            inputTarget.removeEventListener('paste', handleNativePaste, true)
+            inputTarget.removeEventListener('keydown', handleNativeKeyDown, true)
+          }
         }
       })
     }
