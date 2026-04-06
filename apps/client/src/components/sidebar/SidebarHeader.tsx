@@ -74,7 +74,7 @@ export function SidebarHeader({
         {!isSidebarCollapsed
           ? (
             <Button
-              ref={createButtonRef}
+              ref={createButtonRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
               className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
               type={isCreatingSession ? 'default' : 'primary'}
               block

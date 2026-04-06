@@ -1,6 +1,7 @@
 import { App } from 'antd'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router-dom'
 
 import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
@@ -84,6 +85,7 @@ export function ChatHistoryView({
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const location = useLocation()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     messagesLength: messages.length
   })
@@ -156,16 +158,16 @@ export function ChatHistoryView({
     setEditingMessageId(null)
   }, [session?.id])
   useEffect(() => {
-    if (!initialScrollDoneRef.current && isReady) {
+    if (!initialScrollDoneRef.current && isReady && location.hash === '') {
       scrollToBottom('auto')
       initialScrollDoneRef.current = true
     }
-  }, [isReady, messages.length, scrollToBottom])
+  }, [isReady, location.hash, messages.length, scrollToBottom])
   useEffect(() => {
-    if (!showScrollBottom) {
+    if (location.hash === '' && !showScrollBottom) {
       scrollToBottom('auto')
     }
-  }, [messages.length, scrollToBottom, showScrollBottom])
+  }, [location.hash, messages.length, scrollToBottom, showScrollBottom])
   const handleStartEditing = (messageId: string) => {
     let isBlocked = false
 
@@ -184,6 +186,61 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
+  const lastAssistantActionAnchorId = useMemo(() => {
+    for (let index = renderItems.length - 1; index >= 0; index -= 1) {
+      const item = renderItems[index]
+      if (item == null) continue
+      if (item.type === 'tool-group') continue
+      if (item.message.role === 'user') continue
+      return item.anchorId
+    }
+    return null
+  }, [renderItems])
+
+  useEffect(() => {
+    const hash = decodeURIComponent(location.hash.replace(/^#/, ''))
+    if (!isReady || hash === '') return
+
+    let removeHighlightTimer: ReturnType<typeof setTimeout> | null = null
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let frameId: number | null = null
+
+    const scrollToAnchor = () => {
+      const target = document.getElementById(hash)
+      if (target == null) {
+        return false
+      }
+
+      target.scrollIntoView({ block: 'center', behavior: 'auto' })
+      target.classList.add('is-anchor-target')
+      removeHighlightTimer = setTimeout(() => {
+        target.classList.remove('is-anchor-target')
+      }, 1800)
+      return true
+    }
+
+    if (!scrollToAnchor()) {
+      frameId = requestAnimationFrame(() => {
+        if (!scrollToAnchor()) {
+          retryTimer = setTimeout(() => {
+            void scrollToAnchor()
+          }, 120)
+        }
+      })
+    }
+
+    return () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId)
+      }
+      if (retryTimer != null) {
+        clearTimeout(retryTimer)
+      }
+      if (removeHighlightTimer != null) {
+        clearTimeout(removeHighlightTimer)
+      }
+    }
+  }, [isReady, location.hash, renderItems.length])
 
   return (
     <>
@@ -200,11 +257,14 @@ export function ChatHistoryView({
               return (
                 <MessageItem
                   key={item.message.id || index}
+                  anchorId={item.anchorId}
                   msg={item.message}
                   isFirstInGroup={item.isFirstInGroup}
+                  originalMessage={item.originalMessage}
                   sessionInfo={sessionInfo}
-                  isEditing={editingMessageId === item.message.id}
+                  isEditing={editingMessageId === item.originalMessage.id}
                   isSessionBusy={isCreating || session?.status === 'running' || session?.status === 'waiting_input'}
+                  showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
                   onEditMessage={editMessage}
                   onForkMessage={forkMessage}
                   onRecallMessage={recallMessage}
@@ -219,7 +279,10 @@ export function ChatHistoryView({
               return (
                 <ToolGroup
                   key={item.id || `group-${index}`}
+                  anchorId={item.anchorId}
                   items={item.items}
+                  originalMessage={item.originalMessage}
+                  sessionId={session?.id}
                   footer={item.footer}
                 />
               )

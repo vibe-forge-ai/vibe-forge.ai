@@ -1,5 +1,12 @@
 .tool-group-container {
   max-width: 100%;
+  scroll-margin-top: 72px;
+  transition: background-color .2s ease;
+
+  &.is-anchor-target {
+    background-color: rgba(59, 130, 246, .08);
+    border-radius: 12px;
+  }
 
   .tool-group-wrapper {
     margin: 0;

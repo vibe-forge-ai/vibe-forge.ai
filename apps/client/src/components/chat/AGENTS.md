@@ -45,6 +45,10 @@
 - 同一时间只允许一条消息进入编辑态；冲突时保留当前编辑器并提示用户。
 - `复制原文` 复制的是原始 markdown/text，不是渲染后的可见 DOM 文本。
 - 编辑确认按钮固定使用 `发送`，不要改回实现导向文案。
+- 用户消息的 hover 操作按钮固定挂在消息左侧的独立 action rail，不要再塞回 footer 里挤占阅读流。
+- assistant 消息的可见 footer 操作按钮只保留最后一条；更早的 assistant / tool 消息只能通过右键菜单触发操作。
+- 消息级右键菜单必须同时兼容普通消息和工具调用块；`复制消息链接` 走 `#message-*` hash 锚点，落点要能直接滚动到对应消息位置，而不只是会话页。
+- 消息级操作要始终基于原始 message id，而不是渲染拆分后的临时 id；`text/tool-group` 拆分只影响展示，不应影响 `edit / recall / fork / copy id / copy link`。
 
 ## Sender 结构约束
 

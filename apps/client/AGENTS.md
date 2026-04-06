@@ -30,6 +30,8 @@
 - 聊天页面入口统一由 route 组件承接，当前为 `src/routes/ChatRoute.tsx`。
 - `ChatRoute` 负责 `/` 与 `/session/:sessionId` 的合并入口、会话解析和空态处理。
 - `src/components/chat/` 只保留聊天页面内部视图，不再单独维护旧式 route wrapper。
+- 会话列表的“搜索 / 筛选 / 排序 / 收起态”已写入 URL query；后续新增 session 级 UI 状态时，优先先判断是否也应落到 query，而不是只放组件本地 state。
+- 会话卡片支持右键上下文菜单；涉及 `收藏 / 重命名 / 归档 / 复制链接 / 复制 ID / 复制控制台指令` 时，优先沿着右键菜单扩展，不要再把所有能力塞回 hover 按钮。
 
 数据流约定：
 

@@ -10,7 +10,7 @@ import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type { Session } from '@vibe-forge/core'
-import { deleteSession, updateSession } from '../api'
+import { deleteSession, updateSession, updateSessionTitle } from '../api'
 import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
 import { isSidebarResizingAtom } from '../store/index'
 import { formatShortcutLabel } from '../utils/shortcutUtils'
@@ -179,13 +179,9 @@ export function Sidebar({
     }
   }
 
-  async function handleUpdateTags(id: string, tags: string[]) {
-    try {
-      await updateSession(id, { tags })
-      await mutateSessions()
-    } catch (err) {
-      console.error('Failed to update tags:', err)
-    }
+  async function handleRenameSession(id: string, title: string) {
+    await updateSessionTitle(id, title)
+    await mutateSessions()
   }
 
   const handleToggleSelect = (id: string) => {
@@ -345,9 +341,8 @@ export function Sidebar({
           searchQuery={searchQuery}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
-          onDeleteSession={handleDeleteSession}
+          onRenameSession={handleRenameSession}
           onStarSession={handleStarSession}
-          onUpdateTags={handleUpdateTags}
           onToggleSelect={handleToggleSelect}
         />
       </div>
