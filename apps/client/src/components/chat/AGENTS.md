@@ -32,8 +32,6 @@
   - sender 私有类型定义。
 - `sender/@utils/`
   - sender 私有常量与轻量工具函数。
-- `ThinkingStatus.tsx`
-  - 聊天域可复用的状态提示组件，不再算 sender 私有视图。
 - `../../dock-panel/DockPanel.tsx`
   - 聊天页底部可复用 dock 面板壳层。
   - 统一承载标题、meta、关闭动作和拖拽调高能力。
