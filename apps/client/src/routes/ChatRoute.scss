@@ -254,15 +254,25 @@
   width: 100%;
 }
 
+.chat-composer-stack__inner > :not(:first-child).chat-composer-card,
 .chat-composer-stack__inner > :not(:first-child) .chat-composer-card {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
 
+.chat-composer-stack__inner > :not(:last-child).chat-composer-card,
 .chat-composer-stack__inner > :not(:last-child) .chat-composer-card {
   margin-bottom: -1px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+}
+
+.chat-composer-stack__inner
+  > :not(:first-child):not(:last-child).chat-composer-card,
+.chat-composer-stack__inner
+  > :not(:first-child):not(:last-child)
+  .chat-composer-card {
+  border-radius: 0;
 }
 
 .scroll-bottom-btn {

@@ -19,6 +19,7 @@ import { MessageStatusNotice } from './messages/MessageStatusNotice'
 import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
+import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
 import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
 
@@ -492,6 +493,21 @@ export function ChatHistoryView({
       <div className='chat-composer-stack'>
         <div className='chat-composer-stack__inner'>
           <CurrentTodoList messages={messages} />
+          {!isInlineEditing && interactionRequest != null && (
+            <SenderInteractionPanel
+              interactionRequest={interactionRequest}
+              permissionContext={interactionRequest.payload.kind === 'permission'
+                ? interactionRequest.payload.permissionContext
+                : undefined}
+              deniedTools={interactionRequest.payload.kind === 'permission'
+                ? (interactionRequest.payload.permissionContext?.deniedTools ?? [])
+                : []}
+              reasons={interactionRequest.payload.kind === 'permission'
+                ? (interactionRequest.payload.permissionContext?.reasons ?? [])
+                : []}
+              onInteractionResponse={onInteractionResponse}
+            />
+          )}
           {!isInlineEditing && (
             <div className='sender-container'>
               <Sender
