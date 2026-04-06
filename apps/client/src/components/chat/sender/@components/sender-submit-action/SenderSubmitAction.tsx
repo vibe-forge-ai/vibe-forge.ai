@@ -1,6 +1,7 @@
 import '../sender-toolbar/SenderSelectShared.scss'
 import './SenderSubmitAction.scss'
 
+import type { SessionQueuedMessageMode } from '@vibe-forge/core'
 import { Button, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 
@@ -13,12 +14,17 @@ export function SenderSubmitAction({
   submitLabel,
   hasComposerContent,
   modelUnavailable,
+  sendBlocked,
+  sendBlockedTooltip,
+  showConfirmInteractionAction,
+  confirmInteractionLabel,
   isThinking,
   resolvedSendShortcut,
   queueSteerShortcut,
   queueNextShortcut,
   isMac,
   onCancel,
+  onConfirmInteractionAction,
   onSend,
   onStop
 }: {
@@ -27,23 +33,30 @@ export function SenderSubmitAction({
   submitLabel?: string
   hasComposerContent: boolean
   modelUnavailable: boolean
+  sendBlocked: boolean
+  sendBlockedTooltip?: string
+  showConfirmInteractionAction: boolean
+  confirmInteractionLabel?: string
   isThinking: boolean
   resolvedSendShortcut: string
   queueSteerShortcut?: string
   queueNextShortcut?: string
   isMac: boolean
   onCancel?: () => void
-  onSend: () => void
+  onConfirmInteractionAction?: () => void
+  onSend: (mode?: SessionQueuedMessageMode) => void
   onStop?: () => void
 }) {
   const { t } = useTranslation()
   const showStopAction = isThinking && !hasComposerContent
-  const isSendDisabled = !showStopAction && modelUnavailable
+  const isSendDisabled = !showStopAction && (modelUnavailable || sendBlocked)
+  const handleSendClick = () => onSend()
   const buttonClasses = [
     'chat-send-btn',
     hasComposerContent && !isSendDisabled ? 'active' : '',
     showStopAction ? 'stop' : '',
-    isSendDisabled ? 'disabled' : ''
+    isSendDisabled ? 'disabled' : '',
+    sendBlocked ? 'blocked' : ''
   ].filter(Boolean).join(' ')
 
   if (isInlineEdit) {
@@ -60,7 +73,7 @@ export function SenderSubmitAction({
           size='small'
           loading={submitLoading}
           disabled={!hasComposerContent}
-          onClick={onSend}
+          onClick={handleSendClick}
         >
           {submitLabel ?? t('chat.send')}
         </Button>
@@ -88,13 +101,8 @@ export function SenderSubmitAction({
           arrow={false}
         >
           <div className='sender-control-tooltip-target'>
-            <div
-              className={buttonClasses}
-              onClick={onStop}
-            >
-              <span className='material-symbols-rounded'>
-                stop_circle
-              </span>
+            <div className={buttonClasses} onClick={onStop}>
+              <span className='material-symbols-rounded'>stop_circle</span>
             </div>
           </div>
         </Tooltip>
@@ -123,16 +131,56 @@ export function SenderSubmitAction({
         arrow={false}
       >
         <div className='sender-control-tooltip-target'>
-          <div
-            className={buttonClasses}
-            onClick={isSendDisabled ? undefined : onSend}
-          >
-            <span className='material-symbols-rounded'>
-              send
-            </span>
+          <div className={buttonClasses} onClick={isSendDisabled ? undefined : handleSendClick}>
+            <span className='material-symbols-rounded'>send</span>
           </div>
         </div>
       </Tooltip>
+    )
+  }
+
+  if (sendBlocked) {
+    return (
+      <>
+        <Tooltip
+          title={sendBlockedTooltip}
+          placement='top'
+          classNames={{ root: 'sender-send-tooltip-popover' }}
+          trigger={['hover']}
+          mouseEnterDelay={.3}
+          mouseLeaveDelay={.08}
+          arrow={false}
+        >
+          <div className='sender-control-tooltip-target'>
+            <div className={buttonClasses} onClick={handleSendClick}>
+              <span className='material-symbols-rounded'>send</span>
+            </div>
+          </div>
+        </Tooltip>
+
+        {showConfirmInteractionAction && onConfirmInteractionAction != null && (
+          <Tooltip
+            title={t('chat.permissionConfirmOptionTooltip')}
+            placement='top'
+            classNames={{ root: 'sender-send-tooltip-popover' }}
+            trigger={['hover']}
+            mouseEnterDelay={.3}
+            mouseLeaveDelay={.08}
+            arrow={false}
+          >
+            <Button
+              autoInsertSpace={false}
+              size='small'
+              type='default'
+              className='chat-confirm-btn'
+              onClick={onConfirmInteractionAction}
+            >
+              <span className='material-symbols-rounded'>task_alt</span>
+              <span>{confirmInteractionLabel ?? t('chat.permissionConfirmOption')}</span>
+            </Button>
+          </Tooltip>
+        )}
+      </>
     )
   }
 
@@ -144,13 +192,8 @@ export function SenderSubmitAction({
       targetClassName='sender-control-tooltip-target'
       enabled
     >
-      <div
-        className={buttonClasses}
-        onClick={isSendDisabled ? undefined : onSend}
-      >
-        <span className='material-symbols-rounded'>
-          send
-        </span>
+      <div className={buttonClasses} onClick={isSendDisabled ? undefined : handleSendClick}>
+        <span className='material-symbols-rounded'>send</span>
       </div>
     </ShortcutTooltip>
   )

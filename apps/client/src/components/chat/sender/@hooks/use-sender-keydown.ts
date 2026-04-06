@@ -14,8 +14,11 @@ export const useSenderKeydown = ({
   input,
   pendingImageCount,
   pendingFileCount,
+  interactionOptionCount,
   onCancel,
   onClear,
+  onInteractionOptionMove,
+  onInteractionOptionSubmit,
   onInterrupt,
   onInterruptHint,
   onResetComposer,
@@ -38,8 +41,11 @@ export const useSenderKeydown = ({
   input: string
   pendingImageCount: number
   pendingFileCount: number
+  interactionOptionCount: number
   onCancel?: () => void
   onClear?: () => void
+  onInteractionOptionMove?: (delta: number) => void
+  onInteractionOptionSubmit?: () => void
   onInterrupt: () => void
   onInterruptHint: () => void
   onResetComposer: () => void
@@ -84,6 +90,33 @@ export const useSenderKeydown = ({
     if (clearInputShortcut?.trim() && isShortcutMatch(event, clearInputShortcut, isMac)) {
       event.preventDefault()
       onInputClear()
+      return
+    }
+    const canNavigateInteractionOptions = !isInlineEdit &&
+      interactionOptionCount > 0 &&
+      input.trim() === '' &&
+      pendingImageCount === 0 &&
+      pendingFileCount === 0
+    if (
+      canNavigateInteractionOptions &&
+      onInteractionOptionMove != null &&
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+    ) {
+      event.preventDefault()
+      onInteractionOptionMove(event.key === 'ArrowUp' ? -1 : 1)
+      return
+    }
+    if (
+      canNavigateInteractionOptions &&
+      onInteractionOptionSubmit != null &&
+      event.key === 'Enter' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey
+    ) {
+      event.preventDefault()
+      onInteractionOptionSubmit()
       return
     }
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {

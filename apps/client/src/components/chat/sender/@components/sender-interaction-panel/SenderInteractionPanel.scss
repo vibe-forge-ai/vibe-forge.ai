@@ -7,150 +7,99 @@
 
 .interaction-panel {
   --interaction-muted: var(--sub-text-color, #6b7280);
-  --interaction-chip-bg: var(--tag-bg, rgba(15, 23, 42, .06));
-  --interaction-divider: rgba(148, 163, 184, .18);
-
-  max-height: 320px;
-  overflow-y: auto;
+  --interaction-option-bg: var(--bg-color);
+  --interaction-option-border: var(--border-color);
+  --interaction-option-hover-border: rgba(59, 130, 246, .3);
+  --interaction-option-active-bg: rgba(59, 130, 246, .08);
+  --interaction-option-active-border: rgba(59, 130, 246, .42);
+  --interaction-info-bg: rgba(15, 23, 42, .06);
 
   &__summary {
-    align-items: center;
+    align-items: flex-start;
+    padding: 10px 12px 6px;
+    gap: 10px;
   }
 
   &__body {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    padding: 0 8px 8px;
   }
 
-  &__headline {
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__title-wrap {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 6px;
-    width: 100%;
-    min-width: 0;
   }
 
-  &__headline-icon {
-    flex-shrink: 0;
-    margin-top: 1px;
+  &__title-icon {
+    flex: 0 0 auto;
     font-size: 15px;
     color: var(--primary-color, #2563eb);
-  }
-
-  &__headline-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    align-self: flex-start;
-    padding: 1px 5px;
-    border-radius: 999px;
-    background: rgba(37, 99, 235, .08);
-    color: var(--interaction-muted);
-    font-size: 10px;
-    font-weight: 600;
-  }
-
-  &__question {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-color);
-    line-height: 1.25;
-  }
-
-  &__context {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 0 2px;
-  }
-
-  &__info-list {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  &__info-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    flex-wrap: nowrap;
-
-    &--wrap {
-      align-items: flex-start;
-      flex-wrap: wrap;
-    }
-  }
-
-  &__meta-label {
-    flex: 0 0 auto;
-    color: var(--interaction-muted);
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  &__meta-value {
-    width: fit-content;
-    max-width: 100%;
-    padding: 1px 5px;
-    border-radius: 999px;
-    background: var(--interaction-chip-bg);
-    color: var(--text-color);
-    font-size: 10px;
-    overflow-wrap: anywhere;
-  }
-
-  &__chips,
-  &__reason-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  &__chip,
-  &__reason-pill {
-    padding: 1px 5px;
-    border-radius: 999px;
-    font-size: 10px;
-    line-height: 1.2;
-  }
-
-  &__chip {
-    background: var(--interaction-chip-bg);
-    color: var(--text-color);
-  }
-
-  &__reason-pill {
-    display: inline-flex;
-    align-items: center;
-    background: var(--interaction-chip-bg);
-    color: var(--text-color);
   }
 
   &__options {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  &__nav {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: -1px;
+  }
+
+  &__nav-button {
+    width: 22px;
+    height: 22px;
     padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--interaction-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease;
+
+    .material-symbols-rounded {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(148, 163, 184, .14);
+      color: var(--text-color);
+      outline: none;
+    }
   }
 
   &__option.ant-btn {
     height: auto;
-    display: block;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(148, 163, 184, .16);
-    background: transparent;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border-color: var(--interaction-option-border);
+    background: var(--interaction-option-bg);
     box-shadow: none;
     text-align: left;
     transition:
@@ -158,11 +107,83 @@
       border-color .18s ease,
       color .18s ease;
 
+    &.is-active {
+      background: var(--interaction-option-active-bg);
+      border-color: var(--interaction-option-active-border);
+    }
+
     &:hover,
-    &:focus {
-      background: var(--tag-hover-bg, rgba(148, 163, 184, .14));
+    &:focus-visible {
+      border-color: var(--interaction-option-hover-border);
+      background: var(--interaction-option-bg);
+      outline: none;
+    }
+  }
+
+  &__option--allow.ant-btn {
+    .interaction-panel__option-icon {
+      color: #15803d;
+      background-color: rgba(22, 163, 74, .1);
+    }
+  }
+
+  &__option--deny.ant-btn {
+    .interaction-panel__option-icon {
+      color: #b91c1c;
+      background-color: rgba(220, 38, 38, .08);
+    }
+  }
+
+  &__option--neutral.ant-btn {
+    .interaction-panel__option-icon {
+      color: #6b7280;
+      background-color: rgba(15, 23, 42, .06);
+    }
+  }
+
+  &__option--question.ant-btn {
+    display: block;
+    padding: 6px 8px;
+    background: transparent;
+    border-color: rgba(148, 163, 184, .16);
+
+    &.is-active {
+      background: rgba(148, 163, 184, .16);
+      border-color: rgba(148, 163, 184, .38);
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(148, 163, 184, .14);
       border-color: rgba(148, 163, 184, .3);
     }
+  }
+
+  &__option-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    align-self: center;
+    font-size: 13px;
+    margin-top: 1px;
+  }
+
+  &__option-copy {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
   }
 
   &__option-main {
@@ -183,12 +204,19 @@
   }
 
   &__option-label {
-    flex: 1;
     min-width: 0;
     font-size: 11px;
     font-weight: 500;
+    line-height: 1.35;
+    color: var(--text-color);
+    word-break: break-word;
+  }
+
+  &__option-description {
+    font-size: 10px;
     line-height: 1.25;
-    white-space: normal;
+    color: var(--placeholder-color, #9ca3af);
+    word-break: break-word;
   }
 
   &__option-side {
@@ -204,43 +232,63 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--interaction-chip-bg);
+    background: var(--interaction-info-bg);
     color: var(--interaction-muted);
     font-size: 12px;
     line-height: 1;
     cursor: help;
   }
+
+  &__toggle.ant-btn {
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    width: fit-content;
+    padding: 0;
+    color: var(--placeholder-color, #9ca3af);
+  }
+
+  &__toggle.ant-btn:hover,
+  &__toggle.ant-btn:focus {
+    color: var(--sub-text-color, #6b7280);
+    background: transparent;
+  }
+
+  &__toggle-label {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  &__toggle-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
+.interaction-question {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-color);
 }
 
 html.dark {
   .interaction-panel {
-    --interaction-chip-bg: rgba(148, 163, 184, .14);
-    --interaction-divider: rgba(71, 85, 105, .45);
-  }
-
-  .interaction-panel__meta-value,
-  .interaction-panel__info-trigger {
-    background: rgba(148, 163, 184, .14);
+    --interaction-option-bg: rgba(15, 23, 42, .52);
+    --interaction-option-border: rgba(71, 85, 105, .36);
+    --interaction-option-hover-border: rgba(148, 163, 184, .5);
+    --interaction-option-active-bg: rgba(51, 65, 85, .44);
+    --interaction-option-active-border: rgba(148, 163, 184, .52);
+    --interaction-info-bg: rgba(148, 163, 184, .14);
   }
 
   .interaction-panel__option.ant-btn {
-    background: transparent;
-    border-color: rgba(71, 85, 105, .36);
-
     &:hover,
-    &:focus {
-      background: rgba(51, 65, 85, .48);
-      border-color: rgba(148, 163, 184, .5);
+    &:focus-visible {
+      background: var(--interaction-option-bg);
     }
-  }
-}
-
-@media (max-width: 640px) {
-  .interaction-panel__headline {
-    gap: 6px;
-  }
-
-  .interaction-panel__info-row {
-    gap: 6px;
   }
 }

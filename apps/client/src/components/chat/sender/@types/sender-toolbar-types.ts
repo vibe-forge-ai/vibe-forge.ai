@@ -20,6 +20,9 @@ export interface SenderToolbarState {
   isInlineEdit: boolean
   isThinking: boolean
   modelUnavailable: boolean
+  sendBlocked: boolean
+  sendBlockedTooltip?: string
+  showConfirmInteractionAction: boolean
   adapterLocked: boolean
   submitLoading: boolean
   supportsEffort: boolean
@@ -52,6 +55,7 @@ export interface SenderToolbarData {
   adapterOptions?: Array<{ value: string; label: ReactNode }>
   composerControlShortcuts: SenderToolbarShortcuts
   submitLabel?: string
+  confirmInteractionLabel?: string
 }
 
 export interface SenderToolbarRefs {
@@ -85,5 +89,6 @@ export interface SenderToolbarHandlers {
   onSend: (mode?: SessionQueuedMessageMode) => void
   onInterrupt: () => void
   onCancel?: () => void
+  onConfirmInteractionOption?: () => void
   onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
 }

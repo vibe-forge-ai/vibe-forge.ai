@@ -17,6 +17,11 @@ export const buildSenderToolbar = ({
   isInlineEdit,
   isMac,
   isThinking,
+  sendBlocked,
+  sendBlockedTooltip,
+  showConfirmInteractionAction,
+  confirmInteractionLabel,
+  onConfirmInteractionOption,
   message,
   props,
   refs,
@@ -43,6 +48,11 @@ export const buildSenderToolbar = ({
   isInlineEdit: boolean
   isMac: boolean
   isThinking: boolean
+  sendBlocked: boolean
+  sendBlockedTooltip?: string
+  showConfirmInteractionAction: boolean
+  confirmInteractionLabel?: string
+  onConfirmInteractionOption?: () => void
   message: { warning: (content: ReactNode) => unknown }
   props: SenderProps
   refs: {
@@ -89,6 +99,7 @@ export const buildSenderToolbar = ({
       onPermissionModeChange: props.onPermissionModeChange,
       onQueueModeChange: props.onQueueModeChange,
       onCancel: props.onCancel,
+      onConfirmInteractionOption,
       onSend: callbacks.onSend
     },
     composer,
@@ -118,10 +129,14 @@ export const buildSenderToolbar = ({
       isInlineEdit,
       isMac,
       isThinking,
+      sendBlocked,
+      sendBlockedTooltip,
+      showConfirmInteractionAction,
       modelUnavailable: props.modelUnavailable,
       referenceActions,
       refs,
       selectOverlays,
+      confirmInteractionLabel,
       submitLabel: props.submitLabel,
       submitLoading: props.submitLoading === true,
       supportsEffort

@@ -1,5 +1,5 @@
 import { App } from 'antd'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 
@@ -19,6 +19,7 @@ import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
+import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
 import { QueuedMessagesCard } from './QueuedMessagesCard'
@@ -138,6 +139,8 @@ export function ChatHistoryView({
   const [expandedTurnIds, setExpandedTurnIds] = useState<Set<string>>(new Set())
   const [queueMode, setQueueMode] = useState<SessionQueuedMessageMode>('steer')
   const [queuedDraft, setQueuedDraft] = useState<{ content: ChatMessageContent[] } | null>(null)
+  const [activeInteractionOptionIndex, setActiveInteractionOptionIndex] = useState(0)
+  const interactionOptions = interactionRequest?.payload.options ?? []
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -233,6 +236,39 @@ export function ChatHistoryView({
     setQueueMode('steer')
   }, [session?.id])
   useEffect(() => {
+    setActiveInteractionOptionIndex(0)
+  }, [interactionRequest?.id])
+  useEffect(() => {
+    if (interactionOptions.length === 0) {
+      setActiveInteractionOptionIndex(0)
+      return
+    }
+
+    setActiveInteractionOptionIndex((current) => Math.min(current, interactionOptions.length - 1))
+  }, [interactionOptions.length])
+
+  const handleMoveInteractionOption = useCallback((delta: number) => {
+    if (interactionOptions.length === 0) {
+      return
+    }
+
+    setActiveInteractionOptionIndex((current) => getLoopedIndex(current, delta, interactionOptions.length))
+  }, [interactionOptions.length])
+
+  const handleSubmitActiveInteractionOption = useCallback(() => {
+    if (interactionRequest == null) {
+      return
+    }
+
+    const option = interactionOptions[activeInteractionOptionIndex] ?? interactionOptions[0]
+    if (option == null) {
+      return
+    }
+
+    onInteractionResponse(interactionRequest.id, option.value ?? option.label)
+  }, [activeInteractionOptionIndex, interactionOptions, interactionRequest, onInteractionResponse])
+
+  useEffect(() => {
     if (!initialScrollDoneRef.current && isReady && location.hash === '') {
       scrollToBottom('auto')
       initialScrollDoneRef.current = true
@@ -307,6 +343,27 @@ export function ChatHistoryView({
   const handleMoveQueuedMessage = async (item: SessionQueuedMessage, targetMode: SessionQueuedMessageMode) => {
     await moveQueuedContent(item.id, targetMode)
   }
+  const isPermissionInteraction = interactionRequest?.payload.kind === 'permission'
+  const interactionPanel = !isInlineEditing && interactionRequest != null
+    ? (
+      <SenderInteractionPanel
+        interactionRequest={interactionRequest}
+        activeOptionIndex={activeInteractionOptionIndex}
+        permissionContext={interactionRequest.payload.kind === 'permission'
+          ? interactionRequest.payload.permissionContext
+          : undefined}
+        deniedTools={interactionRequest.payload.kind === 'permission'
+          ? (interactionRequest.payload.permissionContext?.deniedTools ?? [])
+          : []}
+        reasons={interactionRequest.payload.kind === 'permission'
+          ? (interactionRequest.payload.permissionContext?.reasons ?? [])
+          : []}
+        onActiveOptionIndexChange={setActiveInteractionOptionIndex}
+        onMoveActiveOption={handleMoveInteractionOption}
+        onInteractionResponse={onInteractionResponse}
+      />
+    )
+    : null
 
   useEffect(() => {
     const hash = hashAnchorId
@@ -562,6 +619,7 @@ export function ChatHistoryView({
 
       <div className='chat-composer-stack'>
         <div className='chat-composer-stack__inner'>
+          {isPermissionInteraction && interactionPanel}
           <CurrentTodoList messages={messages} />
           {!isInlineEditing && (
             <QueuedMessagesCard
@@ -583,21 +641,7 @@ export function ChatHistoryView({
               onReorder={(ids) => reorderQueuedContent('steer', ids)}
             />
           )}
-          {!isInlineEditing && interactionRequest != null && (
-            <SenderInteractionPanel
-              interactionRequest={interactionRequest}
-              permissionContext={interactionRequest.payload.kind === 'permission'
-                ? interactionRequest.payload.permissionContext
-                : undefined}
-              deniedTools={interactionRequest.payload.kind === 'permission'
-                ? (interactionRequest.payload.permissionContext?.deniedTools ?? [])
-                : []}
-              reasons={interactionRequest.payload.kind === 'permission'
-                ? (interactionRequest.payload.permissionContext?.reasons ?? [])
-                : []}
-              onInteractionResponse={onInteractionResponse}
-            />
-          )}
+          {!isPermissionInteraction && interactionPanel}
           {!isInlineEditing && (
             <div className='sender-container'>
               <Sender
@@ -610,6 +654,14 @@ export function ChatHistoryView({
                 sessionInfo={sessionInfo}
                 interactionRequest={interactionRequest}
                 onInteractionResponse={onInteractionResponse}
+                interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
+                  ? {
+                    optionCount: interactionOptions.length,
+                    activeIndex: activeInteractionOptionIndex,
+                    onMove: handleMoveInteractionOption,
+                    onSubmit: handleSubmitActiveInteractionOption
+                  }
+                  : undefined}
                 initialContent={queuedDraft?.content}
                 placeholder={placeholder}
                 submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}

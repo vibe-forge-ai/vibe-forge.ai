@@ -22,6 +22,7 @@ export const createSenderToolbarHandlers = ({
   onPermissionModeChange,
   onQueueModeChange,
   onCancel,
+  onConfirmInteractionOption,
   onSend,
   referenceActions,
   selectOverlays,
@@ -45,6 +46,7 @@ export const createSenderToolbarHandlers = ({
   onPermissionModeChange?: (mode: PermissionMode) => void
   onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
   onCancel?: () => void
+  onConfirmInteractionOption?: () => void
   onSend: (mode?: SessionQueuedMessageMode) => void
   referenceActions: {
     setShowReferenceActions: (nextOpen: boolean) => void
@@ -114,6 +116,7 @@ export const createSenderToolbarHandlers = ({
     onQueueModeChange,
     onSend,
     onInterrupt,
-    onCancel
+    onCancel,
+    onConfirmInteractionOption
   } satisfies SenderToolbarHandlers
 }

@@ -28,6 +28,12 @@ export interface SenderProps {
   sessionInfo?: SessionInfo | null
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void
+  interactionOptionNavigation?: {
+    optionCount: number
+    activeIndex: number
+    onMove: (delta: number) => void
+    onSubmit: () => void
+  }
   placeholder?: string
   initialContent?: SenderInitialContent
   onCancel?: () => void

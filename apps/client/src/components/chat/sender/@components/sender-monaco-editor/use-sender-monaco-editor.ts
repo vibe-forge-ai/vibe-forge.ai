@@ -27,6 +27,7 @@ export const useSenderMonacoEditor = ({
   value,
   disabled,
   sendShortcut,
+  sendShortcutDisabled,
   onSendShortcut,
   secondarySendShortcut,
   onSecondarySendShortcut,
@@ -43,6 +44,7 @@ export const useSenderMonacoEditor = ({
   value: string
   disabled: boolean
   sendShortcut: string
+  sendShortcutDisabled?: boolean
   onSendShortcut: () => void
   secondarySendShortcut?: string
   onSecondarySendShortcut?: () => void
@@ -64,6 +66,7 @@ export const useSenderMonacoEditor = ({
   const decorationsRef = useRef<MonacoEditorNamespace.IEditorDecorationsCollection | null>(null)
   const disabledRef = useRef(disabled)
   const sendShortcutRef = useRef(sendShortcut)
+  const sendShortcutDisabledRef = useRef(Boolean(sendShortcutDisabled))
   const onSendShortcutRef = useRef(onSendShortcut)
   const secondarySendShortcutRef = useRef(secondarySendShortcut)
   const onSecondarySendShortcutRef = useRef(onSecondarySendShortcut)
@@ -77,6 +80,7 @@ export const useSenderMonacoEditor = ({
 
   disabledRef.current = disabled
   sendShortcutRef.current = sendShortcut
+  sendShortcutDisabledRef.current = Boolean(sendShortcutDisabled)
   onSendShortcutRef.current = onSendShortcut
   secondarySendShortcutRef.current = secondarySendShortcut
   onSecondarySendShortcutRef.current = onSecondarySendShortcut
@@ -216,7 +220,10 @@ export const useSenderMonacoEditor = ({
           onSecondarySendShortcutRef.current()
           return
         }
-        if (isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))) {
+        if (
+          !sendShortcutDisabledRef.current &&
+          isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))
+        ) {
           event.preventDefault()
           event.stopPropagation()
           onSendShortcutRef.current()
