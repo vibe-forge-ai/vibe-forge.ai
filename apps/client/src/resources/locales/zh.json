@@ -478,8 +478,13 @@
       "edit": "编辑消息",
       "editInProgress": "已有一条消息正在编辑，请先发送或取消当前编辑",
       "saveEdit": "保存并分叉",
+      "confirmInline": "确认",
       "recall": "撤回到此处",
-      "fork": "从此处分叉"
+      "fork": "从此处分叉",
+      "recallConfirmTitle": "确认撤回到此处",
+      "recallConfirmContent": "后续消息会被回退到这条消息之后，是否继续？",
+      "forkConfirmTitle": "确认从此处分叉",
+      "forkConfirmContent": "将基于这条消息创建一个新的会话分支，是否继续？"
     },
     "messageFooter": {
       "tokens": "Token 数",

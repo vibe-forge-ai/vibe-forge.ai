@@ -477,8 +477,13 @@
       "edit": "Edit message",
       "editInProgress": "A message is already being edited. Send or cancel it first.",
       "saveEdit": "Save as branch",
+      "confirmInline": "Confirm",
       "recall": "Recall to here",
-      "fork": "Fork from here"
+      "fork": "Fork from here",
+      "recallConfirmTitle": "Recall to this message?",
+      "recallConfirmContent": "Messages after this point will be rolled back. Continue?",
+      "forkConfirmTitle": "Fork from this message?",
+      "forkConfirmContent": "This will create a new session branch from this message. Continue?"
     },
     "messageFooter": {
       "tokens": "Tokens",
