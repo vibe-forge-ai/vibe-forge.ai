@@ -53,6 +53,221 @@ describe('larkChannelDefinition.connect', () => {
     })
   })
 
+  it('renders tool summaries as interactive cards', async () => {
+    vi.resetModules()
+    const create = vi.fn().mockResolvedValue({ code: 0, data: { message_id: 'om_card' } })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const connection = await createChannelConnection({
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret'
+    })
+
+    await expect(connection.sendMessage({
+      text: '工具调用（1）\n1. SendImage',
+      receiveId: 'oc_xxx',
+      receiveIdType: 'chat_id',
+      toolCallSummary: {
+        items: [{
+          toolUseId: 'tool-1',
+          name: 'mcp__channel-lark-test__SendImage',
+          status: 'success',
+          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}',
+          resultText: '{"messageId":"om_image"}'
+        }]
+      }
+    })).resolves.toEqual({ messageId: 'om_card' })
+
+    const payload = create.mock.calls[0]?.[0]
+    expect(payload).toEqual(expect.objectContaining({
+      params: { receive_id_type: 'chat_id' },
+      data: expect.objectContaining({
+        receive_id: 'oc_xxx',
+        msg_type: 'interactive'
+      })
+    }))
+
+    const card = JSON.parse(payload.data.content)
+    expect(card.schema).toBe('2.0')
+    expect(card.header.title.content).toBe('工具调用（1）')
+    expect(card.body.elements[0].tag).toBe('collapsible_panel')
+    expect(card.body.elements[0].expanded).toBe(false)
+    expect(card.body.elements[0].header.title.content)
+      .toContain('✅ SendImage({"imagePath":"packages/utils/src/assets/mcp.png"})')
+    expect(card.body.elements[0].elements[0].content).toContain('**执行结果**')
+    expect(card.body.elements[0].elements[0].content).toContain('{"messageId":"om_image"}')
+  })
+
+  it('updates tool summary cards in place', async () => {
+    vi.resetModules()
+    const patch = vi.fn().mockResolvedValue({ code: 0, data: { message_id: 'om_card' } })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create: vi.fn(),
+          patch,
+          update: vi.fn()
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const connection = await createChannelConnection({
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret'
+    })
+
+    await expect(connection.updateMessage?.('om_card', {
+      text: '工具调用（1）\n1. SendImage',
+      receiveId: 'oc_xxx',
+      receiveIdType: 'chat_id',
+      toolCallSummary: {
+        items: [{
+          toolUseId: 'tool-1',
+          name: 'mcp__channel-lark-test__SendImage',
+          status: 'success',
+          argsText: '{"imagePath":"a.png"}',
+          resultText: '{"messageId":"om_image"}'
+        }]
+      }
+    })).resolves.toEqual({ messageId: 'om_card' })
+
+    expect(patch).toHaveBeenCalledWith({
+      path: {
+        message_id: 'om_card'
+      },
+      data: {
+        content: expect.any(String)
+      }
+    })
+
+    const payload = patch.mock.calls[0]?.[0]
+    const card = JSON.parse(payload.data.content)
+    expect(card.schema).toBe('2.0')
+    expect(card.body.elements[0].header.title.content).toContain('✅ SendImage({"imagePath":"a.png"})')
+    expect(card.body.elements[0].elements[0].content).toContain('{"messageId":"om_image"}')
+  })
+
+  it('renders markdown-like normal messages as post messages instead of cards', async () => {
+    vi.resetModules()
+    const create = vi.fn().mockResolvedValue({ code: 0, data: { message_id: 'om_post' } })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const connection = await createChannelConnection({
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret'
+    })
+
+    await expect(connection.sendMessage({
+      text: '# 标题\n- item1\n- item2\n```ts\nconsole.log(1)\n```',
+      receiveId: 'oc_xxx',
+      receiveIdType: 'chat_id'
+    })).resolves.toEqual({ messageId: 'om_post' })
+
+    expect(create).toHaveBeenCalledWith({
+      params: { receive_id_type: 'chat_id' },
+      data: {
+        receive_id: 'oc_xxx',
+        msg_type: 'post',
+        content: JSON.stringify({
+          zh_cn: {
+            content: [[{
+              tag: 'md',
+              text: '# 标题\n- item1\n- item2\n```ts\nconsole.log(1)\n```'
+            }]]
+          }
+        })
+      }
+    })
+  })
+
+  it('keeps plain normal messages as text', async () => {
+    vi.resetModules()
+    const create = vi.fn().mockResolvedValue({ code: 0, data: { message_id: 'om_text' } })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const connection = await createChannelConnection({
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret'
+    })
+
+    await connection.sendMessage({
+      text: '收到，链路正常。',
+      receiveId: 'oc_xxx',
+      receiveIdType: 'chat_id'
+    })
+
+    expect(create).toHaveBeenCalledWith({
+      params: { receive_id_type: 'chat_id' },
+      data: {
+        receive_id: 'oc_xxx',
+        msg_type: 'text',
+        content: JSON.stringify({ text: '收到，链路正常。' })
+      }
+    })
+  })
+
   it('pushes follow-up bubbles through the Lark API', async () => {
     vi.resetModules()
     const fetchMock = vi.fn()

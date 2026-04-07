@@ -12,30 +12,98 @@ import type {
 } from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
+import { resolveLarkOutboundMessagePayload } from './utils/outbound-message'
 import { createTenantTokenProvider } from './utils/tenant-token'
 import { resolveLarkId } from './utils/text-format'
+import { buildToolCallSummaryCard } from './utils/tool-call-card'
+
+const ensureLarkMessageSuccess = (label: string, result: LarkSendMessageResponse) => {
+  if (result.code != null && result.code !== 0) {
+    throw new Error(`${label}: ${result.msg ?? 'unknown error'}`)
+  }
+
+  return {
+    messageId: result.data?.message_id
+  }
+}
 
 const sendLarkMessage = async (
   client: Client,
-  message: LarkChannelMessage
+  message: LarkChannelMessage,
+  logger?: ChannelLogger
 ) => {
+  if (message.toolCallSummary != null && message.toolCallSummary.items.length > 0) {
+    try {
+      const result = await client.im.message.create({
+        params: {
+          receive_id_type: message.receiveIdType
+        },
+        data: {
+          receive_id: message.receiveId,
+          msg_type: 'interactive',
+          content: JSON.stringify(buildToolCallSummaryCard(message.toolCallSummary))
+        }
+      }) as LarkSendMessageResponse
+      return ensureLarkMessageSuccess('Lark tool summary card send failed', result)
+    } catch (error) {
+      await logger?.warn?.({
+        receiveId: message.receiveId,
+        receiveIdType: message.receiveIdType,
+        error: error instanceof Error ? error.message : String(error)
+      }, '[lark] Failed to send tool summary card, falling back to text message')
+    }
+  }
+
+  const outbound = resolveLarkOutboundMessagePayload(message)
   const result = await client.im.message.create({
     params: {
       receive_id_type: message.receiveIdType
     },
     data: {
       receive_id: message.receiveId,
-      msg_type: 'text',
-      content: JSON.stringify({ text: message.text })
+      msg_type: outbound.msgType,
+      content: outbound.content ?? JSON.stringify({ text: message.text })
     }
   }) as LarkSendMessageResponse
-  if (result.code != null && result.code !== 0) {
-    throw new Error(`Lark message send failed: ${result.msg ?? 'unknown error'}`)
+  return ensureLarkMessageSuccess('Lark message send failed', result)
+}
+
+const updateLarkMessage = async (
+  client: Client,
+  messageId: string,
+  message: LarkChannelMessage,
+  logger?: ChannelLogger
+) => {
+  if (message.toolCallSummary != null && message.toolCallSummary.items.length > 0) {
+    try {
+      const result = await client.im.message.patch({
+        path: {
+          message_id: messageId
+        },
+        data: {
+          content: JSON.stringify(buildToolCallSummaryCard(message.toolCallSummary))
+        }
+      }) as LarkSendMessageResponse
+      return ensureLarkMessageSuccess('Lark tool summary card update failed', result)
+    } catch (error) {
+      await logger?.warn?.({
+        messageId,
+        error: error instanceof Error ? error.message : String(error)
+      }, '[lark] Failed to update tool summary card, falling back to text update')
+    }
   }
 
-  return {
-    messageId: result.data?.message_id
-  }
+  const outbound = resolveLarkOutboundMessagePayload(message)
+  const result = await client.im.message.update({
+    path: {
+      message_id: messageId
+    },
+    data: {
+      msg_type: outbound.msgType === 'interactive' ? 'text' : outbound.msgType,
+      content: outbound.content ?? JSON.stringify({ text: message.text })
+    }
+  }) as LarkSendMessageResponse
+  return ensureLarkMessageSuccess('Lark message update failed', result)
 }
 
 const pushLarkFollowUps = async (
@@ -199,7 +267,10 @@ export const createChannelConnection = defineCreateChannelConnection(async (
   const tenantTokenProvider = createTenantTokenProvider(config)
   return {
     sendMessage: async (message) => {
-      return sendLarkMessage(client, message)
+      return sendLarkMessage(client, message, logger)
+    },
+    updateMessage: async (messageId, message) => {
+      return updateLarkMessage(client, messageId, message, logger)
     },
     pushFollowUps: async ({ messageId, followUps }) => {
       await pushLarkFollowUps(messageId, followUps, tenantTokenProvider)

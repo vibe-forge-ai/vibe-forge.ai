@@ -80,6 +80,7 @@ export interface ChannelFollowUp {
 
 export interface ChannelConnection<TMessage> {
   sendMessage: (message: TMessage) => Promise<ChannelSendResult | undefined>
+  updateMessage?: (messageId: string, message: TMessage) => Promise<ChannelSendResult | undefined>
   pushFollowUps?: (input: {
     messageId: string
     followUps: readonly ChannelFollowUp[]

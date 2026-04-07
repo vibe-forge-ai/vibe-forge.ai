@@ -11,7 +11,19 @@ import { buildInteractionText } from './interaction'
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
 import { defineMessages } from './middleware/i18n'
-import { consumePendingUnack, deleteBinding, resolveBinding } from './state'
+import {
+  clearPendingToolCallDisplay,
+  consumePendingUnack,
+  deleteBinding,
+  resolveBinding,
+  resolvePendingToolCallDisplay,
+  setPendingToolCallDisplay
+} from './state'
+import {
+  buildToolCallSummaryText,
+  extractToolCallSummary,
+  mergeToolCallSummaries
+} from './tool-call-summary'
 import type { ChannelRuntimeState } from './types'
 
 export const handleInboundEvent = async (
@@ -133,31 +145,62 @@ export const handleSessionEvent = async (
   if (!binding) return false
   const state = states.get(binding.channelKey)
   if (!state?.connection) return false
+  const connection = state.connection
   const receiveId = binding.replyReceiveId ?? binding.channelId
   const receiveIdType = binding.replyReceiveIdType ?? 'chat_id'
   const serverLogger = getSessionLogger(sessionId, 'server')
-
-  if (event.type === 'interaction_request') {
+  const deliverMessage = async (message: ChannelTextMessage) => {
     const unack = consumePendingUnack(sessionId)
     if (unack) {
       await unack().catch(() => undefined)
     }
 
+    return await connection.sendMessage(message)
+  }
+  const upsertToolCallSummary = async (summary: NonNullable<ReturnType<typeof extractToolCallSummary>>) => {
+    const message: ChannelTextMessage = {
+      receiveId,
+      receiveIdType,
+      text: buildToolCallSummaryText(summary),
+      toolCallSummary: summary
+    }
+    const pendingDisplay = resolvePendingToolCallDisplay(sessionId)
+
+    if (pendingDisplay?.messageId != null && typeof connection.updateMessage === 'function') {
+      const result = await connection.updateMessage(pendingDisplay.messageId, message)
+      setPendingToolCallDisplay(sessionId, {
+        summary,
+        messageId: result?.messageId ?? pendingDisplay.messageId
+      })
+      return true
+    }
+
+    const result = await deliverMessage(message)
+    setPendingToolCallDisplay(sessionId, {
+      summary,
+      messageId: result?.messageId ?? pendingDisplay?.messageId
+    })
+    return true
+  }
+
+  if (event.type === 'interaction_request') {
+    clearPendingToolCallDisplay(sessionId)
+
     const language = state.config?.language ?? 'zh'
     const options = event.payload.options ?? []
     const hasDescriptions = options.some(option => (option.description?.trim() ?? '') !== '')
     const text = buildInteractionText(language, event.payload)
-    const result = await state.connection.sendMessage({ receiveId, receiveIdType, text })
+    const result = await deliverMessage({ receiveId, receiveIdType, text })
     let followUpsPushed = false
 
     if (
       !event.payload.multiselect &&
       options.length > 0 &&
       result?.messageId != null &&
-      state.connection.pushFollowUps
+      connection.pushFollowUps
     ) {
       try {
-        await state.connection.pushFollowUps({
+        await connection.pushFollowUps({
           messageId: result.messageId,
           followUps: options.map(option => ({ content: option.value ?? option.label }))
         })
@@ -184,15 +227,30 @@ export const handleSessionEvent = async (
     return true
   }
 
-  if (event.type !== 'message' || event.message.role !== 'assistant') return false
-  const text = extractTextFromMessage(event.message)
-  if (text == null || text === '') return false
+  if (event.type === 'message') {
+    const toolCallSummary = extractToolCallSummary(event.message)
+    if (toolCallSummary != null) {
+      const mergedSummary = mergeToolCallSummaries(
+        resolvePendingToolCallDisplay(sessionId)?.summary,
+        toolCallSummary
+      )
+      await upsertToolCallSummary(mergedSummary)
+    }
 
-  const unack = consumePendingUnack(sessionId)
-  if (unack) {
-    await unack().catch(() => undefined)
+    if (event.message.role !== 'assistant') {
+      return toolCallSummary != null
+    }
+
+    const text = extractTextFromMessage(event.message)
+    if (text == null || text === '') {
+      return toolCallSummary != null
+    }
+
+    clearPendingToolCallDisplay(sessionId)
+    await deliverMessage({ receiveId, receiveIdType, text })
+    return true
   }
 
-  await state.connection.sendMessage({ receiveId, receiveIdType, text })
-  return true
+  clearPendingToolCallDisplay(sessionId)
+  return false
 }

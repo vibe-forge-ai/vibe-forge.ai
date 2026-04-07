@@ -129,6 +129,10 @@ export const resolveChannelSessionMcpServers =
 import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
 
 interface ChannelConnectionExtensions {
+  updateMessage?: (
+    messageId: string,
+    message: TMessage
+  ) => Promise<ChannelSendResult | undefined>
   generateSystemPrompt?: (
     inbound: ChannelInboundEvent
   ) => Promise<string | undefined>
@@ -136,6 +140,8 @@ interface ChannelConnectionExtensions {
 ```
 
 频道实现可在此方法中调用平台 API（如获取 bot profile），结果自动注入 systemPrompt。
+
+`updateMessage` 主要用于频道内的增量状态展示，例如把连续的 tool_use / tool_result 事件更新到同一条卡片或消息里，而不是每次发送一条新的文本回复。
 
 ## 工作约定
 

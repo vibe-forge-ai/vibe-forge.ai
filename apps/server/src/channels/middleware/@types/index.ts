@@ -13,6 +13,20 @@ export interface ChannelTextMessage {
   receiveId: string
   receiveIdType: string
   text: string
+  toolCallSummary?: ChannelToolCallSummary
+}
+
+export interface ChannelToolCallSummaryItem {
+  toolUseId: string
+  name: string
+  status: 'pending' | 'success' | 'error'
+  argsText?: string
+  resultText?: string
+}
+
+export interface ChannelToolCallSummary {
+  title?: string
+  items: ChannelToolCallSummaryItem[]
 }
 
 export interface ChannelContext {

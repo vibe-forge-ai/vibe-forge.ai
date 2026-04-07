@@ -49,6 +49,7 @@ const bindTestSession = () => {
 const makeRuntimeState = (
   input: {
     sendMessage?: ReturnType<typeof vi.fn>
+    updateMessage?: ReturnType<typeof vi.fn>
     pushFollowUps?: ReturnType<typeof vi.fn>
     language?: 'zh' | 'en'
   } = {}
@@ -64,6 +65,7 @@ const makeRuntimeState = (
       },
       connection: {
         sendMessage: input.sendMessage ?? vi.fn().mockResolvedValue({ messageId: 'om_default' }),
+        updateMessage: input.updateMessage,
         pushFollowUps: input.pushFollowUps ?? vi.fn().mockResolvedValue(undefined)
       }
     } as any]
@@ -79,6 +81,21 @@ const makeInteractionRequestEvent = (
     payload: {
       sessionId: 'sess-1',
       ...payload
+    }
+  }) as any
+
+const makeMessageEvent = (
+  role: 'assistant' | 'user',
+  content: any,
+  id = `msg_${Math.random().toString(36).slice(2)}`
+) =>
+  ({
+    type: 'message',
+    message: {
+      id,
+      role,
+      content,
+      createdAt: Date.now()
     }
   }) as any
 
@@ -196,5 +213,127 @@ describe('channel handlers', () => {
     expect(delivered).toBe(true)
     expect(sendMessage).toHaveBeenCalledOnce()
     expect(pushFollowUps).toHaveBeenCalledOnce()
+  })
+
+  it('delivers the first tool event immediately and updates the same summary message as results arrive', async () => {
+    const sendMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    const updateMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    bindTestSession()
+
+    await expect(handleSessionEvent(
+      makeRuntimeState({ sendMessage, updateMessage }),
+      'sess-1',
+      makeMessageEvent('assistant', [{
+        type: 'tool_use',
+        id: 'tool-1',
+        name: 'mcp__channel-lark-test__SendImage',
+        input: {
+          imagePath: 'packages/utils/src/assets/mcp.png'
+        }
+      }], 'assistant-tool-use')
+    )).resolves.toBe(true)
+
+    expect(sendMessage).toHaveBeenCalledTimes(1)
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      receiveId: 'chat_1',
+      receiveIdType: 'chat_id',
+      toolCallSummary: expect.objectContaining({
+        items: [expect.objectContaining({
+          toolUseId: 'tool-1',
+          name: 'mcp__channel-lark-test__SendImage',
+          status: 'pending',
+          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}'
+        })]
+      })
+    }))
+
+    await expect(handleSessionEvent(
+      makeRuntimeState({ sendMessage, updateMessage }),
+      'sess-1',
+      makeMessageEvent('user', [{
+        type: 'tool_result',
+        tool_use_id: 'tool-1',
+        content: {
+          messageId: 'om_lark_image'
+        }
+      }], 'user-tool-result')
+    )).resolves.toBe(true)
+
+    expect(updateMessage).toHaveBeenCalledTimes(1)
+    expect(updateMessage).toHaveBeenCalledWith(
+      'om_tool_summary',
+      expect.objectContaining({
+        toolCallSummary: expect.objectContaining({
+          items: [expect.objectContaining({
+            toolUseId: 'tool-1',
+            status: 'success',
+            resultText: '{"messageId":"om_lark_image"}'
+          })]
+        })
+      })
+    )
+
+    await expect(handleSessionEvent(
+      makeRuntimeState({ sendMessage, updateMessage }),
+      'sess-1',
+      makeMessageEvent('assistant', '图片已发送。', 'assistant-final')
+    )).resolves.toBe(true)
+
+    expect(sendMessage).toHaveBeenNthCalledWith(2, {
+      receiveId: 'chat_1',
+      receiveIdType: 'chat_id',
+      text: '图片已发送。'
+    })
+  })
+
+  it('keeps adjacent tool calls inside one updatable summary card', async () => {
+    const sendMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    const updateMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    bindTestSession()
+    const states = makeRuntimeState({ sendMessage, updateMessage })
+
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_use',
+      id: 'tool-1',
+      name: 'mcp__channel-lark-test__SendImage',
+      input: { imagePath: 'a.png' }
+    }], 'tool-1-use'))
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('user', [{
+      type: 'tool_result',
+      tool_use_id: 'tool-1',
+      content: { messageId: 'om_image' }
+    }], 'tool-1-result'))
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_use',
+      id: 'tool-2',
+      name: 'mcp__channel-lark-test__SendFile',
+      input: { filePath: 'README.md' }
+    }], 'tool-2-use'))
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('user', [{
+      type: 'tool_result',
+      tool_use_id: 'tool-2',
+      content: { messageId: 'om_file' }
+    }], 'tool-2-result'))
+
+    expect(sendMessage).toHaveBeenCalledTimes(1)
+    expect(updateMessage).toHaveBeenCalledTimes(3)
+    expect(updateMessage.mock.calls[2]?.[1]).toEqual(expect.objectContaining({
+      toolCallSummary: expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            toolUseId: 'tool-1',
+            status: 'success',
+            resultText: '{"messageId":"om_image"}'
+          }),
+          expect.objectContaining({
+            toolUseId: 'tool-2',
+            name: 'mcp__channel-lark-test__SendFile',
+            status: 'success',
+            argsText: '{"filePath":"README.md"}',
+            resultText: '{"messageId":"om_file"}'
+          })
+        ]
+      })
+    }))
   })
 })
