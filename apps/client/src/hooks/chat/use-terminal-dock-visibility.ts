@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const TERMINAL_EXIT_ANIMATION_MS = 200
+const TERMINAL_EXIT_ANIMATION_MS = 240
 
 export function useTerminalDockVisibility(isOpen: boolean) {
   const [isRendered, setIsRendered] = useState(isOpen)
@@ -9,11 +9,11 @@ export function useTerminalDockVisibility(isOpen: boolean) {
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true)
-      const rafId = window.requestAnimationFrame(() => {
+      const timeoutId = window.setTimeout(() => {
         setIsVisible(true)
-      })
+      }, 0)
       return () => {
-        window.cancelAnimationFrame(rafId)
+        window.clearTimeout(timeoutId)
       }
     }
 

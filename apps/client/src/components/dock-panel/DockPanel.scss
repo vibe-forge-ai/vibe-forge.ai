@@ -1,29 +1,42 @@
 .dock-panel {
-  flex: 0 0 var(--dock-panel-height, 240px);
-  height: var(--dock-panel-height, 240px);
-  min-height: var(--dock-panel-min-height, 180px);
+  flex: 0 0 var(--dock-panel-current-height, var(--dock-panel-height, 240px));
+  height: var(--dock-panel-current-height, var(--dock-panel-height, 240px));
+  min-height: 0;
   max-height: var(--dock-panel-max-height, 520px);
   position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 12px;
+  padding: var(--dock-panel-padding-top, 12px) 12px
+    var(--dock-panel-padding-bottom, 12px);
   background-color: var(--bg-color);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--dock-panel-border-color, var(--border-color));
   gap: 6px;
+  overflow: hidden;
+  opacity: var(--dock-panel-opacity, 1);
+  transform: translateY(var(--dock-panel-translate-y, 0));
+  transition:
+    flex-basis .24s cubic-bezier(.22, 1, .36, 1),
+    height .24s cubic-bezier(.22, 1, .36, 1),
+    padding-top .24s cubic-bezier(.22, 1, .36, 1),
+    padding-bottom .24s cubic-bezier(.22, 1, .36, 1),
+    opacity .18s ease,
+    transform .24s cubic-bezier(.22, 1, .36, 1),
+    border-top-color .18s ease;
 
   &.is-resizing {
     cursor: row-resize;
   }
 }
 
-.dock-panel.is-entering-slide-up {
-  animation: dock-panel-slide-up .24s cubic-bezier(.22, 1, .36, 1);
-}
-
 .dock-panel.is-closing {
+  --dock-panel-current-height: 0px;
+  --dock-panel-padding-top: 0px;
+  --dock-panel-padding-bottom: 0px;
+  --dock-panel-border-color: transparent;
+  --dock-panel-opacity: 0;
+  --dock-panel-translate-y: 20px;
   pointer-events: none;
-  animation: dock-panel-slide-down .2s cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 .dock-panel__resize-handle {
@@ -72,6 +85,7 @@
 .dock-panel__title {
   font-weight: 600;
   flex: 0 1 auto;
+  max-width: 100%;
 }
 
 .dock-panel__meta {
@@ -131,33 +145,8 @@ html.dark .dock-panel__close-btn.ant-btn.ant-btn-text {
   --nav-hover-bg: #1a1a1a;
 }
 
-@keyframes dock-panel-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes dock-panel-slide-down {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dock-panel.is-entering-slide-up,
-  .dock-panel.is-closing {
-    animation: none;
+  .dock-panel {
+    transition: none;
   }
 }
