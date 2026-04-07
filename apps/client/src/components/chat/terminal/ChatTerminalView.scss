@@ -1,10 +1,12 @@
 .chat-terminal-view {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 240px;
+  min-height: 180px;
+  max-height: 42vh;
   position: relative;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-color);
+  border-top: 1px solid var(--border-color);
 
   &__error {
     position: absolute;
@@ -60,6 +62,7 @@
   }
 
   &__footer {
+    padding: 6px 12px 10px;
     font-size: 12px;
     color: var(--sub-text-color);
   }

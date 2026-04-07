@@ -2,7 +2,7 @@ import './ChatHeader.scss'
 
 import type { Session } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
-import { App, Button, Dropdown } from 'antd'
+import { App, Button, Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import { useAtomValue } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -20,7 +20,7 @@ import {
   getSessionToolGroups
 } from './session-metadata'
 
-export type ChatHeaderView = 'history' | 'timeline' | 'terminal' | 'settings'
+export type ChatHeaderView = 'history' | 'timeline' | 'settings'
 
 interface SessionDebugItem {
   icon: string
@@ -49,7 +49,9 @@ export function ChatHeader({
   lastMessage,
   lastUserMessage,
   activeView,
-  onViewChange
+  isTerminalOpen,
+  onViewChange,
+  onToggleTerminal
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
@@ -60,7 +62,9 @@ export function ChatHeader({
   lastMessage?: string
   lastUserMessage?: string
   activeView: ChatHeaderView
+  isTerminalOpen: boolean
   onViewChange: (view: ChatHeaderView) => void
+  onToggleTerminal: () => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -94,10 +98,9 @@ export function ChatHeader({
   }
 
   const viewItems = [
-    { value: 'history' as const, icon: 'forum' },
-    { value: 'timeline' as const, icon: 'timeline' },
-    { value: 'terminal' as const, icon: 'terminal' },
-    { value: 'settings' as const, icon: 'tune' }
+    { value: 'history' as const, icon: 'forum', title: t('chat.viewHistory') },
+    { value: 'timeline' as const, icon: 'timeline', title: t('chat.viewTimeline') },
+    { value: 'settings' as const, icon: 'tune', title: t('chat.viewSettings') }
   ]
 
   const handleToggleStar = async () => {
@@ -197,33 +200,52 @@ export function ChatHeader({
 
       <div className='chat-header-actions'>
         {viewItems.map(item => (
-          <Button
-            key={item.value}
-            type='text'
-            className={`chat-header-action-button ${activeView === item.value ? 'is-active' : ''}`}
-            onClick={() => {
-              onViewChange(item.value)
-            }}
-            icon={<span className='chat-header-view-option material-symbols-rounded'>{item.icon}</span>}
-          />
+          <Tooltip key={item.value} title={item.title}>
+            <Button
+              type='text'
+              className={`chat-header-action-button ${activeView === item.value ? 'is-active' : ''}`}
+              title={item.title}
+              aria-label={item.title}
+              onClick={() => {
+                onViewChange(item.value)
+              }}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>{item.icon}</span>}
+            />
+          </Tooltip>
         ))}
+        <Tooltip title={t('chat.viewTerminal')}>
+          <Button
+            type='text'
+            className={`chat-header-action-button ${isTerminalOpen ? 'is-active' : ''}`}
+            title={t('chat.viewTerminal')}
+            aria-label={t('chat.viewTerminal')}
+            onClick={onToggleTerminal}
+            icon={<span className='chat-header-view-option material-symbols-rounded'>terminal</span>}
+          />
+        </Tooltip>
         {shouldShowDebugButton && (
-          <Button
-            type='text'
-            className={`chat-header-action-button ${isDebugMode ? 'is-debug-active' : ''}`}
-            title={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
-            aria-label={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
-            onClick={toggleDebugMode}
-            icon={<span className='chat-header-view-option material-symbols-rounded'>bug_report</span>}
-          />
+          <Tooltip title={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}>
+            <Button
+              type='text'
+              className={`chat-header-action-button ${isDebugMode ? 'is-debug-active' : ''}`}
+              title={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
+              aria-label={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
+              onClick={toggleDebugMode}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>bug_report</span>}
+            />
+          </Tooltip>
         )}
-        <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
-          <Button
-            type='text'
-            className='chat-header-action-button'
-            icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
-          />
-        </Dropdown>
+        <Tooltip title={t('common.moreActions')}>
+          <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
+            <Button
+              type='text'
+              className='chat-header-action-button'
+              title={t('common.moreActions')}
+              aria-label={t('common.moreActions')}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
+            />
+          </Dropdown>
+        </Tooltip>
       </div>
     </div>
   )

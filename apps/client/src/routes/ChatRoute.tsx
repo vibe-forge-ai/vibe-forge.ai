@@ -54,7 +54,9 @@ function ChatRouteView({
     errorBanner,
     retryConnection,
     activeView,
+    isTerminalOpen,
     setActiveView,
+    setIsTerminalOpen,
     handleInteractionResponse,
     setMessages,
     placeholder,
@@ -81,9 +83,14 @@ function ChatRouteView({
   } = useChatSession({ session })
   const isEmptyNewSession = !session?.id && messages.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
+  const shouldShowTerminal = session?.id != null && isTerminalOpen
 
   return (
-    <div className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''}`}>
+    <div
+      className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''} ${
+        shouldShowTerminal ? 'has-terminal' : ''
+      }`}
+    >
       {session?.id && (
         <ChatHeader
           sessionInfo={sessionInfo}
@@ -95,7 +102,11 @@ function ChatRouteView({
           lastMessage={session.lastMessage}
           lastUserMessage={session.lastUserMessage}
           activeView={resolvedActiveView}
+          isTerminalOpen={isTerminalOpen}
           onViewChange={setActiveView}
+          onToggleTerminal={() => {
+            setIsTerminalOpen(!isTerminalOpen)
+          }}
         />
       )}
 
@@ -139,16 +150,16 @@ function ChatRouteView({
         <ChatTimelineView messages={messages} />
       )}
 
-      {resolvedActiveView === 'terminal' && session?.id && (
-        <ChatTerminalView sessionId={session.id} />
-      )}
-
       {resolvedActiveView === 'settings' && session?.id && (
         <ChatSettingsView
           session={session}
           sessionInfo={sessionInfo}
           onClose={() => setActiveView('history')}
         />
+      )}
+
+      {shouldShowTerminal && session?.id && (
+        <ChatTerminalView sessionId={session.id} />
       )}
     </div>
   )

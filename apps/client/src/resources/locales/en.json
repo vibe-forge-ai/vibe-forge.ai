@@ -68,6 +68,7 @@
     "copySessionLink": "Copy session link",
     "copySessionId": "Copy session ID",
     "copyResumeCommand": "Copy resume command",
+    "moreActions": "More actions",
     "sessionLinkCopied": "Session link copied to clipboard",
     "resumeCommandCopied": "Resume command copied to clipboard",
     "sessionIdCopied": "Session ID copied to clipboard",

@@ -69,6 +69,7 @@
     "copySessionLink": "复制会话链接",
     "copySessionId": "复制会话 ID",
     "copyResumeCommand": "复制控制台指令",
+    "moreActions": "更多操作",
     "sessionLinkCopied": "会话链接已复制到剪贴板",
     "resumeCommandCopied": "控制台指令已复制到剪贴板",
     "sessionIdCopied": "Session ID 已复制到剪贴板",
