@@ -84,7 +84,7 @@ export function ChatHistoryView({
   modelUnavailable: boolean
   hasAvailableModels: boolean
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
@@ -189,14 +189,6 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
-  const timestampLocale = i18n.resolvedLanguage?.startsWith('zh') === true ? 'zh-CN' : 'en-US'
-  const turnTimeFormatter = useMemo(() => (
-    new Intl.DateTimeFormat(timestampLocale, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    })
-  ), [timestampLocale])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
   const messageTurns = useMemo(() =>
     buildMessageTurns({
@@ -273,13 +265,41 @@ export function ChatHistoryView({
     })
   }
 
+  const formatTurnDuration = (durationMs: number | null) => {
+    if (durationMs == null) return null
+    const totalSeconds = Math.floor(durationMs / 1000)
+    if (totalSeconds <= 0) {
+      return t('chat.turnDurationUnderSecond')
+    }
+
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+
+    if (hours > 0) {
+      return [
+        t('chat.turnDurationHours', { count: hours }),
+        minutes > 0 ? t('chat.turnDurationMinutes', { count: minutes }) : null
+      ].filter(Boolean).join(' ')
+    }
+
+    if (minutes > 0) {
+      return [
+        t('chat.turnDurationMinutes', { count: minutes }),
+        seconds > 0 ? t('chat.turnDurationSeconds', { count: seconds }) : null
+      ].filter(Boolean).join(' ')
+    }
+
+    return t('chat.turnDurationSeconds', { count: seconds })
+  }
+
   const renderTurnSummary = (turn: (typeof messageTurns)[number]) => (
     <div className={`chat-turn-summary ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
       <div className='chat-turn-summary__content'>
         <div className='chat-turn-summary__meta'>
-          {turn.summaryTimestamp != null && (
+          {formatTurnDuration(turn.durationMs) != null && (
             <span className='chat-turn-summary__time'>
-              {turnTimeFormatter.format(new Date(turn.summaryTimestamp))}
+              {t('chat.turnProcessedDuration', { duration: formatTurnDuration(turn.durationMs) })}
             </span>
           )}
           <span className='chat-turn-summary__count'>

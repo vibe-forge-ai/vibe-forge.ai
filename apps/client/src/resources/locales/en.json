@@ -485,6 +485,11 @@
       "copyTimestampSuccess": "Copied ISO timestamp",
       "copyTimestampTitle": "Double-click to copy the ISO timestamp and log the message payload"
     },
+    "turnProcessedDuration": "Processed {{duration}}",
+    "turnDurationUnderSecond": "<1s",
+    "turnDurationHours": "{{count}}h",
+    "turnDurationMinutes": "{{count}}m",
+    "turnDurationSeconds": "{{count}}s",
     "turnSummaryCount": "{{count}} hidden messages",
     "turnExpandAction": "Expand",
     "turnCollapseAction": "Collapse",

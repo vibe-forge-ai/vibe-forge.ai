@@ -486,6 +486,11 @@
       "copyTimestampSuccess": "ISO 时间已复制到剪贴板",
       "copyTimestampTitle": "双击复制 ISO 时间并在控制台输出消息结构"
     },
+    "turnProcessedDuration": "已处理 {{duration}}",
+    "turnDurationUnderSecond": "1 秒内",
+    "turnDurationHours": "{{count}} 小时",
+    "turnDurationMinutes": "{{count}} 分",
+    "turnDurationSeconds": "{{count}} 秒",
     "turnSummaryCount": "{{count}} 条中间消息",
     "turnExpandAction": "展开",
     "turnCollapseAction": "收起",

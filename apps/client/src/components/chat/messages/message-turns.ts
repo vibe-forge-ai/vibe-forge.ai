@@ -7,12 +7,12 @@ interface MessageTurnDraft {
 }
 
 export interface MessageTurn {
+  durationMs: number | null
   hiddenCount: number
   id: string
   isCollapsed: boolean
   isExpandable: boolean
   items: ChatRenderItem[]
-  summaryTimestamp: number | null
   visibleItems: ChatRenderItem[]
 }
 
@@ -61,6 +61,8 @@ export const buildMessageTurns = (params: {
 
   return drafts.map((draft, index) => {
     const isLastTurn = index === drafts.length - 1
+    const startTimestamp = draft.items[0]?.originalMessage.createdAt ?? null
+    const endTimestamp = draft.items[draft.items.length - 1]?.originalMessage.createdAt ?? null
     const hiddenCount = Math.max(draft.items.length - 2, 0)
     const isExpandable = draft.startedByUser && hiddenCount > 0
     const hasHashTarget = params.hashAnchorId != null && params.hashAnchorId !== ''
@@ -70,12 +72,14 @@ export const buildMessageTurns = (params: {
     const isCollapsed = shouldCollapseByDefault && !params.expandedTurnIds.has(draft.id) && !hasHashTarget
 
     return {
+      durationMs: startTimestamp != null && endTimestamp != null
+        ? Math.max(endTimestamp - startTimestamp, 0)
+        : null,
       hiddenCount,
       id: draft.id,
       isCollapsed,
       isExpandable,
       items: draft.items,
-      summaryTimestamp: draft.items[draft.items.length - 1]?.originalMessage.createdAt ?? null,
       visibleItems: isCollapsed
         ? [draft.items[0]!, draft.items[draft.items.length - 1]!]
         : draft.items
