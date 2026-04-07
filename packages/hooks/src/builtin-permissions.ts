@@ -1,6 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-import { normalizePermissionToolName, resolvePermissionMirrorPath } from '@vibe-forge/utils'
+import {
+  normalizePermissionToolName,
+  normalizeSessionPermissionState,
+  resolvePermissionMirrorPath,
+  splitManagedPermissionKeys
+} from '@vibe-forge/utils'
 import type { PermissionToolSubject } from '@vibe-forge/utils'
 
 import type { Plugin } from './context'
@@ -25,11 +30,17 @@ const readMirrorDecision = async (params: {
       permissionState?: { allow?: string[]; deny?: string[]; onceAllow?: string[]; onceDeny?: string[] }
       projectPermissions?: { allow?: string[]; deny?: string[]; ask?: string[] }
     }
+    const permissionState = normalizeSessionPermissionState(parsed.permissionState)
+    const projectPermissions = {
+      allow: splitManagedPermissionKeys(parsed.projectPermissions?.allow).bare,
+      deny: splitManagedPermissionKeys(parsed.projectPermissions?.deny).bare,
+      ask: splitManagedPermissionKeys(parsed.projectPermissions?.ask).bare
+    }
     const key = params.subject.key
-    const onceDeny = parsed.permissionState?.onceDeny ?? []
+    const onceDeny = permissionState.onceDeny
     if (onceDeny.includes(key)) {
       parsed.permissionState = {
-        ...parsed.permissionState,
+        ...permissionState,
         onceDeny: onceDeny.filter(item => item !== key)
       }
       await writeFile(
@@ -39,10 +50,10 @@ const readMirrorDecision = async (params: {
       )
       return 'deny' as const
     }
-    const onceAllow = parsed.permissionState?.onceAllow ?? []
+    const onceAllow = permissionState.onceAllow
     if (onceAllow.includes(key)) {
       parsed.permissionState = {
-        ...parsed.permissionState,
+        ...permissionState,
         onceAllow: onceAllow.filter(item => item !== key)
       }
       await writeFile(
@@ -52,10 +63,10 @@ const readMirrorDecision = async (params: {
       )
       return 'allow' as const
     }
-    if (parsed.permissionState?.deny?.includes(key) || parsed.projectPermissions?.deny?.includes(key)) {
+    if (permissionState.deny.includes(key) || projectPermissions.deny.includes(key)) {
       return 'deny' as const
     }
-    if (parsed.permissionState?.allow?.includes(key) || parsed.projectPermissions?.allow?.includes(key)) {
+    if (permissionState.allow.includes(key) || projectPermissions.allow.includes(key)) {
       return 'allow' as const
     }
   } catch {

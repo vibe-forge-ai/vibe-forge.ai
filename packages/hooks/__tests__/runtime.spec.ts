@@ -415,6 +415,55 @@ describe('hook runtime', () => {
     })
   })
 
+  it('normalizes mixed-case custom MCP keys in the builtin permission plugin mirror fallback', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-custom-allow-'))
+    tempDirs.push(workspace)
+
+    await writeDocument(
+      resolvePermissionMirrorPath(workspace, 'claude-code', 'session-custom-allow'),
+      JSON.stringify({
+        permissionState: {
+          allow: ['Channel-lark-test'],
+          deny: [],
+          onceAllow: [],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    const result = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-custom-allow',
+        adapter: 'claude-code',
+        runtime: 'server',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'mcp__channel-lark-test__GetChannelContext'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-custom-allow',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toMatchObject({
+      continue: true,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow'
+      }
+    })
+  })
+
   it('consumes onceAllow decisions from the builtin permission plugin mirror fallback', async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-once-allow-'))
     tempDirs.push(workspace)

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
+import { syncChannelSessionBinding } from '#~/channels/middleware/bind-session.js'
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { processUserMessage } from '#~/services/session/index.js'
@@ -12,6 +13,10 @@ vi.mock('#~/services/session/create.js', () => ({
 
 vi.mock('#~/services/session/index.js', () => ({
   processUserMessage: vi.fn()
+}))
+
+vi.mock('#~/channels/middleware/bind-session.js', () => ({
+  syncChannelSessionBinding: vi.fn()
 }))
 
 vi.mock('#~/channels/middleware/dispatch/prompt.js', () => ({
@@ -131,6 +136,28 @@ describe('dispatchMiddleware', () => {
       const next = vi.fn().mockResolvedValue(undefined)
       await dispatchMiddleware(makeCtx(), next)
       expect(next).toHaveBeenCalledOnce()
+    })
+
+    it('syncs the channel binding before starting the first adapter run', async () => {
+      let beforeStart: ((sessionId: string) => Promise<void> | void) | undefined
+      vi.mocked(createSessionWithInitialMessage).mockImplementationOnce(async (options) => {
+        beforeStart = options.beforeStart
+        await options.beforeStart?.('new-sess')
+        return { id: 'new-sess' } as any
+      })
+
+      await dispatchMiddleware(makeCtx(), vi.fn().mockResolvedValue(undefined))
+
+      expect(beforeStart).toBeTypeOf('function')
+      expect(syncChannelSessionBinding).toHaveBeenCalledWith({
+        channelKey: 'lark:default',
+        inbound: expect.objectContaining({
+          channelType: 'lark',
+          channelId: 'ch1',
+          sessionType: 'direct'
+        }),
+        sessionId: 'new-sess'
+      })
     })
   })
 

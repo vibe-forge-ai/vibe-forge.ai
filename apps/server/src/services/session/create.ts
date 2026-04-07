@@ -11,6 +11,7 @@ export async function createSessionWithInitialMessage(options: {
   parentSessionId?: string
   id?: string
   shouldStart?: boolean
+  beforeStart?: (sessionId: string) => void | Promise<void>
   tags?: string[]
   model?: string
   effort?: 'low' | 'medium' | 'high' | 'max'
@@ -27,6 +28,7 @@ export async function createSessionWithInitialMessage(options: {
     parentSessionId,
     id,
     shouldStart = true,
+    beforeStart,
     tags,
     model,
     effort,
@@ -58,6 +60,7 @@ export async function createSessionWithInitialMessage(options: {
 
   if ((initialMessage || initialContent) && shouldStart) {
     try {
+      await beforeStart?.(session.id)
       await startAdapterSession(
         session.id,
         { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter }

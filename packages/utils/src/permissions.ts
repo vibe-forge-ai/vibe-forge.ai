@@ -69,11 +69,7 @@ const uniqueStrings = (values: string[]) => [...new Set(values)]
 
 const normalizeAliasKey = (value: string) => value.replace(/[\s_-]+/g, '').toLowerCase()
 
-const sanitizeBareKey = (value: string) => value.replace(/[^a-z0-9-]+/gi, '')
-
-const toTitleCase = (value: string) => (
-  value.length === 0 ? value : `${value[0]!.toUpperCase()}${value.slice(1)}`
-)
+const sanitizeBareKey = (value: string) => value.replace(/[^a-z0-9-]+/gi, '').toLowerCase()
 
 export const createEmptySessionPermissionState = (): SessionPermissionState => ({
   allow: [],
@@ -90,9 +86,9 @@ export const normalizeSessionPermissionState = (value: unknown): SessionPermissi
   const normalizeList = (input: unknown) =>
     uniqueStrings(
       Array.isArray(input)
-        ? input.filter((item): item is string => typeof item === 'string' && item.trim() !== '').map(item =>
-          item.trim()
-        )
+        ? input
+          .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+          .map(item => normalizePermissionToolName(item)?.key ?? item.trim())
         : []
     )
 
@@ -111,12 +107,13 @@ export const splitManagedPermissionKeys = (values: string[] | undefined) => {
   const other: string[] = []
 
   for (const raw of values ?? []) {
-    const value = raw.trim()
-    if (value === '') continue
-    if (isBarePermissionKey(value)) {
-      bare.push(value)
+    const trimmed = raw.trim()
+    if (trimmed === '') continue
+    const normalized = normalizePermissionToolName(trimmed)?.key ?? trimmed
+    if (isBarePermissionKey(normalized)) {
+      bare.push(normalized)
     } else {
-      other.push(value)
+      other.push(trimmed)
     }
   }
 
@@ -185,8 +182,8 @@ export const normalizePermissionToolName = (
   const bareKey = sanitizeBareKey(trimmed)
   if (bareKey !== '' && isBarePermissionKey(bareKey)) {
     return {
-      key: toTitleCase(bareKey),
-      label: toTitleCase(bareKey),
+      key: bareKey,
+      label: bareKey,
       scope: 'tool'
     }
   }
