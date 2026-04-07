@@ -13,6 +13,13 @@
 - Server 侧读取项目 / 用户配置时，统一通过 `apps/server/src/services/config.ts`。
 - 会话运行态缓存、交互等待队列、广播 socket 集合统一放在 `apps/server/src/services/`。
 
+## WebSocket Channel
+
+- chat 会话和 terminal 会话是两套独立 websocket 协议，不要把 terminal 字节流塞进 chat `WSEvent`。
+- chat 入口继续走既有 session runtime；terminal 入口通过 `channel=terminal` 分流到 `apps/server/src/websocket/terminal.ts`。
+- terminal 的 socket 集合、scrollback、shell process 和空闲回收逻辑统一放在 `apps/server/src/services/terminal/`。
+- terminal 运行态只保存在内存里；删除 session 时需要同时销毁 terminal runtime，避免留下悬空 socket 或孤儿进程。
+
 ## Schema
 
 - DB schema 按领域拆分在 `apps/server/src/db/*.schema.ts` 中维护。
