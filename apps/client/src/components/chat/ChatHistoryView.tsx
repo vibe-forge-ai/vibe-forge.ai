@@ -14,6 +14,7 @@ import type { SessionInfo } from '@vibe-forge/types'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
 import { MessageItem } from './messages/MessageItem'
+import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
@@ -83,7 +84,7 @@ export function ChatHistoryView({
   modelUnavailable: boolean
   hasAvailableModels: boolean
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
@@ -109,6 +110,7 @@ export function ChatHistoryView({
   })
   const initialScrollDoneRef = useRef(false)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [expandedTurnIds, setExpandedTurnIds] = useState<Set<string>>(new Set())
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -156,6 +158,7 @@ export function ChatHistoryView({
   useEffect(() => {
     initialScrollDoneRef.current = false
     setEditingMessageId(null)
+    setExpandedTurnIds(new Set())
   }, [session?.id])
   useEffect(() => {
     if (!initialScrollDoneRef.current && isReady && location.hash === '') {
@@ -186,6 +189,22 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
+  const timestampLocale = i18n.resolvedLanguage?.startsWith('zh') === true ? 'zh-CN' : 'en-US'
+  const turnTimeFormatter = useMemo(() => (
+    new Intl.DateTimeFormat(timestampLocale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  ), [timestampLocale])
+  const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
+  const messageTurns = useMemo(() =>
+    buildMessageTurns({
+      renderItems,
+      expandedTurnIds,
+      hashAnchorId,
+      keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
+    }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status])
   const lastAssistantActionAnchorId = useMemo(() => {
     for (let index = renderItems.length - 1; index >= 0; index -= 1) {
       const item = renderItems[index]
@@ -198,7 +217,7 @@ export function ChatHistoryView({
   }, [renderItems])
 
   useEffect(() => {
-    const hash = decodeURIComponent(location.hash.replace(/^#/, ''))
+    const hash = hashAnchorId
     if (!isReady || hash === '') return
 
     let removeHighlightTimer: ReturnType<typeof setTimeout> | null = null
@@ -240,7 +259,46 @@ export function ChatHistoryView({
         clearTimeout(removeHighlightTimer)
       }
     }
-  }, [isReady, location.hash, renderItems.length])
+  }, [hashAnchorId, isReady, messageTurns])
+
+  const toggleTurnCollapsed = (turnId: string) => {
+    setExpandedTurnIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(turnId)) {
+        next.delete(turnId)
+      } else {
+        next.add(turnId)
+      }
+      return next
+    })
+  }
+
+  const renderTurnSummary = (turn: (typeof messageTurns)[number]) => (
+    <div className={`chat-turn-summary ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+      <div className='chat-turn-summary__content'>
+        <div className='chat-turn-summary__meta'>
+          {turn.summaryTimestamp != null && (
+            <span className='chat-turn-summary__time'>
+              {turnTimeFormatter.format(new Date(turn.summaryTimestamp))}
+            </span>
+          )}
+          <span className='chat-turn-summary__count'>
+            {t('chat.turnSummaryCount', { count: turn.hiddenCount })}
+          </span>
+        </div>
+        <button
+          type='button'
+          className='chat-turn-summary__toggle'
+          aria-expanded={!turn.isCollapsed}
+          onClick={() => toggleTurnCollapsed(turn.id)}
+        >
+          <span className='material-symbols-rounded'>
+            {turn.isCollapsed ? 'chevron_right' : 'expand_more'}
+          </span>
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -252,43 +310,59 @@ export function ChatHistoryView({
               <span>{t('common.creatingChat')}</span>
             </div>
           )}
-          {renderItems.map((item, index) => {
-            if (item.type === 'message') {
-              return (
-                <MessageItem
-                  key={item.message.id || index}
-                  anchorId={item.anchorId}
-                  msg={item.message}
-                  isFirstInGroup={item.isFirstInGroup}
-                  originalMessage={item.originalMessage}
-                  sessionInfo={sessionInfo}
-                  isEditing={editingMessageId === item.originalMessage.id}
-                  isSessionBusy={isCreating || session?.status === 'running' || session?.status === 'waiting_input'}
-                  showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
-                  onEditMessage={editMessage}
-                  onForkMessage={forkMessage}
-                  onRecallMessage={recallMessage}
-                  onStartEditing={handleStartEditing}
-                  onCancelEditing={(messageId) => {
-                    setEditingMessageId((current) => current === messageId ? null : current)
-                  }}
-                  sessionId={session?.id}
-                />
-              )
-            } else if (item.type === 'tool-group') {
-              return (
-                <ToolGroup
-                  key={item.id || `group-${index}`}
-                  anchorId={item.anchorId}
-                  items={item.items}
-                  originalMessage={item.originalMessage}
-                  sessionId={session?.id}
-                  footer={item.footer}
-                />
-              )
-            }
-            return null
-          })}
+          {messageTurns.map((turn) => (
+            <React.Fragment key={turn.id}>
+              {turn.visibleItems.map((item, index) => {
+                const itemKey = item.type === 'message'
+                  ? item.anchorId
+                  : item.id
+
+                if (item.type === 'message') {
+                  return (
+                    <React.Fragment key={itemKey}>
+                      <MessageItem
+                        anchorId={item.anchorId}
+                        msg={item.message}
+                        isFirstInGroup={item.isFirstInGroup}
+                        originalMessage={item.originalMessage}
+                        sessionInfo={sessionInfo}
+                        isEditing={editingMessageId === item.originalMessage.id}
+                        isSessionBusy={isCreating || session?.status === 'running' ||
+                          session?.status === 'waiting_input'}
+                        showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
+                        onEditMessage={editMessage}
+                        onForkMessage={forkMessage}
+                        onRecallMessage={recallMessage}
+                        onStartEditing={handleStartEditing}
+                        onCancelEditing={(messageId) => {
+                          setEditingMessageId((current) => current === messageId ? null : current)
+                        }}
+                        sessionId={session?.id}
+                      />
+                      {turn.isExpandable && index === 0 && (
+                        renderTurnSummary(turn)
+                      )}
+                    </React.Fragment>
+                  )
+                }
+
+                return (
+                  <React.Fragment key={itemKey}>
+                    <ToolGroup
+                      anchorId={item.anchorId}
+                      items={item.items}
+                      originalMessage={item.originalMessage}
+                      sessionId={session?.id}
+                      footer={item.footer}
+                    />
+                    {turn.isExpandable && index === 0 && (
+                      renderTurnSummary(turn)
+                    )}
+                  </React.Fragment>
+                )
+              })}
+            </React.Fragment>
+          ))}
           <div ref={messagesEndRef} />
         </div>
 

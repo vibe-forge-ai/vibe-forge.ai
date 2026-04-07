@@ -1,8 +1,7 @@
 .chat-message-user, .chat-message-assistant {
   display: flex;
   align-items: flex-start;
-  margin-top: 12px;
-  margin-bottom: 0;
+  margin: 0;
   position: relative;
   scroll-margin-top: 72px;
   transition: background-color .2s ease;
@@ -70,10 +69,6 @@
     opacity: 1;
   }
 
-  &:first-child {
-    margin-top: 0;
-  }
-
   &.is-editing {
     .message-body-container {
       align-items: stretch;
@@ -125,10 +120,6 @@
   flex-direction: row-reverse;
   gap: 8px;
 
-  &.consecutive {
-    margin-top: 4px;
-  }
-
   &:hover .message-side-actions {
     opacity: 1;
     pointer-events: auto;
@@ -158,10 +149,6 @@
   flex-direction: row;
   gap: 0;
   padding-left: 0;
-
-  &.consecutive {
-    margin-top: 0;
-  }
 
   .bubble {
     background-color: transparent;

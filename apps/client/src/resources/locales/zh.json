@@ -486,6 +486,9 @@
       "copyTimestampSuccess": "ISO 时间已复制到剪贴板",
       "copyTimestampTitle": "双击复制 ISO 时间并在控制台输出消息结构"
     },
+    "turnSummaryCount": "{{count}} 条中间消息",
+    "turnExpandAction": "展开",
+    "turnCollapseAction": "收起",
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
     "newSessionGuide": {
       "loading": "正在加载...",

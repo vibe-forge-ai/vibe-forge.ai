@@ -485,6 +485,9 @@
       "copyTimestampSuccess": "Copied ISO timestamp",
       "copyTimestampTitle": "Double-click to copy the ISO timestamp and log the message payload"
     },
+    "turnSummaryCount": "{{count}} hidden messages",
+    "turnExpandAction": "Expand",
+    "turnCollapseAction": "Collapse",
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
     "newSessionGuide": {
       "loading": "Loading...",
