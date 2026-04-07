@@ -20,6 +20,7 @@ export function AdapterSelectControl({
   const { adapterLocked, modelUnavailable, isThinking, selectedAdapter } = state
   const { adapterOptions } = data
   const { onAdapterChange } = handlers
+  const isDisabled = adapterLocked || modelUnavailable || isThinking
 
   if (adapterOptions == null || adapterOptions.length <= 1) {
     return null
@@ -31,7 +32,7 @@ export function AdapterSelectControl({
         className={`adapter-select-tooltip-target ${adapterLocked ? 'adapter-select-tooltip-target--locked' : ''}`
           .trim()}
       >
-        <div className='sender-select-shell sender-select-shell--adapter'>
+        <div className={`sender-select-shell sender-select-shell--adapter ${isDisabled ? 'is-disabled' : ''}`.trim()}>
           <Select
             className={`adapter-select ${adapterLocked ? 'adapter-select--locked' : ''}`.trim()}
             classNames={{ popup: { root: 'adapter-select-popup' } }}
@@ -39,7 +40,7 @@ export function AdapterSelectControl({
             options={adapterOptions}
             showSearch={false}
             allowClear={false}
-            disabled={adapterLocked || modelUnavailable || isThinking}
+            disabled={isDisabled}
             onChange={(value) => onAdapterChange?.(value)}
             placeholder={t('chat.adapterSelectPlaceholder', { defaultValue: 'Adapter' })}
             optionLabelProp='label'

@@ -29,7 +29,7 @@
     }
   }
 
-  &.sender-select-shell--adapter:hover {
+  &.sender-select-shell--adapter:not(.is-disabled):hover {
     .adapter-select {
       background: var(--sender-control-hover-bg);
       color: var(--sender-control-hover-color);
