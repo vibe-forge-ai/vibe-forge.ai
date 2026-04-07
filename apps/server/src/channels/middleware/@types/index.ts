@@ -22,6 +22,8 @@ export interface ChannelToolCallSummaryItem {
   status: 'pending' | 'success' | 'error'
   argsText?: string
   resultText?: string
+  detailUrl?: string
+  exportJsonUrl?: string
 }
 
 export interface ChannelToolCallSummary {

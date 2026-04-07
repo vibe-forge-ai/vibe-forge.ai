@@ -53,7 +53,10 @@ export const resolveDefaultReceiveTarget = (
     receiveIdType?: LarkMessageReceiveIdType
   }
 ) => {
-  const receiveId = input?.receiveId ?? env.defaultReceiveId ?? env.channelId
+  const explicitReceiveId = typeof input?.receiveId === 'string' && input.receiveId.trim() !== ''
+    ? input.receiveId.trim()
+    : undefined
+  const receiveId = explicitReceiveId ?? env.defaultReceiveId ?? env.channelId
   const receiveIdType = input?.receiveIdType ?? env.defaultReceiveIdType ?? 'chat_id'
   if (receiveId == null || receiveId.trim() === '') {
     throw new Error('Missing receive target. Provide receiveId explicitly or start from a bound Lark channel session.')
@@ -65,7 +68,10 @@ export const resolveDefaultReceiveTarget = (
 }
 
 export const resolveDefaultChatId = (env: LarkMcpRuntimeEnv, chatId?: string) => {
-  const resolvedChatId = chatId ?? env.channelId
+  const explicitChatId = typeof chatId === 'string' && chatId.trim() !== ''
+    ? chatId.trim()
+    : undefined
+  const resolvedChatId = explicitChatId ?? env.channelId
   if (resolvedChatId == null || resolvedChatId.trim() === '') {
     throw new Error('Missing chatId. Provide chatId explicitly or start from a bound Lark channel session.')
   }

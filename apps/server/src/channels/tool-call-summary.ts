@@ -3,6 +3,7 @@ import type { ChatMessage } from '@vibe-forge/core'
 import { safeJsonStringify } from '#~/utils/json.js'
 
 import type { ChannelToolCallSummary, ChannelToolCallSummaryItem } from './middleware/@types/index.js'
+import { normalizeToolDisplayName } from './tool-call-name'
 
 const MAX_SUMMARY_LINE_LENGTH = 320
 
@@ -12,19 +13,40 @@ const truncateLine = (value: string, maxLength = MAX_SUMMARY_LINE_LENGTH) => (
 
 const toSingleLine = (value: string) => value.replace(/\s+/g, ' ').trim()
 
-const normalizeToolName = (name: string) => {
-  const trimmed = name.trim()
-  if (!trimmed.startsWith('adapter:')) {
-    return trimmed
+const unwrapStructuredText = (value: unknown): string | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined
   }
 
-  return trimmed.split(':').at(-1)?.trim() || trimmed
+  const textParts = value.flatMap((item) => {
+    if (item == null || typeof item !== 'object' || Array.isArray(item)) {
+      return []
+    }
+
+    if ((item as { type?: unknown }).type !== 'text') {
+      return []
+    }
+
+    const text = (item as { text?: unknown }).text
+    return typeof text === 'string' ? [text] : []
+  })
+  if (textParts.length === 0 || textParts.length !== value.length) {
+    return undefined
+  }
+
+  const merged = textParts.join('\n').trim()
+  return merged === '' ? undefined : merged
 }
 
 const stringifySummaryValue = (value: unknown) => {
+  const unwrappedText = unwrapStructuredText(value)
+  if (unwrappedText != null) {
+    return unwrappedText
+  }
+
   if (typeof value === 'string') {
-    const normalized = toSingleLine(value)
-    return normalized === '' ? undefined : truncateLine(normalized)
+    const normalized = value.trim()
+    return normalized === '' ? undefined : normalized
   }
 
   const serialized = safeJsonStringify(value).trim()
@@ -32,7 +54,7 @@ const stringifySummaryValue = (value: unknown) => {
     return undefined
   }
 
-  return truncateLine(toSingleLine(serialized))
+  return serialized
 }
 
 const resolveSummaryTitle = (summary: ChannelToolCallSummary) => (
@@ -50,14 +72,16 @@ const buildLegacyToolCallSummary = (message: ChatMessage): ChannelToolCallSummar
     title: '工具调用',
     items: [{
       toolUseId,
-      name: normalizeToolName(toolCall.name),
+      name: normalizeToolDisplayName(toolCall.name),
       status: toolCall.status === 'error'
         ? 'error'
         : toolCall.output != null
         ? 'success'
         : 'pending',
       argsText: stringifySummaryValue(toolCall.args),
-      resultText: stringifySummaryValue(toolCall.output)
+      resultText: stringifySummaryValue(toolCall.output),
+      detailUrl: undefined,
+      exportJsonUrl: undefined
     }]
   }
 }
@@ -72,7 +96,7 @@ export const extractToolCallSummary = (message: ChatMessage): ChannelToolCallSum
     if (item.type === 'tool_use') {
       items.push({
         toolUseId: item.id.trim(),
-        name: normalizeToolName(item.name),
+        name: normalizeToolDisplayName(item.name),
         status: 'pending',
         argsText: stringifySummaryValue(item.input)
       })
@@ -120,7 +144,9 @@ export const mergeToolCallSummaries = (
       name: item.name !== item.toolUseId ? item.name : existing.name,
       status: item.status,
       argsText: item.argsText ?? existing.argsText,
-      resultText: item.resultText ?? existing.resultText
+      resultText: item.resultText ?? existing.resultText,
+      detailUrl: item.detailUrl ?? existing.detailUrl,
+      exportJsonUrl: item.exportJsonUrl ?? existing.exportJsonUrl
     }
   }
 
@@ -143,10 +169,16 @@ export const buildToolCallSummaryText = (summary: ChannelToolCallSummary) => {
     lines.push(`工具: ${item.name}`)
     lines.push(`状态: ${resolveStatusLabel(item.status)}`)
     if (item.argsText != null) {
-      lines.push(`参数: ${item.argsText}`)
+      lines.push(`参数: ${truncateLine(toSingleLine(item.argsText))}`)
     }
     if (item.resultText != null) {
-      lines.push(`${item.status === 'error' ? '错误' : '结果'}: ${item.resultText}`)
+      lines.push(`${item.status === 'error' ? '错误' : '结果'}: ${truncateLine(toSingleLine(item.resultText))}`)
+    }
+    if (item.detailUrl != null) {
+      lines.push(`详情: ${item.detailUrl}`)
+    }
+    if (item.exportJsonUrl != null) {
+      lines.push(`导出: ${item.exportJsonUrl}`)
     }
   }
 

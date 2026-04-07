@@ -217,6 +217,78 @@ describe('lark channel companion MCP', () => {
     }
   })
 
+  it('treats an empty receiveId as the bound chat fallback when sending files', async () => {
+    vi.resetModules()
+    const fileCreate = vi.fn().mockResolvedValue({ file_key: 'file_1' })
+    const messageCreate = vi.fn().mockResolvedValue({
+      code: 0,
+      data: {
+        message_id: 'om_sent'
+      }
+    })
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client: vi.fn().mockImplementation(() => ({
+        im: {
+          file: {
+            create: fileCreate
+          },
+          message: {
+            create: messageCreate
+          }
+        },
+        contact: {}
+      })),
+      Domain: {
+        Feishu: 'Feishu',
+        Lark: 'Lark'
+      }
+    }))
+
+    const tempDir = await mkdtemp(join(tmpdir(), 'vf-lark-mcp-'))
+    const workspaceDir = await realpath(tempDir)
+    const filePath = join(workspaceDir, 'report.pdf')
+    await writeFile(filePath, 'hello world', 'utf8')
+
+    try {
+      vi.stubEnv('__VF_PROJECT_WORKSPACE_FOLDER__', workspaceDir)
+      const { createLarkMcpService } = await import('#~/mcp/service.js')
+      const service = createLarkMcpService({
+        appId: 'app_id',
+        appSecret: 'app_secret',
+        domain: 'Feishu',
+        channelId: 'chat_1',
+        defaultReceiveId: 'chat_1',
+        defaultReceiveIdType: 'chat_id'
+      })
+
+      const result = await service.sendFile({
+        filePath,
+        receiveId: '   ',
+        confirmExternalShare: true
+      })
+
+      expect(messageCreate).toHaveBeenCalledWith({
+        params: {
+          receive_id_type: 'chat_id'
+        },
+        data: {
+          receive_id: 'chat_1',
+          msg_type: 'file',
+          content: JSON.stringify({ file_key: 'file_1' }),
+          uuid: undefined
+        }
+      })
+      expect(result).toMatchObject({
+        receiveId: 'chat_1',
+        receiveIdType: 'chat_id'
+      })
+    } finally {
+      vi.unstubAllEnvs()
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
   it('gets a user profile from the contact directory', async () => {
     vi.resetModules()
     const userGet = vi.fn().mockResolvedValue({

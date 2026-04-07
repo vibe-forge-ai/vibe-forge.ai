@@ -24,12 +24,14 @@ describe('env helpers', () => {
   it('parses __VF_PROJECT_AI_SERVER_DEBUG__ from process env', async () => {
     vi.stubEnv('__VF_PROJECT_AI_SERVER_DEBUG__', 'true')
     vi.stubEnv('__VF_PROJECT_AI_SERVER_LOG_LEVEL__', 'warn')
+    vi.stubEnv('__VF_PROJECT_AI_PUBLIC_BASE_URL__', 'https://lan.example')
 
     const { loadEnv } = await import('../src/env')
 
     expect(loadEnv()).toEqual(expect.objectContaining({
       __VF_PROJECT_AI_SERVER_DEBUG__: true,
-      __VF_PROJECT_AI_SERVER_LOG_LEVEL__: 'warn'
+      __VF_PROJECT_AI_SERVER_LOG_LEVEL__: 'warn',
+      __VF_PROJECT_AI_PUBLIC_BASE_URL__: 'https://lan.example'
     }))
   })
 })

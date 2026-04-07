@@ -1,6 +1,12 @@
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
-import type { ChannelConnection, ChannelFollowUp, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
+import type {
+  ChannelConnection,
+  ChannelFileMessage,
+  ChannelFollowUp,
+  ChannelInboundEvent,
+  ChannelLogger
+} from '@vibe-forge/core/channel'
 import { defineCreateChannelConnection } from '@vibe-forge/core/channel'
 
 import type {
@@ -17,14 +23,16 @@ import { createTenantTokenProvider } from './utils/tenant-token'
 import { resolveLarkId } from './utils/text-format'
 import { buildToolCallSummaryCard } from './utils/tool-call-card'
 
-const ensureLarkMessageSuccess = (label: string, result: LarkSendMessageResponse) => {
+const ensureLarkSuccess = <T extends { code?: number; msg?: string }>(label: string, result: T) => {
   if (result.code != null && result.code !== 0) {
     throw new Error(`${label}: ${result.msg ?? 'unknown error'}`)
   }
+  return result
+}
 
-  return {
-    messageId: result.data?.message_id
-  }
+const ensureLarkMessageSuccess = (label: string, result: LarkSendMessageResponse) => {
+  const success = ensureLarkSuccess(label, result)
+  return { messageId: success.data?.message_id }
 }
 
 const sendLarkMessage = async (
@@ -104,6 +112,42 @@ const updateLarkMessage = async (
     }
   }) as LarkSendMessageResponse
   return ensureLarkMessageSuccess('Lark message update failed', result)
+}
+
+const sendLarkFileMessage = async (
+  client: Client,
+  message: ChannelFileMessage
+) => {
+  const fileBytes = typeof message.content === 'string'
+    ? Buffer.from(message.content, 'utf8')
+    : Buffer.from(message.content)
+  const uploadResult = ensureLarkSuccess(
+    'Lark file upload failed',
+    await client.im.file.create({
+      data: {
+        file_type: 'stream',
+        file_name: message.fileName,
+        file: fileBytes
+      }
+    }) as { code?: number; msg?: string; file_key?: string }
+  )
+  if (uploadResult.file_key == null || uploadResult.file_key === '') {
+    throw new Error('Lark file upload failed: missing file_key')
+  }
+
+  return await ensureLarkMessageSuccess(
+      'Lark file send failed',
+      await client.im.message.create({
+        params: {
+          receive_id_type: message.receiveIdType as LarkChannelMessage['receiveIdType']
+        },
+      data: {
+        receive_id: message.receiveId,
+        msg_type: 'file',
+        content: JSON.stringify({ file_key: uploadResult.file_key })
+      }
+    }) as LarkSendMessageResponse
+  )
 }
 
 const pushLarkFollowUps = async (
@@ -268,6 +312,9 @@ export const createChannelConnection = defineCreateChannelConnection(async (
   return {
     sendMessage: async (message) => {
       return sendLarkMessage(client, message, logger)
+    },
+    sendFileMessage: async (message) => {
+      return sendLarkFileMessage(client, message)
     },
     updateMessage: async (messageId, message) => {
       return updateLarkMessage(client, messageId, message, logger)

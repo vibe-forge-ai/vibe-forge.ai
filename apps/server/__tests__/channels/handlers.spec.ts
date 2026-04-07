@@ -240,9 +240,11 @@ describe('channel handlers', () => {
       toolCallSummary: expect.objectContaining({
         items: [expect.objectContaining({
           toolUseId: 'tool-1',
-          name: 'mcp__channel-lark-test__SendImage',
+          name: 'SendImage',
           status: 'pending',
-          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}'
+          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}',
+          detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=assistant-tool-use',
+          exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1&messageId=assistant-tool-use'
         })]
       })
     }))
@@ -327,12 +329,141 @@ describe('channel handlers', () => {
           }),
           expect.objectContaining({
             toolUseId: 'tool-2',
-            name: 'mcp__channel-lark-test__SendFile',
+            name: 'SendFile',
             status: 'success',
             argsText: '{"filePath":"README.md"}',
-            resultText: '{"messageId":"om_file"}'
+            resultText: '{"messageId":"om_file"}',
+            detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-2&messageId=tool-2-result',
+            exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-2&messageId=tool-2-result'
           })
         ]
+      })
+    }))
+  })
+
+  it('keeps updating the same tool summary card after a permission interaction', async () => {
+    const sendMessage = vi.fn()
+      .mockResolvedValueOnce({ messageId: 'om_tool_summary' })
+      .mockResolvedValueOnce({ messageId: 'om_permission' })
+    const updateMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    bindTestSession()
+    const states = makeRuntimeState({ sendMessage, updateMessage })
+
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_use',
+      id: 'tool-1',
+      name: 'mcp__channel-lark-test__GetCurrentChatMessages',
+      input: { chatId: '', limit: 6 }
+    }], 'tool-1-use'))
+
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_result',
+      tool_use_id: 'tool-1',
+      content: 'Claude requested permissions to use mcp__channel-lark-test__GetCurrentChatMessages.',
+      is_error: true
+    }], 'tool-1-result'))
+
+    await handleSessionEvent(states, 'sess-1', makeInteractionRequestEvent({
+      kind: 'permission',
+      question: '当前任务需要使用 channel-lark-test 才能继续，请选择处理方式。',
+      options: [
+        { label: '同意本次', value: 'allow_once' }
+      ]
+    }, 'interaction-permission'))
+
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_use',
+      id: 'tool-2',
+      name: 'mcp__channel-lark-test__GetCurrentChatMessages',
+      input: { chatId: '', limit: 6 }
+    }], 'tool-2-use'))
+
+    await handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_result',
+      tool_use_id: 'tool-2',
+      content: {
+        matchedCount: 6
+      }
+    }], 'tool-2-result'))
+
+    expect(sendMessage).toHaveBeenCalledTimes(2)
+    expect(sendMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      receiveId: 'chat_1',
+      receiveIdType: 'chat_id',
+      toolCallSummary: expect.any(Object)
+    }))
+    expect(sendMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      receiveId: 'chat_1',
+      receiveIdType: 'chat_id',
+      text: expect.stringContaining('[权限请求]')
+    }))
+    expect(updateMessage).toHaveBeenCalledTimes(3)
+    expect(updateMessage.mock.calls[2]?.[0]).toBe('om_tool_summary')
+    expect(updateMessage.mock.calls[2]?.[1]).toEqual(expect.objectContaining({
+      toolCallSummary: expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            toolUseId: 'tool-1',
+            status: 'error'
+          }),
+          expect.objectContaining({
+            toolUseId: 'tool-2',
+            status: 'success',
+            resultText: '{"matchedCount":6}'
+          })
+        ]
+      })
+    }))
+  })
+
+  it('serializes tool summary upserts so fast tool results patch the first card instead of sending a second one', async () => {
+    let resolveSendMessage: ((value: { messageId: string }) => void) | undefined
+    const sendMessage = vi.fn().mockImplementation(async () => {
+      return await new Promise<{ messageId: string }>((resolve) => {
+        resolveSendMessage = resolve
+      })
+    })
+    const updateMessage = vi.fn().mockResolvedValue({ messageId: 'om_tool_summary' })
+    bindTestSession()
+    const states = makeRuntimeState({ sendMessage, updateMessage })
+
+    const firstEvent = handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_use',
+      id: 'tool-1',
+      name: 'mcp__channel-lark-test__GetCurrentChatMessages',
+      input: { chatId: '', limit: 6 }
+    }], 'tool-1-use'))
+
+    await vi.waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledTimes(1)
+    })
+
+    const secondEvent = handleSessionEvent(states, 'sess-1', makeMessageEvent('assistant', [{
+      type: 'tool_result',
+      tool_use_id: 'tool-1',
+      content: {
+        matchedCount: 6
+      }
+    }], 'tool-1-result'))
+
+    expect(updateMessage).not.toHaveBeenCalled()
+    resolveSendMessage?.({ messageId: 'om_tool_summary' })
+
+    await expect(Promise.all([firstEvent, secondEvent])).resolves.toEqual([true, true])
+
+    expect(sendMessage).toHaveBeenCalledTimes(1)
+    expect(updateMessage).toHaveBeenCalledTimes(1)
+    expect(updateMessage).toHaveBeenCalledWith('om_tool_summary', expect.objectContaining({
+      toolCallSummary: expect.objectContaining({
+        items: [expect.objectContaining({
+          toolUseId: 'tool-1',
+          name: 'GetCurrentChatMessages',
+          status: 'success',
+          argsText: '{"chatId":"","limit":6}',
+          resultText: '{"matchedCount":6}',
+          detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=tool-1-result',
+          exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1&messageId=tool-1-result'
+        })]
       })
     }))
   })

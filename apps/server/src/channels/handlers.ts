@@ -15,6 +15,7 @@ import {
   clearPendingToolCallDisplay,
   consumePendingUnack,
   deleteBinding,
+  runPendingToolCallDisplayUpdate,
   resolveBinding,
   resolvePendingToolCallDisplay,
   setPendingToolCallDisplay
@@ -24,6 +25,7 @@ import {
   extractToolCallSummary,
   mergeToolCallSummaries
 } from './tool-call-summary'
+import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
 import type { ChannelRuntimeState } from './types'
 
 export const handleInboundEvent = async (
@@ -149,6 +151,26 @@ export const handleSessionEvent = async (
   const receiveId = binding.replyReceiveId ?? binding.channelId
   const receiveIdType = binding.replyReceiveIdType ?? 'chat_id'
   const serverLogger = getSessionLogger(sessionId, 'server')
+  const attachToolCallDetailUrl = (
+    summary: NonNullable<ReturnType<typeof extractToolCallSummary>>,
+    messageId?: string
+  ) => ({
+    ...summary,
+      items: summary.items.map(item => ({
+        ...item,
+        detailUrl: buildToolCallDetailUrl(state.config, {
+          sessionId,
+          toolUseId: item.toolUseId,
+          messageId
+        }),
+        exportJsonUrl: buildChannelActionUrl(state.config, {
+          action: 'tool-call-export',
+          sessionId,
+          toolUseId: item.toolUseId,
+          messageId
+        })
+      }))
+  })
   const deliverMessage = async (message: ChannelTextMessage) => {
     const unack = consumePendingUnack(sessionId)
     if (unack) {
@@ -157,35 +179,39 @@ export const handleSessionEvent = async (
 
     return await connection.sendMessage(message)
   }
-  const upsertToolCallSummary = async (summary: NonNullable<ReturnType<typeof extractToolCallSummary>>) => {
-    const message: ChannelTextMessage = {
-      receiveId,
-      receiveIdType,
-      text: buildToolCallSummaryText(summary),
-      toolCallSummary: summary
-    }
-    const pendingDisplay = resolvePendingToolCallDisplay(sessionId)
+  const upsertToolCallSummary = async (nextSummary: NonNullable<ReturnType<typeof extractToolCallSummary>>) => {
+    return await runPendingToolCallDisplayUpdate(sessionId, async () => {
+      const mergedSummary = mergeToolCallSummaries(
+        resolvePendingToolCallDisplay(sessionId)?.summary,
+        nextSummary
+      )
+      const message: ChannelTextMessage = {
+        receiveId,
+        receiveIdType,
+        text: buildToolCallSummaryText(mergedSummary),
+        toolCallSummary: mergedSummary
+      }
+      const pendingDisplay = resolvePendingToolCallDisplay(sessionId)
 
-    if (pendingDisplay?.messageId != null && typeof connection.updateMessage === 'function') {
-      const result = await connection.updateMessage(pendingDisplay.messageId, message)
+      if (pendingDisplay?.messageId != null && typeof connection.updateMessage === 'function') {
+        const result = await connection.updateMessage(pendingDisplay.messageId, message)
+        setPendingToolCallDisplay(sessionId, {
+          summary: mergedSummary,
+          messageId: result?.messageId ?? pendingDisplay.messageId
+        })
+        return true
+      }
+
+      const result = await deliverMessage(message)
       setPendingToolCallDisplay(sessionId, {
-        summary,
-        messageId: result?.messageId ?? pendingDisplay.messageId
+        summary: mergedSummary,
+        messageId: result?.messageId ?? pendingDisplay?.messageId
       })
       return true
-    }
-
-    const result = await deliverMessage(message)
-    setPendingToolCallDisplay(sessionId, {
-      summary,
-      messageId: result?.messageId ?? pendingDisplay?.messageId
     })
-    return true
   }
 
   if (event.type === 'interaction_request') {
-    clearPendingToolCallDisplay(sessionId)
-
     const language = state.config?.language ?? 'zh'
     const options = event.payload.options ?? []
     const hasDescriptions = options.some(option => (option.description?.trim() ?? '') !== '')
@@ -230,11 +256,7 @@ export const handleSessionEvent = async (
   if (event.type === 'message') {
     const toolCallSummary = extractToolCallSummary(event.message)
     if (toolCallSummary != null) {
-      const mergedSummary = mergeToolCallSummaries(
-        resolvePendingToolCallDisplay(sessionId)?.summary,
-        toolCallSummary
-      )
-      await upsertToolCallSummary(mergedSummary)
+      await upsertToolCallSummary(attachToolCallDetailUrl(toolCallSummary, event.message.id))
     }
 
     if (event.message.role !== 'assistant') {
@@ -251,6 +273,5 @@ export const handleSessionEvent = async (
     return true
   }
 
-  clearPendingToolCallDisplay(sessionId)
   return false
 }

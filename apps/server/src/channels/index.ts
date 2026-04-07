@@ -6,6 +6,7 @@ import { logger } from '#~/utils/logger.js'
 import { handleInboundEvent, handleSessionEvent } from './handlers'
 import { loadChannelModule } from './loader'
 import { resolveBinding } from './state'
+import { sendToolCallJsonFile } from './tool-call-file'
 import type { ChannelManager, ChannelRuntimeState } from './types'
 
 const collectChannelEntries = (
@@ -123,4 +124,24 @@ export const resolveChannelSessionMcpServers = async (sessionId: string) => {
   return Object.fromEntries(
     (servers ?? []).map(server => [server.name, server.config])
   ) satisfies Record<string, ChannelSessionMcpServer['config']>
+}
+
+export const sendChannelToolCallJsonFile = async (
+  sessionId: string,
+  toolUseId: string,
+  messageId?: string
+) => {
+  if (channelManager == null) {
+    return {
+      ok: false,
+      statusCode: 503,
+      message: 'channel manager 还没有初始化。'
+    }
+  }
+
+  return await sendToolCallJsonFile(channelManager.states, {
+    sessionId,
+    toolUseId,
+    messageId
+  })
 }
