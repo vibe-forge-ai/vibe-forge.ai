@@ -20,6 +20,7 @@
 - 全局表面样式例如 tooltip 字号、通用浮层排版、主题 token，优先改 `src/styles/global.scss` 或主题配置，不要只在局部组件里覆盖。
 - 如果只想改一个图标或一个状态，selector 要收紧；过宽的 `color` 覆盖很容易误伤其他图标，比如最高推理强度、权限菜单勾选、发送按钮、disabled 态。
 - 颜色回归先对照 `git diff` 或最近可用提交，不要凭印象重新猜一套 token。
+- `xterm.js` 这类终端视图要分开看外层 surface、`.xterm-viewport` 和 renderer canvas；外层已经切到浅色，不代表 viewport 默认黑底不会继续漏出来。
 
 ## 真实界面验证
 

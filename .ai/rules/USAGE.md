@@ -11,6 +11,7 @@ description: 仅在处理项目接入、安装、运行 Vibe Forge 服务、CLI 
 
 - [安装与准备](./usage/install.md)
 - [启动服务](./usage/runtime.md)
+- [Web UI 与 Terminal 视图](./usage/web.md)
 - [CLI 与示例](./usage/cli.md)
 - [插件与数据资产](./usage/plugins.md)
 
@@ -19,3 +20,4 @@ description: 仅在处理项目接入、安装、运行 Vibe Forge 服务、CLI 
 - 不需要 clone 本仓库，只需要安装相关包。
 - 配置与会话基于你的项目目录，而不是 Vibe Forge 仓库本身。
 - UI、CLI、MCP、hooks runtime 都可以按需单独接入。
+- Web UI 的会话页支持独立 `terminal` 视图，但它和 chat 消息流是两条不同的运行链路。
