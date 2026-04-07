@@ -76,6 +76,7 @@ export function MessageContextMenu({
     isDebugMode,
     isEditing,
     messageApi: message,
+    onCloseMenu: closeMenu,
     onConfirmableActionClick: handleConfirmableActionClick,
     onStartEditing,
     sessionId,

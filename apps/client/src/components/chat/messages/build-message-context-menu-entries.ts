@@ -15,6 +15,7 @@ export function buildMessageContextMenuEntries({
   isDebugMode,
   isEditing,
   messageApi,
+  onCloseMenu,
   onConfirmableActionClick,
   onStartEditing,
   sessionId,
@@ -32,6 +33,7 @@ export function buildMessageContextMenuEntries({
     error: (content: string) => void
     success: (content: string) => void
   }
+  onCloseMenu: () => void
   onConfirmableActionClick: (action: Exclude<PendingMessageMenuAction, null>) => void
   onStartEditing: () => void
   sessionId?: string
@@ -41,6 +43,7 @@ export function buildMessageContextMenuEntries({
   const entries: MessageContextMenuEntry[] = []
 
   const closeWithCopy = (text: string, successMessage: string) => {
+    onCloseMenu()
     void copyTextWithFeedback({
       text,
       messageApi,
@@ -65,7 +68,10 @@ export function buildMessageContextMenuEntries({
       key: 'edit',
       label: t('chat.messageActions.edit'),
       icon: 'edit',
-      onClick: onStartEditing
+      onClick: () => {
+        onCloseMenu()
+        onStartEditing()
+      }
     })
   }
 
