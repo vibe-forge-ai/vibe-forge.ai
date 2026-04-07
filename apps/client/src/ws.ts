@@ -4,16 +4,17 @@ import { getServerHostEnv, getServerPortEnv, getServerWsPath } from '#~/runtime-
 
 const SERVER_HOST = getServerHostEnv() || window.location.hostname
 const SERVER_PORT = getServerPortEnv() || '8787'
-const WS_URL = `ws://${SERVER_HOST}:${SERVER_PORT}${getServerWsPath()}`
+const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss' : 'ws'
+const WS_URL = `${WS_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}${getServerWsPath()}`
 
-export interface WSHandlers {
+export interface WSHandlers<TMessage = WSEvent> {
   onOpen?: () => void
-  onMessage?: (data: WSEvent) => void
+  onMessage?: (data: TMessage) => void
   onError?: (err: Event) => void
   onClose?: () => void
 }
 
-export function createSocket(handlers: WSHandlers, params?: Record<string, string>) {
+export function createSocket<TMessage = WSEvent>(handlers: WSHandlers<TMessage>, params?: Record<string, string>) {
   let url = WS_URL
   if (params) {
     const searchParams = new URLSearchParams(params)
@@ -24,7 +25,7 @@ export function createSocket(handlers: WSHandlers, params?: Record<string, strin
   ws.addEventListener('message', (ev) => {
     try {
       const data = JSON.parse(String(ev.data)) as unknown
-      handlers.onMessage?.(data as WSEvent)
+      handlers.onMessage?.(data as TMessage)
     } catch (e) {
       console.error(e)
     }

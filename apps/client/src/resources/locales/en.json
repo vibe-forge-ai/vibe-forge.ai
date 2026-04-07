@@ -386,6 +386,7 @@
     "viewInitInfo": "Double click to view initialization info",
     "viewHistory": "History",
     "viewTimeline": "Timeline",
+    "viewTerminal": "Terminal",
     "viewSettings": "Settings",
     "deleteSessionTitle": "Delete session",
     "deleteSessionDesc": "This will permanently remove the session and all messages. Proceed carefully.",
@@ -499,6 +500,10 @@
       "dangerouslyDisableSandbox": "sandbox disabled",
       "viewCommand": "View command",
       "unknown": "Unknown tool"
+    },
+    "terminal": {
+      "connectionError": "Terminal connection failed. Check the server and try again.",
+      "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}"
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",

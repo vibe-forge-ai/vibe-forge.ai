@@ -21,6 +21,14 @@
     flex-direction: column;
   }
 
+  &-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
   &-title {
     font-size: 16px;
     font-weight: 600;
@@ -33,6 +41,11 @@
     gap: 4px;
     font-size: 12px;
     color: var(--sub-text-color, #6b7280);
+
+    &--selectable {
+      cursor: pointer;
+      user-select: all;
+    }
   }
 
   &-session-id {
@@ -55,6 +68,10 @@
       border-color: var(--border-color-hover, #e5e7eb);
     }
   }
+}
+
+.chat-header-icon.material-symbols-rounded {
+  font-size: 18px;
 }
 
 .chat-header-actions {

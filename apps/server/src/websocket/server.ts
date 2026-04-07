@@ -19,6 +19,7 @@ import {
 } from '#~/services/session/runtime.js'
 import { safeJsonStringify } from '#~/utils/json.js'
 import { getSessionLogger } from '#~/utils/logger.js'
+import { handleTerminalSocketConnection } from './terminal'
 
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
@@ -27,6 +28,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
     const subscribeMode = params.get('subscribe')
+    const channel = params.get('channel')
 
     if (subscribeMode === 'sessions') {
       addSessionSubscriberSocket(ws)
@@ -37,6 +39,24 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     }
 
     const sessionId = params.get('sessionId') ?? uuidv4()
+
+    if (channel === 'terminal') {
+      const session = getDb().getSession(sessionId)
+      if (session == null) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(safeJsonStringify({
+            type: 'terminal_error',
+            message: 'Session not found.',
+            fatal: true
+          }))
+        }
+        return
+      }
+
+      handleTerminalSocketConnection(ws, sessionId, params)
+      return
+    }
+
     const model = params.get('model') ?? undefined
     const effort = params.get('effort') ?? undefined
     const systemPrompt = params.get('systemPrompt') ?? undefined

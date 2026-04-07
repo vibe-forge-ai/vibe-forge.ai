@@ -387,6 +387,7 @@
     "viewInitInfo": "双击查看初始化信息",
     "viewHistory": "历史",
     "viewTimeline": "时序",
+    "viewTerminal": "终端",
     "viewSettings": "配置",
     "deleteSessionTitle": "删除会话",
     "deleteSessionDesc": "删除会话会永久移除全部消息与上下文，请确认后再继续。",
@@ -500,6 +501,10 @@
       "dangerouslyDisableSandbox": "禁用沙箱",
       "viewCommand": "查看指令",
       "unknown": "未知工具"
+    },
+    "terminal": {
+      "connectionError": "终端连接失败，请检查服务状态后重试",
+      "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}"
     },
     "sessionSettings": "会话设置",
     "enterTitle": "输入会话标题...",
