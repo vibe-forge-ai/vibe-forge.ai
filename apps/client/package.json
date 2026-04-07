@@ -31,6 +31,8 @@
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "@vitejs/plugin-react": "^5.1.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "antd": "^5.20.0",
     "dayjs": "^1.11.19",
     "devicon": "^2.17.0",

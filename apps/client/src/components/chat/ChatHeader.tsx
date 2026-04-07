@@ -18,7 +18,7 @@ import {
   getSessionToolGroups
 } from './session-metadata'
 
-export type ChatHeaderView = 'history' | 'timeline' | 'settings'
+export type ChatHeaderView = 'history' | 'timeline' | 'terminal' | 'settings'
 
 export function ChatHeader({
   sessionInfo,
@@ -84,7 +84,7 @@ export function ChatHeader({
     {
       key: 'star',
       label: isStarred ? t('common.unstar') : t('common.star'),
-      icon: <span className={`material-symbols-rounded ${isStarred ? 'is-filled' : ''}`} style={{ fontSize: '18px' }}>
+      icon: <span className={`material-symbols-rounded chat-header-icon ${isStarred ? 'is-filled' : ''}`}>
         {isStarred ? 'star' : 'star_border'}
       </span>,
       onClick: () => {
@@ -94,7 +94,7 @@ export function ChatHeader({
     {
       key: 'archive',
       label: isArchived ? t('common.restore') : t('common.archive'),
-      icon: <span className='material-symbols-rounded' style={{ fontSize: '18px' }}>
+      icon: <span className='material-symbols-rounded chat-header-icon'>
         {isArchived ? 'unarchive' : 'archive'}
       </span>,
       onClick: () => {
@@ -105,28 +105,12 @@ export function ChatHeader({
 
   return (
     <div className={`chat-header ${isSidebarCollapsed ? 'is-collapsed' : ''} ${isResizing ? 'is-resizing' : ''}`}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+      <div className='chat-header-main'>
         <div className='chat-header-info'>
           <div className='chat-header-title'>
             {displayTitle}
           </div>
-          <div
-            className='chat-header-subtitle'
-            onDoubleClick={() => {
-              // eslint-disable-next-line no-console
-              console.log('Session Full Info:', {
-                sessionId,
-                sessionTitle,
-                isStarred,
-                isArchived,
-                tags,
-                lastMessage,
-                lastUserMessage,
-                sessionInfo
-              })
-            }}
-            style={{ cursor: 'pointer', userSelect: 'all' }}
-          >
+          <div className='chat-header-subtitle chat-header-subtitle--selectable'>
             {sessionId ?? t('chat.selectModel')}
           </div>
         </div>
@@ -158,6 +142,14 @@ export function ChatHeader({
                 </span>
               ),
               value: 'timeline'
+            },
+            {
+              label: (
+                <span className='chat-header-view-option material-symbols-rounded'>
+                  terminal
+                </span>
+              ),
+              value: 'terminal'
             },
             {
               label: (

@@ -51,7 +51,8 @@
       "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest"
     },
     "onlyBuiltDependencies": [
-      "@parcel/watcher"
+      "@parcel/watcher",
+      "node-pty"
     ]
   }
 }

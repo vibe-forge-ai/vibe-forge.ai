@@ -4,7 +4,7 @@ import type { ChatHeaderView } from '#~/components/chat/ChatHeader.js'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 
 const normalizeView = (value: string): ChatHeaderView => {
-  if (value === 'timeline' || value === 'settings' || value === 'history') {
+  if (value === 'timeline' || value === 'settings' || value === 'history' || value === 'terminal') {
     return value
   }
   return 'history'

@@ -14,6 +14,7 @@ import {
   setSessionInteraction
 } from '#~/services/session/interaction.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
+import { disposeTerminalSession } from '#~/services/terminal/index.js'
 import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
 export function sessionsRouter(): Router {
@@ -324,6 +325,7 @@ export function sessionsRouter(): Router {
     if (removed) {
       // 显式销毁会话进程
       killSession(id)
+      disposeTerminalSession(id)
       notifySessionUpdated(id, { id, isDeleted: true })
     }
     ctx.body = { ok: true, removed }

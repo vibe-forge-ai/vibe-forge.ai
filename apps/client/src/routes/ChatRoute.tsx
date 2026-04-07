@@ -12,6 +12,7 @@ import { ChatHeader } from '#~/components/chat/ChatHeader.js'
 import { ChatHistoryView } from '#~/components/chat/ChatHistoryView.js'
 import { ChatSettingsView } from '#~/components/chat/ChatSettingsView.js'
 import { ChatTimelineView } from '#~/components/chat/ChatTimelineView.js'
+import { ChatTerminalView } from '#~/components/chat/terminal/ChatTerminalView.js'
 import { useChatSession } from '#~/hooks/chat/use-chat-session'
 
 export function ChatRoute() {
@@ -79,6 +80,7 @@ function ChatRouteView({
     modelUnavailable
   } = useChatSession({ session })
   const isEmptyNewSession = !session?.id && messages.length === 0
+  const resolvedActiveView = session?.id != null ? activeView : 'history'
 
   return (
     <div className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''}`}>
@@ -92,12 +94,12 @@ function ChatRouteView({
           tags={session.tags}
           lastMessage={session.lastMessage}
           lastUserMessage={session.lastUserMessage}
-          activeView={activeView}
+          activeView={resolvedActiveView}
           onViewChange={setActiveView}
         />
       )}
 
-      {activeView === 'history' && (
+      {resolvedActiveView === 'history' && (
         <ChatHistoryView
           isReady={isReady}
           messages={messages}
@@ -133,11 +135,15 @@ function ChatRouteView({
         />
       )}
 
-      {activeView === 'timeline' && (
+      {resolvedActiveView === 'timeline' && (
         <ChatTimelineView messages={messages} />
       )}
 
-      {activeView === 'settings' && session?.id && (
+      {resolvedActiveView === 'terminal' && session?.id && (
+        <ChatTerminalView sessionId={session.id} />
+      )}
+
+      {resolvedActiveView === 'settings' && session?.id && (
         <ChatSettingsView
           session={session}
           sessionInfo={sessionInfo}
