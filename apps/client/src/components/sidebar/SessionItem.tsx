@@ -4,7 +4,7 @@ import type { Session, SessionStatus } from '@vibe-forge/core'
 import { Button, List, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { getAdapterDisplay } from '#~/resources/adapters.js'
@@ -20,10 +20,13 @@ interface SessionItemProps {
   isSelected: boolean
   onSelect: (session: Session) => void
   onArchive: (id: string) => void | Promise<void>
+  onDelete: (id: string) => void | Promise<void>
   onRename: (id: string, title: string) => Promise<void>
   onStar: (id: string, isStarred: boolean) => void | Promise<void>
   onToggleSelect: (id: string) => void
 }
+
+type PendingSessionAction = 'archive' | null
 
 export function SessionItem({
   session,
@@ -32,12 +35,38 @@ export function SessionItem({
   isSelected,
   onSelect,
   onArchive,
+  onDelete,
   onRename,
   onStar,
   onToggleSelect
 }: SessionItemProps) {
   const { t, i18n } = useTranslation()
   const automationPrefix = 'automation:'
+  const itemContentRef = useRef<HTMLDivElement | null>(null)
+  const [pendingAction, setPendingAction] = useState<PendingSessionAction>(null)
+
+  useEffect(() => {
+    if (pendingAction == null) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const nextTarget = event.target
+      if (!(nextTarget instanceof Node)) {
+        setPendingAction(null)
+        return
+      }
+
+      if (!itemContentRef.current?.contains(nextTarget)) {
+        setPendingAction(null)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true)
+    }
+  }, [pendingAction])
 
   const timeDisplay = useMemo(() => {
     const d = dayjs(session.createdAt)
@@ -51,6 +80,9 @@ export function SessionItem({
       full: d.format('YYYY-MM-DD HH:mm:ss')
     }
   }, [session.createdAt, i18n.language])
+
+  const archiveActionLabel = session.isArchived ? t('common.restore') : t('common.archive')
+  const archiveConfirmLabel = t('common.confirmAction', { action: archiveActionLabel })
 
   const displayTitle = (session.title != null && session.title !== '')
     ? session.title
@@ -133,15 +165,27 @@ export function SessionItem({
     )
   }
 
+  const handleConfirmableActionClick = (action: Exclude<PendingSessionAction, null>) => {
+    if (pendingAction === action) {
+      setPendingAction(null)
+      void onArchive(session.id)
+      return
+    }
+
+    setPendingAction(action)
+  }
+
   return (
     <SessionContextMenu
       session={session}
       onArchive={onArchive}
+      onDelete={onDelete}
       onRename={onRename}
       onStar={onStar}
     >
       <List.Item
         onClick={() => isBatchMode ? onToggleSelect(session.id) : onSelect(session)}
+        onMouseLeave={() => setPendingAction(null)}
         onDoubleClick={() => {
           // eslint-disable-next-line no-console
           console.log('Session Details:', session)
@@ -150,7 +194,7 @@ export function SessionItem({
           session.isStarred ? 'starred' : ''
         }`}
       >
-        <div className='session-item-content'>
+        <div ref={itemContentRef} className='session-item-content'>
           <div className={`session-leading ${adapterDisplay?.icon != null ? 'has-adapter' : ''}`}>
             {adapterDisplay?.icon != null && (
               <img
@@ -187,6 +231,7 @@ export function SessionItem({
                           className={`action-btn star-btn ${session.isStarred ? 'starred' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation()
+                            setPendingAction(null)
                             void onStar(session.id, !session.isStarred)
                           }}
                           icon={
@@ -198,17 +243,25 @@ export function SessionItem({
                           }
                         />
                       </Tooltip>
-                      <Tooltip title={t('common.archive')}>
+                      <Tooltip
+                        title={pendingAction === 'archive' ? archiveConfirmLabel : archiveActionLabel}
+                      >
                         <Button
                           type='text'
                           size='small'
-                          className='action-btn archive-btn'
+                          className={`action-btn archive-btn ${pendingAction === 'archive' ? 'is-confirming' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            void onArchive(session.id)
+                            handleConfirmableActionClick('archive')
                           }}
-                          icon={<span className='material-symbols-rounded'>archive</span>}
-                        />
+                        >
+                          <span className='material-symbols-rounded'>
+                            {session.isArchived ? 'unarchive' : 'archive'}
+                          </span>
+                          {pendingAction === 'archive' && (
+                            <span className='action-btn__label'>{archiveConfirmLabel}</span>
+                          )}
+                        </Button>
                       </Tooltip>
                     </div>
                   </>

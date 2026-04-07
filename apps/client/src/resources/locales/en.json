@@ -25,6 +25,7 @@
     "batchRestoreFailed": "Failed to restore some sessions",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "confirmAction": "Confirm {{action}}",
     "startNewChat": "No active sessions found. Start a new chat!",
     "backToHome": "Back to Home",
     "noData": "No data",

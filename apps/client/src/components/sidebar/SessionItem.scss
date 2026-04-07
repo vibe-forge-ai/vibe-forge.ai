@@ -162,20 +162,22 @@
         }
 
         .session-header-side {
-          position: relative;
           display: flex;
           align-items: center;
           justify-content: flex-end;
           flex-shrink: 0;
-          min-width: 52px;
+          gap: 6px;
+          min-width: 0;
           min-height: 18px;
+          overflow: hidden;
 
           .time-display {
             font-size: 10px;
             line-height: 1;
             color: var(--sub-text-color);
             white-space: nowrap;
-            transition: opacity .2s ease;
+            max-width: 64px;
+            transition: opacity .2s ease, max-width .2s ease;
           }
         }
       }
@@ -233,13 +235,17 @@
   }
 
   .session-item-actions {
-    display: flex;
-    gap: 2px;
+    display: inline-flex;
+    gap: 4px;
     opacity: 0;
-    transition: opacity .2s ease;
+    max-width: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition:
+      opacity .2s ease,
+      max-width .24s ease,
+      visibility 0s linear .24s;
     pointer-events: none;
-    position: absolute;
-    inset: 0;
     justify-content: flex-end;
 
     .action-btn {
@@ -247,12 +253,29 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 4px;
       width: 18px;
+      min-width: 18px;
       height: 18px;
       padding: 0;
+      border-radius: 6px;
+      transition:
+        width .18s ease,
+        min-width .18s ease,
+        padding .18s ease,
+        background-color .18s ease,
+        color .18s ease,
+        margin-left .18s ease;
 
       &:hover {
         background-color: transparent;
+      }
+
+      &.is-confirming {
+        width: auto;
+        min-width: 18px;
+        padding: 0 6px;
+        margin-left: 2px;
       }
 
       &.star-btn {
@@ -285,6 +308,27 @@
       .material-symbols-rounded {
         font-size: 16px;
       }
+    }
+
+    .action-btn__label {
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+  }
+
+  &:hover {
+    .session-header-side {
+      .time-display {
+        max-width: 0;
+      }
+    }
+
+    .session-item-actions {
+      max-width: 160px;
+      visibility: visible;
+      transition-delay: 0s;
     }
   }
 }

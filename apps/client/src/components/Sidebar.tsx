@@ -341,6 +341,7 @@ export function Sidebar({
           searchQuery={searchQuery}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
+          onDeleteSession={handleDeleteSession}
           onRenameSession={handleRenameSession}
           onStarSession={handleStarSession}
           onToggleSelect={handleToggleSelect}

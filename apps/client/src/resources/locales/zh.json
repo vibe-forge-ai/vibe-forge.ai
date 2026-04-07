@@ -25,6 +25,7 @@
     "batchRestoreFailed": "部分会话还原失败",
     "cancel": "取消",
     "confirm": "确定",
+    "confirmAction": "确认{{action}}",
     "startNewChat": "暂时没有未归档的历史会话，聊点什么吧",
     "backToHome": "返回首页",
     "noData": "暂无数据",

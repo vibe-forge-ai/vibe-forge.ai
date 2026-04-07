@@ -1,13 +1,14 @@
+import './MessageContextMenu.scss'
+
 import { App, Dropdown } from 'antd'
-import type { MenuProps } from 'antd'
 import type { ReactElement } from 'react'
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ChatMessage } from '@vibe-forge/core'
 
-import { buildSessionUrl } from '#~/utils/chat-links.js'
-import { copyTextWithFeedback } from '#~/utils/copy.js'
+import { MessageContextMenuContent } from './MessageContextMenuContent'
+import { buildMessageContextMenuEntries } from './build-message-context-menu-entries'
 
 interface MessageContextMenuProps {
   anchorId: string
@@ -24,6 +25,8 @@ interface MessageContextMenuProps {
   onRecall: () => void
   onStartEditing: () => void
 }
+
+type PendingMessageMenuAction = 'fork' | 'recall' | null
 
 export function MessageContextMenu({
   anchorId,
@@ -42,125 +45,29 @@ export function MessageContextMenu({
 }: MessageContextMenuProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const [open, setOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<PendingMessageMenuAction>(null)
 
-  const items = useMemo<MenuProps['items']>(() => {
-    const nextItems: NonNullable<MenuProps['items']> = []
+  const closeMenu = () => {
+    setOpen(false)
+    setPendingAction(null)
+  }
 
-    if (copyableText != null) {
-      nextItems.push({
-        key: 'copy',
-        label: t('chat.messageActions.copy'),
-        icon: <span className='material-symbols-rounded'>content_copy</span>,
-        onClick: () => {
-          void copyTextWithFeedback({
-            text: copyableText,
-            messageApi: message,
-            successMessage: t('chat.messageActions.copySuccess'),
-            failureMessage: t('chat.messageActions.copyFailed')
-          })
-        }
-      })
-    }
-
-    if (canEdit && !isEditing) {
-      nextItems.push({
-        key: 'edit',
-        label: t('chat.messageActions.edit'),
-        icon: <span className='material-symbols-rounded'>edit</span>,
-        onClick: onStartEditing
-      })
-    }
-
-    if (canRecall) {
-      nextItems.push({
-        key: 'recall',
-        label: t('chat.messageActions.recall'),
-        icon: <span className='material-symbols-rounded'>undo</span>,
-        onClick: () => {
-          onRecall()
-        }
-      })
-    }
-
-    if (canFork) {
-      nextItems.push({
-        key: 'fork',
-        label: t('chat.messageActions.fork'),
-        icon: <span className='material-symbols-rounded'>fork_right</span>,
-        onClick: () => {
-          onFork()
-        }
-      })
-    }
-
-    if (nextItems.length > 0) {
-      nextItems.push({ type: 'divider' })
-    }
-
-    if (sessionId != null && sessionId !== '') {
-      nextItems.push({
-        key: 'copy-link',
-        label: t('chat.messageActions.copyLink'),
-        icon: <span className='material-symbols-rounded'>link</span>,
-        onClick: () => {
-          void copyTextWithFeedback({
-            text: buildSessionUrl(sessionId, { anchorId }),
-            messageApi: message,
-            successMessage: t('chat.messageActions.copyLinkSuccess'),
-            failureMessage: t('chat.messageActions.copyFailed')
-          })
-        }
-      })
-    }
-
-    nextItems.push({
-      key: 'copy-id',
-      label: t('chat.messageActions.copyId'),
-      icon: <span className='material-symbols-rounded'>fingerprint</span>,
-      onClick: () => {
-        void copyTextWithFeedback({
-          text: sourceMessage.id,
-          messageApi: message,
-          successMessage: t('chat.messageActions.copyIdSuccess'),
-          failureMessage: t('chat.messageActions.copyFailed')
-        })
+  const handleConfirmableActionClick = (action: Exclude<PendingMessageMenuAction, null>) => {
+    if (pendingAction === action) {
+      closeMenu()
+      if (action === 'recall') {
+        void onRecall()
+        return
       }
-    })
-
-    if (isDebugMode) {
-      nextItems.push(
-        { type: 'divider' },
-        {
-          key: 'copy-json',
-          label: t('chat.messageActions.copyJson'),
-          icon: <span className='material-symbols-rounded'>data_object</span>,
-          onClick: () => {
-            void copyTextWithFeedback({
-              text: JSON.stringify(sourceMessage, null, 2),
-              messageApi: message,
-              successMessage: t('chat.messageActions.copyJsonSuccess'),
-              failureMessage: t('chat.messageActions.copyFailed')
-            })
-          }
-        },
-        {
-          key: 'copy-timestamp',
-          label: t('chat.messageActions.copyTimestamp'),
-          icon: <span className='material-symbols-rounded'>schedule</span>,
-          onClick: () => {
-            void copyTextWithFeedback({
-              text: String(sourceMessage.createdAt),
-              messageApi: message,
-              successMessage: t('chat.messageActions.copyTimestampSuccess'),
-              failureMessage: t('chat.messageActions.copyFailed')
-            })
-          }
-        }
-      )
+      void onFork()
+      return
     }
 
-    return nextItems
-  }, [
+    setPendingAction(action)
+  }
+
+  const entries = buildMessageContextMenuEntries({
     anchorId,
     canEdit,
     canFork,
@@ -168,17 +75,32 @@ export function MessageContextMenu({
     copyableText,
     isDebugMode,
     isEditing,
-    message,
-    onFork,
-    onRecall,
+    messageApi: message,
+    onConfirmableActionClick: handleConfirmableActionClick,
     onStartEditing,
     sessionId,
     sourceMessage,
     t
-  ])
+  })
 
   return (
-    <Dropdown menu={{ items }} trigger={['contextMenu']}>
+    <Dropdown
+      trigger={['contextMenu']}
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen) {
+          setPendingAction(null)
+        }
+      }}
+      dropdownRender={() => (
+        <MessageContextMenuContent
+          entries={entries}
+          pendingAction={pendingAction}
+          onCancelConfirm={() => setPendingAction(null)}
+        />
+      )}
+    >
       {children}
     </Dropdown>
   )
