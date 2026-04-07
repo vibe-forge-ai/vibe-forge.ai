@@ -62,6 +62,14 @@ export const sendTerminalEvent = (socket: WebSocket, event: TerminalSessionEvent
   socket.send(safeJsonStringify(event))
 }
 
+export const closeTerminalSocket = (socket: WebSocket, code = 1000, reason?: string) => {
+  if (socket.readyState === WebSocketImpl.CLOSING || socket.readyState === WebSocketImpl.CLOSED) {
+    return
+  }
+
+  socket.close(code, reason)
+}
+
 export const broadcastTerminalEvent = (runtime: TerminalRuntime, event: TerminalSessionEvent) => {
   const payload = safeJsonStringify(event)
   for (const socket of runtime.sockets) {

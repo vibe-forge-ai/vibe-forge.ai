@@ -32,6 +32,37 @@ const isTerminalSessionCommand = (value: unknown): value is TerminalSessionComma
     candidate.type === 'terminal_terminate'
 }
 
+export function sendTerminalFatalError(
+  ws: WebSocket,
+  message: string,
+  closeCode = 1011
+) {
+  if (ws.readyState !== WebSocketImpl.OPEN) {
+    if (ws.readyState === WebSocketImpl.CONNECTING) {
+      ws.close(closeCode, message)
+    }
+    return
+  }
+
+  ws.send(
+    JSON.stringify({
+      type: 'terminal_error',
+      message,
+      fatal: true
+    }),
+    (error) => {
+      if (error != null) {
+        ws.terminate()
+        return
+      }
+
+      if (ws.readyState === WebSocketImpl.OPEN) {
+        ws.close(closeCode, message)
+      }
+    }
+  )
+}
+
 export function handleTerminalSocketConnection(
   ws: WebSocket,
   sessionId: string,
@@ -48,13 +79,7 @@ export function handleTerminalSocketConnection(
       { err: error, sessionId, cols, rows },
       '[terminal] Failed to establish terminal websocket session'
     )
-    if (ws.readyState === WebSocketImpl.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'terminal_error',
-        message: error instanceof Error ? error.message : String(error),
-        fatal: true
-      }))
-    }
+    sendTerminalFatalError(ws, error instanceof Error ? error.message : String(error))
     return
   }
 

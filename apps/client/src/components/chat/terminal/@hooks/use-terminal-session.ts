@@ -29,8 +29,11 @@ export function useTerminalSession({
   const { t } = useTranslation()
   const socketRef = useRef<WebSocket | null>(null)
   const expectedCloseRef = useRef(false)
+  const fatalErrorRef = useRef(false)
   const reconnectTimerRef = useRef<number | null>(null)
   const restartRequestedRef = useRef(false)
+  const latestSizeRef = useRef({ cols: initialCols, rows: initialRows })
+  const pendingResizeRef = useRef<{ cols: number; rows: number } | null>(null)
   const onReadyRef = useRef(onReady)
   const onOutputRef = useRef(onOutput)
   const onExitRef = useRef(onExit)
@@ -41,6 +44,7 @@ export function useTerminalSession({
   onReadyRef.current = onReady
   onOutputRef.current = onOutput
   onExitRef.current = onExit
+  latestSizeRef.current = { cols: initialCols, rows: initialRows }
 
   const sendCommand = useCallback((command: TerminalSessionCommand) => {
     const socket = socketRef.current
@@ -70,7 +74,7 @@ export function useTerminalSession({
     })
   }, [sendCommand])
 
-  const resizeTerminal = useCallback((cols: number, rows: number) => {
+  const sendResizeCommand = useCallback((cols: number, rows: number) => {
     return sendCommand({
       type: 'terminal_resize',
       cols,
@@ -78,17 +82,42 @@ export function useTerminalSession({
     })
   }, [sendCommand])
 
+  const flushPendingResize = useCallback(() => {
+    const pendingResize = pendingResizeRef.current
+    if (pendingResize == null) {
+      return false
+    }
+
+    const sent = sendResizeCommand(pendingResize.cols, pendingResize.rows)
+    if (sent) {
+      pendingResizeRef.current = null
+    }
+    return sent
+  }, [sendResizeCommand])
+
+  const resizeTerminal = useCallback((cols: number, rows: number) => {
+    latestSizeRef.current = { cols, rows }
+    pendingResizeRef.current = { cols, rows }
+    return flushPendingResize()
+  }, [flushPendingResize])
+
   useEffect(() => {
     if (!active) {
       return
     }
 
     expectedCloseRef.current = false
+    fatalErrorRef.current = false
     restartRequestedRef.current = false
     setErrorMessage(null)
+    pendingResizeRef.current = latestSizeRef.current
+
+    const connectSize = latestSizeRef.current
 
     const socket = createSocket<TerminalSessionEvent>({
-      onOpen: () => undefined,
+      onOpen: () => {
+        flushPendingResize()
+      },
       onMessage: (event) => {
         switch (event.type) {
           case 'terminal_ready':
@@ -96,11 +125,12 @@ export function useTerminalSession({
             if (event.info.status === 'exited') {
               if (!restartRequestedRef.current) {
                 restartRequestedRef.current = true
+                const restartSize = latestSizeRef.current
                 socket.send(JSON.stringify(
                   {
                     type: 'terminal_restart',
-                    cols: initialCols,
-                    rows: initialRows
+                    cols: restartSize.cols,
+                    rows: restartSize.rows
                   } satisfies TerminalSessionCommand
                 ))
               }
@@ -122,6 +152,7 @@ export function useTerminalSession({
             onExitRef.current?.(event)
             return
           case 'terminal_error':
+            fatalErrorRef.current = event.fatal === true
             setErrorMessage(event.message)
         }
       },
@@ -129,7 +160,8 @@ export function useTerminalSession({
         setErrorMessage(t('chat.terminal.connectionError'))
       },
       onClose: () => {
-        if (expectedCloseRef.current) {
+        socketRef.current = null
+        if (expectedCloseRef.current || fatalErrorRef.current) {
           return
         }
 
@@ -138,8 +170,8 @@ export function useTerminalSession({
     }, {
       channel: 'terminal',
       sessionId,
-      cols: String(initialCols),
-      rows: String(initialRows)
+      cols: String(connectSize.cols),
+      rows: String(connectSize.rows)
     })
 
     socketRef.current = socket
@@ -153,7 +185,7 @@ export function useTerminalSession({
       socket.close()
       socketRef.current = null
     }
-  }, [active, initialCols, initialRows, connectVersion, scheduleReconnect, sessionId, t])
+  }, [active, connectVersion, flushPendingResize, scheduleReconnect, sessionId, t])
 
   return {
     errorMessage,

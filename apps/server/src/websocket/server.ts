@@ -19,7 +19,7 @@ import {
 } from '#~/services/session/runtime.js'
 import { safeJsonStringify } from '#~/utils/json.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-import { handleTerminalSocketConnection } from './terminal'
+import { handleTerminalSocketConnection, sendTerminalFatalError } from './terminal'
 
 export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
@@ -43,13 +43,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     if (channel === 'terminal') {
       const session = getDb().getSession(sessionId)
       if (session == null) {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(safeJsonStringify({
-            type: 'terminal_error',
-            message: 'Session not found.',
-            fatal: true
-          }))
-        }
+        sendTerminalFatalError(ws, 'Session not found.', 1008)
         return
       }
 

@@ -3,7 +3,7 @@ import type { TerminalSessionCommand } from '@vibe-forge/types'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { resizeTerminalSession, restartTerminalSession } from './runtime'
-import { clearIdleTimer, sendTerminalEvent, terminalRuntimeStore } from './store'
+import { clearIdleTimer, closeTerminalSocket, sendTerminalEvent, terminalRuntimeStore } from './store'
 
 export function terminateTerminalSession(sessionId: string) {
   const runtime = terminalRuntimeStore.get(sessionId)
@@ -22,8 +22,21 @@ export function disposeTerminalSession(sessionId: string) {
   }
 
   clearIdleTimer(runtime)
-  runtime.driver?.kill()
+  const sockets = [...runtime.sockets]
+  for (const socket of sockets) {
+    sendTerminalEvent(socket, {
+      type: 'terminal_error',
+      message: 'Terminal session was closed.',
+      fatal: true
+    })
+  }
+
+  runtime.sockets.clear()
   terminalRuntimeStore.delete(sessionId)
+  runtime.driver?.kill()
+  for (const socket of sockets) {
+    closeTerminalSocket(socket, 1000, 'Terminal session was closed.')
+  }
 }
 
 export function handleTerminalCommand(sessionId: string, command: TerminalSessionCommand) {
