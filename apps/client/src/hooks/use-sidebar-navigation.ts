@@ -16,14 +16,19 @@ export function useSidebarNavigation() {
   const activeSessionId = sessionMatch?.params.sessionId
   const showSidebar = location.pathname === '/' || activeSessionId != null
 
+  const getNavigationTarget = useCallback((pathname: string) => ({
+    pathname,
+    search: location.search
+  }), [location.search])
+
   const handleSelectSession = useCallback((session: Session, _isNew?: boolean) => {
-    void navigate(session.id === '' ? '/' : `/session/${session.id}`)
-  }, [navigate])
+    void navigate(getNavigationTarget(session.id === '' ? '/' : `/session/${session.id}`))
+  }, [getNavigationTarget, navigate])
 
   const handleDeletedSession = useCallback((deletedId: string, nextId?: string) => {
     if (activeSessionId !== deletedId) return
-    void navigate(nextId ? `/session/${nextId}` : '/')
-  }, [activeSessionId, navigate])
+    void navigate(getNavigationTarget(nextId ? `/session/${nextId}` : '/'))
+  }, [activeSessionId, getNavigationTarget, navigate])
 
   return {
     activeSessionId,

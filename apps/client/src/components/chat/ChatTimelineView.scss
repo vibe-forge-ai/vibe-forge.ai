@@ -1,8 +1,9 @@
 .chat-timeline-view {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 24px;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 12px 12px;
   overflow: auto;
 }
 

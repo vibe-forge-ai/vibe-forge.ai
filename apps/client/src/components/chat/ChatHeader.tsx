@@ -1,13 +1,15 @@
 import './ChatHeader.scss'
 
+import type { Session } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
-import { App, Button, Dropdown, Radio } from 'antd'
+import { App, Button, Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import { useAtomValue } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { deleteSession, getApiErrorMessage, updateSession } from '../../api'
+import { useQueryParams } from '../../hooks/useQueryParams'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
@@ -18,7 +20,24 @@ import {
   getSessionToolGroups
 } from './session-metadata'
 
-export type ChatHeaderView = 'history' | 'timeline' | 'terminal' | 'settings'
+export type ChatHeaderView = 'history' | 'timeline' | 'settings'
+
+interface SessionDebugItem {
+  icon: string
+  key: string
+  label: string
+  value: string
+}
+
+const DEBUG_MONO_KEYS = new Set([
+  'sessionId',
+  'uuid',
+  'leafUuid',
+  'adapter',
+  'model',
+  'version',
+  'cwd'
+])
 
 export function ChatHeader({
   sessionInfo,
@@ -30,7 +49,9 @@ export function ChatHeader({
   lastMessage,
   lastUserMessage,
   activeView,
-  onViewChange
+  isTerminalOpen,
+  onViewChange,
+  onToggleTerminal
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
@@ -41,12 +62,25 @@ export function ChatHeader({
   lastMessage?: string
   lastUserMessage?: string
   activeView: ChatHeaderView
+  isTerminalOpen: boolean
   onViewChange: (view: ChatHeaderView) => void
+  onToggleTerminal: () => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const isSidebarCollapsed = useAtomValue(isSidebarCollapsedAtom)
   const isResizing = useAtomValue(isSidebarResizingAtom)
+  const { searchParams, update: updateQuery } = useQueryParams<{ debug: string }>({
+    keys: ['debug'],
+    omit: {
+      debug: value => value === ''
+    }
+  })
+  const titleClickCountRef = useRef(0)
+  const titleClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasDebugQuery = searchParams.has('debug')
+  const isDebugMode = searchParams.get('debug') === 'true'
+  const shouldShowDebugButton = hasDebugQuery
 
   const summary = sessionInfo?.type === 'summary' ? sessionInfo.summary : null
   const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) ?? sessionTitle
@@ -59,6 +93,15 @@ export function ChatHeader({
     : (lastMessage != null && lastMessage !== '')
     ? lastMessage
     : t('common.newChat')
+  const toggleDebugMode = () => {
+    updateQuery({ debug: isDebugMode ? 'false' : 'true' })
+  }
+
+  const viewItems = [
+    { value: 'history' as const, icon: 'forum', title: t('chat.viewHistory') },
+    { value: 'timeline' as const, icon: 'timeline', title: t('chat.viewTimeline') },
+    { value: 'settings' as const, icon: 'tune', title: t('chat.viewSettings') }
+  ]
 
   const handleToggleStar = async () => {
     if (sessionId == null || sessionId === '') return
@@ -103,91 +146,125 @@ export function ChatHeader({
     }
   ]
 
+  useEffect(() => {
+    return () => {
+      if (titleClickTimerRef.current != null) {
+        clearTimeout(titleClickTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleTitleClick = () => {
+    if (titleClickTimerRef.current != null) {
+      clearTimeout(titleClickTimerRef.current)
+    }
+
+    titleClickCountRef.current += 1
+
+    if (titleClickCountRef.current >= 5) {
+      titleClickCountRef.current = 0
+      titleClickTimerRef.current = null
+      toggleDebugMode()
+      // eslint-disable-next-line no-console
+      console.log('Session Full Info:', {
+        sessionId,
+        sessionTitle,
+        isStarred,
+        isArchived,
+        tags,
+        lastMessage,
+        lastUserMessage,
+        sessionInfo
+      })
+      return
+    }
+
+    titleClickTimerRef.current = setTimeout(() => {
+      titleClickCountRef.current = 0
+      titleClickTimerRef.current = null
+    }, 500)
+  }
+
   return (
     <div className={`chat-header ${isSidebarCollapsed ? 'is-collapsed' : ''} ${isResizing ? 'is-resizing' : ''}`}>
       <div className='chat-header-main'>
         <div className='chat-header-info'>
-          <div className='chat-header-title'>
+          <div
+            className='chat-header-title'
+            onClick={handleTitleClick}
+          >
             {displayTitle}
-          </div>
-          <div className='chat-header-subtitle chat-header-subtitle--selectable'>
-            {sessionId ?? t('chat.selectModel')}
           </div>
         </div>
       </div>
 
       <div className='chat-header-actions'>
-        <Radio.Group
-          className='chat-header-view-group'
-          value={activeView}
-          optionType='button'
-          buttonStyle='solid'
-          size='small'
-          onChange={(event) => {
-            onViewChange(event.target.value as ChatHeaderView)
-          }}
-          options={[
-            {
-              label: (
-                <span className='chat-header-view-option material-symbols-rounded'>
-                  forum
-                </span>
-              ),
-              value: 'history'
-            },
-            {
-              label: (
-                <span className='chat-header-view-option material-symbols-rounded'>
-                  timeline
-                </span>
-              ),
-              value: 'timeline'
-            },
-            {
-              label: (
-                <span className='chat-header-view-option material-symbols-rounded'>
-                  terminal
-                </span>
-              ),
-              value: 'terminal'
-            },
-            {
-              label: (
-                <span className='chat-header-view-option material-symbols-rounded'>
-                  tune
-                </span>
-              ),
-              value: 'settings'
-            }
-          ]}
-        />
-        <div className='chat-header-divider' />
-        <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
+        {viewItems.map(item => (
+          <Tooltip key={item.value} title={item.title}>
+            <Button
+              type='text'
+              className={`chat-header-action-button ${activeView === item.value ? 'is-active' : ''}`}
+              title={item.title}
+              aria-label={item.title}
+              onClick={() => {
+                onViewChange(item.value)
+              }}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>{item.icon}</span>}
+            />
+          </Tooltip>
+        ))}
+        <Tooltip title={t('chat.viewTerminal')}>
           <Button
             type='text'
-            icon={<span className='material-symbols-rounded'>more_vert</span>}
+            className={`chat-header-action-button ${isTerminalOpen ? 'is-active' : ''}`}
+            title={t('chat.viewTerminal')}
+            aria-label={t('chat.viewTerminal')}
+            onClick={onToggleTerminal}
+            icon={<span className='chat-header-view-option material-symbols-rounded'>terminal</span>}
           />
-        </Dropdown>
+        </Tooltip>
+        {shouldShowDebugButton && (
+          <Tooltip title={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}>
+            <Button
+              type='text'
+              className={`chat-header-action-button ${isDebugMode ? 'is-debug-active' : ''}`}
+              title={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
+              aria-label={isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable')}
+              onClick={toggleDebugMode}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>bug_report</span>}
+            />
+          </Tooltip>
+        )}
+        <Tooltip title={t('common.moreActions')}>
+          <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
+            <Button
+              type='text'
+              className='chat-header-action-button'
+              title={t('common.moreActions')}
+              aria-label={t('common.moreActions')}
+              icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
+            />
+          </Dropdown>
+        </Tooltip>
       </div>
     </div>
   )
 }
 
 export function SessionSettingsPanel({
-  sessionId,
-  initialTitle,
-  initialTags = [],
+  session,
   sessionInfo,
   onClose
 }: {
-  sessionId: string
-  initialTitle?: string
-  initialTags?: string[]
+  session: Session
   sessionInfo: SessionInfo | null
   onClose: () => void
 }) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
+  const { searchParams } = useQueryParams<{ debug: string }>({ keys: ['debug'] })
+  const isDebugMode = searchParams.get('debug') === 'true'
+  const sessionId = session.id
   const fields = useMemo<FieldSpec[]>(() => [
     {
       path: ['title'],
@@ -206,10 +283,11 @@ export function SessionSettingsPanel({
     }
   ], [])
   const initialValue = useMemo(() => ({
-    title: initialTitle ?? '',
-    tags: initialTags
-  }), [initialTags, initialTitle])
+    title: session.title ?? '',
+    tags: session.tags ?? []
+  }), [session.tags, session.title])
   const [draft, setDraft] = useState(initialValue)
+  const [collapsedToolGroupKeys, setCollapsedToolGroupKeys] = useState<Record<string, boolean>>({})
   const draftsRef = useRef(initialValue)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savingRef = useRef(false)
@@ -234,6 +312,124 @@ export function SessionSettingsPanel({
   const toolGroups = useMemo(() => getSessionToolGroups(sessionInfo), [sessionInfo])
   const assetWarnings = useMemo(() => getSessionAssetWarnings(sessionInfo), [sessionInfo])
   const selectionWarnings = useMemo(() => getSessionSelectionWarnings(sessionInfo), [sessionInfo])
+  const debugItems = useMemo<SessionDebugItem[]>(() => {
+    const emptyValue = t('chat.timelineEmptyValue')
+    const booleanValue = (value: boolean | undefined) =>
+      value ? t('chat.debugEnabledValue') : t('chat.debugDisabledValue')
+    const tags = session.tags ?? []
+    const items: SessionDebugItem[] = [
+      {
+        key: 'sessionId',
+        label: t('chat.debugSessionId'),
+        value: session.id,
+        icon: 'fingerprint'
+      },
+      {
+        key: 'view',
+        label: t('chat.debugView'),
+        value: t('chat.viewSettings'),
+        icon: 'tune'
+      },
+      {
+        key: 'starred',
+        label: t('chat.debugStarred'),
+        value: booleanValue(session.isStarred),
+        icon: 'star'
+      },
+      {
+        key: 'archived',
+        label: t('chat.debugArchived'),
+        value: booleanValue(session.isArchived),
+        icon: 'archive'
+      }
+    ]
+
+    if (tags.length > 0) {
+      items.push({
+        key: 'tags',
+        label: t('chat.debugTags'),
+        value: tags.join(', '),
+        icon: 'sell'
+      })
+    }
+
+    if (sessionInfo?.type === 'init') {
+      items.push(
+        {
+          key: 'type',
+          label: t('chat.debugType'),
+          value: sessionInfo.type,
+          icon: 'deployed_code'
+        },
+        {
+          key: 'uuid',
+          label: t('chat.debugUuid'),
+          value: sessionInfo.uuid,
+          icon: 'tag'
+        },
+        {
+          key: 'adapter',
+          label: t('chat.debugAdapter'),
+          value: sessionInfo.adapter ?? emptyValue,
+          icon: 'extension'
+        },
+        {
+          key: 'model',
+          label: t('chat.debugModel'),
+          value: sessionInfo.model,
+          icon: 'model_training'
+        },
+        {
+          key: 'effort',
+          label: t('chat.debugEffort'),
+          value: sessionInfo.effort ?? emptyValue,
+          icon: 'psychology'
+        },
+        {
+          key: 'version',
+          label: t('chat.debugVersion'),
+          value: sessionInfo.version,
+          icon: 'deployed_code_update'
+        },
+        {
+          key: 'tools',
+          label: t('chat.debugTools'),
+          value: String(sessionInfo.tools.length),
+          icon: 'handyman'
+        },
+        {
+          key: 'agents',
+          label: t('chat.debugAgents'),
+          value: String(sessionInfo.agents.length),
+          icon: 'hub'
+        },
+        {
+          key: 'cwd',
+          label: t('chat.debugCwd'),
+          value: sessionInfo.cwd,
+          icon: 'folder_open'
+        }
+      )
+    }
+
+    if (sessionInfo?.type === 'summary') {
+      items.push(
+        {
+          key: 'type',
+          label: t('chat.debugType'),
+          value: sessionInfo.type,
+          icon: 'deployed_code'
+        },
+        {
+          key: 'leafUuid',
+          label: t('chat.debugLeafUuid'),
+          value: sessionInfo.leafUuid,
+          icon: 'call_split'
+        }
+      )
+    }
+    return items
+  }, [session.id, session.isArchived, session.isStarred, session.tags, sessionInfo, t])
 
   const formatSelectionWarning = (warning: (typeof selectionWarnings)[number]) => {
     const reason = warning.reason === 'excluded'
@@ -307,6 +503,13 @@ export function SessionSettingsPanel({
     })
   }
 
+  const toggleToolGroup = (key: string) => {
+    setCollapsedToolGroupKeys((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }))
+  }
+
   return (
     <div className='session-settings-drawer'>
       <ConfigSectionPanel
@@ -364,21 +567,32 @@ export function SessionSettingsPanel({
             <div className='session-tool-groups'>
               {toolGroups.map((group) => (
                 <div key={group.key} className='session-tool-group-card'>
-                  <div className='session-tool-group-card__header'>
+                  <button
+                    type='button'
+                    className='session-tool-group-card__header'
+                    onClick={() => toggleToolGroup(group.key)}
+                  >
                     <div className='session-tool-group-card__title'>
                       <span className='material-symbols-rounded'>{group.icon}</span>
                       <span>{t(group.labelKey)}</span>
                     </div>
-                    <span className='session-tool-group-card__count'>{group.tools.length}</span>
-                  </div>
-                  <div className='session-tool-group-card__list'>
-                    {group.tools.map(tool => (
-                      <div key={tool} className='session-tool-chip'>
-                        <span className='session-tool-chip__dot' />
-                        <code>{formatToolLabel(tool)}</code>
-                      </div>
-                    ))}
-                  </div>
+                    <div className='session-tool-group-card__meta'>
+                      <span className='session-tool-group-card__count'>{group.tools.length}</span>
+                      <span className='material-symbols-rounded session-tool-group-card__expand'>
+                        {collapsedToolGroupKeys[group.key] ? 'expand_more' : 'expand_less'}
+                      </span>
+                    </div>
+                  </button>
+                  {!collapsedToolGroupKeys[group.key] && (
+                    <div className='session-tool-group-card__list'>
+                      {group.tools.map(tool => (
+                        <div key={tool} className='session-tool-row' title={formatToolLabel(tool)}>
+                          <span className='session-tool-row__dot' />
+                          <code>{formatToolLabel(tool)}</code>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -389,6 +603,30 @@ export function SessionSettingsPanel({
             </div>
           )}
       </div>
+
+      {isDebugMode && debugItems.length > 0 && (
+        <div className='settings-section session-debug-section'>
+          <div className='section-header'>
+            <span className='material-symbols-rounded'>bug_report</span>
+            <span>{t('chat.debugSectionTitle')}</span>
+          </div>
+
+          <div className='session-debug-panel'>
+            <div className='session-debug-list'>
+              {debugItems.map(item => (
+                <div key={item.key} className='session-debug-row'>
+                  <span className='session-debug-row__label'>{item.label}</span>
+                  <span
+                    className={`session-debug-row__value ${DEBUG_MONO_KEYS.has(item.key) ? 'is-mono' : ''}`}
+                  >
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className='settings-footer'>
         <div className='danger-zone'>

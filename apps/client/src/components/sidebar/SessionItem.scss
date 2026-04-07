@@ -1,10 +1,10 @@
 .session-item {
   color: var(--text-color);
   cursor: pointer;
-  padding: 12px !important;
+  padding: 8px !important;
   position: relative;
   border: 1px solid var(--border-color) !important;
-  border-radius: 12px;
+  border-radius: 8px;
   transition: all .2s ease;
   background-color: var(--bg-color);
 
@@ -12,8 +12,13 @@
     background-color: var(--sidebar-hover-bg);
     border-color: var(--sidebar-hover-bg) !important;
 
+    .time-display {
+      opacity: 0;
+    }
+
     .session-item-actions {
       opacity: 1;
+      pointer-events: auto;
     }
   }
 
@@ -21,10 +26,6 @@
     background-color: var(--sidebar-active-bg) !important;
     border-color: var(--sidebar-active-text) !important;
     color: var(--sidebar-active-text) !important;
-
-    .session-item-actions {
-      opacity: 1;
-    }
   }
 
   &.selected {
@@ -36,17 +37,17 @@
     display: flex;
     align-items: flex-start;
     width: 100%;
-    gap: 12px;
+    gap: 4px;
 
     .status-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background-color: var(--sub-text-color); // Default gray
       opacity: .3;
       flex-shrink: 0;
-      margin-top: 5px;
-      margin-right: -4px; // Pull closer to the text
+      margin-top: 0;
+      margin-right: 0;
       transition: all .2s;
 
       &.active {
@@ -55,23 +56,48 @@
       }
     }
 
-    .batch-checkbox-wrapper {
-      width: 32px;
-      height: 32px;
+    .session-leading {
+      width: 16px;
+      height: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      position: relative;
+
+      &.has-adapter {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .session-adapter-icon {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+        object-fit: contain;
+      }
     }
 
     .status-indicator {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       flex-shrink: 0;
-      margin-top: 2px;
+
+      &.is-overlay {
+        position: absolute;
+        right: 1px;
+        bottom: 1px;
+        z-index: 1;
+        border-radius: 999px;
+        background-color: var(--bg-color);
+        box-shadow: 0 0 0 2px var(--bg-color);
+      }
 
       .status-icon {
         &.spin {
@@ -80,8 +106,8 @@
       }
 
       .waiting-input-indicator {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
         background-color: #faad14;
         border-radius: 50%;
         position: relative;
@@ -90,10 +116,10 @@
         &::after {
           content: '';
           position: absolute;
-          top: -4px;
-          left: -4px;
-          right: -4px;
-          bottom: -4px;
+          top: -3px;
+          left: -3px;
+          right: -3px;
+          bottom: -3px;
           border: 1px dashed #faad14;
           border-radius: 50%;
           animation: spin 3s linear infinite;
@@ -106,7 +132,7 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
 
       &.with-actions {
         padding-right: 0; // Remove padding as actions are positioned differently
@@ -115,14 +141,14 @@
       .session-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        gap: 8px;
+        align-items: center;
+        gap: 6px;
 
         .session-title {
           flex: 1;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 4px;
           min-width: 0;
 
           .session-title-text {
@@ -130,51 +156,60 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-size: 14px;
+            font-size: 12px;
+            line-height: 1.35;
+          }
+        }
+
+        .session-header-side {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex-shrink: 0;
+          gap: 6px;
+          min-width: 0;
+          min-height: 18px;
+          overflow: hidden;
+
+          .time-display {
+            font-size: 10px;
+            line-height: 1;
+            color: var(--sub-text-color);
+            white-space: nowrap;
+            max-width: 64px;
+            transition: opacity .2s ease, max-width .2s ease;
           }
         }
       }
 
       .last-message {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--sub-text-color);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        line-height: 1.5;
-      }
-
-      .session-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 4px;
-
-        .time-display {
-          font-size: 11px;
-          color: var(--sub-text-color);
-        }
+        line-height: 1.35;
       }
 
       .tags-container {
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 3px;
         align-items: center;
 
         .session-tag {
-          max-width: 120px;
-          font-size: 10px;
+          max-width: 112px;
+          font-size: 9px;
           margin: 0;
-          padding: 0 4px;
-          line-height: 14px;
+          padding: 0 3px;
+          line-height: 13px;
           border-radius: 2px;
           display: inline-flex;
           align-items: center;
           white-space: nowrap;
 
           &--automation {
-            padding: 0 6px;
+            padding: 0 5px;
           }
 
           &__link {
@@ -199,37 +234,64 @@
     }
   }
 
-  .session-item-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    z-index: 20;
-
-    .ant-badge-count {
-      background-color: var(--sub-text-color) !important;
-      color: #fff;
-      box-shadow: none;
-    }
-  }
-
   .session-item-actions {
-    display: flex;
+    display: inline-flex;
     gap: 4px;
     opacity: 0;
-    transition: opacity .2s ease;
+    max-width: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition:
+      opacity .2s ease,
+      max-width .24s ease,
+      visibility 0s linear .24s;
+    pointer-events: none;
+    justify-content: flex-end;
 
     .action-btn {
       color: var(--sub-text-color);
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
+      gap: 4px;
+      width: 18px;
+      min-width: 18px;
+      height: 18px;
       padding: 0;
+      border-radius: 6px;
+      transition:
+        width .18s ease,
+        min-width .18s ease,
+        padding .18s ease,
+        background-color .18s ease,
+        color .18s ease,
+        margin-left .18s ease;
 
       &:hover {
         background-color: transparent;
-        color: #3b82f6; // Blue on hover
+      }
+
+      &.is-confirming {
+        width: auto;
+        min-width: 18px;
+        padding: 0 6px;
+        margin-left: 2px;
+      }
+
+      &.star-btn {
+        color: #d97706;
+
+        &:hover {
+          color: #b45309;
+        }
+      }
+
+      &.archive-btn {
+        color: #dc2626;
+
+        &:hover {
+          color: #b91c1c;
+        }
       }
 
       &.starred {
@@ -244,8 +306,29 @@
       }
 
       .material-symbols-rounded {
-        font-size: 18px;
+        font-size: 16px;
       }
+    }
+
+    .action-btn__label {
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+  }
+
+  &:hover {
+    .session-header-side {
+      .time-display {
+        max-width: 0;
+      }
+    }
+
+    .session-item-actions {
+      max-width: 160px;
+      visibility: visible;
+      transition-delay: 0s;
     }
   }
 }

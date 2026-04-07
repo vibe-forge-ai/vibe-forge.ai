@@ -1,7 +1,7 @@
 import './SessionList.scss'
 
 import type { Session } from '@vibe-forge/core'
-import { Button, List } from 'antd'
+import { Button, Checkbox, List } from 'antd'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SessionItem } from './SessionItem'
@@ -9,28 +9,30 @@ import { SessionItem } from './SessionItem'
 interface SessionListProps {
   sessions: Session[]
   activeId?: string
+  hasActiveFilters: boolean
   isBatchMode: boolean
   selectedIds: Set<string>
   searchQuery?: string
   onSelectSession: (session: Session) => void
   onArchiveSession: (id: string) => void | Promise<void>
   onDeleteSession: (id: string) => void | Promise<void>
+  onRenameSession: (id: string, title: string) => Promise<void>
   onStarSession: (id: string, isStarred: boolean) => void | Promise<void>
-  onUpdateTags: (id: string, tags: string[]) => void | Promise<void>
   onToggleSelect: (id: string) => void
 }
 
 export function SessionList({
   sessions,
   activeId,
+  hasActiveFilters,
   isBatchMode,
   selectedIds,
   searchQuery,
   onSelectSession,
   onArchiveSession,
   onDeleteSession,
+  onRenameSession,
   onStarSession,
-  onUpdateTags,
   onToggleSelect
 }: SessionListProps) {
   const { t } = useTranslation()
@@ -115,7 +117,7 @@ export function SessionList({
           size='small'
           locale={{
             emptyText: <div className='empty-text'>
-              {searchQuery ? t('common.noSessions') : t('common.startNewChat')}
+              {searchQuery || hasActiveFilters ? t('common.noSessions') : t('common.startNewChat')}
             </div>
           }}
           dataSource={flattenedSessions}
@@ -124,18 +126,31 @@ export function SessionList({
               className={`session-row ${depth > 0 ? 'has-parent' : ''}`}
               style={{ '--session-depth': depth } as React.CSSProperties}
             >
-              <SessionItem
-                session={s}
-                isActive={activeId === s.id}
-                isBatchMode={isBatchMode}
-                isSelected={selectedIds.has(s.id)}
-                onSelect={onSelectSession}
-                onArchive={onArchiveSession}
-                onDelete={onDeleteSession}
-                onStar={onStarSession}
-                onUpdateTags={onUpdateTags}
-                onToggleSelect={onToggleSelect}
-              />
+              <div className='session-row-main'>
+                {isBatchMode && (
+                  <div
+                    className='session-select-toggle'
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedIds.has(s.id)}
+                      onChange={() => onToggleSelect(s.id)}
+                    />
+                  </div>
+                )}
+                <SessionItem
+                  session={s}
+                  isActive={activeId === s.id}
+                  isBatchMode={isBatchMode}
+                  isSelected={selectedIds.has(s.id)}
+                  onSelect={onSelectSession}
+                  onArchive={onArchiveSession}
+                  onDelete={onDeleteSession}
+                  onRename={onRenameSession}
+                  onStar={onStarSession}
+                  onToggleSelect={onToggleSelect}
+                />
+              </div>
               {hasChildren && !isBatchMode && (
                 <div
                   className='session-collapse-row'

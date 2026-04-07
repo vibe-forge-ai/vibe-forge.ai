@@ -30,6 +30,8 @@
 - 聊天页面入口统一由 route 组件承接，当前为 `src/routes/ChatRoute.tsx`。
 - `ChatRoute` 负责 `/` 与 `/session/:sessionId` 的合并入口、会话解析和空态处理。
 - `src/components/chat/` 只保留聊天页面内部视图，不再单独维护旧式 route wrapper。
+- 会话列表的“搜索 / 筛选 / 排序 / 收起态”已写入 URL query；后续新增 session 级 UI 状态时，优先先判断是否也应落到 query，而不是只放组件本地 state。
+- 会话卡片支持右键上下文菜单；涉及 `收藏 / 重命名 / 归档 / 复制链接 / 复制 ID / 复制控制台指令` 时，优先沿着右键菜单扩展，不要再把所有能力塞回 hover 按钮。
 
 数据流约定：
 
@@ -59,7 +61,8 @@ import 约定：
 
 前端调试入口：
 
-- 如果任务涉及 tooltip / popover / select / theme / sender，优先补读 `../../.ai/rules/frontend-standard/debugging.md`。
+- 如果任务涉及 tooltip / popover / select / theme / sender / focus / hover / 样式回归 / 真实 Chrome 验证 / CDP 调试，开始修改前必须先读 `../../.ai/rules/frontend-standard/debugging.md`。
+- 需要通过 Chrome DevTools Protocol 调试页面时，必须使用独立 profile 和冷启动的调试 Chrome，不要直接复用用户已经打开的日常浏览器实例。
 - 样式和交互问题不要只看代码；至少做一次真实 Chrome 的 computed style、open state 和 focus 回归。
 
 ## 聊天消息操作维护

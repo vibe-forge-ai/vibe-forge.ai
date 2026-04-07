@@ -18,6 +18,11 @@ globs:
 - [主题与国际化](./frontend-standard/theme-i18n.md)
 - [调试与回归](./frontend-standard/debugging.md)
 
+## 阅读要求
+
+- 只要任务涉及交互、浮层、tooltip、popover、select、focus、theme、样式回归、热更新异常、真实 Chrome 验证或 CDP 调试，开始动手前必须先读 [调试与回归](./frontend-standard/debugging.md)。
+- 如果改动发生在 `apps/client/`，还应继续阅读 `apps/client/AGENTS.md`；如果范围进一步落到聊天页 / sender / 消息级交互，还要继续阅读 `apps/client/src/components/chat/AGENTS.md`。
+
 ## 核心约束
 
 - 业务组件放在 `src/components/` 下。

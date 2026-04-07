@@ -1,14 +1,9 @@
 .chat-terminal-view {
-  flex: 1;
-  min-height: 0;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-color);
 
   &__error {
     position: absolute;
-    top: 16px;
+    top: 36px;
     right: 16px;
     z-index: 3;
     padding: 8px 10px;
@@ -25,10 +20,10 @@
   }
 
   &__surface {
-    flex: 1;
-    min-height: 0;
     display: flex;
     position: relative;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     background:
       radial-gradient(
@@ -60,6 +55,7 @@
   }
 
   &__footer {
+    padding: 0;
     font-size: 12px;
     color: var(--sub-text-color);
   }

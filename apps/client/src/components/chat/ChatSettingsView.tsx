@@ -15,9 +15,7 @@ export function ChatSettingsView({
   return (
     <div className='chat-settings-panel'>
       <SessionSettingsPanel
-        sessionId={session.id}
-        initialTitle={session.title}
-        initialTags={session.tags}
+        session={session}
         sessionInfo={sessionInfo}
         onClose={onClose}
       />

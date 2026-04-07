@@ -35,7 +35,7 @@ export function useChatSession({
   })
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { effort, setEffort, effortOptions } = useChatEffort()
-  const { activeView, setActiveView } = useChatView()
+  const { activeView, isTerminalOpen, setActiveView, setIsTerminalOpen } = useChatView()
   const { interactionRequest, setInteractionRequest, handleInteractionResponse: submitInteractionResponse } =
     useChatInteraction({
       sessionId: session?.id
@@ -116,7 +116,9 @@ export function useChatSession({
     retryConnection,
     isThinking,
     activeView,
+    isTerminalOpen,
     setActiveView,
+    setIsTerminalOpen,
     handleInteractionResponse,
     setMessages,
     placeholder: !session?.id ? t('chat.newSessionPlaceholder') : undefined,

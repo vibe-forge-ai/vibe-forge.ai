@@ -1,0 +1,143 @@
+.session-context-menu {
+  min-width: 196px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background-color: var(--bg-color);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session-context-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+
+  &:hover {
+    background-color: color-mix(
+      in srgb,
+      var(--primary-color) 8%,
+      var(--bg-color)
+    );
+  }
+
+  &.is-confirming {
+    background-color: color-mix(
+      in srgb,
+      var(--primary-color) 12%,
+      var(--bg-color)
+    );
+  }
+
+  &.is-danger {
+    color: #dc2626;
+
+    &:hover {
+      background-color: rgba(220, 38, 38, .12);
+      color: #b91c1c;
+    }
+
+    &.is-confirming {
+      background-color: rgba(220, 38, 38, .12);
+    }
+  }
+}
+
+.session-context-menu__meta {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-context-menu__icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.session-context-menu__item--star .session-context-menu__icon {
+  color: #d97706;
+}
+
+.session-context-menu__item--archive .session-context-menu__icon {
+  color: #dc2626;
+}
+
+.session-context-menu__item--delete .session-context-menu__icon {
+  color: #991b1b;
+}
+
+.session-context-menu__item--copy-session-link .session-context-menu__icon {
+  color: #2563eb;
+}
+
+.session-context-menu__item--copy-session-id .session-context-menu__icon {
+  color: #64748b;
+}
+
+.session-context-menu__item--copy-resume-command .session-context-menu__icon {
+  color: #0f766e;
+}
+
+.session-context-menu__label {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.session-context-menu__confirm-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.session-context-menu__confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &.is-accept:hover {
+    background-color: rgba(34, 197, 94, .14);
+    color: #15803d;
+  }
+
+  &.is-cancel:hover {
+    background-color: rgba(148, 163, 184, .18);
+    color: var(--text-color);
+  }
+}
+
+.session-context-menu__divider {
+  height: 1px;
+  margin: 4px 6px;
+  background-color: var(--border-color);
+}

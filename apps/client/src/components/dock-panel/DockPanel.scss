@@ -1,0 +1,152 @@
+.dock-panel {
+  flex: 0 0 var(--dock-panel-current-height, var(--dock-panel-height, 240px));
+  height: var(--dock-panel-current-height, var(--dock-panel-height, 240px));
+  min-height: 0;
+  max-height: var(--dock-panel-max-height, 520px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--dock-panel-padding-top, 12px) 12px
+    var(--dock-panel-padding-bottom, 12px);
+  background-color: var(--bg-color);
+  border-top: 1px solid var(--dock-panel-border-color, var(--border-color));
+  gap: 6px;
+  overflow: hidden;
+  opacity: var(--dock-panel-opacity, 1);
+  transform: translateY(var(--dock-panel-translate-y, 0));
+  transition:
+    flex-basis .24s cubic-bezier(.22, 1, .36, 1),
+    height .24s cubic-bezier(.22, 1, .36, 1),
+    padding-top .24s cubic-bezier(.22, 1, .36, 1),
+    padding-bottom .24s cubic-bezier(.22, 1, .36, 1),
+    opacity .18s ease,
+    transform .24s cubic-bezier(.22, 1, .36, 1),
+    border-top-color .18s ease;
+
+  &.is-resizing {
+    cursor: row-resize;
+  }
+}
+
+.dock-panel.is-closing {
+  --dock-panel-current-height: 0px;
+  --dock-panel-padding-top: 0px;
+  --dock-panel-padding-bottom: 0px;
+  --dock-panel-border-color: transparent;
+  --dock-panel-opacity: 0;
+  --dock-panel-translate-y: 20px;
+  pointer-events: none;
+}
+
+.dock-panel__resize-handle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 24px;
+  margin: -12px -12px 0;
+  padding: 12px 12px 0;
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: opacity .18s ease;
+
+  &:hover {
+    opacity: .92;
+  }
+}
+
+.dock-panel__header-main {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dock-panel__title,
+.dock-panel__meta {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background-color: var(--sub-bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-panel__title {
+  font-weight: 600;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.dock-panel__meta {
+  flex: 0 1 auto;
+  max-width: min(180px, 40%);
+  color: var(--sub-text-color);
+  font-family:
+    ui-monospace, sfmono-regular, 'SF Mono', menlo, consolas, monospace;
+}
+
+.dock-panel__header-spacer {
+  flex: 1;
+  min-width: 24px;
+}
+
+.dock-panel__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-panel__close-btn.ant-btn.ant-btn-text {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  color: var(--sub-text-color, #6b7280);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .2s ease, color .2s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background-color: var(--nav-hover-bg, #f3f4f6);
+    color: var(--text-color, #111827);
+  }
+}
+
+.dock-panel__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-panel__footer {
+  flex-shrink: 0;
+}
+
+html.dark .dock-panel__close-btn.ant-btn.ant-btn-text {
+  --nav-hover-bg: #1a1a1a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-panel {
+    transition: none;
+  }
+}

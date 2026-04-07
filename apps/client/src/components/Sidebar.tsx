@@ -1,19 +1,32 @@
 import './Sidebar.scss'
 
 import { Button, Tooltip } from 'antd'
-import { useAtom, useAtomValue } from 'jotai'
+import { useAtomValue } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import { useQueryParams } from '#~/hooks/useQueryParams.js'
+import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
+import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
+import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type { Session } from '@vibe-forge/core'
-import { deleteSession, updateSession } from '../api'
+import { deleteSession, updateSession, updateSessionTitle } from '../api'
 import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
-import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../store/index'
+import { isSidebarResizingAtom } from '../store/index'
 import { formatShortcutLabel } from '../utils/shortcutUtils'
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
+import { matchesAnyFilterPattern } from './sidebar/filter-utils'
+
+const sortSessionsByOrder = (sessions: Session[], sortOrder: SidebarSessionSortOrder) => {
+  return [...sessions].sort((left, right) => {
+    const starredDelta = Number(right.isStarred === true) - Number(left.isStarred === true)
+    if (starredDelta !== 0) return starredDelta
+
+    const createdDelta = (left.createdAt ?? 0) - (right.createdAt ?? 0)
+    return sortOrder === 'asc' ? createdDelta : -createdDelta
+  })
+}
 
 export function Sidebar({
   activeId,
@@ -26,19 +39,26 @@ export function Sidebar({
   onDeletedSession?: (id: string, nextId?: string) => void
   width: number
 }) {
-  const { t } = useTranslation()
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useAtom(isSidebarCollapsedAtom)
+  const {
+    adapterFilters,
+    hasActiveFilterConditions,
+    hasActiveSearchControls,
+    isSidebarCollapsed,
+    searchQuery,
+    setSortOrder,
+    setAdapterFilters,
+    setSearchQuery,
+    setSidebarCollapsed,
+    setTagFilters,
+    sortOrder,
+    sortSelection,
+    tagFilters
+  } = useSidebarQueryState()
   const isResizing = useAtomValue(isSidebarResizingAtom)
-  const [searchQuery, setSearchQuery] = useState('')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
+  const { t } = useTranslation()
   const isMac = navigator.platform.includes('Mac')
-  const { values } = useQueryParams<{ tag: string }>({
-    keys: ['tag'],
-    defaults: { tag: '' },
-    omit: { tag: (value) => value === '' }
-  })
-  const tagFilter = values.tag.trim()
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
@@ -62,24 +82,46 @@ export function Sidebar({
     () => formatShortcutLabel(resolvedNewSessionShortcut, isMac),
     [resolvedNewSessionShortcut, isMac]
   )
+  const availableTags = useMemo(() => {
+    return Array.from(
+      new Set(
+        sessions.flatMap((session) => (session.tags ?? []).map((tag) => tag.trim()).filter(Boolean))
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  }, [sessions])
+  const availableAdapters = useMemo(() => {
+    return Array.from(
+      new Set(
+        sessions
+          .map((session) => session.adapter?.trim() ?? '')
+          .filter(Boolean)
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  }, [sessions])
 
   const filteredSessions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    return sessions.filter((s: Session) => {
-      if (tagFilter) {
-        const matchesTag = (s.tags ?? []).some((tag: string) => tag.toLowerCase() === tagFilter.toLowerCase())
-        if (!matchesTag) return false
-      }
+    const visibleSessions = sessions.filter((s: Session) => {
+      if (!matchesAnyFilterPattern(s.tags ?? [], tagFilters)) return false
+
+      const adapterCandidates = [
+        s.adapter ?? '',
+        s.adapter != null && s.adapter !== '' ? getAdapterDisplay(s.adapter).title : ''
+      ].filter(Boolean)
+      if (!matchesAnyFilterPattern(adapterCandidates, adapterFilters)) return false
+
       if (!query) return true
       return (
         (s.title ?? '').toLowerCase().includes(query) ||
         (s.lastMessage ?? '').toLowerCase().includes(query) ||
         (s.lastUserMessage ?? '').toLowerCase().includes(query) ||
         s.id.toLowerCase().includes(query) ||
-        (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query))
+        (s.tags ?? []).some((tag: string) => tag.toLowerCase().includes(query)) ||
+        adapterCandidates.some((candidate) => candidate.toLowerCase().includes(query))
       )
     })
-  }, [sessions, searchQuery, tagFilter])
+    return sortSessionsByOrder(visibleSessions, sortOrder)
+  }, [adapterFilters, searchQuery, sessions, sortOrder, tagFilters])
 
   async function handleCreateSession() {
     onSelectSession({ id: '' } as Session, true)
@@ -137,13 +179,9 @@ export function Sidebar({
     }
   }
 
-  async function handleUpdateTags(id: string, tags: string[]) {
-    try {
-      await updateSession(id, { tags })
-      await mutateSessions()
-    } catch (err) {
-      console.error('Failed to update tags:', err)
-    }
+  async function handleRenameSession(id: string, title: string) {
+    await updateSessionTitle(id, title)
+    await mutateSessions()
   }
 
   const handleToggleSelect = (id: string) => {
@@ -186,6 +224,32 @@ export function Sidebar({
       setIsBatchMode(false)
     } catch (err) {
       console.error('Failed to batch archive sessions:', err)
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    try {
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => deleteSession(id)))
+      await mutateSessions()
+
+      if (activeId && selectedIds.has(activeId)) {
+        const nextSession = sessions.find(s => !selectedIds.has(s.id))
+        onDeletedSession?.(activeId, nextSession?.id)
+      }
+
+      setSelectedIds(new Set<string>())
+      setIsBatchMode(false)
+    } catch (err) {
+      console.error('Failed to batch delete sessions:', err)
+    }
+  }
+
+  const handleBatchStar = async (isStarred: boolean) => {
+    try {
+      await Promise.all(Array.from(selectedIds).map(async (id: string) => updateSession(id, { isStarred })))
+      await mutateSessions()
+    } catch (err) {
+      console.error('Failed to batch update star status:', err)
     }
   }
 
@@ -233,46 +297,43 @@ export function Sidebar({
         }}
       >
         <SidebarHeader
+          adapterFilters={adapterFilters}
+          availableAdapters={availableAdapters}
+          hasActiveSearchControls={hasActiveSearchControls}
+          isSidebarCollapsed={isSidebarCollapsed}
           searchQuery={searchQuery}
+          sortOrder={sortOrder}
+          sortSelection={sortSelection}
           onSearchChange={setSearchQuery}
+          availableTags={availableTags}
+          tagFilters={tagFilters}
+          onSortOrderChange={setSortOrder}
+          onAdapterFilterChange={setAdapterFilters}
+          onTagFilterChange={setTagFilters}
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
+          onToggleSidebarCollapsed={() => setSidebarCollapsed(!isSidebarCollapsed)}
           selectedCount={selectedIds.size}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
           onBatchArchive={() => {
             void handleBatchArchive()
           }}
+          onBatchDelete={() => {
+            void handleBatchDelete()
+          }}
+          onBatchStar={() => {
+            void handleBatchStar(true)
+          }}
           isCreatingSession={isCreatingSession}
+          shortcutLabel={shortcutLabel}
+          createButtonRef={createBtnRef}
           onCreateSession={() => {
             void handleCreateSession()
           }}
         />
-        <div className='sidebar-new-chat'>
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : undefined} placement='right'>
-            <Button
-              ref={createBtnRef}
-              className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
-              type={isCreatingSession ? 'default' : 'primary'}
-              block
-              disabled={!!isCreatingSession}
-              onClick={() => {
-                void handleCreateSession()
-              }}
-            >
-              <span className='btn-content'>
-                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                  {isCreatingSession ? 'chat_bubble' : 'send'}
-                </span>
-                <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
-              </span>
-              <span className='shortcut-tag'>
-                {shortcutLabel}
-              </span>
-            </Button>
-          </Tooltip>
-        </div>
         <SessionList
+          hasActiveFilters={hasActiveFilterConditions}
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}
@@ -281,11 +342,39 @@ export function Sidebar({
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
           onDeleteSession={handleDeleteSession}
+          onRenameSession={handleRenameSession}
           onStarSession={handleStarSession}
-          onUpdateTags={handleUpdateTags}
           onToggleSelect={handleToggleSelect}
         />
       </div>
+      {isSidebarCollapsed && (
+        <div className='sidebar-collapsed-header'>
+          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='bottom'>
+            <Button
+              ref={createBtnRef}
+              className={`sidebar-collapsed-control ${isCreatingSession ? 'active' : ''}`}
+              type='text'
+              disabled={!!isCreatingSession}
+              onClick={() => {
+                void handleCreateSession()
+              }}
+            >
+              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+                {isCreatingSession ? 'chat_bubble' : 'send'}
+              </span>
+            </Button>
+          </Tooltip>
+          <Tooltip title={t('common.expand')} placement='bottom'>
+            <Button
+              className='sidebar-collapsed-control'
+              type='text'
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <span className='material-symbols-rounded'>dock_to_right</span>
+            </Button>
+          </Tooltip>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,14 +1,21 @@
 .chat-message-user, .chat-message-assistant {
   display: flex;
   align-items: flex-start;
-  margin-top: 12px;
-  margin-bottom: 0;
+  margin: 0;
   position: relative;
+  scroll-margin-top: 72px;
+  transition: background-color .2s ease;
+
+  &.is-anchor-target {
+    background-color: rgba(59, 130, 246, .08);
+    border-radius: 12px;
+  }
 
   .message-body-container {
     display: flex;
     flex-direction: column;
     max-width: 90%;
+    position: relative;
 
     &.is-editing {
       width: 100%;
@@ -62,10 +69,6 @@
     opacity: 1;
   }
 
-  &:first-child {
-    margin-top: 0;
-  }
-
   &.is-editing {
     .message-body-container {
       align-items: stretch;
@@ -75,11 +78,28 @@
   }
 }
 
+.message-side-actions {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  display: flex;
+  transform: translate(-4px, -50%);
+  visibility: hidden;
+  opacity: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+
 .msg-action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
+  min-width: 28px;
   height: 28px;
   padding: 0;
   border: 0;
@@ -87,7 +107,12 @@
   background: var(--bg-color);
   color: var(--sub-text-color, inherit);
   cursor: pointer;
-  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+  transition:
+    width .2s ease,
+    padding .2s ease,
+    background-color .2s ease,
+    border-color .2s ease,
+    color .2s ease;
 
   &:hover {
     background: var(--tag-hover-bg, rgba(127, 127, 127, .12));
@@ -98,14 +123,53 @@
     font-size: 16px;
     line-height: 1;
   }
+
+  &.is-confirming {
+    width: auto;
+    padding: 0 10px;
+    gap: 4px;
+  }
+}
+
+.msg-action-button__label {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.msg-action-button--copy {
+  color: var(--sub-text-color, inherit);
+}
+
+.msg-action-button--recall {
+  color: #dc2626;
+
+  &:hover {
+    background: rgba(220, 38, 38, .12);
+    color: #b91c1c;
+  }
+}
+
+.msg-action-button--fork {
+  color: #0891b2;
+
+  &:hover {
+    background: rgba(8, 145, 178, .12);
+    color: #0e7490;
+  }
 }
 
 .chat-message-user {
   flex-direction: row-reverse;
   gap: 8px;
 
-  &.consecutive {
-    margin-top: 4px;
+  &.is-actions-visible .message-side-actions {
+    visibility: visible;
+    opacity: 1;
+    transform: translate(0, -50%);
+    pointer-events: auto;
+    transition-delay: 0s;
   }
 
   .bubble {
@@ -132,10 +196,6 @@
   flex-direction: row;
   gap: 0;
   padding-left: 0;
-
-  &.consecutive {
-    margin-top: 0;
-  }
 
   .bubble {
     background-color: transparent;

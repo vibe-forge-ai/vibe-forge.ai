@@ -1,6 +1,7 @@
 import { App } from 'antd'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router-dom'
 
 import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
@@ -13,6 +14,7 @@ import type { SessionInfo } from '@vibe-forge/types'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
 import { MessageItem } from './messages/MessageItem'
+import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { Sender } from './sender/Sender'
 import { ToolGroup } from './tools/core/ToolGroup'
@@ -84,6 +86,7 @@ export function ChatHistoryView({
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const location = useLocation()
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     messagesLength: messages.length
   })
@@ -107,6 +110,7 @@ export function ChatHistoryView({
   })
   const initialScrollDoneRef = useRef(false)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [expandedTurnIds, setExpandedTurnIds] = useState<Set<string>>(new Set())
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -154,18 +158,19 @@ export function ChatHistoryView({
   useEffect(() => {
     initialScrollDoneRef.current = false
     setEditingMessageId(null)
+    setExpandedTurnIds(new Set())
   }, [session?.id])
   useEffect(() => {
-    if (!initialScrollDoneRef.current && isReady) {
+    if (!initialScrollDoneRef.current && isReady && location.hash === '') {
       scrollToBottom('auto')
       initialScrollDoneRef.current = true
     }
-  }, [isReady, messages.length, scrollToBottom])
+  }, [isReady, location.hash, messages.length, scrollToBottom])
   useEffect(() => {
-    if (!showScrollBottom) {
+    if (location.hash === '' && !showScrollBottom) {
       scrollToBottom('auto')
     }
-  }, [messages.length, scrollToBottom, showScrollBottom])
+  }, [location.hash, messages.length, scrollToBottom, showScrollBottom])
   const handleStartEditing = (messageId: string) => {
     let isBlocked = false
 
@@ -184,6 +189,174 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
+  const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
+  const messageTurns = useMemo(() =>
+    buildMessageTurns({
+      renderItems,
+      expandedTurnIds,
+      hashAnchorId,
+      keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
+    }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status])
+  const lastAssistantActionAnchorId = useMemo(() => {
+    for (let index = renderItems.length - 1; index >= 0; index -= 1) {
+      const item = renderItems[index]
+      if (item == null) continue
+      if (item.type === 'tool-group') continue
+      if (item.message.role === 'user') continue
+      return item.anchorId
+    }
+    return null
+  }, [renderItems])
+
+  useEffect(() => {
+    const hash = hashAnchorId
+    if (!isReady || hash === '') return
+
+    let removeHighlightTimer: ReturnType<typeof setTimeout> | null = null
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let frameId: number | null = null
+
+    const scrollToAnchor = () => {
+      const target = document.getElementById(hash)
+      if (target == null) {
+        return false
+      }
+
+      target.scrollIntoView({ block: 'center', behavior: 'auto' })
+      target.classList.add('is-anchor-target')
+      removeHighlightTimer = setTimeout(() => {
+        target.classList.remove('is-anchor-target')
+      }, 1800)
+      return true
+    }
+
+    if (!scrollToAnchor()) {
+      frameId = requestAnimationFrame(() => {
+        if (!scrollToAnchor()) {
+          retryTimer = setTimeout(() => {
+            void scrollToAnchor()
+          }, 120)
+        }
+      })
+    }
+
+    return () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId)
+      }
+      if (retryTimer != null) {
+        clearTimeout(retryTimer)
+      }
+      if (removeHighlightTimer != null) {
+        clearTimeout(removeHighlightTimer)
+      }
+    }
+  }, [hashAnchorId, isReady, messageTurns])
+
+  const toggleTurnCollapsed = (turnId: string) => {
+    setExpandedTurnIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(turnId)) {
+        next.delete(turnId)
+      } else {
+        next.add(turnId)
+      }
+      return next
+    })
+  }
+
+  const formatTurnDuration = (durationMs: number | null) => {
+    if (durationMs == null) return null
+    const totalSeconds = Math.floor(durationMs / 1000)
+    if (totalSeconds <= 0) {
+      return t('chat.turnDurationUnderSecond')
+    }
+
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+
+    if (hours > 0) {
+      return [
+        t('chat.turnDurationHours', { count: hours }),
+        minutes > 0 ? t('chat.turnDurationMinutes', { count: minutes }) : null
+      ].filter(Boolean).join(' ')
+    }
+
+    if (minutes > 0) {
+      return [
+        t('chat.turnDurationMinutes', { count: minutes }),
+        seconds > 0 ? t('chat.turnDurationSeconds', { count: seconds }) : null
+      ].filter(Boolean).join(' ')
+    }
+
+    return t('chat.turnDurationSeconds', { count: seconds })
+  }
+
+  const renderTurnSummary = (turn: (typeof messageTurns)[number]) => (
+    <div className={`chat-turn-summary ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+      <div className='chat-turn-summary__content'>
+        <div className='chat-turn-summary__meta'>
+          {formatTurnDuration(turn.durationMs) != null && (
+            <span className='chat-turn-summary__time'>
+              {t('chat.turnProcessedDuration', { duration: formatTurnDuration(turn.durationMs) })}
+            </span>
+          )}
+          <span className='chat-turn-summary__count'>
+            {t('chat.turnSummaryCount', { count: turn.hiddenCount })}
+          </span>
+        </div>
+        <button
+          type='button'
+          className='chat-turn-summary__toggle'
+          aria-expanded={!turn.isCollapsed}
+          onClick={() => toggleTurnCollapsed(turn.id)}
+        >
+          <span className='material-symbols-rounded'>
+            chevron_right
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderTurnItem = (item: (typeof renderItems)[number], key?: string) => {
+    if (item.type === 'message') {
+      return (
+        <MessageItem
+          key={key ?? item.anchorId}
+          anchorId={item.anchorId}
+          msg={item.message}
+          isFirstInGroup={item.isFirstInGroup}
+          originalMessage={item.originalMessage}
+          sessionInfo={sessionInfo}
+          isEditing={editingMessageId === item.originalMessage.id}
+          isSessionBusy={isCreating || session?.status === 'running' ||
+            session?.status === 'waiting_input'}
+          showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
+          onEditMessage={editMessage}
+          onForkMessage={forkMessage}
+          onRecallMessage={recallMessage}
+          onStartEditing={handleStartEditing}
+          onCancelEditing={(messageId) => {
+            setEditingMessageId((current) => current === messageId ? null : current)
+          }}
+          sessionId={session?.id}
+        />
+      )
+    }
+
+    return (
+      <ToolGroup
+        key={key ?? item.id}
+        anchorId={item.anchorId}
+        items={item.items}
+        originalMessage={item.originalMessage}
+        sessionId={session?.id}
+        footer={item.footer}
+      />
+    )
+  }
 
   return (
     <>
@@ -195,37 +368,31 @@ export function ChatHistoryView({
               <span>{t('common.creatingChat')}</span>
             </div>
           )}
-          {renderItems.map((item, index) => {
-            if (item.type === 'message') {
-              return (
-                <MessageItem
-                  key={item.message.id || index}
-                  msg={item.message}
-                  isFirstInGroup={item.isFirstInGroup}
-                  sessionInfo={sessionInfo}
-                  isEditing={editingMessageId === item.message.id}
-                  isSessionBusy={isCreating || session?.status === 'running' || session?.status === 'waiting_input'}
-                  onEditMessage={editMessage}
-                  onForkMessage={forkMessage}
-                  onRecallMessage={recallMessage}
-                  onStartEditing={handleStartEditing}
-                  onCancelEditing={(messageId) => {
-                    setEditingMessageId((current) => current === messageId ? null : current)
-                  }}
-                  sessionId={session?.id}
-                />
+          {messageTurns.map((turn) => (
+            turn.isExpandable
+              ? (
+                <div key={turn.id} className={`chat-turn ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+                  {renderTurnItem(turn.items[0]!, `${turn.id}:leading`)}
+                  <div className={`chat-turn__summary-region ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+                    {renderTurnSummary(turn)}
+                    <div
+                      className={`chat-turn__collapsible ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
+                      aria-hidden={turn.isCollapsed}
+                    >
+                      <div className='chat-turn__collapsible-inner'>
+                        {turn.items.slice(1, -1).map((item) => renderTurnItem(item))}
+                      </div>
+                    </div>
+                  </div>
+                  {renderTurnItem(turn.items[turn.items.length - 1]!, `${turn.id}:trailing`)}
+                </div>
               )
-            } else if (item.type === 'tool-group') {
-              return (
-                <ToolGroup
-                  key={item.id || `group-${index}`}
-                  items={item.items}
-                  footer={item.footer}
-                />
+              : (
+                <React.Fragment key={turn.id}>
+                  {turn.items.map((item) => renderTurnItem(item))}
+                </React.Fragment>
               )
-            }
-            return null
-          })}
+          ))}
           <div ref={messagesEndRef} />
         </div>
 

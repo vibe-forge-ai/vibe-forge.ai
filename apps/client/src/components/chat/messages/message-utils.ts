@@ -1,6 +1,10 @@
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 
+import { getMessageAnchorId } from '#~/utils/chat-links.js'
+
 export interface ToolGroupItem {
+  anchorId: string
+  originalMessage: ChatMessage
   type: 'tool-group'
   id: string
   items: {
@@ -16,6 +20,8 @@ export interface ToolGroupItem {
 }
 
 export interface MessageRenderItem {
+  anchorId: string
+  originalMessage: ChatMessage
   type: 'message'
   message: ChatMessage
   isFirstInGroup: boolean
@@ -52,6 +58,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       // If content is null/empty but legacy toolCall exists, we should render it
       if (msg && msg.toolCall) {
         result.push({
+          anchorId: getMessageAnchorId(msg.id),
+          originalMessage: msg,
           type: 'message',
           message: msg,
           isFirstInGroup: i === 0 || (i > 0 && messages[i - 1]?.role !== msg.role)
@@ -66,6 +74,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
 
     if (typeof msg.content === 'string') {
       result.push({
+        anchorId: getMessageAnchorId(msg.id),
+        originalMessage: msg,
         type: 'message',
         message: msg,
         isFirstInGroup
@@ -87,6 +97,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       const flushTools = () => {
         if (currentToolGroup.length > 0) {
           result.push({
+            anchorId: getMessageAnchorId(msg.id, `tool-${producedCount}`),
+            originalMessage: msg,
             type: 'tool-group',
             id: `group-${msg.id}-${producedCount}`,
             items: [...currentToolGroup],
@@ -100,6 +112,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       const flushText = () => {
         if (textParts.length > 0) {
           result.push({
+            anchorId: getMessageAnchorId(msg.id, `text-${producedCount}`),
+            originalMessage: msg,
             type: 'message',
             message: {
               ...msg,
@@ -130,6 +144,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       // Handle legacy toolCall if no other content was produced
       if (producedCount === 0 && msg.toolCall) {
         result.push({
+          anchorId: getMessageAnchorId(msg.id),
+          originalMessage: msg,
           type: 'message',
           message: msg,
           isFirstInGroup
@@ -158,6 +174,8 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       const prev = mergedResult[mergedResult.length - 1]
       if (prev && prev.type === 'tool-group') {
         prev.items.push(...item.items)
+        prev.originalMessage = item.originalMessage
+        prev.anchorId = item.anchorId
         if (item.footer) {
           prev.footer = item.footer
         }
