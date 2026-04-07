@@ -313,12 +313,50 @@ export function ChatHistoryView({
           onClick={() => toggleTurnCollapsed(turn.id)}
         >
           <span className='material-symbols-rounded'>
-            {turn.isCollapsed ? 'chevron_right' : 'expand_more'}
+            chevron_right
           </span>
         </button>
       </div>
     </div>
   )
+
+  const renderTurnItem = (item: (typeof renderItems)[number], key?: string) => {
+    if (item.type === 'message') {
+      return (
+        <MessageItem
+          key={key ?? item.anchorId}
+          anchorId={item.anchorId}
+          msg={item.message}
+          isFirstInGroup={item.isFirstInGroup}
+          originalMessage={item.originalMessage}
+          sessionInfo={sessionInfo}
+          isEditing={editingMessageId === item.originalMessage.id}
+          isSessionBusy={isCreating || session?.status === 'running' ||
+            session?.status === 'waiting_input'}
+          showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
+          onEditMessage={editMessage}
+          onForkMessage={forkMessage}
+          onRecallMessage={recallMessage}
+          onStartEditing={handleStartEditing}
+          onCancelEditing={(messageId) => {
+            setEditingMessageId((current) => current === messageId ? null : current)
+          }}
+          sessionId={session?.id}
+        />
+      )
+    }
+
+    return (
+      <ToolGroup
+        key={key ?? item.id}
+        anchorId={item.anchorId}
+        items={item.items}
+        originalMessage={item.originalMessage}
+        sessionId={session?.id}
+        footer={item.footer}
+      />
+    )
+  }
 
   return (
     <>
@@ -331,57 +369,29 @@ export function ChatHistoryView({
             </div>
           )}
           {messageTurns.map((turn) => (
-            <React.Fragment key={turn.id}>
-              {turn.visibleItems.map((item, index) => {
-                const itemKey = item.type === 'message'
-                  ? item.anchorId
-                  : item.id
-
-                if (item.type === 'message') {
-                  return (
-                    <React.Fragment key={itemKey}>
-                      <MessageItem
-                        anchorId={item.anchorId}
-                        msg={item.message}
-                        isFirstInGroup={item.isFirstInGroup}
-                        originalMessage={item.originalMessage}
-                        sessionInfo={sessionInfo}
-                        isEditing={editingMessageId === item.originalMessage.id}
-                        isSessionBusy={isCreating || session?.status === 'running' ||
-                          session?.status === 'waiting_input'}
-                        showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
-                        onEditMessage={editMessage}
-                        onForkMessage={forkMessage}
-                        onRecallMessage={recallMessage}
-                        onStartEditing={handleStartEditing}
-                        onCancelEditing={(messageId) => {
-                          setEditingMessageId((current) => current === messageId ? null : current)
-                        }}
-                        sessionId={session?.id}
-                      />
-                      {turn.isExpandable && index === 0 && (
-                        renderTurnSummary(turn)
-                      )}
-                    </React.Fragment>
-                  )
-                }
-
-                return (
-                  <React.Fragment key={itemKey}>
-                    <ToolGroup
-                      anchorId={item.anchorId}
-                      items={item.items}
-                      originalMessage={item.originalMessage}
-                      sessionId={session?.id}
-                      footer={item.footer}
-                    />
-                    {turn.isExpandable && index === 0 && (
-                      renderTurnSummary(turn)
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </React.Fragment>
+            turn.isExpandable
+              ? (
+                <div key={turn.id} className={`chat-turn ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+                  {renderTurnItem(turn.items[0]!, `${turn.id}:leading`)}
+                  <div className={`chat-turn__summary-region ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
+                    {renderTurnSummary(turn)}
+                    <div
+                      className={`chat-turn__collapsible ${turn.isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
+                      aria-hidden={turn.isCollapsed}
+                    >
+                      <div className='chat-turn__collapsible-inner'>
+                        {turn.items.slice(1, -1).map((item) => renderTurnItem(item))}
+                      </div>
+                    </div>
+                  </div>
+                  {renderTurnItem(turn.items[turn.items.length - 1]!, `${turn.id}:trailing`)}
+                </div>
+              )
+              : (
+                <React.Fragment key={turn.id}>
+                  {turn.items.map((item) => renderTurnItem(item))}
+                </React.Fragment>
+              )
           ))}
           <div ref={messagesEndRef} />
         </div>
