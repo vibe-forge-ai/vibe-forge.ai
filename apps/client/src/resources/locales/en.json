@@ -48,6 +48,7 @@
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "collapse": "Collapse sidebar",
+    "close": "Close",
     "sort": "Sort order",
     "allTags": "All tags",
     "allAdapters": "All adapters",
@@ -562,7 +563,8 @@
     },
     "terminal": {
       "connectionError": "Terminal connection failed. Check the server and try again.",
-      "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}"
+      "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}",
+      "resizePanel": "Drag to resize terminal height"
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",

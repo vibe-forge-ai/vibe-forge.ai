@@ -14,6 +14,7 @@ import { ChatSettingsView } from '#~/components/chat/ChatSettingsView.js'
 import { ChatTimelineView } from '#~/components/chat/ChatTimelineView.js'
 import { ChatTerminalView } from '#~/components/chat/terminal/ChatTerminalView.js'
 import { useChatSession } from '#~/hooks/chat/use-chat-session'
+import { useTerminalDockVisibility } from '#~/hooks/chat/use-terminal-dock-visibility'
 
 export function ChatRoute() {
   const { t } = useTranslation()
@@ -84,6 +85,7 @@ function ChatRouteView({
   const isEmptyNewSession = !session?.id && messages.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const shouldShowTerminal = session?.id != null && isTerminalOpen
+  const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(shouldShowTerminal)
 
   return (
     <div
@@ -158,8 +160,12 @@ function ChatRouteView({
         />
       )}
 
-      {shouldShowTerminal && session?.id && (
-        <ChatTerminalView sessionId={session.id} />
+      {isTerminalRendered && session?.id && (
+        <ChatTerminalView
+          isOpen={isTerminalVisible}
+          sessionId={session.id}
+          onClose={() => setIsTerminalOpen(false)}
+        />
       )}
     </div>
   )

@@ -34,6 +34,10 @@
   - sender 私有常量与轻量工具函数。
 - `ThinkingStatus.tsx`
   - 聊天域可复用的状态提示组件，不再算 sender 私有视图。
+- `../../dock-panel/DockPanel.tsx`
+  - 聊天页底部可复用 dock 面板壳层。
+  - 统一承载标题、meta、关闭动作和拖拽调高能力。
+  - terminal 以及后续其他底部面板优先复用这里，不要再各自复制一套 resize/header 逻辑。
 - `../../components/workspace/ContextFilePicker.tsx`
   - 工作区文件选择器；如果别的输入入口也要复用目录树选择，直接走这里。
 

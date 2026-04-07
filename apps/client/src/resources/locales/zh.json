@@ -48,6 +48,7 @@
     "selectAll": "全选",
     "deselectAll": "取消全选",
     "collapse": "收起侧边栏",
+    "close": "关闭",
     "sort": "排序规则",
     "allTags": "全部标签",
     "allAdapters": "全部适配器",
@@ -563,7 +564,8 @@
     },
     "terminal": {
       "connectionError": "终端连接失败，请检查服务状态后重试",
-      "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}"
+      "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}",
+      "resizePanel": "拖动调整终端高度"
     },
     "sessionSettings": "会话设置",
     "enterTitle": "输入会话标题...",
