@@ -6,34 +6,42 @@ import { Terminal } from '@xterm/xterm'
 const DEFAULT_COLS = 120
 const DEFAULT_ROWS = 32
 
-const TERMINAL_FOREGROUND = '#e5eef9'
-const TERMINAL_CURSOR = '#f8fafc'
-const TERMINAL_CURSOR_ACCENT = '#0f172a'
-const TERMINAL_SELECTION = 'rgba(96, 165, 250, 0.28)'
+const readCssVar = (styles: CSSStyleDeclaration, name: string, fallback: string) => {
+  const value = styles.getPropertyValue(name).trim()
+  return value === '' ? fallback : value
+}
 
 const buildTerminalTheme = () => {
+  const styles = window.getComputedStyle(document.documentElement)
+  const isDark = document.documentElement.classList.contains('dark')
+  const background = readCssVar(styles, '--bg-color', isDark ? '#141414' : '#ffffff')
+  const foreground = readCssVar(styles, '--text-color', isDark ? '#ffffff' : '#000000')
+  const subForeground = readCssVar(styles, '--sub-text-color', isDark ? '#8c8c8c' : '#1b1b1b')
+  const primaryColor = readCssVar(styles, '--primary-color', isDark ? '#3b82f6' : '#2563eb')
+  const primarySoftBg = readCssVar(styles, '--primary-soft-bg', isDark ? '#111b26' : '#eff6ff')
+
   return {
-    background: 'transparent',
-    foreground: TERMINAL_FOREGROUND,
-    cursor: TERMINAL_CURSOR,
-    cursorAccent: TERMINAL_CURSOR_ACCENT,
-    selectionBackground: TERMINAL_SELECTION,
-    black: '#0f172a',
-    red: '#ef4444',
-    green: '#10b981',
-    yellow: '#f59e0b',
-    blue: '#60a5fa',
-    magenta: '#f472b6',
-    cyan: '#22d3ee',
-    white: '#e2e8f0',
-    brightBlack: '#475569',
-    brightRed: '#f87171',
-    brightGreen: '#34d399',
-    brightYellow: '#fbbf24',
-    brightBlue: '#93c5fd',
-    brightMagenta: '#f9a8d4',
-    brightCyan: '#67e8f9',
-    brightWhite: '#f8fafc'
+    background,
+    foreground,
+    cursor: primaryColor,
+    cursorAccent: background,
+    selectionBackground: primarySoftBg,
+    black: isDark ? '#0f172a' : '#111827',
+    red: isDark ? '#ef4444' : '#dc2626',
+    green: isDark ? '#10b981' : '#047857',
+    yellow: isDark ? '#f59e0b' : '#b45309',
+    blue: isDark ? '#60a5fa' : '#2563eb',
+    magenta: isDark ? '#f472b6' : '#c026d3',
+    cyan: isDark ? '#22d3ee' : '#0f766e',
+    white: isDark ? '#e2e8f0' : subForeground,
+    brightBlack: isDark ? '#475569' : '#4b5563',
+    brightRed: isDark ? '#f87171' : '#ef4444',
+    brightGreen: isDark ? '#34d399' : '#10b981',
+    brightYellow: isDark ? '#fbbf24' : '#f59e0b',
+    brightBlue: isDark ? '#93c5fd' : '#3b82f6',
+    brightMagenta: isDark ? '#f9a8d4' : '#d946ef',
+    brightCyan: isDark ? '#67e8f9' : '#14b8a6',
+    brightWhite: foreground
   }
 }
 
@@ -119,7 +127,7 @@ export function useTerminalInstance({
     })
     themeObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ['class', 'style']
     })
 
     return () => {

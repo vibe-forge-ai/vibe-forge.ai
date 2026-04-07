@@ -14,8 +14,12 @@
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid
-      color-mix(in srgb, var(--danger-color) 18%, rgba(15, 23, 42, .7));
-    background-color: rgba(15, 23, 42, .82);
+      color-mix(in srgb, var(--danger-color) 24%, var(--border-color));
+    background-color: color-mix(
+      in srgb,
+      var(--bg-color) 86%,
+      var(--danger-color) 14%
+    );
     color: var(--danger-color);
     font-size: 12px;
   }
@@ -27,8 +31,16 @@
     position: relative;
     overflow: hidden;
     background:
-      radial-gradient(circle at top, rgba(255, 255, 255, .04), transparent 48%),
-      #111827;
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--primary-color) 12%, transparent),
+        transparent 52%
+      ),
+      linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sub-bg-color) 78%, var(--bg-color)),
+      var(--bg-color)
+    );
   }
 
   &__terminal {
@@ -43,26 +55,12 @@
     }
 
     .xterm-viewport {
-      border-radius: 10px;
+      background-color: var(--bg-color);
     }
   }
 
   &__footer {
     font-size: 12px;
     color: var(--sub-text-color);
-  }
-}
-
-html.dark {
-  .chat-terminal-view {
-    &__surface {
-      background:
-        radial-gradient(
-          circle at top,
-          rgba(96, 165, 250, .08),
-          transparent 46%
-        ),
-        #020617;
-    }
   }
 }
