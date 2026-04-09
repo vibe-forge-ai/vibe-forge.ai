@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   loadConfigState: vi.fn(),
   updateConfigFile: vi.fn(),
   handleChannelSessionEvent: vi.fn(),
+  resolveChannelSessionMcpServers: vi.fn(),
   requestInteraction: vi.fn(),
   canRequestInteraction: vi.fn(),
   mkdir: vi.fn(),
@@ -26,7 +27,8 @@ vi.mock('@vibe-forge/app-runtime', () => ({
 }))
 
 vi.mock('#~/channels/index.js', () => ({
-  handleChannelSessionEvent: mocks.handleChannelSessionEvent
+  handleChannelSessionEvent: mocks.handleChannelSessionEvent,
+  resolveChannelSessionMcpServers: mocks.resolveChannelSessionMcpServers
 }))
 
 vi.mock('#~/services/config/index.js', () => ({
@@ -133,6 +135,7 @@ describe('startAdapterSession', () => {
     })
     mocks.updateConfigFile.mockResolvedValue({ ok: true })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
+    mocks.resolveChannelSessionMcpServers.mockResolvedValue({})
     mocks.requestInteraction.mockReset()
     mocks.canRequestInteraction.mockReturnValue(false)
     mocks.mkdir.mockResolvedValue(undefined)
@@ -230,6 +233,47 @@ describe('startAdapterSession', () => {
     expect(runtime.session.emit).toBe(emit)
     expect(runtime.config?.adapter).toBe('claude-code')
     expect(mocks.run).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes channel companion MCP servers into the runtime query options', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.resolveChannelSessionMcpServers.mockResolvedValueOnce({
+      'channel-lark-default': {
+        command: process.execPath,
+        args: ['/tmp/channel-lark-mcp.js'],
+        env: {
+          VF_LARK_APP_ID: 'cli_app'
+        }
+      }
+    })
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        runtimeMcpServers: {
+          'channel-lark-default': {
+            command: process.execPath,
+            args: ['/tmp/channel-lark-mcp.js'],
+            env: {
+              VF_LARK_APP_ID: 'cli_app'
+            }
+          }
+        }
+      })
+    )
   })
 
   it('restarts the runtime when adapter changes and ignores stale exit events', async () => {

@@ -69,6 +69,11 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 | `description`             | `string?`   | 频道说明                                                |
 | `enabled`                 | `boolean?`  | 是否启用，默认 true                                     |
 | `systemPrompt`            | `string?`   | 启动会话时注入的系统提示词                              |
+| `commandPrefix`           | `string?`   | 频道指令前缀，默认 `/`                                  |
+| `language`                | `zh\|en?`   | 频道提示语言，默认 `zh`                                 |
+| `enableSessionMcp`        | `boolean?`  | 是否自动挂载该频道提供的 session companion MCP，默认 true |
+| `serverBaseUrl`           | `string?`   | 频道动作页与工具详情页对外可访问的 server 基础地址，例如 `https://bot.example.com` |
+| `sessionDetailBaseUrl`    | `string?`   | 会话详情 UI 的对外可访问基础地址；未配置时基于 `serverBaseUrl` 和 client base 推导 |
 | `access.admins`           | `string[]?` | 管理员 sender ID 列表，豁免所有访问控制，可执行管理指令 |
 | `access.allowPrivateChat` | `boolean?`  | 是否接受私聊，默认 true                                 |
 | `access.allowGroupChat`   | `boolean?`  | 是否接受群聊，默认 true                                 |
@@ -76,6 +81,39 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 | `access.blockedGroups`    | `string[]?` | 群组黑名单（channel ID）                                |
 | `access.allowedSenders`   | `string[]?` | 发送者白名单（sender ID）                               |
 | `access.blockedSenders`   | `string[]?` | 发送者黑名单（sender ID），优先于白名单                 |
+
+## Companion MCP 约定
+
+Channel 包可以可选导出 `@vibe-forge/channel-<type>/mcp` 子入口，用于声明该频道的 session-scoped companion MCP。
+
+- 子入口导出 `resolveChannelSessionMcpServers(config, context)`。
+- 返回值是具体 MCP server 配置数组；server 会在会话启动时解析，而不是在 workspace 资产阶段预注入。
+- companion MCP 只会注入到“从该频道绑定会话启动出来的 adapter session”里，不会影响其他会话。
+- `enableSessionMcp !== false` 时默认启用；频道配置可按 channel key 单独关闭。
+- companion MCP 应优先暴露该频道上下文相关、需要当前会话绑定信息才能安全执行的动作，例如发送消息、查询当前群、处理频道目录对象等。
+- 命名推荐使用 `channel-<type>-<channelKey>` 前缀，避免和用户 workspace 自带的 MCP 重名。
+- 如果 companion MCP 需要给用户返回 server 动作链接或详情页链接，统一基于 `serverBaseUrl` / `sessionDetailBaseUrl` 生成，默认回落到 `http://localhost:<serverPort>`；涉及局域网、反向代理或公网部署时，必须通过频道配置显式提供外部可访问地址。
+- 这类对外动作链接依赖 `__VF_PROJECT_AI_SERVER_ACTION_SECRET__` 做签名；未配置时不应继续生成可点击链接。
+- 对外暴露到聊天卡片里的 server 动作链接必须使用短时签名 token，不直接暴露原始 `sessionId` / `toolUseId`；带副作用的动作应进一步做一次性消费，避免刷新或预取重复执行。
+
+实现约定：
+
+```typescript
+export const resolveChannelSessionMcpServers =
+  defineResolveChannelSessionMcpServers<MyChannelConfig>((config, context) => [
+    {
+      name: `channel-mytype-${context.channelKey}`,
+      config: {
+        command: process.execPath,
+        args: [resolveMcpCliPath()],
+        env: {
+          VF_CHANNEL_SESSION_ID: context.sessionId,
+          VF_CHANNEL_KEY: context.channelKey
+        }
+      }
+    }
+  ])
+```
 
 ## systemPrompt 组装顺序
 
@@ -96,6 +134,10 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 import type { ChannelInboundEvent } from '@vibe-forge/core/channel'
 
 interface ChannelConnectionExtensions {
+  updateMessage?: (
+    messageId: string,
+    message: TMessage
+  ) => Promise<ChannelSendResult | undefined>
   generateSystemPrompt?: (
     inbound: ChannelInboundEvent
   ) => Promise<string | undefined>
@@ -103,6 +145,8 @@ interface ChannelConnectionExtensions {
 ```
 
 频道实现可在此方法中调用平台 API（如获取 bot profile），结果自动注入 systemPrompt。
+
+`updateMessage` 主要用于频道内的增量状态展示，例如把连续的 tool_use / tool_result 事件更新到同一条卡片或消息里，而不是每次发送一条新的文本回复。
 
 ## 工作约定
 

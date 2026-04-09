@@ -168,6 +168,29 @@ describe('session permission service', () => {
     }))
   })
 
+  it('normalizes mixed-case custom tool keys before resolving remembered decisions', async () => {
+    runtimeState = {
+      allow: ['Channel-lark-test'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'channel-lark-test',
+        label: 'channel-lark-test',
+        scope: 'tool'
+      }
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'sessionAllow'
+    }))
+  })
+
   it('keeps the DB permission state authoritative when mirror sync fails', async () => {
     runtimeState = {
       allow: [],
@@ -220,6 +243,38 @@ describe('session permission service', () => {
     })
     expect(runtimeState).toEqual({
       allow: ['Write'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    })
+  })
+
+  it('stores custom MCP subject keys in canonical lowercase form', async () => {
+    runtimeState = {
+      allow: [],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+    projectConfig.permissions = {
+      allow: ['Channel-lark-test'],
+      deny: [],
+      ask: []
+    }
+
+    await applyPermissionInteractionDecision({
+      sessionId: 'sess-1',
+      subjectKeys: ['Channel-lark-test'],
+      action: 'allow_project'
+    })
+
+    expect(projectConfig.permissions).toEqual({
+      allow: ['channel-lark-test'],
+      deny: [],
+      ask: []
+    })
+    expect(runtimeState).toEqual({
+      allow: ['channel-lark-test'],
       deny: [],
       onceAllow: [],
       onceDeny: []

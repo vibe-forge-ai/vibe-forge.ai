@@ -1,19 +1,20 @@
 import type { LarkChannelConfig, TenantTokenCacheEntry, TenantTokenProvider } from '#~/types.js'
 
 import { isTenantAccessTokenResponse } from './guards'
+import { buildLarkOpenApiUrl } from './open-api'
 
 const tenantTokenCache = new Map<string, TenantTokenCacheEntry>()
 
 export const createTenantTokenProvider = (config: LarkChannelConfig): TenantTokenProvider => {
   return async () => {
-    const cacheKey = config.appId
+    const cacheKey = `${config.domain ?? 'Feishu'}:${config.appId}`
     const cached = tenantTokenCache.get(cacheKey)
     const now = Date.now()
     if (cached && cached.expiresAt - now >= 30 * 60 * 1000) {
       return cached.token
     }
     const response = await globalThis.fetch(
-      'https://fsopen.bytedance.net/open-apis/auth/v3/tenant_access_token/internal',
+      buildLarkOpenApiUrl('/open-apis/auth/v3/tenant_access_token/internal', config.domain),
       {
         method: 'POST',
         headers: {

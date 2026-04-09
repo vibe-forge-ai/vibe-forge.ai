@@ -22,12 +22,25 @@ export const larkChannelConfigSchema = channelBaseSchema.extend({
 export const larkChannelMessageSchema = z.object({
   receiveId: z.string().min(1).describe('接收方 ID'),
   receiveIdType: z.enum(['open_id', 'user_id', 'chat_id', 'email']).describe('接收方类型'),
-  text: z.string().min(1).describe('消息文本')
+  text: z.string().min(1).describe('消息文本'),
+  toolCallSummary: z.object({
+    title: z.string().optional().describe('Tool summary title'),
+    items: z.array(z.object({
+      toolUseId: z.string().min(1).describe('Tool call identifier'),
+      name: z.string().min(1).describe('Tool name'),
+      status: z.enum(['pending', 'success', 'error']).describe('Tool execution status'),
+      argsText: z.string().optional().describe('Single-line tool arguments summary'),
+      resultText: z.string().optional().describe('Single-line tool result summary'),
+      detailUrl: z.string().optional().describe('Optional server detail URL for this tool call'),
+      exportJsonUrl: z.string().optional().describe('Optional server action URL that asks the bot to send the full tool-call JSON file')
+    })).min(1).describe('Ordered tool call summary entries')
+  }).optional().describe('Optional structured tool call summary for richer channel rendering')
 })
 
 export type LarkChannelConfig = z.infer<typeof larkChannelConfigSchema>
 export type LarkChannelMessage = z.infer<typeof larkChannelMessageSchema>
 export type LarkReceiveIdType = LarkChannelMessage['receiveIdType']
+export type LarkToolCallSummary = NonNullable<LarkChannelMessage['toolCallSummary']>
 
 export interface LarkMention {
   id?: {
@@ -54,6 +67,23 @@ export interface LarkMessagePayload {
       open_id?: string | null
       user_id?: string | null
       union_id?: string | null
+    }
+  }
+}
+
+export interface LarkMessageCallbackPayload {
+  schema?: string
+  header?: {
+    event_type?: string
+  }
+  event?: {
+    action?: {
+      value?: unknown
+      tag?: string
+    }
+    context?: {
+      open_message_id?: string
+      open_chat_id?: string
     }
   }
 }

@@ -5,6 +5,7 @@ import { processUserMessage } from '#~/services/session/index.js'
 
 import type { ChannelMiddleware } from '../@types'
 import { stripSpeakerPrefix } from '../@utils'
+import { syncChannelSessionBinding } from '../bind-session'
 import { buildSessionSystemPrompt } from './prompt'
 
 const buildChannelTags = (inbound: ChannelInboundEvent) => {
@@ -22,6 +23,7 @@ export const dispatchMiddleware: ChannelMiddleware = async (ctx, next) => {
   const hasContent = ctx.contentItems != null && ctx.contentItems.length > 0
 
   if (!ctx.sessionId) {
+    const systemPrompt = await buildSessionSystemPrompt(inbound, config, connection)
     const session = await createSessionWithInitialMessage({
       title: stripSpeakerPrefix(inbound.text ?? '').split('\n')[0],
       initialMessage: hasContent ? undefined : inbound.text,
@@ -31,7 +33,14 @@ export const dispatchMiddleware: ChannelMiddleware = async (ctx, next) => {
       effort: ctx.channelEffort,
       permissionMode: ctx.channelPermissionMode,
       tags: buildChannelTags(inbound),
-      systemPrompt: await buildSessionSystemPrompt(inbound, config, connection)
+      systemPrompt,
+      beforeStart: async (sessionId) => {
+        syncChannelSessionBinding({
+          channelKey: ctx.channelKey,
+          inbound,
+          sessionId
+        })
+      }
     })
     ctx.sessionId = session.id
   } else {

@@ -56,7 +56,12 @@ const normalizeKeys = (values: string[]) =>
       .filter((value): value is string => value.trim() !== '')
   )
 
-const removeKeys = (values: string[], keys: Set<string>) => values.filter(value => !keys.has(value.trim()))
+const removeKeys = (values: string[], keys: Set<string>) => (
+  values.filter((value) => {
+    const normalized = normalizePermissionToolName(value)?.key ?? value.trim()
+    return !keys.has(normalized)
+  })
+)
 
 const buildGeneralSectionValue = (config: Config | undefined, permissions: Config['permissions']) => ({
   baseDir: config?.baseDir,

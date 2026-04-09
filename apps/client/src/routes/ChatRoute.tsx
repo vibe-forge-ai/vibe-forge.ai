@@ -1,8 +1,9 @@
 import './ChatRoute.scss'
 
 import { Button, Empty } from 'antd'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import useSWR from 'swr'
 
 import type { Session } from '@vibe-forge/core'
@@ -47,6 +48,7 @@ function ChatRouteView({
 }: {
   session?: Session
 }) {
+  const [searchParams] = useSearchParams()
   const {
     messages,
     sessionInfo,
@@ -82,10 +84,34 @@ function ChatRouteView({
     hasAvailableModels,
     modelUnavailable
   } = useChatSession({ session })
+  const targetMessageId = searchParams.get('messageId') ?? undefined
+  const targetToolUseId = searchParams.get('toolUseId') ?? undefined
+  const deepLinkTargetKey = targetToolUseId?.trim()
+    ? `tool:${targetToolUseId.trim()}`
+    : targetMessageId?.trim()
+      ? `message:${targetMessageId.trim()}`
+      : ''
   const isEmptyNewSession = !session?.id && messages.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const shouldShowTerminal = session?.id != null && isTerminalOpen
   const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(shouldShowTerminal)
+  const handledDeepLinkTargetRef = useRef('')
+
+  useEffect(() => {
+    if (deepLinkTargetKey === '') {
+      handledDeepLinkTargetRef.current = ''
+      return
+    }
+
+    if (handledDeepLinkTargetRef.current === deepLinkTargetKey) {
+      return
+    }
+
+    handledDeepLinkTargetRef.current = deepLinkTargetKey
+    if (activeView !== 'history') {
+      setActiveView('history')
+    }
+  }, [activeView, deepLinkTargetKey, setActiveView])
 
   return (
     <div
@@ -117,6 +143,8 @@ function ChatRouteView({
           isReady={isReady}
           messages={messages}
           session={session}
+          targetMessageId={targetMessageId}
+          targetToolUseId={targetToolUseId}
           sessionInfo={sessionInfo}
           errorBanner={errorBanner}
           onRetryConnection={retryConnection}

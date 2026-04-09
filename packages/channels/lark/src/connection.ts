@@ -1,6 +1,13 @@
+import { Buffer } from 'node:buffer'
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
-import type { ChannelConnection, ChannelFollowUp, ChannelInboundEvent, ChannelLogger } from '@vibe-forge/core/channel'
+import type {
+  ChannelConnection,
+  ChannelFileMessage,
+  ChannelFollowUp,
+  ChannelInboundEvent,
+  ChannelLogger
+} from '@vibe-forge/core/channel'
 import { defineCreateChannelConnection } from '@vibe-forge/core/channel'
 
 import type {
@@ -12,36 +19,144 @@ import type {
 } from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
+import { buildLarkOpenApiUrl } from './utils/open-api'
+import { resolveLarkOutboundMessagePayload } from './utils/outbound-message'
 import { createTenantTokenProvider } from './utils/tenant-token'
 import { resolveLarkId } from './utils/text-format'
+import { buildToolCallSummaryCard } from './utils/tool-call-card'
+
+const ensureLarkSuccess = <T extends { code?: number; msg?: string }>(label: string, result: T) => {
+  if (result.code != null && result.code !== 0) {
+    throw new Error(`${label}: ${result.msg ?? 'unknown error'}`)
+  }
+  return result
+}
+
+const ensureLarkMessageSuccess = (label: string, result: LarkSendMessageResponse) => {
+  const success = ensureLarkSuccess(label, result)
+  return { messageId: success.data?.message_id }
+}
 
 const sendLarkMessage = async (
   client: Client,
-  message: LarkChannelMessage
+  message: LarkChannelMessage,
+  logger?: ChannelLogger
 ) => {
+  if (message.toolCallSummary != null && message.toolCallSummary.items.length > 0) {
+    try {
+      const result = await client.im.message.create({
+        params: {
+          receive_id_type: message.receiveIdType
+        },
+        data: {
+          receive_id: message.receiveId,
+          msg_type: 'interactive',
+          content: JSON.stringify(buildToolCallSummaryCard(message.toolCallSummary))
+        }
+      }) as LarkSendMessageResponse
+      return ensureLarkMessageSuccess('Lark tool summary card send failed', result)
+    } catch (error) {
+      await logger?.warn?.({
+        receiveId: message.receiveId,
+        receiveIdType: message.receiveIdType,
+        error: error instanceof Error ? error.message : String(error)
+      }, '[lark] Failed to send tool summary card, falling back to text message')
+    }
+  }
+
+  const outbound = resolveLarkOutboundMessagePayload(message)
   const result = await client.im.message.create({
     params: {
       receive_id_type: message.receiveIdType
     },
     data: {
       receive_id: message.receiveId,
-      msg_type: 'text',
-      content: JSON.stringify({ text: message.text })
+      msg_type: outbound.msgType,
+      content: outbound.content ?? JSON.stringify({ text: message.text })
     }
   }) as LarkSendMessageResponse
-  if (result.code != null && result.code !== 0) {
-    throw new Error(`Lark message send failed: ${result.msg ?? 'unknown error'}`)
+  return ensureLarkMessageSuccess('Lark message send failed', result)
+}
+
+const updateLarkMessage = async (
+  client: Client,
+  messageId: string,
+  message: LarkChannelMessage,
+  logger?: ChannelLogger
+) => {
+  if (message.toolCallSummary != null && message.toolCallSummary.items.length > 0) {
+    try {
+      const result = await client.im.message.patch({
+        path: {
+          message_id: messageId
+        },
+        data: {
+          content: JSON.stringify(buildToolCallSummaryCard(message.toolCallSummary))
+        }
+      }) as LarkSendMessageResponse
+      return ensureLarkMessageSuccess('Lark tool summary card update failed', result)
+    } catch (error) {
+      await logger?.warn?.({
+        messageId,
+        error: error instanceof Error ? error.message : String(error)
+      }, '[lark] Failed to update tool summary card, falling back to text update')
+    }
   }
 
-  return {
-    messageId: result.data?.message_id
+  const outbound = resolveLarkOutboundMessagePayload(message)
+  const result = await client.im.message.update({
+    path: {
+      message_id: messageId
+    },
+    data: {
+      msg_type: outbound.msgType === 'interactive' ? 'text' : outbound.msgType,
+      content: outbound.content ?? JSON.stringify({ text: message.text })
+    }
+  }) as LarkSendMessageResponse
+  return ensureLarkMessageSuccess('Lark message update failed', result)
+}
+
+const sendLarkFileMessage = async (
+  client: Client,
+  message: ChannelFileMessage
+) => {
+  const fileBytes = typeof message.content === 'string'
+    ? Buffer.from(message.content, 'utf8')
+    : Buffer.from(message.content)
+  const uploadResult = ensureLarkSuccess(
+    'Lark file upload failed',
+    await client.im.file.create({
+      data: {
+        file_type: 'stream',
+        file_name: message.fileName,
+        file: fileBytes
+      }
+    }) as { code?: number; msg?: string; file_key?: string }
+  )
+  if (uploadResult.file_key == null || uploadResult.file_key === '') {
+    throw new Error('Lark file upload failed: missing file_key')
   }
+
+  return await ensureLarkMessageSuccess(
+      'Lark file send failed',
+      await client.im.message.create({
+        params: {
+          receive_id_type: message.receiveIdType as LarkChannelMessage['receiveIdType']
+        },
+      data: {
+        receive_id: message.receiveId,
+        msg_type: 'file',
+        content: JSON.stringify({ file_key: uploadResult.file_key })
+      }
+    }) as LarkSendMessageResponse
+  )
 }
 
 const pushLarkFollowUps = async (
   messageId: string,
   followUps: readonly ChannelFollowUp[],
-  tenantTokenProvider: () => Promise<string | undefined>
+  tenantTokenProvider: () => Promise<string | undefined>,
+  domain?: LarkChannelConfig['domain']
 ) => {
   const accessToken = await tenantTokenProvider()
   if (!accessToken) {
@@ -49,7 +164,7 @@ const pushLarkFollowUps = async (
   }
 
   const response = await globalThis.fetch(
-    `https://fsopen.bytedance.net/open-apis/im/v1/messages/${encodeURIComponent(messageId)}/push_follow_up`,
+    buildLarkOpenApiUrl(`/open-apis/im/v1/messages/${encodeURIComponent(messageId)}/push_follow_up`, domain),
     {
       method: 'POST',
       headers: {
@@ -199,10 +314,16 @@ export const createChannelConnection = defineCreateChannelConnection(async (
   const tenantTokenProvider = createTenantTokenProvider(config)
   return {
     sendMessage: async (message) => {
-      return sendLarkMessage(client, message)
+      return sendLarkMessage(client, message, logger)
+    },
+    sendFileMessage: async (message) => {
+      return sendLarkFileMessage(client, message)
+    },
+    updateMessage: async (messageId, message) => {
+      return updateLarkMessage(client, messageId, message, logger)
     },
     pushFollowUps: async ({ messageId, followUps }) => {
-      await pushLarkFollowUps(messageId, followUps, tenantTokenProvider)
+      await pushLarkFollowUps(messageId, followUps, tenantTokenProvider, config.domain)
     },
     startReceiving: async ({ handlers }) => {
       const dispatcher = new EventDispatcher({})

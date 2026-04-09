@@ -25,6 +25,7 @@ interface MessageItemProps {
   msg: ChatMessage
   isFirstInGroup: boolean
   originalMessage: ChatMessage
+  isTargeted: boolean
   sessionId?: string
   sessionInfo?: SessionInfo | null
   isSessionBusy: boolean
@@ -47,6 +48,7 @@ function MessageItemComponent({
   msg,
   isFirstInGroup,
   originalMessage,
+  isTargeted,
   sessionId,
   sessionInfo,
   isSessionBusy,
@@ -402,7 +404,8 @@ function MessageItemComponent({
         id={anchorId}
         className={`${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${isEditing ? 'is-editing' : ''} ${
           !isFirstInGroup ? 'consecutive' : ''
-        } ${isActionsVisible ? 'is-actions-visible' : ''}`}
+        } ${isActionsVisible ? 'is-actions-visible' : ''} ${isTargeted ? 'is-targeted' : ''}`}
+        data-message-id={originalMessage.id}
         onPointerEnter={handleActionsPointerEnter}
         onPointerLeave={handleActionsPointerLeave}
       >
@@ -448,6 +451,7 @@ function MessageItemComponent({
 const areMessageItemPropsEqual = (prev: MessageItemProps, next: MessageItemProps) => {
   return prev.anchorId === next.anchorId &&
     prev.isFirstInGroup === next.isFirstInGroup &&
+    prev.isTargeted === next.isTargeted &&
     prev.isSessionBusy === next.isSessionBusy &&
     prev.isEditing === next.isEditing &&
     prev.sessionId === next.sessionId &&

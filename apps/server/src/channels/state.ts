@@ -1,9 +1,17 @@
 import { getDb } from '#~/db/index.js'
 
+import type { ChannelToolCallSummary } from './middleware/@types/index.js'
 import type { ChannelSessionBinding } from './types'
+
+interface PendingToolCallDisplay {
+  summary: ChannelToolCallSummary
+  messageId?: string
+}
 
 const sessionBindings = new Map<string, ChannelSessionBinding>()
 const pendingSessionUnack = new Map<string, (() => Promise<void>) | undefined>()
+const pendingToolCallDisplays = new Map<string, PendingToolCallDisplay>()
+const pendingToolCallDisplayUpdates = new Map<string, Promise<void>>()
 const seenMessageIds = new Map<string, number>()
 const maxSeenMessageIds = 5000
 
@@ -30,6 +38,8 @@ export const setBinding = (sessionId: string, binding: ChannelSessionBinding) =>
 
 export const deleteBinding = (sessionId: string) => {
   sessionBindings.delete(sessionId)
+  pendingToolCallDisplays.delete(sessionId)
+  pendingToolCallDisplayUpdates.delete(sessionId)
 }
 
 export const setPendingUnack = (sessionId: string, unack?: () => Promise<void>) => {
@@ -42,6 +52,46 @@ export const consumePendingUnack = (sessionId: string) => {
     pendingSessionUnack.delete(sessionId)
   }
   return unack
+}
+
+export const resolvePendingToolCallDisplay = (sessionId: string) => pendingToolCallDisplays.get(sessionId)
+
+export const setPendingToolCallDisplay = (
+  sessionId: string,
+  display: PendingToolCallDisplay
+) => {
+  pendingToolCallDisplays.set(sessionId, display)
+}
+
+export const clearPendingToolCallDisplay = (sessionId: string) => {
+  const display = pendingToolCallDisplays.get(sessionId)
+  if (display != null) {
+    pendingToolCallDisplays.delete(sessionId)
+  }
+  return display
+}
+
+export const runPendingToolCallDisplayUpdate = async <T>(
+  sessionId: string,
+  task: () => Promise<T>
+) => {
+  const previous = pendingToolCallDisplayUpdates.get(sessionId) ?? Promise.resolve()
+  const currentTask = previous
+    .catch(() => undefined)
+    .then(task)
+  const marker = currentTask.then(
+    () => undefined,
+    () => undefined
+  )
+  pendingToolCallDisplayUpdates.set(sessionId, marker)
+
+  try {
+    return await currentTask
+  } finally {
+    if (pendingToolCallDisplayUpdates.get(sessionId) === marker) {
+      pendingToolCallDisplayUpdates.delete(sessionId)
+    }
+  }
 }
 
 export const isDuplicateMessage = (key: string) => {

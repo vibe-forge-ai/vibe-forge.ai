@@ -21,6 +21,7 @@
   - 列出当前 Feishu messenger 页里左侧可见的会话候选；如果用户没有明确指定目标会话，先跑这个命令再向用户确认
 - `pnpm tools chrome-debug messenger-send <conversation> <message>`
   - 在当前 Feishu messenger 页里按会话名点开会话并发送一条消息
+  - 如果是本轮第一次往该页面发消息，先确认目标会话；用户只说“我打开了一个会话”时，不要直接发送
 - `pnpm tools chrome-debug messenger-click-reply <conversation> <messageSnippet>`
   - 在当前 Feishu messenger 页里悬停某条消息，并点击它的 reply 按钮
 - `pnpm tools chrome-debug messenger-click-text <conversation> <text>`
@@ -74,6 +75,11 @@
   - hook 日志 parser 和 snapshot projection 单测
 - `scripts/__tests__/adapter-e2e/mock-llm.spec.ts`
   - mock LLM 规则 DSL 单测
+
+## Lark 调试约定
+
+- 用户没有明确给出会话名时，第一次发消息前先把当前会话标题或可见候选回给用户确认。
+- 用户确认过本轮调试目标后，后续默认继续复用同一会话，除非用户明确要求切换。
 
 ## 维护约定
 

@@ -27,6 +27,7 @@ interface ChromeDebugEvaluateResult<TResult> {
 interface MessengerConversationSelection {
   found: boolean
   conversation?: {
+    alreadyActive?: boolean
     preview: string
     rect: {
       x: number
@@ -93,8 +94,8 @@ interface MessengerComposerFocusResult {
   previousValue: string
 }
 
-interface MessengerSendButtonClickResult {
-  found: boolean
+interface MessengerSendTriggerResult {
+  method: 'enter' | 'click'
   sendButton?: {
     rect: {
       x: number
@@ -200,6 +201,38 @@ const sleep = async (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms)
   })
+
+const dispatchChromeMouseClick = async (
+  client: Awaited<ReturnType<typeof createChromeCdpClient>>,
+  point: {
+    x: number
+    y: number
+  }
+) => {
+  await client.send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: point.x,
+    y: point.y,
+    button: 'none',
+    buttons: 0
+  })
+  await client.send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: point.x,
+    y: point.y,
+    button: 'left',
+    buttons: 1,
+    clickCount: 1
+  })
+  await client.send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: point.x,
+    y: point.y,
+    button: 'left',
+    buttons: 0,
+    clickCount: 1
+  })
+}
 
 const parseChromeDebugTargets = (value: unknown): ChromeDebugTarget[] => {
   if (!Array.isArray(value)) {
@@ -368,9 +401,37 @@ const buildSelectMessengerConversationExpression = (conversation: string) => `
 (() => {
   ${buildVisibilityHelpersExpression()}
   const targetName = ${JSON.stringify(conversation)};
+  const normalizeText = (value) => String(value ?? '').trim().replace(/\\n+/g, ' ');
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const candidates = [];
   const seen = new Set();
+
+  const activeHeader = [...document.querySelectorAll('*')]
+    .find((element) => {
+      if (!(element instanceof Element) || !isVisible(element)) return false;
+      const rect = element.getBoundingClientRect();
+      return (
+        normalizeText(element.innerText) === targetName &&
+        rect.x >= window.innerWidth * 0.35 &&
+        rect.x <= window.innerWidth * 0.7 &&
+        rect.y >= 0 &&
+        rect.y <= 140 &&
+        rect.height <= 80
+      );
+    });
+
+  if (activeHeader instanceof Element) {
+    const rect = activeHeader.getBoundingClientRect();
+    return {
+      found: true,
+      conversation: {
+        alreadyActive: true,
+        score: Number.MAX_SAFE_INTEGER,
+        rect: serializeRect(rect),
+        preview: normalizeText(activeHeader.innerText)
+      }
+    };
+  }
 
   while (walker.nextNode()) {
     const currentNode = walker.currentNode;
@@ -401,9 +462,16 @@ const buildSelectMessengerConversationExpression = (conversation: string) => `
             (rect.width >= 220 ? 2 : 0) +
             (rect.x >= window.innerWidth * 0.2 ? 1 : 0)
           );
+          const className = String(row.className ?? '');
+          const isActive = (
+            /(^|\\s)(active|selected)(\\s|$)/i.test(className) ||
+            row.getAttribute('aria-selected') === 'true' ||
+            row.getAttribute('data-selected') === 'true'
+          );
 
           candidates.push({
             element: row,
+            isActive,
             score,
             rect: serializeRect(rect),
             preview: String(row.innerText ?? '').trim().replace(/\\n+/g, ' | ').slice(0, 200)
@@ -428,20 +496,23 @@ const buildSelectMessengerConversationExpression = (conversation: string) => `
     };
   }
 
-  best.element.scrollIntoView({ block: 'nearest' });
-  if (typeof best.element.click === 'function') {
-    best.element.click();
-  } else {
-    best.element.dispatchEvent(new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    }));
+  if (!best.isActive) {
+    best.element.scrollIntoView({ block: 'nearest' });
+    if (typeof best.element.click === 'function') {
+      best.element.click();
+    } else {
+      best.element.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      }));
+    }
   }
 
   return {
     found: true,
     conversation: {
+      alreadyActive: best.isActive,
       score: best.score,
       rect: best.rect,
       preview: best.preview
@@ -557,8 +628,9 @@ const buildLocateMessengerComposerExpression = () => `
       return rect.y >= window.innerHeight * 0.6 && rect.width >= 200;
     })
     .sort((left, right) => right.getBoundingClientRect().y - left.getBoundingClientRect().y)[0];
+  const editorRect = editor?.getBoundingClientRect();
 
-  const sendButton = [...document.querySelectorAll('button, [role="button"]')]
+  const buttonCandidates = [...document.querySelectorAll('button, [role="button"]')]
     .filter(isVisible)
     .map((element) => {
       const rect = element.getBoundingClientRect();
@@ -569,22 +641,26 @@ const buildLocateMessengerComposerExpression = () => `
         aria: String(element.getAttribute('aria-label') ?? ''),
         title: String(element.getAttribute('title') ?? '')
       };
+    });
+
+  const sendButton = buttonCandidates
+    .filter((entry) => {
+      if (!editorRect) return false;
+      const verticalGap = Math.abs(entry.rect.y - editorRect.y);
+      return (
+        entry.rect.y >= editorRect.y - 80 &&
+        entry.rect.y <= editorRect.bottom + 120 &&
+        entry.rect.x >= editorRect.x + editorRect.width * 0.45 &&
+        verticalGap <= 120
+      );
     })
-    .filter((entry) => entry.rect.y >= window.innerHeight * 0.72)
-    .sort((left, right) => right.rect.x - left.rect.x)
+    .sort((left, right) => right.rect.x - left.rect.x || Math.abs(left.rect.y - editorRect.y) - Math.abs(right.rect.y - editorRect.y))
     .find((entry) => /发送/.test([entry.text, entry.aria, entry.title].join(' ')))
-    ?? [...document.querySelectorAll('button, [role="button"]')]
-      .filter(isVisible)
-      .map((element) => {
-        const rect = element.getBoundingClientRect();
-        return {
-          element,
-          rect,
-          text: String(element.innerText ?? '').trim(),
-          aria: String(element.getAttribute('aria-label') ?? ''),
-          title: String(element.getAttribute('title') ?? '')
-        };
-      })
+    ?? buttonCandidates
+      .filter((entry) => entry.rect.y >= window.innerHeight * 0.72)
+      .sort((left, right) => right.rect.x - left.rect.x)
+      .find((entry) => /发送/.test([entry.text, entry.aria, entry.title].join(' ')))
+    ?? buttonCandidates
       .filter((entry) => (
         entry.rect.y >= window.innerHeight * 0.72 &&
         entry.rect.x >= window.innerWidth * 0.85 &&
@@ -682,6 +758,14 @@ const buildFocusMessengerComposerExpression = (replaceDraft: boolean) => `
 const buildClickMessengerSendButtonExpression = () => `
 (() => {
   ${buildVisibilityHelpersExpression()}
+  const editor = [...document.querySelectorAll('[contenteditable="true"], textarea, input[type="text"]')]
+    .filter(isVisible)
+    .filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.y >= window.innerHeight * 0.6 && rect.width >= 200;
+    })
+    .sort((left, right) => right.getBoundingClientRect().y - left.getBoundingClientRect().y)[0];
+  const editorRect = editor?.getBoundingClientRect();
   const candidates = [...document.querySelectorAll('button, [role="button"]')]
     .filter(isVisible)
     .map((element) => {
@@ -697,7 +781,18 @@ const buildClickMessengerSendButtonExpression = () => `
     .filter((entry) => entry.rect.y >= window.innerHeight * 0.72)
     .sort((left, right) => right.rect.x - left.rect.x);
 
-  const sendButton = candidates.find((entry) => /发送/.test([entry.text, entry.aria, entry.title].join(' ')))
+  const sendButton = candidates.find((entry) => {
+    if (!editorRect) return false;
+    const verticalGap = Math.abs(entry.rect.y - editorRect.y);
+    return (
+      /发送/.test([entry.text, entry.aria, entry.title].join(' ')) &&
+      entry.rect.y >= editorRect.y - 80 &&
+      entry.rect.y <= editorRect.bottom + 120 &&
+      entry.rect.x >= editorRect.x + editorRect.width * 0.45 &&
+      verticalGap <= 120
+    );
+  })
+    ?? candidates.find((entry) => /发送/.test([entry.text, entry.aria, entry.title].join(' ')))
     ?? candidates.find((entry) => (
       entry.rect.x >= window.innerWidth * 0.85 &&
       entry.rect.width <= 48 &&
@@ -706,7 +801,7 @@ const buildClickMessengerSendButtonExpression = () => `
 
   if (!sendButton) {
     return {
-      found: false
+      method: 'click'
     };
   }
 
@@ -721,7 +816,7 @@ const buildClickMessengerSendButtonExpression = () => `
   }
 
   return {
-    found: true,
+    method: 'click',
     sendButton: {
       rect: serializeRect(sendButton.rect),
       text: sendButton.text,
@@ -1013,16 +1108,26 @@ const buildClickMessengerTextExpression = (text: string) => `
     if (!(target instanceof Element) || !isVisible(target)) continue;
 
     const rect = target.getBoundingClientRect();
+    const role = target.getAttribute('role') ?? '';
+    const isInteractive = (
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      role === 'button' ||
+      role === 'link'
+    );
     const key = [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)].join(':');
     if (seen.has(key)) continue;
     seen.add(key);
 
     if (
-      rect.x < window.innerWidth * 0.45 ||
-      rect.y < window.innerHeight * 0.62 ||
-      rect.width < 40 ||
-      rect.width > window.innerWidth * 0.45 ||
-      rect.height > 96
+      rect.x < window.innerWidth * 0.35 ||
+      rect.y < window.innerHeight * 0.4 ||
+      rect.x + rect.width > window.innerWidth ||
+      rect.y + rect.height > window.innerHeight ||
+      rect.width < (isInteractive ? 6 : 40) ||
+      rect.width > window.innerWidth * 0.6 ||
+      rect.height < (isInteractive ? 20 : 16) ||
+      rect.height > (isInteractive ? 160 : 96)
     ) {
       continue;
     }
@@ -1031,29 +1136,20 @@ const buildClickMessengerTextExpression = (text: string) => `
       element: target,
       rect: serializeRect(rect),
       area: rect.width * rect.height,
+      isInteractive,
       preview: normalizeText(target.innerText)
     });
   }
 
   const best = [...candidates].sort((left, right) => (
-    right.rect.y - left.rect.y ||
-    left.area - right.area
+    scoreCandidate(right) - scoreCandidate(left) ||
+    right.area - left.area
   ))[0];
 
   if (!best) {
     return {
       found: false
     };
-  }
-
-  if (typeof best.element.click === 'function') {
-    best.element.click();
-  } else {
-    best.element.dispatchEvent(new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    }));
   }
 
   return {
@@ -1215,28 +1311,57 @@ export const runChromeDebugMessengerSend = async (input: ChromeDebugMessengerSen
     await client.send('Input.insertText', { text: input.message })
     await sleep(200)
 
-    const sendButtonClickResult = await client.send<ChromeDebugEvaluateResult<MessengerSendButtonClickResult>>(
-      'Runtime.evaluate',
-      {
-        expression: buildClickMessengerSendButtonExpression(),
-        returnByValue: true,
-        awaitPromise: true
-      }
-    )
-    const sendButtonClick = sendButtonClickResult.result?.value
-
-    if (sendButtonClick == null || sendButtonClick.found !== true || sendButtonClick.sendButton == null) {
-      throw new Error('Messenger send button was not found.')
-    }
+    let sendTrigger: MessengerSendTriggerResult = { method: 'enter' }
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key: 'Enter',
+      code: 'Enter',
+      windowsVirtualKeyCode: 13,
+      nativeVirtualKeyCode: 13,
+      text: '\r',
+      unmodifiedText: '\r'
+    })
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key: 'Enter',
+      code: 'Enter',
+      windowsVirtualKeyCode: 13,
+      nativeVirtualKeyCode: 13
+    })
 
     await sleep(input.settleMs)
 
-    const tailSnapshotResult = await client.send<ChromeDebugEvaluateResult<MessengerTailSnapshot>>('Runtime.evaluate', {
+    let tailSnapshotResult = await client.send<ChromeDebugEvaluateResult<MessengerTailSnapshot>>('Runtime.evaluate', {
       expression: buildMessengerTailSnapshotExpression(input.message),
       returnByValue: true,
       awaitPromise: true
     })
-    const tailSnapshot = tailSnapshotResult.result?.value
+    let tailSnapshot = tailSnapshotResult.result?.value
+
+    if ((tailSnapshot?.matches?.length ?? 0) === 0) {
+      const sendButtonClickResult = await client.send<ChromeDebugEvaluateResult<MessengerSendTriggerResult>>(
+        'Runtime.evaluate',
+        {
+          expression: buildClickMessengerSendButtonExpression(),
+          returnByValue: true,
+          awaitPromise: true
+        }
+      )
+      const sendButtonClick = sendButtonClickResult.result?.value
+
+      if (sendButtonClick == null || sendButtonClick.sendButton == null) {
+        throw new Error('Messenger message was not sent by Enter, and no send button fallback was found.')
+      }
+
+      sendTrigger = sendButtonClick
+      await sleep(input.settleMs)
+      tailSnapshotResult = await client.send<ChromeDebugEvaluateResult<MessengerTailSnapshot>>('Runtime.evaluate', {
+        expression: buildMessengerTailSnapshotExpression(input.message),
+        returnByValue: true,
+        awaitPromise: true
+      })
+      tailSnapshot = tailSnapshotResult.result?.value
+    }
 
     return {
       target: {
@@ -1245,7 +1370,7 @@ export const runChromeDebugMessengerSend = async (input: ChromeDebugMessengerSen
       },
       conversation: selectedConversation.conversation,
       composer: composerLocation.editor,
-      sendButton: sendButtonClick.sendButton,
+      sendButton: sendTrigger.sendButton,
       tail: tailSnapshot?.tail ?? [],
       matches: tailSnapshot?.matches ?? []
     }
@@ -1418,6 +1543,13 @@ export const runChromeDebugMessengerClickText = async (input: ChromeDebugMesseng
     if (clicked == null || clicked.found !== true || clicked.clicked == null) {
       throw new Error(`Visible text "${input.text}" was not found on the current messenger page.`)
     }
+
+    const clickX = Math.round(clicked.clicked.rect.x + Math.max(clicked.clicked.rect.width, 1) / 2)
+    const clickY = Math.round(clicked.clicked.rect.y + Math.max(clicked.clicked.rect.height, 1) / 2)
+    await dispatchChromeMouseClick(client, {
+      x: clickX,
+      y: clickY
+    })
 
     await sleep(input.settleMs)
 

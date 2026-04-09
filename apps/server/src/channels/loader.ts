@@ -1,17 +1,29 @@
 import { createRequire } from 'node:module'
 
-import type { ChannelCreateFn, ChannelDescriptor } from '@vibe-forge/core/channel'
+import type {
+  ChannelCreateFn,
+  ChannelDescriptor,
+  ResolveChannelSessionMcpServersFn
+} from '@vibe-forge/core/channel'
 
 const nodeRequire = createRequire(__filename)
 
 export interface LoadedChannel {
   create: ChannelCreateFn
   definition: ChannelDescriptor
+  resolveSessionMcpServers?: ResolveChannelSessionMcpServersFn
 }
+
+const isOptionalMcpModuleMissing = (error: unknown, specifier: string) =>
+  error instanceof Error &&
+  'code' in error &&
+  error.code === 'MODULE_NOT_FOUND' &&
+  error.message.includes(specifier)
 
 export const loadChannelModule = (type: string): LoadedChannel => {
   const mainSpecifier = `@vibe-forge/channel-${type}`
   const connSpecifier = `@vibe-forge/channel-${type}/connection`
+  const mcpSpecifier = `@vibe-forge/channel-${type}/mcp`
 
   const mainMod = nodeRequire(mainSpecifier) as {
     channelDefinition?: ChannelDescriptor
@@ -29,5 +41,19 @@ export const loadChannelModule = (type: string): LoadedChannel => {
     throw new TypeError(`${connSpecifier} must export createChannelConnection`)
   }
 
-  return { create, definition }
+  let resolveSessionMcpServers: ResolveChannelSessionMcpServersFn | undefined
+  try {
+    const mcpMod = nodeRequire(mcpSpecifier) as {
+      resolveChannelSessionMcpServers?: ResolveChannelSessionMcpServersFn
+    }
+    if (typeof mcpMod.resolveChannelSessionMcpServers === 'function') {
+      resolveSessionMcpServers = mcpMod.resolveChannelSessionMcpServers
+    }
+  } catch (error) {
+    if (!isOptionalMcpModuleMissing(error, mcpSpecifier)) {
+      throw error
+    }
+  }
+
+  return { create, definition, resolveSessionMcpServers }
 }

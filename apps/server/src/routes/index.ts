@@ -13,6 +13,7 @@ import { logger } from '#~/utils/logger.js'
 import { aiRouter } from './ai'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
+import { channelActionsRouter } from './channel-actions'
 import { configRouter } from './config'
 import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
@@ -83,6 +84,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
+    { prefix: '/channels/actions', router: channelActionsRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },
     { prefix: '/api/workspace', router: workspaceRouter() }
