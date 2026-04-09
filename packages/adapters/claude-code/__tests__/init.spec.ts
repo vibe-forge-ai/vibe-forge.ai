@@ -54,4 +54,51 @@ describe('initClaudeCodeAdapter', () => {
     expect((await lstat(keychainsPath)).isSymbolicLink()).toBe(true)
     expect(resolve(dirname(keychainsPath), await readlink(keychainsPath))).toBe(resolve(realHome, 'Library', 'Keychains'))
   })
+
+  it('removes stale keychains symlinks when the real home is unavailable', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const keychainsPath = join(mockHome, 'Library', 'Keychains')
+
+    await mkdir(join(realHome, 'Library', 'Keychains'), { recursive: true })
+    await writeFile(join(realHome, 'Library', 'Keychains', 'login.keychain-db'), '')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    expect((await lstat(keychainsPath)).isSymbolicLink()).toBe(true)
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    await expect(lstat(keychainsPath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 })

@@ -38,12 +38,16 @@ const syncClaudeMockHomeSkills = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) =>
 
 const syncClaudeMockHomeKeychains = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
   const realHome = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const targetPath = resolve(resolveMockHome(ctx.cwd, ctx.env), 'Library', 'Keychains')
 
-  if (realHome == null || realHome === '') return
+  if (realHome == null || realHome === '') {
+    await rm(targetPath, { recursive: true, force: true })
+    return
+  }
 
   await syncClaudeMockHomeSymlink({
     sourcePath: resolve(realHome, 'Library', 'Keychains'),
-    targetPath: resolve(resolveMockHome(ctx.cwd, ctx.env), 'Library', 'Keychains'),
+    targetPath,
     type: 'dir'
   })
 }
