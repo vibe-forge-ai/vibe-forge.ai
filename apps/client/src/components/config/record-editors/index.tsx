@@ -1,6 +1,6 @@
 export { BooleanRecordEditor } from './BooleanRecordEditor'
-export { ChannelRecordEditor } from './ChannelRecordEditor'
 export { KeyValueEditor } from './KeyValueEditor'
 export { McpServersRecordEditor } from './McpServersRecordEditor'
 export { ModelServicesRecordEditor } from './ModelServicesRecordEditor'
 export { RecordJsonEditor } from './RecordJsonEditor'
+export { SchemaRecordEditor } from './SchemaRecordEditor'

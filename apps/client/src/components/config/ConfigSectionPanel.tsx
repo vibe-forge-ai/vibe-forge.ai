@@ -2,6 +2,8 @@ import '../ConfigView.scss'
 
 import type { ReactNode } from 'react'
 
+import type { ConfigUiSection } from '@vibe-forge/types'
+
 import { SectionForm } from './ConfigSectionForm'
 import type { FieldSpec } from './configSchema'
 import type { TranslationFn } from './configUtils'
@@ -11,6 +13,7 @@ export function ConfigSectionPanel({
   title,
   icon,
   fields,
+  uiSection,
   value,
   onChange,
   mergedModelServices,
@@ -24,6 +27,7 @@ export function ConfigSectionPanel({
   title?: ReactNode
   icon?: ReactNode
   fields?: FieldSpec[]
+  uiSection?: ConfigUiSection
   value: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
@@ -61,6 +65,7 @@ export function ConfigSectionPanel({
         <SectionForm
           sectionKey={sectionKey}
           fields={fields}
+          uiSection={uiSection}
           value={value}
           onChange={onChange}
           mergedModelServices={mergedModelServices}

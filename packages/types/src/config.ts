@@ -328,3 +328,80 @@ export interface ConfigResponse {
     about?: AboutInfo
   }
 }
+
+export type ConfigUiFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'string[]'
+  | 'select'
+  | 'json'
+  | 'multiline'
+
+export interface ConfigUiFieldOption {
+  value: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiField {
+  path: string[]
+  type: ConfigUiFieldType
+  defaultValue?: unknown
+  label?: string
+  description?: string
+  icon?: string
+  placeholder?: string
+  sensitive?: boolean
+  options?: ConfigUiFieldOption[]
+}
+
+export interface ConfigUiObjectSchema {
+  fields: ConfigUiField[]
+}
+
+export interface ConfigUiRecordKind {
+  key: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiRecordMapSchema {
+  mode: 'keyed' | 'discriminated'
+  keyPlaceholder?: string
+  discriminatorField?: string
+  entryKinds?: ConfigUiRecordKind[]
+  schemas: Record<string, ConfigUiObjectSchema>
+  unknownSchema?: ConfigUiObjectSchema
+  unknownEditor?: 'json'
+}
+
+export interface ConfigUiSection {
+  key: string
+  title?: string
+  description?: string
+  kind: 'recordMap'
+  recordMap: ConfigUiRecordMapSchema
+}
+
+export interface ConfigUiSchema {
+  version: 1
+  sections: Record<string, ConfigUiSection>
+}
+
+export type ConfigJsonSchema = Record<string, unknown>
+
+export interface ConfigSchemaVariant {
+  jsonSchema: ConfigJsonSchema
+  uiSchema?: ConfigUiSchema
+  outputPath?: string
+  extensions?: {
+    adapters: string[]
+    channels: string[]
+  }
+}
+
+export interface ConfigSchemaResponse {
+  base: ConfigSchemaVariant
+  workspace: ConfigSchemaVariant
+}

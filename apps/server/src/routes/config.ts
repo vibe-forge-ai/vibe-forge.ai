@@ -1,15 +1,22 @@
+/* eslint-disable max-lines -- config route also serves schema endpoints and section presenters */
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
 import Router from '@koa/router'
 
-import { updateConfigFile } from '@vibe-forge/config'
-import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
+import {
+  composeBaseConfigSchemaBundle,
+  composeWorkspaceConfigSchemaBundle,
+  updateConfigFile,
+  validateConfigSection,
+  writeWorkspaceConfigSchemaFile
+} from '@vibe-forge/config'
+import type { AdapterBuiltinModel, Config, ConfigSchemaResponse } from '@vibe-forge/types'
 import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
-import { badRequest, internalServerError } from '#~/utils/http.js'
+import { badRequest, internalServerError, isHttpError } from '#~/utils/http.js'
 
 const sanitize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -118,6 +125,49 @@ const loadAdapterBuiltinModels = (
 export function configRouter(): Router {
   const router = new Router()
 
+  router.get('/schema', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const [base, workspace] = await Promise.all([
+        Promise.resolve(composeBaseConfigSchemaBundle()),
+        composeWorkspaceConfigSchemaBundle({ cwd: workspaceFolder })
+      ])
+
+      const body: ConfigSchemaResponse = {
+        base: {
+          jsonSchema: base.jsonSchema,
+          extensions: base.extensions
+        },
+        workspace: {
+          jsonSchema: workspace.jsonSchema,
+          uiSchema: workspace.uiSchema,
+          extensions: workspace.extensions
+        }
+      }
+
+      ctx.body = body
+    } catch (err) {
+      throw internalServerError('Failed to load config schema', { cause: err, code: 'config_schema_load_failed' })
+    }
+  })
+
+  router.post('/schema/generate', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const { outputPath, bundle } = await writeWorkspaceConfigSchemaFile({ cwd: workspaceFolder })
+      ctx.body = {
+        ok: true,
+        outputPath,
+        extensions: bundle.extensions
+      }
+    } catch (err) {
+      throw internalServerError('Failed to generate config schema', {
+        cause: err,
+        code: 'config_schema_generate_failed'
+      })
+    }
+  })
+
   router.get('/', async (ctx) => {
     try {
       const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadConfigState()
@@ -176,9 +226,26 @@ export function configRouter(): Router {
 
     try {
       const workspaceFolder = getWorkspaceFolder()
+      const parsed = await validateConfigSection(section, value, { cwd: workspaceFolder })
+      if (!parsed.success) {
+        throw badRequest(
+          'Invalid config section value',
+          {
+            section,
+            issues: parsed.error.issues.map(issue => ({
+              path: issue.path,
+              message: issue.message
+            }))
+          },
+          'invalid_config_section_value'
+        )
+      }
       await updateConfigFile({ workspaceFolder, source, section, value })
       ctx.body = { ok: true }
     } catch (err) {
+      if (isHttpError(err)) {
+        throw err
+      }
       throw internalServerError('Failed to update config', { cause: err, code: 'config_update_failed' })
     }
   })

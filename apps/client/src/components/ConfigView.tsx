@@ -6,12 +6,12 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigSource } from '@vibe-forge/core'
-import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
+import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
 import { PageShell } from '#~/components/layout/PageShell'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
-import { getApiErrorMessage, getConfig, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, getConfigSchema, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
@@ -22,6 +22,7 @@ export function ConfigView() {
   const { message } = App.useApp()
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
   const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
     keys: ['tab', 'source'],
     defaults: { tab: 'general', source: 'project' }
@@ -136,6 +137,7 @@ export function ConfigView() {
 
     return groups
   }, [tabs, t])
+  const uiSections = schemaData?.workspace.uiSchema?.sections ?? {}
 
   useEffect(() => {
     if (activeTab == null) return
@@ -223,6 +225,9 @@ export function ConfigView() {
       {configTabKeys.has(tab.key) && (
         <ConfigSectionPanel
           sectionKey={tab.key}
+          title={tab.label}
+          icon={tab.icon}
+          uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
           value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
           onChange={(next) => handleDraftChange(tab.key, next)}
           mergedModelServices={mergedModelServices as Record<string, unknown>}
@@ -313,6 +318,42 @@ export function ConfigView() {
               <div className='config-view__compact-panel'>
                 {activeTab != null ? renderTabContent(activeTab) : null}
               </div>
+            </div>
+          )
+          : (
+            <div className='config-view__tabs-wrap'>
+              <Tabs
+                tabPosition='left'
+                tabBarGutter={4}
+                indicator={{ size: 0 }}
+                className='config-view__tabs'
+                activeKey={activeTabKey}
+                onChange={(key) => {
+                  if (key !== 'group-config' && key !== 'group-app') {
+                    setActiveTabKey(key)
+                  }
+                }}
+                items={tabs.map((tab) => {
+                  if (tab.type === 'group') {
+                    return {
+                      key: tab.key,
+                      label: <span className='config-view__group-label'>{tab.label}</span>,
+                      disabled: true,
+                      children: <div />
+                    }
+                  }
+                  return {
+                    key: tab.key,
+                    label: (
+                      <span className='config-view__tab-label'>
+                        <span className='material-symbols-rounded config-view__tab-icon'>{tab.icon}</span>
+                        <span className='config-view__tab-text'>{tab.label}</span>
+                      </span>
+                    ),
+                    children: renderTabContent(tab)
+                  }
+                })}
+              />
             </div>
           )
           : (

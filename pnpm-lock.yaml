@@ -376,6 +376,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../utils
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/adapters/codex:
     dependencies:
@@ -439,6 +442,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../utils
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/adapters/opencode:
     dependencies:
@@ -460,6 +466,9 @@ importers:
       opencode-ai:
         specifier: 1.3.2
         version: 1.3.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/app-runtime:
     dependencies:
@@ -526,6 +535,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@vibe-forge/core':
+        specifier: workspace:^
+        version: link:../core
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
@@ -535,6 +547,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/js-yaml':
         specifier: ^4.0.9
