@@ -2,6 +2,8 @@
 
 ## 文档入口
 
+- `.ai/rules/ADAPTERS.md`
+  - adapter 统一设计、原生资产自动适配、运行时配置和真实 CLI 验证入口
 - `.ai/rules/HOOKS.md`
   - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
 - `.ai/rules/HOOKS-REFERENCE.md`
@@ -47,6 +49,12 @@
 - OpenCode adapter 负责 plugin/config dir/session env
 - CLI 或 upstream 事件流负责把 tool 事件送出来
 - hooks runtime 负责统一插件执行，task runtime 负责去重
+- OpenCode 的 skills 继续保持 session 级 `OPENCODE_CONFIG_DIR` 投影；不要把 `.ai/skills` 在 init 阶段全量挂进 mock home，否则会绕过 include/exclude skill 选择和 overlay 规划
+
+OpenCode 官方文档：
+
+- [OpenCode Agent Skills](https://opencode.ai/docs/skills)
+- [OpenCode Config](https://opencode.ai/docs/config/)
 
 ## 真实 CLI 验证
 

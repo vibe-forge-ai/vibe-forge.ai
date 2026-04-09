@@ -10,6 +10,7 @@
 
 按任务继续阅读：
 
+- adapter runtime / mock home / 原生资产自动适配：`.ai/rules/ADAPTERS.md`
 - 前端 / 后端约束：`.ai/rules/FRONTEND-STANDARD.md`、`.ai/rules/BACKEND-STANDARD.md`
 - 仓库开发与贡献：`.ai/rules/DEVELOPMENT.md`
 - 项目接入方式：`.ai/rules/USAGE.md`

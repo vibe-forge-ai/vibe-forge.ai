@@ -2,6 +2,8 @@
 
 ## 文档入口
 
+- `.ai/rules/ADAPTERS.md`
+  - adapter 统一设计、原生资产自动适配、运行时配置和真实 CLI 验证入口
 - `.ai/rules/HOOKS.md`
   - 通用 hooks 方案、事件矩阵、`.ai/.mock` 托管配置布局
 - `.ai/rules/HOOKS-REFERENCE.md`
@@ -13,7 +15,7 @@
 
 - `src/claude/*.ts`
   - Claude CLI 会话生命周期
-  - `prepare.ts` 组装执行参数与 settings，`session.ts` 负责 spawn/stream，`init.ts` 只做 adapter 初始化
+  - `prepare.ts` 组装执行参数与 settings，`session.ts` 负责 spawn/stream，`init.ts` 负责 adapter 初始化与 mock-home skills 同步
 - `src/plugins/*.ts`
   - Claude native plugin 的格式适配层：marketplace 解析、manifest/root 检测与 Claude -> Vibe Forge 资产转换
   - `index.ts` 只导出给 CLI core 使用的标准 installer hooks，不承载通用安装编排
@@ -38,7 +40,8 @@
 - `src/claude/prepare.ts`
   - 注入 session 运行参数、native hook env、settings 与 mcp config
 - `src/claude/init.ts`
-  - adapter 初始化阶段安装 Claude native hooks；router 生命周期由 `src/ccr/daemon.ts` 接管
+  - adapter 初始化阶段安装 Claude native hooks，并把 `.ai/skills` 软链到 `.ai/.mock/.claude/skills`
+  - router 生命周期由 `src/ccr/daemon.ts` 接管
 - `src/hooks/bridge.ts`
   - 负责把 Claude native payload 翻译成统一 hook 协议
 - `packages/hooks/call-hook.js`
@@ -134,8 +137,14 @@ node apps/cli/cli.js \
 Claude 维护时优先检查两点：
 
 - 仓库默认不提交项目级 `.claude/settings.json`；Claude 托管入口是 `.ai/.mock/.claude/settings.json`
+- workspace skills 走 `.ai/.mock/.claude/skills`，这是在 mock home 里模拟 Claude 的个人级 `~/.claude/skills`
 - 但如果用户自己加了项目级 `.claude/settings.json`，Claude 仍会和 mock home settings 一起加载，容易出现双触发
 - 排查重复 hook 时，不要只看 `.ai/.mock/.claude/settings.json`，也要检查项目级 `.claude/settings.json`
+
+Claude skills 官方文档：
+
+- [Claude Code Skills](https://code.claude.com/docs/en/skills)
+- [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
 
 ## 调试路由
 
