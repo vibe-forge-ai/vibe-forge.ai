@@ -31,6 +31,15 @@
         "require": "./dist/channel.js"
       }
     },
+    "./config-schema": {
+      "__vibe-forge__": {
+        "default": "./src/config-schema.ts"
+      },
+      "default": {
+        "import": "./dist/config-schema.mjs",
+        "require": "./dist/config-schema.js"
+      }
+    },
     "./schema": {
       "__vibe-forge__": {
         "default": "./src/schema.ts"

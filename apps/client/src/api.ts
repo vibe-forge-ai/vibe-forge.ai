@@ -20,7 +20,7 @@ export {
 } from './api/benchmark'
 
 // 配置读取与更新 API
-export { getConfig, updateConfig } from './api/config'
+export { getConfig, getConfigSchema, updateConfig } from './api/config'
 
 // 知识库与规则说明 API
 export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
