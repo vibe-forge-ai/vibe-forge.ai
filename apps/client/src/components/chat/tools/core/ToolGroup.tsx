@@ -16,6 +16,7 @@ interface ToolGroupProps {
   }[]
   originalMessage: ChatMessage
   sessionId?: string
+  targetToolUseId?: string
   footer?: {
     model?: string
     usage?: ChatMessage['usage']
@@ -29,12 +30,20 @@ function ToolGroupComponent({
   items,
   originalMessage,
   sessionId,
+  targetToolUseId,
   footer
 }: ToolGroupProps) {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const isDebugMode = searchParams.get('debug') === 'true'
   const [expanded, setExpanded] = useState(false)
+
+  const lastItem = items[items.length - 1]
+  const otherItems = items.slice(0, -1)
+  const shouldForceExpand = targetToolUseId != null &&
+    targetToolUseId !== '' &&
+    otherItems.some(item => item.item.id === targetToolUseId)
+  const isExpanded = expanded || shouldForceExpand
 
   if (items.length === 0) return null
 
@@ -55,7 +64,7 @@ function ToolGroupComponent({
         onStartEditing={() => {}}
       >
         <div id={anchorId} className='tool-group-container'>
-          <div className='tool-group-wrapper single-item'>
+          <div className='tool-group-wrapper single-item' data-tool-use-id={items[0].item.id}>
             <ToolRenderer
               item={items[0].item}
               resultItem={items[0].resultItem}
@@ -70,9 +79,6 @@ function ToolGroupComponent({
       </MessageContextMenu>
     )
   }
-
-  const lastItem = items[items.length - 1]
-  const otherItems = items.slice(0, -1)
 
   return (
     <MessageContextMenu
@@ -90,30 +96,31 @@ function ToolGroupComponent({
     >
       <div id={anchorId} className='tool-group-container'>
         <div className='tool-group-wrapper card-style'>
-          <div
-            className='tool-group-header'
-            onClick={() => setExpanded(!expanded)}
-          >
-            <div className='header-left'>
-              <span className='material-symbols-rounded'>dataset</span>
-              <span>{t('chat.usedTools', { count: items.length })}</span>
-            </div>
-            <span className='material-symbols-rounded expand-icon'>
-              {expanded ? 'expand_less' : 'expand_more'}
-            </span>
+        <div
+          className='tool-group-header'
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className='header-left'>
+            <span className='material-symbols-rounded'>dataset</span>
+            <span>{t('chat.usedTools', { count: items.length })}</span>
           </div>
+          <span className='material-symbols-rounded expand-icon'>
+            {isExpanded ? 'expand_less' : 'expand_more'}
+          </span>
+        </div>
 
-          {expanded && (
-            <div className='tool-group-list'>
-              {otherItems.map((it, idx) => (
+        {isExpanded && (
+          <div className='tool-group-list'>
+            {otherItems.map((it, idx) => (
+              <div key={it.item.id || idx} data-tool-use-id={it.item.id}>
                 <ToolRenderer
-                  key={it.item.id || idx}
                   item={it.item}
                   resultItem={it.resultItem}
                 />
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
+        )}
 
           {
             /* Always show the last item, but if expanded, it's just part of the list visually.
@@ -124,12 +131,13 @@ function ToolGroupComponent({
               When expanded: Header + Other Items + Last Item
           */
           }
-          <div className='tool-group-last-item'>
+          <div className='tool-group-last-item' data-tool-use-id={lastItem.item.id}>
             <ToolRenderer
               item={lastItem.item}
               resultItem={lastItem.resultItem}
             />
           </div>
+
         </div>
 
         {footer && isDebugMode && (
@@ -145,6 +153,7 @@ function ToolGroupComponent({
 const areToolGroupPropsEqual = (prev: ToolGroupProps, next: ToolGroupProps) => {
   if (prev.anchorId !== next.anchorId) return false
   if (prev.items.length !== next.items.length) return false
+  if (prev.targetToolUseId !== next.targetToolUseId) return false
   for (let i = 0; i < prev.items.length; i++) {
     if (prev.items[i].item !== next.items[i].item) return false
     if (prev.items[i].resultItem !== next.items[i].resultItem) return false

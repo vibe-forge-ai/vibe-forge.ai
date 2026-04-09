@@ -76,6 +76,16 @@
       max-width: 100%;
     }
   }
+
+  &.is-targeted {
+    scroll-margin-top: 96px;
+
+    .bubble {
+      outline: 2px solid rgba(59, 130, 246, .35);
+      outline-offset: 6px;
+      border-radius: 12px;
+    }
+  }
 }
 
 .message-side-actions {

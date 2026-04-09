@@ -23,6 +23,8 @@ export function ChatHistoryView({
   isReady,
   messages,
   session,
+  targetMessageId,
+  targetToolUseId,
   sessionInfo,
   errorBanner,
   onRetryConnection,
@@ -55,6 +57,8 @@ export function ChatHistoryView({
   isReady: boolean
   messages: ChatMessage[]
   session?: Session
+  targetMessageId?: string
+  targetToolUseId?: string
   sessionInfo: SessionInfo | null
   errorBanner?: ChatErrorBannerState | null
   onRetryConnection: () => void
@@ -190,13 +194,30 @@ export function ChatHistoryView({
   const isInlineEditing = editingMessageId != null
   const renderItems = useMemo(() => processMessages(messages), [messages])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
+  const targetAnchorId = useMemo(() => {
+    if (targetToolUseId != null && targetToolUseId !== '') {
+      const targetToolGroup = renderItems.find((item) => {
+        return item.type === 'tool-group' && item.items.some(toolItem => toolItem.item.id === targetToolUseId)
+      })
+      return targetToolGroup?.anchorId ?? ''
+    }
+
+    if (targetMessageId != null && targetMessageId !== '') {
+      const targetMessage = renderItems.find((item) => {
+        return item.type === 'message' && item.originalMessage.id === targetMessageId
+      })
+      return targetMessage?.anchorId ?? ''
+    }
+
+    return ''
+  }, [renderItems, targetMessageId, targetToolUseId])
   const messageTurns = useMemo(() =>
     buildMessageTurns({
       renderItems,
       expandedTurnIds,
-      hashAnchorId,
+      hashAnchorId: hashAnchorId !== '' ? hashAnchorId : targetAnchorId,
       keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
-    }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status])
+    }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status, targetAnchorId])
   const lastAssistantActionAnchorId = useMemo(() => {
     for (let index = renderItems.length - 1; index >= 0; index -= 1) {
       const item = renderItems[index]
@@ -252,6 +273,32 @@ export function ChatHistoryView({
       }
     }
   }, [hashAnchorId, isReady, messageTurns])
+
+  useEffect(() => {
+    const targetAttr = targetToolUseId != null && targetToolUseId !== ''
+      ? { key: 'data-tool-use-id', value: targetToolUseId }
+      : targetMessageId != null && targetMessageId !== ''
+        ? { key: 'data-message-id', value: targetMessageId }
+        : undefined
+    if (targetAttr == null) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const container = messagesContentRef.current
+      if (container == null) {
+        return
+      }
+
+      const target = Array.from(container.querySelectorAll<HTMLElement>(`[${targetAttr.key}]`))
+        .find(element => element.getAttribute(targetAttr.key) === targetAttr.value)
+      target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [messageTurns, messagesContentRef, targetMessageId, targetToolUseId])
 
   const toggleTurnCollapsed = (turnId: string) => {
     setExpandedTurnIds((prev) => {
@@ -328,6 +375,7 @@ export function ChatHistoryView({
           anchorId={item.anchorId}
           msg={item.message}
           isFirstInGroup={item.isFirstInGroup}
+          isTargeted={item.originalMessage.id === targetMessageId}
           originalMessage={item.originalMessage}
           sessionInfo={sessionInfo}
           isEditing={editingMessageId === item.originalMessage.id}
@@ -353,6 +401,7 @@ export function ChatHistoryView({
         items={item.items}
         originalMessage={item.originalMessage}
         sessionId={session?.id}
+        targetToolUseId={targetToolUseId}
         footer={item.footer}
       />
     )
