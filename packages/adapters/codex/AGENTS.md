@@ -25,6 +25,7 @@ The adapter drives Codex in two modes:
 
 Cross-reference these docs first when touching hooks:
 
+- `.ai/rules/ADAPTERS.md` — adapter 统一设计、原生资产自动适配、运行时配置和真实 CLI 验证入口
 - `.ai/rules/HOOKS.md` — user-facing behavior, event matrix, `.ai/.mock` asset layout
 - `.ai/rules/HOOKS-REFERENCE.md` — real CLI smoke commands, lessons learned, shared runtime entrypoints
 - `apps/cli/src/AGENTS.md` — CLI hook bridge entry and `call-hook.js` routing
@@ -35,6 +36,7 @@ Primary implementation entrypoints for Codex hooks:
   - writes the managed `.ai/.mock/.codex/hooks.json`
 - `src/runtime/init.ts`
   - installs mock-home assets during adapter init
+  - keeps hooks/auth in `.ai/.mock/.codex/` and maps workspace skills into `.ai/.mock/.agents/skills`
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
@@ -87,10 +89,17 @@ Validation checklist:
 Codex maintenance notes:
 
 - native hooks should stay entirely inside mock home; do not write to the real Codex home
+- native skills should stay in `.ai/.mock/.agents/skills`; `.codex/skills` is not a Codex-native skills location
 - Codex 2026-03-27 official hooks docs say `~/.codex/hooks.json` and `<repo>/.codex/hooks.json` are both loaded, so project-level managed hooks must be deduped before writing mock-home hooks
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
 - when native hooks are active, bridge duplicates must stay disabled in `packages/task/src/run.ts`
 - Codex native `PreToolUse` / `PostToolUse` should be treated as Bash-first until official coverage expands; transcript JSONL can supplement non-Bash analytics, but it cannot block or rewrite the live session
+
+Relevant official docs:
+
+- [Codex Skills](https://developers.openai.com/codex/skills)
+- [Codex AGENTS.md](https://developers.openai.com/codex/agents-md)
+- [Codex Config basics](https://developers.openai.com/codex/config-basic)
 
 ---
 

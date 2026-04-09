@@ -69,7 +69,8 @@ export async function resolvePromptAssetSelection(params: {
       effectiveBundle = await resolveWorkspaceAssetBundle({
         cwd: params.bundle.cwd,
         plugins: resolvePluginOverlay(params.bundle.pluginConfigs, pluginOverlay),
-        overlaySource: `${params.type}:${baseTarget.displayName}`
+        overlaySource: `${params.type}:${baseTarget.displayName}`,
+        includeManagedPlugins: pluginOverlay.mode !== 'override'
       })
     }
 

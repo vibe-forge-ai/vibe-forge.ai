@@ -29,6 +29,25 @@ describe('mergeConfigs', () => {
             }
           }
         },
+        marketplaces: {
+          'team-tools': {
+            type: 'claude-code',
+            options: {
+              source: {
+                source: 'settings',
+                plugins: [
+                  {
+                    name: 'reviewer',
+                    source: {
+                      source: 'npm',
+                      package: '@acme/reviewer'
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
         plugins: [
           {
             id: 'logger',
@@ -58,6 +77,12 @@ describe('mergeConfigs', () => {
             completed: {
               description: 'Child Description'
             }
+          }
+        },
+        marketplaces: {
+          'team-tools': {
+            type: 'claude-code',
+            enabled: false
           }
         },
         plugins: [
@@ -92,6 +117,26 @@ describe('mergeConfigs', () => {
     expect(merged.notifications?.events?.completed).toEqual({
       title: 'Base Title',
       description: 'Child Description'
+    })
+    expect(merged.marketplaces).toEqual({
+      'team-tools': {
+        type: 'claude-code',
+        enabled: false,
+        options: {
+          source: {
+            source: 'settings',
+            plugins: [
+              {
+                name: 'reviewer',
+                source: {
+                  source: 'npm',
+                  package: '@acme/reviewer'
+                }
+              }
+            ]
+          }
+        }
+      }
     })
     expect(merged.plugins).toEqual([
       {

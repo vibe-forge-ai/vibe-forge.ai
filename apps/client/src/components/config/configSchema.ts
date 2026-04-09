@@ -313,6 +313,12 @@ export const configSchema: Record<string, FieldSpec[]> = {
       type: 'json',
       defaultValue: [],
       icon: 'extension'
+    },
+    {
+      path: ['marketplaces'],
+      type: 'json',
+      defaultValue: {},
+      icon: 'store'
     }
   ],
   mcp: [

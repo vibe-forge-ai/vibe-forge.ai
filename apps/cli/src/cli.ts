@@ -11,6 +11,7 @@ import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
+import { registerPluginCommand } from './commands/plugin'
 import { registerReportCommand } from './commands/report'
 import { registerRunCommand } from './commands/run'
 import { registerStopCommand } from './commands/stop'
@@ -36,6 +37,7 @@ registerRunCommand(program)
 registerBenchmarkCommand(program)
 registerClearCommand(program)
 registerListCommand(program)
+registerPluginCommand(program)
 registerReportCommand(program)
 registerStopCommand(program)
 registerKillCommand(program)

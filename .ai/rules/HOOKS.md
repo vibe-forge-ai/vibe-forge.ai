@@ -7,6 +7,8 @@ description: 当任务涉及 hooks 方案、托管配置、事件矩阵或启用
 
 本文件是 hooks 方案入口页；统一语义和实现细节拆到 `hooks/`，更深的维护细节继续看 [HOOKS-REFERENCE.md](./HOOKS-REFERENCE.md)。
 
+如果问题已经超出 hooks，开始涉及 adapter 的 mock home、原生 skills、MCP 自动生效或 session config dir，请改看 [ADAPTERS.md](./ADAPTERS.md)。
+
 ## 先看这些
 
 - [托管配置](./hooks/managed-files.md)

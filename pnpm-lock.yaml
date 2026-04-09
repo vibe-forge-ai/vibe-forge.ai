@@ -337,6 +337,9 @@ importers:
       '@musistudio/claude-code-router':
         specifier: 1.0.73
         version: 1.0.73(@modelcontextprotocol/sdk@1.25.3(hono@4.11.4)(zod@3.25.76))(ws@8.20.0)(zod@3.25.76)
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../../config
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core

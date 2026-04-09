@@ -23,6 +23,15 @@
         "require": "./dist/index.js"
       }
     },
+    "./claude-json-plugin": {
+      "__vibe-forge__": {
+        "default": "./src/claude-json-plugin.ts"
+      },
+      "default": {
+        "import": "./dist/claude-json-plugin.mjs",
+        "require": "./dist/claude-json-plugin.js"
+      }
+    },
     "./call-hook.js": "./call-hook.js",
     "./package.json": "./package.json"
   },

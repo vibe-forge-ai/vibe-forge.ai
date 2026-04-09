@@ -113,6 +113,17 @@ notifications:
   events:
     completed:
       title: Base Title
+marketplaces:
+  team-tools:
+    type: claude-code
+    options:
+      source:
+        source: settings
+        plugins:
+          - name: reviewer
+            source:
+              source: npm
+              package: "@acme/reviewer"
 plugins:
   - id: logger
     options:
@@ -141,6 +152,12 @@ adapters:
                 completed: {
                   description: 'Project Description'
                 }
+              }
+            },
+            marketplaces: {
+              'team-tools': {
+                type: 'claude-code',
+                enabled: false
               }
             },
             plugins: [
@@ -219,6 +236,26 @@ shortcuts:
             completed: {
               title: 'Base Title',
               description: 'Project Description'
+            }
+          }
+        },
+        marketplaces: {
+          'team-tools': {
+            type: 'claude-code',
+            enabled: false,
+            options: {
+              source: {
+                source: 'settings',
+                plugins: [
+                  {
+                    name: 'reviewer',
+                    source: {
+                      source: 'npm',
+                      package: '@acme/reviewer'
+                    }
+                  }
+                ]
+              }
             }
           }
         },

@@ -3,6 +3,8 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
+import { resolveAdapterPackageName } from '@vibe-forge/types'
+
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from './native'
 import type { HookInputs } from './type'
 
@@ -27,13 +29,6 @@ const HOOK_EVENT_ENV = '__VF_VIBE_FORGE_HOOK_EVENT_NAME__'
 const createWorkspaceRequire = () => {
   const workspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
   return createRequire(path.resolve(workspaceFolder, '__vf-hook-loader__.js'))
-}
-
-const resolveAdapterPackageName = (value: string) => {
-  const trimmed = value.trim()
-  if (trimmed.startsWith('@')) return trimmed
-  if (trimmed.startsWith(ADAPTER_PREFIX)) return `${ADAPTER_SCOPE}/${trimmed}`
-  return `${ADAPTER_SCOPE}/${ADAPTER_PREFIX}${trimmed}`
 }
 
 const isHookBridgeResolveMiss = (error: unknown) => {

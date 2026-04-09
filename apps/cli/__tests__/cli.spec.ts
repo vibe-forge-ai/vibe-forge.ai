@@ -13,6 +13,13 @@ describe('cli argv normalization', () => {
     expect(normalizeCliArgs(['run', 'hello'])).toEqual(['run', 'hello'])
     expect(normalizeCliArgs(['list'])).toEqual(['list'])
     expect(normalizeCliArgs(['benchmark', 'list'])).toEqual(['benchmark', 'list'])
+    expect(normalizeCliArgs(['plugin', '--adapter', 'claude', 'add', 'demo@team-tools'])).toEqual([
+      'plugin',
+      '--adapter',
+      'claude',
+      'add',
+      'demo@team-tools'
+    ])
     expect(normalizeCliArgs(['--help'])).toEqual(['--help'])
     expect(normalizeCliArgs(['-V'])).toEqual(['-V'])
   })

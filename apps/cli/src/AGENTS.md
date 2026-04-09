@@ -63,6 +63,7 @@ hooks 相关问题先按这条链路看：
 维护约定：
 
 - CLI 只做入口分发和最小 env 补齐，不承载 adapter 私有协议翻译
+- adapter-native plugin 的标准安装动作、目录约定和失败回滚在 CLI core；adapter 自己的 `./plugins` 导出只提供 native 格式解析、marketplace 规则和转换钩子
 - 业务 hook 执行放在 `packages/hooks/src/*`
 - 通用 `call-hook.js` 运行时与 `vf-call-hook` bin 都归 `packages/hooks`
 - `.ai/.mock` 的 native 资产写入放在 adapter / `packages/hooks/src/native.ts`，不要散落到 CLI 命令层

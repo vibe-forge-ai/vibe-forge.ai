@@ -6,6 +6,7 @@ import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 import { resolveClaudeCliPath } from '../ccr/paths'
+import { stageClaudePluginDirs } from './plugins'
 
 interface ClaudeExecutionSettings {
   [key: string]: unknown
@@ -248,11 +249,16 @@ export const prepareClaudeExecution = async (
     'adapter.claude-code.settings',
     settings
   )
+  const pluginDirs = await stageClaudePluginDirs({
+    cwd,
+    ctxId: ctx.ctxId,
+    sessionId
+  })
 
   const args: string[] = [
     ...(description
       ? [JSON.stringify(
-        `${(
+          `${(
           description?.trimStart().startsWith('-') ? '\0' : ''
         )}${(
           description.replace(/`/g, "'")
@@ -262,7 +268,8 @@ export const prepareClaudeExecution = async (
     '--mcp-config',
     mcpCachePath,
     '--settings',
-    settingsCachePath
+    settingsCachePath,
+    ...pluginDirs.flatMap(pluginDir => ['--plugin-dir', pluginDir])
   ].filter((a) => typeof a === 'string')
 
   if (permissionMode === 'bypassPermissions') {

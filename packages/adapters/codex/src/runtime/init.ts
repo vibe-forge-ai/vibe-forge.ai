@@ -1,9 +1,10 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, symlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { access, mkdir, rm, symlink } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
+import { resolveMockHome } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
@@ -15,9 +16,9 @@ const execFileAsync = promisify(execFile)
  * Symlink `<home>/.codex/auth.json` into `<aiHome>/.codex/auth.json` so
  * the codex process can authenticate when HOME is redirected to `.ai/.mock`.
  */
-async function linkAuthFile(home: string): Promise<void> {
+async function linkAuthFile(home: string, mockHome: string): Promise<void> {
   const realAuth = join(home, '.codex', 'auth.json')
-  const aiCodexDir = join(process.env.HOME!, '.codex')
+  const aiCodexDir = join(mockHome, '.codex')
   const aiAuth = join(aiCodexDir, 'auth.json')
 
   // Ensure the .codex directory exists inside the AI home
@@ -41,6 +42,22 @@ async function linkAuthFile(home: string): Promise<void> {
   await symlink(realAuth, aiAuth)
 }
 
+async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {
+  const sourceDir = resolve(ctx.cwd, '.ai', 'skills')
+  const targetDir = resolve(resolveMockHome(ctx.cwd, ctx.env), '.agents', 'skills')
+
+  try {
+    await access(sourceDir)
+  } catch {
+    await rm(targetDir, { recursive: true, force: true })
+    return
+  }
+
+  await rm(targetDir, { recursive: true, force: true })
+  await mkdir(dirname(targetDir), { recursive: true })
+  await symlink(sourceDir, targetDir, 'dir')
+}
+
 /**
  * Initialize the Codex adapter.
  *
@@ -58,7 +75,8 @@ async function linkAuthFile(home: string): Promise<void> {
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
 
-  const home = process.env.__VF_PROJECT_REAL_HOME__!
+  const home = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
 
   const binaryPath = resolveCodexBinaryPath(env)
 
@@ -69,6 +87,9 @@ export const initCodexAdapter = async (ctx: AdapterCtx) => {
     // installed but the --version flag might not exist in older builds.
   }
 
-  await linkAuthFile(home)
+  if (home != null && home !== '') {
+    await linkAuthFile(home, mockHome)
+  }
+  await syncCodexMockHomeSkills(ctx)
   await ensureCodexNativeHooksInstalled(ctx)
 }
