@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/app-runtime",
-  "version": "0.10.0",
+  "version": "0.10.1-alpha.1",
   "description": "App-facing runtime facade for Vibe Forge",
   "imports": {
     "#~/*.js": {

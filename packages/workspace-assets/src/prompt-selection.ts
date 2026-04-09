@@ -11,6 +11,7 @@ import type {
   WorkspaceSkillSelection
 } from '@vibe-forge/types'
 
+import { supportsNativeProjectSkills } from './adapter-capabilities'
 import { resolveWorkspaceAssetBundle } from './bundle'
 import {
   generateEntitiesRoutePrompt,
@@ -35,6 +36,7 @@ export async function resolvePromptAssetSelection(params: {
   bundle: WorkspaceAssetBundle
   type: 'spec' | 'entity' | undefined
   name?: string
+  adapter?: string
   input?: {
     skills?: WorkspaceSkillSelection
   }
@@ -83,10 +85,11 @@ export async function resolvePromptAssetSelection(params: {
   }
 
   const selectedSkillAssets = resolveSelectedSkillAssets(effectiveBundle.skills, params.input?.skills)
+  const useNativeProjectSkills = supportsNativeProjectSkills(params.adapter)
   const promptAssetIds = new Set<string>([
     ...effectiveBundle.rules.map(asset => asset.id),
     ...effectiveBundle.specs.map(asset => asset.id),
-    ...selectedSkillAssets.map(asset => asset.id),
+    ...(useNativeProjectSkills ? [] : selectedSkillAssets.map(asset => asset.id)),
     ...(params.type !== 'entity' ? effectiveBundle.entities.map(asset => asset.id) : [])
   ])
   const ruleDefinitions = new Map<string, Definition<Rule>>(
@@ -164,10 +167,12 @@ export async function resolvePromptAssetSelection(params: {
     generateRulesPrompt(effectiveBundle.cwd, rules),
     generateSkillsPrompt(effectiveBundle.cwd, targetSkills),
     generateEntitiesRoutePrompt(entities),
-    generateSkillsRoutePrompt(effectiveBundle.cwd, routedSkills),
+    useNativeProjectSkills ? '' : generateSkillsRoutePrompt(effectiveBundle.cwd, routedSkills),
     generateSpecRoutePrompt(specs, { active: params.type === 'spec' }),
     targetBody
-  ].join('\n\n')
+  ]
+    .filter(section => section !== '')
+    .join('\n\n')
 
   if (targetToolsFilter != null) {
     options.tools = targetToolsFilter

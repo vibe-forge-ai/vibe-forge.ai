@@ -241,6 +241,90 @@ describe('resolvePromptAssetSelection', () => {
     expect(options.systemPrompt).not.toContain('先读 README.md')
   })
 
+  it('omits route-only project skills when the adapter provides native skill loading', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      [
+        '---',
+        'description: 检索项目信息',
+        '---',
+        '先读 README.md'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data, options] = await resolvePromptAssetSelection({
+      bundle,
+      adapter: 'claude-code',
+      type: undefined
+    })
+
+    expect(data.targetSkills).toEqual([])
+    expect(options.systemPrompt).not.toContain('<skills>')
+    expect(options.systemPrompt).not.toContain('# research')
+    expect(options.systemPrompt).not.toContain('Skill file path: .ai/skills/research/SKILL.md')
+    expect(options.promptAssetIds).not.toContain(bundle.skills[0]?.id)
+  })
+
+  it('keeps explicitly referenced skills embedded for adapters with native project skills', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      [
+        '---',
+        'description: 检索项目信息',
+        '---',
+        '先读 README.md'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/review/SKILL.md'),
+      [
+        '---',
+        'description: 评审代码改动',
+        '---',
+        '检查回归风险'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/specs/release/index.md'),
+      [
+        '---',
+        'description: 发布流程',
+        'skills:',
+        '  - research',
+        '---',
+        '执行发布'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data, options] = await resolvePromptAssetSelection({
+      bundle,
+      adapter: 'claude-code',
+      type: 'spec',
+      name: 'release'
+    })
+
+    expect(data.targetSkills.map(skill => skill.resolvedName ?? skill.attributes.name)).toEqual(['research'])
+    expect(options.systemPrompt).toContain('The following skill modules are loaded for the project')
+    expect(options.systemPrompt).toContain('# research')
+    expect(options.systemPrompt).toContain('<skill-content>')
+    expect(options.systemPrompt).toContain('先读 README.md')
+    expect(options.systemPrompt).not.toContain('<skills>')
+    expect(options.systemPrompt).not.toContain('# review')
+    expect(options.systemPrompt).not.toContain('Skill file path: .ai/skills/review/SKILL.md')
+  })
+
   it('keeps spec route guidance without default identity in normal mode', async () => {
     const workspace = await createWorkspace()
 

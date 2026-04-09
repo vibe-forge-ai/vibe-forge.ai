@@ -10,6 +10,7 @@ import type {
   WorkspaceSkillSelection
 } from '@vibe-forge/types'
 
+import { resolveNativeSkillDiagnosticReason, supportsNativeProjectSkills } from './adapter-capabilities'
 import { resolveSelectedMcpNames, resolveSelectedSkillAssets } from './selection-internal'
 
 export function buildAdapterAssetPlan(params: {
@@ -83,13 +84,13 @@ export function buildAdapterAssetPlan(params: {
   })
 
   const selectedSkillAssets = resolveSelectedSkillAssets(params.bundle.skills, params.options.skills)
-  if (params.adapter === 'opencode') {
+  if (supportsNativeProjectSkills(params.adapter)) {
     selectedSkillAssets.forEach((asset) => {
       diagnostics.push({
         assetId: asset.id,
         adapter: params.adapter,
         status: 'native',
-        reason: 'Mirrored into OPENCODE_CONFIG_DIR as a native skill.',
+        reason: resolveNativeSkillDiagnosticReason(params.adapter),
         packageId: asset.packageId,
         scope: asset.scope,
         instancePath: asset.instancePath,
@@ -98,6 +99,8 @@ export function buildAdapterAssetPlan(params: {
         taskOverlaySource: asset.taskOverlaySource
       })
     })
+  }
+  if (params.adapter === 'opencode') {
     params.bundle.opencodeOverlayAssets.forEach((asset) => {
       diagnostics.push({
         assetId: asset.id,

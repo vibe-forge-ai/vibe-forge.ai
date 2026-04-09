@@ -157,9 +157,11 @@ Notes:
               promptType,
               promptName,
               cwd,
-              skills == null
-                ? undefined
-                : { skills }
+              {
+                skills,
+                adapter: cachedAdapter ?? opts.adapter,
+                model: opts.model
+              }
             )
             const env = {
               ...process.env,

@@ -127,6 +127,53 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>')
   })
 
+  it('omits route-only skills when the resolved adapter provides native project skills', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify(
+        {
+          adapters: {
+            'claude-code': {},
+            codex: {}
+          },
+          modelServices: {
+            gpt: {
+              apiBaseUrl: 'https://example.invalid/responses',
+              apiKey: 'demo',
+              models: ['kimi-k2.5']
+            }
+          },
+          models: {
+            'gpt,kimi-k2.5': {
+              defaultAdapter: 'claude-code'
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      undefined,
+      undefined,
+      workspace,
+      {
+        model: 'gpt,kimi-k2.5'
+      }
+    )
+
+    expect(resolvedConfig.systemPrompt).not.toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).not.toContain('# research')
+    expect(resolvedConfig.systemPrompt).not.toContain('Skill file path: .ai/skills/research/SKILL.md')
+  })
+
   it('supports entity skill include selectors', async () => {
     const workspace = await createWorkspace()
 

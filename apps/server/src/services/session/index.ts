@@ -369,7 +369,11 @@ export async function startAdapterSession(
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         options.promptType,
         options.promptName,
-        promptCwd
+        promptCwd,
+        {
+          adapter: resolvedAdapter,
+          model: resolvedModel
+        }
       )
       const env = {
         ...processEnv,

@@ -78,7 +78,10 @@ export class TaskManager {
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         promptType,
         promptName,
-        promptCWD
+        promptCWD,
+        {
+          adapter
+        }
       )
       const env = {
         ...process.env,
