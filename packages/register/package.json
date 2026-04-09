@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/register",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "exports": {
     "./dotenv": {
       "types": "./dotenv.d.ts",
