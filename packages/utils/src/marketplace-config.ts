@@ -50,13 +50,15 @@ export const mergeMarketplaceConfigs = (
     ...Object.keys(normalizedRight ?? {})
   ])
 
-  const merged: MarketplaceConfig = {}
-  for (const key of keys) {
-    const entry = mergeMarketplaceEntry(normalizedLeft?.[key], normalizedRight?.[key])
-    if (entry != null) {
-      merged[key] = entry
-    }
-  }
+  const entries = Array.from(keys)
+    .map((key) => {
+      const entry = mergeMarketplaceEntry(
+        normalizedLeft?.[key],
+        normalizedRight?.[key]
+      )
+      return entry == null ? undefined : [key, entry] as const
+    })
+    .filter((entry): entry is readonly [string, MarketplaceConfigEntry] => entry != null)
 
-  return merged
+  return entries.length === 0 ? undefined : Object.fromEntries(entries)
 }

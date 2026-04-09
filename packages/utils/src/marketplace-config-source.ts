@@ -147,7 +147,7 @@ const normalizeMarketplaceEntry = (
 }
 
 export const normalizeMarketplaceConfig = (
-  marketplaces: MarketplaceConfig | undefined,
+  marketplaces: unknown,
   path: string = 'marketplaces',
   options: NormalizeMarketplaceConfigOptions = {}
 ): MarketplaceConfig | undefined => {
