@@ -1,6 +1,7 @@
 export * from './bridge'
 export * from './bridge-loader'
 export * from './call'
+export * from './claude-json-plugin'
 export * from './context'
 export * from './entry'
 export * from './loader'

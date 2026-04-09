@@ -4,6 +4,7 @@ import process from 'node:process'
 import { buildConfigJsonVariables, loadConfig, resetConfigCache } from '@vibe-forge/config'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
+import { mergePluginConfigs } from '@vibe-forge/utils/plugin-resolver'
 import { transformCamelKey } from '@vibe-forge/utils/string-transform'
 
 import { createBuiltinPermissionPlugin } from './builtin-permissions'
@@ -103,10 +104,10 @@ export const executeHookInput = async (
     cwd: workspaceFolder,
     jsonVariables
   })
+  const pluginConfig = mergePluginConfigs(config?.plugins, userConfig?.plugins)
   const plugins = [
     createBuiltinPermissionPlugin(env),
-    ...await resolvePlugins(workspaceFolder, config?.plugins),
-    ...await resolvePlugins(workspaceFolder, userConfig?.plugins)
+    ...await resolvePlugins(workspaceFolder, pluginConfig)
   ]
 
   return callPluginHook(

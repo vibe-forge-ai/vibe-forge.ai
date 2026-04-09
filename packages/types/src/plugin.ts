@@ -103,6 +103,47 @@ export interface PluginManifest {
   children?: Record<string, PluginManifestChildDefinition>
 }
 
+export type ManagedPluginAdapter = 'claude'
+
+export interface ManagedPluginNpmSource {
+  type: 'npm'
+  spec: string
+}
+
+export interface ManagedPluginGithubSource {
+  type: 'github'
+  repo: string
+  ref?: string
+}
+
+export interface ManagedPluginGitSource {
+  type: 'git'
+  url: string
+  ref?: string
+}
+
+export interface ManagedPluginPathSource {
+  type: 'path'
+  path: string
+}
+
+export type ManagedPluginSource =
+  | ManagedPluginNpmSource
+  | ManagedPluginGithubSource
+  | ManagedPluginGitSource
+  | ManagedPluginPathSource
+
+export interface ManagedPluginInstallConfig {
+  version: 1
+  adapter: ManagedPluginAdapter
+  name: string
+  scope?: string
+  installedAt: string
+  source: ManagedPluginSource
+  nativePluginPath: string
+  vibeForgePluginPath: string
+}
+
 export type PluginResolutionStrategy =
   | 'direct'
   | 'vibe-forge-prefix'

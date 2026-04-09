@@ -1,10 +1,14 @@
 import type { PluginConfig } from '@vibe-forge/types'
 import {
   flattenPluginInstances,
-  resolveConfiguredPluginInstances,
-  resolvePluginHooksEntryPath
+  mergePluginConfigs,
+  resolvePluginHooksEntryPathForInstance,
+  resolveConfiguredPluginInstances
 } from '@vibe-forge/utils/plugin-resolver'
-
+import {
+  listManagedPluginInstalls,
+  toManagedPluginConfig
+} from '@vibe-forge/utils/managed-plugin'
 import type { Plugin } from './context'
 
 const loadPlugin = async (
@@ -38,23 +42,26 @@ export const resolvePlugins = async (
   cwd: string,
   config: PluginConfig | undefined
 ): Promise<Partial<Plugin>[]> => {
-  if (config == null) return []
+  const managedPlugins = toManagedPluginConfig(await listManagedPluginInstalls(cwd))
+  const effectiveConfig = mergePluginConfigs(config, managedPlugins) ?? []
+  if (effectiveConfig.length === 0) return []
 
   const instances = flattenPluginInstances(
     await resolveConfiguredPluginInstances({
       cwd,
-      plugins: config
+      plugins: effectiveConfig
     })
   ).flatMap((instance) => {
-    if (instance.packageId == null) return []
-    const hooksEntryPath = resolvePluginHooksEntryPath(cwd, instance.packageId)
+    const hooksEntryPath = resolvePluginHooksEntryPathForInstance(cwd, instance)
     return hooksEntryPath != null
       ? [{ instance, hooksEntryPath }]
       : []
   })
 
   const modules = await Promise.allSettled(
-    instances.map(({ instance, hooksEntryPath }) => loadPlugin(hooksEntryPath, instance.packageId!, instance.options))
+    instances.map(({ instance, hooksEntryPath }) =>
+      loadPlugin(hooksEntryPath, instance.packageId ?? instance.requestId, instance.options)
+    )
   )
 
   const plugins: Partial<Plugin>[] = []

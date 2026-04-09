@@ -68,6 +68,15 @@
         "require": "./dist/log-level.js"
       }
     },
+    "./managed-plugin": {
+      "__vibe-forge__": {
+        "default": "./src/managed-plugin.ts"
+      },
+      "default": {
+        "import": "./dist/managed-plugin.mjs",
+        "require": "./dist/managed-plugin.js"
+      }
+    },
     "./model-selection": {
       "__vibe-forge__": {
         "default": "./src/model-selection.ts"
