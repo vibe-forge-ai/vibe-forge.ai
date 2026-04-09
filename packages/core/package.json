@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/core",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -29,6 +29,15 @@
       "default": {
         "import": "./dist/channel.mjs",
         "require": "./dist/channel.js"
+      }
+    },
+    "./config-schema": {
+      "__vibe-forge__": {
+        "default": "./src/config-schema.ts"
+      },
+      "default": {
+        "import": "./dist/config-schema.mjs",
+        "require": "./dist/config-schema.js"
       }
     },
     "./schema": {

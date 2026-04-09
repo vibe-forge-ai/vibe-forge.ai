@@ -14,6 +14,9 @@
 - `src/claude/*.ts`
   - Claude CLI 会话生命周期
   - `prepare.ts` 组装执行参数与 settings，`session.ts` 负责 spawn/stream，`init.ts` 只做 adapter 初始化
+- `src/plugins/*.ts`
+  - Claude native plugin 的格式适配层：marketplace 解析、manifest/root 检测与 Claude -> Vibe Forge 资产转换
+  - `index.ts` 只导出给 CLI core 使用的标准 installer hooks，不承载通用安装编排
 - `src/hooks/*.ts`
   - Claude native hooks 的托管配置与 bridge 逻辑
   - `native.ts` 写 `.ai/.mock/.claude/settings.json`，`bridge.ts` 把 Claude payload 翻译成统一 hook 协议

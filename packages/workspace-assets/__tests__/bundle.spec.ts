@@ -1,10 +1,11 @@
 import process from 'node:process'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
 import { resolveWorkspaceAssetBundle } from '#~/index.js'
 
-import { createWorkspace, installPluginPackage } from './test-helpers'
+import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
 
 describe('resolveWorkspaceAssetBundle', () => {
   it('loads npm plugin assets via the package-id fallback and exposes OpenCode overlays', async () => {
@@ -63,6 +64,58 @@ describe('resolveWorkspaceAssetBundle', () => {
         payload: expect.objectContaining({
           targetSubpath: 'commands/review.md'
         })
+      })
+    ]))
+  })
+
+  it('auto-loads managed Claude plugins from .ai/plugins as directory plugins', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/.vf-plugin.json'),
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'demo',
+          scope: 'demo',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './demo'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/vibe-forge/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/vibe-forge/mcp/browser.json'),
+      JSON.stringify({ command: 'npx', args: ['browser-server'] }, null, 2)
+    )
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/vibe-forge/hooks.js'),
+      'module.exports = { name: "demo-managed" }\n'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.skills.map(asset => asset.displayName)).toContain('demo/research')
+    expect(Object.keys(bundle.mcpServers)).toContain('demo/browser')
+    expect(bundle.hookPlugins).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        scope: 'demo',
+        origin: 'plugin'
       })
     ]))
   })

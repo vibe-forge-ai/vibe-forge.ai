@@ -389,4 +389,60 @@ describe('resolvePromptAssetSelection', () => {
     expect(options.systemPrompt).toContain('> Skill file path: .ai/skills/research/SKILL.md')
     expect(options.systemPrompt).not.toContain('先读 README.md')
   })
+
+  it('lets spec plugin overrides exclude managed plugins when mode is override', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/.vf-plugin.json'),
+      JSON.stringify({
+        version: 1,
+        adapter: 'claude',
+        name: 'demo',
+        scope: 'demo',
+        installedAt: new Date().toISOString(),
+        source: {
+          type: 'path',
+          path: './demo'
+        },
+        nativePluginPath: 'native',
+        vibeForgePluginPath: 'vibe-forge'
+      }, null, 2)
+    )
+    await writeDocument(
+      join(workspace, '.ai/plugins/demo/vibe-forge/skills/research/SKILL.md'),
+      [
+        '---',
+        'description: 托管插件技能',
+        '---',
+        '先读插件文档'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/specs/isolated/index.md'),
+      [
+        '---',
+        'description: 隔离 spec',
+        'plugins:',
+        '  mode: override',
+        '  list: []',
+        '---',
+        '执行隔离流程'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'spec',
+      name: 'isolated'
+    })
+
+    expect(bundle.skills.map(asset => asset.displayName)).toContain('demo/research')
+    expect(options.assetBundle?.skills).toEqual([])
+    expect(options.systemPrompt).not.toContain('demo/research')
+  })
 })

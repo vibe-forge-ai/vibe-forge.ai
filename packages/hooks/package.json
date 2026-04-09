@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/hooks",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Vibe Forge hooks runtime and bridge helpers",
   "imports": {
     "#~/*.js": {
@@ -21,6 +21,15 @@
       "default": {
         "import": "./dist/index.mjs",
         "require": "./dist/index.js"
+      }
+    },
+    "./claude-json-plugin": {
+      "__vibe-forge__": {
+        "default": "./src/claude-json-plugin.ts"
+      },
+      "default": {
+        "import": "./dist/claude-json-plugin.mjs",
+        "require": "./dist/claude-json-plugin.js"
       }
     },
     "./call-hook.js": "./call-hook.js",

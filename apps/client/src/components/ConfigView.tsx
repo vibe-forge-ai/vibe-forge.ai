@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigSource } from '@vibe-forge/core'
-import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
+import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
-import { getApiErrorMessage, getConfig, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, getConfigSchema, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
@@ -18,6 +18,7 @@ export function ConfigView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
   const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
     keys: ['tab', 'source'],
     defaults: { tab: 'general', source: 'project' }
@@ -107,6 +108,7 @@ export function ConfigView() {
   const setActiveTabKey = (key: string) => updateQuery({ tab: key })
 
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
+  const uiSections = schemaData?.workspace.uiSchema?.sections ?? {}
 
   useEffect(() => {
     if (activeTab == null) return
@@ -238,6 +240,7 @@ export function ConfigView() {
                         sectionKey={tab.key}
                         title={tab.label}
                         icon={tab.icon}
+                        uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
                         value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
                         onChange={(next) => handleDraftChange(tab.key, next)}
                         mergedModelServices={mergedModelServices as Record<string, unknown>}

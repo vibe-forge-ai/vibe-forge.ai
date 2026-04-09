@@ -1,6 +1,6 @@
 {
   "name": "vibe-forge-dev",
-  "version": "0.6.0",
+  "version": "0.10.0",
   "private": true,
   "scripts": {
     "start": "./start.sh",

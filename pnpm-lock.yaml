@@ -337,6 +337,9 @@ importers:
       '@musistudio/claude-code-router':
         specifier: 1.0.73
         version: 1.0.73(@modelcontextprotocol/sdk@1.25.3(hono@4.11.4)(zod@3.25.76))(ws@8.20.0)(zod@3.25.76)
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../../config
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core
@@ -349,6 +352,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../utils
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/adapters/codex:
     dependencies:
@@ -367,6 +373,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../utils
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/adapters/opencode:
     dependencies:
@@ -388,6 +397,9 @@ importers:
       opencode-ai:
         specifier: 1.3.2
         version: 1.3.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/app-runtime:
     dependencies:
@@ -451,6 +463,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@vibe-forge/core':
+        specifier: workspace:^
+        version: link:../core
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
@@ -460,6 +475,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/js-yaml':
         specifier: ^4.0.9

@@ -39,6 +39,14 @@ const shouldTryPrefixedPackageId = (id: string) => (
   !id.includes('\\')
 )
 
+const isTopLevelDirectoryReference = (id: string) => (
+  id.startsWith('./') ||
+  id.startsWith('../') ||
+  id.startsWith('/') ||
+  id.startsWith('\\') ||
+  /^[a-z]:[\\/]/i.test(id)
+)
+
 const toPluginManifest = (value: unknown): PluginManifest | undefined => {
   if (!isRecord(value)) return undefined
 
@@ -227,6 +235,20 @@ const resolvePackageReference = (cwd: string, id: string): ResolvedPluginReferen
   throw new Error(`Failed to resolve plugin package ${id}. Install it in the current workspace first.`)
 }
 
+const resolveDirectoryReference = (cwd: string, id: string): ResolvedPluginReference => {
+  const rootDir = resolveDirectoryPath(cwd, id)
+  if (!existsSync(rootDir)) {
+    throw new Error(`Failed to resolve plugin directory ${id}.`)
+  }
+
+  return {
+    sourceType: 'directory',
+    requestId: id,
+    resolvedBy: 'direct',
+    rootDir
+  }
+}
+
 const loadManifest = (
   cwd: string,
   packageId: string
@@ -247,6 +269,23 @@ export const resolvePluginHooksEntryPath = (
   cwd: string,
   packageId: string
 ) => resolveOptionalPackageEntryPath(cwd, `${packageId}/hooks`)
+
+export const resolveDirectoryPluginHooksEntryPath = (rootDir: string) => {
+  const directPath = resolve(rootDir, 'hooks.js')
+  if (existsSync(directPath)) return directPath
+
+  const indexPath = resolve(rootDir, 'hooks', 'index.js')
+  return existsSync(indexPath) ? indexPath : undefined
+}
+
+export const resolvePluginHooksEntryPathForInstance = (
+  cwd: string,
+  instance: Pick<ResolvedPluginInstance, 'packageId' | 'rootDir'>
+) => (
+  instance.packageId != null
+    ? resolvePluginHooksEntryPath(cwd, instance.packageId)
+    : resolveDirectoryPluginHooksEntryPath(instance.rootDir)
+)
 
 const resolveDirectoryPath = (baseDir: string, path: string) => (
   path.startsWith('/') ? path : resolve(baseDir, path)
@@ -335,7 +374,11 @@ const resolveChildReference = (
 const resolveTopLevelReference = (
   cwd: string,
   config: PluginInstanceConfig
-) => resolvePackageReference(cwd, config.id)
+) => (
+  isTopLevelDirectoryReference(config.id)
+    ? resolveDirectoryReference(cwd, config.id)
+    : resolvePackageReference(cwd, config.id)
+)
 
 interface ResolvePluginInstanceParams {
   cwd: string

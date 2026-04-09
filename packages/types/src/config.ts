@@ -67,6 +67,116 @@ export interface NotificationConfig {
   events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
 }
 
+export interface ClaudeCodeMarketplaceSourceGithub {
+  source: 'github'
+  repo: string
+  ref?: string
+  path?: string
+}
+
+export interface ClaudeCodeMarketplaceSourceGit {
+  source: 'git'
+  url: string
+  ref?: string
+  path?: string
+}
+
+export interface ClaudeCodeMarketplaceSourceDirectory {
+  source: 'directory'
+  path: string
+}
+
+export interface ClaudeCodeMarketplaceSourceUrl {
+  source: 'url'
+  url: string
+}
+
+export interface ClaudeCodeMarketplacePluginSourceGithub {
+  source: 'github'
+  repo: string
+  ref?: string
+  sha?: string
+}
+
+export interface ClaudeCodeMarketplacePluginSourceGit {
+  source: 'url'
+  url: string
+  ref?: string
+  sha?: string
+}
+
+export interface ClaudeCodeMarketplacePluginSourceGitSubdir {
+  source: 'git-subdir'
+  url: string
+  path: string
+  ref?: string
+  sha?: string
+}
+
+export interface ClaudeCodeMarketplacePluginSourceNpm {
+  source: 'npm'
+  package: string
+  version?: string
+  registry?: string
+}
+
+export type ClaudeCodeMarketplacePluginSource =
+  | string
+  | ClaudeCodeMarketplacePluginSourceGithub
+  | ClaudeCodeMarketplacePluginSourceGit
+  | ClaudeCodeMarketplacePluginSourceGitSubdir
+  | ClaudeCodeMarketplacePluginSourceNpm
+
+export interface ClaudeCodeMarketplacePluginDefinition {
+  name: string
+  description?: string
+  version?: string
+  strict?: boolean
+  skills?: string | string[]
+  commands?: string | string[]
+  agents?: string | string[]
+  hooks?: string | string[] | Record<string, unknown>
+  mcpServers?: string | string[] | Record<string, unknown>
+  userConfig?: unknown
+  source: ClaudeCodeMarketplacePluginSource
+}
+
+export interface ClaudeCodeMarketplaceSourceSettings {
+  source: 'settings'
+  name?: string
+  metadata?: {
+    pluginRoot?: string
+  }
+  plugins: ClaudeCodeMarketplacePluginDefinition[]
+}
+
+export interface ClaudeCodeMarketplaceSourceHostPattern {
+  source: 'hostPattern'
+  hostPattern: string
+}
+
+export type ClaudeCodeMarketplaceSource =
+  | ClaudeCodeMarketplaceSourceGithub
+  | ClaudeCodeMarketplaceSourceGit
+  | ClaudeCodeMarketplaceSourceDirectory
+  | ClaudeCodeMarketplaceSourceUrl
+  | ClaudeCodeMarketplaceSourceSettings
+  | ClaudeCodeMarketplaceSourceHostPattern
+
+export interface ClaudeCodeMarketplaceOptions {
+  source: ClaudeCodeMarketplaceSource
+}
+
+export interface ClaudeCodeMarketplaceConfigEntry {
+  type: 'claude-code'
+  enabled?: boolean
+  options?: ClaudeCodeMarketplaceOptions
+}
+
+export type MarketplaceConfigEntry = ClaudeCodeMarketplaceConfigEntry
+
+export type MarketplaceConfig = Record<string, MarketplaceConfigEntry>
+
 export interface Config {
   extend?: string | string[]
   baseDir?: string
@@ -145,6 +255,7 @@ export interface Config {
    * ```
    */
   plugins?: PluginConfig
+  marketplaces?: MarketplaceConfig
 }
 
 export interface AboutInfo {
@@ -182,6 +293,7 @@ export interface ConfigSection {
   adapterBuiltinModels?: Record<string, AdapterBuiltinModel[]>
   plugins?: {
     plugins?: Config['plugins']
+    marketplaces?: Config['marketplaces']
   }
   mcp?: {
     mcpServers?: Config['mcpServers']
@@ -207,4 +319,81 @@ export interface ConfigResponse {
     experiments?: Record<string, unknown>
     about?: AboutInfo
   }
+}
+
+export type ConfigUiFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'string[]'
+  | 'select'
+  | 'json'
+  | 'multiline'
+
+export interface ConfigUiFieldOption {
+  value: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiField {
+  path: string[]
+  type: ConfigUiFieldType
+  defaultValue?: unknown
+  label?: string
+  description?: string
+  icon?: string
+  placeholder?: string
+  sensitive?: boolean
+  options?: ConfigUiFieldOption[]
+}
+
+export interface ConfigUiObjectSchema {
+  fields: ConfigUiField[]
+}
+
+export interface ConfigUiRecordKind {
+  key: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiRecordMapSchema {
+  mode: 'keyed' | 'discriminated'
+  keyPlaceholder?: string
+  discriminatorField?: string
+  entryKinds?: ConfigUiRecordKind[]
+  schemas: Record<string, ConfigUiObjectSchema>
+  unknownSchema?: ConfigUiObjectSchema
+  unknownEditor?: 'json'
+}
+
+export interface ConfigUiSection {
+  key: string
+  title?: string
+  description?: string
+  kind: 'recordMap'
+  recordMap: ConfigUiRecordMapSchema
+}
+
+export interface ConfigUiSchema {
+  version: 1
+  sections: Record<string, ConfigUiSection>
+}
+
+export type ConfigJsonSchema = Record<string, unknown>
+
+export interface ConfigSchemaVariant {
+  jsonSchema: ConfigJsonSchema
+  uiSchema?: ConfigUiSchema
+  outputPath?: string
+  extensions?: {
+    adapters: string[]
+    channels: string[]
+  }
+}
+
+export interface ConfigSchemaResponse {
+  base: ConfigSchemaVariant
+  workspace: ConfigSchemaVariant
 }

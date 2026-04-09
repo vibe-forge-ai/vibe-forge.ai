@@ -10,11 +10,12 @@ import {
 } from '@vibe-forge/config'
 import type { Config, Definition, Entity, PluginConfig, WorkspaceAsset, WorkspaceAssetKind } from '@vibe-forge/types'
 import { resolveRelativePath } from '@vibe-forge/utils'
+import { listManagedPluginInstalls, toManagedPluginConfig } from '@vibe-forge/utils/managed-plugin'
 import {
   flattenPluginInstances,
   mergePluginConfigs,
   resolveConfiguredPluginInstances,
-  resolvePluginHooksEntryPath
+  resolvePluginHooksEntryPathForInstance
 } from '@vibe-forge/utils/plugin-resolver'
 import type { ResolvedPluginInstance } from '@vibe-forge/utils/plugin-resolver'
 import { glob } from 'fast-glob'
@@ -341,6 +342,7 @@ export async function collectWorkspaceAssets(params: {
   configs?: [Config?, Config?]
   plugins?: PluginConfig
   overlaySource?: string
+  includeManagedPlugins?: boolean
   useDefaultVibeForgeMcpServer?: boolean
 }): Promise<{
   assets: WorkspaceAsset[]
@@ -357,7 +359,13 @@ export async function collectWorkspaceAssets(params: {
   specs: Array<Extract<WorkspaceAsset, { kind: 'spec' }>>
 }> {
   const [config, userConfig] = params.configs ?? await loadWorkspaceConfig(params.cwd)
-  const pluginConfigs = params.plugins ?? mergePluginConfigs(config?.plugins, userConfig?.plugins)
+  const managedPluginConfigs = params.includeManagedPlugins === false
+    ? undefined
+    : toManagedPluginConfig(await listManagedPluginInstalls(params.cwd))
+  const pluginConfigs = mergePluginConfigs(
+    params.plugins ?? mergePluginConfigs(config?.plugins, userConfig?.plugins),
+    managedPluginConfigs
+  )
   const pluginInstances = await resolveConfiguredPluginInstances({
     cwd: params.cwd,
     plugins: pluginConfigs,
@@ -493,9 +501,7 @@ export async function collectWorkspaceAssets(params: {
   }
 
   const hookPlugins = flattenedPluginInstances
-    .filter(instance =>
-      instance.packageId != null && resolvePluginHooksEntryPath(params.cwd, instance.packageId) != null
-    )
+    .filter(instance => resolvePluginHooksEntryPathForInstance(params.cwd, instance) != null)
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 

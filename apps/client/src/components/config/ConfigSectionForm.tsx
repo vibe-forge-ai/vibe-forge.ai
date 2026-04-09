@@ -3,6 +3,8 @@ import './ConfigSectionForm.scss'
 import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
+import type { ConfigUiSection } from '@vibe-forge/types'
+
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { FieldRow } from './ConfigFieldRow'
@@ -21,16 +23,17 @@ import {
 import type { TranslationFn } from './configUtils'
 import {
   BooleanRecordEditor,
-  ChannelRecordEditor,
   KeyValueEditor,
   McpServersRecordEditor,
   ModelServicesRecordEditor,
-  RecordJsonEditor
+  RecordJsonEditor,
+  SchemaRecordEditor
 } from './record-editors/index'
 
 export const SectionForm = ({
   sectionKey,
   fields: providedFields,
+  uiSection,
   value,
   onChange,
   mergedModelServices,
@@ -40,6 +43,7 @@ export const SectionForm = ({
 }: {
   sectionKey: string
   fields?: FieldSpec[]
+  uiSection?: ConfigUiSection
   value: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
@@ -48,6 +52,20 @@ export const SectionForm = ({
   t: TranslationFn
 }) => {
   const fields = providedFields ?? configSchema[sectionKey] ?? []
+  if (uiSection?.kind === 'recordMap') {
+    const recordValue = (value != null && typeof value === 'object')
+      ? value as Record<string, unknown>
+      : {}
+    return (
+      <SchemaRecordEditor
+        value={recordValue}
+        schema={uiSection.recordMap}
+        onChange={onChange}
+        t={t}
+        keyPlaceholder={uiSection.recordMap.keyPlaceholder ?? t('config.editor.fieldKey')}
+      />
+    )
+  }
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
@@ -252,7 +270,7 @@ export const SectionForm = ({
         )
       } else if (field.recordKind === 'channels') {
         control = (
-          <ChannelRecordEditor
+          <RecordJsonEditor
             value={recordValue}
             onChange={handleValueChange}
             t={t}
