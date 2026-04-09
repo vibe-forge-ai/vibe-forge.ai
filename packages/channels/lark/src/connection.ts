@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
 import type {
@@ -18,6 +19,7 @@ import type {
 } from '#~/types.js'
 
 import { parseLarkContent } from './utils/parse'
+import { buildLarkOpenApiUrl } from './utils/open-api'
 import { resolveLarkOutboundMessagePayload } from './utils/outbound-message'
 import { createTenantTokenProvider } from './utils/tenant-token'
 import { resolveLarkId } from './utils/text-format'
@@ -153,7 +155,8 @@ const sendLarkFileMessage = async (
 const pushLarkFollowUps = async (
   messageId: string,
   followUps: readonly ChannelFollowUp[],
-  tenantTokenProvider: () => Promise<string | undefined>
+  tenantTokenProvider: () => Promise<string | undefined>,
+  domain?: LarkChannelConfig['domain']
 ) => {
   const accessToken = await tenantTokenProvider()
   if (!accessToken) {
@@ -161,7 +164,7 @@ const pushLarkFollowUps = async (
   }
 
   const response = await globalThis.fetch(
-    `https://fsopen.bytedance.net/open-apis/im/v1/messages/${encodeURIComponent(messageId)}/push_follow_up`,
+    buildLarkOpenApiUrl(`/open-apis/im/v1/messages/${encodeURIComponent(messageId)}/push_follow_up`, domain),
     {
       method: 'POST',
       headers: {
@@ -320,7 +323,7 @@ export const createChannelConnection = defineCreateChannelConnection(async (
       return updateLarkMessage(client, messageId, message, logger)
     },
     pushFollowUps: async ({ messageId, followUps }) => {
-      await pushLarkFollowUps(messageId, followUps, tenantTokenProvider)
+      await pushLarkFollowUps(messageId, followUps, tenantTokenProvider, config.domain)
     },
     startReceiving: async ({ handlers }) => {
       const dispatcher = new EventDispatcher({})

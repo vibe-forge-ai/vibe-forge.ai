@@ -497,7 +497,7 @@ describe('larkChannelDefinition.connect', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'https://fsopen.bytedance.net/open-apis/im/v1/messages/om_target/push_follow_up',
+      'https://open.feishu.cn/open-apis/im/v1/messages/om_target/push_follow_up',
       {
         method: 'POST',
         headers: {
@@ -512,6 +512,73 @@ describe('larkChannelDefinition.connect', () => {
         })
       }
     )
+  })
+
+  it('routes tenant-token and follow-up requests through the lark open-api domain when configured', async () => {
+    vi.resetModules()
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          code: 0,
+          msg: 'ok',
+          tenant_access_token: 't_lark',
+          expire: 7200
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 0, msg: 'success', data: {} })
+      })
+    const Client = vi.fn().mockImplementation(() => ({
+      im: {
+        message: {
+          create: vi.fn()
+        }
+      }
+    }))
+
+    vi.doMock('@larksuiteoapi/node-sdk', () => ({
+      Client,
+      Domain: { Feishu: 'Feishu', Lark: 'Lark' },
+      WSClient: vi.fn(),
+      EventDispatcher: vi.fn(),
+      withTenantToken: vi.fn()
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { createChannelConnection } = await import('#~/connection.js')
+
+    const connection = await createChannelConnection({
+      type: 'lark',
+      appId: 'app_id',
+      appSecret: 'app_secret',
+      domain: 'Lark'
+    })
+    await connection.pushFollowUps?.({
+      messageId: 'om_target',
+      followUps: [
+        { content: '/help --page=1' }
+      ]
+    })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal',
+      expect.objectContaining({
+        method: 'POST'
+      })
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://open.larksuite.com/open-apis/im/v1/messages/om_target/push_follow_up',
+      expect.objectContaining({
+        method: 'POST'
+      })
+    )
+    vi.unstubAllGlobals()
   })
 
   it('starts websocket receiving with handlers', async () => {
@@ -806,7 +873,7 @@ describe('larkChannelDefinition.connect', () => {
     })
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://fsopen.bytedance.net/open-apis/auth/v3/tenant_access_token/internal',
+      'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
       expect.objectContaining({
         method: 'POST'
       })
