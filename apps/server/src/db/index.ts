@@ -7,6 +7,8 @@ import type {
   AutomationTrigger
 } from './automation/repo'
 import { automationSchemaModule } from './automation/schema'
+import { createChannelActionTokensRepo } from './channelActionTokens/repo'
+import { channelActionTokensSchemaModule } from './channelActionTokens/schema'
 import { channelSessionsSchemaModule } from './channelSessions/schema'
 
 import { createChannelSessionsRepo } from './channelSessions/repo'
@@ -19,7 +21,12 @@ import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
 import type { SqliteDatabase } from './sqlite'
 
-const dbSchemaModules = [sessionsSchemaModule, channelSessionsSchemaModule, automationSchemaModule] as const
+const dbSchemaModules = [
+  sessionsSchemaModule,
+  channelSessionsSchemaModule,
+  channelActionTokensSchemaModule,
+  automationSchemaModule
+] as const
 
 export interface SqliteDbOptions {
   db?: SqliteDatabase
@@ -30,6 +37,7 @@ export class SqliteDb {
   private sessions: ReturnType<typeof createSessionsRepo>
   private messages: ReturnType<typeof createMessagesRepo>
   private channelSessions: ReturnType<typeof createChannelSessionsRepo>
+  private channelActionTokens: ReturnType<typeof createChannelActionTokensRepo>
   private tags: ReturnType<typeof createTagsRepo>
   private automation: ReturnType<typeof createAutomationRepo>
 
@@ -39,6 +47,7 @@ export class SqliteDb {
     this.sessions = createSessionsRepo(this.db)
     this.messages = createMessagesRepo(this.db)
     this.channelSessions = createChannelSessionsRepo(this.db)
+    this.channelActionTokens = createChannelActionTokensRepo(this.db)
     this.tags = createTagsRepo(this.db)
     this.automation = createAutomationRepo(this.db)
   }
@@ -109,6 +118,19 @@ export class SqliteDb {
 
   deleteChannelSessionBySessionId(sessionId: string) {
     return this.channelSessions.removeBySessionId(sessionId)
+  }
+
+  consumeChannelActionTokenNonce(nonce: string, action: string, expiresAt: number, consumedAt = Date.now()) {
+    return this.channelActionTokens.consume({
+      nonce,
+      action,
+      expiresAt,
+      consumedAt
+    })
+  }
+
+  clearChannelActionTokenNonces() {
+    this.channelActionTokens.clear()
   }
 
   copyMessages(fromSessionId: string, toSessionId: string) {

@@ -1,6 +1,8 @@
 import { loadEnv } from '@vibe-forge/core'
 import type { ChannelBaseConfig } from '@vibe-forge/core/channel'
 
+import { tryCreateChannelActionToken } from './action-token'
+
 const DEFAULT_CLIENT_BASE = '/ui/'
 
 const normalizeClientBase = (value?: string) => {
@@ -70,12 +72,17 @@ export const buildToolCallDetailUrl = (
   }
 ) => {
   const baseUrl = resolveChannelServerBaseUrl(config)
-  const url = new URL(`${baseUrl}/channels/actions/tool-call-detail`)
-  url.searchParams.set('sessionId', params.sessionId)
-  url.searchParams.set('toolUseId', params.toolUseId)
-  if (params.messageId?.trim()) {
-    url.searchParams.set('messageId', params.messageId.trim())
+  const token = tryCreateChannelActionToken({
+    action: 'tool-call-detail',
+    sessionId: params.sessionId,
+    toolUseId: params.toolUseId,
+    messageId: params.messageId
+  })
+  if (token == null) {
+    return undefined
   }
+  const url = new URL(`${baseUrl}/channels/actions/tool-call-detail`)
+  url.searchParams.set('token', token)
   return url.toString()
 }
 
@@ -90,13 +97,17 @@ export const buildChannelActionUrl = (
 ) => {
   const action = params.action.trim()
   const baseUrl = resolveChannelServerBaseUrl(config)
+  const token = tryCreateChannelActionToken({
+    action,
+    sessionId: params.sessionId,
+    toolUseId: params.toolUseId,
+    messageId: params.messageId,
+    oneTime: action === 'tool-call-export'
+  })
+  if (token == null) {
+    return undefined
+  }
   const url = new URL(`${baseUrl}/channels/actions/${encodeURIComponent(action)}`)
-  url.searchParams.set('sessionId', params.sessionId)
-  if (params.toolUseId?.trim()) {
-    url.searchParams.set('toolUseId', params.toolUseId.trim())
-  }
-  if (params.messageId?.trim()) {
-    url.searchParams.set('messageId', params.messageId.trim())
-  }
+  url.searchParams.set('token', token)
   return url.toString()
 }

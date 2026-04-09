@@ -99,8 +99,25 @@ const makeMessageEvent = (
     }
   }) as any
 
+const expectActionUrl = async (
+  input: {
+    url: string
+    action: 'tool-call-detail' | 'tool-call-export'
+    claims: Record<string, unknown>
+  }
+) => {
+  const { verifyChannelActionToken } = await import('#~/channels/action-token.js')
+  const parsed = new URL(input.url)
+  expect(`${parsed.origin}${parsed.pathname}`).toBe(`http://localhost:8787/channels/actions/${input.action}`)
+  expect(verifyChannelActionToken(parsed.searchParams.get('token') ?? '', input.action)).toEqual({
+    ok: true,
+    claims: expect.objectContaining(input.claims)
+  })
+}
+
 describe('channel handlers', () => {
   beforeEach(() => {
+    vi.stubEnv('__VF_PROJECT_AI_SERVER_ACTION_SECRET__', 'test-secret')
     deleteBinding('sess-1')
     consumePendingUnack('sess-1')
   })
@@ -108,6 +125,8 @@ describe('channel handlers', () => {
   afterEach(() => {
     deleteBinding('sess-1')
     consumePendingUnack('sess-1')
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 
   it('delivers interaction requests to the bound channel and attaches quick actions', async () => {
@@ -242,12 +261,31 @@ describe('channel handlers', () => {
           toolUseId: 'tool-1',
           name: 'SendImage',
           status: 'pending',
-          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}',
-          detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=assistant-tool-use',
-          exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1&messageId=assistant-tool-use'
+          argsText: '{"imagePath":"packages/utils/src/assets/mcp.png"}'
         })]
       })
     }))
+    const firstItem = sendMessage.mock.calls[0]?.[0]?.toolCallSummary?.items?.[0]
+    await expectActionUrl({
+      url: firstItem.detailUrl,
+      action: 'tool-call-detail',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-1',
+        messageId: 'assistant-tool-use',
+        oneTime: false
+      }
+    })
+    await expectActionUrl({
+      url: firstItem.exportJsonUrl,
+      action: 'tool-call-export',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-1',
+        messageId: 'assistant-tool-use',
+        oneTime: true
+      }
+    })
 
     await expect(handleSessionEvent(
       makeRuntimeState({ sendMessage, updateMessage }),
@@ -332,13 +370,33 @@ describe('channel handlers', () => {
             name: 'SendFile',
             status: 'success',
             argsText: '{"filePath":"README.md"}',
-            resultText: '{"messageId":"om_file"}',
-            detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-2&messageId=tool-2-result',
-            exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-2&messageId=tool-2-result'
+            resultText: '{"messageId":"om_file"}'
           })
         ]
       })
     }))
+    const finalItems = updateMessage.mock.calls[2]?.[1]?.toolCallSummary?.items ?? []
+    const sendFileItem = finalItems.find((item: any) => item.toolUseId === 'tool-2')
+    await expectActionUrl({
+      url: sendFileItem.detailUrl,
+      action: 'tool-call-detail',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-2',
+        messageId: 'tool-2-result',
+        oneTime: false
+      }
+    })
+    await expectActionUrl({
+      url: sendFileItem.exportJsonUrl,
+      action: 'tool-call-export',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-2',
+        messageId: 'tool-2-result',
+        oneTime: true
+      }
+    })
   })
 
   it('keeps updating the same tool summary card after a permission interaction', async () => {
@@ -460,11 +518,30 @@ describe('channel handlers', () => {
           name: 'GetCurrentChatMessages',
           status: 'success',
           argsText: '{"chatId":"","limit":6}',
-          resultText: '{"matchedCount":6}',
-          detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=tool-1-result',
-          exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1&messageId=tool-1-result'
+          resultText: '{"matchedCount":6}'
         })]
       })
     }))
+    const resultItem = updateMessage.mock.calls[0]?.[1]?.toolCallSummary?.items?.[0]
+    await expectActionUrl({
+      url: resultItem.detailUrl,
+      action: 'tool-call-detail',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-1',
+        messageId: 'tool-1-result',
+        oneTime: false
+      }
+    })
+    await expectActionUrl({
+      url: resultItem.exportJsonUrl,
+      action: 'tool-call-export',
+      claims: {
+        sessionId: 'sess-1',
+        toolUseId: 'tool-1',
+        messageId: 'tool-1-result',
+        oneTime: true
+      }
+    })
   })
 })

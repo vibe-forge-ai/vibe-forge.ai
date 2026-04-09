@@ -13,6 +13,7 @@ describe('tool-call-file', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('__VF_PROJECT_AI_SERVER_ACTION_SECRET__', 'test-secret')
     deleteBinding('sess-1')
     setBinding('sess-1', {
       channelType: 'lark',
@@ -29,6 +30,8 @@ describe('tool-call-file', () => {
 
   afterEach(() => {
     deleteBinding('sess-1')
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 
   it('rebuilds the tool payload from session history and sends it as a file to the bound chat', async () => {
@@ -86,11 +89,12 @@ describe('tool-call-file', () => {
       messageId: 'msg-assistant'
     })
 
+    const { verifyChannelActionToken } = await import('#~/channels/action-token.js')
+
     expect(result).toEqual(expect.objectContaining({
       ok: true,
       statusCode: 200,
-      fileName: 'GetCurrentChatMessages-tool-1.json',
-      detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=msg-assistant'
+      fileName: 'GetCurrentChatMessages-tool-1.json'
     }))
     expect(sendFileMessage).toHaveBeenCalledWith(expect.objectContaining({
       receiveId: 'chat_1',
@@ -111,8 +115,19 @@ describe('tool-call-file', () => {
       },
       result: {
         items: [{ id: 'm1' }, { id: 'm2' }]
-      },
-      detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1&messageId=msg-assistant'
+      }
     })
+
+    const detailUrl = new URL(result.detailUrl ?? '')
+    expect(`${detailUrl.origin}${detailUrl.pathname}`).toBe('http://localhost:8787/channels/actions/tool-call-detail')
+    expect(verifyChannelActionToken(detailUrl.searchParams.get('token') ?? '', 'tool-call-detail')).toEqual({
+      ok: true,
+      claims: expect.objectContaining({
+        sessionId: 'sess-1',
+        toolUseId: 'tool-1',
+        messageId: 'msg-assistant'
+      })
+    })
+    expect(new URL(payload.detailUrl).searchParams.get('token')).toBe(detailUrl.searchParams.get('token'))
   })
 })
