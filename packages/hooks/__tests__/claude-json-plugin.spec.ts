@@ -43,6 +43,7 @@ describe('createClaudeJsonHooksPlugin', () => {
     const result = await plugin.SessionStart?.(
       {
         logger: {
+          stream: process.stdout,
           info: () => {},
           warn: () => {},
           error: () => {},
@@ -94,6 +95,7 @@ describe('createClaudeJsonHooksPlugin', () => {
     const result = await plugin.SessionEnd?.(
       {
         logger: {
+          stream: process.stdout,
           info: () => {},
           warn: () => {},
           error: () => {},

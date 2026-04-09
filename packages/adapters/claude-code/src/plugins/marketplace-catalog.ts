@@ -1,7 +1,12 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import type { ClaudeCodeMarketplacePluginDefinition, ClaudeCodeMarketplaceSource, ManagedPluginSource } from '@vibe-forge/types'
+import type {
+  ClaudeCodeMarketplacePluginDefinition,
+  ClaudeCodeMarketplaceSource,
+  ManagedPluginSource,
+  MarketplaceConfig
+} from '@vibe-forge/types'
 import { normalizeMarketplaceConfig } from '@vibe-forge/utils'
 
 import { pathExists } from './source'
@@ -19,18 +24,22 @@ export interface ClaudeMarketplaceCatalog {
 }
 
 const normalizeMarketplaceCatalog = (catalog: unknown, description: string): ClaudeMarketplaceCatalog => {
+  const catalogSource: Record<string, unknown> = {
+    source: 'settings',
+    ...(isRecord(catalog) ? catalog : {})
+  }
+  if (isRecord(catalog) && 'plugins' in catalog) {
+    catalogSource.plugins = catalog.plugins
+  }
+
   const normalized = normalizeMarketplaceConfig({
     __catalog__: {
       type: 'claude-code',
       options: {
-        source: {
-          source: 'settings',
-          ...(isRecord(catalog) ? catalog : {}),
-          plugins: isRecord(catalog) ? catalog.plugins : undefined
-        }
+        source: catalogSource
       }
     }
-  }, description, {
+  } as unknown as MarketplaceConfig, description, {
     allowSettingsPathPluginSources: true
   })
 

@@ -8,10 +8,12 @@ const mergeClaudeCodeMarketplaceOptions = (
   right?: ClaudeCodeMarketplaceOptions
 ): ClaudeCodeMarketplaceOptions | undefined => {
   if (left == null && right == null) return undefined
+  const source = right?.source ?? left?.source
+  if (source == null) return undefined
   return {
     ...(left ?? {}),
     ...(right ?? {}),
-    source: right?.source ?? left?.source
+    source
   }
 }
 
@@ -48,10 +50,13 @@ export const mergeMarketplaceConfigs = (
     ...Object.keys(normalizedRight ?? {})
   ])
 
-  return Object.fromEntries(
-    Array.from(keys).map((key) => [
-      key,
-      mergeMarketplaceEntry(normalizedLeft?.[key], normalizedRight?.[key])
-    ])
-  )
+  const merged: MarketplaceConfig = {}
+  for (const key of keys) {
+    const entry = mergeMarketplaceEntry(normalizedLeft?.[key], normalizedRight?.[key])
+    if (entry != null) {
+      merged[key] = entry
+    }
+  }
+
+  return merged
 }
