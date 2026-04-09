@@ -52,7 +52,9 @@ describe('initClaudeCodeAdapter', () => {
 
     const keychainsPath = join(mockHome, 'Library', 'Keychains')
     expect((await lstat(keychainsPath)).isSymbolicLink()).toBe(true)
-    expect(resolve(dirname(keychainsPath), await readlink(keychainsPath))).toBe(resolve(realHome, 'Library', 'Keychains'))
+    expect(resolve(dirname(keychainsPath), await readlink(keychainsPath))).toBe(
+      resolve(realHome, 'Library', 'Keychains')
+    )
   })
 
   it('removes stale keychains symlinks when the real home is unavailable', async () => {
