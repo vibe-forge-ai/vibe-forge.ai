@@ -113,6 +113,8 @@ export function ChatHistoryView({
     onClearMessages
   })
   const initialScrollDoneRef = useRef(false)
+  const handledHashAnchorIdRef = useRef('')
+  const handledTargetScrollKeyRef = useRef('')
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [expandedTurnIds, setExpandedTurnIds] = useState<Set<string>>(new Set())
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
@@ -161,6 +163,8 @@ export function ChatHistoryView({
   }
   useEffect(() => {
     initialScrollDoneRef.current = false
+    handledHashAnchorIdRef.current = ''
+    handledTargetScrollKeyRef.current = ''
     setEditingMessageId(null)
     setExpandedTurnIds(new Set())
   }, [session?.id])
@@ -231,7 +235,12 @@ export function ChatHistoryView({
 
   useEffect(() => {
     const hash = hashAnchorId
-    if (!isReady || hash === '') return
+    if (hash === '') {
+      handledHashAnchorIdRef.current = ''
+      return
+    }
+
+    if (!isReady || handledHashAnchorIdRef.current === hash) return
 
     let removeHighlightTimer: ReturnType<typeof setTimeout> | null = null
     let retryTimer: ReturnType<typeof setTimeout> | null = null
@@ -243,6 +252,7 @@ export function ChatHistoryView({
         return false
       }
 
+      handledHashAnchorIdRef.current = hash
       target.scrollIntoView({ block: 'center', behavior: 'auto' })
       target.classList.add('is-anchor-target')
       removeHighlightTimer = setTimeout(() => {
@@ -276,11 +286,16 @@ export function ChatHistoryView({
 
   useEffect(() => {
     const targetAttr = targetToolUseId != null && targetToolUseId !== ''
-      ? { key: 'data-tool-use-id', value: targetToolUseId }
+      ? { key: 'data-tool-use-id', value: targetToolUseId, targetKey: `tool:${targetToolUseId}` }
       : targetMessageId != null && targetMessageId !== ''
-        ? { key: 'data-message-id', value: targetMessageId }
+        ? { key: 'data-message-id', value: targetMessageId, targetKey: `message:${targetMessageId}` }
         : undefined
     if (targetAttr == null) {
+      handledTargetScrollKeyRef.current = ''
+      return
+    }
+
+    if (handledTargetScrollKeyRef.current === targetAttr.targetKey) {
       return
     }
 
@@ -292,7 +307,12 @@ export function ChatHistoryView({
 
       const target = Array.from(container.querySelectorAll<HTMLElement>(`[${targetAttr.key}]`))
         .find(element => element.getAttribute(targetAttr.key) === targetAttr.value)
-      target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (target == null) {
+        return
+      }
+
+      handledTargetScrollKeyRef.current = targetAttr.targetKey
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' })
     })
 
     return () => {

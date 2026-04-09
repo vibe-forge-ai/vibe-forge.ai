@@ -91,6 +91,7 @@ export function channelActionsRouter(): Router {
     const sessionId = verified.claims.sessionId
     const toolUseId = verified.claims.toolUseId ?? ''
     const messageId = verified.claims.messageId
+    const sessionUrl = verified.claims.sessionUrl
     const payload = resolveToolCallPayload(sessionId, toolUseId)
     if (payload == null) {
       ctx.status = 404
@@ -109,6 +110,7 @@ export function channelActionsRouter(): Router {
       sessionId,
       toolUseId,
       messageId,
+      sessionUrl,
       payload
     })
   })

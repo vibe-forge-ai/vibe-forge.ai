@@ -3,29 +3,12 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 
 import { getDb } from '#~/db/index.js'
 
+import type { ChannelActionTokenClaims, ChannelActionTokenInput } from './action-token-claims.js'
+import { parseChannelActionTokenClaims } from './action-token-claims.js'
 import { MissingChannelActionSecretError, resolveActionTokenSecret } from './action-token-secret.js'
 
 const DEFAULT_DETAIL_TOKEN_TTL_MS = 60 * 60 * 1000
 const DEFAULT_EXPORT_TOKEN_TTL_MS = 15 * 60 * 1000
-
-export interface ChannelActionTokenClaims {
-  action: string
-  sessionId: string
-  toolUseId?: string
-  messageId?: string
-  exp: number
-  nonce?: string
-  oneTime?: boolean
-}
-
-export interface ChannelActionTokenInput {
-  action: string
-  sessionId: string
-  toolUseId?: string
-  messageId?: string
-  ttlMs?: number
-  oneTime?: boolean
-}
 
 export type ChannelActionTokenErrorCode =
   'missing' | 'malformed' | 'invalid' | 'expired' | 'action_mismatch' | 'replayed' | 'unavailable'
@@ -49,40 +32,6 @@ const compareSignature = (expected: string, actual: string) => {
     return false
   }
   return timingSafeEqual(expectedBuffer, actualBuffer)
-}
-
-const parseClaims = (payload: unknown): ChannelActionTokenClaims | undefined => {
-  if (payload == null || typeof payload !== 'object' || Array.isArray(payload)) {
-    return undefined
-  }
-  const record = payload as Record<string, unknown>
-
-  const action = typeof record.action === 'string' ? record.action.trim() : ''
-  const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
-  const exp = typeof record.exp === 'number' ? record.exp : Number.NaN
-  if (action === '' || sessionId === '' || !Number.isFinite(exp)) {
-    return undefined
-  }
-
-  const toolUseId = typeof record.toolUseId === 'string' && record.toolUseId.trim() !== ''
-    ? record.toolUseId.trim()
-    : undefined
-  const messageId = typeof record.messageId === 'string' && record.messageId.trim() !== ''
-    ? record.messageId.trim()
-    : undefined
-  const nonce = typeof record.nonce === 'string' && record.nonce.trim() !== ''
-    ? record.nonce.trim()
-    : undefined
-
-  return {
-    action,
-    sessionId,
-    toolUseId,
-    messageId,
-    exp,
-    nonce,
-    oneTime: record.oneTime === true
-  }
 }
 
 const verifyActionTokenInternal = (
@@ -128,7 +77,7 @@ const verifyActionTokenInternal = (
     return { ok: false, code: 'malformed' }
   }
 
-  const claims = parseClaims(parsedPayload)
+  const claims = parseChannelActionTokenClaims(parsedPayload)
   if (claims == null) {
     return { ok: false, code: 'malformed' }
   }
@@ -160,6 +109,7 @@ export const createChannelActionToken = (input: ChannelActionTokenInput) => {
   const claims: ChannelActionTokenClaims = {
     action: input.action.trim(),
     sessionId: input.sessionId,
+    sessionUrl: input.sessionUrl?.trim() || undefined,
     toolUseId: input.toolUseId?.trim() || undefined,
     messageId: input.messageId?.trim() || undefined,
     exp: now + Math.max(1, ttlMs),

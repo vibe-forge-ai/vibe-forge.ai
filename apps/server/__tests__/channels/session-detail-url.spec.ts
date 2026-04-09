@@ -62,6 +62,7 @@ describe('session detail url', () => {
       claims: expect.objectContaining({
         action: 'tool-call-detail',
         sessionId: 'sess-1',
+        sessionUrl: 'http://localhost:8787/ui/session/sess-1?toolUseId=tool-1&messageId=msg-1',
         toolUseId: 'tool-1',
         messageId: 'msg-1',
         oneTime: false

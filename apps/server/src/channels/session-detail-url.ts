@@ -75,6 +75,7 @@ export const buildToolCallDetailUrl = (
   const token = tryCreateChannelActionToken({
     action: 'tool-call-detail',
     sessionId: params.sessionId,
+    sessionUrl: buildSessionDetailUrl(config, params),
     toolUseId: params.toolUseId,
     messageId: params.messageId
   })

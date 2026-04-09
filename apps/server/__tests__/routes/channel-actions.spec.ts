@@ -131,6 +131,7 @@ describe('channel action routes', () => {
     const token = createChannelActionToken({
       action: 'tool-call-detail',
       sessionId: 'sess-1',
+      sessionUrl: 'https://ui.example/session/sess-1?toolUseId=tool-1&messageId=msg-1',
       toolUseId: 'tool-1',
       messageId: 'msg-1'
     })
@@ -139,6 +140,8 @@ describe('channel action routes', () => {
     const okHtml = await okResponse.text()
     expect(okResponse.status).toBe(200)
     expect(okHtml).toContain('GetCurrentChatMessages · success')
+    expect(okHtml).toContain('https://ui.example/session/sess-1?toolUseId=tool-1&amp;messageId=msg-1')
+    expect(okHtml).toContain('尝试打开会话 UI')
     expect(resolveToolCallPayload).toHaveBeenCalledWith('sess-1', 'tool-1')
 
     const badResponse = await fetch(`${baseUrl}/channels/actions/tool-call-detail?token=bad-token`)

@@ -34,6 +34,7 @@ describe('channel action token', () => {
     const token = createChannelActionToken({
       action: 'tool-call-detail',
       sessionId: 'sess-1',
+      sessionUrl: 'https://ui.example/session/sess-1?toolUseId=tool-1&messageId=msg-1',
       toolUseId: 'tool-1',
       messageId: 'msg-1'
     })
@@ -44,6 +45,7 @@ describe('channel action token', () => {
       claims: expect.objectContaining({
         action: 'tool-call-detail',
         sessionId: 'sess-1',
+        sessionUrl: 'https://ui.example/session/sess-1?toolUseId=tool-1&messageId=msg-1',
         toolUseId: 'tool-1',
         messageId: 'msg-1',
         oneTime: false
