@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/mcp",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Vibe Forge MCP server",
   "imports": {
     "#~/*.js": {
