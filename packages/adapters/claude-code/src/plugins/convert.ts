@@ -9,10 +9,10 @@ import {
   transformClaudeTemplateString,
   transformClaudeTemplateValue,
   writeGeneratedHooksModule
-} from './plugin-convert-support'
-import type { ClaudeTemplateContext } from './plugin-convert-support'
-import type { ClaudePluginManifest } from './plugin-source'
-import { parseClaudePluginManifest, pathExists } from './plugin-source'
+} from './convert-support'
+import type { ClaudeTemplateContext } from './convert-support'
+import type { ClaudePluginManifest } from './source'
+import { parseClaudePluginManifest, pathExists } from './source'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -25,15 +25,6 @@ const asStringList = (value: unknown): string[] => (
     ? value.filter((entry): entry is string => typeof entry === 'string' && entry.trim() !== '')
     : []
 )
-
-export const toPluginSlug = (value: string) => (
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'plugin'
-)
-
 const collectSkillSourceDirs = async (pluginRoot: string, manifest: ClaudePluginManifest | undefined) => {
   const entries = manifest?.skills != null ? asStringList(manifest.skills) : ['skills']
   const dirs = new Map<string, string>()
@@ -64,8 +55,11 @@ const collectSkillSourceDirs = async (pluginRoot: string, manifest: ClaudePlugin
 
   return dirs
 }
-
-const collectMarkdownFiles = async (pluginRoot: string, entriesValue: string | string[] | undefined, fallbackDir: string) => {
+const collectMarkdownFiles = async (
+  pluginRoot: string,
+  entriesValue: string | string[] | undefined,
+  fallbackDir: string
+) => {
   const entries = entriesValue != null ? asStringList(entriesValue) : [fallbackDir]
   const files = new Map<string, string>()
 
@@ -87,7 +81,6 @@ const collectMarkdownFiles = async (pluginRoot: string, entriesValue: string | s
 
   return files
 }
-
 const mergeMcpConfig = (target: Record<string, Record<string, unknown>>, value: unknown) => {
   if (!isRecord(value)) return
   const record = isRecord(value.mcpServers) ? value.mcpServers : value
@@ -95,7 +88,6 @@ const mergeMcpConfig = (target: Record<string, Record<string, unknown>>, value: 
     if (isRecord(config)) target[name] = config
   }
 }
-
 const readStructuredConfigValues = async (pluginRoot: string, value: unknown): Promise<unknown[]> => {
   if (typeof value === 'string') {
     const resolved = path.resolve(pluginRoot, value)
@@ -125,14 +117,14 @@ export const convertClaudePluginToVibeForge = async (params: {
   vibeForgeRoot: string
   pluginName: string
   pluginDataDir: string
+  manifest?: ClaudePluginManifest
 }) => {
-  const manifest = await parseClaudePluginManifest(params.nativePluginRoot)
+  const manifest = params.manifest ?? await parseClaudePluginManifest(params.nativePluginRoot)
   const context: ClaudeTemplateContext = {
     nativePluginRoot: params.nativePluginRoot,
     pluginDataDir: params.pluginDataDir
   }
   const seenTargets = new Map<string, string>()
-
   for (const [name, sourceDir] of await collectSkillSourceDirs(params.nativePluginRoot, manifest)) {
     const targetDir = path.join(params.vibeForgeRoot, 'skills', name)
     const targetSkillPath = path.join(targetDir, 'SKILL.md')
@@ -160,7 +152,6 @@ export const convertClaudePluginToVibeForge = async (params: {
       'utf8'
     )
   }
-
   const mergedMcp: Record<string, Record<string, unknown>> = {}
   for (const value of (manifest?.mcpServers != null
     ? await readStructuredConfigValues(params.nativePluginRoot, manifest.mcpServers)
@@ -177,7 +168,6 @@ export const convertClaudePluginToVibeForge = async (params: {
       'utf8'
     )
   }
-
   const hooks: Record<string, unknown[]> = {}
   for (const value of (manifest?.hooks != null
     ? await readStructuredConfigValues(params.nativePluginRoot, manifest.hooks)

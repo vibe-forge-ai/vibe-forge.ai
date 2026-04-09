@@ -1,5 +1,5 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs, mergePluginConfigs } from '@vibe-forge/utils'
+import { mergeAdapterConfigs, mergeMarketplaceConfigs, mergePluginConfigs } from '@vibe-forge/utils'
 
 const hasOwnKeys = (value: Record<string, unknown>) => Object.keys(value).length > 0
 
@@ -130,7 +130,8 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.conversation as Record<string, unknown> | undefined
     ) as Config['conversation'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins']
+    plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
+    marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }
 
   return merged as T

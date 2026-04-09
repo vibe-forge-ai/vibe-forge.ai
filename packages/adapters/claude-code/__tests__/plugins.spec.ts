@@ -4,7 +4,8 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { installClaudePlugin } from '#~/commands/plugin.js'
+import { installAdapterPluginWithInstaller } from '../../../../apps/cli/src/commands/@core/plugin-install'
+import { claudeCodePluginInstaller } from '../src/plugins/index'
 
 const tempDirs: string[] = []
 
@@ -18,7 +19,7 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { recursive: true, force: true })))
 })
 
-describe('plugin command', () => {
+describe('claude plugin manager', () => {
   it('installs a local Claude plugin into .ai/plugins and generates Vibe Forge assets', async () => {
     const cwd = await createTempDir()
     const pluginSourceDir = path.join(cwd, 'local-claude-plugin')
@@ -64,7 +65,7 @@ describe('plugin command', () => {
       }, null, 2)
     )
 
-    const result = await installClaudePlugin({
+    const result = await installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
       cwd,
       source: pluginSourceDir
     })
@@ -115,7 +116,7 @@ describe('plugin command', () => {
       }, null, 2)
     )
 
-    await expect(installClaudePlugin({
+    await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
       cwd,
       source: pluginSourceDir
     })).rejects.toThrow(/userConfig/i)
@@ -140,7 +141,7 @@ describe('plugin command', () => {
       }, null, 2)
     )
 
-    await expect(installClaudePlugin({
+    await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
       cwd,
       source: pluginSourceDir
     })).rejects.toThrow(/Unsupported Claude hook event/i)
@@ -160,7 +161,7 @@ describe('plugin command', () => {
     await fs.writeFile(path.join(pluginSourceDir, 'skills', 'review', 'SKILL.md'), 'Review docs\n')
     await fs.writeFile(path.join(pluginSourceDir, 'commands', 'review.md'), 'Review files\n')
 
-    await expect(installClaudePlugin({
+    await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
       cwd,
       source: pluginSourceDir
     })).rejects.toThrow(/assets conflict/i)
@@ -170,11 +171,113 @@ describe('plugin command', () => {
     await fs.rm(path.join(pluginSourceDir, 'commands', 'review.md'))
     await fs.writeFile(path.join(pluginSourceDir, 'commands', 'review-command.md'), 'Review files\n')
 
-    await expect(installClaudePlugin({
+    await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
       cwd,
       source: pluginSourceDir
     })).resolves.toEqual(expect.objectContaining({
       installDir: path.join(cwd, '.ai', 'plugins', 'retryable-plugin')
     }))
+  })
+
+  it('installs a Claude plugin from a configured marketplace', async () => {
+    const cwd = await createTempDir()
+    const marketplaceDir = path.join(cwd, 'team-marketplace')
+    const pluginSourceDir = path.join(marketplaceDir, 'plugins', 'reviewer')
+
+    await fs.mkdir(path.join(marketplaceDir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(path.join(pluginSourceDir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(path.join(pluginSourceDir, 'docs'), { recursive: true })
+
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.yaml'),
+      [
+        'marketplaces:',
+        '  team-tools:',
+        '    type: claude-code',
+        '    options:',
+        '      source:',
+        '        source: directory',
+        `        path: ${JSON.stringify(marketplaceDir)}`
+      ].join('\n')
+    )
+    await fs.writeFile(
+      path.join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
+      JSON.stringify({
+        metadata: {
+          pluginRoot: './plugins'
+        },
+        plugins: [
+          {
+            name: 'reviewer',
+            source: 'reviewer',
+            commands: 'docs'
+          }
+        ]
+      }, null, 2)
+    )
+    await fs.writeFile(
+      path.join(pluginSourceDir, '.claude-plugin', 'plugin.json'),
+      JSON.stringify({ name: 'reviewer' }, null, 2)
+    )
+    await fs.writeFile(path.join(pluginSourceDir, 'docs', 'review.md'), 'Review from marketplace\n')
+
+    const result = await installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
+      cwd,
+      source: 'reviewer@team-tools'
+    })
+
+    expect(result.config.source).toEqual({
+      type: 'marketplace',
+      marketplace: 'team-tools',
+      plugin: 'reviewer'
+    })
+    await expect(
+      fs.readFile(path.join(cwd, '.ai', 'plugins', 'reviewer', 'vibe-forge', 'skills', 'review', 'SKILL.md'), 'utf8')
+    ).resolves.toContain('Review from marketplace')
+  })
+
+  it('rejects ambiguous marketplace-like sources when no marketplace is configured', async () => {
+    const cwd = await createTempDir()
+
+    await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
+      cwd,
+      source: 'reviewer@team-tools'
+    })).rejects.toThrow(/Use "npm:reviewer@team-tools" to install an npm package/i)
+  })
+
+  it('passes explicit npm: sources through the Claude installer without marketplace parsing', async () => {
+    const cwd = await createTempDir()
+    const pluginSourceDir = path.join(cwd, 'npm-source@team-tools')
+
+    await fs.mkdir(path.join(pluginSourceDir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(path.join(pluginSourceDir, 'commands'), { recursive: true })
+    await fs.writeFile(
+      path.join(pluginSourceDir, 'package.json'),
+      JSON.stringify({
+        name: 'npm-source-team-tools',
+        version: '1.0.0'
+      }, null, 2)
+    )
+    await fs.writeFile(
+      path.join(pluginSourceDir, '.claude-plugin', 'plugin.json'),
+      JSON.stringify({ name: 'Npm Escape Plugin' }, null, 2)
+    )
+    await fs.writeFile(path.join(pluginSourceDir, 'commands', 'review.md'), 'Review via npm source\n')
+
+    const result = await installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
+      cwd,
+      source: `npm:${pluginSourceDir}`
+    })
+
+    expect(result.config.source).toEqual({
+      type: 'npm',
+      spec: pluginSourceDir
+    })
+    await expect(
+      fs.readFile(
+        path.join(cwd, '.ai', 'plugins', 'npm-escape-plugin', 'vibe-forge', 'skills', 'review', 'SKILL.md'),
+        'utf8'
+      )
+    ).resolves.toContain('Review via npm source')
   })
 })

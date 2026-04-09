@@ -8,26 +8,45 @@ const MANAGED_PLUGIN_CONFIG_FILE = '.vf-plugin.json'
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
-
-const isManagedPluginAdapter = (value: unknown): value is ManagedPluginAdapter => value === 'claude'
-
+const isManagedPluginAdapter = (value: unknown): value is ManagedPluginAdapter => (
+  typeof value === 'string' && value.trim() !== ''
+)
 const isManagedPluginSource = (value: unknown): value is ManagedPluginInstallConfig['source'] => {
   if (!isRecord(value) || typeof value.type !== 'string') return false
 
   switch (value.type) {
     case 'npm':
-      return typeof value.spec === 'string' && value.spec.trim() !== ''
+      return typeof value.spec === 'string' && value.spec.trim() !== '' && (
+        value.registry == null || (typeof value.registry === 'string' && value.registry.trim() !== '')
+      )
     case 'github':
-      return typeof value.repo === 'string' && value.repo.trim() !== ''
+      return typeof value.repo === 'string' && value.repo.trim() !== '' && (
+        value.ref == null || (typeof value.ref === 'string' && value.ref.trim() !== '')
+      ) && (
+        value.sha == null || (typeof value.sha === 'string' && value.sha.trim() !== '')
+      )
     case 'git':
-      return typeof value.url === 'string' && value.url.trim() !== ''
+      return typeof value.url === 'string' && value.url.trim() !== '' && (
+        value.ref == null || (typeof value.ref === 'string' && value.ref.trim() !== '')
+      ) && (
+        value.sha == null || (typeof value.sha === 'string' && value.sha.trim() !== '')
+      )
+    case 'git-subdir':
+      return typeof value.url === 'string' && value.url.trim() !== '' &&
+        typeof value.path === 'string' && value.path.trim() !== '' && (
+          value.ref == null || (typeof value.ref === 'string' && value.ref.trim() !== '')
+        ) && (
+          value.sha == null || (typeof value.sha === 'string' && value.sha.trim() !== '')
+        )
     case 'path':
       return typeof value.path === 'string' && value.path.trim() !== ''
+    case 'marketplace':
+      return typeof value.marketplace === 'string' && value.marketplace.trim() !== '' &&
+        typeof value.plugin === 'string' && value.plugin.trim() !== ''
     default:
       return false
   }
 }
-
 const normalizeManagedPluginConfig = (value: unknown, filePath: string): ManagedPluginInstallConfig | undefined => {
   if (!isRecord(value)) return undefined
   if (value.version !== 1) return undefined
@@ -59,25 +78,20 @@ const normalizeManagedPluginConfig = (value: unknown, filePath: string): Managed
     vibeForgePluginPath: value.vibeForgePluginPath
   }
 }
-
 export interface ManagedPluginInstall {
   config: ManagedPluginInstallConfig
   installDir: string
   nativePluginDir: string
   vibeForgePluginDir: string
 }
-
 export const getManagedPluginsRoot = (cwd: string) => resolve(cwd, '.ai', 'plugins')
-
 export const getManagedPluginConfigPath = (installDir: string) => resolve(installDir, MANAGED_PLUGIN_CONFIG_FILE)
-
 const isOutsideInstallDir = (relativePath: string) => (
   relativePath === '..' ||
   relativePath.startsWith('../') ||
   relativePath.startsWith('..\\') ||
   isAbsolute(relativePath)
 )
-
 const assertManagedPluginSubpath = async (
   installDir: string,
   rawPath: string,
@@ -115,7 +129,6 @@ const assertManagedPluginSubpath = async (
 
   return trimmed
 }
-
 export const readManagedPluginInstall = async (installDir: string): Promise<ManagedPluginInstall | undefined> => {
   const configPath = getManagedPluginConfigPath(installDir)
   try {
@@ -131,7 +144,6 @@ export const readManagedPluginInstall = async (installDir: string): Promise<Mana
     assertManagedPluginSubpath(installDir, config.nativePluginPath, 'nativePluginPath', configPath),
     assertManagedPluginSubpath(installDir, config.vibeForgePluginPath, 'vibeForgePluginPath', configPath)
   ])
-
   return {
     config: {
       ...config,
@@ -143,7 +155,6 @@ export const readManagedPluginInstall = async (installDir: string): Promise<Mana
     vibeForgePluginDir: resolve(installDir, vibeForgePluginPath)
   }
 }
-
 export const listManagedPluginInstalls = async (
   cwd: string,
   options?: {
@@ -151,7 +162,6 @@ export const listManagedPluginInstalls = async (
   }
 ) => {
   const root = getManagedPluginsRoot(cwd)
-
   try {
     const entries = await readdir(root, { withFileTypes: true })
     const installDirs = entries
@@ -160,7 +170,6 @@ export const listManagedPluginInstalls = async (
     const installs = await Promise.allSettled(
       installDirs.map(installDir => readManagedPluginInstall(installDir))
     )
-
     return installs
       .flatMap((install, index) => {
         if (install.status === 'fulfilled') {
@@ -180,7 +189,6 @@ export const listManagedPluginInstalls = async (
     return []
   }
 }
-
 export const toManagedPluginConfig = (
   installs: ManagedPluginInstall[]
 ): PluginConfig => (

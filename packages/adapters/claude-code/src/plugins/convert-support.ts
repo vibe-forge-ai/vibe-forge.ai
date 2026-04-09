@@ -4,6 +4,7 @@ import path from 'node:path'
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
+
 const SUPPORTED_CLAUDE_HOOK_EVENTS = new Set([
   'SessionStart',
   'UserPromptSubmit',

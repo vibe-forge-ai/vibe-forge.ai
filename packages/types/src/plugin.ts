@@ -103,23 +103,34 @@ export interface PluginManifest {
   children?: Record<string, PluginManifestChildDefinition>
 }
 
-export type ManagedPluginAdapter = 'claude'
+export type ManagedPluginAdapter = 'claude' | 'codex' | 'opencode' | (string & {})
 
 export interface ManagedPluginNpmSource {
   type: 'npm'
   spec: string
+  registry?: string
 }
 
 export interface ManagedPluginGithubSource {
   type: 'github'
   repo: string
   ref?: string
+  sha?: string
 }
 
 export interface ManagedPluginGitSource {
   type: 'git'
   url: string
   ref?: string
+  sha?: string
+}
+
+export interface ManagedPluginGitSubdirSource {
+  type: 'git-subdir'
+  url: string
+  path: string
+  ref?: string
+  sha?: string
 }
 
 export interface ManagedPluginPathSource {
@@ -127,11 +138,19 @@ export interface ManagedPluginPathSource {
   path: string
 }
 
+export interface ManagedPluginMarketplaceSource {
+  type: 'marketplace'
+  marketplace: string
+  plugin: string
+}
+
 export type ManagedPluginSource =
   | ManagedPluginNpmSource
   | ManagedPluginGithubSource
   | ManagedPluginGitSource
   | ManagedPluginPathSource
+  | ManagedPluginGitSubdirSource
+  | ManagedPluginMarketplaceSource
 
 export interface ManagedPluginInstallConfig {
   version: 1

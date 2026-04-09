@@ -87,4 +87,65 @@ describe('listManagedPluginInstalls', () => {
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0]?.[0]).toContain('must stay inside the install dir')
   })
+
+  it('accepts marketplace-backed managed plugin installs', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-managed-plugin-'))
+    tempDirs.push(workspace)
+
+    await mkdir(join(workspace, '.ai/plugins/reviewer/native'), { recursive: true })
+    await mkdir(join(workspace, '.ai/plugins/reviewer/vibe-forge'), { recursive: true })
+    await writeFile(
+      join(workspace, '.ai/plugins/reviewer/.vf-plugin.json'),
+      JSON.stringify({
+        version: 1,
+        adapter: 'claude',
+        name: 'reviewer',
+        installedAt: new Date().toISOString(),
+        source: {
+          type: 'marketplace',
+          marketplace: 'team-tools',
+          plugin: 'reviewer'
+        },
+        nativePluginPath: 'native',
+        vibeForgePluginPath: 'vibe-forge'
+      }, null, 2)
+    )
+
+    const installs = await listManagedPluginInstalls(workspace)
+
+    expect(installs).toHaveLength(1)
+    expect(installs[0]?.config.source).toEqual({
+      type: 'marketplace',
+      marketplace: 'team-tools',
+      plugin: 'reviewer'
+    })
+  })
+
+  it('accepts managed plugin installs for non-claude adapters', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-managed-plugin-'))
+    tempDirs.push(workspace)
+
+    await mkdir(join(workspace, '.ai/plugins/codex-helper/native'), { recursive: true })
+    await mkdir(join(workspace, '.ai/plugins/codex-helper/vibe-forge'), { recursive: true })
+    await writeFile(
+      join(workspace, '.ai/plugins/codex-helper/.vf-plugin.json'),
+      JSON.stringify({
+        version: 1,
+        adapter: 'codex',
+        name: 'codex-helper',
+        installedAt: new Date().toISOString(),
+        source: {
+          type: 'npm',
+          spec: '@acme/codex-helper'
+        },
+        nativePluginPath: 'native',
+        vibeForgePluginPath: 'vibe-forge'
+      }, null, 2)
+    )
+
+    const installs = await listManagedPluginInstalls(workspace, { adapter: 'codex' })
+
+    expect(installs).toHaveLength(1)
+    expect(installs[0]?.config.adapter).toBe('codex')
+  })
 })
