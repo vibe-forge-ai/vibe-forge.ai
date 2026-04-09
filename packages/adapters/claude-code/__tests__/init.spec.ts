@@ -19,17 +19,21 @@ afterEach(async () => {
 })
 
 describe('initClaudeCodeAdapter', () => {
-  it('symlinks workspace skills into the isolated Claude home', async () => {
+  it('symlinks workspace skills and macOS keychains into the isolated Claude home', async () => {
     const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
 
     await mkdir(join(workspace, '.ai', 'skills', 'research'), { recursive: true })
     await writeFile(join(workspace, '.ai', 'skills', 'research', 'SKILL.md'), '# Research\n')
+    await mkdir(join(realHome, 'Library', 'Keychains'), { recursive: true })
+    await writeFile(join(realHome, 'Library', 'Keychains', 'login.keychain-db'), '')
 
     await initClaudeCodeAdapter({
       cwd: workspace,
       env: {
-        HOME: mockHome
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
       },
       logger: {
         info: vi.fn(),
@@ -45,5 +49,9 @@ describe('initClaudeCodeAdapter', () => {
     const targetPath = join(mockHome, '.claude', 'skills')
     expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(workspace, '.ai', 'skills'))
+
+    const keychainsPath = join(mockHome, 'Library', 'Keychains')
+    expect((await lstat(keychainsPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(keychainsPath), await readlink(keychainsPath))).toBe(resolve(realHome, 'Library', 'Keychains'))
   })
 })
