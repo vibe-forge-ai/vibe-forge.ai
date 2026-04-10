@@ -1,16 +1,38 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, rm, symlink } from 'node:fs/promises'
+import { access, mkdir, readdir, rm, symlink } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
-import { resolveMockHome } from '@vibe-forge/hooks'
+import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
 const execFileAsync = promisify(execFile)
+const CODEX_MANAGED_SKILLS_STATE_FILE = '.vibe-forge-managed-skills.json'
+
+const syncCodexMockHomeSymlink = async (params: {
+  sourcePath: string
+  targetPath: string
+  type: 'dir' | 'file'
+}) => {
+  const { sourcePath, targetPath, type } = params
+
+  try {
+    await access(sourcePath)
+  } catch {
+    await rm(targetPath, { recursive: true, force: true })
+    return
+  }
+
+  if (resolve(sourcePath) === resolve(targetPath)) return
+
+  await rm(targetPath, { recursive: true, force: true })
+  await mkdir(dirname(targetPath), { recursive: true })
+  await symlink(sourcePath, targetPath, type)
+}
 
 /**
  * Symlink `<home>/.codex/auth.json` into `<aiHome>/.codex/auth.json` so
@@ -44,18 +66,56 @@ async function linkAuthFile(home: string, mockHome: string): Promise<void> {
 
 async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {
   const sourceDir = resolve(ctx.cwd, '.ai', 'skills')
-  const targetDir = resolve(resolveMockHome(ctx.cwd, ctx.env), '.agents', 'skills')
+  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+
+  await syncCodexMockHomeSymlink({
+    sourcePath: sourceDir,
+    targetPath: resolve(mockHome, '.agents', 'skills'),
+    type: 'dir'
+  })
+  await syncCodexMockHomeNativeSkillEntries({
+    sourceDir,
+    targetDir: resolve(mockHome, '.codex', 'skills')
+  })
+}
+
+const syncCodexMockHomeNativeSkillEntries = async (params: {
+  sourceDir: string
+  targetDir: string
+}) => {
+  const { sourceDir, targetDir } = params
+  const statePath = join(targetDir, CODEX_MANAGED_SKILLS_STATE_FILE)
+  const previousState = await readJsonFileOrDefault<{ skills?: unknown }>(statePath, {})
+  const previousManagedSkills = Array.isArray(previousState.skills)
+    ? previousState.skills.filter((name): name is string => typeof name === 'string' && name.trim() !== '')
+    : []
+
+  for (const skillName of previousManagedSkills) {
+    await rm(join(targetDir, skillName), { recursive: true, force: true })
+  }
 
   try {
     await access(sourceDir)
   } catch {
-    await rm(targetDir, { recursive: true, force: true })
+    await writeJsonFile(statePath, { skills: [] })
     return
   }
 
-  await rm(targetDir, { recursive: true, force: true })
-  await mkdir(dirname(targetDir), { recursive: true })
-  await symlink(sourceDir, targetDir, 'dir')
+  await mkdir(targetDir, { recursive: true })
+  const nextManagedSkills = (await readdir(sourceDir, { withFileTypes: true }))
+    .filter(entry => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()))
+    .map(entry => entry.name)
+    .sort((left, right) => left.localeCompare(right))
+
+  for (const skillName of nextManagedSkills) {
+    await syncCodexMockHomeSymlink({
+      sourcePath: join(sourceDir, skillName),
+      targetPath: join(targetDir, skillName),
+      type: 'dir'
+    })
+  }
+
+  await writeJsonFile(statePath, { skills: nextManagedSkills })
 }
 
 /**

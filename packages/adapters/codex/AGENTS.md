@@ -36,7 +36,7 @@ Primary implementation entrypoints for Codex hooks:
   - writes the managed `.ai/.mock/.codex/hooks.json`
 - `src/runtime/init.ts`
   - installs mock-home assets during adapter init
-  - keeps hooks/auth in `.ai/.mock/.codex/` and maps workspace skills into `.ai/.mock/.agents/skills`
+  - keeps hooks/auth in `.ai/.mock/.codex/`, maps workspace skills into `.ai/.mock/.agents/skills`, and mirrors each skill into `.ai/.mock/.codex/skills/<name>`
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
@@ -89,7 +89,8 @@ Validation checklist:
 Codex maintenance notes:
 
 - native hooks should stay entirely inside mock home; do not write to the real Codex home
-- native skills should stay in `.ai/.mock/.agents/skills`; `.codex/skills` is not a Codex-native skills location
+- Codex 官方文档里的用户级 skills 入口仍是 `.ai/.mock/.agents/skills`
+- 但当前真实 runtime 会在 `.ai/.mock/.codex/skills/.system` 下维护系统技能，所以 workspace skills 也要镜像进 `.ai/.mock/.codex/skills/<name>`
 - Codex 2026-03-27 official hooks docs say `~/.codex/hooks.json` and `<repo>/.codex/hooks.json` are both loaded, so project-level managed hooks must be deduped before writing mock-home hooks
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
 - when native hooks are active, bridge duplicates must stay disabled in `packages/task/src/run.ts`
