@@ -210,7 +210,7 @@ describe('generateDefaultCCRConfigJSON', () => {
     ])
   })
 
-  it('injects logger transformer by default', () => {
+  it('injects built-in transformers by default', () => {
     const raw = generateDefaultCCRConfigJSON({
       cwd: '/tmp/project',
       userConfig: baseUserConfig
@@ -223,6 +223,7 @@ describe('generateDefaultCCRConfigJSON', () => {
     expect(config.transformers.some(item => item.path.endsWith('logger.ts'))).toBe(true)
     expect(config.transformers.some(item => item.path.endsWith('openai-polyfill.ts'))).toBe(true)
     expect(config.transformers.some(item => item.path.endsWith('gemini-open-router-polyfill.ts'))).toBe(true)
+    expect(config.transformers.some(item => item.path.endsWith('kimi-thinking-polyfill.ts'))).toBe(true)
   })
 
   it('allows disabling logger transformer explicitly', () => {

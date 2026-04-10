@@ -303,6 +303,9 @@ export const generateDefaultCCRConfigJSON = (params: {
       path: resolveTransformerPath('gemini-open-router-polyfill')
     },
     {
+      path: resolveTransformerPath('kimi-thinking-polyfill')
+    },
+    {
       path: resolveTransformerPath('openai-polyfill')
     },
     ...(loggerEnabled
