@@ -1,0 +1,316 @@
+.chat-header-git {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-header-git__split {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text,
+.chat-header-git__split-toggle.ant-btn.ant-btn-text,
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  height: 24px;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sub-text-color, #6b7280);
+  box-shadow: none;
+  transition: background-color .2s ease, color .2s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background-color: var(--nav-hover-bg, #f3f4f6);
+    color: var(--text-color, #111827);
+  }
+
+  &:disabled {
+    background: transparent;
+    color: var(--sub-text-color, #6b7280);
+  }
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text,
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  min-width: 0;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text {
+  gap: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.chat-header-git__split-toggle.ant-btn.ant-btn-text {
+  width: 24px;
+  padding: 0;
+  justify-content: center;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.chat-header-git__split.is-open {
+  .chat-header-git__split-main.ant-btn.ant-btn-text,
+  .chat-header-git__split-toggle.ant-btn.ant-btn-text {
+    background-color: var(--nav-active-bg, #eff6ff);
+    color: var(--nav-active-text, #2563eb);
+  }
+}
+
+.chat-header-git__split-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  gap: 8px;
+  padding-right: 6px;
+  justify-content: space-between;
+
+  &.is-open {
+    background-color: var(--nav-active-bg, #eff6ff);
+    color: var(--nav-active-text, #2563eb);
+  }
+
+  &.is-disabled {
+    opacity: .7;
+  }
+}
+
+.chat-header-git__trigger-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-header-git__trigger-chevron.material-symbols-rounded {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.chat-header-git__trigger-label {
+  min-width: 0;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.chat-header-git__separator {
+  width: 1px;
+  height: 12px;
+  margin-inline: 8px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.chat-header-git__dirty-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d97706;
+  flex-shrink: 0;
+}
+
+.chat-header-git__overlay {
+  width: 244px;
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-color);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chat-header-git__overlay--operations {
+  width: 208px;
+}
+
+.chat-header-git__overlay--branches {
+  width: 236px;
+}
+
+.chat-header-git__overlay-meta {
+  font-size: 11px;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__search.ant-input-affix-wrapper {
+  min-height: 30px;
+  border-radius: 9px;
+  padding-inline: 8px;
+
+  .ant-input {
+    font-size: 10px;
+  }
+}
+
+.chat-header-git__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.chat-header-git__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__section + .chat-header-git__section {
+  padding-top: 5px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+.chat-header-git__section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__branch-row,
+.chat-header-git__operation-row,
+.chat-header-git__create-row {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-color);
+  transition: background-color .2s ease, color .2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--sub-bg-color, rgba(15, 23, 42, .05));
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+  }
+}
+
+.chat-header-git__branch-row-main,
+.chat-header-git__operation-row-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chat-header-git__row-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__row-title {
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header-git__row-subtitle {
+  font-size: 11px;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__row-icon.material-symbols-rounded,
+.chat-header-git__row-state.material-symbols-rounded {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.chat-header-git__row-state.material-symbols-rounded {
+  color: var(--primary-color, #2563eb);
+}
+
+.chat-header-git__create-row {
+  border: 1px dashed
+    color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 28%,
+      var(--border-color)
+    );
+  background: color-mix(
+    in srgb,
+    var(--primary-color, #2563eb) 6%,
+    var(--bg-color)
+  );
+}
+
+.chat-header-git__empty {
+  padding: 8px 0 2px;
+}
+
+.chat-header-git__loading {
+  padding: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.chat-header-git__divider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.chat-header-git__commit-note {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__commit-input.ant-input {
+  border-radius: 12px;
+}
+
+html.dark {
+  .chat-header-git {
+    --nav-hover-bg: #1a1a1a;
+    --nav-active-bg: #111b26;
+    --nav-active-text: #3b82f6;
+  }
+
+  .chat-header-git__split,
+  .chat-header-git__trigger.ant-btn.ant-btn-text {
+    color: var(--sub-text-color);
+  }
+
+  .chat-header-git__overlay {
+    box-shadow: 0 20px 44px rgba(0, 0, 0, .42);
+  }
+}

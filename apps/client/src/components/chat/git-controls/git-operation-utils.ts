@@ -1,0 +1,52 @@
+import type { GitRepositoryState } from '@vibe-forge/types'
+
+export type GitOperationKind = 'commit' | 'push' | 'sync'
+
+const hasUpstream = (repoState: GitRepositoryState) => repoState.upstream != null && repoState.upstream.trim() !== ''
+
+const hasRemote = (repoState: GitRepositoryState) => hasUpstream(repoState) || (repoState.remotes?.length ?? 0) > 0
+
+const hasBranch = (repoState: GitRepositoryState) =>
+  repoState.currentBranch != null && repoState.currentBranch.trim() !== ''
+
+export const isGitOperationDisabled = (
+  repoState: GitRepositoryState,
+  kind: GitOperationKind
+) => {
+  switch (kind) {
+    case 'commit':
+      return repoState.hasChanges !== true
+    case 'push':
+    case 'sync':
+      return !hasBranch(repoState) || !hasRemote(repoState)
+  }
+}
+
+export const getPrimaryGitOperationKind = (
+  repoState: GitRepositoryState
+): GitOperationKind | null => {
+  if (repoState.hasChanges === true) {
+    return 'commit'
+  }
+
+  if ((repoState.behind ?? 0) > 0 && !isGitOperationDisabled(repoState, 'sync')) {
+    return 'sync'
+  }
+
+  if (
+    ((repoState.ahead ?? 0) > 0 || !hasUpstream(repoState)) &&
+    !isGitOperationDisabled(repoState, 'push')
+  ) {
+    return 'push'
+  }
+
+  if (!isGitOperationDisabled(repoState, 'sync')) {
+    return 'sync'
+  }
+
+  if (!isGitOperationDisabled(repoState, 'push')) {
+    return 'push'
+  }
+
+  return null
+}

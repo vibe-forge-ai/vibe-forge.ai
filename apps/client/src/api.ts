@@ -18,6 +18,23 @@ export {
   listBenchmarkCategories,
   startBenchmarkRun
 } from './api/benchmark'
+export type {
+  GitAvailabilityReason,
+  GitBranchKind,
+  GitBranchListResult,
+  GitBranchSummary,
+  GitMutationResult,
+  GitRepositoryState
+} from '@vibe-forge/types'
+export {
+  checkoutSessionGitBranch,
+  commitSessionGitChanges,
+  createSessionGitBranch,
+  getSessionGitState,
+  listSessionGitBranches,
+  pushSessionGitBranch,
+  syncSessionGitBranch
+} from './api/git'
 
 // 配置读取与更新 API
 export { getConfig, updateConfig } from './api/config'
