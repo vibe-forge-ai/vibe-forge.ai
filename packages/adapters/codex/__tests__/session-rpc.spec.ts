@@ -339,6 +339,60 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('disables codex startup update checks by default', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-default-update-check',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    expect(overrides).toContain('check_for_update_on_startup=false')
+
+    session.kill()
+  })
+
+  it('allows configOverrides to re-enable codex startup update checks', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              configOverrides: {
+                check_for_update_on_startup: true
+              }
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-custom-update-check',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    expect(overrides).toContain('check_for_update_on_startup=true')
+    expect(overrides).not.toContain('check_for_update_on_startup=false')
+
+    session.kill()
+  })
+
   it('enables native codex hooks and injects runtime metadata when available', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()

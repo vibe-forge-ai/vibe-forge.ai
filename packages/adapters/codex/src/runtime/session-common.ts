@@ -126,6 +126,10 @@ const normalizeProviderBaseUrl = (apiBaseUrl: string | undefined, wireApi: strin
     : apiBaseUrl
 }
 
+const DEFAULT_CODEX_CONFIG_OVERRIDES: Record<string, unknown> = {
+  check_for_update_on_startup: false
+}
+
 /**
  * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
  */
@@ -174,6 +178,11 @@ const encodeCodexConfigValue = (value: unknown): string | undefined => {
   }
   return undefined
 }
+
+const mergeCodexConfigOverrides = (overrides: Record<string, unknown>) => ({
+  ...DEFAULT_CODEX_CONFIG_OVERRIDES,
+  ...Object.fromEntries(Object.entries(overrides).filter(([, value]) => value !== undefined))
+})
 
 const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>) => {
   const args: string[] = []
@@ -523,7 +532,9 @@ export async function resolveSessionBase(
     ...(userConfig?.modelServices ?? {})
   }
 
-  const configOverrides = isPlainObject(configOverridesValue) ? configOverridesValue : {}
+  const configOverrides = mergeCodexConfigOverrides(
+    isPlainObject(configOverridesValue) ? configOverridesValue : {}
+  )
   const nativeReasoningEffort = normalizeCodexReasoningEffort(configOverrides.model_reasoning_effort)
   const requestedEffort = options.effort ?? configuredEffort
   const requestedReasoningEffort = mapPublicEffortToCodex(requestedEffort)
