@@ -4,6 +4,7 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../core/ToolCallBox'
+import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { defineToolRender } from '../defineToolRender'
 import { TaskRow } from './components/TaskRow'
 
@@ -29,18 +30,30 @@ export const ListTasksTool = defineToolRender(({ resultItem }) => {
     const text = resultItem.content[0].text.trim()
     return JSON.parse(text) as TaskResult[]
   }, [resultItem?.content])
+  const errorMeta = resultItem?.is_error === true
+    ? (
+      <span className='tool-status tool-status--error'>
+        <span className='material-symbols-rounded'>error</span>
+      </span>
+    )
+    : undefined
 
   return (
-    <div className='tool-group list-tasks-tool'>
+    <div className='tool-group tool-group--compact list-tasks-tool'>
       <ToolCallBox
-        defaultExpanded={true}
-        header={
-          <div className='tool-header-content'>
-            <span className='material-symbols-rounded tool-header-icon'>list_alt</span>
-            <span className='tool-header-title'>{t('chat.tools.listTasks')}</span>
-            <span className='tool-header-chip'>{taskResults.length}</span>
-          </div>
-        }
+        variant='inline'
+        defaultExpanded={false}
+        header={({ isExpanded, isCollapsible }) => (
+          <ToolSummaryHeader
+            icon={<span className='material-symbols-rounded'>list_alt</span>}
+            title={t('chat.tools.listTasks')}
+            target={t('chat.tools.taskCount', { count: taskResults.length })}
+            expanded={isExpanded}
+            collapsible={isCollapsible}
+            meta={errorMeta}
+            metaTitle={errorMeta == null ? undefined : t('chat.result')}
+          />
+        )}
         content={
           <div className='tool-content'>
             <div className='list-tasks-tool__list'>

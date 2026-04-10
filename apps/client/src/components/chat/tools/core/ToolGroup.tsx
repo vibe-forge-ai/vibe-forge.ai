@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router-dom'
 import { MessageContextMenu } from '../../messages/MessageContextMenu'
 import { MessageFooter } from '../../messages/MessageFooter'
 import { ToolRenderer } from './ToolRenderer'
+import { getToolGroupSummaryText } from './tool-summary'
 
 interface ToolGroupProps {
   anchorId: string
@@ -38,14 +39,13 @@ function ToolGroupComponent({
   const isDebugMode = searchParams.get('debug') === 'true'
   const [expanded, setExpanded] = useState(false)
 
-  const lastItem = items[items.length - 1]
-  const otherItems = items.slice(0, -1)
+  if (items.length === 0) return null
+
+  const summaryText = getToolGroupSummaryText(items, t)
   const shouldForceExpand = targetToolUseId != null &&
     targetToolUseId !== '' &&
-    otherItems.some(item => item.item.id === targetToolUseId)
+    items.some(item => item.item.id === targetToolUseId)
   const isExpanded = expanded || shouldForceExpand
-
-  if (items.length === 0) return null
 
   // If only one item, just render it directly (wrapped in container for footer)
   if (items.length === 1) {
@@ -96,48 +96,33 @@ function ToolGroupComponent({
     >
       <div id={anchorId} className='tool-group-container'>
         <div className='tool-group-wrapper card-style'>
-        <div
-          className='tool-group-header'
-          onClick={() => setExpanded(!expanded)}
-        >
-          <div className='header-left'>
-            <span className='material-symbols-rounded'>dataset</span>
-            <span>{t('chat.usedTools', { count: items.length })}</span>
+          <div
+            className='tool-group-header'
+            aria-expanded={isExpanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            <div className='header-left'>
+              <span>{summaryText}</span>
+            </div>
+            <span className={`material-symbols-rounded expand-icon ${isExpanded ? 'is-expanded' : ''}`}>
+              chevron_right
+            </span>
           </div>
-          <span className='material-symbols-rounded expand-icon'>
-            {isExpanded ? 'expand_less' : 'expand_more'}
-          </span>
-        </div>
 
-        {isExpanded && (
-          <div className='tool-group-list'>
-            {otherItems.map((it, idx) => (
-              <div key={it.item.id || idx} data-tool-use-id={it.item.id}>
+          <div
+            className={`tool-group-list-shell ${isExpanded ? 'expanded' : 'collapsed'}`}
+            aria-hidden={!isExpanded}
+          >
+            <div className='tool-group-list'>
+              {items.map((it, idx) => (
                 <ToolRenderer
+                  key={it.item.id || idx}
                   item={it.item}
                   resultItem={it.resultItem}
                 />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        )}
-
-          {
-            /* Always show the last item, but if expanded, it's just part of the list visually.
-              If collapsed, it appears "below" the header.
-              Actually, to make it look like "part of the list", we should just put it in the flow.
-
-              When collapsed: Header + Last Item
-              When expanded: Header + Other Items + Last Item
-          */
-          }
-          <div className='tool-group-last-item' data-tool-use-id={lastItem.item.id}>
-            <ToolRenderer
-              item={lastItem.item}
-              resultItem={lastItem.resultItem}
-            />
-          </div>
-
         </div>
 
         {footer && isDebugMode && (

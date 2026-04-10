@@ -1,6 +1,11 @@
 import './ToolCallBox.scss'
 import React, { useState } from 'react'
 
+type ToolCallBoxHeaderRender = (state: {
+  isExpanded: boolean
+  isCollapsible: boolean
+}) => React.ReactNode
+
 export function ToolCallBox({
   header,
   content,
@@ -8,23 +13,30 @@ export function ToolCallBox({
   type = 'call',
   defaultExpanded = false,
   collapsible = true,
+  variant = 'default',
   onDoubleClick
 }: {
-  header: React.ReactNode
-  content: React.ReactNode
+  header: React.ReactNode | ToolCallBoxHeaderRender
+  content?: React.ReactNode
   isError?: boolean
   type?: 'call' | 'result'
   defaultExpanded?: boolean
   collapsible?: boolean
+  variant?: 'default' | 'inline'
   onDoubleClick?: (e: React.MouseEvent) => void
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded || !collapsible)
+  const hasBody = content != null && content !== false
+  const isCollapsible = collapsible && hasBody
 
-  const isExpanded = !collapsible || expanded
+  const isExpanded = hasBody && (!isCollapsible || expanded)
+  const headerContent = typeof header === 'function'
+    ? header({ isExpanded, isCollapsible })
+    : header
 
   return (
     <div
-      className={`tool-call-box ${type === 'result' ? 'result' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}
+      className={`tool-call-box tool-call-box--${variant} ${type === 'result' ? 'result' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}
       onDoubleClick={(e) => {
         if (onDoubleClick) {
           e.stopPropagation()
@@ -33,21 +45,27 @@ export function ToolCallBox({
       }}
     >
       <div
-        className={`tool-call-header ${type === 'result' && isError ? 'error' : ''}`}
-        onClick={() => collapsible && setExpanded(!expanded)}
+        className={`tool-call-header ${type === 'result' && isError ? 'error' : ''} ${isCollapsible ? 'is-collapsible' : 'is-static'}`}
+        aria-expanded={isCollapsible ? isExpanded : undefined}
+        onClick={() => isCollapsible && setExpanded(!expanded)}
       >
         <div className='tool-call-header-main'>
-          {header}
+          {headerContent}
         </div>
-        {collapsible && (
-          <span className='material-symbols-rounded expand-icon'>
-            {isExpanded ? 'expand_less' : 'expand_more'}
+        {isCollapsible && typeof header !== 'function' && (
+          <span className={`material-symbols-rounded expand-icon ${isExpanded ? 'is-expanded' : ''}`}>
+            expand_more
           </span>
         )}
       </div>
-      {isExpanded && (
-        <div className='tool-call-body'>
+      {hasBody && (
+        <div
+          className={`tool-call-body-shell ${isExpanded ? 'expanded' : 'collapsed'}`}
+          aria-hidden={!isExpanded}
+        >
+          <div className='tool-call-body'>
           {content}
+          </div>
         </div>
       )}
     </div>

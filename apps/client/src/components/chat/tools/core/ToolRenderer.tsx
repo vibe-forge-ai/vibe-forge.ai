@@ -3,7 +3,7 @@ import React from 'react'
 import type { ChatMessageContent } from '@vibe-forge/core'
 
 import { DefaultTool } from '../DefaultTool'
-import { BashTool, adapterClaudeToolRenders } from '../adapter-claude'
+import { GenericClaudeTool, adapterClaudeToolRenders, isClaudeToolName } from '../adapter-claude'
 import { chromeDevtoolsToolRenders } from '../plugin-chrome-devtools'
 import { taskToolRenders } from '../task'
 
@@ -28,7 +28,7 @@ export function ToolRenderer({
 }) {
   const toolName = item.name
   const foundRenderer = TOOL_RENDERERS[toolName] ?? ToolRenderer.findRendererByInput(item)
-  const Renderer = foundRenderer ?? DefaultTool
+  const Renderer = foundRenderer ?? (isClaudeToolName(toolName) ? GenericClaudeTool : DefaultTool)
   return <Renderer item={item} resultItem={resultItem} />
 }
 
@@ -40,7 +40,7 @@ ToolRenderer.findRendererByInput = (item: Extract<ChatMessageContent, { type: 't
       'command' in input &&
       (('description' in input && input.description != null) || ('reason' in input && input.reason != null))
     ) {
-      return BashTool
+      return GenericClaudeTool
     }
   }
   return null
