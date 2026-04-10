@@ -132,6 +132,26 @@ const normalizeProviderBaseUrl = (apiBaseUrl: string | undefined, wireApi: strin
 const toTomlInlineTable = (obj: Record<string, string>) =>
   `{${Object.entries(obj).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}}`
 
+const MCP_INHERITED_ENV_KEYS = [
+  '__VF_PROJECT_WORKSPACE_FOLDER__',
+  '__VF_PROJECT_PACKAGE_DIR__',
+  '__VF_PROJECT_CLI_PACKAGE_DIR__',
+  '__VF_PROJECT_AI_SESSION_ID__',
+  '__VF_PROJECT_AI_CTX_ID__',
+  '__VF_PROJECT_AI_RUN_TYPE__',
+  '__VF_PROJECT_AI_SERVER_HOST__',
+  '__VF_PROJECT_AI_SERVER_PORT__',
+  '__VF_PROJECT_AI_LOG_PREFIX__'
+] as const
+
+const pickInheritedMcpEnv = (env: Record<string, string | null | undefined>) => (
+  Object.fromEntries(
+    MCP_INHERITED_ENV_KEYS
+      .map(key => [key, env[key]])
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '')
+  )
+)
+
 const encodeCodexConfigValue = (value: unknown): string | undefined => {
   if (typeof value === 'string') return toToml(value)
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)
@@ -302,9 +322,13 @@ function buildCodexConfigOverrides(params: {
 /**
  * Build `-c mcp_servers.<name>.*` overrides for each filtered MCP server.
  */
-function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
+function buildMcpConfigArgs(
+  servers: Record<string, unknown>,
+  inheritedEnv: Record<string, string | null | undefined> = {}
+): string[] {
   const toTomlKey = (name: string) => /^[\w-]+$/.test(name) ? name : JSON.stringify(name)
   const args: string[] = []
+  const inheritedMcpEnv = pickInheritedMcpEnv(inheritedEnv)
   for (const [name, server] of Object.entries(servers)) {
     const {
       command,
@@ -326,8 +350,12 @@ function buildMcpConfigArgs(servers: Record<string, unknown>): string[] {
       if (Array.isArray(cmdArgs) && cmdArgs.length > 0) {
         args.push('-c', `${prefix}.args=${JSON.stringify(cmdArgs)}`)
       }
-      if (env != null) {
-        args.push('-c', `${prefix}.env=${toTomlInlineTable(env)}`)
+      const mergedEnv = {
+        ...inheritedMcpEnv,
+        ...(env ?? {})
+      }
+      if (Object.keys(mergedEnv).length > 0) {
+        args.push('-c', `${prefix}.env=${toTomlInlineTable(mergedEnv)}`)
       }
     } else if (typeof url === 'string') {
       args.push('-c', `${prefix}.url=${toToml(url)}`)
@@ -594,7 +622,7 @@ export async function resolveSessionBase(
     return nextServers
   })()
 
-  const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers)
+  const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers, env)
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
 

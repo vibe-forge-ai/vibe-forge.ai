@@ -65,7 +65,7 @@ export const createTaskRegister = () => {
         await callHook('StartTasks', {
           cwd: process.cwd(),
           sessionId: process.env.__VF_PROJECT_AI_SESSION_ID__!,
-          tasks
+          tasks: resolvedTasks
         })
         const syncResults = parentSessionId
           ? await Promise.allSettled(resolvedTasks.map(task =>

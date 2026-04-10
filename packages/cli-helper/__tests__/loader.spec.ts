@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { delimiter, resolve } from 'node:path'
 import process from 'node:process'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -104,5 +104,66 @@ require(entryPath).runCliPackageEntrypoint({
       sourceEntry: './src/custom-cli',
       distEntry: './dist/custom-cli.js'
     })
+  })
+
+  it('bootstraps NODE_PATH from package resolution paths', async () => {
+    const workspaceDir = await mkdtemp(resolve(tmpdir(), 'vf-cli-helper-node-path-'))
+    tempDirs.push(workspaceDir)
+
+    const packageDir = resolve(workspaceDir, 'vendor/fake-cli')
+    const dependencyDir = resolve(workspaceDir, 'vendor/node_modules/dep')
+    await mkdir(packageDir, { recursive: true })
+    await mkdir(dependencyDir, { recursive: true })
+    await writeFile(resolve(dependencyDir, 'package.json'), JSON.stringify({ name: 'dep', version: '1.0.0' }))
+    const resolvedDependencyPackageJson = await realpath(resolve(dependencyDir, 'package.json'))
+    const resolvedVendorNodeModules = await realpath(resolve(workspaceDir, 'vendor/node_modules'))
+
+    const entryPath = resolve(packageDir, 'entry.js')
+    await writeFile(
+      entryPath,
+      `const { createRequire } = require('node:module')
+const { resolve } = require('node:path')
+const workspaceRequire = createRequire(resolve(process.cwd(), '__workspace_probe__.cjs'))
+process.stdout.write(JSON.stringify({
+  nodePath: process.env.NODE_PATH,
+  resolved: workspaceRequire.resolve('dep/package.json')
+}))
+`
+    )
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve(process.cwd(), 'packages/cli-helper/loader.js')],
+      {
+        cwd: workspaceDir,
+        env: {
+          ...process.env,
+          NODE_PATH: '',
+          __VF_PROJECT_PACKAGE_DIR__: packageDir,
+          __VF_PROJECT_CLI_BIN_SOURCE_ENTRY__: entryPath
+        },
+        encoding: 'utf8'
+      }
+    )
+
+    expect(result.status).toBe(0)
+    expect(result.signal).toBeNull()
+    expect(result.stderr).toBe('')
+
+    const output = JSON.parse(result.stdout) as { nodePath: string; resolved: string }
+    const normalizedNodePathEntries = await Promise.all(
+      output.nodePath
+        .split(delimiter)
+        .filter(Boolean)
+        .map(async entry => {
+          try {
+            return await realpath(entry)
+          } catch {
+            return entry
+          }
+        })
+    )
+    expect(output.resolved).toBe(resolvedDependencyPackageJson)
+    expect(normalizedNodePathEntries).toContain(resolvedVendorNodeModules)
   })
 })

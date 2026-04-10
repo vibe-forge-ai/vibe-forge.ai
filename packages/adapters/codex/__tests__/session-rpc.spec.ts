@@ -372,6 +372,62 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('injects required vibe-forge session env into command-based MCP servers', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        env: {
+          __VF_PROJECT_WORKSPACE_FOLDER__: '/tmp/project',
+          __VF_PROJECT_PACKAGE_DIR__: '/tmp/project/infra',
+          __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/project/infra/node_modules/@vibe-forge/cli',
+          __VF_PROJECT_AI_SESSION_ID__: 'vf-session',
+          __VF_PROJECT_AI_CTX_ID__: 'vf-ctx',
+          __VF_PROJECT_AI_RUN_TYPE__: 'server',
+          __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+          __VF_PROJECT_AI_SERVER_PORT__: '8787',
+          __VF_PROJECT_AI_LOG_PREFIX__: 'test-prefix',
+          IGNORED_ENV: 'ignored-value'
+        },
+        configs: [{
+          mcpServers: {
+            'vibe-forge': {
+              command: 'node',
+              args: ['mcp.js'],
+              env: {
+                EXPLICIT_ENV: '1'
+              }
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-mcp-env',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    const mcpEnvOverride = getConfigOverride(overrides, 'mcp_servers.vibe-forge.env=')
+
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SESSION_ID__ = "vf-session"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_CTX_ID__ = "vf-ctx"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_RUN_TYPE__ = "server"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_HOST__ = "127.0.0.1"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_PORT__ = "8787"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_WORKSPACE_FOLDER__ = "/tmp/project"')
+    expect(mcpEnvOverride).toContain('EXPLICIT_ENV = "1"')
+    expect(mcpEnvOverride).not.toContain('IGNORED_ENV')
+
+    session.kill()
+  })
+
   it('passes through extra options in stream mode', async () => {
     process.env.HOME = '/tmp'
     const { proc } = makeProc()

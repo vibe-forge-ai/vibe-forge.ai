@@ -1,9 +1,45 @@
 const { spawn } = require('node:child_process')
 const { existsSync } = require('node:fs')
+const Module = require('node:module')
 const path = require('node:path')
 const process = require('node:process')
 
 const ENTRY_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs']
+
+const splitNodePath = (value) => (
+  typeof value === 'string'
+    ? value
+        .split(path.delimiter)
+        .map(item => item.trim())
+        .filter(Boolean)
+    : []
+)
+
+const resolvePackageNodePaths = (packageDir) => {
+  if (!packageDir || typeof packageDir !== 'string') return []
+
+  try {
+    const packageRequire = Module.createRequire(path.resolve(packageDir, 'package.json'))
+    return packageRequire.resolve.paths('@vibe-forge/cli-helper-node-path-probe') ?? []
+  } catch {
+    return []
+  }
+}
+
+const bootstrapNodePath = () => {
+  const packageDir = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? process.cwd()
+  const nextNodePaths = [
+    ...new Set([
+      ...splitNodePath(process.env.NODE_PATH),
+      ...resolvePackageNodePaths(packageDir)
+    ])
+  ]
+
+  if (nextNodePaths.length === 0) return
+
+  process.env.NODE_PATH = nextNodePaths.join(path.delimiter)
+  Module._initPaths()
+}
 
 const resolveEntryPath = (value) => {
   if (!value || typeof value !== 'string') return undefined
@@ -47,6 +83,8 @@ const resolveCliEntrypoint = () => {
     'CLI entrypoint not found. Set __VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ or __VF_PROJECT_CLI_BIN_DIST_ENTRY__.'
   )
 }
+
+bootstrapNodePath()
 
 if (!process.env.__IS_LOADER_CLI__) {
   const child = spawn(process.execPath, process.argv.slice(1), {

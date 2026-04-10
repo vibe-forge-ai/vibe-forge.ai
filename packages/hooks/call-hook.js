@@ -1,19 +1,57 @@
 const { spawn } = require('node:child_process')
 const { existsSync } = require('node:fs')
-const { resolve } = require('node:path')
+const Module = require('node:module')
+const path = require('node:path')
 const process = require('node:process')
+
+const splitNodePath = (value) => (
+  typeof value === 'string'
+    ? value
+        .split(path.delimiter)
+        .map(item => item.trim())
+        .filter(Boolean)
+    : []
+)
+
+const resolvePackageNodePaths = (packageDir) => {
+  if (!packageDir || typeof packageDir !== 'string') return []
+
+  try {
+    const packageRequire = Module.createRequire(path.resolve(packageDir, 'package.json'))
+    return packageRequire.resolve.paths('@vibe-forge/hooks-node-path-probe') ?? []
+  } catch {
+    return []
+  }
+}
+
+const bootstrapNodePath = () => {
+  const packageDir = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname
+  const nextNodePaths = [
+    ...new Set([
+      ...splitNodePath(process.env.NODE_PATH),
+      ...resolvePackageNodePaths(packageDir)
+    ])
+  ]
+
+  if (nextNodePaths.length === 0) return
+
+  process.env.NODE_PATH = nextNodePaths.join(path.delimiter)
+  Module._initPaths()
+}
+
+bootstrapNodePath()
 
 process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
 process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname
-process.env.HOME = resolve(
+process.env.HOME = path.resolve(
   process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
   './.ai/.mock'
 )
 
 require('@vibe-forge/register/dotenv')
 
-const sourceEntrypoint = resolve(__dirname, './src/entry.ts')
-const distEntrypoint = resolve(__dirname, './dist/entry.js')
+const sourceEntrypoint = path.resolve(__dirname, './src/entry.ts')
+const distEntrypoint = path.resolve(__dirname, './dist/entry.js')
 const shouldLoadSourceEntrypoint = existsSync(sourceEntrypoint)
 
 if (shouldLoadSourceEntrypoint && !process.env.__IS_VF_HOOK_LOADER__) {
