@@ -176,24 +176,25 @@
   }
 
   .tool-call-body-shell {
-    max-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     overflow: hidden;
     transition:
-      max-height .22s ease,
+      grid-template-rows .22s ease,
       padding-left .22s ease,
       opacity .18s ease,
       visibility 0s linear .22s;
 
     &.expanded {
-      max-height: 1200px;
+      grid-template-rows: 1fr;
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
       transition:
-        max-height .22s ease,
+        grid-template-rows .22s ease,
         padding-left .22s ease,
         opacity .18s ease;
     }

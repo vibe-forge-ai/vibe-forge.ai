@@ -582,6 +582,7 @@
       "viewCommand": "View command",
       "noParameters": "No parameters",
       "groupSummaryCount": "{{name}} {{count}}x",
+      "groupSummaryMoreCount": "+{{count}}x",
       "singleSelect": "single",
       "multiSelect": "multi",
       "fields": {

@@ -583,6 +583,7 @@
       "viewCommand": "查看指令",
       "noParameters": "无参数",
       "groupSummaryCount": "{{name}} {{count}} 次",
+      "groupSummaryMoreCount": "+{{count}} 次",
       "singleSelect": "单选",
       "multiSelect": "多选",
       "fields": {

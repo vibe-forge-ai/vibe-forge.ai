@@ -1,12 +1,26 @@
 import type { ChatMessageContent } from '@vibe-forge/core'
 
 import { getClaudeToolSummaryText } from '../adapter-claude/claude-tool-summary'
-import { buildClaudeToolPresentation, isClaudeToolName } from '../adapter-claude/claude-tool-presentation'
+import {
+  buildClaudeToolPresentation,
+  getClaudeToolBaseName,
+  isClaudeToolName
+} from '../adapter-claude/claude-tool-presentation'
 
 export type ToolUseItem = Extract<ChatMessageContent, { type: 'tool_use' }>
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
 const HUMANIZED_SEGMENT_SEPARATOR = /[_:-]+/g
+const GENERIC_TOOL_NAMESPACE_PREFIXES = new Set(['adapter', 'agent', 'mcp', 'plugin', 'tool'])
+
+const humanizeToolSegment = (value: string) => value
+  .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
+  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+  .trim()
+
+const getToolNameSegments = (name: string) => (
+  name.includes('__') ? name.split('__').filter(Boolean) : name.split(':').filter(Boolean)
+)
 
 export const formatToolName = (name: string) => {
   if (name.startsWith('mcp__ChromeDevtools__')) {
@@ -17,10 +31,7 @@ export const formatToolName = (name: string) => {
   const lastSegment = namespaceSegments.length > 0
     ? namespaceSegments[namespaceSegments.length - 1]
     : name.split(':').pop() ?? name
-  return lastSegment
-    .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .trim()
+  return humanizeToolSegment(lastSegment)
 }
 
 export const getToolInputPreview = (input: unknown) => {
@@ -86,13 +97,47 @@ export function getToolPrimaryText(item: ToolUseItem) {
   return getToolInputPreview(item.input)
 }
 
-export function getToolGroupLabel(item: ToolUseItem, t: Translate) {
+const getToolNamespaceLabel = (name: string) => {
+  const namespaceSegments = getToolNameSegments(name)
+    .slice(0, -1)
+    .filter((segment, index) => !(index === 0 && GENERIC_TOOL_NAMESPACE_PREFIXES.has(segment.toLowerCase())))
+    .map(humanizeToolSegment)
+    .filter(Boolean)
+
+  return namespaceSegments.length > 0 ? namespaceSegments.join(' ') : undefined
+}
+
+const getToolQualifiedLabel = (name: string, fallbackLabel: string) => {
+  const namespaceLabel = getToolNamespaceLabel(name)
+  return namespaceLabel != null && namespaceLabel !== ''
+    ? `${namespaceLabel} ${fallbackLabel}`
+    : fallbackLabel
+}
+
+interface ToolGroupDescriptor {
+  key: string
+  label: string
+  qualifiedLabel: string
+}
+
+function getToolGroupDescriptor(item: ToolUseItem, t: Translate): ToolGroupDescriptor {
   if (isClaudeToolName(item.name)) {
+    const baseName = getClaudeToolBaseName(item.name)
     const presentation = buildClaudeToolPresentation(item.name, item.input)
-    return t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
+    const label = t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
+    return {
+      key: `claude:${baseName}`,
+      label,
+      qualifiedLabel: label
+    }
   }
 
-  return formatToolName(item.name)
+  const label = formatToolName(item.name)
+  return {
+    key: item.name,
+    label,
+    qualifiedLabel: getToolQualifiedLabel(item.name, label)
+  }
 }
 
 export function getToolGroupSummaryText(
@@ -101,30 +146,48 @@ export function getToolGroupSummaryText(
   }>,
   t: Translate
 ) {
-  const groupedTools = new Map<string, { label: string, count: number }>()
+  const groupedTools = new Map<string, { label: string, qualifiedLabel: string, count: number }>()
 
   for (const { item } of items) {
-    const label = getToolGroupLabel(item, t)
+    const descriptor = getToolGroupDescriptor(item, t)
+    const label = descriptor.label
     if (label === '') continue
 
-    const current = groupedTools.get(label)
+    const current = groupedTools.get(descriptor.key)
     if (current != null) {
       current.count += 1
       continue
     }
 
-    groupedTools.set(label, { label, count: 1 })
+    groupedTools.set(descriptor.key, {
+      label,
+      qualifiedLabel: descriptor.qualifiedLabel,
+      count: 1
+    })
   }
 
-  const summaries = Array.from(groupedTools.values()).map(({ label, count }) => (
-    t('chat.tools.groupSummaryCount', { name: label, count })
-  ))
+  const groups = Array.from(groupedTools.values())
+  const labelCounts = groups.reduce((map, group) => {
+    map.set(group.label, (map.get(group.label) ?? 0) + 1)
+    return map
+  }, new Map<string, number>())
 
-  if (summaries.length === 0) {
+  if (groups.length === 0) {
     return t('chat.usedTools', { count: items.length })
   }
 
-  const visible = summaries.slice(0, 2)
-  const extraCount = summaries.length - visible.length
-  return extraCount > 0 ? `${visible.join(' · ')} +${extraCount}` : visible.join(' · ')
+  const summaries = groups.map((group) => {
+    const name = (labelCounts.get(group.label) ?? 0) > 1 ? group.qualifiedLabel : group.label
+    return {
+      count: group.count,
+      text: t('chat.tools.groupSummaryCount', { name, count: group.count })
+    }
+  })
+
+  const visible = summaries.slice(0, 2).map(summary => summary.text)
+  const hiddenCallCount = summaries.slice(2).reduce((count, summary) => count + summary.count, 0)
+
+  return hiddenCallCount > 0
+    ? [...visible, t('chat.tools.groupSummaryMoreCount', { count: hiddenCallCount })].join(' · ')
+    : visible.join(' · ')
 }
