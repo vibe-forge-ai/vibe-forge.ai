@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 const SCROLL_THRESHOLD = 80
 
-export function useChatScroll({ messagesLength }: { messagesLength: number }) {
+export function useChatScroll({ contentVersion }: { contentVersion: number }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesContentRef = useRef<HTMLDivElement>(null)
@@ -39,7 +39,7 @@ export function useChatScroll({ messagesLength }: { messagesLength: number }) {
 
   useEffect(() => {
     updateScrollState()
-  }, [updateScrollState, messagesLength])
+  }, [contentVersion, updateScrollState])
 
   return {
     messagesEndRef,

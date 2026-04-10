@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 
-import { getSessionMessages } from '#~/api.js'
-import { connectionManager } from '#~/connectionManager.js'
 import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
-import type { ChatErrorBannerState } from './interaction-state'
+
+import { getSessionMessages } from '#~/api.js'
+import { connectionManager } from '#~/connectionManager.js'
+
+import type { ChatErrorState } from './interaction-state'
 import {
   applyInteractionStateEvent,
   findLatestFatalError,
@@ -63,7 +65,7 @@ export function useChatSessionMessages({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [isReady, setIsReady] = useState(false)
-  const [errorBanner, setErrorBanner] = useState<ChatErrorBannerState | null>(null)
+  const [errorState, setErrorState] = useState<ChatErrorState | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const isInitialLoadRef = useRef<boolean>(true)
   const lastConnectedModelRef = useRef<string | undefined>(undefined)
@@ -124,11 +126,12 @@ export function useChatSessionMessages({
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
-      setErrorBanner(
+      setErrorState(
         restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
           ? {
             kind: 'session',
-            message: latestFatalError.message
+            message: latestFatalError.message,
+            code: latestFatalError.code
           }
           : null
       )
@@ -174,7 +177,7 @@ export function useChatSessionMessages({
   const retryConnection = useCallback(() => {
     if (session?.id == null || session.id === '') return
     expectedCloseRef.current = true
-    setErrorBanner(null)
+    setErrorState(null)
     connectionManager.close(session.id)
     setRetryCount((count) => count + 1)
   }, [session?.id])
@@ -183,7 +186,7 @@ export function useChatSessionMessages({
     setMessages([])
     setSessionInfo(null)
     setIsReady(false)
-    setErrorBanner(null)
+    setErrorState(null)
     setInteractionRequest(null)
     interactionRequestRef.current = null
     isInitialLoadRef.current = true
@@ -249,7 +252,7 @@ export function useChatSessionMessages({
       session?.status !== 'running'
     if (modelChanged || effortChanged || permissionModeChanged || adapterChanged) {
       expectedCloseRef.current = true
-      setErrorBanner(null)
+      setErrorState(null)
       connectionManager.send(session.id, { type: 'terminate_session' })
       connectionManager.close(session.id)
     }
@@ -278,7 +281,7 @@ export function useChatSessionMessages({
       cleanup = connectionManager.connect(session.id, {
         onOpen() {
           expectedCloseRef.current = false
-          setErrorBanner((current) => current?.kind === 'session' ? current : null)
+          setErrorState((current) => current?.kind === 'session' ? current : null)
         },
         onMessage(data: WSEvent) {
           if (isDisposed) return
@@ -287,7 +290,7 @@ export function useChatSessionMessages({
             interactionRequestRef.current = nextInteraction
             setInteractionRequest(nextInteraction)
             if (nextInteraction != null) {
-              setErrorBanner(null)
+              setErrorState(null)
             }
           }
           if (data.type === 'interaction_response') {
@@ -297,9 +300,10 @@ export function useChatSessionMessages({
           if (data.type === 'error') {
             const fatalError = getFatalSessionError(data)
             if (fatalError != null) {
-              setErrorBanner({
+              setErrorState({
                 kind: 'session',
-                message: fatalError.message
+                message: fatalError.message,
+                code: fatalError.code
               })
             }
             return
@@ -367,9 +371,10 @@ export function useChatSessionMessages({
         },
         onError() {
           if (isDisposed) return
-          setErrorBanner({
+          setErrorState({
             kind: 'connection',
-            message: t('chat.connectionError')
+            message: t('chat.connectionError'),
+            reason: 'error'
           })
         },
         onClose() {
@@ -378,10 +383,11 @@ export function useChatSessionMessages({
             expectedCloseRef.current = false
             return
           }
-          setErrorBanner((current) =>
+          setErrorState((current) =>
             current ?? {
               kind: 'connection',
-              message: t('chat.connectionClosed')
+              message: t('chat.connectionClosed'),
+              reason: 'closed'
             }
           )
         }
@@ -414,7 +420,7 @@ export function useChatSessionMessages({
     setMessages,
     sessionInfo,
     isReady,
-    errorBanner,
+    errorState,
     retryConnection,
     reconcileAfterInteraction
   }

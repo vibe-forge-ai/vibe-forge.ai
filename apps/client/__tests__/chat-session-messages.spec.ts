@@ -162,4 +162,31 @@ describe('chat session interaction state', () => {
       }
     })).toBeNull()
   })
+
+  it('strips ANSI escape sequences from fatal error messages', () => {
+    expect(getFatalSessionError({
+      type: 'error',
+      data: {
+        message: '\u001B[31mError: Invalid session ID. Must be a valid UUID.\u001B[39m \u001B[31m\u001B[39m',
+        fatal: true
+      }
+    })).toEqual({
+      message: 'Error: Invalid session ID. Must be a valid UUID.'
+    })
+  })
+
+  it('falls back to the top-level error message when the payload only contains ANSI output', () => {
+    expect(getFatalSessionError({
+      type: 'error',
+      message: 'Session failed after the runtime closed the stream.',
+      data: {
+        message: '\u001B[31m\u001B[39m',
+        code: 'session_failed',
+        fatal: true
+      }
+    })).toEqual({
+      message: 'Session failed after the runtime closed the stream.',
+      code: 'session_failed'
+    })
+  })
 })
