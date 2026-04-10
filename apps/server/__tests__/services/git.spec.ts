@@ -101,7 +101,7 @@ describe('git service', () => {
       },
       { stdout: 'origin\nupstream\n' },
       { stdout: '10\t0\tsrc/app.ts\n' },
-      { stdout: '2\t1\tsrc/other.ts\n' },
+      { stdout: '10\t0\tsrc/app.ts\n2\t1\tsrc/other.ts\n' },
       { stdout: 'README.md\0' },
       { stdout: '1234567890abcdef\tfeat: header polish' }
     )
@@ -136,6 +136,101 @@ describe('git service', () => {
         subject: 'feat: header polish'
       }
     })
+  })
+
+  it('does not double count files that have both staged and unstaged changes', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      {
+        stdout: [
+          '# branch.head feature/header',
+          '# branch.upstream origin/feature/header',
+          '1 MM N... 100644 100644 100644 123456 123456 src/app.ts'
+        ].join('\n')
+      },
+      { stdout: 'origin\n' },
+      { stdout: '1\t1\tsrc/app.ts\n' },
+      { stdout: '1\t1\tsrc/app.ts\n' },
+      { stdout: '' },
+      { stdout: '1234567890abcdef\tfeat: header polish' }
+    )
+
+    const { getSessionGitState } = await import('#~/services/git/index.js')
+    await expect(getSessionGitState('sess-1')).resolves.toMatchObject({
+      available: true,
+      stagedSummary: {
+        changedFiles: 1,
+        additions: 1,
+        deletions: 1
+      },
+      workingTreeSummary: {
+        changedFiles: 1,
+        additions: 1,
+        deletions: 1
+      }
+    })
+  })
+
+  it('falls back to the empty tree when HEAD is missing', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      {
+        stdout: [
+          '# branch.head main',
+          '1 A. N... 100644 100644 100644 123456 123456 src/app.ts',
+          '? README.md'
+        ].join('\n')
+      },
+      { stdout: 'origin\n' },
+      { stdout: '3\t0\tsrc/app.ts\n' },
+      createExecError("fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.", {
+        code: 128,
+        stderr: "fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree."
+      }),
+      { stdout: 'README.md\0' },
+      createExecError("fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.", {
+        code: 128,
+        stderr: "fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree."
+      }),
+      { stdout: '3\t0\tsrc/app.ts\n' }
+    )
+
+    const { getSessionGitState } = await import('#~/services/git/index.js')
+    await expect(getSessionGitState('sess-1')).resolves.toEqual({
+      available: true,
+      cwd: '/workspace/packages/app',
+      repositoryRoot: '/workspace',
+      currentBranch: 'main',
+      upstream: null,
+      ahead: 0,
+      behind: 0,
+      hasChanges: true,
+      hasStagedChanges: true,
+      hasUnstagedChanges: false,
+      hasUntrackedChanges: true,
+      remotes: ['origin'],
+      stagedSummary: {
+        changedFiles: 1,
+        additions: 3,
+        deletions: 0
+      },
+      workingTreeSummary: {
+        changedFiles: 2,
+        additions: 3,
+        deletions: 0
+      },
+      headCommit: null
+    })
+
+    expect(mocks.execFile).toHaveBeenCalledWith(
+      'git',
+      ['diff', '4b825dc642cb6eb9a060e54bf8d69288fbee4904', '--numstat'],
+      expect.objectContaining({
+        cwd: '/workspace',
+        maxBuffer: 1048576
+      }),
+      expect.any(Function)
+    )
   })
 
   it('creates a tracking branch when switching to a remote branch without a local peer', async () => {
