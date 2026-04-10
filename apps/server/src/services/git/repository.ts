@@ -12,6 +12,7 @@ import type { ParsedGitStatus } from './parsers'
 
 import { parseGitBranches, parseGitStatus } from './parsers'
 import { isGitMissingError, isNotRepositoryError, resolveGitErrorMessage, runGit } from './runner'
+import { getHeadCommitSummary, getRepositoryChangeSummaries } from './summary'
 
 interface GitRepositoryContext {
   available: boolean
@@ -142,9 +143,11 @@ export const getSessionGitStateInternal = async (sessionId: string): Promise<Git
     }
   }
 
-  const [status, remotes] = await Promise.all([
+  const [status, remotes, summaries, headCommit] = await Promise.all([
     getRepositoryStatus(repo.repositoryRoot),
-    listRepositoryRemotes(repo.repositoryRoot)
+    listRepositoryRemotes(repo.repositoryRoot),
+    getRepositoryChangeSummaries(repo.repositoryRoot),
+    getHeadCommitSummary(repo.repositoryRoot)
   ])
 
   return {
@@ -159,7 +162,10 @@ export const getSessionGitStateInternal = async (sessionId: string): Promise<Git
     hasStagedChanges: status.hasStagedChanges,
     hasUnstagedChanges: status.hasUnstagedChanges,
     hasUntrackedChanges: status.hasUntrackedChanges,
-    remotes
+    remotes,
+    stagedSummary: summaries.stagedSummary,
+    workingTreeSummary: summaries.workingTreeSummary,
+    headCommit
   }
 }
 

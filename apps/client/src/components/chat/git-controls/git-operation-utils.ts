@@ -1,6 +1,7 @@
 import type { GitRepositoryState } from '@vibe-forge/types'
 
 export type GitOperationKind = 'commit' | 'push' | 'sync'
+export type GitPushBlockedReason = 'behind-upstream' | 'push-unavailable' | null
 
 const hasUpstream = (repoState: GitRepositoryState) => repoState.upstream != null && repoState.upstream.trim() !== ''
 
@@ -20,6 +21,21 @@ export const isGitOperationDisabled = (
     case 'sync':
       return !hasBranch(repoState) || !hasRemote(repoState)
   }
+}
+
+export const getGitPushBlockedReason = (
+  repoState: GitRepositoryState,
+  forcePush: boolean
+): GitPushBlockedReason => {
+  if (isGitOperationDisabled(repoState, 'push')) {
+    return 'push-unavailable'
+  }
+
+  if ((repoState.behind ?? 0) > 0 && !forcePush) {
+    return 'behind-upstream'
+  }
+
+  return null
 }
 
 export const getPrimaryGitOperationKind = (

@@ -2,11 +2,12 @@ import './ChatGitControls.scss'
 
 import { useTranslation } from 'react-i18next'
 
-import { pushSessionGitBranch, syncSessionGitBranch } from '#~/api'
+import { syncSessionGitBranch } from '#~/api'
 
 import { BranchSwitcherDropdown } from './BranchSwitcherDropdown'
 import { GitCommitModal } from './GitCommitModal'
 import { GitOperationsDropdown } from './GitOperationsDropdown'
+import { GitPushModal } from './GitPushModal'
 import { useChatGitControls } from './use-chat-git-controls'
 
 export function ChatGitControls({
@@ -31,16 +32,10 @@ export function ChatGitControls({
           onOpenChange={git.setOperationsMenuOpen}
           onOpenCommit={() => {
             git.setOperationsMenuOpen(false)
+            git.setCommitMessageError('')
             git.setCommitModalOpen(true)
           }}
-          onPush={() => {
-            void git.runMutation(
-              'push',
-              () => pushSessionGitBranch(sessionId),
-              t('chat.gitPushSuccess'),
-              () => git.setOperationsMenuOpen(false)
-            )
-          }}
+          onPush={git.handleOpenPushModal}
           onSync={() => {
             void git.runMutation(
               'sync',
@@ -79,21 +74,54 @@ export function ChatGitControls({
       </div>
 
       <GitCommitModal
+        canCommitAndPush={git.canCommitAndPush}
+        canSubmit={git.canSubmitCommit}
+        commitAmend={git.commitAmend}
+        commitBlockedMessage={git.commitBlockedMessage}
+        commitForcePush={git.commitForcePush}
+        commitIncludeUnstagedChanges={git.commitIncludeUnstagedChanges}
         commitMessage={git.commitMessage}
         commitMessageError={git.commitMessageError}
+        commitNextStep={git.commitNextStep}
+        commitSkipHooks={git.commitSkipHooks}
+        commitSummary={git.commitSummary}
+        currentBranchLabel={git.currentBranchLabel}
+        headCommit={git.repoState.headCommit ?? null}
         open={git.commitModalOpen}
-        pending={git.pendingAction === 'commit'}
-        onCancel={() => {
-          git.setCommitModalOpen(false)
-          git.setCommitMessageError('')
-        }}
+        pending={git.pendingAction === 'commit' || git.pendingAction === 'commit-and-push'}
+        onCancel={git.resetCommitState}
         onCommit={git.handleCommit}
+        onNextStepChange={git.setCommitNextStep}
+        onToggleAmend={(checked) => {
+          git.setCommitAmend(checked)
+          if (git.commitMessageError !== '') {
+            git.setCommitMessageError('')
+          }
+        }}
+        onToggleForcePush={git.setCommitForcePush}
+        onToggleIncludeUnstagedChanges={(checked) => {
+          git.setCommitIncludeUnstagedChanges(checked)
+        }}
+        onToggleSkipHooks={git.setCommitSkipHooks}
         onMessageChange={(value) => {
           git.setCommitMessage(value)
           if (git.commitMessageError !== '') {
             git.setCommitMessageError('')
           }
         }}
+      />
+
+      <GitPushModal
+        blockedMessage={git.pushBlockedMessage}
+        currentBranchLabel={git.currentBranchLabel}
+        forcePush={git.pushForce}
+        hasUpstream={git.repoState.upstream != null && git.repoState.upstream.trim() !== ''}
+        open={git.pushModalOpen}
+        pending={git.pendingAction === 'push'}
+        upstreamLabel={git.repoState.upstream?.trim() || t('chat.gitNoUpstream')}
+        onCancel={git.resetPushState}
+        onPush={git.handlePush}
+        onToggleForcePush={git.setPushForce}
       />
     </>
   )

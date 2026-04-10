@@ -149,7 +149,8 @@
 }
 
 .chat-header-git__overlay-meta {
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.45;
   color: var(--sub-text-color);
 }
 
@@ -287,15 +288,296 @@
   background: var(--border-color);
 }
 
-.chat-header-git__commit-note {
-  margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.6;
+.chat-header-git__commit-modal {
+  .ant-modal-content {
+    padding: 14px;
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(255, 255, 255, .03),
+        transparent 34%
+      ),
+      var(--bg-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  }
+
+  .ant-modal-close {
+    inset-inline-end: 10px;
+    top: 10px;
+    color: var(--sub-text-color);
+
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+}
+
+.chat-header-git__commit-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-header-git__commit-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(
+    in srgb,
+    var(--sub-bg-color, rgba(15, 23, 42, .08)) 92%,
+    transparent
+  );
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+}
+
+.chat-header-git__commit-title {
+  margin-top: -4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-summary-grid {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 8px 14px;
+}
+
+.chat-header-git__commit-summary-label {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--sub-text-color);
 }
 
+.chat-header-git__commit-summary-value {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-summary-value--branch {
+  .material-symbols-rounded {
+    font-size: 14px;
+  }
+
+  span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.chat-header-git__commit-summary-value--stats {
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__commit-summary-delta {
+  font-weight: 700;
+
+  &.is-positive {
+    color: #22c55e;
+  }
+
+  &.is-negative {
+    color: #ef4444;
+  }
+}
+
+.chat-header-git__commit-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-header-git__commit-sub-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-header-git__commit-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 0;
+
+  .ant-switch {
+    min-width: 28px;
+    height: 16px;
+    line-height: 16px;
+    margin-top: 1px;
+    flex: 0 0 auto;
+  }
+
+  .ant-switch-handle {
+    width: 12px;
+    height: 12px;
+    top: 2px;
+    inset-inline-start: 2px;
+  }
+
+  .ant-switch.ant-switch-checked .ant-switch-handle {
+    inset-inline-start: calc(100% - 14px);
+  }
+
+  .ant-switch-inner {
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+  }
+
+  &.is-disabled {
+    opacity: .6;
+  }
+}
+
+.chat-header-git__commit-toggle-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.chat-header-git__commit-toggle-title,
+.chat-header-git__commit-section-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-toggle-description {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--sub-text-color);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.chat-header-git__commit-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .chat-header-git__commit-input.ant-input {
-  border-radius: 12px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.chat-header-git__commit-error {
+  margin-top: -6px;
+  font-size: 10px;
+  color: var(--error-text-color, #ef4444);
+}
+
+.chat-header-git__commit-next-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+  border-radius: 14px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.chat-header-git__commit-next-step {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: transparent;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-color);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color .2s ease, color .2s ease;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--text-color) 5%,
+      transparent
+    );
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+  }
+
+  &.is-selected {
+    background: color-mix(
+      in srgb,
+      var(--text-color) 8%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--text-color) 8%, transparent);
+  }
+}
+
+.chat-header-git__commit-next-step-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-header-git__commit-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chat-header-git__commit-submit.ant-btn.ant-btn-primary {
+  min-width: 180px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+  border: 0;
+  background: var(--text-color);
+  color: var(--bg-color);
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    background: color-mix(in srgb, var(--text-color) 90%, transparent);
+    color: var(--bg-color);
+  }
+
+  &:disabled {
+    background: color-mix(in srgb, var(--text-color) 16%, transparent);
+    color: color-mix(in srgb, var(--bg-color) 72%, transparent);
+  }
 }
 
 html.dark {
@@ -312,5 +594,11 @@ html.dark {
 
   .chat-header-git__overlay {
     box-shadow: 0 20px 44px rgba(0, 0, 0, .42);
+  }
+
+  .chat-header-git__commit-modal {
+    .ant-modal-content {
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+    }
   }
 }

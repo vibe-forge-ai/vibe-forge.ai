@@ -1,7 +1,8 @@
-import type { GitBranchKind, GitBranchListResult, GitRepositoryState } from '@vibe-forge/types'
+import type { GitBranchKind, GitBranchListResult, GitPushPayload, GitRepositoryState } from '@vibe-forge/types'
 
-import { badRequest, conflict, notFound } from '#~/utils/http.js'
+import { conflict, notFound } from '#~/utils/http.js'
 
+import { assertBranchName } from './commit'
 import {
   ensureRepositoryContext,
   getBranchListForRepository,
@@ -10,24 +11,7 @@ import {
 } from './repository'
 import { resolveGitErrorMessage, runGit } from './runner'
 
-const assertBranchName = async (name: string, repositoryRoot: string) => {
-  const normalized = name.trim()
-  if (normalized === '') {
-    throw badRequest('Branch name is required', { name }, 'git_branch_name_required')
-  }
-
-  try {
-    await runGit(['check-ref-format', '--branch', normalized], repositoryRoot)
-  } catch (error) {
-    throw badRequest(
-      resolveGitErrorMessage(error, 'Invalid git branch name'),
-      { name: normalized },
-      'git_invalid_branch_name'
-    )
-  }
-
-  return normalized
-}
+export { commitSessionGitChanges } from './commit'
 
 export const getSessionGitState = async (sessionId: string): Promise<GitRepositoryState> => {
   return getSessionGitStateInternal(sessionId)
@@ -103,50 +87,33 @@ export const createSessionGitBranch = async (sessionId: string, branchName: stri
   return getSessionGitStateInternal(sessionId)
 }
 
-export const commitSessionGitChanges = async (sessionId: string, message: string): Promise<GitRepositoryState> => {
-  const repo = await ensureRepositoryContext(sessionId)
-  const trimmedMessage = message.trim()
-  if (trimmedMessage === '') {
-    throw badRequest('Commit message is required', undefined, 'git_commit_message_required')
-  }
-
-  const status = await getSessionGitStateInternal(sessionId)
-  if (status.hasChanges !== true) {
-    throw conflict('There are no git changes to commit', { sessionId }, 'git_no_changes_to_commit')
-  }
-
-  try {
-    await runGit(['add', '-A'], repo.repositoryRoot)
-    await runGit(['commit', '-m', trimmedMessage], repo.repositoryRoot)
-  } catch (error) {
-    throw conflict(
-      resolveGitErrorMessage(error, 'Failed to commit git changes'),
-      { cwd: repo.repositoryRoot },
-      'git_commit_failed'
-    )
-  }
-
-  return getSessionGitStateInternal(sessionId)
-}
-
-export const pushSessionGitBranch = async (sessionId: string): Promise<GitRepositoryState> => {
+export const pushSessionGitBranch = async (
+  sessionId: string,
+  input: GitPushPayload = {}
+): Promise<GitRepositoryState> => {
   const repo = await ensureRepositoryContext(sessionId)
   const status = await getSessionGitStateInternal(sessionId)
   const currentBranch = status.currentBranch
+  const force = input.force === true
 
   if (currentBranch == null || currentBranch === '') {
     throw conflict('Detached HEAD cannot be pushed directly', { sessionId }, 'git_detached_head')
   }
 
   try {
+    const pushArgs = ['push']
+    if (force) {
+      pushArgs.push('--force-with-lease')
+    }
+
     if (status.upstream != null && status.upstream !== '') {
-      await runGit(['push'], repo.repositoryRoot)
+      await runGit(pushArgs, repo.repositoryRoot)
     } else {
       const remote = pickDefaultRemote(status.remotes ?? [])
       if (remote == null) {
         throw conflict('No git remote is configured', { sessionId }, 'git_remote_missing')
       }
-      await runGit(['push', '--set-upstream', remote, currentBranch], repo.repositoryRoot)
+      await runGit([...pushArgs, '--set-upstream', remote, currentBranch], repo.repositoryRoot)
     }
   } catch (error) {
     if (error instanceof Error && 'status' in error) {

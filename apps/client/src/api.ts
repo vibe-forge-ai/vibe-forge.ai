@@ -18,14 +18,9 @@ export {
   listBenchmarkCategories,
   startBenchmarkRun
 } from './api/benchmark'
-export type {
-  GitAvailabilityReason,
-  GitBranchKind,
-  GitBranchListResult,
-  GitBranchSummary,
-  GitMutationResult,
-  GitRepositoryState
-} from '@vibe-forge/types'
+
+// 配置读取与更新 API
+export { getConfig, updateConfig } from './api/config'
 export {
   checkoutSessionGitBranch,
   commitSessionGitChanges,
@@ -35,9 +30,6 @@ export {
   pushSessionGitBranch,
   syncSessionGitBranch
 } from './api/git'
-
-// 配置读取与更新 API
-export { getConfig, updateConfig } from './api/config'
 
 // 知识库与规则说明 API
 export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
@@ -64,4 +56,16 @@ export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessa
 export type { WorkspaceTreeEntry } from './api/workspace'
 export { listWorkspaceTree } from './api/workspace'
 
+export type {
+  GitAvailabilityReason,
+  GitBranchKind,
+  GitBranchListResult,
+  GitBranchSummary,
+  GitChangeSummary,
+  GitCommitPayload,
+  GitHeadCommitSummary,
+  GitMutationResult,
+  GitPushPayload,
+  GitRepositoryState
+} from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'

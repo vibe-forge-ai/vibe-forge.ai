@@ -5,6 +5,18 @@ export type GitAvailabilityReason =
 
 export type GitBranchKind = 'local' | 'remote'
 
+export interface GitChangeSummary {
+  changedFiles: number
+  additions: number
+  deletions: number
+}
+
+export interface GitHeadCommitSummary {
+  hash: string
+  shortHash: string
+  subject: string
+}
+
 export interface GitRepositoryState {
   available: boolean
   cwd: string
@@ -19,6 +31,9 @@ export interface GitRepositoryState {
   hasUnstagedChanges?: boolean
   hasUntrackedChanges?: boolean
   remotes?: string[]
+  stagedSummary?: GitChangeSummary
+  workingTreeSummary?: GitChangeSummary
+  headCommit?: GitHeadCommitSummary | null
 }
 
 export interface GitBranchSummary {
@@ -36,4 +51,15 @@ export interface GitBranchListResult {
 
 export interface GitMutationResult {
   repo: GitRepositoryState
+}
+
+export interface GitCommitPayload {
+  message?: string
+  includeUnstagedChanges?: boolean
+  amend?: boolean
+  skipHooks?: boolean
+}
+
+export interface GitPushPayload {
+  force?: boolean
 }

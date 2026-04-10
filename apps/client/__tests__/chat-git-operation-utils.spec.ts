@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { GitRepositoryState } from '@vibe-forge/types'
 
-import { getPrimaryGitOperationKind, isGitOperationDisabled } from '#~/components/chat/git-controls/git-operation-utils'
+import {
+  getGitPushBlockedReason,
+  getPrimaryGitOperationKind,
+  isGitOperationDisabled
+} from '#~/components/chat/git-controls/git-operation-utils'
 
 const createRepoState = (overrides: Partial<GitRepositoryState> = {}): GitRepositoryState => ({
   available: true,
@@ -47,5 +51,12 @@ describe('chat git operation utils', () => {
     expect(isGitOperationDisabled(detached, 'push')).toBe(true)
     expect(isGitOperationDisabled(detached, 'sync')).toBe(true)
     expect(getPrimaryGitOperationKind(detached)).toBeNull()
+  })
+
+  it('blocks push until sync or force when the branch is behind upstream', () => {
+    const behind = createRepoState({ behind: 2 })
+
+    expect(getGitPushBlockedReason(behind, false)).toBe('behind-upstream')
+    expect(getGitPushBlockedReason(behind, true)).toBeNull()
   })
 })

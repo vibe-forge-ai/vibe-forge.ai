@@ -1,4 +1,11 @@
-import type { GitBranchKind, GitBranchListResult, GitMutationResult, GitRepositoryState } from '@vibe-forge/types'
+import type {
+  GitBranchKind,
+  GitBranchListResult,
+  GitCommitPayload,
+  GitMutationResult,
+  GitPushPayload,
+  GitRepositoryState
+} from '@vibe-forge/types'
 
 import { fetchApiJson, jsonHeaders } from './base'
 
@@ -39,9 +46,7 @@ export async function createSessionGitBranch(
 
 export async function commitSessionGitChanges(
   sessionId: string,
-  payload: {
-    message: string
-  }
+  payload: GitCommitPayload
 ): Promise<GitMutationResult> {
   return fetchApiJson<GitMutationResult>(`/api/sessions/${sessionId}/git/commit`, {
     method: 'POST',
@@ -50,9 +55,14 @@ export async function commitSessionGitChanges(
   })
 }
 
-export async function pushSessionGitBranch(sessionId: string): Promise<GitMutationResult> {
+export async function pushSessionGitBranch(
+  sessionId: string,
+  payload: GitPushPayload = {}
+): Promise<GitMutationResult> {
   return fetchApiJson<GitMutationResult>(`/api/sessions/${sessionId}/git/push`, {
-    method: 'POST'
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify(payload)
   })
 }
 

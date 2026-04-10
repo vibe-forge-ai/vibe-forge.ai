@@ -1,6 +1,6 @@
 import Router from '@koa/router'
 
-import type { GitBranchKind } from '@vibe-forge/types'
+import type { GitBranchKind, GitCommitPayload, GitPushPayload } from '@vibe-forge/types'
 
 import {
   checkoutSessionGitBranch,
@@ -57,21 +57,39 @@ export function gitRouter(): Router {
 
   router.post('/commit', async (ctx) => {
     const { sessionId } = ctx.params as { sessionId: string }
-    const { message } = ctx.request.body as { message?: string }
+    const body = ctx.request.body as GitCommitPayload
 
-    if (typeof message !== 'string' || message.trim() === '') {
-      throw badRequest('Commit message is required', undefined, 'git_commit_message_required')
+    if (body.message != null && typeof body.message !== 'string') {
+      throw badRequest('Commit message is invalid', undefined, 'git_commit_invalid_payload')
+    }
+
+    if (body.includeUnstagedChanges != null && typeof body.includeUnstagedChanges !== 'boolean') {
+      throw badRequest('Commit options are invalid', undefined, 'git_commit_invalid_payload')
+    }
+
+    if (body.amend != null && typeof body.amend !== 'boolean') {
+      throw badRequest('Commit options are invalid', undefined, 'git_commit_invalid_payload')
+    }
+
+    if (body.skipHooks != null && typeof body.skipHooks !== 'boolean') {
+      throw badRequest('Commit options are invalid', undefined, 'git_commit_invalid_payload')
     }
 
     ctx.body = {
-      repo: await commitSessionGitChanges(sessionId, message)
+      repo: await commitSessionGitChanges(sessionId, body)
     }
   })
 
   router.post('/push', async (ctx) => {
     const { sessionId } = ctx.params as { sessionId: string }
+    const body = (ctx.request.body ?? {}) as GitPushPayload
+
+    if (body.force != null && typeof body.force !== 'boolean') {
+      throw badRequest('Push options are invalid', undefined, 'git_push_invalid_payload')
+    }
+
     ctx.body = {
-      repo: await pushSessionGitBranch(sessionId)
+      repo: await pushSessionGitBranch(sessionId, body)
     }
   })
 
