@@ -5,7 +5,10 @@ import process from 'node:process'
 
 import type { Config } from '@vibe-forge/types'
 
+import { mergeUniqueList } from './merge'
+
 export const DEFAULT_VIBE_FORGE_MCP_SERVER_NAME = 'vibe-forge'
+export const DEFAULT_VIBE_FORGE_MCP_PERMISSION_NAME = DEFAULT_VIBE_FORGE_MCP_SERVER_NAME
 
 export const resolveUseDefaultVibeForgeMcpServer = (options: {
   runtimeValue?: boolean
@@ -39,6 +42,49 @@ export const resolveDefaultVibeForgeMcpServerConfig = () => {
   } catch {
     return undefined
   }
+}
+
+const withDefaultVibeForgeMcpPermission = (
+  config: Config | undefined
+) => {
+  if (config == null) return undefined
+
+  return {
+    ...config,
+    permissions: {
+      ...(config.permissions ?? {}),
+      allow: mergeUniqueList(
+        config.permissions?.allow,
+        [DEFAULT_VIBE_FORGE_MCP_PERMISSION_NAME]
+      )
+    }
+  } satisfies Config
+}
+
+export const mergeDefaultVibeForgeMcpPermissions = (options: {
+  runtimeValue?: boolean
+  projectConfig?: Config
+  userConfig?: Config
+}) => {
+  if (!resolveUseDefaultVibeForgeMcpServer(options)) {
+    return [options.projectConfig, options.userConfig] as const
+  }
+
+  if (options.projectConfig != null) {
+    return [
+      withDefaultVibeForgeMcpPermission(options.projectConfig),
+      options.userConfig
+    ] as const
+  }
+
+  if (options.userConfig != null) {
+    return [
+      options.projectConfig,
+      withDefaultVibeForgeMcpPermission(options.userConfig)
+    ] as const
+  }
+
+  return [options.projectConfig, options.userConfig] as const
 }
 
 const resolvePublishedMcpPackageJsonPath = (packageResolver: NodeJS.Require) => {

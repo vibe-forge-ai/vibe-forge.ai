@@ -8,6 +8,7 @@ import process from 'node:process'
 import type { Config } from '@vibe-forge/types'
 import { load } from 'js-yaml'
 
+import { mergeDefaultVibeForgeMcpPermissions } from './default-vibe-forge-mcp'
 import { mergeConfigs } from './merge'
 
 export interface LoadConfigOptions {
@@ -393,10 +394,10 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
       }
     }
 
-    return [
+    return mergeDefaultVibeForgeMcpPermissions({
       projectConfig,
       userConfig
-    ] as const
+    })
   })()
   configCache.set(cacheKey, nextConfig)
   return nextConfig

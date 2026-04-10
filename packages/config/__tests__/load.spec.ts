@@ -227,7 +227,7 @@ shortcuts:
           API_KEY: 'secret-key'
         },
         permissions: {
-          allow: ['Read', 'Edit']
+          allow: ['Read', 'Edit', 'vibe-forge']
         },
         announcements: ['base', 'project'],
         defaultIncludeMcpServers: ['docs', 'browser'],
@@ -300,6 +300,37 @@ shortcuts:
         }
       })
       expect(userConfig?.extend).toBeUndefined()
+    } finally {
+      resetConfigCache()
+      await rm(tempDir, { force: true, recursive: true })
+    }
+  })
+
+  it('does not inject the built-in MCP permission when config disables the built-in server', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-disable-default-mcp-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, '.ai.config.json'),
+        JSON.stringify(
+          {
+            noDefaultVibeForgeMcpServer: true,
+            permissions: {
+              allow: ['Read']
+            }
+          },
+          null,
+          2
+        )
+      )
+
+      resetConfigCache()
+      const [projectConfig] = await loadConfig({
+        cwd: tempDir,
+        jsonVariables: {}
+      })
+
+      expect(projectConfig?.permissions?.allow).toEqual(['Read'])
     } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })
@@ -406,7 +437,7 @@ defaultModel: package-model
         defaultModel: 'package-model',
         announcements: ['package-root'],
         permissions: {
-          allow: ['Browser']
+          allow: ['Browser', 'vibe-forge']
         },
         modelServices: {
           browser: {
