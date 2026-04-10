@@ -1,0 +1,128 @@
+.tool-group.claude-generic-tool {
+  .claude-generic-tool__content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .claude-generic-tool__section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .claude-generic-tool__status {
+    display: inline-flex;
+    align-items: center;
+
+    .material-symbols-rounded {
+      font-size: 16px;
+    }
+
+    &.is-success {
+      color: var(--success-color);
+    }
+
+    &.is-error {
+      color: var(--danger-color);
+    }
+  }
+
+  .claude-generic-tool__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .claude-generic-tool__list-item {
+    padding: 4px 0 4px 10px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .claude-generic-tool__questions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .claude-generic-tool__question {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .claude-generic-tool__question-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .claude-generic-tool__question-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-color);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .claude-generic-tool__question-mode {
+    flex-shrink: 0;
+    color: var(--sub-text-color);
+    font-size: 15px;
+    cursor: help;
+  }
+
+  .claude-generic-tool__question-text {
+    color: var(--text-color);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .claude-generic-tool__question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .claude-generic-tool__question-option {
+    padding: 4px 0 4px 10px;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .claude-generic-tool__question-option-label {
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .claude-generic-tool__question-option-description {
+    color: var(--sub-text-color);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .claude-generic-tool__placeholder {
+    color: var(--sub-text-color);
+    font-size: 12px;
+    font-style: italic;
+  }
+}

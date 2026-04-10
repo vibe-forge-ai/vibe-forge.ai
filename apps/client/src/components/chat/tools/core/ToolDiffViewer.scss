@@ -1,0 +1,135 @@
+.tool-diff-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tool-diff-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tool-diff-viewer__legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.tool-diff-viewer__lang {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--sub-text-color);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  min-height: 20px;
+}
+
+.tool-diff-viewer__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--sub-text-color);
+  font-size: 11px;
+  line-height: 1.5;
+  min-height: 20px;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+  }
+}
+
+.tool-diff-viewer__meta-item--success {
+  color: var(--success-color);
+}
+
+.tool-diff-viewer__meta-item--muted {
+  opacity: .8;
+}
+
+.tool-diff-viewer__meta-label {
+  color: var(--sub-text-color);
+}
+
+.tool-diff-viewer__meta-value {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.tool-diff-viewer__mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tool-diff-viewer__mode-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sub-text-color);
+  cursor: pointer;
+  transition: border-color .18s ease, color .18s ease, background-color .18s ease;
+
+  &:hover {
+    border-color: var(--border-color);
+    color: var(--text-color);
+    background: var(--bg-color-hover);
+  }
+
+  &.is-active {
+    border-color: var(--border-color);
+    color: var(--text-color);
+    background: var(--tag-bg);
+  }
+
+  .material-symbols-rounded {
+    font-size: 15px;
+  }
+}
+
+.tool-diff-viewer__editor {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.tool-diff-viewer__editor {
+  .monaco-diff-editor,
+  .monaco-editor,
+  .monaco-editor-background,
+  .monaco-editor .margin,
+  .monaco-editor .inputarea.ime-input {
+    background: transparent !important;
+  }
+
+  .monaco-diff-editor .editor.original,
+  .monaco-diff-editor .editor.modified {
+    background: transparent !important;
+  }
+
+  .monaco-diff-editor .diffOverview,
+  .monaco-diff-editor .diffOverviewRuler,
+  .monaco-editor .scroll-decoration,
+  .monaco-editor .minimap-shadow-visible {
+    box-shadow: none !important;
+  }
+}

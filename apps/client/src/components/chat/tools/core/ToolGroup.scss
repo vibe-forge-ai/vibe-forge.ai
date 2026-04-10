@@ -11,112 +11,97 @@
   .tool-group-wrapper {
     margin: 0;
 
-    &.single-item {
-      // No special style for single item
-    }
-
     &.card-style {
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      background-color: var(--bg-color);
-      overflow: hidden;
-
       .tool-group-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        background-color: var(--tag-bg, #f9fafb);
-        border-bottom: 1px solid transparent;
+        justify-content: flex-start;
+        gap: 4px;
+        padding: 1px 0;
+        background: transparent;
         cursor: pointer;
         user-select: none;
-        transition: background-color .2s, text-shadow .4s ease;
+        color: var(--sub-text-color);
+        transition: color .2s ease;
 
         .header-left {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
+          min-width: 0;
+          flex: 0 1 auto;
+          font-size: 12px;
           font-weight: 500;
-          color: var(--text-color);
-
-          .material-symbols-rounded {
-            font-size: 18px;
-            color: var(--sub-text-color);
-          }
+          line-height: 1.45;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .expand-icon {
-          font-size: 20px;
-          color: var(--sub-text-color);
+          font-size: 16px;
+          flex-shrink: 0;
+          transition: transform .22s ease, opacity .18s ease;
+          transform-origin: center;
+
+          &.is-expanded {
+            transform: rotate(90deg);
+          }
         }
 
         &:hover {
-          opacity: .8;
+          color: var(--text-color);
+        }
+      }
+
+      .tool-group-list-shell {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+          grid-template-rows .22s ease,
+          opacity .18s ease,
+          visibility 0s linear .22s;
+
+        &.expanded {
+          grid-template-rows: 1fr;
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition:
+            grid-template-rows .22s ease,
+            opacity .18s ease;
         }
       }
 
       .tool-group-list {
+        min-height: 0;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        gap: 0;
-        padding: 0;
-        border-top: 1px solid var(--border-color);
-        background-color: var(--bg-color);
-      }
+        gap: 2px;
+        padding: 4px 0 0;
 
-      .tool-group-last-item {
-        background-color: var(--bg-color);
-      }
-
-      // Shared style reset for all tool groups inside the card
-      .tool-group-list, .tool-group-last-item {
         .tool-group {
           margin: 0;
           border: none;
           border-radius: 0;
-          background-color: transparent;
-          overflow: visible; // Allow timeline line to overflow
+          background: transparent;
+          overflow: visible;
 
           .tool-call-box {
             margin: 0;
             border: none;
             border-radius: 0;
+            background: transparent;
 
             .tool-call-header {
-              padding: 8px 12px;
-              background-color: transparent;
-
-              &:hover {
-                text-shadow: 0 0 .5px currentColor;
-              }
+              background: transparent;
             }
 
             .tool-call-body {
-              padding: 0;
-              background-color: transparent;
+              background: transparent;
             }
           }
-        }
-      }
-
-      // Timeline gap style
-      .tool-group-list .tool-group {
-        position: relative;
-        margin-bottom: 12px; // Increased gap between items
-        border-bottom: none; // Remove border as we use gap + line
-
-        &::after {
-          content: '';
-          position: absolute;
-          left: 19px;
-          bottom: -11px; // Adjusted for larger margin
-          height: 10px; // Increased length for larger gap
-          width: 2px;
-          background-color: var(--sub-text-color);
-          z-index: 99;
-          border-radius: 4px;
-          opacity: .5;
         }
       }
     }
@@ -148,14 +133,9 @@
 }
 
 html.dark .tool-group-container .tool-group-wrapper.card-style {
-  background-color: #1f2937; // Darker bg for card
   .tool-group-header {
-    background-color: #374151;
     &:hover {
-      text-shadow: 0 0 .5px currentColor;
+      color: #e5e7eb;
     }
-  }
-  .tool-group-list, .tool-group-last-item {
-    background-color: #1f2937;
   }
 }

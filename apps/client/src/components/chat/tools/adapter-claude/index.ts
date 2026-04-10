@@ -1,22 +1,31 @@
 import type {} from '@vibe-forge/adapter-claude-code/schema'
 
 import { defineToolRenders } from '../defineToolRender'
-import { BashTool } from './BashTool'
-import { GlobTool } from './GlobTool'
-import { GrepTool } from './GrepTool'
-import { LsTool } from './LSTool'
-import { ReadTool } from './ReadTool'
-import { TodoTool } from './TodoTool'
-import { WriteTool } from './WriteTool'
+import { GenericClaudeTool } from './GenericClaudeTool'
+export { buildClaudeToolPresentation, getClaudeToolBaseName, isClaudeToolName } from './claude-tool-presentation'
+export { getClaudeToolSummaryText } from './claude-tool-summary'
 
 export const adapterClaudeToolRenders = defineToolRenders({
-  Bash: BashTool,
-  LS: LsTool,
-  Glob: GlobTool,
-  Grep: GrepTool,
-  Read: ReadTool,
-  Write: WriteTool,
-  TodoWrite: TodoTool
+  AskUserQuestion: GenericClaudeTool,
+  Bash: GenericClaudeTool,
+  Edit: GenericClaudeTool,
+  EnterPlanMode: GenericClaudeTool,
+  ExitPlanMode: GenericClaudeTool,
+  LS: GenericClaudeTool,
+  Glob: GenericClaudeTool,
+  Grep: GenericClaudeTool,
+  NotebookEdit: GenericClaudeTool,
+  Read: GenericClaudeTool,
+  Skill: GenericClaudeTool,
+  Task: GenericClaudeTool,
+  TaskCreate: GenericClaudeTool,
+  TaskGet: GenericClaudeTool,
+  TaskList: GenericClaudeTool,
+  TaskUpdate: GenericClaudeTool,
+  WebFetch: GenericClaudeTool,
+  WebSearch: GenericClaudeTool,
+  Write: GenericClaudeTool,
+  TodoWrite: GenericClaudeTool
 }, { namespace: 'adapter:claude-code:' })
 
-export { BashTool, GlobTool, GrepTool, LsTool, ReadTool, TodoTool, WriteTool }
+export { GenericClaudeTool }
