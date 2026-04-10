@@ -27,64 +27,6 @@
   .chat-input-monaco {
     color: var(--text-color);
   }
-
-  .model-unavailable {
-    margin-bottom: 6px;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1px dashed var(--border-color);
-    background-color: var(--tag-bg, #f9fafb);
-    color: var(--placeholder-color);
-    font-size: 12px;
-  }
-
-  .connection-error-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(220, 38, 38, .2);
-    background: linear-gradient(
-      135deg,
-      rgba(254, 242, 242, .95),
-      rgba(255, 255, 255, .92)
-    );
-  }
-
-  .connection-error-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    min-width: 0;
-
-    .material-symbols-rounded {
-      color: #dc2626;
-      font-size: 18px;
-      line-height: 1;
-      margin-top: 1px;
-    }
-  }
-
-  .connection-error-copy {
-    min-width: 0;
-  }
-
-  .connection-error-title {
-    color: #991b1b;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .connection-error-message {
-    margin-top: 2px;
-    color: #7f1d1d;
-    font-size: 12px;
-    line-height: 1.4;
-    word-break: break-word;
-  }
 }
 
 .chat-input-container--inline-edit {

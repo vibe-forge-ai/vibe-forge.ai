@@ -3,17 +3,20 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 
-import type { ChatErrorBannerState } from '#~/hooks/chat/interaction-state'
+import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
+import type { SessionInfo } from '@vibe-forge/types'
+
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
-import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
+
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
 import { MessageItem } from './messages/MessageItem'
+import { MessageStatusNotice } from './messages/MessageStatusNotice'
+import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { Sender } from './sender/Sender'
@@ -26,7 +29,7 @@ export function ChatHistoryView({
   targetMessageId,
   targetToolUseId,
   sessionInfo,
-  errorBanner,
+  historyStatusNotices,
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
@@ -60,7 +63,7 @@ export function ChatHistoryView({
   targetMessageId?: string
   targetToolUseId?: string
   sessionInfo: SessionInfo | null
-  errorBanner?: ChatErrorBannerState | null
+  historyStatusNotices: ChatHistoryStatusNotice[]
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
@@ -91,8 +94,9 @@ export function ChatHistoryView({
   const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
+  const historyRenderCount = messages.length + historyStatusNotices.length
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
-    messagesLength: messages.length
+    contentVersion: historyRenderCount
   })
   const {
     isCreating,
@@ -173,12 +177,12 @@ export function ChatHistoryView({
       scrollToBottom('auto')
       initialScrollDoneRef.current = true
     }
-  }, [isReady, location.hash, messages.length, scrollToBottom])
+  }, [historyRenderCount, isReady, location.hash, scrollToBottom])
   useEffect(() => {
     if (location.hash === '' && !showScrollBottom) {
       scrollToBottom('auto')
     }
-  }, [location.hash, messages.length, scrollToBottom, showScrollBottom])
+  }, [historyRenderCount, location.hash, scrollToBottom, showScrollBottom])
   const handleStartEditing = (messageId: string) => {
     let isBlocked = false
 
@@ -288,8 +292,8 @@ export function ChatHistoryView({
     const targetAttr = targetToolUseId != null && targetToolUseId !== ''
       ? { key: 'data-tool-use-id', value: targetToolUseId, targetKey: `tool:${targetToolUseId}` }
       : targetMessageId != null && targetMessageId !== ''
-        ? { key: 'data-message-id', value: targetMessageId, targetKey: `message:${targetMessageId}` }
-        : undefined
+      ? { key: 'data-message-id', value: targetMessageId, targetKey: `message:${targetMessageId}` }
+      : undefined
     if (targetAttr == null) {
       handledTargetScrollKeyRef.current = ''
       return
@@ -462,6 +466,13 @@ export function ChatHistoryView({
                 </React.Fragment>
               )
           ))}
+          {historyStatusNotices.map(notice => (
+            <MessageStatusNotice
+              key={notice.id}
+              notice={notice}
+              onRetryConnection={onRetryConnection}
+            />
+          ))}
           <div ref={messagesEndRef} />
         </div>
 
@@ -472,7 +483,7 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {!session?.id && messages.length === 0 && (
+      {!session?.id && messages.length === 0 && historyStatusNotices.length === 0 && (
         <div className='new-session-guide-wrapper'>
           <NewSessionGuide />
         </div>
@@ -489,8 +500,6 @@ export function ChatHistoryView({
             onInterrupt={interrupt}
             onClear={clearMessages}
             sessionInfo={sessionInfo}
-            errorBanner={errorBanner}
-            onRetryConnection={onRetryConnection}
             interactionRequest={interactionRequest}
             onInteractionResponse={onInteractionResponse}
             placeholder={placeholder}

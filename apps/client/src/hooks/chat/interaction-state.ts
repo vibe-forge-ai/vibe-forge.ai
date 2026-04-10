@@ -1,19 +1,25 @@
 import type { AskUserQuestionParams, Session, WSEvent } from '@vibe-forge/core'
 
+import { stripAnsi } from '#~/utils/strip-ansi'
+
 export interface InteractionRequestState {
   id: string
   payload: AskUserQuestionParams
 }
 
-export interface ChatErrorBannerState {
+export interface ChatErrorState {
   kind: 'connection' | 'session'
   message: string
+  code?: string
+  reason?: 'error' | 'closed'
 }
 
 export interface FatalSessionErrorState {
   message: string
   code?: string
 }
+
+const normalizeErrorMessage = (value: string) => stripAnsi(value).trim()
 
 export const getFatalSessionError = (event: WSEvent): FatalSessionErrorState | null => {
   if (event?.type !== 'error') {
@@ -24,20 +30,34 @@ export const getFatalSessionError = (event: WSEvent): FatalSessionErrorState | n
     return null
   }
 
+  const code = event.data != null && typeof event.data === 'object' &&
+      'code' in event.data &&
+      typeof event.data.code === 'string' &&
+      event.data.code.trim() !== ''
+    ? event.data.code
+    : undefined
+
   if (event.data != null && typeof event.data === 'object' && 'message' in event.data) {
     const message = event.data.message
-    if (typeof message === 'string' && message.trim() !== '') {
-      return {
-        message,
-        code: typeof event.data.code === 'string' && event.data.code.trim() !== ''
-          ? event.data.code
-          : undefined
+    if (typeof message === 'string') {
+      const normalizedMessage = normalizeErrorMessage(message)
+      if (normalizedMessage !== '') {
+        return {
+          message: normalizedMessage,
+          code
+        }
       }
     }
   }
 
-  if (typeof event.message === 'string' && event.message.trim() !== '') {
-    return { message: event.message }
+  if (typeof event.message === 'string') {
+    const normalizedMessage = normalizeErrorMessage(event.message)
+    if (normalizedMessage !== '') {
+      return {
+        message: normalizedMessage,
+        code
+      }
+    }
   }
 
   return null

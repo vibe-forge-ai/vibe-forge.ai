@@ -49,7 +49,6 @@ export const buildSenderControllerResult = ({
   attachments,
   completion,
   composer,
-  errorBanner,
   focusRestore,
   handleKeyDown,
   hideSender,
@@ -59,7 +58,6 @@ export const buildSenderControllerResult = ({
   isInlineEdit,
   isThinking,
   modelUnavailable,
-  onRetryConnection,
   permissionContext,
   placeholder,
   editorRef,
@@ -68,7 +66,6 @@ export const buildSenderControllerResult = ({
   attachments: SenderControllerAttachments
   completion: SenderControllerCompletion
   composer: SenderControllerComposer
-  errorBanner?: SenderProps['errorBanner']
   focusRestore: { queueEditorFocusRestore: () => void }
   handleKeyDown: (event: KeyboardEvent) => void
   hideSender: boolean
@@ -78,7 +75,6 @@ export const buildSenderControllerResult = ({
   isInlineEdit: boolean
   isThinking: boolean
   modelUnavailable?: boolean
-  onRetryConnection?: (() => void) | undefined
   permissionContext?: {
     deniedTools?: string[]
     reasons?: string[]
@@ -102,8 +98,6 @@ export const buildSenderControllerResult = ({
   handleKeyDown,
   interactionRequest,
   interactionResponse,
-  errorBanner,
-  onRetryConnection,
   modelUnavailable,
   placeholder,
   onInputChange: completion.handleInputChange,

@@ -45,7 +45,7 @@ export function useChatSession({
     setMessages,
     sessionInfo,
     isReady,
-    errorBanner,
+    errorState,
     retryConnection,
     reconcileAfterInteraction
   } = useChatSessionMessages({
@@ -112,7 +112,7 @@ export function useChatSession({
     sessionInfo,
     interactionRequest,
     isReady,
-    errorBanner,
+    errorState,
     retryConnection,
     isThinking,
     activeView,

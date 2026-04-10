@@ -1,7 +1,7 @@
 import './ChatRoute.scss'
 
 import { Button, Empty } from 'antd'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import useSWR from 'swr'
@@ -13,6 +13,7 @@ import { ChatHeader } from '#~/components/chat/ChatHeader.js'
 import { ChatHistoryView } from '#~/components/chat/ChatHistoryView.js'
 import { ChatSettingsView } from '#~/components/chat/ChatSettingsView.js'
 import { ChatTimelineView } from '#~/components/chat/ChatTimelineView.js'
+import { buildChatHistoryStatusNotices } from '#~/components/chat/messages/build-chat-history-status-notices'
 import { ChatTerminalView } from '#~/components/chat/terminal/ChatTerminalView.js'
 import { useChatSession } from '#~/hooks/chat/use-chat-session'
 import { useTerminalDockVisibility } from '#~/hooks/chat/use-terminal-dock-visibility'
@@ -27,9 +28,7 @@ export function ChatRoute() {
   )
   const session = sessionId == null ? undefined : sessionsRes?.sessions.find(item => item.id === sessionId)
 
-  if (sessionId != null && isLoading) {
-    return null
-  }
+  if (sessionId != null && isLoading) return null
 
   if (sessionId != null && session == null) {
     return (
@@ -43,18 +42,15 @@ export function ChatRoute() {
   return <ChatRouteView session={session} />
 }
 
-function ChatRouteView({
-  session
-}: {
-  session?: Session
-}) {
+function ChatRouteView({ session }: { session?: Session }) {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const {
     messages,
     sessionInfo,
     interactionRequest,
     isReady,
-    errorBanner,
+    errorState,
     retryConnection,
     activeView,
     isTerminalOpen,
@@ -86,12 +82,20 @@ function ChatRouteView({
   } = useChatSession({ session })
   const targetMessageId = searchParams.get('messageId') ?? undefined
   const targetToolUseId = searchParams.get('toolUseId') ?? undefined
+  const isDebugMode = searchParams.get('debug') === 'true'
   const deepLinkTargetKey = targetToolUseId?.trim()
     ? `tool:${targetToolUseId.trim()}`
     : targetMessageId?.trim()
-      ? `message:${targetMessageId.trim()}`
-      : ''
-  const isEmptyNewSession = !session?.id && messages.length === 0
+    ? `message:${targetMessageId.trim()}`
+    : ''
+  const historyStatusNotices = useMemo(() =>
+    buildChatHistoryStatusNotices({
+      errorState,
+      isDebugMode,
+      modelUnavailable,
+      t
+    }), [errorState, isDebugMode, modelUnavailable, t])
+  const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const shouldShowTerminal = session?.id != null && isTerminalOpen
   const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(shouldShowTerminal)
@@ -100,16 +104,11 @@ function ChatRouteView({
   useEffect(() => {
     if (deepLinkTargetKey === '') {
       handledDeepLinkTargetRef.current = ''
-      return
-    }
-
-    if (handledDeepLinkTargetRef.current === deepLinkTargetKey) {
-      return
-    }
-
-    handledDeepLinkTargetRef.current = deepLinkTargetKey
-    if (activeView !== 'history') {
-      setActiveView('history')
+    } else if (handledDeepLinkTargetRef.current !== deepLinkTargetKey) {
+      handledDeepLinkTargetRef.current = deepLinkTargetKey
+      if (activeView !== 'history') {
+        setActiveView('history')
+      }
     }
   }, [activeView, deepLinkTargetKey, setActiveView])
 
@@ -132,9 +131,7 @@ function ChatRouteView({
           activeView={resolvedActiveView}
           isTerminalOpen={isTerminalOpen}
           onViewChange={setActiveView}
-          onToggleTerminal={() => {
-            setIsTerminalOpen(!isTerminalOpen)
-          }}
+          onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
         />
       )}
 
@@ -146,7 +143,7 @@ function ChatRouteView({
           targetMessageId={targetMessageId}
           targetToolUseId={targetToolUseId}
           sessionInfo={sessionInfo}
-          errorBanner={errorBanner}
+          historyStatusNotices={historyStatusNotices}
           onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}
