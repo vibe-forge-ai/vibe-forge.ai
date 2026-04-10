@@ -25,6 +25,8 @@ declare module '@vibe-forge/types' {
       /**
        * Raw Codex config overrides encoded as dotted keys and values,
        * serialized to repeated `-c key=value` flags.
+       * The adapter defaults `check_for_update_on_startup` to `false`
+       * unless explicitly overridden here.
        */
       configOverrides?: Record<string, unknown>
       /**

@@ -120,6 +120,9 @@ export default defineConfig({
       effort: 'medium',
       maxOutputTokens: 4096,
       clientInfo: { name: 'vibe-forge', title: 'Vibe Forge', version: '0.1.0' },
+      configOverrides: {
+        check_for_update_on_startup: false
+      },
       features: {
         shell_snapshot: true,
         unified_exec: false
@@ -165,6 +168,15 @@ Notable flags:
 | `web_search_request` | true    | Live web search                                                          |
 | `remote_models`      | false   | Refresh remote model list at startup                                     |
 | `codex_hooks`        | false   | Native `SessionStart/UserPromptSubmit/PreToolUse/PostToolUse/Stop` hooks |
+
+### `configOverrides`
+
+Raw Codex `-c key=value` overrides forwarded to every Codex spawn.
+
+The adapter currently defaults `check_for_update_on_startup = false` so managed
+Codex sessions do not surface startup version-update prompts by default.
+Set `adapters.codex.configOverrides.check_for_update_on_startup = true` if you
+need to restore Codex's built-in startup update check.
 
 ### Native hooks
 
