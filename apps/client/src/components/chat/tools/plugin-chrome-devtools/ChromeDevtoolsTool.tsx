@@ -25,6 +25,13 @@ export const ChromeDevtoolsTool = defineToolRender(({ item, resultItem }) => {
   const hasDetails = hasCallDetails || hasResultDetails
   const titleText = getToolTitleText(item, t)
   const targetPresentation = getToolTargetPresentation(getToolPrimaryText(item))
+  const errorMeta = resultItem?.is_error === true
+    ? (
+      <span className='tool-status tool-status--error'>
+        <span className='material-symbols-rounded'>error</span>
+      </span>
+    )
+    : undefined
 
   return (
     <div className='tool-group tool-group--compact chrome-devtools-tool'>
@@ -41,16 +48,8 @@ export const ChromeDevtoolsTool = defineToolRender(({ item, resultItem }) => {
             targetMonospace={targetPresentation.monospace}
             expanded={isExpanded}
             collapsible={isCollapsible}
-            meta={resultItem != null
-              ? (
-                <span className={resultItem.is_error === true ? 'tool-status tool-status--error' : 'tool-status tool-status--success'}>
-                  <span className='material-symbols-rounded'>
-                    {resultItem.is_error === true ? 'error' : 'check_circle'}
-                  </span>
-                </span>
-              )
-              : undefined}
-            metaTitle={resultItem == null ? undefined : t('chat.result')}
+            meta={errorMeta}
+            metaTitle={errorMeta == null ? undefined : t('chat.result')}
           />
         )}
         content={hasDetails

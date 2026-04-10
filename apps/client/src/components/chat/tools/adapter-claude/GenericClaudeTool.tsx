@@ -66,6 +66,13 @@ export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
   const summaryText = useMemo(() => getClaudeToolSummaryText(item.name, item.input, t), [item.input, item.name, t])
   const rawTargetText = view.primary ?? (summaryText !== titleText ? summaryText : undefined)
   const targetPresentation = getToolTargetPresentation(rawTargetText)
+  const errorMeta = resultItem?.is_error === true
+    ? (
+      <span className='claude-generic-tool__status is-error'>
+        <span className='material-symbols-rounded'>error</span>
+      </span>
+    )
+    : undefined
 
   return (
     <div className='tool-group tool-group--compact claude-generic-tool'>
@@ -82,16 +89,8 @@ export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
             targetMonospace={targetPresentation.monospace}
             expanded={isExpanded}
             collapsible={isCollapsible}
-            meta={resultItem != null
-              ? (
-                <span className={`claude-generic-tool__status ${resultItem.is_error === true ? 'is-error' : 'is-success'}`}>
-                  <span className='material-symbols-rounded'>
-                    {resultItem.is_error === true ? 'error' : 'check_circle'}
-                  </span>
-                </span>
-              )
-              : undefined}
-            metaTitle={resultItem == null ? undefined : t('chat.result')}
+            meta={errorMeta}
+            metaTitle={errorMeta == null ? undefined : t('chat.result')}
           />
         )}
         content={hasDetails

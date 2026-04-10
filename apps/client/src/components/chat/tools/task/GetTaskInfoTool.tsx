@@ -5,6 +5,8 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../core/ToolCallBox'
+import { getToolTargetPresentation } from '../core/tool-display'
+import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { defineToolRender } from '../defineToolRender'
 import { TaskRow } from './components/TaskRow'
 
@@ -53,18 +55,33 @@ export const GetTaskInfoTool = defineToolRender(({ item, resultItem }) => {
     })()
     : []
   const titleFallback = t('chat.tools.task')
+  const taskIdPresentation = getToolTargetPresentation(taskResult?.taskId ?? inputTaskId)
+  const errorMeta = resultItem?.is_error === true
+    ? (
+      <span className='tool-status tool-status--error'>
+        <span className='material-symbols-rounded'>error</span>
+      </span>
+    )
+    : undefined
 
   return (
-    <div className='tool-group get-task-info-tool'>
+    <div className='tool-group tool-group--compact get-task-info-tool'>
       <ToolCallBox
-        defaultExpanded={true}
-        header={
-          <div className='tool-header-content'>
-            <span className='material-symbols-rounded tool-header-icon'>info</span>
-            <span className='tool-header-title'>{t('chat.tools.getTaskInfo')}</span>
-            <span className='tool-header-chip'>{taskResult ? 1 : 0}</span>
-          </div>
-        }
+        variant='inline'
+        defaultExpanded={false}
+        header={({ isExpanded, isCollapsible }) => (
+          <ToolSummaryHeader
+            icon={<span className='material-symbols-rounded'>info</span>}
+            title={t('chat.tools.getTaskInfo')}
+            target={taskIdPresentation.text}
+            targetTitle={taskIdPresentation.title}
+            targetMonospace={taskIdPresentation.monospace}
+            expanded={isExpanded}
+            collapsible={isCollapsible}
+            meta={errorMeta}
+            metaTitle={errorMeta == null ? undefined : t('chat.result')}
+          />
+        )}
         content={
           <div className='tool-content'>
             {taskResult

@@ -7,7 +7,6 @@ import { safeJsonStringify } from '#~/utils/safe-serialize'
 import {
   getToolFieldIcon,
   getToolInlineValueText,
-  getToolSectionIcon,
   getToolValueText,
   TOOL_TOOLTIP_PROPS
 } from '../core/tool-display'
@@ -37,33 +36,30 @@ export function ClaudeToolInlineFields({
   }
 
   return (
-    <div className='tool-detail-section'>
-      {getSectionHeader(getToolSectionIcon('details'), t('chat.tools.fields.details'))}
-      <div className='tool-inline-token-list'>
-        {fields.map((field, index) => {
-          const label = t(field.labelKey, { defaultValue: field.fallbackLabel })
-          const valueText = getToolInlineValueText(field.value)
-          return (
-            <Tooltip
-              key={getFieldKey(field, index)}
-              title={(
-                <div className='tool-tooltip-content'>
-                  <div className='tool-tooltip-content__title'>{label}</div>
-                  <div className='tool-tooltip-content__value'>{getToolValueText(field.value)}</div>
-                </div>
-              )}
-              {...TOOL_TOOLTIP_PROPS}
-            >
-              <div className='tool-inline-token'>
-                <span className='tool-inline-token__icon material-symbols-rounded'>
-                  {getToolFieldIcon(field.labelKey, field.format)}
-                </span>
-                <span className='tool-inline-token__value'>{valueText}</span>
+    <div className='tool-inline-token-list tool-inline-token-list--standalone' aria-label={t('chat.tools.fields.details')}>
+      {fields.map((field, index) => {
+        const label = t(field.labelKey, { defaultValue: field.fallbackLabel })
+        const valueText = getToolInlineValueText(field.value)
+        return (
+          <Tooltip
+            key={getFieldKey(field, index)}
+            title={(
+              <div className='tool-tooltip-content'>
+                <div className='tool-tooltip-content__title'>{label}</div>
+                <div className='tool-tooltip-content__value'>{getToolValueText(field.value)}</div>
               </div>
-            </Tooltip>
-          )
-        })}
-      </div>
+            )}
+            {...TOOL_TOOLTIP_PROPS}
+          >
+            <div className='tool-inline-token'>
+              <span className='tool-inline-token__icon material-symbols-rounded'>
+                {getToolFieldIcon(field.labelKey, field.format)}
+              </span>
+              <span className='tool-inline-token__value'>{valueText}</span>
+            </div>
+          </Tooltip>
+        )
+      })}
     </div>
   )
 }

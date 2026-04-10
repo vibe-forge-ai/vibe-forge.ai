@@ -547,6 +547,7 @@
       "startTasksFailed": "Failed",
       "startTasksLogs": "Task Logs",
       "task": "Task",
+      "taskCount": "{{count}} tasks",
       "taskExitCode": "Exit: {{code}}",
       "writeSuccess": "Write Success",
       "writeFailed": "Write Failed",

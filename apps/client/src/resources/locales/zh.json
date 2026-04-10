@@ -548,6 +548,7 @@
       "startTasksFailed": "失败",
       "startTasksLogs": "任务日志",
       "task": "任务",
+      "taskCount": "{{count}} 个任务",
       "taskExitCode": "退出码: {{code}}",
       "writeSuccess": "写入成功",
       "writeFailed": "写入失败",

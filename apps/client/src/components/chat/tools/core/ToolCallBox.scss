@@ -113,7 +113,7 @@
     }
 
     .tool-call-body {
-      padding: 1px 0 4px;
+      padding: 0 0 4px;
       background: transparent;
       border-top: none;
     }
@@ -201,6 +201,7 @@
 
   .tool-call-box--inline .tool-call-body-shell.expanded {
     padding-left: 18px;
+    padding-top: 6px;
   }
 
   .tool-call-body {
@@ -528,14 +529,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1.4;
     color: var(--sub-text-color);
   }
 
   .tool-summary-header__target--mono {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .tool-summary-header__meta {
