@@ -10,11 +10,22 @@ export interface LoadedChannel {
   resolveSessionMcpServers?: ResolveChannelSessionMcpServersFn
 }
 
-const isOptionalMcpModuleMissing = (error: unknown, specifier: string) =>
-  error instanceof Error &&
-  'code' in error &&
-  error.code === 'MODULE_NOT_FOUND' &&
-  error.message.includes(specifier)
+const isOptionalMcpModuleMissing = (error: unknown, specifier: string) => {
+  if (!(error instanceof Error) || !('code' in error)) {
+    return false
+  }
+
+  if (error.code === 'MODULE_NOT_FOUND') {
+    return error.message.includes(specifier)
+  }
+
+  return (
+    error.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' &&
+    specifier.endsWith('/mcp') &&
+    error.message.includes("Package subpath './mcp'") &&
+    error.message.includes('"exports"')
+  )
+}
 
 export const loadChannelModule = (type: string): LoadedChannel => {
   const mainSpecifier = `@vibe-forge/channel-${type}`

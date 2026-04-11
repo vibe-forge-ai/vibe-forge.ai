@@ -10,6 +10,7 @@
 ## 主要变更
 
 - Lark channel 与 server 补齐 session companion MCP、tool call 详情链路和更稳定的深链接/动作链接处理。
+- Channel 初始化现在会把 connected / disabled / error 状态写进启动日志，并兼容旧版 Lark 发布包缺失 `./mcp` export 的场景。
 - Web Chat 继续重构工具调用展示，改进 tool summary、diff/renderer 结构，并补上聊天消息与工具定位的深链接体验。
 - adapter runtime 进一步加强原生 skills 与 mock home 同步；Codex runtime 自动同步 workspace skills 并默认关闭启动更新检查，Claude adapter 提升 resume 容错并补上 Kimi CCR transformer 兼容。
 - 默认内置 Vibe Forge MCP 现在可直接启用，同时修复 managed runtime 插件解析、register runtime transpile 判断和任务侧 project skill 查询链路。
