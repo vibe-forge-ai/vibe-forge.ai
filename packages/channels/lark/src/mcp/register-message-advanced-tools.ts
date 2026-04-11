@@ -1,11 +1,8 @@
 import { z } from 'zod'
 
-import {
-  larkForwardReceiveIdTypeSchema,
-  larkMemberIdTypeSchema
-} from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkForwardReceiveIdTypeSchema, larkMemberIdTypeSchema } from './types.js'
 
 const mergeForwardMessagesSchema = z.object({
   messageIds: z.array(z.string().min(1)).min(1).describe('Message IDs to merge and forward'),
@@ -28,7 +25,9 @@ const urgentBaseSchema = z.object({
 })
 
 const chargeableUrgentSchema = urgentBaseSchema.extend({
-  confirmQuotaUsage: z.literal(true).describe('Must be true to acknowledge this action may consume enterprise urgent quota')
+  confirmQuotaUsage: z.literal(true).describe(
+    'Must be true to acknowledge this action may consume enterprise urgent quota'
+  )
 })
 
 export const registerLarkMessageAdvancedTools = (
@@ -75,7 +74,8 @@ export const registerLarkMessageAdvancedTools = (
     'SendSmsUrgent',
     {
       title: 'Send SMS Urgent',
-      description: 'Trigger SMS urgent delivery for a sent message. This consumes enterprise quota and requires explicit acknowledgement.',
+      description:
+        'Trigger SMS urgent delivery for a sent message. This consumes enterprise quota and requires explicit acknowledgement.',
       inputSchema: chargeableUrgentSchema
     },
     async (input: z.infer<typeof chargeableUrgentSchema>) => toJsonResult(await service.sendSmsUrgent(input))
@@ -85,7 +85,8 @@ export const registerLarkMessageAdvancedTools = (
     'SendPhoneUrgent',
     {
       title: 'Send Phone Urgent',
-      description: 'Trigger phone urgent delivery for a sent message. This consumes enterprise quota and requires explicit acknowledgement.',
+      description:
+        'Trigger phone urgent delivery for a sent message. This consumes enterprise quota and requires explicit acknowledgement.',
       inputSchema: chargeableUrgentSchema
     },
     async (input: z.infer<typeof chargeableUrgentSchema>) => toJsonResult(await service.sendPhoneUrgent(input))

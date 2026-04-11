@@ -1,8 +1,8 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -11,19 +11,20 @@ const require = createRequire(import.meta.url)
 describe('register/esbuild', () => {
   const tempDirs: string[] = []
 
-  const runWithRegister = (entryPath: string) => spawnSync(
-    process.execPath,
-    [
-      '--conditions=__vibe-forge__',
-      '-r',
-      require.resolve('../esbuild.js'),
-      '-e',
-      `console.log(JSON.stringify(require(${JSON.stringify(entryPath)})))`
-    ],
-    {
-      encoding: 'utf8'
-    }
-  )
+  const runWithRegister = (entryPath: string) =>
+    spawnSync(
+      process.execPath,
+      [
+        '--conditions=__vibe-forge__',
+        '-r',
+        require.resolve('../esbuild.js'),
+        '-e',
+        `console.log(JSON.stringify(require(${JSON.stringify(entryPath)})))`
+      ],
+      {
+        encoding: 'utf8'
+      }
+    )
 
   afterEach(async () => {
     await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))

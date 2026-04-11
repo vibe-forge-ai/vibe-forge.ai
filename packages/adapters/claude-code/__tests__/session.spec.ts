@@ -234,7 +234,9 @@ describe('claude-code session error events', () => {
     } as any)
 
     await new Promise(resolve => setTimeout(resolve, 10))
-    const exitHandler = firstProc.on.mock.calls.find(call => call[0] === 'exit')?.[1]
+    const exitHandler = firstProc.on.mock.calls.find(
+      (call: [string, (...args: unknown[]) => void]) => call[0] === 'exit'
+    )?.[1]
     exitHandler?.(1)
 
     for (let attempt = 0; attempt < 20 && spawnMock.mock.calls.length < 2; attempt += 1) {

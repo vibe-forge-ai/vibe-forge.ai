@@ -1,12 +1,6 @@
-import { getFileInfo, getLanguageFromPath } from './utils'
-import {
-  asBoolean,
-  asNumber,
-  asString,
-  asStringArray,
-  pushField
-} from './claude-tool-shared'
+import { asBoolean, asNumber, asString, asStringArray, pushField } from './claude-tool-shared'
 import type { ClaudeToolField } from './claude-tool-shared'
+import { getFileInfo, getLanguageFromPath } from './utils'
 
 interface BuilderParams {
   baseName: string

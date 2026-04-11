@@ -56,8 +56,12 @@ export const createTaskRegister = () => {
         })
       },
       async ({ tasks }) => {
-        const resolvedTasks = tasks.map((task): McpManagedTaskInput & { taskId: string } => ({
+        const resolvedTasks = tasks.map((task): McpManagedTaskInput & {
+          taskId: string
+          type: NonNullable<McpManagedTaskInput['type']>
+        } => ({
           ...task,
+          type: task.type ?? 'default',
           taskId: uuid()
         }))
         const parentSessionId = getParentSessionId()

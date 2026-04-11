@@ -479,19 +479,23 @@ describe('resolvePromptAssetSelection', () => {
 
     await writeDocument(
       join(workspace, '.ai/plugins/demo/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: 'demo',
-        scope: 'demo',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'path',
-          path: './demo'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'demo',
+          scope: 'demo',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './demo'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
     await writeDocument(
       join(workspace, '.ai/plugins/demo/vibe-forge/skills/research/SKILL.md'),

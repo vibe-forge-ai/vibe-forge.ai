@@ -1,12 +1,12 @@
+import { ensureSuccess, resolveDefaultChatId } from './shared.js'
+import type { LarkImClient } from './shared.js'
 import type {
   LarkChatLinkValidity,
   LarkChatMemberIdType,
   LarkChatSortType,
-  LarkMemberIdType,
-  LarkMcpRuntimeEnv
+  LarkMcpRuntimeEnv,
+  LarkMemberIdType
 } from './types.js'
-import { ensureSuccess, resolveDefaultChatId } from './shared.js'
-import type { LarkImClient } from './shared.js'
 
 export const createLarkChatActions = (
   env: LarkMcpRuntimeEnv,

@@ -11,21 +11,17 @@ import { buildInteractionText } from './interaction'
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
 import { defineMessages } from './middleware/i18n'
+import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
 import {
   clearPendingToolCallDisplay,
   consumePendingUnack,
   deleteBinding,
-  runPendingToolCallDisplayUpdate,
   resolveBinding,
   resolvePendingToolCallDisplay,
+  runPendingToolCallDisplayUpdate,
   setPendingToolCallDisplay
 } from './state'
-import {
-  buildToolCallSummaryText,
-  extractToolCallSummary,
-  mergeToolCallSummaries
-} from './tool-call-summary'
-import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
+import { buildToolCallSummaryText, extractToolCallSummary, mergeToolCallSummaries } from './tool-call-summary'
 import type { ChannelRuntimeState } from './types'
 
 export const handleInboundEvent = async (
@@ -156,20 +152,20 @@ export const handleSessionEvent = async (
     messageId?: string
   ) => ({
     ...summary,
-      items: summary.items.map(item => ({
-        ...item,
-        detailUrl: buildToolCallDetailUrl(state.config, {
-          sessionId,
-          toolUseId: item.toolUseId,
-          messageId
-        }),
-        exportJsonUrl: buildChannelActionUrl(state.config, {
-          action: 'tool-call-export',
-          sessionId,
-          toolUseId: item.toolUseId,
-          messageId
-        })
-      }))
+    items: summary.items.map(item => ({
+      ...item,
+      detailUrl: buildToolCallDetailUrl(state.config, {
+        sessionId,
+        toolUseId: item.toolUseId,
+        messageId
+      }),
+      exportJsonUrl: buildChannelActionUrl(state.config, {
+        action: 'tool-call-export',
+        sessionId,
+        toolUseId: item.toolUseId,
+        messageId
+      })
+    }))
   })
   const deliverMessage = async (message: ChannelTextMessage) => {
     const unack = consumePendingUnack(sessionId)

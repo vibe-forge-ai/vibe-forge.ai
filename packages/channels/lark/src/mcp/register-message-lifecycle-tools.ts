@@ -1,12 +1,8 @@
 import { z } from 'zod'
 
-import {
-  larkFollowUpLanguageSchema,
-  larkMemberIdTypeSchema,
-  larkUpdatableMessageTypeSchema
-} from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkFollowUpLanguageSchema, larkMemberIdTypeSchema, larkUpdatableMessageTypeSchema } from './types.js'
 
 const optionalPageSizeSchema = z.number().int().min(1).max(100).optional()
 

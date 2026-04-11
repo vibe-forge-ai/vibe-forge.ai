@@ -12,9 +12,9 @@ import type {
   WSEvent
 } from '@vibe-forge/core'
 import type {
-  AdapterQueryOptions,
   AdapterErrorData,
   AdapterOutputEvent,
+  AdapterQueryOptions,
   AskUserQuestionParams,
   PermissionInteractionDecision,
   SessionInfo

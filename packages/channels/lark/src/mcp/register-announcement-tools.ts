@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { larkMemberIdTypeSchema } from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkMemberIdTypeSchema } from './types.js'
 
 const getChatAnnouncementSchema = z.object({
   chatId: z.string().optional().describe('Explicit chat_id; defaults to the bound channel chat'),
@@ -39,6 +39,7 @@ export const registerLarkAnnouncementTools = (
       description: 'Patch the announcement document for the bound chat by default.',
       inputSchema: updateChatAnnouncementSchema
     },
-    async (input: z.infer<typeof updateChatAnnouncementSchema>) => toJsonResult(await service.updateChatAnnouncement(input))
+    async (input: z.infer<typeof updateChatAnnouncementSchema>) =>
+      toJsonResult(await service.updateChatAnnouncement(input))
   )
 }

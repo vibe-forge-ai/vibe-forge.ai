@@ -1,4 +1,4 @@
-import type { TaskRuntime } from '@vibe-forge/types'
+import type { SessionPermissionMode, TaskRuntime } from '@vibe-forge/types'
 
 export type HookSource = 'native' | 'bridge'
 
@@ -58,10 +58,12 @@ export interface HookInputs {
 
   StartTasks: HookInputCore & {
     tasks: Array<{
+      taskId: string
       description: string
       type: 'default' | 'spec' | 'entity'
       name?: string
       adapter?: string
+      permissionMode?: SessionPermissionMode
       background?: boolean
     }>
   }

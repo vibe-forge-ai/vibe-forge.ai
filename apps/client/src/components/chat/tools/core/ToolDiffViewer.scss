@@ -86,7 +86,10 @@
   background: transparent;
   color: var(--sub-text-color);
   cursor: pointer;
-  transition: border-color .18s ease, color .18s ease, background-color .18s ease;
+  transition:
+    border-color .18s ease,
+    color .18s ease,
+    background-color .18s ease;
 
   &:hover {
     border-color: var(--border-color);

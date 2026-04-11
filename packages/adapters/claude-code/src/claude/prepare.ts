@@ -262,7 +262,7 @@ export const prepareClaudeExecution = async (
   const args: string[] = [
     ...(description
       ? [JSON.stringify(
-          `${(
+        `${(
           description?.trimStart().startsWith('-') ? '\0' : ''
         )}${(
           description.replace(/`/g, "'")

@@ -36,7 +36,9 @@ export function ToolCallBox({
 
   return (
     <div
-      className={`tool-call-box tool-call-box--${variant} ${type === 'result' ? 'result' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}
+      className={`tool-call-box tool-call-box--${variant} ${type === 'result' ? 'result' : ''} ${
+        isExpanded ? 'expanded' : 'collapsed'
+      }`}
       onDoubleClick={(e) => {
         if (onDoubleClick) {
           e.stopPropagation()
@@ -45,7 +47,9 @@ export function ToolCallBox({
       }}
     >
       <div
-        className={`tool-call-header ${type === 'result' && isError ? 'error' : ''} ${isCollapsible ? 'is-collapsible' : 'is-static'}`}
+        className={`tool-call-header ${type === 'result' && isError ? 'error' : ''} ${
+          isCollapsible ? 'is-collapsible' : 'is-static'
+        }`}
         aria-expanded={isCollapsible ? isExpanded : undefined}
         onClick={() => isCollapsible && setExpanded(!expanded)}
       >
@@ -64,7 +68,7 @@ export function ToolCallBox({
           aria-hidden={!isExpanded}
         >
           <div className='tool-call-body'>
-          {content}
+            {content}
           </div>
         </div>
       )}

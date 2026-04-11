@@ -1,18 +1,17 @@
 import { z } from 'zod'
 
-import {
-  larkDepartmentIdTypeSchema,
-  larkMemberIdTypeSchema
-} from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkDepartmentIdTypeSchema, larkMemberIdTypeSchema } from './types.js'
 
 const optionalPageSizeSchema = z.number().int().min(1).max(100).optional()
 
 const getUserSchema = z.object({
   userId: z.string().min(1).describe('The target user ID'),
   userIdType: larkMemberIdTypeSchema.optional().describe('Type of userId'),
-  departmentIdType: larkDepartmentIdTypeSchema.optional().describe('Department ID type used in returned department fields')
+  departmentIdType: larkDepartmentIdTypeSchema.optional().describe(
+    'Department ID type used in returned department fields'
+  )
 })
 
 const resolveUserIdsSchema = z.object({
@@ -68,6 +67,7 @@ export const registerLarkDirectoryTools = (
       description: 'List direct users under a Lark department.',
       inputSchema: findUsersByDepartmentSchema
     },
-    async (input: z.infer<typeof findUsersByDepartmentSchema>) => toJsonResult(await service.findUsersByDepartment(input))
+    async (input: z.infer<typeof findUsersByDepartmentSchema>) =>
+      toJsonResult(await service.findUsersByDepartment(input))
   )
 }

@@ -11,7 +11,13 @@ const DEFAULT_DETAIL_TOKEN_TTL_MS = 60 * 60 * 1000
 const DEFAULT_EXPORT_TOKEN_TTL_MS = 15 * 60 * 1000
 
 export type ChannelActionTokenErrorCode =
-  'missing' | 'malformed' | 'invalid' | 'expired' | 'action_mismatch' | 'replayed' | 'unavailable'
+  | 'missing'
+  | 'malformed'
+  | 'invalid'
+  | 'expired'
+  | 'action_mismatch'
+  | 'replayed'
+  | 'unavailable'
 
 type ChannelActionTokenResult =
   | { ok: true; claims: ChannelActionTokenClaims }

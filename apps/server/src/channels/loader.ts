@@ -1,10 +1,6 @@
 import { createRequire } from 'node:module'
 
-import type {
-  ChannelCreateFn,
-  ChannelDescriptor,
-  ResolveChannelSessionMcpServersFn
-} from '@vibe-forge/core/channel'
+import type { ChannelCreateFn, ChannelDescriptor, ResolveChannelSessionMcpServersFn } from '@vibe-forge/core/channel'
 
 const nodeRequire = createRequire(__filename)
 

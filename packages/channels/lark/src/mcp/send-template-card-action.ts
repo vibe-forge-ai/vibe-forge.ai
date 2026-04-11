@@ -1,11 +1,12 @@
-import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
 import { ensureSuccess, resolveDefaultReceiveTarget } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
 
 export const createSendTemplateCardAction = (
   env: LarkMcpRuntimeEnv,
   im: LarkImClient
-) => async (input: {
+) =>
+async (input: {
   templateId: string
   templateVariable?: Record<string, unknown>
   receiveId?: string

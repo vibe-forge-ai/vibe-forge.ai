@@ -1,6 +1,6 @@
-import { getFileInfo } from './utils'
-import { getClaudeToolBaseName, buildClaudeToolPresentation } from './claude-tool-presentation'
+import { buildClaudeToolPresentation, getClaudeToolBaseName } from './claude-tool-presentation'
 import { isRecord, toQuestionList } from './claude-tool-shared'
+import { getFileInfo } from './utils'
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
@@ -26,13 +26,19 @@ export function getClaudeToolSummaryText(name: string, input: unknown, t: Transl
 
   if (baseName === 'Read' || baseName === 'Write' || baseName === 'Edit') {
     const pathValue = typeof record?.file_path === 'string' ? getFileInfo(record.file_path).filePath : undefined
-    const titleKey = baseName === 'Read' ? 'chat.tools.read' : baseName === 'Write' ? 'chat.tools.write' : 'chat.tools.editTool'
+    const titleKey = baseName === 'Read'
+      ? 'chat.tools.read'
+      : baseName === 'Write'
+      ? 'chat.tools.write'
+      : 'chat.tools.editTool'
     const fallback = baseName === 'Read' ? 'Read File' : baseName === 'Write' ? 'Write File' : 'Edit File'
     return joinSummary(t(titleKey, { defaultValue: fallback }), pathValue)
   }
 
   if (baseName === 'NotebookEdit') {
-    const notebookPath = typeof record?.notebook_path === 'string' ? getFileInfo(record.notebook_path).filePath : undefined
+    const notebookPath = typeof record?.notebook_path === 'string'
+      ? getFileInfo(record.notebook_path).filePath
+      : undefined
     return joinSummary(t('chat.tools.notebookEdit', { defaultValue: 'Notebook Edit' }), notebookPath)
   }
 

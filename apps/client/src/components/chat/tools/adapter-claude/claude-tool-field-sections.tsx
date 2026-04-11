@@ -4,12 +4,7 @@ import React from 'react'
 import { CodeBlock } from '#~/components/CodeBlock'
 import { safeJsonStringify } from '#~/utils/safe-serialize'
 
-import {
-  getToolFieldIcon,
-  getToolInlineValueText,
-  getToolValueText,
-  TOOL_TOOLTIP_PROPS
-} from '../core/tool-display'
+import { TOOL_TOOLTIP_PROPS, getToolFieldIcon, getToolInlineValueText, getToolValueText } from '../core/tool-display'
 import type { ClaudeToolField, ClaudeToolQuestion } from './claude-tool-presentation'
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
@@ -36,19 +31,22 @@ export function ClaudeToolInlineFields({
   }
 
   return (
-    <div className='tool-inline-token-list tool-inline-token-list--standalone' aria-label={t('chat.tools.fields.details')}>
+    <div
+      className='tool-inline-token-list tool-inline-token-list--standalone'
+      aria-label={t('chat.tools.fields.details')}
+    >
       {fields.map((field, index) => {
         const label = t(field.labelKey, { defaultValue: field.fallbackLabel })
         const valueText = getToolInlineValueText(field.value)
         return (
           <Tooltip
             key={getFieldKey(field, index)}
-            title={(
+            title={
               <div className='tool-tooltip-content'>
                 <div className='tool-tooltip-content__title'>{label}</div>
                 <div className='tool-tooltip-content__value'>{getToolValueText(field.value)}</div>
               </div>
-            )}
+            }
             {...TOOL_TOOLTIP_PROPS}
           >
             <div className='tool-inline-token'>
@@ -111,7 +109,10 @@ export function renderClaudeBlockField(field: ClaudeToolField, index: number, t:
         {sectionHeader}
         <div className='claude-generic-tool__questions'>
           {questions.map((question, questionIndex) => (
-            <div className='claude-generic-tool__question' key={`${question.header ?? question.question}-${questionIndex}`}>
+            <div
+              className='claude-generic-tool__question'
+              key={`${question.header ?? question.question}-${questionIndex}`}
+            >
               <div className='claude-generic-tool__question-header'>
                 <div className='claude-generic-tool__question-title'>
                   {question.header ?? `${label} ${questionIndex + 1}`}
