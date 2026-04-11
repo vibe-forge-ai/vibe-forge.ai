@@ -42,27 +42,35 @@ describe('claude plugin manager', () => {
     await fs.writeFile(path.join(pluginSourceDir, 'agents', 'reviewer.md'), 'Review the implementation\n')
     await fs.writeFile(
       path.join(pluginSourceDir, '.mcp.json'),
-      JSON.stringify({
-        mcpServers: {
-          docs: {
-            command: '${' + 'CLAUDE_PLUGIN_ROOT}/server.js',
-            args: ['--data', '${' + 'CLAUDE_PLUGIN_DATA}']
+      JSON.stringify(
+        {
+          mcpServers: {
+            docs: {
+              command: '${' + 'CLAUDE_PLUGIN_ROOT}/server.js',
+              args: ['--data', '${' + 'CLAUDE_PLUGIN_DATA}']
+            }
           }
-        }
-      }, null, 2)
+        },
+        null,
+        2
+      )
     )
     await fs.writeFile(
       path.join(pluginSourceDir, 'hooks', 'hooks.json'),
-      JSON.stringify({
-        hooks: {
-          SessionStart: [{
-            hooks: [{
-              type: 'command',
-              command: '"${' + 'CLAUDE_PLUGIN_ROOT}/scripts/hook.sh"'
+      JSON.stringify(
+        {
+          hooks: {
+            SessionStart: [{
+              hooks: [{
+                type: 'command',
+                command: '"${' + 'CLAUDE_PLUGIN_ROOT}/scripts/hook.sh"'
+              }]
             }]
-          }]
-        }
-      }, null, 2)
+          }
+        },
+        null,
+        2
+      )
     )
 
     const result = await installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
@@ -75,7 +83,9 @@ describe('claude plugin manager', () => {
     const installRoot = path.join(cwd, '.ai', 'plugins', 'demo-claude-plugin')
     const nativePluginRoot = path.join(installRoot, 'native')
     const pluginDataRoot = path.join(installRoot, 'data')
-    await expect(fs.readFile(path.join(installRoot, '.vf-plugin.json'), 'utf8')).resolves.toContain('"adapter": "claude"')
+    await expect(fs.readFile(path.join(installRoot, '.vf-plugin.json'), 'utf8')).resolves.toContain(
+      '"adapter": "claude"'
+    )
     await expect(fs.readFile(path.join(installRoot, 'native', '.claude-plugin', 'plugin.json'), 'utf8')).resolves
       .toContain('Demo Claude Plugin')
     await expect(fs.readFile(path.join(installRoot, 'vibe-forge', 'skills', 'research', 'SKILL.md'), 'utf8')).resolves
@@ -95,7 +105,9 @@ describe('claude plugin manager', () => {
       .toContain('${' + 'CLAUDE_PLUGIN_ROOT}/scripts/hook.sh')
     await expect(fs.readFile(path.join(installRoot, 'vibe-forge', 'hooks.js'), 'utf8')).resolves
       .toContain('claudePluginRoot')
-    await expect(fs.stat(pluginDataRoot)).resolves.toEqual(expect.objectContaining({ isDirectory: expect.any(Function) }))
+    await expect(fs.stat(pluginDataRoot)).resolves.toEqual(
+      expect.objectContaining({ isDirectory: expect.any(Function) })
+    )
   })
 
   it('rejects Claude plugins that require userConfig mapping', async () => {
@@ -105,15 +117,19 @@ describe('claude plugin manager', () => {
     await fs.mkdir(path.join(pluginSourceDir, '.claude-plugin'), { recursive: true })
     await fs.writeFile(
       path.join(pluginSourceDir, '.claude-plugin', 'plugin.json'),
-      JSON.stringify({
-        name: 'Plugin With Config',
-        userConfig: {
-          api_token: {
-            description: 'Token',
-            sensitive: true
+      JSON.stringify(
+        {
+          name: 'Plugin With Config',
+          userConfig: {
+            api_token: {
+              description: 'Token',
+              sensitive: true
+            }
           }
-        }
-      }, null, 2)
+        },
+        null,
+        2
+      )
     )
 
     await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
@@ -129,16 +145,20 @@ describe('claude plugin manager', () => {
     await fs.mkdir(path.join(pluginSourceDir, 'hooks'), { recursive: true })
     await fs.writeFile(
       path.join(pluginSourceDir, 'hooks', 'hooks.json'),
-      JSON.stringify({
-        hooks: {
-          PermissionRequest: [{
-            hooks: [{
-              type: 'command',
-              command: 'echo nope'
+      JSON.stringify(
+        {
+          hooks: {
+            PermissionRequest: [{
+              hooks: [{
+                type: 'command',
+                command: 'echo nope'
+              }]
             }]
-          }]
-        }
-      }, null, 2)
+          }
+        },
+        null,
+        2
+      )
     )
 
     await expect(installAdapterPluginWithInstaller(claudeCodePluginInstaller, {
@@ -202,18 +222,22 @@ describe('claude plugin manager', () => {
     )
     await fs.writeFile(
       path.join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
-      JSON.stringify({
-        metadata: {
-          pluginRoot: './plugins'
+      JSON.stringify(
+        {
+          metadata: {
+            pluginRoot: './plugins'
+          },
+          plugins: [
+            {
+              name: 'reviewer',
+              source: 'reviewer',
+              commands: 'docs'
+            }
+          ]
         },
-        plugins: [
-          {
-            name: 'reviewer',
-            source: 'reviewer',
-            commands: 'docs'
-          }
-        ]
-      }, null, 2)
+        null,
+        2
+      )
     )
     await fs.writeFile(
       path.join(pluginSourceDir, '.claude-plugin', 'plugin.json'),
@@ -253,10 +277,14 @@ describe('claude plugin manager', () => {
     await fs.mkdir(path.join(pluginSourceDir, 'commands'), { recursive: true })
     await fs.writeFile(
       path.join(pluginSourceDir, 'package.json'),
-      JSON.stringify({
-        name: 'npm-source-team-tools',
-        version: '1.0.0'
-      }, null, 2)
+      JSON.stringify(
+        {
+          name: 'npm-source-team-tools',
+          version: '1.0.0'
+        },
+        null,
+        2
+      )
     )
     await fs.writeFile(
       path.join(pluginSourceDir, '.claude-plugin', 'plugin.json'),

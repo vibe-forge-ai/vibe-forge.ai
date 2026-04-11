@@ -24,19 +24,23 @@ describe('managed hook runtime', () => {
 
     await writeDocument(
       join(workspace, '.ai/plugins/demo/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: 'demo',
-        scope: 'demo',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'path',
-          path: './demo'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'demo',
+          scope: 'demo',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './demo'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
     await writeDocument(
       join(workspace, '.ai/plugins/demo/vibe-forge/hooks.js'),
@@ -71,27 +75,39 @@ describe('managed hook runtime', () => {
     const packageDir = join(workspace, 'vendor/fake-hooks-package')
     await writeDocument(
       join(packageDir, 'package.json'),
-      JSON.stringify({
-        name: 'fake-hooks-package',
-        version: '1.0.0'
-      }, null, 2)
+      JSON.stringify(
+        {
+          name: 'fake-hooks-package',
+          version: '1.0.0'
+        },
+        null,
+        2
+      )
     )
     await writeDocument(
       join(workspace, '.ai.config.json'),
-      JSON.stringify({
-        plugins: [
-          {
-            id: 'demo'
-          }
-        ]
-      }, null, 2)
+      JSON.stringify(
+        {
+          plugins: [
+            {
+              id: 'demo'
+            }
+          ]
+        },
+        null,
+        2
+      )
     )
     await writeDocument(
       join(workspace, 'vendor/node_modules/@vibe-forge/plugin-demo/package.json'),
-      JSON.stringify({
-        name: '@vibe-forge/plugin-demo',
-        version: '1.0.0'
-      }, null, 2)
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      )
     )
     await writeDocument(
       join(workspace, 'vendor/node_modules/@vibe-forge/plugin-demo/hooks.js'),

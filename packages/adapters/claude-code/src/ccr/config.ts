@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import type { Config, ModelServiceConfig } from '@vibe-forge/types'
+import type { Config, ModelServiceConfig, NativeModelRouteDescriptor } from '@vibe-forge/types'
 import { resolveModelDisplayMetadata } from '@vibe-forge/utils'
 
 import { resolveTransformerPath } from './paths'
@@ -269,13 +269,34 @@ const resolveCompatibleApiTimeoutMs = (params: {
   return timeoutByService[defaultService] ?? uniqueTimeouts[0]
 }
 
+const buildBuiltinPassthroughProvider = (
+  builtinRoutes: NativeModelRouteDescriptor[],
+  anthropicApiKey: string | undefined
+) => {
+  if (builtinRoutes.length === 0 || anthropicApiKey == null || anthropicApiKey.trim() === '') return undefined
+
+  const firstRoute = builtinRoutes[0]
+
+  // Omit `models` so CCR treats this as a catch-all fallback provider.
+  // Claude Code resolves aliases (sonnet, opus, haiku) to real model IDs
+  // before making API requests, so listing aliases in `models` would never
+  // match. Any model not matched by a service provider falls through here.
+  return {
+    name: 'anthropic_passthrough',
+    api_base_url: firstRoute.upstreamBaseUrl,
+    api_key: anthropicApiKey
+  }
+}
+
 export const generateDefaultCCRConfigJSON = (params: {
   cwd: string
   config?: Config
   userConfig?: Config
   adapterOptions?: NonNullable<Config['adapters']>['claude-code']
+  builtinPassthroughRoutes?: NativeModelRouteDescriptor[]
+  anthropicApiKey?: string
 }) => {
-  const { cwd, config, userConfig, adapterOptions } = params
+  const { cwd, config, userConfig, adapterOptions, builtinPassthroughRoutes } = params
   const modelServices = {
     ...(config?.modelServices ?? {}),
     ...(userConfig?.modelServices ?? {})
@@ -289,6 +310,12 @@ export const generateDefaultCCRConfigJSON = (params: {
     userConfig,
     modelServices
   })
+  const passthroughProvider = builtinPassthroughRoutes != null
+    ? buildBuiltinPassthroughProvider(builtinPassthroughRoutes, params.anthropicApiKey)
+    : undefined
+  const allProviders = passthroughProvider != null
+    ? [passthroughProvider, ...providers]
+    : providers
   const loggerEnabled = adapterOptions?.ccrTransformers?.logger ?? true
   const apiTimeoutMs = resolveCompatibleApiTimeoutMs({
     defaultService,
@@ -318,7 +345,7 @@ export const generateDefaultCCRConfigJSON = (params: {
       ...(adapterOptions?.ccrOptions ?? {}),
       ...(apiTimeoutMs != null ? { API_TIMEOUT_MS: apiTimeoutMs } : {}),
       transformers,
-      Providers: providers,
+      Providers: allProviders,
       Router: {
         default: resolveRouterModel({
           fallback: adapterOptions?.modelFallbacks?.default,

@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { Buffer } from 'node:buffer'
 import { Readable } from 'node:stream'
 
@@ -153,22 +155,24 @@ describe('larkChannelDefinition.connect', () => {
       appSecret: 'app_secret'
     })
 
-    await expect(connection.updateMessage?.('om_card', {
-      text: '工具调用（1）\n1. SendImage',
-      receiveId: 'oc_xxx',
-      receiveIdType: 'chat_id',
-      toolCallSummary: {
-        items: [{
-          toolUseId: 'tool-1',
-          name: 'mcp__channel-lark-test__SendImage',
-          status: 'success',
-          argsText: '{"imagePath":"a.png"}',
-          resultText: '{"messageId":"om_image"}',
-          detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1',
-          exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1'
-        }]
-      }
-    })).resolves.toEqual({ messageId: 'om_card' })
+    await expect(
+      connection.updateMessage?.('om_card', {
+        text: '工具调用（1）\n1. SendImage',
+        receiveId: 'oc_xxx',
+        receiveIdType: 'chat_id',
+        toolCallSummary: {
+          items: [{
+            toolUseId: 'tool-1',
+            name: 'mcp__channel-lark-test__SendImage',
+            status: 'success',
+            argsText: '{"imagePath":"a.png"}',
+            resultText: '{"messageId":"om_image"}',
+            detailUrl: 'http://localhost:8787/channels/actions/tool-call-detail?sessionId=sess-1&toolUseId=tool-1',
+            exportJsonUrl: 'http://localhost:8787/channels/actions/tool-call-export?sessionId=sess-1&toolUseId=tool-1'
+          }]
+        }
+      })
+    ).resolves.toEqual({ messageId: 'om_card' })
 
     expect(patch).toHaveBeenCalledWith({
       path: {
@@ -325,12 +329,14 @@ describe('larkChannelDefinition.connect', () => {
       appSecret: 'app_secret'
     })
 
-    await expect(connection.sendFileMessage?.({
-      receiveId: 'oc_xxx',
-      receiveIdType: 'chat_id',
-      fileName: 'tool-call.json',
-      content: JSON.stringify({ ok: true }, null, 2)
-    })).resolves.toEqual({ messageId: 'om_file' })
+    await expect(
+      connection.sendFileMessage?.({
+        receiveId: 'oc_xxx',
+        receiveIdType: 'chat_id',
+        fileName: 'tool-call.json',
+        content: JSON.stringify({ ok: true }, null, 2)
+      })
+    ).resolves.toEqual({ messageId: 'om_file' })
 
     expect(fileCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({

@@ -12,9 +12,9 @@ import type {
   WSEvent
 } from '@vibe-forge/core'
 import type {
-  AdapterQueryOptions,
   AdapterErrorData,
   AdapterOutputEvent,
+  AdapterQueryOptions,
   AskUserQuestionParams,
   PermissionInteractionDecision,
   SessionInfo
@@ -594,6 +594,30 @@ export async function startAdapterSession(
               void requestInteraction(interaction.payload, {
                 interactionId: interaction.id
               }).catch(() => undefined)
+              break
+            }
+            case 'config_update': {
+              const configUpdateData = event.data as { source?: string; model?: string }
+              if (typeof configUpdateData.model === 'string' && configUpdateData.model.trim() !== '') {
+                updateAndNotifySession(sessionId, { model: configUpdateData.model })
+                const cachedRuntime = getAdapterSessionRuntime(sessionId)
+                if (cachedRuntime?.config != null) {
+                  cachedRuntime.config.model = configUpdateData.model
+                }
+                applyEvent({
+                  type: 'session_info',
+                  info: {
+                    type: 'config_update',
+                    model: configUpdateData.model,
+                    source: configUpdateData.source
+                  }
+                })
+                serverLogger.info({
+                  sessionId,
+                  source: configUpdateData.source,
+                  model: configUpdateData.model
+                }, '[server] Model updated via native switch')
+              }
               break
             }
             case 'error':

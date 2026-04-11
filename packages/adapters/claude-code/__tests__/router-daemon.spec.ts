@@ -67,7 +67,7 @@ describe('ensureClaudeCodeRouterReady', () => {
     const spawnDetached = vi.fn(async () => undefined)
     const waitForReady = vi.fn(async () => undefined)
 
-    const connection = await ensureClaudeCodeRouterReady(ctx, {
+    const connection = await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => false),
@@ -114,7 +114,7 @@ describe('ensureClaudeCodeRouterReady', () => {
     const spawnDetached = vi.fn(async () => undefined)
     const waitForReady = vi.fn(async () => undefined)
 
-    const connection = await ensureClaudeCodeRouterReady(ctx, {
+    const connection = await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => false),
@@ -135,13 +135,48 @@ describe('ensureClaudeCodeRouterReady', () => {
     expect(spawnDetached).toHaveBeenCalledTimes(1)
   })
 
+  it('writes builtin passthrough auth into the router config when Anthropic API key is available', async () => {
+    const workspace = await createWorkspace()
+    const ctx = createCtx(workspace, {
+      env: {
+        ANTHROPIC_API_KEY: 'anthropic-key'
+      }
+    })
+
+    const configText = generateDefaultCCRConfigJSON({
+      cwd: workspace,
+      userConfig: ctx.configs[1],
+      adapterOptions: ctx.configs[1].adapters['claude-code'],
+      builtinPassthroughRoutes: [{
+        selectorValue: 'sonnet',
+        nativeModelId: 'sonnet',
+        title: 'sonnet',
+        description: 'builtin sonnet',
+        order: 0,
+        kind: 'builtin_passthrough',
+        upstreamModel: 'claude-sonnet-4-6',
+        upstreamBaseUrl: 'https://api.anthropic.com'
+      }],
+      anthropicApiKey: 'anthropic-key'
+    })
+
+    const config = JSON.parse(configText) as {
+      Providers?: Array<{ name?: string; api_key?: string }>
+    }
+
+    expect(config.Providers?.[0]).toEqual(expect.objectContaining({
+      name: 'anthropic_passthrough',
+      api_key: 'anthropic-key'
+    }))
+  })
+
   it('preserves existing NODE_OPTIONS when preloading the TypeScript transformer runtime', async () => {
     const workspace = await createWorkspace()
     const ctx = createCtx(workspace)
     const spawnDetached = vi.fn(async () => undefined)
     vi.stubEnv('NODE_OPTIONS', '--trace-warnings')
 
-    await ensureClaudeCodeRouterReady(ctx, {
+    await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => false),
@@ -168,7 +203,7 @@ describe('ensureClaudeCodeRouterReady', () => {
     await mkdir(routerHome, { recursive: true })
     await writeFile(pidPath, '4321', 'utf8')
 
-    await ensureClaudeCodeRouterReady(ctx, {
+    await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive,
@@ -200,7 +235,7 @@ describe('ensureClaudeCodeRouterReady', () => {
     const stopProcess = vi.fn(async () => undefined)
     const waitForReady = vi.fn(async () => undefined)
 
-    const connection = await ensureClaudeCodeRouterReady(ctx, {
+    const connection = await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => true),
@@ -249,7 +284,7 @@ describe('ensureClaudeCodeRouterReady', () => {
     const stopProcess = vi.fn(async () => undefined)
     const waitForReady = vi.fn(async () => undefined)
 
-    const connection = await ensureClaudeCodeRouterReady(ctx, {
+    const connection = await ensureClaudeCodeRouterReady(ctx, undefined, {
       resolveCliPath: () => '/bin/sh',
       resolveRuntimePreloadPath: () => '/mock/register/preload.js',
       isProcessAlive: vi.fn(() => true),

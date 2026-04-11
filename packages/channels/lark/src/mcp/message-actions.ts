@@ -1,25 +1,25 @@
 import { stat } from 'node:fs/promises'
 
-import type {
-  LarkFileType,
-  LarkForwardReceiveIdType,
-  LarkMemberIdType,
-  LarkMcpRuntimeEnv,
-  LarkMessageReceiveIdType
-} from './types.js'
+import { createSendImageAction } from './send-image-action.js'
+import { createSendRawMessageAction } from './send-raw-message-action.js'
+import { createSendTemplateCardAction } from './send-template-card-action.js'
 import {
+  MAX_IM_FILE_SIZE,
   createFileReadStream,
   ensureSuccess,
-  MAX_IM_FILE_SIZE,
   resolveDefaultReceiveTarget,
   resolveExistingFilePath,
   resolveLarkFileType,
   resolveUploadFileName
 } from './shared.js'
 import type { LarkImClient } from './shared.js'
-import { createSendImageAction } from './send-image-action.js'
-import { createSendRawMessageAction } from './send-raw-message-action.js'
-import { createSendTemplateCardAction } from './send-template-card-action.js'
+import type {
+  LarkFileType,
+  LarkForwardReceiveIdType,
+  LarkMcpRuntimeEnv,
+  LarkMemberIdType,
+  LarkMessageReceiveIdType
+} from './types.js'
 
 export const createLarkMessageActions = (
   env: LarkMcpRuntimeEnv,
@@ -155,7 +155,9 @@ export const createLarkMessageActions = (
     const receiveId = input.receiveId ?? env.defaultReceiveId ?? env.channelId
     const receiveIdType = input.receiveIdType ?? env.defaultReceiveIdType ?? 'chat_id'
     if (receiveId == null || receiveId.trim() === '') {
-      throw new Error('Missing forward target. Provide receiveId explicitly or start from a bound Lark channel session.')
+      throw new Error(
+        'Missing forward target. Provide receiveId explicitly or start from a bound Lark channel session.'
+      )
     }
     const result = ensureSuccess(
       'Forward message',

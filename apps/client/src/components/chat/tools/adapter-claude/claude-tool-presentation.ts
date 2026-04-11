@@ -1,18 +1,14 @@
 import { buildClaudeEditToolPresentation } from './claude-tool-edit-builders'
 import { buildClaudeOperationToolPresentation } from './claude-tool-operation-builders'
-import { buildClaudeSystemToolPresentation } from './claude-tool-system-builders'
-import { buildClaudeTaskToolPresentation } from './claude-tool-task-builders'
-import {
-  CLAUDE_TOOL_META,
-  addDetailsField,
-  isRecord
-} from './claude-tool-shared'
+import { CLAUDE_TOOL_META, addDetailsField, isRecord } from './claude-tool-shared'
 import type {
   ClaudeToolField,
   ClaudeToolPresentation,
   ClaudeToolQuestion,
   ClaudeToolQuestionOption
 } from './claude-tool-shared'
+import { buildClaudeSystemToolPresentation } from './claude-tool-system-builders'
+import { buildClaudeTaskToolPresentation } from './claude-tool-task-builders'
 
 export type { ClaudeToolField, ClaudeToolPresentation, ClaudeToolQuestion, ClaudeToolQuestionOption }
 
@@ -47,10 +43,10 @@ export function buildClaudeToolPresentation(name: string, input: unknown): Claud
   const primary = editResult.handled
     ? editResult.primary
     : operationResult.handled
-      ? operationResult.primary
-      : systemResult.handled
-        ? systemResult.primary
-        : taskResult.primary
+    ? operationResult.primary
+    : systemResult.handled
+    ? systemResult.primary
+    : taskResult.primary
 
   addDetailsField(fields, record, usedKeys)
 

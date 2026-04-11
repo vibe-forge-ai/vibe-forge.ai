@@ -1,6 +1,7 @@
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 
 import { createDirectCodexSession } from './direct'
+import { unregisterProxyCatalog } from './proxy'
 import { resolveSessionBase } from './session-common'
 import { createStreamCodexSession } from './stream'
 import { createCodexTranscriptHookWatcher } from './transcript-hooks'
@@ -22,14 +23,46 @@ export const createCodexSession = async (ctx: AdapterCtx, options: AdapterQueryO
     })
     : undefined
   let didStopTranscriptHookWatcher = false
+  let didCleanupProxyCatalog = false
   const stopTranscriptHookWatcher = () => {
     if (didStopTranscriptHookWatcher) return
     didStopTranscriptHookWatcher = true
     transcriptHookWatcher?.stop()
   }
+  const cleanupProxyCatalog = () => {
+    if (didCleanupProxyCatalog) return
+    didCleanupProxyCatalog = true
+    if (base.proxyCatalogSessionKey != null) {
+      unregisterProxyCatalog(base.proxyCatalogSessionKey)
+    }
+  }
+
+  if (base.proxyCatalog != null) {
+    base.proxyCatalog.onSelectorChange = (newSelector: string) => {
+      options.onEvent({
+        type: 'config_update',
+        data: {
+          source: 'native_model_switch',
+          model: newSelector
+        }
+      })
+    }
+  }
+
+  if (base.modelFallback != null) {
+    options.onEvent({
+      type: 'config_update',
+      data: {
+        source: 'native_model_switch',
+        model: base.modelFallback
+      }
+    })
+  }
+
   const wrappedOnEvent: typeof options.onEvent = (event) => {
     if (event.type === 'exit') {
       stopTranscriptHookWatcher()
+      cleanupProxyCatalog()
     }
     options.onEvent(event)
   }
@@ -65,11 +98,13 @@ export const createCodexSession = async (ctx: AdapterCtx, options: AdapterQueryO
       ...session,
       kill: () => {
         stopTranscriptHookWatcher()
+        cleanupProxyCatalog()
         session.kill()
       }
     }
   } catch (error) {
     stopTranscriptHookWatcher()
+    cleanupProxyCatalog()
     throw error
   }
 }

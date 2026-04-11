@@ -8,7 +8,10 @@ import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 import type { Logger } from '@vibe-forge/utils/create-logger'
 
+import type { CodexProxyCatalog } from './proxy-catalog'
+
 export const CODEX_PROXY_META_HEADER_NAME = 'X-Vibe-Forge-Proxy-Meta'
+export const CODEX_PROXY_SESSION_HEADER_NAME = 'X-Vibe-Forge-Proxy-Session'
 type CodexProxyLogger = Logger
 
 interface CodexProxyLogContext {
@@ -423,26 +426,108 @@ const getRequestLogger = (logContext: CodexProxyLogContext | undefined) => {
   return logger
 }
 
+const extractModelFromBody = (body: Buffer): string | undefined => {
+  if (body.length === 0) return undefined
+  try {
+    const parsed = JSON.parse(body.toString('utf8')) as unknown
+    if (isPlainObject(parsed) && typeof parsed.model === 'string') {
+      return parsed.model
+    }
+  } catch {}
+  return undefined
+}
+
+interface ResolvedProxyContext {
+  proxyMeta: CodexProxyMeta
+  requestBodyBuffer: Buffer
+}
+
+const resolveProxyContext = async (
+  req: IncomingMessage,
+  logger: CodexProxyLogger | undefined
+): Promise<ResolvedProxyContext | { error: { status: number; message: string } }> => {
+  const rawMetaHeader = normalizeHeaderValue(req.headers[CODEX_PROXY_META_HEADER_NAME.toLowerCase()])
+
+  if (typeof rawMetaHeader === 'string' && rawMetaHeader.trim() !== '') {
+    let proxyMeta: CodexProxyMeta
+    try {
+      proxyMeta = decodeCodexProxyMeta(rawMetaHeader)
+    } catch {
+      return { error: { status: 400, message: `Invalid ${CODEX_PROXY_META_HEADER_NAME} header` } }
+    }
+    let requestBodyBuffer: Buffer
+    try {
+      requestBodyBuffer = await readRequestBody(req)
+    } catch {
+      return { error: { status: 400, message: 'Failed to read request body' } }
+    }
+    return { proxyMeta, requestBodyBuffer }
+  }
+
+  const sessionKey = normalizeHeaderValue(req.headers[CODEX_PROXY_SESSION_HEADER_NAME.toLowerCase()])
+  if (typeof sessionKey === 'string' && sessionKey.trim() !== '') {
+    const catalog = getProxyCatalog(sessionKey)
+    if (catalog == null) {
+      return { error: { status: 400, message: `No proxy catalog registered for session: ${sessionKey}` } }
+    }
+    let requestBodyBuffer: Buffer
+    try {
+      requestBodyBuffer = await readRequestBody(req)
+    } catch {
+      return { error: { status: 400, message: 'Failed to read request body' } }
+    }
+    const modelId = extractModelFromBody(requestBodyBuffer)
+    if (modelId == null) {
+      return { error: { status: 400, message: 'Could not extract model from request body' } }
+    }
+    const route = catalog.resolve(modelId)
+    if (route == null) {
+      return { error: { status: 400, message: `No route found for model: ${modelId}` } }
+    }
+    catalog.setCurrentModel(modelId)
+    const slashIdx = sessionKey.indexOf('/')
+    const logContext: CodexProxyLogContext | undefined = slashIdx > 0
+      ? {
+        cwd: '',
+        ctxId: sessionKey.slice(0, slashIdx),
+        sessionId: sessionKey.slice(slashIdx + 1)
+      }
+      : undefined
+    const proxyMeta: CodexProxyMeta = {
+      upstreamBaseUrl: route.upstreamBaseUrl,
+      ...(route.headers != null && Object.keys(route.headers).length > 0 ? { headers: route.headers } : {}),
+      ...(route.queryParams != null && Object.keys(route.queryParams).length > 0
+        ? { queryParams: route.queryParams }
+        : {}),
+      ...(route.maxOutputTokens != null ? { maxOutputTokens: route.maxOutputTokens } : {}),
+      ...(logContext != null ? { logContext } : {})
+    }
+    return { proxyMeta, requestBodyBuffer }
+  }
+
+  return {
+    error: {
+      status: 400,
+      message: `Missing required ${CODEX_PROXY_META_HEADER_NAME} or ${CODEX_PROXY_SESSION_HEADER_NAME} header`
+    }
+  }
+}
+
 const handleProxyRequest = async (
   req: IncomingMessage,
   res: ServerResponse,
   logger: CodexProxyLogger | undefined
 ) => {
-  const rawMetaHeader = normalizeHeaderValue(req.headers[CODEX_PROXY_META_HEADER_NAME.toLowerCase()])
-  if (typeof rawMetaHeader !== 'string' || rawMetaHeader.trim() === '') {
-    logger?.warn('[codex proxy] missing proxy metadata header', summarizeRequest(req))
-    writeJsonError(res, 400, `Missing required ${CODEX_PROXY_META_HEADER_NAME} header`)
+  const resolved = await resolveProxyContext(req, logger)
+  if ('error' in resolved) {
+    logger?.warn('[codex proxy] proxy context resolution failed', {
+      ...summarizeRequest(req),
+      errorMessage: resolved.error.message
+    })
+    writeJsonError(res, resolved.error.status, resolved.error.message)
     return
   }
-
-  let proxyMeta: CodexProxyMeta
-  try {
-    proxyMeta = decodeCodexProxyMeta(rawMetaHeader)
-  } catch {
-    logger?.warn('[codex proxy] invalid proxy metadata header', summarizeRequest(req))
-    writeJsonError(res, 400, `Invalid ${CODEX_PROXY_META_HEADER_NAME} header`)
-    return
-  }
+  const { proxyMeta, requestBodyBuffer } = resolved
   const requestLogger = getRequestLogger(proxyMeta.logContext) ?? logger
 
   if (typeof proxyMeta.upstreamBaseUrl !== 'string' || proxyMeta.upstreamBaseUrl.trim() === '') {
@@ -454,13 +539,6 @@ const handleProxyRequest = async (
     return
   }
 
-  let requestBodyBuffer: Buffer
-  try {
-    requestBodyBuffer = await readRequestBody(req)
-  } catch {
-    writeJsonError(res, 400, 'Failed to read request body')
-    return
-  }
   const requestId = `proxy-${++proxyRequestCounter}`
   const requestStartedAt = Date.now()
   const requestUrl = req.url ?? '/responses'
@@ -475,6 +553,7 @@ const handleProxyRequest = async (
     if (normalizedValue == null) continue
     if (REQUEST_HEADERS_TO_DROP.has(normalizedKey)) continue
     if (normalizedKey === CODEX_PROXY_META_HEADER_NAME.toLowerCase()) continue
+    if (normalizedKey === CODEX_PROXY_SESSION_HEADER_NAME.toLowerCase()) continue
     upstreamHeaders.set(key, normalizedValue)
   }
   for (const [key, value] of Object.entries(proxyMeta.headers ?? {})) {
@@ -671,4 +750,18 @@ export const ensureCodexProxyServer = async (logger?: CodexProxyLogger) => {
   }
 
   return proxyServerPromise
+}
+
+const proxyCatalogs = new Map<string, CodexProxyCatalog>()
+
+export function registerProxyCatalog(sessionKey: string, catalog: CodexProxyCatalog): void {
+  proxyCatalogs.set(sessionKey, catalog)
+}
+
+export function unregisterProxyCatalog(sessionKey: string): void {
+  proxyCatalogs.delete(sessionKey)
+}
+
+export function getProxyCatalog(sessionKey: string): CodexProxyCatalog | undefined {
+  return proxyCatalogs.get(sessionKey)
 }

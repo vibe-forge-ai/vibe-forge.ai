@@ -8,7 +8,14 @@ export type LarkDomain = z.infer<typeof larkDomainSchema>
 export const larkMessageReceiveIdTypeSchema = z.enum(['open_id', 'user_id', 'union_id', 'email', 'chat_id'])
 export type LarkMessageReceiveIdType = z.infer<typeof larkMessageReceiveIdTypeSchema>
 
-export const larkForwardReceiveIdTypeSchema = z.enum(['open_id', 'user_id', 'union_id', 'email', 'chat_id', 'thread_id'])
+export const larkForwardReceiveIdTypeSchema = z.enum([
+  'open_id',
+  'user_id',
+  'union_id',
+  'email',
+  'chat_id',
+  'thread_id'
+])
 export type LarkForwardReceiveIdType = z.infer<typeof larkForwardReceiveIdTypeSchema>
 
 export const larkMemberIdTypeSchema = z.enum(['user_id', 'union_id', 'open_id'])

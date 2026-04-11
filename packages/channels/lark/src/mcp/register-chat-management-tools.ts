@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { larkMemberIdTypeSchema } from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkMemberIdTypeSchema } from './types.js'
 
 const createChatSchema = z.object({
   name: z.string().optional().describe('Chat name'),
@@ -31,7 +31,9 @@ const updateChatSchema = z.object({
   membershipApproval: z.string().optional().describe('Raw membership_approval value'),
   groupMessageType: z.enum(['chat', 'thread']).optional().describe('Chat message style'),
   urgentSetting: z.enum(['only_owner', 'all_members']).optional().describe('Urgent permission setting'),
-  videoConferenceSetting: z.enum(['only_owner', 'all_members']).optional().describe('Video conference permission setting'),
+  videoConferenceSetting: z.enum(['only_owner', 'all_members']).optional().describe(
+    'Video conference permission setting'
+  ),
   pinManageSetting: z.enum(['only_owner', 'all_members']).optional().describe('Pin management permission setting'),
   hideMemberCountSetting: z.enum(['all_members', 'only_owner']).optional().describe('Member count visibility setting'),
   userIdType: larkMemberIdTypeSchema.optional().describe('ID type used in ownerId')

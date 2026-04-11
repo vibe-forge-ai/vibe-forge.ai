@@ -66,6 +66,8 @@ declare module '@vibe-forge/types' {
           boolean
         >
       >
+      nativeModelSwitch?: boolean
+      nativeModelSwitchBootstrap?: boolean
     }
   }
 }
@@ -73,5 +75,11 @@ declare module '@vibe-forge/types' {
 declare module '@vibe-forge/types' {
   interface Cache {
     'adapter.codex.threads': Record<string, string>
+    'adapter.codex.model-catalog': {
+      models: Array<{
+        slug: string
+        display_name: string
+      }>
+    }
   }
 }

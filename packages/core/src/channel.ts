@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { z } from 'zod'
 
 import type { Config } from '@vibe-forge/types'
@@ -54,10 +56,14 @@ export const channelBaseSchema = z.object({
     .describe('是否在通过该频道启动的会话中自动挂载该频道提供的 companion MCP，默认 true'),
   serverBaseUrl: z
     .string().optional()
-    .describe('用户可访问的 server 基础地址，例如 http://192.168.1.10:8787 或 https://example.com/vf；用于生成频道内跳转和 server 动作链接'),
+    .describe(
+      '用户可访问的 server 基础地址，例如 http://192.168.1.10:8787 或 https://example.com/vf；用于生成频道内跳转和 server 动作链接'
+    ),
   sessionDetailBaseUrl: z
     .string().optional()
-    .describe('用户可访问的会话详情页面基础地址，例如 https://example.com/ui；用于生成频道内跳转到 server 会话详情的链接'),
+    .describe(
+      '用户可访问的会话详情页面基础地址，例如 https://example.com/ui；用于生成频道内跳转到 server 会话详情的链接'
+    ),
   // 访问权限控制
   access: channelAccessSchema
     .optional()

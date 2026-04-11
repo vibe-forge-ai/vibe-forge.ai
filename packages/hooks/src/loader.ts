@@ -1,14 +1,11 @@
 import type { PluginConfig } from '@vibe-forge/types'
+import { listManagedPluginInstalls, toManagedPluginConfig } from '@vibe-forge/utils/managed-plugin'
 import {
   flattenPluginInstances,
   mergePluginConfigs,
-  resolvePluginHooksEntryPathForInstance,
-  resolveConfiguredPluginInstances
+  resolveConfiguredPluginInstances,
+  resolvePluginHooksEntryPathForInstance
 } from '@vibe-forge/utils/plugin-resolver'
-import {
-  listManagedPluginInstalls,
-  toManagedPluginConfig
-} from '@vibe-forge/utils/managed-plugin'
 import type { Plugin } from './context'
 
 const loadPlugin = async (

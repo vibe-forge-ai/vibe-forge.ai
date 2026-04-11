@@ -1,12 +1,13 @@
 import type { ChannelActionTokenErrorCode } from '#~/channels/action-token.js'
 import { normalizeToolDisplayName } from '#~/channels/tool-call-name.js'
 
-const escapeHtml = (value: string) => value
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll('\'', '&#39;')
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 
 export const renderActionPage = (input: {
   title: string

@@ -21,35 +21,43 @@ describe('listManagedPluginInstalls', () => {
     await mkdir(join(workspace, '.ai/plugins/good'), { recursive: true })
     await writeFile(
       join(workspace, '.ai/plugins/good/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: 'good',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'path',
-          path: './good'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'good',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './good'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
 
     await mkdir(join(workspace, '.ai/plugins/bad'), { recursive: true })
     await writeFile(
       join(workspace, '.ai/plugins/bad/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: '',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'path',
-          path: './bad'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: '',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './bad'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -66,18 +74,22 @@ describe('listManagedPluginInstalls', () => {
     await mkdir(join(workspace, '.ai/plugins/escaped'), { recursive: true })
     await writeFile(
       join(workspace, '.ai/plugins/escaped/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: 'escaped',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'path',
-          path: './escaped'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'escaped',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'path',
+            path: './escaped'
+          },
+          nativePluginPath: '../../outside',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: '../../outside',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -96,19 +108,23 @@ describe('listManagedPluginInstalls', () => {
     await mkdir(join(workspace, '.ai/plugins/reviewer/vibe-forge'), { recursive: true })
     await writeFile(
       join(workspace, '.ai/plugins/reviewer/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'claude',
-        name: 'reviewer',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'marketplace',
-          marketplace: 'team-tools',
-          plugin: 'reviewer'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'claude',
+          name: 'reviewer',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'marketplace',
+            marketplace: 'team-tools',
+            plugin: 'reviewer'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
 
     const installs = await listManagedPluginInstalls(workspace)
@@ -129,18 +145,22 @@ describe('listManagedPluginInstalls', () => {
     await mkdir(join(workspace, '.ai/plugins/codex-helper/vibe-forge'), { recursive: true })
     await writeFile(
       join(workspace, '.ai/plugins/codex-helper/.vf-plugin.json'),
-      JSON.stringify({
-        version: 1,
-        adapter: 'codex',
-        name: 'codex-helper',
-        installedAt: new Date().toISOString(),
-        source: {
-          type: 'npm',
-          spec: '@acme/codex-helper'
+      JSON.stringify(
+        {
+          version: 1,
+          adapter: 'codex',
+          name: 'codex-helper',
+          installedAt: new Date().toISOString(),
+          source: {
+            type: 'npm',
+            spec: '@acme/codex-helper'
+          },
+          nativePluginPath: 'native',
+          vibeForgePluginPath: 'vibe-forge'
         },
-        nativePluginPath: 'native',
-        vibeForgePluginPath: 'vibe-forge'
-      }, null, 2)
+        null,
+        2
+      )
     )
 
     const installs = await listManagedPluginInstalls(workspace, { adapter: 'codex' })

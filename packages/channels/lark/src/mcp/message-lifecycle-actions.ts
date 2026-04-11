@@ -1,14 +1,6 @@
-import type {
-  LarkFollowUpLanguage,
-  LarkMemberIdType,
-  LarkMcpRuntimeEnv,
-  LarkUpdatableMessageType
-} from './types.js'
-import {
-  ensureSuccess,
-  resolveMessageContent
-} from './shared.js'
+import { ensureSuccess, resolveMessageContent } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkFollowUpLanguage, LarkMcpRuntimeEnv, LarkMemberIdType, LarkUpdatableMessageType } from './types.js'
 
 const validateUpdatableMessageType = (msgType: string) => {
   if (msgType !== 'text' && msgType !== 'post') {

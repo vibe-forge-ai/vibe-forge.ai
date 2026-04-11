@@ -146,6 +146,28 @@ Claude skills 官方文档：
 - [Claude Code Skills](https://code.claude.com/docs/en/skills)
 - [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
 
+## Builtin model isolation
+
+When `nativeModelSwitch` and `nativeModelSwitchBootstrap` are both enabled, VF builds a native model catalog with both builtin Claude models and custom service models. However, CCR (Claude Code Router) is **only** started and injected when the session starts on a custom (service) model.
+
+- **Builtin selected** (e.g. `sonnet`, `opus`, `default`): Claude keeps its native `ANTHROPIC_BASE_URL` and `ANTHROPIC_API_KEY`. CCR is not started, `ANTHROPIC_BASE_URL` is not overridden, and the original login state is preserved. `ANTHROPIC_CUSTOM_MODEL_OPTION` is still set so custom models appear in Claude's `/model` menu.
+- **Service selected** (e.g. `myProvider,claude-hooks`): CCR is started, `ANTHROPIC_BASE_URL` is redirected to CCR, and `ANTHROPIC_API_KEY` is cleared (CCR holds the real key). Builtin passthrough routes are also registered in CCR so that switching back to a builtin within the CCR session still works.
+
+The `nativeCatalog` is returned for model tracking in both cases, enabling trace attribution across model switches.
+
+This ensures that connecting VF never changes the behavior of Claude's original builtin models — VF is an incremental extension to the `/model` menu, not a replacement.
+
+### Mid-session model type switching
+
+`ANTHROPIC_BASE_URL` is a session-level env var set at spawn time. This creates an asymmetry:
+
+| Switch direction | Supported | Reason                                                 |
+| ---------------- | --------- | ------------------------------------------------------ |
+| custom → builtin | ✅        | CCR has builtin passthrough provider                   |
+| builtin → custom | ❌        | No CCR endpoint injected; custom model can't be routed |
+
+If a future version needs builtin→custom switching, the recommended approach is **session restart**: the adapter emits a `session_restart_needed` event when `modelTracker` detects a type change, and the frontend relaunches with the new model.
+
 ## 调试路由
 
 ### 1. `npx vf ... --print` 没有输出、输出格式异常、resume/create 行为不对

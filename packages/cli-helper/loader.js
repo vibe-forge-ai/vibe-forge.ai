@@ -9,9 +9,9 @@ const ENTRY_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs']
 const splitNodePath = (value) => (
   typeof value === 'string'
     ? value
-        .split(path.delimiter)
-        .map(item => item.trim())
-        .filter(Boolean)
+      .split(path.delimiter)
+      .map(item => item.trim())
+      .filter(Boolean)
     : []
 )
 

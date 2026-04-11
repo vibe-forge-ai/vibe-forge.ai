@@ -1,19 +1,20 @@
 import { stat } from 'node:fs/promises'
 
-import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
 import {
+  MAX_IM_IMAGE_SIZE,
   createFileReadStream,
   ensureSuccess,
-  MAX_IM_IMAGE_SIZE,
   resolveDefaultReceiveTarget,
   resolveExistingFilePath
 } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
 
 export const createSendImageAction = (
   env: LarkMcpRuntimeEnv,
   im: LarkImClient
-) => async (input: {
+) =>
+async (input: {
   imagePath: string
   receiveId?: string
   receiveIdType?: LarkMessageReceiveIdType

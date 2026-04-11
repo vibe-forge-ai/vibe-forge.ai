@@ -5,6 +5,7 @@ import { uuid } from '@vibe-forge/utils/uuid'
 
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'
+import type { ModelTracker } from '../protocol/incoming'
 import type {
   ClaudeCodeBaseEvent,
   ClaudeCodeErrorResultEvent,
@@ -41,14 +42,32 @@ const stripAnsiSequences = (value: string) => {
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
-  const { cliPath, args, env, cwd, sessionId, effort, executionType } = await prepareClaudeExecution(ctx, options)
+  const { cliPath, args, env, cwd, sessionId, effort, executionType, nativeCatalog, modelFallback } =
+    await prepareClaudeExecution(ctx, options)
   let didEmitFatalError = false
+
+  const modelTracker: ModelTracker | undefined = nativeCatalog != null
+    ? {
+      currentModel: options.model,
+      resolveSelector: nativeCatalog.resolveSelector
+    }
+    : undefined
 
   const emitEvent = (event: Parameters<typeof onEvent>[0]) => {
     if (event.type === 'error' && event.data.fatal !== false) {
       didEmitFatalError = true
     }
     onEvent(event)
+  }
+
+  if (modelFallback != null) {
+    emitEvent({
+      type: 'config_update',
+      data: {
+        source: 'native_model_switch',
+        model: modelFallback
+      }
+    })
   }
 
   if (mode === 'stream') {
@@ -119,7 +138,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
             ) {
               void markResumeReady()
             }
-            handleIncomingEvent(parsed, emitEvent, effort)
+            handleIncomingEvent(parsed, emitEvent, effort, modelTracker)
           } catch (err) {
             console.error('Failed to parse JSON:', trimmed, err)
           }
