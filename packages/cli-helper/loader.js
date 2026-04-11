@@ -20,6 +20,8 @@ const resolvePackageNodePaths = (packageDir) => {
 
   try {
     const packageRequire = Module.createRequire(path.resolve(packageDir, 'package.json'))
+    // Probe package resolution with a synthetic name so Node returns the
+    // lookup paths for dependencies installed around the project package.
     return packageRequire.resolve.paths('@vibe-forge/cli-helper-node-path-probe') ?? []
   } catch {
     return []
