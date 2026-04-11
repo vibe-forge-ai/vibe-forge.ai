@@ -340,6 +340,24 @@ Notes:
             if (event.type === 'init') {
               updateInitRecord(event.data, boundSession?.pid)
             }
+            if (event.type === 'config_update') {
+              const updateData = event.data as { model?: string }
+              if (typeof updateData.model === 'string' && updateData.model.trim() !== '') {
+                record.resume = {
+                  ...record.resume,
+                  updatedAt: Date.now(),
+                  adapterOptions: {
+                    ...record.resume.adapterOptions,
+                    model: updateData.model
+                  }
+                }
+                record.detail = {
+                  ...record.detail,
+                  model: updateData.model
+                }
+                void persistRecord()
+              }
+            }
             if (shouldPrintOutput) {
               const nextState = handlePrintEvent({
                 event,

@@ -214,6 +214,26 @@ Passed to `turn/start` as `maxOutputTokens`.
 Passed as `capabilities.experimentalApi` during the `initialize` handshake in `stream` mode.\
 Enable this to expose gated app-server fields and methods.
 
+### Builtin model isolation
+
+When `nativeModelSwitch` and `nativeModelSwitchBootstrap` are both enabled, VF builds a model catalog that contains **both** builtin Codex models and custom service models. However, VF only installs the `vibe_forge` proxy provider when the currently selected model maps to a VF **service** route.
+
+- **Builtin selected** (e.g. `gpt-5.4`): Codex uses its native provider and auth. No `model_provider=vibe_forge` is injected; the proxy catalog is not registered for the session. The model catalog JSON is still written so `/model` shows both builtin and custom choices.
+- **Service selected** (e.g. `myProvider,gpt-4o-mini`): the `vibe_forge` provider is installed, routing requests through the local proxy. All catalog routes (service + builtin) are registered in the proxy catalog so that mid-session `/model` switches to a builtin can be forwarded to the correct upstream.
+
+This ensures that connecting VF never changes the behavior of Codex's native builtin models — VF is an incremental extension to the `/model` menu, not a replacement.
+
+#### Mid-session model type switching
+
+`model_provider` is a session-level config set at spawn time. This creates an asymmetry:
+
+| Switch direction | Supported | Reason                                                             |
+| ---------------- | --------- | ------------------------------------------------------------------ |
+| custom → builtin | ✅        | Proxy has the upstream route; Codex resolves it normally           |
+| builtin → custom | ❌        | No `vibe_forge` provider installed; custom model can't reach proxy |
+
+If a future version needs builtin→custom switching, the recommended approach is **session restart**: the adapter emits a `session_restart_needed` event when `modelTracker` detects a type change, and the frontend relaunches with the new model.
+
 ---
 
 ## Model selection

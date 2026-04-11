@@ -98,10 +98,16 @@ const normalizePermissionDenials = (items: unknown[]) => {
     .filter((item): item is { message: string; deniedTools: string[] } => item != null)
 }
 
+export interface ModelTracker {
+  currentModel: string | undefined
+  resolveSelector?: (nativeModelId: string) => string | undefined
+}
+
 export const handleIncomingEvent = (
   data: ClaudeCodeIncomingEvent,
   onEvent: AdapterQueryOptions['onEvent'],
-  effort?: AdapterQueryOptions['effort']
+  effort?: AdapterQueryOptions['effort'],
+  modelTracker?: ModelTracker
 ) => {
   const emitResultError = (params: {
     message: string
@@ -146,12 +152,31 @@ export const handleIncomingEvent = (
 
     const toolUsePart = contentParts.find((p): p is ClaudeCodeContentToolUse => p.type === 'tool_use')
 
+    const resolvedModel = data.message.model || data.model
+    if (
+      modelTracker != null &&
+      resolvedModel != null &&
+      resolvedModel !== modelTracker.currentModel
+    ) {
+      const newSelector = modelTracker.resolveSelector?.(resolvedModel)
+      modelTracker.currentModel = resolvedModel
+      if (newSelector != null) {
+        onEvent({
+          type: 'config_update',
+          data: {
+            source: 'native_model_switch',
+            model: newSelector
+          }
+        })
+      }
+    }
+
     const assistant: ChatMessage = {
       id: data.uuid,
       role: 'assistant',
       content: textContent,
       createdAt: Date.now(),
-      model: data.message.model || data.model,
+      model: resolvedModel,
       usage: data.message.usage
     }
 

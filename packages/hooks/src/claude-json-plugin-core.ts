@@ -1,7 +1,5 @@
 import { resolve } from 'node:path'
 
-import { definePlugin } from './context'
-import type { Plugin } from './context'
 import {
   getEventGroups,
   matchesToolHook,
@@ -9,6 +7,8 @@ import {
   readClaudeHooksConfig,
   runClaudeCommandHook
 } from './claude-json-plugin-support'
+import { definePlugin } from './context'
+import type { Plugin } from './context'
 import type { HookInputs, HookOutputs } from './type'
 
 const CLAUDE_JSON_PLUGIN_EVENTS = [
@@ -30,7 +30,8 @@ const createEventHandler = <K extends keyof HookInputs>(
     claudePluginRoot: string
     pluginDataDir: string
   }
-) => async (
+) =>
+async (
   ctx: Parameters<NonNullable<Plugin[K]>>[0],
   input: HookInputs[K],
   next: () => Promise<HookOutputs[K]>
@@ -79,18 +80,22 @@ export const createClaudeJsonHooksPlugin = (params: {
     pluginDataDir: params.pluginDataDir
   }
 
-  return definePlugin({
-    name: params.name,
-    SessionStart: createEventHandler('SessionStart', config, runtimePaths),
-    UserPromptSubmit: createEventHandler('UserPromptSubmit', config, runtimePaths),
-    PreToolUse: createEventHandler('PreToolUse', config, runtimePaths),
-    PostToolUse: createEventHandler('PostToolUse', config, runtimePaths),
-    Notification: createEventHandler('Notification', config, runtimePaths),
-    Stop: createEventHandler('Stop', config, runtimePaths),
-    SubagentStop: createEventHandler('SubagentStop', config, runtimePaths),
-    PreCompact: createEventHandler('PreCompact', config, runtimePaths),
-    SessionEnd: createEventHandler('SessionEnd', config, runtimePaths)
-  } satisfies Partial<Plugin> & {
-    [K in (typeof CLAUDE_JSON_PLUGIN_EVENTS)[number]]: Plugin[K]
-  })
+  return definePlugin(
+    {
+      name: params.name,
+      SessionStart: createEventHandler('SessionStart', config, runtimePaths),
+      UserPromptSubmit: createEventHandler('UserPromptSubmit', config, runtimePaths),
+      PreToolUse: createEventHandler('PreToolUse', config, runtimePaths),
+      PostToolUse: createEventHandler('PostToolUse', config, runtimePaths),
+      Notification: createEventHandler('Notification', config, runtimePaths),
+      Stop: createEventHandler('Stop', config, runtimePaths),
+      SubagentStop: createEventHandler('SubagentStop', config, runtimePaths),
+      PreCompact: createEventHandler('PreCompact', config, runtimePaths),
+      SessionEnd: createEventHandler('SessionEnd', config, runtimePaths)
+    } satisfies
+      & Partial<Plugin>
+      & {
+        [K in (typeof CLAUDE_JSON_PLUGIN_EVENTS)[number]]: Plugin[K]
+      }
+  )
 }

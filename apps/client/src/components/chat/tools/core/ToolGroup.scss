@@ -67,9 +67,7 @@
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
-          transition:
-            grid-template-rows .22s ease,
-            opacity .18s ease;
+          transition: grid-template-rows .22s ease, opacity .18s ease;
         }
       }
 

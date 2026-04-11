@@ -5,7 +5,6 @@ import { uuid } from '@vibe-forge/utils/uuid'
 import { z } from 'zod'
 
 import { createChildSession, getParentSessionId } from '#~/sync.js'
-import type { McpManagedTaskInput } from '../../types'
 import { defineRegister } from '../types'
 import { TaskManager } from './manager'
 
@@ -56,7 +55,7 @@ export const createTaskRegister = () => {
         })
       },
       async ({ tasks }) => {
-        const resolvedTasks = tasks.map((task): McpManagedTaskInput & { taskId: string } => ({
+        const resolvedTasks = tasks.map(task => ({
           ...task,
           taskId: uuid()
         }))

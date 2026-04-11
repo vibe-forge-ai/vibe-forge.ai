@@ -49,12 +49,14 @@ describe('lark channel message lifecycle tools', () => {
       domain: 'Feishu'
     })
 
-    expect(await service.replyMessage({
-      messageId: 'om_source',
-      msgType: 'text',
-      content: { text: 'reply' },
-      replyInThread: true
-    })).toEqual({
+    expect(
+      await service.replyMessage({
+        messageId: 'om_source',
+        msgType: 'text',
+        content: { text: 'reply' },
+        replyInThread: true
+      })
+    ).toEqual({
       sourceMessageId: 'om_source',
       msgType: 'text',
       messageId: 'om_reply'
@@ -70,11 +72,13 @@ describe('lark channel message lifecycle tools', () => {
       }
     })
 
-    expect(await service.updateMessage({
-      messageId: 'om_update',
-      msgType: 'text',
-      content: { text: 'updated' }
-    })).toEqual({
+    expect(
+      await service.updateMessage({
+        messageId: 'om_update',
+        msgType: 'text',
+        content: { text: 'updated' }
+      })
+    ).toEqual({
       messageId: 'om_update',
       msgType: 'text'
     })
@@ -87,10 +91,12 @@ describe('lark channel message lifecycle tools', () => {
       }
     })
 
-    expect(await service.patchMessage({
-      messageId: 'om_card',
-      content: { elements: [] }
-    })).toEqual({})
+    expect(
+      await service.patchMessage({
+        messageId: 'om_card',
+        content: { elements: [] }
+      })
+    ).toEqual({})
 
     expect(patch).toHaveBeenCalledWith({
       path: { message_id: 'om_card' },
@@ -99,16 +105,18 @@ describe('lark channel message lifecycle tools', () => {
       }
     })
 
-    expect(await service.pushFollowUps({
-      messageId: 'om_card',
-      followUps: [{
-        content: 'next step',
-        i18nContents: [{
+    expect(
+      await service.pushFollowUps({
+        messageId: 'om_card',
+        followUps: [{
           content: 'next step',
-          language: 'en_us'
+          i18nContents: [{
+            content: 'next step',
+            language: 'en_us'
+          }]
         }]
-      }]
-    })).toEqual({})
+      })
+    ).toEqual({})
 
     expect(pushFollowUp).toHaveBeenCalledWith({
       path: { message_id: 'om_card' },

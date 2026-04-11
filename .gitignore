@@ -1,12 +1,16 @@
 .DS_Store
 .idea
 .logs
+
+# AI related
 .ai/.mock
 .ai/caches
 .ai/logs
 .ai/results
 .ai/worktress
 .ai.dev.config.json
+claude.local.md
+docs/superpowers
 
 ### Node template
 # Logs

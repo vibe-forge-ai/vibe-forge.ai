@@ -1,7 +1,7 @@
 import type { LarkPermissionOperation } from './types.js'
 
-import { chatPermissionGuideByOperation } from './permissions-chat.js'
 import { chatManagementPermissionGuideByOperation } from './permissions-chat-management.js'
+import { chatPermissionGuideByOperation } from './permissions-chat.js'
 import { directoryPermissionGuideByOperation } from './permissions-directory.js'
 import { messageAdvancedPermissionGuideByOperation } from './permissions-message-advanced.js'
 import { messageLifecyclePermissionGuideByOperation } from './permissions-message-lifecycle.js'

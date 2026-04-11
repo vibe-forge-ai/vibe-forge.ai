@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
-import type { AdapterCtx, Config } from '@vibe-forge/types'
+import type { AdapterCtx, Config, NativeModelRouteDescriptor } from '@vibe-forge/types'
 import { omitAdapterCommonConfig } from '@vibe-forge/utils'
 
 import { generateDefaultCCRConfigJSON } from './config'
@@ -210,15 +210,21 @@ const resolveAdapterOptions = (params: {
 
 export const ensureClaudeCodeRouterReady = async (
   ctx: Pick<AdapterCtx, 'configs' | 'cwd' | 'env'>,
+  builtinPassthroughRoutes?: NativeModelRouteDescriptor[],
   deps: Partial<ClaudeCodeRouterDeps> = {}
 ) => {
   const { cwd, env, configs: [config, userConfig] } = ctx
   const adapterOptions = resolveAdapterOptions({ config, userConfig })
+  const anthropicApiKey = env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_API_KEY
   const configText = generateDefaultCCRConfigJSON({
     cwd,
     config,
     userConfig,
-    adapterOptions
+    adapterOptions,
+    builtinPassthroughRoutes,
+    anthropicApiKey: typeof anthropicApiKey === 'string' && anthropicApiKey.trim() !== ''
+      ? anthropicApiKey
+      : undefined
   })
   const routerDeps = {
     ...defaultRouterDeps,

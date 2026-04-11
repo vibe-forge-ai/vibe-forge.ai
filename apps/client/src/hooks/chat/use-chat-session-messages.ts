@@ -45,6 +45,25 @@ const applyToolResultEvent = (currentMessages: ChatMessage[], data: WSEvent): Ch
   })
 }
 
+const applySessionModelUpdate = (
+  currentSessionInfo: SessionInfo | null,
+  model: string | undefined
+) => {
+  if (
+    model == null ||
+    model.trim() === '' ||
+    currentSessionInfo == null ||
+    currentSessionInfo.type !== 'init'
+  ) {
+    return currentSessionInfo
+  }
+
+  return {
+    ...currentSessionInfo,
+    model
+  }
+}
+
 export function useChatSessionMessages({
   session,
   modelForQuery,
@@ -140,8 +159,11 @@ export function useChatSessionMessages({
         currentMessages = applyMessageEvent(currentMessages, data)
         currentMessages = applyToolResultEvent(currentMessages, data)
         if (data.type === 'session_info') {
-          if (data.info != null && data.info.type !== 'summary') {
-            currentSessionInfo = data.info
+          const info = data.info
+          if (info != null && info.type === 'config_update') {
+            currentSessionInfo = applySessionModelUpdate(currentSessionInfo, info.model)
+          } else if (info != null && info.type !== 'summary') {
+            currentSessionInfo = info
           }
         }
       }
@@ -343,10 +365,13 @@ export function useChatSessionMessages({
           }
 
           if (data.type === 'session_info') {
-            if (data.info != null && data.info.type === 'summary') {
+            const info = data.info
+            if (info != null && info.type === 'config_update') {
+              setSessionInfo(prev => applySessionModelUpdate(prev, info.model))
+            } else if (info != null && info.type === 'summary') {
               void mutate('/api/sessions')
             } else {
-              setSessionInfo(data.info ?? null)
+              setSessionInfo(info ?? null)
               if (isInitialLoadRef.current) {
                 setTimeout(() => {
                   if (isDisposed) return

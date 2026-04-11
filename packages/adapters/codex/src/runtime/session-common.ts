@@ -1,16 +1,28 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
+import { buildNativeModelCatalog, resolveBuiltinPassthroughRoutes, resolveServiceRoutes } from '@vibe-forge/utils'
+import type { NativeModelCatalog } from '@vibe-forge/utils'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 
+import { builtinModels } from '#~/models.js'
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
-import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
+import {
+  CODEX_PROXY_META_HEADER_NAME,
+  CODEX_PROXY_SESSION_HEADER_NAME,
+  encodeCodexProxyMeta,
+  ensureCodexProxyServer,
+  registerProxyCatalog
+} from './proxy'
+import { createCodexProxyCatalog } from './proxy-catalog'
+import type { CodexProxyCatalog } from './proxy-catalog'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
 export type CodexOutboundApprovalPolicy = 'never' | 'untrusted' | 'on-request'
@@ -108,6 +120,15 @@ const mapPublicEffortToCodex = (value: AdapterQueryOptions['effort']): CodexReas
     : undefined
 )
 
+const resolveCodexHomeDir = (env?: AdapterCtx['env']) => {
+  const candidate = env?.HOME ?? process.env.HOME ?? homedir()
+  if (typeof candidate === 'string' && candidate.trim() !== '') {
+    return candidate
+  }
+
+  throw new Error('Failed to resolve Codex home directory')
+}
+
 const mapCodexEffortToPublic = (value: CodexReasoningEffort | undefined): AdapterQueryOptions['effort'] => (
   value === 'xhigh' ? 'max' : value
 )
@@ -192,6 +213,178 @@ const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>) => {
     args.push('-c', `${key}=${encoded}`)
   }
   return args
+}
+
+const DEFAULT_CATALOG_REASONING_LEVEL: CodexReasoningEffort = 'medium'
+
+const DEFAULT_CATALOG_REASONING_LEVELS: Array<{
+  effort: CodexReasoningEffort
+  description: string
+}> = [
+  { effort: 'low', description: 'Fast responses with lighter reasoning' },
+  { effort: 'medium', description: 'Balances speed and reasoning depth for everyday tasks' },
+  { effort: 'high', description: 'Greater reasoning depth for complex problems' },
+  { effort: 'xhigh', description: 'Extra high reasoning depth for complex problems' }
+]
+
+interface CodexCatalogModel {
+  slug: string
+  display_name: string
+  description?: string
+  base_instructions: string
+  default_reasoning_level: CodexReasoningEffort
+  supported_reasoning_levels: Array<{
+    effort: CodexReasoningEffort
+    description: string
+  }>
+  shell_type: string
+  visibility: 'list' | 'hide'
+  supported_in_api: boolean
+  priority: number
+  [key: string]: unknown
+}
+
+const projectCatalogModel = (value: unknown, index: number): CodexCatalogModel | undefined => {
+  if (!isPlainObject(value)) return undefined
+
+  const slug = typeof value.slug === 'string' && value.slug.trim() !== ''
+    ? value.slug
+    : undefined
+  const displayName = typeof value.display_name === 'string' && value.display_name.trim() !== ''
+    ? value.display_name
+    : slug
+
+  if (slug == null || displayName == null) return undefined
+
+  const defaultReasoningLevel = normalizeCodexReasoningEffort(value.default_reasoning_level) ??
+    DEFAULT_CATALOG_REASONING_LEVEL
+  const supportedReasoningLevels = Array.isArray(value.supported_reasoning_levels)
+    ? value.supported_reasoning_levels
+      .flatMap((entry) => {
+        if (!isPlainObject(entry)) return []
+        const effort = normalizeCodexReasoningEffort(entry.effort)
+        if (effort == null) return []
+        return [{
+          effort,
+          description: typeof entry.description === 'string'
+            ? entry.description
+            : DEFAULT_CATALOG_REASONING_LEVELS.find(level => level.effort === effort)?.description ?? ''
+        }]
+      })
+    : []
+
+  return {
+    ...value,
+    slug,
+    display_name: displayName,
+    ...(typeof value.description === 'string' && value.description.trim() !== ''
+      ? { description: value.description }
+      : {}),
+    base_instructions: typeof value.base_instructions === 'string' ? value.base_instructions : '',
+    default_reasoning_level: defaultReasoningLevel,
+    supported_reasoning_levels: supportedReasoningLevels.length > 0
+      ? supportedReasoningLevels
+      : DEFAULT_CATALOG_REASONING_LEVELS,
+    shell_type: typeof value.shell_type === 'string' && value.shell_type.trim() !== ''
+      ? value.shell_type
+      : 'shell_command',
+    visibility: value.visibility === 'hide' ? 'hide' : 'list',
+    supported_in_api: typeof value.supported_in_api === 'boolean' ? value.supported_in_api : true,
+    priority: normalizePositiveInteger(value.priority) ?? (index + 1)
+  }
+}
+
+const buildCatalogModelFromRoute = (
+  route: Parameters<typeof createCodexProxyCatalog>[0]['routes'][number],
+  slug: string,
+  priority: number,
+  displayName?: string,
+  template?: CodexCatalogModel
+): CodexCatalogModel => ({
+  ...(template ?? {
+    additional_speed_tiers: [],
+    availability_nux: null,
+    upgrade: null,
+    model_messages: {},
+    supports_reasoning_summaries: false,
+    default_reasoning_summary: 'none',
+    support_verbosity: true,
+    default_verbosity: 'low',
+    apply_patch_tool_type: 'freeform',
+    web_search_tool_type: 'text_and_image',
+    truncation_policy: { mode: 'tokens', limit: 10_000 },
+    supports_parallel_tool_calls: true,
+    supports_image_detail_original: true,
+    context_window: 128_000,
+    effective_context_window_percent: 95,
+    experimental_supported_tools: [],
+    input_modalities: ['text'],
+    supports_search_tool: true
+  }),
+  slug,
+  display_name: displayName ?? route.title,
+  ...(route.description != null && route.description.trim() !== ''
+    ? { description: route.description }
+    : {}),
+  base_instructions: '',
+  default_reasoning_level: DEFAULT_CATALOG_REASONING_LEVEL,
+  supported_reasoning_levels: DEFAULT_CATALOG_REASONING_LEVELS,
+  shell_type: 'shell_command',
+  visibility: 'list',
+  supported_in_api: true,
+  priority
+})
+
+const resolveCatalogSlug = (
+  route: Parameters<typeof createCodexProxyCatalog>[0]['routes'][number],
+  usedSlugs: Set<string>
+) => {
+  const candidates = [route.upstreamModel, route.selectorValue, route.nativeModelId]
+  const match = candidates.find(candidate =>
+    typeof candidate === 'string' && candidate.trim() !== '' && !usedSlugs.has(candidate)
+  )
+  return match ?? route.nativeModelId
+}
+
+const buildCodexModelCatalog = async (params: {
+  nativeCatalog: NativeModelCatalog
+  homeDir: string
+}) => {
+  const modelsCachePath = resolve(params.homeDir, '.codex', 'models_cache.json')
+  let baseModels: CodexCatalogModel[] = []
+
+  try {
+    const raw = await readFile(modelsCachePath, 'utf8')
+    const parsed = JSON.parse(raw) as { models?: unknown[] }
+    baseModels = Array.isArray(parsed.models)
+      ? parsed.models.flatMap((model, index) => {
+        const projected = projectCatalogModel(model, index)
+        return projected != null ? [projected] : []
+      })
+      : []
+  } catch {
+    baseModels = []
+  }
+
+  const mergedModels = [...baseModels]
+  const templateModel = mergedModels[0]
+  const usedSlugs = new Set(mergedModels.map(model => model.slug))
+
+  for (const route of params.nativeCatalog.routes) {
+    const isBuiltin = route.kind === 'builtin_passthrough'
+    const preferredSlug = isBuiltin ? route.upstreamModel : resolveCatalogSlug(route, usedSlugs)
+    if (usedSlugs.has(preferredSlug)) continue
+
+    const displayName = !isBuiltin && preferredSlug !== route.upstreamModel && route.serviceKey != null
+      ? `${route.title} (${route.serviceKey})`
+      : route.title
+
+    mergedModels.push(buildCatalogModelFromRoute(route, preferredSlug, route.order + 1, displayName, templateModel))
+    usedSlugs.add(preferredSlug)
+  }
+
+  mergedModels.sort((left, right) => left.priority - right.priority)
+  return { models: mergedModels }
 }
 
 /**
@@ -414,6 +607,10 @@ export interface CodexSessionBase {
   turnEffort?: CodexReasoningEffort
   threadCacheKey: string
   cachedThreadId: string | undefined
+  nativeCatalog?: NativeModelCatalog
+  proxyCatalog?: CodexProxyCatalog
+  proxyCatalogSessionKey?: string
+  modelFallback?: string
 }
 
 export const getErrorSummary = (err: unknown) => (
@@ -464,16 +661,92 @@ export const isInvalidEncryptedContentError = (err: unknown) => {
   return message.includes('invalid_encrypted_content') || message.includes('organization_id did not match')
 }
 
+const CODEX_BUILTIN_API_BASE_URL = 'https://api.openai.com/v1'
+const CODEX_BUILTIN_CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api/codex'
+
+const resolveCodexBuiltinBaseUrl = async (homeDir: string) => {
+  const authPath = resolve(homeDir, '.codex', 'auth.json')
+
+  try {
+    const authContent = await readFile(authPath, 'utf8')
+    const parsed = JSON.parse(authContent) as { auth_mode?: unknown }
+    const authMode = typeof parsed.auth_mode === 'string' ? parsed.auth_mode.trim().toLowerCase() : undefined
+    return authMode === 'chatgpt'
+      ? CODEX_BUILTIN_CHATGPT_BASE_URL
+      : CODEX_BUILTIN_API_BASE_URL
+  } catch {
+    return CODEX_BUILTIN_API_BASE_URL
+  }
+}
+
+const buildCodexNativeCatalog = async (
+  homeDir: string,
+  configs: [import('@vibe-forge/types').Config?, import('@vibe-forge/types').Config?]
+): Promise<NativeModelCatalog | undefined> => {
+  const [config, userConfig] = configs
+  const mergedModelServices = {
+    ...(config?.modelServices ?? {}),
+    ...(userConfig?.modelServices ?? {})
+  }
+  const mergedModels = {
+    ...(config?.models ?? {}),
+    ...(userConfig?.models ?? {})
+  }
+
+  const builtinBaseUrl = await resolveCodexBuiltinBaseUrl(homeDir)
+  const builtinRoutes = resolveBuiltinPassthroughRoutes({
+    builtinModels,
+    resolveUpstream: (builtinValue: string) => ({
+      upstreamBaseUrl: builtinBaseUrl,
+      upstreamModel: builtinValue
+    }),
+    models: mergedModels,
+    baseOrder: 0
+  })
+
+  const serviceRoutes = resolveServiceRoutes({
+    modelServices: mergedModelServices,
+    models: mergedModels,
+    recommendedModels: [
+      ...(config?.recommendedModels ?? []),
+      ...(userConfig?.recommendedModels ?? [])
+    ],
+    nativeIdStrategy: 'vf_prefixed',
+    baseOrder: builtinModels.length,
+    resolveServiceMeta: (_serviceKey, service) => {
+      const { wireApi, queryParams, headers } = (service.extra?.codex as CodexModelProviderExtra | undefined) ?? {}
+      const normalizedBaseUrl = normalizeProviderBaseUrl(service.apiBaseUrl, wireApi)
+      const normalizedHeaders = normalizeStringRecord(headers)
+      const normalizedQueryParams = normalizeStringRecord(queryParams)
+      const mergedHeaders = typeof service.apiKey === 'string' && service.apiKey.trim() !== ''
+        ? { Authorization: `Bearer ${service.apiKey}`, ...normalizedHeaders }
+        : Object.keys(normalizedHeaders).length > 0
+        ? normalizedHeaders
+        : undefined
+      return {
+        upstreamBaseUrl: normalizedBaseUrl ?? undefined,
+        headers: mergedHeaders,
+        queryParams: Object.keys(normalizedQueryParams).length > 0 ? normalizedQueryParams : undefined
+      }
+    }
+  })
+
+  if (builtinRoutes.length === 0 && serviceRoutes.length === 0) return undefined
+
+  const defaultSelector = userConfig?.defaultModel ?? config?.defaultModel
+  return buildNativeModelCatalog({ builtinRoutes, serviceRoutes, defaultSelector })
+}
+
 async function buildThreadCacheKey(params: {
   cwd: string
+  homeDir: string
   useYolo: boolean
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
-  resolvedModel: string | undefined
   configFingerprintArgs: string[]
   features: Record<string, boolean>
 }) {
-  const authPath = resolve(process.env.HOME!, '.codex', 'auth.json')
+  const authPath = resolve(params.homeDir, '.codex', 'auth.json')
   let authDigest: string | undefined
 
   try {
@@ -489,7 +762,6 @@ async function buildThreadCacheKey(params: {
       useYolo: params.useYolo,
       approvalPolicy: params.approvalPolicy,
       sandboxPolicy: params.sandboxPolicy,
-      model: params.resolvedModel ?? null,
       configOverrideArgs: params.configFingerprintArgs,
       features: params.features,
       authDigest: authDigest ?? null
@@ -504,12 +776,15 @@ export async function resolveSessionBase(
   options: AdapterQueryOptions
 ): Promise<CodexSessionBase> {
   const { logger, cwd, env, cache, configs: [config, userConfig] } = ctx
+  const codexHomeDir = resolveCodexHomeDir(env)
 
   const {
     sandboxPolicy: configSandboxPolicy,
     effort: configuredEffort,
     features: configFeatures,
-    configOverrides: configOverridesValue
+    configOverrides: configOverridesValue,
+    nativeModelSwitch: configNativeModelSwitch,
+    nativeModelSwitchBootstrap: configNativeModelSwitchBootstrap
   } = {
     ...(config?.adapters?.codex ?? {}),
     ...(userConfig?.adapters?.codex ?? {})
@@ -518,6 +793,8 @@ export async function resolveSessionBase(
     effort?: AdapterQueryOptions['effort']
     features?: Record<string, boolean>
     configOverrides?: Record<string, unknown>
+    nativeModelSwitch?: boolean
+    nativeModelSwitchBootstrap?: boolean
   }
 
   const useYolo = shouldUseYolo(options.permissionMode)
@@ -542,9 +819,19 @@ export async function resolveSessionBase(
     ? mapCodexEffortToPublic(nativeReasoningEffort)
     : requestedEffort
 
+  const nativeBootstrapEnabled = configNativeModelSwitch === true &&
+    configNativeModelSwitchBootstrap === true
+  const nativeCatalog = nativeBootstrapEnabled
+    ? await buildCodexNativeCatalog(codexHomeDir, ctx.configs)
+    : undefined
+  const hasCatalogRoutes = nativeCatalog != null && nativeCatalog.routes.length > 0
+
   const routedServiceKey = resolveRoutedServiceKey(options.model)
   const routedService = routedServiceKey != null ? mergedModelServices[routedServiceKey] : undefined
-  const shouldUseProxy = typeof routedService?.apiBaseUrl === 'string' && routedService.apiBaseUrl.trim() !== ''
+  const hasRoutedService = typeof routedService?.apiBaseUrl === 'string' && routedService.apiBaseUrl.trim() !== ''
+  const hasServiceRoutes = nativeCatalog != null &&
+    nativeCatalog.routes.some(r => r.kind === 'service')
+  const shouldUseProxy = hasRoutedService || (nativeBootstrapEnabled && hasServiceRoutes)
   const proxyLogger = shouldUseProxy
     ? createLogger(
       cwd,
@@ -569,7 +856,7 @@ export async function resolveSessionBase(
   const {
     args: configOverrideArgs,
     fingerprintArgs: configFingerprintArgs,
-    resolvedModel,
+    resolvedModel: initialResolvedModel,
     resolvedMaxOutputTokens
   } = buildCodexConfigOverrides({
     systemPrompt: options.systemPrompt,
@@ -597,6 +884,7 @@ export async function resolveSessionBase(
       }
       : undefined
   })
+  let resolvedModel = initialResolvedModel
 
   const nativeConfigOverrideArgs = buildNativeConfigOverrideArgs(configOverrides)
   configOverrideArgs.push(...nativeConfigOverrideArgs)
@@ -638,7 +926,7 @@ export async function resolveSessionBase(
   configFingerprintArgs.push(...mcpConfigArgs)
 
   const binaryPath = resolveCodexBinaryPath(env)
-  await mkdir(resolve(process.env.HOME!, '.codex'), { recursive: true })
+  await mkdir(resolve(codexHomeDir, '.codex'), { recursive: true })
   const spawnEnv = buildSpawnEnv(env)
 
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
@@ -649,12 +937,107 @@ export async function resolveSessionBase(
     spawnEnv.__VF_CODEX_TASK_SESSION_ID__ = options.sessionId
   }
 
+  let proxyCatalog: CodexProxyCatalog | undefined
+  let proxyCatalogSessionKey: string | undefined
+  let modelFallback: string | undefined
+
+  if (nativeCatalog != null && hasCatalogRoutes && resolvedModel != null) {
+    const rawModel = options.model?.trim()
+    const inCatalog = nativeCatalog.routes.some(r =>
+      r.selectorValue === resolvedModel ||
+      r.nativeModelId === resolvedModel ||
+      (rawModel != null && (r.selectorValue === rawModel || r.nativeModelId === rawModel))
+    )
+    if (!inCatalog && nativeCatalog.defaultRoute != null) {
+      modelFallback = nativeCatalog.defaultRoute.selectorValue
+      resolvedModel = modelFallback
+    }
+  }
+
+  // Determine if the effective model maps to a VF service route (vs. a Codex builtin).
+  // Only service-route models should be routed through the VF proxy; builtin models
+  // must use Codex's native provider/transport to preserve original auth and subscriptions.
+  const currentModelIsServiceRoute = nativeCatalog != null && (() => {
+    const rawModel = options.model?.trim()
+    const candidates = [rawModel, resolvedModel].filter(
+      (c): c is string => c != null && c !== ''
+    )
+    return candidates.some(candidate =>
+      nativeCatalog!.routes.some(r =>
+        r.kind === 'service' &&
+        (r.selectorValue === candidate || r.nativeModelId === candidate || r.upstreamModel === candidate)
+      )
+    )
+  })()
+
+  if (nativeBootstrapEnabled && hasCatalogRoutes && nativeCatalog != null && proxyBaseUrl != null) {
+    // Only install VF proxy routing when the current model is a service route.
+    // Builtin models keep Codex's native provider/transport untouched.
+    const serviceRoutes = nativeCatalog.routes.filter(r => r.kind === 'service')
+    if (currentModelIsServiceRoute && serviceRoutes.length > 0) {
+      proxyCatalogSessionKey = `${ctx.ctxId}/${options.sessionId ?? 'default'}`
+
+      const rawModel = options.model?.trim()
+      const initialRoute = rawModel != null
+        ? nativeCatalog.routes.find(r => r.selectorValue === rawModel || r.nativeModelId === rawModel)
+        : undefined
+      const initialNativeModelId = initialRoute?.nativeModelId ?? resolvedModel
+
+      // Register ALL catalog routes (service + builtin) in the proxy catalog.
+      // When model_provider=vibe_forge is active, every request goes through the proxy.
+      // Builtin routes need to be present so that mid-session /model switches to a
+      // builtin can be forwarded to the correct upstream (e.g. api.openai.com).
+      proxyCatalog = createCodexProxyCatalog({
+        routes: nativeCatalog.routes,
+        initialNativeModelId
+      })
+      registerProxyCatalog(proxyCatalogSessionKey, proxyCatalog)
+
+      // Install vibe_forge provider so Codex routes requests through the local proxy.
+      // When routedServiceKey is set, buildCodexConfigOverrides already pushed a service-
+      // specific model_provider; the later `-c model_provider=vibe_forge` overrides it so
+      // all requests go through the session-header catalog path for dynamic switching.
+      configOverrideArgs.push('-c', `model_provider=${toToml('vibe_forge')}`)
+      configFingerprintArgs.push('-c', `model_provider=${toToml('vibe_forge')}`)
+      configOverrideArgs.push('-c', `model_providers.vibe_forge.name=${toToml('Vibe Forge')}`)
+      configFingerprintArgs.push('-c', `model_providers.vibe_forge.name=${toToml('Vibe Forge')}`)
+      configOverrideArgs.push('-c', `model_providers.vibe_forge.base_url=${toToml(proxyBaseUrl)}`)
+      configFingerprintArgs.push('-c', `model_providers.vibe_forge.base_url=${toToml(proxyBaseUrl)}`)
+      configOverrideArgs.push(
+        '-c',
+        `model_providers.vibe_forge.http_headers=${
+          toTomlInlineTable({
+            [CODEX_PROXY_SESSION_HEADER_NAME]: proxyCatalogSessionKey!
+          })
+        }`
+      )
+      configFingerprintArgs.push(
+        '-c',
+        `model_providers.vibe_forge.http_headers=${
+          toTomlInlineTable({
+            [CODEX_PROXY_SESSION_HEADER_NAME]: 'session'
+          })
+        }`
+      )
+    }
+
+    // Always write the model catalog so both builtin and custom models appear in
+    // the /model menu — VF is an incremental extension, not a replacement.
+    const modelCatalog = await buildCodexModelCatalog({
+      nativeCatalog,
+      homeDir: codexHomeDir
+    })
+    const { cachePath: modelCatalogPath } = await cache.set('adapter.codex.model-catalog', modelCatalog)
+    configOverrideArgs.push('-c', `model_catalog_json=${toToml(modelCatalogPath)}`)
+    configFingerprintArgs.push('-c', `model_catalog_json=${toToml(modelCatalogPath)}`)
+  }
+
   const threadCacheKey = await buildThreadCacheKey({
     cwd,
+    homeDir: codexHomeDir,
     useYolo,
     approvalPolicy,
     sandboxPolicy,
-    resolvedModel,
     configFingerprintArgs,
     features
   })
@@ -679,6 +1062,10 @@ export async function resolveSessionBase(
     effectiveEffort,
     turnEffort: nativeReasoningEffort == null ? requestedReasoningEffort : undefined,
     threadCacheKey,
-    cachedThreadId
+    cachedThreadId,
+    nativeCatalog,
+    proxyCatalog,
+    proxyCatalogSessionKey,
+    modelFallback
   }
 }

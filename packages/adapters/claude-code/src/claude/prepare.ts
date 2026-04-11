@@ -1,11 +1,15 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import process from 'node:process'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import { buildNativeModelCatalog, resolveBuiltinPassthroughRoutes, resolveServiceRoutes } from '@vibe-forge/utils'
+import type { NativeModelCatalog } from '@vibe-forge/utils'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 import { resolveClaudeCliPath } from '../ccr/paths'
+import { builtinModels } from '../models'
 import { stageClaudePluginDirs } from './plugins'
 
 interface ClaudeExecutionSettings {
@@ -32,6 +36,8 @@ interface PreparedClaudeExecution {
   sessionId: string
   effort?: AdapterQueryOptions['effort']
   executionType: 'create' | 'resume'
+  nativeCatalog?: NativeModelCatalog
+  modelFallback?: string
 }
 
 const resolveCCRRequestLogContextPath = (cwd: string, sessionId: string) =>
@@ -85,7 +91,92 @@ const normalizeEffort = (value: unknown): AdapterQueryOptions['effort'] => (
     : undefined
 )
 
+const asNonEmptyString = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== ''
+    ? value
+    : undefined
+)
+
 const uniqueStrings = (values: string[]) => [...new Set(values)]
+
+const ANTHROPIC_BUILTIN_BASE_URL = 'https://api.anthropic.com'
+
+const resolveClaudeBuiltinUpstream = (builtinValue: string) => {
+  if (builtinValue === 'default' || builtinValue === 'opusplan') return undefined
+  return {
+    upstreamBaseUrl: ANTHROPIC_BUILTIN_BASE_URL,
+    upstreamModel: builtinValue
+  }
+}
+
+const buildClaudeNativeCatalog = (
+  configs: [import('@vibe-forge/types').Config?, import('@vibe-forge/types').Config?],
+  _adapterConfig: Record<string, unknown>
+): NativeModelCatalog | undefined => {
+  const [config, userConfig] = configs
+  const mergedModelServices = {
+    ...(config?.modelServices ?? {}),
+    ...(userConfig?.modelServices ?? {})
+  }
+  const mergedModels = {
+    ...(config?.models ?? {}),
+    ...(userConfig?.models ?? {})
+  }
+
+  const builtinRoutes = resolveBuiltinPassthroughRoutes({
+    builtinModels,
+    resolveUpstream: resolveClaudeBuiltinUpstream,
+    models: mergedModels,
+    baseOrder: 0
+  })
+
+  const serviceRoutes = resolveServiceRoutes({
+    modelServices: mergedModelServices,
+    models: mergedModels,
+    recommendedModels: [
+      ...(config?.recommendedModels ?? []),
+      ...(userConfig?.recommendedModels ?? [])
+    ],
+    nativeIdStrategy: 'selector',
+    baseOrder: builtinModels.length,
+    resolveServiceMeta: (_serviceKey, service) => {
+      const extra = (service.extra ?? {}) as {
+        claudeCodeRouter?: { queryParams?: Record<string, string> }
+        codex?: { queryParams?: Record<string, string> }
+      }
+      const queryParams = extra.claudeCodeRouter?.queryParams ?? extra.codex?.queryParams
+      if (queryParams == null || Object.keys(queryParams).length === 0) return undefined
+      return { queryParams }
+    }
+  })
+
+  if (builtinRoutes.length === 0 && serviceRoutes.length === 0) return undefined
+
+  const defaultSelector = userConfig?.defaultModel ?? config?.defaultModel
+  return buildNativeModelCatalog({ builtinRoutes, serviceRoutes, defaultSelector })
+}
+
+const resolveClaudeCustomModelOption = (params: {
+  nativeCatalog?: NativeModelCatalog
+  effectiveModel?: string
+}) => {
+  const { nativeCatalog, effectiveModel } = params
+  if (nativeCatalog == null) return undefined
+
+  const serviceRoutes = nativeCatalog.routes.filter(route => route.kind === 'service')
+  if (serviceRoutes.length === 0) return undefined
+
+  if (effectiveModel != null && effectiveModel !== '') {
+    const currentRoute = serviceRoutes.find(route => route.selectorValue === effectiveModel)
+    if (currentRoute != null) return currentRoute
+  }
+
+  if (nativeCatalog.defaultRoute?.kind === 'service') {
+    return nativeCatalog.defaultRoute
+  }
+
+  return serviceRoutes[0]
+}
 
 export const prepareClaudeExecution = async (
   ctx: AdapterCtx,
@@ -115,6 +206,8 @@ export const prepareClaudeExecution = async (
     effort?: AdapterQueryOptions['effort']
     settingsContent?: Record<string, unknown>
     nativeEnv?: Record<string, string>
+    nativeModelSwitch?: boolean
+    nativeModelSwitchBootstrap?: boolean
   }
   const requestedEffort = effort ?? mergedAdapterConfig.effort
   const settingsContent = isPlainObject(mergedAdapterConfig.settingsContent)
@@ -189,9 +282,59 @@ export const prepareClaudeExecution = async (
     }
   }
   settings = deepMerge(settings, settingsContent) as ClaudeExecutionSettings
-  const useCCR = typeof model === 'string' && model.includes(',')
+  const anthropicApiKey = asNonEmptyString(nativeEnv.ANTHROPIC_API_KEY) ??
+    asNonEmptyString(settings.env.ANTHROPIC_API_KEY) ??
+    asNonEmptyString(env.ANTHROPIC_API_KEY) ??
+    asNonEmptyString(process.env.ANTHROPIC_API_KEY)
+  const nativeBootstrapRequested = mergedAdapterConfig.nativeModelSwitch === true &&
+    mergedAdapterConfig.nativeModelSwitchBootstrap === true
+  const nativeCatalogCandidate = nativeBootstrapRequested
+    ? buildClaudeNativeCatalog(ctx.configs, mergedAdapterConfig)
+    : undefined
+  const hasCatalogRoutes = nativeCatalogCandidate != null && nativeCatalogCandidate.routes.length > 0
+
+  let effectiveModel = model
+  let modelFallback: string | undefined
+  const startsOnCustomModel = typeof effectiveModel === 'string' && effectiveModel.includes(',')
+
+  // CCR (Claude Code Router) is needed whenever starting on a custom (service) model,
+  // regardless of whether native bootstrap is enabled. Native bootstrap only controls
+  // whether the full model catalog (with builtin passthrough + /model menu) is built.
+  const useCCR = startsOnCustomModel
+
+  if (useCCR && hasCatalogRoutes && nativeCatalogCandidate != null && effectiveModel != null && effectiveModel !== '') {
+    const inCatalog = nativeCatalogCandidate.routes.some(r => r.selectorValue === effectiveModel)
+    if (!inCatalog && nativeCatalogCandidate.defaultRoute != null) {
+      modelFallback = nativeCatalogCandidate.defaultRoute.selectorValue
+      effectiveModel = modelFallback
+    }
+  }
+
+  const builtinPassthroughRoutes = useCCR && nativeCatalogCandidate != null
+    ? anthropicApiKey != null
+      ? nativeCatalogCandidate.routes.filter(r => r.kind === 'builtin_passthrough')
+      : []
+    : undefined
+
+  // Resolve custom model option from the full catalog candidate — not gated on useCCR.
+  // This ensures custom models appear in Claude's /model menu even when starting with
+  // a builtin model: the menu is "incremental extension", not a replacement.
+  const customModelOption = nativeBootstrapRequested && hasCatalogRoutes
+    ? resolveClaudeCustomModelOption({
+      nativeCatalog: nativeCatalogCandidate,
+      effectiveModel
+    })
+    : undefined
+
   if (useCCR) {
-    const router = await ensureClaudeCodeRouterReady(ctx)
+    const router = await ensureClaudeCodeRouterReady({
+      ...ctx,
+      env: {
+        ...ctx.env,
+        ...settings.env,
+        ...(anthropicApiKey != null ? { ANTHROPIC_API_KEY: anthropicApiKey } : {})
+      }
+    }, builtinPassthroughRoutes)
     settings.env = {
       ...settings.env,
       ANTHROPIC_BASE_URL: `http://${router.host}:${router.port}`,
@@ -258,7 +401,7 @@ export const prepareClaudeExecution = async (
   const args: string[] = [
     ...(description
       ? [JSON.stringify(
-          `${(
+        `${(
           description?.trimStart().startsWith('-') ? '\0' : ''
         )}${(
           description.replace(/`/g, "'")
@@ -287,7 +430,7 @@ export const prepareClaudeExecution = async (
     args.push('--resume', sessionId)
   }
 
-  if (model != null && model !== '') args.push('--model', model)
+  if (effectiveModel != null && effectiveModel !== '') args.push('--model', effectiveModel)
 
   if (systemPrompt != null && systemPrompt !== '') {
     args.push(
@@ -306,6 +449,14 @@ export const prepareClaudeExecution = async (
         : {}
     ),
     ...nativeEnv,
+    ...(customModelOption != null
+      ? {
+        ANTHROPIC_CUSTOM_MODEL_OPTION: customModelOption.selectorValue,
+        ANTHROPIC_CUSTOM_MODEL_OPTION_NAME: customModelOption.title,
+        ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION: customModelOption.description ??
+          `Custom model (${customModelOption.selectorValue})`
+      }
+      : {}),
     ...(nativeHooksAvailable
       ? {
         __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
@@ -323,6 +474,8 @@ export const prepareClaudeExecution = async (
     cwd,
     sessionId,
     effort: nativeEnvEffort ?? settingsContentEffort ?? requestedEffort,
-    executionType
+    executionType,
+    nativeCatalog: nativeBootstrapRequested && hasCatalogRoutes ? nativeCatalogCandidate : undefined,
+    modelFallback
   }
 }

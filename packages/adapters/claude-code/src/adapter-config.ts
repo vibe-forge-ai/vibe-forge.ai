@@ -30,6 +30,8 @@ declare module '@vibe-forge/types' {
       apiTimeout?: number
       settingsContent?: Record<string, unknown>
       nativeEnv?: Record<string, string>
+      nativeModelSwitch?: boolean
+      nativeModelSwitchBootstrap?: boolean
     }
   }
 }

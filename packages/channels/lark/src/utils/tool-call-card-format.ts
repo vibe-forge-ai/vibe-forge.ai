@@ -1,10 +1,6 @@
 import type { LarkToolCallSummary } from '#~/types.js'
 
-import {
-  buildSummarySectionText,
-  resolveCodeBlockContent,
-  truncateCodeBlockContent
-} from './tool-call-card-content.js'
+import { buildSummarySectionText, resolveCodeBlockContent, truncateCodeBlockContent } from './tool-call-card-content.js'
 import { normalizeToolDisplayName } from './tool-call-name.js'
 
 const MAX_HEADER_ARGS_LENGTH = 96

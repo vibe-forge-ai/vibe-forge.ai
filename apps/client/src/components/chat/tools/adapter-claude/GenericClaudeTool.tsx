@@ -4,27 +4,31 @@ import { Tooltip } from 'antd'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { ToolCallBox } from '../core/ToolCallBox'
+import { ToolResultContent } from '../core/ToolResultContent'
+import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { hasMeaningfulToolValue } from '../core/tool-content-presence'
 import {
+  TOOL_TOOLTIP_PROPS,
   getToolFieldIcon,
   getToolInlineValueText,
-  getToolTargetPresentation,
   getToolSectionIcon,
-  TOOL_TOOLTIP_PROPS
+  getToolTargetPresentation
 } from '../core/tool-display'
-import { ToolResultContent } from '../core/ToolResultContent'
-import { ToolCallBox } from '../core/ToolCallBox'
-import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { defineToolRender } from '../defineToolRender'
 import { ClaudeEditDiff } from './ClaudeEditDiff'
-import { buildClaudeToolPresentation, getClaudeToolBaseName } from './claude-tool-presentation'
 import { ClaudeToolInlineFields, renderClaudeBlockField } from './claude-tool-field-sections'
+import { buildClaudeToolPresentation, getClaudeToolBaseName } from './claude-tool-presentation'
 import { getClaudeToolSummaryText } from './claude-tool-summary'
 
 export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
   const view = useMemo(() => buildClaudeToolPresentation(item.name, item.input), [item.input, item.name])
-  const titleText = useMemo(() => t(view.titleKey, { defaultValue: view.fallbackTitle }), [t, view.fallbackTitle, view.titleKey])
+  const titleText = useMemo(() => t(view.titleKey, { defaultValue: view.fallbackTitle }), [
+    t,
+    view.fallbackTitle,
+    view.titleKey
+  ])
   const inlineFields = view.fields.filter(field => field.format === 'inline')
   const isEditTool = view.baseName === 'Edit'
   const blockFields = view.fields.filter((field) => {
@@ -56,8 +60,8 @@ export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
         value: isBooleanTrue
           ? t('chat.tools.booleanOn')
           : isBooleanFalse
-            ? t('chat.tools.booleanOff')
-            : getToolInlineValueText(field.value),
+          ? t('chat.tools.booleanOff')
+          : getToolInlineValueText(field.value),
         tone: isBooleanTrue ? 'success' : isBooleanFalse ? 'muted' : 'default'
       } as const
     })
@@ -95,33 +99,33 @@ export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
         )}
         content={hasDetails
           ? (
-          <div className='tool-detail-sections claude-generic-tool__content'>
-            <ClaudeToolInlineFields fields={standaloneInlineFields} t={t} />
-            {hasEditDiff && (
-              <div className='tool-detail-section claude-generic-tool__section'>
-                <ClaudeEditDiff
-                  oldValue={editOldValue}
-                  newValue={editNewValue}
-                  lang={editLanguage}
-                  metaItems={editMetaItems}
-                />
-              </div>
-            )}
-            {blockFields.map((field, index) => renderClaudeBlockField(field, index, t))}
-            {showResultDetails && resultItem != null && (
-              <div className='tool-detail-section'>
-                <div className='tool-detail-section__header'>
-                  <Tooltip title={t('chat.result')} {...TOOL_TOOLTIP_PROPS}>
-                    <span className='tool-detail-section__icon material-symbols-rounded'>
-                      {getToolSectionIcon('result')}
-                    </span>
-                  </Tooltip>
+            <div className='tool-detail-sections claude-generic-tool__content'>
+              <ClaudeToolInlineFields fields={standaloneInlineFields} t={t} />
+              {hasEditDiff && (
+                <div className='tool-detail-section claude-generic-tool__section'>
+                  <ClaudeEditDiff
+                    oldValue={editOldValue}
+                    newValue={editNewValue}
+                    lang={editLanguage}
+                    metaItems={editMetaItems}
+                  />
                 </div>
-                <ToolResultContent content={resultItem.content} preferMarkdown={preferMarkdown} />
-              </div>
-            )}
-          </div>
-            )
+              )}
+              {blockFields.map((field, index) => renderClaudeBlockField(field, index, t))}
+              {showResultDetails && resultItem != null && (
+                <div className='tool-detail-section'>
+                  <div className='tool-detail-section__header'>
+                    <Tooltip title={t('chat.result')} {...TOOL_TOOLTIP_PROPS}>
+                      <span className='tool-detail-section__icon material-symbols-rounded'>
+                        {getToolSectionIcon('result')}
+                      </span>
+                    </Tooltip>
+                  </div>
+                  <ToolResultContent content={resultItem.content} preferMarkdown={preferMarkdown} />
+                </div>
+              )}
+            </div>
+          )
           : null}
       />
     </div>

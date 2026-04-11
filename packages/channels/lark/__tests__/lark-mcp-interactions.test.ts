@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { describe, expect, it, vi } from 'vitest'
 
 describe('lark channel interaction tools', () => {

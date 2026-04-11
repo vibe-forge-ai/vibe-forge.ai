@@ -1,10 +1,4 @@
-import {
-  asBoolean,
-  asString,
-  asStringArray,
-  pushField,
-  toQuestionList
-} from './claude-tool-shared'
+import { asBoolean, asString, asStringArray, pushField, toQuestionList } from './claude-tool-shared'
 import type { ClaudeToolField } from './claude-tool-shared'
 
 interface BuilderParams {
@@ -129,4 +123,3 @@ export function buildClaudeSystemToolPresentation(params: BuilderParams) {
     primary: asString(record?.remoteSessionTitle) ?? asString(record?.remoteSessionId)
   }
 }
-

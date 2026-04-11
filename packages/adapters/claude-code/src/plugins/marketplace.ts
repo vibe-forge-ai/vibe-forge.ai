@@ -1,9 +1,5 @@
 import { buildConfigJsonVariables, loadConfig, mergeConfigs } from '@vibe-forge/config'
-import type {
-  AdapterPluginResolveSourceContext,
-  Config,
-  ResolvedAdapterPluginSource
-} from '@vibe-forge/types'
+import type { AdapterPluginResolveSourceContext, Config, ResolvedAdapterPluginSource } from '@vibe-forge/types'
 
 import { loadMarketplaceCatalogFromSource } from './marketplace-catalog'
 import { resolveMarketplacePluginSource, toMarketplaceManifestOverrides } from './marketplace-source'
@@ -68,9 +64,7 @@ export const resolveClaudeMarketplaceInstallSource = async (
   const configuredMarketplace = getConfiguredClaudeMarketplace(mergedConfig, reference.marketplace)
   if (configuredMarketplace == null) {
     throw new Error(
-      `Ambiguous Claude plugin source "${params.requestedSource}". No Claude marketplace named "${
-        reference.marketplace
-      }" is configured. Use "npm:${params.requestedSource}" to install an npm package, or configure that marketplace first.`
+      `Ambiguous Claude plugin source "${params.requestedSource}". No Claude marketplace named "${reference.marketplace}" is configured. Use "npm:${params.requestedSource}" to install an npm package, or configure that marketplace first.`
     )
   }
   if (configuredMarketplace.enabled === false) {

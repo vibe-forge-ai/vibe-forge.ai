@@ -135,7 +135,16 @@ export async function createStreamCodexSession(
   } = base
   const { cache, configs: [config, userConfig] } = ctx
   const { onEvent, description, sessionId, extraOptions, type: sessionType } = options
-  const model = resolvedModel
+  // For thread start/resume RPCs, always pass the resolved model name (the CLI-level
+  // slug like "gpt-5.4" or the proxy catalog's slug). Codex RPC doesn't understand
+  // internal vf::... native model IDs.
+  const modelParam = () => {
+    const m = resolvedModel
+    return m ? { model: m } : {}
+  }
+  // When proxy catalog is active, omit model from turn/start so Codex uses its
+  // internal /model selection. The proxy catalog handles routing regardless.
+  const turnModelParam = () => base.proxyCatalog != null ? {} : modelParam()
   const rpcApprovalPolicy = toCodexOutboundApprovalPolicy(approvalPolicy)
 
   const {
@@ -323,7 +332,7 @@ export async function createStreamCodexSession(
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
       serviceName: 'vibe-forge',
-      ...(model ? { model } : {})
+      ...modelParam()
     })
     threadId = startResult.thread.id
     usedCachedThread = false
@@ -345,7 +354,7 @@ export async function createStreamCodexSession(
     logger.info('[codex session] resuming thread', { threadId: nextThreadId, sessionId })
     const resumeResult = await rpc.request<{ thread: CodexThread }>('thread/resume', {
       threadId: nextThreadId,
-      ...(model ? { model } : {})
+      ...modelParam()
     })
     threadId = resumeResult.thread.id
     usedCachedThread = true
@@ -359,7 +368,7 @@ export async function createStreamCodexSession(
       cwd,
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
-      ...(model ? { model } : {}),
+      ...turnModelParam(),
       ...(turnEffort ? { effort: turnEffort } : {}),
       ...(typeof maxOutputTokens === 'number' ? { maxOutputTokens } : {})
     }

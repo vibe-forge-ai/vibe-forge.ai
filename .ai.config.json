@@ -1,11 +1,16 @@
 {
   "adapters": {
     "claude-code": {
+      "nativeModelSwitch": true,
+      "nativeModelSwitchBootstrap": true,
       "ccrTransformers": {
         "logger": true
       }
     },
-    "codex": {},
+    "codex": {
+      "nativeModelSwitch": true,
+      "nativeModelSwitchBootstrap": true
+    },
     "opencode": {}
   },
   "plugins": [
@@ -23,7 +28,11 @@
       "description": "Local offline mock LLM service for hook smoke tests.",
       "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/responses",
       "apiKey": "hook-smoke-local",
-      "models": ["codex-hooks", "claude-hooks", "opencode-hooks"],
+      "models": [
+        "codex-hooks",
+        "claude-hooks",
+        "opencode-hooks"
+      ],
       "extra": {
         "codex": {
           "wireApi": "responses"
@@ -38,7 +47,9 @@
       "description": "Local offline mock LLM service for Claude Code Router smoke tests.",
       "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/chat/completions",
       "apiKey": "hook-smoke-local",
-      "models": ["claude-hooks"]
+      "models": [
+        "claude-hooks"
+      ]
     }
   },
   "mcpServers": {

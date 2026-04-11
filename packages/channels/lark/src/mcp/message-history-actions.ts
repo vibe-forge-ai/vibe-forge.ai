@@ -1,13 +1,11 @@
+/* eslint-disable max-lines */
+
 import type { LarkMention } from '#~/types.js'
 import { parseLarkContent } from '#~/utils/parse.js'
 
-import type {
-  LarkMessageReceiveIdType,
-  LarkMessageSortType,
-  LarkMcpRuntimeEnv
-} from './types.js'
 import { ensureSuccess, isRecord, resolveDefaultChatId } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType, LarkMessageSortType } from './types.js'
 
 const DEFAULT_RECENT_MESSAGE_LIMIT = 10
 const MAX_RECENT_MESSAGE_LIMIT = 50
@@ -351,10 +349,12 @@ export const createLarkMessageHistoryActions = (
           continue
         }
 
-        matchedMessages.push(includeRawContent ? normalized : {
-          ...normalized,
-          rawContent: undefined
-        })
+        matchedMessages.push(
+          includeRawContent ? normalized : {
+            ...normalized,
+            rawContent: undefined
+          }
+        )
 
         if (matchedMessages.length >= limit) {
           break

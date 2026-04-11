@@ -1,6 +1,6 @@
-import process from 'node:process'
 import { createRequire } from 'node:module'
 import { dirname, resolve as resolvePath } from 'node:path'
+import process from 'node:process'
 
 import { defineResolveChannelSessionMcpServers } from '@vibe-forge/core/channel'
 
@@ -42,7 +42,9 @@ export const resolveChannelSessionMcpServers = defineResolveChannelSessionMcpSer
             VF_LARK_DEFAULT_RECEIVE_ID: context.replyReceiveId ?? context.channelId,
             VF_LARK_DEFAULT_RECEIVE_ID_TYPE: context.replyReceiveIdType ?? 'chat_id',
             ...(context.replyReceiveId == null ? {} : { VF_CHANNEL_REPLY_RECEIVE_ID: context.replyReceiveId }),
-            ...(context.replyReceiveIdType == null ? {} : { VF_CHANNEL_REPLY_RECEIVE_ID_TYPE: context.replyReceiveIdType })
+            ...(context.replyReceiveIdType == null
+              ? {}
+              : { VF_CHANNEL_REPLY_RECEIVE_ID_TYPE: context.replyReceiveIdType })
           }
         }
       }

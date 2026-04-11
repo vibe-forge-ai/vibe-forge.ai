@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { readFile, writeFile } from 'node:fs/promises'
 import { PassThrough } from 'node:stream'
 
 import { spawn } from 'node:child_process'
@@ -38,7 +39,9 @@ function makeCtx(overrides: {
     cache: {
       set: async (key: string, value: unknown) => {
         cacheStore.set(key, value)
-        return { cachePath: `/tmp/${key}.json` }
+        const cachePath = `/tmp/${key}.json`
+        await writeFile(cachePath, JSON.stringify(value, null, 2), 'utf8')
+        return { cachePath }
       },
       get: async (key: string) => cacheStore.get(key)
     },
@@ -142,6 +145,22 @@ function decodeProxyMeta(overrides: string[], serviceKey: string) {
   }
 
   return JSON.parse(Buffer.from(encodedMeta, 'base64url').toString('utf8')) as Record<string, unknown>
+}
+
+async function decodeModelCatalog(overrides: string[]) {
+  const catalogOverride = getConfigOverride(overrides, 'model_catalog_json=')
+  if (catalogOverride == null) {
+    throw new Error('Missing model_catalog_json override')
+  }
+
+  const catalogPath = JSON.parse(catalogOverride.slice('model_catalog_json='.length)) as string
+  return JSON.parse(await readFile(catalogPath, 'utf8')) as {
+    models?: Array<{
+      slug?: string
+      display_name?: string
+      description?: string
+    }>
+  }
 }
 
 describe('createCodexSession RPC approval policy mapping', () => {
@@ -622,6 +641,106 @@ describe('createCodexSession RPC approval policy mapping', () => {
         requestedEffort: 'high',
         effectiveEffort: 'high',
         wireApi: 'responses'
+      }
+    })
+
+    session.kill()
+  })
+
+  it('registers native bootstrap models into the Codex model catalog for /model switching', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              nativeModelSwitch: true,
+              nativeModelSwitchBootstrap: true
+            }
+          },
+          modelServices: {
+            'hook-smoke-mock': {
+              title: 'Hook Smoke Mock',
+              apiBaseUrl: 'http://127.0.0.1:40111/responses',
+              apiKey: 'hook-smoke-local',
+              models: ['codex-hooks']
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        mode: 'direct',
+        runtime: 'server',
+        sessionId: 'session-native-bootstrap-model-catalog',
+        model: 'hook-smoke-mock,codex-hooks',
+        description: 'Reply with pong.',
+        onEvent: () => {}
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+    const catalog = await decodeModelCatalog(overrides)
+    const slugs = (catalog.models ?? []).map(model => model.slug)
+
+    expect(overrides).toContain('model_provider="vibe_forge"')
+    expect(slugs).toContain('gpt-5.4')
+    expect(slugs).toContain('codex-hooks')
+    expect(spawnArgs).toContain('--model')
+    expect(spawnArgs).toContain('codex-hooks')
+
+    session.kill()
+  })
+
+  it('falls back to the default native catalog model when the requested model is outside the catalog', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(
+      makeCtx({
+        configs: [{
+          adapters: {
+            codex: {
+              nativeModelSwitch: true,
+              nativeModelSwitchBootstrap: true
+            }
+          },
+          modelServices: {
+            'hook-smoke-mock': {
+              title: 'Hook Smoke Mock',
+              apiBaseUrl: 'http://127.0.0.1:40111/responses',
+              apiKey: 'hook-smoke-local',
+              models: ['codex-hooks']
+            }
+          }
+        }, undefined]
+      }),
+      {
+        type: 'create',
+        mode: 'direct',
+        runtime: 'server',
+        sessionId: 'session-native-bootstrap-fallback',
+        model: 'hook-smoke-mock,codex-direct-answer',
+        description: 'Reply with pong.',
+        onEvent: (event: AdapterOutputEvent) => events.push(event)
+      } as any
+    )
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    expect(spawnArgs).toContain('--model')
+    expect(spawnArgs).toContain('gpt-5.4')
+    expect(spawnArgs).not.toContain('codex-direct-answer')
+    expect(events).toContainEqual({
+      type: 'config_update',
+      data: {
+        source: 'native_model_switch',
+        model: 'gpt-5.4'
       }
     })
 

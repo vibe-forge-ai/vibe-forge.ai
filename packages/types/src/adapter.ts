@@ -22,18 +22,31 @@ export interface AdapterInteractionRequest {
   payload: AskUserQuestionParams
 }
 
+export interface AdapterConfigUpdateData {
+  source: 'native_model_switch' | (string & {})
+  model?: string
+  [key: string]: unknown
+}
+
 export type AdapterOutputEvent =
   | { type: 'init'; data: SessionInitInfo }
   | { type: 'summary'; data: SessionSummaryInfo }
   | { type: 'message'; data: ChatMessage }
   | { type: 'interaction_request'; data: AdapterInteractionRequest }
+  | { type: 'config_update'; data: AdapterConfigUpdateData }
   | { type: 'error'; data: AdapterErrorData }
   | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
 
+export interface SessionConfigUpdateInfo {
+  model: string
+  source?: string
+}
+
 export type SessionInfo =
   | ({ type: 'init' } & SessionInitInfo)
   | ({ type: 'summary' } & SessionSummaryInfo)
+  | ({ type: 'config_update' } & SessionConfigUpdateInfo)
 
 export interface SessionInitInfo {
   uuid: string

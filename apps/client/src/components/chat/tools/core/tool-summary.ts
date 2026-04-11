@@ -1,11 +1,11 @@
 import type { ChatMessageContent } from '@vibe-forge/core'
 
-import { getClaudeToolSummaryText } from '../adapter-claude/claude-tool-summary'
 import {
   buildClaudeToolPresentation,
   getClaudeToolBaseName,
   isClaudeToolName
 } from '../adapter-claude/claude-tool-presentation'
+import { getClaudeToolSummaryText } from '../adapter-claude/claude-tool-summary'
 
 export type ToolUseItem = Extract<ChatMessageContent, { type: 'tool_use' }>
 type Translate = (key: string, options?: Record<string, unknown>) => string
@@ -13,10 +13,11 @@ type Translate = (key: string, options?: Record<string, unknown>) => string
 const HUMANIZED_SEGMENT_SEPARATOR = /[_:-]+/g
 const GENERIC_TOOL_NAMESPACE_PREFIXES = new Set(['adapter', 'agent', 'mcp', 'plugin', 'tool'])
 
-const humanizeToolSegment = (value: string) => value
-  .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
-  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-  .trim()
+const humanizeToolSegment = (value: string) =>
+  value
+    .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim()
 
 const getToolNameSegments = (name: string) => (
   name.includes('__') ? name.split('__').filter(Boolean) : name.split(':').filter(Boolean)
@@ -146,7 +147,7 @@ export function getToolGroupSummaryText(
   }>,
   t: Translate
 ) {
-  const groupedTools = new Map<string, { label: string, qualifiedLabel: string, count: number }>()
+  const groupedTools = new Map<string, { label: string; qualifiedLabel: string; count: number }>()
 
   for (const { item } of items) {
     const descriptor = getToolGroupDescriptor(item, t)

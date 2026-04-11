@@ -1,4 +1,10 @@
-import type { AdapterInteractionRequest, ChatMessage, ChatMessageContent, TaskRuntime } from '@vibe-forge/types'
+import type {
+  AdapterConfigUpdateData,
+  AdapterInteractionRequest,
+  ChatMessage,
+  ChatMessageContent,
+  TaskRuntime
+} from '@vibe-forge/types'
 
 import type { HookLogger } from './context'
 import type { HookInputs } from './type'
@@ -31,6 +37,7 @@ export type HookBridgeOutputEvent =
   | { type: 'error'; data: unknown }
   | { type: 'exit'; data: { exitCode?: number; stderr?: string } }
   | { type: 'stop'; data?: ChatMessage }
+  | { type: 'config_update'; data: AdapterConfigUpdateData }
 
 type HookBridgeMessageEvent = Extract<HookBridgeInputEvent, { type: 'message' }>
 
