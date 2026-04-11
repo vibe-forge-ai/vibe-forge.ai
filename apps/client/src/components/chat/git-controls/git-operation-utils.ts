@@ -38,6 +38,33 @@ export const getGitPushBlockedReason = (
   return null
 }
 
+export const getGitControlState = (
+  repoState: GitRepositoryState | undefined,
+  forcePush: boolean,
+  labels: {
+    detachedHead: string
+    pushNeedsSyncOrForce: string
+    pushUnavailable: string
+  }
+) => {
+  const currentBranchLabel = repoState?.available === true && repoState.currentBranch?.trim() !== ''
+    ? repoState.currentBranch
+    : labels.detachedHead
+  const pushBlockedReason = repoState?.available === true
+    ? getGitPushBlockedReason(repoState, forcePush)
+    : 'push-unavailable'
+
+  return {
+    currentBranchLabel,
+    pushBlockedReason,
+    pushBlockedMessage: pushBlockedReason === 'behind-upstream'
+      ? labels.pushNeedsSyncOrForce
+      : pushBlockedReason == null
+      ? ''
+      : labels.pushUnavailable
+  }
+}
+
 export const getPrimaryGitOperationKind = (
   repoState: GitRepositoryState
 ): GitOperationKind | null => {

@@ -2,7 +2,13 @@ import { access } from 'node:fs/promises'
 import { isAbsolute, resolve } from 'node:path'
 
 import type { WSEvent } from '@vibe-forge/core'
-import type { GitAvailabilityReason, GitBranchSummary, GitRepositoryState, SessionInfo } from '@vibe-forge/types'
+import type {
+  GitAvailabilityReason,
+  GitBranchSummary,
+  GitRepositoryState,
+  GitWorktreeSummary,
+  SessionInfo
+} from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { getWorkspaceFolder } from '#~/services/config/index.js'
@@ -13,6 +19,7 @@ import type { ParsedGitStatus } from './parsers'
 import { parseGitBranches, parseGitStatus } from './parsers'
 import { isGitMissingError, isNotRepositoryError, resolveGitErrorMessage, runGit } from './runner'
 import { getHeadCommitSummary, getRepositoryChangeSummaries } from './summary'
+import { parseGitWorktrees } from './worktree-parser'
 
 interface GitRepositoryContext {
   available: boolean
@@ -120,10 +127,15 @@ export const getRepositoryStatus = async (repositoryRoot: string): Promise<Parse
 
 export const getRepositoryBranches = async (repositoryRoot: string, currentBranch: string | null) => {
   const { stdout } = await runGit(
-    ['for-each-ref', '--format=%(refname:short)\t%(refname)', 'refs/heads', 'refs/remotes'],
+    ['for-each-ref', '--format=%(refname:short)\t%(refname)\t%(worktreepath)', 'refs/heads', 'refs/remotes'],
     repositoryRoot
   )
   return parseGitBranches(stdout, currentBranch)
+}
+
+export const getRepositoryWorktrees = async (repositoryRoot: string): Promise<GitWorktreeSummary[]> => {
+  const { stdout } = await runGit(['worktree', 'list', '--porcelain'], repositoryRoot)
+  return parseGitWorktrees(stdout, repositoryRoot)
 }
 
 export const pickDefaultRemote = (remotes: string[]) => {

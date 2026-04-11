@@ -8,6 +8,7 @@ import { BranchSwitcherDropdown } from './BranchSwitcherDropdown'
 import { GitCommitModal } from './GitCommitModal'
 import { GitOperationsDropdown } from './GitOperationsDropdown'
 import { GitPushModal } from './GitPushModal'
+import { GitWorktreeDropdown } from './GitWorktreeDropdown'
 import { useChatGitControls } from './use-chat-git-controls'
 
 export function ChatGitControls({
@@ -29,7 +30,13 @@ export function ChatGitControls({
           isBusy={git.isBusy}
           open={git.operationsMenuOpen}
           repoState={git.repoState}
-          onOpenChange={git.setOperationsMenuOpen}
+          onOpenChange={(nextOpen) => {
+            git.setOperationsMenuOpen(nextOpen)
+            if (nextOpen) {
+              git.setBranchMenuOpen(false)
+              git.setWorktreeMenuOpen(false)
+            }
+          }}
           onOpenCommit={() => {
             git.setOperationsMenuOpen(false)
             git.setCommitMessageError('')
@@ -47,6 +54,7 @@ export function ChatGitControls({
         />
 
         <BranchSwitcherDropdown
+          availableLocalBranches={git.availableLocalBranches}
           currentBranchLabel={git.currentBranchLabel}
           isBusy={git.isBusy}
           isLoading={git.isBranchListLoading}
@@ -55,12 +63,13 @@ export function ChatGitControls({
           branchQuery={git.branchQuery}
           canCreateBranch={git.canCreateBranch}
           hasBranchResults={git.hasBranchResults}
-          localBranches={git.localBranches}
           remoteBranches={git.remoteBranches}
           onCreateBranch={git.handleCreateBranch}
           onOpenChange={(nextOpen) => {
             git.setBranchMenuOpen(nextOpen)
             if (nextOpen) {
+              git.setOperationsMenuOpen(false)
+              git.setWorktreeMenuOpen(false)
               git.setShouldLoadBranches(true)
               return
             }
@@ -69,6 +78,20 @@ export function ChatGitControls({
           onQueryChange={git.setBranchQuery}
           onSwitchBranch={git.handleBranchSwitch}
         />
+
+        {git.showWorktreeButton && (
+          <GitWorktreeDropdown
+            open={git.worktreeMenuOpen}
+            worktrees={git.worktrees}
+            onOpenChange={(nextOpen) => {
+              git.setWorktreeMenuOpen(nextOpen)
+              if (nextOpen) {
+                git.setOperationsMenuOpen(false)
+                git.setBranchMenuOpen(false)
+              }
+            }}
+          />
+        )}
 
         <div className='chat-header-git__separator' />
       </div>

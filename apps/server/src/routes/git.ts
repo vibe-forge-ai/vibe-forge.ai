@@ -8,6 +8,7 @@ import {
   createSessionGitBranch,
   getSessionGitState,
   listSessionGitBranches,
+  listSessionGitWorktrees,
   pushSessionGitBranch,
   syncSessionGitBranch
 } from '#~/services/git/index.js'
@@ -24,6 +25,11 @@ export function gitRouter(): Router {
   router.get('/branches', async (ctx) => {
     const { sessionId } = ctx.params as { sessionId: string }
     ctx.body = await listSessionGitBranches(sessionId)
+  })
+
+  router.get('/worktrees', async (ctx) => {
+    const { sessionId } = ctx.params as { sessionId: string }
+    ctx.body = await listSessionGitWorktrees(sessionId)
   })
 
   router.post('/checkout', async (ctx) => {

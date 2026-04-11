@@ -1,4 +1,3 @@
-import { Switch } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 import type { GitChangeSummary } from '@vibe-forge/types'
@@ -55,7 +54,13 @@ export function GitCommitToggleRow({
 }) {
   return (
     <label className={`chat-header-git__commit-toggle-row ${disabled ? 'is-disabled' : ''}`}>
-      <Switch checked={checked} disabled={disabled} onChange={onChange} />
+      <input
+        checked={checked}
+        className='chat-header-git__commit-toggle-checkbox'
+        disabled={disabled}
+        type='checkbox'
+        onChange={(event) => onChange(event.target.checked)}
+      />
       <div className='chat-header-git__commit-toggle-copy'>
         <div className='chat-header-git__commit-toggle-title'>{title}</div>
         <div className='chat-header-git__commit-toggle-description'>{description}</div>

@@ -4,7 +4,8 @@ import type {
   GitCommitPayload,
   GitMutationResult,
   GitPushPayload,
-  GitRepositoryState
+  GitRepositoryState,
+  GitWorktreeListResult
 } from '@vibe-forge/types'
 
 import { fetchApiJson, jsonHeaders } from './base'
@@ -15,6 +16,10 @@ export async function getSessionGitState(sessionId: string): Promise<GitReposito
 
 export async function listSessionGitBranches(sessionId: string): Promise<GitBranchListResult> {
   return fetchApiJson<GitBranchListResult>(`/api/sessions/${sessionId}/git/branches`)
+}
+
+export async function listSessionGitWorktrees(sessionId: string): Promise<GitWorktreeListResult> {
+  return fetchApiJson<GitWorktreeListResult>(`/api/sessions/${sessionId}/git/worktrees`)
 }
 
 export async function checkoutSessionGitBranch(

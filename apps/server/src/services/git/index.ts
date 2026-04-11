@@ -1,4 +1,10 @@
-import type { GitBranchKind, GitBranchListResult, GitPushPayload, GitRepositoryState } from '@vibe-forge/types'
+import type {
+  GitBranchKind,
+  GitBranchListResult,
+  GitPushPayload,
+  GitRepositoryState,
+  GitWorktreeListResult
+} from '@vibe-forge/types'
 
 import { conflict, notFound } from '#~/utils/http.js'
 
@@ -6,10 +12,12 @@ import { assertBranchName } from './commit'
 import {
   ensureRepositoryContext,
   getBranchListForRepository,
+  getRepositoryWorktrees,
   getSessionGitStateInternal,
   pickDefaultRemote
 } from './repository'
 import { resolveGitErrorMessage, runGit } from './runner'
+import { getBlockedGitWorktreePath } from './worktree'
 
 export { commitSessionGitChanges } from './commit'
 
@@ -27,6 +35,14 @@ export const listSessionGitBranches = async (sessionId: string): Promise<GitBran
   }
 }
 
+export const listSessionGitWorktrees = async (sessionId: string): Promise<GitWorktreeListResult> => {
+  const repo = await ensureRepositoryContext(sessionId)
+
+  return {
+    worktrees: await getRepositoryWorktrees(repo.repositoryRoot)
+  }
+}
+
 export const checkoutSessionGitBranch = async (
   sessionId: string,
   input: {
@@ -39,6 +55,19 @@ export const checkoutSessionGitBranch = async (
   const target = branches.find(branch => branch.kind === input.kind && branch.name === input.name)
   if (target == null) {
     throw notFound('Git branch not found', input, 'git_branch_not_found')
+  }
+
+  const blockedWorktreePath = getBlockedGitWorktreePath(target, branches, repo.repositoryRoot)
+  if (blockedWorktreePath != null) {
+    throw conflict(
+      `Git branch ${target.localName} is already checked out in another worktree`,
+      {
+        ...input,
+        branchName: target.localName,
+        worktreePath: blockedWorktreePath
+      },
+      'git_branch_checked_out_in_other_worktree'
+    )
   }
 
   try {

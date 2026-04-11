@@ -27,6 +27,7 @@ export {
   createSessionGitBranch,
   getSessionGitState,
   listSessionGitBranches,
+  listSessionGitWorktrees,
   pushSessionGitBranch,
   syncSessionGitBranch
 } from './api/git'
@@ -66,6 +67,8 @@ export type {
   GitHeadCommitSummary,
   GitMutationResult,
   GitPushPayload,
-  GitRepositoryState
+  GitRepositoryState,
+  GitWorktreeListResult,
+  GitWorktreeSummary
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'

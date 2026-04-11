@@ -41,12 +41,24 @@ export interface GitBranchSummary {
   kind: GitBranchKind
   localName: string
   remoteName?: string
+  worktreePath?: string
   isCurrent: boolean
 }
 
 export interface GitBranchListResult {
   currentBranch: string | null
   branches: GitBranchSummary[]
+}
+
+export interface GitWorktreeSummary {
+  path: string
+  branchName: string | null
+  isCurrent: boolean
+  isDetached: boolean
+}
+
+export interface GitWorktreeListResult {
+  worktrees: GitWorktreeSummary[]
 }
 
 export interface GitMutationResult {

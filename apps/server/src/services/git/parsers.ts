@@ -94,12 +94,14 @@ export const parseGitBranches = (output: string, currentBranch: string | null): 
       continue
     }
 
-    const [name = '', fullRef = ''] = rawLine.split('\t')
+    const [name = '', fullRef = '', worktreePathRaw = ''] = rawLine.split('\t')
+    const worktreePath = worktreePathRaw.trim() === '' ? undefined : worktreePathRaw.trim()
     if (fullRef.startsWith('refs/heads/')) {
       branches.push({
         name,
         kind: 'local',
         localName: name,
+        worktreePath,
         isCurrent: name === currentBranch
       })
       continue
@@ -131,12 +133,18 @@ export const parseGitBranches = (output: string, currentBranch: string | null): 
     if (left.isCurrent !== right.isCurrent) {
       return left.isCurrent ? -1 : 1
     }
+    if (left.kind === 'local' && right.kind === 'local') {
+      const leftCheckedOut = left.worktreePath != null && left.worktreePath !== ''
+      const rightCheckedOut = right.worktreePath != null && right.worktreePath !== ''
+      if (leftCheckedOut !== rightCheckedOut) {
+        return leftCheckedOut ? 1 : -1
+      }
+    }
     return left.name.localeCompare(right.name)
   })
 
   return branches
 }
-
 export const parseGitNumstat = (output: string): ParsedGitNumstatEntry[] => {
   const entries: ParsedGitNumstatEntry[] = []
 
@@ -184,9 +192,5 @@ export const parseGitHeadCommit = (output: string): GitHeadCommitSummary | null 
     return null
   }
 
-  return {
-    hash,
-    shortHash: hash.slice(0, 7),
-    subject
-  }
+  return { hash, shortHash: hash.slice(0, 7), subject }
 }

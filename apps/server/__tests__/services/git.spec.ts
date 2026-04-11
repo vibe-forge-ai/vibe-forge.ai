@@ -239,9 +239,9 @@ describe('git service', () => {
       { stdout: '# branch.head main\n' },
       {
         stdout: [
-          'main\trefs/heads/main',
-          'origin/main\trefs/remotes/origin/main',
-          'origin/feature/header\trefs/remotes/origin/feature/header'
+          'main\trefs/heads/main\t/workspace',
+          'origin/main\trefs/remotes/origin/main\t',
+          'origin/feature/header\trefs/remotes/origin/feature/header\t'
         ].join('\n')
       },
       { stdout: '' },
@@ -275,6 +275,87 @@ describe('git service', () => {
       }),
       expect.any(Function)
     )
+  })
+
+  it('rejects switching to a branch that is already checked out in another worktree', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      { stdout: '# branch.head feature/current\n' },
+      {
+        stdout: [
+          'feature/current\trefs/heads/feature/current\t/workspace',
+          'main\trefs/heads/main\t/Users/yijie/codes/vibe-forge.ai',
+          'origin/main\trefs/remotes/origin/main\t'
+        ].join('\n')
+      }
+    )
+
+    const { checkoutSessionGitBranch } = await import('#~/services/git/index.js')
+    await expect(checkoutSessionGitBranch('sess-1', {
+      name: 'origin/main',
+      kind: 'remote'
+    })).rejects.toMatchObject({
+      code: 'git_branch_checked_out_in_other_worktree',
+      status: 409,
+      details: {
+        branchName: 'main',
+        kind: 'remote',
+        name: 'origin/main',
+        worktreePath: '/Users/yijie/codes/vibe-forge.ai'
+      }
+    })
+
+    expect(mocks.execFile).not.toHaveBeenCalledWith(
+      'git',
+      ['checkout', 'main'],
+      expect.anything(),
+      expect.any(Function)
+    )
+  })
+
+  it('lists git worktrees for the current repository', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      {
+        stdout: [
+          'worktree /workspace',
+          'HEAD abcdef0123456789',
+          'branch refs/heads/main',
+          '',
+          'worktree /Users/yijie/.codex/worktrees/3d03/vibe-forge.ai',
+          'HEAD bcdef0123456789a',
+          'branch refs/heads/feature/header',
+          '',
+          'worktree /tmp/detached-tree',
+          'HEAD cdef0123456789ab',
+          'detached'
+        ].join('\n')
+      }
+    )
+
+    const { listSessionGitWorktrees } = await import('#~/services/git/index.js')
+    await expect(listSessionGitWorktrees('sess-1')).resolves.toEqual({
+      worktrees: [
+        {
+          path: '/workspace',
+          branchName: 'main',
+          isCurrent: true,
+          isDetached: false
+        },
+        {
+          path: '/Users/yijie/.codex/worktrees/3d03/vibe-forge.ai',
+          branchName: 'feature/header',
+          isCurrent: false,
+          isDetached: false
+        },
+        {
+          path: '/tmp/detached-tree',
+          branchName: null,
+          isCurrent: false,
+          isDetached: true
+        }
+      ]
+    })
   })
 
   it('amends the latest commit message without staging unstaged changes and skips hooks', async () => {

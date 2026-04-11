@@ -3,43 +3,8 @@ import { useTranslation } from 'react-i18next'
 
 import type { GitBranchSummary, GitRepositoryState } from '@vibe-forge/types'
 
-const renderBranchSection = (
-  title: string,
-  branches: GitBranchSummary[],
-  isBusy: boolean,
-  onSwitchBranch: (branch: GitBranchSummary) => void
-) => {
-  if (branches.length === 0) {
-    return null
-  }
-
-  return (
-    <div className='chat-header-git__section'>
-      <span className='chat-header-git__section-label'>{title}</span>
-      {branches.map(branch => (
-        <button
-          key={`${branch.kind}:${branch.name}`}
-          type='button'
-          className='chat-header-git__branch-row'
-          disabled={isBusy}
-          onClick={() => onSwitchBranch(branch)}
-        >
-          <div className='chat-header-git__branch-row-main'>
-            <span className='chat-header-git__row-icon material-symbols-rounded'>
-              {branch.kind === 'local' ? 'call_split' : 'cloud_sync'}
-            </span>
-            <span className='chat-header-git__row-title'>{branch.name}</span>
-          </div>
-          {branch.isCurrent && (
-            <span className='chat-header-git__row-state material-symbols-rounded'>check</span>
-          )}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 export function BranchSwitcherDropdown({
+  availableLocalBranches,
   currentBranchLabel,
   isBusy,
   isLoading,
@@ -48,13 +13,13 @@ export function BranchSwitcherDropdown({
   branchQuery,
   canCreateBranch,
   hasBranchResults,
-  localBranches,
   remoteBranches,
   onCreateBranch,
   onOpenChange,
   onQueryChange,
   onSwitchBranch
 }: {
+  availableLocalBranches: GitBranchSummary[]
   currentBranchLabel: string
   isBusy: boolean
   isLoading: boolean
@@ -63,7 +28,6 @@ export function BranchSwitcherDropdown({
   branchQuery: string
   canCreateBranch: boolean
   hasBranchResults: boolean
-  localBranches: GitBranchSummary[]
   remoteBranches: GitBranchSummary[]
   onCreateBranch: (name: string) => void
   onOpenChange: (open: boolean) => void
@@ -71,6 +35,44 @@ export function BranchSwitcherDropdown({
   onSwitchBranch: (branch: GitBranchSummary) => void
 }) {
   const { t } = useTranslation()
+
+  const renderBranchSection = (title: string, branches: GitBranchSummary[]) => {
+    if (branches.length === 0) {
+      return null
+    }
+
+    return (
+      <div className='chat-header-git__section'>
+        <span className='chat-header-git__section-label'>{title}</span>
+        {branches.map(branch => {
+          return (
+            <button
+              key={`${branch.kind}:${branch.name}`}
+              type='button'
+              className='chat-header-git__branch-row'
+              disabled={isBusy}
+              title={branch.name}
+              onClick={() => onSwitchBranch(branch)}
+            >
+              <div className='chat-header-git__branch-row-main'>
+                <span className='chat-header-git__row-icon material-symbols-rounded'>
+                  {branch.kind === 'local' ? 'call_split' : 'cloud_sync'}
+                </span>
+                <span className='chat-header-git__row-copy'>
+                  <span className='chat-header-git__row-title'>{branch.name}</span>
+                </span>
+              </div>
+              {branch.isCurrent
+                ? (
+                  <span className='chat-header-git__row-state material-symbols-rounded'>check</span>
+                )
+                : null}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <Dropdown
@@ -111,7 +113,9 @@ export function BranchSwitcherDropdown({
             </button>
           )}
 
-          {isLoading && localBranches.length === 0 && remoteBranches.length === 0
+          {isLoading &&
+              availableLocalBranches.length === 0 &&
+              remoteBranches.length === 0
             ? (
               <div className='chat-header-git__loading'>
                 <Spin size='small' />
@@ -120,18 +124,8 @@ export function BranchSwitcherDropdown({
             : hasBranchResults
             ? (
               <div className='chat-header-git__sections'>
-                {renderBranchSection(
-                  t('chat.gitBranchesLocal'),
-                  localBranches,
-                  isBusy,
-                  onSwitchBranch
-                )}
-                {renderBranchSection(
-                  t('chat.gitBranchesRemote'),
-                  remoteBranches,
-                  isBusy,
-                  onSwitchBranch
-                )}
+                {renderBranchSection(t('chat.gitBranchesLocal'), availableLocalBranches)}
+                {renderBranchSection(t('chat.gitBranchesRemote'), remoteBranches)}
               </div>
             )
             : (

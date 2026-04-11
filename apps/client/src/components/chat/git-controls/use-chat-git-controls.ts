@@ -10,13 +10,15 @@ import {
   createSessionGitBranch,
   getApiErrorMessage,
   getSessionGitState,
-  listSessionGitBranches,
-  pushSessionGitBranch
+  listSessionGitBranches
 } from '#~/api'
 
-import { filterGitBranches, hasExactGitBranchMatch } from './git-branch-utils'
-import { getGitPushBlockedReason } from './git-operation-utils'
+import { filterGitBranches, getGitBranchViewState, hasExactGitBranchMatch } from './git-branch-utils'
+import { runGitControlMutation, runSessionGitPush } from './git-mutation-utils'
+import { getGitControlState } from './git-operation-utils'
 import { useChatGitCommit } from './use-chat-git-commit'
+import { useChatGitPushState } from './use-chat-git-push-state'
+import { useChatGitWorktrees } from './use-chat-git-worktrees'
 
 type GitActionKind = 'branch-create' | 'branch-switch' | 'commit' | 'commit-and-push' | 'push' | 'sync'
 
@@ -28,13 +30,7 @@ export function useChatGitControls(sessionId: string) {
   const [shouldLoadBranches, setShouldLoadBranches] = useState(false)
   const [branchQuery, setBranchQuery] = useState('')
   const [pendingAction, setPendingAction] = useState<GitActionKind | null>(null)
-  const [pushModalOpen, setPushModalOpen] = useState(false)
-  const [pushForce, setPushForce] = useState(false)
-
-  const resetPushState = () => {
-    setPushModalOpen(false)
-    setPushForce(false)
-  }
+  const push = useChatGitPushState()
 
   const { data: repoState, mutate: mutateRepoState } = useSWR<GitRepositoryState>(
     ['session-git-state', sessionId],
@@ -46,14 +42,21 @@ export function useChatGitControls(sessionId: string) {
     () => listSessionGitBranches(sessionId),
     { revalidateOnFocus: false }
   )
+  const worktree = useChatGitWorktrees({
+    currentBranch: repoState?.currentBranch,
+    enabled: repoState?.available === true,
+    repositoryRoot: repoState?.repositoryRoot,
+    sessionId
+  })
 
   useEffect(() => {
     setBranchMenuOpen(false)
     setOperationsMenuOpen(false)
+    worktree.setWorktreeMenuOpen(false)
     setShouldLoadBranches(false)
     setBranchQuery('')
     setPendingAction(null)
-    resetPushState()
+    push.resetPushState()
   }, [sessionId])
 
   const refreshGitState = async (nextRepo?: GitRepositoryState) => {
@@ -65,6 +68,10 @@ export function useChatGitControls(sessionId: string) {
 
     if (shouldLoadBranches) {
       await mutateBranchData()
+    }
+
+    if (repoState?.available === true || nextRepo?.available === true) {
+      await worktree.mutateWorktreeData()
     }
   }
 
@@ -78,41 +85,40 @@ export function useChatGitControls(sessionId: string) {
 
   const allBranches = branchData?.branches ?? []
   const filteredBranches = useMemo(() => filterGitBranches(allBranches, branchQuery), [allBranches, branchQuery])
-  const localBranches = filteredBranches.filter(branch => branch.kind === 'local')
-  const remoteBranches = filteredBranches.filter(branch => branch.kind === 'remote')
+  const currentWorktreePath = repoState?.available === true ? repoState.repositoryRoot ?? '' : ''
+  const { availableLocalBranches, hasResults: hasBranchResults, remoteBranches } = useMemo(
+    () => getGitBranchViewState(filteredBranches, allBranches, currentWorktreePath),
+    [allBranches, filteredBranches, currentWorktreePath]
+  )
   const canCreateBranch = branchQuery.trim() !== '' && !hasExactGitBranchMatch(allBranches, branchQuery)
-  const hasBranchResults = filteredBranches.length > 0
   const isBusy = pendingAction != null
 
-  const currentBranchLabel = repoState?.available === true && repoState.currentBranch?.trim() !== ''
-    ? repoState.currentBranch
-    : t('chat.gitDetachedHead')
-  const pushBlockedReason = repoState?.available === true
-    ? getGitPushBlockedReason(repoState, pushForce)
-    : 'push-unavailable'
-  const pushBlockedMessage = pushBlockedReason == null
-    ? ''
-    : pushBlockedReason === 'behind-upstream'
-    ? t('chat.gitPushNeedsSyncOrForce')
-    : t('common.operationFailed')
+  const { currentBranchLabel, pushBlockedMessage, pushBlockedReason } = getGitControlState(repoState, push.pushForce, {
+    detachedHead: t('chat.gitDetachedHead'),
+    pushNeedsSyncOrForce: t('chat.gitPushNeedsSyncOrForce'),
+    pushUnavailable: t('common.operationFailed')
+  })
 
   const runMutation = async (
     action: Exclude<GitActionKind, 'commit' | 'commit-and-push'>,
     task: () => Promise<{ repo: GitRepositoryState }>,
     successMessage: string,
     onSuccess?: () => void
-  ) => {
-    setPendingAction(action)
-    try {
-      const result = await task()
-      await refreshGitState(result.repo)
-      onSuccess?.()
-      void message.success(successMessage)
-    } catch (error) {
-      void message.error(getApiErrorMessage(error, t('common.operationFailed')))
-    } finally {
-      setPendingAction(null)
-    }
+  ) =>
+    runGitControlMutation({
+      action,
+      notifyError: error => void message.error(getApiErrorMessage(error, t('common.operationFailed'))),
+      notifySuccess: nextMessage => void message.success(nextMessage),
+      onSuccess,
+      refreshGitState,
+      setPendingAction,
+      successMessage,
+      task
+    })
+
+  const closeBranchMenu = () => {
+    setBranchMenuOpen(false)
+    setBranchQuery('')
   }
 
   const handleBranchSwitch = (branch: GitBranchSummary) => {
@@ -120,10 +126,7 @@ export function useChatGitControls(sessionId: string) {
       'branch-switch',
       () => checkoutSessionGitBranch(sessionId, { name: branch.name, kind: branch.kind }),
       t('chat.gitSwitchBranchSuccess', { branch: branch.kind === 'local' ? branch.name : branch.localName }),
-      () => {
-        setBranchMenuOpen(false)
-        setBranchQuery('')
-      }
+      closeBranchMenu
     )
   }
 
@@ -137,33 +140,27 @@ export function useChatGitControls(sessionId: string) {
       'branch-create',
       () => createSessionGitBranch(sessionId, { name: trimmedName }),
       t('chat.gitCreateBranchSuccess', { branch: trimmedName }),
-      () => {
-        setBranchMenuOpen(false)
-        setBranchQuery('')
-      }
+      closeBranchMenu
     )
   }
 
   const handleOpenPushModal = () => {
     setOperationsMenuOpen(false)
-    setPushModalOpen(true)
+    push.setPushModalOpen(true)
   }
 
   const handlePush = () => {
-    if (repoState?.available !== true) {
-      return
-    }
-    if (pushBlockedReason != null) {
-      void message.error(pushBlockedMessage)
-      return
-    }
-
-    void runMutation(
-      'push',
-      () => pushSessionGitBranch(sessionId, { force: pushForce }),
-      pushForce ? t('chat.gitForcePushSuccess') : t('chat.gitPushSuccess'),
-      resetPushState
-    )
+    void runSessionGitPush({
+      blockedMessage: pushBlockedMessage,
+      blockedReason: pushBlockedReason,
+      force: push.pushForce,
+      notifyBlocked: nextMessage => void message.error(nextMessage),
+      onSuccess: push.resetPushState,
+      repoState,
+      runMutation,
+      sessionId,
+      successMessage: push.pushForce ? t('chat.gitForcePushSuccess') : t('chat.gitPushSuccess')
+    })
   }
 
   return {
@@ -178,22 +175,26 @@ export function useChatGitControls(sessionId: string) {
     hasBranchResults,
     isBranchListLoading,
     isBusy,
-    localBranches,
+    availableLocalBranches,
     operationsMenuOpen,
     pendingAction,
     pushBlockedMessage,
-    pushForce,
-    pushModalOpen,
+    pushForce: push.pushForce,
+    pushModalOpen: push.pushModalOpen,
     remoteBranches,
     repoState,
     runMutation,
+    showWorktreeButton: worktree.showWorktreeButton,
+    worktreeMenuOpen: worktree.worktreeMenuOpen,
+    worktrees: worktree.worktrees,
     setBranchMenuOpen,
     setBranchQuery,
     setOperationsMenuOpen,
-    setPushForce,
-    setPushModalOpen,
+    setPushForce: push.setPushForce,
+    setPushModalOpen: push.setPushModalOpen,
     setShouldLoadBranches,
-    resetPushState,
+    setWorktreeMenuOpen: worktree.setWorktreeMenuOpen,
+    resetPushState: push.resetPushState,
     ...commit
   }
 }
