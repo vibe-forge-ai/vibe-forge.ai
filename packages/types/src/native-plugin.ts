@@ -26,7 +26,7 @@ export interface AdapterPluginResolveSourceContext {
 }
 
 export interface ResolvedAdapterPluginSource<
-  TManifest extends AdapterPluginManifest = AdapterPluginManifest
+  TManifest extends AdapterPluginManifest = AdapterPluginManifest,
 > {
   installSource: ManagedPluginSource
   managedSource?: ManagedPluginSource
@@ -34,7 +34,7 @@ export interface ResolvedAdapterPluginSource<
 }
 
 export interface AdapterPluginInstaller<
-  TManifest extends AdapterPluginManifest = AdapterPluginManifest
+  TManifest extends AdapterPluginManifest = AdapterPluginManifest,
 > {
   adapter: ManagedPluginAdapter
   displayName?: string

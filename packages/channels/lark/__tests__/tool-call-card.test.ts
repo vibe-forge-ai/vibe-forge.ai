@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { buildToolCallSummaryCard } from '#~/utils/tool-call-card.js'
 
-const createLongResult = () => JSON.stringify({
-  items: Array.from({ length: 80 }, (_, index) => ({
-    index,
-    value: `line-${index}`
-  }))
-})
+const createLongResult = () =>
+  JSON.stringify({
+    items: Array.from({ length: 80 }, (_, index) => ({
+      index,
+      value: `line-${index}`
+    }))
+  })
 
 describe('tool-call-card', () => {
   it('truncates long tool results to 12 lines and adds an export button', () => {

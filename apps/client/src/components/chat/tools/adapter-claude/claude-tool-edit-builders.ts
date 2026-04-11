@@ -1,10 +1,6 @@
-import { getFileInfo, getLanguageFromPath } from './utils'
-import {
-  asBoolean,
-  asString,
-  pushField
-} from './claude-tool-shared'
+import { asBoolean, asString, pushField } from './claude-tool-shared'
 import type { ClaudeToolField } from './claude-tool-shared'
+import { getFileInfo, getLanguageFromPath } from './utils'
 
 interface BuilderParams {
   baseName: string
@@ -104,4 +100,3 @@ export function buildClaudeEditToolPresentation(params: BuilderParams) {
   usedKeys.add('notebook_path')
   return { handled: true, primary }
 }
-

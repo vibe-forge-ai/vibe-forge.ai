@@ -1,10 +1,6 @@
-import type {
-  LarkForwardReceiveIdType,
-  LarkMemberIdType,
-  LarkMcpRuntimeEnv
-} from './types.js'
 import { ensureSuccess } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkForwardReceiveIdType, LarkMcpRuntimeEnv, LarkMemberIdType } from './types.js'
 
 const resolveForwardTarget = (
   env: LarkMcpRuntimeEnv,

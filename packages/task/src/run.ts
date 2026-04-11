@@ -12,13 +12,8 @@ import { loadAdapter } from '@vibe-forge/types'
 import {
   listServiceModels,
   mergeAdapterConfigs,
-  normalizeNonEmptyString,
-  resolveAdapterConfiguredDefaultModel,
   resolveAdapterModelCompatibility,
-  resolveDefaultModelSelection,
-  resolveEffectiveEffort,
-  resolveModelDefaultAdapter,
-  resolveModelSelection
+  resolveEffectiveEffort
 } from '@vibe-forge/utils'
 import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
 
@@ -113,7 +108,6 @@ const formatAdapterModelFallbackError = (error: AdapterModelFallbackError) => {
 
   return `Adapter "${error.adapter}" defaultModel "${error.defaultModel}" is also not allowed${ruleSuffix}.`
 }
-
 
 declare module '@vibe-forge/types' {
   interface Cache {

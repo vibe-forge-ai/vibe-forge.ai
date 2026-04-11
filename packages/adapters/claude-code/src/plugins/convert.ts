@@ -132,7 +132,9 @@ export const convertClaudePluginToVibeForge = async (params: {
     await fs.cp(sourceDir, targetDir, { recursive: true })
     await rewriteMarkdownTree(targetDir, context, `skill "${name}"`)
   }
-  for (const [name, sourcePath] of await collectMarkdownFiles(params.nativePluginRoot, manifest?.commands, 'commands')) {
+  for (
+    const [name, sourcePath] of await collectMarkdownFiles(params.nativePluginRoot, manifest?.commands, 'commands')
+  ) {
     const targetPath = path.join(params.vibeForgeRoot, 'skills', name, 'SKILL.md')
     reserveTargetFile(seenTargets, targetPath, `command "${name}"`, params.vibeForgeRoot)
     await fs.mkdir(path.dirname(targetPath), { recursive: true })
@@ -153,9 +155,11 @@ export const convertClaudePluginToVibeForge = async (params: {
     )
   }
   const mergedMcp: Record<string, Record<string, unknown>> = {}
-  for (const value of (manifest?.mcpServers != null
-    ? await readStructuredConfigValues(params.nativePluginRoot, manifest.mcpServers)
-    : await readStructuredConfigValues(params.nativePluginRoot, '.mcp.json'))) {
+  for (
+    const value of (manifest?.mcpServers != null
+      ? await readStructuredConfigValues(params.nativePluginRoot, manifest.mcpServers)
+      : await readStructuredConfigValues(params.nativePluginRoot, '.mcp.json'))
+  ) {
     const transformed = transformClaudeTemplateValue(value, context, 'Claude plugin MCP config')
     mergeMcpConfig(mergedMcp, transformed)
   }
@@ -169,9 +173,11 @@ export const convertClaudePluginToVibeForge = async (params: {
     )
   }
   const hooks: Record<string, unknown[]> = {}
-  for (const value of (manifest?.hooks != null
-    ? await readStructuredConfigValues(params.nativePluginRoot, manifest.hooks)
-    : await readStructuredConfigValues(params.nativePluginRoot, path.join('hooks', 'hooks.json')))) {
+  for (
+    const value of (manifest?.hooks != null
+      ? await readStructuredConfigValues(params.nativePluginRoot, manifest.hooks)
+      : await readStructuredConfigValues(params.nativePluginRoot, path.join('hooks', 'hooks.json')))
+  ) {
     const transformed = transformClaudeTemplateValue(
       value,
       context,

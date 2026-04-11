@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { larkMemberIdTypeSchema } from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkMemberIdTypeSchema } from './types.js'
 
 const optionalPageSizeSchema = z.number().int().min(1).max(100).optional()
 
@@ -49,7 +49,8 @@ export const registerLarkReactionTools = (
       description: 'Delete a reaction from a Lark message.',
       inputSchema: deleteMessageReactionSchema
     },
-    async (input: z.infer<typeof deleteMessageReactionSchema>) => toJsonResult(await service.deleteMessageReaction(input))
+    async (input: z.infer<typeof deleteMessageReactionSchema>) =>
+      toJsonResult(await service.deleteMessageReaction(input))
   )
 
   server.registerTool(

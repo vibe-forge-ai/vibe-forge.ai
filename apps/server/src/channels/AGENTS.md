@@ -62,25 +62,25 @@ bindSessionMiddleware      → 持久化 channel↔session 绑定
 
 `channelBaseSchema`（`@vibe-forge/core/channel`）支持以下字段：
 
-| 字段                      | 类型        | 说明                                                    |
-| ------------------------- | ----------- | ------------------------------------------------------- |
-| `type`                    | `string`    | 频道类型（必填）                                        |
-| `title`                   | `string?`   | 频道标题，也作为 bot 在该频道的显示名称                 |
-| `description`             | `string?`   | 频道说明                                                |
-| `enabled`                 | `boolean?`  | 是否启用，默认 true                                     |
-| `systemPrompt`            | `string?`   | 启动会话时注入的系统提示词                              |
-| `commandPrefix`           | `string?`   | 频道指令前缀，默认 `/`                                  |
-| `language`                | `zh\|en?`   | 频道提示语言，默认 `zh`                                 |
-| `enableSessionMcp`        | `boolean?`  | 是否自动挂载该频道提供的 session companion MCP，默认 true |
+| 字段                      | 类型        | 说明                                                                               |
+| ------------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| `type`                    | `string`    | 频道类型（必填）                                                                   |
+| `title`                   | `string?`   | 频道标题，也作为 bot 在该频道的显示名称                                            |
+| `description`             | `string?`   | 频道说明                                                                           |
+| `enabled`                 | `boolean?`  | 是否启用，默认 true                                                                |
+| `systemPrompt`            | `string?`   | 启动会话时注入的系统提示词                                                         |
+| `commandPrefix`           | `string?`   | 频道指令前缀，默认 `/`                                                             |
+| `language`                | `zh\|en?`   | 频道提示语言，默认 `zh`                                                            |
+| `enableSessionMcp`        | `boolean?`  | 是否自动挂载该频道提供的 session companion MCP，默认 true                          |
 | `serverBaseUrl`           | `string?`   | 频道动作页与工具详情页对外可访问的 server 基础地址，例如 `https://bot.example.com` |
 | `sessionDetailBaseUrl`    | `string?`   | 会话详情 UI 的对外可访问基础地址；未配置时基于 `serverBaseUrl` 和 client base 推导 |
-| `access.admins`           | `string[]?` | 管理员 sender ID 列表，豁免所有访问控制，可执行管理指令 |
-| `access.allowPrivateChat` | `boolean?`  | 是否接受私聊，默认 true                                 |
-| `access.allowGroupChat`   | `boolean?`  | 是否接受群聊，默认 true                                 |
-| `access.allowedGroups`    | `string[]?` | 群组白名单（channel ID）                                |
-| `access.blockedGroups`    | `string[]?` | 群组黑名单（channel ID）                                |
-| `access.allowedSenders`   | `string[]?` | 发送者白名单（sender ID）                               |
-| `access.blockedSenders`   | `string[]?` | 发送者黑名单（sender ID），优先于白名单                 |
+| `access.admins`           | `string[]?` | 管理员 sender ID 列表，豁免所有访问控制，可执行管理指令                            |
+| `access.allowPrivateChat` | `boolean?`  | 是否接受私聊，默认 true                                                            |
+| `access.allowGroupChat`   | `boolean?`  | 是否接受群聊，默认 true                                                            |
+| `access.allowedGroups`    | `string[]?` | 群组白名单（channel ID）                                                           |
+| `access.blockedGroups`    | `string[]?` | 群组黑名单（channel ID）                                                           |
+| `access.allowedSenders`   | `string[]?` | 发送者白名单（sender ID）                                                          |
+| `access.blockedSenders`   | `string[]?` | 发送者黑名单（sender ID），优先于白名单                                            |
 
 ## Companion MCP 约定
 

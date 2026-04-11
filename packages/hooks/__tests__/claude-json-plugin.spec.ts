@@ -20,16 +20,21 @@ describe('createClaudeJsonHooksPlugin', () => {
     await mkdir(join(pluginDir, 'hooks'), { recursive: true })
     await writeFile(
       join(pluginDir, 'hooks', 'claude-hooks.json'),
-      JSON.stringify({
-        hooks: {
-          SessionStart: [{
-            hooks: [{
-              type: 'command',
-              command: 'node -e "process.stdout.write(JSON.stringify({systemMessage:[process.env.CLAUDE_PLUGIN_ROOT,process.env.CLAUDE_PLUGIN_DATA].join(\\\"|\\\")}))"'
+      JSON.stringify(
+        {
+          hooks: {
+            SessionStart: [{
+              hooks: [{
+                type: 'command',
+                command:
+                  'node -e "process.stdout.write(JSON.stringify({systemMessage:[process.env.CLAUDE_PLUGIN_ROOT,process.env.CLAUDE_PLUGIN_DATA].join(\\"|\\")}))"'
+              }]
             }]
-          }]
-        }
-      }, null, 2)
+          }
+        },
+        null,
+        2
+      )
     )
 
     const plugin = createClaudeJsonHooksPlugin({
@@ -72,16 +77,20 @@ describe('createClaudeJsonHooksPlugin', () => {
     await mkdir(join(pluginDir, 'hooks'), { recursive: true })
     await writeFile(
       join(pluginDir, 'hooks', 'claude-hooks.json'),
-      JSON.stringify({
-        hooks: {
-          SessionEnd: [{
-            hooks: [{
-              type: 'command',
-              command: 'node -e "process.stdout.write(JSON.stringify({systemMessage:\\\"session-end\\\"}))"'
+      JSON.stringify(
+        {
+          hooks: {
+            SessionEnd: [{
+              hooks: [{
+                type: 'command',
+                command: 'node -e "process.stdout.write(JSON.stringify({systemMessage:\\"session-end\\"}))"'
+              }]
             }]
-          }]
-        }
-      }, null, 2)
+          }
+        },
+        null,
+        2
+      )
     )
 
     const plugin = createClaudeJsonHooksPlugin({

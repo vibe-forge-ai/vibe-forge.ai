@@ -32,16 +32,20 @@ const normalizeMarketplaceCatalog = (catalog: unknown, description: string): Cla
     catalogSource.plugins = catalog.plugins
   }
 
-  const normalized = normalizeMarketplaceConfig({
-    __catalog__: {
-      type: 'claude-code',
-      options: {
-        source: catalogSource
+  const normalized = normalizeMarketplaceConfig(
+    {
+      __catalog__: {
+        type: 'claude-code',
+        options: {
+          source: catalogSource
+        }
       }
+    } as unknown as MarketplaceConfig,
+    description,
+    {
+      allowSettingsPathPluginSources: true
     }
-  } as unknown as MarketplaceConfig, description, {
-    allowSettingsPathPluginSources: true
-  })
+  )
 
   const source = normalized?.__catalog__?.options?.source
   if (source == null || source.source !== 'settings') {

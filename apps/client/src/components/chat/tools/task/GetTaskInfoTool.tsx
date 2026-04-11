@@ -5,8 +5,8 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../core/ToolCallBox'
-import { getToolTargetPresentation } from '../core/tool-display'
 import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
+import { getToolTargetPresentation } from '../core/tool-display'
 import { defineToolRender } from '../defineToolRender'
 import { TaskRow } from './components/TaskRow'
 

@@ -8,7 +8,7 @@ export function ClaudeEditDiff({
   oldValue,
   newValue,
   lang,
-  metaItems = [],
+  metaItems = []
 }: {
   oldValue?: string
   newValue?: string

@@ -5,11 +5,7 @@ import type { AdapterPluginInstaller } from '@vibe-forge/types'
 import { convertClaudePluginToVibeForge } from './convert'
 import { resolveClaudeMarketplaceInstallSource } from './marketplace'
 import type { ClaudePluginManifest } from './source'
-import {
-  detectClaudePluginRoot,
-  mergeClaudePluginManifest,
-  parseClaudePluginManifest
-} from './source'
+import { detectClaudePluginRoot, mergeClaudePluginManifest, parseClaudePluginManifest } from './source'
 
 const formatClaudeInstallSummary = (params: {
   pluginName: string

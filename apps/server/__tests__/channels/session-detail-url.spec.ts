@@ -13,8 +13,7 @@ describe('session detail url', () => {
       buildSessionDetailUrl,
       buildToolCallDetailUrl,
       resolveChannelServerBaseUrl
-    } =
-      await import('#~/channels/session-detail-url.js')
+    } = await import('#~/channels/session-detail-url.js')
     const { verifyChannelActionToken } = await import('#~/channels/action-token.js')
 
     expect(resolveChannelServerBaseUrl(undefined)).toBe('http://localhost:8787')
@@ -35,7 +34,9 @@ describe('session detail url', () => {
       throw new Error('Expected actionUrl to be defined')
     }
     const actionToken = new URL(actionUrl).searchParams.get('token') ?? ''
-    expect(new URL(actionUrl).origin + new URL(actionUrl).pathname).toBe('http://localhost:8787/channels/actions/tool-call-export')
+    expect(new URL(actionUrl).origin + new URL(actionUrl).pathname).toBe(
+      'http://localhost:8787/channels/actions/tool-call-export'
+    )
     expect(verifyChannelActionToken(actionToken, 'tool-call-export')).toEqual({
       ok: true,
       claims: expect.objectContaining({
@@ -56,7 +57,9 @@ describe('session detail url', () => {
       throw new Error('Expected detailUrl to be defined')
     }
     const detailToken = new URL(detailUrl).searchParams.get('token') ?? ''
-    expect(new URL(detailUrl).origin + new URL(detailUrl).pathname).toBe('http://localhost:8787/channels/actions/tool-call-detail')
+    expect(new URL(detailUrl).origin + new URL(detailUrl).pathname).toBe(
+      'http://localhost:8787/channels/actions/tool-call-detail'
+    )
     expect(verifyChannelActionToken(detailToken, 'tool-call-detail')).toEqual({
       ok: true,
       claims: expect.objectContaining({
@@ -106,7 +109,9 @@ describe('session detail url', () => {
     }
 
     const parsed = new URL(actionUrl)
-    expect(`${parsed.origin}${parsed.pathname}`).toBe('https://bot.example.com/internal/channels/actions/tool-call-export')
+    expect(`${parsed.origin}${parsed.pathname}`).toBe(
+      'https://bot.example.com/internal/channels/actions/tool-call-export'
+    )
     expect(verifyChannelActionToken(parsed.searchParams.get('token') ?? '', 'tool-call-export')).toEqual({
       ok: true,
       claims: expect.objectContaining({

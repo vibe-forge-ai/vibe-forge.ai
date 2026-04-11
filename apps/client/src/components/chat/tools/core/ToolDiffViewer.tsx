@@ -98,7 +98,9 @@ export function ToolDiffViewer({
           {metaItems.map(item => (
             <span
               key={`${item.label}-${item.value ?? ''}`}
-              className={`tool-diff-viewer__meta-item ${item.tone != null ? `tool-diff-viewer__meta-item--${item.tone}` : ''}`}
+              className={`tool-diff-viewer__meta-item ${
+                item.tone != null ? `tool-diff-viewer__meta-item--${item.tone}` : ''
+              }`}
             >
               {item.icon != null && item.icon !== '' && (
                 <span className='material-symbols-rounded'>{item.icon}</span>

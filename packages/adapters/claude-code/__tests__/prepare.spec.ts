@@ -133,9 +133,11 @@ describe('prepareClaudeExecution', () => {
         set: vi.fn(async (key: string) => ({
           cachePath: `/tmp/${key}.json`
         })) as any,
-        get: vi.fn(async (key: string) => key === 'adapter.claude-code.resume-state'
-          ? { canResume: false }
-          : undefined) as any
+        get: vi.fn(async (key: string) =>
+          key === 'adapter.claude-code.resume-state'
+            ? { canResume: false }
+            : undefined
+        ) as any
       },
       logger: {
         info: vi.fn(),

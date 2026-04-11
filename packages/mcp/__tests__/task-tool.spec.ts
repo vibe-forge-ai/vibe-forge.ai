@@ -69,15 +69,18 @@ describe('task tool integration', () => {
       }]
     })
 
-    expect(mocks.callHook).toHaveBeenCalledWith('StartTasks', expect.objectContaining({
-      sessionId: 'sess-1',
-      tasks: [expect.objectContaining({
-        taskId: 'task-1',
-        description: 'only output ok',
-        type: 'default',
-        background: false
-      })]
-    }))
+    expect(mocks.callHook).toHaveBeenCalledWith(
+      'StartTasks',
+      expect.objectContaining({
+        sessionId: 'sess-1',
+        tasks: [expect.objectContaining({
+          taskId: 'task-1',
+          description: 'only output ok',
+          type: 'default',
+          background: false
+        })]
+      })
+    )
     expect(mocks.startTask).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task-1'
     }))

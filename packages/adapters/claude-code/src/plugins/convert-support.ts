@@ -168,7 +168,9 @@ export const reserveTargetFile = (
   const existing = seenTargets.get(targetPath)
   if (existing != null) {
     throw new Error(
-      `Claude plugin assets conflict: ${existing} and ${sourceDescription} both map to ${path.relative(vibeForgeRoot, targetPath)}.`
+      `Claude plugin assets conflict: ${existing} and ${sourceDescription} both map to ${
+        path.relative(vibeForgeRoot, targetPath)
+      }.`
     )
   }
   seenTargets.set(targetPath, sourceDescription)

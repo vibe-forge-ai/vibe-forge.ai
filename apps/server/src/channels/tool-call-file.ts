@@ -28,7 +28,7 @@ export interface SendToolCallJsonFileResult {
 const normalizeString = (value: unknown) => typeof value === 'string' ? value.trim() : ''
 
 const sanitizeFileNamePart = (value: string) => {
-  const normalized = value.trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  const normalized = value.trim().replace(/[^\w.-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
   return normalized === '' ? 'tool-call' : normalized
 }
 
@@ -148,17 +148,21 @@ export const sendToolCallJsonFile = async (
   const fileName = resolveToolExportFileName(resolved.name, resolved.toolUseId)
   const receiveId = binding.replyReceiveId ?? binding.channelId
   const receiveIdType = binding.replyReceiveIdType ?? 'chat_id'
-  const fileContent = JSON.stringify({
-    sessionId: params.sessionId,
-    messageId: params.messageId,
-    toolUseId: resolved.toolUseId,
-    name: resolved.name,
-    status: resolved.status,
-    args: resolved.args,
-    result: resolved.result,
-    detailUrl,
-    exportedAt: new Date().toISOString()
-  }, null, 2)
+  const fileContent = JSON.stringify(
+    {
+      sessionId: params.sessionId,
+      messageId: params.messageId,
+      toolUseId: resolved.toolUseId,
+      name: resolved.name,
+      status: resolved.status,
+      args: resolved.args,
+      result: resolved.result,
+      detailUrl,
+      exportedAt: new Date().toISOString()
+    },
+    null,
+    2
+  )
 
   await state.connection.sendFileMessage({
     receiveId,

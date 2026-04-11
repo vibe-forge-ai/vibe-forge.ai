@@ -1,15 +1,12 @@
 import { spawn } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'
-import type {
-  ClaudeCodeErrorResultEvent,
-  ClaudeCodeIncomingEvent,
-  ClaudeCodeUserEvent
-} from '../protocol/types'
+import type { ClaudeCodeErrorResultEvent, ClaudeCodeIncomingEvent, ClaudeCodeUserEvent } from '../protocol/types'
 import { prepareClaudeExecution } from './prepare'
 
 const isMissingConversationError = (errors: string[] | undefined, sessionId: string) => (
@@ -76,7 +73,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       canResumeMarked = false
       await ctx.cache.set('adapter.claude-code.resume-state', { canResume: false })
     }
-    let proc: ReturnType<typeof spawn>
+    let proc: ChildProcessWithoutNullStreams | undefined
     let stdoutBuffer = ''
     let stderrBuffer: string[] = []
     let canResumeMarked = executionType === 'resume'
@@ -100,6 +97,13 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       })
     }
 
+    const getProcess = () => {
+      if (proc == null) {
+        throw new Error('Claude Code process is not running')
+      }
+      return proc
+    }
+
     const emitMessageToProcess = (event: ReplayableMessageEvent) => {
       const outputEvent: ClaudeCodeUserEvent = {
         uuid: uuid(),
@@ -116,7 +120,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
           uuid: uuid()
         }
       }
-      proc.stdin.write(`${JSON.stringify(outputEvent)}\n`)
+      getProcess().stdin.write(`${JSON.stringify(outputEvent)}\n`)
     }
 
     const emitEventToProcess = (event: AdapterEvent) => {
@@ -137,11 +141,11 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
               content: [{ type: 'text', text: '[Request interrupted by user]' }]
             }
           }
-          proc.stdin.write(`${JSON.stringify(outputEvent)}\n`)
+          getProcess().stdin.write(`${JSON.stringify(outputEvent)}\n`)
           break
         }
         case 'stop': {
-          proc.stdin.end()
+          getProcess().stdin.end()
           break
         }
       }
@@ -178,15 +182,16 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
         args: nextArgs,
         mode
       })
-      proc = spawn(cliPath, nextArgs, {
+      const nextProc: ChildProcessWithoutNullStreams = spawn(cliPath, nextArgs, {
         env: { ...env, FORCE_COLOR: '1' },
         cwd,
         stdio: 'pipe'
       })
+      proc = nextProc
       stdoutBuffer = ''
       stderrBuffer = []
 
-      proc.stdout.on('data', (buf) => {
+      nextProc.stdout.on('data', (buf) => {
         const rawStr = String(buf)
         stdoutBuffer += rawStr
         const lines = stdoutBuffer.split('\n')
@@ -234,12 +239,12 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
         }
       })
 
-      proc.stderr.on('data', (buf) => {
+      nextProc.stderr.on('data', (buf) => {
         const rawStr = String(buf)
         stderrBuffer.push(rawStr)
       })
 
-      proc.on('error', (err) => {
+      nextProc.on('error', (err) => {
         const message = err instanceof Error ? err.message : String(err)
         if (!didEmitFatalError) {
           emitEvent({
@@ -257,7 +262,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
         })
       })
 
-      proc.on('exit', (code) => {
+      nextProc.on('exit', (code) => {
         if (pendingResumeCreateFallback) {
           pendingResumeCreateFallback = false
           void restartWithCreateFallback().catch((error) => {
@@ -320,10 +325,12 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
     }
 
     return {
-      kill: () => proc.kill(),
-      stop: () => proc.stdin.end(),
+      kill: () => getProcess().kill(),
+      stop: () => getProcess().stdin.end(),
       emit,
-      pid: proc.pid
+      get pid() {
+        return getProcess().pid
+      }
     }
   }
 

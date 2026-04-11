@@ -1,15 +1,12 @@
-import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
-import {
-  ensureSuccess,
-  resolveDefaultReceiveTarget,
-  resolveMessageContent
-} from './shared.js'
+import { ensureSuccess, resolveDefaultReceiveTarget, resolveMessageContent } from './shared.js'
 import type { LarkImClient } from './shared.js'
+import type { LarkMcpRuntimeEnv, LarkMessageReceiveIdType } from './types.js'
 
 export const createSendRawMessageAction = (
   env: LarkMcpRuntimeEnv,
   im: LarkImClient
-) => async (input: {
+) =>
+async (input: {
   msgType: string
   content: unknown
   receiveId?: string

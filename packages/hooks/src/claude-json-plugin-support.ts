@@ -79,24 +79,23 @@ export const matchesToolHook = (eventName: keyof HookInputs, group: ClaudeComman
   }
 }
 
-export const mergeHookOutputs = <T extends HookOutputCore>(left: T, right: T): T => ({
-  ...left,
-  ...right,
-  continue: right.continue ?? left.continue,
-  suppressOutput: Boolean(left.suppressOutput) || Boolean(right.suppressOutput),
-  systemMessage: mergeSystemMessage(left.systemMessage, right.systemMessage),
-  stopReason: right.stopReason ?? left.stopReason,
-  ...((
-    'hookSpecificOutput' in left || 'hookSpecificOutput' in right
+export const mergeHookOutputs = <T extends HookOutputCore>(left: T, right: T): T =>
+  ({
+    ...left,
+    ...right,
+    continue: right.continue ?? left.continue,
+    suppressOutput: Boolean(left.suppressOutput) || Boolean(right.suppressOutput),
+    systemMessage: mergeSystemMessage(left.systemMessage, right.systemMessage),
+    stopReason: right.stopReason ?? left.stopReason,
+    ...('hookSpecificOutput' in left || 'hookSpecificOutput' in right
       ? {
         hookSpecificOutput: mergeHookSpecificOutput(
           (left as Record<string, unknown>).hookSpecificOutput,
           (right as Record<string, unknown>).hookSpecificOutput
         )
       }
-      : {}
-  ))
-}) as T
+      : {})
+  }) as T
 
 export const runClaudeCommandHook = async <K extends keyof HookInputs>(params: {
   command: string
@@ -123,8 +122,12 @@ export const runClaudeCommandHook = async <K extends keyof HookInputs>(params: {
 
     let stdout = ''
     let stderr = ''
-    child.stdout.on('data', chunk => { stdout += String(chunk) })
-    child.stderr.on('data', chunk => { stderr += String(chunk) })
+    child.stdout.on('data', chunk => {
+      stdout += String(chunk)
+    })
+    child.stderr.on('data', chunk => {
+      stderr += String(chunk)
+    })
     child.on('error', reject)
     child.on('close', code => resolvePromise({ code: code ?? 1, stdout, stderr }))
     child.stdin.write(`${JSON.stringify(toSnakeCaseRecord(params.input))}\n`)
