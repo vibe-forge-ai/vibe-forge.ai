@@ -93,6 +93,70 @@ describe('prepareClaudeExecution', () => {
     expect(prepared.args).not.toContain('--permission-mode')
   })
 
+  it('keeps explicit resume sessions in resume mode even when resume-state cache is missing', async () => {
+    const prepared = await prepareClaudeExecution({
+      ctxId: 'ctx-1',
+      cwd: '/repo',
+      env: {},
+      cache: {
+        set: vi.fn(async (key: string) => ({
+          cachePath: `/tmp/${key}.json`
+        })) as any,
+        get: vi.fn(async () => undefined) as any
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      } as any,
+      configs: [{}, {}]
+    }, {
+      type: 'resume',
+      runtime: 'cli',
+      sessionId: 'sess-resume',
+      onEvent: vi.fn()
+    })
+
+    expect(prepared.executionType).toBe('resume')
+    expect(prepared.args).toContain('--resume')
+    expect(prepared.args).toContain('sess-resume')
+    expect(prepared.args).not.toContain('--session-id')
+  })
+
+  it('falls back to create only when resume-state explicitly marks resume as unavailable', async () => {
+    const prepared = await prepareClaudeExecution({
+      ctxId: 'ctx-1',
+      cwd: '/repo',
+      env: {},
+      cache: {
+        set: vi.fn(async (key: string) => ({
+          cachePath: `/tmp/${key}.json`
+        })) as any,
+        get: vi.fn(async (key: string) => key === 'adapter.claude-code.resume-state'
+          ? { canResume: false }
+          : undefined) as any
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      } as any,
+      configs: [{}, {}]
+    }, {
+      type: 'resume',
+      runtime: 'cli',
+      sessionId: 'sess-create-fallback',
+      onEvent: vi.fn()
+    })
+
+    expect(prepared.executionType).toBe('create')
+    expect(prepared.args).toContain('--session-id')
+    expect(prepared.args).toContain('sess-create-fallback')
+    expect(prepared.args).not.toContain('--resume')
+  })
+
   it('stages managed Claude plugins into the session cache and passes --plugin-dir', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'claude-prepare-'))
     await mkdir(join(cwd, '.ai/plugins/demo/native/.claude-plugin'), { recursive: true })
