@@ -26,10 +26,15 @@ vi.mock('#~/services/session/index.js', () => ({
 }))
 
 const deleteChannelSessionBySessionId = vi.fn()
+const deleteChannelSession = vi.fn()
+const getChannelSession = vi.fn()
+const getChannelSessionBySessionId = vi.fn()
+const getSessions = vi.fn()
 const getSession = vi.fn()
 const updateSession = vi.fn()
 const updateSessionArchivedWithChildren = vi.fn()
 const upsertChannelPreference = vi.fn()
+const upsertChannelSession = vi.fn()
 
 const makeInbound = (overrides: Record<string, unknown> = {}) => ({
   channelType: 'lark',
@@ -60,6 +65,9 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     reply: vi.fn().mockResolvedValue(undefined),
     pushFollowUps: vi.fn().mockResolvedValue(undefined),
     getBoundSession: vi.fn(),
+    searchSessions: vi.fn(),
+    bindSession: vi.fn(),
+    unbindSession: vi.fn(),
     resetSession: vi.fn(),
     stopSession: vi.fn(),
     restartSession: vi.fn().mockResolvedValue(undefined),
@@ -99,6 +107,92 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
   if (!overrides.getBoundSession) {
     ctx.getBoundSession = vi.fn(() => ctx.sessionId ? getSession(ctx.sessionId) : undefined)
   }
+  if (!overrides.searchSessions) {
+    ctx.searchSessions = vi.fn((query: string) => {
+      const normalized = query.trim().toLowerCase()
+      return getSessions()
+        .filter((session: any) => {
+          const haystack = [
+            session.id,
+            session.title,
+            session.lastMessage,
+            session.lastUserMessage,
+            session.model,
+            session.adapter,
+            ...(session.tags ?? [])
+          ]
+            .filter(Boolean)
+            .join('\n')
+            .toLowerCase()
+          return haystack.includes(normalized)
+        })
+        .map((session: any) => ({
+          session,
+          binding: getChannelSessionBySessionId(session.id)
+            ? {
+                channelType: getChannelSessionBySessionId(session.id).channelType,
+                sessionType: getChannelSessionBySessionId(session.id).sessionType,
+                channelId: getChannelSessionBySessionId(session.id).channelId,
+                channelKey: getChannelSessionBySessionId(session.id).channelKey
+              }
+            : undefined
+        }))
+    })
+  }
+  if (!overrides.bindSession) {
+    ctx.bindSession = vi.fn((sessionId: string) => {
+      const session = getSession(sessionId)
+      if (!session) {
+        return { alreadyBound: false }
+      }
+      const previous = getChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      const transferred = getChannelSessionBySessionId(sessionId)
+      if (
+        transferred &&
+        (
+          transferred.channelType !== ctx.inbound.channelType ||
+          transferred.sessionType !== ctx.inbound.sessionType ||
+          transferred.channelId !== ctx.inbound.channelId
+        )
+      ) {
+        deleteChannelSession(transferred.channelType, transferred.sessionType, transferred.channelId)
+      }
+      upsertChannelSession({
+        channelType: ctx.inbound.channelType,
+        sessionType: ctx.inbound.sessionType,
+        channelId: ctx.inbound.channelId,
+        channelKey: ctx.channelKey,
+        replyReceiveId: ctx.inbound.replyTo?.receiveId,
+        replyReceiveIdType: ctx.inbound.replyTo?.receiveIdType,
+        sessionId
+      })
+      ctx.sessionId = sessionId
+      return {
+        alreadyBound: previous?.sessionId === sessionId,
+        session,
+        previousSessionId: previous?.sessionId !== sessionId ? previous?.sessionId : undefined,
+        transferredFrom: transferred == null
+          ? undefined
+          : {
+              channelType: transferred.channelType,
+              sessionType: transferred.sessionType,
+              channelId: transferred.channelId,
+              channelKey: transferred.channelKey
+            }
+      }
+    })
+  }
+  if (!overrides.unbindSession) {
+    ctx.unbindSession = vi.fn(() => {
+      const current = getChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      if (!current?.sessionId) {
+        return { sessionId: undefined }
+      }
+      deleteChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      ctx.sessionId = undefined
+      return { sessionId: current.sessionId }
+    })
+  }
   if (!overrides.resetSession) {
     ctx.resetSession = vi.fn(() => {
       if (ctx.sessionId) {
@@ -133,6 +227,8 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  getChannelSession.mockReturnValue({ sessionId: 'sess-abc' })
+  getChannelSessionBySessionId.mockReturnValue(undefined)
   getSession.mockReturnValue({
     id: 'sess-abc',
     title: 'Session A',
@@ -144,12 +240,34 @@ beforeEach(() => {
     tags: ['tag-a'],
     isArchived: false,
     isStarred: true,
+    lastMessage: 'Investigate lark resume failure',
     createdAt: Date.now()
   })
+  getSessions.mockReturnValue([
+    getSession(),
+    {
+      id: 'sess-other',
+      title: 'Lark handoff window',
+      status: 'completed',
+      messageCount: 446,
+      model: 'gpt-responses,gpt-5.4-2026-03-05',
+      adapter: 'codex',
+      tags: ['channel:lark:group:oc_790b0dd9fff1f5e216ac15bfbc257556'],
+      isArchived: false,
+      isStarred: false,
+      lastMessage: 'Resume miniapp gear session after interruption',
+      createdAt: Date.now()
+    }
+  ])
   vi.mocked(getDb).mockReturnValue({
+    deleteChannelSession,
     deleteChannelSessionBySessionId,
+    getChannelSession,
+    getChannelSessionBySessionId,
     getSession,
+    getSessions,
     getChannelPreference: vi.fn().mockReturnValue(undefined),
+    upsertChannelSession,
     upsertChannelPreference,
     updateSession,
     updateSessionArchivedWithChildren
@@ -194,7 +312,7 @@ describe('/help command', () => {
     await channelCommandMiddleware(ctx, next)
 
     expect(ctx.reply).toHaveBeenCalledOnce()
-    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('第 1/2 页')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('第 1/3 页')
     expect(ctx.pushFollowUps).toHaveBeenCalledWith({
       messageId: 'om-help-1',
       followUps: [{ content: '/help --page=2' }]
@@ -249,11 +367,11 @@ describe('/help command', () => {
 
     expect(ctx.reply).toHaveBeenCalledOnce()
     const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
-    expect(message).toContain('第 2/2 页')
-    expect(message).toContain('/allow <field:sender|group|private|groupchat> <value>')
+    expect(message).toContain('第 2/3 页')
+    expect(message).toContain('/stop')
     expect(ctx.pushFollowUps).toHaveBeenCalledWith({
       messageId: undefined,
-      followUps: [{ content: '/help --page=1' }]
+      followUps: [{ content: '/help --page=1' }, { content: '/help --page=3' }]
     })
   })
 
@@ -278,6 +396,84 @@ describe('/session command', () => {
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('Session A')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('gpt-test')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('上下文消息数：12')
+  })
+
+  it('/session search lists matching sessions with binding status', async () => {
+    getChannelSessionBySessionId.mockImplementation((sessionId: string) => (
+      sessionId === 'sess-other'
+        ? {
+            channelType: 'lark',
+            sessionType: 'group',
+            channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
+            channelKey: 'lark:miniapp-gear'
+          }
+        : {
+            channelType: 'lark',
+            sessionType: 'direct',
+            channelId: 'ch1',
+            channelKey: 'lark:default'
+          }
+    ))
+    const ctx = makeCtx({ commandText: '/session search miniapp gear', config: { type: 'lark' } as any })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('找到 1 个匹配会话')
+    expect(message).toContain('sess-other')
+    expect(message).toContain('已绑定 lark/group/oc_790b0dd9fff1f5e216ac15bfbc257556')
+  })
+
+  it('/session bind rebinds the current channel to an existing session', async () => {
+    getSession.mockImplementation((sessionId: string) => (
+      sessionId === 'sess-other'
+        ? {
+            id: 'sess-other',
+            title: 'Lark handoff window',
+            status: 'completed',
+            messageCount: 446,
+            model: 'gpt-responses,gpt-5.4-2026-03-05',
+            adapter: 'codex',
+            tags: [],
+            isArchived: false,
+            isStarred: false,
+            createdAt: Date.now()
+          }
+        : {
+            id: 'sess-abc',
+            title: 'Session A',
+            status: 'running',
+            messageCount: 12,
+            model: 'gpt-test',
+            adapter: 'codex',
+            tags: ['tag-a'],
+            isArchived: false,
+            isStarred: true,
+            createdAt: Date.now()
+          }
+    ))
+    const ctx = makeCtx({ commandText: '/session bind sess-other', config: { type: 'lark' } as any })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(upsertChannelSession).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: 'sess-other'
+    }))
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('已将当前频道绑定到会话 sess-other')
+    expect(message).toContain('当前频道原先绑定的会话 sess-abc 已解除绑定')
+  })
+
+  it('/session unbind detaches the current channel without archiving the session', async () => {
+    const ctx = makeCtx({ commandText: '/session unbind', config: { type: 'lark' } as any })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(deleteChannelSession).toHaveBeenCalledWith('lark', 'direct', 'ch1')
+    expect(updateSessionArchivedWithChildren).not.toHaveBeenCalled()
+    expect(ctx.reply).toHaveBeenCalledWith('已解除当前频道与会话 sess-abc 的绑定，会话内容已保留。')
   })
 })
 

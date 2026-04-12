@@ -338,7 +338,18 @@ export async function startAdapterSession(
       deleteAdapterSessionRuntime(sessionId)
     }
 
-    serverLogger.info({ sessionId, type }, '[server] Starting new adapter process')
+    serverLogger.info({
+      sessionId,
+      type,
+      requestedModel: options.model,
+      persistedModel: existing?.model,
+      resolvedModel,
+      requestedAdapter: options.adapter,
+      persistedAdapter: existing?.adapter,
+      resolvedAdapter,
+      resolvedEffort,
+      resolvedPermissionMode
+    }, '[server] Starting new adapter process')
 
     if (existing == null) {
       serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
@@ -454,13 +465,28 @@ export async function startAdapterSession(
           switch (event.type) {
             case 'init':
               if ('model' in (event.data as any)) {
+                const reportedModel = typeof (event.data as any).model === 'string'
+                  ? (event.data as any).model
+                  : undefined
+                const reportedAdapter = typeof (event.data as any).adapter === 'string'
+                  ? (event.data as any).adapter
+                  : undefined
+                const persistedModel = resolvedModel ?? reportedModel
+                const persistedAdapter = resolvedAdapter ?? reportedAdapter
+                serverLogger.info({
+                  sessionId,
+                  requestedModel: options.model,
+                  resolvedModel,
+                  reportedModel,
+                  persistedModel,
+                  requestedAdapter: options.adapter,
+                  resolvedAdapter,
+                  reportedAdapter,
+                  persistedAdapter
+                }, '[server] Adapter init received')
                 updateAndNotifySession(sessionId, {
-                  model: typeof (event.data as any).model === 'string'
-                    ? (event.data as any).model
-                    : resolvedModel,
-                  adapter: typeof (event.data as any).adapter === 'string'
-                    ? (event.data as any).adapter
-                    : resolvedAdapter,
+                  model: persistedModel,
+                  adapter: persistedAdapter,
                   effort: resolvedEffort,
                   permissionMode: resolvedPermissionMode
                 })

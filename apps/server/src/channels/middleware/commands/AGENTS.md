@@ -9,7 +9,7 @@ commands/
   index.ts            ← 中间件入口，组装所有指令并分发（含权限拦截）
   command-system.ts   ← 指令类型系统、chain builder、解析器
   cmd.general.ts      ← 通用指令：help / whoami / lang（含 help 格式化）
-  cmd.session.ts      ← 会话指令：session / reset / stop / get / set / permissionMode
+  cmd.session.ts      ← 会话指令：session / search / bind / unbind / reset / stop / get / set / permissionMode
   cmd.access.ts       ← 权限指令：access / admins / admin / allow / block
   access.ts           ← 权限检查 & 频道配置写入工具
   i18n.ts             ← 国际化注册 API（defineMessages / t / createT）、LanguageCode 类型、系统级共享翻译

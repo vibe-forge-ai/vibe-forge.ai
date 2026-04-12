@@ -7,6 +7,9 @@ import { command, requiredArg, restArg } from './command-system'
 
 defineMessages('zh', {
   'cmd.session.description': '查看当前会话状态',
+  'cmd.session.search.description': '搜索系统内的会话，方便重新绑定到当前频道',
+  'cmd.session.bind.description': '将当前频道绑定到指定会话',
+  'cmd.session.unbind.description': '解绑当前频道与会话，但保留会话本身',
   'cmd.reset.description': '归档并解绑当前会话',
   'cmd.stop.description': '停止当前运行中的会话',
   'cmd.permissionMode.description': '设置当前会话权限模式，或在无会话时设置下一次会话的权限模式',
@@ -57,6 +60,24 @@ defineMessages('zh', {
   'session.starred': ({ starred }) => `星标：${starred}`,
   'session.archived': ({ archived }) => `归档：${archived}`,
   'session.tags': ({ tags }) => `标签：${tags}`,
+  'session.search.noResults': ({ query }) => `未找到匹配“${query}”的会话。`,
+  'session.search.header': ({ count, query }) => `找到 ${count} 个匹配会话（关键词：${query}）：`,
+  'session.search.more': ({ remaining }) => `其余 ${remaining} 个结果未展示，请缩小关键词继续搜索。`,
+  'session.search.binding.current': '当前频道',
+  'session.search.binding.unbound': '未绑定',
+  'session.search.binding.other': ({ channelType, sessionType, channelId }) =>
+    `已绑定 ${channelType}/${sessionType}/${channelId}`,
+  'session.search.item': ({ index, id, title, status, count, model, binding }) =>
+    `${index}. ${id} | ${title} | ${status} | 消息 ${count} | ${model} | ${binding}`,
+  'bind.notFound': ({ id }) => `未找到会话 ${id}。`,
+  'bind.alreadyBound': ({ id, title }) => `当前频道已绑定到会话 ${id}（${title}），已刷新绑定信息。`,
+  'bind.success': ({ id, title }) => `已将当前频道绑定到会话 ${id}（${title}）。`,
+  'bind.replaced': ({ previousId }) => `当前频道原先绑定的会话 ${previousId} 已解除绑定。`,
+  'bind.transferred': ({ channelType, sessionType, channelId }) =>
+    `目标会话原先绑定于 ${channelType}/${sessionType}/${channelId}，已转移到当前频道。`,
+  'bind.followUp': '之后在当前频道发送消息会继续该会话。',
+  'unbind.noSession': '当前频道没有已绑定会话。',
+  'unbind.success': ({ id }) => `已解除当前频道与会话 ${id} 的绑定，会话内容已保留。`,
   'reset.success': '已归档并解绑当前会话，可以继续对话创建新会话。',
   'stop.noSession': '当前频道没有可停止的会话。',
   'stop.notRunning': ({ status }) => `当前会话状态为 ${status}，无需停止。`,
@@ -74,6 +95,9 @@ defineMessages('zh', {
 
 defineMessages('en', {
   'cmd.session.description': 'Show current session status',
+  'cmd.session.search.description': 'Search internal sessions so they can be rebound into this channel',
+  'cmd.session.bind.description': 'Bind this channel to an existing session',
+  'cmd.session.unbind.description': 'Unbind this channel from its session without archiving the session',
   'cmd.reset.description': 'Archive and unbind current session',
   'cmd.stop.description': 'Stop the current running session',
   'cmd.permissionMode.description':
@@ -127,6 +151,24 @@ defineMessages('en', {
   'session.starred': ({ starred }) => `Starred: ${starred}`,
   'session.archived': ({ archived }) => `Archived: ${archived}`,
   'session.tags': ({ tags }) => `Tags: ${tags}`,
+  'session.search.noResults': ({ query }) => `No sessions matched “${query}”.`,
+  'session.search.header': ({ count, query }) => `Found ${count} matching sessions (query: ${query}):`,
+  'session.search.more': ({ remaining }) => `${remaining} more results were omitted. Narrow the query and search again.`,
+  'session.search.binding.current': 'current channel',
+  'session.search.binding.unbound': 'unbound',
+  'session.search.binding.other': ({ channelType, sessionType, channelId }) =>
+    `bound to ${channelType}/${sessionType}/${channelId}`,
+  'session.search.item': ({ index, id, title, status, count, model, binding }) =>
+    `${index}. ${id} | ${title} | ${status} | ${count} msgs | ${model} | ${binding}`,
+  'bind.notFound': ({ id }) => `Session ${id} was not found.`,
+  'bind.alreadyBound': ({ id, title }) => `This channel is already bound to session ${id} (${title}). Binding refreshed.`,
+  'bind.success': ({ id, title }) => `This channel is now bound to session ${id} (${title}).`,
+  'bind.replaced': ({ previousId }) => `The previously bound session ${previousId} has been detached from this channel.`,
+  'bind.transferred': ({ channelType, sessionType, channelId }) =>
+    `The target session was previously bound to ${channelType}/${sessionType}/${channelId} and has been moved here.`,
+  'bind.followUp': 'Send the next message in this channel to continue that session.',
+  'unbind.noSession': 'No session is currently bound to this channel.',
+  'unbind.success': ({ id }) => `This channel has been detached from session ${id}. The session itself was kept.`,
   'reset.success': 'Session archived and unbound. You can continue chatting to create a new session.',
   'stop.noSession': 'No active session to stop.',
   'stop.notRunning': ({ status }) => `Session status is ${status}, no need to stop.`,
@@ -146,6 +188,8 @@ defineMessages('en', {
 
 const formatList = (ctx: ChannelContext, items: string[] | undefined) =>
   items != null && items.length > 0 ? items.join('、') : ctx.t('label.none')
+
+const SESSION_SEARCH_LIMIT = 8
 
 const PERMISSION_MODE_CHOICES = [
   {
@@ -286,10 +330,112 @@ const formatSessionSummary = (ctx: ChannelContext) => {
   ].join('\n')
 }
 
+const formatSearchBinding = (
+  ctx: ChannelContext,
+  binding: ReturnType<ChannelContext['searchSessions']>[number]['binding']
+) => {
+  if (binding == null) {
+    return ctx.t('session.search.binding.unbound')
+  }
+
+  if (
+    binding.channelType === ctx.inbound.channelType &&
+    binding.sessionType === ctx.inbound.sessionType &&
+    binding.channelId === ctx.inbound.channelId
+  ) {
+    return ctx.t('session.search.binding.current')
+  }
+
+  return ctx.t('session.search.binding.other', {
+    channelType: binding.channelType,
+    sessionType: binding.sessionType,
+    channelId: binding.channelId
+  })
+}
+
 export const sessionCommands = () => [
   command<ChannelContext>('session')
     .alias('status')
     .description('cmd.session.description')
+    .subcommand(
+      command<ChannelContext>('search')
+        .alias('find')
+        .description('cmd.session.search.description')
+        .adminOnly()
+        .argument(restArg('query'))
+        .action(async ({ ctx, args: [query] }) => {
+          const results = ctx.searchSessions(query as string)
+          if (results.length === 0) {
+            await ctx.reply(ctx.t('session.search.noResults', { query }))
+            return
+          }
+
+          const displayed = results.slice(0, SESSION_SEARCH_LIMIT)
+          const lines = [
+            ctx.t('session.search.header', { count: results.length, query }),
+            ...displayed.map((result, index) => ctx.t('session.search.item', {
+              index: index + 1,
+              id: result.session.id,
+              title: result.session.title ?? ctx.t('label.unnamed'),
+              status: result.session.status ?? 'unknown',
+              count: result.session.messageCount ?? 0,
+              model: result.session.model ?? ctx.t('label.notSet'),
+              binding: formatSearchBinding(ctx, result.binding)
+            }))
+          ]
+          if (results.length > displayed.length) {
+            lines.push(ctx.t('session.search.more', { remaining: results.length - displayed.length }))
+          }
+          await ctx.reply(lines.join('\n'))
+        })
+    )
+    .subcommand(
+      command<ChannelContext>('bind')
+        .alias('attach')
+        .description('cmd.session.bind.description')
+        .adminOnly()
+        .argument(requiredArg('sessionId'))
+        .action(async ({ ctx, args: [sessionId] }) => {
+          const result = ctx.bindSession(sessionId as string)
+          if (result.session == null) {
+            await ctx.reply(ctx.t('bind.notFound', { id: sessionId }))
+            return
+          }
+
+          const lines = [
+            ctx.t(result.alreadyBound ? 'bind.alreadyBound' : 'bind.success', {
+              id: result.session.id,
+              title: result.session.title ?? ctx.t('label.unnamed')
+            })
+          ]
+          if (result.previousSessionId != null) {
+            lines.push(ctx.t('bind.replaced', { previousId: result.previousSessionId }))
+          }
+          if (result.transferredFrom != null) {
+            lines.push(ctx.t('bind.transferred', {
+              channelType: result.transferredFrom.channelType,
+              sessionType: result.transferredFrom.sessionType,
+              channelId: result.transferredFrom.channelId
+            }))
+          }
+          lines.push(ctx.t('bind.followUp'))
+          await ctx.reply(lines.join('\n'))
+        })
+    )
+    .subcommand(
+      command<ChannelContext>('unbind')
+        .alias('detach')
+        .description('cmd.session.unbind.description')
+        .adminOnly()
+        .action(async ({ ctx }) => {
+          const result = ctx.unbindSession()
+          if (result.sessionId == null) {
+            await ctx.reply(ctx.t('unbind.noSession'))
+            return
+          }
+          await ctx.reply(ctx.t('unbind.success', { id: result.sessionId }))
+        })
+    )
     .action(async ({ ctx }) => {
       await ctx.reply(formatSessionSummary(ctx))
     }),
