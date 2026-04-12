@@ -34,10 +34,17 @@ export const resolveQuerySelection = (params: {
   }
   const availableAdapters = Object.keys(mergedAdapters ?? {})
   const serviceModels = listServiceModels(mergedModelServices)
+  const mergedDefaultModelService = pickFirstNonEmptyString(
+    [
+      params.userConfig?.defaultModelService,
+      params.config?.defaultModelService
+    ]
+  )
   const explicitAdapter = normalizeNonEmptyString(params.inputAdapter)
   const explicitModel = resolveModelSelection({
     value: params.inputModel,
     serviceModels,
+    preferredServiceKey: mergedDefaultModelService,
     preserveUnknown: true
   })
   const mergedDefaultAdapter = pickFirstNonEmptyString(
@@ -50,12 +57,6 @@ export const resolveQuerySelection = (params: {
     [
       params.userConfig?.defaultModel,
       params.config?.defaultModel
-    ]
-  )
-  const mergedDefaultModelService = pickFirstNonEmptyString(
-    [
-      params.userConfig?.defaultModelService,
-      params.config?.defaultModelService
     ]
   )
   const resolvedDefaultModel = resolveDefaultModelSelection({

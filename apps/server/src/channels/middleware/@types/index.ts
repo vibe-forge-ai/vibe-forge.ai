@@ -9,6 +9,29 @@ import type {
 
 import type { LanguageCode, MessageArgs, MessageCatalog } from '../i18n'
 
+export interface ChannelSessionBindingInfo {
+  channelType: string
+  sessionType: string
+  channelId: string
+  channelKey: string
+}
+
+export interface ChannelSessionSearchResult {
+  session: Session
+  binding?: ChannelSessionBindingInfo
+}
+
+export interface ChannelBindSessionResult {
+  alreadyBound: boolean
+  session?: Session
+  previousSessionId?: string
+  transferredFrom?: ChannelSessionBindingInfo
+}
+
+export interface ChannelUnbindSessionResult {
+  sessionId?: string
+}
+
 export interface ChannelTextMessage {
   receiveId: string
   receiveIdType: string
@@ -61,6 +84,12 @@ export interface ChannelContext {
   // ── session operations ──
   /** Get the session bound to the current channel, or undefined */
   getBoundSession: () => Session | undefined
+  /** Search sessions that can be rebound into the current channel */
+  searchSessions: (query: string) => ChannelSessionSearchResult[]
+  /** Bind the current channel to an existing session */
+  bindSession: (sessionId: string) => ChannelBindSessionResult
+  /** Unbind the current channel from the current session without archiving it */
+  unbindSession: () => ChannelUnbindSessionResult
   /** Archive and unbind the current session */
   resetSession: () => void
   /** Stop the running session (kill the process) */
