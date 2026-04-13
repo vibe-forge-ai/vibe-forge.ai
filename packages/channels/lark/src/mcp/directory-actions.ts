@@ -1,10 +1,6 @@
-import type {
-  LarkDepartmentIdType,
-  LarkMcpRuntimeEnv,
-  LarkMemberIdType
-} from './types.js'
 import { ensureSuccess } from './shared.js'
 import type { LarkContactClient } from './shared.js'
+import type { LarkDepartmentIdType, LarkMcpRuntimeEnv, LarkMemberIdType } from './types.js'
 
 const resolveContactUserApi = (contact?: LarkContactClient) => {
   const userApi = contact?.user

@@ -1,9 +1,6 @@
 import type { LarkToolCallSummary } from '#~/types.js'
 
-import {
-  buildToolCallSummaryHeaderText,
-  buildToolCallSummaryPanelElements
-} from './tool-call-card-format.js'
+import { buildToolCallSummaryHeaderText, buildToolCallSummaryPanelElements } from './tool-call-card-format.js'
 
 const resolveTitle = (summary: LarkToolCallSummary) => (
   summary.title?.trim() || `工具调用（${summary.items.length}）`

@@ -1,5 +1,5 @@
-import { Buffer } from 'node:buffer'
 import { Client, Domain, EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
+import { Buffer } from 'node:buffer'
 
 import type {
   ChannelConnection,
@@ -18,9 +18,9 @@ import type {
   LarkSendMessageResponse
 } from '#~/types.js'
 
-import { parseLarkContent } from './utils/parse'
 import { buildLarkOpenApiUrl } from './utils/open-api'
 import { resolveLarkOutboundMessagePayload } from './utils/outbound-message'
+import { parseLarkContent } from './utils/parse'
 import { createTenantTokenProvider } from './utils/tenant-token'
 import { resolveLarkId } from './utils/text-format'
 import { buildToolCallSummaryCard } from './utils/tool-call-card'
@@ -138,11 +138,11 @@ const sendLarkFileMessage = async (
   }
 
   return await ensureLarkMessageSuccess(
-      'Lark file send failed',
-      await client.im.message.create({
-        params: {
-          receive_id_type: message.receiveIdType as LarkChannelMessage['receiveIdType']
-        },
+    'Lark file send failed',
+    await client.im.message.create({
+      params: {
+        receive_id_type: message.receiveIdType as LarkChannelMessage['receiveIdType']
+      },
       data: {
         receive_id: message.receiveId,
         msg_type: 'file',

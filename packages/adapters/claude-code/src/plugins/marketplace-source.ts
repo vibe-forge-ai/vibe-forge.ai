@@ -1,6 +1,10 @@
 import path from 'node:path'
 
-import type { ClaudeCodeMarketplacePluginDefinition, ClaudeCodeMarketplacePluginSource, ManagedPluginSource } from '@vibe-forge/types'
+import type {
+  ClaudeCodeMarketplacePluginDefinition,
+  ClaudeCodeMarketplacePluginSource,
+  ManagedPluginSource
+} from '@vibe-forge/types'
 
 import type { ClaudeMarketplaceCatalog } from './marketplace-catalog'
 import type { ClaudePluginManifest } from './source'
@@ -39,8 +43,8 @@ export const resolveMarketplacePluginSource = (params: {
 
     const pluginRootPrefix = normalizeNonEmptyString(params.catalog.metadata?.pluginRoot)
     const relativeSource = pluginRootPrefix != null &&
-      !params.source.startsWith('./') &&
-      !params.source.startsWith('../')
+        !params.source.startsWith('./') &&
+        !params.source.startsWith('../')
       ? path.join(pluginRootPrefix, params.source)
       : params.source
 
@@ -80,7 +84,9 @@ export const resolveMarketplacePluginSource = (params: {
     case 'npm':
       return {
         type: 'npm',
-        spec: params.source.version != null ? `${params.source.package}@${params.source.version}` : params.source.package,
+        spec: params.source.version != null
+          ? `${params.source.package}@${params.source.version}`
+          : params.source.package,
         ...(params.source.registry != null ? { registry: params.source.registry } : {})
       }
   }

@@ -7,9 +7,9 @@ const process = require('node:process')
 const splitNodePath = (value) => (
   typeof value === 'string'
     ? value
-        .split(path.delimiter)
-        .map(item => item.trim())
-        .filter(Boolean)
+      .split(path.delimiter)
+      .map(item => item.trim())
+      .filter(Boolean)
     : []
 )
 

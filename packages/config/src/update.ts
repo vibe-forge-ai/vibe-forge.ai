@@ -249,7 +249,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
     }
     case 'plugins': {
       updateField('plugins', sectionValue.plugins as Config['plugins'])
-      updateField('marketplaces', sectionValue.marketplaces as Config['marketplaces'], hasOwn(sectionValue, 'marketplaces'))
+      updateField(
+        'marketplaces',
+        sectionValue.marketplaces as Config['marketplaces'],
+        hasOwn(sectionValue, 'marketplaces')
+      )
       return nextConfig
     }
     case 'mcp': {

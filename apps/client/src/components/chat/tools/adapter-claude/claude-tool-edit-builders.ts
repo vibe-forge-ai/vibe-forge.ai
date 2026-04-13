@@ -1,10 +1,6 @@
-import { getFileInfo, getLanguageFromPath } from './utils'
-import {
-  asBoolean,
-  asString,
-  pushField
-} from './claude-tool-shared'
+import { asBoolean, asString, pushField } from './claude-tool-shared'
 import type { ClaudeToolField } from './claude-tool-shared'
+import { getFileInfo, getLanguageFromPath } from './utils'
 
 interface BuilderParams {
   baseName: string
@@ -25,7 +21,14 @@ export function buildClaudeEditToolPresentation(params: BuilderParams) {
         const data = todo as Record<string, unknown>
         const content = asString(data.content)
         const status = asString(data.status)
-        return content != null ? [`[${status ?? 'pending'}] ${content}`] : []
+        const activeForm = asString(data.activeForm)
+        if (content == null) {
+          return []
+        }
+        const detail = status === 'in_progress' && activeForm != null && activeForm !== content
+          ? ` (${activeForm})`
+          : ''
+        return [`[${status ?? 'pending'}] ${content}${detail}`]
       })
       : undefined
 
@@ -104,4 +107,3 @@ export function buildClaudeEditToolPresentation(params: BuilderParams) {
   usedKeys.add('notebook_path')
   return { handled: true, primary }
 }
-

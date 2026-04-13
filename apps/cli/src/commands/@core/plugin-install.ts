@@ -58,7 +58,7 @@ const writeInstallSummary = (summaryLines: string[]) => {
 }
 
 export const installAdapterPluginWithInstaller = async <
-  TManifest extends AdapterPluginManifest = AdapterPluginManifest
+  TManifest extends AdapterPluginManifest = AdapterPluginManifest,
 >(
   installer: AdapterPluginInstaller<TManifest>,
   options: AdapterPluginAddOptions

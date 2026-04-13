@@ -10,23 +10,40 @@ import { getSessionLogger } from '#~/utils/logger.js'
 import { buildInteractionText } from './interaction'
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
+import { bindChannelSession } from './middleware/bind-session'
 import { defineMessages } from './middleware/i18n'
+import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
 import {
   clearPendingToolCallDisplay,
   consumePendingUnack,
   deleteBinding,
-  runPendingToolCallDisplayUpdate,
   resolveBinding,
   resolvePendingToolCallDisplay,
+  runPendingToolCallDisplayUpdate,
   setPendingToolCallDisplay
 } from './state'
-import {
-  buildToolCallSummaryText,
-  extractToolCallSummary,
-  mergeToolCallSummaries
-} from './tool-call-summary'
-import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
+import { buildToolCallSummaryText, extractToolCallSummary, mergeToolCallSummaries } from './tool-call-summary'
 import type { ChannelRuntimeState } from './types'
+
+const normalizeSearchText = (value: string | undefined) => value?.trim().toLowerCase() ?? ''
+
+const matchesSessionSearch = (session: ReturnType<ReturnType<typeof getDb>['getSession']>, query: string) => {
+  const normalizedQuery = normalizeSearchText(query)
+  if (normalizedQuery === '') return true
+  const haystack = [
+    session?.id,
+    session?.title,
+    session?.lastMessage,
+    session?.lastUserMessage,
+    session?.model,
+    session?.adapter,
+    ...(session?.tags ?? [])
+  ]
+    .map(value => normalizeSearchText(value))
+    .filter(Boolean)
+    .join('\n')
+  return haystack.includes(normalizedQuery)
+}
 
 export const handleInboundEvent = async (
   channelKey: string,
@@ -62,6 +79,68 @@ export const handleInboundEvent = async (
     getBoundSession: () => {
       if (!ctx.sessionId) return undefined
       return getDb().getSession(ctx.sessionId)
+    },
+    searchSessions: (query) => {
+      const db = getDb()
+      const sessions = db.getSessions('all')
+        .filter(session => matchesSessionSearch(session, query))
+      return sessions.map(session => {
+        const binding = db.getChannelSessionBySessionId(session.id)
+        return {
+          session,
+          binding: binding == null
+            ? undefined
+            : {
+              channelType: binding.channelType,
+              sessionType: binding.sessionType,
+              channelId: binding.channelId,
+              channelKey: binding.channelKey
+            }
+        }
+      })
+    },
+    bindSession: (sessionId) => {
+      const db = getDb()
+      const session = db.getSession(sessionId)
+      if (session == null) {
+        return { alreadyBound: false }
+      }
+      const bindingResult = bindChannelSession({
+        channelType: inbound.channelType,
+        sessionType: inbound.sessionType,
+        channelId: inbound.channelId,
+        channelKey,
+        replyReceiveId: inbound.replyTo?.receiveId,
+        replyReceiveIdType: inbound.replyTo?.receiveIdType,
+        sessionId
+      })
+      if (bindingResult.previousSessionId != null && bindingResult.previousSessionId !== sessionId) {
+        deleteBinding(bindingResult.previousSessionId)
+      }
+      ctx.sessionId = sessionId
+      return {
+        alreadyBound: bindingResult.alreadyBound,
+        session,
+        previousSessionId: bindingResult.previousSessionId,
+        transferredFrom: bindingResult.transferredFrom == null
+          ? undefined
+          : {
+            channelType: bindingResult.transferredFrom.channelType,
+            sessionType: bindingResult.transferredFrom.sessionType,
+            channelId: bindingResult.transferredFrom.channelId,
+            channelKey: bindingResult.transferredFrom.channelKey
+          }
+      }
+    },
+    unbindSession: () => {
+      const currentBinding = getDb().getChannelSession(inbound.channelType, inbound.sessionType, inbound.channelId)
+      const sessionId = currentBinding?.sessionId ?? ctx.sessionId
+      getDb().deleteChannelSession(inbound.channelType, inbound.sessionType, inbound.channelId)
+      if (sessionId) {
+        deleteBinding(sessionId)
+      }
+      ctx.sessionId = undefined
+      return { sessionId }
     },
     resetSession: () => {
       const { sessionId } = ctx
@@ -156,20 +235,20 @@ export const handleSessionEvent = async (
     messageId?: string
   ) => ({
     ...summary,
-      items: summary.items.map(item => ({
-        ...item,
-        detailUrl: buildToolCallDetailUrl(state.config, {
-          sessionId,
-          toolUseId: item.toolUseId,
-          messageId
-        }),
-        exportJsonUrl: buildChannelActionUrl(state.config, {
-          action: 'tool-call-export',
-          sessionId,
-          toolUseId: item.toolUseId,
-          messageId
-        })
-      }))
+    items: summary.items.map(item => ({
+      ...item,
+      detailUrl: buildToolCallDetailUrl(state.config, {
+        sessionId,
+        toolUseId: item.toolUseId,
+        messageId
+      }),
+      exportJsonUrl: buildChannelActionUrl(state.config, {
+        action: 'tool-call-export',
+        sessionId,
+        toolUseId: item.toolUseId,
+        messageId
+      })
+    }))
   })
   const deliverMessage = async (message: ChannelTextMessage) => {
     const unack = consumePendingUnack(sessionId)

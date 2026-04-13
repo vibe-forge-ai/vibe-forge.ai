@@ -55,4 +55,3 @@ export const hasMeaningfulToolValue = (value: unknown): boolean => {
 
   return Object.values(parsed as Record<string, unknown>).some(item => hasMeaningfulToolValue(item))
 }
-

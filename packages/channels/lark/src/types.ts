@@ -32,7 +32,9 @@ export const larkChannelMessageSchema = z.object({
       argsText: z.string().optional().describe('Single-line tool arguments summary'),
       resultText: z.string().optional().describe('Single-line tool result summary'),
       detailUrl: z.string().optional().describe('Optional server detail URL for this tool call'),
-      exportJsonUrl: z.string().optional().describe('Optional server action URL that asks the bot to send the full tool-call JSON file')
+      exportJsonUrl: z.string().optional().describe(
+        'Optional server action URL that asks the bot to send the full tool-call JSON file'
+      )
     })).min(1).describe('Ordered tool call summary entries')
   }).optional().describe('Optional structured tool call summary for richer channel rendering')
 })

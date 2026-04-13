@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
+import { bindChannelSession, bindSessionMiddleware } from '#~/channels/middleware/bind-session.js'
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
-import { setBinding, setPendingUnack } from '#~/channels/state.js'
+import { deleteBinding, setBinding, setPendingUnack } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 
 vi.mock('#~/db/index.js', () => ({
@@ -11,10 +11,14 @@ vi.mock('#~/db/index.js', () => ({
 }))
 
 vi.mock('#~/channels/state.js', () => ({
+  deleteBinding: vi.fn(),
   setBinding: vi.fn(),
   setPendingUnack: vi.fn()
 }))
 
+const deleteChannelSession = vi.fn()
+const getChannelSession = vi.fn()
+const getChannelSessionBySessionId = vi.fn()
 const upsertChannelSession = vi.fn()
 
 const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
@@ -40,6 +44,9 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
+  searchSessions: vi.fn(() => []),
+  bindSession: vi.fn(() => ({ alreadyBound: false })),
+  unbindSession: vi.fn(() => ({})),
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
@@ -55,7 +62,12 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getDb).mockReturnValue({ upsertChannelSession } as any)
+  vi.mocked(getDb).mockReturnValue({
+    deleteChannelSession,
+    getChannelSession,
+    getChannelSessionBySessionId,
+    upsertChannelSession
+  } as any)
 })
 
 describe('bindSessionMiddleware', () => {
@@ -107,5 +119,43 @@ describe('bindSessionMiddleware', () => {
     const next = vi.fn().mockResolvedValue(undefined)
     await bindSessionMiddleware(makeCtx(), next)
     expect(next).toHaveBeenCalledOnce()
+  })
+
+  it('clears the previous in-memory binding when the channel switches sessions', () => {
+    getChannelSession.mockReturnValue({ sessionId: 'sess-old' })
+
+    bindChannelSession({
+      channelType: 'lark',
+      sessionType: 'direct',
+      channelId: 'ch1',
+      channelKey: 'lark:default',
+      replyReceiveId: 'recv1',
+      replyReceiveIdType: 'chat_id',
+      sessionId: 'sess-new'
+    })
+
+    expect(deleteBinding).toHaveBeenCalledWith('sess-old')
+  })
+
+  it('transfers an existing session binding from another channel before rebinding', () => {
+    getChannelSessionBySessionId.mockReturnValue({
+      channelType: 'lark',
+      sessionType: 'group',
+      channelId: 'group-1',
+      channelKey: 'lark:ops',
+      sessionId: 'sess-abc'
+    })
+
+    bindChannelSession({
+      channelType: 'lark',
+      sessionType: 'direct',
+      channelId: 'ch1',
+      channelKey: 'lark:default',
+      replyReceiveId: 'recv1',
+      replyReceiveIdType: 'chat_id',
+      sessionId: 'sess-abc'
+    })
+
+    expect(deleteChannelSession).toHaveBeenCalledWith('lark', 'group', 'group-1')
   })
 })

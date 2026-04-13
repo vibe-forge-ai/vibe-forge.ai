@@ -1,7 +1,7 @@
 import process from 'node:process'
 
-import type { Command } from 'commander'
 import { buildConfigJsonVariables, loadConfig, mergeConfigs } from '@vibe-forge/config'
+import type { Command } from 'commander'
 
 import { addAdapterPlugin } from './@core/plugin-install'
 

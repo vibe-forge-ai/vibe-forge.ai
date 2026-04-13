@@ -120,6 +120,10 @@ export class SqliteDb {
     return this.channelSessions.removeBySessionId(sessionId)
   }
 
+  deleteChannelSession(channelType: string, sessionType: string, channelId: string) {
+    return this.channelSessions.remove(channelType, sessionType, channelId)
+  }
+
   consumeChannelActionTokenNonce(nonce: string, action: string, expiresAt: number, consumedAt = Date.now()) {
     return this.channelActionTokens.consume({
       nonce,

@@ -84,6 +84,14 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     return stmt.run(sessionId).changes
   }
 
+  const remove = (channelType: string, sessionType: string, channelId: string) => {
+    const stmt = db.prepare(`
+      DELETE FROM channel_sessions
+      WHERE channelType = ? AND sessionType = ? AND channelId = ?
+    `)
+    return stmt.run(channelType, sessionType, channelId).changes
+  }
+
   const getPreference = (
     channelType: string,
     sessionType: string,
@@ -128,6 +136,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     get,
     getPreference,
     getBySessionId,
+    remove,
     removeBySessionId,
     upsert,
     upsertPreference

@@ -1,11 +1,4 @@
-import {
-  asBoolean,
-  asNumber,
-  asString,
-  asStringArray,
-  getDescriptionTitle,
-  pushField
-} from './claude-tool-shared'
+import { asBoolean, asNumber, asString, asStringArray, getDescriptionTitle, pushField } from './claude-tool-shared'
 import type { ClaudeToolField } from './claude-tool-shared'
 
 interface BuilderParams {

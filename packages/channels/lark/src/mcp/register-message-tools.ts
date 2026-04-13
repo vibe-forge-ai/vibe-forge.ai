@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
+import type { RegisterServer } from './register-utils.js'
+import { toJsonResult } from './register-utils.js'
 import {
   larkFileTypeSchema,
   larkForwardReceiveIdTypeSchema,
   larkMemberIdTypeSchema,
   larkMessageReceiveIdTypeSchema
 } from './types.js'
-import type { RegisterServer } from './register-utils.js'
-import { toJsonResult } from './register-utils.js'
 
 const sendTextMessageSchema = z.object({
   text: z.string().min(1).describe('Message text'),
@@ -96,7 +96,8 @@ export const registerLarkMessageTools = (
     'SendFile',
     {
       title: 'Send File',
-      description: 'Upload a local workspace file to Lark IM and send it to the bound chat by default. Requires explicit share confirmation.',
+      description:
+        'Upload a local workspace file to Lark IM and send it to the bound chat by default. Requires explicit share confirmation.',
       inputSchema: sendFileSchema
     },
     async (input: z.infer<typeof sendFileSchema>) => toJsonResult(await service.sendFile(input))
@@ -106,7 +107,8 @@ export const registerLarkMessageTools = (
     'SendImage',
     {
       title: 'Send Image',
-      description: 'Upload a local workspace image to Lark IM and send it to the bound chat by default. Requires explicit share confirmation.',
+      description:
+        'Upload a local workspace image to Lark IM and send it to the bound chat by default. Requires explicit share confirmation.',
       inputSchema: sendImageSchema
     },
     async (input: z.infer<typeof sendImageSchema>) => toJsonResult(await service.sendImage(input))

@@ -1,8 +1,8 @@
+import type { ManagedPluginSource } from '@vibe-forge/types'
 import { spawn } from 'node:child_process'
 import { constants } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import type { ManagedPluginSource } from '@vibe-forge/types'
 
 export const pathExists = async (target: string) => {
   try {

@@ -46,16 +46,24 @@ function makeProc(options: {
   stderr?: string[]
   exitCode?: number
   error?: Error
+  autoExit?: boolean
 } = {}) {
   const stdout = new PassThrough()
   const stderr = new PassThrough()
+  const stdin = new PassThrough()
   const handlers = new Map<string, (...args: any[]) => void>()
+  const stdinWrites: string[] = []
+
+  stdin.on('data', (chunk) => {
+    stdinWrites.push(String(chunk))
+  })
 
   const proc = {
     stdout,
     stderr,
-    stdin: new PassThrough(),
+    stdin,
     pid: 1234,
+    stdinWrites,
     on: vi.fn((event: string, handler: (...args: any[]) => void) => {
       handlers.set(event, handler)
       return proc
@@ -77,7 +85,9 @@ function makeProc(options: {
       handlers.get('error')?.(options.error)
       return
     }
-    handlers.get('exit')?.(options.exitCode ?? 0)
+    if (options.autoExit !== false) {
+      handlers.get('exit')?.(options.exitCode ?? 0)
+    }
   })
 
   return proc
@@ -178,5 +188,67 @@ describe('claude-code session error events', () => {
         stderr: ''
       }
     })
+  })
+
+  it('retries missing resume sessions in create mode and replays the pending prompt', async () => {
+    const ctx = makeCtx()
+    const firstProc = makeProc({
+      stdout: [
+        `${
+          JSON.stringify({
+            type: 'result',
+            subtype: 'error_during_execution',
+            uuid: 'evt-missing',
+            timestamp: new Date().toISOString(),
+            sessionId: 'sess-1',
+            cwd: '/tmp',
+            session_id: 'sess-1',
+            errors: ['No conversation found with session ID: sess-1']
+          })
+        }\n`
+      ],
+      autoExit: false
+    })
+    const secondProc = makeProc({ autoExit: false })
+
+    mocks.prepareClaudeExecution.mockResolvedValue({
+      cliPath: 'claude',
+      args: ['run', '--resume', 'sess-1'],
+      env: {},
+      cwd: '/tmp',
+      sessionId: 'sess-1',
+      executionType: 'resume'
+    })
+    spawnMock
+      .mockImplementationOnce(() => firstProc)
+      .mockImplementationOnce(() => secondProc)
+
+    const events: AdapterOutputEvent[] = []
+    await createClaudeSession(ctx, {
+      type: 'resume',
+      runtime: 'server',
+      mode: 'stream',
+      sessionId: 'sess-1',
+      description: 'follow up',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    await new Promise(resolve => setTimeout(resolve, 10))
+    const exitHandler = firstProc.on.mock.calls.find(
+      (call: [string, (...args: unknown[]) => void]) => call[0] === 'exit'
+    )?.[1]
+    exitHandler?.(1)
+
+    for (let attempt = 0; attempt < 20 && spawnMock.mock.calls.length < 2; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+    expect(spawnMock.mock.calls[0]?.[1]).toContain('--resume')
+    expect(spawnMock.mock.calls[1]?.[1]).toContain('--session-id')
+    expect(spawnMock.mock.calls[1]?.[1]).not.toContain('--resume')
+    expect(ctx.cache.set).toHaveBeenCalledWith('adapter.claude-code.resume-state', { canResume: false })
+    expect(secondProc.stdinWrites.join('')).toContain('"follow up"')
+    expect(events).toEqual([])
   })
 })

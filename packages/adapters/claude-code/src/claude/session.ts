@@ -1,17 +1,26 @@
 import { spawn } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 import type { AdapterCtx, AdapterEvent, AdapterQueryOptions } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { mapAdapterContentToClaudeContent } from '../protocol/content'
 import { handleIncomingEvent } from '../protocol/incoming'
-import type {
-  ClaudeCodeBaseEvent,
-  ClaudeCodeErrorResultEvent,
-  ClaudeCodeIncomingEvent,
-  ClaudeCodeUserEvent
-} from '../protocol/types'
+import type { ClaudeCodeErrorResultEvent, ClaudeCodeIncomingEvent, ClaudeCodeUserEvent } from '../protocol/types'
 import { prepareClaudeExecution } from './prepare'
+
+const isMissingConversationError = (errors: string[] | undefined, sessionId: string) => (
+  (errors ?? []).some(error => error.includes(`No conversation found with session ID: ${sessionId}`))
+)
+
+const buildClaudeCreateArgs = (args: string[], sessionId: string) => {
+  const nextArgs = [...args]
+  const resumeIndex = nextArgs.findIndex(arg => arg === '--resume')
+  if (resumeIndex === -1) return nextArgs
+
+  nextArgs.splice(resumeIndex, 2, '--session-id', sessionId)
+  return nextArgs
+}
 
 const stripAnsiSequences = (value: string) => {
   let output = ''
@@ -41,7 +50,7 @@ const stripAnsiSequences = (value: string) => {
 export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const { logger } = ctx
   const { onEvent, description, mode = 'stream', extraOptions } = options
-  const { cliPath, args, env, cwd, sessionId, effort, executionType } = await prepareClaudeExecution(ctx, options)
+  let { cliPath, args, env, cwd, sessionId, effort, executionType } = await prepareClaudeExecution(ctx, options)
   let didEmitFatalError = false
 
   const emitEvent = (event: Parameters<typeof onEvent>[0]) => {
@@ -52,30 +61,7 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
   }
 
   if (mode === 'stream') {
-    args.push(
-      '--print',
-      '--verbose',
-      '--debug',
-      '--output-format',
-      'stream-json',
-      '--input-format',
-      'stream-json',
-      ...(extraOptions ?? [])
-    )
-
-    logger.info('Claude Code CLI command:', {
-      cliPath,
-      args,
-      mode
-    })
-    const proc = spawn(cliPath, args, {
-      env: { ...env, FORCE_COLOR: '1' },
-      cwd,
-      stdio: 'pipe'
-    })
-
-    let stdoutBuffer = ''
-    let canResumeMarked = executionType === 'resume'
+    type ReplayableMessageEvent = Extract<AdapterEvent, { type: 'message' }>
 
     const markResumeReady = async () => {
       if (canResumeMarked) return
@@ -87,51 +73,19 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       canResumeMarked = false
       await ctx.cache.set('adapter.claude-code.resume-state', { canResume: false })
     }
+    let proc: ChildProcessWithoutNullStreams | undefined
+    let stdoutBuffer = ''
+    let stderrBuffer: string[] = []
+    let canResumeMarked = executionType === 'resume'
+    let allowMissingConversationFallback = executionType === 'resume'
+    let pendingResumeCreateFallback = false
+    let resumeStateUpdate = Promise.resolve()
+    let replayableMessages: ReplayableMessageEvent[] = []
 
-    proc.stdout.on('data', (buf) => {
-      const rawStr = String(buf)
-      stdoutBuffer += rawStr
-      const lines = stdoutBuffer.split('\n')
-      stdoutBuffer = lines.pop() ?? ''
-      for (const line of lines) {
-        logger.debug('Claude Code CLI stdout:', { line })
-        const cleanedLine = stripAnsiSequences(line)
-        const trimmed = cleanedLine.trim()
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-          try {
-            const parsed = JSON.parse(trimmed) as ClaudeCodeIncomingEvent
-            if (
-              parsed.type === 'result' &&
-              parsed.subtype === 'error_during_execution' &&
-              (parsed as ClaudeCodeErrorResultEvent).errors.some(
-                error => error.includes(`No conversation found with session ID: ${sessionId}`)
-              )
-            ) {
-              void clearResumeReady()
-            }
-            if (
-              executionType === 'create' &&
-              (
-                (parsed.type === 'system' && parsed.subtype === 'init') ||
-                parsed.type === 'assistant' ||
-                (parsed.type === 'result' && parsed.subtype === 'success')
-              )
-            ) {
-              void markResumeReady()
-            }
-            handleIncomingEvent(parsed, emitEvent, effort)
-          } catch (err) {
-            console.error('Failed to parse JSON:', trimmed, err)
-          }
-        }
-      }
-    })
-
-    const stderrBuffer: string[] = []
-    proc.stderr.on('data', (buf) => {
-      const rawStr = String(buf)
-      stderrBuffer.push(rawStr)
-    })
+    const closeMissingConversationFallbackWindow = () => {
+      allowMissingConversationFallback = false
+      replayableMessages = []
+    }
 
     let didEmitExit = false
     const emitExit = (data: { exitCode?: number; stderr?: string }) => {
@@ -143,85 +97,222 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
       })
     }
 
-    proc.on('error', (err) => {
-      const message = err instanceof Error ? err.message : String(err)
-      if (!didEmitFatalError) {
-        emitEvent({
-          type: 'error',
-          data: {
-            message,
-            details: err,
-            fatal: true
-          }
-        })
+    const getProcess = () => {
+      if (proc == null) {
+        throw new Error('Claude Code process is not running')
       }
-      emitExit({
-        exitCode: 1,
-        stderr: message
-      })
-    })
+      return proc
+    }
 
-    proc.on('exit', (code) => {
-      const stderr = stderrBuffer.join('')
-      if ((code ?? 0) !== 0 && !didEmitFatalError) {
-        emitEvent({
-          type: 'error',
-          data: {
-            message: stderr !== '' ? stderr : `Process exited with code ${code ?? 1}`,
-            details: stderr !== '' ? { stderr } : { exitCode: code ?? 1 },
-            fatal: true
-          }
-        })
-      }
-      emitExit({
-        exitCode: code ?? undefined,
-        stderr
-      })
-    })
-
-    const emit = (event: AdapterEvent) => {
-      let outputEvent: ClaudeCodeBaseEvent | ClaudeCodeUserEvent = {
+    const emitMessageToProcess = (event: ReplayableMessageEvent) => {
+      const outputEvent: ClaudeCodeUserEvent = {
         uuid: uuid(),
         timestamp: new Date().toISOString(),
         sessionId,
-        cwd
+        cwd,
+        type: 'user',
+        parentUuid: event.parentUuid ?? null,
+        message: {
+          id: `msg_${Date.now()}`,
+          type: 'message',
+          role: 'user',
+          content: mapAdapterContentToClaudeContent(event.content),
+          uuid: uuid()
+        }
       }
+      getProcess().stdin.write(`${JSON.stringify(outputEvent)}\n`)
+    }
+
+    const emitEventToProcess = (event: AdapterEvent) => {
       switch (event.type) {
         case 'message': {
-          outputEvent = {
-            ...outputEvent,
-            type: 'user',
-            parentUuid: event.parentUuid ?? null,
-            message: {
-              id: `msg_${Date.now()}`,
-              type: 'message',
-              role: 'user',
-              content: mapAdapterContentToClaudeContent(event.content),
-              uuid: uuid()
-            }
-          }
+          emitMessageToProcess(event)
           break
         }
         case 'interrupt': {
-          outputEvent = {
-            ...outputEvent,
+          const outputEvent: ClaudeCodeUserEvent = {
+            uuid: uuid(),
+            timestamp: new Date().toISOString(),
+            sessionId,
+            cwd,
             type: 'user',
             message: {
               role: 'user',
               content: [{ type: 'text', text: '[Request interrupted by user]' }]
             }
           }
+          getProcess().stdin.write(`${JSON.stringify(outputEvent)}\n`)
           break
         }
         case 'stop': {
-          proc.stdin.end()
+          getProcess().stdin.end()
+          break
+        }
+      }
+    }
+
+    const spawnArgs = () => [
+      ...args,
+      '--print',
+      '--verbose',
+      '--debug',
+      '--output-format',
+      'stream-json',
+      '--input-format',
+      'stream-json',
+      ...(extraOptions ?? [])
+    ]
+
+    const restartWithCreateFallback = async () => {
+      await resumeStateUpdate
+      args = buildClaudeCreateArgs(args, sessionId)
+      executionType = 'create'
+      canResumeMarked = false
+      allowMissingConversationFallback = true
+      startProcess()
+      for (const event of replayableMessages) {
+        emitEventToProcess(event)
+      }
+    }
+
+    const startProcess = () => {
+      const nextArgs = spawnArgs()
+      logger.info('Claude Code CLI command:', {
+        cliPath,
+        args: nextArgs,
+        mode
+      })
+      const nextProc: ChildProcessWithoutNullStreams = spawn(cliPath, nextArgs, {
+        env: { ...env, FORCE_COLOR: '1' },
+        cwd,
+        stdio: 'pipe'
+      })
+      proc = nextProc
+      stdoutBuffer = ''
+      stderrBuffer = []
+
+      nextProc.stdout.on('data', (buf) => {
+        const rawStr = String(buf)
+        stdoutBuffer += rawStr
+        const lines = stdoutBuffer.split('\n')
+        stdoutBuffer = lines.pop() ?? ''
+        for (const line of lines) {
+          logger.debug('Claude Code CLI stdout:', { line })
+          const cleanedLine = stripAnsiSequences(line)
+          const trimmed = cleanedLine.trim()
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+              const parsed = JSON.parse(trimmed) as ClaudeCodeIncomingEvent
+              if (
+                parsed.type === 'result' &&
+                parsed.subtype === 'error_during_execution' &&
+                isMissingConversationError((parsed as ClaudeCodeErrorResultEvent).errors, sessionId) &&
+                allowMissingConversationFallback
+              ) {
+                pendingResumeCreateFallback = true
+                allowMissingConversationFallback = false
+                resumeStateUpdate = clearResumeReady()
+                continue
+              }
+              if (
+                (parsed.type === 'system' && parsed.subtype === 'init') ||
+                parsed.type === 'assistant' ||
+                (parsed.type === 'result' && parsed.subtype === 'success')
+              ) {
+                closeMissingConversationFallbackWindow()
+              }
+              if (
+                executionType === 'create' &&
+                (
+                  (parsed.type === 'system' && parsed.subtype === 'init') ||
+                  parsed.type === 'assistant' ||
+                  (parsed.type === 'result' && parsed.subtype === 'success')
+                )
+              ) {
+                void markResumeReady()
+              }
+              handleIncomingEvent(parsed, emitEvent, effort)
+            } catch (err) {
+              console.error('Failed to parse JSON:', trimmed, err)
+            }
+          }
+        }
+      })
+
+      nextProc.stderr.on('data', (buf) => {
+        const rawStr = String(buf)
+        stderrBuffer.push(rawStr)
+      })
+
+      nextProc.on('error', (err) => {
+        const message = err instanceof Error ? err.message : String(err)
+        if (!didEmitFatalError) {
+          emitEvent({
+            type: 'error',
+            data: {
+              message,
+              details: err,
+              fatal: true
+            }
+          })
+        }
+        emitExit({
+          exitCode: 1,
+          stderr: message
+        })
+      })
+
+      nextProc.on('exit', (code) => {
+        if (pendingResumeCreateFallback) {
+          pendingResumeCreateFallback = false
+          void restartWithCreateFallback().catch((error) => {
+            const message = error instanceof Error ? error.message : String(error)
+            if (!didEmitFatalError) {
+              emitEvent({
+                type: 'error',
+                data: {
+                  message,
+                  details: error,
+                  fatal: true
+                }
+              })
+            }
+            emitExit({
+              exitCode: 1,
+              stderr: message
+            })
+          })
           return
         }
-        default:
-          logger.warn('Unknown event:', event)
-          break
+
+        const stderr = stderrBuffer.join('')
+        if ((code ?? 0) !== 0 && !didEmitFatalError) {
+          emitEvent({
+            type: 'error',
+            data: {
+              message: stderr !== '' ? stderr : `Process exited with code ${code ?? 1}`,
+              details: stderr !== '' ? { stderr } : { exitCode: code ?? 1 },
+              fatal: true
+            }
+          })
+        }
+        emitExit({
+          exitCode: code ?? undefined,
+          stderr
+        })
+      })
+    }
+
+    startProcess()
+
+    const emit = (event: AdapterEvent) => {
+      if (event.type === 'message' && (allowMissingConversationFallback || pendingResumeCreateFallback)) {
+        replayableMessages.push(event)
       }
-      proc.stdin.write(`${JSON.stringify(outputEvent)}\n`)
+      if (pendingResumeCreateFallback) {
+        return
+      }
+      emitEventToProcess(event)
     }
 
     if (description) {
@@ -234,10 +325,12 @@ export const createClaudeSession = async (ctx: AdapterCtx, options: AdapterQuery
     }
 
     return {
-      kill: () => proc.kill(),
-      stop: () => proc.stdin.end(),
+      kill: () => getProcess().kill(),
+      stop: () => getProcess().stdin.end(),
       emit,
-      pid: proc.pid
+      get pid() {
+        return getProcess().pid
+      }
     }
   }
 

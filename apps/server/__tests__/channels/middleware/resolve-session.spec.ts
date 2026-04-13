@@ -3,10 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { resolveSessionMiddleware } from '#~/channels/middleware/resolve-session.js'
+import { setBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 
 vi.mock('#~/db/index.js', () => ({
   getDb: vi.fn()
+}))
+
+vi.mock('#~/channels/state.js', () => ({
+  setBinding: vi.fn()
 }))
 
 const makeCtx = (): ChannelContext => ({
@@ -25,6 +30,9 @@ const makeCtx = (): ChannelContext => ({
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
+  searchSessions: vi.fn(() => []),
+  bindSession: vi.fn(() => ({ alreadyBound: false })),
+  unbindSession: vi.fn(() => ({})),
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
@@ -42,7 +50,15 @@ beforeEach(() => vi.clearAllMocks())
 describe('resolveSessionMiddleware', () => {
   it('sets ctx.sessionId when the DB finds a matching session', async () => {
     vi.mocked(getDb).mockReturnValue({
-      getChannelSession: vi.fn().mockReturnValue({ sessionId: 'sess-abc' }),
+      getChannelSession: vi.fn().mockReturnValue({
+        channelType: 'lark',
+        sessionType: 'direct',
+        channelId: 'ch1',
+        channelKey: 'lark:default',
+        replyReceiveId: 'recv1',
+        replyReceiveIdType: 'chat_id',
+        sessionId: 'sess-abc'
+      }),
       getChannelPreference: vi.fn().mockReturnValue(undefined)
     } as any)
     const ctx = makeCtx()
@@ -51,6 +67,14 @@ describe('resolveSessionMiddleware', () => {
     await resolveSessionMiddleware(ctx, next)
 
     expect(ctx.sessionId).toBe('sess-abc')
+    expect(setBinding).toHaveBeenCalledWith('sess-abc', {
+      channelType: 'lark',
+      channelKey: 'lark:default',
+      channelId: 'ch1',
+      sessionType: 'direct',
+      replyReceiveId: 'recv1',
+      replyReceiveIdType: 'chat_id'
+    })
     expect(next).toHaveBeenCalledOnce()
   })
 

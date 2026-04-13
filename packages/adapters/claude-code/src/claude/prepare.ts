@@ -107,7 +107,11 @@ export const prepareClaudeExecution = async (
     tools: inputToolsRule
   } = options
   const resumeState = await cache.get('adapter.claude-code.resume-state')
-  const executionType = type === 'resume' && resumeState?.canResume === true ? 'resume' : 'create'
+  const executionType = type === 'resume'
+    ? resumeState?.canResume === false
+      ? 'create'
+      : 'resume'
+    : 'create'
   const mergedAdapterConfig = {
     ...(config?.adapters?.['claude-code'] ?? {}),
     ...(userConfig?.adapters?.['claude-code'] ?? {})
@@ -258,7 +262,7 @@ export const prepareClaudeExecution = async (
   const args: string[] = [
     ...(description
       ? [JSON.stringify(
-          `${(
+        `${(
           description?.trimStart().startsWith('-') ? '\0' : ''
         )}${(
           description.replace(/`/g, "'")

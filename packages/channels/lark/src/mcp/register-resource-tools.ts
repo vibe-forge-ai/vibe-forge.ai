@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { larkMessageResourceTypeSchema } from './types.js'
 import type { RegisterServer } from './register-utils.js'
 import { toJsonResult } from './register-utils.js'
+import { larkMessageResourceTypeSchema } from './types.js'
 
 const downloadFileSchema = z.object({
   fileKey: z.string().min(1).describe('Lark file_key to download'),
@@ -56,6 +56,7 @@ export const registerLarkResourceTools = (
       description: 'Download a file, image, audio, or video resource from a visible Lark message into the workspace.',
       inputSchema: downloadMessageResourceSchema
     },
-    async (input: z.infer<typeof downloadMessageResourceSchema>) => toJsonResult(await service.downloadMessageResource(input))
+    async (input: z.infer<typeof downloadMessageResourceSchema>) =>
+      toJsonResult(await service.downloadMessageResource(input))
   )
 }

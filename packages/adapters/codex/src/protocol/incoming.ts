@@ -79,11 +79,11 @@ export class CommandOutputAccumulator {
  *
  * @param method   - The JSON-RPC notification method name
  * @param params   - The notification params (as raw Record)
- * @param rpc      - The RPC client (used to respond to server-initiated approval requests)
+ * @param _rpc     - The RPC client (used to respond to server-initiated approval requests)
  * @param onEvent  - The event emitter from `AdapterQueryOptions`
  * @param msgAcc   - Agent message text accumulator
  * @param cmdAcc   - Command output accumulator
- * @param approvalPolicy - 'never' | 'unlessTrusted' | 'onRequest'
+ * @param _approvalPolicy - 'never' | 'unlessTrusted' | 'onRequest'
  */
 export const handleIncomingNotification = (
   method: string,

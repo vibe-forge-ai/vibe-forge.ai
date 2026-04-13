@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChannelContext } from '#~/channels/middleware/@types/index.js'
-import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
 import { syncChannelSessionBinding } from '#~/channels/middleware/bind-session.js'
+import { dispatchMiddleware } from '#~/channels/middleware/dispatch/index.js'
 import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { processUserMessage } from '#~/services/session/index.js'
@@ -46,6 +46,9 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
+  searchSessions: vi.fn(() => []),
+  bindSession: vi.fn(() => ({ alreadyBound: false })),
+  unbindSession: vi.fn(() => ({})),
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),

@@ -562,6 +562,72 @@ describe('startAdapterSession', () => {
     expect(currentSession.status).toBe('failed')
   })
 
+  it('preserves the full model selector after adapter init reports a bare model id', async () => {
+    let onEvent: ((event: any) => void) | undefined
+
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        expect(adapterOptions.type).toBe('resume')
+        expect(adapterOptions.model).toBe('gpt-responses,gpt-5.4-2026-03-05')
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-responses,gpt-5.4-2026-03-05',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    onEvent?.({
+      type: 'init',
+      data: {
+        uuid: 'sess-1',
+        model: 'gpt-5.4-2026-03-05',
+        adapter: 'codex',
+        version: 'unknown',
+        tools: [],
+        slashCommands: [],
+        cwd: process.cwd(),
+        agents: []
+      }
+    })
+
+    expect(currentSession.model).toBe('gpt-responses,gpt-5.4-2026-03-05')
+
+    currentSession = {
+      ...currentSession,
+      status: 'completed'
+    }
+    adapterSessionStore.clear()
+    getMessages.mockReturnValue([
+      {
+        type: 'message',
+        message: {
+          id: 'assist-1',
+          role: 'assistant',
+          content: 'previous answer',
+          createdAt: Date.now()
+        }
+      }
+    ])
+
+    await startAdapterSession('sess-1')
+  })
+
   it('restarts the adapter on demand when a follow-up user message arrives after completion', async () => {
     const emit = vi.fn()
 

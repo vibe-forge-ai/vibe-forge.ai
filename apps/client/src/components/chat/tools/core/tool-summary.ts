@@ -1,11 +1,14 @@
+/* eslint-disable max-lines */
+
 import type { ChatMessageContent } from '@vibe-forge/core'
 
-import { getClaudeToolSummaryText } from '../adapter-claude/claude-tool-summary'
 import {
   buildClaudeToolPresentation,
   getClaudeToolBaseName,
   isClaudeToolName
 } from '../adapter-claude/claude-tool-presentation'
+import { getClaudeToolSummaryText } from '../adapter-claude/claude-tool-summary'
+import { buildGenericToolPresentation } from './generic-tool-presentation'
 
 export type ToolUseItem = Extract<ChatMessageContent, { type: 'tool_use' }>
 type Translate = (key: string, options?: Record<string, unknown>) => string
@@ -13,10 +16,11 @@ type Translate = (key: string, options?: Record<string, unknown>) => string
 const HUMANIZED_SEGMENT_SEPARATOR = /[_:-]+/g
 const GENERIC_TOOL_NAMESPACE_PREFIXES = new Set(['adapter', 'agent', 'mcp', 'plugin', 'tool'])
 
-const humanizeToolSegment = (value: string) => value
-  .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
-  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-  .trim()
+const humanizeToolSegment = (value: string) =>
+  value
+    .replace(HUMANIZED_SEGMENT_SEPARATOR, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim()
 
 const getToolNameSegments = (name: string) => (
   name.includes('__') ? name.split('__').filter(Boolean) : name.split(':').filter(Boolean)
@@ -27,7 +31,7 @@ export const formatToolName = (name: string) => {
     return name.replace('mcp__ChromeDevtools__', '')
   }
 
-  const namespaceSegments = name.split('__').filter(Boolean)
+  const namespaceSegments = name.includes('__') ? name.split('__').filter(Boolean) : []
   const lastSegment = namespaceSegments.length > 0
     ? namespaceSegments[namespaceSegments.length - 1]
     : name.split(':').pop() ?? name
@@ -75,8 +79,11 @@ export function getToolSummaryText(item: ToolUseItem, t: Translate) {
     return getClaudeToolSummaryText(item.name, item.input, t)
   }
 
-  const displayName = formatToolName(item.name)
-  const preview = getToolInputPreview(item.input)
+  const presentation = buildGenericToolPresentation(item.name, item.input)
+  const displayName = presentation.titleKey != null
+    ? t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
+    : presentation.fallbackTitle
+  const preview = presentation.primary ?? getToolInputPreview(item.input)
   return preview != null && preview !== '' ? `${displayName} ${preview}` : displayName
 }
 
@@ -86,7 +93,10 @@ export function getToolTitleText(item: ToolUseItem, t: Translate) {
     return t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
   }
 
-  return formatToolName(item.name)
+  const presentation = buildGenericToolPresentation(item.name, item.input)
+  return presentation.titleKey != null
+    ? t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
+    : presentation.fallbackTitle
 }
 
 export function getToolPrimaryText(item: ToolUseItem) {
@@ -94,7 +104,7 @@ export function getToolPrimaryText(item: ToolUseItem) {
     return buildClaudeToolPresentation(item.name, item.input).primary
   }
 
-  return getToolInputPreview(item.input)
+  return buildGenericToolPresentation(item.name, item.input).primary ?? getToolInputPreview(item.input)
 }
 
 const getToolNamespaceLabel = (name: string) => {
@@ -132,7 +142,10 @@ function getToolGroupDescriptor(item: ToolUseItem, t: Translate): ToolGroupDescr
     }
   }
 
-  const label = formatToolName(item.name)
+  const presentation = buildGenericToolPresentation(item.name, item.input)
+  const label = presentation.titleKey != null
+    ? t(presentation.titleKey, { defaultValue: presentation.fallbackTitle })
+    : presentation.fallbackTitle
   return {
     key: item.name,
     label,
@@ -146,7 +159,7 @@ export function getToolGroupSummaryText(
   }>,
   t: Translate
 ) {
-  const groupedTools = new Map<string, { label: string, qualifiedLabel: string, count: number }>()
+  const groupedTools = new Map<string, { label: string; qualifiedLabel: string; count: number }>()
 
   for (const { item } of items) {
     const descriptor = getToolGroupDescriptor(item, t)
