@@ -1,6 +1,5 @@
 import './GenericClaudeTool.scss'
 
-import { Tooltip } from 'antd'
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -9,10 +8,8 @@ import { ToolResultContent } from '../core/ToolResultContent'
 import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { hasMeaningfulToolValue } from '../core/tool-content-presence'
 import {
-  TOOL_TOOLTIP_PROPS,
   getToolFieldIcon,
   getToolInlineValueText,
-  getToolSectionIcon,
   getToolTargetPresentation
 } from '../core/tool-display'
 import { defineToolRender } from '../defineToolRender'
@@ -114,13 +111,6 @@ export const GenericClaudeTool = defineToolRender(({ item, resultItem }) => {
               {blockFields.map((field, index) => renderClaudeBlockField(field, index, t))}
               {showResultDetails && resultItem != null && (
                 <div className='tool-detail-section'>
-                  <div className='tool-detail-section__header'>
-                    <Tooltip title={t('chat.result')} {...TOOL_TOOLTIP_PROPS}>
-                      <span className='tool-detail-section__icon material-symbols-rounded'>
-                        {getToolSectionIcon('result')}
-                      </span>
-                    </Tooltip>
-                  </div>
                   <ToolResultContent content={resultItem.content} preferMarkdown={preferMarkdown} />
                 </div>
               )}

@@ -1,16 +1,16 @@
-import { Tooltip } from 'antd'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ChatMessageContent } from '@vibe-forge/core'
 
-import { CodeBlock } from '#~/components/CodeBlock'
-import { safeJsonStringify } from '#~/utils/safe-serialize'
-
 import { ToolCallBox } from './core/ToolCallBox'
+import { ToolDiffViewer } from './core/ToolDiffViewer'
 import { ToolResultContent } from './core/ToolResultContent'
 import { ToolSummaryHeader } from './core/ToolSummaryHeader'
+import { buildGenericToolPresentation } from './core/generic-tool-presentation'
 import { hasMeaningfulToolValue } from './core/tool-content-presence'
-import { TOOL_TOOLTIP_PROPS, getToolSectionIcon, getToolTargetPresentation } from './core/tool-display'
+import { ToolInlineFields, renderToolBlockField } from './core/tool-field-sections'
+import { getToolTargetPresentation } from './core/tool-display'
 import { getToolPrimaryText, getToolTitleText } from './core/tool-summary'
 
 export function DefaultTool({
@@ -21,11 +21,18 @@ export function DefaultTool({
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
 }) {
   const { t } = useTranslation()
-  const hasCallDetails = hasMeaningfulToolValue(item.input)
+  const view = useMemo(() => buildGenericToolPresentation(item.name, item.input), [item.input, item.name])
+  const hasCallDetails = view.inlineFields.length > 0 || view.blockFields.length > 0 || view.diff != null
   const hasResultDetails = resultItem != null && hasMeaningfulToolValue(resultItem.content)
-  const hasDetails = hasCallDetails || hasResultDetails
-  const titleText = getToolTitleText(item, t)
-  const targetPresentation = getToolTargetPresentation(getToolPrimaryText(item))
+  const showResultDetails = hasResultDetails && !(view.suppressSuccessResult === true && resultItem?.is_error !== true)
+  const hasDetails = hasCallDetails || showResultDetails
+  const titleText = view.titleKey != null
+    ? t(view.titleKey, { defaultValue: view.fallbackTitle })
+    : getToolTitleText(item, t)
+  const targetPresentation = getToolTargetPresentation(view.primary ?? getToolPrimaryText(item))
+  const preferMarkdown = ['webfetch', 'websearch'].includes(
+    item.name.split(':').pop()?.replace(/[^a-z0-9]+/gi, '').toLowerCase() ?? ''
+  )
   const errorMeta = resultItem?.is_error === true
     ? (
       <span className='tool-status tool-status--error'>
@@ -42,7 +49,7 @@ export function DefaultTool({
         collapsible={hasDetails}
         header={({ isExpanded, isCollapsible }) => (
           <ToolSummaryHeader
-            icon={<span className='material-symbols-rounded'>build</span>}
+            icon={<span className='material-symbols-rounded'>{view.icon}</span>}
             title={titleText}
             target={targetPresentation.text}
             targetTitle={targetPresentation.title}
@@ -56,32 +63,34 @@ export function DefaultTool({
         content={hasDetails
           ? (
             <div className='tool-detail-sections'>
-              {hasCallDetails && (
+              <ToolInlineFields fields={view.inlineFields} t={t} />
+              {view.diff != null && (
                 <div className='tool-detail-section'>
-                  <div className='tool-detail-section__header'>
-                    <Tooltip title={t('chat.tools.call')} {...TOOL_TOOLTIP_PROPS}>
-                      <span className='tool-detail-section__icon material-symbols-rounded'>
-                        {getToolSectionIcon('call')}
-                      </span>
-                    </Tooltip>
-                  </div>
-                  <CodeBlock
-                    code={safeJsonStringify(item.input != null ? item.input : {}, 2)}
-                    lang='json'
-                    hideHeader={true}
+                  <ToolDiffViewer
+                    original={view.diff.original}
+                    modified={view.diff.modified}
+                    language={view.diff.language}
+                    metaItems={(view.diff.metaItems ?? []).map(item => ({
+                      icon: item.icon,
+                      label: t(item.labelKey, { defaultValue: item.fallbackLabel }),
+                      value: item.value != null && item.value !== ''
+                        ? (item.value === 'true'
+                          ? t('chat.tools.booleanOn')
+                          : item.value === 'false'
+                          ? t('chat.tools.booleanOff')
+                          : item.value)
+                        : undefined,
+                      tone: item.tone
+                    }))}
+                    splitLabel={t('chat.tools.diffSplit')}
+                    inlineLabel={t('chat.tools.diffInline')}
                   />
                 </div>
               )}
-              {hasResultDetails && resultItem != null && (
+              {view.blockFields.map((field, index) => renderToolBlockField(field, index, t))}
+              {showResultDetails && resultItem != null && (
                 <div className='tool-detail-section'>
-                  <div className='tool-detail-section__header'>
-                    <Tooltip title={t('chat.result')} {...TOOL_TOOLTIP_PROPS}>
-                      <span className='tool-detail-section__icon material-symbols-rounded'>
-                        {getToolSectionIcon('result')}
-                      </span>
-                    </Tooltip>
-                  </div>
-                  <ToolResultContent content={resultItem.content} />
+                  <ToolResultContent content={resultItem.content} preferMarkdown={preferMarkdown} />
                 </div>
               )}
             </div>
