@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { formatCodexCommandForDisplay } from '#~/command-display.js'
 import { buildCodexApprovalResponse, resolveCodexApprovalDecision } from '#~/runtime/stream.js'
 
 describe('codex stream approval decision mapping', () => {
@@ -31,5 +32,27 @@ describe('codex stream approval decision mapping', () => {
       kind: 'command',
       availableDecisions: ['accept', 'acceptForSession', 'decline']
     })).toEqual({ decision: 'acceptForSession' })
+  })
+})
+
+describe('formatCodexCommandForDisplay', () => {
+  it('formats array commands', () => {
+    expect(formatCodexCommandForDisplay(['/usr/bin/zsh', '-lc', 'ls -la'])).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('preserves string commands', () => {
+    expect(formatCodexCommandForDisplay('/usr/bin/zsh -lc ls -la')).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('formats structured commands without throwing', () => {
+    expect(formatCodexCommandForDisplay({
+      executable: '/usr/bin/zsh',
+      args: ['-lc', 'ls -la']
+    })).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('falls back to a placeholder when command is empty', () => {
+    expect(formatCodexCommandForDisplay(undefined)).toBe('[command]')
+    expect(formatCodexCommandForDisplay({})).toBe('[command]')
   })
 })

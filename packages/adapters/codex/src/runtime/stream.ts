@@ -9,6 +9,7 @@ import type {
 } from '@vibe-forge/types'
 import type { CodexSessionBase } from './session-common'
 
+import { formatCodexCommandForDisplay } from '#~/command-display.js'
 import { AgentMessageAccumulator, CommandOutputAccumulator, handleIncomingNotification } from '#~/protocol/incoming.js'
 import { CodexRpcClient } from '#~/protocol/rpc.js'
 import type {
@@ -20,7 +21,9 @@ import type {
   CommandExecutionRequestApprovalResponse,
   FileChangeApprovalParams,
   FileChangeDecision,
-  FileChangeRequestApprovalResponse
+  FileChangeRequestApprovalResponse,
+  McpServerElicitationRequestParams,
+  McpServerElicitationResponse
 } from '#~/types.js'
 
 import {
@@ -54,6 +57,7 @@ const buildCodexPermissionInteraction = (params: {
   interactionId: string
   question: string
   subjectKey: string
+  subjectLabel?: string
   reasons?: string[]
 }): AdapterInteractionRequest => ({
   id: params.interactionId,
@@ -67,12 +71,16 @@ const buildCodexPermissionInteraction = (params: {
       deniedTools: [params.subjectKey],
       reasons: params.reasons,
       subjectKey: params.subjectKey,
-      subjectLabel: params.subjectKey,
+      subjectLabel: params.subjectLabel ?? params.subjectKey,
       scope: 'tool',
       projectConfigPath: '.ai.config.json'
     }
   }
 })
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
 
 export const resolveCodexApprovalDecision = (params: {
   answer: string | string[]
@@ -107,6 +115,23 @@ export const buildCodexApprovalResponse = (params: {
 }): CommandExecutionRequestApprovalResponse | FileChangeRequestApprovalResponse => ({
   decision: resolveCodexApprovalDecision(params)
 })
+
+export const buildCodexMcpElicitationResponse = (
+  answer: string | string[]
+): McpServerElicitationResponse => {
+  const raw = Array.isArray(answer) ? answer[0] : answer
+  const normalized = typeof raw === 'string' ? raw.trim() : ''
+  if (normalized === 'allow_once' || normalized === 'allow_session' || normalized === 'allow_project') {
+    return {
+      action: 'accept',
+      content: {}
+    }
+  }
+  if (normalized === 'deny_once' || normalized === 'deny_session' || normalized === 'deny_project') {
+    return { action: 'reject' }
+  }
+  return { action: 'cancel' }
+}
 
 /**
  * Spawn `codex app-server` and drive it over JSON-RPC 2.0 (JSONL),
@@ -186,9 +211,8 @@ export async function createStreamCodexSession(
   const pendingApprovals = new Map<string, {
     rpcId: number
     availableDecisions?: string[]
-    kind: 'command' | 'file-change'
+    kind: 'command' | 'file-change' | 'mcp-elicitation'
   }>()
-
   const emitEvent = (event: AdapterOutputEvent) => {
     if (event.type === 'error' && event.data.fatal !== false) {
       didEmitFatalError = true
@@ -256,7 +280,7 @@ export async function createStreamCodexSession(
         availableDecisions: payload.availableDecisions,
         kind: 'command'
       })
-      const commandStr = payload.command?.join(' ') ?? '[command]'
+      const commandStr = formatCodexCommandForDisplay(payload.command)
       emitEvent({
         type: 'interaction_request',
         data: buildCodexPermissionInteraction({
@@ -296,7 +320,72 @@ export async function createStreamCodexSession(
           reasons: payload.reason?.trim() ? [payload.reason.trim()] : undefined
         })
       })
+      return
     }
+
+    if (method === 'mcpServer/elicitation/request') {
+      const payload = params as unknown as McpServerElicitationRequestParams
+      const interactionId = `codex-approval:${id}`
+      const requestedSchema = isRecord(payload.requestedSchema) ? payload.requestedSchema : {}
+      const schemaProperties = isRecord(requestedSchema.properties) ? requestedSchema.properties : {}
+      const schemaType = typeof requestedSchema.type === 'string' ? requestedSchema.type : undefined
+      const isPermissionPrompt = payload._meta?.codex_approval_kind === 'mcp_tool_call'
+      const supportsEmptyAcceptPayload = schemaType === 'object' && Object.keys(schemaProperties).length === 0
+      const subjectKey = payload.serverName?.trim() || 'mcp'
+      const toolTitle = payload._meta?.tool_title?.trim()
+      const toolDescription = payload._meta?.tool_description?.trim()
+      const question = payload.message?.trim() || '允许执行 MCP 工具调用？'
+
+      if (approvalPolicy === 'never') {
+        rpc.respond(id, {
+          action: 'accept',
+          content: {}
+        } satisfies McpServerElicitationResponse)
+        return
+      }
+
+      if (isPermissionPrompt && supportsEmptyAcceptPayload) {
+        pendingApprovals.set(interactionId, {
+          rpcId: id,
+          kind: 'mcp-elicitation'
+        })
+        emitEvent({
+          type: 'interaction_request',
+          data: buildCodexPermissionInteraction({
+            sessionId,
+            interactionId,
+            question,
+            subjectKey,
+            subjectLabel: toolTitle != null && toolTitle !== ''
+              ? `${subjectKey}:${toolTitle}`
+              : subjectKey,
+            reasons: [toolDescription, question]
+              .filter((value): value is string => typeof value === 'string' && value !== '')
+          })
+        })
+        return
+      }
+
+      logger.warn('[codex session] unsupported mcp elicitation request; cancelling', {
+        id,
+        sessionId,
+        threadId,
+        activeTurnId,
+        method,
+        params
+      })
+      rpc.respond(id, { action: 'cancel' } satisfies McpServerElicitationResponse)
+      return
+    }
+
+    logger.warn('[codex session] unhandled rpc request', {
+      id,
+      method,
+      sessionId,
+      threadId,
+      activeTurnId,
+      params
+    })
   })
 
   proc.on('exit', (code) => {
@@ -480,11 +569,13 @@ export async function createStreamCodexSession(
       pendingApprovals.delete(interactionId)
       rpc.respond(
         pending.rpcId,
-        buildCodexApprovalResponse({
-          answer: data,
-          availableDecisions: pending.availableDecisions,
-          kind: pending.kind
-        })
+        pending.kind === 'mcp-elicitation'
+          ? buildCodexMcpElicitationResponse(data)
+          : buildCodexApprovalResponse({
+            answer: data,
+            availableDecisions: pending.availableDecisions,
+            kind: pending.kind
+          })
       )
     },
     pid: proc.pid

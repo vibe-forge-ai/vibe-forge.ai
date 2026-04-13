@@ -2,6 +2,7 @@ import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterQueryOptions } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
+import { formatCodexCommandForDisplay } from '#~/command-display.js'
 import type {
   CodexItemAgentMessage,
   CodexItemCommandExecution,
@@ -124,11 +125,7 @@ export const handleIncomingNotification = (
     const { item } = params as unknown as ItemStartedParams
     if (item.type === 'commandExecution') {
       const cmdItem = item as CodexItemCommandExecution
-      const command = Array.isArray(cmdItem.command)
-        ? cmdItem.command.join(' ')
-        : typeof cmdItem.command === 'string'
-        ? cmdItem.command
-        : '[command]'
+      const command = formatCodexCommandForDisplay(cmdItem.command)
       // Emit a tool_use event so the client sees the command being kicked off
       const msg: ChatMessage = {
         id: cmdItem.id,

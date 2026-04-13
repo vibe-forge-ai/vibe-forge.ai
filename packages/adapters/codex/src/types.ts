@@ -89,10 +89,22 @@ export interface CodexCommandAction {
   content?: string
 }
 
+export interface CodexStructuredCommand {
+  executable?: string
+  args?: unknown[]
+  argv?: unknown[]
+  command?: unknown
+}
+
+export type CodexCommandValue =
+  | string
+  | string[]
+  | CodexStructuredCommand
+
 export interface CodexItemCommandExecution {
   type: 'commandExecution'
   id: string
-  command: string[]
+  command: CodexCommandValue
   cwd?: string
   status: 'inProgress' | 'completed' | 'failed' | 'declined'
   commandActions?: CodexCommandAction[]
@@ -238,7 +250,7 @@ export interface CommandExecApprovalParams {
   threadId: string
   turnId: string
   reason?: string
-  command?: string[]
+  command?: CodexCommandValue
   cwd?: string
   commandActions?: CodexCommandAction[]
   proposedExecpolicyAmendment?: unknown
@@ -258,6 +270,25 @@ export interface FileChangeApprovalParams {
   grantRoot?: string
 }
 
+export interface McpServerElicitationRequestMeta {
+  codex_approval_kind?: string
+  persist?: string[]
+  tool_title?: string
+  tool_description?: string
+  tool_params?: Record<string, unknown>
+  tool_params_display?: unknown[]
+}
+
+export interface McpServerElicitationRequestParams {
+  threadId: string
+  turnId: string
+  serverName: string
+  mode?: string
+  _meta?: McpServerElicitationRequestMeta
+  message?: string
+  requestedSchema?: Record<string, unknown>
+}
+
 export type CommandExecDecision =
   | 'accept'
   | 'acceptForSession'
@@ -266,6 +297,7 @@ export type CommandExecDecision =
   | { acceptWithExecpolicyAmendment: { execpolicy_amendment: string[] } }
 
 export type FileChangeDecision = 'accept' | 'acceptForSession' | 'decline' | 'cancel'
+export type McpServerElicitationDecision = 'accept' | 'reject' | 'cancel'
 
 export interface CommandExecutionRequestApprovalResponse {
   decision: CommandExecDecision
@@ -273,6 +305,11 @@ export interface CommandExecutionRequestApprovalResponse {
 
 export interface FileChangeRequestApprovalResponse {
   decision: FileChangeDecision
+}
+
+export interface McpServerElicitationResponse {
+  action: McpServerElicitationDecision
+  content?: Record<string, unknown>
 }
 
 // ─── Codex input item types ────────────────────────────────────────────────────

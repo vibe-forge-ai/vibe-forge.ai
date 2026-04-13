@@ -268,6 +268,113 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('handles command approval requests when payload.command is not an array', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const ctx = makeCtx()
+    const session = await createCodexSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-command-approval-string',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${JSON.stringify({
+      id: 7,
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        itemId: 'cmd-1',
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        command: {
+          executable: '/usr/bin/zsh',
+          args: ['-lc', 'ls -la']
+        },
+        reason: 'Inspect the workspace',
+        availableDecisions: ['accept', 'decline']
+      }
+    })}\n`)
+
+    await waitForWrites()
+
+    const requestEvent = events.find(event => event.type === 'interaction_request')
+    expect(requestEvent).toBeDefined()
+    expect((requestEvent as any)?.data?.payload?.question).toContain('/usr/bin/zsh -lc ls -la')
+    expect(ctx.logger.error).not.toHaveBeenCalledWith(
+      '[codex rpc] request handler error',
+      expect.anything()
+    )
+
+    session.respondInteraction('codex-approval:7', 'allow_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 7,
+      result: { decision: 'accept' }
+    })
+
+    session.kill()
+  })
+
+  it('handles MCP elicitation approval requests for tool calls', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${JSON.stringify({
+      id: 9,
+      method: 'mcpServer/elicitation/request',
+      params: {
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        serverName: 'vibe-forge',
+        mode: 'form',
+        _meta: {
+          codex_approval_kind: 'mcp_tool_call',
+          tool_title: 'List Tasks',
+          tool_description: 'List all managed tasks'
+        },
+        message: 'Allow the vibe-forge MCP server to run tool "ListTasks"?',
+        requestedSchema: {
+          type: 'object',
+          properties: {}
+        }
+      }
+    })}\n`)
+
+    await waitForWrites()
+
+    const requestEvent = events.find(event => event.type === 'interaction_request')
+    expect(requestEvent).toBeDefined()
+    expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the vibe-forge MCP server')
+
+    session.respondInteraction('codex-approval:9', 'allow_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 9,
+      result: {
+        action: 'accept',
+        content: {}
+      }
+    })
+
+    session.kill()
+  })
+
   it('uses --yolo and danger-full-access when permission mode is bypassPermissions', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()
