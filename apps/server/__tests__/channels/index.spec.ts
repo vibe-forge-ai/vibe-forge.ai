@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 
 const loadChannelModule = vi.fn()
 const handleInboundEvent = vi.fn()

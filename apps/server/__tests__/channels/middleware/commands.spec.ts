@@ -130,11 +130,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
           session,
           binding: getChannelSessionBySessionId(session.id)
             ? {
-                channelType: getChannelSessionBySessionId(session.id).channelType,
-                sessionType: getChannelSessionBySessionId(session.id).sessionType,
-                channelId: getChannelSessionBySessionId(session.id).channelId,
-                channelKey: getChannelSessionBySessionId(session.id).channelKey
-              }
+              channelType: getChannelSessionBySessionId(session.id).channelType,
+              sessionType: getChannelSessionBySessionId(session.id).sessionType,
+              channelId: getChannelSessionBySessionId(session.id).channelId,
+              channelKey: getChannelSessionBySessionId(session.id).channelKey
+            }
             : undefined
         }))
     })
@@ -174,11 +174,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
         transferredFrom: transferred == null
           ? undefined
           : {
-              channelType: transferred.channelType,
-              sessionType: transferred.sessionType,
-              channelId: transferred.channelId,
-              channelKey: transferred.channelKey
-            }
+            channelType: transferred.channelType,
+            sessionType: transferred.sessionType,
+            channelId: transferred.channelId,
+            channelKey: transferred.channelKey
+          }
       }
     })
   }
@@ -416,17 +416,17 @@ describe('/session command', () => {
     getChannelSessionBySessionId.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            channelType: 'lark',
-            sessionType: 'group',
-            channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
-            channelKey: 'lark:miniapp-gear'
-          }
+          channelType: 'lark',
+          sessionType: 'group',
+          channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
+          channelKey: 'lark:miniapp-gear'
+        }
         : {
-            channelType: 'lark',
-            sessionType: 'direct',
-            channelId: 'ch1',
-            channelKey: 'lark:default'
-          }
+          channelType: 'lark',
+          sessionType: 'direct',
+          channelId: 'ch1',
+          channelKey: 'lark:default'
+        }
     ))
     const ctx = makeCtx({ commandText: '/session search miniapp gear', config: { type: 'lark' } as any })
 
@@ -476,29 +476,29 @@ describe('/session command', () => {
     getSession.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            id: 'sess-other',
-            title: 'Lark handoff window',
-            status: 'completed',
-            messageCount: 446,
-            model: 'gpt-responses,gpt-5.4-2026-03-05',
-            adapter: 'codex',
-            tags: [],
-            isArchived: false,
-            isStarred: false,
-            createdAt: Date.now()
-          }
+          id: 'sess-other',
+          title: 'Lark handoff window',
+          status: 'completed',
+          messageCount: 446,
+          model: 'gpt-responses,gpt-5.4-2026-03-05',
+          adapter: 'codex',
+          tags: [],
+          isArchived: false,
+          isStarred: false,
+          createdAt: Date.now()
+        }
         : {
-            id: 'sess-abc',
-            title: 'Session A',
-            status: 'running',
-            messageCount: 12,
-            model: 'gpt-test',
-            adapter: 'codex',
-            tags: ['tag-a'],
-            isArchived: false,
-            isStarred: true,
-            createdAt: Date.now()
-          }
+          id: 'sess-abc',
+          title: 'Session A',
+          status: 'running',
+          messageCount: 12,
+          model: 'gpt-test',
+          adapter: 'codex',
+          tags: ['tag-a'],
+          isArchived: false,
+          isStarred: true,
+          createdAt: Date.now()
+        }
     ))
     const ctx = makeCtx({ commandText: '/session bind sess-other', config: { type: 'lark' } as any })
 
