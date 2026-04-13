@@ -82,6 +82,53 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
 
+const sanitizePermissionKeySegment = (value: string | undefined) => {
+  const normalized = value?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return normalized != null && normalized !== '' ? normalized : undefined
+}
+
+const extractMcpToolNameFromMessage = (message: string | undefined) => {
+  const trimmed = message?.trim()
+  if (trimmed == null || trimmed === '') return undefined
+
+  const quotedMatch = trimmed.match(/tool\s+["'`](.+?)["'`]/i)
+  if (quotedMatch?.[1] != null && quotedMatch[1].trim() !== '') {
+    return quotedMatch[1].trim()
+  }
+
+  const bareMatch = trimmed.match(/tool\s+([A-Za-z0-9_.:-]+)/i)
+  if (bareMatch?.[1] != null && bareMatch[1].trim() !== '') {
+    return bareMatch[1].trim()
+  }
+
+  return undefined
+}
+
+const buildMcpPermissionSubject = (payload: McpServerElicitationRequestParams) => {
+  const serverName = payload.serverName?.trim() || 'mcp'
+  const serverKey = sanitizePermissionKeySegment(serverName) ?? 'mcp'
+  const toolName = payload._meta?.tool_title?.trim() || extractMcpToolNameFromMessage(payload.message)
+  const toolKey = sanitizePermissionKeySegment(toolName) ?? 'tool'
+
+  return {
+    subjectKey: `mcp-${serverKey}-${toolKey}`,
+    subjectLabel: toolName != null && toolName !== ''
+      ? `${serverName}:${toolName}`
+      : serverName
+  }
+}
+
+const supportsEmptyMcpAcceptPayload = (requestedSchema: unknown) => {
+  const schema = isRecord(requestedSchema) ? requestedSchema : {}
+  const schemaProperties = isRecord(schema.properties) ? schema.properties : {}
+  const schemaType = typeof schema.type === 'string' ? schema.type : undefined
+  const requiredFields = Array.isArray(schema.required)
+    ? schema.required.filter((value): value is string => typeof value === 'string' && value.trim() !== '')
+    : []
+
+  return schemaType === 'object' && Object.keys(schemaProperties).length === 0 && requiredFields.length === 0
+}
+
 export const resolveCodexApprovalDecision = (params: {
   answer: string | string[]
   availableDecisions?: string[]
@@ -128,7 +175,7 @@ export const buildCodexMcpElicitationResponse = (
     }
   }
   if (normalized === 'deny_once' || normalized === 'deny_session' || normalized === 'deny_project') {
-    return { action: 'reject' }
+    return { action: 'decline' }
   }
   return { action: 'cancel' }
 }
@@ -326,21 +373,22 @@ export async function createStreamCodexSession(
     if (method === 'mcpServer/elicitation/request') {
       const payload = params as unknown as McpServerElicitationRequestParams
       const interactionId = `codex-approval:${id}`
-      const requestedSchema = isRecord(payload.requestedSchema) ? payload.requestedSchema : {}
-      const schemaProperties = isRecord(requestedSchema.properties) ? requestedSchema.properties : {}
-      const schemaType = typeof requestedSchema.type === 'string' ? requestedSchema.type : undefined
       const isPermissionPrompt = payload._meta?.codex_approval_kind === 'mcp_tool_call'
-      const supportsEmptyAcceptPayload = schemaType === 'object' && Object.keys(schemaProperties).length === 0
-      const subjectKey = payload.serverName?.trim() || 'mcp'
-      const toolTitle = payload._meta?.tool_title?.trim()
+      const supportsEmptyAcceptPayload = supportsEmptyMcpAcceptPayload(payload.requestedSchema)
+      const { subjectKey, subjectLabel } = buildMcpPermissionSubject(payload)
       const toolDescription = payload._meta?.tool_description?.trim()
       const question = payload.message?.trim() || '允许执行 MCP 工具调用？'
 
       if (approvalPolicy === 'never') {
-        rpc.respond(id, {
-          action: 'accept',
-          content: {}
-        } satisfies McpServerElicitationResponse)
+        rpc.respond(
+          id,
+          isPermissionPrompt && supportsEmptyAcceptPayload
+            ? {
+              action: 'accept',
+              content: {}
+            } satisfies McpServerElicitationResponse
+            : { action: 'cancel' } satisfies McpServerElicitationResponse
+        )
         return
       }
 
@@ -356,9 +404,7 @@ export async function createStreamCodexSession(
             interactionId,
             question,
             subjectKey,
-            subjectLabel: toolTitle != null && toolTitle !== ''
-              ? `${subjectKey}:${toolTitle}`
-              : subjectKey,
+            subjectLabel,
             reasons: [toolDescription, question]
               .filter((value): value is string => typeof value === 'string' && value !== '')
           })

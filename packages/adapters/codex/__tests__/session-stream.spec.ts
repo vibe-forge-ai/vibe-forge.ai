@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { formatCodexCommandForDisplay } from '#~/command-display.js'
-import { buildCodexApprovalResponse, resolveCodexApprovalDecision } from '#~/runtime/stream.js'
+import {
+  buildCodexApprovalResponse,
+  buildCodexMcpElicitationResponse,
+  resolveCodexApprovalDecision
+} from '#~/runtime/stream.js'
 
 describe('codex stream approval decision mapping', () => {
   it('maps file-change cancel responses to decline', () => {
@@ -32,6 +36,10 @@ describe('codex stream approval decision mapping', () => {
       kind: 'command',
       availableDecisions: ['accept', 'acceptForSession', 'decline']
     })).toEqual({ decision: 'acceptForSession' })
+  })
+
+  it('maps denied MCP approvals to decline actions', () => {
+    expect(buildCodexMcpElicitationResponse('deny_once')).toEqual({ action: 'decline' })
   })
 })
 

@@ -297,7 +297,7 @@ export type CommandExecDecision =
   | { acceptWithExecpolicyAmendment: { execpolicy_amendment: string[] } }
 
 export type FileChangeDecision = 'accept' | 'acceptForSession' | 'decline' | 'cancel'
-export type McpServerElicitationDecision = 'accept' | 'reject' | 'cancel'
+export type McpServerElicitationDecision = 'accept' | 'decline' | 'cancel'
 
 export interface CommandExecutionRequestApprovalResponse {
   decision: CommandExecDecision

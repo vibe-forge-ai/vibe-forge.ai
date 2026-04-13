@@ -360,6 +360,10 @@ describe('createCodexSession RPC approval policy mapping', () => {
     const requestEvent = events.find(event => event.type === 'interaction_request')
     expect(requestEvent).toBeDefined()
     expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the vibe-forge MCP server')
+    expect((requestEvent as any)?.data?.payload?.permissionContext).toMatchObject({
+      subjectKey: 'mcp-vibe-forge-list-tasks',
+      subjectLabel: 'vibe-forge:List Tasks'
+    })
 
     session.respondInteraction('codex-approval:9', 'allow_once')
     await waitForWrites()
@@ -369,6 +373,108 @@ describe('createCodexSession RPC approval policy mapping', () => {
       result: {
         action: 'accept',
         content: {}
+      }
+    })
+
+    session.kill()
+  })
+
+  it('maps denied MCP elicitation approvals to decline responses', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation-deny',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    proc.stdout.push(`${JSON.stringify({
+      id: 10,
+      method: 'mcpServer/elicitation/request',
+      params: {
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        serverName: 'vibe-forge',
+        mode: 'form',
+        _meta: {
+          codex_approval_kind: 'mcp_tool_call',
+          tool_description: 'Start managed tasks'
+        },
+        message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+        requestedSchema: {
+          type: 'object',
+          properties: {}
+        }
+      }
+    })}\n`)
+
+    await waitForWrites()
+
+    session.respondInteraction('codex-approval:10', 'deny_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 10,
+      result: {
+        action: 'decline'
+      }
+    })
+
+    session.kill()
+  })
+
+  it('cancels unsupported MCP elicitation schemas when permission mode is dontAsk', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation-never-schema',
+      permissionMode: 'dontAsk',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${JSON.stringify({
+      id: 11,
+      method: 'mcpServer/elicitation/request',
+      params: {
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        serverName: 'vibe-forge',
+        mode: 'form',
+        _meta: {
+          codex_approval_kind: 'mcp_tool_call',
+          tool_title: 'Start Tasks',
+          tool_description: 'Start managed tasks'
+        },
+        message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+        requestedSchema: {
+          type: 'object',
+          properties: {
+            reason: {
+              type: 'string'
+            }
+          },
+          required: ['reason']
+        }
+      }
+    })}\n`)
+
+    await waitForWrites()
+
+    expect(events.filter(event => event.type === 'interaction_request')).toHaveLength(0)
+    expect(receivedLines).toContainEqual({
+      id: 11,
+      result: {
+        action: 'cancel'
       }
     })
 
