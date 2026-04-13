@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { safeJsonStringify } from '#~/utils/safe-serialize'
 
 export const TOOL_TOOLTIP_PROPS = {

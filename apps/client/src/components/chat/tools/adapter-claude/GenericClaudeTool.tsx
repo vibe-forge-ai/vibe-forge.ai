@@ -7,11 +7,7 @@ import { ToolCallBox } from '../core/ToolCallBox'
 import { ToolResultContent } from '../core/ToolResultContent'
 import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { hasMeaningfulToolValue } from '../core/tool-content-presence'
-import {
-  getToolFieldIcon,
-  getToolInlineValueText,
-  getToolTargetPresentation
-} from '../core/tool-display'
+import { getToolFieldIcon, getToolInlineValueText, getToolTargetPresentation } from '../core/tool-display'
 import { defineToolRender } from '../defineToolRender'
 import { ClaudeEditDiff } from './ClaudeEditDiff'
 import { ClaudeToolInlineFields, renderClaudeBlockField } from './claude-tool-field-sections'

@@ -8,7 +8,7 @@ import { TOOL_TOOLTIP_PROPS, getToolFieldIcon, getToolInlineValueText, getToolVa
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
-export type ToolFieldFormat = 'inline' | 'text' | 'code' | 'list' | 'json'
+export type ToolFieldFormat = 'inline' | 'text' | 'code' | 'list' | 'json' | 'questions'
 
 export interface ToolFieldView {
   labelKey: string
@@ -50,12 +50,12 @@ export function ToolInlineFields({
         return (
           <Tooltip
             key={getFieldKey(field, index)}
-            title={(
+            title={
               <div className='tool-tooltip-content'>
                 <div className='tool-tooltip-content__title'>{label}</div>
                 <div className='tool-tooltip-content__value'>{getToolValueText(field.value)}</div>
               </div>
-            )}
+            }
             {...TOOL_TOOLTIP_PROPS}
           >
             <div className='tool-inline-token'>

@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import type { ToolDiffMetaItem } from './ToolDiffViewer'
 import type { ToolFieldView } from './tool-field-sections'
 
@@ -124,8 +126,8 @@ const normalizeToolKey = (name: string) => (
 
 const toFieldKey = (value: string) => (
   value
-    .replace(/^[^a-zA-Z0-9]+/, '')
-    .replace(/[_-]+([a-zA-Z0-9])/g, (_, char: string) => char.toUpperCase())
+    .replace(/^[^a-z0-9]+/i, '')
+    .replace(/[_-]+([a-z0-9])/gi, (_, char: string) => char.toUpperCase())
 )
 
 const toFallbackLabel = (value: string) => {
@@ -179,9 +181,10 @@ const looksLikeCode = (key: string, value: string) => {
   return /[{}();=<>]|^diff --git/m.test(value)
 }
 
-const isPrimitiveList = (value: unknown[]) => value.every(item => (
-  typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
-))
+const isPrimitiveList = (value: unknown[]) =>
+  value.every(item => (
+    typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
+  ))
 
 const getChangeLines = (value: unknown) => {
   if (!Array.isArray(value)) return undefined

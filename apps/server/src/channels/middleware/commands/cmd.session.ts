@@ -97,7 +97,8 @@ defineMessages('zh', {
 
 defineMessages('en', {
   'cmd.session.description': 'Show current session status',
-  'cmd.session.search.description': 'Search or list internal sessions with pagination so they can be rebound into this channel',
+  'cmd.session.search.description':
+    'Search or list internal sessions with pagination so they can be rebound into this channel',
   'cmd.session.bind.description': 'Bind this channel to an existing session',
   'cmd.session.unbind.description': 'Unbind this channel from its session without archiving the session',
   'cmd.reset.description': 'Archive and unbind current session',
@@ -165,9 +166,11 @@ defineMessages('en', {
   'session.search.item': ({ index, id, title, status, count, model, binding }) =>
     `${index}. ${id} | ${title} | ${status} | ${count} msgs | ${model} | ${binding}`,
   'bind.notFound': ({ id }) => `Session ${id} was not found.`,
-  'bind.alreadyBound': ({ id, title }) => `This channel is already bound to session ${id} (${title}). Binding refreshed.`,
+  'bind.alreadyBound': ({ id, title }) =>
+    `This channel is already bound to session ${id} (${title}). Binding refreshed.`,
   'bind.success': ({ id, title }) => `This channel is now bound to session ${id} (${title}).`,
-  'bind.replaced': ({ previousId }) => `The previously bound session ${previousId} has been detached from this channel.`,
+  'bind.replaced': ({ previousId }) =>
+    `The previously bound session ${previousId} has been detached from this channel.`,
   'bind.transferred': ({ channelType, sessionType, channelId }) =>
     `The target session was previously bound to ${channelType}/${sessionType}/${channelId} and has been moved here.`,
   'bind.followUp': 'Send the next message in this channel to continue that session.',
@@ -433,15 +436,17 @@ const paginateSessionSearchResults = (
       ? ctx.t('session.search.listHeader', { count: results.length })
       : ctx.t('session.search.header', { count: results.length, query: request.query }),
     ctx.t('session.search.page', { current: currentPage, total: totalPages }),
-    ...displayed.map((result, index) => ctx.t('session.search.item', {
-      index: startIndex + index + 1,
-      id: result.session.id,
-      title: result.session.title ?? ctx.t('label.unnamed'),
-      status: result.session.status ?? 'unknown',
-      count: result.session.messageCount ?? 0,
-      model: result.session.model ?? ctx.t('label.notSet'),
-      binding: formatSearchBinding(ctx, result.binding)
-    }))
+    ...displayed.map((result, index) =>
+      ctx.t('session.search.item', {
+        index: startIndex + index + 1,
+        id: result.session.id,
+        title: result.session.title ?? ctx.t('label.unnamed'),
+        status: result.session.status ?? 'unknown',
+        count: result.session.messageCount ?? 0,
+        model: result.session.model ?? ctx.t('label.notSet'),
+        binding: formatSearchBinding(ctx, result.binding)
+      })
+    )
   ]
 
   const followUps = [] as Array<{ content: string }>

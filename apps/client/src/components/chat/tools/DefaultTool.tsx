@@ -9,8 +9,8 @@ import { ToolResultContent } from './core/ToolResultContent'
 import { ToolSummaryHeader } from './core/ToolSummaryHeader'
 import { buildGenericToolPresentation } from './core/generic-tool-presentation'
 import { hasMeaningfulToolValue } from './core/tool-content-presence'
-import { ToolInlineFields, renderToolBlockField } from './core/tool-field-sections'
 import { getToolTargetPresentation } from './core/tool-display'
+import { ToolInlineFields, renderToolBlockField } from './core/tool-field-sections'
 import { getToolPrimaryText, getToolTitleText } from './core/tool-summary'
 
 export function DefaultTool({
