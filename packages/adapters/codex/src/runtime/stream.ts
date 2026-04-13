@@ -96,7 +96,7 @@ const extractMcpToolNameFromMessage = (message: string | undefined) => {
     return quotedMatch[1].trim()
   }
 
-  const bareMatch = trimmed.match(/tool\s+([A-Za-z0-9_.:-]+)/i)
+  const bareMatch = trimmed.match(/tool\s+([\w.:-]+)/i)
   if (bareMatch?.[1] != null && bareMatch[1].trim() !== '') {
     return bareMatch[1].trim()
   }

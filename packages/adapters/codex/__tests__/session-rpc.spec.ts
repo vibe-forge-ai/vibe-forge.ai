@@ -122,6 +122,18 @@ async function waitForWrites() {
   await new Promise(resolve => setTimeout(resolve, 20))
 }
 
+function respondToInteraction(
+  session: Awaited<ReturnType<typeof createCodexSession>>,
+  interactionId: string,
+  answer: string | string[]
+) {
+  if (!('respondInteraction' in session)) {
+    throw new Error('Expected stream session to support interaction responses')
+  }
+
+  session.respondInteraction(interactionId, answer)
+}
+
 function getConfigOverrides(spawnArgs: string[]) {
   return spawnArgs.filter((_, index) => spawnArgs[index - 1] === '-c')
 }
@@ -283,21 +295,23 @@ describe('createCodexSession RPC approval policy mapping', () => {
       onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
-    proc.stdout.push(`${JSON.stringify({
-      id: 7,
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        itemId: 'cmd-1',
-        threadId: 'thr_1',
-        turnId: 'turn_1',
-        command: {
-          executable: '/usr/bin/zsh',
-          args: ['-lc', 'ls -la']
-        },
-        reason: 'Inspect the workspace',
-        availableDecisions: ['accept', 'decline']
-      }
-    })}\n`)
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 7,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          itemId: 'cmd-1',
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          command: {
+            executable: '/usr/bin/zsh',
+            args: ['-lc', 'ls -la']
+          },
+          reason: 'Inspect the workspace',
+          availableDecisions: ['accept', 'decline']
+        }
+      })
+    }\n`)
 
     await waitForWrites()
 
@@ -309,7 +323,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
       expect.anything()
     )
 
-    session.respondInteraction('codex-approval:7', 'allow_once')
+    respondToInteraction(session, 'codex-approval:7', 'allow_once')
     await waitForWrites()
 
     expect(receivedLines).toContainEqual({
@@ -334,26 +348,28 @@ describe('createCodexSession RPC approval policy mapping', () => {
       onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
-    proc.stdout.push(`${JSON.stringify({
-      id: 9,
-      method: 'mcpServer/elicitation/request',
-      params: {
-        threadId: 'thr_1',
-        turnId: 'turn_1',
-        serverName: 'vibe-forge',
-        mode: 'form',
-        _meta: {
-          codex_approval_kind: 'mcp_tool_call',
-          tool_title: 'List Tasks',
-          tool_description: 'List all managed tasks'
-        },
-        message: 'Allow the vibe-forge MCP server to run tool "ListTasks"?',
-        requestedSchema: {
-          type: 'object',
-          properties: {}
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 9,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'vibe-forge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_title: 'List Tasks',
+            tool_description: 'List all managed tasks'
+          },
+          message: 'Allow the vibe-forge MCP server to run tool "ListTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
         }
-      }
-    })}\n`)
+      })
+    }\n`)
 
     await waitForWrites()
 
@@ -365,7 +381,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
       subjectLabel: 'vibe-forge:List Tasks'
     })
 
-    session.respondInteraction('codex-approval:9', 'allow_once')
+    respondToInteraction(session, 'codex-approval:9', 'allow_once')
     await waitForWrites()
 
     expect(receivedLines).toContainEqual({
@@ -392,29 +408,31 @@ describe('createCodexSession RPC approval policy mapping', () => {
       onEvent: () => {}
     } as any)
 
-    proc.stdout.push(`${JSON.stringify({
-      id: 10,
-      method: 'mcpServer/elicitation/request',
-      params: {
-        threadId: 'thr_1',
-        turnId: 'turn_1',
-        serverName: 'vibe-forge',
-        mode: 'form',
-        _meta: {
-          codex_approval_kind: 'mcp_tool_call',
-          tool_description: 'Start managed tasks'
-        },
-        message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
-        requestedSchema: {
-          type: 'object',
-          properties: {}
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 10,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'vibe-forge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_description: 'Start managed tasks'
+          },
+          message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
         }
-      }
-    })}\n`)
+      })
+    }\n`)
 
     await waitForWrites()
 
-    session.respondInteraction('codex-approval:10', 'deny_once')
+    respondToInteraction(session, 'codex-approval:10', 'deny_once')
     await waitForWrites()
 
     expect(receivedLines).toContainEqual({
@@ -442,31 +460,33 @@ describe('createCodexSession RPC approval policy mapping', () => {
       onEvent: (event: AdapterOutputEvent) => events.push(event)
     } as any)
 
-    proc.stdout.push(`${JSON.stringify({
-      id: 11,
-      method: 'mcpServer/elicitation/request',
-      params: {
-        threadId: 'thr_1',
-        turnId: 'turn_1',
-        serverName: 'vibe-forge',
-        mode: 'form',
-        _meta: {
-          codex_approval_kind: 'mcp_tool_call',
-          tool_title: 'Start Tasks',
-          tool_description: 'Start managed tasks'
-        },
-        message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
-        requestedSchema: {
-          type: 'object',
-          properties: {
-            reason: {
-              type: 'string'
-            }
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 11,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'vibe-forge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_title: 'Start Tasks',
+            tool_description: 'Start managed tasks'
           },
-          required: ['reason']
+          message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {
+              reason: {
+                type: 'string'
+              }
+            },
+            required: ['reason']
+          }
         }
-      }
-    })}\n`)
+      })
+    }\n`)
 
     await waitForWrites()
 
