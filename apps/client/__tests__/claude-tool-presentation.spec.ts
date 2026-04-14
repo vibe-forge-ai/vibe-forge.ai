@@ -93,4 +93,28 @@ describe('claude tool presentation', () => {
       })
     ]))
   })
+
+  it('keeps activeForm visible for in-progress TodoWrite items', () => {
+    const presentation = buildClaudeToolPresentation('adapter:claude-code:TodoWrite', {
+      todos: [
+        {
+          content: 'Polish tool layout',
+          status: 'in_progress',
+          activeForm: 'Polishing tool layout'
+        },
+        {
+          content: 'Capture screenshots',
+          status: 'pending'
+        }
+      ]
+    })
+
+    const todosField = presentation.fields.find(field => field.labelKey === 'chat.tools.fields.todos')
+    expect(todosField).toBeDefined()
+    expect(todosField?.format).toBe('list')
+    expect(todosField?.value).toEqual([
+      '[in_progress] Polish tool layout (Polishing tool layout)',
+      '[pending] Capture screenshots'
+    ])
+  })
 })
