@@ -17,7 +17,8 @@ import {
   restoreInteractionStateFromHistory
 } from './interaction-state'
 import {
-  mergeChatSessionViewSnapshot,
+  deleteChatSessionViewSnapshot,
+  setChatSessionViewSnapshot,
   restoreChatSessionViewSnapshot
 } from './session-view-cache'
 import type { ChatSessionViewSnapshot } from './session-view-cache'
@@ -98,9 +99,11 @@ export function useChatSessionMessages({
       isHydrated: boolean
     }>
   ) => {
-    const next = mergeChatSessionViewSnapshot(sessionViewCacheRef.current.get(sessionId), patch)
-    sessionViewCacheRef.current.set(sessionId, next)
-    return next
+    return setChatSessionViewSnapshot(sessionViewCacheRef.current, sessionId, patch)
+  }, [])
+
+  const removeSessionViewCache = useCallback((sessionId: string) => {
+    deleteChatSessionViewSnapshot(sessionViewCacheRef.current, sessionId)
   }, [])
 
   const setMessages = useCallback((value: SetStateAction<ChatMessage[]>) => {
@@ -111,9 +114,10 @@ export function useChatSessionMessages({
       const sessionId = activeSessionIdRef.current
 
       if (sessionId != null && sessionId !== '') {
+        const currentSnapshot = sessionViewCacheRef.current.get(sessionId)
         updateSessionViewCache(sessionId, {
           messages: next,
-          isHydrated: true
+          isHydrated: currentSnapshot?.isHydrated === true || next.length > 0
         })
       }
 
@@ -340,8 +344,7 @@ export function useChatSessionMessages({
           setErrorState((current) => {
             const next = current?.kind === 'session' ? current : null
             updateSessionViewCache(session.id, {
-              errorState: next,
-              isHydrated: true
+              errorState: next
             })
             return next
           })
@@ -353,14 +356,12 @@ export function useChatSessionMessages({
             interactionRequestRef.current = nextInteraction
             setInteractionRequest(nextInteraction)
             updateSessionViewCache(session.id, {
-              interactionRequest: nextInteraction,
-              isHydrated: true
+              interactionRequest: nextInteraction
             })
             if (nextInteraction != null) {
               setErrorState(null)
               updateSessionViewCache(session.id, {
-                errorState: null,
-                isHydrated: true
+                errorState: null
               })
             }
           }
@@ -378,8 +379,7 @@ export function useChatSessionMessages({
               } satisfies ChatErrorState
               setErrorState(nextErrorState)
               updateSessionViewCache(session.id, {
-                errorState: nextErrorState,
-                isHydrated: true
+                errorState: nextErrorState
               })
             }
             return
@@ -391,6 +391,7 @@ export function useChatSessionMessages({
               const updatedSession = data.session as Session | { id: string; isDeleted: boolean }
 
               if ('isDeleted' in updatedSession && updatedSession.isDeleted) {
+                removeSessionViewCache(updatedSession.id)
                 return {
                   ...prev,
                   sessions: prev.sessions.filter((s: Session) => s.id !== updatedSession.id)
@@ -424,8 +425,7 @@ export function useChatSessionMessages({
             } else {
               setSessionInfo(data.info ?? null)
               updateSessionViewCache(session.id, {
-                sessionInfo: data.info ?? null,
-                isHydrated: true
+                sessionInfo: data.info ?? null
               })
               if (isInitialLoadRef.current) {
                 setTimeout(() => {
@@ -449,8 +449,7 @@ export function useChatSessionMessages({
             interactionRequestRef.current = data
             setInteractionRequest(data)
             updateSessionViewCache(session.id, {
-              interactionRequest: data,
-              isHydrated: true
+              interactionRequest: data
             })
           }
         },
@@ -463,8 +462,7 @@ export function useChatSessionMessages({
           } satisfies ChatErrorState
           setErrorState(nextErrorState)
           updateSessionViewCache(session.id, {
-            errorState: nextErrorState,
-            isHydrated: true
+            errorState: nextErrorState
           })
         },
         onClose() {
@@ -480,8 +478,7 @@ export function useChatSessionMessages({
               reason: 'closed'
             }
             updateSessionViewCache(session.id, {
-              errorState: next,
-              isHydrated: true
+              errorState: next
             })
             return next
           })
@@ -508,6 +505,7 @@ export function useChatSessionMessages({
     session?.status,
     setInteractionRequest,
     t,
+    removeSessionViewCache,
     updateSessionViewCache
   ])
 

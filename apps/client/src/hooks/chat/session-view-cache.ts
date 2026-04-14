@@ -11,6 +11,8 @@ export interface ChatSessionViewSnapshot {
   isHydrated: boolean
 }
 
+export const MAX_CHAT_SESSION_VIEW_SNAPSHOTS = 20
+
 export const createChatSessionViewSnapshot = (
   value?: Partial<ChatSessionViewSnapshot>
 ): ChatSessionViewSnapshot => ({
@@ -41,4 +43,35 @@ export const restoreChatSessionViewSnapshot = (snapshot?: ChatSessionViewSnapsho
     interactionRequest: resolved.interactionRequest,
     isReady: resolved.isHydrated
   }
+}
+
+export const setChatSessionViewSnapshot = (
+  cache: Map<string, ChatSessionViewSnapshot>,
+  sessionId: string,
+  patch: Partial<ChatSessionViewSnapshot>
+) => {
+  const next = mergeChatSessionViewSnapshot(cache.get(sessionId), patch)
+
+  if (cache.has(sessionId)) {
+    cache.delete(sessionId)
+  }
+
+  cache.set(sessionId, next)
+
+  while (cache.size > MAX_CHAT_SESSION_VIEW_SNAPSHOTS) {
+    const oldestSessionId = cache.keys().next().value
+    if (oldestSessionId == null) {
+      break
+    }
+    cache.delete(oldestSessionId)
+  }
+
+  return next
+}
+
+export const deleteChatSessionViewSnapshot = (
+  cache: Map<string, ChatSessionViewSnapshot>,
+  sessionId: string
+) => {
+  cache.delete(sessionId)
 }
