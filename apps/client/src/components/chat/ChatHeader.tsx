@@ -13,6 +13,7 @@ import { useQueryParams } from '../../hooks/useQueryParams'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
+import { ChatGitControls } from './git-controls/ChatGitControls'
 import {
   formatToolLabel,
   getSessionAssetWarnings,
@@ -199,6 +200,9 @@ export function ChatHeader({
       </div>
 
       <div className='chat-header-actions'>
+        {sessionId != null && sessionId !== '' && (
+          <ChatGitControls sessionId={sessionId} />
+        )}
         {viewItems.map(item => (
           <Tooltip key={item.value} title={item.title}>
             <Button

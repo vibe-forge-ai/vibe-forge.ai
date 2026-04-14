@@ -32,8 +32,8 @@ const formatStructuredCommand = (command: CodexStructuredCommand): string => {
   const argv = Array.isArray(command.argv)
     ? command.argv
     : Array.isArray(command.args)
-      ? command.args
-      : []
+    ? command.args
+    : []
   const parts = normalizeCommandParts([
     command.executable,
     ...argv

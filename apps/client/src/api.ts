@@ -21,6 +21,16 @@ export {
 
 // 配置读取与更新 API
 export { getConfig, updateConfig } from './api/config'
+export {
+  checkoutSessionGitBranch,
+  commitSessionGitChanges,
+  createSessionGitBranch,
+  getSessionGitState,
+  listSessionGitBranches,
+  listSessionGitWorktrees,
+  pushSessionGitBranch,
+  syncSessionGitBranch
+} from './api/git'
 
 // 知识库与规则说明 API
 export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
@@ -47,4 +57,18 @@ export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessa
 export type { WorkspaceTreeEntry } from './api/workspace'
 export { listWorkspaceTree } from './api/workspace'
 
+export type {
+  GitAvailabilityReason,
+  GitBranchKind,
+  GitBranchListResult,
+  GitBranchSummary,
+  GitChangeSummary,
+  GitCommitPayload,
+  GitHeadCommitSummary,
+  GitMutationResult,
+  GitPushPayload,
+  GitRepositoryState,
+  GitWorktreeListResult,
+  GitWorktreeSummary
+} from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'

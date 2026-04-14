@@ -1,0 +1,616 @@
+.chat-header-git {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-header-git__split {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text,
+.chat-header-git__split-toggle.ant-btn.ant-btn-text,
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  height: 24px;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sub-text-color, #6b7280);
+  box-shadow: none;
+  transition: background-color .2s ease, color .2s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background-color: var(--nav-hover-bg, #f3f4f6);
+    color: var(--text-color, #111827);
+  }
+
+  &:disabled {
+    background: transparent;
+    color: var(--sub-text-color, #6b7280);
+  }
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text,
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  min-width: 0;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-header-git__split-main.ant-btn.ant-btn-text {
+  gap: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.chat-header-git__split-toggle.ant-btn.ant-btn-text {
+  width: 24px;
+  padding: 0;
+  justify-content: center;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.chat-header-git__split.is-open {
+  .chat-header-git__split-main.ant-btn.ant-btn-text,
+  .chat-header-git__split-toggle.ant-btn.ant-btn-text {
+    background-color: var(--nav-active-bg, #eff6ff);
+    color: var(--nav-active-text, #2563eb);
+  }
+}
+
+.chat-header-git__split-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.chat-header-git__trigger.ant-btn.ant-btn-text {
+  gap: 8px;
+  padding-right: 6px;
+  justify-content: space-between;
+
+  &.is-open {
+    background-color: var(--nav-active-bg, #eff6ff);
+    color: var(--nav-active-text, #2563eb);
+  }
+
+  &.is-disabled {
+    opacity: .7;
+  }
+}
+
+.chat-header-git__trigger-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-header-git__trigger-chevron.material-symbols-rounded {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.chat-header-git__trigger-label {
+  min-width: 0;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.chat-header-git__separator {
+  width: 1px;
+  height: 12px;
+  margin-inline: 8px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.chat-header-git__dirty-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d97706;
+  flex-shrink: 0;
+}
+
+.chat-header-git__overlay {
+  width: 244px;
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-color);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chat-header-git__overlay--operations {
+  width: 208px;
+}
+
+.chat-header-git__overlay--branches {
+  width: 236px;
+}
+
+.chat-header-git__overlay--worktrees {
+  width: 228px;
+}
+
+.chat-header-git__overlay-meta {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__search.ant-input-affix-wrapper {
+  min-height: 30px;
+  border-radius: 9px;
+  padding-inline: 8px;
+
+  .ant-input {
+    font-size: 10px;
+  }
+}
+
+.chat-header-git__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.chat-header-git__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__section + .chat-header-git__section {
+  padding-top: 5px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+.chat-header-git__section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__branch-row,
+.chat-header-git__operation-row,
+.chat-header-git__create-row {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-color);
+  transition: background-color .2s ease, color .2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--sub-bg-color, rgba(15, 23, 42, .05));
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+  }
+}
+
+.chat-header-git__worktree-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__worktree-row {
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  color: var(--text-color);
+}
+
+.chat-header-git__branch-row-main,
+.chat-header-git__operation-row-main,
+.chat-header-git__worktree-row-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chat-header-git__row-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__row-title {
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header-git__row-subtitle {
+  min-width: 0;
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--sub-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header-git__row-icon.material-symbols-rounded,
+.chat-header-git__row-state.material-symbols-rounded {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.chat-header-git__row-state.material-symbols-rounded {
+  color: var(--primary-color, #2563eb);
+}
+
+.chat-header-git__create-row {
+  border: 1px dashed
+    color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 28%,
+      var(--border-color)
+    );
+  background: color-mix(
+    in srgb,
+    var(--primary-color, #2563eb) 6%,
+    var(--bg-color)
+  );
+}
+
+.chat-header-git__empty {
+  padding: 8px 0 2px;
+}
+
+.chat-header-git__loading {
+  padding: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.chat-header-git__divider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.chat-header-git__commit-modal {
+  .ant-modal-content {
+    padding: 14px;
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(255, 255, 255, .03),
+        transparent 34%
+      ),
+      var(--bg-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  }
+
+  .ant-modal-close {
+    inset-inline-end: 10px;
+    top: 10px;
+    color: var(--sub-text-color);
+
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+}
+
+.chat-header-git__commit-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-header-git__commit-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(
+    in srgb,
+    var(--sub-bg-color, rgba(15, 23, 42, .08)) 92%,
+    transparent
+  );
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+}
+
+.chat-header-git__commit-title {
+  margin-top: -4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-summary-grid {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 8px 14px;
+}
+
+.chat-header-git__commit-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__commit-summary-value {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-summary-value--branch {
+  .material-symbols-rounded {
+    font-size: 14px;
+  }
+
+  span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.chat-header-git__commit-summary-value--stats {
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--sub-text-color);
+}
+
+.chat-header-git__commit-summary-delta {
+  font-weight: 700;
+
+  &.is-positive {
+    color: #22c55e;
+  }
+
+  &.is-negative {
+    color: #ef4444;
+  }
+}
+
+.chat-header-git__commit-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-header-git__commit-sub-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-header-git__commit-toggle-row {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  align-items: flex-start;
+  column-gap: 14px;
+  padding: 0;
+
+  &.is-disabled {
+    opacity: .6;
+  }
+}
+
+.chat-header-git__commit-toggle-checkbox {
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+  justify-self: start;
+  accent-color: var(--primary-color, #2563eb);
+}
+
+.chat-header-git__commit-toggle-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.chat-header-git__commit-toggle-title,
+.chat-header-git__commit-section-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.chat-header-git__commit-toggle-description {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--sub-text-color);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.chat-header-git__commit-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-header-git__commit-input.ant-input {
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.chat-header-git__commit-error {
+  margin-top: -6px;
+  font-size: 10px;
+  color: var(--error-text-color, #ef4444);
+}
+
+.chat-header-git__commit-next-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+  border-radius: 14px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.chat-header-git__commit-next-step {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: transparent;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-color);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color .2s ease, color .2s ease;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--text-color) 5%,
+      transparent
+    );
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+  }
+
+  &.is-selected {
+    background: color-mix(
+      in srgb,
+      var(--text-color) 8%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--text-color) 8%, transparent);
+  }
+}
+
+.chat-header-git__commit-next-step-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-header-git__commit-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chat-header-git__commit-submit.ant-btn.ant-btn-primary {
+  min-width: 180px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+  border: 0;
+  background: var(--text-color);
+  color: var(--bg-color);
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    background: color-mix(in srgb, var(--text-color) 90%, transparent);
+    color: var(--bg-color);
+  }
+
+  &:disabled {
+    background: color-mix(in srgb, var(--text-color) 16%, transparent);
+    color: color-mix(in srgb, var(--bg-color) 72%, transparent);
+  }
+}
+
+html.dark {
+  .chat-header-git {
+    --nav-hover-bg: #1a1a1a;
+    --nav-active-bg: #111b26;
+    --nav-active-text: #3b82f6;
+  }
+
+  .chat-header-git__split,
+  .chat-header-git__trigger.ant-btn.ant-btn-text {
+    color: var(--sub-text-color);
+  }
+
+  .chat-header-git__overlay {
+    box-shadow: 0 20px 44px rgba(0, 0, 0, .42);
+  }
+
+  .chat-header-git__commit-modal {
+    .ant-modal-content {
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+    }
+  }
+}
