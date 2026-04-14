@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  createChatSessionViewSnapshot,
   MAX_CHAT_SESSION_VIEW_SNAPSHOTS,
+  createChatSessionViewSnapshot,
   mergeChatSessionViewSnapshot,
   restoreChatSessionViewSnapshot,
   setChatSessionViewSnapshot

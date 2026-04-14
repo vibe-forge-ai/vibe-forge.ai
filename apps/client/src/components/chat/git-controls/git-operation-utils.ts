@@ -47,8 +47,11 @@ export const getGitControlState = (
     pushUnavailable: string
   }
 ) => {
-  const currentBranchLabel = repoState?.available === true && repoState.currentBranch?.trim() !== ''
-    ? repoState.currentBranch
+  const currentBranchName = repoState?.available === true
+    ? repoState.currentBranch?.trim() ?? ''
+    : ''
+  const currentBranchLabel = currentBranchName !== ''
+    ? currentBranchName
     : labels.detachedHead
   const pushBlockedReason = repoState?.available === true
     ? getGitPushBlockedReason(repoState, forcePush)

@@ -18,8 +18,8 @@ import {
 } from './interaction-state'
 import {
   deleteChatSessionViewSnapshot,
-  setChatSessionViewSnapshot,
-  restoreChatSessionViewSnapshot
+  restoreChatSessionViewSnapshot,
+  setChatSessionViewSnapshot
 } from './session-view-cache'
 import type { ChatSessionViewSnapshot } from './session-view-cache'
 import type { ChatEffort } from './use-chat-effort'
