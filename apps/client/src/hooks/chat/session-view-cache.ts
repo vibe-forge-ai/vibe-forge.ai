@@ -35,13 +35,16 @@ export const mergeChatSessionViewSnapshot = (
 
 export const restoreChatSessionViewSnapshot = (snapshot?: ChatSessionViewSnapshot) => {
   const resolved = createChatSessionViewSnapshot(snapshot)
+  const restorable = resolved.isHydrated === true
+    ? resolved
+    : createChatSessionViewSnapshot()
 
   return {
-    messages: resolved.messages,
-    sessionInfo: resolved.sessionInfo,
-    errorState: resolved.errorState,
-    interactionRequest: resolved.interactionRequest,
-    isReady: resolved.isHydrated
+    messages: restorable.messages,
+    sessionInfo: restorable.sessionInfo,
+    errorState: restorable.errorState,
+    interactionRequest: restorable.interactionRequest,
+    isReady: restorable.isHydrated
   }
 }
 

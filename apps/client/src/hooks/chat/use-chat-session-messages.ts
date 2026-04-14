@@ -117,7 +117,7 @@ export function useChatSessionMessages({
         const currentSnapshot = sessionViewCacheRef.current.get(sessionId)
         updateSessionViewCache(sessionId, {
           messages: next,
-          isHydrated: currentSnapshot?.isHydrated === true || next.length > 0
+          isHydrated: currentSnapshot?.isHydrated === true
         })
       }
 

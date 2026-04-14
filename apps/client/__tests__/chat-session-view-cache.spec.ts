@@ -66,6 +66,25 @@ describe('chat session view cache', () => {
     expect(merged.isHydrated).toBe(false)
   })
 
+  it('does not restore messages from an unhydrated snapshot', () => {
+    const restored = restoreChatSessionViewSnapshot(createChatSessionViewSnapshot({
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'user',
+          content: 'hello',
+          createdAt: 1
+        }
+      ]
+    }))
+
+    expect(restored.messages).toHaveLength(0)
+    expect(restored.sessionInfo).toBeNull()
+    expect(restored.errorState).toBeNull()
+    expect(restored.interactionRequest).toBeNull()
+    expect(restored.isReady).toBe(false)
+  })
+
   it('evicts the oldest cached sessions after reaching the cache limit', () => {
     const cache = new Map()
 
