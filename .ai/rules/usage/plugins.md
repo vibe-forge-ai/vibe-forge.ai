@@ -2,6 +2,15 @@
 
 返回入口：[USAGE.md](../USAGE.md)
 
+## 两套插件体系
+
+Vibe Forge 现在有两套并行的插件使用方式：
+
+- 统一 Vibe Forge 插件：通过 `plugins` 配置加载 npm 包里的 `rules / skills / specs / entities / mcp / hooks`
+- adapter 原生插件：通过 `npx vf plugin --adapter <adapter> add ...` 安装 adapter 自己的原生插件格式，再转成项目可复用的 Vibe Forge 资产
+
+如果你要安装 Claude Code 插件、配置 marketplace，继续看 [Adapter 原生插件与 Marketplace](./native-plugins.md)。
+
 ## 安装方式
 
 - 插件通过 npm 安装到你的项目 workspace。
@@ -107,12 +116,16 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 - `opencode/modes`
 - `opencode/plugins`
 
-当前还不支持：
+另外，当前已支持一条 adapter-native 插件安装链路：
 
-- Claude 原生 plugin format 兼容层
-- Codex 原生 plugin format 兼容层
+- `claude-code`: 支持 Claude 原生插件安装与 marketplace 解析，Vibe Forge 会自动处理项目侧的兼容接入
 
-也就是说，同一个 Vibe Forge 插件可以同时服务 `claude-code`、`codex`、`opencode`，但如果你写的是 OpenCode 原生目录结构，只有 OpenCode adapter 会消费这些 native 资产。
+当前还未接入：
+
+- Codex 原生 plugin format 安装链路
+- OpenCode 原生 plugin marketplace 安装链路
+
+也就是说，同一个 Vibe Forge 插件可以同时服务 `claude-code`、`codex`、`opencode`；如果你安装的是 Claude 原生插件，Vibe Forge 会尽量把它抹平成项目统一插件层可用的能力，并在 Claude adapter 下自动接入。
 
 ## 示例：标准开发流插件
 
