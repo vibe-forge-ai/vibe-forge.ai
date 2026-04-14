@@ -14,6 +14,7 @@ description: 仅在处理项目接入、安装、运行 Vibe Forge 服务、CLI 
 - [Web UI 与 Terminal 视图](./usage/web.md)
 - [CLI 与示例](./usage/cli.md)
 - [插件与数据资产](./usage/plugins.md)
+- [Adapter 原生插件与 Marketplace](./usage/native-plugins.md)
 
 ## 接入目标
 
