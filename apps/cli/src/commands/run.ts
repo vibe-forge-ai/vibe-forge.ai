@@ -1,4 +1,5 @@
 import { getCliDefaultSkillNames, getCliDefaultSkillPluginConfig } from '#~/default-skill-plugin.js'
+import { createAdapterOption, normalizeCliAdapterOptionValue } from './@core/adapter-option'
 import { registerRunCommand } from './run/command'
 import { parseCliInputControlEvent } from './run/input-control'
 import {
@@ -21,6 +22,7 @@ import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './run/types'
 export {
   RUN_INPUT_FORMATS,
   RUN_OUTPUT_FORMATS,
+  createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
   getAdapterInteractionMessage,
@@ -29,6 +31,7 @@ export {
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
+  normalizeCliAdapterOptionValue,
   parseCliInputControlEvent,
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,

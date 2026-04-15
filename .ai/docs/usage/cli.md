@@ -56,8 +56,11 @@ printf '%s\n' '{"hookEventName":"Notification","cwd":"'"$PWD"'","sessionId":"deb
 ### 执行一次任务
 
 ```bash
-npx vf run --adapter codex --print "读取 README 并给出一个三步改进建议"
+npx vf run -A codex --print "读取 README 并给出一个三步改进建议"
+npx vf run -A claude "读取 README 并给出一个三步改进建议"
 ```
+
+`adapter` 参数支持 `-A` 短写，也接受常见简化值，例如 `claude`、`adapter-codex`。
 
 ### 恢复会话
 

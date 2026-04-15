@@ -11,6 +11,8 @@ import {
 import type { BenchmarkCase, BenchmarkCategory, BenchmarkResult } from '@vibe-forge/types'
 import type { Command } from 'commander'
 
+import { createAdapterOption } from './@core/adapter-option'
+
 interface BenchmarkRunOptions {
   category: string
   title?: string
@@ -105,7 +107,7 @@ export function registerBenchmarkCommand(program: Command) {
     .requiredOption('--category <category>', 'Benchmark category')
     .option('--title <title>', 'Benchmark title')
     .option('--concurrency <count>', 'Category concurrency', '2')
-    .option('--adapter <adapter>', 'Adapter to use')
+    .addOption(createAdapterOption('Adapter to use'))
     .option('--model <model>', 'Model to use')
     .option('--effort <effort>', 'Effort to use (low, medium, high, max)')
     .option('--system-prompt <prompt>', 'Additional system prompt')

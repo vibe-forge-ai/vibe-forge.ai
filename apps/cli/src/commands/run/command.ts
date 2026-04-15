@@ -25,6 +25,7 @@ import {
   readCliSessionPermissionRecovery,
   writeCliSessionPermissionRecovery
 } from '#~/session-permission-cache.js'
+import { createAdapterOption } from '../@core/adapter-option'
 import { extraOptions } from '../@core/extra-options'
 import { attachInputBridge } from './input-bridge'
 import { supportsPrintInteractionResponses } from './input-control'
@@ -67,7 +68,7 @@ const configureRunCommand = (command: Command) => {
     .option('--print', 'Print assistant output to stdout', false)
     .option('--model <model>', 'Model to use')
     .option('--effort <effort>', 'Effort to use (low, medium, high, max)')
-    .option('--adapter <adapter>', 'Adapter to use')
+    .addOption(createAdapterOption('Adapter to use'))
     .option('--system-prompt <prompt>', 'System prompt')
     .option(
       '--no-inject-default-system-prompt',
@@ -99,12 +100,14 @@ const configureRunCommand = (command: Command) => {
       `
 Examples:
   vf "实现一个新的 list 筛选"
-  vf run --adapter codex --print "读取 README 并总结"
+  vf run -A codex --print "读取 README 并总结"
+  vf run -A claude "读取 README 并总结"
   vf run --include-skill vf-cli-quickstart "介绍一下 vf CLI 怎么恢复会话"
   vf list --view default
   vf --resume <sessionId>
 
 Notes:
+  --adapter also supports -A and simplified ids like claude / adapter-codex.
   When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.

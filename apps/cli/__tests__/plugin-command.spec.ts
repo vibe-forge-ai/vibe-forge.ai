@@ -29,7 +29,8 @@ describe('plugin command helpers', () => {
     )
 
     await expect(resolvePluginCommandAdapter(undefined, cwd)).resolves.toBe('codex')
-    await expect(resolvePluginCommandAdapter('claude', cwd)).resolves.toBe('claude')
+    await expect(resolvePluginCommandAdapter('claude', cwd)).resolves.toBe('claude-code')
+    await expect(resolvePluginCommandAdapter('adapter-codex', cwd)).resolves.toBe('codex')
   })
 
   it('supports explicit npm: specs for ambiguous unscoped package sources', async () => {
