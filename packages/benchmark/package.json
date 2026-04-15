@@ -28,6 +28,7 @@
   "dependencies": {
     "@vibe-forge/task": "workspace:^",
     "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2",
     "zod": "^3.24.1"

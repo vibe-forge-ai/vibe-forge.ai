@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { cwd, env } from 'node:process'
 
+import { resolveProjectAiPath } from '@vibe-forge/utils'
+
 /**
  * Tries to load `AGENTS.channel.<channelType>.md` from:
  *   1. <projectRoot>/.ai/rules/AGENTS.channel.<channelType>.md
@@ -12,7 +14,7 @@ export const loadChannelAgentRules = async (channelType: string): Promise<string
   const filename = `AGENTS.channel.${channelType}.md`
   const root = env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? cwd()
   const candidates = [
-    join(root, '.ai', 'rules', filename),
+    resolveProjectAiPath(root, env, 'rules', filename),
     join(root, filename)
   ]
   for (const candidate of candidates) {

@@ -4,12 +4,14 @@ import process from 'node:process'
 
 import { glob } from 'fast-glob'
 import fm from 'front-matter'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { readBenchmarkResult } from './result-store'
 import { BenchmarkFrontmatterSchema } from './schema'
 import type { BenchmarkCase, BenchmarkCaseSelector, BenchmarkCategory, BenchmarkListOptions } from './types'
 
-export const resolveBenchmarkRoot = (workspaceFolder = process.cwd()) => resolve(workspaceFolder, '.ai/benchmark')
+export const resolveBenchmarkRoot = (workspaceFolder = process.cwd()) =>
+  resolveProjectAiPath(workspaceFolder, process.env, 'benchmark')
 
 const resolveSummary = (body: string) => {
   const lines = body

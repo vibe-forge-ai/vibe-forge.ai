@@ -4,6 +4,7 @@ import process from 'node:process'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord, deepMerge } from '../common/object-utils'
@@ -371,7 +372,7 @@ export const ensureSystemPromptFile = async (
 ) => {
   if (options.systemPrompt == null || options.systemPrompt.trim() === '') return undefined
 
-  const promptDir = resolve(ctx.cwd, '.ai', '.mock', '.opencode-adapter', options.sessionId, 'instructions')
+  const promptDir = resolveProjectAiPath(ctx.cwd, ctx.env, '.mock', '.opencode-adapter', options.sessionId, 'instructions')
   const promptPath = resolve(promptDir, 'system.md')
   await mkdir(promptDir, { recursive: true })
   await writeFile(promptPath, options.systemPrompt)

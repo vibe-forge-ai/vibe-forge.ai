@@ -68,6 +68,57 @@ describe('resolveWorkspaceAssetBundle', () => {
     ]))
   })
 
+  it('loads workspace assets from the env-configured ai base dir', async () => {
+    const workspace = await createWorkspace()
+    const previousBaseDir = process.env.__VF_PROJECT_AI_BASE_DIR__
+
+    try {
+      process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
+      await writeDocument(join(workspace, '.vf/rules/review.md'), '---\ndescription: 评审规则\n---\n必须检查风险')
+      await writeDocument(join(workspace, '.vf/skills/research/SKILL.md'), '---\ndescription: 检索资料\n---\n阅读 README.md')
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [undefined, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      expect(bundle.rules.map(asset => asset.displayName)).toEqual(['review'])
+      expect(bundle.skills.map(asset => asset.displayName)).toEqual(['research'])
+    } finally {
+      if (previousBaseDir == null) {
+        delete process.env.__VF_PROJECT_AI_BASE_DIR__
+      } else {
+        process.env.__VF_PROJECT_AI_BASE_DIR__ = previousBaseDir
+      }
+    }
+  })
+
+  it('loads workspace entities from the env-configured entities dir', async () => {
+    const workspace = await createWorkspace()
+    const previousEntitiesDir = process.env.__VF_PROJECT_AI_ENTITIES_DIR__
+
+    try {
+      process.env.__VF_PROJECT_AI_ENTITIES_DIR__ = 'agents'
+      await writeDocument(join(workspace, '.ai/agents/reviewer/README.md'), '---\ndescription: 负责代码评审\n---\n检查风险')
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [undefined, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      expect(bundle.entities.map(asset => asset.displayName)).toEqual(['reviewer'])
+      expect(bundle.entities[0]?.sourcePath).toContain('/.ai/agents/reviewer/README.md')
+    } finally {
+      if (previousEntitiesDir == null) {
+        delete process.env.__VF_PROJECT_AI_ENTITIES_DIR__
+      } else {
+        process.env.__VF_PROJECT_AI_ENTITIES_DIR__ = previousEntitiesDir
+      }
+    }
+  })
+
   it('auto-loads managed Claude plugins from .ai/plugins as directory plugins', async () => {
     const workspace = await createWorkspace()
 

@@ -23,6 +23,7 @@ describe('createLogger', () => {
 
   afterEach(async () => {
     vi.useRealTimers()
+    delete process.env.__VF_PROJECT_AI_BASE_DIR__
     await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
   })
 
@@ -117,6 +118,21 @@ describe('createLogger', () => {
     expect(content).toContain('__D__ Claude Code CLI stdout:')
     expect(content).toContain('```yaml')
     expect(content).toContain('line: debug enabled')
+  })
+
+  it('writes logs under the env-configured ai base dir', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
+    tempDirs.push(cwd)
+    process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
+
+    const logger = createLogger(cwd, 'task-1', 'session-1')
+    logger.info('hello')
+    await new Promise<void>((resolve) => {
+      logger.stream.end(() => resolve())
+    })
+
+    const files = await listFiles(join(cwd, '.vf/logs/task-1'))
+    expect(files).toEqual([join(cwd, '.vf/logs/task-1/session-1.log.md')])
   })
 
   it('renders multiline strings as folded yaml blocks', async () => {

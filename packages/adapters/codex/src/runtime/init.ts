@@ -6,6 +6,7 @@ import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'
@@ -65,7 +66,7 @@ async function linkAuthFile(home: string, mockHome: string): Promise<void> {
 }
 
 async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {
-  const sourceDir = resolve(ctx.cwd, '.ai', 'skills')
+  const sourceDir = resolveProjectAiPath(ctx.cwd, ctx.env, 'skills')
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
 
   await syncCodexMockHomeSymlink({

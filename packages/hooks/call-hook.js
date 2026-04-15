@@ -4,6 +4,10 @@ const Module = require('node:module')
 const path = require('node:path')
 const process = require('node:process')
 
+const resolveAiBaseDir = () => (
+  process.env.__VF_PROJECT_AI_BASE_DIR__?.trim()?.replace(/[\\/]+$/, '') || '.ai'
+)
+
 const splitNodePath = (value) => (
   typeof value === 'string'
     ? value
@@ -45,12 +49,13 @@ bootstrapNodePath()
 
 process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
 process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname
+require('@vibe-forge/register/dotenv')
+
 process.env.HOME = path.resolve(
   process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
-  './.ai/.mock'
+  resolveAiBaseDir(),
+  '.mock'
 )
-
-require('@vibe-forge/register/dotenv')
 
 const sourceEntrypoint = path.resolve(__dirname, './src/entry.ts')
 const distEntrypoint = path.resolve(__dirname, './dist/entry.js')

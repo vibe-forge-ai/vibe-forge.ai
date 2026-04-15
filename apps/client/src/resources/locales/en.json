@@ -289,8 +289,8 @@
       "desc": "Manage roles, components, and domain entities for the project.",
       "empty": "No entities found.",
       "create": "Create Entity",
-      "createHint": "Create an entity definition under .ai/entities, then refresh the page.",
-      "importHint": "Import entity files into .ai/entities, then refresh the page."
+      "createHint": "Create an entity definition file, then refresh the page.",
+      "importHint": "Import entity definition files, then refresh the page."
     },
     "flows": {
       "title": "Flow Library",
@@ -595,9 +595,9 @@
       },
       "entities": {
         "title": "Existing Entities",
-        "empty": "No entities found. Add them under .ai/entities to show here.",
+        "empty": "No entities found. Add entity definition files to show them here.",
         "create": "Quick Create Entity",
-        "createToast": "Create an entity definition under .ai/entities, then refresh the page."
+        "createToast": "Create an entity definition file, then refresh the page."
       },
       "help": {
         "title": "Help",

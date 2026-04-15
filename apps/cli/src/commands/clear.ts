@@ -4,58 +4,64 @@ import process from 'node:process'
 
 import type { Command } from 'commander'
 import fg from 'fast-glob'
+import { resolveProjectAiBaseDirName, resolveProjectAiPath } from '@vibe-forge/utils'
 
-const CLEAR_TARGETS = [
-  '.logs',
-  '.ai/logs',
-  '.ai/caches',
-  '.ai/.mock/.claude/debug',
-  '.ai/.mock/.claude/todos',
-  '.ai/.mock/.claude/session-env',
-  '.ai/.mock/.claude/projects',
-  '.ai/.mock/.claude-core-router/logs',
-  '.ai/.mock/.claude-code-router/logs'
+const CLEAR_AI_TARGETS = [
+  'logs',
+  'caches',
+  '.mock/.claude/debug',
+  '.mock/.claude/todos',
+  '.mock/.claude/session-env',
+  '.mock/.claude/projects',
+  '.mock/.claude-core-router/logs',
+  '.mock/.claude-code-router/logs'
 ] as const
 
 const BENCHMARK_LOG_PATTERNS = [
-  '.ai/benchmarks/specs/**/logs',
-  '.ai/benchmarks/entities/**/logs',
-  '.ai/benchmarks/cases/**/logs'
+  'benchmarks/specs/**/logs',
+  'benchmarks/entities/**/logs',
+  'benchmarks/cases/**/logs'
 ] as const
 
 const CLAUDE_CODE_ROUTER_LOG_FILE_PATTERNS = [
-  '.ai/.mock/.claude-code-router/*.log',
-  '.ai/.mock/.claude-code-router/*.log.*'
+  '.mock/.claude-code-router/*.log',
+  '.mock/.claude-code-router/*.log.*'
 ] as const
 
-const CLAUDE_CODE_ROUTER_SESSION_LOG_PATTERN = '.ai/.mock/.claude-code-router/*/logs'
+const CLAUDE_CODE_ROUTER_SESSION_LOG_PATTERN = '.mock/.claude-code-router/*/logs'
 
 export interface RunClearCommandOptions {
   cwd?: string
 }
 
 async function collectClearTargets(cwd: string) {
+  const aiBaseDir = resolveProjectAiPath(cwd, process.env)
+  const logsDir = resolveProjectAiPath(cwd, process.env, 'logs')
   const benchmarkLogDirs = await fg([...BENCHMARK_LOG_PATTERNS], {
-    cwd,
+    cwd: aiBaseDir,
     onlyDirectories: true,
-    deep: 10
+    deep: 10,
+    absolute: true
   })
 
   const claudeCodeRouterSessionLogDirs = await fg(CLAUDE_CODE_ROUTER_SESSION_LOG_PATTERN, {
-    cwd,
+    cwd: aiBaseDir,
     onlyDirectories: true,
-    deep: 2
+    deep: 2,
+    absolute: true
   })
 
   const claudeCodeRouterLogFiles = await fg([...CLAUDE_CODE_ROUTER_LOG_FILE_PATTERNS], {
-    cwd,
+    cwd: aiBaseDir,
     onlyFiles: true,
-    deep: 1
+    deep: 1,
+    absolute: true
   })
 
   return [
-    ...CLEAR_TARGETS,
-    ...benchmarkLogDirs.filter(dir => dir !== '.ai/logs' && !dir.startsWith('.ai/logs/')),
+    path.resolve(cwd, '.logs'),
+    ...CLEAR_AI_TARGETS.map(target => resolveProjectAiPath(cwd, process.env, ...target.split('/'))),
+    ...benchmarkLogDirs.filter(dir => dir !== logsDir && !dir.startsWith(`${logsDir}${path.sep}`)),
     ...claudeCodeRouterSessionLogDirs.map(dir => path.dirname(dir)),
     ...claudeCodeRouterLogFiles
   ]
@@ -66,20 +72,20 @@ export async function runClearCommand(options: RunClearCommandOptions = {}) {
   const targets = Array.from(new Set(await collectClearTargets(cwd)))
 
   await Promise.all(
-    targets.map(target => fs.rm(path.resolve(cwd, target), { force: true, recursive: true }))
+    targets.map(target => fs.rm(target, { force: true, recursive: true }))
   )
 
   await Promise.all([
-    fs.mkdir(path.resolve(cwd, '.ai/logs'), { recursive: true }),
-    fs.mkdir(path.resolve(cwd, '.ai/caches'), { recursive: true })
+    fs.mkdir(resolveProjectAiPath(cwd, process.env, 'logs'), { recursive: true }),
+    fs.mkdir(resolveProjectAiPath(cwd, process.env, 'caches'), { recursive: true })
   ])
 
   await Promise.all([
-    fs.writeFile(path.resolve(cwd, '.ai/logs/.gitkeep'), ''),
-    fs.writeFile(path.resolve(cwd, '.ai/caches/.gitkeep'), '')
+    fs.writeFile(resolveProjectAiPath(cwd, process.env, 'logs', '.gitkeep'), ''),
+    fs.writeFile(resolveProjectAiPath(cwd, process.env, 'caches', '.gitkeep'), '')
   ])
 
-  console.log('Clear logs and cache successfully')
+  console.log(`Clear logs and cache successfully (${resolveProjectAiBaseDirName(process.env)})`)
 }
 
 export function registerClearCommand(program: Command) {

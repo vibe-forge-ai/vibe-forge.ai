@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveProjectAiPath } from '@vibe-forge/utils'
+
 export interface NativeHookHandlerConfig {
   type: 'command'
   command: string
@@ -37,7 +39,7 @@ export const resolveMockHome = (
   env: Record<string, string | null | undefined>
 ) => {
   const explicitHome = env.HOME?.trim() || process.env.HOME?.trim()
-  return explicitHome ? resolve(explicitHome) : resolve(cwd, '.ai', '.mock')
+  return explicitHome ? resolve(explicitHome) : resolveProjectAiPath(cwd, env, '.mock')
 }
 
 export const resolveManagedHookPackageDir = () => {

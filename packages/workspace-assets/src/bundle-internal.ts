@@ -9,7 +9,7 @@ import {
   resolveDefaultVibeForgeMcpServerConfig
 } from '@vibe-forge/config'
 import type { Config, Definition, Entity, PluginConfig, WorkspaceAsset, WorkspaceAssetKind } from '@vibe-forge/types'
-import { resolveRelativePath } from '@vibe-forge/utils'
+import { resolveProjectAiBaseDir, resolveProjectAiEntitiesDir, resolveRelativePath } from '@vibe-forge/utils'
 import { listManagedPluginInstalls, toManagedPluginConfig } from '@vibe-forge/utils/managed-plugin'
 import {
   flattenPluginInstances,
@@ -217,13 +217,15 @@ const createOpenCodeOverlayAsset = <TKind extends OpenCodeOverlayKind>(params: {
 } as OpenCodeOverlayAsset<TKind>)
 
 const scanWorkspaceDocuments = async (cwd: string) => {
+  const aiBaseDir = resolveProjectAiBaseDir(cwd, process.env)
+  const entitiesDir = resolveProjectAiEntitiesDir(cwd, process.env)
   const [rulePaths, skillPaths, specPaths, entityDocPaths, entityJsonPaths, mcpPaths] = await Promise.all([
-    glob(['.ai/rules/*.md'], { cwd, absolute: true }),
-    glob(['.ai/skills/*/SKILL.md'], { cwd, absolute: true }),
-    glob(['.ai/specs/*.md', '.ai/specs/*/index.md'], { cwd, absolute: true }),
-    glob(['.ai/entities/*.md', '.ai/entities/*/README.md'], { cwd, absolute: true }),
-    glob(['.ai/entities/*/index.json'], { cwd, absolute: true }),
-    glob(['.ai/mcp/*.json', '.ai/mcp/*.yaml', '.ai/mcp/*.yml'], { cwd, absolute: true })
+    glob(['rules/*.md'], { cwd: aiBaseDir, absolute: true }),
+    glob(['skills/*/SKILL.md'], { cwd: aiBaseDir, absolute: true }),
+    glob(['specs/*.md', 'specs/*/index.md'], { cwd: aiBaseDir, absolute: true }),
+    glob(['*.md', '*/README.md'], { cwd: entitiesDir, absolute: true }),
+    glob(['*/index.json'], { cwd: entitiesDir, absolute: true }),
+    glob(['mcp/*.json', 'mcp/*.yaml', 'mcp/*.yml'], { cwd: aiBaseDir, absolute: true })
   ])
 
   return {
@@ -441,7 +443,7 @@ export async function collectWorkspaceAssets(params: {
         name: DEFAULT_VIBE_FORGE_MCP_SERVER_NAME,
         config: defaultVibeForgeMcpServer,
         origin: 'workspace',
-        sourcePath: resolve(params.cwd, '.ai')
+        sourcePath: resolveProjectAiBaseDir(params.cwd, process.env)
       }))
     }
   }

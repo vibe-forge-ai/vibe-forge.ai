@@ -1,6 +1,8 @@
 import { cp, mkdir, rm, symlink } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
+import process from 'node:process'
 
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 import { listManagedPluginInstalls } from '@vibe-forge/utils/managed-plugin'
 
 const toSlug = (value: string) => (
@@ -27,7 +29,7 @@ export const stageClaudePluginDirs = async (params: {
   const installs = await listManagedPluginInstalls(params.cwd, { adapter: 'claude' })
   if (installs.length === 0) return []
 
-  const runtimeRoot = resolve(params.cwd, '.ai', 'caches', params.ctxId, params.sessionId, '.claude-plugins')
+  const runtimeRoot = resolveProjectAiPath(params.cwd, process.env, 'caches', params.ctxId, params.sessionId, '.claude-plugins')
   await rm(runtimeRoot, { recursive: true, force: true })
   await mkdir(runtimeRoot, { recursive: true })
 

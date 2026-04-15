@@ -55,7 +55,7 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 - scope 完全由用户控制，不由插件作者定义。
 - 如果插件配置了 `scope`，资源标识会变成 `scope/name`，例如 `std/standard-dev-flow`、`std/dev-planner`。
 - 如果没有配置 `scope`，可以直接写 `name`，但只有在该类资源全局唯一时才能成功解析。
-- 当本地 `.ai/*` 资源和插件资源同名时，建议给插件实例增加 `scope`，避免歧义。
+- 当本地项目资产目录中的资源和插件资源同名时，建议给插件实例增加 `scope`，避免歧义。
 
 ## Child Plugin
 
@@ -100,6 +100,44 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 - `hooks`
 
 其中 `spec` 和 `entity` 还支持在文档前置元数据里通过 `plugins: { mode, list }` 对当前任务的插件列表做 `extend` 或 `override`。
+
+## 本地数据资产目录
+
+项目内置资产默认从 `./.ai/` 读取：
+
+- `rules`
+- `skills`
+- `specs`
+- `entities`
+- `mcp`
+
+如果你的项目不想使用默认的 `.ai` 目录，可以在项目根 `.env` 中覆盖：
+
+```env
+__VF_PROJECT_AI_BASE_DIR__=.vf
+```
+
+这样本地资产会改为从 `./.vf/` 下读取。
+
+如果只想改实体目录名，可以继续配置：
+
+```env
+__VF_PROJECT_AI_ENTITIES_DIR__=agents
+```
+
+此时实体会从 `./.vf/agents/` 读取。`__VF_PROJECT_AI_ENTITIES_DIR__` 也支持嵌套路径，例如：
+
+```env
+__VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
+```
+
+此时实体会从 `./.vf/knowledge/entities/` 读取。
+
+边界说明：
+
+- 这里修改的是项目数据资产目录，不是配置文件位置
+- `.ai.config.json` / `.ai.dev.config.*` 仍然放在项目根或 `./infra/`
+- 修改 `.env` 后需要重启相关进程
 
 ## Adapter 兼容范围
 
