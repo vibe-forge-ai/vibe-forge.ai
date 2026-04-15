@@ -49,9 +49,9 @@ export {
   forkSession,
   getSessionMessages,
   listSessions,
-  respondSessionInteraction,
   moveQueuedMessage,
   reorderQueuedMessages,
+  respondSessionInteraction,
   updateQueuedMessage,
   updateSession,
   updateSessionTitle
