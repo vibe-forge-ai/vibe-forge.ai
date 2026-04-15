@@ -1,5 +1,5 @@
 const ROOT_ONLY_ARGS = new Set(['-h', '--help', '-V', '--version', 'help'])
-const ROOT_SUBCOMMANDS = new Set(['benchmark', 'clear', 'kill', 'list', 'ls', 'plugin', 'report', 'run', 'stop'])
+const ROOT_SUBCOMMANDS = new Set(['benchmark', 'clear', 'config', 'kill', 'list', 'ls', 'plugin', 'report', 'run', 'stop'])
 
 export const normalizeCliArgs = (args: string[]) => {
   const [firstArg] = args

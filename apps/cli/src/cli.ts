@@ -9,6 +9,7 @@ import { getCliDescription, getCliVersion } from '#~/utils.js'
 import { normalizeCliArgs } from './cli-argv'
 import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
+import { registerConfigCommand } from './commands/config'
 import { registerKillCommand } from './commands/kill'
 import { registerListCommand } from './commands/list'
 import { registerPluginCommand } from './commands/plugin'
@@ -29,6 +30,7 @@ Examples:
   vf run --include-skill vf-cli-quickstart "介绍 vf CLI 的常用命令"
   vf list
   vf list --view full
+  vf config list
   vf --resume <sessionId>
   vf list --running
 `
@@ -37,6 +39,7 @@ Examples:
 registerRunCommand(program)
 registerBenchmarkCommand(program)
 registerClearCommand(program)
+registerConfigCommand(program)
 registerListCommand(program)
 registerPluginCommand(program)
 registerReportCommand(program)

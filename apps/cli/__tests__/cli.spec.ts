@@ -13,6 +13,7 @@ describe('cli argv normalization', () => {
   it('preserves explicit subcommands and help/version flags', () => {
     expect(normalizeCliArgs(['run', 'hello'])).toEqual(['run', 'hello'])
     expect(normalizeCliArgs(['list'])).toEqual(['list'])
+    expect(normalizeCliArgs(['config', 'list'])).toEqual(['config', 'list'])
     expect(normalizeCliArgs(['benchmark', 'list'])).toEqual(['benchmark', 'list'])
     expect(normalizeCliArgs(['plugin', '--adapter', 'claude', 'add', 'demo@team-tools'])).toEqual([
       'plugin',

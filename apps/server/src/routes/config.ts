@@ -6,6 +6,7 @@ import process from 'node:process'
 import Router from '@koa/router'
 
 import {
+  buildConfigSections,
   composeBaseConfigSchemaBundle,
   composeWorkspaceConfigSchemaBundle,
   updateConfigFile,
@@ -52,53 +53,11 @@ const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
 }
 
 const buildSections = (config: Config | undefined) => {
-  const {
-    baseDir,
-    effort,
-    defaultAdapter,
-    defaultModelService,
-    defaultModel,
-    recommendedModels,
-    interfaceLanguage,
-    modelLanguage,
-    announcements,
-    shortcuts,
-    conversation,
-    notifications
-  } = config ?? {}
+  const sections = sanitize(buildConfigSections(config)) as ReturnType<typeof buildConfigSections>
 
   return {
-    general: {
-      baseDir,
-      effort,
-      defaultAdapter,
-      defaultModelService,
-      defaultModel,
-      recommendedModels: sanitize(recommendedModels),
-      interfaceLanguage,
-      modelLanguage,
-      announcements,
-      permissions: sanitize(config?.permissions),
-      env: sanitize(config?.env),
-      notifications: sanitize(notifications)
-    },
-    conversation: sanitize(conversation),
-    models: sanitize(config?.models),
-    modelServices: sanitize(config?.modelServices),
-    channels: sanitize(config?.channels),
-    adapters: sanitize(config?.adapters),
-    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
-    plugins: sanitize({
-      plugins: config?.plugins,
-      marketplaces: config?.marketplaces
-    }),
-    mcp: sanitize({
-      mcpServers: config?.mcpServers,
-      defaultIncludeMcpServers: config?.defaultIncludeMcpServers,
-      defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
-      noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
-    }),
-    shortcuts: sanitize(shortcuts)
+    ...sections,
+    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>
   }
 }
 
