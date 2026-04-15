@@ -76,14 +76,20 @@ export const serializeTaskInfo = (params: {
   info?: TaskInfo
 }) => {
   const info = params.info
-  const { session, onStop, serverSync, createdAt, ...safeInfo } = info ?? {}
+  const safeInfo = (() => {
+    if (info == null) {
+      return undefined
+    }
+    const { session, onStop, serverSync, createdAt, ...rest } = info
+    return rest
+  })()
   return {
     taskId: params.taskId,
     description: params.description ?? info?.description,
     status: info?.status ?? params.status,
     logs: info?.logs ?? [],
-    pendingInput: safeInfo.pendingInteraction,
+    pendingInput: safeInfo?.pendingInteraction,
     ...safeInfo,
-    guidance: buildTaskGuidance(safeInfo)
+    guidance: buildTaskGuidance(safeInfo ?? {})
   }
 }

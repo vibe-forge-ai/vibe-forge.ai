@@ -178,7 +178,7 @@ describe('run command interaction handling', () => {
     const stdin = new PassThrough()
     const decisionPromise = readCliPermissionDecision({
       format: 'stream-json',
-      stdin: stdin as NodeJS.ReadStream
+      stdin
     })
 
     stdin.end('{"type":"submit_input","data":"allow_once"}\n')
