@@ -56,6 +56,11 @@ import { createSessionExitController } from './session-exit-controller'
 import type { ActiveCliSessionRecord, ExitControllableSession, RunOptions } from './types'
 import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './types'
 
+type PrintInputCapableSession = ExitControllableSession & {
+  pid?: number
+  respondInteraction?: (id: string, data: string | string[]) => void | Promise<void>
+}
+
 const configureRunCommand = (command: Command) => {
   command
     .argument('[description...]')
@@ -388,23 +393,21 @@ Notes:
 
         await persistRecord()
 
-        let boundSession: (ExitControllableSession & { pid?: number }) | undefined
+        let boundSession: PrintInputCapableSession | undefined
         let stopInputBridge: (() => void) | undefined
         const permissionToolUseCache = new Map<string, string>()
-        let permissionRecoveryQueue = Promise.resolve()
+        let permissionRecoveryQueue: Promise<void> = Promise.resolve()
         const submitPrintInput = async (params: { interactionId?: string; data: string | string[] }) => {
           const interactionId = params.interactionId ?? pendingInteraction?.id
           if (interactionId == null || interactionId.trim() === '') {
             throw new TypeError('No pending interaction is available. Wait for an interaction_request event first.')
           }
-          if (
-            typeof (boundSession as { respondInteraction?: unknown } | undefined)?.respondInteraction !== 'function'
-          ) {
+          const respondInteraction = boundSession?.respondInteraction
+          if (typeof respondInteraction !== 'function') {
             throw new TypeError('The current session does not support submit_input events.')
           }
 
-          await (boundSession as { respondInteraction: (id: string, data: string | string[]) => Promise<void> | void })
-            .respondInteraction(interactionId, params.data)
+          await respondInteraction(interactionId, params.data)
 
           if (pendingInteraction?.id === interactionId) {
             pendingInteraction = undefined
@@ -471,7 +474,9 @@ Notes:
               if (permissionRecovery != null) {
                 permissionRecoveryQueue = permissionRecoveryQueue
                   .catch(() => {})
-                  .then(() => writeCliSessionPermissionRecovery(cwd, ctxId, sessionId, permissionRecovery))
+                  .then(async () => {
+                    await writeCliSessionPermissionRecovery(cwd, ctxId, sessionId, permissionRecovery)
+                  })
                 if (shouldPrintOutput) {
                   const nextState = handlePrintEvent({
                     event: {

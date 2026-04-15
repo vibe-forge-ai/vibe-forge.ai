@@ -4,6 +4,10 @@ import { createInterface } from 'node:readline'
 import { parseCliInputControlEvent } from './input-control'
 import type { RunInputFormat } from './types'
 
+type PermissionDecisionInput = NodeJS.ReadableStream & {
+  setEncoding(encoding: BufferEncoding): void
+}
+
 const resolveDecisionFromPayload = (payload: unknown) => {
   const event = parseCliInputControlEvent(payload)
   if (event.type === 'submit_input') {
@@ -15,7 +19,7 @@ const resolveDecisionFromPayload = (payload: unknown) => {
   throw new TypeError('Permission recovery expects submit_input or a plain text decision like allow_once.')
 }
 
-const readFirstLine = async (stdin: NodeJS.ReadStream) =>
+const readFirstLine = async (stdin: PermissionDecisionInput) =>
   await new Promise<string>((resolve, reject) => {
     const rl = createInterface({ input: stdin, crlfDelay: Infinity })
     let settled = false
@@ -44,7 +48,7 @@ const readFirstLine = async (stdin: NodeJS.ReadStream) =>
     stdin.once('error', onError)
   })
 
-const readAll = async (stdin: NodeJS.ReadStream) =>
+const readAll = async (stdin: PermissionDecisionInput) =>
   await new Promise<string>((resolve, reject) => {
     const chunks: string[] = []
     const onData = (chunk: string | Buffer) => {
@@ -70,7 +74,7 @@ const readAll = async (stdin: NodeJS.ReadStream) =>
 
 export const readCliPermissionDecision = async (params: {
   format: RunInputFormat
-  stdin: NodeJS.ReadStream
+  stdin: PermissionDecisionInput
 }) => {
   params.stdin.setEncoding('utf8')
   if (params.format === 'stream-json') {
