@@ -97,7 +97,7 @@ const getAllCommands = (): AnyCommandSpec<ChannelContext>[] => {
   if (_allCommands) return _allCommands
   _allCommands = [
     ...generalCommands(getPrefix, getAllCommands),
-    ...sessionCommands(),
+    ...sessionCommands(getPrefix),
     ...accessCommands()
   ]
   return _allCommands

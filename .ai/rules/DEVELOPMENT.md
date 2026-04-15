@@ -37,6 +37,8 @@ pnpm start
 - 如果主 worktree 也没有这些本地文件，仍然需要你自己补齐，或者显式导出所需环境变量。
 - 新建或切换到 worktree 后，先在当前 worktree 根目录执行一次 `pnpm install`，不要复用别的 worktree 的依赖状态。
 - `start.sh` 启动前会先做只读的 workspace 安装校验；如果当前 worktree 缺少 `node_modules` 状态文件或 workspace 链接，会直接报错并要求先执行 `pnpm install`。
+- 在 Codex worktree 中开发时，优先先切到一个和当前主线任务一致的分支名；不要长期停留在 detached HEAD，也不要为顺手修的小点单独起支线分支名。
+- 开发态前端标题会显示当前 git ref，用来区分多个 worktree；如果刚切了分支，需要重启 `start.sh` 后再刷新页面，标题才会更新。
 
 ### Worktree 启动前检查
 

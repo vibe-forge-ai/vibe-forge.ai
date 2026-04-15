@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import type { WSEvent } from '@vibe-forge/types'
+import type { SessionPermissionMode, WSEvent } from '@vibe-forge/types'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 
 const getServerBaseUrl = () => {
@@ -10,6 +10,10 @@ const getServerBaseUrl = () => {
 }
 
 export const getParentSessionId = () => {
+  const sessionId = process.env.__VF_PROJECT_AI_SESSION_ID__
+  if (sessionId != null && sessionId !== '') {
+    return sessionId
+  }
   const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__
   return ctxId ?? undefined
 }
@@ -18,6 +22,7 @@ export const createChildSession = async (params: {
   id: string
   title?: string
   parentSessionId?: string
+  permissionMode?: SessionPermissionMode
 }) => {
   const baseUrl = getServerBaseUrl()
   const response = await fetch(`${baseUrl}/api/sessions`, {
@@ -27,6 +32,7 @@ export const createChildSession = async (params: {
       id: params.id,
       title: params.title,
       parentSessionId: params.parentSessionId,
+      permissionMode: params.permissionMode,
       start: false
     })
   })

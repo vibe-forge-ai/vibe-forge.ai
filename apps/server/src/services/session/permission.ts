@@ -122,7 +122,7 @@ export const syncPermissionStateMirror = async (
   } = {}
 ) => {
   const adapter = input.adapter ?? getDb().getSession(sessionId)?.adapter
-  if (adapter !== 'claude-code' && adapter !== 'opencode') {
+  if (adapter !== 'claude-code' && adapter !== 'kimi' && adapter !== 'opencode') {
     return
   }
 
@@ -172,38 +172,46 @@ const resolveProjectDecision = (keys: string[], lists: ProjectPermissionLists): 
 export const resolvePermissionDecision = async (params: {
   sessionId: string
   subject: PermissionToolSubject | undefined
+  lookupKeys?: string[]
 }): Promise<PermissionResolution> => {
   const { subject, sessionId } = params
   if (subject == null) {
     return { result: 'inherit', source: 'none' }
   }
 
-  const key = subject.key
+  const keyCandidates = normalizeKeys([
+    subject.key,
+    ...(params.lookupKeys ?? [])
+  ])
   const sessionState = getSessionPermissionState(sessionId)
-  if (sessionState.onceDeny.includes(key)) {
+
+  const matchedOnceDenyKeys = keyCandidates.filter(key => sessionState.onceDeny.includes(key))
+  if (matchedOnceDenyKeys.length > 0) {
     await updateSessionPermissionState(sessionId, {
       ...sessionState,
-      onceDeny: sessionState.onceDeny.filter(item => item !== key)
+      onceDeny: sessionState.onceDeny.filter(item => !matchedOnceDenyKeys.includes(item))
     })
     return { result: 'deny', source: 'onceDeny', subject }
   }
-  if (sessionState.onceAllow.includes(key)) {
+
+  const matchedOnceAllowKeys = keyCandidates.filter(key => sessionState.onceAllow.includes(key))
+  if (matchedOnceAllowKeys.length > 0) {
     await updateSessionPermissionState(sessionId, {
       ...sessionState,
-      onceAllow: sessionState.onceAllow.filter(item => item !== key)
+      onceAllow: sessionState.onceAllow.filter(item => !matchedOnceAllowKeys.includes(item))
     })
     return { result: 'allow', source: 'onceAllow', subject }
   }
-  if (sessionState.deny.includes(key)) {
+
+  if (keyCandidates.some(key => sessionState.deny.includes(key))) {
     return { result: 'deny', source: 'sessionDeny', subject }
   }
-  if (sessionState.allow.includes(key)) {
+  if (keyCandidates.some(key => sessionState.allow.includes(key))) {
     return { result: 'allow', source: 'sessionAllow', subject }
   }
 
-  const projectDecision = resolveProjectDecision([key], await resolveProjectPermissionLists())
   return {
-    ...projectDecision,
+    ...resolveProjectDecision(keyCandidates, await resolveProjectPermissionLists()),
     subject
   }
 }

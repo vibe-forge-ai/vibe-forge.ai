@@ -36,7 +36,7 @@
 
 ## 默认内建 MCP
 
-- `task prepare` 会把内建 `vibe-forge` MCP server 作为 fallback MCP asset 注入到 workspace bundle。
+- `task prepare` 会把内建 `VibeForge` MCP server 作为 fallback MCP asset 注入到 workspace bundle。
 - 关键实现位置：
   - `packages/config/src/default-vibe-forge-mcp.ts`
   - `packages/task/src/prepare.ts`

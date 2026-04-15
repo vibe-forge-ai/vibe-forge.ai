@@ -48,6 +48,7 @@ function ChatRouteView({ session }: { session?: Session }) {
   const {
     messages,
     sessionInfo,
+    queuedMessages,
     interactionRequest,
     isReady,
     errorState,
@@ -123,6 +124,7 @@ function ChatRouteView({ session }: { session?: Session }) {
           sessionInfo={sessionInfo}
           sessionId={session.id}
           sessionTitle={session.title}
+          sessionStatus={session.status}
           isStarred={session.isStarred}
           isArchived={session.isArchived}
           tags={session.tags}
@@ -144,6 +146,7 @@ function ChatRouteView({ session }: { session?: Session }) {
           targetToolUseId={targetToolUseId}
           sessionInfo={sessionInfo}
           historyStatusNotices={historyStatusNotices}
+          queuedMessages={queuedMessages}
           onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}

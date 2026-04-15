@@ -1,6 +1,6 @@
 import type { WorkspaceAssetAdapter } from '@vibe-forge/types'
 
-const NATIVE_SKILL_ADAPTERS = new Set<WorkspaceAssetAdapter>(['claude-code', 'copilot', 'opencode'])
+const NATIVE_SKILL_ADAPTERS = new Set<WorkspaceAssetAdapter>(['claude-code', 'copilot', 'kimi', 'opencode'])
 
 export const supportsNativeProjectSkills = (adapter?: string): adapter is WorkspaceAssetAdapter =>
   adapter != null && NATIVE_SKILL_ADAPTERS.has(adapter as WorkspaceAssetAdapter)
@@ -10,5 +10,7 @@ export const resolveNativeSkillDiagnosticReason = (adapter: WorkspaceAssetAdapte
     ? 'Synced into the Claude mock home as a native skill.'
     : adapter === 'copilot'
     ? 'Staged for Copilot CLI native skill discovery.'
+    : adapter === 'kimi'
+    ? 'Staged into a Kimi --skills-dir directory as a native skill.'
     : 'Mirrored into OPENCODE_CONFIG_DIR as a native skill.'
 )

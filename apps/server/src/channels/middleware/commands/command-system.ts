@@ -308,7 +308,7 @@ const formatArgumentUsage = (argument: CommandArgumentSpec) => {
     case 'optional':
       return `[${argument.name}${choiceSuffix}]`
     case 'variadic':
-      return `<${argument.name}${choiceSuffix}...>`
+      return `[${argument.name}${choiceSuffix}...]`
     case 'rest':
       return `<${argument.name}${choiceSuffix}>`
   }

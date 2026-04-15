@@ -8,6 +8,7 @@ const asRecord = (value: unknown): Record<string, unknown> => (
 
 const REDACTED = '[REDACTED]'
 const SENSITIVE_KEY_PATTERN = /api[-_]?key|token|secret|authorization|password|cookie|session[-_]?token|bearer/i
+const MARKDOWN_FENCE_LINE_PATTERN = /(^|\n)([ \t]{0,3})```/g
 
 const sanitizeEnvRecord = (value: unknown) => {
   const record = asRecord(value)
@@ -17,6 +18,18 @@ const sanitizeEnvRecord = (value: unknown) => {
     keys: Object.keys(record).sort()
   }
 }
+
+const escapeMarkdownFenceLines = (value: string) => (
+  value
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(
+      MARKDOWN_FENCE_LINE_PATTERN,
+      (_match, lineStart: string, indent: string) => `${lineStart}${indent}\\\`\\\`\\\``
+    )
+)
+
+const formatLogText = (value: unknown) => escapeMarkdownFenceLines(String(value ?? ''))
 
 const sanitizeHookLogValue = (
   value: unknown,
@@ -92,16 +105,20 @@ export default definePlugin({
       case 'adapter:codex:Bash': {
         const toolInput = asRecord(sanitizeHookLogValue(input.toolInput, 'toolInput'))
         const toolResponse = asRecord(sanitizeHookLogValue(input.toolResponse, 'toolResponse'))
+        const description = formatLogText(toolInput.description)
+        const command = formatLogText(toolInput.command)
+        const stdout = formatLogText(toolResponse.stdout ?? input.toolResponse ?? '<no stdout>')
+        const stderr = formatLogText(toolResponse.stderr ?? '<no stderr>')
         logger.info(
           input.toolName,
-          toolInput.description,
+          description,
           '\n```text\n' +
             `isImage: ${toolResponse.isImage ?? ''}\n` +
             `interrupted: ${toolResponse.interrupted ?? ''}\n` +
-            `> ${toolInput.command ?? ''}\n\n` +
-            `stdout: ${toolResponse.stdout ?? input.toolResponse ?? '<no stdout>'}\n` +
+            `> ${command}\n\n` +
+            `stdout: ${stdout}\n` +
             '-----------------------------------------\n' +
-            `stderr: ${toolResponse.stderr ?? '<no stderr>'}\n` +
+            `stderr: ${stderr}\n` +
             '\n```'
         )
         break

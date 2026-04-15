@@ -1,4 +1,9 @@
-import type { ClaudeCodeMarketplaceOptions, MarketplaceConfig, MarketplaceConfigEntry } from '@vibe-forge/types'
+import type {
+  ClaudeCodeMarketplaceOptions,
+  MarketplaceConfig,
+  MarketplaceConfigEntry,
+  MarketplaceDeclaredPluginConfig
+} from '@vibe-forge/types'
 
 import { normalizeMarketplaceConfig } from './marketplace-config-source'
 export { normalizeMarketplaceConfig } from './marketplace-config-source'
@@ -17,6 +22,39 @@ const mergeClaudeCodeMarketplaceOptions = (
   }
 }
 
+const mergeMarketplaceDeclaredPluginEntry = (
+  left?: MarketplaceDeclaredPluginConfig,
+  right?: MarketplaceDeclaredPluginConfig
+): MarketplaceDeclaredPluginConfig | undefined => {
+  if (left == null) return right
+  if (right == null) return left
+
+  return {
+    ...(right.enabled != null ? { enabled: right.enabled } : left.enabled != null ? { enabled: left.enabled } : {}),
+    ...(right.scope != null ? { scope: right.scope } : left.scope != null ? { scope: left.scope } : {})
+  }
+}
+
+const mergeMarketplaceDeclaredPlugins = (
+  left?: Record<string, MarketplaceDeclaredPluginConfig>,
+  right?: Record<string, MarketplaceDeclaredPluginConfig>
+) => {
+  if (left == null && right == null) return undefined
+
+  const keys = new Set([
+    ...Object.keys(left ?? {}),
+    ...Object.keys(right ?? {})
+  ])
+  const entries = Array.from(keys)
+    .map((key) => {
+      const mergedEntry = mergeMarketplaceDeclaredPluginEntry(left?.[key], right?.[key])
+      return mergedEntry == null ? undefined : [key, mergedEntry] as const
+    })
+    .filter((entry): entry is readonly [string, MarketplaceDeclaredPluginConfig] => entry != null)
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
 const mergeMarketplaceEntry = (
   left: MarketplaceConfigEntry | undefined,
   right: MarketplaceConfigEntry | undefined
@@ -27,9 +65,16 @@ const mergeMarketplaceEntry = (
 
   if (left.type === 'claude-code' && right.type === 'claude-code') {
     const options = mergeClaudeCodeMarketplaceOptions(left.options, right.options)
+    const plugins = mergeMarketplaceDeclaredPlugins(left.plugins, right.plugins)
     return {
       type: 'claude-code',
       ...(right.enabled != null ? { enabled: right.enabled } : left.enabled != null ? { enabled: left.enabled } : {}),
+      ...(right.syncOnRun != null
+        ? { syncOnRun: right.syncOnRun }
+        : left.syncOnRun != null
+        ? { syncOnRun: left.syncOnRun }
+        : {}),
+      ...(plugins != null ? { plugins } : {}),
       ...(options != null ? { options } : {})
     }
   }

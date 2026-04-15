@@ -19,6 +19,7 @@ export interface PermissionInteractionContext {
   deniedTools?: string[]
   reasons?: string[]
   subjectKey?: string
+  subjectLookupKeys?: string[]
   subjectLabel?: string
   scope?: 'tool'
   projectConfigPath?: string

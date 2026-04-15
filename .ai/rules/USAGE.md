@@ -3,21 +3,13 @@ alwaysApply: false
 description: 仅在处理项目接入、安装、运行 Vibe Forge 服务、CLI 用法或插件资产时加载的接入文档。
 ---
 
-# 在自己项目中使用
+# 使用文档入口
 
-本文件是接入入口页；安装、运行和 CLI 细节拆到 `usage/`。
+`.ai/rules` 只负责维护规则、架构约束和实现边界。
 
-## 先看这些
+如果你要在自己的项目中使用 Vibe Forge，继续看 [docs/index.md](../docs/index.md)。
 
-- [安装与准备](./usage/install.md)
-- [启动服务](./usage/runtime.md)
-- [Web UI 与 Terminal 视图](./usage/web.md)
-- [CLI 与示例](./usage/cli.md)
-- [插件与数据资产](./usage/plugins.md)
+约定：
 
-## 接入目标
-
-- 不需要 clone 本仓库，只需要安装相关包。
-- 配置与会话基于你的项目目录，而不是 Vibe Forge 仓库本身。
-- UI、CLI、MCP、hooks runtime 都可以按需单独接入。
-- Web UI 的会话页支持独立 `terminal` 视图，但它和 chat 消息流是两条不同的运行链路。
+- 面向用户的安装、运行、CLI 和插件使用说明统一放在 `.ai/docs/`
+- `.ai/rules` 中只保留对这些文档的入口提示，不再直接承载具体使用说明

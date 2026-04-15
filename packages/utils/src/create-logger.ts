@@ -1,8 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import process from 'node:process'
 
 import type { LogLevel, Logger } from '@vibe-forge/types'
+
+import { resolveProjectAiPath } from './ai-path'
 
 export type { Logger } from '@vibe-forge/types'
 
@@ -24,6 +27,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 const YAML_INDENT = '  '
 const YAML_RESERVED_PATTERN =
   /^(?:[-+]?\.inf|\.nan|[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:e[-+]?\d+)?|true|false|null|[~yn]|yes|no|on|off)$/i
+const MARKDOWN_FENCE_LINE_PATTERN = /(^|\n)([ \t]{0,3})```/g
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null &&
@@ -62,6 +66,15 @@ const formatYamlInlineValue = (value: YamlLogValue): string => {
 }
 
 const normalizeMultilineString = (value: string) => value.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+const escapeMarkdownFenceLines = (value: string) => (
+  value.replace(
+    MARKDOWN_FENCE_LINE_PATTERN,
+    (_match, lineStart: string, indent: string) => `${lineStart}${indent}\\\`\\\`\\\``
+  )
+)
+
+const formatMultilineLogString = (value: string) => escapeMarkdownFenceLines(normalizeMultilineString(value))
 
 const toYamlLogValue = (value: unknown, stack = new WeakSet<object>()): YamlLogValue => {
   if (value == null) return null
@@ -142,7 +155,7 @@ const renderYamlMultilineString = (value: string, indentLevel: number): string[]
   const childIndent = YAML_INDENT.repeat(indentLevel + 1)
   return [
     `${indent}>-`,
-    ...normalizeMultilineString(value)
+    ...formatMultilineLogString(value)
       .split('\n')
       .map(line => `${childIndent}${line}`)
   ]
@@ -161,7 +174,7 @@ const renderYamlLines = (value: YamlLogValue, indentLevel = 0): string[] => {
       if (typeof item === 'string' && isMultilineString(item)) {
         return [
           `${indent}- >-`,
-          ...normalizeMultilineString(item)
+          ...formatMultilineLogString(item)
             .split('\n')
             .map(line => `${YAML_INDENT.repeat(indentLevel + 1)}${line}`)
         ]
@@ -191,7 +204,7 @@ const renderYamlLines = (value: YamlLogValue, indentLevel = 0): string[] => {
       if (typeof entryValue === 'string' && isMultilineString(entryValue)) {
         return [
           `${indent}${renderedKey}: >-`,
-          ...normalizeMultilineString(entryValue)
+          ...formatMultilineLogString(entryValue)
             .split('\n')
             .map(line => `${YAML_INDENT.repeat(indentLevel + 1)}${line}`)
         ]
@@ -217,9 +230,10 @@ export const formatLoggerMessage = (...args: unknown[]) => (
         return arg
       }
       if (arg instanceof Error) {
+        const errorText = formatMultilineLogString(arg.stack ?? String(arg))
         return (
           '\n```text\n' +
-          `${arg.stack}\n` +
+          `${errorText}\n` +
           '```'
         )
       }
@@ -248,10 +262,10 @@ export const createLogger = (
   level: LogLevel = 'info'
 ): Logger => {
   const normalizedSessionId = sessionId ?? 'default'
-  const taskDir = resolve(
-    cwd,
-    `.ai${logPrefix}/logs/${taskId}`
-  )
+  const normalizedLogPrefix = logPrefix
+    .split(/[\\/]/)
+    .filter(Boolean)
+  const taskDir = resolveProjectAiPath(cwd, process.env, ...normalizedLogPrefix, 'logs', taskId)
 
   const loggerFilePath = resolve(
     taskDir,

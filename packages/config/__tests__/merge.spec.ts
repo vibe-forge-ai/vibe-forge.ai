@@ -32,6 +32,12 @@ describe('mergeConfigs', () => {
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
+            syncOnRun: true,
+            plugins: {
+              reviewer: {
+                scope: 'review'
+              }
+            },
             options: {
               source: {
                 source: 'settings',
@@ -82,7 +88,15 @@ describe('mergeConfigs', () => {
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
-            enabled: false
+            enabled: false,
+            plugins: {
+              reviewer: {
+                enabled: false
+              },
+              chrome: {
+                scope: 'browser'
+              }
+            }
           }
         },
         plugins: [
@@ -122,6 +136,16 @@ describe('mergeConfigs', () => {
       'team-tools': {
         type: 'claude-code',
         enabled: false,
+        syncOnRun: true,
+        plugins: {
+          reviewer: {
+            enabled: false,
+            scope: 'review'
+          },
+          chrome: {
+            scope: 'browser'
+          }
+        },
         options: {
           source: {
             source: 'settings',

@@ -173,8 +173,8 @@ describe('workspace asset prompt builders', () => {
     ])
 
     expect(prompt).toContain('reviewer: 负责代码审查')
-    expect(prompt).toContain('`vibe-forge.StartTasks`')
-    expect(prompt).toContain('`GetTaskInfo`')
+    expect(prompt).toContain('`VibeForge.StartTasks`')
+    expect(prompt).toContain('`VibeForge.GetTaskInfo`')
     expect(prompt).toContain('`wait`')
     expect(prompt).not.toContain('run-tasks')
     expect(prompt).not.toContain('需要关注变更风险')

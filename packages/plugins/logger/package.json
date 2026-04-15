@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/plugin-logger",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {

@@ -4,6 +4,7 @@ import process from 'node:process'
 
 import { DefinitionLoader } from '@vibe-forge/definition-loader'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 const filterResolvedSkills = async (
   cwd: string,
@@ -66,10 +67,7 @@ export const ensureOpenCodeConfigDir = async (params: {
   if (baseConfigDir == null && resolvedSkills.size === 0 && planOverlays.length === 0) return undefined
 
   const configDir = resolve(
-    params.ctx.cwd,
-    '.ai',
-    '.mock',
-    '.opencode-adapter',
+    resolveProjectAiPath(params.ctx.cwd, params.ctx.env, '.mock', '.opencode-adapter'),
     params.options.sessionId,
     'config-dir'
   )

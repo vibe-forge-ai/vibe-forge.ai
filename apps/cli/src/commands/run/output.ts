@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterErrorData, AdapterOutputEvent, TaskDetail } from '@vibe-forge/types'
+import type { AdapterErrorData, AdapterOutputEvent, AskUserQuestionParams, TaskDetail } from '@vibe-forge/types'
 import { extractTextFromMessage } from '@vibe-forge/utils/chat-message'
 
 import type { RunOutputFormat } from './types'
@@ -40,6 +40,20 @@ export const getAdapterErrorMessage = (data: AdapterErrorData) => {
   return details ? `${data.message}\n${details}` : data.message
 }
 
+export const getAdapterInteractionMessage = (payload: AskUserQuestionParams) => {
+  const header = payload.kind === 'permission' ? 'Permission required' : 'Input required'
+  const optionLines = (payload.options ?? [])
+    .map((option) => {
+      const value = option.value ?? option.label
+      return option.description != null && option.description.trim() !== ''
+        ? `- ${value}: ${option.description}`
+        : `- ${value}`
+    })
+  return optionLines.length > 0
+    ? `${header}\n${payload.question}\nOptions:\n${optionLines.join('\n')}`
+    : `${header}\n${payload.question}`
+}
+
 export const shouldPrintResumeHint = (input: {
   shouldPrintOutput: boolean
   status: TaskDetail['status']
@@ -50,6 +64,7 @@ export const handlePrintEvent = (input: {
   outputFormat: RunOutputFormat
   lastAssistantText: string | undefined
   didExitAfterError: boolean
+  exitOnInteractionRequest?: boolean
   stopExitsStreamJson?: boolean
   log: (message: string) => void
   errorLog: (message: string) => void
@@ -58,6 +73,30 @@ export const handlePrintEvent = (input: {
   const nextAssistantText = input.event.type === 'message'
     ? (getPrintableAssistantText(input.event.data) ?? input.lastAssistantText)
     : input.lastAssistantText
+
+  if (input.event.type === 'interaction_request') {
+    switch (input.outputFormat) {
+      case 'stream-json':
+      case 'json':
+        input.log(JSON.stringify(input.event, null, 2))
+        if (input.exitOnInteractionRequest === true) {
+          input.requestExit(1)
+        }
+        return {
+          lastAssistantText: nextAssistantText,
+          didExitAfterError: input.didExitAfterError || input.exitOnInteractionRequest === true
+        }
+      case 'text':
+        input.errorLog(getAdapterInteractionMessage(input.event.data.payload))
+        if (input.exitOnInteractionRequest === true) {
+          input.requestExit(1)
+        }
+        return {
+          lastAssistantText: nextAssistantText,
+          didExitAfterError: input.didExitAfterError || input.exitOnInteractionRequest === true
+        }
+    }
+  }
 
   if (input.event.type === 'error') {
     const isFatal = input.event.data.fatal !== false

@@ -69,13 +69,6 @@ export const ChromeDevtoolsTool = defineToolRender(({ item, resultItem }) => {
               )}
               {hasResultDetails && resultItem != null && (
                 <div className='tool-detail-section'>
-                  <div className='tool-detail-section__header'>
-                    <Tooltip title={t('chat.result')} {...TOOL_TOOLTIP_PROPS}>
-                      <span className='tool-detail-section__icon material-symbols-rounded'>
-                        {getToolSectionIcon('result')}
-                      </span>
-                    </Tooltip>
-                  </div>
                   <ToolResultContent content={resultItem.content} />
                 </div>
               )}

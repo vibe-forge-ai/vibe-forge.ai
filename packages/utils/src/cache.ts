@@ -1,8 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import process from 'node:process'
 
 import type { Cache } from '@vibe-forge/types'
+
+import { resolveProjectAiPath } from './ai-path'
 
 export const getCachePath = (
   cwd: string,
@@ -10,7 +13,7 @@ export const getCachePath = (
   sessionId: string | undefined,
   key: keyof Cache
 ) => {
-  const taskDir = resolve(cwd, '.ai/caches', taskId)
+  const taskDir = resolveProjectAiPath(cwd, process.env, 'caches', taskId)
   const cacheDir = sessionId ? resolve(taskDir, sessionId) : taskDir
   return resolve(cacheDir, `${key}.json`)
 }

@@ -1,24 +1,9 @@
-import { resolve } from 'node:path'
+import { resolveProjectAiPath } from './ai-path'
 
-export const CANONICAL_PERMISSION_TOOL_KEYS = [
-  'Bash',
-  'Read',
-  'Write',
-  'Edit',
-  'Glob',
-  'Grep',
-  'List',
-  'Lsp',
-  'Task',
-  'Skill',
-  'Question',
-  'TodoRead',
-  'TodoWrite',
-  'WebFetch',
-  'WebSearch'
-] as const
+import { isBarePermissionKey, normalizePermissionToolName } from './permission-tool'
 
-export type CanonicalPermissionToolKey = (typeof CANONICAL_PERMISSION_TOOL_KEYS)[number]
+export { CANONICAL_PERMISSION_TOOL_KEYS, isBarePermissionKey, normalizePermissionToolName } from './permission-tool'
+export type { CanonicalPermissionToolKey, PermissionToolSubject } from './permission-tool'
 
 export interface SessionPermissionState {
   allow: string[]
@@ -27,49 +12,7 @@ export interface SessionPermissionState {
   onceDeny: string[]
 }
 
-export interface PermissionToolSubject {
-  key: string
-  label: string
-  scope: 'tool'
-}
-
-const CANONICAL_KEY_SET = new Set<string>(CANONICAL_PERMISSION_TOOL_KEYS)
-
-const TOOL_NAME_ALIASES: Record<string, CanonicalPermissionToolKey> = {
-  agent: 'Task',
-  askuserquestion: 'Question',
-  bash: 'Bash',
-  command: 'Bash',
-  commandexecution: 'Bash',
-  commands: 'Bash',
-  edit: 'Edit',
-  fetch: 'WebFetch',
-  glob: 'Glob',
-  grep: 'Grep',
-  list: 'List',
-  ls: 'List',
-  lsp: 'Lsp',
-  patch: 'Edit',
-  question: 'Question',
-  read: 'Read',
-  readfile: 'Read',
-  shell: 'Bash',
-  skill: 'Skill',
-  subagent: 'Task',
-  task: 'Task',
-  todoread: 'TodoRead',
-  todowrite: 'TodoWrite',
-  view: 'Read',
-  webfetch: 'WebFetch',
-  websearch: 'WebSearch',
-  write: 'Write'
-}
-
 const uniqueStrings = (values: string[]) => [...new Set(values)]
-
-const normalizeAliasKey = (value: string) => value.replace(/[\s_-]+/g, '').toLowerCase()
-
-const sanitizeBareKey = (value: string) => value.replace(/[^a-z0-9-]+/gi, '').toLowerCase()
 
 export const createEmptySessionPermissionState = (): SessionPermissionState => ({
   allow: [],
@@ -100,8 +43,6 @@ export const normalizeSessionPermissionState = (value: unknown): SessionPermissi
   }
 }
 
-export const isBarePermissionKey = (value: string) => /^[a-z][a-z0-9-]*$/i.test(value)
-
 export const splitManagedPermissionKeys = (values: string[] | undefined) => {
   const bare: string[] = []
   const other: string[] = []
@@ -124,69 +65,5 @@ export const splitManagedPermissionKeys = (values: string[] | undefined) => {
 }
 
 export const resolvePermissionMirrorPath = (cwd: string, adapter: string, sessionId: string) => (
-  resolve(cwd, '.ai', '.mock', 'permission-state', adapter, `${sessionId}.json`)
+  resolveProjectAiPath(cwd, undefined, '.mock', 'permission-state', adapter, `${sessionId}.json`)
 )
-
-export const normalizePermissionToolName = (
-  value: string | undefined,
-  input: {
-    mcpServer?: string
-  } = {}
-): PermissionToolSubject | undefined => {
-  const serverName = input.mcpServer?.trim()
-  if (serverName != null && serverName !== '') {
-    const bareKey = sanitizeBareKey(serverName)
-    if (bareKey !== '') {
-      return {
-        key: bareKey,
-        label: bareKey,
-        scope: 'tool'
-      }
-    }
-  }
-
-  const trimmed = value?.trim()
-  if (trimmed == null || trimmed === '') return undefined
-
-  if (CANONICAL_KEY_SET.has(trimmed)) {
-    return {
-      key: trimmed,
-      label: trimmed,
-      scope: 'tool'
-    }
-  }
-
-  if (trimmed.startsWith('mcp__')) {
-    const parts = trimmed.split('__')
-    const serverPart = parts[1]?.trim()
-    const bareKey = sanitizeBareKey(serverPart ?? '')
-    if (bareKey !== '') {
-      return {
-        key: bareKey,
-        label: bareKey,
-        scope: 'tool'
-      }
-    }
-  }
-
-  const normalizedAlias = normalizeAliasKey(trimmed)
-  const mappedAlias = TOOL_NAME_ALIASES[normalizedAlias]
-  if (mappedAlias != null) {
-    return {
-      key: mappedAlias,
-      label: mappedAlias,
-      scope: 'tool'
-    }
-  }
-
-  const bareKey = sanitizeBareKey(trimmed)
-  if (bareKey !== '' && isBarePermissionKey(bareKey)) {
-    return {
-      key: bareKey,
-      label: bareKey,
-      scope: 'tool'
-    }
-  }
-
-  return undefined
-}

@@ -587,6 +587,24 @@
     overflow-wrap: anywhere;
   }
 
+  .tool-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tool-detail-list-item {
+    padding: 4px 0 4px 10px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
   .tool-inline-token-list {
     display: flex;
     flex-wrap: wrap;
