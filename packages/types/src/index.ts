@@ -1,4 +1,5 @@
 export * from './adapter'
+export * from './adapter-package'
 export * from './benchmark'
 export * from './cache'
 export * from './common'

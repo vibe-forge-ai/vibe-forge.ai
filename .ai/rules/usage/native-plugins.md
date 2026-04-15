@@ -54,6 +54,11 @@ marketplaces:
   <marketplace-name>:
     type: claude-code
     enabled: true
+    syncOnRun: true | false
+    plugins:
+      <plugin-name>:
+        enabled: true | false
+        scope: optional-scope
     options:
       source: ...
 ```
@@ -71,6 +76,12 @@ marketplaces:
 - `github`：直接指向一个 marketplace 仓库
 - `settings`：在你的项目配置里直接内联一个最小 catalog
 
+如果你在 `plugins` 里声明了某个 marketplace plugin：
+
+- 第一次 `vf run` 创建新会话时，Vibe Forge 会自动把它安装到项目里的 `.ai/plugins`
+- `syncOnRun: true` 时，每次创建新会话前都会按 marketplace 重新同步一次
+- `syncOnRun: false` 或不写时，只会在缺失时自动补装，不会每次强制更新
+
 ## 示例：接入 Superpowers Marketplace
 
 如果你想直接使用 Superpowers 维护的 Claude marketplace，可以这样配：
@@ -80,6 +91,12 @@ marketplaces:
   superpowers-marketplace:
     type: claude-code
     enabled: true
+    syncOnRun: true
+    plugins:
+      superpowers:
+        scope: superpowers
+      superpowers-chrome:
+        enabled: false
     options:
       source:
         source: github
@@ -103,6 +120,8 @@ npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 
 前提是这个 plugin 名字已经存在于该 marketplace 的 `marketplace.json` 里。
 
+如果你已经在 `plugins` 里声明了它们，也可以不手动执行这些安装命令，直接运行 `vf run` 让项目在启动时自动同步。
+
 ## 示例：项目内联一个最小 Marketplace
 
 如果你不想依赖整个外部 marketplace，也可以只在项目里声明你真正要用的几个插件：
@@ -112,6 +131,11 @@ marketplaces:
   superpowers:
     type: claude-code
     enabled: true
+    plugins:
+      superpowers:
+        scope: superpowers
+      superpowers-chrome:
+        enabled: false
     options:
       source:
         source: settings
@@ -158,6 +182,7 @@ npx vf plugin --adapter claude add private-journal-mcp@superpowers
 
 - Claude 插件里的可转换能力会进入项目统一资产层
 - Claude adapter 运行时会自动启用对应的项目级原生插件
+- 如果插件是在 `marketplaces.<name>.plugins` 里声明的，`vf run` 也会在启动时自动补装或同步它
 - 你不需要再手动维护额外的 Claude 用户目录配置
 
 ## 当前限制

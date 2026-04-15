@@ -1,6 +1,12 @@
 import process from 'node:process'
 
-import { buildConfigJsonVariables, loadConfig, resolveUseDefaultVibeForgeMcpServer } from '@vibe-forge/config'
+import {
+  buildConfigJsonVariables,
+  loadConfig,
+  mergeConfigs,
+  resolveUseDefaultVibeForgeMcpServer
+} from '@vibe-forge/config'
+import { syncConfiguredMarketplacePlugins } from '@vibe-forge/managed-plugins'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { getCache, setCache } from '@vibe-forge/utils/cache'
 import { createLogger } from '@vibe-forge/utils/create-logger'
@@ -54,16 +60,32 @@ export const prepare = async (
 
   const jsonVariables = buildConfigJsonVariables(cwd, env)
   const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
-  const assets = adapterOptions.assetBundle ?? await resolveWorkspaceAssetBundle({
-    cwd,
-    configs: [config, userConfig],
-    plugins: options.plugins,
-    useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
-      runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
-      projectConfig: config,
-      userConfig
+  const mergedConfig = mergeConfigs(config, userConfig)
+  const assets = adapterOptions.assetBundle ?? await (async () => {
+    if (adapterOptions.type === 'create') {
+      const syncResults = await syncConfiguredMarketplacePlugins({
+        cwd,
+        marketplaces: mergedConfig?.marketplaces
+      })
+      const updatedPlugins = syncResults
+        .filter(result => result.action !== 'skipped')
+        .map(result => `${result.plugin}@${result.marketplace}`)
+      if (updatedPlugins.length > 0) {
+        logger.info({ plugins: updatedPlugins }, '[plugins] Synchronized declared marketplace plugins')
+      }
+    }
+
+    return resolveWorkspaceAssetBundle({
+      cwd,
+      configs: [config, userConfig],
+      plugins: options.plugins,
+      useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
+        runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
+        projectConfig: config,
+        userConfig
+      })
     })
-  })
+  })()
   return [
     {
       ctxId,

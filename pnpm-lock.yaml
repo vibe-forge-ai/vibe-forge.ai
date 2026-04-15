@@ -106,6 +106,9 @@ importers:
       '@vibe-forge/plugin-cli-skills':
         specifier: workspace:^
         version: link:../../packages/plugins/cli-skills
+      '@vibe-forge/managed-plugins':
+        specifier: workspace:^
+        version: link:../../packages/managed-plugins
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
@@ -532,6 +535,15 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
 
+  packages/managed-plugins:
+    dependencies:
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
@@ -610,6 +622,9 @@ importers:
       '@vibe-forge/hooks':
         specifier: workspace:^
         version: link:../hooks
+      '@vibe-forge/managed-plugins':
+        specifier: workspace:^
+        version: link:../managed-plugins
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types

@@ -157,6 +157,7 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 另外，当前已支持一条 adapter-native 插件安装链路：
 
 - `claude-code`: 支持 Claude 原生插件安装与 marketplace 解析，Vibe Forge 会自动处理项目侧的兼容接入
+- `claude-code`: 还支持在 `marketplaces.<name>.plugins` 里声明项目默认插件，`vf run` 创建新会话时会自动补装或同步
 
 当前还未接入：
 
