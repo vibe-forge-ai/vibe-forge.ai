@@ -4,9 +4,13 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { convertClaudePluginToVibeForge } from '../../adapters/claude-code/src/plugins/convert'
-import { detectClaudePluginRoot, mergeClaudePluginManifest, parseClaudePluginManifest } from '../../adapters/claude-code/src/plugins/source'
 import { syncConfiguredMarketplacePlugins } from '#~/managed-plugin-install.js'
+import { convertClaudePluginToVibeForge } from '../../adapters/claude-code/src/plugins/convert'
+import {
+  detectClaudePluginRoot,
+  mergeClaudePluginManifest,
+  parseClaudePluginManifest
+} from '../../adapters/claude-code/src/plugins/source'
 
 const { loadAdapterPluginInstallerMock } = vi.hoisted(() => ({
   loadAdapterPluginInstallerMock: vi.fn()

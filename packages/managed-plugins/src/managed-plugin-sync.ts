@@ -20,15 +20,17 @@ const matchesMarketplaceSource = (
 
 export const syncConfiguredMarketplacePlugins = async (params: {
   cwd: string
-  marketplaces: Record<string, {
-    type: string
-    enabled?: boolean
-    syncOnRun?: boolean
-    plugins?: Record<string, {
+  marketplaces:
+    | Record<string, {
+      type: string
       enabled?: boolean
-      scope?: string
+      syncOnRun?: boolean
+      plugins?: Record<string, {
+        enabled?: boolean
+        scope?: string
+      }>
     }>
-  }> | undefined
+    | undefined
 }) => {
   const results: Array<{
     marketplace: string

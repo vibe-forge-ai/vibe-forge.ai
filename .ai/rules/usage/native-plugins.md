@@ -74,7 +74,7 @@ marketplaces:
 其中最常见的是：
 
 - `github`：直接指向一个 marketplace 仓库
-- `settings`：在你的项目配置里直接内联一个最小 catalog
+- `settings`：在项目配置里直接内联一个最小 catalog
 
 如果你在 `plugins` 里声明了某个 marketplace plugin：
 
@@ -122,54 +122,7 @@ npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 
 如果你已经在 `plugins` 里声明了它们，也可以不手动执行这些安装命令，直接运行 `vf run` 让项目在启动时自动同步。
 
-## 示例：项目内联一个最小 Marketplace
-
-如果你不想依赖整个外部 marketplace，也可以只在项目里声明你真正要用的几个插件：
-
-```yaml
-marketplaces:
-  superpowers:
-    type: claude-code
-    enabled: true
-    plugins:
-      superpowers:
-        scope: superpowers
-      superpowers-chrome:
-        enabled: false
-    options:
-      source:
-        source: settings
-        plugins:
-          - name: superpowers
-            source:
-              source: github
-              repo: obra/superpowers
-              ref: main
-          - name: superpowers-chrome
-            source:
-              source: github
-              repo: obra/superpowers-chrome
-              ref: main
-          - name: private-journal-mcp
-            source:
-              source: github
-              repo: obra/private-journal-mcp
-              ref: main
-```
-
-然后安装：
-
-```bash
-npx vf plugin --adapter claude add superpowers@superpowers
-npx vf plugin --adapter claude add superpowers-chrome@superpowers
-npx vf plugin --adapter claude add private-journal-mcp@superpowers
-```
-
-说明：
-
-- `source: settings` 适合把项目依赖锁到你自己指定的仓库和 ref
-- 这种内联 catalog 里的 `plugins[].source` 必须写显式对象，不能写相对路径字符串
-- 相对路径插件源只适用于目录型 marketplace，因为只有目录型 marketplace 才有本地 root 可解析
+如果你不想依赖整个外部 marketplace，也可以用 `options.source.source: settings` 在项目配置里内联一个最小 catalog，只声明你真正需要的几个插件。
 
 ## 用户视角下的行为
 

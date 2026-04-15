@@ -1,4 +1,1 @@
-export {
-  addAdapterPlugin,
-  installAdapterPluginWithInstaller
-} from '@vibe-forge/managed-plugins'
+export { addAdapterPlugin, installAdapterPluginWithInstaller } from '@vibe-forge/managed-plugins'
