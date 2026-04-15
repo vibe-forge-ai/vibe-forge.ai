@@ -13,7 +13,6 @@ export type WorkspaceAssetKind =
   | 'command'
   | 'mode'
   | 'nativePlugin'
-export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'gemini' | 'opencode'
 export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'copilot' | 'gemini' | 'kimi' | 'opencode'
 export type AssetDiagnosticStatus = 'native' | 'translated' | 'prompt' | 'skipped'
 
