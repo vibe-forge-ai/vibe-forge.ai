@@ -73,6 +73,8 @@ export function buildAdapterAssetPlan(params: {
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
         ? 'Mapped into the Codex native hooks bridge.'
+        : params.adapter === 'kimi'
+        ? 'Mapped into the Kimi native hooks bridge.'
         : 'Mapped into the OpenCode native hooks bridge.',
       packageId: asset.packageId,
       scope: asset.scope,
@@ -115,13 +117,15 @@ export function buildAdapterAssetPlan(params: {
         taskOverlaySource: asset.taskOverlaySource
       })
     })
-  } else if (params.adapter === 'codex') {
+  } else if (params.adapter === 'codex' || params.adapter === 'kimi') {
     params.bundle.opencodeOverlayAssets.forEach((asset) => {
       diagnostics.push({
         assetId: asset.id,
         adapter: params.adapter,
         status: 'skipped',
-        reason: 'No stable native Codex mapping exists for this asset kind in V1.',
+        reason: params.adapter === 'codex'
+          ? 'No stable native Codex mapping exists for this asset kind in V1.'
+          : 'No stable native Kimi mapping exists for this asset kind in V1.',
         packageId: asset.packageId,
         scope: asset.scope,
         instancePath: asset.instancePath,
@@ -147,6 +151,13 @@ export function buildAdapterAssetPlan(params: {
         targetPath: asset.payload.targetSubpath
       }))
     ]
+    : params.adapter === 'kimi'
+    ? selectedSkillAssets.map((asset): AdapterOverlayEntry => ({
+      assetId: asset.id,
+      kind: 'skill',
+      sourcePath: dirname(asset.sourcePath),
+      targetPath: asset.displayName.replaceAll('/', '__')
+    }))
     : []
 
   return {

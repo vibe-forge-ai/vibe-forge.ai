@@ -43,6 +43,9 @@ importers:
       '@vibe-forge/adapter-codex':
         specifier: workspace:*
         version: link:packages/adapters/codex
+      '@vibe-forge/adapter-kimi':
+        specifier: workspace:*
+        version: link:packages/adapters/kimi
       '@vibe-forge/adapter-opencode':
         specifier: workspace:*
         version: link:packages/adapters/opencode
@@ -146,6 +149,9 @@ importers:
       '@vibe-forge/adapter-codex':
         specifier: workspace:^
         version: link:../../packages/adapters/codex
+      '@vibe-forge/adapter-kimi':
+        specifier: workspace:^
+        version: link:../../packages/adapters/kimi
       '@vibe-forge/adapter-opencode':
         specifier: workspace:^
         version: link:../../packages/adapters/opencode
@@ -364,6 +370,21 @@ importers:
       '@openai/codex':
         specifier: 0.120.0
         version: 0.120.0
+      '@vibe-forge/core':
+        specifier: workspace:^
+        version: link:../../core
+      '@vibe-forge/hooks':
+        specifier: workspace:^
+        version: link:../../hooks
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../../utils
+
+  packages/adapters/kimi:
+    dependencies:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core

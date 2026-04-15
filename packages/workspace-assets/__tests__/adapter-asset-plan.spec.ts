@@ -179,4 +179,82 @@ describe('buildAdapterAssetPlan', () => {
       })
     ]))
   })
+
+  it('builds kimi overlays for native skills and native hooks', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'hooks.js': 'module.exports = {}\n'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'opencode/commands/review.md': '# review\n'
+    })
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: 'logger' },
+          { id: 'demo', scope: 'demo' }
+        ],
+        mcpServers: {
+          docs: {
+            command: 'npx',
+            args: ['docs-server']
+          }
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const plan = buildAdapterAssetPlan({
+      adapter: 'kimi',
+      bundle,
+      options: {
+        skills: {
+          include: ['research']
+        }
+      }
+    })
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+    const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
+
+    expect(plan.overlays).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'research'
+      })
+    ]))
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        adapter: 'kimi',
+        assetId: loggerHookPluginId,
+        status: 'native'
+      }),
+      expect.objectContaining({
+        adapter: 'kimi',
+        assetId: demoCommandId,
+        status: 'skipped'
+      })
+    ]))
+  })
 })

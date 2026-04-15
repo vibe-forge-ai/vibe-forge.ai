@@ -1,0 +1,61 @@
+{
+  "name": "@vibe-forge/adapter-kimi",
+  "version": "0.11.0",
+  "description": "Kimi CLI Adapter for Vibe Forge",
+  "imports": {
+    "#~/*.js": {
+      "__vibe-forge__": {
+        "default": "./src/*.ts"
+      },
+      "default": {
+        "import": "./dist/*.mjs",
+        "require": "./dist/*.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "__vibe-forge__": {
+        "default": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
+      }
+    },
+    "./schema": {
+      "__vibe-forge__": {
+        "default": "./src/schema.ts"
+      },
+      "default": {
+        "import": "./dist/schema.mjs",
+        "require": "./dist/schema.js"
+      }
+    },
+    "./models": {
+      "__vibe-forge__": {
+        "default": "./src/models.ts"
+      },
+      "default": {
+        "import": "./dist/models.mjs",
+        "require": "./dist/models.js"
+      }
+    },
+    "./icon": {
+      "__vibe-forge__": {
+        "default": "./src/icon.ts"
+      },
+      "default": {
+        "import": "./dist/icon.mjs",
+        "require": "./dist/icon.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/hooks": "workspace:^",
+    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/utils": "workspace:^"
+  }
+}

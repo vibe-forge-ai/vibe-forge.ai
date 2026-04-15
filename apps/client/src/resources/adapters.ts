@@ -3,6 +3,7 @@ import {
   adapterIcon as claudeCodeIcon
 } from '@vibe-forge/adapter-claude-code/icon'
 import { adapterDisplayName as codexDisplayName, adapterIcon as codexIcon } from '@vibe-forge/adapter-codex/icon'
+import { adapterDisplayName as kimiDisplayName, adapterIcon as kimiIcon } from '@vibe-forge/adapter-kimi/icon'
 import {
   adapterDisplayName as opencodeDisplayName,
   adapterIcon as opencodeIcon
@@ -16,6 +17,10 @@ export const adapterDisplayMap = {
   codex: {
     title: codexDisplayName,
     icon: codexIcon
+  },
+  kimi: {
+    title: kimiDisplayName,
+    icon: kimiIcon
   },
   opencode: {
     title: opencodeDisplayName,

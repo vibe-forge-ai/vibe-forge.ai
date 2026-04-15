@@ -122,7 +122,7 @@ export const syncPermissionStateMirror = async (
   } = {}
 ) => {
   const adapter = input.adapter ?? getDb().getSession(sessionId)?.adapter
-  if (adapter !== 'claude-code' && adapter !== 'opencode') {
+  if (adapter !== 'claude-code' && adapter !== 'kimi' && adapter !== 'opencode') {
     return
   }
 

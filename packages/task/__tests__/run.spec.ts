@@ -167,7 +167,7 @@ describe('task run adapter init', () => {
         'claude-code': {}
       }),
       defaultAdapter: 'claude-code'
-    }, undefined] as AdapterCtx['configs']
+    }, undefined] as unknown as AdapterCtx['configs']
     prepareMock.mockResolvedValue([ctx])
 
     const result = await run({
@@ -239,6 +239,34 @@ describe('task run adapter init', () => {
 
     expect(queryMock.mock.calls[1]?.[1]).toMatchObject({
       effort: 'max'
+    })
+  })
+
+  it('accepts effort for kimi and forwards it to the adapter query', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        kimi: {
+          effort: 'medium'
+        }
+      })
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'kimi',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-kimi-effort',
+      effort: 'high',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls.at(-1)?.[1]).toMatchObject({
+      effort: 'high'
     })
   })
 
@@ -543,6 +571,34 @@ describe('task run adapter init', () => {
     expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
       adapter: 'opencode',
       disabledEvents: ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
+    }))
+  })
+
+  it('disables overlapping bridge events when kimi native hooks are active', async () => {
+    const ctx = createCtx()
+    ctx.env.__VF_PROJECT_AI_KIMI_NATIVE_HOOKS_AVAILABLE__ = '1'
+    ctx.configs = [{
+      adapters: createAdapters({
+        kimi: {}
+      })
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'kimi',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-kimi-native',
+      description: 'hello',
+      onEvent: vi.fn()
+    })
+
+    expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
+      adapter: 'kimi',
+      disabledEvents: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
     }))
   })
 
