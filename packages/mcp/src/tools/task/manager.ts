@@ -386,7 +386,10 @@ export class TaskManager {
     const task = this.tasks.get(taskId)
     if (!task) return
 
-    void this.syncEvent(task, event)
+    const shouldSyncEvent = !(task.status === 'failed' && (event.type === 'exit' || event.type === 'stop'))
+    if (shouldSyncEvent) {
+      void this.syncEvent(task, event)
+    }
 
     switch (event.type) {
       case 'message': {
@@ -463,6 +466,12 @@ export class TaskManager {
       }
       case 'exit':
         task.session = undefined
+        if (task.status === 'failed') {
+          task.exitCode = event.data.exitCode ?? undefined
+          this.stopServerPolling(taskId)
+          task.onStop?.()
+          break
+        }
         if (task.status === 'waiting_input') {
           task.exitCode = event.data.exitCode ?? undefined
           this.stopServerPolling(taskId)
@@ -664,15 +673,58 @@ export class TaskManager {
     }
   }
 
+  private async syncStoppedTask(params: {
+    task: TaskInfo
+    pendingInteraction?: PendingTaskInteraction
+  }) {
+    const { task, pendingInteraction } = params
+    if (!task.serverSync) return
+
+    if (pendingInteraction != null) {
+      try {
+        await postSessionEvent(task.serverSync.sessionId, {
+          type: 'interaction_response',
+          id: pendingInteraction.id,
+          data: PERMISSION_DECISION_CANCEL
+        })
+      } catch (error) {
+        appendTaskLog(
+          task,
+          `Sync interaction cancellation failed: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    }
+
+    try {
+      await postSessionEvent(task.serverSync.sessionId, {
+        type: 'error',
+        data: {
+          message: 'Task stopped by user',
+          fatal: true
+        }
+      })
+    } catch (error) {
+      appendTaskLog(
+        task,
+        `Sync stop event failed: ${error instanceof Error ? error.message : String(error)}`
+      )
+    }
+  }
+
   public stopTask(taskId: string): boolean {
     const task = this.tasks.get(taskId)
     if (task && (task.session != null || task.pendingInteraction != null || task.status === 'waiting_input')) {
+      const pendingInteraction = task.pendingInteraction
       task.session?.kill()
       task.session = undefined
       task.pendingInteraction = undefined
       appendTaskLog(task, 'Task stopped by user')
       task.status = 'failed' // or 'stopped' if we had that status
       this.stopServerPolling(taskId)
+      void this.syncStoppedTask({
+        task,
+        pendingInteraction
+      })
       if (task.onStop) task.onStop()
       return true
     }

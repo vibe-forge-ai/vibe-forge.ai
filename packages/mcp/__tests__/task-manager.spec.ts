@@ -377,7 +377,8 @@ describe('taskManager fatal error scenarios', () => {
     await managedTaskManager.startTask({
       taskId: 'task-stop-waiting',
       description: 'trigger',
-      adapter: 'claude-code'
+      adapter: 'claude-code',
+      enableServerSync: true
     })
 
     const waitingTask = managedTaskManager.getTask('task-stop-waiting')
@@ -386,10 +387,23 @@ describe('taskManager fatal error scenarios', () => {
     expect(waitingTask?.pendingInteraction).toBeDefined()
 
     expect(managedTaskManager.stopTask('task-stop-waiting')).toBe(true)
+    await new Promise(resolve => setTimeout(resolve, 0))
 
     const stoppedTask = managedTaskManager.getTask('task-stop-waiting')
     expect(stoppedTask?.status).toBe('failed')
     expect(stoppedTask?.pendingInteraction).toBeUndefined()
     expect(stoppedTask?.logs).toContain('Task stopped by user')
+    expect(mocks.postSessionEvent).toHaveBeenCalledWith('task-stop-waiting', {
+      type: 'interaction_response',
+      id: expect.stringContaining('task-recovery:task-stop-waiting:'),
+      data: 'cancel'
+    })
+    expect(mocks.postSessionEvent).toHaveBeenCalledWith('task-stop-waiting', {
+      type: 'error',
+      data: {
+        message: 'Task stopped by user',
+        fatal: true
+      }
+    })
   })
 })
