@@ -10,7 +10,10 @@ export type {
   SessionWorkspaceCleanupPolicy,
   SessionWorkspaceKind,
   SessionWorkspaceState,
+  SessionMessageQueueState,
   SessionPermissionMode,
+  SessionQueuedMessage,
+  SessionQueuedMessageMode,
   SessionStatus,
   TaskDetail,
   TaskRuntime

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { shouldHideSenderForInteraction } from '#~/components/chat/sender/@core/interaction-request'
 
 describe('sender interaction request visibility', () => {
-  it('hides the sender for permission interactions', () => {
+  it('keeps the sender visible for permission interactions', () => {
     expect(shouldHideSenderForInteraction({
       id: 'interaction-1',
       payload: {
@@ -11,7 +11,7 @@ describe('sender interaction request visibility', () => {
         question: '是否授权？',
         kind: 'permission'
       }
-    })).toBe(true)
+    })).toBe(false)
   })
 
   it('keeps the sender visible for question interactions', () => {

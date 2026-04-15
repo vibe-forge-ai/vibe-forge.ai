@@ -36,6 +36,8 @@ export function SenderBody({
   onCursorChange,
   onKeyDown,
   onPaste,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   resolveCompletionMatch,
   resolveTokenDecorations,
   toolbarState,
@@ -62,6 +64,8 @@ export function SenderBody({
   onCursorChange: (cursorOffset: number | null) => void
   onKeyDown: (event: KeyboardEvent) => void
   onPaste: (event: ClipboardEvent) => void | Promise<void>
+  secondarySendShortcut?: string
+  onSecondarySendShortcut?: () => void
   resolveCompletionMatch: (
     value: string,
     cursorOffset: number | null,
@@ -93,7 +97,10 @@ export function SenderBody({
         placeholder={placeholder || t('chat.inputPlaceholder')}
         disabled={(!isInlineEdit && modelUnavailable) || (isInlineEdit && isBusy)}
         sendShortcut={toolbarState.resolvedSendShortcut}
+        sendShortcutDisabled={toolbarState.sendBlocked}
         onSendShortcut={toolbarHandlers.onSend}
+        secondarySendShortcut={secondarySendShortcut}
+        onSecondarySendShortcut={onSecondarySendShortcut}
         onInputChange={onInputChange}
         onCursorChange={onCursorChange}
         onKeyDown={onKeyDown}

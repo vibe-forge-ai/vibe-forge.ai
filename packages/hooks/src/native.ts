@@ -38,8 +38,18 @@ export const resolveMockHome = (
   cwd: string,
   env: Record<string, string | null | undefined>
 ) => {
+  const fallbackMockHome = resolveProjectAiPath(cwd, env, '.mock')
   const explicitHome = env.HOME?.trim() || process.env.HOME?.trim()
-  return explicitHome ? resolve(explicitHome) : resolveProjectAiPath(cwd, env, '.mock')
+  const realHome = env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const resolvedExplicitHome = explicitHome ? resolve(explicitHome) : undefined
+  const resolvedRealHome = realHome ? resolve(realHome) : undefined
+
+  if (resolvedExplicitHome == null) return fallbackMockHome
+  if (resolvedRealHome != null && resolvedExplicitHome === resolvedRealHome) {
+    return fallbackMockHome
+  }
+
+  return resolvedExplicitHome
 }
 
 export const resolveManagedHookPackageDir = () => {

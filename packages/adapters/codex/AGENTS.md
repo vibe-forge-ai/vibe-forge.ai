@@ -36,7 +36,8 @@ Primary implementation entrypoints for Codex hooks:
   - writes the managed `.ai/.mock/.codex/hooks.json`
 - `src/runtime/init.ts`
   - installs mock-home assets during adapter init
-  - keeps hooks/auth in `.ai/.mock/.codex/`, maps workspace skills into `.ai/.mock/.agents/skills`, and mirrors each skill into `.ai/.mock/.codex/skills/<name>`
+  - keeps hooks/auth/config in `.ai/.mock/.codex/`, maps workspace skills into `.ai/.mock/.agents/skills`, and mirrors each skill into `.ai/.mock/.codex/skills/<name>`
+  - writes a managed `.ai/.mock/.codex/config.toml` that trusts the current workspace and suppresses startup update checks unless `configOverrides` restores them
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
@@ -85,6 +86,7 @@ Validation checklist:
 - terminal output is exactly `E2E_CODEX`
 - `.ai/logs/<ctxId>/<sessionId>.log.md` contains `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`
 - `.ai/.mock/.codex/hooks.json` still points to the managed Vibe Forge bridge
+- `.ai/.mock/.codex/config.toml` marks the current workspace `[projects."<cwd>"]` as `trusted`
 
 Codex maintenance notes:
 
@@ -173,10 +175,21 @@ Notable flags:
 
 Raw Codex `-c key=value` overrides forwarded to every Codex spawn.
 
-The adapter currently defaults `check_for_update_on_startup = false` so managed
-Codex sessions do not surface startup version-update prompts by default.
-Set `adapters.codex.configOverrides.check_for_update_on_startup = true` if you
-need to restore Codex's built-in startup update check.
+The adapter also mirrors `check_for_update_on_startup` into the managed mock-home
+`config.toml`, defaulting it to `false` so managed Codex sessions do not surface
+startup version-update prompts. Set
+`adapters.codex.configOverrides.check_for_update_on_startup = true` if you need
+to restore Codex's built-in startup update check.
+
+During init, the adapter also writes:
+
+```toml
+[projects."/absolute/path/to/workspace"]
+trust_level = "trusted"
+```
+
+so Codex does not stop on first-run workspace trust prompts inside the isolated
+mock home.
 
 ### Native hooks
 

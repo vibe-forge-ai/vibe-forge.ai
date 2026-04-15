@@ -67,9 +67,18 @@ const walkJsonlFiles = async (dir: string): Promise<string[]> => {
   return nested.flat()
 }
 
+const resolveCodexTranscriptWaitMs = () => {
+  const configured = Number(process.env.HOOK_SMOKE_CODEX_TRANSCRIPT_WAIT_MS ?? 30_000)
+  const fallback = Number(process.env.HOOK_SMOKE_TIMEOUT_MS ?? 180_000)
+  if (Number.isFinite(configured) && configured > 0) {
+    return Math.min(configured, fallback)
+  }
+  return fallback
+}
+
 const waitForCodexTranscriptFile = async () => {
   const sessionsRoot = path.resolve(mockHome, '.codex', 'sessions')
-  const deadline = Date.now() + 10_000
+  const deadline = Date.now() + resolveCodexTranscriptWaitMs()
 
   while (Date.now() < deadline) {
     const files = await walkJsonlFiles(sessionsRoot)

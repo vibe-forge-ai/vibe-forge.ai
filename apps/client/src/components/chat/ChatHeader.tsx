@@ -1,6 +1,6 @@
 import './ChatHeader.scss'
 
-import type { Session } from '@vibe-forge/core'
+import type { Session, SessionStatus } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 import { App, Button, Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
@@ -43,6 +43,7 @@ export function ChatHeader({
   sessionInfo,
   sessionId,
   sessionTitle,
+  sessionStatus,
   isStarred,
   isArchived,
   tags,
@@ -56,6 +57,7 @@ export function ChatHeader({
   sessionInfo: SessionInfo | null
   sessionId?: string
   sessionTitle?: string
+  sessionStatus?: SessionStatus
   isStarred?: boolean
   isArchived?: boolean
   tags?: string[]

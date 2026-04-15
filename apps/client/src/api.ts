@@ -46,7 +46,9 @@ export { createProject, listProjects } from './api/projects'
 export {
   branchSessionFromMessage,
   createSessionManagedWorktree,
+  createQueuedMessage,
   createSession,
+  deleteQueuedMessage,
   deleteSession,
   forkSession,
   getSessionMessages,
@@ -55,6 +57,9 @@ export {
   listSessionWorkspaceTree,
   respondSessionInteraction,
   transferSessionWorkspaceToLocal,
+  moveQueuedMessage,
+  reorderQueuedMessages,
+  updateQueuedMessage,
   updateSession,
   updateSessionTitle
 } from './api/sessions'

@@ -15,7 +15,10 @@ const createI18n = async () => {
             chat: {
               permissionRequestTitleWithTool: '正在请求使用【{{tool}}】的调用权限，请选择通过',
               permissionExpandOptions: '展开更多选项',
-              permissionCollapseOptions: '收起更多选项'
+              permissionCollapseOptions: '收起更多选项',
+              interactionOptionNavigation: '选项快速切换',
+              interactionOptionPrevious: '上一个选项',
+              interactionOptionNext: '下一个选项'
             }
           }
         }
@@ -37,7 +40,6 @@ const renderPanel = async ({
       const actual = await vi.importActual<typeof import('react')>('react')
       return {
         ...actual,
-        useEffect: () => undefined,
         useState: () => [true, vi.fn()]
       }
     })
@@ -93,6 +95,7 @@ const renderPanel = async ({
             }
           }
         }}
+        activeOptionIndex={0}
         permissionContext={{
           adapter: 'claude-code',
           subjectKey: 'Write',
@@ -103,6 +106,8 @@ const renderPanel = async ({
         }}
         deniedTools={['Write']}
         reasons={['Permission required to continue']}
+        onActiveOptionIndexChange={vi.fn()}
+        onMoveActiveOption={vi.fn()}
       />
     </I18nextProvider>
   )
@@ -122,6 +127,7 @@ describe('sender interaction panel', () => {
     expect(html).toContain('同意并在当前会话忽略类似调用')
     expect(html).toContain('拒绝本次')
     expect(html).toContain('展开更多选项')
+    expect(html).toContain('选项快速切换')
     expect(html).not.toContain('同意并在当前项目忽略类似调用')
     expect(html).not.toContain('拒绝并在当前会话阻止类似调用')
     expect(html).not.toContain('拒绝并在当前项目阻止类似调用')

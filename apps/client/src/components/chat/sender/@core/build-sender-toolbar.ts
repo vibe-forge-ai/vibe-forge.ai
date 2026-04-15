@@ -17,10 +17,16 @@ export const buildSenderToolbar = ({
   isInlineEdit,
   isMac,
   isThinking,
+  sendBlocked,
+  sendBlockedTooltip,
+  showConfirmInteractionAction,
+  confirmInteractionLabel,
+  onConfirmInteractionOption,
   message,
   props,
   refs,
   referenceActions,
+  queuedMessageShortcuts,
   resolvedSendShortcut,
   selectOverlays,
   supportsEffort,
@@ -31,14 +37,22 @@ export const buildSenderToolbar = ({
     handleImageUpload: () => void
     handleOpenContextPicker: () => void
   }
-  callbacks: { onSend: () => void }
+  callbacks: { onSend: (mode?: 'steer' | 'next') => void }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
-  composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
+  composerControlShortcuts: Pick<
+    SenderToolbarData['composerControlShortcuts'],
+    'switchEffort' | 'switchModel' | 'switchPermissionMode'
+  >
   focusRestore: { queueEditorFocusRestore: () => void }
   isBusy: boolean
   isInlineEdit: boolean
   isMac: boolean
   isThinking: boolean
+  sendBlocked: boolean
+  sendBlockedTooltip?: string
+  showConfirmInteractionAction: boolean
+  confirmInteractionLabel?: string
+  onConfirmInteractionOption?: () => void
   message: { warning: (content: ReactNode) => unknown }
   props: SenderProps
   refs: {
@@ -57,6 +71,7 @@ export const buildSenderToolbar = ({
     referenceMenuNavigation: SenderToolbarRefs['referenceMenuNavigation']
     permissionMenuNavigation: SenderToolbarRefs['permissionMenuNavigation']
   }
+  queuedMessageShortcuts: Pick<SenderToolbarData['composerControlShortcuts'], 'queueNext' | 'queueSteer'>
   resolvedSendShortcut: string
   selectOverlays: {
     showModelSelect: boolean
@@ -82,7 +97,9 @@ export const buildSenderToolbar = ({
       onModelChange: props.onModelChange,
       onToggleRecommendedModel: props.onToggleRecommendedModel,
       onPermissionModeChange: props.onPermissionModeChange,
+      onQueueModeChange: props.onQueueModeChange,
       onCancel: props.onCancel,
+      onConfirmInteractionOption,
       onSend: callbacks.onSend
     },
     composer,
@@ -95,6 +112,8 @@ export const buildSenderToolbar = ({
       modelSearchOptions: props.modelSearchOptions,
       permissionMode: props.permissionMode ?? 'default',
       permissionModeOptions: props.permissionModeOptions ?? [],
+      queueMode: props.queueMode ?? 'steer',
+      queuedMessageShortcuts,
       recommendedModelOptions: props.recommendedModelOptions,
       servicePreviewModelOptions: props.servicePreviewModelOptions,
       resolvedSendShortcut,
@@ -110,10 +129,14 @@ export const buildSenderToolbar = ({
       isInlineEdit,
       isMac,
       isThinking,
+      sendBlocked,
+      sendBlockedTooltip,
+      showConfirmInteractionAction,
       modelUnavailable: props.modelUnavailable,
       referenceActions,
       refs,
       selectOverlays,
+      confirmInteractionLabel,
       submitLabel: props.submitLabel,
       submitLoading: props.submitLoading === true,
       supportsEffort

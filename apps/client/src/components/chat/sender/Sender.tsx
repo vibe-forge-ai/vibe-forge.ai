@@ -1,10 +1,8 @@
 import './Sender.scss'
 
-import { ThinkingStatus } from '#~/components/chat/ThinkingStatus'
 import { useSenderController } from '#~/components/chat/sender/@hooks/use-sender-controller'
 
 import { SenderBody } from './@components/sender-body/SenderBody'
-import { SenderInteractionPanel } from './@components/sender-interaction-panel/SenderInteractionPanel'
 import type { SenderProps } from './@types/sender-props'
 
 export function Sender(props: SenderProps) {
@@ -18,16 +16,6 @@ export function Sender(props: SenderProps) {
         controller.isInlineEdit ? 'chat-input-wrapper--inline-edit' : ''
       ].filter(Boolean).join(' ')}
     >
-      {controller.isThinking && <ThinkingStatus />}
-      {!controller.isInlineEdit && controller.interactionRequest != null && (
-        <SenderInteractionPanel
-          interactionRequest={controller.interactionRequest}
-          permissionContext={controller.permissionContext}
-          deniedTools={controller.deniedTools}
-          reasons={controller.reasons}
-          onInteractionResponse={controller.interactionResponse}
-        />
-      )}
       {!controller.hideSender && (
         <SenderBody
           isInlineEdit={controller.isInlineEdit}
@@ -48,6 +36,8 @@ export function Sender(props: SenderProps) {
           onCursorChange={controller.onCursorChange}
           onKeyDown={controller.handleKeyDown}
           onPaste={controller.attachments.handlePaste}
+          secondarySendShortcut={controller.secondarySendShortcut}
+          onSecondarySendShortcut={controller.onSecondarySendShortcut}
           resolveCompletionMatch={controller.completion.resolveCompletionMatch}
           resolveTokenDecorations={controller.completion.resolveTokenDecorations}
           toolbarState={controller.toolbar.toolbarState}

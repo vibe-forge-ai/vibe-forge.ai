@@ -410,7 +410,11 @@ export function useChatModelAdapterSelection({
               alt: '',
               'aria-hidden': true
             })
-            : null,
+            : createElement('span', {
+              key: 'fallback-icon',
+              className: 'adapter-option__icon adapter-option__icon--fallback material-symbols-rounded',
+              'aria-hidden': true
+            }, 'deployed_code'),
           createElement('span', { key: 'text', className: 'adapter-option__text' }, display.title)
         ])
       }

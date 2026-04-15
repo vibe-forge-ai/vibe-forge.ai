@@ -1,4 +1,4 @@
-import type { ChatMessageContent, Session } from '@vibe-forge/core'
+import type { ChatMessageContent, Session, SessionMessageQueueState, SessionQueuedMessageMode } from '@vibe-forge/core'
 import type { GitBranchKind, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
@@ -177,4 +177,73 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
 
 export async function updateSessionTitle(id: string, title: string): Promise<ApiOkResponse> {
   return updateSession(id, { title })
+}
+
+export async function createQueuedMessage(
+  sessionId: string,
+  mode: SessionQueuedMessageMode,
+  content: ChatMessageContent[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(`/api/sessions/${sessionId}/queued-messages`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({ mode, content })
+  })
+}
+
+export async function updateQueuedMessage(
+  sessionId: string,
+  queueId: string,
+  content: ChatMessageContent[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}`,
+    {
+      method: 'PATCH',
+      headers: jsonHeaders,
+      body: JSON.stringify({ content })
+    }
+  )
+}
+
+export async function deleteQueuedMessage(
+  sessionId: string,
+  queueId: string
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}`,
+    {
+      method: 'DELETE'
+    }
+  )
+}
+
+export async function moveQueuedMessage(
+  sessionId: string,
+  queueId: string,
+  mode: SessionQueuedMessageMode
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}/move`,
+    {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ mode })
+    }
+  )
+}
+
+export async function reorderQueuedMessages(
+  sessionId: string,
+  mode: SessionQueuedMessageMode,
+  ids: string[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/reorder`,
+    {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ mode, ids })
+    }
+  )
 }

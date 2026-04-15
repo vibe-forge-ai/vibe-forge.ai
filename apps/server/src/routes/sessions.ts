@@ -1,6 +1,6 @@
 import Router from '@koa/router'
 
-import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
 import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
@@ -13,6 +13,14 @@ import {
   handleInteractionResponse,
   setSessionInteraction
 } from '#~/services/session/interaction.js'
+import {
+  createSessionQueuedMessage,
+  deleteSessionQueuedMessage,
+  listSessionQueuedMessages,
+  moveSessionQueuedMessage,
+  reorderSessionQueuedMessages,
+  updateSessionQueuedMessage
+} from '#~/services/session/queue.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
 import {
   createSessionManagedWorktree,
@@ -56,7 +64,12 @@ export function sessionsRouter(): Router {
 
     const parsedLimit = parseLimit(limit)
     const responseMessages = parsedLimit == null ? messages : messages.slice(-parsedLimit)
-    ctx.body = { messages: responseMessages, session, interaction }
+    ctx.body = {
+      messages: responseMessages,
+      session,
+      interaction,
+      queuedMessages: listSessionQueuedMessages(id)
+    }
   })
 
   router.get('/:id/workspace', async (ctx) => {
@@ -395,6 +408,95 @@ export function sessionsRouter(): Router {
       notifySessionUpdated(id, { id, isDeleted: true })
     }
     ctx.body = { ok: true, removed }
+  })
+
+  router.post('/:id/queued-messages', (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { mode, content } = ctx.request.body as {
+      mode?: SessionQueuedMessageMode
+      content?: ChatMessageContent[]
+    }
+
+    if (mode !== 'steer' && mode !== 'next') {
+      throw badRequest('Invalid queued message mode', { mode }, 'invalid_queued_message_mode')
+    }
+    if (!Array.isArray(content) || content.length === 0) {
+      throw badRequest('Queued message content cannot be empty', undefined, 'empty_queued_message_content')
+    }
+
+    const session = db.getSession(id)
+    if (session == null) {
+      throw notFound('Session not found', { id }, 'session_not_found')
+    }
+
+    const queuedMessage = createSessionQueuedMessage(id, mode, content)
+    ctx.body = { queuedMessage, queuedMessages: listSessionQueuedMessages(id) }
+  })
+
+  router.patch('/:id/queued-messages/:queueId', (ctx) => {
+    const { id, queueId } = ctx.params as { id: string; queueId: string }
+    const { content } = ctx.request.body as { content?: ChatMessageContent[] }
+
+    if (!Array.isArray(content) || content.length === 0) {
+      throw badRequest('Queued message content cannot be empty', undefined, 'empty_queued_message_content')
+    }
+
+    const updated = updateSessionQueuedMessage(id, queueId, content)
+    if (updated == null) {
+      throw notFound('Queued message not found', { id, queueId }, 'queued_message_not_found')
+    }
+
+    ctx.body = { queuedMessage: updated, queuedMessages: listSessionQueuedMessages(id) }
+  })
+
+  router.delete('/:id/queued-messages/:queueId', (ctx) => {
+    const { id, queueId } = ctx.params as { id: string; queueId: string }
+    const removed = deleteSessionQueuedMessage(id, queueId)
+    if (!removed) {
+      throw notFound('Queued message not found', { id, queueId }, 'queued_message_not_found')
+    }
+    ctx.body = { ok: true, queuedMessages: listSessionQueuedMessages(id) }
+  })
+
+  router.post('/:id/queued-messages/:queueId/move', (ctx) => {
+    const { id, queueId } = ctx.params as { id: string; queueId: string }
+    const { mode } = ctx.request.body as {
+      mode?: SessionQueuedMessageMode
+    }
+
+    if (mode !== 'steer' && mode !== 'next') {
+      throw badRequest('Invalid queued message mode', { mode }, 'invalid_queued_message_mode')
+    }
+
+    const moved = moveSessionQueuedMessage(id, queueId, mode)
+    if (moved == null) {
+      throw notFound('Queued message not found', { id, queueId }, 'queued_message_not_found')
+    }
+
+    ctx.body = { queuedMessage: moved, queuedMessages: listSessionQueuedMessages(id) }
+  })
+
+  router.post('/:id/queued-messages/reorder', (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { mode, ids } = ctx.request.body as {
+      mode?: SessionQueuedMessageMode
+      ids?: string[]
+    }
+
+    if (mode !== 'steer' && mode !== 'next') {
+      throw badRequest('Invalid queued message mode', { mode }, 'invalid_queued_message_mode')
+    }
+    if (!Array.isArray(ids) || ids.some(item => typeof item !== 'string' || item.trim() === '')) {
+      throw badRequest('Invalid queued message order', { ids }, 'invalid_queued_message_order')
+    }
+
+    try {
+      reorderSessionQueuedMessages(id, mode, ids)
+    } catch (error) {
+      throw badRequest('Invalid queued message order', { ids }, 'invalid_queued_message_order')
+    }
+
+    ctx.body = { queuedMessages: listSessionQueuedMessages(id) }
   })
 
   router.post('/:id/messages/:messageId/branch', async (ctx) => {
