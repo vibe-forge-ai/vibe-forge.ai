@@ -85,6 +85,7 @@ describe('config schema bundle', () => {
       expect(bundle.extensions.adapters).toContain('codex')
       expect(bundle.extensions.channels).toContain('lark')
       expect(codexSchema.properties).toMatchObject({
+        model: { type: 'string' },
         sandboxPolicy: { type: 'object' },
         experimentalApi: { type: 'boolean' },
         effort: { type: 'string' }
@@ -147,6 +148,40 @@ describe('config schema bundle', () => {
       expect(knownInvalid.success).toBe(false)
       expect(knownWithUnknownKey.success).toBe(false)
       expect(unknownAdapter.success).toBe(true)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves the legacy model alias for known adapters', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-schema-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, 'package.json'),
+        JSON.stringify({
+          name: 'schema-test-workspace',
+          private: true,
+          dependencies: {
+            '@vibe-forge/adapter-codex': 'workspace:*'
+          }
+        }, null, 2)
+      )
+
+      const parsed = await validateConfigSection('adapters', {
+        codex: {
+          model: 'gpt-5.4'
+        }
+      }, { cwd: tempDir })
+
+      expect(parsed.success).toBe(true)
+      if (parsed.success) {
+        expect(parsed.data).toEqual({
+          codex: {
+            model: 'gpt-5.4'
+          }
+        })
+      }
     } finally {
       await rm(tempDir, { recursive: true, force: true })
     }
@@ -256,10 +291,10 @@ module.exports.channelDefinition = {
       const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
       const adapters = (bundle.jsonSchema.properties as Record<string, unknown>).adapters as Record<string, unknown>
       const adapterProperties = adapters.properties as Record<string, unknown>
-      const externalSchema = adapterProperties.external as Record<string, unknown>
+      const externalSchema = adapterProperties['@scope/adapter-external'] as Record<string, unknown>
       const channelFields = bundle.uiSchema.sections.channels.recordMap.schemas['external-channel']?.fields ?? []
 
-      expect(bundle.extensions.adapters).toContain('external')
+      expect(bundle.extensions.adapters).toContain('@scope/adapter-external')
       expect(bundle.extensions.channels).toContain('external-channel')
       expect(externalSchema.properties).toMatchObject({
         workspaceOnlyFlag: { type: 'boolean' }
@@ -327,10 +362,10 @@ export const channelDefinition = {
       const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
       const adapters = (bundle.jsonSchema.properties as Record<string, unknown>).adapters as Record<string, unknown>
       const adapterProperties = adapters.properties as Record<string, unknown>
-      const externalSchema = adapterProperties['esm-adapter'] as Record<string, unknown>
+      const externalSchema = adapterProperties['@scope/adapter-esm'] as Record<string, unknown>
       const channelFields = bundle.uiSchema.sections.channels.recordMap.schemas['esm-channel']?.fields ?? []
 
-      expect(bundle.extensions.adapters).toContain('esm-adapter')
+      expect(bundle.extensions.adapters).toContain('@scope/adapter-esm')
       expect(bundle.extensions.channels).toContain('esm-channel')
       expect(externalSchema.properties).toMatchObject({
         esmFlag: { type: 'boolean' }
@@ -377,9 +412,9 @@ export const adapterConfigContribution = {
       const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
       const adapters = (bundle.jsonSchema.properties as Record<string, unknown>).adapters as Record<string, unknown>
       const adapterProperties = adapters.properties as Record<string, unknown>
-      const patternSchema = adapterProperties['pattern-adapter'] as Record<string, unknown>
+      const patternSchema = adapterProperties['@scope/adapter-pattern'] as Record<string, unknown>
 
-      expect(bundle.extensions.adapters).toContain('pattern-adapter')
+      expect(bundle.extensions.adapters).toContain('@scope/adapter-pattern')
       expect(patternSchema.properties).toMatchObject({
         patternFlag: { type: 'boolean' }
       })

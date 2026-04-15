@@ -82,24 +82,43 @@ export const SchemaRecordEditor = ({
 
   const resolveEntrySchema = (entryKey: string, entryValue: Record<string, unknown>) => {
     if (schema.mode === 'keyed') {
-      return schema.schemas[entryKey] ?? schema.unknownSchema
+      const matchedSchema = schema.schemas[entryKey]
+      return {
+        itemSchema: matchedSchema ?? schema.unknownSchema,
+        isKnownEntry: matchedSchema != null
+      }
     }
 
     const discriminatorField = schema.discriminatorField ?? 'type'
     const discriminatorValue = getValueByPath(entryValue, [discriminatorField])
     if (typeof discriminatorValue === 'string') {
-      return schema.schemas[discriminatorValue] ?? schema.unknownSchema
+      const matchedSchema = schema.schemas[discriminatorValue]
+      return {
+        itemSchema: matchedSchema ?? schema.unknownSchema,
+        isKnownEntry: matchedSchema != null
+      }
     }
-    return schema.unknownSchema
+    return {
+      itemSchema: schema.unknownSchema,
+      isKnownEntry: false
+    }
   }
 
   const renderField = (
     recordKey: string,
     recordValue: Record<string, unknown>,
-    field: ConfigUiField
+    field: ConfigUiField,
+    options?: {
+      hideDiscriminatorField?: boolean
+    }
   ) => {
     const discriminatorField = schema.mode === 'discriminated' ? (schema.discriminatorField ?? 'type') : undefined
-    if (discriminatorField != null && field.path.length === 1 && field.path[0] === discriminatorField) {
+    if (
+      options?.hideDiscriminatorField === true &&
+      discriminatorField != null &&
+      field.path.length === 1 &&
+      field.path[0] === discriminatorField
+    ) {
       return null
     }
 
@@ -201,12 +220,13 @@ export const SchemaRecordEditor = ({
         const recordValue = (itemValue != null && typeof itemValue === 'object')
           ? itemValue as Record<string, unknown>
           : {}
-        const itemSchema = resolveEntrySchema(key, recordValue)
+        const { itemSchema, isKnownEntry } = resolveEntrySchema(key, recordValue)
         const isCollapsed = collapsedKeys[key] === true
         const discriminatorField = schema.discriminatorField ?? 'type'
         const discriminatorValue = schema.mode === 'discriminated'
           ? getValueByPath(recordValue, [discriminatorField])
           : undefined
+        const shouldRenderJsonFallback = !isKnownEntry && schema.unknownEditor === 'json'
         const kindMeta = typeof discriminatorValue === 'string'
           ? schema.entryKinds?.find(item => item.key === discriminatorValue)
           : schema.entryKinds?.find(item => item.key === key)
@@ -260,8 +280,12 @@ export const SchemaRecordEditor = ({
             </div>
             <div className='config-view__record-body'>
               <div className='config-view__record-fields'>
-                {(itemSchema?.fields ?? []).map(field => renderField(key, recordValue, field))}
-                {itemSchema == null && schema.unknownEditor === 'json' && (
+                {!shouldRenderJsonFallback && (itemSchema?.fields ?? []).map(field => (
+                  renderField(key, recordValue, field, {
+                    hideDiscriminatorField: isKnownEntry
+                  })
+                ))}
+                {shouldRenderJsonFallback && (
                   <ComplexTextEditor
                     value={recordValue}
                     onChange={(updated) => {

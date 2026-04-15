@@ -186,6 +186,10 @@ const channelPackageNameToType = (packageName: string) => (
     : packageName
 )
 
+const legacyAdapterConfigAliasSchema = z.object({
+  model: z.string().optional().describe('Legacy alias for defaultModel')
+})
+
 const isOptionalLike = (schema: z.ZodTypeAny): boolean => {
   if (isZodType(schema, 'ZodOptional') || isZodType(schema, 'ZodDefault')) return true
   if (isZodType(schema, 'ZodEffects')) {
@@ -299,10 +303,21 @@ const composeAdapterEntrySchema = (contribution: AdapterConfigContribution) => (
   adapterConfigCommonSchema.merge(contribution.schema)
 )
 
+const composeAdapterEntryValidationSchema = (contribution: AdapterConfigContribution) => (
+  composeAdapterEntrySchema(contribution).merge(legacyAdapterConfigAliasSchema)
+)
+
+const dedupeAdapterContributions = (contributions: readonly AdapterConfigContribution[]) => Array.from(
+  new Map(contributions.map(contribution => [contribution.adapterKey, contribution])).values()
+)
+
 const createAdaptersSectionSchema = (contributions: readonly AdapterConfigContribution[]) => (
   z.object(
     Object.fromEntries(
-      contributions.map(contribution => [contribution.adapterKey, composeAdapterEntrySchema(contribution).optional()])
+      contributions.map(contribution => [
+        contribution.adapterKey,
+        composeAdapterEntryValidationSchema(contribution).optional()
+      ])
     )
   ).catchall(baseAdapterEntrySchema)
 )
@@ -907,7 +922,17 @@ const loadAdapterContribution = async (
   const mod = await loadPackageSubpathWithSourceFallback(packageName, './config-schema', cwd) as {
     adapterConfigContribution?: AdapterConfigContribution
   } | undefined
-  return mod?.adapterConfigContribution
+  const contribution = mod?.adapterConfigContribution
+  if (contribution == null) {
+    return undefined
+  }
+
+  return packageName.startsWith('@vibe-forge/adapter-')
+    ? contribution
+    : {
+      ...contribution,
+      adapterKey: packageName
+    }
 }
 
 const loadChannelDefinition = async (
@@ -955,7 +980,11 @@ const runKnownAdapterStrictValidators = (
   return contributions.flatMap((contribution) => {
     const value = adapterRecord[contribution.adapterKey]
     if (value == null) return []
-    return collectKnownSchemaUnknownKeyIssues(composeAdapterEntrySchema(contribution), value, [contribution.adapterKey])
+    return collectKnownSchemaUnknownKeyIssues(
+      composeAdapterEntryValidationSchema(contribution),
+      value,
+      [contribution.adapterKey]
+    )
   })
 }
 
@@ -987,9 +1016,9 @@ export const composeWorkspaceConfigSchemaBundle = async (
     ...Array.from(packageNames).filter(isChannelPackageName).map(channelPackageNameToType)
   ])
 
-  const adapterContributions = (
+  const adapterContributions = dedupeAdapterContributions((
     await Promise.all(Array.from(adapterSpecifiers).map(async specifier => await loadAdapterContribution(specifier, options.cwd)))
-  ).filter((contribution): contribution is AdapterConfigContribution => contribution != null)
+  ).filter((contribution): contribution is AdapterConfigContribution => contribution != null))
 
   const channelDefinitions = (
     await Promise.all(Array.from(channelSpecifiers).map(async specifier => await loadChannelDefinition(specifier, options.cwd)))

@@ -8,7 +8,7 @@ import { SectionForm } from '#~/components/config/ConfigSectionForm'
 const t = (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key
 
 describe('config schema form', () => {
-  it('renders schema-driven adapter entries with known and fallback fields', () => {
+  it('renders schema-driven adapter entries with JSON fallback for unknown keys', () => {
     const uiSection: ConfigUiSection = {
       key: 'adapters',
       kind: 'recordMap',
@@ -69,8 +69,8 @@ describe('config schema form', () => {
 
     expect(html).toContain('Experimental API')
     expect(html).toContain('Max Output Tokens')
-    expect(html).toContain('Default Model')
     expect(html).toContain('custom-adapter')
+    expect(html).toContain('config-view__complex-editor')
   })
 
   it('renders schema-driven channel entries from the server-provided schema', () => {
@@ -139,6 +139,67 @@ describe('config schema form', () => {
     expect(html).toContain('teamChat')
     expect(html).toContain('App ID')
     expect(html).toContain('App Secret')
+  })
+
+  it('renders unknown channel entries with the JSON fallback editor', () => {
+    const uiSection: ConfigUiSection = {
+      key: 'channels',
+      kind: 'recordMap',
+      recordMap: {
+        mode: 'discriminated',
+        keyPlaceholder: 'Channel name',
+        discriminatorField: 'type',
+        entryKinds: [
+          {
+            key: 'lark',
+            label: 'Lark'
+          }
+        ],
+        schemas: {
+          lark: {
+            fields: [
+              {
+                path: ['type'],
+                type: 'select',
+                options: [{ value: 'lark' }],
+                defaultValue: 'lark'
+              },
+              {
+                path: ['appId'],
+                type: 'string',
+                label: 'App ID',
+                defaultValue: ''
+              }
+            ]
+          }
+        },
+        unknownSchema: {
+          fields: []
+        },
+        unknownEditor: 'json'
+      }
+    }
+
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='channels'
+        uiSection={uiSection}
+        value={{
+          customChat: {
+            type: 'custom-channel',
+            customFlag: true
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('customChat')
+    expect(html).toContain('config-view__complex-editor')
+    expect(html).not.toContain('App ID')
   })
 
   it('falls back to the JSON record editor when no channel kinds are available', () => {
