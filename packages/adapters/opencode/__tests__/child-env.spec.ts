@@ -187,7 +187,7 @@ describe('opencode resolved config consumption', () => {
       mcp?: Record<string, unknown>
     }
 
-    expect(adapterConfig.effort).toBe('high')
+    expect(adapterConfig.common.effort).toBe('high')
     expect(Object.keys(sessionConfig.mcp ?? {})).toEqual(['docs'])
   })
 })

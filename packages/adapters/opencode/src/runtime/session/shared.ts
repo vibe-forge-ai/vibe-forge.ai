@@ -1,20 +1,12 @@
 import { execFile } from 'node:child_process'
 
-import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
+import { resolveAdapterConfig as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterCtx } from '@vibe-forge/types'
-import { omitAdapterCommonConfig } from '@vibe-forge/utils'
 import { uuid } from '@vibe-forge/utils/uuid'
 
-export interface OpenCodeAdapterConfig {
-  effort?: 'low' | 'medium' | 'high' | 'max'
-  agent?: string
-  planAgent?: string | false
-  titlePrefix?: string
-  share?: boolean
-  sessionListMaxCount?: number
-  configContent?: Record<string, unknown>
-}
+import type { OpenCodeAdapterConfig } from '#~/config-schema.js'
+import { openCodeAdapterExtraCommonKeys } from '#~/config-schema.js'
 
 export interface OpenCodeRunResult {
   exitCode: number
@@ -118,10 +110,18 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
   )
 )
 
-export const resolveAdapterConfig = (ctx: AdapterCtx): OpenCodeAdapterConfig => {
-  const { mergedConfig } = resolveConfigState({
+export const resolveAdapterConfig = (ctx: AdapterCtx) => resolveMergedAdapterConfig<
+  OpenCodeAdapterConfig,
+  typeof openCodeAdapterExtraCommonKeys[number]
+>(
+  'opencode',
+  {
     configState: ctx.configState,
     configs: ctx.configs
-  })
-  return omitAdapterCommonConfig(resolveAdapterConfigEntry('opencode', mergedConfig)) as OpenCodeAdapterConfig
-}
+  },
+  {
+    extraCommonKeys: openCodeAdapterExtraCommonKeys
+  }
+)
+
+export type OpenCodeResolvedAdapterConfig = ReturnType<typeof resolveAdapterConfig>

@@ -1,6 +1,5 @@
 import { spawn } from 'node:child_process'
 
-import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import type {
   AdapterCtx,
   AdapterEvent,
@@ -41,6 +40,7 @@ import {
   toAdapterErrorData,
   toCodexOutboundApprovalPolicy
 } from './session-common'
+import { resolveCodexAdapterConfig } from './config'
 
 const buildPermissionInteractionOptions = () => [
   { label: '同意本次', value: 'allow_once', description: '仅继续这次被拦截的操作。' },
@@ -216,10 +216,7 @@ export async function createStreamCodexSession(
     cachedThreadId
   } = base
   const { cache } = ctx
-  const { mergedConfig } = resolveConfigState({
-    configState: ctx.configState,
-    configs: ctx.configs
-  })
+  const { native: nativeConfig } = resolveCodexAdapterConfig(ctx)
   const { onEvent, description, sessionId, extraOptions, type: sessionType } = options
   const model = resolvedModel
   const rpcApprovalPolicy = toCodexOutboundApprovalPolicy(approvalPolicy)
@@ -228,11 +225,7 @@ export async function createStreamCodexSession(
     experimentalApi = false,
     maxOutputTokens: adapterMaxOutputTokens,
     clientInfo: rawClientInfo = {}
-  } = resolveAdapterConfigEntry('codex', mergedConfig) as {
-    experimentalApi?: boolean
-    maxOutputTokens?: number
-    clientInfo?: { name?: string; title?: string; version?: string }
-  }
+  } = nativeConfig
   const maxOutputTokens = typeof resolvedMaxOutputTokens === 'number'
     ? resolvedMaxOutputTokens
     : resolvedMaxOutputTokens === null

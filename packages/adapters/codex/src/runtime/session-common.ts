@@ -3,7 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
+import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
 import { createLogger } from '@vibe-forge/utils/create-logger'
@@ -11,7 +11,7 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
-import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides } from './config'
+import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides, resolveCodexAdapterConfig } from './config'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
@@ -469,18 +469,14 @@ export async function resolveSessionBase(
     configState: ctx.configState,
     configs: ctx.configs
   })
+  const { common: commonConfig, native: nativeConfig } = resolveCodexAdapterConfig(ctx)
 
   const {
     sandboxPolicy: configSandboxPolicy,
-    effort: configuredEffort,
     features: configFeatures,
     configOverrides: configOverridesValue
-  } = resolveAdapterConfigEntry('codex', mergedConfig) as {
-    sandboxPolicy?: CodexSandboxPolicy
-    effort?: AdapterQueryOptions['effort']
-    features?: Record<string, boolean>
-    configOverrides?: Record<string, unknown>
-  }
+  } = nativeConfig
+  const configuredEffort = commonConfig.effort as AdapterQueryOptions['effort'] | undefined
 
   const useYolo = shouldUseYolo(options.permissionMode)
   const approvalPolicy = resolveApprovalPolicy(options.permissionMode)

@@ -10,7 +10,7 @@ import { resolveProjectAiPath } from '@vibe-forge/utils'
 import { buildInlineConfigContent, resolveOpenCodeModel } from '../common'
 import { asPlainRecord, deepMerge } from '../common/object-utils'
 import { toProcessEnv } from './shared'
-import type { OpenCodeAdapterConfig } from './shared'
+import type { OpenCodeResolvedAdapterConfig } from './shared'
 import { ensureOpenCodeConfigDir } from './skill-config'
 
 const resolveMergedConfig = (ctx: AdapterCtx) => resolveConfigState({
@@ -83,7 +83,7 @@ const readBaseConfigContent = async (configDir: string | undefined) => {
 export const buildChildEnv = async (params: {
   ctx: AdapterCtx
   options: AdapterQueryOptions
-  adapterConfig: OpenCodeAdapterConfig
+  adapterConfig: OpenCodeResolvedAdapterConfig
   systemPromptFile?: string
 }) => {
   const configDir = await ensureOpenCodeConfigDir({ ctx: params.ctx, options: params.options })
@@ -95,7 +95,7 @@ export const buildChildEnv = async (params: {
   )
   const inlineConfigContent = buildInlineConfigContent({
     baseConfigContent,
-    adapterConfigContent: params.adapterConfig.configContent,
+    adapterConfigContent: params.adapterConfig.native.configContent,
     envConfigContent: parseEnvConfigContent(params.ctx.env),
     permissionMode: params.options.permissionMode,
     tools: params.options.tools,
@@ -106,7 +106,7 @@ export const buildChildEnv = async (params: {
     systemPromptFile: params.systemPromptFile,
     providerConfig
   })
-  const requestedEffort = params.options.effort ?? params.adapterConfig.effort
+  const requestedEffort = params.options.effort ?? params.adapterConfig.common.effort
   const effortConfig = buildOpenCodeEffortConfig({
     cliModel,
     rawModel: params.options.model,

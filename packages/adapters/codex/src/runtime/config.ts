@@ -1,8 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
-import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
+import { resolveAdapterConfig as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { AdapterCtx } from '@vibe-forge/types'
+
+import type { CodexAdapterConfig } from '#~/config-schema.js'
+import { codexAdapterExtraCommonKeys } from '#~/config-schema.js'
+import type { CodexSandboxPolicy } from '#~/types.js'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
 const MANAGED_CONFIG_BLOCK_END = '# END VIBE FORGE MANAGED CODEX CONFIG'
@@ -60,19 +64,34 @@ export const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>
   return args
 }
 
+type CodexRuntimeAdapterConfig = Omit<CodexAdapterConfig, 'sandboxPolicy'> & {
+  sandboxPolicy?: CodexSandboxPolicy
+}
+
+export const resolveCodexAdapterConfig = (
+  params: {
+    configState?: AdapterCtx['configState']
+    configs?: AdapterCtx['configs']
+  } | undefined
+) => resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, typeof codexAdapterExtraCommonKeys[number]>(
+  'codex',
+  {
+    configState: params?.configState,
+    configs: params?.configs
+  },
+  {
+    extraCommonKeys: codexAdapterExtraCommonKeys
+  }
+)
+
 export const resolveCodexConfigOverrides = (
   params: {
     configState?: AdapterCtx['configState']
     configs?: AdapterCtx['configs']
   } | undefined
 ) => {
-  const { mergedConfig } = resolveConfigState({
-    configState: params?.configState,
-    configs: params?.configs
-  })
-  const { configOverrides: configOverridesValue } = resolveAdapterConfigEntry('codex', mergedConfig) as {
-    configOverrides?: Record<string, unknown>
-  }
+  const { native } = resolveCodexAdapterConfig(params)
+  const { configOverrides: configOverridesValue } = native
 
   return mergeCodexConfigOverrides(
     isPlainObject(configOverridesValue) ? configOverridesValue : {}

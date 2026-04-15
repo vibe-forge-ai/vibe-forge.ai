@@ -6,13 +6,16 @@ import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  ADAPTER_COMMON_CONFIG_KEYS,
   buildConfigJsonVariables,
   buildResolvedConfigState,
   loadAdapterConfig,
   loadConfig,
   resetConfigCache,
+  resolveAdapterConfig,
   resolveConfigState,
-  resolveAdapterConfigEntry
+  resolveAdapterConfigEntry,
+  splitAdapterConfigEntry
 } from '#~/load.js'
 
 const DISABLE_DEV_CONFIG_ENV = '__VF_PROJECT_AI_DISABLE_DEV_CONFIG__'
@@ -597,6 +600,46 @@ defaultModel: package-model
     })
   })
 
+  it('splits adapter config into common and native sections with adapter-specific common keys', () => {
+    const result = splitAdapterConfigEntry({
+      defaultModel: 'gpt-5.4',
+      includeModels: ['gpt-5.4'],
+      excludeModels: ['gpt-4.1'],
+      effort: 'high',
+      settingsContent: {
+        nested: true
+      },
+      model: 'legacy-model'
+    } as {
+      defaultModel?: string
+      includeModels?: string[]
+      excludeModels?: string[]
+      effort?: string
+      settingsContent?: Record<string, unknown>
+      model?: string
+    }, {
+      extraCommonKeys: ['effort']
+    })
+
+    expect(ADAPTER_COMMON_CONFIG_KEYS).toEqual([
+      'defaultModel',
+      'includeModels',
+      'excludeModels'
+    ])
+    expect(result.common).toEqual({
+      defaultModel: 'gpt-5.4',
+      includeModels: ['gpt-5.4'],
+      excludeModels: ['gpt-4.1'],
+      effort: 'high',
+      model: 'legacy-model'
+    })
+    expect(result.native).toEqual({
+      settingsContent: {
+        nested: true
+      }
+    })
+  })
+
   it('reuses a precomputed resolved config state when available', () => {
     const state = buildResolvedConfigState(
       {
@@ -616,6 +659,49 @@ defaultModel: package-model
         undefined
       ]
     })).toBe(state)
+  })
+
+  it('resolves adapter config sections from the merged config state', () => {
+    const state = buildResolvedConfigState(
+      {
+        adapters: {
+          'claude-code': {
+            defaultModel: 'project-model',
+            effort: 'medium',
+            settingsContent: {
+              permissionMode: 'plan'
+            }
+          }
+        }
+      } as any,
+      {
+        adapters: {
+          'claude-code': {
+            effort: 'high'
+          }
+        }
+      } as any
+    )
+
+    const result = resolveAdapterConfig<{
+      defaultModel?: string
+      effort?: string
+      settingsContent?: Record<string, unknown>
+    }, 'effort'>('claude-code', {
+      configState: state
+    }, {
+      extraCommonKeys: ['effort']
+    })
+
+    expect(result.common).toEqual({
+      defaultModel: 'project-model',
+      effort: 'high'
+    })
+    expect(result.native).toEqual({
+      settingsContent: {
+        permissionMode: 'plan'
+      }
+    })
   })
 
   it('loads adapter config through the resolved config helper path', async () => {

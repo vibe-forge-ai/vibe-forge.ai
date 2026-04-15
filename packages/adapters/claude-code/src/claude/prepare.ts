@@ -2,13 +2,14 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import process from 'node:process'
 
-import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
+import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 import { resolveClaudeCliPath } from '../ccr/paths'
+import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 import { stageClaudePluginDirs } from './plugins'
 
 interface ClaudeExecutionSettings {
@@ -92,6 +93,7 @@ export const prepareClaudeExecution = async (
     configState: ctx.configState,
     configs: ctx.configs
   })
+  const { common: commonConfig, native: nativeConfig } = resolveClaudeCodeAdapterConfig(ctx)
   const assetPlan = options.assetPlan
   const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
   const {
@@ -112,18 +114,13 @@ export const prepareClaudeExecution = async (
       ? 'create'
       : 'resume'
     : 'create'
-  const mergedAdapterConfig = resolveAdapterConfigEntry('claude-code', mergedConfig) as {
-    effort?: AdapterQueryOptions['effort']
-    settingsContent?: Record<string, unknown>
-    nativeEnv?: Record<string, string>
-  }
-  const requestedEffort = effort ?? mergedAdapterConfig.effort
-  const settingsContent = isPlainObject(mergedAdapterConfig.settingsContent)
-    ? mergedAdapterConfig.settingsContent
+  const requestedEffort = effort ?? commonConfig.effort
+  const settingsContent = isPlainObject(nativeConfig.settingsContent)
+    ? nativeConfig.settingsContent
     : {}
-  const nativeEnv = isPlainObject(mergedAdapterConfig.nativeEnv)
+  const nativeEnv = isPlainObject(nativeConfig.nativeEnv)
     ? Object.fromEntries(
-      Object.entries(mergedAdapterConfig.nativeEnv).filter((entry): entry is [string, string] =>
+      Object.entries(nativeConfig.nativeEnv).filter((entry): entry is [string, string] =>
         typeof entry[1] === 'string'
       )
     )
