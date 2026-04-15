@@ -26,22 +26,25 @@ export const claudeCodeAdapterConfigSchema = z.object({
 })
 
 export type ClaudeCodeAdapterConfig = z.infer<typeof claudeCodeAdapterConfigSchema>
-export const claudeCodeAdapterExtraCommonKeys = ['effort'] as const
-export const claudeCodeAdapterDeepMergeKeys = [
-  'ccrOptions',
-  'ccrTransformers',
-  'modelFallbacks',
-  'settingsContent',
-  'nativeEnv'
-] as const
+export type ClaudeCodeCommonAdapterConfigKey = 'effort'
 export type ClaudeCodeNativeAdapterConfig = Omit<
   ClaudeCodeAdapterConfig,
-  typeof claudeCodeAdapterExtraCommonKeys[number]
+  ClaudeCodeCommonAdapterConfigKey
 >
 
 export const adapterConfigContribution = defineAdapterConfigContribution({
   adapterKey: 'claude-code',
   title: 'Claude Code',
   description: 'Claude Code adapter configuration',
-  schema: claudeCodeAdapterConfigSchema
+  schema: claudeCodeAdapterConfigSchema,
+  configEntry: {
+    extraCommonKeys: ['effort'] as const,
+    deepMergeKeys: [
+      'ccrOptions',
+      'ccrTransformers',
+      'modelFallbacks',
+      'settingsContent',
+      'nativeEnv'
+    ] as const
+  }
 })

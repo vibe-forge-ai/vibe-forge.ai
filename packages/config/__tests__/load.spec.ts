@@ -15,6 +15,7 @@ import {
   resolveAdapterConfig,
   resolveConfigState,
   resolveAdapterConfigEntry,
+  resolveAdapterConfigWithContribution,
   splitAdapterConfigEntry
 } from '#~/load.js'
 
@@ -762,6 +763,70 @@ defaultModel: package-model
       ccrOptions: {
         PORT: '4123',
         APIKEY: 'router-key'
+      }
+    })
+  })
+
+  it('reuses contribution metadata when resolving adapter config', () => {
+    const state = buildResolvedConfigState(
+      {
+        adapters: {
+          'claude-code': {
+            defaultModel: 'project-model',
+            effort: 'medium',
+            settingsContent: {
+              outputStyle: {
+                tone: 'concise',
+                bullets: true
+              }
+            }
+          }
+        }
+      } as any,
+      {
+        adapters: {
+          'claude-code': {
+            effort: 'high',
+            settingsContent: {
+              outputStyle: {
+                bullets: false
+              },
+              approvals: {
+                mode: 'plan'
+              }
+            }
+          }
+        }
+      } as any
+    )
+
+    const result = resolveAdapterConfigWithContribution<{
+      defaultModel?: string
+      effort?: string
+      settingsContent?: Record<string, unknown>
+    }, 'effort'>({
+      adapterKey: 'claude-code',
+      configEntry: {
+        extraCommonKeys: ['effort'],
+        deepMergeKeys: ['settingsContent']
+      }
+    }, {
+      configState: state
+    })
+
+    expect(result.common).toEqual({
+      defaultModel: 'project-model',
+      effort: 'high'
+    })
+    expect(result.native).toEqual({
+      settingsContent: {
+        outputStyle: {
+          tone: 'concise',
+          bullets: false
+        },
+        approvals: {
+          mode: 'plan'
+        }
       }
     })
   })

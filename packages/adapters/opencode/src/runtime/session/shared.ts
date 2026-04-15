@@ -1,12 +1,12 @@
 import { execFile } from 'node:child_process'
 
-import { resolveAdapterConfig as resolveMergedAdapterConfig } from '@vibe-forge/config'
+import { resolveAdapterConfigWithContribution as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
-import type { OpenCodeAdapterConfig } from '#~/config-schema.js'
-import { openCodeAdapterDeepMergeKeys, openCodeAdapterExtraCommonKeys } from '#~/config-schema.js'
+import { adapterConfigContribution } from '#~/config-schema.js'
+import type { OpenCodeAdapterConfig, OpenCodeCommonAdapterConfigKey } from '#~/config-schema.js'
 
 export interface OpenCodeRunResult {
   exitCode: number
@@ -112,16 +112,12 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
 
 export const resolveAdapterConfig = (ctx: AdapterCtx) => resolveMergedAdapterConfig<
   OpenCodeAdapterConfig,
-  typeof openCodeAdapterExtraCommonKeys[number]
+  OpenCodeCommonAdapterConfigKey
 >(
-  'opencode',
+  adapterConfigContribution,
   {
     configState: ctx.configState,
     configs: ctx.configs
-  },
-  {
-    extraCommonKeys: openCodeAdapterExtraCommonKeys,
-    deepMergeKeys: openCodeAdapterDeepMergeKeys
   }
 )
 

@@ -60,6 +60,14 @@ export interface ResolveAdapterConfigEntryOptions<
   deepMergeKeys?: readonly (keyof TEntry)[]
 }
 
+export interface AdapterConfigResolverContribution<
+  TEntry extends AdapterConfigRecord = AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never
+> {
+  adapterKey: string
+  configEntry?: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey>
+}
+
 export interface ResolvedAdapterConfig<
   TEntry extends AdapterConfigRecord = AdapterConfigEntry<AdapterConfigRecord>,
   TExtraCommonKey extends keyof TEntry = never
@@ -619,6 +627,18 @@ export const resolveAdapterConfig = <
     resolveOptions
   )
 }
+
+export const resolveAdapterConfigWithContribution = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never
+>(
+  contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
+  options: ResolveAdapterConfigOptions = {}
+) => resolveAdapterConfig<TEntry, TExtraCommonKey>(
+  contribution.adapterKey,
+  options,
+  contribution.configEntry
+)
 
 export const loadAdapterConfig = async (
   name: string,

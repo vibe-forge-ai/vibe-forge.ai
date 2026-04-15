@@ -10,17 +10,34 @@ export interface ConfigSemanticIssue {
   message: string
 }
 
-export interface AdapterConfigContribution<TSchema extends z.AnyZodObject = z.AnyZodObject> {
+type AdapterConfigSchemaKey<TSchema extends z.AnyZodObject> = Extract<keyof z.infer<TSchema>, string>
+
+export interface AdapterConfigEntryMetadata<
+  TSchema extends z.AnyZodObject = z.AnyZodObject,
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+> {
+  extraCommonKeys?: readonly TExtraCommonKey[]
+  deepMergeKeys?: readonly AdapterConfigSchemaKey<TSchema>[]
+}
+
+export interface AdapterConfigContribution<
+  TSchema extends z.AnyZodObject = z.AnyZodObject,
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+> {
   adapterKey: string
   title?: string
   description?: string
   schema: TSchema
   uiSchema?: ConfigUiObjectSchema
+  configEntry?: AdapterConfigEntryMetadata<TSchema, TExtraCommonKey>
   validate?: (value: z.infer<TSchema>) => readonly ConfigSemanticIssue[] | void
 }
 
-export const defineAdapterConfigContribution = <TSchema extends z.AnyZodObject>(
-  contribution: AdapterConfigContribution<TSchema>
+export const defineAdapterConfigContribution = <
+  TSchema extends z.AnyZodObject,
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+>(
+  contribution: AdapterConfigContribution<TSchema, TExtraCommonKey>
 ) => contribution
 
 export const jsonValueSchema: z.ZodType<unknown> = z.lazy(() => z.union([

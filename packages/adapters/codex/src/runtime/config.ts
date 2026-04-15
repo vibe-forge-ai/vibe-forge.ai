@@ -1,11 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
-import { resolveAdapterConfig as resolveMergedAdapterConfig } from '@vibe-forge/config'
+import { resolveAdapterConfigWithContribution as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { AdapterCtx } from '@vibe-forge/types'
 
-import type { CodexAdapterConfig } from '#~/config-schema.js'
-import { codexAdapterDeepMergeKeys, codexAdapterExtraCommonKeys } from '#~/config-schema.js'
+import { adapterConfigContribution } from '#~/config-schema.js'
+import type { CodexAdapterConfig, CodexCommonAdapterConfigKey } from '#~/config-schema.js'
 import type { CodexSandboxPolicy } from '#~/types.js'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
@@ -73,15 +73,11 @@ export const resolveCodexAdapterConfig = (
     configState?: AdapterCtx['configState']
     configs?: AdapterCtx['configs']
   } | undefined
-) => resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, typeof codexAdapterExtraCommonKeys[number]>(
-  'codex',
+) => resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, CodexCommonAdapterConfigKey>(
+  adapterConfigContribution,
   {
     configState: params?.configState,
     configs: params?.configs
-  },
-  {
-    extraCommonKeys: codexAdapterExtraCommonKeys,
-    deepMergeKeys: codexAdapterDeepMergeKeys
   }
 )
 
