@@ -68,11 +68,13 @@ export function buildAdapterAssetPlan(params: {
     diagnostics.push({
       assetId: asset.id,
       adapter: params.adapter,
-      status: 'native',
+      status: params.adapter === 'copilot' ? 'translated' : 'native',
       reason: params.adapter === 'claude-code'
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
         ? 'Mapped into the Codex native hooks bridge.'
+        : params.adapter === 'copilot'
+        ? 'Handled by the Vibe Forge task hook bridge.'
         : 'Mapped into the OpenCode native hooks bridge.',
       packageId: asset.packageId,
       scope: asset.scope,
@@ -115,13 +117,15 @@ export function buildAdapterAssetPlan(params: {
         taskOverlaySource: asset.taskOverlaySource
       })
     })
-  } else if (params.adapter === 'codex') {
+  } else if (params.adapter === 'codex' || params.adapter === 'copilot') {
     params.bundle.opencodeOverlayAssets.forEach((asset) => {
       diagnostics.push({
         assetId: asset.id,
         adapter: params.adapter,
         status: 'skipped',
-        reason: 'No stable native Codex mapping exists for this asset kind in V1.',
+        reason: `No stable native ${
+          params.adapter === 'codex' ? 'Codex' : 'Copilot'
+        } mapping exists for this asset kind in V1.`,
         packageId: asset.packageId,
         scope: asset.scope,
         instancePath: asset.instancePath,
@@ -132,14 +136,15 @@ export function buildAdapterAssetPlan(params: {
     })
   }
 
+  const selectedSkillOverlays = selectedSkillAssets.map((asset): AdapterOverlayEntry => ({
+    assetId: asset.id,
+    kind: 'skill',
+    sourcePath: dirname(asset.sourcePath),
+    targetPath: `skills/${asset.displayName.replaceAll('/', '__')}`
+  }))
   const overlays: AdapterOverlayEntry[] = params.adapter === 'opencode'
     ? [
-      ...selectedSkillAssets.map((asset): AdapterOverlayEntry => ({
-        assetId: asset.id,
-        kind: 'skill',
-        sourcePath: dirname(asset.sourcePath),
-        targetPath: `skills/${asset.displayName.replaceAll('/', '__')}`
-      })),
+      ...selectedSkillOverlays,
       ...params.bundle.opencodeOverlayAssets.map((asset): AdapterOverlayEntry => ({
         assetId: asset.id,
         kind: asset.kind,
@@ -147,6 +152,8 @@ export function buildAdapterAssetPlan(params: {
         targetPath: asset.payload.targetSubpath
       }))
     ]
+    : params.adapter === 'copilot'
+    ? selectedSkillOverlays
     : []
 
   return {

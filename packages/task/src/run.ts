@@ -179,7 +179,7 @@ export const run = async (
   await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
-  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'opencode'])
+  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'opencode'])
   const supportsEffort = supportedEffortAdapters.has(adapterType)
   if (!supportsEffort && adapterOptions.effort != null) {
     throw new Error(`Adapter "${adapterType}" does not support effort`)
@@ -216,7 +216,7 @@ export const run = async (
   const assetPlanBaseRaw = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
     ? undefined
     : buildAdapterAssetPlan({
-      adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
+      adapter: adapterType as 'claude-code' | 'codex' | 'copilot' | 'opencode',
       bundle: ctx.assets,
       options: {
         mcpServers: runtimeMcpSelection.workspaceSelection,
