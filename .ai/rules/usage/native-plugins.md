@@ -124,6 +124,8 @@ npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 
 如果你不想依赖整个外部 marketplace，也可以用 `options.source.source: settings` 在项目配置里内联一个最小 catalog，只声明你真正需要的几个插件。
 
+更完整的 marketplace 配置示例见 [Marketplace 详细示例](./native-plugins/marketplaces.md)。
+
 ## 用户视角下的行为
 
 执行 `vf plugin --adapter claude add ...` 之后，你可以把它理解成两件事：
