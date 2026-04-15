@@ -18,6 +18,17 @@ export interface LoadConfigOptions {
   disableDevConfig?: boolean
 }
 
+export interface ResolvedConfigState {
+  projectConfig?: Config
+  userConfig?: Config
+  mergedConfig: Config
+}
+
+export interface ResolveConfigStateOptions {
+  configState?: ResolvedConfigState
+  configs?: readonly [Config?, Config?]
+}
+
 interface ConfigWithExtend {
   extend?: string | string[]
 }
@@ -408,15 +419,45 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
   return nextConfig
 }
 
+export const resolveMergedConfig = (
+  projectConfig?: Config,
+  userConfig?: Config
+): Config => mergeConfigs(projectConfig, userConfig) ?? {}
+
+export const buildResolvedConfigState = (
+  projectConfig?: Config,
+  userConfig?: Config
+): ResolvedConfigState => ({
+  projectConfig,
+  userConfig,
+  mergedConfig: resolveMergedConfig(projectConfig, userConfig)
+})
+
+export const resolveConfigState = (
+  options: ResolveConfigStateOptions = {}
+): ResolvedConfigState => (
+  options.configState ?? buildResolvedConfigState(options.configs?.[0], options.configs?.[1])
+)
+
+export const loadConfigState = async (
+  options: LoadConfigOptions = {}
+): Promise<ResolvedConfigState> => {
+  const [projectConfig, userConfig] = await loadConfig(options)
+  return buildResolvedConfigState(projectConfig, userConfig)
+}
+
+export const resolveAdapterConfigEntry = (
+  name: string,
+  mergedConfig?: Config
+): Record<string, unknown> => {
+  const adapters = mergedConfig?.adapters as Record<string, unknown> | undefined
+  return isRecord(adapters?.[name]) ? adapters[name] : {}
+}
+
 export const loadAdapterConfig = async (
   name: string,
   options: LoadConfigOptions = {}
 ) => {
-  const [projectConfig, userConfig] = await loadConfig(options)
-  const projectAdapters = projectConfig?.adapters as Record<string, unknown> | undefined
-  const userAdapters = userConfig?.adapters as Record<string, unknown> | undefined
-  return {
-    ...(projectAdapters?.[name] as Record<string, unknown> | undefined ?? {}),
-    ...(userAdapters?.[name] as Record<string, unknown> | undefined ?? {})
-  } as Record<string, unknown>
+  const { mergedConfig } = await loadConfigState(options)
+  return resolveAdapterConfigEntry(name, mergedConfig)
 }

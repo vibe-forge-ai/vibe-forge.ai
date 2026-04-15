@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
@@ -12,47 +13,39 @@ import { toProcessEnv } from './shared'
 import type { OpenCodeAdapterConfig } from './shared'
 import { ensureOpenCodeConfigDir } from './skill-config'
 
+const resolveMergedConfig = (ctx: AdapterCtx) => resolveConfigState({
+  configState: ctx.configState,
+  configs: ctx.configs
+}).mergedConfig
+
 const resolveMergedModelServices = (ctx: AdapterCtx) =>
-  ({
-    ...(ctx.configs[0]?.modelServices ?? {}),
-    ...(ctx.configs[1]?.modelServices ?? {})
-  }) as Record<string, ModelServiceConfig>
+  (resolveMergedConfig(ctx).modelServices ?? {}) as Record<string, ModelServiceConfig>
 
 const resolveMergedMcpServers = (ctx: AdapterCtx) =>
-  ({
-    ...(ctx.configs[0]?.mcpServers ?? {}),
-    ...(ctx.configs[1]?.mcpServers ?? {})
-  }) as Config['mcpServers']
+  resolveMergedConfig(ctx).mcpServers as Config['mcpServers']
 
-const resolveManagedPermissions = (ctx: AdapterCtx): Config['permissions'] => ({
-  allow: [
-    ...(ctx.configs[0]?.permissions?.allow ?? []),
-    ...(ctx.configs[1]?.permissions?.allow ?? [])
-  ],
-  deny: [
-    ...(ctx.configs[0]?.permissions?.deny ?? []),
-    ...(ctx.configs[1]?.permissions?.deny ?? [])
-  ],
-  ask: [
-    ...(ctx.configs[0]?.permissions?.ask ?? []),
-    ...(ctx.configs[1]?.permissions?.ask ?? [])
-  ]
-})
+const resolveManagedPermissions = (ctx: AdapterCtx): Config['permissions'] => {
+  const permissions = resolveMergedConfig(ctx).permissions
+  return {
+    allow: [...(permissions?.allow ?? [])],
+    deny: [...(permissions?.deny ?? [])],
+    ask: [...(permissions?.ask ?? [])]
+  }
+}
 
 const resolveMcpServerSelection = (
   ctx: AdapterCtx,
   selection: AdapterQueryOptions['mcpServers']
 ) => {
+  const mergedConfig = resolveMergedConfig(ctx)
   const include = selection?.include ?? Array.from(
     new Set([
-      ...(ctx.configs[0]?.defaultIncludeMcpServers ?? []),
-      ...(ctx.configs[1]?.defaultIncludeMcpServers ?? [])
+      ...(mergedConfig.defaultIncludeMcpServers ?? [])
     ])
   )
   const exclude = selection?.exclude ?? Array.from(
     new Set([
-      ...(ctx.configs[0]?.defaultExcludeMcpServers ?? []),
-      ...(ctx.configs[1]?.defaultExcludeMcpServers ?? [])
+      ...(mergedConfig.defaultExcludeMcpServers ?? [])
     ])
   )
 

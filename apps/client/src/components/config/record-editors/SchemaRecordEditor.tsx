@@ -298,7 +298,11 @@ export const SchemaRecordEditor = ({
               className='config-view__icon-button'
               aria-label={t('common.confirm')}
               icon={<span className='material-symbols-rounded'>check</span>}
-              disabled={newKey.trim() === '' || Object.hasOwn(value, newKey)}
+              disabled={
+                newKey.trim() === '' ||
+                Object.hasOwn(value, newKey) ||
+                (schema.mode === 'discriminated' && newKind.trim() === '')
+              }
               onClick={() => {
                 const nextSchema = schema.mode === 'discriminated'
                   ? (schema.schemas[newKind] ?? schema.unknownSchema)

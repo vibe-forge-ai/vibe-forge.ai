@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import type { AdapterCtx } from '@vibe-forge/types'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
@@ -60,13 +61,16 @@ export const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>
 }
 
 export const resolveCodexConfigOverrides = (
-  configs: AdapterCtx['configs'] | undefined
+  params: {
+    configState?: AdapterCtx['configState']
+    configs?: AdapterCtx['configs']
+  } | undefined
 ) => {
-  const [config, userConfig] = configs ?? []
-  const { configOverrides: configOverridesValue } = {
-    ...(config?.adapters?.codex ?? {}),
-    ...(userConfig?.adapters?.codex ?? {})
-  } as {
+  const { mergedConfig } = resolveConfigState({
+    configState: params?.configState,
+    configs: params?.configs
+  })
+  const { configOverrides: configOverridesValue } = resolveAdapterConfigEntry('codex', mergedConfig) as {
     configOverrides?: Record<string, unknown>
   }
 
@@ -115,6 +119,7 @@ export const writeManagedCodexConfigFile = async (params: {
   configPath: string
   workspacePath: string
   configs: AdapterCtx['configs'] | undefined
+  configState?: AdapterCtx['configState']
 }) => {
   let currentContent = ''
 
@@ -126,7 +131,10 @@ export const writeManagedCodexConfigFile = async (params: {
     }
   }
 
-  const configOverrides = resolveCodexConfigOverrides(params.configs)
+  const configOverrides = resolveCodexConfigOverrides({
+    configs: params.configs,
+    configState: params.configState
+  })
   const nextContent = upsertManagedCodexConfig({
     currentContent,
     workspacePath: params.workspacePath,

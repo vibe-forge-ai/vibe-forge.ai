@@ -140,4 +140,42 @@ describe('config schema form', () => {
     expect(html).toContain('App ID')
     expect(html).toContain('App Secret')
   })
+
+  it('falls back to the JSON record editor when no channel kinds are available', () => {
+    const uiSection: ConfigUiSection = {
+      key: 'channels',
+      kind: 'recordMap',
+      recordMap: {
+        mode: 'discriminated',
+        keyPlaceholder: 'Channel name',
+        discriminatorField: 'type',
+        entryKinds: [],
+        schemas: {},
+        unknownSchema: {
+          fields: []
+        },
+        unknownEditor: 'json'
+      }
+    }
+
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='channels'
+        uiSection={uiSection}
+        value={{
+          teamChat: {
+            type: 'custom-channel',
+            customFlag: true
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('teamChat')
+    expect(html).not.toContain('ant-select')
+  })
 })

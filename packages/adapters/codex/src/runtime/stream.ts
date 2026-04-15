@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import type {
   AdapterCtx,
   AdapterEvent,
@@ -214,7 +215,11 @@ export async function createStreamCodexSession(
     threadCacheKey,
     cachedThreadId
   } = base
-  const { cache, configs: [config, userConfig] } = ctx
+  const { cache } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
   const { onEvent, description, sessionId, extraOptions, type: sessionType } = options
   const model = resolvedModel
   const rpcApprovalPolicy = toCodexOutboundApprovalPolicy(approvalPolicy)
@@ -223,10 +228,7 @@ export async function createStreamCodexSession(
     experimentalApi = false,
     maxOutputTokens: adapterMaxOutputTokens,
     clientInfo: rawClientInfo = {}
-  } = {
-    ...(config?.adapters?.codex ?? {}),
-    ...(userConfig?.adapters?.codex ?? {})
-  } as {
+  } = resolveAdapterConfigEntry('codex', mergedConfig) as {
     experimentalApi?: boolean
     maxOutputTokens?: number
     clientInfo?: { name?: string; title?: string; version?: string }

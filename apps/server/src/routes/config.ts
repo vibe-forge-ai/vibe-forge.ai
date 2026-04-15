@@ -240,7 +240,7 @@ export function configRouter(): Router {
           'invalid_config_section_value'
         )
       }
-      await updateConfigFile({ workspaceFolder, source, section, value })
+      await updateConfigFile({ workspaceFolder, source, section, value: parsed.data })
       ctx.body = { ok: true }
     } catch (err) {
       if (isHttpError(err)) {

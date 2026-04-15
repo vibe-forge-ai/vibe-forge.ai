@@ -5,7 +5,7 @@ import { resolveQuerySelection } from '#~/query-selection.js'
 describe('resolveQuerySelection', () => {
   it('prefers defaultModelService when an explicit bare model matches multiple services', () => {
     const selection = resolveQuerySelection({
-      config: {
+      mergedConfig: {
         adapters: {
           codex: {},
           'claude-code': {}
@@ -24,7 +24,6 @@ describe('resolveQuerySelection', () => {
         },
         defaultModelService: 'gpt-responses'
       } as any,
-      userConfig: undefined,
       inputModel: 'gpt-5.4-2026-03-05'
     })
 

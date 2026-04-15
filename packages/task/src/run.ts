@@ -1,5 +1,6 @@
 import { callHook, createAdapterHookBridge } from '@vibe-forge/hooks'
 import type { HookInputs } from '@vibe-forge/hooks'
+import { resolveConfigState } from '@vibe-forge/config'
 import type {
   AdapterCtx,
   AdapterModelFallbackError,
@@ -12,7 +13,6 @@ import type {
 import { loadAdapter } from '@vibe-forge/types'
 import {
   listServiceModels,
-  mergeAdapterConfigs,
   resolveAdapterModelCompatibility,
   resolveEffectiveEffort
 } from '@vibe-forge/utils'
@@ -130,17 +130,17 @@ export const run = async (
   adapterOptions: AdapterQueryOptions
 ) => {
   const [ctx] = await prepare(options, adapterOptions)
-  const {
-    configs: [config, userConfig]
-  } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
 
   const { logger, cache, ...base } = ctx
 
   await cache.set('base', base)
 
   const resolvedSelection = resolveQuerySelection({
-    config,
-    userConfig,
+    mergedConfig,
     inputAdapter: options.adapter,
     inputModel: adapterOptions.model
   })
@@ -149,21 +149,10 @@ export const run = async (
     throw new Error('No adapter found in config, please set adapters in config file')
   }
 
-  const mergedAdapters = mergeAdapterConfigs(
-    config?.adapters as Record<string, unknown> | undefined,
-    userConfig?.adapters as Record<string, unknown> | undefined
-  )
-  const mergedModelServices = {
-    ...(config?.modelServices ?? {}),
-    ...(userConfig?.modelServices ?? {})
-  }
+  const mergedAdapters = mergedConfig.adapters as Record<string, unknown> | undefined
+  const mergedModelServices = mergedConfig.modelServices ?? {}
   const serviceModels = listServiceModels(mergedModelServices)
-  const mergedDefaultModelService = pickFirstNonEmptyString(
-    [
-      userConfig?.defaultModelService,
-      config?.defaultModelService
-    ]
-  )
+  const mergedDefaultModelService = pickFirstNonEmptyString([mergedConfig.defaultModelService])
   const compatibilityResult = resolveAdapterModelCompatibility({
     adapter: adapterType,
     model: resolvedSelection.model,
@@ -190,12 +179,9 @@ export const run = async (
       explicitEffort: adapterOptions.effort,
       model: resolvedModel,
       adapter: adapterType,
-      configEffort: userConfig?.effort ?? config?.effort,
+      configEffort: mergedConfig.effort,
       adapters: mergedAdapters,
-      models: {
-        ...(config?.models ?? {}),
-        ...(userConfig?.models ?? {})
-      }
+      models: mergedConfig.models
     })
     : { effort: undefined as undefined }
 

@@ -5,7 +5,15 @@ import process from 'node:process'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildConfigJsonVariables, loadConfig, resetConfigCache } from '#~/load.js'
+import {
+  buildConfigJsonVariables,
+  buildResolvedConfigState,
+  loadAdapterConfig,
+  loadConfig,
+  resetConfigCache,
+  resolveConfigState,
+  resolveAdapterConfigEntry
+} from '#~/load.js'
 
 const DISABLE_DEV_CONFIG_ENV = '__VF_PROJECT_AI_DISABLE_DEV_CONFIG__'
 
@@ -555,6 +563,97 @@ defaultModel: package-model
       expect(errorSpy).toHaveBeenCalled()
     } finally {
       errorSpy.mockRestore()
+      resetConfigCache()
+      await rm(tempDir, { force: true, recursive: true })
+    }
+  })
+
+  it('builds resolved config state and adapter entries from merged config semantics', () => {
+    const state = buildResolvedConfigState(
+      {
+        defaultModelService: 'project-service',
+        adapters: {
+          codex: {
+            defaultModel: 'project-model',
+            includeModels: ['project-include']
+          }
+        }
+      } as any,
+      {
+        defaultModelService: 'user-service',
+        adapters: {
+          codex: {
+            excludeModels: ['user-exclude']
+          }
+        }
+      } as any
+    )
+
+    expect(state.mergedConfig.defaultModelService).toBe('user-service')
+    expect(resolveAdapterConfigEntry('codex', state.mergedConfig)).toEqual({
+      defaultModel: 'project-model',
+      includeModels: ['project-include'],
+      excludeModels: ['user-exclude']
+    })
+  })
+
+  it('reuses a precomputed resolved config state when available', () => {
+    const state = buildResolvedConfigState(
+      {
+        defaultModel: 'project-model'
+      } as any,
+      {
+        defaultModel: 'user-model'
+      } as any
+    )
+
+    expect(resolveConfigState({
+      configState: state,
+      configs: [
+        {
+          defaultModel: 'stale-project-model'
+        } as any,
+        undefined
+      ]
+    })).toBe(state)
+  })
+
+  it('loads adapter config through the resolved config helper path', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-adapter-load-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, '.ai.config.json'),
+        JSON.stringify({
+          adapters: {
+            codex: {
+              defaultModel: 'project-model'
+            }
+          }
+        })
+      )
+      await writeFile(
+        path.join(tempDir, '.ai.dev.config.json'),
+        JSON.stringify({
+          adapters: {
+            codex: {
+              excludeModels: ['user-exclude']
+            }
+          }
+        })
+      )
+
+      resetConfigCache()
+      const config = await loadAdapterConfig('codex', {
+        cwd: tempDir,
+        jsonVariables: {}
+      })
+
+      expect(config).toEqual({
+        defaultModel: 'project-model',
+        excludeModels: ['user-exclude']
+      })
+    } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })
     }

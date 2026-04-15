@@ -5,7 +5,8 @@ import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
-import type { AdapterCtx, Config } from '@vibe-forge/types'
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
+import type { AdapterCtx } from '@vibe-forge/types'
 import { omitAdapterCommonConfig, resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { generateDefaultCCRConfigJSON } from './config'
@@ -197,23 +198,20 @@ const defaultRouterDeps: ClaudeCodeRouterDeps = {
   waitForReady: waitForReadyDefault
 }
 
-const resolveAdapterOptions = (params: {
-  config?: Config
-  userConfig?: Config
-}) => {
-  const { config, userConfig } = params
-  return omitAdapterCommonConfig({
-    ...(config?.adapters?.['claude-code'] ?? {}),
-    ...(userConfig?.adapters?.['claude-code'] ?? {})
+const resolveAdapterOptions = (ctx: Pick<AdapterCtx, 'configState' | 'configs'>) => {
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
   })
+  return omitAdapterCommonConfig(resolveAdapterConfigEntry('claude-code', mergedConfig))
 }
 
 export const ensureClaudeCodeRouterReady = async (
-  ctx: Pick<AdapterCtx, 'configs' | 'cwd' | 'env'>,
+  ctx: Pick<AdapterCtx, 'configState' | 'configs' | 'cwd' | 'env'>,
   deps: Partial<ClaudeCodeRouterDeps> = {}
 ) => {
   const { cwd, env, configs: [config, userConfig] } = ctx
-  const adapterOptions = resolveAdapterOptions({ config, userConfig })
+  const adapterOptions = resolveAdapterOptions(ctx)
   const configText = generateDefaultCCRConfigJSON({
     cwd,
     config,

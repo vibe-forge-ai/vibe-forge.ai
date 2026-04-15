@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import {
   buildConfigJsonVariables,
-  loadConfig,
+  loadConfigState,
   mergeConfigs,
   resolveUseDefaultVibeForgeMcpServer
 } from '@vibe-forge/config'
@@ -59,14 +59,11 @@ export const prepare = async (
   )
 
   const jsonVariables = buildConfigJsonVariables(cwd, env)
-  const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
-  const mergedConfig = mergeConfigs(config, userConfig)
+  const configState = await loadConfigState({ cwd, jsonVariables })
+  const { projectConfig: config, userConfig, mergedConfig } = configState
   const mergedPlugins = mergeConfigs(
     {
-      plugins: mergeConfigs(
-        { plugins: config?.plugins },
-        { plugins: userConfig?.plugins }
-      )?.plugins
+      plugins: mergedConfig?.plugins
     },
     {
       plugins: options.plugins
@@ -108,6 +105,7 @@ export const prepare = async (
       },
       logger,
       configs: [config, userConfig],
+      configState,
       assets
     } satisfies AdapterCtx
   ] as const

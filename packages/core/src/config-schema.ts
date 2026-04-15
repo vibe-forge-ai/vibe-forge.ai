@@ -305,70 +305,90 @@ export const baseConfigFileSchema = z.object({
   marketplaces: marketplaceConfigSchema.optional()
 }).strict()
 
+const getZodTypeName = (schema: z.ZodTypeAny) => (
+  (schema as { _def?: { typeName?: string } })._def?.typeName
+)
+
+const isZodType = (schema: z.ZodTypeAny, typeName: string) => getZodTypeName(schema) === typeName
+
 const unwrapUiSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
-  if (schema instanceof z.ZodOptional) return unwrapUiSchema(schema.unwrap())
-  if (schema instanceof z.ZodNullable) return unwrapUiSchema(schema.unwrap())
-  if (schema instanceof z.ZodDefault) return unwrapUiSchema(schema.removeDefault())
-  if (schema instanceof z.ZodEffects) return unwrapUiSchema(schema.innerType())
+  if (isZodType(schema, 'ZodOptional') || isZodType(schema, 'ZodNullable')) {
+    return unwrapUiSchema((schema as unknown as { unwrap: () => z.ZodTypeAny }).unwrap())
+  }
+  if (isZodType(schema, 'ZodDefault')) {
+    return unwrapUiSchema((schema as unknown as { removeDefault: () => z.ZodTypeAny }).removeDefault())
+  }
+  if (isZodType(schema, 'ZodEffects')) {
+    return unwrapUiSchema((schema as unknown as { innerType: () => z.ZodTypeAny }).innerType())
+  }
   return schema
 }
 
 const getUiDefaultValue = (schema: z.ZodTypeAny): unknown => {
-  if (schema instanceof z.ZodDefault) return schema._def.defaultValue()
-  if (schema instanceof z.ZodOptional) return undefined
-  if (schema instanceof z.ZodNullable) return null
+  if (isZodType(schema, 'ZodDefault')) {
+    return (schema as unknown as { _def: { defaultValue: () => unknown } })._def.defaultValue()
+  }
+  if (isZodType(schema, 'ZodOptional')) return undefined
+  if (isZodType(schema, 'ZodNullable')) return null
 
   const unwrapped = unwrapUiSchema(schema)
-  if (unwrapped instanceof z.ZodLiteral) return unwrapped.value
-  if (unwrapped instanceof z.ZodEnum) return unwrapped.options[0]
-  if (unwrapped instanceof z.ZodNativeEnum) {
-    const values = Object.values(unwrapped.enum)
+  if (isZodType(unwrapped, 'ZodLiteral')) return (unwrapped as unknown as { value: unknown }).value
+  if (isZodType(unwrapped, 'ZodEnum')) return (unwrapped as unknown as { options: string[] }).options[0]
+  if (isZodType(unwrapped, 'ZodNativeEnum')) {
+    const values = Object.values((unwrapped as unknown as { enum: Record<string, unknown> }).enum)
     return values.length > 0 ? values[0] : undefined
   }
-  if (unwrapped instanceof z.ZodString) return ''
-  if (unwrapped instanceof z.ZodNumber) return 0
-  if (unwrapped instanceof z.ZodBoolean) return false
-  if (unwrapped instanceof z.ZodArray) return []
-  if (unwrapped instanceof z.ZodObject || unwrapped instanceof z.ZodRecord) return {}
+  if (isZodType(unwrapped, 'ZodString')) return ''
+  if (isZodType(unwrapped, 'ZodNumber')) return 0
+  if (isZodType(unwrapped, 'ZodBoolean')) return false
+  if (isZodType(unwrapped, 'ZodArray')) return []
+  if (isZodType(unwrapped, 'ZodObject') || isZodType(unwrapped, 'ZodRecord')) return {}
   return undefined
 }
 
 const inferUiFieldType = (schema: z.ZodTypeAny): ConfigUiFieldType => {
   const unwrapped = unwrapUiSchema(schema)
-  if (unwrapped instanceof z.ZodString) return 'string'
-  if (unwrapped instanceof z.ZodNumber) return 'number'
-  if (unwrapped instanceof z.ZodBoolean) return 'boolean'
-  if (unwrapped instanceof z.ZodEnum || unwrapped instanceof z.ZodNativeEnum || unwrapped instanceof z.ZodLiteral) {
+  if (isZodType(unwrapped, 'ZodString')) return 'string'
+  if (isZodType(unwrapped, 'ZodNumber')) return 'number'
+  if (isZodType(unwrapped, 'ZodBoolean')) return 'boolean'
+  if (
+    isZodType(unwrapped, 'ZodEnum') ||
+    isZodType(unwrapped, 'ZodNativeEnum') ||
+    isZodType(unwrapped, 'ZodLiteral')
+  ) {
     return 'select'
   }
-  if (unwrapped instanceof z.ZodArray) {
-    const element = unwrapUiSchema(unwrapped.element)
-    return element instanceof z.ZodString ? 'string[]' : 'json'
+  if (isZodType(unwrapped, 'ZodArray')) {
+    const element = unwrapUiSchema((unwrapped as unknown as { element: z.ZodTypeAny }).element)
+    return isZodType(element, 'ZodString') ? 'string[]' : 'json'
   }
   return 'json'
 }
 
 const inferUiOptions = (schema: z.ZodTypeAny) => {
   const unwrapped = unwrapUiSchema(schema)
-  if (unwrapped instanceof z.ZodLiteral) {
-    return [{ value: String(unwrapped.value) }]
+  if (isZodType(unwrapped, 'ZodLiteral')) {
+    return [{ value: String((unwrapped as unknown as { value: unknown }).value) }]
   }
-  if (unwrapped instanceof z.ZodEnum) {
-    return unwrapped.options.map((value: string) => ({ value }))
+  if (isZodType(unwrapped, 'ZodEnum')) {
+    return (unwrapped as unknown as { options: string[] }).options.map(value => ({ value }))
   }
-  if (unwrapped instanceof z.ZodNativeEnum) {
-    return Object.values(unwrapped.enum).map(value => ({ value: String(value) }))
+  if (isZodType(unwrapped, 'ZodNativeEnum')) {
+    return Object.values((unwrapped as unknown as { enum: Record<string, string | number> }).enum)
+      .map(value => ({ value: String(value) }))
   }
   return undefined
 }
 
 export const buildConfigUiObjectSchema = (schema: z.ZodTypeAny): ConfigUiObjectSchema => {
   const unwrapped = unwrapUiSchema(schema)
-  if (!(unwrapped instanceof z.ZodObject)) {
+  if (!isZodType(unwrapped, 'ZodObject')) {
     return { fields: [] }
   }
 
-  const shapeEntries = Object.entries(unwrapped.shape) as Array<[string, z.ZodTypeAny]>
+  const shapeEntries = Object.entries((unwrapped as unknown as { shape: Record<string, z.ZodTypeAny> }).shape) as Array<
+    [string, z.ZodTypeAny]
+  >
   const fields = shapeEntries.map(([key, value]) => {
     const uiField: ConfigUiField = {
       path: [key],

@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import type { ChatMessage } from '@vibe-forge/core'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { omitAdapterCommonConfig } from '@vibe-forge/utils'
@@ -118,9 +119,9 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
 )
 
 export const resolveAdapterConfig = (ctx: AdapterCtx): OpenCodeAdapterConfig => {
-  const [config, userConfig] = ctx.configs
-  return omitAdapterCommonConfig({
-    ...(config?.adapters?.opencode ?? {}),
-    ...(userConfig?.adapters?.opencode ?? {})
-  }) as OpenCodeAdapterConfig
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
+  return omitAdapterCommonConfig(resolveAdapterConfigEntry('opencode', mergedConfig)) as OpenCodeAdapterConfig
 }

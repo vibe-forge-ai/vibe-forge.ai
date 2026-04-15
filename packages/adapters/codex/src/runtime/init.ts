@@ -97,12 +97,13 @@ const syncCodexMockHomeNativeSkillEntries = async (params: {
   await writeJsonFile(statePath, { skills: nextManagedSkills })
 }
 
-async function writeManagedCodexConfig(ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'configs'>): Promise<void> {
+async function writeManagedCodexConfig(ctx: Pick<AdapterCtx, 'configState' | 'cwd' | 'env' | 'configs'>): Promise<void> {
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
   await writeManagedCodexConfigFile({
     configPath: join(mockHome, '.codex', 'config.toml'),
     workspacePath: ctx.cwd,
-    configs: ctx.configs
+    configs: ctx.configs,
+    configState: ctx.configState
   })
 }
 

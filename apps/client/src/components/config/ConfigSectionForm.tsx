@@ -56,6 +56,16 @@ export const SectionForm = ({
     const recordValue = (value != null && typeof value === 'object')
       ? value as Record<string, unknown>
       : {}
+    if (uiSection.recordMap.mode === 'discriminated' && (uiSection.recordMap.entryKinds?.length ?? 0) === 0) {
+      return (
+        <RecordJsonEditor
+          value={recordValue}
+          onChange={onChange}
+          t={t}
+          keyPlaceholder={t('config.editor.fieldKey')}
+        />
+      )
+    }
     return (
       <SchemaRecordEditor
         value={recordValue}

@@ -3,6 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
 import { createLogger } from '@vibe-forge/utils/create-logger'
@@ -463,17 +464,18 @@ export async function resolveSessionBase(
   ctx: AdapterCtx,
   options: AdapterQueryOptions
 ): Promise<CodexSessionBase> {
-  const { logger, cwd, env, cache, configs: [config, userConfig] } = ctx
+  const { logger, cwd, env, cache } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
 
   const {
     sandboxPolicy: configSandboxPolicy,
     effort: configuredEffort,
     features: configFeatures,
     configOverrides: configOverridesValue
-  } = {
-    ...(config?.adapters?.codex ?? {}),
-    ...(userConfig?.adapters?.codex ?? {})
-  } as {
+  } = resolveAdapterConfigEntry('codex', mergedConfig) as {
     sandboxPolicy?: CodexSandboxPolicy
     effort?: AdapterQueryOptions['effort']
     features?: Record<string, boolean>
@@ -487,10 +489,7 @@ export async function resolveSessionBase(
     : (configSandboxPolicy ?? { type: 'workspaceWrite' })
   const features: Record<string, boolean> = { ...(configFeatures ?? {}) }
 
-  const mergedModelServices: Record<string, ModelServiceConfig> = {
-    ...(config?.modelServices ?? {}),
-    ...(userConfig?.modelServices ?? {})
-  }
+  const mergedModelServices: Record<string, ModelServiceConfig> = mergedConfig.modelServices ?? {}
 
   const configOverrides = mergeCodexConfigOverrides(
     isPlainObject(configOverridesValue) ? configOverridesValue : {}
@@ -567,18 +566,9 @@ export async function resolveSessionBase(
   }
 
   const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? (() => {
-    const mergedMcpServers = {
-      ...(config?.mcpServers ?? {}),
-      ...(userConfig?.mcpServers ?? {})
-    }
-    const defaultInclude = [
-      ...(config?.defaultIncludeMcpServers ?? []),
-      ...(userConfig?.defaultIncludeMcpServers ?? [])
-    ]
-    const defaultExclude = [
-      ...(config?.defaultExcludeMcpServers ?? []),
-      ...(userConfig?.defaultExcludeMcpServers ?? [])
-    ]
+    const mergedMcpServers = mergedConfig.mcpServers ?? {}
+    const defaultInclude = mergedConfig.defaultIncludeMcpServers ?? []
+    const defaultExclude = mergedConfig.defaultExcludeMcpServers ?? []
     const includeMcpServers = options.mcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
     const excludeMcpServers = options.mcpServers?.exclude ?? (defaultExclude.length > 0 ? defaultExclude : undefined)
 

@@ -62,6 +62,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/definition-loader": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",

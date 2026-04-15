@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import process from 'node:process'
 
+import { resolveAdapterConfigEntry, resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
@@ -86,7 +87,11 @@ export const prepareClaudeExecution = async (
   ctx: AdapterCtx,
   options: AdapterQueryOptions
 ): Promise<PreparedClaudeExecution> => {
-  const { env, cwd, cache, configs: [config, userConfig] } = ctx
+  const { env, cwd, cache } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
   const assetPlan = options.assetPlan
   const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
   const {
@@ -107,10 +112,7 @@ export const prepareClaudeExecution = async (
       ? 'create'
       : 'resume'
     : 'create'
-  const mergedAdapterConfig = {
-    ...(config?.adapters?.['claude-code'] ?? {}),
-    ...(userConfig?.adapters?.['claude-code'] ?? {})
-  } as {
+  const mergedAdapterConfig = resolveAdapterConfigEntry('claude-code', mergedConfig) as {
     effort?: AdapterQueryOptions['effort']
     settingsContent?: Record<string, unknown>
     nativeEnv?: Record<string, string>
@@ -131,51 +133,30 @@ export const prepareClaudeExecution = async (
 
   let settings: ClaudeExecutionSettings = {
     mcpServers: assetPlan?.mcpServers ?? {
-      ...config?.mcpServers,
-      ...userConfig?.mcpServers
+      ...(mergedConfig.mcpServers ?? {})
     },
     permissions: {
-      allow: [
-        ...(config?.permissions?.allow ?? []),
-        ...(userConfig?.permissions?.allow ?? [])
-      ],
-      deny: [
-        ...(config?.permissions?.deny ?? []),
-        ...(userConfig?.permissions?.deny ?? [])
-      ],
-      ask: [
-        ...(config?.permissions?.ask ?? []),
-        ...(userConfig?.permissions?.ask ?? [])
-      ],
+      allow: [...(mergedConfig.permissions?.allow ?? [])],
+      deny: [...(mergedConfig.permissions?.deny ?? [])],
+      ask: [...(mergedConfig.permissions?.ask ?? [])],
       defaultMode: permissionMode ??
-        userConfig?.permissions?.defaultMode ??
-        config?.permissions?.defaultMode
+        mergedConfig.permissions?.defaultMode
     },
-    defaultIncludeMcpServers: [
-      ...(config?.defaultIncludeMcpServers ?? []),
-      ...(userConfig?.defaultIncludeMcpServers ?? [])
-    ],
-    defaultExcludeMcpServers: [
-      ...(config?.defaultExcludeMcpServers ?? []),
-      ...(userConfig?.defaultExcludeMcpServers ?? [])
-    ],
+    defaultIncludeMcpServers: [...(mergedConfig.defaultIncludeMcpServers ?? [])],
+    defaultExcludeMcpServers: [...(mergedConfig.defaultExcludeMcpServers ?? [])],
     plansDirectory: resolveProjectAiPath(cwd, env, 'works'),
     env: {
-      ...(config?.env ?? {}),
-      ...(userConfig?.env ?? {}),
+      ...(mergedConfig.env ?? {}),
       ...(nativeHooksAvailable
         ? {
           __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
           [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
           __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
           __VF_CLAUDE_TASK_SESSION_ID__: sessionId
-        }
+      }
         : {})
     } as Record<string, string | null | undefined>,
-    companyAnnouncements: [
-      ...(config?.announcements ?? []),
-      ...(userConfig?.announcements ?? [])
-    ]
+    companyAnnouncements: [...(mergedConfig.announcements ?? [])]
   }
   if (
     nativeEnvEffort == null &&
