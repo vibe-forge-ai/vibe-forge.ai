@@ -102,4 +102,94 @@ describe('initCodexAdapter', () => {
     expect((await lstat(join(mockHome, '.codex', 'skills', '.system'))).isDirectory()).toBe(true)
     expect((await lstat(join(mockHome, '.codex', 'skills', 'report'))).isSymbolicLink()).toBe(true)
   })
+
+  it('writes a managed config.toml that trusts the workspace and disables update checks by default', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(join(mockHome, '.codex', 'config.toml'), 'utf8')
+    expect(configContent).toContain('check_for_update_on_startup = false')
+    expect(configContent).toContain(`[projects.${JSON.stringify(resolve(workspace))}]`)
+    expect(configContent).toContain('trust_level = "trusted"')
+  })
+
+  it('preserves unmanaged config content and replaces the managed block with user overrides', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        '',
+        '# BEGIN VIBE FORGE MANAGED CODEX CONFIG',
+        'check_for_update_on_startup = false',
+        '',
+        '[projects."/tmp/old-workspace"]',
+        'trust_level = "trusted"',
+        '# END VIBE FORGE MANAGED CODEX CONFIG',
+        ''
+      ].join('\n')
+    )
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      configs: [{
+        adapters: {
+          codex: {
+            configOverrides: {
+              check_for_update_on_startup: true
+            }
+          }
+        }
+      }, undefined],
+      assets: {
+        hookPlugins: []
+      }
+    } as any
+
+    await initCodexAdapter(ctx)
+    await initCodexAdapter(ctx)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('model = "gpt-5.4"')
+    expect(configContent).toContain('check_for_update_on_startup = true')
+    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX CONFIG/g)).toHaveLength(1)
+    expect(configContent).toContain(`[projects.${JSON.stringify(resolve(workspace))}]`)
+    expect(configContent).not.toContain('/tmp/old-workspace')
+  })
 })
