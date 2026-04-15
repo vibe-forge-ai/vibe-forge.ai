@@ -8,6 +8,19 @@ import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { ensureClaudeNativeHooksInstalled } from '../hooks/native'
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+
+const mergeRecord = (...values: unknown[]) => {
+  const merged: Record<string, unknown> = {}
+  for (const value of values) {
+    if (!isRecord(value)) continue
+    Object.assign(merged, value)
+  }
+  return merged
+}
+
 const syncClaudeMockHomeSymlink = async (params: {
   sourcePath: string
   targetPath: string
@@ -101,14 +114,15 @@ const syncClaudeMockHomeProjectState = async (ctx: Pick<AdapterCtx, 'cwd' | 'env
   const realState = realStatePath != null
     ? await readJsonFileOrDefault<Record<string, unknown> | undefined>(realStatePath, undefined)
     : undefined
-  const nextState = { ...(mockState ?? realState ?? {}) }
-  const projects = {
-    ...((nextState.projects ?? {}) as Record<string, Record<string, unknown>>)
-  }
+  const nextState = mergeRecord(realState, mockState)
+  const realProjects = isRecord(realState?.projects) ? realState.projects : undefined
+  const mockProjects = isRecord(mockState?.projects) ? mockState.projects : undefined
+  const projects = mergeRecord(realProjects, mockProjects)
   const workspacePath = resolve(ctx.cwd)
-  const existingProjectState = {
-    ...(projects[workspacePath] ?? {})
-  }
+  const existingProjectState = mergeRecord(
+    isRecord(realProjects?.[workspacePath]) ? realProjects[workspacePath] : undefined,
+    isRecord(mockProjects?.[workspacePath]) ? mockProjects[workspacePath] : undefined
+  )
   const existingOnboardingCount = typeof existingProjectState.projectOnboardingSeenCount === 'number' &&
       Number.isFinite(existingProjectState.projectOnboardingSeenCount)
     ? existingProjectState.projectOnboardingSeenCount

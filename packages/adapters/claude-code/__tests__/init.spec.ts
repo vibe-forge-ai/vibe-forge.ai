@@ -236,4 +236,86 @@ describe('initClaudeCodeAdapter', () => {
       hasCompletedProjectOnboarding: true
     })
   })
+
+  it('merges existing mock-home Claude state with real-home state instead of overwriting it', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await writeFile(
+      join(realHome, '.claude.json'),
+      JSON.stringify(
+        {
+          autoUpdates: false,
+          projects: {
+            '/tmp/from-real': {
+              hasTrustDialogAccepted: true,
+              projectOnboardingSeenCount: 2
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+    await mkdir(mockHome, { recursive: true })
+    await writeFile(
+      join(mockHome, '.claude.json'),
+      JSON.stringify(
+        {
+          preferredModel: 'sonnet',
+          projects: {
+            '/tmp/from-mock': {
+              notes: 'keep-me'
+            },
+            [resolve(workspace)]: {
+              customFlag: 'preserve-me',
+              projectOnboardingSeenCount: 4
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      autoUpdates?: boolean
+      preferredModel?: string
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.autoUpdates).toBe(false)
+    expect(appState.preferredModel).toBe('sonnet')
+    expect(appState.projects?.['/tmp/from-real']).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 2
+    })
+    expect(appState.projects?.['/tmp/from-mock']).toMatchObject({
+      notes: 'keep-me'
+    })
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      customFlag: 'preserve-me',
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 4,
+      hasCompletedProjectOnboarding: true
+    })
+  })
 })
