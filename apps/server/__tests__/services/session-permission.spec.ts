@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { applyPermissionInteractionDecision, resolvePermissionDecision } from '#~/services/session/permission.js'
+import {
+  applyPermissionInteractionDecision,
+  resolvePermissionDecision,
+  syncPermissionStateMirror
+} from '#~/services/session/permission.js'
 import { createEmptySessionPermissionState } from '@vibe-forge/utils'
 
 const mocks = vi.hoisted(() => ({
@@ -282,6 +286,38 @@ describe('session permission service', () => {
     }))
     expect(runtimeState.onceAllow).toEqual([])
     expect(mocks.getSessionLogger).toHaveBeenCalledWith('sess-1', 'server')
+  })
+
+  it('writes permission mirror files for Kimi sessions', async () => {
+    runtimeState = {
+      allow: ['Shell'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+    mocks.getDb.mockReturnValue({
+      getSessionRuntimeState: vi.fn(() => ({
+        runtimeKind: 'interactive',
+        historySeedPending: false,
+        permissionState: runtimeState
+      })),
+      updateSessionRuntimeState,
+      getSession: vi.fn(() => ({
+        id: 'sess-kimi',
+        adapter: 'kimi'
+      }))
+    })
+
+    await syncPermissionStateMirror('sess-kimi')
+
+    const mirrorContent = String(mocks.writeFile.mock.calls.at(-1)?.[1] ?? '{}')
+    expect(JSON.parse(mirrorContent)).toMatchObject({
+      sessionId: 'sess-kimi',
+      adapter: 'kimi',
+      permissionState: {
+        allow: ['Bash']
+      }
+    })
   })
 
   it('writes allow_project into project config and removes conflicting managed keys', async () => {

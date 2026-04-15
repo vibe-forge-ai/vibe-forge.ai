@@ -367,6 +367,55 @@ describe('hook runtime', () => {
     })
   })
 
+  it('returns remembered permission decisions for Kimi native hooks', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-kimi-'))
+    tempDirs.push(workspace)
+
+    await writeDocument(
+      resolvePermissionMirrorPath(workspace, 'kimi', 'session-kimi-deny'),
+      JSON.stringify({
+        permissionState: {
+          allow: [],
+          deny: ['Shell'],
+          onceAllow: [],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    const result = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-kimi-deny',
+        adapter: 'kimi',
+        runtime: 'cli',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'Shell'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-kimi-deny',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '1'
+      }
+    )
+
+    expect(result).toMatchObject({
+      continue: false,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny'
+      }
+    })
+  })
+
   it('returns a remembered allow decision from the builtin permission plugin mirror fallback', async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-allow-'))
     tempDirs.push(workspace)
