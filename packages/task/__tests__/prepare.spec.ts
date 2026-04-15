@@ -204,4 +204,62 @@ describe('prepare', () => {
     expect(mocks.syncConfiguredMarketplacePlugins).not.toHaveBeenCalled()
     expect(mocks.resolveWorkspaceAssetBundle).not.toHaveBeenCalled()
   })
+
+  it('merges run-scoped plugins with project config plugins when resolving assets', async () => {
+    const { prepare } = await import('#~/prepare.js')
+    mocks.loadConfig.mockResolvedValue([
+      {
+        plugins: [
+          { id: 'logger' }
+        ]
+      },
+      {
+        plugins: [
+          { id: 'standard-dev', scope: 'std' }
+        ]
+      }
+    ])
+    mocks.mergeConfigs.mockImplementation((left, right) => ({
+      ...(left ?? {}),
+      ...(right ?? {}),
+      ...(left?.plugins != null || right?.plugins != null
+        ? {
+          plugins: [
+            ...((left?.plugins as any[]) ?? []),
+            ...((right?.plugins as any[]) ?? [])
+          ]
+        }
+        : {})
+    }))
+
+    await prepare({
+      cwd: '/tmp/project',
+      env: {},
+      plugins: [
+        { id: '@vibe-forge/plugin-cli-skills' }
+      ]
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-plugin-merge',
+      onEvent: vi.fn()
+    } as any)
+
+    expect(mocks.resolveWorkspaceAssetBundle).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: '/tmp/project',
+      configs: [
+        {
+          plugins: [{ id: 'logger' }]
+        },
+        {
+          plugins: [{ id: 'standard-dev', scope: 'std' }]
+        }
+      ],
+      plugins: [
+        { id: 'logger' },
+        { id: 'standard-dev', scope: 'std' },
+        { id: '@vibe-forge/plugin-cli-skills' }
+      ]
+    }))
+  })
 })

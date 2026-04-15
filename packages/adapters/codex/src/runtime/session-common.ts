@@ -598,8 +598,8 @@ export async function resolveSessionBase(
   configFingerprintArgs.push(...mcpConfigArgs)
 
   const binaryPath = resolveCodexBinaryPath(env)
-  await mkdir(resolve(process.env.HOME!, '.codex'), { recursive: true })
   const spawnEnv = buildSpawnEnv(env)
+  await mkdir(resolve(spawnEnv.HOME ?? process.env.HOME!, '.codex'), { recursive: true })
 
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
     features.codex_hooks = true
