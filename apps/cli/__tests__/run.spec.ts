@@ -151,6 +151,11 @@ describe('run command print output', () => {
     expect(resolveRunMode(true, 'cli', 'direct')).toBe('stream')
   })
 
+  it('keeps direct mode for shorthand runs when print behavior is inferred separately', () => {
+    expect(resolveRunMode(false, 'default', 'direct')).toBe('direct')
+    expect(resolveRunMode(false, 'default', 'stream')).toBe('stream')
+  })
+
   it('rejects startup-only flags when resuming a cached session', () => {
     const command = new Command()
     command

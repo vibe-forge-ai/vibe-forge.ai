@@ -83,7 +83,7 @@ const createCtx = (): TestCtx => ({
       })
     },
     undefined
-  ] as AdapterCtx['configs'],
+  ] as unknown as AdapterCtx['configs'],
   assets: createAssets()
 })
 
@@ -167,7 +167,7 @@ describe('task run adapter init', () => {
         'claude-code': {}
       }),
       defaultAdapter: 'claude-code'
-    }, undefined] as AdapterCtx['configs']
+    }, undefined] as unknown as AdapterCtx['configs']
     prepareMock.mockResolvedValue([ctx])
 
     const result = await run({
@@ -205,7 +205,7 @@ describe('task run adapter init', () => {
           models: ['modelX']
         }
       }
-    }, undefined] as AdapterCtx['configs']
+    }, undefined] as unknown as AdapterCtx['configs']
     prepareMock.mockResolvedValue([ctx])
 
     await run({

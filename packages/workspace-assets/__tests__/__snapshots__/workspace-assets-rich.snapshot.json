@@ -467,7 +467,7 @@
       ]
     },
     "options": {
-      "systemPrompt": "<system-prompt>\nThe project system rules are:\n# review\n\n> 必须检查发布改动的回归风险。\n\n# demo/security\n\n> Use when: 插件安全规则\n> Rule file path: node_modules/@vibe-forge/plugin-demo/rules/security.md\n> Only read this rule file when the task matches the scenario above.\n</system-prompt>\n\n\n<system-prompt>\nThe following skill modules are loaded for the project:\n# research\n\n> Skill description: 检索资料\n> Skill file path: .ai/skills/research/SKILL.md\n> Resolve relative paths in the resource content relative to the directory containing this skill file.\n\n<skill-content>\n先阅读 README.md，再补充结论。\n</skill-content>\n</system-prompt>\n\n\n<system-prompt>\nThe project includes the following entities:\n  - architect: 负责拆解方案的实体\n\nWhen solving user problems, you may specify entities through `vibe-forge.StartTasks` as needed and have them coordinate multiple entity types to complete the work; use `GetTaskInfo` and `wait` to track progress.\n</system-prompt>\n\n\n\n\n<system-prompt>\nYou are a professional project execution manager who can skillfully direct other entities to work toward your goal. Expectations:\n\n- Never complete code development work alone\n- You must coordinate other developers to complete tasks\n- You must keep them aligned with the goal and verify that their completion reports meet the requirements\n\nChoose the appropriate workflow based on the user's needs and the actual development goal, and use the workflow identifier to locate and load the corresponding definition.\n- Pass the identifier based on the actual need. This is not a path; use the standard workflow loading capability to resolve it.\n- Decide how to pass parameters based on their descriptions and actual usage scenarios.\nThe project includes the following workflows:\n- Workflow name: release\n  - Description: 正式发布流程\n  - Identifier: release\n  - Parameters:\n    - None\n\n- Workflow name: demo/release\n  - Description: 插件发布流程\n  - Identifier: demo/release\n  - Parameters:\n    - None\n\n</system-prompt>\n\n\n执行正式发布，并整理变更摘要。",
+      "systemPrompt": "<system-prompt>\nThe project system rules are:\n# review\n\n> 必须检查发布改动的回归风险。\n\n# demo/security\n\n> Use when: 插件安全规则\n> Rule file path: node_modules/@vibe-forge/plugin-demo/rules/security.md\n> Only read this rule file when the task matches the scenario above.\n</system-prompt>\n\n\n<system-prompt>\nThe following skill modules are loaded for the project:\n# research\n\n> Skill description: 检索资料\n> Skill file path: .ai/skills/research/SKILL.md\n> Resolve relative paths in the resource content relative to the directory containing this skill file.\n\n<skill-content>\n先阅读 README.md，再补充结论。\n</skill-content>\n</system-prompt>\n\n\n<system-prompt>\nThe project includes the following entities:\n  - architect: 负责拆解方案的实体\n\nWhen solving user problems, you may specify entities through `vibe-forge.StartTasks` as needed and have them coordinate multiple entity types to complete the work; use `GetTaskInfo` and `wait` to track progress.\n</system-prompt>\n\n\n<system-prompt>\nYou are a professional project execution manager who can skillfully direct other entities to work toward your goal. Expectations:\n\n- Never complete code development work alone\n- You must coordinate other developers to complete tasks\n- You must keep them aligned with the goal and verify that their completion reports meet the requirements\n\nChoose the appropriate workflow based on the user's needs and the actual development goal, and use the workflow identifier to locate and load the corresponding definition.\n- Pass the identifier based on the actual need. This is not a path; use the standard workflow loading capability to resolve it.\n- Decide how to pass parameters based on their descriptions and actual usage scenarios.\nThe project includes the following workflows:\n- Workflow name: release\n  - Description: 正式发布流程\n  - Identifier: release\n  - Parameters:\n    - None\n\n- Workflow name: demo/release\n  - Description: 插件发布流程\n  - Identifier: demo/release\n  - Parameters:\n    - None\n\n</system-prompt>\n\n\n执行正式发布，并整理变更摘要。",
       "tools": {
         "include": [
           "Edit",
@@ -553,6 +553,12 @@
           "adapter": "claude-code",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
+          "adapter": "claude-code",
+          "status": "native",
+          "reason": "Synced into the Claude mock home as a native skill."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
@@ -685,6 +691,126 @@
         {
           "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
           "adapter": "codex",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        }
+      ]
+    },
+    "gemini": {
+      "adapter": "gemini",
+      "mcpServers": {
+        "docs": {
+          "args": [
+            "docs-server"
+          ],
+          "command": "npx"
+        }
+      },
+      "overlays": [],
+      "diagnostics": [
+        {
+          "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
+          "adapter": "gemini",
+          "status": "skipped",
+          "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
+          "adapter": "gemini",
+          "status": "skipped",
+          "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
+          "adapter": "gemini",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
+          "adapter": "gemini",
+          "status": "translated",
+          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "packageId": "@vibe-forge/plugin-logger"
+        },
+        {
+          "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
+          "adapter": "gemini",
+          "status": "translated",
+          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
+          "adapter": "gemini",
+          "status": "translated",
+          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "packageId": "@vibe-forge/plugin-telemetry"
+        },
+        {
+          "assetId": "mcpServer:workspace:workspace:docs:<workspace>/.ai.config.json",
+          "adapter": "gemini",
+          "status": "translated",
+          "reason": "Translated into adapter-specific MCP configuration."
+        },
+        {
+          "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
+          "adapter": "gemini",
+          "status": "skipped",
+          "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
+          "adapter": "gemini",
+          "status": "skipped",
+          "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
+          "adapter": "gemini",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
+          "adapter": "gemini",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
+          "adapter": "gemini",
+          "status": "native",
+          "reason": "Symlinked into GEMINI_CLI_HOME as a native Gemini skill."
+        },
+        {
+          "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
+          "adapter": "gemini",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt."
+        },
+        {
+          "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
+          "adapter": "gemini",
+          "status": "prompt",
+          "reason": "Mapped into the generated system prompt.",
+          "scope": "demo",
+          "packageId": "@vibe-forge/plugin-demo"
+        },
+        {
+          "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
+          "adapter": "gemini",
           "status": "prompt",
           "reason": "Mapped into the generated system prompt."
         }

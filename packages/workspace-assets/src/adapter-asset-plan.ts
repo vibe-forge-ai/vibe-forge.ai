@@ -68,11 +68,13 @@ export function buildAdapterAssetPlan(params: {
     diagnostics.push({
       assetId: asset.id,
       adapter: params.adapter,
-      status: 'native',
+      status: params.adapter === 'gemini' ? 'translated' : 'native',
       reason: params.adapter === 'claude-code'
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
         ? 'Mapped into the Codex native hooks bridge.'
+        : params.adapter === 'gemini'
+        ? 'Handled by the Vibe Forge managed hook bridge in V1.'
         : 'Mapped into the OpenCode native hooks bridge.',
       packageId: asset.packageId,
       scope: asset.scope,
@@ -122,6 +124,21 @@ export function buildAdapterAssetPlan(params: {
         adapter: params.adapter,
         status: 'skipped',
         reason: 'No stable native Codex mapping exists for this asset kind in V1.',
+        packageId: asset.packageId,
+        scope: asset.scope,
+        instancePath: asset.instancePath,
+        origin: asset.origin,
+        resolvedBy: asset.resolvedBy,
+        taskOverlaySource: asset.taskOverlaySource
+      })
+    })
+  } else if (params.adapter === 'gemini') {
+    params.bundle.opencodeOverlayAssets.forEach((asset) => {
+      diagnostics.push({
+        assetId: asset.id,
+        adapter: params.adapter,
+        status: 'skipped',
+        reason: 'No stable native Gemini mapping exists for this asset kind in V1.',
         packageId: asset.packageId,
         scope: asset.scope,
         instancePath: asset.instancePath,

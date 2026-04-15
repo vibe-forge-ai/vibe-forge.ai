@@ -196,7 +196,11 @@ Notes:
                 injectDefaultSystemPrompt
               }),
               permissionMode: opts.permissionMode,
-              mode: opts.print ? 'stream' as const : 'direct' as const,
+              mode: resolveRunMode(
+                opts.print,
+                printSource,
+                'direct'
+              ),
               tools: mergeListConfig(
                 resolvedConfig.tools,
                 opts.includeTool,

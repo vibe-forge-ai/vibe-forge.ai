@@ -7,6 +7,10 @@ import {
   adapterDisplayName as opencodeDisplayName,
   adapterIcon as opencodeIcon
 } from '@vibe-forge/adapter-opencode/icon'
+import {
+  adapterDisplayName as geminiDisplayName,
+  adapterIcon as geminiIcon
+} from '@vibe-forge/adapter-gemini/icon'
 
 export const adapterDisplayMap = {
   'claude-code': {
@@ -16,6 +20,10 @@ export const adapterDisplayMap = {
   codex: {
     title: codexDisplayName,
     icon: codexIcon
+  },
+  gemini: {
+    title: geminiDisplayName,
+    icon: geminiIcon
   },
   opencode: {
     title: opencodeDisplayName,

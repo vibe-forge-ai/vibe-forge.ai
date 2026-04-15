@@ -6,7 +6,8 @@ import type {
   AdapterOutputEvent,
   AdapterQueryOptions,
   Config,
-  TaskDetail
+  TaskDetail,
+  WorkspaceAssetAdapter
 } from '@vibe-forge/types'
 import { loadAdapter } from '@vibe-forge/types'
 import {
@@ -199,7 +200,10 @@ export const run = async (
     : { effort: undefined as undefined }
 
   const originalOnEvent = adapterOptions.onEvent
-  const supportedAssetPlanAdapters = supportedEffortAdapters
+  const supportedAssetPlanAdapters = new Set<WorkspaceAssetAdapter>(['claude-code', 'codex', 'gemini', 'opencode'])
+  const supportsAssetPlan = (value: string): value is WorkspaceAssetAdapter => (
+    supportedAssetPlanAdapters.has(value as WorkspaceAssetAdapter)
+  )
   const runtimeMcpServers = Object.fromEntries(
     Object.entries(adapterOptions.runtimeMcpServers ?? {})
       .filter(([, server]) => server != null && server.enabled !== false)
@@ -213,10 +217,10 @@ export const run = async (
     runtimeServerNames: new Set(Object.keys(runtimeMcpServers)),
     selection: adapterOptions.mcpServers
   })
-  const assetPlanBaseRaw = ctx.assets == null || !supportedAssetPlanAdapters.has(adapterType)
+  const assetPlanBaseRaw = ctx.assets == null || !supportsAssetPlan(adapterType)
     ? undefined
     : buildAdapterAssetPlan({
-      adapter: adapterType as 'claude-code' | 'codex' | 'opencode',
+      adapter: adapterType,
       bundle: ctx.assets,
       options: {
         mcpServers: runtimeMcpSelection.workspaceSelection,

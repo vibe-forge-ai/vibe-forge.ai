@@ -139,7 +139,10 @@ export const resolveRuleSelection = async (
   bundle: WorkspaceAssetBundle,
   refs: RuleReference[] | string[] | undefined,
   currentInstancePath?: string
-) => {
+): Promise<{
+  assets: Array<Extract<WorkspaceAsset, { kind: 'rule' }>>
+  remoteDefinitions: Definition<Rule>[]
+}> => {
   const assets: Array<Extract<WorkspaceAsset, { kind: 'rule' }>> = []
   const remoteDefinitions: Definition<Rule>[] = []
   const seen = new Set<string>()
@@ -199,7 +202,7 @@ export const resolveExcludedSkillRefs = (selection: string[] | SkillSelection | 
 export const resolveSelectedSkillAssets = (
   assets: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>,
   selection?: WorkspaceSkillSelection
-) => {
+): Array<Extract<WorkspaceAsset, { kind: 'skill' }>> => {
   if (selection == null) return assets
 
   const included = selection.include != null && selection.include.length > 0
