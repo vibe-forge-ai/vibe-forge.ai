@@ -6,6 +6,7 @@ import type {
   MarketplaceConfigEntry
 } from '@vibe-forge/types'
 
+import { normalizeMarketplaceDeclaredPlugins } from './marketplace-config-declared-plugin'
 import { normalizeMarketplacePluginDefinition } from './marketplace-config-plugin'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -126,7 +127,11 @@ const normalizeMarketplaceEntry = (
     case 'claude-code': {
       const entry: ClaudeCodeMarketplaceConfigEntry = {
         type: 'claude-code',
-        ...(typeof value.enabled === 'boolean' ? { enabled: value.enabled } : {})
+        ...(typeof value.enabled === 'boolean' ? { enabled: value.enabled } : {}),
+        ...(typeof value.syncOnRun === 'boolean' ? { syncOnRun: value.syncOnRun } : {})
+      }
+      if (value.plugins != null) {
+        entry.plugins = normalizeMarketplaceDeclaredPlugins(value.plugins, `${path}.plugins`)
       }
       if (value.options != null) {
         if (!isRecord(value.options)) {

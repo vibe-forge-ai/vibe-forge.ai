@@ -167,9 +167,16 @@ export interface ClaudeCodeMarketplaceOptions {
   source: ClaudeCodeMarketplaceSource
 }
 
+export interface MarketplaceDeclaredPluginConfig {
+  enabled?: boolean
+  scope?: string
+}
+
 export interface ClaudeCodeMarketplaceConfigEntry {
   type: 'claude-code'
   enabled?: boolean
+  syncOnRun?: boolean
+  plugins?: Record<string, MarketplaceDeclaredPluginConfig>
   options?: ClaudeCodeMarketplaceOptions
 }
 

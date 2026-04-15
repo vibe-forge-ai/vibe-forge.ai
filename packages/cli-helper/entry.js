@@ -1,6 +1,10 @@
 const path = require('node:path')
 const process = require('node:process')
 
+const resolveAiBaseDir = () => (
+  process.env.__VF_PROJECT_AI_BASE_DIR__?.trim()?.replace(/[\\/]+$/, '') || '.ai'
+)
+
 const runCliPackageEntrypoint = (options) => {
   const {
     packageDir,
@@ -19,7 +23,8 @@ const runCliPackageEntrypoint = (options) => {
   process.env.__VF_PROJECT_REAL_HOME__ = process.env.__VF_PROJECT_REAL_HOME__ ?? process.env.HOME ?? ''
   process.env.HOME = path.resolve(
     process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
-    './.ai/.mock'
+    resolveAiBaseDir(),
+    '.mock'
   )
   process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__ = sourceEntry
   process.env.__VF_PROJECT_CLI_BIN_DIST_ENTRY__ = distEntry

@@ -1,22 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 
-import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessage, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 
-import type { ChatErrorState } from './interaction-state'
+import type { ChatErrorState, InteractionRequestState } from './interaction-state'
 import {
   applyInteractionStateEvent,
   findLatestFatalError,
   getFatalSessionError,
   restoreInteractionStateFromHistory
 } from './interaction-state'
+import {
+  deleteChatSessionViewSnapshot,
+  restoreChatSessionViewSnapshot,
+  setChatSessionViewSnapshot
+} from './session-view-cache'
+import type { ChatSessionViewSnapshot } from './session-view-cache'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
+
+const EMPTY_QUEUED_MESSAGES: SessionMessageQueueState = { steer: [], next: [] }
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {
   if (data.type !== 'message') return currentMessages
@@ -62,8 +71,9 @@ export function useChatSessionMessages({
 }) {
   const { t } = useTranslation()
   const { mutate } = useSWRConfig()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messagesState, setMessagesState] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
+  const [queuedMessages, setQueuedMessages] = useState<SessionMessageQueueState>({ steer: [], next: [] })
   const [isReady, setIsReady] = useState(false)
   const [errorState, setErrorState] = useState<ChatErrorState | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -74,12 +84,50 @@ export function useChatSessionMessages({
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
   const lastObservedSessionStatusRef = useRef<Session['status'] | undefined>(session?.status)
   const expectedCloseRef = useRef(false)
-  const interactionRequestRef = useRef<{ id: string; payload: AskUserQuestionParams } | null>(null)
+  const interactionRequestRef = useRef<InteractionRequestState | null>(null)
   const activeSessionIdRef = useRef<string | undefined>(session?.id)
   const historyRequestSeqRef = useRef(0)
   const reconcileTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([])
+  const sessionViewCacheRef = useRef(new Map<string, ChatSessionViewSnapshot>())
 
   activeSessionIdRef.current = session?.id
+
+  const updateSessionViewCache = useCallback((
+    sessionId: string,
+    patch: Partial<{
+      messages: ChatMessage[]
+      sessionInfo: SessionInfo | null
+      queuedMessages: SessionMessageQueueState
+      errorState: ChatErrorState | null
+      interactionRequest: InteractionRequestState | null
+      isHydrated: boolean
+    }>
+  ) => {
+    return setChatSessionViewSnapshot(sessionViewCacheRef.current, sessionId, patch)
+  }, [])
+
+  const removeSessionViewCache = useCallback((sessionId: string) => {
+    deleteChatSessionViewSnapshot(sessionViewCacheRef.current, sessionId)
+  }, [])
+
+  const setMessages = useCallback((value: SetStateAction<ChatMessage[]>) => {
+    setMessagesState((current) => {
+      const next = typeof value === 'function'
+        ? value(current)
+        : value
+      const sessionId = activeSessionIdRef.current
+
+      if (sessionId != null && sessionId !== '') {
+        const currentSnapshot = sessionViewCacheRef.current.get(sessionId)
+        updateSessionViewCache(sessionId, {
+          messages: next,
+          isHydrated: currentSnapshot?.isHydrated === true
+        })
+      }
+
+      return next
+    })
+  }, [updateSessionViewCache])
 
   const clearScheduledReconciles = useCallback(() => {
     for (const timer of reconcileTimersRef.current) {
@@ -123,18 +171,19 @@ export function useChatSessionMessages({
         res.session?.status
       )
       const latestFatalError = findLatestFatalError(events)
+      const nextErrorState = restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
+        ? {
+          kind: 'session' as const,
+          message: latestFatalError.message,
+          code: latestFatalError.code
+        }
+        : null
+      const nextQueuedMessages = res.queuedMessages ?? EMPTY_QUEUED_MESSAGES
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
-      setErrorState(
-        restoredInteraction == null && res.session?.status === 'failed' && latestFatalError != null
-          ? {
-            kind: 'session',
-            message: latestFatalError.message,
-            code: latestFatalError.code
-          }
-          : null
-      )
+      setQueuedMessages(nextQueuedMessages)
+      setErrorState(nextErrorState)
 
       for (const data of events) {
         currentMessages = applyMessageEvent(currentMessages, data)
@@ -145,6 +194,15 @@ export function useChatSessionMessages({
           }
         }
       }
+
+      updateSessionViewCache(sessionId, {
+        messages: currentMessages,
+        sessionInfo: currentSessionInfo,
+        queuedMessages: nextQueuedMessages,
+        errorState: nextErrorState,
+        interactionRequest: restoredInteraction,
+        isHydrated: true
+      })
 
       setMessages(currentMessages)
       setSessionInfo(currentSessionInfo)
@@ -161,7 +219,7 @@ export function useChatSessionMessages({
     } catch (err) {
       console.error('Failed to fetch history messages:', err)
     }
-  }, [mutate, setInteractionRequest])
+  }, [mutate, setInteractionRequest, setMessages, updateSessionViewCache])
 
   const reconcileAfterInteraction = useCallback(() => {
     clearScheduledReconciles()
@@ -178,21 +236,21 @@ export function useChatSessionMessages({
     if (session?.id == null || session.id === '') return
     expectedCloseRef.current = true
     setErrorState(null)
+    updateSessionViewCache(session.id, { errorState: null })
     connectionManager.close(session.id)
     setRetryCount((count) => count + 1)
-  }, [session?.id])
+  }, [session?.id, updateSessionViewCache])
 
   useEffect(() => {
-    setMessages([])
-    setSessionInfo(null)
-    setIsReady(false)
-    setErrorState(null)
-    setInteractionRequest(null)
-    interactionRequestRef.current = null
-    isInitialLoadRef.current = true
-
     if (session?.id == null || session.id === '') {
+      setMessagesState([])
+      setSessionInfo(null)
+      setQueuedMessages(EMPTY_QUEUED_MESSAGES)
       setIsReady(true)
+      setErrorState(null)
+      setInteractionRequest(null)
+      interactionRequestRef.current = null
+      isInitialLoadRef.current = true
       lastConnectedModelRef.current = undefined
       lastConnectedEffortRef.current = undefined
       lastConnectedPermissionModeRef.current = undefined
@@ -201,6 +259,18 @@ export function useChatSessionMessages({
       return
     }
 
+    const restoredState = restoreChatSessionViewSnapshot(sessionViewCacheRef.current.get(session.id))
+
+    setMessagesState(restoredState.messages)
+    setSessionInfo(restoredState.sessionInfo)
+    setQueuedMessages(restoredState.queuedMessages)
+    setErrorState(restoredState.errorState)
+    setInteractionRequest(restoredState.interactionRequest)
+    interactionRequestRef.current = restoredState.interactionRequest
+    setIsReady(restoredState.isReady)
+    isInitialLoadRef.current = !restoredState.isReady
+
+    void refreshHistory()
     void refreshHistory()
 
     return () => {
@@ -281,7 +351,13 @@ export function useChatSessionMessages({
       cleanup = connectionManager.connect(session.id, {
         onOpen() {
           expectedCloseRef.current = false
-          setErrorState((current) => current?.kind === 'session' ? current : null)
+          setErrorState((current) => {
+            const next = current?.kind === 'session' ? current : null
+            updateSessionViewCache(session.id, {
+              errorState: next
+            })
+            return next
+          })
         },
         onMessage(data: WSEvent) {
           if (isDisposed) return
@@ -289,8 +365,14 @@ export function useChatSessionMessages({
           if (nextInteraction !== interactionRequestRef.current) {
             interactionRequestRef.current = nextInteraction
             setInteractionRequest(nextInteraction)
+            updateSessionViewCache(session.id, {
+              interactionRequest: nextInteraction
+            })
             if (nextInteraction != null) {
               setErrorState(null)
+              updateSessionViewCache(session.id, {
+                errorState: null
+              })
             }
           }
           if (data.type === 'interaction_response') {
@@ -300,10 +382,14 @@ export function useChatSessionMessages({
           if (data.type === 'error') {
             const fatalError = getFatalSessionError(data)
             if (fatalError != null) {
-              setErrorState({
+              const nextErrorState = {
                 kind: 'session',
                 message: fatalError.message,
                 code: fatalError.code
+              } satisfies ChatErrorState
+              setErrorState(nextErrorState)
+              updateSessionViewCache(session.id, {
+                errorState: nextErrorState
               })
             }
             return
@@ -315,6 +401,7 @@ export function useChatSessionMessages({
               const updatedSession = data.session as Session | { id: string; isDeleted: boolean }
 
               if ('isDeleted' in updatedSession && updatedSession.isDeleted) {
+                removeSessionViewCache(updatedSession.id)
                 return {
                   ...prev,
                   sessions: prev.sessions.filter((s: Session) => s.id !== updatedSession.id)
@@ -337,6 +424,14 @@ export function useChatSessionMessages({
             return
           }
 
+          if (data.type === 'session_queue_updated') {
+            setQueuedMessages(data.queue)
+            updateSessionViewCache(session.id, {
+              queuedMessages: data.queue
+            })
+            return
+          }
+
           if (data.type === 'message') {
             setMessages((current) => applyMessageEvent(current, data))
             return
@@ -347,6 +442,9 @@ export function useChatSessionMessages({
               void mutate('/api/sessions')
             } else {
               setSessionInfo(data.info ?? null)
+              updateSessionViewCache(session.id, {
+                sessionInfo: data.info ?? null
+              })
               if (isInitialLoadRef.current) {
                 setTimeout(() => {
                   if (isDisposed) return
@@ -366,15 +464,23 @@ export function useChatSessionMessages({
           }
 
           if (data.type === 'interaction_request') {
+            interactionRequestRef.current = data
             setInteractionRequest(data)
+            updateSessionViewCache(session.id, {
+              interactionRequest: data
+            })
           }
         },
         onError() {
           if (isDisposed) return
-          setErrorState({
+          const nextErrorState = {
             kind: 'connection',
             message: t('chat.connectionError'),
             reason: 'error'
+          } satisfies ChatErrorState
+          setErrorState(nextErrorState)
+          updateSessionViewCache(session.id, {
+            errorState: nextErrorState
           })
         },
         onClose() {
@@ -383,13 +489,17 @@ export function useChatSessionMessages({
             expectedCloseRef.current = false
             return
           }
-          setErrorState((current) =>
-            current ?? {
+          setErrorState((current) => {
+            const next = current ?? {
               kind: 'connection',
               message: t('chat.connectionClosed'),
               reason: 'closed'
             }
-          )
+            updateSessionViewCache(session.id, {
+              errorState: next
+            })
+            return next
+          })
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
     }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
@@ -412,13 +522,16 @@ export function useChatSessionMessages({
     session?.id,
     session?.status,
     setInteractionRequest,
-    t
+    t,
+    removeSessionViewCache,
+    updateSessionViewCache
   ])
 
   return {
-    messages,
+    messages: messagesState,
     setMessages,
     sessionInfo,
+    queuedMessages,
     isReady,
     errorState,
     retryConnection,

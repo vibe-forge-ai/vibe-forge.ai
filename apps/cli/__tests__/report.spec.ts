@@ -18,6 +18,7 @@ const createTempDir = async () => {
 afterEach(async () => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  delete process.env.__VF_PROJECT_AI_BASE_DIR__
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { force: true, recursive: true })))
 })
 
@@ -43,11 +44,11 @@ describe('report command', () => {
     await fs.writeFile(path.join(cwd, '.ai/.mock/ignored.json'), '{}')
 
     expect(await collectReportTargets(cwd)).toEqual([
-      '.ai/logs',
-      '.ai/.mock/.claude',
-      '.ai/.mock/.config',
-      '.ai/.mock/.vf',
-      '.ai/.mock/.claude.json.backup.1774599210661'
+      path.join(cwd, '.ai/logs'),
+      path.join(cwd, '.ai/.mock/.claude'),
+      path.join(cwd, '.ai/.mock/.config'),
+      path.join(cwd, '.ai/.mock/.vf'),
+      path.join(cwd, '.ai/.mock/.claude.json.backup.1774599210661')
     ])
   })
 
@@ -113,6 +114,29 @@ describe('report command', () => {
     await expect(runReportCommand({
       cwd,
       filename: '.ai/logs/report'
-    })).rejects.toThrow('Report archive must not be created inside .ai/logs.')
+    })).rejects.toThrow(path.join(cwd, '.ai/logs'))
+  })
+
+  it('packages files from the env-configured ai base dir', async () => {
+    const cwd = await createTempDir()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
+
+    await fs.mkdir(path.join(cwd, '.vf/logs'), { recursive: true })
+    await fs.mkdir(path.join(cwd, '.vf/caches'), { recursive: true })
+    await fs.writeFile(path.join(cwd, '.vf/logs/session.log'), 'log data')
+    await fs.writeFile(path.join(cwd, '.vf/caches/task.json'), '{"ok":true}')
+
+    const result = await runReportCommand({ cwd, filename: 'bundle-vf' })
+
+    expect(result).not.toBeNull()
+
+    const archiveListing = execFileSync('tar', ['-tzf', result!.archivePath], {
+      encoding: 'utf-8'
+    })
+
+    expect(archiveListing).toContain('.vf/logs/session.log')
+    expect(archiveListing).toContain('.vf/caches/task.json')
+    expect(logSpy).toHaveBeenCalledWith(`Report archive created: ${result!.archivePath}`)
   })
 })

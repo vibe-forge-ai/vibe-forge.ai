@@ -26,6 +26,7 @@ program
     `
 Examples:
   vf "读取 README 并给出改进建议"
+  vf run --include-skill vf-cli-quickstart "介绍 vf CLI 的常用命令"
   vf list
   vf list --view full
   vf --resume <sessionId>

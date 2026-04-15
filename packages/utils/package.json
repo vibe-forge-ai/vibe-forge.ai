@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/utils",
-  "version": "0.11.0",
+  "version": "0.11.2",
   "description": "Shared runtime utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {

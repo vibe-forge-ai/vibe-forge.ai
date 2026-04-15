@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 
 import type { RunTaskOptions } from '@vibe-forge/app-runtime'
 import type { AdapterQueryOptions, TaskDetail } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 import { getCache, getCachePath, setCache } from '@vibe-forge/utils/cache'
 
 export type CliOutputFormat = 'text' | 'json' | 'stream-json'
@@ -39,8 +41,6 @@ declare module '@vibe-forge/types' {
     detail: TaskDetail
   }
 }
-
-const CACHE_ROOT = '.ai/caches'
 
 const readDirSafe = async (target: string) => {
   try {
@@ -92,7 +92,7 @@ export const resolveCliSessionDescription = (record: CliSessionRecord) =>
 export const resolveCliSessionUpdatedAt = (record: CliSessionRecord) => getRecordUpdatedAt(record)
 
 export const listCliSessions = async (cwd: string): Promise<CliSessionRecord[]> => {
-  const cacheRoot = path.resolve(cwd, CACHE_ROOT)
+  const cacheRoot = resolveProjectAiPath(cwd, process.env, 'caches')
   const ctxEntries = await readDirSafe(cacheRoot)
   const sessions: CliSessionRecord[] = []
 

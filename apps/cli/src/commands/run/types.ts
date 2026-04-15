@@ -46,6 +46,7 @@ export type CliInputControlEvent =
   | { type: 'message'; content: string | ChatMessageContent[] }
   | { type: 'interrupt' }
   | { type: 'stop' }
+  | { type: 'submit_input'; interactionId?: string; data: string | string[] }
 
 export interface CliInputSession {
   emit(

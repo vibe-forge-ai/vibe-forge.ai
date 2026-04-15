@@ -6,10 +6,11 @@ import type { Command } from 'commander'
 import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
 import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
 import { callHook } from '@vibe-forge/hooks'
-import type { AdapterOutputEvent, SessionInitInfo } from '@vibe-forge/types'
+import type { AdapterInteractionRequest, AdapterOutputEvent, SessionInitInfo } from '@vibe-forge/types'
 import { getCache } from '@vibe-forge/utils/cache'
 import { uuid } from '@vibe-forge/utils/uuid'
 
+import { getCliDefaultSkillNames, getCliDefaultSkillPluginConfig } from '#~/default-skill-plugin.js'
 import {
   clearCliSessionControl,
   formatResumeCommand,
@@ -19,8 +20,15 @@ import {
   resolveCliSessionAdapter,
   writeCliSessionRecord
 } from '#~/session-cache.js'
+import {
+  clearCliSessionPermissionRecovery,
+  readCliSessionPermissionRecovery,
+  writeCliSessionPermissionRecovery
+} from '#~/session-permission-cache.js'
 import { extraOptions } from '../@core/extra-options'
 import { attachInputBridge } from './input-bridge'
+import { supportsPrintInteractionResponses } from './input-control'
+import { readCliPermissionDecision } from './input-decision'
 import {
   getDisallowedResumeFlags,
   getOutputFormat,
@@ -29,10 +37,29 @@ import {
   resolveInjectDefaultSystemPromptOption,
   resolveRunMode
 } from './options'
-import { handlePrintEvent, shouldPrintResumeHint } from './output'
+import { getAdapterInteractionMessage, handlePrintEvent, shouldPrintResumeHint } from './output'
+import {
+  isTerminalPermissionDecision,
+  shouldApplyPermissionDecision,
+  shouldClearPermissionRecoveryCache
+} from './permission-decision'
+import {
+  PERMISSION_DECISION_CANCEL,
+  PERMISSION_RECOVERY_CONTINUE_PROMPT,
+  buildPermissionRecoveryRecord,
+  extractPermissionErrorContext,
+  rememberPermissionToolUses,
+  resolvePermissionInteractionDecision
+} from './permission-recovery'
+import { applyCliPermissionDecision } from './permission-state'
 import { createSessionExitController } from './session-exit-controller'
 import type { ActiveCliSessionRecord, ExitControllableSession, RunOptions } from './types'
 import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './types'
+
+type PrintInputCapableSession = ExitControllableSession & {
+  pid?: number
+  respondInteraction?: (id: string, data: string | string[]) => void | Promise<void>
+}
 
 const configureRunCommand = (command: Command) => {
   command
@@ -73,12 +100,15 @@ const configureRunCommand = (command: Command) => {
 Examples:
   vf "实现一个新的 list 筛选"
   vf run --adapter codex --print "读取 README 并总结"
+  vf run --include-skill vf-cli-quickstart "介绍一下 vf CLI 怎么恢复会话"
   vf list --view default
   vf --resume <sessionId>
 
 Notes:
   When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
+  Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
+  In print mode, live permission/input replies require --input-format stream-json, then send {"type":"submit_input","data":"allow_once"}.
 `
     )
     .action(async (descriptionArgs: string[], opts: RunOptions, currentCommand: Command) => {
@@ -87,6 +117,7 @@ Notes:
         let lastAssistantText: string | undefined
         let didExitAfterError = false
         let inputClosed = false
+        let pendingInteraction: AdapterInteractionRequest | undefined
         const exitController = createSessionExitController()
         const cwd = process.cwd()
         const generatedSessionId = opts.sessionId ?? uuid()
@@ -137,17 +168,85 @@ Notes:
           outputFormatSource,
           cachedSession?.resume?.outputFormat ?? 'text'
         )
+        const resumeMode = resolveRunMode(
+          opts.print,
+          printSource,
+          cachedSession?.resume?.adapterOptions.mode ?? 'direct'
+        )
+        const shouldPrintOutput = resumeMode === 'stream'
+        const supportsPrintInteractionInput = supportsPrintInteractionResponses(opts.inputFormat)
+        const pendingPermissionRecovery = await readCliSessionPermissionRecovery(cwd, ctxId, sessionId)
+
+        if (isResume && pendingPermissionRecovery != null) {
+          if (shouldPrintOutput) {
+            handlePrintEvent({
+              event: {
+                type: 'interaction_request',
+                data: {
+                  id: `cli-recovery:${sessionId}`,
+                  payload: pendingPermissionRecovery.payload
+                }
+              },
+              outputFormat,
+              lastAssistantText,
+              didExitAfterError,
+              exitOnInteractionRequest: false,
+              log: (message) => console.log(message),
+              errorLog: (message) => console.error(message),
+              requestExit: () => {}
+            })
+          } else {
+            console.error(getAdapterInteractionMessage(pendingPermissionRecovery.payload))
+          }
+
+          if (opts.inputFormat == null) {
+            console.error(
+              `Resume with --print --input-format to answer this permission request for session ${sessionId}.`
+            )
+            process.exit(1)
+          }
+
+          const answer = await readCliPermissionDecision({
+            format: opts.inputFormat,
+            stdin: process.stdin
+          })
+          const decision = resolvePermissionInteractionDecision(answer)
+          if (decision == null) {
+            throw new TypeError('Permission recovery requires a decision like allow_once or deny_project.')
+          }
+
+          if (decision === PERMISSION_DECISION_CANCEL) {
+            console.error('Permission recovery cancelled. Session was not resumed.')
+            process.exit(1)
+          }
+          if (shouldApplyPermissionDecision(decision)) {
+            await applyCliPermissionDecision({
+              cwd,
+              sessionId,
+              adapter: pendingPermissionRecovery.adapter,
+              subjectKeys: pendingPermissionRecovery.subjectKeys,
+              action: decision
+            })
+          }
+          if (shouldClearPermissionRecoveryCache(decision)) {
+            await clearCliSessionPermissionRecovery(cwd, ctxId, sessionId)
+          }
+          if (isTerminalPermissionDecision(decision)) {
+            console.error(`Permission decision applied: ${decision}. Session was not resumed.`)
+            process.exit(1)
+          }
+        }
 
         const adapterOptions = cachedSession?.resume != null
           ? {
             ...cachedSession.resume.adapterOptions,
             type: 'resume' as const,
-            description,
-            mode: resolveRunMode(
-              opts.print,
-              printSource,
-              cachedSession.resume.adapterOptions.mode ?? 'direct'
-            ),
+            description: pendingPermissionRecovery == null
+              ? description
+              : (description.trim() === ''
+                ? PERMISSION_RECOVERY_CONTINUE_PROMPT
+                : `${PERMISSION_RECOVERY_CONTINUE_PROMPT}\n\n${description}`),
+            mode: resumeMode,
             extraOptions
           }
           : await (async () => {
@@ -160,7 +259,8 @@ Notes:
               {
                 skills,
                 adapter: cachedAdapter ?? opts.adapter,
-                model: opts.model
+                model: opts.model,
+                plugins: getCliDefaultSkillPluginConfig()
               }
             )
             const env = {
@@ -217,7 +317,6 @@ Notes:
               assetBundle: resolvedConfig.assetBundle
             }
           })()
-        const shouldPrintOutput = adapterOptions.mode === 'stream'
         const {
           type: _adapterType,
           description: _adapterDescription,
@@ -294,8 +393,26 @@ Notes:
 
         await persistRecord()
 
-        let boundSession: (ExitControllableSession & { pid?: number }) | undefined
+        let boundSession: PrintInputCapableSession | undefined
         let stopInputBridge: (() => void) | undefined
+        const permissionToolUseCache = new Map<string, string>()
+        let permissionRecoveryQueue: Promise<void> = Promise.resolve()
+        const submitPrintInput = async (params: { interactionId?: string; data: string | string[] }) => {
+          const interactionId = params.interactionId ?? pendingInteraction?.id
+          if (interactionId == null || interactionId.trim() === '') {
+            throw new TypeError('No pending interaction is available. Wait for an interaction_request event first.')
+          }
+          const respondInteraction = boundSession?.respondInteraction
+          if (typeof respondInteraction !== 'function') {
+            throw new TypeError('The current session does not support submit_input events.')
+          }
+
+          await respondInteraction(interactionId, params.data)
+
+          if (pendingInteraction?.id === interactionId) {
+            pendingInteraction = undefined
+          }
+        }
         const handleExit = (exitCode: number) => {
           void (async () => {
             const endedAt = Date.now()
@@ -320,6 +437,7 @@ Notes:
             }
             await persistRecord()
             await persistQueue
+            await permissionRecoveryQueue
             await clearCliSessionControl(cwd, ctxId, sessionId)
             stopInputBridge?.()
             if (shouldPrintResumeHint({ shouldPrintOutput, status })) {
@@ -333,12 +451,69 @@ Notes:
           adapter: record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter,
           cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
           ctxId,
-          env: process.env
+          env: process.env,
+          plugins: getCliDefaultSkillPluginConfig()
         }, {
           ...adapterOptions,
           onEvent: (event: AdapterOutputEvent) => {
             if (event.type === 'init') {
               updateInitRecord(event.data, boundSession?.pid)
+            }
+            if (event.type === 'message') {
+              rememberPermissionToolUses(permissionToolUseCache, event.data)
+            }
+            if (event.type === 'error' && event.data.code === 'permission_required') {
+              const permissionRecovery = buildPermissionRecoveryRecord({
+                sessionId,
+                adapter: resolvedAdapter ?? record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter,
+                currentMode: record.resume.adapterOptions.permissionMode,
+                context: extractPermissionErrorContext(event.data, {
+                  toolUseSubjects: permissionToolUseCache
+                })
+              })
+              if (permissionRecovery != null) {
+                permissionRecoveryQueue = permissionRecoveryQueue
+                  .catch(() => {})
+                  .then(async () => {
+                    await writeCliSessionPermissionRecovery(cwd, ctxId, sessionId, permissionRecovery)
+                  })
+                if (shouldPrintOutput) {
+                  const nextState = handlePrintEvent({
+                    event: {
+                      type: 'interaction_request',
+                      data: {
+                        id: `cli-recovery:${sessionId}`,
+                        payload: permissionRecovery.payload
+                      }
+                    },
+                    outputFormat,
+                    lastAssistantText,
+                    didExitAfterError,
+                    exitOnInteractionRequest: true,
+                    log: (message) => console.log(message),
+                    errorLog: (message) => console.error(message),
+                    requestExit: (code) => exitController.requestExit(code)
+                  })
+                  lastAssistantText = nextState.lastAssistantText
+                  didExitAfterError = nextState.didExitAfterError
+                }
+                return
+              }
+            }
+            if (event.type === 'interaction_request') {
+              pendingInteraction = event.data
+              if (shouldPrintOutput && opts.inputFormat != null && !supportsPrintInteractionInput) {
+                console.error(
+                  'Print-mode interaction responses require --input-format stream-json. Exiting after printing the request.'
+                )
+              }
+            }
+            if (
+              event.type === 'stop' ||
+              event.type === 'exit' ||
+              (event.type === 'error' && event.data.fatal !== false)
+            ) {
+              pendingInteraction = undefined
             }
             if (shouldPrintOutput) {
               const nextState = handlePrintEvent({
@@ -346,6 +521,9 @@ Notes:
                 outputFormat,
                 lastAssistantText,
                 didExitAfterError,
+                exitOnInteractionRequest: event.type === 'interaction_request' && (
+                  !supportsPrintInteractionInput || inputClosed
+                ),
                 stopExitsStreamJson: outputFormat === 'stream-json' && opts.inputFormat != null && inputClosed,
                 log: (message) => console.log(message),
                 errorLog: (message) => console.error(message),
@@ -387,7 +565,11 @@ Notes:
             },
             onInputClosed: () => {
               inputClosed = true
-            }
+              if (pendingInteraction != null) {
+                exitController.requestExit(1)
+              }
+            },
+            submitInput: submitPrintInput
           })
         }
       } catch (error) {

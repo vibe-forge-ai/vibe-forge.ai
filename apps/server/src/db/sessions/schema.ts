@@ -32,6 +32,17 @@ export const sessionsSchemaModule: SchemaModule = {
         FOREIGN KEY(sessionId) REFERENCES sessions(id) ON DELETE CASCADE
       );
 
+      CREATE TABLE IF NOT EXISTS session_message_queue (
+        id TEXT PRIMARY KEY,
+        sessionId TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        orderIndex INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        FOREIGN KEY(sessionId) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
       CREATE TABLE IF NOT EXISTS tags (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL
@@ -46,6 +57,7 @@ export const sessionsSchemaModule: SchemaModule = {
       );
 
       CREATE INDEX IF NOT EXISTS idx_messages_sessionId ON messages(sessionId);
+      CREATE INDEX IF NOT EXISTS idx_session_message_queue_sessionId ON session_message_queue(sessionId, mode, orderIndex);
     `)
 
     ensureColumn('sessions', 'isStarred', 'INTEGER DEFAULT 0')

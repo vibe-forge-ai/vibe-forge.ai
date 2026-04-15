@@ -130,11 +130,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
           session,
           binding: getChannelSessionBySessionId(session.id)
             ? {
-                channelType: getChannelSessionBySessionId(session.id).channelType,
-                sessionType: getChannelSessionBySessionId(session.id).sessionType,
-                channelId: getChannelSessionBySessionId(session.id).channelId,
-                channelKey: getChannelSessionBySessionId(session.id).channelKey
-              }
+              channelType: getChannelSessionBySessionId(session.id).channelType,
+              sessionType: getChannelSessionBySessionId(session.id).sessionType,
+              channelId: getChannelSessionBySessionId(session.id).channelId,
+              channelKey: getChannelSessionBySessionId(session.id).channelKey
+            }
             : undefined
         }))
     })
@@ -174,11 +174,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
         transferredFrom: transferred == null
           ? undefined
           : {
-              channelType: transferred.channelType,
-              sessionType: transferred.sessionType,
-              channelId: transferred.channelId,
-              channelKey: transferred.channelKey
-            }
+            channelType: transferred.channelType,
+            sessionType: transferred.sessionType,
+            channelId: transferred.channelId,
+            channelKey: transferred.channelKey
+          }
       }
     })
   }
@@ -398,21 +398,35 @@ describe('/session command', () => {
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('上下文消息数：12')
   })
 
+  it('/session search without query lists recent sessions', async () => {
+    const ctx = makeCtx({ commandText: '/session search', config: { type: 'lark' } as any })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.searchSessions).toHaveBeenCalledWith('')
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('最近会话列表')
+    expect(message).toContain('第 1/1 页')
+    expect(message).toContain('sess-abc')
+    expect(message).toContain('sess-other')
+  })
+
   it('/session search lists matching sessions with binding status', async () => {
     getChannelSessionBySessionId.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            channelType: 'lark',
-            sessionType: 'group',
-            channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
-            channelKey: 'lark:miniapp-gear'
-          }
+          channelType: 'lark',
+          sessionType: 'group',
+          channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
+          channelKey: 'lark:miniapp-gear'
+        }
         : {
-            channelType: 'lark',
-            sessionType: 'direct',
-            channelId: 'ch1',
-            channelKey: 'lark:default'
-          }
+          channelType: 'lark',
+          sessionType: 'direct',
+          channelId: 'ch1',
+          channelKey: 'lark:default'
+        }
     ))
     const ctx = makeCtx({ commandText: '/session search miniapp gear', config: { type: 'lark' } as any })
 
@@ -425,33 +439,66 @@ describe('/session command', () => {
     expect(message).toContain('已绑定 lark/group/oc_790b0dd9fff1f5e216ac15bfbc257556')
   })
 
+  it('/session list supports pagination', async () => {
+    getSessions.mockReturnValue(Array.from({ length: 10 }, (_, index) => ({
+      id: `sess-${index + 1}`,
+      title: `Session ${index + 1}`,
+      status: 'completed',
+      messageCount: index + 1,
+      model: 'gpt-responses,gpt-5.4-2026-03-05',
+      adapter: 'codex',
+      tags: [],
+      isArchived: false,
+      isStarred: false,
+      createdAt: Date.now() - index
+    })))
+    const ctx = makeCtx({
+      commandText: '/session list --page=2',
+      config: { type: 'lark' } as any,
+      reply: vi.fn().mockResolvedValue({ messageId: 'om-session-list-2' }) as any
+    })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('最近会话列表（共 10 个）')
+    expect(message).toContain('第 2/2 页')
+    expect(message).toContain('sess-9')
+    expect(message).toContain('sess-10')
+    expect(ctx.pushFollowUps).toHaveBeenCalledWith({
+      messageId: 'om-session-list-2',
+      followUps: [{ content: '/session list --page=1' }]
+    })
+  })
+
   it('/session bind rebinds the current channel to an existing session', async () => {
     getSession.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            id: 'sess-other',
-            title: 'Lark handoff window',
-            status: 'completed',
-            messageCount: 446,
-            model: 'gpt-responses,gpt-5.4-2026-03-05',
-            adapter: 'codex',
-            tags: [],
-            isArchived: false,
-            isStarred: false,
-            createdAt: Date.now()
-          }
+          id: 'sess-other',
+          title: 'Lark handoff window',
+          status: 'completed',
+          messageCount: 446,
+          model: 'gpt-responses,gpt-5.4-2026-03-05',
+          adapter: 'codex',
+          tags: [],
+          isArchived: false,
+          isStarred: false,
+          createdAt: Date.now()
+        }
         : {
-            id: 'sess-abc',
-            title: 'Session A',
-            status: 'running',
-            messageCount: 12,
-            model: 'gpt-test',
-            adapter: 'codex',
-            tags: ['tag-a'],
-            isArchived: false,
-            isStarred: true,
-            createdAt: Date.now()
-          }
+          id: 'sess-abc',
+          title: 'Session A',
+          status: 'running',
+          messageCount: 12,
+          model: 'gpt-test',
+          adapter: 'codex',
+          tags: ['tag-a'],
+          isArchived: false,
+          isStarred: true,
+          createdAt: Date.now()
+        }
     ))
     const ctx = makeCtx({ commandText: '/session bind sess-other', config: { type: 'lark' } as any })
 

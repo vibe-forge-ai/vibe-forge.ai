@@ -10,6 +10,7 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
+import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides } from './config'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
@@ -126,10 +127,6 @@ const normalizeProviderBaseUrl = (apiBaseUrl: string | undefined, wireApi: strin
     : apiBaseUrl
 }
 
-const DEFAULT_CODEX_CONFIG_OVERRIDES: Record<string, unknown> = {
-  check_for_update_on_startup: false
-}
-
 /**
  * Encode a flat string→string record as a TOML inline table: `{key = "value", …}`.
  */
@@ -143,6 +140,7 @@ const MCP_INHERITED_ENV_KEYS = [
   '__VF_PROJECT_AI_SESSION_ID__',
   '__VF_PROJECT_AI_CTX_ID__',
   '__VF_PROJECT_AI_RUN_TYPE__',
+  '__VF_PROJECT_AI_PERMISSION_MODE__',
   '__VF_PROJECT_AI_SERVER_HOST__',
   '__VF_PROJECT_AI_SERVER_PORT__',
   '__VF_PROJECT_AI_LOG_PREFIX__'
@@ -155,44 +153,6 @@ const pickInheritedMcpEnv = (env: Record<string, string | null | undefined>) => 
       .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '')
   )
 )
-
-const encodeCodexConfigValue = (value: unknown): string | undefined => {
-  if (typeof value === 'string') return toToml(value)
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  if (Array.isArray(value)) {
-    if (value.every(item => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')) {
-      return JSON.stringify(value)
-    }
-    return undefined
-  }
-  if (isPlainObject(value)) {
-    const entries = Object.entries(value).filter((entry) =>
-      typeof entry[1] === 'string' || typeof entry[1] === 'number' || typeof entry[1] === 'boolean'
-    )
-    if (entries.length === 0 || entries.length !== Object.keys(value).length) return undefined
-    return `{${
-      entries.map(([key, item]) => `${key} = ${typeof item === 'string' ? JSON.stringify(item) : String(item)}`).join(
-        ', '
-      )
-    }}`
-  }
-  return undefined
-}
-
-const mergeCodexConfigOverrides = (overrides: Record<string, unknown>) => ({
-  ...DEFAULT_CODEX_CONFIG_OVERRIDES,
-  ...Object.fromEntries(Object.entries(overrides).filter(([, value]) => value !== undefined))
-})
-
-const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>) => {
-  const args: string[] = []
-  for (const [key, value] of Object.entries(overrides)) {
-    const encoded = encodeCodexConfigValue(value)
-    if (encoded == null) continue
-    args.push('-c', `${key}=${encoded}`)
-  }
-  return args
-}
 
 /**
  * Derive the `-c key=value` overrides and API-key env injections needed to map
@@ -638,8 +598,8 @@ export async function resolveSessionBase(
   configFingerprintArgs.push(...mcpConfigArgs)
 
   const binaryPath = resolveCodexBinaryPath(env)
-  await mkdir(resolve(process.env.HOME!, '.codex'), { recursive: true })
   const spawnEnv = buildSpawnEnv(env)
+  await mkdir(resolve(spawnEnv.HOME ?? process.env.HOME!, '.codex'), { recursive: true })
 
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
     features.codex_hooks = true

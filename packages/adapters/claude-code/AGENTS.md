@@ -40,7 +40,7 @@
 - `src/claude/prepare.ts`
   - 注入 session 运行参数、native hook env、settings 与 mcp config
 - `src/claude/init.ts`
-  - adapter 初始化阶段安装 Claude native hooks，并把 `.ai/skills` 软链到 `.ai/.mock/.claude/skills`
+  - adapter 初始化阶段安装 Claude native hooks，把 `.ai/skills` 软链到 `.ai/.mock/.claude/skills`，并写 mock-home `.claude.json` 项目信任状态
   - router 生命周期由 `src/ccr/daemon.ts` 接管
 - `src/hooks/bridge.ts`
   - 负责把 Claude native payload 翻译成统一 hook 协议
@@ -133,10 +133,12 @@ node apps/cli/cli.js \
 - 终端输出 `E2E_CLAUDE`
 - `.ai/logs/<ctxId>/<sessionId>.log.md` 出现 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `.ai/.mock/.claude/settings.json` 仍指向 Vibe Forge 托管 hook bridge
+- `.ai/.mock/.claude.json` 为当前 workspace 写入 `projects["<cwd>"].hasTrustDialogAccepted = true`
 
 Claude 维护时优先检查两点：
 
 - 仓库默认不提交项目级 `.claude/settings.json`；Claude 托管入口是 `.ai/.mock/.claude/settings.json`
+- workspace trust state 落在 `.ai/.mock/.claude.json`，不是 `.claude/settings.json`
 - workspace skills 走 `.ai/.mock/.claude/skills`，这是在 mock home 里模拟 Claude 的个人级 `~/.claude/skills`
 - 但如果用户自己加了项目级 `.claude/settings.json`，Claude 仍会和 mock home settings 一起加载，容易出现双触发
 - 排查重复 hook 时，不要只看 `.ai/.mock/.claude/settings.json`，也要检查项目级 `.claude/settings.json`

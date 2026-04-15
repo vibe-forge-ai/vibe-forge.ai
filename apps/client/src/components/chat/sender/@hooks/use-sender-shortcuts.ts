@@ -8,6 +8,19 @@ import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useComposerControlShortcuts } from '#~/hooks/chat/use-composer-control-shortcuts'
 import { resolveSendShortcut } from '#~/utils/shortcutUtils'
 
+const resolveQueuedMessageShortcuts = (sendShortcut: string, isMac: boolean) => {
+  const primary = sendShortcut
+  const candidates = isMac
+    ? ['cmd+shift+enter', 'cmd+alt+enter', 'cmd+ctrl+enter']
+    : ['mod+enter', 'alt+enter', 'ctrl+shift+enter']
+  const next = candidates.find(shortcut => shortcut !== primary) ?? candidates[0]
+
+  return {
+    queueSteer: primary,
+    queueNext: next
+  }
+}
+
 export const useSenderShortcuts = ({
   enabled,
   isInlineEdit,
@@ -38,6 +51,7 @@ export const useSenderShortcuts = ({
   const { data: configRes } = useSWR<ConfigResponse>('/api/config')
   const mergedShortcuts = configRes?.sources?.merged?.shortcuts
   const resolvedSendShortcut = resolveSendShortcut(mergedShortcuts?.sendMessage, isMac)
+  const queuedMessageShortcuts = resolveQueuedMessageShortcuts(resolvedSendShortcut, isMac)
 
   const composerControlShortcuts = useComposerControlShortcuts({
     enabled,
@@ -73,6 +87,7 @@ export const useSenderShortcuts = ({
   return {
     clearInputShortcut: mergedShortcuts?.clearInput,
     composerControlShortcuts,
-    resolvedSendShortcut
+    resolvedSendShortcut,
+    queuedMessageShortcuts
   }
 }

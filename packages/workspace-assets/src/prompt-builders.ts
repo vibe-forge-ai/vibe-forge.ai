@@ -5,7 +5,7 @@ import {
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
 import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
-import { resolvePromptPath } from '@vibe-forge/utils'
+import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, resolvePromptPath } from '@vibe-forge/utils'
 
 const toMarkdownBlockquote = (content: string) => (
   content
@@ -178,7 +178,7 @@ export const generateEntitiesRoutePrompt = (entities: Definition<Entity>[]) => {
         })
         .join('')
     }\n` +
-    'When solving user problems, you may specify entities through `vibe-forge.StartTasks` as needed and have them coordinate multiple entity types to complete the work; use `GetTaskInfo` and `wait` to track progress.\n' +
+    `When solving user problems, you may specify entities through \`${CANONICAL_VIBE_FORGE_MCP_SERVER_NAME}.StartTasks\` as needed and have them coordinate multiple entity types to complete the work; use \`${CANONICAL_VIBE_FORGE_MCP_SERVER_NAME}.GetTaskInfo\` and \`wait\` to track progress.\n` +
     '</system-prompt>\n'
   )
 }

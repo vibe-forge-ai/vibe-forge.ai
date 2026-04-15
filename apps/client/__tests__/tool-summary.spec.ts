@@ -135,4 +135,26 @@ describe('tool summary', () => {
 
     expect(summary).toBe('search reference 1x · click 1x · +2x')
   })
+
+  it('uses compact codex tool titles instead of raw patch input previews', () => {
+    const summary = getToolGroupSummaryText([
+      {
+        item: {
+          type: 'tool_use',
+          id: 'patch-1',
+          name: 'adapter:codex:ApplyPatch',
+          input: {
+            patch: [
+              '*** Begin Patch',
+              '*** Add File: /tmp/example.ts',
+              '+export const value = 1',
+              '*** End Patch'
+            ].join('\n')
+          }
+        }
+      }
+    ], t)
+
+    expect(summary).toBe('Apply Patch 1x')
+  })
 })

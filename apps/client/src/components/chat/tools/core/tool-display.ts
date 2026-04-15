@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { safeJsonStringify } from '#~/utils/safe-serialize'
 
 export const TOOL_TOOLTIP_PROPS = {
@@ -23,14 +25,20 @@ const TOOL_FIELD_ICON_MAP: Record<string, string> = {
   cellType: 'grid_view',
   command: 'terminal',
   content: 'notes',
+  contextLines: 'format_line_spacing',
+  cwd: 'folder_open',
+  changes: 'difference',
   description: 'subject',
   disableSandbox: 'shield',
   details: 'info',
+  endLine: 'keyboard_double_arrow_down',
   editMode: 'edit',
   glob: 'data_object',
   ignore: 'visibility_off',
+  ignoreCase: 'text_fields',
   limit: 'filter_alt',
   maxTurns: 'repeat',
+  maxOutputTokens: 'expand_content',
   metadata: 'badge',
   model: 'neurology',
   mode: 'tune',
@@ -48,11 +56,14 @@ const TOOL_FIELD_ICON_MAP: Record<string, string> = {
   replaceAll: 'select_all',
   resume: 'play_circle',
   runInBackground: 'background_dot_large',
+  startLine: 'keyboard_double_arrow_up',
   status: 'flag',
   subagentType: 'hub',
   subject: 'title',
   timeout: 'timer',
-  todos: 'checklist'
+  todos: 'checklist',
+  workdir: 'folder_code',
+  yieldTimeMs: 'schedule'
 }
 
 const TOOL_FORMAT_ICON_MAP: Record<string, string> = {

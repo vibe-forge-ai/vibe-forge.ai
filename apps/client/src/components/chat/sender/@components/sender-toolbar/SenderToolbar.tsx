@@ -36,6 +36,10 @@ export function SenderToolbar({
       />
 
       <div className='toolbar-left'>
+        {!state.isInlineEdit && (
+          <AdapterSelectControl state={state} data={data} handlers={handlers} />
+        )}
+
         <ReferenceActionsControl
           state={state}
           data={data}
@@ -63,23 +67,25 @@ export function SenderToolbar({
       </div>
 
       <div className={`toolbar-right ${state.isInlineEdit ? 'toolbar-right--inline-edit' : ''}`.trim()}>
-        {!state.isInlineEdit && (
-          <AdapterSelectControl state={state} data={data} handlers={handlers} />
-        )}
-
         <SenderSubmitAction
           isInlineEdit={state.isInlineEdit}
           submitLoading={state.submitLoading}
           submitLabel={data.submitLabel}
           hasComposerContent={state.hasComposerContent}
-          hasSendText={state.hasSendText}
           modelUnavailable={state.modelUnavailable}
+          sendBlocked={state.sendBlocked}
+          sendBlockedTooltip={state.sendBlockedTooltip}
+          showConfirmInteractionAction={state.showConfirmInteractionAction}
+          confirmInteractionLabel={data.confirmInteractionLabel}
           isThinking={state.isThinking}
           resolvedSendShortcut={state.resolvedSendShortcut}
+          queueSteerShortcut={data.composerControlShortcuts.queueSteer}
+          queueNextShortcut={data.composerControlShortcuts.queueNext}
           isMac={state.isMac}
           onCancel={handlers.onCancel}
+          onConfirmInteractionAction={handlers.onConfirmInteractionOption}
           onSend={handlers.onSend}
-          onInterrupt={handlers.onInterrupt}
+          onStop={handlers.onInterrupt}
         />
       </div>
     </div>

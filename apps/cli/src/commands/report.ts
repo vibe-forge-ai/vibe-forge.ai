@@ -4,22 +4,17 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
+import { resolveProjectAiBaseDir, resolveProjectAiBaseDirName, resolveProjectAiPath } from '@vibe-forge/utils'
 import type { Command } from 'commander'
-
-const REPORT_TARGETS = ['.ai/logs', '.ai/caches'] as const
+const REPORT_TARGETS = ['logs', 'caches'] as const
 const REPORT_MOCK_TARGETS = [
-  '.ai/.mock/.claude',
-  '.ai/.mock/.claude-code-router',
-  '.ai/.mock/.config',
-  '.ai/.mock/.codex',
-  '.ai/.mock/.vf'
+  '.mock/.claude',
+  '.mock/.claude-code-router',
+  '.mock/.config',
+  '.mock/.codex',
+  '.mock/.vf'
 ] as const
 const REPORT_MOCK_FILE_PREFIX = '.claude.json'
-const REPORT_TAR_EXCLUDES = [
-  '.ai/.mock/.config/**/node_modules',
-  '.ai/.mock/.config/**/node_modules/*'
-] as const
-
 const pad = (value: number) => String(value).padStart(2, '0')
 
 export const formatReportTimestamp = (date: Date) => {
@@ -54,8 +49,9 @@ const collectExistingTargets = async (cwd: string, targets: readonly string[]) =
 
   for (const target of targets) {
     try {
-      await fs.access(path.resolve(cwd, target), constants.F_OK)
-      availableTargets.push(target)
+      const resolvedTarget = resolveProjectAiPath(cwd, process.env, ...target.split('/'))
+      await fs.access(resolvedTarget, constants.F_OK)
+      availableTargets.push(resolvedTarget)
     } catch {
       // ignore missing targets
     }
@@ -66,7 +62,7 @@ const collectExistingTargets = async (cwd: string, targets: readonly string[]) =
 
 const collectMockReportTargets = async (cwd: string) => {
   const availableTargets = await collectExistingTargets(cwd, REPORT_MOCK_TARGETS)
-  const mockRoot = path.resolve(cwd, '.ai/.mock')
+  const mockRoot = resolveProjectAiPath(cwd, process.env, '.mock')
 
   try {
     const entries = await fs.readdir(mockRoot, { withFileTypes: true })
@@ -77,7 +73,7 @@ const collectMockReportTargets = async (cwd: string) => {
           entry.name.startsWith(`${REPORT_MOCK_FILE_PREFIX}.backup`)
         )
       )
-      .map(entry => `.ai/.mock/${entry.name}`)
+      .map(entry => path.resolve(mockRoot, entry.name))
       .sort((left, right) => left.localeCompare(right))
 
     availableTargets.push(...mockFiles)
@@ -94,14 +90,13 @@ export const collectReportTargets = async (cwd: string) => {
   return availableTargets
 }
 
-const assertArchivePath = (cwd: string, archivePath: string, sources: string[]) => {
+const assertArchivePath = (archivePath: string, sources: string[]) => {
   const resolvedArchivePath = path.resolve(archivePath)
 
   for (const source of sources) {
-    const resolvedSourcePath = path.resolve(cwd, source)
     if (
-      resolvedArchivePath === resolvedSourcePath ||
-      resolvedArchivePath.startsWith(`${resolvedSourcePath}${path.sep}`)
+      resolvedArchivePath === source ||
+      resolvedArchivePath.startsWith(`${source}${path.sep}`)
     ) {
       throw new Error(`Report archive must not be created inside ${source}.`)
     }
@@ -109,18 +104,27 @@ const assertArchivePath = (cwd: string, archivePath: string, sources: string[]) 
 }
 
 const createTarArchive = async (cwd: string, archivePath: string, sources: string[]) => {
+  const aiBaseDir = resolveProjectAiBaseDir(cwd, process.env)
+  const archiveRoot = path.dirname(aiBaseDir)
+  const archiveBaseDir = path.relative(archiveRoot, aiBaseDir).split(path.sep).join('/')
+  const tarExcludes = [
+    `${archiveBaseDir}/.mock/.config/**/node_modules`,
+    `${archiveBaseDir}/.mock/.config/**/node_modules/*`
+  ]
+  const archiveSources = sources.map(source => path.relative(archiveRoot, source))
+
   await fs.mkdir(path.dirname(archivePath), { recursive: true })
 
   await new Promise<void>((resolve, reject) => {
     const child = spawn('tar', [
       '-czf',
       archivePath,
-      ...REPORT_TAR_EXCLUDES.map(pattern => `--exclude=${pattern}`),
+      ...tarExcludes.map(pattern => `--exclude=${pattern}`),
       '-C',
-      cwd,
-      ...sources
+      archiveRoot,
+      ...archiveSources
     ], {
-      cwd,
+      cwd: archiveRoot,
       stdio: ['ignore', 'ignore', 'pipe']
     })
 
@@ -167,26 +171,23 @@ export async function runReportCommand(options: RunReportCommandOptions = {}) {
   const sources = await collectReportTargets(cwd)
 
   if (sources.length === 0) {
-    console.log('No reportable files found under .ai.')
+    console.log(`No reportable files found under ${resolveProjectAiBaseDirName(process.env)}.`)
     return null
   }
 
   const archivePath = resolveReportArchivePath(cwd, options.filename)
-  assertArchivePath(cwd, archivePath, sources)
+  assertArchivePath(archivePath, sources)
   await createTarArchive(cwd, archivePath, sources)
 
   console.log(`Report archive created: ${archivePath}`)
 
-  return {
-    archivePath,
-    sources
-  }
+  return { archivePath, sources }
 }
 
 export function registerReportCommand(program: Command) {
   program
     .command('report [filename]')
-    .description('Package .ai logs, caches and selected mock data into a compressed archive')
+    .description('Package workspace logs, caches and selected mock data into a compressed archive')
     .action(async (filename?: string) => {
       try {
         await runReportCommand({ filename })

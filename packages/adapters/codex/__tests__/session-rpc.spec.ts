@@ -122,6 +122,18 @@ async function waitForWrites() {
   await new Promise(resolve => setTimeout(resolve, 20))
 }
 
+function respondToInteraction(
+  session: Awaited<ReturnType<typeof createCodexSession>>,
+  interactionId: string,
+  answer: string | string[]
+) {
+  if (!('respondInteraction' in session)) {
+    throw new Error('Expected stream session to support interaction responses')
+  }
+
+  session.respondInteraction(interactionId, answer)
+}
+
 function getConfigOverrides(spawnArgs: string[]) {
   return spawnArgs.filter((_, index) => spawnArgs[index - 1] === '-c')
 }
@@ -264,6 +276,232 @@ describe('createCodexSession RPC approval policy mapping', () => {
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     expect(spawnArgs[0]).toBe('app-server')
     expect(spawnArgs).not.toContain('--yolo')
+
+    session.kill()
+  })
+
+  it('handles command approval requests when payload.command is not an array', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const ctx = makeCtx()
+    const session = await createCodexSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-command-approval-string',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 7,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          itemId: 'cmd-1',
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          command: {
+            executable: '/usr/bin/zsh',
+            args: ['-lc', 'ls -la']
+          },
+          reason: 'Inspect the workspace',
+          availableDecisions: ['accept', 'decline']
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    const requestEvent = events.find(event => event.type === 'interaction_request')
+    expect(requestEvent).toBeDefined()
+    expect((requestEvent as any)?.data?.payload?.question).toContain('/usr/bin/zsh -lc ls -la')
+    expect(ctx.logger.error).not.toHaveBeenCalledWith(
+      '[codex rpc] request handler error',
+      expect.anything()
+    )
+
+    respondToInteraction(session, 'codex-approval:7', 'allow_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 7,
+      result: { decision: 'accept' }
+    })
+
+    session.kill()
+  })
+
+  it('handles MCP elicitation approval requests for tool calls', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 9,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'VibeForge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_title: 'List Tasks',
+            tool_description: 'List all managed tasks'
+          },
+          message: 'Allow the VibeForge MCP server to run tool "ListTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    const requestEvent = events.find(event => event.type === 'interaction_request')
+    expect(requestEvent).toBeDefined()
+    expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the VibeForge MCP server')
+    expect((requestEvent as any)?.data?.payload?.permissionContext).toMatchObject({
+      subjectKey: 'mcp-vibe-forge-list-tasks',
+      subjectLookupKeys: [
+        'mcp-vibe-forge-list-tasks',
+        'mcp-vibeforge-list-tasks',
+        'VibeForge'
+      ],
+      subjectLabel: 'VibeForge:List Tasks'
+    })
+
+    respondToInteraction(session, 'codex-approval:9', 'allow_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 9,
+      result: {
+        action: 'accept',
+        content: {}
+      }
+    })
+
+    session.kill()
+  })
+
+  it('maps denied MCP elicitation approvals to decline responses', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation-deny',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 10,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'VibeForge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_description: 'Start managed tasks'
+          },
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    respondToInteraction(session, 'codex-approval:10', 'deny_once')
+    await waitForWrites()
+
+    expect(receivedLines).toContainEqual({
+      id: 10,
+      result: {
+        action: 'decline'
+      }
+    })
+
+    session.kill()
+  })
+
+  it('cancels unsupported MCP elicitation schemas when permission mode is dontAsk', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx(), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-elicitation-never-schema',
+      permissionMode: 'dontAsk',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 11,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'VibeForge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_title: 'Start Tasks',
+            tool_description: 'Start managed tasks'
+          },
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {
+              reason: {
+                type: 'string'
+              }
+            },
+            required: ['reason']
+          }
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    expect(events.filter(event => event.type === 'interaction_request')).toHaveLength(0)
+    expect(receivedLines).toContainEqual({
+      id: 11,
+      result: {
+        action: 'cancel'
+      }
+    })
 
     session.kill()
   })
@@ -440,6 +678,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
           __VF_PROJECT_AI_SESSION_ID__: 'vf-session',
           __VF_PROJECT_AI_CTX_ID__: 'vf-ctx',
           __VF_PROJECT_AI_RUN_TYPE__: 'server',
+          __VF_PROJECT_AI_PERMISSION_MODE__: 'dontAsk',
           __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
           __VF_PROJECT_AI_SERVER_PORT__: '8787',
           __VF_PROJECT_AI_LOG_PREFIX__: 'test-prefix',
@@ -447,7 +686,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
         },
         configs: [{
           mcpServers: {
-            'vibe-forge': {
+            VibeForge: {
               command: 'node',
               args: ['mcp.js'],
               env: {
@@ -468,11 +707,12 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const overrides = getConfigOverrides(spawnArgs)
-    const mcpEnvOverride = getConfigOverride(overrides, 'mcp_servers.vibe-forge.env=')
+    const mcpEnvOverride = getConfigOverride(overrides, 'mcp_servers.VibeForge.env=')
 
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SESSION_ID__ = "vf-session"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_CTX_ID__ = "vf-ctx"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_RUN_TYPE__ = "server"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_PERMISSION_MODE__ = "dontAsk"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_HOST__ = "127.0.0.1"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_PORT__ = "8787"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_WORKSPACE_FOLDER__ = "/tmp/project"')

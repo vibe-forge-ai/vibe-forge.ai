@@ -23,6 +23,7 @@ describe('createLogger', () => {
 
   afterEach(async () => {
     vi.useRealTimers()
+    delete process.env.__VF_PROJECT_AI_BASE_DIR__
     await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
   })
 
@@ -119,6 +120,21 @@ describe('createLogger', () => {
     expect(content).toContain('line: debug enabled')
   })
 
+  it('writes logs under the env-configured ai base dir', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
+    tempDirs.push(cwd)
+    process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
+
+    const logger = createLogger(cwd, 'task-1', 'session-1')
+    logger.info('hello')
+    await new Promise<void>((resolve) => {
+      logger.stream.end(() => resolve())
+    })
+
+    const files = await listFiles(join(cwd, '.vf/logs/task-1'))
+    expect(files).toEqual([join(cwd, '.vf/logs/task-1/session-1.log.md')])
+  })
+
   it('renders multiline strings as folded yaml blocks', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
     tempDirs.push(cwd)
@@ -140,5 +156,28 @@ describe('createLogger', () => {
     expect(content).toContain('  b: >-')
     expect(content).toContain('    1233')
     expect(content).toContain('    456')
+  })
+
+  it('escapes markdown fence lines inside folded yaml strings', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
+    tempDirs.push(cwd)
+
+    const logger = createLogger(cwd, 'task-1', 'session-1')
+    logger.info({
+      prompt: 'before\n```bash\necho "hi"\n```\nafter'
+    })
+    await new Promise<void>((resolve) => {
+      logger.stream.end(() => resolve())
+    })
+
+    const canonicalPath = join(cwd, '.ai/logs/task-1/session-1.log.md')
+    const content = await readFile(canonicalPath, 'utf8')
+    expect(content).toContain('```yaml')
+    expect(content).toContain('prompt: >-')
+    expect(content).toContain('  before')
+    expect(content).toContain('  \\`\\`\\`bash')
+    expect(content).toContain('  echo "hi"')
+    expect(content).toContain('  \\`\\`\\`')
+    expect(content).toContain('  after')
   })
 })

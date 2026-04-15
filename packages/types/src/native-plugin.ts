@@ -5,6 +5,7 @@ export interface AdapterPluginAddOptions {
   source: string
   force?: boolean
   scope?: string
+  silent?: boolean
 }
 
 export interface AdapterPluginAddResult {

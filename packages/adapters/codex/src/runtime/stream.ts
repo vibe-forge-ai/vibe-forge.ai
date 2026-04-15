@@ -7,8 +7,15 @@ import type {
   AdapterOutputEvent,
   AdapterQueryOptions
 } from '@vibe-forge/types'
+import {
+  CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+  resolveMcpPermissionServerKey,
+  resolveMcpPermissionServerKeys,
+  sanitizeMcpPermissionKeySegment
+} from '@vibe-forge/utils'
 import type { CodexSessionBase } from './session-common'
 
+import { formatCodexCommandForDisplay } from '#~/command-display.js'
 import { AgentMessageAccumulator, CommandOutputAccumulator, handleIncomingNotification } from '#~/protocol/incoming.js'
 import { CodexRpcClient } from '#~/protocol/rpc.js'
 import type {
@@ -20,7 +27,9 @@ import type {
   CommandExecutionRequestApprovalResponse,
   FileChangeApprovalParams,
   FileChangeDecision,
-  FileChangeRequestApprovalResponse
+  FileChangeRequestApprovalResponse,
+  McpServerElicitationRequestParams,
+  McpServerElicitationResponse
 } from '#~/types.js'
 
 import {
@@ -54,6 +63,8 @@ const buildCodexPermissionInteraction = (params: {
   interactionId: string
   question: string
   subjectKey: string
+  subjectLookupKeys?: string[]
+  subjectLabel?: string
   reasons?: string[]
 }): AdapterInteractionRequest => ({
   id: params.interactionId,
@@ -67,12 +78,65 @@ const buildCodexPermissionInteraction = (params: {
       deniedTools: [params.subjectKey],
       reasons: params.reasons,
       subjectKey: params.subjectKey,
-      subjectLabel: params.subjectKey,
+      subjectLookupKeys: params.subjectLookupKeys,
+      subjectLabel: params.subjectLabel ?? params.subjectKey,
       scope: 'tool',
       projectConfigPath: '.ai.config.json'
     }
   }
 })
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+
+const extractMcpToolNameFromMessage = (message: string | undefined) => {
+  const trimmed = message?.trim()
+  if (trimmed == null || trimmed === '') return undefined
+
+  const quotedMatch = trimmed.match(/tool\s+["'`](.+?)["'`]/i)
+  if (quotedMatch?.[1] != null && quotedMatch[1].trim() !== '') {
+    return quotedMatch[1].trim()
+  }
+
+  const bareMatch = trimmed.match(/tool\s+([\w.:-]+)/i)
+  if (bareMatch?.[1] != null && bareMatch[1].trim() !== '') {
+    return bareMatch[1].trim()
+  }
+
+  return undefined
+}
+
+const buildMcpPermissionSubject = (payload: McpServerElicitationRequestParams) => {
+  const serverName = payload.serverName?.trim() || 'mcp'
+  const serverKeys = resolveMcpPermissionServerKeys(serverName)
+  const serverKey = resolveMcpPermissionServerKey(serverName) ?? 'mcp'
+  const toolName = payload._meta?.tool_title?.trim() || extractMcpToolNameFromMessage(payload.message)
+  const toolKey = sanitizeMcpPermissionKeySegment(toolName) ?? 'tool'
+  const subjectLookupKeys = [
+    ...serverKeys.map(key => `mcp-${key}-${toolKey}`),
+    ...(serverName === CANONICAL_VIBE_FORGE_MCP_SERVER_NAME ? [CANONICAL_VIBE_FORGE_MCP_SERVER_NAME] : [])
+  ]
+
+  return {
+    subjectKey: `mcp-${serverKey}-${toolKey}`,
+    subjectLookupKeys,
+    subjectLabel: toolName != null && toolName !== ''
+      ? `${serverName}:${toolName}`
+      : serverName
+  }
+}
+
+const supportsEmptyMcpAcceptPayload = (requestedSchema: unknown) => {
+  const schema = isRecord(requestedSchema) ? requestedSchema : {}
+  const schemaProperties = isRecord(schema.properties) ? schema.properties : {}
+  const schemaType = typeof schema.type === 'string' ? schema.type : undefined
+  const requiredFields = Array.isArray(schema.required)
+    ? schema.required.filter((value): value is string => typeof value === 'string' && value.trim() !== '')
+    : []
+
+  return schemaType === 'object' && Object.keys(schemaProperties).length === 0 && requiredFields.length === 0
+}
 
 export const resolveCodexApprovalDecision = (params: {
   answer: string | string[]
@@ -107,6 +171,23 @@ export const buildCodexApprovalResponse = (params: {
 }): CommandExecutionRequestApprovalResponse | FileChangeRequestApprovalResponse => ({
   decision: resolveCodexApprovalDecision(params)
 })
+
+export const buildCodexMcpElicitationResponse = (
+  answer: string | string[]
+): McpServerElicitationResponse => {
+  const raw = Array.isArray(answer) ? answer[0] : answer
+  const normalized = typeof raw === 'string' ? raw.trim() : ''
+  if (normalized === 'allow_once' || normalized === 'allow_session' || normalized === 'allow_project') {
+    return {
+      action: 'accept',
+      content: {}
+    }
+  }
+  if (normalized === 'deny_once' || normalized === 'deny_session' || normalized === 'deny_project') {
+    return { action: 'decline' }
+  }
+  return { action: 'cancel' }
+}
 
 /**
  * Spawn `codex app-server` and drive it over JSON-RPC 2.0 (JSONL),
@@ -156,7 +237,7 @@ export async function createStreamCodexSession(
     ? undefined
     : adapterMaxOutputTokens
   const clientInfo = {
-    name: rawClientInfo.name ?? 'vibe-forge',
+    name: rawClientInfo.name ?? CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
     title: rawClientInfo.title ?? 'Vibe Forge',
     version: rawClientInfo.version ?? '0.1.0'
   }
@@ -186,9 +267,8 @@ export async function createStreamCodexSession(
   const pendingApprovals = new Map<string, {
     rpcId: number
     availableDecisions?: string[]
-    kind: 'command' | 'file-change'
+    kind: 'command' | 'file-change' | 'mcp-elicitation'
   }>()
-
   const emitEvent = (event: AdapterOutputEvent) => {
     if (event.type === 'error' && event.data.fatal !== false) {
       didEmitFatalError = true
@@ -256,7 +336,7 @@ export async function createStreamCodexSession(
         availableDecisions: payload.availableDecisions,
         kind: 'command'
       })
-      const commandStr = payload.command?.join(' ') ?? '[command]'
+      const commandStr = formatCodexCommandForDisplay(payload.command)
       emitEvent({
         type: 'interaction_request',
         data: buildCodexPermissionInteraction({
@@ -296,7 +376,72 @@ export async function createStreamCodexSession(
           reasons: payload.reason?.trim() ? [payload.reason.trim()] : undefined
         })
       })
+      return
     }
+
+    if (method === 'mcpServer/elicitation/request') {
+      const payload = params as unknown as McpServerElicitationRequestParams
+      const interactionId = `codex-approval:${id}`
+      const isPermissionPrompt = payload._meta?.codex_approval_kind === 'mcp_tool_call'
+      const supportsEmptyAcceptPayload = supportsEmptyMcpAcceptPayload(payload.requestedSchema)
+      const { subjectKey, subjectLookupKeys, subjectLabel } = buildMcpPermissionSubject(payload)
+      const toolDescription = payload._meta?.tool_description?.trim()
+      const question = payload.message?.trim() || '允许执行 MCP 工具调用？'
+
+      if (approvalPolicy === 'never') {
+        rpc.respond(
+          id,
+          isPermissionPrompt && supportsEmptyAcceptPayload
+            ? {
+              action: 'accept',
+              content: {}
+            } satisfies McpServerElicitationResponse
+            : { action: 'cancel' } satisfies McpServerElicitationResponse
+        )
+        return
+      }
+
+      if (isPermissionPrompt && supportsEmptyAcceptPayload) {
+        pendingApprovals.set(interactionId, {
+          rpcId: id,
+          kind: 'mcp-elicitation'
+        })
+        emitEvent({
+          type: 'interaction_request',
+          data: buildCodexPermissionInteraction({
+            sessionId,
+            interactionId,
+            question,
+            subjectKey,
+            subjectLookupKeys,
+            subjectLabel,
+            reasons: [toolDescription, question]
+              .filter((value): value is string => typeof value === 'string' && value !== '')
+          })
+        })
+        return
+      }
+
+      logger.warn('[codex session] unsupported mcp elicitation request; cancelling', {
+        id,
+        sessionId,
+        threadId,
+        activeTurnId,
+        method,
+        params
+      })
+      rpc.respond(id, { action: 'cancel' } satisfies McpServerElicitationResponse)
+      return
+    }
+
+    logger.warn('[codex session] unhandled rpc request', {
+      id,
+      method,
+      sessionId,
+      threadId,
+      activeTurnId,
+      params
+    })
   })
 
   proc.on('exit', (code) => {
@@ -322,7 +467,7 @@ export async function createStreamCodexSession(
       cwd,
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
-      serviceName: 'vibe-forge',
+      serviceName: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
       ...(model ? { model } : {})
     })
     threadId = startResult.thread.id
@@ -480,11 +625,13 @@ export async function createStreamCodexSession(
       pendingApprovals.delete(interactionId)
       rpc.respond(
         pending.rpcId,
-        buildCodexApprovalResponse({
-          answer: data,
-          availableDecisions: pending.availableDecisions,
-          kind: pending.kind
-        })
+        pending.kind === 'mcp-elicitation'
+          ? buildCodexMcpElicitationResponse(data)
+          : buildCodexApprovalResponse({
+            answer: data,
+            availableDecisions: pending.availableDecisions,
+            kind: pending.kind
+          })
       )
     },
     pid: proc.pid

@@ -3,11 +3,11 @@ import type { EffortLevel, Session, SessionPermissionMode } from '@vibe-forge/co
 import type { ChannelContext } from '../@types'
 import { defineMessages } from '../i18n'
 import type { CommandArgumentChoice } from './command-system'
-import { command, requiredArg, restArg } from './command-system'
+import { command, requiredArg, restArg, variadicArg } from './command-system'
 
 defineMessages('zh', {
   'cmd.session.description': '查看当前会话状态',
-  'cmd.session.search.description': '搜索系统内的会话，方便重新绑定到当前频道',
+  'cmd.session.search.description': '搜索或列出系统内的会话，支持分页，方便重新绑定到当前频道',
   'cmd.session.bind.description': '将当前频道绑定到指定会话',
   'cmd.session.unbind.description': '解绑当前频道与会话，但保留会话本身',
   'cmd.reset.description': '归档并解绑当前会话',
@@ -60,9 +60,11 @@ defineMessages('zh', {
   'session.starred': ({ starred }) => `星标：${starred}`,
   'session.archived': ({ archived }) => `归档：${archived}`,
   'session.tags': ({ tags }) => `标签：${tags}`,
+  'session.search.empty': '当前没有可列出的会话。',
   'session.search.noResults': ({ query }) => `未找到匹配“${query}”的会话。`,
+  'session.search.listHeader': ({ count }) => `最近会话列表（共 ${count} 个）：`,
   'session.search.header': ({ count, query }) => `找到 ${count} 个匹配会话（关键词：${query}）：`,
-  'session.search.more': ({ remaining }) => `其余 ${remaining} 个结果未展示，请缩小关键词继续搜索。`,
+  'session.search.page': ({ current, total }) => `第 ${current}/${total} 页`,
   'session.search.binding.current': '当前频道',
   'session.search.binding.unbound': '未绑定',
   'session.search.binding.other': ({ channelType, sessionType, channelId }) =>
@@ -95,7 +97,8 @@ defineMessages('zh', {
 
 defineMessages('en', {
   'cmd.session.description': 'Show current session status',
-  'cmd.session.search.description': 'Search internal sessions so they can be rebound into this channel',
+  'cmd.session.search.description':
+    'Search or list internal sessions with pagination so they can be rebound into this channel',
   'cmd.session.bind.description': 'Bind this channel to an existing session',
   'cmd.session.unbind.description': 'Unbind this channel from its session without archiving the session',
   'cmd.reset.description': 'Archive and unbind current session',
@@ -151,9 +154,11 @@ defineMessages('en', {
   'session.starred': ({ starred }) => `Starred: ${starred}`,
   'session.archived': ({ archived }) => `Archived: ${archived}`,
   'session.tags': ({ tags }) => `Tags: ${tags}`,
+  'session.search.empty': 'There are no sessions to list.',
   'session.search.noResults': ({ query }) => `No sessions matched “${query}”.`,
+  'session.search.listHeader': ({ count }) => `Recent sessions (${count} total):`,
   'session.search.header': ({ count, query }) => `Found ${count} matching sessions (query: ${query}):`,
-  'session.search.more': ({ remaining }) => `${remaining} more results were omitted. Narrow the query and search again.`,
+  'session.search.page': ({ current, total }) => `Page ${current}/${total}`,
   'session.search.binding.current': 'current channel',
   'session.search.binding.unbound': 'unbound',
   'session.search.binding.other': ({ channelType, sessionType, channelId }) =>
@@ -161,9 +166,11 @@ defineMessages('en', {
   'session.search.item': ({ index, id, title, status, count, model, binding }) =>
     `${index}. ${id} | ${title} | ${status} | ${count} msgs | ${model} | ${binding}`,
   'bind.notFound': ({ id }) => `Session ${id} was not found.`,
-  'bind.alreadyBound': ({ id, title }) => `This channel is already bound to session ${id} (${title}). Binding refreshed.`,
+  'bind.alreadyBound': ({ id, title }) =>
+    `This channel is already bound to session ${id} (${title}). Binding refreshed.`,
   'bind.success': ({ id, title }) => `This channel is now bound to session ${id} (${title}).`,
-  'bind.replaced': ({ previousId }) => `The previously bound session ${previousId} has been detached from this channel.`,
+  'bind.replaced': ({ previousId }) =>
+    `The previously bound session ${previousId} has been detached from this channel.`,
   'bind.transferred': ({ channelType, sessionType, channelId }) =>
     `The target session was previously bound to ${channelType}/${sessionType}/${channelId} and has been moved here.`,
   'bind.followUp': 'Send the next message in this channel to continue that session.',
@@ -189,7 +196,7 @@ defineMessages('en', {
 const formatList = (ctx: ChannelContext, items: string[] | undefined) =>
   items != null && items.length > 0 ? items.join('、') : ctx.t('label.none')
 
-const SESSION_SEARCH_LIMIT = 8
+const SESSION_SEARCH_PAGE_SIZE = 8
 
 const PERMISSION_MODE_CHOICES = [
   {
@@ -353,40 +360,136 @@ const formatSearchBinding = (
   })
 }
 
-export const sessionCommands = () => [
+interface SessionSearchRequest {
+  page: number
+  query: string
+}
+
+interface SessionSearchPage {
+  text: string
+  followUps: Array<{ content: string }>
+}
+
+const parseSessionSearchRequest = (rawArgs: readonly string[]): SessionSearchRequest => {
+  let page = 1
+  const queryTokens: string[] = []
+
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const token = rawArgs[index]
+    if (token.startsWith('--page=')) {
+      const parsedPage = Number.parseInt(token.slice('--page='.length), 10)
+      if (Number.isFinite(parsedPage) && parsedPage > 0) {
+        page = parsedPage
+      }
+      continue
+    }
+
+    if (token === '--page') {
+      const nextToken = rawArgs[index + 1]
+      const parsedPage = nextToken == null ? Number.NaN : Number.parseInt(nextToken, 10)
+      if (Number.isFinite(parsedPage) && parsedPage > 0) {
+        page = parsedPage
+        index += 1
+      }
+      continue
+    }
+
+    if (token.startsWith('--query=')) {
+      queryTokens.push(decodeURIComponent(token.slice('--query='.length)))
+      continue
+    }
+
+    queryTokens.push(token)
+  }
+
+  return {
+    page,
+    query: queryTokens.join(' ').trim()
+  }
+}
+
+const createSessionSearchPageCommand = (prefix: string, page: number, query: string) => {
+  const parts = query === '' ? [`${prefix}session`, 'list'] : [`${prefix}session`, 'search']
+  parts.push(`--page=${page}`)
+  if (query !== '') {
+    parts.push(`--query=${encodeURIComponent(query)}`)
+  }
+  return parts.join(' ')
+}
+
+const canUseSearchFollowUps = (ctx: ChannelContext) =>
+  ctx.inbound.channelType === 'lark' && ctx.inbound.sessionType === 'direct'
+
+const paginateSessionSearchResults = (
+  ctx: ChannelContext,
+  results: ReturnType<ChannelContext['searchSessions']>,
+  request: SessionSearchRequest,
+  prefix: string
+): SessionSearchPage => {
+  const totalPages = Math.max(1, Math.ceil(results.length / SESSION_SEARCH_PAGE_SIZE))
+  const currentPage = Math.min(Math.max(request.page, 1), totalPages)
+  const startIndex = (currentPage - 1) * SESSION_SEARCH_PAGE_SIZE
+  const displayed = results.slice(startIndex, startIndex + SESSION_SEARCH_PAGE_SIZE)
+
+  const lines = [
+    request.query === ''
+      ? ctx.t('session.search.listHeader', { count: results.length })
+      : ctx.t('session.search.header', { count: results.length, query: request.query }),
+    ctx.t('session.search.page', { current: currentPage, total: totalPages }),
+    ...displayed.map((result, index) =>
+      ctx.t('session.search.item', {
+        index: startIndex + index + 1,
+        id: result.session.id,
+        title: result.session.title ?? ctx.t('label.unnamed'),
+        status: result.session.status ?? 'unknown',
+        count: result.session.messageCount ?? 0,
+        model: result.session.model ?? ctx.t('label.notSet'),
+        binding: formatSearchBinding(ctx, result.binding)
+      })
+    )
+  ]
+
+  const followUps = [] as Array<{ content: string }>
+  if (totalPages > 1 && currentPage > 1) {
+    followUps.push({ content: createSessionSearchPageCommand(prefix, currentPage - 1, request.query) })
+  }
+  if (totalPages > 1 && currentPage < totalPages) {
+    followUps.push({ content: createSessionSearchPageCommand(prefix, currentPage + 1, request.query) })
+  }
+
+  return {
+    text: lines.join('\n'),
+    followUps
+  }
+}
+
+export const sessionCommands = (getPrefix: (ctx: ChannelContext) => string = () => '/') => [
   command<ChannelContext>('session')
     .alias('status')
     .description('cmd.session.description')
     .subcommand(
       command<ChannelContext>('search')
-        .alias('find')
+        .alias('find', 'list')
         .description('cmd.session.search.description')
         .adminOnly()
-        .argument(restArg('query'))
-        .action(async ({ ctx, args: [query] }) => {
-          const results = ctx.searchSessions(query as string)
+        .argument(variadicArg('query'))
+        .action(async ({ ctx, rawArgs }) => {
+          const request = parseSessionSearchRequest(rawArgs)
+          const results = ctx.searchSessions(request.query)
           if (results.length === 0) {
-            await ctx.reply(ctx.t('session.search.noResults', { query }))
+            await ctx.reply(
+              request.query === ''
+                ? ctx.t('session.search.empty')
+                : ctx.t('session.search.noResults', { query: request.query })
+            )
             return
           }
 
-          const displayed = results.slice(0, SESSION_SEARCH_LIMIT)
-          const lines = [
-            ctx.t('session.search.header', { count: results.length, query }),
-            ...displayed.map((result, index) => ctx.t('session.search.item', {
-              index: index + 1,
-              id: result.session.id,
-              title: result.session.title ?? ctx.t('label.unnamed'),
-              status: result.session.status ?? 'unknown',
-              count: result.session.messageCount ?? 0,
-              model: result.session.model ?? ctx.t('label.notSet'),
-              binding: formatSearchBinding(ctx, result.binding)
-            }))
-          ]
-          if (results.length > displayed.length) {
-            lines.push(ctx.t('session.search.more', { remaining: results.length - displayed.length }))
+          const searchPage = paginateSessionSearchResults(ctx, results, request, getPrefix(ctx))
+          const replyResult = await ctx.reply(searchPage.text)
+          if (canUseSearchFollowUps(ctx) && searchPage.followUps.length > 0) {
+            await ctx.pushFollowUps({ messageId: replyResult?.messageId, followUps: searchPage.followUps })
           }
-          await ctx.reply(lines.join('\n'))
         })
     )
     .subcommand(

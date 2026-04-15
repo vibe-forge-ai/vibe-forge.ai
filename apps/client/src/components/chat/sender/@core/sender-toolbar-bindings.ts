@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import type { SessionQueuedMessageMode } from '@vibe-forge/core'
+
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -33,8 +35,10 @@ export const createSenderToolbarBindings = ({
     onModelChange?: (model: string) => void
     onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
     onPermissionModeChange?: (mode: PermissionMode) => void
+    onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
     onCancel?: () => void
-    onSend: () => void
+    onConfirmInteractionOption?: () => void
+    onSend: (mode?: SessionQueuedMessageMode) => void
   }
   composer: { input: string; pendingImageCount: number; pendingFileCount: number }
   resources: { message: { warning: (content: ReactNode) => unknown }; t: (key: string) => string }
@@ -46,6 +50,8 @@ export const createSenderToolbarBindings = ({
     modelSearchOptions?: ModelSelectOption[]
     permissionMode: PermissionMode
     permissionModeOptions: SenderToolbarData['permissionModeOptions']
+    queueMode: SessionQueuedMessageMode
+    queuedMessageShortcuts: Pick<SenderToolbarData['composerControlShortcuts'], 'queueNext' | 'queueSteer'>
     recommendedModelOptions?: ModelSelectOption[]
     servicePreviewModelOptions?: ModelSelectOption[]
     resolvedSendShortcut: string
@@ -56,11 +62,17 @@ export const createSenderToolbarBindings = ({
   ui: {
     adapterLocked: boolean
     canOpenReferenceActions: boolean
-    composerControlShortcuts: SenderToolbarData['composerControlShortcuts']
+    composerControlShortcuts: Pick<
+      SenderToolbarData['composerControlShortcuts'],
+      'switchEffort' | 'switchModel' | 'switchPermissionMode'
+    >
     focusRestore: { queueEditorFocusRestore: () => void }
     isInlineEdit: boolean
     isMac: boolean
     isThinking: boolean
+    sendBlocked: boolean
+    sendBlockedTooltip?: string
+    showConfirmInteractionAction: boolean
     modelUnavailable?: boolean
     referenceActions: {
       showReferenceActions: boolean
@@ -85,6 +97,7 @@ export const createSenderToolbarBindings = ({
       openEffortSelector: () => boolean
     }
     submitLabel?: string
+    confirmInteractionLabel?: string
     submitLoading: boolean
     supportsEffort: boolean
   }
@@ -93,6 +106,9 @@ export const createSenderToolbarBindings = ({
     isInlineEdit: ui.isInlineEdit,
     isThinking: ui.isThinking,
     modelUnavailable: Boolean(ui.modelUnavailable),
+    sendBlocked: ui.sendBlocked,
+    sendBlockedTooltip: ui.sendBlockedTooltip,
+    showConfirmInteractionAction: ui.showConfirmInteractionAction,
     adapterLocked: ui.adapterLocked,
     submitLoading: ui.submitLoading,
     supportsEffort: ui.supportsEffort,
@@ -108,6 +124,8 @@ export const createSenderToolbarBindings = ({
     selectedAdapter: selection.selectedAdapter,
     isMac: ui.isMac,
     resolvedSendShortcut: selection.resolvedSendShortcut,
+    queueMode: selection.queueMode,
+    showQueueModeControl: ui.isThinking && !ui.isInlineEdit,
     hasComposerContent: composer.input.trim() !== '' || composer.pendingImageCount > 0 || composer.pendingFileCount > 0,
     hasSendText: composer.input.trim() !== ''
   }
@@ -121,8 +139,12 @@ export const createSenderToolbarBindings = ({
     effortOptions: selection.effortOptions,
     permissionModeOptions: selection.permissionModeOptions,
     adapterOptions: selection.adapterOptions,
-    composerControlShortcuts: ui.composerControlShortcuts,
-    submitLabel: ui.submitLabel
+    composerControlShortcuts: {
+      ...ui.composerControlShortcuts,
+      ...selection.queuedMessageShortcuts
+    },
+    submitLabel: ui.submitLabel,
+    confirmInteractionLabel: ui.confirmInteractionLabel
   }
 
   const toolbarRefs: SenderToolbarRefs = {
@@ -144,7 +166,9 @@ export const createSenderToolbarBindings = ({
     onModelChange: callbacks.onModelChange,
     onToggleRecommendedModel: callbacks.onToggleRecommendedModel,
     onPermissionModeChange: callbacks.onPermissionModeChange,
+    onQueueModeChange: callbacks.onQueueModeChange,
     onCancel: callbacks.onCancel,
+    onConfirmInteractionOption: callbacks.onConfirmInteractionOption,
     onSend: callbacks.onSend,
     referenceActions: ui.referenceActions,
     selectOverlays: ui.selectOverlays,

@@ -25,6 +25,7 @@ const exists = async (target: string) => {
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  delete process.env.__VF_PROJECT_AI_BASE_DIR__
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { force: true, recursive: true })))
 })
 
@@ -75,6 +76,25 @@ describe('clear command', () => {
     expect(await exists(path.join(cwd, '.ai/.mock/.claude-code-router/.claude-code-router.pid'))).toBe(true)
     expect(await exists(path.join(cwd, '.ai/.mock/.claude-code-router/config.json'))).toBe(true)
     expect(await exists(path.join(cwd, '.ai/.mock/.claude-code-router/plugins/plugin.js'))).toBe(true)
-    expect(logSpy).toHaveBeenCalledWith('Clear logs and cache successfully')
+    expect(logSpy).toHaveBeenCalledWith('Clear logs and cache successfully (.ai)')
+  })
+
+  it('clears files under the env-configured ai base dir', async () => {
+    const cwd = await createTempDir()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
+
+    await fs.mkdir(path.join(cwd, '.vf/logs'), { recursive: true })
+    await fs.mkdir(path.join(cwd, '.vf/caches'), { recursive: true })
+    await fs.writeFile(path.join(cwd, '.vf/logs/session.log'), 'session log')
+    await fs.writeFile(path.join(cwd, '.vf/caches/cache.json'), '{"ok":true}')
+
+    await runClearCommand({ cwd })
+
+    expect(await exists(path.join(cwd, '.vf/logs/session.log'))).toBe(false)
+    expect(await exists(path.join(cwd, '.vf/caches/cache.json'))).toBe(false)
+    expect(await exists(path.join(cwd, '.vf/logs/.gitkeep'))).toBe(true)
+    expect(await exists(path.join(cwd, '.vf/caches/.gitkeep'))).toBe(true)
+    expect(logSpy).toHaveBeenCalledWith('Clear logs and cache successfully (.vf)')
   })
 })

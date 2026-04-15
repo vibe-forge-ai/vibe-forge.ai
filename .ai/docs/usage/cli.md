@@ -1,6 +1,6 @@
 # CLI 与示例
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## 常用命令
 
@@ -17,6 +17,20 @@
 - `vf clear`：清理本地日志与缓存
 - `vf stop <sessionId>`：优雅停止正在运行的 CLI 会话
 - `vf kill <sessionId>`：强制终止正在运行的 CLI 会话
+
+## 内建 Skills
+
+`@vibe-forge/cli` 会默认注入 companion 插件 `@vibe-forge/plugin-cli-skills`，可直接通过 `--include-skill` 使用：
+
+- `vf-cli-quickstart`：介绍 `vf run`、`vf list`、`vf --resume`、`vf stop`、`vf kill` 等常用命令。
+- `vf-cli-print-mode`：介绍 `--print`、`--input-format`、权限请求、继续会话和 `submit_input` 的写法。
+
+示例：
+
+```bash
+npx vf run --include-skill vf-cli-quickstart "介绍一下 vf CLI 怎么恢复一个会话"
+npx vf run --include-skill vf-cli-print-mode --print "告诉我 print 模式怎么处理权限请求"
+```
 
 ## 参考示例
 

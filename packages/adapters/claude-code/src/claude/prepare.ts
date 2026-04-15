@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
+import process from 'node:process'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
 import { resolveClaudeCliPath } from '../ccr/paths'
@@ -35,14 +37,7 @@ interface PreparedClaudeExecution {
 }
 
 const resolveCCRRequestLogContextPath = (cwd: string, sessionId: string) =>
-  join(
-    cwd,
-    '.ai',
-    '.mock',
-    '.claude-code-router',
-    'request-log-context',
-    `${sessionId}.json`
-  )
+  resolveProjectAiPath(cwd, process.env, '.mock', '.claude-code-router', 'request-log-context', `${sessionId}.json`)
 
 const persistCCRRequestLogContext = async (params: {
   cwd: string
@@ -164,7 +159,7 @@ export const prepareClaudeExecution = async (
       ...(config?.defaultExcludeMcpServers ?? []),
       ...(userConfig?.defaultExcludeMcpServers ?? [])
     ],
-    plansDirectory: './.ai/works',
+    plansDirectory: resolveProjectAiPath(cwd, env, 'works'),
     env: {
       ...(config?.env ?? {}),
       ...(userConfig?.env ?? {}),
