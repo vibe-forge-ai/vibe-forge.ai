@@ -1,6 +1,8 @@
 import type { ChatMessageContent } from '@vibe-forge/core'
 
-import type { CliInputControlEvent } from './types'
+import type { CliInputControlEvent, RunInputFormat } from './types'
+
+export const supportsPrintInteractionResponses = (format: RunInputFormat | undefined) => format === 'stream-json'
 
 const isChatTextContent = (value: unknown): value is Extract<ChatMessageContent, { type: 'text' }> => (
   value != null &&

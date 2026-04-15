@@ -318,4 +318,78 @@ describe('taskManager fatal error scenarios', () => {
     })
     expect(mocks.writeFile).toHaveBeenCalled()
   })
+
+  it('stops blocked tasks even after the failed session has already exited', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      const session = {
+        emit: vi.fn(() => {
+          adapterOptions.onEvent({
+            type: 'message',
+            data: {
+              id: 'assistant-tool-use-stop',
+              role: 'assistant',
+              content: [{
+                type: 'tool_use',
+                id: 'tool-use-stop-1',
+                name: 'adapter:claude-code:Write',
+                input: {
+                  file_path: '/tmp/demo.txt',
+                  content: 'blocked'
+                }
+              }],
+              createdAt: Date.now()
+            }
+          })
+          adapterOptions.onEvent({
+            type: 'error',
+            data: {
+              message: 'Permission required to continue',
+              code: 'permission_required',
+              details: {
+                toolUseId: 'tool-use-stop-1',
+                permissionDenials: [{
+                  message: 'Write requires approval',
+                  deniedTools: []
+                }]
+              },
+              fatal: true
+            }
+          })
+          adapterOptions.onEvent({
+            type: 'exit',
+            data: {
+              exitCode: 1,
+              stderr: 'permission blocked'
+            }
+          })
+        }),
+        kill: vi.fn()
+      }
+      return {
+        session,
+        resolvedAdapter: 'claude-code'
+      }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-stop-waiting',
+      description: 'trigger',
+      adapter: 'claude-code'
+    })
+
+    const waitingTask = managedTaskManager.getTask('task-stop-waiting')
+    expect(waitingTask?.status).toBe('waiting_input')
+    expect(waitingTask?.session).toBeUndefined()
+    expect(waitingTask?.pendingInteraction).toBeDefined()
+
+    expect(managedTaskManager.stopTask('task-stop-waiting')).toBe(true)
+
+    const stoppedTask = managedTaskManager.getTask('task-stop-waiting')
+    expect(stoppedTask?.status).toBe('failed')
+    expect(stoppedTask?.pendingInteraction).toBeUndefined()
+    expect(stoppedTask?.logs).toContain('Task stopped by user')
+  })
 })

@@ -666,8 +666,9 @@ export class TaskManager {
 
   public stopTask(taskId: string): boolean {
     const task = this.tasks.get(taskId)
-    if (task && task.session) {
-      task.session.kill()
+    if (task && (task.session != null || task.pendingInteraction != null || task.status === 'waiting_input')) {
+      task.session?.kill()
+      task.session = undefined
       task.pendingInteraction = undefined
       appendTaskLog(task, 'Task stopped by user')
       task.status = 'failed' // or 'stopped' if we had that status

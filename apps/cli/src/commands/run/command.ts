@@ -27,6 +27,7 @@ import {
 } from '#~/session-permission-cache.js'
 import { extraOptions } from '../@core/extra-options'
 import { attachInputBridge } from './input-bridge'
+import { supportsPrintInteractionResponses } from './input-control'
 import { readCliPermissionDecision } from './input-decision'
 import {
   getDisallowedResumeFlags,
@@ -37,6 +38,11 @@ import {
   resolveRunMode
 } from './options'
 import { getAdapterInteractionMessage, handlePrintEvent, shouldPrintResumeHint } from './output'
+import {
+  isTerminalPermissionDecision,
+  shouldApplyPermissionDecision,
+  shouldClearPermissionRecoveryCache
+} from './permission-decision'
 import {
   PERMISSION_DECISION_CANCEL,
   PERMISSION_RECOVERY_CONTINUE_PROMPT,
@@ -97,7 +103,7 @@ Notes:
   When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
-  In print mode with --input-format, reply to permission/input prompts by sending {"type":"submit_input","data":"allow_once"}.
+  In print mode, live permission/input replies require --input-format stream-json, then send {"type":"submit_input","data":"allow_once"}.
 `
     )
     .action(async (descriptionArgs: string[], opts: RunOptions, currentCommand: Command) => {
@@ -163,6 +169,7 @@ Notes:
           cachedSession?.resume?.adapterOptions.mode ?? 'direct'
         )
         const shouldPrintOutput = resumeMode === 'stream'
+        const supportsPrintInteractionInput = supportsPrintInteractionResponses(opts.inputFormat)
         const pendingPermissionRecovery = await readCliSessionPermissionRecovery(cwd, ctxId, sessionId)
 
         if (isResume && pendingPermissionRecovery != null) {
@@ -203,12 +210,11 @@ Notes:
             throw new TypeError('Permission recovery requires a decision like allow_once or deny_project.')
           }
 
-          await clearCliSessionPermissionRecovery(cwd, ctxId, sessionId)
           if (decision === PERMISSION_DECISION_CANCEL) {
             console.error('Permission recovery cancelled. Session was not resumed.')
             process.exit(1)
           }
-          if (decision !== 'deny_once') {
+          if (shouldApplyPermissionDecision(decision)) {
             await applyCliPermissionDecision({
               cwd,
               sessionId,
@@ -217,7 +223,10 @@ Notes:
               action: decision
             })
           }
-          if (decision === 'deny_once' || decision === 'deny_session' || decision === 'deny_project') {
+          if (shouldClearPermissionRecoveryCache(decision)) {
+            await clearCliSessionPermissionRecovery(cwd, ctxId, sessionId)
+          }
+          if (isTerminalPermissionDecision(decision)) {
             console.error(`Permission decision applied: ${decision}. Session was not resumed.`)
             process.exit(1)
           }
@@ -488,6 +497,11 @@ Notes:
             }
             if (event.type === 'interaction_request') {
               pendingInteraction = event.data
+              if (shouldPrintOutput && opts.inputFormat != null && !supportsPrintInteractionInput) {
+                console.error(
+                  'Print-mode interaction responses require --input-format stream-json. Exiting after printing the request.'
+                )
+              }
             }
             if (
               event.type === 'stop' ||
@@ -503,7 +517,7 @@ Notes:
                 lastAssistantText,
                 didExitAfterError,
                 exitOnInteractionRequest: event.type === 'interaction_request' && (
-                  opts.inputFormat == null || inputClosed
+                  !supportsPrintInteractionInput || inputClosed
                 ),
                 stopExitsStreamJson: outputFormat === 'stream-json' && opts.inputFormat != null && inputClosed,
                 log: (message) => console.log(message),

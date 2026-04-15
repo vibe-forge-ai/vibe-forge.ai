@@ -7,8 +7,15 @@ import { resolvePermissionMirrorPath } from '@vibe-forge/utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getAdapterInteractionMessage, handlePrintEvent, parseCliInputControlEvent } from '#~/commands/run.js'
+import { supportsPrintInteractionResponses } from '#~/commands/run/input-control.js'
 import { readCliPermissionDecision } from '#~/commands/run/input-decision.js'
 import {
+  isTerminalPermissionDecision,
+  shouldApplyPermissionDecision,
+  shouldClearPermissionRecoveryCache
+} from '#~/commands/run/permission-decision.js'
+import {
+  PERMISSION_DECISION_CANCEL,
   buildPermissionRecoveryRecord,
   extractPermissionErrorContext,
   rememberPermissionToolUses
@@ -52,6 +59,13 @@ describe('run command interaction handling', () => {
     expect(() => parseCliInputControlEvent({ type: 'submit_input' })).toThrow(
       'Submit input requires a non-empty string or string array in "data" or "response".'
     )
+  })
+
+  it('only treats stream-json as a live print interaction input channel', () => {
+    expect(supportsPrintInteractionResponses(undefined)).toBe(false)
+    expect(supportsPrintInteractionResponses('text')).toBe(false)
+    expect(supportsPrintInteractionResponses('json')).toBe(false)
+    expect(supportsPrintInteractionResponses('stream-json')).toBe(true)
   })
 
   it('prints interaction requests and exits text mode when no input channel is available', () => {
@@ -170,6 +184,15 @@ describe('run command interaction handling', () => {
     stdin.end('{"type":"submit_input","data":"allow_once"}\n')
 
     await expect(decisionPromise).resolves.toBe('allow_once')
+  })
+
+  it('keeps pending recovery cache on cancel but clears it for terminal decisions', () => {
+    expect(shouldApplyPermissionDecision('allow_session')).toBe(true)
+    expect(shouldApplyPermissionDecision('deny_once')).toBe(false)
+    expect(shouldClearPermissionRecoveryCache(PERMISSION_DECISION_CANCEL)).toBe(false)
+    expect(shouldClearPermissionRecoveryCache('deny_once')).toBe(true)
+    expect(isTerminalPermissionDecision('deny_project')).toBe(true)
+    expect(isTerminalPermissionDecision('allow_once')).toBe(false)
   })
 
   it('writes onceAllow decisions into the claude permission mirror', async () => {
