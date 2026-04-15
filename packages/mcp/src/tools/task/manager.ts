@@ -37,7 +37,7 @@ interface ServerSyncState {
   poller?: NodeJS.Timeout
 }
 
-interface PendingTaskInteraction {
+export interface PendingTaskInteraction {
   id: string
   payload: AskUserQuestionParams
   source: 'adapter' | 'permission_recovery'
