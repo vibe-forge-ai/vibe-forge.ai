@@ -22,12 +22,18 @@ import { buildConfigJsonVariables, loadConfigState } from './load'
 
 type AdapterConfigContribution = import('@vibe-forge/core/config-schema').AdapterConfigContribution
 
+interface ResolvedAdapterSchemaEntry {
+  configKey: string
+  contribution: AdapterConfigContribution
+  isAlias: boolean
+}
+
 export interface ConfigSchemaBundle {
   fileSchema: z.ZodTypeAny
   sectionSchemas: Record<string, z.ZodTypeAny>
   jsonSchema: ConfigJsonSchema
   uiSchema: ConfigUiSchema
-  adapterContributions: readonly AdapterConfigContribution[]
+  adapterEntries: readonly ResolvedAdapterSchemaEntry[]
   channelDefinitions: readonly ChannelDescriptor[]
   extensions: {
     adapters: string[]
@@ -307,16 +313,37 @@ const composeAdapterEntryValidationSchema = (contribution: AdapterConfigContribu
   composeAdapterEntrySchema(contribution).merge(legacyAdapterConfigAliasSchema)
 )
 
-const dedupeAdapterContributions = (contributions: readonly AdapterConfigContribution[]) => Array.from(
-  new Map(contributions.map(contribution => [contribution.adapterKey, contribution])).values()
+const resolveAdapterSchemaEntry = (
+  configKey: string,
+  contribution: AdapterConfigContribution
+): ResolvedAdapterSchemaEntry => ({
+  configKey,
+  contribution,
+  isAlias: configKey !== contribution.adapterKey
+})
+
+const dedupeResolvedAdapterSchemaEntries = (entries: readonly ResolvedAdapterSchemaEntry[]) => Array.from(
+  new Map(entries.map(entry => [entry.configKey, entry])).values()
 )
 
-const createAdaptersSectionSchema = (contributions: readonly AdapterConfigContribution[]) => (
+const getPreferredAdapterEntries = (entries: readonly ResolvedAdapterSchemaEntry[]) => (
+  Array.from(
+    new Map(entries.map(entry => [entry.contribution.adapterKey, entry])).values()
+  ).map((entry) => {
+    const exactEntry = entries.find(candidate => (
+      candidate.contribution.adapterKey === entry.contribution.adapterKey &&
+      candidate.isAlias === false
+    ))
+    return exactEntry ?? entry
+  })
+)
+
+const createAdaptersSectionSchema = (entries: readonly ResolvedAdapterSchemaEntry[]) => (
   z.object(
     Object.fromEntries(
-      contributions.map(contribution => [
-        contribution.adapterKey,
-        composeAdapterEntryValidationSchema(contribution).optional()
+      entries.map(entry => [
+        entry.configKey,
+        composeAdapterEntryValidationSchema(entry.contribution).optional()
       ])
     )
   ).catchall(baseAdapterEntrySchema)
@@ -477,7 +504,7 @@ const createFileSchema = (
 )
 
 const createUiSchema = (
-  adapterContributions: readonly AdapterConfigContribution[],
+  adapterEntries: readonly ResolvedAdapterSchemaEntry[],
   channelDefinitions: readonly ChannelDescriptor[]
 ): ConfigUiSchema => ({
   version: 1,
@@ -489,15 +516,15 @@ const createUiSchema = (
       recordMap: {
         mode: 'keyed',
         keyPlaceholder: 'Adapter key',
-        entryKinds: adapterContributions.map(contribution => ({
-          key: contribution.adapterKey,
-          label: contribution.title,
-          description: contribution.description
+        entryKinds: getPreferredAdapterEntries(adapterEntries).map(entry => ({
+          key: entry.configKey,
+          label: entry.contribution.title,
+          description: entry.contribution.description
         })),
         schemas: Object.fromEntries(
-          adapterContributions.map(contribution => [
-            contribution.adapterKey,
-            contribution.uiSchema ?? buildConfigUiObjectSchema(composeAdapterEntrySchema(contribution))
+          adapterEntries.map(entry => [
+            entry.configKey,
+            entry.contribution.uiSchema ?? buildConfigUiObjectSchema(composeAdapterEntrySchema(entry.contribution))
           ])
         ),
         unknownSchema: buildConfigUiObjectSchema(baseAdapterEntrySchema),
@@ -566,10 +593,10 @@ const createChannelsSectionJsonSchema = (
 
 const createBundle = (
   schemaId: string,
-  adapterContributions: readonly AdapterConfigContribution[],
+  adapterEntries: readonly ResolvedAdapterSchemaEntry[],
   channelDefinitions: readonly ChannelDescriptor[]
 ): ConfigSchemaBundle => {
-  const adaptersSectionSchema = createAdaptersSectionSchema(adapterContributions)
+  const adaptersSectionSchema = createAdaptersSectionSchema(adapterEntries)
   const channelsSectionSchema = createChannelsSectionSchema(channelDefinitions)
   const fileSchema = createFileSchema(adaptersSectionSchema, channelsSectionSchema)
   const sectionSchemas = {
@@ -599,11 +626,11 @@ const createBundle = (
     fileSchema,
     sectionSchemas,
     jsonSchema,
-    uiSchema: createUiSchema(adapterContributions, channelDefinitions),
-    adapterContributions,
+    uiSchema: createUiSchema(adapterEntries, channelDefinitions),
+    adapterEntries,
     channelDefinitions,
     extensions: {
-      adapters: adapterContributions.map(contribution => contribution.adapterKey),
+      adapters: getPreferredAdapterEntries(adapterEntries).map(entry => entry.configKey),
       channels: channelDefinitions.map(definition => definition.type)
     }
   }
@@ -951,19 +978,19 @@ const loadChannelDefinition = async (
 
 const runAdapterValidators = (
   adapters: unknown,
-  contributions: readonly AdapterConfigContribution[]
+  entries: readonly ResolvedAdapterSchemaEntry[]
 ) => {
   if (adapters == null || typeof adapters !== 'object') return []
 
   const adapterRecord = adapters as Record<string, unknown>
-  return contributions.flatMap((contribution) => {
-    const validator = contribution.validate
+  return entries.flatMap((entry) => {
+    const validator = entry.contribution.validate
     if (validator == null) return []
 
-    const value = adapterRecord[contribution.adapterKey]
+    const value = adapterRecord[entry.configKey]
     if (value == null) return []
 
-    const parsed = contribution.schema.safeParse(value)
+    const parsed = entry.contribution.schema.safeParse(value)
     if (!parsed.success) return []
 
     return [...(validator(parsed.data) ?? [])]
@@ -972,18 +999,18 @@ const runAdapterValidators = (
 
 const runKnownAdapterStrictValidators = (
   adapters: unknown,
-  contributions: readonly AdapterConfigContribution[]
+  entries: readonly ResolvedAdapterSchemaEntry[]
 ) => {
   if (adapters == null || typeof adapters !== 'object') return []
 
   const adapterRecord = adapters as Record<string, unknown>
-  return contributions.flatMap((contribution) => {
-    const value = adapterRecord[contribution.adapterKey]
+  return entries.flatMap((entry) => {
+    const value = adapterRecord[entry.configKey]
     if (value == null) return []
     return collectKnownSchemaUnknownKeyIssues(
-      composeAdapterEntryValidationSchema(contribution),
+      composeAdapterEntryValidationSchema(entry.contribution),
       value,
-      [contribution.adapterKey]
+      [entry.configKey]
     )
   })
 }
@@ -1016,9 +1043,12 @@ export const composeWorkspaceConfigSchemaBundle = async (
     ...Array.from(packageNames).filter(isChannelPackageName).map(channelPackageNameToType)
   ])
 
-  const adapterContributions = dedupeAdapterContributions((
-    await Promise.all(Array.from(adapterSpecifiers).map(async specifier => await loadAdapterContribution(specifier, options.cwd)))
-  ).filter((contribution): contribution is AdapterConfigContribution => contribution != null))
+  const adapterEntries = dedupeResolvedAdapterSchemaEntries((
+    await Promise.all(Array.from(adapterSpecifiers).map(async (specifier) => {
+      const contribution = await loadAdapterContribution(specifier, options.cwd)
+      return contribution == null ? undefined : resolveAdapterSchemaEntry(specifier, contribution)
+    }))
+  ).filter((entry): entry is ResolvedAdapterSchemaEntry => entry != null))
 
   const channelDefinitions = (
     await Promise.all(Array.from(channelSpecifiers).map(async specifier => await loadChannelDefinition(specifier, options.cwd)))
@@ -1026,7 +1056,7 @@ export const composeWorkspaceConfigSchemaBundle = async (
 
   return createBundle(
     `file://${resolve(options.cwd, WORKSPACE_SCHEMA_RELATIVE_PATH)}`,
-    adapterContributions,
+    adapterEntries,
     channelDefinitions
   )
 }
@@ -1046,8 +1076,8 @@ export const validateConfigFileObject = async (
 
   const normalizedConfig = parsed.data as Config
   const issues = [
-    ...runAdapterValidators(normalizedConfig.adapters, bundle.adapterContributions),
-    ...runKnownAdapterStrictValidators((value as Config | undefined)?.adapters, bundle.adapterContributions)
+    ...runAdapterValidators(normalizedConfig.adapters, bundle.adapterEntries),
+    ...runKnownAdapterStrictValidators((value as Config | undefined)?.adapters, bundle.adapterEntries)
   ]
 
   if (issues.length === 0) {
@@ -1097,8 +1127,8 @@ export const validateConfigSection = async (
   }
 
   const issues = [
-    ...runAdapterValidators(parsed.data, bundle.adapterContributions),
-    ...runKnownAdapterStrictValidators(value, bundle.adapterContributions)
+    ...runAdapterValidators(parsed.data, bundle.adapterEntries),
+    ...runKnownAdapterStrictValidators(value, bundle.adapterEntries)
   ]
 
   if (issues.length === 0) {

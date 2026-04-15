@@ -187,6 +187,50 @@ describe('config schema bundle', () => {
     }
   })
 
+  it('treats configured built-in adapter aliases as known schema entries', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-schema-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, 'package.json'),
+        JSON.stringify({
+          name: 'schema-test-workspace',
+          private: true,
+          dependencies: {
+            '@vibe-forge/adapter-claude-code': 'workspace:*'
+          }
+        }, null, 2)
+      )
+      await writeFile(
+        path.join(tempDir, '.ai.config.json'),
+        JSON.stringify({
+          adapters: {
+            claude: {
+              effort: 'medium'
+            }
+          }
+        }, null, 2)
+      )
+
+      const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
+      const adapterFields = bundle.uiSchema.sections.adapters.recordMap.schemas.claude?.fields ?? []
+      const entryKinds = bundle.uiSchema.sections.adapters.recordMap.entryKinds ?? []
+      const parsed = await validateConfigSection('adapters', {
+        claude: {
+          customFlag: true
+        }
+      }, { cwd: tempDir })
+
+      expect(bundle.extensions.adapters).toContain('claude-code')
+      expect(adapterFields.map(field => field.path.join('.'))).toContain('effort')
+      expect(entryKinds.map(entry => entry.key)).toContain('claude-code')
+      expect(entryKinds.map(entry => entry.key)).not.toContain('claude')
+      expect(parsed.success).toBe(false)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
   it('rejects malformed known channels while keeping unknown channel types permissive', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-schema-'))
 
