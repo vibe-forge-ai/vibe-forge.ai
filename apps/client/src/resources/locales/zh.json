@@ -290,8 +290,8 @@
       "desc": "管理项目内的角色、组件或领域实体。",
       "empty": "暂未发现实体。",
       "create": "新建实体",
-      "createHint": "请在 .ai/entities 中创建实体定义文件，保存后刷新页面。",
-      "importHint": "请将实体文件导入至 .ai/entities，保存后刷新页面。"
+      "createHint": "请创建实体定义文件，保存后刷新页面。",
+      "importHint": "请导入实体定义文件，保存后刷新页面。"
     },
     "flows": {
       "title": "流程库",
@@ -596,9 +596,9 @@
       },
       "entities": {
         "title": "已有实体",
-        "empty": "暂未发现实体，放入 .ai/entities 即可展示。",
+        "empty": "暂未发现实体，加入实体定义文件后即可展示。",
         "create": "快速创建实体",
-        "createToast": "请在 .ai/entities 下创建实体定义文件，保存后刷新页面。"
+        "createToast": "请创建实体定义文件，保存后刷新页面。"
       },
       "help": {
         "title": "一些帮助",

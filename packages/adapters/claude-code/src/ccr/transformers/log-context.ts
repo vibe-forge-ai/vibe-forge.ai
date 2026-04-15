@@ -4,20 +4,13 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { formatLoggerEntry } from '@vibe-forge/utils'
+import { formatLoggerEntry, resolveProjectAiPath } from '@vibe-forge/utils'
 
 const CLAUDE_CODE_SESSION_HEADER = 'x-claude-code-session-id'
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 const resolveCCRRequestLogContextPath = (workspace, sessionId) =>
-  path.join(
-    workspace,
-    '.ai',
-    '.mock',
-    '.claude-code-router',
-    'request-log-context',
-    `${sessionId}.json`
-  )
+  resolveProjectAiPath(workspace, process.env, '.mock', '.claude-code-router', 'request-log-context', `${sessionId}.json`)
 
 const readHeaderValue = (headers, name) => {
   if (headers == null) return undefined
@@ -136,12 +129,7 @@ const resolveRequestLogPath = (fileName, context, request) => {
   }
 
   return path.join(
-    workspace,
-    '.ai',
-    'logs',
-    ctxId,
-    sessionId,
-    'adapter-claude-code',
+    resolveProjectAiPath(workspace, process.env, 'logs', ctxId, sessionId, 'adapter-claude-code'),
     fileName
   )
 }

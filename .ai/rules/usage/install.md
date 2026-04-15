@@ -45,3 +45,39 @@ npx -y vfui-client --help
 
 - `defineConfig()` 入口：`@vibe-forge/config`
 - `Config` 类型：`@vibe-forge/types`
+
+## 数据资产目录
+
+默认情况下，项目数据资产目录位于 `./.ai/`，例如：
+
+- `./.ai/rules`
+- `./.ai/skills`
+- `./.ai/specs`
+- `./.ai/entities`
+- `./.ai/mcp`
+
+如果你希望改名或放到嵌套目录，可以在项目根 `.env` 中覆盖：
+
+```env
+__VF_PROJECT_AI_BASE_DIR__=.vf
+__VF_PROJECT_AI_ENTITIES_DIR__=agents
+```
+
+常见用法：
+
+- `__VF_PROJECT_AI_BASE_DIR__`：覆盖整个数据资产根目录，支持相对项目根的嵌套目录，也支持绝对路径
+- `__VF_PROJECT_AI_ENTITIES_DIR__`：只覆盖实体子目录，基于 AI 基目录继续解析，也支持嵌套路径
+
+例如：
+
+```env
+__VF_PROJECT_AI_BASE_DIR__=.config/vibe/ai-data
+__VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
+```
+
+最终实体目录会解析为 `./.config/vibe/ai-data/knowledge/entities`。
+
+注意：
+
+- `.ai.config.json` / `.ai.config.yaml` / `.ai.dev.config.*` 的文件名和位置不受这些环境变量影响
+- 修改 `.env` 后需要重启相关 server / CLI / adapter 进程，已有进程不会自动重载

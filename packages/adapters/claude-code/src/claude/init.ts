@@ -4,6 +4,7 @@ import process from 'node:process'
 
 import { resolveMockHome } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { ensureClaudeNativeHooksInstalled } from '../hooks/native'
 
@@ -66,7 +67,7 @@ const syncClaudeMockHomeSkills = async (ctx: Pick<AdapterCtx, 'assets' | 'cwd' |
   }
 
   await syncClaudeMockHomeSymlink({
-    sourcePath: resolve(ctx.cwd, '.ai', 'skills'),
+    sourcePath: resolveProjectAiPath(ctx.cwd, ctx.env, 'skills'),
     targetPath: resolve(resolveMockHome(ctx.cwd, ctx.env), '.claude', 'skills'),
     type: 'dir'
   })

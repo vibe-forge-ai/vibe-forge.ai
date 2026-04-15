@@ -1,8 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import process from 'node:process'
 
 import type { LogLevel, Logger } from '@vibe-forge/types'
+
+import { resolveProjectAiPath } from './ai-path'
 
 export type { Logger } from '@vibe-forge/types'
 
@@ -259,10 +262,10 @@ export const createLogger = (
   level: LogLevel = 'info'
 ): Logger => {
   const normalizedSessionId = sessionId ?? 'default'
-  const taskDir = resolve(
-    cwd,
-    `.ai${logPrefix}/logs/${taskId}`
-  )
+  const normalizedLogPrefix = logPrefix
+    .split(/[\\/]/)
+    .filter(Boolean)
+  const taskDir = resolveProjectAiPath(cwd, process.env, ...normalizedLogPrefix, 'logs', taskId)
 
   const loggerFilePath = resolve(
     taskDir,

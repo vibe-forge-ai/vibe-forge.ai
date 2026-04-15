@@ -6,7 +6,7 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import type { AdapterCtx, Config } from '@vibe-forge/types'
-import { omitAdapterCommonConfig } from '@vibe-forge/utils'
+import { omitAdapterCommonConfig, resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { generateDefaultCCRConfigJSON } from './config'
 import { resolveAdapterCliPath, resolveTransformerRuntimePreloadPath } from './paths'
@@ -47,7 +47,7 @@ const normalizePositiveInteger = (value: unknown) => (
 )
 
 const buildRouterPaths = (cwd: string) => {
-  const mockHome = resolve(cwd, '.ai/.mock')
+  const mockHome = resolveProjectAiPath(cwd, process.env, '.mock')
   const routerHome = resolve(mockHome, '.claude-code-router')
   return {
     mockHome,

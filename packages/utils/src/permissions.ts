@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { resolveProjectAiPath } from './ai-path'
 
 import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, isCanonicalVibeForgeMcpServerName } from './vibe-forge-mcp'
 
@@ -127,7 +127,7 @@ export const splitManagedPermissionKeys = (values: string[] | undefined) => {
 }
 
 export const resolvePermissionMirrorPath = (cwd: string, adapter: string, sessionId: string) => (
-  resolve(cwd, '.ai', '.mock', 'permission-state', adapter, `${sessionId}.json`)
+  resolveProjectAiPath(cwd, undefined, '.mock', 'permission-state', adapter, `${sessionId}.json`)
 )
 
 export const normalizePermissionToolName = (

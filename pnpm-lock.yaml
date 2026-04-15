@@ -415,6 +415,9 @@ importers:
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
