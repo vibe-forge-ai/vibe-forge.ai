@@ -35,7 +35,12 @@ export const prepare = async (
     __VF_PROJECT_AI_CTX_ID__: ctxId,
     __VF_PROJECT_AI_SESSION_ID__: sessionId,
     __VF_PROJECT_AI_RUN_TYPE__: adapterOptions.runtime,
-    __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: adapterOptions.runtime === 'server' ? '1' : undefined,
+    __VF_PROJECT_AI_PERMISSION_MODE__: adapterOptions.permissionMode ?? prevEnv.__VF_PROJECT_AI_PERMISSION_MODE__,
+    __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: (
+        adapterOptions.runtime === 'server' || adapterOptions.runtime === 'mcp'
+      )
+      ? '1'
+      : undefined,
     // 移除 NODE_OPTIONS 环境变量，防止干扰子进程的运行环境
     NODE_OPTIONS: undefined
   }
@@ -49,9 +54,10 @@ export const prepare = async (
 
   const jsonVariables = buildConfigJsonVariables(cwd, env)
   const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
-  const assets = await resolveWorkspaceAssetBundle({
+  const assets = adapterOptions.assetBundle ?? await resolveWorkspaceAssetBundle({
     cwd,
     configs: [config, userConfig],
+    plugins: options.plugins,
     useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
       runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
       projectConfig: config,

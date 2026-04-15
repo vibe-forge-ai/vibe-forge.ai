@@ -1,0 +1,7 @@
+{
+  "name": "@vibe-forge/plugin-cli-skills",
+  "version": "0.11.1",
+  "exports": {
+    "./package.json": "./package.json"
+  }
+}

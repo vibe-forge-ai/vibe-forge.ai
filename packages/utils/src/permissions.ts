@@ -156,6 +156,11 @@ export const normalizePermissionToolName = (
     }
   }
 
+  const adapterToolName = trimmed.match(/^adapter:[^:]+:(.+)$/)?.[1]?.trim()
+  if (adapterToolName != null && adapterToolName !== '') {
+    return normalizePermissionToolName(adapterToolName)
+  }
+
   if (trimmed.startsWith('mcp__')) {
     const parts = trimmed.split('__')
     const serverPart = parts[1]?.trim()

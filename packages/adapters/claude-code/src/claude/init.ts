@@ -28,7 +28,43 @@ const syncClaudeMockHomeSymlink = async (params: {
   await symlink(sourcePath, targetPath, type)
 }
 
-const syncClaudeMockHomeSkills = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
+const resolveClaudeManagedSkills = (ctx: Pick<AdapterCtx, 'assets'>) => {
+  const result = new Map<string, string>()
+  for (const asset of ctx.assets?.skills ?? []) {
+    const targetName = asset.displayName.replaceAll('/', '__')
+    if (targetName === '' || result.has(targetName)) continue
+    result.set(targetName, dirname(asset.sourcePath))
+  }
+  return result
+}
+
+const syncClaudeMockHomeSkillEntries = async (params: {
+  ctx: Pick<AdapterCtx, 'cwd' | 'env'>
+  skills: Map<string, string>
+}) => {
+  const targetDir = resolve(resolveMockHome(params.ctx.cwd, params.ctx.env), '.claude', 'skills')
+  await rm(targetDir, { recursive: true, force: true })
+  await mkdir(targetDir, { recursive: true })
+
+  for (const [targetName, sourcePath] of params.skills.entries()) {
+    await syncClaudeMockHomeSymlink({
+      sourcePath,
+      targetPath: resolve(targetDir, targetName),
+      type: 'dir'
+    })
+  }
+}
+
+const syncClaudeMockHomeSkills = async (ctx: Pick<AdapterCtx, 'assets' | 'cwd' | 'env'>) => {
+  const managedSkills = resolveClaudeManagedSkills(ctx)
+  if (managedSkills.size > 0) {
+    await syncClaudeMockHomeSkillEntries({
+      ctx,
+      skills: managedSkills
+    })
+    return
+  }
+
   await syncClaudeMockHomeSymlink({
     sourcePath: resolve(ctx.cwd, '.ai', 'skills'),
     targetPath: resolve(resolveMockHome(ctx.cwd, ctx.env), '.claude', 'skills'),

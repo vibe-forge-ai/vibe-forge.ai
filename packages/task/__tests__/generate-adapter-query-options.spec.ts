@@ -257,4 +257,42 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).not.toContain('<skills>\n# research')
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>\n检查风险\n</skill-content>')
   })
+
+  it('loads route skills from injected plugin packages', async () => {
+    const workspace = await createWorkspace()
+    const pluginDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-cli-skills')
+
+    await writeDocument(
+      join(pluginDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-cli-skills',
+          version: '0.11.0'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(pluginDir, 'skills', 'vf-cli-quickstart', 'SKILL.md'),
+      '---\ndescription: CLI 快速入门\n---\n先执行 vf list 再恢复会话'
+    )
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      undefined,
+      undefined,
+      workspace,
+      {
+        plugins: [
+          {
+            id: '@vibe-forge/plugin-cli-skills'
+          }
+        ]
+      }
+    )
+
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# vf-cli-quickstart')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill description: CLI 快速入门')
+  })
 })

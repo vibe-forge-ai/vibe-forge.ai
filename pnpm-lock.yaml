@@ -103,6 +103,9 @@ importers:
       '@vibe-forge/hooks':
         specifier: workspace:^
         version: link:../../packages/hooks
+      '@vibe-forge/plugin-cli-skills':
+        specifier: workspace:^
+        version: link:../../packages/plugins/cli-skills
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
@@ -570,6 +573,8 @@ importers:
       '@vibe-forge/types':
         specifier: workspace:*
         version: link:../../types
+
+  packages/plugins/cli-skills: {}
 
   packages/plugins/logger:
     dependencies:

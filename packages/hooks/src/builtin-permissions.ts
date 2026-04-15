@@ -147,6 +147,7 @@ export const createBuiltinPermissionPlugin = (
       const port = env.__VF_PROJECT_AI_SERVER_PORT__?.trim()
       const sessionId = input.sessionId.trim()
       const adapter = input.adapter
+      const subject = normalizePermissionToolName(input.toolName)
 
       try {
         if (host != null && host !== '' && port != null && port !== '') {
@@ -163,12 +164,10 @@ export const createBuiltinPermissionPlugin = (
           if (result.result === 'allow') {
             return buildAllowOutput(result.subject)
           }
-          return next()
         }
       } catch {
       }
 
-      const subject = normalizePermissionToolName(input.toolName)
       if (subject == null) {
         return next()
       }

@@ -673,6 +673,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
           __VF_PROJECT_AI_SESSION_ID__: 'vf-session',
           __VF_PROJECT_AI_CTX_ID__: 'vf-ctx',
           __VF_PROJECT_AI_RUN_TYPE__: 'server',
+          __VF_PROJECT_AI_PERMISSION_MODE__: 'dontAsk',
           __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
           __VF_PROJECT_AI_SERVER_PORT__: '8787',
           __VF_PROJECT_AI_LOG_PREFIX__: 'test-prefix',
@@ -706,6 +707,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SESSION_ID__ = "vf-session"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_CTX_ID__ = "vf-ctx"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_RUN_TYPE__ = "server"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_PERMISSION_MODE__ = "dontAsk"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_HOST__ = "127.0.0.1"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_PORT__ = "8787"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_WORKSPACE_FOLDER__ = "/tmp/project"')
