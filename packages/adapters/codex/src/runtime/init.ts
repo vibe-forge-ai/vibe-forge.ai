@@ -9,6 +9,7 @@ import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
+import { writeManagedCodexConfigFile } from './config'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
 const execFileAsync = promisify(execFile)
@@ -119,6 +120,15 @@ const syncCodexMockHomeNativeSkillEntries = async (params: {
   await writeJsonFile(statePath, { skills: nextManagedSkills })
 }
 
+async function writeManagedCodexConfig(ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'configs'>): Promise<void> {
+  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  await writeManagedCodexConfigFile({
+    configPath: join(mockHome, '.codex', 'config.toml'),
+    workspacePath: ctx.cwd,
+    configs: ctx.configs
+  })
+}
+
 /**
  * Initialize the Codex adapter.
  *
@@ -131,7 +141,8 @@ const syncCodexMockHomeNativeSkillEntries = async (params: {
  *   1. Verifies that the `codex` binary is reachable.
  *   2. Symlinks the real `~/.codex/auth.json` into the mock HOME directory so
  *      authentication works under HOME isolation.
- *   3. Installs a workspace-local native hooks bridge into the mock Codex home.
+ *   3. Writes a managed mock-home `config.toml` for trust and startup defaults.
+ *   4. Installs a workspace-local native hooks bridge into the mock Codex home.
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
@@ -152,5 +163,6 @@ export const initCodexAdapter = async (ctx: AdapterCtx) => {
     await linkAuthFile(home, mockHome)
   }
   await syncCodexMockHomeSkills(ctx)
+  await writeManagedCodexConfig(ctx)
   await ensureCodexNativeHooksInstalled(ctx)
 }

@@ -52,8 +52,11 @@
 
 ## Codex
 
-- 实现入口：[`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts)
+- 实现入口：
+  - [`packages/adapters/codex/src/runtime/init.ts`](../../../packages/adapters/codex/src/runtime/init.ts)
+  - [`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts)
 - 自动生效内容：
+  - mock-home `.codex/config.toml` 里的 workspace trust 与 startup update 默认值
   - `developer_instructions`
   - `model_provider.*`
   - `mcp_servers.*`
@@ -63,7 +66,7 @@
 设计考量：
 
 - Codex 更偏向 `config.toml` / `-c key=value` 覆盖
-- 所以共享配置在这里会被编译成多组 `-c` 参数，而不是落成单个文件
+- 所以 init 阶段会先在 mock home 写最基础的原生配置（workspace trust、`check_for_update_on_startup`），query 阶段再把会话级共享配置编译成多组 `-c` 参数
 
 ## OpenCode
 
