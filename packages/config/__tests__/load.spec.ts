@@ -227,7 +227,7 @@ shortcuts:
           API_KEY: 'secret-key'
         },
         permissions: {
-          allow: ['Read', 'Edit', 'vibe-forge']
+          allow: ['Read', 'Edit', 'VibeForge']
         },
         announcements: ['base', 'project'],
         defaultIncludeMcpServers: ['docs', 'browser'],
@@ -437,7 +437,7 @@ defaultModel: package-model
         defaultModel: 'package-model',
         announcements: ['package-root'],
         permissions: {
-          allow: ['Browser', 'vibe-forge']
+          allow: ['Browser', 'VibeForge']
         },
         modelServices: {
           browser: {

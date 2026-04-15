@@ -129,8 +129,8 @@ describe('resolveWorkspaceAssetBundle', () => {
       useDefaultVibeForgeMcpServer: true
     })
 
-    expect(enabledBundle.mcpServers).toHaveProperty('vibe-forge')
-    expect(enabledBundle.mcpServers['vibe-forge']?.payload.config).toEqual(expect.objectContaining({
+    expect(enabledBundle.mcpServers).toHaveProperty('VibeForge')
+    expect(enabledBundle.mcpServers.VibeForge?.payload.config).toEqual(expect.objectContaining({
       command: process.execPath,
       args: [expect.stringMatching(/packages\/mcp\/cli\.js$/)]
     }))
@@ -141,7 +141,7 @@ describe('resolveWorkspaceAssetBundle', () => {
       useDefaultVibeForgeMcpServer: false
     })
 
-    expect(disabledBundle.mcpServers).not.toHaveProperty('vibe-forge')
+    expect(disabledBundle.mcpServers).not.toHaveProperty('VibeForge')
   })
 
   it('skips disabled plugin instances and lets disabled child overrides suppress default child activation', async () => {

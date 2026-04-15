@@ -355,14 +355,14 @@ describe('createCodexSession RPC approval policy mapping', () => {
         params: {
           threadId: 'thr_1',
           turnId: 'turn_1',
-          serverName: 'vibe-forge',
+          serverName: 'VibeForge',
           mode: 'form',
           _meta: {
             codex_approval_kind: 'mcp_tool_call',
             tool_title: 'List Tasks',
             tool_description: 'List all managed tasks'
           },
-          message: 'Allow the vibe-forge MCP server to run tool "ListTasks"?',
+          message: 'Allow the VibeForge MCP server to run tool "ListTasks"?',
           requestedSchema: {
             type: 'object',
             properties: {}
@@ -375,10 +375,10 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const requestEvent = events.find(event => event.type === 'interaction_request')
     expect(requestEvent).toBeDefined()
-    expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the vibe-forge MCP server')
+    expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the VibeForge MCP server')
     expect((requestEvent as any)?.data?.payload?.permissionContext).toMatchObject({
-      subjectKey: 'mcp-vibe-forge-list-tasks',
-      subjectLabel: 'vibe-forge:List Tasks'
+      subjectKey: 'mcp-vibeforge-list-tasks',
+      subjectLabel: 'VibeForge:List Tasks'
     })
 
     respondToInteraction(session, 'codex-approval:9', 'allow_once')
@@ -415,13 +415,13 @@ describe('createCodexSession RPC approval policy mapping', () => {
         params: {
           threadId: 'thr_1',
           turnId: 'turn_1',
-          serverName: 'vibe-forge',
+          serverName: 'VibeForge',
           mode: 'form',
           _meta: {
             codex_approval_kind: 'mcp_tool_call',
             tool_description: 'Start managed tasks'
           },
-          message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
           requestedSchema: {
             type: 'object',
             properties: {}
@@ -467,14 +467,14 @@ describe('createCodexSession RPC approval policy mapping', () => {
         params: {
           threadId: 'thr_1',
           turnId: 'turn_1',
-          serverName: 'vibe-forge',
+          serverName: 'VibeForge',
           mode: 'form',
           _meta: {
             codex_approval_kind: 'mcp_tool_call',
             tool_title: 'Start Tasks',
             tool_description: 'Start managed tasks'
           },
-          message: 'Allow the vibe-forge MCP server to run tool "StartTasks"?',
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
           requestedSchema: {
             type: 'object',
             properties: {
@@ -680,7 +680,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
         },
         configs: [{
           mcpServers: {
-            'vibe-forge': {
+            VibeForge: {
               command: 'node',
               args: ['mcp.js'],
               env: {
@@ -701,7 +701,7 @@ describe('createCodexSession RPC approval policy mapping', () => {
 
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     const overrides = getConfigOverrides(spawnArgs)
-    const mcpEnvOverride = getConfigOverride(overrides, 'mcp_servers.vibe-forge.env=')
+    const mcpEnvOverride = getConfigOverride(overrides, 'mcp_servers.VibeForge.env=')
 
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SESSION_ID__ = "vf-session"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_CTX_ID__ = "vf-ctx"')

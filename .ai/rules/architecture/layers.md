@@ -11,7 +11,7 @@
 ## 入口与运行时层
 
 - `packages/cli-helper`：CLI loader，负责 `NODE_OPTIONS`、`@vibe-forge/register/preload` 和退出码透传。
-- `packages/app-runtime`：对 `apps/*` 暴露 task / benchmark 入口，并携带默认 `vibe-forge` MCP 锚点。
+- `packages/app-runtime`：对 `apps/*` 暴露 task / benchmark 入口，并携带默认 `VibeForge` MCP 锚点。
 - `packages/task`：任务执行层，负责 `prepare()`、`run()` 与 adapter query options。
 - `packages/mcp`：独立 MCP stdio server，暴露 `vf-mcp` / `vibe-forge-mcp`。
 - `packages/hooks`：独立 hooks runtime，暴露 `vf-call-hook`。

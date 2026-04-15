@@ -7,6 +7,7 @@ import type {
   AdapterOutputEvent,
   AdapterQueryOptions
 } from '@vibe-forge/types'
+import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, sanitizeMcpPermissionKeySegment } from '@vibe-forge/utils'
 import type { CodexSessionBase } from './session-common'
 
 import { formatCodexCommandForDisplay } from '#~/command-display.js'
@@ -82,11 +83,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
 
-const sanitizePermissionKeySegment = (value: string | undefined) => {
-  const normalized = value?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-  return normalized != null && normalized !== '' ? normalized : undefined
-}
-
 const extractMcpToolNameFromMessage = (message: string | undefined) => {
   const trimmed = message?.trim()
   if (trimmed == null || trimmed === '') return undefined
@@ -106,9 +102,9 @@ const extractMcpToolNameFromMessage = (message: string | undefined) => {
 
 const buildMcpPermissionSubject = (payload: McpServerElicitationRequestParams) => {
   const serverName = payload.serverName?.trim() || 'mcp'
-  const serverKey = sanitizePermissionKeySegment(serverName) ?? 'mcp'
+  const serverKey = sanitizeMcpPermissionKeySegment(serverName) ?? 'mcp'
   const toolName = payload._meta?.tool_title?.trim() || extractMcpToolNameFromMessage(payload.message)
-  const toolKey = sanitizePermissionKeySegment(toolName) ?? 'tool'
+  const toolKey = sanitizeMcpPermissionKeySegment(toolName) ?? 'tool'
 
   return {
     subjectKey: `mcp-${serverKey}-${toolKey}`,
@@ -228,7 +224,7 @@ export async function createStreamCodexSession(
     ? undefined
     : adapterMaxOutputTokens
   const clientInfo = {
-    name: rawClientInfo.name ?? 'vibe-forge',
+    name: rawClientInfo.name ?? CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
     title: rawClientInfo.title ?? 'Vibe Forge',
     version: rawClientInfo.version ?? '0.1.0'
   }
@@ -457,7 +453,7 @@ export async function createStreamCodexSession(
       cwd,
       approvalPolicy: rpcApprovalPolicy,
       sandboxPolicy,
-      serviceName: 'vibe-forge',
+      serviceName: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
       ...(model ? { model } : {})
     })
     threadId = startResult.thread.id

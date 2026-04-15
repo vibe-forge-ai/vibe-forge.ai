@@ -31,7 +31,7 @@ describe('default Vibe Forge MCP', () => {
   })
 
   it('resolves the managed MCP CLI wrapper as a stdio server command', () => {
-    expect(DEFAULT_VIBE_FORGE_MCP_SERVER_NAME).toBe('vibe-forge')
+    expect(DEFAULT_VIBE_FORGE_MCP_SERVER_NAME).toBe('VibeForge')
     expect(resolveDefaultVibeForgeMcpServerConfig()).toEqual({
       command: process.execPath,
       args: [expect.stringMatching(/packages\/mcp\/cli\.js$/)]
@@ -47,8 +47,8 @@ describe('default Vibe Forge MCP', () => {
       }
     })
 
-    expect(DEFAULT_VIBE_FORGE_MCP_PERMISSION_NAME).toBe('vibe-forge')
-    expect(projectConfig?.permissions?.allow).toEqual(['Read', 'vibe-forge'])
+    expect(DEFAULT_VIBE_FORGE_MCP_PERMISSION_NAME).toBe('VibeForge')
+    expect(projectConfig?.permissions?.allow).toEqual(['Read', 'VibeForge'])
     expect(userConfig).toBeUndefined()
   })
 

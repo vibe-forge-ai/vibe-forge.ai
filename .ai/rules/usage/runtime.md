@@ -27,7 +27,7 @@ wait
 
 ## 默认内建 MCP
 
-- `vf run` 与 server session 默认都会加载内建 `vibe-forge` MCP server。
+- `vf run` 与 server session 默认都会加载内建 `VibeForge` MCP server。
 - 单次关闭：`npx vf run --no-default-vibe-forge-mcp-server "..."`
 - 全局关闭：
 
