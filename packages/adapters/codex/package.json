@@ -62,7 +62,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@openai/codex": "0.117.0",
+    "@openai/codex": "0.120.0",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/types": "workspace:^",

@@ -103,12 +103,12 @@ importers:
       '@vibe-forge/hooks':
         specifier: workspace:^
         version: link:../../packages/hooks
-      '@vibe-forge/plugin-cli-skills':
-        specifier: workspace:^
-        version: link:../../packages/plugins/cli-skills
       '@vibe-forge/managed-plugins':
         specifier: workspace:^
         version: link:../../packages/managed-plugins
+      '@vibe-forge/plugin-cli-skills':
+        specifier: workspace:^
+        version: link:../../packages/plugins/cli-skills
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
@@ -338,8 +338,8 @@ importers:
   packages/adapters/claude-code:
     dependencies:
       '@anthropic-ai/claude-code':
-        specifier: 2.1.87
-        version: 2.1.87
+        specifier: 2.1.109
+        version: 2.1.109
       '@musistudio/claude-code-router':
         specifier: 1.0.73
         version: 1.0.73(@modelcontextprotocol/sdk@1.25.3(hono@4.11.4)(zod@3.25.76))(ws@8.20.0)(zod@3.25.76)
@@ -362,8 +362,8 @@ importers:
   packages/adapters/codex:
     dependencies:
       '@openai/codex':
-        specifier: 0.117.0
-        version: 0.117.0
+        specifier: 0.120.0
+        version: 0.120.0
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../core
@@ -780,8 +780,8 @@ packages:
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==, tarball: https://registry.npmjs.org/@antfu/install-pkg/-/install-pkg-1.1.0.tgz}
 
-  '@anthropic-ai/claude-code@2.1.87':
-    resolution: {integrity: sha512-R40p85lv270MsOmuP0VrgZlsBnq6HIoW/aIrPwny6AfhPUmsChPNLkxv/F8Mf6g9iYpGNEfICt5CDw++tKZD0g==, tarball: https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-2.1.87.tgz}
+  '@anthropic-ai/claude-code@2.1.109':
+    resolution: {integrity: sha512-jVy1TcNWzFP/PFbrVfKYNSWoxXe4HJw7wjnZxR72S+X/kSG4Q1d1gVrUsr4Ej7udHBSaCiStqkOI0vGiy9aKlg==, tarball: https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-2.1.109.tgz}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -1625,43 +1625,43 @@ packages:
     resolution: {integrity: sha512-0Jsaoxp/9HJqCa3GzEzJcoi4+VfupD/o+1pBG0qJ0X3d+sKbbfSej2Faiyp0fTHH36mhsdAKi2TahEx9JV08ZA==, tarball: https://registry.npmjs.org/@nolyfill/function-bind/-/function-bind-1.0.21.tgz}
     engines: {node: '>=12.4.0'}
 
-  '@openai/codex@0.117.0':
-    resolution: {integrity: sha512-UmWo39UCGqFB2ImWwtI/TOnVQ1M2JIbCeDVBzOtG57WuTIPBNvDyluPNrzNv6eAcTYpyDLC5+nT5k49LrzEwow==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0.tgz}
+  '@openai/codex@0.120.0':
+    resolution: {integrity: sha512-e2P1Gya3dwsRe9IPOiswVz5JfR700u+/sWCqDc3jkqv2QViPkNiBmZoGhFnZL5jBpKakSjehC4/Fpspg70nHTw==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0.tgz}
     engines: {node: '>=16'}
     hasBin: true
 
-  '@openai/codex@0.117.0-darwin-arm64':
-    resolution: {integrity: sha512-atIlp7v15chsfMpypW8/4PBp6kOca8wBZoC0hdAWGl/PKZ76/cTC+LKi2XhRfMqKY25nUxnXnm1DnLHqWGKRXA==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-darwin-arm64.tgz}
+  '@openai/codex@0.120.0-darwin-arm64':
+    resolution: {integrity: sha512-7CU+I5kBaMuoqfG3xisq0mUWzxoEHvfu34cB8a0KpBiIhAgu12fKpmYgZ4/DvRP6Wm9Fu6LJYKVF5apUHFp8nQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-darwin-arm64.tgz}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [darwin]
 
-  '@openai/codex@0.117.0-darwin-x64':
-    resolution: {integrity: sha512-/TWwOtzo44flOQptQTyu+zozESNpsm/jLlK+6vEjOVikXF+kxeA7sgJHRQQ78dFvnHTW+EpkUYew5qNawREtgw==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-darwin-x64.tgz}
+  '@openai/codex@0.120.0-darwin-x64':
+    resolution: {integrity: sha512-d7joNYuwrmd5iIdp/xAE5f8bZT1r82MnmU6Hzgxq3G+xClwEyhxU737ZWnstFSpnZNfxJ5zXCuFUJh4CAkHNtQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-darwin-x64.tgz}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [darwin]
 
-  '@openai/codex@0.117.0-linux-arm64':
-    resolution: {integrity: sha512-rgQIYipgkMRGvDlK3qbI9v/3NxB1tO3OoNYkWW9onOcev8Jno+hZC0ZEcVamxC5XGspVuPv2Wg+e9hw6jA65FA==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-linux-arm64.tgz}
+  '@openai/codex@0.120.0-linux-arm64':
+    resolution: {integrity: sha512-sVYY25/URlpZPtb0Q0ryLh+lcq9UTEtHAkdZKa0a/R7mAdyPuhpU9V6jWmxwiUh7s53XZOEVFoKmLfH8YIDWCQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-linux-arm64.tgz}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [linux]
 
-  '@openai/codex@0.117.0-linux-x64':
-    resolution: {integrity: sha512-kvOZtyLAgFEFSFRJXVzTnFYoZgZya9ttpxDYHR+diBgDBlcBp1B6pRiIGUmCOauxpHtTFUEyisvhKQquZbAtfg==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-linux-x64.tgz}
+  '@openai/codex@0.120.0-linux-x64':
+    resolution: {integrity: sha512-VcP9B/c/O+EFEgqoetCzvHrLfAdo8vrt09Gx1lJ8ikewctqAuJ/ozj/6wuvlz7XaaK64ib5cge01pOAeCyt2Sg==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-linux-x64.tgz}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [linux]
 
-  '@openai/codex@0.117.0-win32-arm64':
-    resolution: {integrity: sha512-oglr9IEh0P3cXF1LyGE4ROR6OFOJ7zmOZppoS+FJR6ovaPb08RhfXCDq/1yyzZhCYIaL6GHIdJ56ZEfpM4FuCQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-win32-arm64.tgz}
+  '@openai/codex@0.120.0-win32-arm64':
+    resolution: {integrity: sha512-SAaTQU1XHa1qDnmQldmbyROIY5SiaspF+Cw3ziWeeTgyAET3rWusm4ELOElx6QiY1ugYW5ZD+7AFufS2z1xtpQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-win32-arm64.tgz}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [win32]
 
-  '@openai/codex@0.117.0-win32-x64':
-    resolution: {integrity: sha512-ByedNwSlHJ4aE2++fBaUcaqbQsmx2dZS6mhrnv2SqbTY0saRFE2BT1R64fClt8TwXwMsQQn1uvkxjzU4aEhRcg==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.117.0-win32-x64.tgz}
+  '@openai/codex@0.120.0-win32-x64':
+    resolution: {integrity: sha512-zja1GNrbHyOUTvOy5FVMa+rAYIs3m+FOS8rAXftxMEhodMmkMw2O8zcvso657SHhZR0hIEiZ6T70lcyH2YX0mQ==, tarball: https://registry.npmjs.org/@openai/codex/-/codex-0.120.0-win32-x64.tgz}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
@@ -5679,7 +5679,7 @@ snapshots:
       package-manager-detector: 1.5.0
       tinyexec: 1.0.1
 
-  '@anthropic-ai/claude-code@2.1.87':
+  '@anthropic-ai/claude-code@2.1.109':
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
@@ -6510,31 +6510,31 @@ snapshots:
 
   '@nolyfill/function-bind@1.0.21': {}
 
-  '@openai/codex@0.117.0':
+  '@openai/codex@0.120.0':
     optionalDependencies:
-      '@openai/codex-darwin-arm64': '@openai/codex@0.117.0-darwin-arm64'
-      '@openai/codex-darwin-x64': '@openai/codex@0.117.0-darwin-x64'
-      '@openai/codex-linux-arm64': '@openai/codex@0.117.0-linux-arm64'
-      '@openai/codex-linux-x64': '@openai/codex@0.117.0-linux-x64'
-      '@openai/codex-win32-arm64': '@openai/codex@0.117.0-win32-arm64'
-      '@openai/codex-win32-x64': '@openai/codex@0.117.0-win32-x64'
+      '@openai/codex-darwin-arm64': '@openai/codex@0.120.0-darwin-arm64'
+      '@openai/codex-darwin-x64': '@openai/codex@0.120.0-darwin-x64'
+      '@openai/codex-linux-arm64': '@openai/codex@0.120.0-linux-arm64'
+      '@openai/codex-linux-x64': '@openai/codex@0.120.0-linux-x64'
+      '@openai/codex-win32-arm64': '@openai/codex@0.120.0-win32-arm64'
+      '@openai/codex-win32-x64': '@openai/codex@0.120.0-win32-x64'
 
-  '@openai/codex@0.117.0-darwin-arm64':
+  '@openai/codex@0.120.0-darwin-arm64':
     optional: true
 
-  '@openai/codex@0.117.0-darwin-x64':
+  '@openai/codex@0.120.0-darwin-x64':
     optional: true
 
-  '@openai/codex@0.117.0-linux-arm64':
+  '@openai/codex@0.120.0-linux-arm64':
     optional: true
 
-  '@openai/codex@0.117.0-linux-x64':
+  '@openai/codex@0.120.0-linux-x64':
     optional: true
 
-  '@openai/codex@0.117.0-win32-arm64':
+  '@openai/codex@0.120.0-win32-arm64':
     optional: true
 
-  '@openai/codex@0.117.0-win32-x64':
+  '@openai/codex@0.120.0-win32-x64':
     optional: true
 
   '@parcel/watcher-android-arm64@2.5.4':

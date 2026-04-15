@@ -61,6 +61,17 @@ export const prepare = async (
   const jsonVariables = buildConfigJsonVariables(cwd, env)
   const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
   const mergedConfig = mergeConfigs(config, userConfig)
+  const mergedPlugins = mergeConfigs(
+    {
+      plugins: mergeConfigs(
+        { plugins: config?.plugins },
+        { plugins: userConfig?.plugins }
+      )?.plugins
+    },
+    {
+      plugins: options.plugins
+    }
+  )?.plugins
   const assets = adapterOptions.assetBundle ?? await (async () => {
     if (adapterOptions.type === 'create') {
       const syncResults = await syncConfiguredMarketplacePlugins({
@@ -78,7 +89,7 @@ export const prepare = async (
     return resolveWorkspaceAssetBundle({
       cwd,
       configs: [config, userConfig],
-      plugins: options.plugins,
+      plugins: mergedPlugins,
       useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
         runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
         projectConfig: config,

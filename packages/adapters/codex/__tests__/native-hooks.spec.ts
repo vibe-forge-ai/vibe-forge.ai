@@ -171,4 +171,42 @@ describe('ensureCodexNativeHooksInstalled', () => {
     expect(hooks.hooks?.PostToolUse).toHaveLength(1)
     expect(hooks.hooks?.Stop).toHaveLength(1)
   })
+
+  it('prefers the workspace mock home when HOME still points to the real home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: realHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [
+          {
+            id: 'hookPlugin:project:logger'
+          }
+        ]
+      }
+    } as any
+
+    const installed = await ensureCodexNativeHooksInstalled(ctx)
+    const hooks = JSON.parse(
+      await readFile(join(mockHome, '.codex', 'hooks.json'), 'utf8')
+    ) as {
+      hooks?: Record<string, Array<{ matcher?: string }>>
+    }
+
+    expect(installed).toBe(true)
+    expect(hooks.hooks?.SessionStart).toHaveLength(1)
+    await expect(readFile(join(realHome, '.codex', 'hooks.json'), 'utf8')).rejects.toThrow()
+  })
 })
