@@ -1,5 +1,7 @@
 import { resolve } from 'node:path'
 
+import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, isCanonicalVibeForgeMcpServerName } from './vibe-forge-mcp'
+
 export const CANONICAL_PERMISSION_TOOL_KEYS = [
   'Bash',
   'Read',
@@ -14,6 +16,7 @@ export const CANONICAL_PERMISSION_TOOL_KEYS = [
   'Question',
   'TodoRead',
   'TodoWrite',
+  CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
   'WebFetch',
   'WebSearch'
 ] as const
@@ -135,6 +138,14 @@ export const normalizePermissionToolName = (
 ): PermissionToolSubject | undefined => {
   const serverName = input.mcpServer?.trim()
   if (serverName != null && serverName !== '') {
+    if (isCanonicalVibeForgeMcpServerName(serverName)) {
+      return {
+        key: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+        label: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+        scope: 'tool'
+      }
+    }
+
     const bareKey = sanitizeBareKey(serverName)
     if (bareKey !== '') {
       return {
@@ -164,6 +175,14 @@ export const normalizePermissionToolName = (
   if (trimmed.startsWith('mcp__')) {
     const parts = trimmed.split('__')
     const serverPart = parts[1]?.trim()
+    if (isCanonicalVibeForgeMcpServerName(serverPart)) {
+      return {
+        key: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+        label: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+        scope: 'tool'
+      }
+    }
+
     const bareKey = sanitizeBareKey(serverPart ?? '')
     if (bareKey !== '') {
       return {

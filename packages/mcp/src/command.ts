@@ -2,6 +2,7 @@ import process from 'node:process'
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME } from '@vibe-forge/utils'
 import type { Command } from 'commander'
 
 import { createMcpTools } from './tools'
@@ -24,7 +25,7 @@ export const configureMcpCommand = (command: Command, version: string) => (
       const tools = createMcpTools()
 
       const server = new McpServer({
-        name: 'vibe-forge',
+        name: CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
         version
       })
 

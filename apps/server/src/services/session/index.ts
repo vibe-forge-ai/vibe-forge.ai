@@ -531,7 +531,8 @@ export async function startAdapterSession(
                     if (subject != null) {
                       const storedDecision = await resolveStoredPermissionDecision({
                         sessionId,
-                        subject
+                        subject,
+                        lookupKeys: permissionContext?.subjectLookupKeys
                       })
                       if (activeAdapterRunStore.get(sessionId) !== runId) return
 

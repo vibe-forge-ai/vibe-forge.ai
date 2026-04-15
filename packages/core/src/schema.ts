@@ -19,6 +19,7 @@ export const AskUserQuestionParamsSchema = z.object({
     deniedTools: z.array(z.string()).optional(),
     reasons: z.array(z.string()).optional(),
     subjectKey: z.string().optional(),
+    subjectLookupKeys: z.array(z.string()).optional(),
     subjectLabel: z.string().optional(),
     scope: z.enum(['tool']).optional(),
     projectConfigPath: z.string().optional()

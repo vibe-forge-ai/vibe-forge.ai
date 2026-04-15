@@ -4,10 +4,11 @@ import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config } from '@vibe-forge/types'
+import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME } from '@vibe-forge/utils'
 
 import { mergeUniqueList } from './merge'
 
-export const DEFAULT_VIBE_FORGE_MCP_SERVER_NAME = 'vibe-forge'
+export const DEFAULT_VIBE_FORGE_MCP_SERVER_NAME = CANONICAL_VIBE_FORGE_MCP_SERVER_NAME
 export const DEFAULT_VIBE_FORGE_MCP_PERMISSION_NAME = DEFAULT_VIBE_FORGE_MCP_SERVER_NAME
 
 export const resolveUseDefaultVibeForgeMcpServer = (options: {
