@@ -1,6 +1,6 @@
 # Marketplace 详细示例
 
-返回入口：[Adapter 原生插件与 Marketplace](../../../rules/usage/native-plugins.md)
+返回入口：[Adapter 原生插件与 Marketplace](../native-plugins.md)
 
 这页补充用户侧更完整的 marketplace 配置示例，适合你已经确定要把 Claude Code 插件接进项目时参考。
 
