@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/server",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
