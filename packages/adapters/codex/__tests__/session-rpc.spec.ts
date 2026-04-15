@@ -377,7 +377,12 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(requestEvent).toBeDefined()
     expect((requestEvent as any)?.data?.payload?.question).toContain('Allow the VibeForge MCP server')
     expect((requestEvent as any)?.data?.payload?.permissionContext).toMatchObject({
-      subjectKey: 'mcp-vibeforge-list-tasks',
+      subjectKey: 'mcp-vibe-forge-list-tasks',
+      subjectLookupKeys: [
+        'mcp-vibe-forge-list-tasks',
+        'mcp-vibeforge-list-tasks',
+        'VibeForge'
+      ],
       subjectLabel: 'VibeForge:List Tasks'
     })
 

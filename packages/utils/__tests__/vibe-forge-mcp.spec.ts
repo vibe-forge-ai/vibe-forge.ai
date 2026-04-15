@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
   isCanonicalVibeForgeMcpServerName,
+  resolveMcpPermissionServerKey,
+  resolveMcpPermissionServerKeys,
   sanitizeMcpPermissionKeySegment
 } from '#~/index.js'
 
@@ -13,8 +15,14 @@ describe('vibe-forge mcp naming helpers', () => {
     expect(isCanonicalVibeForgeMcpServerName('vibe-forge')).toBe(false)
   })
 
-  it('sanitizes the canonical name directly for permission subject keys', () => {
+  it('keeps the built-in MCP permission server key stable', () => {
+    expect(resolveMcpPermissionServerKey('VibeForge')).toBe('vibe-forge')
+    expect(resolveMcpPermissionServerKeys('VibeForge')).toEqual(['vibe-forge', 'vibeforge'])
     expect(sanitizeMcpPermissionKeySegment('VibeForge')).toBe('vibeforge')
     expect(sanitizeMcpPermissionKeySegment('List Tasks')).toBe('list-tasks')
+  })
+
+  it('does not treat similarly-prefixed custom MCP servers as the built-in server', () => {
+    expect(resolveMcpPermissionServerKeys('VibeForge Docs')).toEqual(['vibeforge-docs'])
   })
 })

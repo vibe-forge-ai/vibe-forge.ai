@@ -191,6 +191,73 @@ describe('session permission service', () => {
     }))
   })
 
+  it('matches stored built-in MCP tool decisions across both known Codex subject slugs', async () => {
+    runtimeState = {
+      allow: ['mcp-vibeforge-list-tasks'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'sessionAllow'
+    }))
+  })
+
+  it('prefers deny over allow when built-in MCP alias keys disagree', async () => {
+    runtimeState = {
+      allow: ['mcp-vibeforge-list-tasks'],
+      deny: ['mcp-vibe-forge-list-tasks'],
+      onceAllow: [],
+      onceDeny: []
+    }
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'deny',
+      source: 'sessionDeny'
+    }))
+  })
+
+  it('falls back to the built-in MCP server permission for Codex MCP approvals', async () => {
+    projectConfig.permissions.allow = ['VibeForge']
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks', 'VibeForge']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'projectAllow'
+    }))
+  })
+
   it('keeps the DB permission state authoritative when mirror sync fails', async () => {
     runtimeState = {
       allow: [],
