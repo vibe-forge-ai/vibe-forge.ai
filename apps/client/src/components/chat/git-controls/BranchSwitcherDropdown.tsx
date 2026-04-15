@@ -1,7 +1,10 @@
 import { Button, Dropdown, Empty, Input, Spin } from 'antd'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { GitBranchSummary, GitRepositoryState } from '@vibe-forge/types'
+
+import { BranchSwitcherResults } from './BranchSwitcherResults'
 
 export function BranchSwitcherDropdown({
   availableLocalBranches,
@@ -37,44 +40,7 @@ export function BranchSwitcherDropdown({
   onSwitchBranch: (branch: GitBranchSummary) => void
 }) {
   const { t } = useTranslation()
-
-  const renderBranchSection = (title: string, branches: GitBranchSummary[]) => {
-    if (branches.length === 0) {
-      return null
-    }
-
-    return (
-      <div className='chat-header-git__section'>
-        <span className='chat-header-git__section-label'>{title}</span>
-        {branches.map(branch => {
-          return (
-            <button
-              key={`${branch.kind}:${branch.name}`}
-              type='button'
-              className='chat-header-git__branch-row'
-              disabled={isBusy}
-              title={branch.name}
-              onClick={() => onSwitchBranch(branch)}
-            >
-              <div className='chat-header-git__branch-row-main'>
-                <span className='chat-header-git__row-icon material-symbols-rounded'>
-                  {branch.kind === 'local' ? 'call_split' : 'cloud_sync'}
-                </span>
-                <span className='chat-header-git__row-copy'>
-                  <span className='chat-header-git__row-title'>{branch.name}</span>
-                </span>
-              </div>
-              {branch.isCurrent
-                ? (
-                  <span className='chat-header-git__row-state material-symbols-rounded'>check</span>
-                )
-                : null}
-            </button>
-          )
-        })}
-      </div>
-    )
-  }
+  const [displayMode, setDisplayMode] = useState<'flat' | 'tree'>('tree')
 
   return (
     <Dropdown
@@ -84,20 +50,47 @@ export function BranchSwitcherDropdown({
       onOpenChange={onOpenChange}
       dropdownRender={() => (
         <div className='chat-header-git__overlay chat-header-git__overlay--branches'>
-          <Input
-            allowClear
-            autoFocus
-            className='chat-header-git__search'
-            placeholder={t('chat.gitSearchBranches')}
-            prefix={<span className='material-symbols-rounded'>search</span>}
-            value={branchQuery}
-            onChange={(event) => onQueryChange(event.target.value)}
-            onPressEnter={() => {
-              if (canCreateBranch) {
-                onCreateBranch(branchQuery)
-              }
-            }}
-          />
+          <div className='chat-header-git__search-row'>
+            <Input
+              allowClear
+              autoFocus
+              className='chat-header-git__search'
+              placeholder={t('chat.gitSearchBranches')}
+              prefix={<span className='material-symbols-rounded'>search</span>}
+              value={branchQuery}
+              onChange={(event) => onQueryChange(event.target.value)}
+              onPressEnter={() => {
+                if (canCreateBranch) {
+                  onCreateBranch(branchQuery)
+                }
+              }}
+            />
+
+            <div
+              className='chat-header-git__view-switch'
+              role='tablist'
+              aria-label={t('chat.gitBranchViewMode')}
+            >
+              <button
+                type='button'
+                className={`chat-header-git__view-button ${displayMode === 'tree' ? 'is-active' : ''}`}
+                title={t('chat.gitBranchViewTree')}
+                aria-label={t('chat.gitBranchViewTree')}
+                onClick={() => setDisplayMode('tree')}
+              >
+                <span className='material-symbols-rounded'>account_tree</span>
+              </button>
+              <button
+                type='button'
+                className={`chat-header-git__view-button ${displayMode === 'flat' ? 'is-active' : ''}`}
+                title={t('chat.gitBranchViewFlat')}
+                aria-label={t('chat.gitBranchViewFlat')}
+                onClick={() => setDisplayMode('flat')}
+              >
+                <span className='material-symbols-rounded'>reorder</span>
+              </button>
+            </div>
+          </div>
 
           {canCreateBranch && (
             <button
@@ -126,8 +119,14 @@ export function BranchSwitcherDropdown({
             : hasBranchResults
             ? (
               <div className='chat-header-git__sections'>
-                {renderBranchSection(t('chat.gitBranchesLocal'), availableLocalBranches)}
-                {renderBranchSection(t('chat.gitBranchesRemote'), remoteBranches)}
+                <BranchSwitcherResults
+                  availableLocalBranches={availableLocalBranches}
+                  branchQuery={branchQuery}
+                  isBusy={isBusy}
+                  mode={displayMode}
+                  remoteBranches={remoteBranches}
+                  onSwitchBranch={onSwitchBranch}
+                />
               </div>
             )
             : (

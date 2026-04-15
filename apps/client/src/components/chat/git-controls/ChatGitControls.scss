@@ -284,12 +284,60 @@
 }
 
 .chat-header-git__search.ant-input-affix-wrapper {
+  flex: 1;
+  min-width: 0;
   min-height: 30px;
   border-radius: 9px;
   padding-inline: 8px;
 
   .ant-input {
     font-size: 10px;
+  }
+}
+
+.chat-header-git__search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-header-git__view-switch {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--sub-bg-color, rgba(15, 23, 42, .03));
+}
+
+.chat-header-git__view-button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--sub-text-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease;
+
+  .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background: var(--sub-bg-color, rgba(15, 23, 42, .08));
+    color: var(--text-color);
+  }
+
+  &.is-active {
+    background: color-mix(in srgb, var(--primary-color, #2563eb) 10%, var(--bg-color));
+    color: var(--primary-color, #2563eb);
   }
 }
 
@@ -354,6 +402,81 @@
   &:disabled {
     cursor: not-allowed;
     opacity: .55;
+  }
+}
+
+.chat-header-git__branch-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__branch-tree-folder,
+.chat-header-git__branch-tree-children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-header-git__branch-tree-folder.is-collapsed {
+  .chat-header-git__branch-folder-chevron {
+    transform: rotate(-90deg);
+  }
+}
+
+.chat-header-git__branch-folder-row {
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 8px;
+  padding-left: calc(8px + (var(--branch-depth, 0) * 12px));
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--sub-text-color);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color .2s ease, color .2s ease;
+
+  &:hover {
+    background: var(--sub-bg-color, rgba(15, 23, 42, .05));
+    color: var(--text-color);
+  }
+}
+
+.chat-header-git__branch-folder-chevron {
+  transition: transform .22s ease;
+  transform-origin: center;
+}
+
+.chat-header-git__branch-tree-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows .22s ease, opacity .18s ease;
+
+  &.is-collapsed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.chat-header-git__branch-tree-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-header-git__branch-row--tree {
+  padding-left: calc(8px + (var(--branch-depth, 0) * 12px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-header-git__branch-folder-chevron,
+  .chat-header-git__branch-tree-collapse {
+    transition: none;
   }
 }
 
