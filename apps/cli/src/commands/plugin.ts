@@ -3,27 +3,34 @@ import process from 'node:process'
 import { buildConfigJsonVariables, loadConfig, mergeConfigs } from '@vibe-forge/config'
 import type { Command } from 'commander'
 
+import { createAdapterOption, normalizeCliAdapterOptionValue } from './@core/adapter-option'
 import { addAdapterPlugin } from './@core/plugin-install'
+
+const normalizeManagedPluginAdapter = (adapter: string) => adapter === 'claude-code' ? 'claude' : adapter
 
 export const resolvePluginCommandAdapter = async (
   explicitAdapter: string | undefined,
   cwd: string = process.cwd()
 ) => {
-  const normalizedExplicitAdapter = explicitAdapter?.trim()
-  if (normalizedExplicitAdapter) return normalizedExplicitAdapter
+  const normalizedExplicitAdapter = explicitAdapter == null
+    ? undefined
+    : normalizeCliAdapterOptionValue(explicitAdapter)
+  if (normalizedExplicitAdapter) return normalizeManagedPluginAdapter(normalizedExplicitAdapter)
 
   const [projectConfig, userConfig] = await loadConfig({
     cwd,
     jsonVariables: buildConfigJsonVariables(cwd, process.env)
   })
-  return mergeConfigs(projectConfig, userConfig)?.defaultAdapter ?? 'claude'
+  return normalizeManagedPluginAdapter(
+    mergeConfigs(projectConfig, userConfig)?.defaultAdapter ?? 'claude'
+  )
 }
 
 export function registerPluginCommand(program: Command) {
   const pluginCommand = program
     .command('plugin')
     .description('Install and manage adapter-native plugins')
-    .option('--adapter <adapter>', 'Plugin adapter type')
+    .addOption(createAdapterOption('Plugin adapter type'))
 
   pluginCommand
     .command('add <source>')

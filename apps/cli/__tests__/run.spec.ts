@@ -2,11 +2,13 @@ import { Command } from 'commander'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
+  normalizeCliAdapterOptionValue,
   parseCliInputControlEvent,
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
@@ -149,6 +151,20 @@ describe('run command print output', () => {
   it('keeps cached stream mode when resume does not override print behavior', () => {
     expect(resolveRunMode(false, 'default', 'stream')).toBe('stream')
     expect(resolveRunMode(true, 'cli', 'direct')).toBe('stream')
+  })
+
+  it('normalizes simplified adapter values', () => {
+    expect(normalizeCliAdapterOptionValue('claude')).toBe('claude-code')
+    expect(normalizeCliAdapterOptionValue('adapter-codex')).toBe('codex')
+    expect(normalizeCliAdapterOptionValue(' codex ')).toBe('codex')
+  })
+
+  it('parses -A as the adapter shorthand', () => {
+    const command = new Command()
+    command.addOption(createAdapterOption('Adapter to use'))
+    command.parse(['-A', 'claude'], { from: 'user' })
+
+    expect(command.opts<{ adapter?: string }>().adapter).toBe('claude-code')
   })
 
   it('keeps direct mode for shorthand runs when print behavior is inferred separately', () => {
