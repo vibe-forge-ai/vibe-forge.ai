@@ -141,4 +141,27 @@ describe('createLogger', () => {
     expect(content).toContain('    1233')
     expect(content).toContain('    456')
   })
+
+  it('escapes markdown fence lines inside folded yaml strings', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'vf-create-logger-'))
+    tempDirs.push(cwd)
+
+    const logger = createLogger(cwd, 'task-1', 'session-1')
+    logger.info({
+      prompt: 'before\n```bash\necho "hi"\n```\nafter'
+    })
+    await new Promise<void>((resolve) => {
+      logger.stream.end(() => resolve())
+    })
+
+    const canonicalPath = join(cwd, '.ai/logs/task-1/session-1.log.md')
+    const content = await readFile(canonicalPath, 'utf8')
+    expect(content).toContain('```yaml')
+    expect(content).toContain('prompt: >-')
+    expect(content).toContain('  before')
+    expect(content).toContain('  \\`\\`\\`bash')
+    expect(content).toContain('  echo "hi"')
+    expect(content).toContain('  \\`\\`\\`')
+    expect(content).toContain('  after')
+  })
 })
