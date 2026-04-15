@@ -71,8 +71,8 @@ package, `@google/gemini-cli@0.38.0`, exposes:
   default.
 - Do not make Gemini checkpoint restore part of Vibe Forge session branching in
   the first pass.
-- Do not support Responses API routing or arbitrary non-`chat/completions`
-  external protocols in V1.
+- Do not support OpenAI Responses API routing, legacy `/completions`, or
+  arbitrary non-`chat/completions` external protocols in V1.
 - Do not manage Gemini custom slash commands in V1.
 - Do not map Gemini `BeforeModel`, `AfterModel`, or `BeforeToolSelection` into
   Vibe Forge hooks until the core adapter is stable.
@@ -365,7 +365,7 @@ adapter should recognize and preserve:
 | `GEMINI_FORCE_ENCRYPTED_FILE_STORAGE`           | Use keychain/encrypted-file storage for OAuth   | Preserve only if explicitly set; cover OAuth/MCP storage behavior in pinned-version smoke tests.                                  |
 | `CODE_ASSIST_ENDPOINT`                          | Code Assist server endpoint for dev/test        | Pass through only when explicitly configured by user/env; do not synthesize from `modelServices.apiBaseUrl`.                      |
 | `CODE_ASSIST_API_VERSION`                       | Code Assist server API version                  | Pass through only when explicitly configured by user/env.                                                                         |
-| `GOOGLE_GEMINI_BASE_URL`                        | GenAI SDK Gemini base URL override              | Preserve only when explicitly set; treat as experimental and undocumented for Gemini CLI headless support.                        |
+| `GOOGLE_GEMINI_BASE_URL`                        | GenAI SDK Gemini base URL override              | Managed by the adapter for routed `modelServices`; otherwise preserve only when explicitly set and do not expose as adapter `apiHost`. |
 | `GOOGLE_VERTEX_BASE_URL`                        | GenAI SDK Vertex base URL override              | Preserve only when explicitly set; treat as experimental and undocumented for Gemini CLI headless support.                        |
 | `GEMINI_CLI_CUSTOM_HEADERS`                     | Extra request headers parsed by Gemini CLI      | Preserve only when explicitly set; redact in logs.                                                                                |
 | `GEMINI_API_KEY_AUTH_MECHANISM`                 | API key header mode, such as bearer             | Preserve only when explicitly set.                                                                                                |
@@ -412,9 +412,13 @@ Auth selection should follow Gemini CLI rather than duplicate it:
   Forge-level diagnostic when they conflict with available credentials. For
   example, `selectedType: "vertex-ai"` without Vertex credentials should fail
   before a lower-level Gemini auth error.
-- Treat `selectedType: "gateway"` and `useExternal: true` as experimental unless
-  a future smoke test proves the normal headless path for the pinned CLI
-  version. Do not map Vibe Forge `modelServices` into those fields in V1.
+- When Vibe Forge resolves a routed `service,model`, generate
+  `security.auth.selectedType: "gateway"` plus `useExternal: true` in the
+  managed Gemini settings and point `GOOGLE_GEMINI_BASE_URL` at the adapter's
+  loopback compatibility proxy.
+- Outside that managed routed-service path, treat user-supplied gateway/base-url
+  behavior as experimental. V1 should not expose a separate Gemini adapter
+  `apiHost` / `apiBaseUrl` field or advertise direct arbitrary endpoint routing.
 
 The current Gemini CLI ACP path exposes an "AI API Gateway" auth method with
 `baseUrl` and headers in an ACP authentication payload. That is not a documented
@@ -435,10 +439,12 @@ Source inspection of `@google/gemini-cli@0.38.0` also shows:
 - Gateway auth sets a placeholder API key and can use custom headers/base URL
   when those values are provided by ACP.
 
-Therefore a user may be able to experiment with gateway/base-url behavior using
-explicit env plus `adapters.gemini.settings`, but V1 should not advertise it as
-supported external model routing until a smoke test proves the exact headless
-behavior against the pinned CLI version.
+Therefore direct user-managed gateway/base-url behavior should remain
+experimental, but V1 can still support external routed models through the
+adapter-owned loopback proxy described above. The supported path is:
+shared `modelServices` -> routed `service,model` selector -> managed Gemini
+gateway auth settings -> local compatibility proxy -> upstream
+OpenAI-compatible `chat/completions` service.
 
 ### Runtime Model
 
@@ -903,35 +909,52 @@ The documented local model routing feature is experimental and uses a local
 Gemma model for routing decisions; it is not a general replacement for the main
 chat model or Vibe Forge `modelServices`.
 
-V1 should therefore treat Gemini as a native-Gemini-model adapter:
+V1 should therefore support two Gemini model-selection paths:
 
-- Accept native Gemini model names, including `auto`, `auto-gemini-*`, and
+- Native Gemini model names, including `auto`, `auto-gemini-*`, and
   `gemini-*`.
+- Routed `service,model` selectors that resolve to shared `modelServices`
+  entries whose upstream protocol is OpenAI-compatible `chat/completions`.
+
+Validation rules in V1:
+
 - Pass through unknown plain model names only for forward compatibility with new
-  Gemini releases, and include a warning if the name is not in built-in metadata.
-- Reject explicit Vibe Forge service selectors such as `openai,gpt-5.4` with a
-  clear fatal error, for example `gemini_external_model_unsupported`.
-- Do not translate `modelServices.*.apiBaseUrl` or `apiKey` into Gemini settings
-  unless a future Gemini CLI release documents a stable primary-model provider
-  or endpoint override.
-- Do not map Vibe Forge `modelServices` to `GOOGLE_GEMINI_BASE_URL`,
-  `GOOGLE_VERTEX_BASE_URL`, `CODE_ASSIST_ENDPOINT`, or Gemini `gateway` auth in
-  V1. Those knobs have different semantics and insufficient documented
-  stability for general external model routing.
-- Allow advanced users to experiment with Gemini's local Gemma router and
-  endpoint-like env through raw `adapters.gemini.settings` and
-  `adapters.gemini.env`, but do not expose it as a Vibe Forge model selector in
-  V1.
+  Gemini releases, and include a warning if the name is not in built-in
+  metadata.
+- Accept `service,model` only when the resolved service exists and its upstream
+  wire protocol is `chat/completions`.
+- Reject services configured for OpenAI Responses API or other non-supported
+  protocols before process launch with a clear fatal error.
+- Do not add a Gemini-specific adapter `apiHost`, `apiBaseUrl`, `baseUrl`, or
+  `provider` field; external providers continue to be declared through shared
+  `modelServices`.
+- Allow adapter-managed route extras such as proxy headers/query params and
+  provider compatibility toggles like `extra.gemini.disableThinking`, but keep
+  those as route-level metadata rather than new top-level Gemini provider
+  config.
 
-Frontend model selection should not present external service models as normal
-Gemini choices when the adapter is locked to `gemini`. The server/adapter must
-still validate defensively because sessions can be started through CLI or API
-paths that bypass the client picker.
+Example routed config:
 
-Future support can be added in a separate RFC if Gemini CLI exposes a stable
-primary-model provider abstraction. That RFC should decide whether Vibe Forge
-maps `modelServices` into a Gemini-compatible proxy, a Vertex AI/Gemini API
-backend selection, or a native Gemini provider config.
+```yaml
+modelServices:
+  kimi:
+    apiBaseUrl: https://api.moonshot.ai/v1/chat/completions
+    apiKey: ${KIMI_API_KEY}
+    models:
+      - kimi-k2.5
+    extra:
+      gemini:
+        disableThinking: true
+
+adapter: gemini
+model: kimi,kimi-k2.5
+```
+
+Frontend model selection should not pretend routed services are native Gemini
+built-ins. If surfaced in the picker, they should remain visually distinct from
+Gemini-native models. The server/adapter must still validate defensively
+because sessions can be started through CLI or API paths that bypass the client
+picker.
 
 ### Frontend and Server Integration
 
@@ -940,8 +963,8 @@ Required frontend work:
 - Add `@vibe-forge/adapter-gemini` to `apps/client/package.json`.
 - Import `adapterDisplayName` and `adapterIcon` from `./icon`.
 - Add Gemini to `adapterDisplayMap`.
-- Filter or disable Vibe Forge `modelServices` entries when the selected adapter
-  is Gemini.
+- Keep routed service models visually distinct from Gemini built-ins when the
+  selected adapter is Gemini, and validate selection server-side.
 - Leave sender effort controls disabled for Gemini in V1.
 
 Required server/task work:
@@ -1082,8 +1105,9 @@ Integration tests:
 - Gemini does not accept `effort` unless support is added.
 - Gemini asset-plan support remains enabled even though Gemini effort support is
   disabled.
-- Gemini rejects explicit external `modelServices` selectors before process
-  launch.
+- Gemini accepts routed `service,model` selectors for OpenAI-compatible
+  `chat/completions` services and rejects Responses-style selectors before
+  process launch.
 - Gemini does not expose a first-class `apiHost` / `apiBaseUrl` / `provider`
   adapter config in V1; endpoint-like behavior is only reachable through
   explicit `adapters.gemini.env` and raw settings.
@@ -1096,8 +1120,8 @@ Integration tests:
   `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop`
   without suppressing framework `SessionEnd`.
 - Client model/adapter selectors display Gemini built-ins.
-- Client model/adapter selectors do not offer external service models as normal
-  Gemini choices.
+- Client model/adapter selectors do not present routed service models as normal
+  Gemini built-ins.
 - Adapter E2E `run`, `test`, and snapshot normalization accept `gemini`.
 
 E2E:
@@ -1382,18 +1406,18 @@ meaning used by other adapters. Rejected until there is explicit product intent.
   cleanup?
 - Should Vibe Forge own Gemini native session retention, or leave
   `general.sessionRetention` entirely to raw Gemini settings?
-- Should Gemini ever support Vibe Forge `modelServices`, or should external
-  models remain delegated to Codex/OpenCode/Claude-router adapters?
-- If Gemini CLI adds a provider abstraction, should Vibe Forge map it from
-  `modelServices`, a Gemini-specific adapter config, or both?
+- Should Gemini routed-service support stay limited to OpenAI-compatible
+  `chat/completions`, or expand to Responses / other upstream protocols later?
+- Should provider-specific compatibility shims such as
+  `extra.gemini.disableThinking` stay heuristic by default for Kimi/Moonshot,
+  or require explicit per-service opt-in?
 - Should `CODE_ASSIST_ENDPOINT` and `GEMINI_CLI_SURFACE` get first-class adapter
   config fields, or is `adapters.gemini.env` enough?
-- Should `GOOGLE_GEMINI_BASE_URL` / `GOOGLE_VERTEX_BASE_URL` become documented
-  experimental adapter config after a pinned-version smoke test?
-- Should Gemini `gateway` auth be exposed only for ACP, or can headless mode use
-  it safely with explicit env/settings?
-- If gateway/base-url support is ever exposed, should it be a Gemini-specific
-  experimental config or normalized into Vibe Forge `modelServices`?
+- Should direct user-managed `GOOGLE_GEMINI_BASE_URL` /
+  `GOOGLE_VERTEX_BASE_URL` remain unsupported except for adapter-managed routed
+  services, or become a documented experimental escape hatch?
+- Should Gemini `gateway` auth stay reserved for adapter-managed routed
+  services, or can headless mode safely expose it as a user-tunable setting?
 - Should Vibe Forge ever add a generic adapter `apiHost` field, or should each
   adapter keep provider-specific endpoint knobs isolated?
 - Should `GEMINI_CLI_HOME` fully replace `HOME=.ai/.mock` for Gemini, or should

@@ -22,8 +22,11 @@ wait
 
 - `__VF_PROJECT_WORKSPACE_FOLDER__` 指向你的项目根目录。
 - `HOME` 可用于隔离运行环境，默认用项目内的 `./.ai/.mock`。
-- 配置了 `modelServices` 时，adapter 会自动使用 CCR 进行模型服务代理。
-- 未配置 `modelServices` 时，adapter 直接使用原生二进制。
+- `modelServices` 是共享层配置；各 adapter 会按自己的原生运行时做映射：
+  - `claude-code` 走 Claude Code Router
+  - `codex` 与 `gemini` 走 adapter 自己的本地代理
+  - `opencode` 写入 session 级 provider 配置
+- 未选择 routed `service,model` 时，adapter 继续使用自己的原生模型/二进制路径。
 
 ## 默认内建 MCP
 
