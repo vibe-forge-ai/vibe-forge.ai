@@ -191,7 +191,8 @@ export const listManagedPluginInstalls = async (
     return []
   }
 }
-export const toManagedPluginConfig = (installs: ManagedPluginInstall[]): PluginConfig => installs.map(install => ({
-  id: install.vibeForgePluginDir,
-  scope: install.config.scope ?? install.config.name
-}))
+export const toManagedPluginConfig = (installs: ManagedPluginInstall[]): PluginConfig =>
+  installs.map(install => ({
+    id: install.vibeForgePluginDir,
+    scope: install.config.scope ?? install.config.name
+  }))

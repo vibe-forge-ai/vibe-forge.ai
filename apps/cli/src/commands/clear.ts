@@ -2,9 +2,9 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
+import { resolveProjectAiBaseDirName, resolveProjectAiPath } from '@vibe-forge/utils'
 import type { Command } from 'commander'
 import fg from 'fast-glob'
-import { resolveProjectAiBaseDirName, resolveProjectAiPath } from '@vibe-forge/utils'
 
 const CLEAR_AI_TARGETS = [
   'logs',

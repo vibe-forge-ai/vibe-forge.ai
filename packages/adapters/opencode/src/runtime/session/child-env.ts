@@ -372,7 +372,14 @@ export const ensureSystemPromptFile = async (
 ) => {
   if (options.systemPrompt == null || options.systemPrompt.trim() === '') return undefined
 
-  const promptDir = resolveProjectAiPath(ctx.cwd, ctx.env, '.mock', '.opencode-adapter', options.sessionId, 'instructions')
+  const promptDir = resolveProjectAiPath(
+    ctx.cwd,
+    ctx.env,
+    '.mock',
+    '.opencode-adapter',
+    options.sessionId,
+    'instructions'
+  )
   const promptPath = resolve(promptDir, 'system.md')
   await mkdir(promptDir, { recursive: true })
   await writeFile(promptPath, options.systemPrompt)

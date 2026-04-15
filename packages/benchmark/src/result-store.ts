@@ -2,8 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import process from 'node:process'
 
-import { glob } from 'fast-glob'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { glob } from 'fast-glob'
 
 import { BenchmarkResultSchema } from './schema'
 import type { BenchmarkResult } from './schema'

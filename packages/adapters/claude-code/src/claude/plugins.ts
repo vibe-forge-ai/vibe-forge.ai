@@ -29,7 +29,14 @@ export const stageClaudePluginDirs = async (params: {
   const installs = await listManagedPluginInstalls(params.cwd, { adapter: 'claude' })
   if (installs.length === 0) return []
 
-  const runtimeRoot = resolveProjectAiPath(params.cwd, process.env, 'caches', params.ctxId, params.sessionId, '.claude-plugins')
+  const runtimeRoot = resolveProjectAiPath(
+    params.cwd,
+    process.env,
+    'caches',
+    params.ctxId,
+    params.sessionId,
+    '.claude-plugins'
+  )
   await rm(runtimeRoot, { recursive: true, force: true })
   await mkdir(runtimeRoot, { recursive: true })
 

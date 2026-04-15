@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveProjectAiPath } from '@vibe-forge/utils'
 import { glob } from 'fast-glob'
 import fm from 'front-matter'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { readBenchmarkResult } from './result-store'
 import { BenchmarkFrontmatterSchema } from './schema'
