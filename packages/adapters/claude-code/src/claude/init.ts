@@ -2,7 +2,7 @@ import { access, mkdir, rm, symlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
-import { resolveMockHome } from '@vibe-forge/hooks'
+import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
 
@@ -89,8 +89,45 @@ const syncClaudeMockHomeKeychains = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>)
   })
 }
 
+const syncClaudeMockHomeProjectState = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
+  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const mockStatePath = resolve(mockHome, '.claude.json')
+  const realHome = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const realStatePath = realHome != null && realHome !== ''
+    ? resolve(realHome, '.claude.json')
+    : undefined
+
+  const mockState = await readJsonFileOrDefault<Record<string, unknown> | undefined>(mockStatePath, undefined)
+  const realState = realStatePath != null
+    ? await readJsonFileOrDefault<Record<string, unknown> | undefined>(realStatePath, undefined)
+    : undefined
+  const nextState = { ...(mockState ?? realState ?? {}) }
+  const projects = {
+    ...((nextState.projects ?? {}) as Record<string, Record<string, unknown>>)
+  }
+  const workspacePath = resolve(ctx.cwd)
+  const existingProjectState = {
+    ...(projects[workspacePath] ?? {})
+  }
+  const existingOnboardingCount = typeof existingProjectState.projectOnboardingSeenCount === 'number' &&
+      Number.isFinite(existingProjectState.projectOnboardingSeenCount)
+    ? existingProjectState.projectOnboardingSeenCount
+    : 0
+
+  projects[workspacePath] = {
+    ...existingProjectState,
+    hasTrustDialogAccepted: true,
+    projectOnboardingSeenCount: Math.max(existingOnboardingCount, 1),
+    hasCompletedProjectOnboarding: true
+  }
+  nextState.projects = projects
+
+  await writeJsonFile(mockStatePath, nextState)
+}
+
 export const initClaudeCodeAdapter = async (ctx: AdapterCtx) => {
   await syncClaudeMockHomeSkills(ctx)
   await syncClaudeMockHomeKeychains(ctx)
+  await syncClaudeMockHomeProjectState(ctx)
   await ensureClaudeNativeHooksInstalled(ctx)
 }

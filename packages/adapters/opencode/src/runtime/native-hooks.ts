@@ -12,7 +12,8 @@ import type { AdapterCtx } from '@vibe-forge/types'
 
 const MANAGED_PLUGIN_FILE_NAME = 'vibe-forge-hooks.js'
 const DEFAULT_OPENCODE_CONFIG = {
-  $schema: 'https://opencode.ai/config.json'
+  $schema: 'https://opencode.ai/config.json',
+  autoupdate: false
 }
 
 const pathExists = async (targetPath: string) => {

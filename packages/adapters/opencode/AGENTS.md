@@ -30,6 +30,7 @@
 
 - `src/runtime/native-hooks.ts`
   - 负责 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js`
+  - 当没有用户 `opencode.json` 时，写托管默认 config（`$schema` + `autoupdate: false`）
 - `src/runtime/session/skill-config.ts`
   - base config、plugins、skills 镜像到 session config dir
 - `src/runtime/session/child-env.ts`
@@ -115,6 +116,8 @@ OpenCode 维护时优先记住：
 
 - 优先把 `opencode run --format json` 当成稳定基线，不要再依赖最终 stdout 文本猜事件
 - session config 不要只靠 `OPENCODE_CONFIG_CONTENT`，优先写真实 `opencode.json`
+- 官方 config/permissions 文档没有单独的 workspace trust state；当前 workspace 内按权限规则运行，额外目录走 `permission.external_directory`
+- adapter/session 已默认注入 `OPENCODE_DISABLE_AUTOUPDATE=true`，mock-home fallback `opencode.json` 也会写 `autoupdate: false`
 - 包装层与 upstream 直跑当前仍可能有行为差异，文档里必须写清楚
 
 ## 约束

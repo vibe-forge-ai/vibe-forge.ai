@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, readlink, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -148,5 +148,92 @@ describe('initClaudeCodeAdapter', () => {
     const targetPath = join(mockHome, '.claude', 'skills', 'vf-cli-quickstart')
     expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
+  })
+
+  it('writes managed project trust state into the isolated Claude app-state file', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 1,
+      hasCompletedProjectOnboarding: true
+    })
+  })
+
+  it('preserves existing Claude app state while seeding trust from the real home config', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await writeFile(
+      join(realHome, '.claude.json'),
+      JSON.stringify(
+        {
+          autoUpdates: false,
+          projects: {
+            '/tmp/existing-project': {
+              hasTrustDialogAccepted: true,
+              projectOnboardingSeenCount: 2
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      autoUpdates?: boolean
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.autoUpdates).toBe(false)
+    expect(appState.projects?.['/tmp/existing-project']).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 2
+    })
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 1,
+      hasCompletedProjectOnboarding: true
+    })
   })
 })

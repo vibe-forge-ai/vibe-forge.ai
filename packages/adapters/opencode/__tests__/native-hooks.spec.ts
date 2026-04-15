@@ -94,9 +94,14 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
 
     const installed = await ensureOpenCodeNativeHooksInstalled(ctx)
     const pluginPath = join(mockHome, '.config', 'opencode', 'plugins', 'vibe-forge-hooks.js')
+    const configPath = join(mockHome, '.config', 'opencode', 'opencode.json')
 
     expect(installed).toBe(true)
     expect(ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__).toBe('1')
     expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    expect(JSON.parse(await readFile(configPath, 'utf8'))).toMatchObject({
+      $schema: 'https://opencode.ai/config.json',
+      autoupdate: false
+    })
   })
 })

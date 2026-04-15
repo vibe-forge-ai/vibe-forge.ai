@@ -35,8 +35,11 @@
 
 ## Claude Code
 
-- 实现入口：[`packages/adapters/claude-code/src/claude/prepare.ts`](../../../packages/adapters/claude-code/src/claude/prepare.ts)
+- 实现入口：
+  - [`packages/adapters/claude-code/src/claude/init.ts`](../../../packages/adapters/claude-code/src/claude/init.ts)
+  - [`packages/adapters/claude-code/src/claude/prepare.ts`](../../../packages/adapters/claude-code/src/claude/prepare.ts)
 - 自动生效内容：
+  - mock-home `.claude.json` 里的 workspace trust state
   - `settingsContent` / `nativeEnv`
   - permissions
   - selected MCP servers
@@ -48,7 +51,7 @@
 设计考量：
 
 - Claude 原生已经有稳定 `settings.json` 和 `--mcp-config`
-- 所以优先把共享配置投影成 Claude 原生 settings，而不是把这些规则重新描述一遍给 prompt
+- 项目信任状态又落在 `~/.claude.json`，所以 init 阶段需要先把 mock-home app state 补齐，再由 query 阶段把会话级共享配置投影成 Claude 原生 settings
 
 ## Codex
 
@@ -70,8 +73,11 @@
 
 ## OpenCode
 
-- 实现入口：[`packages/adapters/opencode/src/runtime/session/child-env.ts`](../../../packages/adapters/opencode/src/runtime/session/child-env.ts)
+- 实现入口：
+  - [`packages/adapters/opencode/src/runtime/native-hooks.ts`](../../../packages/adapters/opencode/src/runtime/native-hooks.ts)
+  - [`packages/adapters/opencode/src/runtime/session/child-env.ts`](../../../packages/adapters/opencode/src/runtime/session/child-env.ts)
 - 自动生效内容：
+  - mock-home fallback `opencode.json` 里的 `$schema` / `autoupdate`
   - 合并后的 `opencode.json`
   - selected MCP servers
   - permissions
@@ -82,7 +88,8 @@
 设计考量：
 
 - OpenCode 允许整个 session config dir 成为原生边界
-- 所以这里最适合把 MCP、skills、commands、agents、modes 一起收敛进一个 session config root
+- 官方文档没有单独的 workspace trust key；当前 workspace 直接受 permissions 规则约束，额外目录才走 `permission.external_directory`
+- 所以这里最适合把 MCP、skills、commands、agents、modes 一起收敛进一个 session config root，并把 update 提示压到 mock-home/session config 这一层处理
 
 ## 共享层职责边界
 
