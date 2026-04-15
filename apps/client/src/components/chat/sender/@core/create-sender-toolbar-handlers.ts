@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import type { SessionQueuedMessageMode } from '@vibe-forge/core'
 
 import type { SenderToolbarHandlers } from '../@types/sender-toolbar-types'
 
@@ -19,7 +20,9 @@ export const createSenderToolbarHandlers = ({
   onModelChange,
   onToggleRecommendedModel,
   onPermissionModeChange,
+  onQueueModeChange,
   onCancel,
+  onConfirmInteractionOption,
   onSend,
   referenceActions,
   selectOverlays,
@@ -41,8 +44,10 @@ export const createSenderToolbarHandlers = ({
   onModelChange?: (model: string) => void
   onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   onPermissionModeChange?: (mode: PermissionMode) => void
+  onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
   onCancel?: () => void
-  onSend: () => void
+  onConfirmInteractionOption?: () => void
+  onSend: (mode?: SessionQueuedMessageMode) => void
   referenceActions: {
     setShowReferenceActions: (nextOpen: boolean) => void
     setShowPermissionActions: (nextOpen: boolean) => void
@@ -108,8 +113,10 @@ export const createSenderToolbarHandlers = ({
     onToggleRecommendedModel,
     onEffortChange,
     onAdapterChange,
+    onQueueModeChange,
     onSend,
     onInterrupt,
-    onCancel
+    onCancel,
+    onConfirmInteractionOption
   } satisfies SenderToolbarHandlers
 }

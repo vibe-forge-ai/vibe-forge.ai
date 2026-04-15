@@ -1,25 +1,35 @@
-.pending-images {
-  display: flex;
-  gap: 8px;
-  padding: 6px 0;
-  flex-wrap: wrap;
-}
-
-.pending-context-files {
+.pending-attachments {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 4px 0 6px;
+  gap: 6px;
+  padding: 2px 0 8px;
+  align-items: flex-start;
+}
+
+.pending-attachments__files,
+.pending-attachments__images {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.pending-attachments__files {
+  flex-direction: column;
+}
+
+.pending-attachments__images {
+  flex-wrap: wrap;
 }
 
 .pending-image {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-color);
+  border: 1px solid rgba(148, 163, 184, .18);
+  background-color: var(--tag-bg, #f3f4f6);
 
   img {
     width: 100%;
@@ -29,15 +39,53 @@
   }
 }
 
+.pending-image__overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 14px 6px 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0),
+    rgba(15, 23, 42, .76)
+  );
+}
+
+.pending-image__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pending-image__name,
+.pending-image__size {
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, .32);
+}
+
+.pending-image__name {
+  font-size: 9px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-image__size {
+  font-size: 8px;
+  opacity: .85;
+}
+
 .pending-context-file {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid rgba(148, 163, 184, .2);
   border-radius: 10px;
-  background: var(--bg-color);
+  background: var(--tag-bg, #f3f4f6);
 }
 
 .pending-context-file__meta {
@@ -45,30 +93,74 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 
 .pending-context-file__icon {
-  font-size: 18px;
-  color: var(--sub-text-color, #6b7280);
+  font-size: 15px;
+  color: var(--primary-color, #2563eb);
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: rgba(37, 99, 235, .1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pending-context-file__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pending-context-file__name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-color);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pending-context-file__path {
   display: block;
   min-width: 0;
-  color: var(--text-color);
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+  color: var(--sub-text-color, #6b7280);
+  font-size: 9px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-context-file__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pending-context-file__size {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--sub-text-color, #6b7280);
 }
 
 .pending-context-file__remove {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  padding: 0;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--sub-text-color, #6b7280);
+  background: transparent;
   cursor: pointer;
 
   &:hover {
@@ -84,20 +176,52 @@
 
 .pending-image-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 5px;
+  right: 5px;
   width: 18px;
   height: 18px;
-  border-radius: 9px;
-  background-color: rgba(0, 0, 0, .55);
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, .64);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background-color: rgba(15, 23, 42, .84);
+  }
 
   .material-symbols-rounded {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
+  }
+}
+
+html.dark {
+  .pending-image {
+    border-color: rgba(71, 85, 105, .55);
+  }
+
+  .pending-context-file {
+    border-color: rgba(71, 85, 105, .55);
+    background: rgba(30, 41, 59, .72);
+  }
+
+  .pending-context-file__icon {
+    background: rgba(59, 130, 246, .16);
+  }
+}
+
+@media (max-width: 640px) {
+  .pending-context-file {
+    width: 100%;
+  }
+
+  .pending-attachments__images {
+    width: 100%;
   }
 }

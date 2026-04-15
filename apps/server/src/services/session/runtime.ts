@@ -10,10 +10,16 @@ export interface SessionInteractionState {
   payload: AskUserQuestionParams
 }
 
+export interface SessionQueueRuntimeState {
+  nextInterruptRequested: boolean
+  nextInterruptPending: boolean
+}
+
 export interface SessionConnectionState {
   sockets: Set<WebSocket>
   messages: WSEvent[]
   currentInteraction?: SessionInteractionState
+  queueRuntime: SessionQueueRuntimeState
 }
 
 export interface AdapterSessionConfig {
@@ -44,7 +50,11 @@ export const pendingSessionInteractionStore = new Map<string, PendingSessionInte
 export function createSessionConnectionState(): SessionConnectionState {
   return {
     sockets: new Set<WebSocket>(),
-    messages: []
+    messages: [],
+    queueRuntime: {
+      nextInterruptRequested: false,
+      nextInterruptPending: false
+    }
   }
 }
 
@@ -78,7 +88,8 @@ export function parkAdapterSessionRuntime(sessionId: string) {
   const parked: SessionConnectionState = {
     sockets: runtime.sockets,
     messages: runtime.messages,
-    currentInteraction: runtime.currentInteraction
+    currentInteraction: runtime.currentInteraction,
+    queueRuntime: runtime.queueRuntime
   }
   externalSessionStore.set(sessionId, parked)
   adapterSessionStore.delete(sessionId)
@@ -116,6 +127,10 @@ export function deleteExternalSessionRuntime(sessionId: string) {
 
 export function getSessionConnectionState(sessionId: string) {
   return adapterSessionStore.get(sessionId) ?? externalSessionStore.get(sessionId)
+}
+
+export function getSessionQueueRuntimeState(sessionId: string) {
+  return getSessionConnectionState(sessionId)?.queueRuntime
 }
 
 export function emitRuntimeEvent(

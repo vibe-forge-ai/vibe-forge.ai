@@ -3,7 +3,7 @@ import type { SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 
-import type { AskUserQuestionParams, ChatMessage, Session, WSEvent } from '@vibe-forge/core'
+import type { AskUserQuestionParams, ChatMessage, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
 import { getSessionMessages } from '#~/api.js'
@@ -24,6 +24,8 @@ import {
 import type { ChatSessionViewSnapshot } from './session-view-cache'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
+
+const EMPTY_QUEUED_MESSAGES: SessionMessageQueueState = { steer: [], next: [] }
 
 const applyMessageEvent = (currentMessages: ChatMessage[], data: WSEvent) => {
   if (data.type !== 'message') return currentMessages
@@ -71,6 +73,7 @@ export function useChatSessionMessages({
   const { mutate } = useSWRConfig()
   const [messagesState, setMessagesState] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
+  const [queuedMessages, setQueuedMessages] = useState<SessionMessageQueueState>({ steer: [], next: [] })
   const [isReady, setIsReady] = useState(false)
   const [errorState, setErrorState] = useState<ChatErrorState | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -94,6 +97,7 @@ export function useChatSessionMessages({
     patch: Partial<{
       messages: ChatMessage[]
       sessionInfo: SessionInfo | null
+      queuedMessages: SessionMessageQueueState
       errorState: ChatErrorState | null
       interactionRequest: InteractionRequestState | null
       isHydrated: boolean
@@ -174,9 +178,11 @@ export function useChatSessionMessages({
           code: latestFatalError.code
         }
         : null
+      const nextQueuedMessages = res.queuedMessages ?? EMPTY_QUEUED_MESSAGES
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
+      setQueuedMessages(nextQueuedMessages)
       setErrorState(nextErrorState)
 
       for (const data of events) {
@@ -192,6 +198,7 @@ export function useChatSessionMessages({
       updateSessionViewCache(sessionId, {
         messages: currentMessages,
         sessionInfo: currentSessionInfo,
+        queuedMessages: nextQueuedMessages,
         errorState: nextErrorState,
         interactionRequest: restoredInteraction,
         isHydrated: true
@@ -238,6 +245,7 @@ export function useChatSessionMessages({
     if (session?.id == null || session.id === '') {
       setMessagesState([])
       setSessionInfo(null)
+      setQueuedMessages(EMPTY_QUEUED_MESSAGES)
       setIsReady(true)
       setErrorState(null)
       setInteractionRequest(null)
@@ -255,12 +263,14 @@ export function useChatSessionMessages({
 
     setMessagesState(restoredState.messages)
     setSessionInfo(restoredState.sessionInfo)
+    setQueuedMessages(restoredState.queuedMessages)
     setErrorState(restoredState.errorState)
     setInteractionRequest(restoredState.interactionRequest)
     interactionRequestRef.current = restoredState.interactionRequest
     setIsReady(restoredState.isReady)
     isInitialLoadRef.current = !restoredState.isReady
 
+    void refreshHistory()
     void refreshHistory()
 
     return () => {
@@ -414,6 +424,14 @@ export function useChatSessionMessages({
             return
           }
 
+          if (data.type === 'session_queue_updated') {
+            setQueuedMessages(data.queue)
+            updateSessionViewCache(session.id, {
+              queuedMessages: data.queue
+            })
+            return
+          }
+
           if (data.type === 'message') {
             setMessages((current) => applyMessageEvent(current, data))
             return
@@ -513,6 +531,7 @@ export function useChatSessionMessages({
     messages: messagesState,
     setMessages,
     sessionInfo,
+    queuedMessages,
     isReady,
     errorState,
     retryConnection,

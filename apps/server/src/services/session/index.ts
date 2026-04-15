@@ -37,6 +37,12 @@ import {
   resolvePermissionSubjectFromInput,
   syncPermissionStateMirrorBestEffort
 } from '#~/services/session/permission.js'
+import {
+  armNextQueueInterrupt,
+  listSessionQueuedMessages,
+  maybeDispatchQueuedTurn,
+  shouldInterruptForQueuedNext
+} from '#~/services/session/queue.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
 import {
   bindAdapterSessionRuntime,
@@ -514,6 +520,15 @@ export async function startAdapterSession(
                   type: 'message',
                   message: event.data
                 })
+                if (
+                  (event.data as any).role === 'assistant' &&
+                  shouldInterruptForQueuedNext(sessionId, {
+                    type: 'message',
+                    message: event.data
+                  })
+                ) {
+                  interruptSession(sessionId)
+                }
               }
               break
             case 'interaction_request': {
@@ -761,6 +776,11 @@ export async function startAdapterSession(
               updateAndNotifySession(sessionId, {
                 status: exitCode === 0 ? 'completed' : 'failed'
               })
+              if (exitCode === 0) {
+                maybeDispatchQueuedTurn(sessionId, async (content) => {
+                  await processUserMessage(sessionId, content)
+                })
+              }
               if (exitCode !== 0 && !sawFatalError) {
                 emitRuntimeEvent(connectionState, {
                   type: 'error',
@@ -802,6 +822,9 @@ export async function startAdapterSession(
               const latestSession = getDb().getSession(sessionId)
               if (latestSession?.status !== 'failed') {
                 updateAndNotifySession(sessionId, { status: 'completed' })
+                maybeDispatchQueuedTurn(sessionId, async (content) => {
+                  await processUserMessage(sessionId, content)
+                })
               }
               break
             }
@@ -813,7 +836,7 @@ export async function startAdapterSession(
         db.updateSessionRuntimeState(sessionId, { historySeedPending: false })
       }
 
-      return setAdapterSessionRuntime(
+      const runtime = setAdapterSessionRuntime(
         sessionId,
         bindAdapterSessionRuntime(connectionState, session, {
           runId,
@@ -824,6 +847,10 @@ export async function startAdapterSession(
           seededFromHistory
         })
       )
+      if (listSessionQueuedMessages(sessionId).next.length > 0) {
+        armNextQueueInterrupt(sessionId)
+      }
+      return runtime
     } catch (err) {
       if (activeAdapterRunStore.get(sessionId) === runId) {
         activeAdapterRunStore.delete(sessionId)
@@ -906,6 +933,10 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   }
 
   updateAndNotifySession(sessionId, updates)
+
+  if (listSessionQueuedMessages(sessionId).next.length > 0) {
+    armNextQueueInterrupt(sessionId)
+  }
 
   const externalCached = getExternalSessionRuntime(sessionId)
   if (isExternalSession && externalCached != null) {

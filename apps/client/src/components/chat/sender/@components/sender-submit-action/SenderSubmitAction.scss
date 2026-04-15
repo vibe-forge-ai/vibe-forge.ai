@@ -40,15 +40,112 @@
     color: var(--primary-color, #6366f1);
     border-color: var(--primary-color, #6366f1);
   }
-  &.thinking {
+  &.stop {
     color: #fff;
     border-color: #dc2626;
     background: linear-gradient(180deg, #ef4444, #dc2626);
+
+    &:hover {
+      color: #fff;
+      border-color: #dc2626;
+      background: linear-gradient(180deg, #ef4444, #dc2626);
+    }
+
+    .material-symbols-rounded {
+      transform: none;
+    }
   }
   &.disabled {
     color: #9ca3af;
     cursor: not-allowed;
     border-color: var(--border-color);
     opacity: .72;
+  }
+
+  &.blocked {
+    cursor: not-allowed;
+
+    &:hover {
+      color: #9ca3af;
+      border-color: var(--border-color);
+      background: color-mix(
+        in srgb,
+        var(--bg-color, #fff) 92%,
+        var(--sub-bg-color, #f3f4f6) 8%
+      );
+    }
+
+    .material-symbols-rounded {
+      transform: none;
+    }
+  }
+}
+
+.chat-confirm-btn.ant-btn {
+  height: var(--sender-control-height);
+  padding: 0 10px;
+  border-radius: var(--sender-control-radius);
+  border-color: var(--border-color);
+  background: var(--bg-color, #fff);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .material-symbols-rounded {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  &:hover,
+  &:focus {
+    border-color: color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 38%,
+      var(--border-color) 62%
+    );
+    color: var(--text-color, #1f2937);
+    background: color-mix(
+      in srgb,
+      var(--bg-color, #fff) 90%,
+      var(--sub-bg-color, #eff6ff) 10%
+    );
+  }
+}
+
+.sender-send-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sender-send-tooltip__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sender-send-tooltip__label {
+  min-width: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.4;
+}
+
+.sender-send-tooltip-popover {
+  pointer-events: none;
+
+  .ant-tooltip-inner {
+    padding: 8px 10px !important;
+  }
+
+  .shortcut-display {
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .16);
+    color: rgba(255, 255, 255, .92);
+    box-shadow: none;
+    flex: 0 0 auto;
   }
 }
