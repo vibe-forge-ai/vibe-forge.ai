@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 
 import { resolvePermissionMirrorPath } from '@vibe-forge/utils'
 import fg from 'fast-glob'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { callHook } from '#~/call.js'
 
@@ -61,6 +61,7 @@ const installLoggerPluginPackage = async (workspace: string) => {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
@@ -538,5 +539,61 @@ describe('hook runtime', () => {
     )
 
     expect(second).toEqual({ continue: true })
+  })
+
+  it('checks the mirror after permission-check returns inherit for mcp tasks', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-hook-permission-mcp-inherit-'))
+    tempDirs.push(workspace)
+
+    await writeDocument(
+      resolvePermissionMirrorPath(workspace, 'claude-code', 'session-mcp-inherit'),
+      JSON.stringify({
+        permissionState: {
+          allow: ['Write'],
+          deny: [],
+          onceAllow: [],
+          onceDeny: []
+        },
+        projectPermissions: {
+          allow: [],
+          deny: [],
+          ask: []
+        }
+      })
+    )
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: 'inherit'
+      })
+    } as Response)
+
+    const result = await callHook(
+      'PreToolUse',
+      {
+        cwd: workspace,
+        sessionId: 'session-mcp-inherit',
+        adapter: 'claude-code',
+        runtime: 'mcp',
+        hookSource: 'native',
+        canBlock: true,
+        toolName: 'write'
+      },
+      {
+        ...process.env,
+        __VF_PROJECT_AI_CTX_ID__: 'ctx-permission-mcp-inherit',
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: '8787'
+      }
+    )
+
+    expect(result).toMatchObject({
+      continue: true,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow'
+      }
+    })
   })
 })

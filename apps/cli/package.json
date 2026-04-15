@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Vibe Forge CLI",
   "imports": {
     "#~/*.js": {
@@ -32,6 +32,7 @@
   "dependencies": {
     "@vibe-forge/app-runtime": "workspace:^",
     "@vibe-forge/cli-helper": "workspace:^",
+    "@vibe-forge/plugin-cli-skills": "workspace:^",
     "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",

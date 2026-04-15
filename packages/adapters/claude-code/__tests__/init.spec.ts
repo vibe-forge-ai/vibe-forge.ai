@@ -103,4 +103,50 @@ describe('initClaudeCodeAdapter', () => {
 
     await expect(lstat(keychainsPath)).rejects.toMatchObject({ code: 'ENOENT' })
   })
+
+  it('syncs plugin-provided skills from resolved workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const pluginSkillDir = join(workspace, 'vendor', 'vf-cli-skills', 'skills', 'vf-cli-quickstart')
+
+    await mkdir(pluginSkillDir, { recursive: true })
+    await writeFile(join(pluginSkillDir, 'SKILL.md'), '# vf-cli-quickstart\n')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:plugin:0:vf-cli-quickstart',
+            kind: 'skill',
+            name: 'vf-cli-quickstart',
+            displayName: 'vf-cli-quickstart',
+            origin: 'plugin',
+            sourcePath: join(pluginSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(pluginSkillDir, 'SKILL.md'),
+                body: '# vf-cli-quickstart\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const targetPath = join(mockHome, '.claude', 'skills', 'vf-cli-quickstart')
+    expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
+  })
 })
