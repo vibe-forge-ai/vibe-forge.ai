@@ -114,14 +114,14 @@ const syncClaudeMockHomeProjectState = async (ctx: Pick<AdapterCtx, 'cwd' | 'env
   const realState = realStatePath != null
     ? await readJsonFileOrDefault<Record<string, unknown> | undefined>(realStatePath, undefined)
     : undefined
-  const nextState = mergeRecord(realState, mockState)
+  const nextState = mergeRecord(mockState, realState)
   const realProjects = isRecord(realState?.projects) ? realState.projects : undefined
   const mockProjects = isRecord(mockState?.projects) ? mockState.projects : undefined
-  const projects = mergeRecord(realProjects, mockProjects)
+  const projects = mergeRecord(mockProjects, realProjects)
   const workspacePath = resolve(ctx.cwd)
   const existingProjectState = mergeRecord(
-    isRecord(realProjects?.[workspacePath]) ? realProjects[workspacePath] : undefined,
-    isRecord(mockProjects?.[workspacePath]) ? mockProjects[workspacePath] : undefined
+    isRecord(mockProjects?.[workspacePath]) ? mockProjects[workspacePath] : undefined,
+    isRecord(realProjects?.[workspacePath]) ? realProjects[workspacePath] : undefined
   )
   const existingOnboardingCount = typeof existingProjectState.projectOnboardingSeenCount === 'number' &&
       Number.isFinite(existingProjectState.projectOnboardingSeenCount)

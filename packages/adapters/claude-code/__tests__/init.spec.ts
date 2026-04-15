@@ -247,10 +247,15 @@ describe('initClaudeCodeAdapter', () => {
       JSON.stringify(
         {
           autoUpdates: false,
+          preferredModel: 'opus',
           projects: {
             '/tmp/from-real': {
               hasTrustDialogAccepted: true,
               projectOnboardingSeenCount: 2
+            },
+            [resolve(workspace)]: {
+              projectOnboardingSeenCount: 2,
+              workspaceTheme: 'real-theme'
             }
           }
         },
@@ -264,6 +269,7 @@ describe('initClaudeCodeAdapter', () => {
       JSON.stringify(
         {
           preferredModel: 'sonnet',
+          autoUpdates: true,
           projects: {
             '/tmp/from-mock': {
               notes: 'keep-me'
@@ -303,7 +309,7 @@ describe('initClaudeCodeAdapter', () => {
     }
 
     expect(appState.autoUpdates).toBe(false)
-    expect(appState.preferredModel).toBe('sonnet')
+    expect(appState.preferredModel).toBe('opus')
     expect(appState.projects?.['/tmp/from-real']).toMatchObject({
       hasTrustDialogAccepted: true,
       projectOnboardingSeenCount: 2
@@ -313,8 +319,9 @@ describe('initClaudeCodeAdapter', () => {
     })
     expect(appState.projects?.[resolve(workspace)]).toMatchObject({
       customFlag: 'preserve-me',
+      workspaceTheme: 'real-theme',
       hasTrustDialogAccepted: true,
-      projectOnboardingSeenCount: 4,
+      projectOnboardingSeenCount: 2,
       hasCompletedProjectOnboarding: true
     })
   })
