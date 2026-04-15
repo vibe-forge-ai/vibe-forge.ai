@@ -12,6 +12,7 @@ import type {
 import { resolveGeminiBinaryPath } from '#~/paths.js'
 
 import { ensureGeminiProxyRoute } from '../proxy'
+import { buildGeminiNativeHooksSettings } from '../native-hooks'
 import {
   buildGeminiRunArgs,
   buildGeminiSettings,
@@ -50,13 +51,15 @@ export const createStreamGeminiSession = async (
   const proxyRoute = resolvedModel.routedService == null
     ? undefined
     : await ensureGeminiProxyRoute(resolvedModel.routedService)
+  const nativeHooks = buildGeminiNativeHooksSettings(ctx.env)
   const settings = buildGeminiSettings({
     adapterConfig,
     approvalMode,
     externalAuth: proxyRoute != null,
     generatedContextFileName: promptFiles.generatedContextFileName,
     mcpServers: options.assetPlan?.mcpServers ?? {},
-    model: resolvedModel.cliModel
+    model: resolvedModel.cliModel,
+    nativeHooks
   })
   await writeGeminiSettings(ctx, settings)
 
@@ -121,7 +124,10 @@ export const createStreamGeminiSession = async (
     const spawnEnv = buildGeminiSpawnEnv({
       adapterConfig,
       ctx,
-      proxyBaseUrl: proxyRoute?.baseUrl
+      model: resolvedModel.cliModel ?? options.model,
+      proxyBaseUrl: proxyRoute?.baseUrl,
+      runtime: options.runtime,
+      sessionId: options.sessionId
     })
     const resumeSessionId = geminiSessionId
     const proc = spawn(

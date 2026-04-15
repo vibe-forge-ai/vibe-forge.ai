@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, Config } from '@vibe-forge/types'
 
 import { resolveGeminiBinaryPath } from '#~/paths.js'
+import { buildGeminiNativeHooksSettings } from '#~/runtime/native-hooks.js'
 import {
   buildGeminiDirectArgs,
   buildGeminiRunArgs,
@@ -184,6 +186,66 @@ describe('gemini prompt and settings helpers', () => {
       ctx: createCtx(),
       proxyBaseUrl: 'http://127.0.0.1:3000/route'
     }).GOOGLE_GEMINI_BASE_URL).toBe('http://127.0.0.1:3000/route')
+  })
+
+  it('writes native hooks into managed Gemini settings when enabled', () => {
+    const nativeHooks = buildGeminiNativeHooksSettings({
+      __VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__: '1',
+      __VF_PROJECT_AI_GEMINI_HOOK_COMMAND__: `"${process.execPath}" "/tmp/call-hook.js"`
+    })
+
+    expect(buildGeminiSettings({
+      adapterConfig: {},
+      approvalMode: 'default',
+      mcpServers: {},
+      model: 'gemini-2.5-pro',
+      nativeHooks
+    })).toMatchObject({
+      hooksConfig: {
+        enabled: true
+      },
+      hooks: {
+        BeforeTool: [
+          {
+            matcher: '.*',
+            hooks: [
+              {
+                command: `"${process.execPath}" "/tmp/call-hook.js"`,
+                type: 'command'
+              }
+            ]
+          }
+        ],
+        AfterAgent: [
+          {
+            hooks: [
+              {
+                command: `"${process.execPath}" "/tmp/call-hook.js"`,
+                type: 'command'
+              }
+            ]
+          }
+        ]
+      }
+    })
+  })
+
+  it('passes native hook bridge markers to Gemini child processes when enabled', () => {
+    const env = buildGeminiSpawnEnv({
+      adapterConfig: {},
+      ctx: createCtx(undefined, undefined, {
+        __VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__: '1'
+      }),
+      model: 'kimi-k2.5',
+      runtime: 'cli',
+      sessionId: 'session-gemini-native'
+    })
+
+    expect(env.__VF_VIBE_FORGE_GEMINI_HOOKS_ACTIVE__).toBe('1')
+    expect(env.__VF_GEMINI_HOOK_MODEL__).toBe('kimi-k2.5')
+    expect(env.__VF_GEMINI_HOOK_RUNTIME__).toBe('cli')
+    expect(env.__VF_GEMINI_TASK_SESSION_ID__).toBe('session-gemini-native')
+    expect(env[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('gemini')
   })
 })
 

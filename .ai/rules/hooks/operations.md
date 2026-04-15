@@ -25,6 +25,7 @@ native hooks 可用时，Vibe Forge 会关闭对应的 bridge 事件，避免同
 
 - `claude-code`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `codex`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
+- `gemini`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `opencode`：`SessionStart` / `PreToolUse` / `PostToolUse` / `Stop`
 
 Codex 补充说明：

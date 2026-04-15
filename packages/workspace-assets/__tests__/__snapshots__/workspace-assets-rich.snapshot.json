@@ -733,23 +733,23 @@
         {
           "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "gemini",
-          "status": "translated",
-          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "status": "native",
+          "reason": "Mapped into the Gemini native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
         {
           "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "gemini",
-          "status": "translated",
-          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "status": "native",
+          "reason": "Mapped into the Gemini native hooks bridge.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
         },
         {
           "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "gemini",
-          "status": "translated",
-          "reason": "Handled by the Vibe Forge managed hook bridge in V1.",
+          "status": "native",
+          "reason": "Mapped into the Gemini native hooks bridge.",
           "packageId": "@vibe-forge/plugin-telemetry"
         },
         {

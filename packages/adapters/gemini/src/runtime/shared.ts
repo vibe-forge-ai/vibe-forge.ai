@@ -5,10 +5,12 @@ import { resolve } from 'node:path'
 import '../adapter-config.js'
 
 import type { ChatMessage } from '@vibe-forge/core'
-import { resolveMockHome } from '@vibe-forge/hooks'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV, resolveMockHome } from '@vibe-forge/hooks'
+import type { NativeHookMatcherGroup } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterMessageContent, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
 import { omitAdapterCommonConfig, parseServiceModelSelector } from '@vibe-forge/utils'
 
+import type { GeminiNativeHooksSettings } from './native-hooks'
 import { resolveGeminiModelServiceRoute } from './proxy'
 
 export interface GeminiAdapterConfig {
@@ -35,6 +37,11 @@ export interface GeminiSettings {
     defaultApprovalMode?: 'default' | 'auto_edit' | 'plan'
     enableAutoUpdate?: boolean
     enableAutoUpdateNotification?: boolean
+  }
+  hooks?: Record<string, NativeHookMatcherGroup[]>
+  hooksConfig?: {
+    enabled?: boolean
+    disabled?: string[]
   }
   mcpServers?: Record<string, Record<string, unknown>>
   model?: {
@@ -150,7 +157,7 @@ const FORBIDDEN_EXTRA_OPTIONS = new Set([
 ])
 
 const FORBIDDEN_PROMPT_PREFIX = /^\/(?![/*])/
-const FORBIDDEN_AT_REFERENCE = /(^|[\s(])@(?:\/|\.{1,2}\/|~\/|[A-Za-z]:[\\/])/m
+const FORBIDDEN_AT_REFERENCE = /(?:^|[\s(])@(?:\/|\.{1,2}\/|~\/|[a-z]:[\\/])/im
 
 export const MAX_GEMINI_STDIN_BYTES = 8 * 1024 * 1024
 
@@ -233,7 +240,7 @@ export const createAssistantMessage = (id: string, content: string, model?: stri
 
 const normalizeToolToken = (value: string) => (
   value
-    .split(/[^a-zA-Z0-9]+/)
+    .split(/[^a-z0-9]+/i)
     .filter(Boolean)
     .map(token => token[0]?.toUpperCase() + token.slice(1))
     .join('')
@@ -408,7 +415,7 @@ export const ensureGeminiPromptFiles = async (
 
   return {
     generatedContextFilePath,
-    generatedContextFileName: '.ai/.mock/.gemini-adapter/' + options.sessionId + '/VIBE_FORGE.md'
+    generatedContextFileName: `.ai/.mock/.gemini-adapter/${options.sessionId}/VIBE_FORGE.md`
   }
 }
 
@@ -440,6 +447,7 @@ export const buildGeminiSettings = (params: {
   generatedContextFileName?: string
   mcpServers: Record<string, NonNullable<Config['mcpServers']>[string]>
   model?: string
+  nativeHooks?: GeminiNativeHooksSettings
 }): GeminiSettings => {
   const {
     adapterConfig,
@@ -447,7 +455,8 @@ export const buildGeminiSettings = (params: {
     externalAuth,
     generatedContextFileName,
     mcpServers,
-    model
+    model,
+    nativeHooks
   } = params
 
   const telemetryOff = adapterConfig.telemetry !== 'inherit'
@@ -500,7 +509,9 @@ export const buildGeminiSettings = (params: {
           mcpServers: Object.fromEntries(
             Object.entries(mcpServers).map(([name, server]) => [name, translateMcpServerConfig(server)])
           )
-        })
+        }),
+    ...(nativeHooks?.hooksConfig == null ? {} : { hooksConfig: nativeHooks.hooksConfig }),
+    ...(nativeHooks?.hooks == null ? {} : { hooks: nativeHooks.hooks })
   }
 
   return settings
@@ -517,10 +528,14 @@ export const writeGeminiSettings = async (ctx: AdapterCtx, settings: GeminiSetti
 export const buildGeminiSpawnEnv = (params: {
   adapterConfig: GeminiAdapterConfig
   ctx: AdapterCtx
+  model?: string
   proxyBaseUrl?: string
+  runtime?: AdapterQueryOptions['runtime']
+  sessionId?: string
 }): Record<string, string | undefined> => {
-  const { adapterConfig, ctx, proxyBaseUrl } = params
+  const { adapterConfig, ctx, model, proxyBaseUrl, runtime, sessionId } = params
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const nativeHooksActive = ctx.env.__VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__ === '1'
 
   return {
     ...toProcessEnv({
@@ -536,7 +551,12 @@ export const buildGeminiSpawnEnv = (params: {
       GEMINI_SYSTEM_MD: undefined,
       GEMINI_WRITE_SYSTEM_MD: undefined,
       GOOGLE_GEMINI_BASE_URL: proxyBaseUrl,
-      GOOGLE_VERTEX_BASE_URL: undefined
+      GOOGLE_VERTEX_BASE_URL: undefined,
+      __VF_GEMINI_HOOK_MODEL__: nativeHooksActive ? model : undefined,
+      __VF_GEMINI_HOOK_RUNTIME__: nativeHooksActive ? runtime : undefined,
+      __VF_GEMINI_TASK_SESSION_ID__: nativeHooksActive ? sessionId : undefined,
+      __VF_VIBE_FORGE_GEMINI_HOOKS_ACTIVE__: nativeHooksActive ? '1' : undefined,
+      [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: nativeHooksActive ? 'gemini' : undefined
     })
   }
 }
