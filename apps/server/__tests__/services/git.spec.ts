@@ -1,9 +1,12 @@
+/* eslint-disable max-lines */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   execFile: vi.fn(),
   getDb: vi.fn(),
+  resolveSessionWorkspace: vi.fn(),
   resolveSessionWorkspaceFolder: vi.fn()
 }))
 
@@ -20,6 +23,7 @@ vi.mock('#~/db/index.js', () => ({
 }))
 
 vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspace: mocks.resolveSessionWorkspace,
   resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder
 }))
 
@@ -53,6 +57,15 @@ describe('git service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.access.mockResolvedValue(undefined)
+    mocks.resolveSessionWorkspace.mockResolvedValue({
+      baseRef: 'main',
+      cleanupPolicy: 'delete_on_session_delete',
+      kind: 'managed_worktree',
+      repositoryRoot: '/workspace',
+      sessionId: 'sess-1',
+      state: 'ready',
+      workspaceFolder: '/workspace'
+    })
     mocks.resolveSessionWorkspaceFolder.mockResolvedValue('/workspace/packages/app')
     mocks.getDb.mockReturnValue({
       getSession: vi.fn(() => ({
@@ -479,6 +492,93 @@ describe('git service', () => {
     expect(mocks.execFile).toHaveBeenCalledWith(
       'git',
       ['push', '--force-with-lease'],
+      expect.objectContaining({
+        cwd: '/workspace',
+        maxBuffer: 1048576
+      }),
+      expect.any(Function)
+    )
+  })
+
+  it('syncs against the current branch when the matching remote branch exists', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      { stdout: '/workspace\n' },
+      {
+        stdout: '# branch.head main-session-sess-1\n'
+      },
+      { stdout: 'origin\n' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: 'abcdef0123456789\tfeat: base' },
+      { stdout: 'abcdef0123456789\trefs/heads/main-session-sess-1\n' },
+      { stdout: '' },
+      { stdout: '/workspace\n' },
+      {
+        stdout: '# branch.head main-session-sess-1\n'
+      },
+      { stdout: 'origin\n' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: 'abcdef0123456789\tfeat: base' }
+    )
+
+    const { syncSessionGitBranch } = await import('#~/services/git/index.js')
+    await expect(syncSessionGitBranch('sess-1')).resolves.toMatchObject({
+      available: true,
+      currentBranch: 'main-session-sess-1'
+    })
+
+    expect(mocks.execFile).toHaveBeenCalledWith(
+      'git',
+      ['pull', '--rebase', '--autostash', 'origin', 'main-session-sess-1'],
+      expect.objectContaining({
+        cwd: '/workspace',
+        maxBuffer: 1048576
+      }),
+      expect.any(Function)
+    )
+    expect(mocks.resolveSessionWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('syncs against the base branch when the session branch does not exist on the remote', async () => {
+    mockExecResponses(
+      { stdout: '/workspace\n' },
+      { stdout: '/workspace\n' },
+      {
+        stdout: '# branch.head main-session-sess-1\n'
+      },
+      { stdout: 'origin\n' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: 'abcdef0123456789\tfeat: base' },
+      { stdout: '' },
+      { stdout: 'abcdef0123456789\trefs/heads/main\n' },
+      { stdout: '' },
+      { stdout: '/workspace\n' },
+      {
+        stdout: '# branch.head main-session-sess-1\n'
+      },
+      { stdout: 'origin\n' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: '' },
+      { stdout: 'abcdef0123456789\tfeat: base' }
+    )
+
+    const { syncSessionGitBranch } = await import('#~/services/git/index.js')
+    await expect(syncSessionGitBranch('sess-1')).resolves.toMatchObject({
+      available: true,
+      currentBranch: 'main-session-sess-1'
+    })
+
+    expect(mocks.resolveSessionWorkspace).toHaveBeenCalledWith('sess-1')
+    expect(mocks.execFile).toHaveBeenCalledWith(
+      'git',
+      ['pull', '--rebase', '--autostash', 'origin', 'main'],
       expect.objectContaining({
         cwd: '/workspace',
         maxBuffer: 1048576

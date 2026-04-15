@@ -1,5 +1,5 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
-import type { SessionWorkspace } from '@vibe-forge/types'
+import type { GitBranchKind, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
@@ -26,6 +26,14 @@ export async function createSession(
     effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
+    workspace?: {
+      createWorktree?: boolean
+      branch?: {
+        name: string
+        kind?: GitBranchKind
+        mode?: 'checkout' | 'create'
+      }
+    }
   }
 ): Promise<{ session: Session }> {
   return fetchApiJson<{ session: Session }>('/api/sessions', {
@@ -43,7 +51,8 @@ export async function createSession(
       promptName: options?.promptName,
       effort: options?.effort,
       permissionMode: options?.permissionMode,
-      adapter: options?.adapter
+      adapter: options?.adapter,
+      workspace: options?.workspace
     })
   })
 }
@@ -89,6 +98,22 @@ export async function getSessionMessages(
 
 export async function getSessionWorkspace(id: string): Promise<{ workspace: SessionWorkspace }> {
   return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace`)
+}
+
+export async function createSessionManagedWorktree(
+  id: string
+): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace/create-worktree`, {
+    method: 'POST'
+  })
+}
+
+export async function transferSessionWorkspaceToLocal(
+  id: string
+): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace/transfer-local`, {
+    method: 'POST'
+  })
 }
 
 export async function listSessionWorkspaceTree(

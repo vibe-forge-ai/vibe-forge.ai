@@ -1,10 +1,28 @@
-import { Button, Dropdown } from 'antd'
-import { useMemo } from 'react'
+/* eslint-disable max-lines */
+
+import { Button, Dropdown, Empty, Input, Switch } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { GitWorktreeSummary, SessionWorkspace } from '@vibe-forge/types'
 
 import { formatGitWorktreePathLabel } from './git-branch-utils'
+
+interface DraftWorktreeMenuMode {
+  type: 'draft'
+  createWorktree: boolean
+  disabled?: boolean
+  onCreateWorktreeChange: (checked: boolean) => void
+}
+
+interface SessionWorktreeMenuMode {
+  type: 'session'
+  isBusy: boolean
+  canCreateManagedWorktree: boolean
+  canTransferToLocal: boolean
+  onCreateManagedWorktree: () => void
+  onTransferToLocal: () => void
+}
 
 const getWorkspaceKindIcon = (kind: SessionWorkspace['kind']) => {
   switch (kind) {
@@ -28,12 +46,24 @@ const getWorkspaceKindLabel = (kind: SessionWorkspace['kind'], t: (key: string) 
   }
 }
 
-const getWorkspaceCleanupLabel = (
-  cleanupPolicy: SessionWorkspace['cleanupPolicy'],
+const getDraftStrategyIcon = (createWorktree: boolean) => (
+  createWorktree ? 'create_new_folder' : 'folder_open'
+)
+
+const getDraftStrategyLabel = (createWorktree: boolean, t: (key: string) => string) => (
+  createWorktree
+    ? t('chat.sessionWorkspaceDraftStrategyManaged')
+    : t('chat.sessionWorkspaceDraftStrategyLocal')
+)
+
+const getWorktreeMenuTitle = (
+  mode: DraftWorktreeMenuMode | SessionWorktreeMenuMode,
   t: (key: string) => string
-) => cleanupPolicy === 'delete_on_session_delete'
-  ? t('chat.sessionWorkspaceCleanupDelete')
-  : t('chat.sessionWorkspaceCleanupRetain')
+) => (
+  mode.type === 'draft'
+    ? t('chat.sessionWorkspaceMenuWorktreeList')
+    : t('chat.sessionWorkspaceMenuCurrentWorktree')
+)
 
 const getWorkspaceStateLabel = (
   state: SessionWorkspace['state'],
@@ -53,20 +83,50 @@ const getWorkspaceStateLabel = (
   }
 }
 
+const joinWorkspaceSummary = (parts: Array<string | null | undefined>) =>
+  parts.filter(part => part != null && part.trim() !== '').join(' · ')
+
+const filterGitWorktrees = (worktrees: GitWorktreeSummary[], query: string) => {
+  const keyword = query.trim().toLowerCase()
+  if (keyword === '') {
+    return worktrees
+  }
+
+  return worktrees.filter(worktree => {
+    const pathLabel = formatGitWorktreePathLabel(worktree.path).toLowerCase()
+    const branchLabel = worktree.branchName?.toLowerCase() ?? ''
+    const fullPath = worktree.path.toLowerCase()
+    return pathLabel.includes(keyword) || branchLabel.includes(keyword) || fullPath.includes(keyword)
+  })
+}
+
 export function GitWorktreeDropdown({
   open,
   workspace,
   worktrees,
   currentBranch,
+  mode,
+  placement = 'bottomLeft',
   onOpenChange
 }: {
   open: boolean
   workspace?: SessionWorkspace
   worktrees: GitWorktreeSummary[]
   currentBranch?: string | null
+  mode: DraftWorktreeMenuMode | SessionWorktreeMenuMode
+  placement?: 'bottomLeft' | 'topLeft'
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation()
+  const [isWorktreeSubmenuOpen, setIsWorktreeSubmenuOpen] = useState(false)
+  const [worktreeQuery, setWorktreeQuery] = useState('')
+
+  useEffect(() => {
+    if (!open) {
+      setIsWorktreeSubmenuOpen(false)
+      setWorktreeQuery('')
+    }
+  }, [open])
 
   const currentWorkspaceTitle = useMemo(() => {
     if (workspace?.workspaceFolder?.trim()) {
@@ -78,99 +138,179 @@ export function GitWorktreeDropdown({
       : t('chat.gitWorktree')
   }, [t, workspace?.workspaceFolder, worktrees])
 
-  const currentWorkspaceMeta = useMemo(() => {
+  const currentWorkspaceSubtitle = useMemo(() => {
     if (workspace == null) {
-      return worktrees.length > 0 ? t('chat.sessionWorkspaceRepositoryWorktrees') : t('chat.gitWorktree')
+      return currentBranch?.trim() || t('chat.gitDetachedHead')
     }
-    return getWorkspaceKindLabel(workspace.kind, t)
-  }, [t, workspace, worktrees.length])
+
+    return joinWorkspaceSummary([
+      getWorkspaceKindLabel(workspace.kind, t),
+      currentBranch?.trim() || t('chat.gitDetachedHead'),
+      workspace.state !== 'ready' ? getWorkspaceStateLabel(workspace.state, t) : null
+    ])
+  }, [currentBranch, t, workspace])
+
+  const filteredWorktrees = useMemo(
+    () => filterGitWorktrees(worktrees, worktreeQuery),
+    [worktreeQuery, worktrees]
+  )
+  const worktreeMenuTitle = getWorktreeMenuTitle(mode, t)
+
+  const triggerLabel = mode.type === 'draft'
+    ? getDraftStrategyLabel(mode.createWorktree, t)
+    : currentWorkspaceTitle
+  const triggerIcon = mode.type === 'draft'
+    ? getDraftStrategyIcon(mode.createWorktree)
+    : workspace != null
+    ? getWorkspaceKindIcon(workspace.kind)
+    : 'account_tree'
+  const triggerTitle = mode.type === 'draft'
+    ? triggerLabel
+    : workspace != null
+    ? workspace.workspaceFolder
+    : currentWorkspaceSubtitle
 
   return (
     <Dropdown
       open={open}
-      placement='bottomLeft'
+      placement={placement}
       trigger={['click']}
       onOpenChange={onOpenChange}
       dropdownRender={() => (
-        <div className='chat-header-git__overlay chat-header-git__overlay--worktrees'>
-          {workspace != null && (
-            <div className='chat-header-git__workspace-panel'>
-              <div className='chat-header-git__workspace-hero'>
-                <div className='chat-header-git__workspace-title'>
-                  <span className='material-symbols-rounded'>{getWorkspaceKindIcon(workspace.kind)}</span>
-                  <span>{t('chat.sessionWorkspace')}</span>
-                </div>
-                <div className='chat-header-git__workspace-value' title={workspace.workspaceFolder}>
-                  {workspace.workspaceFolder}
-                </div>
-              </div>
-
-              <div className='chat-header-git__workspace-meta-list'>
-                <div className='chat-header-git__workspace-meta'>
-                  <span>{t('chat.sessionWorkspaceMode')}</span>
-                  <strong>{getWorkspaceKindLabel(workspace.kind, t)}</strong>
-                </div>
-                <div className='chat-header-git__workspace-meta'>
-                  <span>{t('chat.sessionWorkspaceState')}</span>
-                  <strong>{getWorkspaceStateLabel(workspace.state, t)}</strong>
-                </div>
-                <div className='chat-header-git__workspace-meta'>
-                  <span>{t('chat.sessionWorkspaceCleanup')}</span>
-                  <strong>{getWorkspaceCleanupLabel(workspace.cleanupPolicy, t)}</strong>
-                </div>
-                {currentBranch !== undefined && (
-                  <div className='chat-header-git__workspace-meta'>
-                    <span>{t('chat.sessionWorkspaceBranch')}</span>
-                    <strong>{currentBranch?.trim() || t('chat.gitDetachedHead')}</strong>
-                  </div>
+        <div className='chat-header-git__menu-shell'>
+          <div className='chat-header-git__overlay chat-header-git__overlay--worktree-root'>
+            <button
+              type='button'
+              className={`chat-header-git__menu-row ${isWorktreeSubmenuOpen ? 'is-active' : ''}`}
+              onClick={() => setIsWorktreeSubmenuOpen(value => !value)}
+            >
+              <span className='chat-header-git__menu-row-main'>
+                <span className='chat-header-git__row-icon material-symbols-rounded'>
+                  {workspace != null ? getWorkspaceKindIcon(workspace.kind) : 'account_tree'}
+                </span>
+                <span className='chat-header-git__menu-row-title'>
+                  {worktreeMenuTitle}
+                </span>
+              </span>
+              <span className='chat-header-git__menu-row-trailing'>
+                {mode.type === 'session' && (
+                  <span className='chat-header-git__menu-row-value' title={workspace?.workspaceFolder}>
+                    {currentWorkspaceTitle}
+                  </span>
                 )}
-                {workspace.baseRef != null && workspace.baseRef.trim() !== '' && (
-                  <div className='chat-header-git__workspace-meta'>
-                    <span>{t('chat.sessionWorkspaceBaseRef')}</span>
-                    <strong>{workspace.baseRef}</strong>
-                  </div>
-                )}
-              </div>
+                <span className='material-symbols-rounded'>chevron_right</span>
+              </span>
+            </button>
 
-              {workspace.lastError != null && workspace.lastError.trim() !== '' && (
-                <div className='chat-header-git__workspace-error'>
-                  {workspace.lastError}
-                </div>
-              )}
-            </div>
-          )}
-
-          {worktrees.length > 0 && (
-            <div className='chat-header-git__section'>
-              <div className='chat-header-git__section-label'>
-                {t('chat.sessionWorkspaceRepositoryWorktrees')}
+            {mode.type === 'draft' && (
+              <div className={`chat-header-git__menu-row chat-header-git__menu-row--toggle ${mode.disabled ? 'is-disabled' : ''}`}>
+                <span className='chat-header-git__menu-row-main'>
+                  <span className='chat-header-git__row-icon material-symbols-rounded'>
+                    {getDraftStrategyIcon(true)}
+                  </span>
+                  <span className='chat-header-git__menu-row-title'>
+                    {t('chat.sessionWorkspaceMenuLaunchInWorktree')}
+                  </span>
+                </span>
+                <Switch
+                  checked={mode.createWorktree}
+                  disabled={mode.disabled}
+                  size='small'
+                  onChange={mode.onCreateWorktreeChange}
+                  onClick={(checked, event) => {
+                    event?.stopPropagation()
+                  }}
+                />
               </div>
-              <div className='chat-header-git__worktree-list'>
-                {worktrees.map(worktree => (
-                  <div
-                    key={worktree.path}
-                    className='chat-header-git__worktree-row'
-                    title={worktree.path}
-                  >
-                    <div className='chat-header-git__worktree-row-main'>
-                      <span className='chat-header-git__row-icon material-symbols-rounded'>folder_open</span>
-                      <span className='chat-header-git__row-copy'>
-                        <span className='chat-header-git__row-title'>
-                          {formatGitWorktreePathLabel(worktree.path)}
+            )}
+
+            {mode.type === 'session' && mode.canTransferToLocal && (
+              <button
+                type='button'
+                className='chat-header-git__menu-row'
+                disabled={mode.isBusy}
+                onClick={mode.onTransferToLocal}
+              >
+                <span className='chat-header-git__menu-row-main'>
+                  <span className='chat-header-git__row-icon material-symbols-rounded'>drive_export</span>
+                  <span className='chat-header-git__menu-row-title'>
+                    {t('chat.sessionWorkspaceMenuTransferToLocal')}
+                  </span>
+                </span>
+              </button>
+            )}
+
+            {mode.type === 'session' && mode.canCreateManagedWorktree && (
+              <button
+                type='button'
+                className='chat-header-git__menu-row'
+                disabled={mode.isBusy}
+                onClick={mode.onCreateManagedWorktree}
+              >
+                <span className='chat-header-git__menu-row-main'>
+                  <span className='chat-header-git__row-icon material-symbols-rounded'>add</span>
+                  <span className='chat-header-git__menu-row-title'>
+                    {t('chat.sessionWorkspaceMenuCreateWorktree')}
+                  </span>
+                </span>
+              </button>
+            )}
+          </div>
+
+          {isWorktreeSubmenuOpen && (
+            <div className='chat-header-git__overlay chat-header-git__overlay--worktree-submenu'>
+              <div className='chat-header-git__worktree-submenu-body'>
+                {filteredWorktrees.length > 0
+                  ? (
+                    <div className='chat-header-git__worktree-list'>
+                      {filteredWorktrees.map(worktree => (
+                        <div
+                          key={worktree.path}
+                          className='chat-header-git__worktree-row'
+                          title={worktree.path}
+                        >
+                          <div className='chat-header-git__worktree-row-main'>
+                            <span className='chat-header-git__row-icon material-symbols-rounded'>folder_open</span>
+                            <span className='chat-header-git__row-copy'>
+                              <span className='chat-header-git__row-title'>
+                                {formatGitWorktreePathLabel(worktree.path)}
+                              </span>
+                          <span className='chat-header-git__row-subtitle'>
+                            {worktree.branchName?.trim() || t('chat.gitDetachedHead')}
+                          </span>
                         </span>
-                        <span className='chat-header-git__row-subtitle'>
-                          {worktree.branchName?.trim() || t('chat.gitDetachedHead')}
+                      </div>
+                      {mode.type === 'session' && worktree.isCurrent && (
+                        <span className='chat-header-git__worktree-chip'>
+                          {t('chat.sessionWorkspaceCurrentSession')}
                         </span>
-                      </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    {worktree.isCurrent && (
-                      <span className='chat-header-git__worktree-chip'>
-                        {t('chat.sessionWorkspaceCurrentSession')}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  )
+                  : (
+                    <div className='chat-header-git__empty chat-header-git__empty--worktrees'>
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={t('chat.sessionWorkspaceNoWorktrees')}
+                      />
+                    </div>
+                  )}
               </div>
+
+              <Input
+                allowClear
+                autoFocus
+                className='chat-header-git__search'
+                placeholder={t('chat.sessionWorkspaceSearchWorktrees')}
+                prefix={<span className='material-symbols-rounded'>search</span>}
+                value={worktreeQuery}
+                onChange={(event) => setWorktreeQuery(event.target.value)}
+                onMouseDown={(event) => {
+                  event.stopPropagation()
+                }}
+              />
             </div>
           )}
         </div>
@@ -178,18 +318,13 @@ export function GitWorktreeDropdown({
     >
       <Button
         type='text'
-        className={`chat-header-git__trigger chat-header-git__trigger--workspace ${open ? 'is-open' : ''}`}
-        title={workspace != null ? workspace.workspaceFolder : t('chat.gitWorktree')}
+        className={`chat-header-git__trigger ${open ? 'is-open' : ''} ${mode.type === 'session' && mode.isBusy ? 'is-disabled' : ''}`}
+        title={triggerTitle}
         aria-label={t('chat.sessionWorkspace')}
       >
         <span className='chat-header-git__trigger-main'>
-          <span className='material-symbols-rounded'>
-            {workspace != null ? getWorkspaceKindIcon(workspace.kind) : 'account_tree'}
-          </span>
-          <span className='chat-header-git__trigger-copy'>
-            <span className='chat-header-git__trigger-label'>{currentWorkspaceTitle}</span>
-            <span className='chat-header-git__trigger-meta'>{currentWorkspaceMeta}</span>
-          </span>
+          <span className='material-symbols-rounded'>{triggerIcon}</span>
+          <span className='chat-header-git__trigger-label'>{triggerLabel}</span>
         </span>
         <span className='chat-header-git__trigger-chevron material-symbols-rounded'>expand_more</span>
       </Button>

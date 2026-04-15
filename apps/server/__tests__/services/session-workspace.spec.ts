@@ -52,6 +52,7 @@ describe('session workspace service', () => {
     await writeFile(path.join(workspaceRoot, 'README.md'), '# demo\n', 'utf8')
     runGit(workspaceRoot, ['add', 'README.md'])
     runGit(workspaceRoot, ['commit', '-m', 'init'])
+    runGit(workspaceRoot, ['branch', '-M', 'main'])
   })
 
   afterEach(async () => {
@@ -67,6 +68,10 @@ describe('session workspace service', () => {
     db.createSession('Demo', 'sess-1')
 
     const workspace = await provisionSessionWorkspace('sess-1')
+    const currentBranch = execFileSync('git', ['branch', '--show-current'], {
+      cwd: workspace.workspaceFolder,
+      encoding: 'utf8'
+    }).trim()
 
     expect(workspace).toMatchObject({
       sessionId: 'sess-1',
@@ -74,9 +79,11 @@ describe('session workspace service', () => {
       workspaceFolder: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
       repositoryRoot: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
       worktreePath: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
+      baseRef: 'main',
       cleanupPolicy: 'delete_on_session_delete',
       state: 'ready'
     })
+    expect(currentBranch).toBe('main-session-sess-1')
   })
 
   it('recovers legacy session cwd as an external workspace without creating a new worktree', async () => {
@@ -111,6 +118,50 @@ describe('session workspace service', () => {
     })
     expect(workspace.repositoryRoot).toBeTruthy()
     expect(workspace.repositoryRoot).toContain(path.basename(workspaceRoot))
+  })
+
+  it('creates a managed worktree for an existing shared-workspace session', async () => {
+    const {
+      createSessionManagedWorktree,
+      provisionSessionWorkspace
+    } = await import('#~/services/session/workspace.js')
+    db.createSession('Shared', 'sess-shared')
+
+    const sharedWorkspace = await provisionSessionWorkspace('sess-shared', {
+      createWorktree: false
+    })
+    expect(sharedWorkspace.kind).toBe('shared_workspace')
+
+    const managedWorkspace = await createSessionManagedWorktree('sess-shared')
+
+    expect(managedWorkspace).toMatchObject({
+      sessionId: 'sess-shared',
+      kind: 'managed_worktree',
+      workspaceFolder: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-shared'),
+      worktreePath: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-shared'),
+      cleanupPolicy: 'delete_on_session_delete',
+      state: 'ready'
+    })
+  })
+
+  it('transfers a managed worktree to a retained local workspace without deleting files', async () => {
+    const {
+      provisionSessionWorkspace,
+      transferSessionWorkspaceToLocal
+    } = await import('#~/services/session/workspace.js')
+    db.createSession('Managed', 'sess-local')
+
+    const managedWorkspace = await provisionSessionWorkspace('sess-local')
+    const transferredWorkspace = await transferSessionWorkspaceToLocal('sess-local')
+
+    expect(transferredWorkspace).toMatchObject({
+      sessionId: 'sess-local',
+      kind: 'external_workspace',
+      workspaceFolder: managedWorkspace.workspaceFolder,
+      worktreePath: managedWorkspace.worktreePath,
+      cleanupPolicy: 'retain',
+      state: 'ready'
+    })
   })
 
   it('refuses to delete a dirty managed worktree unless forced', async () => {

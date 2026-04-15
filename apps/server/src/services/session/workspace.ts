@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { env as processEnv } from 'node:process'
@@ -10,6 +12,7 @@ import {
   isGitMissingError,
   isGitNotRepositoryError,
   removeGitWorktree,
+  resolveGitCurrentBranch,
   resolveGitHeadRef,
   resolveGitRepositoryRoot,
   resolveProjectAiPath,
@@ -27,6 +30,7 @@ import { conflict, notFound } from '#~/utils/http.js'
 
 interface ProvisionSessionWorkspaceOptions {
   sourceSessionId?: string
+  createWorktree?: boolean
 }
 
 const DEFAULT_CLEANUP_POLICY: SessionWorkspaceCleanupPolicy = 'delete_on_session_delete'
@@ -46,6 +50,11 @@ const getSessionOrThrow = (sessionId: string) => {
 const resolveManagedWorktreePath = (workspaceFolder: string, sessionId: string) => {
   const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder) ?? workspaceFolder
   return resolveProjectAiPath(primaryWorkspaceFolder, processEnv, 'worktrees', 'sessions', sessionId)
+}
+
+const buildManagedWorktreeBranchName = (baseBranch: string, sessionId: string) => {
+  const suffix = sessionId.slice(0, 8)
+  return `${baseBranch}-session-${suffix}`
 }
 
 const getLatestSessionInfoCwd = (sessionId: string) => {
@@ -107,11 +116,17 @@ const buildManagedWorkspace = async (
   workspaceFolder: string
 ) => {
   const repositoryRoot = await resolveGitRepositoryRoot(workspaceFolder)
-  const baseRef = await resolveGitHeadRef(workspaceFolder).catch(() => 'HEAD')
+  const currentBranch = await resolveGitCurrentBranch(workspaceFolder).catch(() => '')
+  const normalizedBranch = currentBranch.trim() !== '' ? currentBranch.trim() : undefined
+  const baseRef = normalizedBranch ?? await resolveGitHeadRef(workspaceFolder).catch(() => 'HEAD')
   const worktreePath = resolveManagedWorktreePath(workspaceFolder, sessionId)
+  const branchName = normalizedBranch == null
+    ? undefined
+    : buildManagedWorktreeBranchName(normalizedBranch, sessionId)
 
   await mkdir(dirname(worktreePath), { recursive: true })
   await addGitWorktree({
+    branch: branchName,
     cwd: repositoryRoot,
     path: worktreePath,
     ref: baseRef
@@ -154,6 +169,15 @@ export const provisionSessionWorkspace = async (
 
   const sourceWorkspaceFolder = await resolveManagedWorkspaceSource(sessionId, options)
 
+  if (options.createWorktree === false) {
+    return await persistSharedWorkspace(
+      sessionId,
+      sourceWorkspaceFolder,
+      'shared_workspace',
+      'retain'
+    )
+  }
+
   try {
     return await buildManagedWorkspace(sessionId, sourceWorkspaceFolder)
   } catch (error) {
@@ -165,7 +189,7 @@ export const provisionSessionWorkspace = async (
       sessionId,
       sourceWorkspaceFolder,
       'shared_workspace',
-      DEFAULT_CLEANUP_POLICY
+      'retain'
     )
   }
 }
@@ -193,6 +217,57 @@ export const resolveSessionWorkspace = async (sessionId: string) => {
 export const resolveSessionWorkspaceFolder = async (sessionId: string) => {
   const workspace = await resolveSessionWorkspace(sessionId)
   return workspace.workspaceFolder
+}
+
+export const createSessionManagedWorktree = async (sessionId: string) => {
+  getSessionOrThrow(sessionId)
+
+  const existing = await resolveSessionWorkspace(sessionId)
+  if (existing.kind === 'managed_worktree') {
+    return existing
+  }
+
+  try {
+    return await buildManagedWorkspace(sessionId, existing.workspaceFolder)
+  } catch (error) {
+    if (!isGitMissingError(error) && !isGitNotRepositoryError(error)) {
+      throw error
+    }
+
+    throw conflict(
+      'Session workspace is not a git repository',
+      {
+        sessionId,
+        workspaceFolder: existing.workspaceFolder
+      },
+      'session_workspace_not_repository'
+    )
+  }
+}
+
+export const transferSessionWorkspaceToLocal = async (sessionId: string) => {
+  const existing = await resolveSessionWorkspace(sessionId)
+  if (existing.kind !== 'managed_worktree') {
+    throw conflict(
+      'Session workspace is not a managed worktree',
+      { sessionId },
+      'session_workspace_not_managed_worktree'
+    )
+  }
+
+  getDb().updateSessionWorkspace(sessionId, {
+    kind: 'external_workspace',
+    cleanupPolicy: 'retain',
+    state: 'ready',
+    lastError: null
+  })
+
+  const updated = getDb().getSessionWorkspace(sessionId)
+  if (updated == null) {
+    throw new Error(`Failed to transfer session workspace for ${sessionId}`)
+  }
+
+  return updated
 }
 
 export const deleteSessionWorkspace = async (

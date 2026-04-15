@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { App } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,11 +9,13 @@ import type { GitBranchListResult, GitBranchSummary, GitRepositoryState, Session
 
 import {
   checkoutSessionGitBranch,
+  createSessionManagedWorktree,
   createSessionGitBranch,
   getApiErrorMessage,
   getSessionWorkspace,
   getSessionGitState,
-  listSessionGitBranches
+  listSessionGitBranches,
+  transferSessionWorkspaceToLocal
 } from '#~/api'
 
 import { filterGitBranches, getGitBranchViewState, hasExactGitBranchMatch } from './git-branch-utils'
@@ -21,7 +25,15 @@ import { useChatGitCommit } from './use-chat-git-commit'
 import { useChatGitPushState } from './use-chat-git-push-state'
 import { useChatGitWorktrees } from './use-chat-git-worktrees'
 
-type GitActionKind = 'branch-create' | 'branch-switch' | 'commit' | 'commit-and-push' | 'push' | 'sync'
+type GitActionKind =
+  | 'branch-create'
+  | 'branch-switch'
+  | 'commit'
+  | 'commit-and-push'
+  | 'push'
+  | 'sync'
+  | 'workspace-create'
+  | 'workspace-transfer'
 
 export function useChatGitControls(sessionId: string) {
   const { t } = useTranslation()
@@ -33,7 +45,7 @@ export function useChatGitControls(sessionId: string) {
   const [pendingAction, setPendingAction] = useState<GitActionKind | null>(null)
   const push = useChatGitPushState()
 
-  const { data: workspaceData } = useSWR<{ workspace: SessionWorkspace }>(
+  const { data: workspaceData, mutate: mutateWorkspaceData } = useSWR<{ workspace: SessionWorkspace }>(
     ['session-workspace', sessionId],
     () => getSessionWorkspace(sessionId),
     { revalidateOnFocus: false }
@@ -81,6 +93,15 @@ export function useChatGitControls(sessionId: string) {
     }
   }
 
+  const refreshWorkspaceState = async (nextWorkspace?: SessionWorkspace) => {
+    if (nextWorkspace != null) {
+      await mutateWorkspaceData({ workspace: nextWorkspace }, { revalidate: false })
+      return
+    }
+
+    await mutateWorkspaceData()
+  }
+
   const commit = useChatGitCommit({
     closeOperationsMenu: () => setOperationsMenuOpen(false),
     refreshGitState,
@@ -121,6 +142,26 @@ export function useChatGitControls(sessionId: string) {
       successMessage,
       task
     })
+
+  const runWorkspaceMutation = async (
+    action: Extract<GitActionKind, 'workspace-create' | 'workspace-transfer'>,
+    task: () => Promise<{ workspace: SessionWorkspace }>,
+    successMessage: string,
+    onSuccess?: () => void
+  ) => {
+    setPendingAction(action)
+    try {
+      const result = await task()
+      await refreshWorkspaceState(result.workspace)
+      await refreshGitState()
+      onSuccess?.()
+      void message.success(successMessage)
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('common.operationFailed')))
+    } finally {
+      setPendingAction(null)
+    }
+  }
 
   const closeBranchMenu = () => {
     setBranchMenuOpen(false)
@@ -169,6 +210,29 @@ export function useChatGitControls(sessionId: string) {
     })
   }
 
+  const handleCreateManagedWorktree = () => {
+    void runWorkspaceMutation(
+      'workspace-create',
+      () => createSessionManagedWorktree(sessionId),
+      t('chat.sessionWorkspaceCreateWorktreeSuccess'),
+      () => {
+        worktree.setWorktreeMenuOpen(false)
+        setBranchMenuOpen(false)
+      }
+    )
+  }
+
+  const handleTransferWorkspaceToLocal = () => {
+    void runWorkspaceMutation(
+      'workspace-transfer',
+      () => transferSessionWorkspaceToLocal(sessionId),
+      t('chat.sessionWorkspaceTransferToLocalSuccess'),
+      () => {
+        worktree.setWorktreeMenuOpen(false)
+      }
+    )
+  }
+
   return {
     branchMenuOpen,
     branchQuery,
@@ -176,8 +240,10 @@ export function useChatGitControls(sessionId: string) {
     currentBranchLabel,
     handleBranchSwitch,
     handleCreateBranch,
+    handleCreateManagedWorktree,
     handleOpenPushModal,
     handlePush,
+    handleTransferWorkspaceToLocal,
     hasBranchResults,
     isBranchListLoading,
     isBusy,

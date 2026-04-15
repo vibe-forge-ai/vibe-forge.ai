@@ -33,9 +33,10 @@ const resolveSessionGitCwd = async (sessionId: string) => {
   return await resolveSessionWorkspaceFolder(sessionId)
 }
 
-const resolveRepositoryContext = async (sessionId: string): Promise<GitRepositoryContext> => {
-  const cwd = await resolveSessionGitCwd(sessionId)
-
+const resolveRepositoryContextForCwd = async (
+  cwd: string,
+  errorMeta: Record<string, unknown>
+): Promise<GitRepositoryContext> => {
   try {
     await access(cwd)
   } catch {
@@ -72,10 +73,15 @@ const resolveRepositoryContext = async (sessionId: string): Promise<GitRepositor
 
     throw conflict(
       resolveGitErrorMessage(error, 'Failed to inspect git repository'),
-      { sessionId, cwd },
+      errorMeta,
       'git_repository_inspect_failed'
     )
   }
+}
+
+const resolveRepositoryContext = async (sessionId: string): Promise<GitRepositoryContext> => {
+  const cwd = await resolveSessionGitCwd(sessionId)
+  return await resolveRepositoryContextForCwd(cwd, { sessionId, cwd })
 }
 
 export const ensureRepositoryContext = async (sessionId: string): Promise<AvailableGitRepositoryContext> => {
@@ -84,6 +90,12 @@ export const ensureRepositoryContext = async (sessionId: string): Promise<Availa
     throw conflict('Git repository is not available for this session', repo, 'git_repository_unavailable')
   }
   return repo as AvailableGitRepositoryContext
+}
+
+export const resolveRepositoryContextByWorkspaceFolder = async (
+  workspaceFolder: string
+): Promise<GitRepositoryContext> => {
+  return await resolveRepositoryContextForCwd(workspaceFolder, { cwd: workspaceFolder })
 }
 
 export const listRepositoryRemotes = async (repositoryRoot: string) => {
@@ -118,6 +130,12 @@ export const pickDefaultRemote = (remotes: string[]) => {
 
 export const getSessionGitStateInternal = async (sessionId: string): Promise<GitRepositoryState> => {
   const repo = await resolveRepositoryContext(sessionId)
+  return await getGitStateFromRepositoryContext(repo)
+}
+
+export const getGitStateFromRepositoryContext = async (
+  repo: GitRepositoryContext
+): Promise<GitRepositoryState> => {
   if (!repo.available || repo.repositoryRoot == null) {
     return {
       available: false,
@@ -150,6 +168,11 @@ export const getSessionGitStateInternal = async (sessionId: string): Promise<Git
     workingTreeSummary: summaries.workingTreeSummary,
     headCommit
   }
+}
+
+export const getWorkspaceGitStateInternal = async (workspaceFolder: string): Promise<GitRepositoryState> => {
+  const repo = await resolveRepositoryContextByWorkspaceFolder(workspaceFolder)
+  return await getGitStateFromRepositoryContext(repo)
 }
 
 export const getBranchListForRepository = async (repositoryRoot: string): Promise<{

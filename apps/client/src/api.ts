@@ -26,8 +26,11 @@ export {
   commitSessionGitChanges,
   createSessionGitBranch,
   getSessionGitState,
+  getWorkspaceGitState,
   listSessionGitBranches,
   listSessionGitWorktrees,
+  listWorkspaceGitBranches,
+  listWorkspaceGitWorktrees,
   pushSessionGitBranch,
   syncSessionGitBranch
 } from './api/git'
@@ -42,6 +45,7 @@ export { createProject, listProjects } from './api/projects'
 // 会话与消息 API
 export {
   branchSessionFromMessage,
+  createSessionManagedWorktree,
   createSession,
   deleteSession,
   forkSession,
@@ -50,6 +54,7 @@ export {
   listSessions,
   listSessionWorkspaceTree,
   respondSessionInteraction,
+  transferSessionWorkspaceToLocal,
   updateSession,
   updateSessionTitle
 } from './api/sessions'

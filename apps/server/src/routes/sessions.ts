@@ -1,7 +1,7 @@
 import Router from '@koa/router'
 
 import type { ChatMessage, ChatMessageContent, WSEvent } from '@vibe-forge/core'
-import type { SessionInfo, SessionInitInfo } from '@vibe-forge/types'
+import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -15,10 +15,12 @@ import {
 } from '#~/services/session/interaction.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
 import {
+  createSessionManagedWorktree,
   deleteSessionWorkspace,
   provisionSessionWorkspace,
   resolveSessionWorkspace,
-  resolveSessionWorkspaceFolder
+  resolveSessionWorkspaceFolder,
+  transferSessionWorkspaceToLocal
 } from '#~/services/session/workspace.js'
 import { disposeTerminalSession } from '#~/services/terminal/index.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
@@ -71,6 +73,21 @@ export function sessionsRouter(): Router {
     ctx.body = await listWorkspaceTree(path, { workspaceFolder })
   })
 
+  router.post('/:id/workspace/create-worktree', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const workspace = await createSessionManagedWorktree(id)
+    killSession(id)
+    disposeTerminalSession(id)
+    ctx.body = { workspace }
+  })
+
+  router.post('/:id/workspace/transfer-local', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    ctx.body = {
+      workspace: await transferSessionWorkspaceToLocal(id)
+    }
+  })
+
   router.patch('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
     const { title, isStarred, isArchived, tags } = ctx.request.body as {
@@ -118,7 +135,8 @@ export function sessionsRouter(): Router {
       promptType,
       promptName,
       permissionMode,
-      adapter
+      adapter,
+      workspace
     } = ctx.request.body as {
       id?: string
       title?: string
@@ -132,6 +150,14 @@ export function sessionsRouter(): Router {
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
+      workspace?: {
+        createWorktree?: boolean
+        branch?: {
+          name?: string
+          kind?: GitBranchKind
+          mode?: 'checkout' | 'create'
+        }
+      }
     }
     const session = await createSessionWithInitialMessage({
       title,
@@ -145,7 +171,19 @@ export function sessionsRouter(): Router {
       promptType,
       promptName,
       permissionMode,
-      adapter
+      adapter,
+      workspace: workspace == null
+        ? undefined
+        : {
+            createWorktree: workspace.createWorktree,
+            branch: workspace.branch?.name?.trim()
+              ? {
+                  name: workspace.branch.name.trim(),
+                  kind: workspace.branch.kind,
+                  mode: workspace.branch.mode
+                }
+              : undefined
+          }
     })
     ctx.body = { session }
   })

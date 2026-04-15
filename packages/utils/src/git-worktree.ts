@@ -12,6 +12,7 @@ interface RunGitResult {
 }
 
 interface AddGitWorktreeOptions {
+  branch?: string
   cwd: string
   path: string
   ref?: string
@@ -87,11 +88,12 @@ export const runGitCommand = async (args: string[], cwd: string): Promise<RunGit
     return result
   } catch (error) {
     const gitError = error as GitCommandError
-    throw Object.assign(new Error(formatGitErrorMessage(error, `git ${args.join(' ')} failed`)), {
+    const enhancedError = Object.assign(new Error(formatGitErrorMessage(error, `git ${args.join(' ')} failed`)), {
       ...gitError,
       stdout: gitError.stdout ?? '',
       stderr: gitError.stderr ?? ''
     }) as GitCommandError
+    throw enhancedError
   }
 }
 
@@ -105,12 +107,19 @@ export const resolveGitHeadRef = async (cwd: string) => {
   return stdout
 }
 
+export const resolveGitCurrentBranch = async (cwd: string) => {
+  const { stdout } = await runGitCommand(['branch', '--show-current'], cwd)
+  return stdout
+}
+
 export const addGitWorktree = async (options: AddGitWorktreeOptions) => {
   const args = ['worktree', 'add']
   if (options.force !== false) {
     args.push('--force')
   }
-  if (options.detach !== false) {
+  if (options.branch != null && options.branch.trim() !== '') {
+    args.push('-b', options.branch.trim())
+  } else if (options.detach !== false) {
     args.push('--detach')
   }
   args.push(options.path, options.ref?.trim() || 'HEAD')

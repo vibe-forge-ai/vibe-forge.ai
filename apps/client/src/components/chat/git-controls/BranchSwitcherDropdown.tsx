@@ -13,6 +13,7 @@ export function BranchSwitcherDropdown({
   branchQuery,
   canCreateBranch,
   hasBranchResults,
+  placement = 'bottomLeft',
   remoteBranches,
   onCreateBranch,
   onOpenChange,
@@ -28,6 +29,7 @@ export function BranchSwitcherDropdown({
   branchQuery: string
   canCreateBranch: boolean
   hasBranchResults: boolean
+  placement?: 'bottomLeft' | 'topLeft'
   remoteBranches: GitBranchSummary[]
   onCreateBranch: (name: string) => void
   onOpenChange: (open: boolean) => void
@@ -77,7 +79,7 @@ export function BranchSwitcherDropdown({
   return (
     <Dropdown
       open={open}
-      placement='bottomLeft'
+      placement={placement}
       trigger={['click']}
       onOpenChange={onOpenChange}
       dropdownRender={() => (

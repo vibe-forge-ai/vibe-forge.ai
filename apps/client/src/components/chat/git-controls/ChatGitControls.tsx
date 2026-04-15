@@ -12,8 +12,10 @@ import { GitWorktreeDropdown } from './GitWorktreeDropdown'
 import { useChatGitControls } from './use-chat-git-controls'
 
 export function ChatGitControls({
+  placement = 'bottomLeft',
   sessionId
 }: {
+  placement?: 'bottomLeft' | 'topLeft'
   sessionId: string
 }) {
   const { t } = useTranslation()
@@ -28,9 +30,22 @@ export function ChatGitControls({
       <div className='chat-header-git'>
         <GitWorktreeDropdown
           open={git.worktreeMenuOpen}
+          placement={placement}
           workspace={git.workspace}
           worktrees={git.worktrees}
           currentBranch={git.repoState?.currentBranch}
+          mode={{
+            type: 'session',
+            isBusy: git.isBusy,
+            canCreateManagedWorktree:
+              git.repoState?.available === true &&
+              git.workspace != null &&
+              git.workspace.kind !== 'managed_worktree' &&
+              (git.workspace.worktreePath == null || git.workspace.worktreePath.trim() === ''),
+            canTransferToLocal: git.workspace?.kind === 'managed_worktree',
+            onCreateManagedWorktree: git.handleCreateManagedWorktree,
+            onTransferToLocal: git.handleTransferWorkspaceToLocal
+          }}
           onOpenChange={(nextOpen) => {
             git.setWorktreeMenuOpen(nextOpen)
             if (nextOpen) {
@@ -45,6 +60,7 @@ export function ChatGitControls({
             <GitOperationsDropdown
               isBusy={git.isBusy}
               open={git.operationsMenuOpen}
+              placement={placement}
               repoState={git.repoState}
               onOpenChange={(nextOpen) => {
                 git.setOperationsMenuOpen(nextOpen)
@@ -75,6 +91,7 @@ export function ChatGitControls({
               isBusy={git.isBusy}
               isLoading={git.isBranchListLoading}
               open={git.branchMenuOpen}
+              placement={placement}
               repoState={git.repoState}
               branchQuery={git.branchQuery}
               canCreateBranch={git.canCreateBranch}
@@ -97,7 +114,6 @@ export function ChatGitControls({
           </>
         )}
 
-        <div className='chat-header-git__separator' />
       </div>
 
       {git.repoState?.available === true && (

@@ -2,13 +2,19 @@ import { App } from 'antd'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
+import useSWR from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, ChatMessageContent, Session } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
+import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
+import { getConfig } from '#~/api'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import {
+  DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
+  getChatSessionWorkspaceDraftFromConfig
+} from '#~/hooks/chat/chat-session-workspace-draft'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
 
@@ -20,6 +26,7 @@ import type { ChatHistoryStatusNotice } from './messages/build-chat-history-stat
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { Sender } from './sender/Sender'
+import { ChatStatusBar } from './status-bar/ChatStatusBar'
 import { ToolGroup } from './tools/core/ToolGroup'
 
 export function ChatHistoryView({
@@ -94,6 +101,15 @@ export function ChatHistoryView({
   const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
+  const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const configWorkspaceDraft = useMemo(
+    () => getChatSessionWorkspaceDraftFromConfig(configRes),
+    [configRes]
+  )
+  const workspaceDraftDirtyRef = useRef(false)
+  const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
+    ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
+  }))
   const historyRenderCount = messages.length + historyStatusNotices.length
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     contentVersion: historyRenderCount
@@ -114,6 +130,7 @@ export function ChatHistoryView({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    workspaceDraft,
     onClearMessages
   })
   const initialScrollDoneRef = useRef(false)
@@ -172,6 +189,29 @@ export function ChatHistoryView({
     setEditingMessageId(null)
     setExpandedTurnIds(new Set())
   }, [session?.id])
+  useEffect(() => {
+    if (session?.id != null) {
+      return
+    }
+
+    workspaceDraftDirtyRef.current = false
+    setWorkspaceDraft({
+      ...configWorkspaceDraft
+    })
+  }, [session?.id])
+  useEffect(() => {
+    if (session?.id != null) {
+      return
+    }
+
+    if (workspaceDraftDirtyRef.current) {
+      return
+    }
+
+    setWorkspaceDraft({
+      ...configWorkspaceDraft
+    })
+  }, [configWorkspaceDraft, session?.id])
   useEffect(() => {
     if (!initialScrollDoneRef.current && isReady && location.hash === '') {
       scrollToBottom('auto')
@@ -522,6 +562,15 @@ export function ChatHistoryView({
             adapterOptions={adapterOptions}
             onAdapterChange={onAdapterChange}
             modelUnavailable={modelUnavailable}
+          />
+          <ChatStatusBar
+            draftWorkspace={workspaceDraft}
+            isCreating={isCreating}
+            sessionId={session?.id}
+            onDraftWorkspaceChange={(nextDraft) => {
+              workspaceDraftDirtyRef.current = true
+              setWorkspaceDraft(nextDraft)
+            }}
           />
         </div>
       )}

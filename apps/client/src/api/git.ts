@@ -14,12 +14,24 @@ export async function getSessionGitState(sessionId: string): Promise<GitReposito
   return fetchApiJson<GitRepositoryState>(`/api/sessions/${sessionId}/git`)
 }
 
+export async function getWorkspaceGitState(): Promise<GitRepositoryState> {
+  return fetchApiJson<GitRepositoryState>('/api/workspace/git')
+}
+
 export async function listSessionGitBranches(sessionId: string): Promise<GitBranchListResult> {
   return fetchApiJson<GitBranchListResult>(`/api/sessions/${sessionId}/git/branches`)
 }
 
+export async function listWorkspaceGitBranches(): Promise<GitBranchListResult> {
+  return fetchApiJson<GitBranchListResult>('/api/workspace/git/branches')
+}
+
 export async function listSessionGitWorktrees(sessionId: string): Promise<GitWorktreeListResult> {
   return fetchApiJson<GitWorktreeListResult>(`/api/sessions/${sessionId}/git/worktrees`)
+}
+
+export async function listWorkspaceGitWorktrees(): Promise<GitWorktreeListResult> {
+  return fetchApiJson<GitWorktreeListResult>('/api/workspace/git/worktrees')
 }
 
 export async function checkoutSessionGitBranch(
