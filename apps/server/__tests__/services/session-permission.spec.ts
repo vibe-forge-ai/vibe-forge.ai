@@ -10,7 +10,7 @@ import { createEmptySessionPermissionState } from '@vibe-forge/utils'
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
   loadConfigState: vi.fn(),
-  getWorkspaceFolder: vi.fn(),
+  resolveSessionWorkspaceFolder: vi.fn(),
   updateConfigFile: vi.fn(),
   mkdir: vi.fn(),
   writeFile: vi.fn(),
@@ -22,8 +22,11 @@ vi.mock('#~/db/index.js', () => ({
 }))
 
 vi.mock('#~/services/config/index.js', () => ({
-  loadConfigState: mocks.loadConfigState,
-  getWorkspaceFolder: mocks.getWorkspaceFolder
+  loadConfigState: mocks.loadConfigState
+}))
+
+vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder
 }))
 
 vi.mock('@vibe-forge/config', () => ({
@@ -77,7 +80,7 @@ describe('session permission service', () => {
       }))
     })
 
-    mocks.getWorkspaceFolder.mockReturnValue('/workspace')
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValue('/workspace')
     mocks.loadConfigState.mockImplementation(async () => ({
       workspaceFolder: '/workspace',
       projectConfig,

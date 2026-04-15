@@ -16,6 +16,7 @@ import {
 } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { ChatMessageContent, Session, SessionQueuedMessageMode } from '@vibe-forge/core'
+import type { ChatSessionWorkspaceDraft } from './chat-session-workspace-draft'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
@@ -26,6 +27,7 @@ export function useChatSessionActions({
   effort,
   permissionMode,
   adapter,
+  workspaceDraft,
   onClearMessages
 }: {
   session?: Session
@@ -34,6 +36,7 @@ export function useChatSessionActions({
   effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
+  workspaceDraft?: ChatSessionWorkspaceDraft
   onClearMessages: () => void
 }) {
   const { message } = App.useApp()
@@ -83,7 +86,13 @@ export function useChatSessionActions({
         const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
-          adapter
+          adapter,
+          workspace: workspaceDraft == null
+            ? undefined
+            : {
+                createWorktree: workspaceDraft.createWorktree,
+                branch: workspaceDraft.branch
+              }
         })
 
         await insertSessionIntoCache(newSession)
@@ -112,6 +121,7 @@ export function useChatSessionActions({
     navigateWithCurrentSearch,
     effort,
     permissionMode,
+    workspaceDraft,
     modelForQuery,
     session?.id,
     t
@@ -130,7 +140,13 @@ export function useChatSessionActions({
         const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
-          adapter
+          adapter,
+          workspace: workspaceDraft == null
+            ? undefined
+            : {
+                createWorktree: workspaceDraft.createWorktree,
+                branch: workspaceDraft.branch
+              }
         })
 
         await insertSessionIntoCache(newSession)
@@ -159,6 +175,7 @@ export function useChatSessionActions({
     message,
     effort,
     permissionMode,
+    workspaceDraft,
     modelForQuery,
     session?.id,
     t

@@ -6,6 +6,7 @@ import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deleteBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
+import type { SessionWorkspace } from '@vibe-forge/core'
 import { updateConfigFile } from '@vibe-forge/config'
 
 vi.mock('@vibe-forge/config', () => ({
@@ -31,6 +32,7 @@ const getChannelSession = vi.fn()
 const getChannelSessionBySessionId = vi.fn()
 const getSessions = vi.fn()
 const getSession = vi.fn()
+const resolveSessionWorkspace = vi.fn()
 const updateSession = vi.fn()
 const updateSessionArchivedWithChildren = vi.fn()
 const upsertChannelPreference = vi.fn()
@@ -71,6 +73,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     resetSession: vi.fn(),
     stopSession: vi.fn(),
     restartSession: vi.fn().mockResolvedValue(undefined),
+    resolveSessionWorkspace: vi.fn(),
     updateSession: vi.fn(),
     getChannelAdapterPreference: vi.fn(() => ctx.channelAdapter),
     setChannelAdapterPreference: vi.fn((adapter?: string) => {
@@ -221,6 +224,15 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
       if (ctx.sessionId) updateSession(ctx.sessionId, updates)
     })
   }
+  if (!overrides.resolveSessionWorkspace) {
+    ctx.resolveSessionWorkspace = vi.fn(async (sessionId?: string) => {
+      const targetSessionId = sessionId ?? ctx.sessionId
+      if (targetSessionId == null) {
+        return undefined
+      }
+      return resolveSessionWorkspace(targetSessionId)
+    })
+  }
 
   return ctx
 }
@@ -259,6 +271,33 @@ beforeEach(() => {
       createdAt: Date.now()
     }
   ])
+  resolveSessionWorkspace.mockImplementation((sessionId: string): SessionWorkspace | undefined => (
+    sessionId === 'sess-other'
+      ? {
+        sessionId,
+        kind: 'managed_worktree',
+        workspaceFolder: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        repositoryRoot: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        worktreePath: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        baseRef: 'origin/master',
+        cleanupPolicy: 'delete_on_session_delete',
+        state: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+      : {
+        sessionId,
+        kind: 'managed_worktree',
+        workspaceFolder: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        repositoryRoot: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        worktreePath: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        baseRef: 'HEAD',
+        cleanupPolicy: 'delete_on_session_delete',
+        state: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+  ))
   vi.mocked(getDb).mockReturnValue({
     deleteChannelSession,
     deleteChannelSessionBySessionId,
@@ -396,6 +435,8 @@ describe('/session command', () => {
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('Session A')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('gpt-test')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('上下文消息数：12')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('工作区：/tmp/.ai/worktrees/sessions/sess-abc')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('工作区模式：托管 worktree')
   })
 
   it('/session search without query lists recent sessions', async () => {
@@ -511,6 +552,8 @@ describe('/session command', () => {
     const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
     expect(message).toContain('已将当前频道绑定到会话 sess-other')
     expect(message).toContain('当前频道原先绑定的会话 sess-abc 已解除绑定')
+    expect(message).toContain('工作区：/tmp/.ai/worktrees/sessions/sess-other')
+    expect(message).toContain('工作区模式：托管 worktree')
   })
 
   it('/session unbind detaches the current channel without archiving the session', async () => {

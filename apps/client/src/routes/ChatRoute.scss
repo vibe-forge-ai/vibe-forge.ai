@@ -232,6 +232,7 @@
   flex: 0;
   display: flex;
   flex-direction: column;
+  gap: 8px;
   justify-content: flex-end;
   transition:
     flex .4s cubic-bezier(.4, 0, .2, 1),

@@ -20,10 +20,14 @@ import { createSessionsRepo } from './sessions/repo'
 import type { SessionRuntimeState } from './sessions/repo'
 import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
+import { createSessionWorkspacesRepo } from './sessionWorkspaces/repo'
+import type { SessionWorkspaceRow } from './sessionWorkspaces/repo'
+import { sessionWorkspacesSchemaModule } from './sessionWorkspaces/schema'
 import type { SqliteDatabase } from './sqlite'
 
 const dbSchemaModules = [
   sessionsSchemaModule,
+  sessionWorkspacesSchemaModule,
   channelSessionsSchemaModule,
   channelActionTokensSchemaModule,
   automationSchemaModule
@@ -37,6 +41,7 @@ export class SqliteDb {
   private db: SqliteDatabase
   private sessions: ReturnType<typeof createSessionsRepo>
   private messages: ReturnType<typeof createMessagesRepo>
+  private sessionWorkspaces: ReturnType<typeof createSessionWorkspacesRepo>
   private sessionQueue: ReturnType<typeof createSessionQueueRepo>
   private channelSessions: ReturnType<typeof createChannelSessionsRepo>
   private channelActionTokens: ReturnType<typeof createChannelActionTokensRepo>
@@ -48,6 +53,7 @@ export class SqliteDb {
     initSchema(this.db, dbSchemaModules)
     this.sessions = createSessionsRepo(this.db)
     this.messages = createMessagesRepo(this.db)
+    this.sessionWorkspaces = createSessionWorkspacesRepo(this.db)
     this.sessionQueue = createSessionQueueRepo(this.db)
     this.channelSessions = createChannelSessionsRepo(this.db)
     this.channelActionTokens = createChannelActionTokensRepo(this.db)
@@ -65,6 +71,27 @@ export class SqliteDb {
 
   getSessionRuntimeState(id: string) {
     return this.sessions.getRuntimeState(id)
+  }
+
+  getSessionWorkspace(sessionId: string) {
+    return this.sessionWorkspaces.get(sessionId)
+  }
+
+  upsertSessionWorkspace(
+    row: Parameters<typeof this.sessionWorkspaces.upsert>[0]
+  ) {
+    return this.sessionWorkspaces.upsert(row)
+  }
+
+  updateSessionWorkspace(
+    sessionId: string,
+    updates: Parameters<typeof this.sessionWorkspaces.update>[1]
+  ) {
+    return this.sessionWorkspaces.update(sessionId, updates)
+  }
+
+  deleteSessionWorkspace(sessionId: string) {
+    return this.sessionWorkspaces.remove(sessionId)
   }
 
   updateSession(id: string, updates: Parameters<typeof this.sessions.update>[1]) {
@@ -287,3 +314,4 @@ export function getDb() {
 }
 
 export type { AutomationRule, AutomationRuleDetail, AutomationRun, AutomationTask, AutomationTrigger }
+export type { SessionWorkspaceRow }

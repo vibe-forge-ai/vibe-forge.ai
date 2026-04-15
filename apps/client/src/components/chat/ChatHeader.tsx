@@ -8,12 +8,11 @@ import { useAtomValue } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { deleteSession, getApiErrorMessage, updateSession } from '../../api'
+import { ApiError, deleteSession, getApiErrorMessage, updateSession } from '../../api'
 import { useQueryParams } from '../../hooks/useQueryParams'
 import { isSidebarCollapsedAtom, isSidebarResizingAtom } from '../../store/index'
 import { ConfigSectionPanel } from '../config'
 import type { FieldSpec } from '../config/configSchema'
-import { ChatGitControls } from './git-controls/ChatGitControls'
 import {
   formatToolLabel,
   getSessionAssetWarnings,
@@ -202,9 +201,6 @@ export function ChatHeader({
       </div>
 
       <div className='chat-header-actions'>
-        {sessionId != null && sessionId !== '' && (
-          <ChatGitControls sessionId={sessionId} />
-        )}
         {viewItems.map(item => (
           <Tooltip key={item.value} title={item.title}>
             <Button
@@ -491,6 +487,12 @@ export function SessionSettingsPanel({
   }
 
   const handleDelete = () => {
+    const runDelete = async (force = false) => {
+      await deleteSession(sessionId, { force })
+      void message.success(t('common.deleteSuccess'))
+      onClose()
+    }
+
     modal.confirm({
       title: t('common.deleteSession'),
       content: t('common.deleteSessionConfirm'),
@@ -499,10 +501,25 @@ export function SessionSettingsPanel({
       cancelText: t('common.cancel'),
       onOk: async () => {
         try {
-          await deleteSession(sessionId)
-          void message.success(t('common.deleteSuccess'))
-          onClose()
+          await runDelete()
         } catch (err) {
+          if (err instanceof ApiError && err.code === 'session_worktree_not_clean') {
+            modal.confirm({
+              title: t('chat.sessionWorkspaceForceDeleteTitle'),
+              content: t('chat.sessionWorkspaceForceDeleteDescription'),
+              okText: t('common.delete'),
+              okType: 'danger',
+              cancelText: t('common.cancel'),
+              onOk: async () => {
+                try {
+                  await runDelete(true)
+                } catch (forceError) {
+                  void message.error(getApiErrorMessage(forceError, t('common.deleteFailed')))
+                }
+              }
+            })
+            return
+          }
           void message.error(getApiErrorMessage(err, t('common.deleteFailed')))
         }
       }

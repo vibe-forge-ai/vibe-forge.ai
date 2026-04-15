@@ -5,6 +5,7 @@ import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import { resolveSessionWorkspace } from '#~/services/session/workspace.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { buildInteractionText } from './interaction'
@@ -167,6 +168,13 @@ export const handleInboundEvent = async (
         killSession(ctx.sessionId)
         await startAdapterSession(ctx.sessionId)
       }
+    },
+    resolveSessionWorkspace: async (sessionId) => {
+      const targetSessionId = sessionId ?? ctx.sessionId
+      if (targetSessionId == null || targetSessionId === '') {
+        return undefined
+      }
+      return await resolveSessionWorkspace(targetSessionId)
     },
     updateSession: (updates) => {
       if (ctx.sessionId) {

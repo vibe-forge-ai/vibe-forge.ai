@@ -1,7 +1,7 @@
 import Router from '@koa/router'
 
 import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
-import type { SessionInfo, SessionInitInfo } from '@vibe-forge/types'
+import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -22,7 +22,16 @@ import {
   updateSessionQueuedMessage
 } from '#~/services/session/queue.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
+import {
+  createSessionManagedWorktree,
+  deleteSessionWorkspace,
+  provisionSessionWorkspace,
+  resolveSessionWorkspace,
+  resolveSessionWorkspaceFolder,
+  transferSessionWorkspaceToLocal
+} from '#~/services/session/workspace.js'
 import { disposeTerminalSession } from '#~/services/terminal/index.js'
+import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
 export function sessionsRouter(): Router {
@@ -60,6 +69,35 @@ export function sessionsRouter(): Router {
       session,
       interaction,
       queuedMessages: listSessionQueuedMessages(id)
+    }
+  })
+
+  router.get('/:id/workspace', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    ctx.body = {
+      workspace: await resolveSessionWorkspace(id)
+    }
+  })
+
+  router.get('/:id/workspace/tree', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { path } = ctx.query as { path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    ctx.body = await listWorkspaceTree(path, { workspaceFolder })
+  })
+
+  router.post('/:id/workspace/create-worktree', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const workspace = await createSessionManagedWorktree(id)
+    killSession(id)
+    disposeTerminalSession(id)
+    ctx.body = { workspace }
+  })
+
+  router.post('/:id/workspace/transfer-local', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    ctx.body = {
+      workspace: await transferSessionWorkspaceToLocal(id)
     }
   })
 
@@ -110,7 +148,8 @@ export function sessionsRouter(): Router {
       promptType,
       promptName,
       permissionMode,
-      adapter
+      adapter,
+      workspace
     } = ctx.request.body as {
       id?: string
       title?: string
@@ -124,6 +163,14 @@ export function sessionsRouter(): Router {
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
+      workspace?: {
+        createWorktree?: boolean
+        branch?: {
+          name?: string
+          kind?: GitBranchKind
+          mode?: 'checkout' | 'create'
+        }
+      }
     }
     const session = await createSessionWithInitialMessage({
       title,
@@ -137,7 +184,19 @@ export function sessionsRouter(): Router {
       promptType,
       promptName,
       permissionMode,
-      adapter
+      adapter,
+      workspace: workspace == null
+        ? undefined
+        : {
+            createWorktree: workspace.createWorktree,
+            branch: workspace.branch?.name?.trim()
+              ? {
+                  name: workspace.branch.name.trim(),
+                  kind: workspace.branch.kind,
+                  mode: workspace.branch.mode
+                }
+              : undefined
+          }
     })
     ctx.body = { session }
   })
@@ -331,14 +390,21 @@ export function sessionsRouter(): Router {
     throw badRequest('Invalid event', { type: body.type }, 'invalid_event')
   })
 
-  router.delete('/:id', (ctx) => {
+  router.delete('/:id', async (ctx) => {
     const { id } = ctx.params as { id: string }
+    const { force } = ctx.query as { force?: string }
+
+    // 显式销毁会话进程，避免 worktree 删除时仍被占用
+    killSession(id)
+    disposeTerminalSession(id)
+
+    await deleteSessionWorkspace(id, {
+      force: force === 'true'
+    })
+
     db.deleteChannelSessionBySessionId(id)
     const removed = db.deleteSession(id)
     if (removed) {
-      // 显式销毁会话进程
-      killSession(id)
-      disposeTerminalSession(id)
       notifySessionUpdated(id, { id, isDeleted: true })
     }
     ctx.body = { ok: true, removed }
@@ -433,7 +499,7 @@ export function sessionsRouter(): Router {
     ctx.body = { queuedMessages: listSessionQueuedMessages(id) }
   })
 
-  router.post('/:id/messages/:messageId/branch', (ctx) => {
+  router.post('/:id/messages/:messageId/branch', async (ctx) => {
     const { id, messageId } = ctx.params as { id: string; messageId: string }
     const { action, content, title } = ctx.request.body as {
       action?: 'fork' | 'recall' | 'edit'
@@ -445,7 +511,7 @@ export function sessionsRouter(): Router {
       throw badRequest('Invalid message action', { action }, 'invalid_message_action')
     }
 
-    const branchResult = branchSessionFromMessage({
+    const branchResult = await branchSessionFromMessage({
       sessionId: id,
       messageId,
       action,
@@ -462,7 +528,7 @@ export function sessionsRouter(): Router {
     ctx.body = { session: db.getSession(branchResult.session.id) ?? branchResult.session }
   })
 
-  router.post('/:id/fork', (ctx) => {
+  router.post('/:id/fork', async (ctx) => {
     const { id } = ctx.params as { id: string }
     const { title } = ctx.request.body as { title?: string }
 
@@ -474,8 +540,18 @@ export function sessionsRouter(): Router {
     // 创建新会话
     const newSession = db.createSession((title != null && title !== '') ? title : `${original.title} (Fork)`)
 
-    // 同步历史消息
-    db.copyMessages(id, newSession.id)
+    try {
+      await provisionSessionWorkspace(newSession.id, {
+        sourceSessionId: original.id
+      })
+
+      // 同步历史消息
+      db.copyMessages(id, newSession.id)
+    } catch (error) {
+      await deleteSessionWorkspace(newSession.id, { force: true }).catch(() => undefined)
+      db.deleteSession(newSession.id)
+      throw error
+    }
 
     notifySessionUpdated(newSession.id, newSession)
 

@@ -43,8 +43,13 @@ const normalizeWorkspacePath = (workspaceFolder: string, rawPath?: string) => {
   return nextPath
 }
 
-export const listWorkspaceTree = async (rawPath?: string) => {
-  const workspaceFolder = getWorkspaceFolder()
+export const listWorkspaceTree = async (
+  rawPath?: string,
+  options: {
+    workspaceFolder?: string
+  } = {}
+) => {
+  const workspaceFolder = options.workspaceFolder ?? getWorkspaceFolder()
   const normalizedPath = normalizeWorkspacePath(workspaceFolder, rawPath)
   const targetPath = resolve(workspaceFolder, normalizedPath)
 

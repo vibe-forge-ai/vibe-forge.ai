@@ -28,6 +28,7 @@ export function Sender(props: SenderProps) {
           onRemovePendingFile={(path) =>
             controller.composer.setPendingFiles(prev => prev.filter(file => file.path !== path))}
           editorRef={controller.editorRef}
+          sessionId={props.sessionId}
           sessionInfo={props.sessionInfo}
           placeholder={controller.placeholder}
           input={controller.composer.input}

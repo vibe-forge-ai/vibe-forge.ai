@@ -1,4 +1,4 @@
-import { cwd as processCwd, env as processEnv } from 'node:process'
+import { env as processEnv } from 'node:process'
 
 import { v4 as uuidv4 } from 'uuid'
 
@@ -44,6 +44,7 @@ import {
   shouldInterruptForQueuedNext
 } from '#~/services/session/queue.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
+import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
@@ -362,6 +363,7 @@ export async function startAdapterSession(
       db.createSession(undefined, sessionId, undefined, undefined, {
         runtimeKind: 'interactive'
       })
+      await provisionSessionWorkspace(sessionId)
     }
 
     if (
@@ -382,7 +384,7 @@ export async function startAdapterSession(
     activeAdapterRunStore.set(sessionId, runId)
 
     try {
-      const promptCwd = processCwd()
+      const promptCwd = await resolveSessionWorkspaceFolder(sessionId)
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         options.promptType,
         options.promptName,
@@ -401,7 +403,8 @@ export async function startAdapterSession(
         : [resolvedConfig.systemPrompt, options.systemPrompt]
           .filter(Boolean)
           .join('\n\n')
-      const { mergedConfig } = await loadConfigState().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
+      const { mergedConfig } = await loadConfigState(promptCwd)
+        .catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
       const { modelLanguage } = mergedConfig
       const languagePrompt = modelLanguage == null
         ? undefined

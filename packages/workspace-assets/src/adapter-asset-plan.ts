@@ -77,8 +77,6 @@ export function buildAdapterAssetPlan(params: {
         ? 'Handled by the Vibe Forge task hook bridge.'
         : params.adapter === 'kimi'
         ? 'Mapped into the Kimi native hooks bridge.'
-        : params.adapter === 'copilot'
-        ? 'Handled by the Vibe Forge task hook bridge.'
         : 'Mapped into the OpenCode native hooks bridge.',
       packageId: asset.packageId,
       scope: asset.scope,

@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import type {
   GitBranchKind,
   GitBranchListResult,
@@ -7,6 +9,8 @@ import type {
 } from '@vibe-forge/types'
 
 import { conflict, notFound } from '#~/utils/http.js'
+import { getWorkspaceFolder } from '#~/services/config/index.js'
+import { resolveSessionWorkspace } from '#~/services/session/workspace.js'
 
 import { assertBranchName } from './commit'
 import {
@@ -14,6 +18,7 @@ import {
   getBranchListForRepository,
   getRepositoryWorktrees,
   getSessionGitStateInternal,
+  getWorkspaceGitStateInternal,
   pickDefaultRemote
 } from './repository'
 import { resolveGitErrorMessage, runGit } from './runner'
@@ -21,8 +26,116 @@ import { getBlockedGitWorktreePath } from './worktree'
 
 export { commitSessionGitChanges } from './commit'
 
+interface GitSyncRemoteTarget {
+  branch: string
+  remote: string
+}
+
+const looksLikeGitCommitRef = (value: string) => /^[0-9a-f]{7,40}$/i.test(value)
+
+const resolveFallbackSyncTarget = (
+  baseRef: string | undefined,
+  remotes: string[],
+  defaultRemote: string
+): GitSyncRemoteTarget | null => {
+  const normalizedBaseRef = baseRef?.trim()
+  if (
+    normalizedBaseRef == null
+    || normalizedBaseRef === ''
+    || normalizedBaseRef === 'HEAD'
+    || looksLikeGitCommitRef(normalizedBaseRef)
+  ) {
+    return null
+  }
+
+  if (normalizedBaseRef.startsWith('refs/heads/')) {
+    const branch = normalizedBaseRef.slice('refs/heads/'.length).trim()
+    return branch === '' ? null : { remote: defaultRemote, branch }
+  }
+
+  if (normalizedBaseRef.startsWith('refs/remotes/')) {
+    const remoteRef = normalizedBaseRef.slice('refs/remotes/'.length)
+    const [remote, ...branchParts] = remoteRef.split('/')
+    const branch = branchParts.join('/').trim()
+    if (remote === '' || branch === '' || !remotes.includes(remote)) {
+      return null
+    }
+    return {
+      remote,
+      branch
+    }
+  }
+
+  const explicitRemote = remotes.find(
+    remote => normalizedBaseRef.startsWith(`${remote}/`) && normalizedBaseRef.length > remote.length + 1
+  )
+  if (explicitRemote != null) {
+    return {
+      remote: explicitRemote,
+      branch: normalizedBaseRef.slice(explicitRemote.length + 1)
+    }
+  }
+
+  return {
+    remote: defaultRemote,
+    branch: normalizedBaseRef
+  }
+}
+
+const doesRemoteBranchExist = async (repositoryRoot: string, remote: string, branch: string) => {
+  const { stdout } = await runGit(
+    ['ls-remote', '--heads', remote, `refs/heads/${branch}`],
+    repositoryRoot
+  )
+  return stdout.trim() !== ''
+}
+
+const resolveSyncRemoteTarget = async (
+  sessionId: string,
+  repositoryRoot: string,
+  currentBranch: string,
+  remotes: string[]
+): Promise<GitSyncRemoteTarget> => {
+  const remote = pickDefaultRemote(remotes)
+  if (remote == null) {
+    throw conflict('No git remote is configured', { sessionId }, 'git_remote_missing')
+  }
+
+  if (await doesRemoteBranchExist(repositoryRoot, remote, currentBranch)) {
+    return {
+      remote,
+      branch: currentBranch
+    }
+  }
+
+  const workspace = await resolveSessionWorkspace(sessionId)
+  const fallbackTarget = resolveFallbackSyncTarget(workspace.baseRef, remotes, remote)
+  if (
+    fallbackTarget != null
+    && (fallbackTarget.remote !== remote || fallbackTarget.branch !== currentBranch)
+    && await doesRemoteBranchExist(repositoryRoot, fallbackTarget.remote, fallbackTarget.branch)
+  ) {
+    return fallbackTarget
+  }
+
+  throw conflict(
+    'No remote branch is available to sync this session branch',
+    {
+      sessionId,
+      currentBranch,
+      remote,
+      baseRef: workspace.baseRef
+    },
+    'git_remote_branch_missing'
+  )
+}
+
 export const getSessionGitState = async (sessionId: string): Promise<GitRepositoryState> => {
   return getSessionGitStateInternal(sessionId)
+}
+
+export const getWorkspaceGitState = async (): Promise<GitRepositoryState> => {
+  return await getWorkspaceGitStateInternal(getWorkspaceFolder())
 }
 
 export const listSessionGitBranches = async (sessionId: string): Promise<GitBranchListResult> => {
@@ -35,8 +148,38 @@ export const listSessionGitBranches = async (sessionId: string): Promise<GitBran
   }
 }
 
+export const listWorkspaceGitBranches = async (): Promise<GitBranchListResult> => {
+  const repo = await getWorkspaceGitState()
+  if (!repo.available || repo.repositoryRoot == null) {
+    return {
+      currentBranch: repo.currentBranch ?? null,
+      branches: []
+    }
+  }
+
+  const { status, branches } = await getBranchListForRepository(repo.repositoryRoot)
+
+  return {
+    currentBranch: status.currentBranch,
+    branches
+  }
+}
+
 export const listSessionGitWorktrees = async (sessionId: string): Promise<GitWorktreeListResult> => {
   const repo = await ensureRepositoryContext(sessionId)
+
+  return {
+    worktrees: await getRepositoryWorktrees(repo.repositoryRoot)
+  }
+}
+
+export const listWorkspaceGitWorktrees = async (): Promise<GitWorktreeListResult> => {
+  const repo = await getWorkspaceGitState()
+  if (!repo.available || repo.repositoryRoot == null) {
+    return {
+      worktrees: []
+    }
+  }
 
   return {
     worktrees: await getRepositoryWorktrees(repo.repositoryRoot)
@@ -171,11 +314,13 @@ export const syncSessionGitBranch = async (sessionId: string): Promise<GitReposi
     if (status.upstream != null && status.upstream !== '') {
       await runGit(['pull', '--rebase', '--autostash'], repo.repositoryRoot)
     } else {
-      const remote = pickDefaultRemote(status.remotes ?? [])
-      if (remote == null) {
-        throw conflict('No git remote is configured', { sessionId }, 'git_remote_missing')
-      }
-      await runGit(['pull', '--rebase', '--autostash', remote, currentBranch], repo.repositoryRoot)
+      const target = await resolveSyncRemoteTarget(
+        sessionId,
+        repo.repositoryRoot,
+        currentBranch,
+        status.remotes ?? []
+      )
+      await runGit(['pull', '--rebase', '--autostash', target.remote, target.branch], repo.repositoryRoot)
     }
   } catch (error) {
     if (error instanceof Error && 'status' in error) {

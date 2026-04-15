@@ -26,6 +26,7 @@ const makeCtx = (ack?: () => Promise<void>): ChannelContext => ({
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
+  resolveSessionWorkspace: vi.fn().mockResolvedValue(undefined),
   updateSession: vi.fn(),
   getChannelAdapterPreference: vi.fn(),
   setChannelAdapterPreference: vi.fn(),
