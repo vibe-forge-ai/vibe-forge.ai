@@ -75,7 +75,10 @@ describe('resolveWorkspaceAssetBundle', () => {
     try {
       process.env.__VF_PROJECT_AI_BASE_DIR__ = '.vf'
       await writeDocument(join(workspace, '.vf/rules/review.md'), '---\ndescription: 评审规则\n---\n必须检查风险')
-      await writeDocument(join(workspace, '.vf/skills/research/SKILL.md'), '---\ndescription: 检索资料\n---\n阅读 README.md')
+      await writeDocument(
+        join(workspace, '.vf/skills/research/SKILL.md'),
+        '---\ndescription: 检索资料\n---\n阅读 README.md'
+      )
 
       const bundle = await resolveWorkspaceAssetBundle({
         cwd: workspace,
@@ -100,7 +103,10 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     try {
       process.env.__VF_PROJECT_AI_ENTITIES_DIR__ = 'agents'
-      await writeDocument(join(workspace, '.ai/agents/reviewer/README.md'), '---\ndescription: 负责代码评审\n---\n检查风险')
+      await writeDocument(
+        join(workspace, '.ai/agents/reviewer/README.md'),
+        '---\ndescription: 负责代码评审\n---\n检查风险'
+      )
 
       const bundle = await resolveWorkspaceAssetBundle({
         cwd: workspace,

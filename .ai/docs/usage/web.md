@@ -1,6 +1,6 @@
 # Web UI 与 Terminal 视图
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## Web UI 入口
 

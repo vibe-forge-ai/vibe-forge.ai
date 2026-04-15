@@ -10,7 +10,14 @@ const CLAUDE_CODE_SESSION_HEADER = 'x-claude-code-session-id'
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 const resolveCCRRequestLogContextPath = (workspace, sessionId) =>
-  resolveProjectAiPath(workspace, process.env, '.mock', '.claude-code-router', 'request-log-context', `${sessionId}.json`)
+  resolveProjectAiPath(
+    workspace,
+    process.env,
+    '.mock',
+    '.claude-code-router',
+    'request-log-context',
+    `${sessionId}.json`
+  )
 
 const readHeaderValue = (headers, name) => {
   if (headers == null) return undefined

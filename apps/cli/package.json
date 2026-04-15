@@ -32,10 +32,11 @@
   "dependencies": {
     "@vibe-forge/app-runtime": "workspace:^",
     "@vibe-forge/cli-helper": "workspace:^",
-    "@vibe-forge/plugin-cli-skills": "workspace:^",
     "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",
+    "@vibe-forge/managed-plugins": "workspace:^",
+    "@vibe-forge/plugin-cli-skills": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",

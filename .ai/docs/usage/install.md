@@ -1,6 +1,6 @@
 # 安装与准备
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## 安装基础包
 

@@ -1,7 +1,7 @@
 {
-  "name": "@vibe-forge/task",
-  "version": "0.11.2",
-  "description": "Task runtime for Vibe Forge",
+  "name": "@vibe-forge/managed-plugins",
+  "version": "0.11.0",
+  "description": "Managed native plugin installation and sync for Vibe Forge",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -26,15 +26,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/task/__tests__"
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/managed-plugins/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/config": "workspace:^",
-    "@vibe-forge/hooks": "workspace:^",
-    "@vibe-forge/managed-plugins": "workspace:^",
     "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^",
-    "@vibe-forge/workspace-assets": "workspace:^",
-    "zod": "^3.24.1"
+    "@vibe-forge/utils": "workspace:^"
   }
 }

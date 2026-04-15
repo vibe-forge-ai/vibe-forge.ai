@@ -1,6 +1,6 @@
 # 启动服务
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## 启动 UI server / client
 

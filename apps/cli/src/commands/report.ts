@@ -4,10 +4,16 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-import type { Command } from 'commander'
 import { resolveProjectAiBaseDir, resolveProjectAiBaseDirName, resolveProjectAiPath } from '@vibe-forge/utils'
+import type { Command } from 'commander'
 const REPORT_TARGETS = ['logs', 'caches'] as const
-const REPORT_MOCK_TARGETS = ['.mock/.claude', '.mock/.claude-code-router', '.mock/.config', '.mock/.codex', '.mock/.vf'] as const
+const REPORT_MOCK_TARGETS = [
+  '.mock/.claude',
+  '.mock/.claude-code-router',
+  '.mock/.config',
+  '.mock/.codex',
+  '.mock/.vf'
+] as const
 const REPORT_MOCK_FILE_PREFIX = '.claude.json'
 const pad = (value: number) => String(value).padStart(2, '0')
 
