@@ -152,9 +152,21 @@ export const run = async (
   const mergedModelServices = mergedConfig.modelServices ?? {}
   const serviceModels = listServiceModels(mergedModelServices)
   const mergedDefaultModelService = pickFirstNonEmptyString([mergedConfig.defaultModelService])
-  const adapterCommonConfig = resolveAdapterCommonConfig(adapterType, {
-    mergedConfig
-  })
+  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
+  const supportsEffort = supportedEffortAdapters.has(adapterType)
+  const adapterCommonConfig = supportsEffort
+    ? resolveAdapterCommonConfig<Record<string, unknown> & { effort?: AdapterQueryOptions['effort'] }, 'effort'>(
+      adapterType,
+      {
+        mergedConfig
+      },
+      {
+        extraCommonKeys: ['effort']
+      }
+    )
+    : resolveAdapterCommonConfig(adapterType, {
+      mergedConfig
+    })
   const compatibilityResult = resolveAdapterModelCompatibility({
     adapter: adapterType,
     model: resolvedSelection.model,
@@ -171,8 +183,6 @@ export const run = async (
   await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
-  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
-  const supportsEffort = supportedEffortAdapters.has(adapterType)
   if (!supportsEffort && adapterOptions.effort != null) {
     throw new Error(`Adapter "${adapterType}" does not support effort`)
   }

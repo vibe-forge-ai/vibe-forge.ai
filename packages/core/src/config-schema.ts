@@ -55,8 +55,7 @@ export const languageCodeSchema = z.enum(['zh', 'en'])
 export const adapterConfigCommonSchema = z.object({
   defaultModel: z.string().optional().describe('Default model override for this adapter'),
   includeModels: z.array(z.string()).optional().describe('Allowed model IDs for this adapter'),
-  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter'),
-  effort: effortLevelSchema.optional().describe('Default reasoning effort override for this adapter')
+  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter')
 })
 
 export const modelServiceConfigSchema = z.object({

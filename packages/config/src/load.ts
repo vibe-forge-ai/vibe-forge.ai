@@ -34,8 +34,7 @@ type AdapterConfigRecord = object
 export const ADAPTER_COMMON_CONFIG_KEYS = [
   'defaultModel',
   'includeModels',
-  'excludeModels',
-  'effort'
+  'excludeModels'
 ] as const
 
 const LEGACY_ADAPTER_COMMON_CONFIG_KEYS = ['model'] as const

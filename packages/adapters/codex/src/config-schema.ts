@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { defineAdapterConfigContribution, jsonValueSchema } from '@vibe-forge/core/config-schema'
+import { defineAdapterConfigContribution, effortLevelSchema, jsonValueSchema } from '@vibe-forge/core/config-schema'
 
 export const codexAdapterConfigSchema = z.object({
   sandboxPolicy: z.object({
@@ -18,6 +18,7 @@ export const codexAdapterConfigSchema = z.object({
     title: z.string().optional().describe('Client title'),
     version: z.string().optional().describe('Client version')
   }).optional().describe('Client metadata reported to Codex'),
+  effort: effortLevelSchema.optional().describe('Reasoning effort level'),
   configOverrides: z.record(z.string(), jsonValueSchema).optional()
     .describe('Raw Codex config overrides encoded as dotted keys'),
   maxOutputTokens: z.number().int().positive().optional().describe('Maximum output tokens per turn'),
@@ -25,6 +26,7 @@ export const codexAdapterConfigSchema = z.object({
 })
 
 export type CodexAdapterConfig = z.infer<typeof codexAdapterConfigSchema>
+export type CodexCommonAdapterConfigKey = 'effort'
 export type CodexNativeAdapterConfig = CodexAdapterConfig
 
 export const adapterConfigContribution = defineAdapterConfigContribution({
@@ -33,6 +35,7 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   description: 'Codex adapter configuration',
   schema: codexAdapterConfigSchema,
   configEntry: {
+    extraCommonKeys: ['effort'] as const,
     deepMergeKeys: ['sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
   }
 })

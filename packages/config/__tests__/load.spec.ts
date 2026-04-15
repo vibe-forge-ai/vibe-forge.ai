@@ -622,14 +622,13 @@ defaultModel: package-model
       settingsContent?: Record<string, unknown>
       model?: string
     }, {
-      extraCommonKeys: ['routingProfile']
+      extraCommonKeys: ['effort', 'routingProfile']
     })
 
     expect(ADAPTER_COMMON_CONFIG_KEYS).toEqual([
       'defaultModel',
       'includeModels',
-      'excludeModels',
-      'effort'
+      'excludeModels'
     ])
     expect(result.common).toEqual({
       defaultModel: 'gpt-5.4',
@@ -646,7 +645,7 @@ defaultModel: package-model
     })
   })
 
-  it('resolves adapter common config from merged config state', () => {
+  it('resolves adapter common config from merged config state when extra common keys are declared', () => {
     const state = buildResolvedConfigState(
       {
         adapters: {
@@ -669,8 +668,15 @@ defaultModel: package-model
       } as any
     )
 
-    expect(resolveAdapterCommonConfig('codex', {
+    expect(resolveAdapterCommonConfig<{
+      defaultModel?: string
+      includeModels?: string[]
+      excludeModels?: string[]
+      effort?: string
+    }, 'effort'>('codex', {
       configState: state
+    }, {
+      extraCommonKeys: ['effort']
     })).toEqual({
       defaultModel: 'project-model',
       includeModels: ['project-include'],
@@ -726,8 +732,10 @@ defaultModel: package-model
       defaultModel?: string
       effort?: string
       settingsContent?: Record<string, unknown>
-    }>('claude-code', {
+    }, 'effort'>('claude-code', {
       configState: state
+    }, {
+      extraCommonKeys: ['effort']
     })
 
     expect(result.common).toEqual({
@@ -840,9 +848,10 @@ defaultModel: package-model
       defaultModel?: string
       effort?: string
       settingsContent?: Record<string, unknown>
-    }>({
+    }, 'effort'>({
       adapterKey: 'claude-code',
       configEntry: {
+        extraCommonKeys: ['effort'],
         deepMergeKeys: ['settingsContent']
       }
     }, {

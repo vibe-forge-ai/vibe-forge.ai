@@ -55,8 +55,7 @@ describe('config schema bundle', () => {
     expect((adapters.additionalProperties as Record<string, unknown>).properties).toMatchObject({
       defaultModel: { type: 'string' },
       includeModels: { type: 'array' },
-      excludeModels: { type: 'array' },
-      effort: { type: 'string' }
+      excludeModels: { type: 'array' }
     })
   })
 
@@ -87,7 +86,8 @@ describe('config schema bundle', () => {
       expect(bundle.extensions.channels).toContain('lark')
       expect(codexSchema.properties).toMatchObject({
         sandboxPolicy: { type: 'object' },
-        experimentalApi: { type: 'boolean' }
+        experimentalApi: { type: 'boolean' },
+        effort: { type: 'string' }
       })
       expect(channels).toContain('appId')
       expect(channels).toContain('appSecret')

@@ -2,11 +2,11 @@ import { execFile } from 'node:child_process'
 
 import { resolveAdapterConfigWithContribution as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { ChatMessage } from '@vibe-forge/core'
-import type { AdapterConfigEntry, AdapterCtx } from '@vibe-forge/types'
+import type { AdapterCtx } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { adapterConfigContribution } from '#~/config-schema.js'
-import type { OpenCodeAdapterConfig } from '#~/config-schema.js'
+import type { OpenCodeAdapterConfig, OpenCodeCommonAdapterConfigKey } from '#~/config-schema.js'
 
 export interface OpenCodeRunResult {
   exitCode: number
@@ -111,7 +111,8 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
 )
 
 export const resolveAdapterConfig = (ctx: AdapterCtx) => resolveMergedAdapterConfig<
-  AdapterConfigEntry<OpenCodeAdapterConfig>
+  OpenCodeAdapterConfig,
+  OpenCodeCommonAdapterConfigKey
 >(
   adapterConfigContribution,
   {
