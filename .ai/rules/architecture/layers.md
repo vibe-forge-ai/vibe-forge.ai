@@ -11,8 +11,9 @@
 ## 入口与运行时层
 
 - `packages/cli-helper`：CLI loader，负责 `NODE_OPTIONS`、`@vibe-forge/register/preload` 和退出码透传。
-- `packages/app-runtime`：对 `apps/*` 暴露 task / benchmark 入口，并携带默认 `vibe-forge` MCP 锚点。
+- `packages/app-runtime`：对 `apps/*` 暴露 task / benchmark 入口，并携带默认 `VibeForge` MCP 锚点。
 - `packages/task`：任务执行层，负责 `prepare()`、`run()` 与 adapter query options。
+- `packages/managed-plugins`：adapter-native 插件的 source 获取、安装、更新与启动前同步。
 - `packages/mcp`：独立 MCP stdio server，暴露 `vf-mcp` / `vibe-forge-mcp`。
 - `packages/hooks`：独立 hooks runtime，暴露 `vf-call-hook`。
 - `packages/benchmark`：benchmark 发现、workspace 准备、执行和结果读写。
@@ -22,7 +23,7 @@
 - `packages/types`：`Config`、adapter contract / loader、task <-> mcp binding、session / ws 类型。
 - `packages/core`：schema、channel DSL、env、ws 类型和统一导出。
 - `packages/config`：`.ai.config.*` / `.ai.dev.config.*` 查找、变量替换、缓存重置、配置写回。
-- `packages/utils`：logger、log level、字符串 key 转换、uuid、cache、message text 提取。
+- `packages/utils`：logger、log level、字符串 key 转换、uuid、cache、message text 提取，以及托管插件安装记录的低层读写。
 - `packages/definition-core`：definition 名称 / 标识 / 摘要语义、rule `always` 兼容、remote rule reference 投影。
 - `packages/definition-loader`：rules / skills / specs / entities 发现、读取与解析。
 - `packages/workspace-assets`：workspace assets 发现、hook 插件资产投影、prompt asset 选择与 prompt 文本拼装。

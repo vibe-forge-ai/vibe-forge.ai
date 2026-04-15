@@ -4,7 +4,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 import { getDb } from '#~/db/index.js'
-import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
+import { loadConfigState } from '#~/services/config/index.js'
+import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 import { updateConfigFile } from '@vibe-forge/config'
 import type {
@@ -122,12 +123,12 @@ export const syncPermissionStateMirror = async (
   } = {}
 ) => {
   const adapter = input.adapter ?? getDb().getSession(sessionId)?.adapter
-  if (adapter !== 'claude-code' && adapter !== 'opencode') {
+  if (adapter !== 'claude-code' && adapter !== 'kimi' && adapter !== 'opencode') {
     return
   }
 
-  const workspaceFolder = getWorkspaceFolder()
-  const { mergedConfig } = await loadConfigState()
+  const workspaceFolder = await resolveSessionWorkspaceFolder(sessionId)
+  const { mergedConfig } = await loadConfigState(workspaceFolder)
   const mirrorPath = resolvePermissionMirrorPath(workspaceFolder, adapter, sessionId)
   await mkdir(dirname(mirrorPath), { recursive: true })
   await writeFile(
@@ -151,8 +152,9 @@ export const syncPermissionStateMirror = async (
 
 export { syncPermissionStateMirrorBestEffort }
 
-const resolveProjectPermissionLists = async (): Promise<ProjectPermissionLists> => {
-  const { mergedConfig } = await loadConfigState()
+const resolveProjectPermissionLists = async (sessionId: string): Promise<ProjectPermissionLists> => {
+  const workspaceFolder = await resolveSessionWorkspaceFolder(sessionId)
+  const { mergedConfig } = await loadConfigState(workspaceFolder)
   return buildMirrorProjectPermissions(mergedConfig)
 }
 
@@ -172,38 +174,46 @@ const resolveProjectDecision = (keys: string[], lists: ProjectPermissionLists): 
 export const resolvePermissionDecision = async (params: {
   sessionId: string
   subject: PermissionToolSubject | undefined
+  lookupKeys?: string[]
 }): Promise<PermissionResolution> => {
   const { subject, sessionId } = params
   if (subject == null) {
     return { result: 'inherit', source: 'none' }
   }
 
-  const key = subject.key
+  const keyCandidates = normalizeKeys([
+    subject.key,
+    ...(params.lookupKeys ?? [])
+  ])
   const sessionState = getSessionPermissionState(sessionId)
-  if (sessionState.onceDeny.includes(key)) {
+
+  const matchedOnceDenyKeys = keyCandidates.filter(key => sessionState.onceDeny.includes(key))
+  if (matchedOnceDenyKeys.length > 0) {
     await updateSessionPermissionState(sessionId, {
       ...sessionState,
-      onceDeny: sessionState.onceDeny.filter(item => item !== key)
+      onceDeny: sessionState.onceDeny.filter(item => !matchedOnceDenyKeys.includes(item))
     })
     return { result: 'deny', source: 'onceDeny', subject }
   }
-  if (sessionState.onceAllow.includes(key)) {
+
+  const matchedOnceAllowKeys = keyCandidates.filter(key => sessionState.onceAllow.includes(key))
+  if (matchedOnceAllowKeys.length > 0) {
     await updateSessionPermissionState(sessionId, {
       ...sessionState,
-      onceAllow: sessionState.onceAllow.filter(item => item !== key)
+      onceAllow: sessionState.onceAllow.filter(item => !matchedOnceAllowKeys.includes(item))
     })
     return { result: 'allow', source: 'onceAllow', subject }
   }
-  if (sessionState.deny.includes(key)) {
+
+  if (keyCandidates.some(key => sessionState.deny.includes(key))) {
     return { result: 'deny', source: 'sessionDeny', subject }
   }
-  if (sessionState.allow.includes(key)) {
+  if (keyCandidates.some(key => sessionState.allow.includes(key))) {
     return { result: 'allow', source: 'sessionAllow', subject }
   }
 
-  const projectDecision = resolveProjectDecision([key], await resolveProjectPermissionLists())
   return {
-    ...projectDecision,
+    ...resolveProjectDecision(keyCandidates, await resolveProjectPermissionLists(sessionId)),
     subject
   }
 }
@@ -252,12 +262,14 @@ const mutateSessionPermissionState = (
 }
 
 const updateProjectPermissionLists = async (
+  sessionId: string,
   keys: string[],
   target: 'allow' | 'deny'
 ) => {
   const targetKeys = normalizeKeys(keys)
   const keySet = new Set(targetKeys)
-  const { workspaceFolder, projectConfig } = await loadConfigState()
+  const workspaceFolder = await resolveSessionWorkspaceFolder(sessionId)
+  const { projectConfig } = await loadConfigState(workspaceFolder)
   const existingPermissions = projectConfig?.permissions ?? {}
   const nextPermissions: Config['permissions'] = {
     ...existingPermissions,
@@ -284,10 +296,10 @@ export const applyPermissionInteractionDecision = async (params: {
   if (subjectKeys.length === 0) return
 
   if (params.action === 'allow_project') {
-    await updateProjectPermissionLists(subjectKeys, 'allow')
+    await updateProjectPermissionLists(params.sessionId, subjectKeys, 'allow')
   }
   if (params.action === 'deny_project') {
-    await updateProjectPermissionLists(subjectKeys, 'deny')
+    await updateProjectPermissionLists(params.sessionId, subjectKeys, 'deny')
   }
 
   const nextState = mutateSessionPermissionState(

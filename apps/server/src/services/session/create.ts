@@ -1,8 +1,51 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
+import type { GitBranchKind } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
+import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
+import { checkoutSessionGitBranch, createSessionGitBranch } from '#~/services/git/index.js'
 import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import {
+  deleteSessionWorkspace,
+  provisionSessionWorkspace,
+  resolveSessionWorkspace
+} from '#~/services/session/workspace.js'
+
+interface CreateSessionWorkspaceBranchOptions {
+  name: string
+  kind?: GitBranchKind
+  mode?: 'checkout' | 'create'
+}
+
+interface CreateSessionWorkspaceOptions {
+  createWorktree?: boolean
+  branch?: CreateSessionWorkspaceBranchOptions
+}
+
+const resolveCreateSessionConfigWorkspaceFolder = async (parentSessionId?: string) => {
+  if (parentSessionId != null && parentSessionId !== '') {
+    const workspace = await resolveSessionWorkspace(parentSessionId)
+    return workspace.workspaceFolder
+  }
+
+  return getWorkspaceFolder()
+}
+
+const resolveCreateSessionWorktreeDefault = async (
+  parentSessionId?: string,
+  workspace?: CreateSessionWorkspaceOptions
+) => {
+  if (workspace?.createWorktree != null) {
+    return workspace.createWorktree
+  }
+
+  const workspaceFolder = await resolveCreateSessionConfigWorkspaceFolder(parentSessionId)
+  const { mergedConfig } = await loadConfigState(workspaceFolder)
+    .catch(() => ({ mergedConfig: {} as { conversation?: { createSessionWorktree?: boolean } } }))
+
+  return mergedConfig.conversation?.createSessionWorktree ?? true
+}
 
 export async function createSessionWithInitialMessage(options: {
   title?: string
@@ -20,6 +63,7 @@ export async function createSessionWithInitialMessage(options: {
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   systemPrompt?: string
   adapter?: string
+  workspace?: CreateSessionWorkspaceOptions
 }): Promise<Session> {
   const {
     title,
@@ -36,7 +80,8 @@ export async function createSessionWithInitialMessage(options: {
     promptName,
     permissionMode,
     systemPrompt,
-    adapter
+    adapter,
+    workspace
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
@@ -47,16 +92,42 @@ export async function createSessionWithInitialMessage(options: {
       Object.assign(session, updatedSession)
     }
   }
-  notifySessionUpdated(session.id, session)
 
   if (tags && tags.length > 0) {
     db.updateSessionTags(session.id, tags)
     const updated = db.getSession(session.id)
     if (updated) {
       Object.assign(session, updated)
-      notifySessionUpdated(session.id, updated)
     }
   }
+
+  try {
+    const createWorktree = await resolveCreateSessionWorktreeDefault(parentSessionId, workspace)
+    await provisionSessionWorkspace(session.id, {
+      sourceSessionId: parentSessionId,
+      createWorktree
+    })
+
+    if (workspace?.branch != null) {
+      const branchName = workspace.branch.name.trim()
+      if (branchName !== '') {
+        if (workspace.branch.mode === 'create') {
+          await createSessionGitBranch(session.id, branchName)
+        } else {
+          await checkoutSessionGitBranch(session.id, {
+            name: branchName,
+            kind: workspace.branch.kind ?? 'local'
+          })
+        }
+      }
+    }
+  } catch (err) {
+    await deleteSessionWorkspace(session.id, { force: true }).catch(() => undefined)
+    db.deleteSession(session.id)
+    throw err
+  }
+
+  notifySessionUpdated(session.id, session)
 
   if ((initialMessage || initialContent) && shouldStart) {
     try {
@@ -77,6 +148,7 @@ export async function createSessionWithInitialMessage(options: {
       }
     } catch (err) {
       console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      await deleteSessionWorkspace(session.id, { force: true }).catch(() => undefined)
       db.deleteSession(session.id)
       throw err
     }

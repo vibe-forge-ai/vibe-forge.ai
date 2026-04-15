@@ -30,8 +30,7 @@ const getChannelLogContext = (key: string, type: string, configSource: 'project'
   configSource
 })
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : String(error)
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : String(error)
 
 export const initChannels = async (
   configs: ReadonlyArray<{ channels?: Record<string, unknown> } | undefined>

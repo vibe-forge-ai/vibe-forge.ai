@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildCodexApprovalResponse, resolveCodexApprovalDecision } from '#~/runtime/stream.js'
+import { formatCodexCommandForDisplay } from '#~/command-display.js'
+import {
+  buildCodexApprovalResponse,
+  buildCodexMcpElicitationResponse,
+  resolveCodexApprovalDecision
+} from '#~/runtime/stream.js'
 
 describe('codex stream approval decision mapping', () => {
   it('maps file-change cancel responses to decline', () => {
@@ -31,5 +36,31 @@ describe('codex stream approval decision mapping', () => {
       kind: 'command',
       availableDecisions: ['accept', 'acceptForSession', 'decline']
     })).toEqual({ decision: 'acceptForSession' })
+  })
+
+  it('maps denied MCP approvals to decline actions', () => {
+    expect(buildCodexMcpElicitationResponse('deny_once')).toEqual({ action: 'decline' })
+  })
+})
+
+describe('formatCodexCommandForDisplay', () => {
+  it('formats array commands', () => {
+    expect(formatCodexCommandForDisplay(['/usr/bin/zsh', '-lc', 'ls -la'])).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('preserves string commands', () => {
+    expect(formatCodexCommandForDisplay('/usr/bin/zsh -lc ls -la')).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('formats structured commands without throwing', () => {
+    expect(formatCodexCommandForDisplay({
+      executable: '/usr/bin/zsh',
+      args: ['-lc', 'ls -la']
+    })).toBe('/usr/bin/zsh -lc ls -la')
+  })
+
+  it('falls back to a placeholder when command is empty', () => {
+    expect(formatCodexCommandForDisplay(undefined)).toBe('[command]')
+    expect(formatCodexCommandForDisplay({})).toBe('[command]')
   })
 })

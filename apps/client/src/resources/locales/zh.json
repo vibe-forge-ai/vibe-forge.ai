@@ -290,8 +290,8 @@
       "desc": "管理项目内的角色、组件或领域实体。",
       "empty": "暂未发现实体。",
       "create": "新建实体",
-      "createHint": "请在 .ai/entities 中创建实体定义文件，保存后刷新页面。",
-      "importHint": "请将实体文件导入至 .ai/entities，保存后刷新页面。"
+      "createHint": "请创建实体定义文件，保存后刷新页面。",
+      "importHint": "请导入实体定义文件，保存后刷新页面。"
     },
     "flows": {
       "title": "流程库",
@@ -352,6 +352,13 @@
     "permissionReasons": "原因",
     "permissionExpandOptions": "展开更多选项",
     "permissionCollapseOptions": "收起更多选项",
+    "permissionConfirmOption": "确认选项",
+    "permissionConfirmOptionTooltip": "确认当前高亮的权限选项",
+    "permissionSendBlockedTooltip": "当前正在等待权限选项确认，请先确认上方选项",
+    "permissionSendBlockedError": "当前正在等待权限选项确认，暂时不能发送消息",
+    "interactionOptionNavigation": "选项快速切换",
+    "interactionOptionPrevious": "上一个选项",
+    "interactionOptionNext": "下一个选项",
     "tooltipSlashCommands": "快捷指令",
     "tooltipMentionAgents": "提及代理",
     "tooltipInjectContext": "注入上下文",
@@ -364,6 +371,24 @@
     "modelRemoveRecommendation": "从推荐模型中移除",
     "effortShortcutTooltip": "切换推理强度",
     "sendShortcutTooltip": "发送消息",
+    "queue": {
+      "steerTitle": "等待当前轮结束后发送",
+      "nextTitle": "合适时机发送",
+      "count": "{{count}} 条待发送",
+      "sendAfterTurn": "等待结束后发",
+      "sendNext": "下一轮发",
+      "steerShortcutTooltip": "等待当前轮结束后发送",
+      "nextShortcutTooltip": "在下一个合适时机发送",
+      "attachmentsOnly": "包含待发送的图片或引用",
+      "hasImage": "包含图片",
+      "hasReference": "包含引用",
+      "moveToSteer": "移动到等待当前轮结束后发送",
+      "moveToNext": "移动到合适时机发送",
+      "requeueMessage": "重新入队",
+      "stopCurrentRun": "停止当前执行",
+      "stopShortcutTooltip": "按两次 Esc 停止当前执行",
+      "stopShortcutConfirm": "再按一次 Esc 停止当前执行"
+    },
     "adapterLockedTooltip": "创建会话后适配器会锁定",
     "referenceActionsShort": "更多",
     "referenceActionsTitle": "更多",
@@ -443,8 +468,51 @@
     "gitBranchSwitcher": "切换分支",
     "gitOperations": "Git 操作",
     "gitWorktree": "Worktree",
+    "statusBarTitle": "会话状态",
+    "statusBarSessionSubtitle": "这里统一展示当前会话绑定的工作区和 Git 上下文。",
+    "statusBarDraftSubtitle": "发送第一条消息前，先把新会话的工作区准备好。",
+    "sessionWorkspace": "会话工作区",
+    "sessionWorkspaceManaged": "托管 worktree",
+    "sessionWorkspaceShared": "共享工作区",
+    "sessionWorkspaceExternal": "外部工作区",
+    "sessionWorkspaceDraftCreateWorktree": "创建工作树",
+    "sessionWorkspaceDraftStrategyLocal": "本地",
+    "sessionWorkspaceDraftStrategyManaged": "新工作树",
+    "sessionWorkspaceMenuCurrentWorktree": "当前工作树",
+    "sessionWorkspaceMenuWorktreeList": "工作树列表",
+    "sessionWorkspaceMenuLaunchInWorktree": "以工作树模式启动",
+    "sessionWorkspaceMenuTransferToLocal": "转移到本地",
+    "sessionWorkspaceMenuCreateWorktree": "创建工作树",
+    "sessionWorkspaceDraftCreateWorktreeEnabled": "新会话会自动拿到一个隔离的托管 worktree。",
+    "sessionWorkspaceDraftCreateWorktreeDisabled": "新会话会直接复用当前共享工作区。",
+    "sessionWorkspaceDraftCreateBranchLabel": "新分支：{{branch}}",
+    "sessionWorkspaceDraftGitUnavailable": "当前工作区不可用 Git。",
+    "sessionWorkspaceSearchWorktrees": "搜索工作树",
+    "sessionWorkspaceNoWorktrees": "暂无工作树",
+    "sessionWorkspaceMode": "模式",
+    "sessionWorkspaceState": "状态",
+    "sessionWorkspaceBranch": "分支",
+    "sessionWorkspacePath": "路径",
+    "sessionWorkspaceCleanup": "清理策略",
+    "sessionWorkspaceCleanupDelete": "删除会话时一并删除",
+    "sessionWorkspaceCleanupRetain": "删除会话时保留",
+    "sessionWorkspaceBaseRef": "基线引用",
+    "sessionWorkspaceCurrentSession": "当前会话",
+    "sessionWorkspaceRepositoryWorktrees": "仓库 worktree",
+    "sessionWorkspaceStateReady": "就绪",
+    "sessionWorkspaceStateProvisioning": "创建中",
+    "sessionWorkspaceStateDeleting": "删除中",
+    "sessionWorkspaceStateDeleted": "已删除",
+    "sessionWorkspaceStateBroken": "异常",
+    "sessionWorkspaceCreateWorktreeSuccess": "已为当前会话创建托管工作树。",
+    "sessionWorkspaceTransferToLocalSuccess": "当前工作树已转为本地保留。",
+    "sessionWorkspaceForceDeleteTitle": "删除有改动的工作区？",
+    "sessionWorkspaceForceDeleteDescription": "这个会话工作区里还有未提交的改动。是否仍然强制删除会话，并移除它绑定的 worktree？",
     "gitDetachedHead": "DETACHED",
     "gitSearchBranches": "搜索本地或远程分支",
+    "gitBranchViewMode": "分支展示模式",
+    "gitBranchViewTree": "树状",
+    "gitBranchViewFlat": "平铺",
     "gitBranchesLocal": "本地分支",
     "gitBranchesWorktrees": "其他 worktree",
     "gitBranchesRemote": "远程分支",
@@ -596,9 +664,9 @@
       },
       "entities": {
         "title": "已有实体",
-        "empty": "暂未发现实体，放入 .ai/entities 即可展示。",
+        "empty": "暂未发现实体，加入实体定义文件后即可展示。",
         "create": "快速创建实体",
-        "createToast": "请在 .ai/entities 下创建实体定义文件，保存后刷新页面。"
+        "createToast": "请创建实体定义文件，保存后刷新页面。"
       },
       "help": {
         "title": "一些帮助",
@@ -608,9 +676,15 @@
         "footer": "需要更多引导时，可在流程描述中写明使用方式"
       }
     },
+    "attachments": {
+      "pastedImage": "粘贴图片"
+    },
     "todo": {
       "noTasks": "未规划任务",
-      "progress": "任务进度: {{completed}}/{{total}} 已完成"
+      "progress": "任务进度: {{completed}}/{{total}} 已完成",
+      "pendingCount": "{{count}} 待办",
+      "inProgressCount": "{{count}} 进行中",
+      "completedCount": "{{count}} 已完成"
     },
     "tools": {
       "read": "读取文件",
@@ -958,6 +1032,10 @@
         "style": {
           "label": "对话风格",
           "desc": "控制助手的对话风格"
+        },
+        "createSessionWorktree": {
+          "label": "新建会话时创建工作树",
+          "desc": "默认给新会话分配一个托管 worktree"
         },
         "customInstructions": {
           "label": "自定义指令",

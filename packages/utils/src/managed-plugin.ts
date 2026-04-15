@@ -3,6 +3,8 @@ import { isAbsolute, relative, resolve } from 'node:path'
 
 import type { ManagedPluginAdapter, ManagedPluginInstallConfig, PluginConfig } from '@vibe-forge/types'
 
+import { resolveProjectAiPath } from './ai-path'
+
 const MANAGED_PLUGIN_CONFIG_FILE = '.vf-plugin.json'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -84,7 +86,7 @@ export interface ManagedPluginInstall {
   nativePluginDir: string
   vibeForgePluginDir: string
 }
-export const getManagedPluginsRoot = (cwd: string) => resolve(cwd, '.ai', 'plugins')
+export const getManagedPluginsRoot = (cwd: string) => resolveProjectAiPath(cwd, undefined, 'plugins')
 export const getManagedPluginConfigPath = (installDir: string) => resolve(installDir, MANAGED_PLUGIN_CONFIG_FILE)
 const isOutsideInstallDir = (relativePath: string) => (
   relativePath === '..' ||
@@ -189,11 +191,8 @@ export const listManagedPluginInstalls = async (
     return []
   }
 }
-export const toManagedPluginConfig = (
-  installs: ManagedPluginInstall[]
-): PluginConfig => (
-  installs.map((install) => ({
+export const toManagedPluginConfig = (installs: ManagedPluginInstall[]): PluginConfig =>
+  installs.map(install => ({
     id: install.vibeForgePluginDir,
     scope: install.config.scope ?? install.config.name
   }))
-)

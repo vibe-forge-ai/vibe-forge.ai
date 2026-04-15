@@ -64,7 +64,6 @@ describe('openCode config and model helpers', () => {
       }
     })
   })
-
   it('maps custom model services to an OpenCode provider/model pair', () => {
     const result = resolveOpenCodeModel('gateway,gpt-5', {
       gateway: {

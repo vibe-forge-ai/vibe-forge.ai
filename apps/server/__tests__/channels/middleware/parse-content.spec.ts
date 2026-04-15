@@ -103,6 +103,9 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   reply: vi.fn().mockResolvedValue(undefined),
   pushFollowUps: vi.fn().mockResolvedValue(undefined),
   getBoundSession: vi.fn(),
+  searchSessions: vi.fn(() => []),
+  bindSession: vi.fn(() => ({ alreadyBound: false })),
+  unbindSession: vi.fn(() => ({})),
   resetSession: vi.fn(),
   stopSession: vi.fn(),
   restartSession: vi.fn().mockResolvedValue(undefined),
@@ -113,7 +116,8 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   setChannelPermissionModePreference: vi.fn(),
   getChannelEffortPreference: vi.fn(),
   setChannelEffortPreference: vi.fn(),
-  ...overrides
+  ...overrides,
+  resolveSessionWorkspace: overrides.resolveSessionWorkspace ?? vi.fn().mockResolvedValue(undefined)
 })
 
 describe('parseContentMiddleware', () => {

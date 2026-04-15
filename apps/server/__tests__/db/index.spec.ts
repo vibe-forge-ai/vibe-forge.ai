@@ -70,7 +70,13 @@ describe('sqliteDb', () => {
     expect(db.getSessionRuntimeState(child.id)).toEqual({
       runtimeKind: 'interactive',
       historySeed: 'seed prompt',
-      historySeedPending: true
+      historySeedPending: true,
+      permissionState: {
+        allow: [],
+        deny: [],
+        onceAllow: [],
+        onceDeny: []
+      }
     })
   })
 

@@ -257,4 +257,114 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).not.toContain('<skills>\n# research')
     expect(resolvedConfig.systemPrompt).not.toContain('<skill-content>\n检查风险\n</skill-content>')
   })
+
+  it('loads route skills from injected plugin packages', async () => {
+    const workspace = await createWorkspace()
+    const pluginDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-cli-skills')
+
+    await writeDocument(
+      join(pluginDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-cli-skills',
+          version: '0.11.0'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(pluginDir, 'skills', 'vf-cli-quickstart', 'SKILL.md'),
+      '---\ndescription: CLI 快速入门\n---\n先执行 vf list 再恢复会话'
+    )
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      undefined,
+      undefined,
+      workspace,
+      {
+        plugins: [
+          {
+            id: '@vibe-forge/plugin-cli-skills'
+          }
+        ]
+      }
+    )
+
+    expect(resolvedConfig.systemPrompt).toContain('<skills>')
+    expect(resolvedConfig.systemPrompt).toContain('# vf-cli-quickstart')
+    expect(resolvedConfig.systemPrompt).toContain('> Skill description: CLI 快速入门')
+  })
+
+  it('merges injected plugins with workspace config plugins in the returned asset bundle', async () => {
+    const workspace = await createWorkspace()
+    const cliPluginDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-cli-skills')
+    const loggerPluginDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-logger')
+
+    await writeDocument(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify(
+        {
+          plugins: [
+            {
+              id: 'logger'
+            }
+          ]
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(cliPluginDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-cli-skills',
+          version: '0.11.0'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(cliPluginDir, 'skills', 'vf-cli-quickstart', 'SKILL.md'),
+      '---\ndescription: CLI 快速入门\n---\n先执行 vf list 再恢复会话'
+    )
+    await writeDocument(
+      join(loggerPluginDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '0.11.0'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(loggerPluginDir, 'hooks.js'),
+      'module.exports = { TaskStart: async (_ctx, _input, next) => next() }\n'
+    )
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      undefined,
+      undefined,
+      workspace,
+      {
+        plugins: [
+          {
+            id: '@vibe-forge/plugin-cli-skills'
+          }
+        ]
+      }
+    )
+
+    expect(resolvedConfig.assetBundle?.pluginConfigs).toEqual([
+      { id: 'logger' },
+      { id: '@vibe-forge/plugin-cli-skills' }
+    ])
+    expect(resolvedConfig.assetBundle?.hookPlugins.map(asset => asset.packageId)).toEqual([
+      '@vibe-forge/plugin-logger'
+    ])
+  })
 })

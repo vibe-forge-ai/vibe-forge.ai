@@ -51,7 +51,11 @@ export const bindChannelSession = (input: {
   }
 
   if (transferredBinding != null && !isSameChannel(transferredBinding, { channelType, sessionType, channelId })) {
-    db.deleteChannelSession(transferredBinding.channelType, transferredBinding.sessionType, transferredBinding.channelId)
+    db.deleteChannelSession(
+      transferredBinding.channelType,
+      transferredBinding.sessionType,
+      transferredBinding.channelId
+    )
   }
 
   setPendingUnack(sessionId, unack)
@@ -78,9 +82,10 @@ export const bindChannelSession = (input: {
     previousSessionId: previousChannelBinding?.sessionId !== sessionId
       ? previousChannelBinding?.sessionId
       : undefined,
-    transferredFrom: transferredBinding != null && !isSameChannel(transferredBinding, { channelType, sessionType, channelId })
-      ? transferredBinding
-      : undefined
+    transferredFrom:
+      transferredBinding != null && !isSameChannel(transferredBinding, { channelType, sessionType, channelId })
+        ? transferredBinding
+        : undefined
   }
 }
 

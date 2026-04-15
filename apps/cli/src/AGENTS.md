@@ -3,7 +3,7 @@
 CLI 侧只负责命令入口、参数归并、hook/plugin 调用与把任务交给 app-facing runtime / adapter。
 app-facing 的 task / benchmark 入口位于 `@vibe-forge/app-runtime`。
 MCP stdio server 入口位于 `@vibe-forge/mcp`。
-默认内建 `vibe-forge` MCP 的解析位于 `@vibe-forge/config`，由 task runtime 在 prepare 阶段注入；发布态的 `@vibe-forge/mcp` 安装锚点由 `@vibe-forge/app-runtime` 提供。
+默认内建 `VibeForge` MCP 的解析位于 `@vibe-forge/config`，由 task runtime 在 prepare 阶段注入；发布态的 `@vibe-forge/mcp` 安装锚点由 `@vibe-forge/app-runtime` 提供。
 adapter 契约与 loader 位于 `@vibe-forge/types`。
 task-facing workspace asset helper 位于 `@vibe-forge/workspace-assets`。
 definition loader 位于 `@vibe-forge/definition-loader`。

@@ -52,6 +52,7 @@ export function startTerminalSession(
   options: {
     cols?: number
     rows?: number
+    cwd?: string
   } = {}
 ) {
   const runtime = ensureTerminalRuntime(sessionId, options)
@@ -149,6 +150,7 @@ export function resizeTerminalSession(
   options: {
     cols?: number
     rows?: number
+    cwd?: string
   }
 ) {
   const runtime = ensureTerminalRuntime(sessionId, options)
@@ -163,6 +165,7 @@ export function restartTerminalSession(
   options: {
     cols?: number
     rows?: number
+    cwd?: string
   } = {}
 ) {
   const runtime = ensureTerminalRuntime(sessionId, options)

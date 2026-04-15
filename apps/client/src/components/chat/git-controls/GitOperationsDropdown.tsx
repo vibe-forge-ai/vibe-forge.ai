@@ -9,6 +9,7 @@ import { getPrimaryGitOperationKind, isGitOperationDisabled } from './git-operat
 export function GitOperationsDropdown({
   isBusy,
   open,
+  placement = 'bottomLeft',
   repoState,
   onOpenChange,
   onOpenCommit,
@@ -17,6 +18,7 @@ export function GitOperationsDropdown({
 }: {
   isBusy: boolean
   open: boolean
+  placement?: 'bottomLeft' | 'topLeft'
   repoState: GitRepositoryState
   onOpenChange: (open: boolean) => void
   onOpenCommit: () => void
@@ -84,7 +86,7 @@ export function GitOperationsDropdown({
 
       <Dropdown
         open={open}
-        placement='bottomLeft'
+        placement={placement}
         trigger={['click']}
         onOpenChange={onOpenChange}
         dropdownRender={() => (

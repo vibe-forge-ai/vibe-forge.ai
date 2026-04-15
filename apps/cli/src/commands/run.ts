@@ -1,5 +1,6 @@
+import { getCliDefaultSkillNames, getCliDefaultSkillPluginConfig } from '#~/default-skill-plugin.js'
 import { registerRunCommand } from './run/command'
-import { parseCliInputControlEvent } from './run/input-bridge'
+import { parseCliInputControlEvent } from './run/input-control'
 import {
   getDisallowedResumeFlags,
   resolveDefaultVibeForgeMcpServerOption,
@@ -8,6 +9,7 @@ import {
 } from './run/options'
 import {
   getAdapterErrorMessage,
+  getAdapterInteractionMessage,
   getPrintableAssistantText,
   handlePrintEvent,
   resolvePrintableStopText,
@@ -21,6 +23,9 @@ export {
   RUN_OUTPUT_FORMATS,
   createSessionExitController,
   getAdapterErrorMessage,
+  getAdapterInteractionMessage,
+  getCliDefaultSkillNames,
+  getCliDefaultSkillPluginConfig,
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,

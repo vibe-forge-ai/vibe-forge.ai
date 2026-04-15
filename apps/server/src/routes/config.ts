@@ -1,10 +1,12 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import process from 'node:process'
 
 import Router from '@koa/router'
 
 import { updateConfigFile } from '@vibe-forge/config'
 import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
+import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
 import { badRequest, internalServerError } from '#~/utils/http.js'
@@ -128,6 +130,9 @@ export function configRouter(): Router {
       }
       const appInfo = await getAppInfo(workspaceFolder)
       const mergedSections = buildSections(mergedConfig)
+      mergedSections.general.baseDir = process.env.__VF_PROJECT_AI_BASE_DIR__ != null
+        ? resolveProjectAiBaseDirName(process.env)
+        : mergedConfig.baseDir ?? resolveProjectAiBaseDirName(process.env)
       mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
       ctx.body = {
         sources: {

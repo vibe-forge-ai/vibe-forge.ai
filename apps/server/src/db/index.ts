@@ -15,14 +15,19 @@ import { createChannelSessionsRepo } from './channelSessions/repo'
 import { createConnection } from './connection'
 import { initSchema } from './schema'
 import { createMessagesRepo } from './sessions/messages.repo'
+import { createSessionQueueRepo } from './sessions/queue.repo'
 import { createSessionsRepo } from './sessions/repo'
 import type { SessionRuntimeState } from './sessions/repo'
 import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
+import { createSessionWorkspacesRepo } from './sessionWorkspaces/repo'
+import type { SessionWorkspaceRow } from './sessionWorkspaces/repo'
+import { sessionWorkspacesSchemaModule } from './sessionWorkspaces/schema'
 import type { SqliteDatabase } from './sqlite'
 
 const dbSchemaModules = [
   sessionsSchemaModule,
+  sessionWorkspacesSchemaModule,
   channelSessionsSchemaModule,
   channelActionTokensSchemaModule,
   automationSchemaModule
@@ -36,6 +41,8 @@ export class SqliteDb {
   private db: SqliteDatabase
   private sessions: ReturnType<typeof createSessionsRepo>
   private messages: ReturnType<typeof createMessagesRepo>
+  private sessionWorkspaces: ReturnType<typeof createSessionWorkspacesRepo>
+  private sessionQueue: ReturnType<typeof createSessionQueueRepo>
   private channelSessions: ReturnType<typeof createChannelSessionsRepo>
   private channelActionTokens: ReturnType<typeof createChannelActionTokensRepo>
   private tags: ReturnType<typeof createTagsRepo>
@@ -46,6 +53,8 @@ export class SqliteDb {
     initSchema(this.db, dbSchemaModules)
     this.sessions = createSessionsRepo(this.db)
     this.messages = createMessagesRepo(this.db)
+    this.sessionWorkspaces = createSessionWorkspacesRepo(this.db)
+    this.sessionQueue = createSessionQueueRepo(this.db)
     this.channelSessions = createChannelSessionsRepo(this.db)
     this.channelActionTokens = createChannelActionTokensRepo(this.db)
     this.tags = createTagsRepo(this.db)
@@ -62,6 +71,27 @@ export class SqliteDb {
 
   getSessionRuntimeState(id: string) {
     return this.sessions.getRuntimeState(id)
+  }
+
+  getSessionWorkspace(sessionId: string) {
+    return this.sessionWorkspaces.get(sessionId)
+  }
+
+  upsertSessionWorkspace(
+    row: Parameters<typeof this.sessionWorkspaces.upsert>[0]
+  ) {
+    return this.sessionWorkspaces.upsert(row)
+  }
+
+  updateSessionWorkspace(
+    sessionId: string,
+    updates: Parameters<typeof this.sessionWorkspaces.update>[1]
+  ) {
+    return this.sessionWorkspaces.update(sessionId, updates)
+  }
+
+  deleteSessionWorkspace(sessionId: string) {
+    return this.sessionWorkspaces.remove(sessionId)
   }
 
   updateSession(id: string, updates: Parameters<typeof this.sessions.update>[1]) {
@@ -94,6 +124,50 @@ export class SqliteDb {
 
   getMessages(sessionId: string) {
     return this.messages.list(sessionId)
+  }
+
+  listSessionQueuedMessages(sessionId: string) {
+    return this.sessionQueue.list(sessionId)
+  }
+
+  getSessionQueuedMessage(sessionId: string, id: string) {
+    return this.sessionQueue.get(sessionId, id)
+  }
+
+  createSessionQueuedMessage(
+    sessionId: string,
+    mode: Parameters<typeof this.sessionQueue.create>[1],
+    content: Parameters<typeof this.sessionQueue.create>[2]
+  ) {
+    return this.sessionQueue.create(sessionId, mode, content)
+  }
+
+  updateSessionQueuedMessage(
+    sessionId: string,
+    id: string,
+    content: Parameters<typeof this.sessionQueue.update>[2]
+  ) {
+    return this.sessionQueue.update(sessionId, id, content)
+  }
+
+  moveSessionQueuedMessage(
+    sessionId: string,
+    id: string,
+    mode: Parameters<typeof this.sessionQueue.move>[2]
+  ) {
+    return this.sessionQueue.move(sessionId, id, mode)
+  }
+
+  deleteSessionQueuedMessage(sessionId: string, id: string) {
+    return this.sessionQueue.remove(sessionId, id)
+  }
+
+  reorderSessionQueuedMessages(
+    sessionId: string,
+    mode: Parameters<typeof this.sessionQueue.reorder>[1],
+    ids: Parameters<typeof this.sessionQueue.reorder>[2]
+  ) {
+    return this.sessionQueue.reorder(sessionId, mode, ids)
   }
 
   getChannelSession(channelType: string, sessionType: string, channelId: string) {
@@ -240,3 +314,4 @@ export function getDb() {
 }
 
 export type { AutomationRule, AutomationRuleDetail, AutomationRun, AutomationTask, AutomationTrigger }
+export type { SessionWorkspaceRow }

@@ -179,4 +179,200 @@ describe('buildAdapterAssetPlan', () => {
       })
     ]))
   })
+
+  it('builds copilot native skill overlays and translated runtime diagnostics', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'hooks.js': 'module.exports = {}\n'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'opencode/commands/review.md': '# review\n'
+    })
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: 'logger' },
+          { id: 'demo', scope: 'demo' }
+        ],
+        mcpServers: {
+          docs: {
+            command: 'npx',
+            args: ['docs-server']
+          }
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const researchSkillId = bundle.skills.find(asset => asset.name === 'research')?.id
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+    const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
+    const docsMcpId = bundle.mcpServers.docs?.id
+    expect(researchSkillId).toBeDefined()
+    expect(loggerHookPluginId).toBeDefined()
+    expect(demoCommandId).toBeDefined()
+    expect(docsMcpId).toBeDefined()
+
+    const [, resolvedOptions] = await resolvePromptAssetSelection({
+      bundle,
+      type: undefined,
+      name: undefined,
+      adapter: 'copilot',
+      input: {
+        skills: {
+          include: ['research']
+        }
+      }
+    })
+    const plan = buildAdapterAssetPlan({
+      adapter: 'copilot',
+      bundle,
+      options: {
+        promptAssetIds: resolvedOptions.promptAssetIds,
+        mcpServers: resolvedOptions.mcpServers,
+        skills: {
+          include: ['research']
+        }
+      }
+    })
+
+    expect(plan.mcpServers).toHaveProperty('docs')
+    expect(plan.overlays).toEqual([
+      expect.objectContaining({
+        assetId: researchSkillId,
+        kind: 'skill',
+        targetPath: 'skills/research'
+      })
+    ])
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        assetId: researchSkillId,
+        adapter: 'copilot',
+        status: 'native'
+      }),
+      expect.objectContaining({
+        assetId: loggerHookPluginId,
+        adapter: 'copilot',
+        status: 'translated'
+      }),
+      expect.objectContaining({
+        assetId: docsMcpId,
+        adapter: 'copilot',
+        status: 'translated'
+      }),
+      expect.objectContaining({
+        assetId: demoCommandId,
+        adapter: 'copilot',
+        status: 'skipped'
+      })
+    ]))
+    expect(plan.diagnostics).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        assetId: researchSkillId,
+        adapter: 'copilot',
+        status: 'prompt'
+      })
+    ]))
+  })
+
+  it('builds kimi overlays for native skills and native hooks', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'hooks.js': 'module.exports = {}\n'
+    })
+    await installPluginPackage(workspace, '@vibe-forge/plugin-demo', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-demo',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'opencode/commands/review.md': '# review\n'
+    })
+    await writeDocument(
+      join(workspace, '.ai/skills/research/SKILL.md'),
+      '---\ndescription: 检索资料\n---\n阅读 README.md'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: 'logger' },
+          { id: 'demo', scope: 'demo' }
+        ],
+        mcpServers: {
+          docs: {
+            command: 'npx',
+            args: ['docs-server']
+          }
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+    const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
+
+    const plan = buildAdapterAssetPlan({
+      adapter: 'kimi',
+      bundle,
+      options: {
+        skills: {
+          include: ['research']
+        }
+      }
+    })
+
+    expect(plan.overlays).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'research'
+      })
+    ]))
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        adapter: 'kimi',
+        assetId: loggerHookPluginId,
+        status: 'native'
+      }),
+      expect.objectContaining({
+        adapter: 'kimi',
+        assetId: demoCommandId,
+        status: 'skipped'
+      })
+    ]))
+  })
 })

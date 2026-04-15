@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { applyPermissionInteractionDecision, resolvePermissionDecision } from '#~/services/session/permission.js'
+import {
+  applyPermissionInteractionDecision,
+  resolvePermissionDecision,
+  syncPermissionStateMirror
+} from '#~/services/session/permission.js'
 import { createEmptySessionPermissionState } from '@vibe-forge/utils'
 
 const mocks = vi.hoisted(() => ({
   getDb: vi.fn(),
   loadConfigState: vi.fn(),
-  getWorkspaceFolder: vi.fn(),
+  resolveSessionWorkspaceFolder: vi.fn(),
   updateConfigFile: vi.fn(),
   mkdir: vi.fn(),
   writeFile: vi.fn(),
@@ -18,8 +22,11 @@ vi.mock('#~/db/index.js', () => ({
 }))
 
 vi.mock('#~/services/config/index.js', () => ({
-  loadConfigState: mocks.loadConfigState,
-  getWorkspaceFolder: mocks.getWorkspaceFolder
+  loadConfigState: mocks.loadConfigState
+}))
+
+vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder
 }))
 
 vi.mock('@vibe-forge/config', () => ({
@@ -73,7 +80,7 @@ describe('session permission service', () => {
       }))
     })
 
-    mocks.getWorkspaceFolder.mockReturnValue('/workspace')
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValue('/workspace')
     mocks.loadConfigState.mockImplementation(async () => ({
       workspaceFolder: '/workspace',
       projectConfig,
@@ -191,6 +198,73 @@ describe('session permission service', () => {
     }))
   })
 
+  it('matches stored built-in MCP tool decisions across both known Codex subject slugs', async () => {
+    runtimeState = {
+      allow: ['mcp-vibeforge-list-tasks'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'sessionAllow'
+    }))
+  })
+
+  it('prefers deny over allow when built-in MCP alias keys disagree', async () => {
+    runtimeState = {
+      allow: ['mcp-vibeforge-list-tasks'],
+      deny: ['mcp-vibe-forge-list-tasks'],
+      onceAllow: [],
+      onceDeny: []
+    }
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'deny',
+      source: 'sessionDeny'
+    }))
+  })
+
+  it('falls back to the built-in MCP server permission for Codex MCP approvals', async () => {
+    projectConfig.permissions.allow = ['VibeForge']
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject: {
+        key: 'mcp-vibe-forge-list-tasks',
+        label: 'VibeForge:List Tasks',
+        scope: 'tool'
+      },
+      lookupKeys: ['mcp-vibeforge-list-tasks', 'VibeForge']
+    })
+
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'projectAllow'
+    }))
+  })
+
   it('keeps the DB permission state authoritative when mirror sync fails', async () => {
     runtimeState = {
       allow: [],
@@ -215,6 +289,38 @@ describe('session permission service', () => {
     }))
     expect(runtimeState.onceAllow).toEqual([])
     expect(mocks.getSessionLogger).toHaveBeenCalledWith('sess-1', 'server')
+  })
+
+  it('writes permission mirror files for Kimi sessions', async () => {
+    runtimeState = {
+      allow: ['Shell'],
+      deny: [],
+      onceAllow: [],
+      onceDeny: []
+    }
+    mocks.getDb.mockReturnValue({
+      getSessionRuntimeState: vi.fn(() => ({
+        runtimeKind: 'interactive',
+        historySeedPending: false,
+        permissionState: runtimeState
+      })),
+      updateSessionRuntimeState,
+      getSession: vi.fn(() => ({
+        id: 'sess-kimi',
+        adapter: 'kimi'
+      }))
+    })
+
+    await syncPermissionStateMirror('sess-kimi')
+
+    const mirrorContent = String(mocks.writeFile.mock.calls.at(-1)?.[1] ?? '{}')
+    expect(JSON.parse(mirrorContent)).toMatchObject({
+      sessionId: 'sess-kimi',
+      adapter: 'kimi',
+      permissionState: {
+        allow: ['Bash']
+      }
+    })
   })
 
   it('writes allow_project into project config and removes conflicting managed keys', async () => {

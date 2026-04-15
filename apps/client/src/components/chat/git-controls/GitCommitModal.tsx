@@ -64,6 +64,7 @@ export function GitCommitModal({
   const { i18n, t } = useTranslation()
   const numberFormatter = new Intl.NumberFormat(i18n.language)
   const nextSteps = getGitCommitNextSteps(t)
+  const changedFilesCount = commitSummary?.changedFiles ?? 0
   return (
     <Modal
       centered
@@ -86,7 +87,7 @@ export function GitCommitModal({
         <GitCommitSummaryGrid
           branchLabel={t('chat.gitCommitPanelBranch')}
           changedFilesLabel={t('chat.gitChangedFilesCount', {
-            count: numberFormatter.format(commitSummary?.changedFiles ?? 0)
+            count: changedFilesCount
           })}
           changesLabel={t('chat.gitCommitPanelChanges')}
           currentBranchLabel={currentBranchLabel}

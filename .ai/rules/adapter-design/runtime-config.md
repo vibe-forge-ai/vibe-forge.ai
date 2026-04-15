@@ -35,8 +35,11 @@
 
 ## Claude Code
 
-- 实现入口：[`packages/adapters/claude-code/src/claude/prepare.ts`](../../../packages/adapters/claude-code/src/claude/prepare.ts)
+- 实现入口：
+  - [`packages/adapters/claude-code/src/claude/init.ts`](../../../packages/adapters/claude-code/src/claude/init.ts)
+  - [`packages/adapters/claude-code/src/claude/prepare.ts`](../../../packages/adapters/claude-code/src/claude/prepare.ts)
 - 自动生效内容：
+  - mock-home `.claude.json` 里的 workspace trust state
   - `settingsContent` / `nativeEnv`
   - permissions
   - selected MCP servers
@@ -48,12 +51,15 @@
 设计考量：
 
 - Claude 原生已经有稳定 `settings.json` 和 `--mcp-config`
-- 所以优先把共享配置投影成 Claude 原生 settings，而不是把这些规则重新描述一遍给 prompt
+- 项目信任状态又落在 `~/.claude.json`，所以 init 阶段需要先把 mock-home app state 补齐，再由 query 阶段把会话级共享配置投影成 Claude 原生 settings
 
 ## Codex
 
-- 实现入口：[`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts)
+- 实现入口：
+  - [`packages/adapters/codex/src/runtime/init.ts`](../../../packages/adapters/codex/src/runtime/init.ts)
+  - [`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts)
 - 自动生效内容：
+  - mock-home `.codex/config.toml` 里的 workspace trust 与 startup update 默认值
   - `developer_instructions`
   - `model_provider.*`
   - `mcp_servers.*`
@@ -63,12 +69,15 @@
 设计考量：
 
 - Codex 更偏向 `config.toml` / `-c key=value` 覆盖
-- 所以共享配置在这里会被编译成多组 `-c` 参数，而不是落成单个文件
+- 所以 init 阶段会先在 mock home 写最基础的原生配置（workspace trust、`check_for_update_on_startup`），query 阶段再把会话级共享配置编译成多组 `-c` 参数
 
 ## OpenCode
 
-- 实现入口：[`packages/adapters/opencode/src/runtime/session/child-env.ts`](../../../packages/adapters/opencode/src/runtime/session/child-env.ts)
+- 实现入口：
+  - [`packages/adapters/opencode/src/runtime/native-hooks.ts`](../../../packages/adapters/opencode/src/runtime/native-hooks.ts)
+  - [`packages/adapters/opencode/src/runtime/session/child-env.ts`](../../../packages/adapters/opencode/src/runtime/session/child-env.ts)
 - 自动生效内容：
+  - mock-home fallback `opencode.json` 里的 `$schema` / `autoupdate`
   - 合并后的 `opencode.json`
   - selected MCP servers
   - permissions
@@ -79,7 +88,8 @@
 设计考量：
 
 - OpenCode 允许整个 session config dir 成为原生边界
-- 所以这里最适合把 MCP、skills、commands、agents、modes 一起收敛进一个 session config root
+- 官方文档没有单独的 workspace trust key；当前 workspace 直接受 permissions 规则约束，额外目录才走 `permission.external_directory`
+- 所以这里最适合把 MCP、skills、commands、agents、modes 一起收敛进一个 session config root，并把 update 提示压到 mock-home/session config 这一层处理
 
 ## Gemini
 

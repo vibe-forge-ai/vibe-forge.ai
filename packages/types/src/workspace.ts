@@ -14,6 +14,7 @@ export type WorkspaceAssetKind =
   | 'mode'
   | 'nativePlugin'
 export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'gemini' | 'opencode'
+export type WorkspaceAssetAdapter = 'claude-code' | 'codex' | 'copilot' | 'gemini' | 'kimi' | 'opencode'
 export type AssetDiagnosticStatus = 'native' | 'translated' | 'prompt' | 'skipped'
 
 export interface AssetDiagnostic {
@@ -36,7 +37,7 @@ export interface AdapterOverlayEntry {
   targetPath: string
 }
 
-interface WorkspaceAssetBase<TKind extends WorkspaceAssetKind, TPayload> {
+export interface WorkspaceAssetBase<TKind extends WorkspaceAssetKind, TPayload> {
   id: string
   kind: TKind
   name: string
@@ -51,21 +52,21 @@ interface WorkspaceAssetBase<TKind extends WorkspaceAssetKind, TPayload> {
   payload: TPayload
 }
 
-interface WorkspaceDocumentPayload<TDefinition> {
+export interface WorkspaceDocumentPayload<TDefinition> {
   definition: TDefinition
 }
 
-interface WorkspaceMcpPayload {
+export interface WorkspaceMcpPayload {
   name: string
   config: NonNullable<Config['mcpServers']>[string]
 }
 
-interface WorkspaceHookPluginPayload {
+export interface WorkspaceHookPluginPayload {
   packageName?: string
   config: unknown
 }
 
-interface WorkspaceOpenCodeOverlayPayload {
+export interface WorkspaceOpenCodeOverlayPayload {
   entryName: string
   targetSubpath: string
 }

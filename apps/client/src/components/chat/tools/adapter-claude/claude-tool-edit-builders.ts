@@ -21,7 +21,14 @@ export function buildClaudeEditToolPresentation(params: BuilderParams) {
         const data = todo as Record<string, unknown>
         const content = asString(data.content)
         const status = asString(data.status)
-        return content != null ? [`[${status ?? 'pending'}] ${content}`] : []
+        const activeForm = asString(data.activeForm)
+        if (content == null) {
+          return []
+        }
+        const detail = status === 'in_progress' && activeForm != null && activeForm !== content
+          ? ` (${activeForm})`
+          : ''
+        return [`[${status ?? 'pending'}] ${content}${detail}`]
       })
       : undefined
 

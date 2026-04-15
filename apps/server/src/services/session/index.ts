@@ -1,4 +1,4 @@
-import { cwd as processCwd, env as processEnv } from 'node:process'
+import { env as processEnv } from 'node:process'
 
 import { v4 as uuidv4 } from 'uuid'
 
@@ -37,7 +37,14 @@ import {
   resolvePermissionSubjectFromInput,
   syncPermissionStateMirrorBestEffort
 } from '#~/services/session/permission.js'
+import {
+  armNextQueueInterrupt,
+  listSessionQueuedMessages,
+  maybeDispatchQueuedTurn,
+  shouldInterruptForQueuedNext
+} from '#~/services/session/queue.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
+import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
@@ -356,6 +363,7 @@ export async function startAdapterSession(
       db.createSession(undefined, sessionId, undefined, undefined, {
         runtimeKind: 'interactive'
       })
+      await provisionSessionWorkspace(sessionId)
     }
 
     if (
@@ -376,7 +384,7 @@ export async function startAdapterSession(
     activeAdapterRunStore.set(sessionId, runId)
 
     try {
-      const promptCwd = processCwd()
+      const promptCwd = await resolveSessionWorkspaceFolder(sessionId)
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         options.promptType,
         options.promptName,
@@ -395,7 +403,8 @@ export async function startAdapterSession(
         : [resolvedConfig.systemPrompt, options.systemPrompt]
           .filter(Boolean)
           .join('\n\n')
-      const { mergedConfig } = await loadConfigState().catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
+      const { mergedConfig } = await loadConfigState(promptCwd)
+        .catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
       const { modelLanguage } = mergedConfig
       const languagePrompt = modelLanguage == null
         ? undefined
@@ -514,6 +523,15 @@ export async function startAdapterSession(
                   type: 'message',
                   message: event.data
                 })
+                if (
+                  (event.data as any).role === 'assistant' &&
+                  shouldInterruptForQueuedNext(sessionId, {
+                    type: 'message',
+                    message: event.data
+                  })
+                ) {
+                  interruptSession(sessionId)
+                }
               }
               break
             case 'interaction_request': {
@@ -531,7 +549,8 @@ export async function startAdapterSession(
                     if (subject != null) {
                       const storedDecision = await resolveStoredPermissionDecision({
                         sessionId,
-                        subject
+                        subject,
+                        lookupKeys: permissionContext?.subjectLookupKeys
                       })
                       if (activeAdapterRunStore.get(sessionId) !== runId) return
 
@@ -760,6 +779,11 @@ export async function startAdapterSession(
               updateAndNotifySession(sessionId, {
                 status: exitCode === 0 ? 'completed' : 'failed'
               })
+              if (exitCode === 0) {
+                maybeDispatchQueuedTurn(sessionId, async (content) => {
+                  await processUserMessage(sessionId, content)
+                })
+              }
               if (exitCode !== 0 && !sawFatalError) {
                 emitRuntimeEvent(connectionState, {
                   type: 'error',
@@ -801,6 +825,9 @@ export async function startAdapterSession(
               const latestSession = getDb().getSession(sessionId)
               if (latestSession?.status !== 'failed') {
                 updateAndNotifySession(sessionId, { status: 'completed' })
+                maybeDispatchQueuedTurn(sessionId, async (content) => {
+                  await processUserMessage(sessionId, content)
+                })
               }
               break
             }
@@ -812,7 +839,7 @@ export async function startAdapterSession(
         db.updateSessionRuntimeState(sessionId, { historySeedPending: false })
       }
 
-      return setAdapterSessionRuntime(
+      const runtime = setAdapterSessionRuntime(
         sessionId,
         bindAdapterSessionRuntime(connectionState, session, {
           runId,
@@ -823,6 +850,10 @@ export async function startAdapterSession(
           seededFromHistory
         })
       )
+      if (listSessionQueuedMessages(sessionId).next.length > 0) {
+        armNextQueueInterrupt(sessionId)
+      }
+      return runtime
     } catch (err) {
       if (activeAdapterRunStore.get(sessionId) === runId) {
         activeAdapterRunStore.delete(sessionId)
@@ -905,6 +936,10 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   }
 
   updateAndNotifySession(sessionId, updates)
+
+  if (listSessionQueuedMessages(sessionId).next.length > 0) {
+    armNextQueueInterrupt(sessionId)
+  }
 
   const externalCached = getExternalSessionRuntime(sessionId)
   if (isExternalSession && externalCached != null) {

@@ -289,8 +289,8 @@
       "desc": "Manage roles, components, and domain entities for the project.",
       "empty": "No entities found.",
       "create": "Create Entity",
-      "createHint": "Create an entity definition under .ai/entities, then refresh the page.",
-      "importHint": "Import entity files into .ai/entities, then refresh the page."
+      "createHint": "Create an entity definition file, then refresh the page.",
+      "importHint": "Import entity definition files, then refresh the page."
     },
     "flows": {
       "title": "Flow Library",
@@ -351,6 +351,13 @@
     "permissionReasons": "Reasons",
     "permissionExpandOptions": "Show more options",
     "permissionCollapseOptions": "Show fewer options",
+    "permissionConfirmOption": "Confirm option",
+    "permissionConfirmOptionTooltip": "Confirm the currently highlighted permission option",
+    "permissionSendBlockedTooltip": "A permission choice is still pending. Confirm the option above first.",
+    "permissionSendBlockedError": "A permission choice is still pending, so sending is temporarily disabled.",
+    "interactionOptionNavigation": "Quick option navigation",
+    "interactionOptionPrevious": "Previous option",
+    "interactionOptionNext": "Next option",
     "tooltipSlashCommands": "Slash commands",
     "tooltipMentionAgents": "Mention agents",
     "tooltipInjectContext": "Inject context",
@@ -363,6 +370,24 @@
     "modelRemoveRecommendation": "Remove from recommended models",
     "effortShortcutTooltip": "Switch reasoning effort",
     "sendShortcutTooltip": "Send message",
+    "queue": {
+      "steerTitle": "Send After Current Turn",
+      "nextTitle": "Send At Next Safe Point",
+      "count": "{{count}} queued",
+      "sendAfterTurn": "After turn",
+      "sendNext": "Next safe point",
+      "steerShortcutTooltip": "Queue the message until the current turn finishes",
+      "nextShortcutTooltip": "Queue the message and send it at the next safe point",
+      "attachmentsOnly": "Contains queued images or references",
+      "hasImage": "Contains images",
+      "hasReference": "Contains references",
+      "moveToSteer": "Move to send after current turn",
+      "moveToNext": "Move to send at next safe point",
+      "requeueMessage": "Re-queue message",
+      "stopCurrentRun": "Stop current run",
+      "stopShortcutTooltip": "Press Esc twice to stop the current run",
+      "stopShortcutConfirm": "Press Esc again to stop the current run"
+    },
     "adapterLockedTooltip": "Adapters are locked after a session is created",
     "referenceActionsShort": "More",
     "referenceActionsTitle": "More",
@@ -442,8 +467,51 @@
     "gitBranchSwitcher": "Switch branch",
     "gitOperations": "Git actions",
     "gitWorktree": "Worktree",
+    "statusBarTitle": "Session status",
+    "statusBarSessionSubtitle": "Track the current session workspace and git context here.",
+    "statusBarDraftSubtitle": "Set up the next session workspace before sending the first message.",
+    "sessionWorkspace": "Session workspace",
+    "sessionWorkspaceManaged": "Managed worktree",
+    "sessionWorkspaceShared": "Shared workspace",
+    "sessionWorkspaceExternal": "External workspace",
+    "sessionWorkspaceDraftCreateWorktree": "Create worktree",
+    "sessionWorkspaceDraftStrategyLocal": "Local",
+    "sessionWorkspaceDraftStrategyManaged": "New worktree",
+    "sessionWorkspaceMenuCurrentWorktree": "Current worktree",
+    "sessionWorkspaceMenuWorktreeList": "Worktree list",
+    "sessionWorkspaceMenuLaunchInWorktree": "Start in worktree mode",
+    "sessionWorkspaceMenuTransferToLocal": "Transfer to local",
+    "sessionWorkspaceMenuCreateWorktree": "Create worktree",
+    "sessionWorkspaceDraftCreateWorktreeEnabled": "New sessions get an isolated managed worktree.",
+    "sessionWorkspaceDraftCreateWorktreeDisabled": "New sessions reuse the shared workspace directly.",
+    "sessionWorkspaceDraftCreateBranchLabel": "New branch: {{branch}}",
+    "sessionWorkspaceDraftGitUnavailable": "Git is unavailable for the current workspace.",
+    "sessionWorkspaceSearchWorktrees": "Search worktrees",
+    "sessionWorkspaceNoWorktrees": "No worktrees",
+    "sessionWorkspaceMode": "Mode",
+    "sessionWorkspaceState": "State",
+    "sessionWorkspaceBranch": "Branch",
+    "sessionWorkspacePath": "Path",
+    "sessionWorkspaceCleanup": "Cleanup",
+    "sessionWorkspaceCleanupDelete": "Deletes with session",
+    "sessionWorkspaceCleanupRetain": "Retained on delete",
+    "sessionWorkspaceBaseRef": "Base ref",
+    "sessionWorkspaceCurrentSession": "Current session",
+    "sessionWorkspaceRepositoryWorktrees": "Repository worktrees",
+    "sessionWorkspaceStateReady": "Ready",
+    "sessionWorkspaceStateProvisioning": "Provisioning",
+    "sessionWorkspaceStateDeleting": "Deleting",
+    "sessionWorkspaceStateDeleted": "Deleted",
+    "sessionWorkspaceStateBroken": "Broken",
+    "sessionWorkspaceCreateWorktreeSuccess": "Created a managed worktree for this session.",
+    "sessionWorkspaceTransferToLocalSuccess": "This worktree is now retained locally.",
+    "sessionWorkspaceForceDeleteTitle": "Delete dirty workspace?",
+    "sessionWorkspaceForceDeleteDescription": "This session workspace has uncommitted changes. Force delete the session and remove its bound worktree anyway?",
     "gitDetachedHead": "DETACHED",
     "gitSearchBranches": "Search local or remote branches",
+    "gitBranchViewMode": "Branch view mode",
+    "gitBranchViewTree": "Tree",
+    "gitBranchViewFlat": "Flat",
     "gitBranchesLocal": "Local branches",
     "gitBranchesWorktrees": "Other worktrees",
     "gitBranchesRemote": "Remote branches",
@@ -595,9 +663,9 @@
       },
       "entities": {
         "title": "Existing Entities",
-        "empty": "No entities found. Add them under .ai/entities to show here.",
+        "empty": "No entities found. Add entity definition files to show them here.",
         "create": "Quick Create Entity",
-        "createToast": "Create an entity definition under .ai/entities, then refresh the page."
+        "createToast": "Create an entity definition file, then refresh the page."
       },
       "help": {
         "title": "Help",
@@ -607,9 +675,15 @@
         "footer": "Add usage guidance to flow descriptions when needed"
       }
     },
+    "attachments": {
+      "pastedImage": "Pasted image"
+    },
     "todo": {
       "noTasks": "No tasks planned",
-      "progress": "Progress: {{completed}}/{{total}} completed"
+      "progress": "Progress: {{completed}}/{{total}} completed",
+      "pendingCount": "{{count}} todo",
+      "inProgressCount": "{{count}} doing",
+      "completedCount": "{{count}} done"
     },
     "tools": {
       "read": "Read File",
@@ -957,6 +1031,10 @@
         "style": {
           "label": "Conversation Style",
           "desc": "Controls the assistant’s interaction style"
+        },
+        "createSessionWorktree": {
+          "label": "Create worktree for new sessions",
+          "desc": "Use a managed worktree by default when creating a new session"
         },
         "customInstructions": {
           "label": "Custom Instructions",

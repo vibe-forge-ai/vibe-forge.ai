@@ -1,7 +1,9 @@
-import type { ChatMessageContent, Session } from '@vibe-forge/core'
+import type { ChatMessageContent, Session, SessionMessageQueueState, SessionQueuedMessageMode } from '@vibe-forge/core'
+import type { GitBranchKind, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
+import type { WorkspaceTreeEntry } from './workspace'
 
 export async function listSessions(
   filter: 'active' | 'archived' | 'all' = 'active'
@@ -24,6 +26,14 @@ export async function createSession(
     effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
+    workspace?: {
+      createWorktree?: boolean
+      branch?: {
+        name: string
+        kind?: GitBranchKind
+        mode?: 'checkout' | 'create'
+      }
+    }
   }
 ): Promise<{ session: Session }> {
   return fetchApiJson<{ session: Session }>('/api/sessions', {
@@ -41,7 +51,8 @@ export async function createSession(
       promptName: options?.promptName,
       effort: options?.effort,
       permissionMode: options?.permissionMode,
-      adapter: options?.adapter
+      adapter: options?.adapter,
+      workspace: options?.workspace
     })
   })
 }
@@ -85,6 +96,43 @@ export async function getSessionMessages(
   return fetchApiJson<SessionMessagesResponse>(url)
 }
 
+export async function getSessionWorkspace(id: string): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace`)
+}
+
+export async function createSessionManagedWorktree(
+  id: string
+): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace/create-worktree`, {
+    method: 'POST'
+  })
+}
+
+export async function transferSessionWorkspaceToLocal(
+  id: string
+): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace/transfer-local`, {
+    method: 'POST'
+  })
+}
+
+export async function listSessionWorkspaceTree(
+  id: string,
+  path?: string
+): Promise<{
+  path: string
+  entries: WorkspaceTreeEntry[]
+}> {
+  const url = createApiUrl(`/api/sessions/${id}/workspace/tree`)
+  if (path != null && path.trim() !== '') {
+    url.searchParams.set('path', path)
+  }
+  return fetchApiJson<{
+    path: string
+    entries: WorkspaceTreeEntry[]
+  }>(url)
+}
+
 export async function respondSessionInteraction(
   sessionId: string,
   interactionId: string,
@@ -101,9 +149,19 @@ export async function respondSessionInteraction(
   })
 }
 
-export async function deleteSession(id: string): Promise<ApiRemoveResponse> {
+export async function deleteSession(
+  id: string,
+  options: {
+    force?: boolean
+  } = {}
+): Promise<ApiRemoveResponse> {
+  const url = createApiUrl(`/api/sessions/${id}`)
+  if (options.force === true) {
+    url.searchParams.set('force', 'true')
+  }
+
   return fetchApiJsonOrThrow<ApiRemoveResponse>(
-    `/api/sessions/${id}`,
+    url,
     { method: 'DELETE' },
     '[api] delete session failed:'
   )
@@ -119,4 +177,73 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
 
 export async function updateSessionTitle(id: string, title: string): Promise<ApiOkResponse> {
   return updateSession(id, { title })
+}
+
+export async function createQueuedMessage(
+  sessionId: string,
+  mode: SessionQueuedMessageMode,
+  content: ChatMessageContent[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(`/api/sessions/${sessionId}/queued-messages`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({ mode, content })
+  })
+}
+
+export async function updateQueuedMessage(
+  sessionId: string,
+  queueId: string,
+  content: ChatMessageContent[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}`,
+    {
+      method: 'PATCH',
+      headers: jsonHeaders,
+      body: JSON.stringify({ content })
+    }
+  )
+}
+
+export async function deleteQueuedMessage(
+  sessionId: string,
+  queueId: string
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}`,
+    {
+      method: 'DELETE'
+    }
+  )
+}
+
+export async function moveQueuedMessage(
+  sessionId: string,
+  queueId: string,
+  mode: SessionQueuedMessageMode
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/${queueId}/move`,
+    {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ mode })
+    }
+  )
+}
+
+export async function reorderQueuedMessages(
+  sessionId: string,
+  mode: SessionQueuedMessageMode,
+  ids: string[]
+): Promise<{ queuedMessages: SessionMessageQueueState }> {
+  return fetchApiJson<{ queuedMessages: SessionMessageQueueState }>(
+    `/api/sessions/${sessionId}/queued-messages/reorder`,
+    {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({ mode, ids })
+    }
+  )
 }

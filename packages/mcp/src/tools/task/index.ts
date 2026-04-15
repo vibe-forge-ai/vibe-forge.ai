@@ -8,6 +8,15 @@ import { createChildSession, getParentSessionId } from '#~/sync.js'
 import type { McpManagedTaskInput } from '../../types'
 import { defineRegister } from '../types'
 import { TaskManager } from './manager'
+import {
+  SESSION_PERMISSION_MODES,
+  START_TASKS_DESCRIPTION,
+  TASK_BACKGROUND_DESCRIPTION,
+  TASK_PERMISSION_MODE_DESCRIPTION,
+  resolveInheritedPermissionMode,
+  serializeTaskInfo
+} from './presentation'
+import { registerTaskRuntimeTools } from './register-task-runtime-tools'
 
 export const createTaskRegister = () => {
   const taskManager = new TaskManager()
@@ -17,7 +26,7 @@ export const createTaskRegister = () => {
       'StartTasks',
       {
         title: 'Start Tasks',
-        description: 'Start multiple tasks in background or foreground',
+        description: START_TASKS_DESCRIPTION,
         inputSchema: z.object({
           tasks: z
             .array(
@@ -41,14 +50,12 @@ export const createTaskRegister = () => {
                   .describe('The adapter to use for the task (e.g. claude-code)')
                   .optional(),
                 permissionMode: z
-                  .enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions'])
-                  .describe('Permission mode for the task')
+                  .enum(SESSION_PERMISSION_MODES)
+                  .describe(TASK_PERMISSION_MODE_DESCRIPTION)
                   .optional(),
                 background: z
                   .boolean()
-                  .describe(
-                    'Whether to run in background (default: true). If false, waits for completion and returns logs.'
-                  )
+                  .describe(TASK_BACKGROUND_DESCRIPTION)
                   .optional()
               })
             )
@@ -56,11 +63,13 @@ export const createTaskRegister = () => {
         })
       },
       async ({ tasks }) => {
+        const inheritedPermissionMode = resolveInheritedPermissionMode()
         const resolvedTasks = tasks.map((task): McpManagedTaskInput & {
           taskId: string
           type: NonNullable<McpManagedTaskInput['type']>
         } => ({
           ...task,
+          permissionMode: task.permissionMode ?? inheritedPermissionMode,
           type: task.type ?? 'default',
           taskId: uuid()
         }))
@@ -76,7 +85,8 @@ export const createTaskRegister = () => {
             createChildSession({
               id: task.taskId,
               title: task.name ?? task.description,
-              parentSessionId
+              parentSessionId,
+              permissionMode: task.permissionMode
             })
           ))
           : []
@@ -93,84 +103,18 @@ export const createTaskRegister = () => {
             type: 'text',
             text: JSON.stringify(results.map((r, idx) => {
               const { taskId, description } = resolvedTasks[idx]
-              const info = taskManager.getTask(taskId)
-              const { session, onStop, serverSync, createdAt, ...safeInfo } = info ?? {}
-              return {
+              return serializeTaskInfo({
                 taskId,
                 description,
-                status: info?.status ?? r.status,
-                logs: info?.logs ?? [],
-                ...safeInfo
-              }
+                status: r.status === 'rejected' ? 'failed' : 'running',
+                info: taskManager.getTask(taskId)
+              })
             }))
           }]
         }
       }
     )
 
-    server.registerTool(
-      'GetTaskInfo',
-      {
-        title: 'Get Task Info',
-        description: 'Get the status and logs of a specific task',
-        inputSchema: z.object({
-          taskId: z.string().describe('The ID of the task to check')
-        })
-      },
-      async ({ taskId }) => {
-        const task = taskManager.getTask(taskId)
-        if (!task) {
-          return {
-            content: [{ type: 'text', text: `Task ${taskId} not found.` }],
-            isError: true
-          }
-        }
-        const { session, onStop, serverSync, createdAt, ...safeTask } = task
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify([safeTask])
-          }]
-        }
-      }
-    )
-
-    server.registerTool(
-      'StopTask',
-      {
-        title: 'Stop Task',
-        description: 'Stop a running task',
-        inputSchema: z.object({
-          taskId: z.string().describe('The ID of the task to stop')
-        })
-      },
-      async ({ taskId }) => {
-        const success = taskManager.stopTask(taskId)
-        return {
-          content: [{
-            type: 'text',
-            text: success ? `Task ${taskId} stopped.` : `Failed to stop task ${taskId} (not found or already stopped).`
-          }]
-        }
-      }
-    )
-
-    server.registerTool(
-      'ListTasks',
-      {
-        title: 'List Tasks',
-        description: 'List all managed tasks',
-        inputSchema: z.object({})
-      },
-      async () => {
-        const tasks = taskManager.getAllTasks()
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(tasks.map(({ session, onStop, serverSync, createdAt, ...task }) => task))
-          }]
-        }
-      }
-    )
+    registerTaskRuntimeTools(server, taskManager)
   })
 }

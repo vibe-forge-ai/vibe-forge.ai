@@ -1,5 +1,4 @@
 /* eslint-disable max-lines */
-
 import type { SenderEditorHandle } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '#~/components/chat/sender/@utils/sender-completion'
 import { isShortcutMatch } from '#~/utils/shortcutUtils'
@@ -17,13 +16,21 @@ import {
 import { useSenderEditorHandle } from './use-sender-editor-handle'
 import { useSenderMonacoTheme } from './use-sender-monaco-theme'
 
+const hasPastedImageFile = (clipboardData?: DataTransfer | null) => {
+  return Array.from(clipboardData?.items ?? [])
+    .some(item => item.kind === 'file' && item.type.startsWith('image/'))
+}
+
 export const useSenderMonacoEditor = ({
   editorRef,
   modelPath,
   value,
   disabled,
   sendShortcut,
+  sendShortcutDisabled,
   onSendShortcut,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   onInputChange,
   onCursorChange,
   onKeyDown,
@@ -37,7 +44,10 @@ export const useSenderMonacoEditor = ({
   value: string
   disabled: boolean
   sendShortcut: string
+  sendShortcutDisabled?: boolean
   onSendShortcut: () => void
+  secondarySendShortcut?: string
+  onSecondarySendShortcut?: () => void
   onInputChange: (value: string, cursorOffset: number | null) => void
   onCursorChange: (cursorOffset: number | null) => void
   onKeyDown: (event: KeyboardEvent) => void
@@ -56,7 +66,10 @@ export const useSenderMonacoEditor = ({
   const decorationsRef = useRef<MonacoEditorNamespace.IEditorDecorationsCollection | null>(null)
   const disabledRef = useRef(disabled)
   const sendShortcutRef = useRef(sendShortcut)
+  const sendShortcutDisabledRef = useRef(Boolean(sendShortcutDisabled))
   const onSendShortcutRef = useRef(onSendShortcut)
+  const secondarySendShortcutRef = useRef(secondarySendShortcut)
+  const onSecondarySendShortcutRef = useRef(onSecondarySendShortcut)
   const onInputChangeRef = useRef(onInputChange)
   const onCursorChangeRef = useRef(onCursorChange)
   const onKeyDownRef = useRef(onKeyDown)
@@ -67,7 +80,10 @@ export const useSenderMonacoEditor = ({
 
   disabledRef.current = disabled
   sendShortcutRef.current = sendShortcut
+  sendShortcutDisabledRef.current = Boolean(sendShortcutDisabled)
   onSendShortcutRef.current = onSendShortcut
+  secondarySendShortcutRef.current = secondarySendShortcut
+  onSecondarySendShortcutRef.current = onSecondarySendShortcut
   onInputChangeRef.current = onInputChange
   onCursorChangeRef.current = onCursorChange
   onKeyDownRef.current = onKeyDown
@@ -141,30 +157,91 @@ export const useSenderMonacoEditor = ({
     const domNode = editor.getDomNode()
 
     if (domNode != null) {
-      const handleDomPaste: EventListener = (event) => {
+      const inputTargets = Array.from(
+        domNode.querySelectorAll<HTMLElement>('.native-edit-context, textarea.inputarea')
+      )
+      const shouldHandleImagePaste = (event: ClipboardEvent, requireFocus: boolean) => {
+        if (!hasPastedImageFile(event.clipboardData)) {
+          return false
+        }
+
+        if (!requireFocus) {
+          return true
+        }
+
+        const activeElement = document.activeElement
+
+        return editor.hasTextFocus() ||
+          (activeElement != null && domNode.contains(activeElement)) ||
+          (event.target instanceof Node && domNode.contains(event.target))
+      }
+      const handleImagePaste = (
+        event: ClipboardEvent,
+        { requireFocus, stopImmediately }: { requireFocus: boolean; stopImmediately: boolean }
+      ) => {
+        if (!shouldHandleImagePaste(event, requireFocus)) {
+          return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        if (stopImmediately) {
+          event.stopImmediatePropagation()
+        }
+
+        void onPasteRef.current(event)
+      }
+      const handleDocumentPaste = (event: ClipboardEvent) => {
+        if (!shouldHandleImagePaste(event, true)) {
+          return
+        }
+
+        handleImagePaste(event, { requireFocus: true, stopImmediately: true })
+      }
+      const handleNativePaste: EventListener = (event) => {
         if (!(event instanceof ClipboardEvent)) {
           return
         }
-        void onPasteRef.current(event)
+
+        handleImagePaste(event, { requireFocus: false, stopImmediately: true })
       }
-      const nativeEditContext = domNode.querySelector('.native-edit-context')
       const handleNativeKeyDown: EventListener = (event) => {
         if (!(event instanceof KeyboardEvent)) {
           return
         }
-        if (isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))) {
+        if (
+          secondarySendShortcutRef.current != null &&
+          onSecondarySendShortcutRef.current != null &&
+          isShortcutMatch(event, secondarySendShortcutRef.current, navigator.platform.includes('Mac'))
+        ) {
+          event.preventDefault()
+          event.stopPropagation()
+          onSecondarySendShortcutRef.current()
+          return
+        }
+        if (
+          !sendShortcutDisabledRef.current &&
+          isShortcutMatch(event, sendShortcutRef.current, navigator.platform.includes('Mac'))
+        ) {
           event.preventDefault()
           event.stopPropagation()
           onSendShortcutRef.current()
         }
       }
 
-      domNode.addEventListener('paste', handleDomPaste)
-      nativeEditContext?.addEventListener('keydown', handleNativeKeyDown, true)
+      document.addEventListener('paste', handleDocumentPaste, true)
+      for (const inputTarget of inputTargets) {
+        inputTarget.addEventListener('paste', handleNativePaste, true)
+        inputTarget.addEventListener('keydown', handleNativeKeyDown, true)
+      }
       disposables.push({
         dispose: () => {
-          domNode.removeEventListener('paste', handleDomPaste)
-          nativeEditContext?.removeEventListener('keydown', handleNativeKeyDown, true)
+          document.removeEventListener('paste', handleDocumentPaste, true)
+          for (const inputTarget of inputTargets) {
+            inputTarget.removeEventListener('paste', handleNativePaste, true)
+            inputTarget.removeEventListener('keydown', handleNativeKeyDown, true)
+          }
         }
       })
     }

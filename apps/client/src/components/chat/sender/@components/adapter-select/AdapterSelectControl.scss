@@ -84,3 +84,11 @@
   flex-shrink: 0;
   opacity: .9;
 }
+
+.adapter-option__icon--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+}

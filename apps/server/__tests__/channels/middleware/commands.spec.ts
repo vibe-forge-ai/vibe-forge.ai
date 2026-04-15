@@ -6,6 +6,7 @@ import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deleteBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
+import type { SessionWorkspace } from '@vibe-forge/core'
 import { updateConfigFile } from '@vibe-forge/config'
 
 vi.mock('@vibe-forge/config', () => ({
@@ -31,6 +32,7 @@ const getChannelSession = vi.fn()
 const getChannelSessionBySessionId = vi.fn()
 const getSessions = vi.fn()
 const getSession = vi.fn()
+const resolveSessionWorkspace = vi.fn()
 const updateSession = vi.fn()
 const updateSessionArchivedWithChildren = vi.fn()
 const upsertChannelPreference = vi.fn()
@@ -71,6 +73,7 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
     resetSession: vi.fn(),
     stopSession: vi.fn(),
     restartSession: vi.fn().mockResolvedValue(undefined),
+    resolveSessionWorkspace: vi.fn(),
     updateSession: vi.fn(),
     getChannelAdapterPreference: vi.fn(() => ctx.channelAdapter),
     setChannelAdapterPreference: vi.fn((adapter?: string) => {
@@ -130,11 +133,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
           session,
           binding: getChannelSessionBySessionId(session.id)
             ? {
-                channelType: getChannelSessionBySessionId(session.id).channelType,
-                sessionType: getChannelSessionBySessionId(session.id).sessionType,
-                channelId: getChannelSessionBySessionId(session.id).channelId,
-                channelKey: getChannelSessionBySessionId(session.id).channelKey
-              }
+              channelType: getChannelSessionBySessionId(session.id).channelType,
+              sessionType: getChannelSessionBySessionId(session.id).sessionType,
+              channelId: getChannelSessionBySessionId(session.id).channelId,
+              channelKey: getChannelSessionBySessionId(session.id).channelKey
+            }
             : undefined
         }))
     })
@@ -174,11 +177,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
         transferredFrom: transferred == null
           ? undefined
           : {
-              channelType: transferred.channelType,
-              sessionType: transferred.sessionType,
-              channelId: transferred.channelId,
-              channelKey: transferred.channelKey
-            }
+            channelType: transferred.channelType,
+            sessionType: transferred.sessionType,
+            channelId: transferred.channelId,
+            channelKey: transferred.channelKey
+          }
       }
     })
   }
@@ -221,6 +224,15 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
       if (ctx.sessionId) updateSession(ctx.sessionId, updates)
     })
   }
+  if (!overrides.resolveSessionWorkspace) {
+    ctx.resolveSessionWorkspace = vi.fn(async (sessionId?: string) => {
+      const targetSessionId = sessionId ?? ctx.sessionId
+      if (targetSessionId == null) {
+        return undefined
+      }
+      return resolveSessionWorkspace(targetSessionId)
+    })
+  }
 
   return ctx
 }
@@ -259,6 +271,33 @@ beforeEach(() => {
       createdAt: Date.now()
     }
   ])
+  resolveSessionWorkspace.mockImplementation((sessionId: string): SessionWorkspace | undefined => (
+    sessionId === 'sess-other'
+      ? {
+        sessionId,
+        kind: 'managed_worktree',
+        workspaceFolder: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        repositoryRoot: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        worktreePath: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        baseRef: 'origin/master',
+        cleanupPolicy: 'delete_on_session_delete',
+        state: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+      : {
+        sessionId,
+        kind: 'managed_worktree',
+        workspaceFolder: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        repositoryRoot: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        worktreePath: `/tmp/.ai/worktrees/sessions/${sessionId}`,
+        baseRef: 'HEAD',
+        cleanupPolicy: 'delete_on_session_delete',
+        state: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+  ))
   vi.mocked(getDb).mockReturnValue({
     deleteChannelSession,
     deleteChannelSessionBySessionId,
@@ -396,23 +435,39 @@ describe('/session command', () => {
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('Session A')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('gpt-test')
     expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('上下文消息数：12')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('工作区：/tmp/.ai/worktrees/sessions/sess-abc')
+    expect(String(vi.mocked(ctx.reply).mock.calls[0][0])).toContain('工作区模式：托管 worktree')
+  })
+
+  it('/session search without query lists recent sessions', async () => {
+    const ctx = makeCtx({ commandText: '/session search', config: { type: 'lark' } as any })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.searchSessions).toHaveBeenCalledWith('')
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('最近会话列表')
+    expect(message).toContain('第 1/1 页')
+    expect(message).toContain('sess-abc')
+    expect(message).toContain('sess-other')
   })
 
   it('/session search lists matching sessions with binding status', async () => {
     getChannelSessionBySessionId.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            channelType: 'lark',
-            sessionType: 'group',
-            channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
-            channelKey: 'lark:miniapp-gear'
-          }
+          channelType: 'lark',
+          sessionType: 'group',
+          channelId: 'oc_790b0dd9fff1f5e216ac15bfbc257556',
+          channelKey: 'lark:miniapp-gear'
+        }
         : {
-            channelType: 'lark',
-            sessionType: 'direct',
-            channelId: 'ch1',
-            channelKey: 'lark:default'
-          }
+          channelType: 'lark',
+          sessionType: 'direct',
+          channelId: 'ch1',
+          channelKey: 'lark:default'
+        }
     ))
     const ctx = makeCtx({ commandText: '/session search miniapp gear', config: { type: 'lark' } as any })
 
@@ -425,33 +480,66 @@ describe('/session command', () => {
     expect(message).toContain('已绑定 lark/group/oc_790b0dd9fff1f5e216ac15bfbc257556')
   })
 
+  it('/session list supports pagination', async () => {
+    getSessions.mockReturnValue(Array.from({ length: 10 }, (_, index) => ({
+      id: `sess-${index + 1}`,
+      title: `Session ${index + 1}`,
+      status: 'completed',
+      messageCount: index + 1,
+      model: 'gpt-responses,gpt-5.4-2026-03-05',
+      adapter: 'codex',
+      tags: [],
+      isArchived: false,
+      isStarred: false,
+      createdAt: Date.now() - index
+    })))
+    const ctx = makeCtx({
+      commandText: '/session list --page=2',
+      config: { type: 'lark' } as any,
+      reply: vi.fn().mockResolvedValue({ messageId: 'om-session-list-2' }) as any
+    })
+
+    await channelCommandMiddleware(ctx, vi.fn())
+
+    expect(ctx.reply).toHaveBeenCalledOnce()
+    const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
+    expect(message).toContain('最近会话列表（共 10 个）')
+    expect(message).toContain('第 2/2 页')
+    expect(message).toContain('sess-9')
+    expect(message).toContain('sess-10')
+    expect(ctx.pushFollowUps).toHaveBeenCalledWith({
+      messageId: 'om-session-list-2',
+      followUps: [{ content: '/session list --page=1' }]
+    })
+  })
+
   it('/session bind rebinds the current channel to an existing session', async () => {
     getSession.mockImplementation((sessionId: string) => (
       sessionId === 'sess-other'
         ? {
-            id: 'sess-other',
-            title: 'Lark handoff window',
-            status: 'completed',
-            messageCount: 446,
-            model: 'gpt-responses,gpt-5.4-2026-03-05',
-            adapter: 'codex',
-            tags: [],
-            isArchived: false,
-            isStarred: false,
-            createdAt: Date.now()
-          }
+          id: 'sess-other',
+          title: 'Lark handoff window',
+          status: 'completed',
+          messageCount: 446,
+          model: 'gpt-responses,gpt-5.4-2026-03-05',
+          adapter: 'codex',
+          tags: [],
+          isArchived: false,
+          isStarred: false,
+          createdAt: Date.now()
+        }
         : {
-            id: 'sess-abc',
-            title: 'Session A',
-            status: 'running',
-            messageCount: 12,
-            model: 'gpt-test',
-            adapter: 'codex',
-            tags: ['tag-a'],
-            isArchived: false,
-            isStarred: true,
-            createdAt: Date.now()
-          }
+          id: 'sess-abc',
+          title: 'Session A',
+          status: 'running',
+          messageCount: 12,
+          model: 'gpt-test',
+          adapter: 'codex',
+          tags: ['tag-a'],
+          isArchived: false,
+          isStarred: true,
+          createdAt: Date.now()
+        }
     ))
     const ctx = makeCtx({ commandText: '/session bind sess-other', config: { type: 'lark' } as any })
 
@@ -464,6 +552,8 @@ describe('/session command', () => {
     const message = String(vi.mocked(ctx.reply).mock.calls[0][0])
     expect(message).toContain('已将当前频道绑定到会话 sess-other')
     expect(message).toContain('当前频道原先绑定的会话 sess-abc 已解除绑定')
+    expect(message).toContain('工作区：/tmp/.ai/worktrees/sessions/sess-other')
+    expect(message).toContain('工作区模式：托管 worktree')
   })
 
   it('/session unbind detaches the current channel without archiving the session', async () => {

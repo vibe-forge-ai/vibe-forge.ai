@@ -421,6 +421,7 @@ function MessageItemComponent({
                 <div className='message-inline-editor'>
                   <Sender
                     variant='inline-edit'
+                    sessionId={sessionId}
                     sessionInfo={sessionInfo}
                     initialContent={editableContent}
                     submitLabel={t('chat.send')}

@@ -5,12 +5,13 @@ import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import { resolveSessionWorkspace } from '#~/services/session/workspace.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { buildInteractionText } from './interaction'
-import { bindChannelSession } from './middleware/bind-session'
 import { pipeline } from './middleware'
 import type { ChannelContext, ChannelTextMessage } from './middleware/@types'
+import { bindChannelSession } from './middleware/bind-session'
 import { defineMessages } from './middleware/i18n'
 import { buildChannelActionUrl, buildToolCallDetailUrl } from './session-detail-url'
 import {
@@ -91,11 +92,11 @@ export const handleInboundEvent = async (
           binding: binding == null
             ? undefined
             : {
-                channelType: binding.channelType,
-                sessionType: binding.sessionType,
-                channelId: binding.channelId,
-                channelKey: binding.channelKey
-              }
+              channelType: binding.channelType,
+              sessionType: binding.sessionType,
+              channelId: binding.channelId,
+              channelKey: binding.channelKey
+            }
         }
       })
     },
@@ -125,11 +126,11 @@ export const handleInboundEvent = async (
         transferredFrom: bindingResult.transferredFrom == null
           ? undefined
           : {
-              channelType: bindingResult.transferredFrom.channelType,
-              sessionType: bindingResult.transferredFrom.sessionType,
-              channelId: bindingResult.transferredFrom.channelId,
-              channelKey: bindingResult.transferredFrom.channelKey
-            }
+            channelType: bindingResult.transferredFrom.channelType,
+            sessionType: bindingResult.transferredFrom.sessionType,
+            channelId: bindingResult.transferredFrom.channelId,
+            channelKey: bindingResult.transferredFrom.channelKey
+          }
       }
     },
     unbindSession: () => {
@@ -167,6 +168,13 @@ export const handleInboundEvent = async (
         killSession(ctx.sessionId)
         await startAdapterSession(ctx.sessionId)
       }
+    },
+    resolveSessionWorkspace: async (sessionId) => {
+      const targetSessionId = sessionId ?? ctx.sessionId
+      if (targetSessionId == null || targetSessionId === '') {
+        return undefined
+      }
+      return await resolveSessionWorkspace(targetSessionId)
     },
     updateSession: (updates) => {
       if (ctx.sessionId) {

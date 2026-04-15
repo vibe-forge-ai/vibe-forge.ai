@@ -1,7 +1,7 @@
 # App Runtime 包说明
 
 `@vibe-forge/app-runtime` 是给 `apps/*` 使用的 runtime facade。
-它统一暴露 task / benchmark 的 app-facing API，并携带内建 `vibe-forge` MCP 的安装锚点。
+它统一暴露 task / benchmark 的 app-facing API，并携带内建 `VibeForge` MCP 的安装锚点。
 
 ## 什么时候先看这里
 

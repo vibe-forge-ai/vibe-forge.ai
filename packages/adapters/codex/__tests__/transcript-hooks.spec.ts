@@ -382,7 +382,7 @@ describe('createCodexTranscriptHookWatcher', () => {
           payload: {
             type: 'mcp_tool_call',
             call_id: 'call_mcp',
-            server: 'vibe-forge',
+            server: 'VibeForge',
             tool: 'StartTasks',
             arguments: JSON.stringify({ task: 'ship it' })
           }
@@ -411,7 +411,7 @@ describe('createCodexTranscriptHookWatcher', () => {
       'PreToolUse',
       expect.objectContaining({
         toolCallId: 'call_mcp',
-        toolName: 'adapter:codex:mcp:vibe-forge:StartTasks',
+        toolName: 'adapter:codex:mcp:VibeForge:StartTasks',
         toolInput: { task: 'ship it' },
         transcriptPath
       }),
@@ -422,7 +422,7 @@ describe('createCodexTranscriptHookWatcher', () => {
       'PostToolUse',
       expect.objectContaining({
         toolCallId: 'call_mcp',
-        toolName: 'adapter:codex:mcp:vibe-forge:StartTasks',
+        toolName: 'adapter:codex:mcp:VibeForge:StartTasks',
         toolInput: { task: 'ship it' },
         toolResponse: {
           success: true,

@@ -18,7 +18,10 @@ export function SenderMonacoEditor({
   placeholder,
   disabled,
   sendShortcut,
+  sendShortcutDisabled,
   onSendShortcut,
+  secondarySendShortcut,
+  onSecondarySendShortcut,
   onInputChange,
   onCursorChange,
   onKeyDown,
@@ -32,7 +35,10 @@ export function SenderMonacoEditor({
   placeholder: string
   disabled: boolean
   sendShortcut: string
+  sendShortcutDisabled?: boolean
   onSendShortcut: () => void
+  secondarySendShortcut?: string
+  onSecondarySendShortcut?: () => void
   onInputChange: (value: string, cursorOffset: number | null) => void
   onCursorChange: (cursorOffset: number | null) => void
   onKeyDown: (event: KeyboardEvent) => void
@@ -56,7 +62,10 @@ export function SenderMonacoEditor({
     value,
     disabled,
     sendShortcut,
+    sendShortcutDisabled,
     onSendShortcut,
+    secondarySendShortcut,
+    onSecondarySendShortcut,
     onInputChange,
     onCursorChange,
     onKeyDown,
@@ -79,17 +88,25 @@ export function SenderMonacoEditor({
           options={{
             ariaLabel: placeholder,
             automaticLayout: true,
+            bracketPairColorization: { enabled: false },
             domReadOnly: disabled,
             folding: false,
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: FONT_SIZE,
             glyphMargin: false,
+            guides: {
+              bracketPairs: false,
+              highlightActiveBracketPair: false,
+              indentation: false
+            },
             hideCursorInOverviewRuler: true,
             lineDecorationsWidth: 0,
             lineHeight: LINE_HEIGHT,
             lineNumbers: 'off',
             lineNumbersMinChars: 0,
+            matchBrackets: 'never',
             minimap: { enabled: false },
+            occurrencesHighlight: 'off',
             overviewRulerBorder: false,
             overviewRulerLanes: 0,
             padding: { top: 0, bottom: 0 },
@@ -99,6 +116,7 @@ export function SenderMonacoEditor({
             renderLineHighlight: 'none',
             roundedSelection: true,
             scrollBeyondLastLine: false,
+            selectionHighlight: false,
             scrollbar: {
               alwaysConsumeMouseWheel: false,
               horizontal: 'hidden',

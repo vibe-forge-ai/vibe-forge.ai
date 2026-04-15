@@ -104,6 +104,7 @@ const createTerminalRuntime = (
   options: {
     cols?: number
     rows?: number
+    cwd?: string
   } = {}
 ): TerminalRuntime => {
   const cols = normalizeDimension(options.cols, DEFAULT_COLS, MAX_COLS)
@@ -114,7 +115,7 @@ const createTerminalRuntime = (
     sockets: new Set<WebSocket>(),
     info: {
       sessionId,
-      cwd: getWorkspaceFolder(),
+      cwd: options.cwd ?? getWorkspaceFolder(),
       shell: resolveTerminalShell(),
       cols,
       rows,
@@ -155,6 +156,7 @@ export const ensureTerminalRuntime = (
   options: {
     cols?: number
     rows?: number
+    cwd?: string
   } = {}
 ) => {
   const existing = terminalRuntimeStore.get(sessionId)
@@ -165,7 +167,7 @@ export const ensureTerminalRuntime = (
     if (options.rows != null) {
       existing.info.rows = normalizeDimension(options.rows, existing.info.rows, MAX_ROWS)
     }
-    existing.info.cwd = getWorkspaceFolder()
+    existing.info.cwd = options.cwd ?? getWorkspaceFolder()
     if (existing.driver == null) {
       existing.info.shell = resolveTerminalShell()
     }

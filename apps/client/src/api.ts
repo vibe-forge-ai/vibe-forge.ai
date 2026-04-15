@@ -26,8 +26,11 @@ export {
   commitSessionGitChanges,
   createSessionGitBranch,
   getSessionGitState,
+  getWorkspaceGitState,
   listSessionGitBranches,
   listSessionGitWorktrees,
+  listWorkspaceGitBranches,
+  listWorkspaceGitWorktrees,
   pushSessionGitBranch,
   syncSessionGitBranch
 } from './api/git'
@@ -42,12 +45,21 @@ export { createProject, listProjects } from './api/projects'
 // 会话与消息 API
 export {
   branchSessionFromMessage,
+  createSessionManagedWorktree,
+  createQueuedMessage,
   createSession,
+  deleteQueuedMessage,
   deleteSession,
   forkSession,
   getSessionMessages,
+  getSessionWorkspace,
   listSessions,
+  listSessionWorkspaceTree,
   respondSessionInteraction,
+  transferSessionWorkspaceToLocal,
+  moveQueuedMessage,
+  reorderQueuedMessages,
+  updateQueuedMessage,
   updateSession,
   updateSessionTitle
 } from './api/sessions'
@@ -72,3 +84,4 @@ export type {
   GitWorktreeSummary
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
+export type { SessionWorkspace } from '@vibe-forge/types'

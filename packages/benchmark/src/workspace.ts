@@ -2,6 +2,8 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveProjectAiPath } from '@vibe-forge/utils'
+
 import { execCommand, execShellCommand, linkPreparedNodeModules, pathExists } from './utils'
 
 interface CategoryWorkspaceInput {
@@ -33,7 +35,8 @@ export interface CaseWorkspaceState extends CategoryWorkspaceState {
 
 const categoryWorkspaceInflight = new Map<string, Promise<CategoryWorkspaceState>>()
 
-const resolveWorktreeRoot = (workspaceFolder = process.cwd()) => resolve(workspaceFolder, '.ai/worktress/benchmark')
+const resolveWorktreeRoot = (workspaceFolder = process.cwd()) =>
+  resolveProjectAiPath(workspaceFolder, process.env, 'worktress', 'benchmark')
 
 const findGitRoot = async (workspaceFolder: string) => {
   const result = await execCommand({

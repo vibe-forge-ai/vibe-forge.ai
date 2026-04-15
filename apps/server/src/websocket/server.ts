@@ -47,7 +47,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         return
       }
 
-      handleTerminalSocketConnection(ws, sessionId, params)
+      await handleTerminalSocketConnection(ws, sessionId, params)
       return
     }
 

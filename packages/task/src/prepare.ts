@@ -1,6 +1,12 @@
 import process from 'node:process'
 
-import { buildConfigJsonVariables, loadConfig, resolveUseDefaultVibeForgeMcpServer } from '@vibe-forge/config'
+import {
+  buildConfigJsonVariables,
+  loadConfig,
+  mergeConfigs,
+  resolveUseDefaultVibeForgeMcpServer
+} from '@vibe-forge/config'
+import { syncConfiguredMarketplacePlugins } from '@vibe-forge/managed-plugins'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { getCache, setCache } from '@vibe-forge/utils/cache'
 import { createLogger } from '@vibe-forge/utils/create-logger'
@@ -35,7 +41,12 @@ export const prepare = async (
     __VF_PROJECT_AI_CTX_ID__: ctxId,
     __VF_PROJECT_AI_SESSION_ID__: sessionId,
     __VF_PROJECT_AI_RUN_TYPE__: adapterOptions.runtime,
-    __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: adapterOptions.runtime === 'server' ? '1' : undefined,
+    __VF_PROJECT_AI_PERMISSION_MODE__: adapterOptions.permissionMode ?? prevEnv.__VF_PROJECT_AI_PERMISSION_MODE__,
+    __VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__: (
+        adapterOptions.runtime === 'server' || adapterOptions.runtime === 'mcp'
+      )
+      ? '1'
+      : undefined,
     // 移除 NODE_OPTIONS 环境变量，防止干扰子进程的运行环境
     NODE_OPTIONS: undefined
   }
@@ -49,15 +60,43 @@ export const prepare = async (
 
   const jsonVariables = buildConfigJsonVariables(cwd, env)
   const [config, userConfig] = await loadConfig({ cwd, jsonVariables })
-  const assets = await resolveWorkspaceAssetBundle({
-    cwd,
-    configs: [config, userConfig],
-    useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
-      runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
-      projectConfig: config,
-      userConfig
+  const mergedConfig = mergeConfigs(config, userConfig)
+  const mergedPlugins = mergeConfigs(
+    {
+      plugins: mergeConfigs(
+        { plugins: config?.plugins },
+        { plugins: userConfig?.plugins }
+      )?.plugins
+    },
+    {
+      plugins: options.plugins
+    }
+  )?.plugins
+  const assets = adapterOptions.assetBundle ?? await (async () => {
+    if (adapterOptions.type === 'create') {
+      const syncResults = await syncConfiguredMarketplacePlugins({
+        cwd,
+        marketplaces: mergedConfig?.marketplaces
+      })
+      const updatedPlugins = syncResults
+        .filter(result => result.action !== 'skipped')
+        .map(result => `${result.plugin}@${result.marketplace}`)
+      if (updatedPlugins.length > 0) {
+        logger.info({ plugins: updatedPlugins }, '[plugins] Synchronized declared marketplace plugins')
+      }
+    }
+
+    return resolveWorkspaceAssetBundle({
+      cwd,
+      configs: [config, userConfig],
+      plugins: mergedPlugins,
+      useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
+        runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
+        projectConfig: config,
+        userConfig
+      })
     })
-  })
+  })()
   return [
     {
       ctxId,

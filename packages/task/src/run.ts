@@ -180,7 +180,7 @@ export const run = async (
   await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
-  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'opencode'])
+  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
   const supportsEffort = supportedEffortAdapters.has(adapterType)
   if (!supportsEffort && adapterOptions.effort != null) {
     throw new Error(`Adapter "${adapterType}" does not support effort`)
@@ -200,7 +200,14 @@ export const run = async (
     : { effort: undefined as undefined }
 
   const originalOnEvent = adapterOptions.onEvent
-  const supportedAssetPlanAdapters = new Set<WorkspaceAssetAdapter>(['claude-code', 'codex', 'gemini', 'opencode'])
+  const supportedAssetPlanAdapters = new Set<WorkspaceAssetAdapter>([
+    'claude-code',
+    'codex',
+    'copilot',
+    'gemini',
+    'kimi',
+    'opencode'
+  ])
   const supportsAssetPlan = (value: string): value is WorkspaceAssetAdapter => (
     supportedAssetPlanAdapters.has(value as WorkspaceAssetAdapter)
   )
@@ -272,6 +279,8 @@ export const run = async (
     adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : adapterType === 'kimi' && ctx.env.__VF_PROJECT_AI_KIMI_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS

@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, readlink, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -102,5 +102,227 @@ describe('initClaudeCodeAdapter', () => {
     } as any)
 
     await expect(lstat(keychainsPath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('syncs plugin-provided skills from resolved workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const pluginSkillDir = join(workspace, 'vendor', 'vf-cli-skills', 'skills', 'vf-cli-quickstart')
+
+    await mkdir(pluginSkillDir, { recursive: true })
+    await writeFile(join(pluginSkillDir, 'SKILL.md'), '# vf-cli-quickstart\n')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:plugin:0:vf-cli-quickstart',
+            kind: 'skill',
+            name: 'vf-cli-quickstart',
+            displayName: 'vf-cli-quickstart',
+            origin: 'plugin',
+            sourcePath: join(pluginSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(pluginSkillDir, 'SKILL.md'),
+                body: '# vf-cli-quickstart\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const targetPath = join(mockHome, '.claude', 'skills', 'vf-cli-quickstart')
+    expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
+  })
+
+  it('writes managed project trust state into the isolated Claude app-state file', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 1,
+      hasCompletedProjectOnboarding: true
+    })
+  })
+
+  it('preserves existing Claude app state while seeding trust from the real home config', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await writeFile(
+      join(realHome, '.claude.json'),
+      JSON.stringify(
+        {
+          autoUpdates: false,
+          projects: {
+            '/tmp/existing-project': {
+              hasTrustDialogAccepted: true,
+              projectOnboardingSeenCount: 2
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      autoUpdates?: boolean
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.autoUpdates).toBe(false)
+    expect(appState.projects?.['/tmp/existing-project']).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 2
+    })
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 1,
+      hasCompletedProjectOnboarding: true
+    })
+  })
+
+  it('merges existing mock-home Claude state with real-home state instead of overwriting it', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await writeFile(
+      join(realHome, '.claude.json'),
+      JSON.stringify(
+        {
+          autoUpdates: false,
+          preferredModel: 'opus',
+          projects: {
+            '/tmp/from-real': {
+              hasTrustDialogAccepted: true,
+              projectOnboardingSeenCount: 2
+            },
+            [resolve(workspace)]: {
+              projectOnboardingSeenCount: 2,
+              workspaceTheme: 'real-theme'
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+    await mkdir(mockHome, { recursive: true })
+    await writeFile(
+      join(mockHome, '.claude.json'),
+      JSON.stringify(
+        {
+          preferredModel: 'sonnet',
+          autoUpdates: true,
+          projects: {
+            '/tmp/from-mock': {
+              notes: 'keep-me'
+            },
+            [resolve(workspace)]: {
+              customFlag: 'preserve-me',
+              projectOnboardingSeenCount: 4
+            }
+          }
+        },
+        null,
+        2
+      )
+    )
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const appState = JSON.parse(await readFile(join(mockHome, '.claude.json'), 'utf8')) as {
+      autoUpdates?: boolean
+      preferredModel?: string
+      projects?: Record<string, Record<string, unknown>>
+    }
+
+    expect(appState.autoUpdates).toBe(false)
+    expect(appState.preferredModel).toBe('opus')
+    expect(appState.projects?.['/tmp/from-real']).toMatchObject({
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 2
+    })
+    expect(appState.projects?.['/tmp/from-mock']).toMatchObject({
+      notes: 'keep-me'
+    })
+    expect(appState.projects?.[resolve(workspace)]).toMatchObject({
+      customFlag: 'preserve-me',
+      workspaceTheme: 'real-theme',
+      hasTrustDialogAccepted: true,
+      projectOnboardingSeenCount: 2,
+      hasCompletedProjectOnboarding: true
+    })
   })
 })

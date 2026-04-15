@@ -269,6 +269,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
         { value: 'programmatic', label: 'config.options.conversation.programmatic' }
       ]
     },
+    { path: ['createSessionWorktree'], type: 'boolean', defaultValue: true, icon: 'account_tree' },
     { path: ['customInstructions'], type: 'multiline', defaultValue: '', icon: 'description' }
   ],
   models: [

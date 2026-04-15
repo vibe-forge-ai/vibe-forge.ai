@@ -12,7 +12,8 @@ import type { AdapterCtx } from '@vibe-forge/types'
 
 const MANAGED_PLUGIN_FILE_NAME = 'vibe-forge-hooks.js'
 const DEFAULT_OPENCODE_CONFIG = {
-  $schema: 'https://opencode.ai/config.json'
+  $schema: 'https://opencode.ai/config.json',
+  autoupdate: false
 }
 
 const pathExists = async (targetPath: string) => {
@@ -40,6 +41,13 @@ const mirrorDirectory = async (sourceDir: string, targetDir: string) => {
 const mirrorFile = async (sourcePath: string, targetPath: string) => {
   if (!await pathExists(sourcePath)) return false
   await ensureSymlinkTarget(sourcePath, targetPath)
+  return true
+}
+
+const writeJsonFileIfMissing = async (filePath: string, value: unknown) => {
+  if (await pathExists(filePath)) return false
+  await rm(filePath, { recursive: true, force: true })
+  await writeJsonFile(filePath, value)
   return true
 }
 
@@ -202,6 +210,7 @@ export const ensureOpenCodeNativeHooksInstalled = async (
     const managedConfigDir = resolve(mockHome, '.config', 'opencode')
     const pluginDir = resolve(managedConfigDir, 'plugins')
     const managedPluginPath = resolve(pluginDir, MANAGED_PLUGIN_FILE_NAME)
+    const managedConfigPath = resolve(managedConfigDir, 'opencode.json')
 
     await mkdir(managedConfigDir, { recursive: true })
 
@@ -216,14 +225,12 @@ export const ensureOpenCodeNativeHooksInstalled = async (
         mirrorFile(resolve(sourceConfigDir, 'bun.lockb'), resolve(managedConfigDir, 'bun.lockb'))
       ])
       await syncPluginDirectory(resolve(sourceConfigDir, 'plugins'), pluginDir)
-      if (!await mirrorFile(resolve(sourceConfigDir, 'opencode.json'), resolve(managedConfigDir, 'opencode.json'))) {
-        await writeJsonFile(resolve(managedConfigDir, 'opencode.json'), DEFAULT_OPENCODE_CONFIG)
+      if (!await mirrorFile(resolve(sourceConfigDir, 'opencode.json'), managedConfigPath)) {
+        await writeJsonFileIfMissing(managedConfigPath, DEFAULT_OPENCODE_CONFIG)
       }
     } else {
       await syncPluginDirectory(undefined, pluginDir)
-      if (!await pathExists(resolve(managedConfigDir, 'opencode.json'))) {
-        await writeJsonFile(resolve(managedConfigDir, 'opencode.json'), DEFAULT_OPENCODE_CONFIG)
-      }
+      await writeJsonFileIfMissing(managedConfigPath, DEFAULT_OPENCODE_CONFIG)
     }
 
     if (enabled) {

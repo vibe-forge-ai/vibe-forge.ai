@@ -17,8 +17,7 @@ export function buildConfigJsonVariables(
   return buildWorkspaceConfigJsonVariables(workspaceFolder, processEnv)
 }
 
-export async function loadConfigState() {
-  const workspaceFolder = getWorkspaceFolder()
+export async function loadConfigState(workspaceFolder = getWorkspaceFolder()) {
   const [projectConfig, userConfig] = await loadConfig({
     cwd: workspaceFolder,
     jsonVariables: buildConfigJsonVariables(workspaceFolder)

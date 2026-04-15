@@ -1,5 +1,6 @@
 import type { WebSocket } from 'ws'
 
+import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { resizeTerminalSession, startTerminalSession } from './runtime'
 import {
   buildReadyEvent,
@@ -10,7 +11,7 @@ import {
   terminalRuntimeStore
 } from './store'
 
-export function attachTerminalSocket(
+export async function attachTerminalSocket(
   sessionId: string,
   socket: WebSocket,
   options: {
@@ -18,11 +19,18 @@ export function attachTerminalSocket(
     rows?: number
   } = {}
 ) {
-  let runtime = ensureTerminalRuntime(sessionId, options)
+  const cwd = await resolveSessionWorkspaceFolder(sessionId)
+  let runtime = ensureTerminalRuntime(sessionId, {
+    ...options,
+    cwd
+  })
   clearIdleTimer(runtime)
 
   if (!runtime.started) {
-    runtime = startTerminalSession(sessionId, options)
+    runtime = startTerminalSession(sessionId, {
+      ...options,
+      cwd
+    })
   } else if (runtime.driver != null) {
     runtime = resizeTerminalSession(sessionId, options)
   }
