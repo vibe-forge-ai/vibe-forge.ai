@@ -94,9 +94,56 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
 
     const installed = await ensureOpenCodeNativeHooksInstalled(ctx)
     const pluginPath = join(mockHome, '.config', 'opencode', 'plugins', 'vibe-forge-hooks.js')
+    const configPath = join(mockHome, '.config', 'opencode', 'opencode.json')
 
     expect(installed).toBe(true)
     expect(ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__).toBe('1')
     expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    expect(JSON.parse(await readFile(configPath, 'utf8'))).toMatchObject({
+      $schema: 'https://opencode.ai/config.json',
+      autoupdate: false
+    })
+  })
+
+  it('preserves an existing managed opencode.json when the source config directory has no config file', async () => {
+    const workspace = await createTempDir('opencode-hooks-existing-config-')
+    const realHome = await createTempDir('opencode-hooks-existing-home-')
+    const mockHome = join(workspace, '.ai', '.mock')
+    const managedConfigPath = join(mockHome, '.config', 'opencode', 'opencode.json')
+
+    await writeDocument(join(realHome, '.config', 'opencode', 'commands', 'review.md'), '# review')
+    await writeDocument(
+      managedConfigPath,
+      JSON.stringify({
+        $schema: 'https://opencode.ai/config.json',
+        autoupdate: true,
+        theme: 'existing'
+      })
+    )
+    process.env.__VF_PROJECT_REAL_HOME__ = realHome
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {}
+    } as any
+
+    const installed = await ensureOpenCodeNativeHooksInstalled(ctx)
+
+    expect(installed).toBe(false)
+    expect((await lstat(join(mockHome, '.config', 'opencode', 'commands'))).isSymbolicLink()).toBe(true)
+    expect(JSON.parse(await readFile(managedConfigPath, 'utf8'))).toEqual({
+      $schema: 'https://opencode.ai/config.json',
+      autoupdate: true,
+      theme: 'existing'
+    })
   })
 })
