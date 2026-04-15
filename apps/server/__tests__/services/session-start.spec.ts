@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   resolveChannelSessionMcpServers: vi.fn(),
   requestInteraction: vi.fn(),
   canRequestInteraction: vi.fn(),
+  resolveSessionWorkspaceFolder: vi.fn(),
+  provisionSessionWorkspace: vi.fn(),
   mkdir: vi.fn(),
   writeFile: vi.fn()
 }))
@@ -43,6 +45,11 @@ vi.mock('@vibe-forge/config', () => ({
 vi.mock('#~/services/session/interaction.js', () => ({
   requestInteraction: mocks.requestInteraction,
   canRequestInteraction: mocks.canRequestInteraction
+}))
+
+vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder,
+  provisionSessionWorkspace: mocks.provisionSessionWorkspace
 }))
 
 vi.mock('#~/services/session/notification.js', () => ({
@@ -138,6 +145,8 @@ describe('startAdapterSession', () => {
     mocks.resolveChannelSessionMcpServers.mockResolvedValue({})
     mocks.requestInteraction.mockReset()
     mocks.canRequestInteraction.mockReturnValue(false)
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValue(process.cwd())
+    mocks.provisionSessionWorkspace.mockResolvedValue(undefined)
     mocks.mkdir.mockResolvedValue(undefined)
     mocks.writeFile.mockResolvedValue(undefined)
   })
@@ -233,6 +242,41 @@ describe('startAdapterSession', () => {
     expect(runtime.session.emit).toBe(emit)
     expect(runtime.config?.adapter).toBe('claude-code')
     expect(mocks.run).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves the adapter cwd from the session workspace service', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValueOnce('/workspace/.ai/worktrees/sessions/sess-1')
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(mocks.generateAdapterQueryOptions).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      '/workspace/.ai/worktrees/sessions/sess-1',
+      expect.objectContaining({
+        adapter: 'codex',
+        model: 'gpt-4o'
+      })
+    )
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: '/workspace/.ai/worktrees/sessions/sess-1',
+        adapter: 'codex'
+      }),
+      expect.any(Object)
+    )
   })
 
   it('passes channel companion MCP servers into the runtime query options', async () => {

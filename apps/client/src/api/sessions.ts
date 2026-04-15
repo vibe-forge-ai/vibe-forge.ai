@@ -1,7 +1,9 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
+import type { SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
+import type { WorkspaceTreeEntry } from './workspace'
 
 export async function listSessions(
   filter: 'active' | 'archived' | 'all' = 'active'
@@ -85,6 +87,27 @@ export async function getSessionMessages(
   return fetchApiJson<SessionMessagesResponse>(url)
 }
 
+export async function getSessionWorkspace(id: string): Promise<{ workspace: SessionWorkspace }> {
+  return fetchApiJson<{ workspace: SessionWorkspace }>(`/api/sessions/${id}/workspace`)
+}
+
+export async function listSessionWorkspaceTree(
+  id: string,
+  path?: string
+): Promise<{
+  path: string
+  entries: WorkspaceTreeEntry[]
+}> {
+  const url = createApiUrl(`/api/sessions/${id}/workspace/tree`)
+  if (path != null && path.trim() !== '') {
+    url.searchParams.set('path', path)
+  }
+  return fetchApiJson<{
+    path: string
+    entries: WorkspaceTreeEntry[]
+  }>(url)
+}
+
 export async function respondSessionInteraction(
   sessionId: string,
   interactionId: string,
@@ -101,9 +124,19 @@ export async function respondSessionInteraction(
   })
 }
 
-export async function deleteSession(id: string): Promise<ApiRemoveResponse> {
+export async function deleteSession(
+  id: string,
+  options: {
+    force?: boolean
+  } = {}
+): Promise<ApiRemoveResponse> {
+  const url = createApiUrl(`/api/sessions/${id}`)
+  if (options.force === true) {
+    url.searchParams.set('force', 'true')
+  }
+
   return fetchApiJsonOrThrow<ApiRemoveResponse>(
-    `/api/sessions/${id}`,
+    url,
     { method: 'DELETE' },
     '[api] delete session failed:'
   )

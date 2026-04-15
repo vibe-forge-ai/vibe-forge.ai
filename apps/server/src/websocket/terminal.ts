@@ -63,7 +63,7 @@ export function sendTerminalFatalError(
   )
 }
 
-export function handleTerminalSocketConnection(
+export async function handleTerminalSocketConnection(
   ws: WebSocket,
   sessionId: string,
   params: URLSearchParams
@@ -73,7 +73,7 @@ export function handleTerminalSocketConnection(
   const rows = parseDimension(params.get('rows'), DEFAULT_ROWS)
 
   try {
-    attachTerminalSocket(sessionId, ws, { cols, rows })
+    await attachTerminalSocket(sessionId, ws, { cols, rows })
   } catch (error) {
     logger.error(
       { err: error, sessionId, cols, rows },

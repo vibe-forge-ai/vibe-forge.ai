@@ -3,6 +3,7 @@ import type { ChatMessageContent, Session } from '@vibe-forge/core'
 import { getDb } from '#~/db/index.js'
 import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import { deleteSessionWorkspace, provisionSessionWorkspace } from '#~/services/session/workspace.js'
 
 export async function createSessionWithInitialMessage(options: {
   title?: string
@@ -47,16 +48,25 @@ export async function createSessionWithInitialMessage(options: {
       Object.assign(session, updatedSession)
     }
   }
-  notifySessionUpdated(session.id, session)
 
   if (tags && tags.length > 0) {
     db.updateSessionTags(session.id, tags)
     const updated = db.getSession(session.id)
     if (updated) {
       Object.assign(session, updated)
-      notifySessionUpdated(session.id, updated)
     }
   }
+
+  try {
+    await provisionSessionWorkspace(session.id, {
+      sourceSessionId: parentSessionId
+    })
+  } catch (err) {
+    db.deleteSession(session.id)
+    throw err
+  }
+
+  notifySessionUpdated(session.id, session)
 
   if ((initialMessage || initialContent) && shouldStart) {
     try {
@@ -77,6 +87,7 @@ export async function createSessionWithInitialMessage(options: {
       }
     } catch (err) {
       console.error(`[sessions] Failed to start session ${session.id}:`, err)
+      await deleteSessionWorkspace(session.id, { force: true }).catch(() => undefined)
       db.deleteSession(session.id)
       throw err
     }

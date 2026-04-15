@@ -1,4 +1,11 @@
-import type { ChatMessageContent, ConfigSource, EffortLevel, Session, SessionPermissionMode } from '@vibe-forge/core'
+import type {
+  ChatMessageContent,
+  ConfigSource,
+  EffortLevel,
+  Session,
+  SessionPermissionMode,
+  SessionWorkspace
+} from '@vibe-forge/core'
 import type {
   ChannelBaseConfig,
   ChannelConnection,
@@ -96,6 +103,8 @@ export interface ChannelContext {
   stopSession: () => void
   /** Restart the current session (kill + start) */
   restartSession: () => Promise<void>
+  /** Resolve the workspace bound to a session, defaulting to the currently bound session */
+  resolveSessionWorkspace: (sessionId?: string) => Promise<SessionWorkspace | undefined>
   /** Update session fields in DB */
   updateSession: (updates: Partial<Pick<Session, 'model' | 'adapter' | 'permissionMode' | 'effort'>>) => void
   /** Read the adapter preference for the next session created in this channel */

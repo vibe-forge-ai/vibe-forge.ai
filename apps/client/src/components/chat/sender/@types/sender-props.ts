@@ -17,6 +17,7 @@ export interface SenderProps {
   sessionStatus?: SessionStatus
   onInterrupt: () => void
   onClear?: () => void
+  sessionId?: string
   sessionInfo?: SessionInfo | null
   interactionRequest?: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse?: (id: string, data: string | string[]) => void

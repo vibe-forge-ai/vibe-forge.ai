@@ -46,7 +46,9 @@ export {
   deleteSession,
   forkSession,
   getSessionMessages,
+  getSessionWorkspace,
   listSessions,
+  listSessionWorkspaceTree,
   respondSessionInteraction,
   updateSession,
   updateSessionTitle
@@ -72,3 +74,4 @@ export type {
   GitWorktreeSummary
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
+export type { SessionWorkspace } from '@vibe-forge/types'

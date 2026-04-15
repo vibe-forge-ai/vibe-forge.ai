@@ -5,7 +5,7 @@ import type { DataNode } from 'antd/es/tree'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { listWorkspaceTree } from '#~/api/workspace'
+import { listSessionWorkspaceTree, listWorkspaceTree } from '#~/api'
 
 export interface ContextPickerFile {
   path: string
@@ -60,12 +60,14 @@ const toPendingFiles = (paths: string[]): ContextPickerFile[] =>
 
 export function ContextFilePicker({
   open,
+  sessionId,
   selectedPaths,
   variant = 'modal',
   onCancel,
   onConfirm
 }: {
   open: boolean
+  sessionId?: string
   selectedPaths: string[]
   variant?: 'inline' | 'modal'
   onCancel: () => void
@@ -76,6 +78,12 @@ export function ContextFilePicker({
   const [checkedKeys, setCheckedKeys] = useState<string[]>(selectedPaths)
   const [treeData, setTreeData] = useState<ContextFileTreeNode[]>([])
   const [loadingRoot, setLoadingRoot] = useState(false)
+  const loadWorkspaceTree = async (path?: string) => {
+    if (sessionId != null && sessionId !== '') {
+      return await listSessionWorkspaceTree(sessionId, path)
+    }
+    return await listWorkspaceTree(path)
+  }
 
   useEffect(() => {
     if (!open) {
@@ -84,7 +92,7 @@ export function ContextFilePicker({
 
     setCheckedKeys(selectedPaths)
     setLoadingRoot(true)
-    void listWorkspaceTree()
+    void loadWorkspaceTree()
       .then((result) => {
         setTreeData(toTreeNodes(result.entries))
       })
@@ -94,11 +102,11 @@ export function ContextFilePicker({
       .finally(() => {
         setLoadingRoot(false)
       })
-  }, [message, open, selectedPaths, t])
+  }, [message, open, selectedPaths, sessionId, t])
 
   const loadData = async (node: DataNode) => {
     const path = String(node.key)
-    const result = await listWorkspaceTree(path)
+    const result = await loadWorkspaceTree(path)
     setTreeData(prev => replaceNodeChildren(prev, path, toTreeNodes(result.entries)))
   }
 

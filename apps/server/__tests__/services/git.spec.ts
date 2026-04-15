@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   execFile: vi.fn(),
   getDb: vi.fn(),
-  getWorkspaceFolder: vi.fn()
+  resolveSessionWorkspaceFolder: vi.fn()
 }))
 
 vi.mock('node:child_process', () => ({
@@ -19,8 +19,8 @@ vi.mock('#~/db/index.js', () => ({
   getDb: mocks.getDb
 }))
 
-vi.mock('#~/services/config/index.js', () => ({
-  getWorkspaceFolder: mocks.getWorkspaceFolder
+vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder
 }))
 
 const mockExecResponses = (...responses: Array<{ stdout?: string; stderr?: string } | Error>) => {
@@ -53,20 +53,12 @@ describe('git service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.access.mockResolvedValue(undefined)
-    mocks.getWorkspaceFolder.mockReturnValue('/workspace')
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValue('/workspace/packages/app')
     mocks.getDb.mockReturnValue({
       getSession: vi.fn(() => ({
         id: 'sess-1'
       })),
-      getMessages: vi.fn(() => [
-        {
-          type: 'session_info',
-          info: {
-            type: 'init',
-            cwd: '/workspace/packages/app'
-          }
-        }
-      ])
+      getMessages: vi.fn(() => [])
     })
   })
 

@@ -3,12 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { GitBranchListResult, GitBranchSummary, GitRepositoryState } from '@vibe-forge/types'
+import type { GitBranchListResult, GitBranchSummary, GitRepositoryState, SessionWorkspace } from '@vibe-forge/types'
 
 import {
   checkoutSessionGitBranch,
   createSessionGitBranch,
   getApiErrorMessage,
+  getSessionWorkspace,
   getSessionGitState,
   listSessionGitBranches
 } from '#~/api'
@@ -32,6 +33,11 @@ export function useChatGitControls(sessionId: string) {
   const [pendingAction, setPendingAction] = useState<GitActionKind | null>(null)
   const push = useChatGitPushState()
 
+  const { data: workspaceData } = useSWR<{ workspace: SessionWorkspace }>(
+    ['session-workspace', sessionId],
+    () => getSessionWorkspace(sessionId),
+    { revalidateOnFocus: false }
+  )
   const { data: repoState, mutate: mutateRepoState } = useSWR<GitRepositoryState>(
     ['session-git-state', sessionId],
     () => getSessionGitState(sessionId),
@@ -183,6 +189,7 @@ export function useChatGitControls(sessionId: string) {
     pushModalOpen: push.pushModalOpen,
     remoteBranches,
     repoState,
+    workspace: workspaceData?.workspace,
     runMutation,
     showWorktreeButton: worktree.showWorktreeButton,
     worktreeMenuOpen: worktree.worktreeMenuOpen,

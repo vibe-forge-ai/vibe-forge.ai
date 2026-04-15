@@ -8,6 +8,7 @@
 - 会话详情页路径是 `/ui/session/<sessionId>`。
 - `view` query 目前支持 `history`、`timeline`、`terminal`、`settings`。
 - 终端视图入口是 `/ui/session/<sessionId>?view=terminal`。
+- 聊天页 header 会显示当前 session 绑定的 workspace 入口；展开后能同时看到该 session 的 workspace 信息和当前仓库的 worktree 列表。
 
 ## Terminal 视图是什么
 

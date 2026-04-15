@@ -3,6 +3,7 @@ import type { ChatMessage, ChatMessageContent, Session, WSEvent } from '@vibe-fo
 import { getDb } from '#~/db/index.js'
 import { extractTextFromMessage } from '#~/services/session/events.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
+import { deleteSessionWorkspace, provisionSessionWorkspace } from '#~/services/session/workspace.js'
 import { badRequest, notFound } from '#~/utils/http.js'
 import { safeJsonStringify } from '#~/utils/json.js'
 
@@ -227,13 +228,13 @@ const getVisibleMessages = (events: WSEvent[]) => {
     .map(event => event.message)
 }
 
-export function branchSessionFromMessage(options: {
+export async function branchSessionFromMessage(options: {
   sessionId: string
   messageId: string
   action: MessageBranchAction
   content?: string | ChatMessageContent[]
   title?: string
-}): { session: Session; replayContent?: string | ChatMessageContent[] } {
+}): Promise<{ session: Session; replayContent?: string | ChatMessageContent[] }> {
   const db = getDb()
   const originalSession = db.getSession(options.sessionId)
   if (originalSession == null) {
@@ -288,6 +289,16 @@ export function branchSessionFromMessage(options: {
     isStarred: false,
     isArchived: false
   })
+
+  try {
+    await provisionSessionWorkspace(branchSession.id, {
+      sourceSessionId: originalSession.id
+    })
+  } catch (error) {
+    await deleteSessionWorkspace(branchSession.id, { force: true }).catch(() => undefined)
+    db.deleteSession(branchSession.id)
+    throw error
+  }
 
   const createdSession = db.getSession(branchSession.id)
   if (createdSession == null) {

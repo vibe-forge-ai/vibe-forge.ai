@@ -25,6 +25,11 @@ vi.mock('#~/services/session/runtime.js', async () => {
   }
 })
 
+vi.mock('#~/services/session/workspace.js', () => ({
+  provisionSessionWorkspace: vi.fn().mockResolvedValue(undefined),
+  deleteSessionWorkspace: vi.fn().mockResolvedValue(undefined)
+}))
+
 describe('session history branching', () => {
   let db: SqliteDb
 
@@ -39,7 +44,7 @@ describe('session history branching', () => {
     vi.clearAllMocks()
   })
 
-  it('creates an edited child session from a user message', () => {
+  it('creates an edited child session from a user message', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     db.updateSession(original.id, {
       model: 'gpt-4o',
@@ -90,7 +95,7 @@ describe('session history branching', () => {
       db.saveMessage(original.id, event)
     }
 
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'edit',
@@ -120,7 +125,7 @@ describe('session history branching', () => {
     )
   })
 
-  it('keeps legacy tool-call context in the history seed for branched sessions', () => {
+  it('keeps legacy tool-call context in the history seed for branched sessions', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [
       {
@@ -162,7 +167,7 @@ describe('session history branching', () => {
       db.saveMessage(original.id, event)
     }
 
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'edit',
@@ -180,7 +185,7 @@ describe('session history branching', () => {
     }))
   })
 
-  it('supports editing a user message into mixed text and image content', () => {
+  it('supports editing a user message into mixed text and image content', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [
       {
@@ -224,7 +229,7 @@ describe('session history branching', () => {
         mimeType: 'image/png'
       }
     ]
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'edit',
@@ -235,7 +240,7 @@ describe('session history branching', () => {
     expect(db.getMessages(branched.session.id)).toEqual([events[0], events[1]])
   })
 
-  it('keeps file attachments in the history seed for branched sessions', () => {
+  it('keeps file attachments in the history seed for branched sessions', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [
       {
@@ -274,7 +279,7 @@ describe('session history branching', () => {
       db.saveMessage(original.id, event)
     }
 
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'edit',
@@ -286,7 +291,7 @@ describe('session history branching', () => {
     }))
   })
 
-  it('recalls from a user message by trimming later history into a child session', () => {
+  it('recalls from a user message by trimming later history into a child session', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [
       {
@@ -321,7 +326,7 @@ describe('session history branching', () => {
       db.saveMessage(original.id, event)
     }
 
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'recall'
@@ -333,7 +338,7 @@ describe('session history branching', () => {
     expect(branched.session.lastUserMessage).toBe('first prompt')
   })
 
-  it('forks from a user message by replaying it into a child session', () => {
+  it('forks from a user message by replaying it into a child session', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     const events: WSEvent[] = [
       {
@@ -368,7 +373,7 @@ describe('session history branching', () => {
       db.saveMessage(original.id, event)
     }
 
-    const branched = branchSessionFromMessage({
+    const branched = await branchSessionFromMessage({
       sessionId: original.id,
       messageId: 'user-2',
       action: 'fork'
@@ -380,7 +385,7 @@ describe('session history branching', () => {
     expect(branched.session.lastUserMessage).toBe('first prompt')
   })
 
-  it('rejects forking from an assistant message', () => {
+  it('rejects forking from an assistant message', async () => {
     const original = db.createSession('Original', 'session-root', 'completed')
     db.saveMessage(original.id, {
       type: 'message',
@@ -401,12 +406,12 @@ describe('session history branching', () => {
       }
     })
 
-    expect(() =>
+    await expect(
       branchSessionFromMessage({
         sessionId: original.id,
         messageId: 'assistant-1',
         action: 'fork'
       })
-    ).toThrowError('Only user messages can be forked')
+    ).rejects.toThrowError('Only user messages can be forked')
   })
 })

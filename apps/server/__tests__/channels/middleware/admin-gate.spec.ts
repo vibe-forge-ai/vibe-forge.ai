@@ -33,7 +33,8 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => ({
   setChannelPermissionModePreference: vi.fn(),
   getChannelEffortPreference: vi.fn(),
   setChannelEffortPreference: vi.fn(),
-  ...overrides
+  ...overrides,
+  resolveSessionWorkspace: overrides.resolveSessionWorkspace ?? vi.fn().mockResolvedValue(undefined)
 })
 
 beforeEach(() => vi.clearAllMocks())

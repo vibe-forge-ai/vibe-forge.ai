@@ -1,18 +1,14 @@
 import { access } from 'node:fs/promises'
-import { isAbsolute, resolve } from 'node:path'
 
-import type { WSEvent } from '@vibe-forge/core'
 import type {
   GitAvailabilityReason,
   GitBranchSummary,
   GitRepositoryState,
-  GitWorktreeSummary,
-  SessionInfo
+  GitWorktreeSummary
 } from '@vibe-forge/types'
 
-import { getDb } from '#~/db/index.js'
-import { getWorkspaceFolder } from '#~/services/config/index.js'
-import { conflict, notFound } from '#~/utils/http.js'
+import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
+import { conflict } from '#~/utils/http.js'
 
 import type { ParsedGitStatus } from './parsers'
 
@@ -34,32 +30,7 @@ export interface AvailableGitRepositoryContext extends GitRepositoryContext {
 }
 
 const resolveSessionGitCwd = async (sessionId: string) => {
-  const db = getDb()
-  const session = db.getSession(sessionId)
-  if (session == null) {
-    throw notFound('Session not found', { sessionId }, 'session_not_found')
-  }
-
-  const workspaceFolder = getWorkspaceFolder()
-  const events = db.getMessages(sessionId) as WSEvent[]
-  let cwd = workspaceFolder
-
-  for (let index = events.length - 1; index >= 0; index -= 1) {
-    const event = events[index]
-    if (event?.type !== 'session_info') {
-      continue
-    }
-
-    const info = event.info as SessionInfo | null | undefined
-    if (info == null || info.type === 'summary' || typeof info.cwd !== 'string' || info.cwd.trim() === '') {
-      continue
-    }
-
-    cwd = info.cwd.trim()
-    break
-  }
-
-  return isAbsolute(cwd) ? cwd : resolve(workspaceFolder, cwd)
+  return await resolveSessionWorkspaceFolder(sessionId)
 }
 
 const resolveRepositoryContext = async (sessionId: string): Promise<GitRepositoryContext> => {

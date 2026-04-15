@@ -28,6 +28,7 @@ export function SenderBody({
   onRemovePendingImage,
   onRemovePendingFile,
   editorRef,
+  sessionId,
   sessionInfo,
   placeholder,
   input,
@@ -53,6 +54,7 @@ export function SenderBody({
   onRemovePendingImage: (id: string) => void
   onRemovePendingFile: (path: string) => void
   editorRef: MutableRefObject<SenderEditorHandle | null>
+  sessionId?: string
   sessionInfo?: SessionInfo | null
   placeholder: string
   input: string
@@ -103,6 +105,7 @@ export function SenderBody({
       {!isInlineEdit && (
         <ContextFilePicker
           open={showContextPicker}
+          sessionId={sessionId}
           selectedPaths={pendingFiles.map(file => file.path)}
           onCancel={onCancelContextPicker}
           onConfirm={onConfirmContextPicker}

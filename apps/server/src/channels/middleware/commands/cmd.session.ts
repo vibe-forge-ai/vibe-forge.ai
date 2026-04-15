@@ -1,4 +1,4 @@
-import type { EffortLevel, Session, SessionPermissionMode } from '@vibe-forge/core'
+import type { EffortLevel, Session, SessionPermissionMode, SessionWorkspace } from '@vibe-forge/core'
 
 import type { ChannelContext } from '../@types'
 import { defineMessages } from '../i18n'
@@ -60,6 +60,15 @@ defineMessages('zh', {
   'session.starred': ({ starred }) => `星标：${starred}`,
   'session.archived': ({ archived }) => `归档：${archived}`,
   'session.tags': ({ tags }) => `标签：${tags}`,
+  'session.workspace.path': ({ path }) => `工作区：${path}`,
+  'session.workspace.mode': ({ mode }) => `工作区模式：${mode}`,
+  'session.workspace.cleanup': ({ cleanup }) => `清理策略：${cleanup}`,
+  'session.workspace.baseRef': ({ baseRef }) => `基线引用：${baseRef}`,
+  'session.workspace.kind.managedWorktree': '托管 worktree',
+  'session.workspace.kind.sharedWorkspace': '共享工作区',
+  'session.workspace.kind.externalWorkspace': '外部工作区',
+  'session.workspace.cleanup.deleteOnSessionDelete': '删除会话时一并删除',
+  'session.workspace.cleanup.retain': '删除会话时保留',
   'session.search.empty': '当前没有可列出的会话。',
   'session.search.noResults': ({ query }) => `未找到匹配“${query}”的会话。`,
   'session.search.listHeader': ({ count }) => `最近会话列表（共 ${count} 个）：`,
@@ -154,6 +163,15 @@ defineMessages('en', {
   'session.starred': ({ starred }) => `Starred: ${starred}`,
   'session.archived': ({ archived }) => `Archived: ${archived}`,
   'session.tags': ({ tags }) => `Tags: ${tags}`,
+  'session.workspace.path': ({ path }) => `Workspace: ${path}`,
+  'session.workspace.mode': ({ mode }) => `Workspace mode: ${mode}`,
+  'session.workspace.cleanup': ({ cleanup }) => `Cleanup: ${cleanup}`,
+  'session.workspace.baseRef': ({ baseRef }) => `Base ref: ${baseRef}`,
+  'session.workspace.kind.managedWorktree': 'Managed worktree',
+  'session.workspace.kind.sharedWorkspace': 'Shared workspace',
+  'session.workspace.kind.externalWorkspace': 'External workspace',
+  'session.workspace.cleanup.deleteOnSessionDelete': 'Delete with session',
+  'session.workspace.cleanup.retain': 'Retain on delete',
   'session.search.empty': 'There are no sessions to list.',
   'session.search.noResults': ({ query }) => `No sessions matched “${query}”.`,
   'session.search.listHeader': ({ count }) => `Recent sessions (${count} total):`,
@@ -314,7 +332,56 @@ const restartSessionWithReply = async (
   await ctx.reply(message)
 }
 
-const formatSessionSummary = (ctx: ChannelContext) => {
+const formatSessionWorkspaceKind = (ctx: ChannelContext, kind: SessionWorkspace['kind']) => {
+  switch (kind) {
+    case 'managed_worktree':
+      return ctx.t('session.workspace.kind.managedWorktree')
+    case 'external_workspace':
+      return ctx.t('session.workspace.kind.externalWorkspace')
+    default:
+      return ctx.t('session.workspace.kind.sharedWorkspace')
+  }
+}
+
+const formatSessionWorkspaceCleanup = (
+  ctx: ChannelContext,
+  cleanupPolicy: SessionWorkspace['cleanupPolicy']
+) => {
+  switch (cleanupPolicy) {
+    case 'delete_on_session_delete':
+      return ctx.t('session.workspace.cleanup.deleteOnSessionDelete')
+    default:
+      return ctx.t('session.workspace.cleanup.retain')
+  }
+}
+
+const formatSessionWorkspaceLines = (
+  ctx: ChannelContext,
+  workspace: SessionWorkspace,
+  options: {
+    includeBaseRef?: boolean
+    includeCleanup?: boolean
+  } = {}
+) => {
+  const lines = [
+    ctx.t('session.workspace.path', { path: workspace.workspaceFolder }),
+    ctx.t('session.workspace.mode', { mode: formatSessionWorkspaceKind(ctx, workspace.kind) })
+  ]
+
+  if (options.includeCleanup !== false) {
+    lines.push(ctx.t('session.workspace.cleanup', {
+      cleanup: formatSessionWorkspaceCleanup(ctx, workspace.cleanupPolicy)
+    }))
+  }
+
+  if (options.includeBaseRef !== false && workspace.baseRef != null && workspace.baseRef.trim() !== '') {
+    lines.push(ctx.t('session.workspace.baseRef', { baseRef: workspace.baseRef }))
+  }
+
+  return lines
+}
+
+const formatSessionSummary = async (ctx: ChannelContext) => {
   const { sessionId } = ctx
   if (!sessionId) {
     return ctx.t('session.noSession')
@@ -323,6 +390,8 @@ const formatSessionSummary = (ctx: ChannelContext) => {
   if (!session) {
     return ctx.t('session.notFound', { id: sessionId })
   }
+  const workspace = await ctx.resolveSessionWorkspace(sessionId)
+
   return [
     ctx.t('session.title', { title: session.title ?? ctx.t('label.unnamed') }),
     ctx.t('session.status', { status: session.status ?? 'unknown' }),
@@ -333,7 +402,8 @@ const formatSessionSummary = (ctx: ChannelContext) => {
     ctx.t('session.effort', { effort: session.effort ?? ctx.t('label.notSet') }),
     ctx.t('session.starred', { starred: session.isStarred ? ctx.t('label.yes') : ctx.t('label.no') }),
     ctx.t('session.archived', { archived: session.isArchived ? ctx.t('label.yes') : ctx.t('label.no') }),
-    ctx.t('session.tags', { tags: formatList(ctx, session.tags) })
+    ctx.t('session.tags', { tags: formatList(ctx, session.tags) }),
+    ...(workspace == null ? [] : formatSessionWorkspaceLines(ctx, workspace))
   ].join('\n')
 }
 
@@ -521,6 +591,12 @@ export const sessionCommands = (getPrefix: (ctx: ChannelContext) => string = () 
               channelId: result.transferredFrom.channelId
             }))
           }
+          const workspace = await ctx.resolveSessionWorkspace(result.session.id)
+          if (workspace != null) {
+            lines.push(...formatSessionWorkspaceLines(ctx, workspace, {
+              includeCleanup: false
+            }))
+          }
           lines.push(ctx.t('bind.followUp'))
           await ctx.reply(lines.join('\n'))
         })
@@ -540,7 +616,7 @@ export const sessionCommands = (getPrefix: (ctx: ChannelContext) => string = () 
         })
     )
     .action(async ({ ctx }) => {
-      await ctx.reply(formatSessionSummary(ctx))
+      await ctx.reply(await formatSessionSummary(ctx))
     }),
 
   command<ChannelContext>('reset')
