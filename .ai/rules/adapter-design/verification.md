@@ -30,6 +30,12 @@ npx vf run --adapter codex --print 你好
 npx vf run --adapter opencode --print 你好
 ```
 
+### Gemini
+
+```bash
+npx vf run --adapter gemini --print 你好
+```
+
 ## Native skills smoke
 
 ### Claude Code
@@ -69,6 +75,37 @@ OpenCode 的技能验证不要照搬上面两条。它的 skills 是 session 级
 - overlay skill
 
 优先复用已有的 [`packages/adapters/opencode/__tests__/session-runtime-config.spec.ts`](../../../packages/adapters/opencode/__tests__/session-runtime-config.spec.ts) 和 adapter E2E。
+
+### Gemini
+
+1. 在 `.ai/skills/<probe>/SKILL.md` 放一个只会命中特定触发词的 probe skill
+2. 运行：
+
+```bash
+npx vf run --adapter gemini --print --no-inject-default-system-prompt 'vf gemini native skill probe'
+```
+
+预期：
+
+- 输出命中 probe skill 的固定文本
+- 说明 `.ai/skills -> .ai/.mock/.agents/skills` 这条链路生效
+
+## Routed model service smoke
+
+Gemini 的 routed model service 验证不要套用 CCR 视角。它走的是 adapter 自己的本地 compatibility proxy。
+
+1. 在 `modelServices` 里配置一个 OpenAI-compatible `chat/completions` 服务，例如 `kimi`
+2. 运行：
+
+```bash
+npx vf run --adapter gemini --model kimi,kimi-k2.5 --print hi
+```
+
+预期：
+
+- Gemini 正常返回回答，而不是报 provider / auth 初始化错误
+- 服务 endpoint 会被归一到 `.../chat/completions`
+- `Responses API` 或 legacy `/completions` 配置会在启动前被拒绝，而不是拖到运行中才报错
 
 ## Worktree fallback smoke
 

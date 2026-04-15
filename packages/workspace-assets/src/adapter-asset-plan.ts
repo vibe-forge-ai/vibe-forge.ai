@@ -68,11 +68,13 @@ export function buildAdapterAssetPlan(params: {
     diagnostics.push({
       assetId: asset.id,
       adapter: params.adapter,
-      status: params.adapter === 'copilot' ? 'translated' : 'native',
+      status: params.adapter === 'copilot' || params.adapter === 'gemini' ? 'translated' : 'native',
       reason: params.adapter === 'claude-code'
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
         ? 'Mapped into the Codex native hooks bridge.'
+        : params.adapter === 'gemini'
+        ? 'Handled by the Vibe Forge managed hook bridge in V1.'
         : params.adapter === 'copilot'
         ? 'Handled by the Vibe Forge task hook bridge.'
         : params.adapter === 'kimi'
@@ -130,6 +132,21 @@ export function buildAdapterAssetPlan(params: {
           : params.adapter === 'copilot'
           ? 'No stable native Copilot mapping exists for this asset kind in V1.'
           : 'No stable native Kimi mapping exists for this asset kind in V1.',
+        packageId: asset.packageId,
+        scope: asset.scope,
+        instancePath: asset.instancePath,
+        origin: asset.origin,
+        resolvedBy: asset.resolvedBy,
+        taskOverlaySource: asset.taskOverlaySource
+      })
+    })
+  } else if (params.adapter === 'gemini') {
+    params.bundle.opencodeOverlayAssets.forEach((asset) => {
+      diagnostics.push({
+        assetId: asset.id,
+        adapter: params.adapter,
+        status: 'skipped',
+        reason: 'No stable native Gemini mapping exists for this asset kind in V1.',
         packageId: asset.packageId,
         scope: asset.scope,
         instancePath: asset.instancePath,

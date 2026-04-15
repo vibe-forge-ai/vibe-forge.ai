@@ -91,6 +91,27 @@
 - 官方文档没有单独的 workspace trust key；当前 workspace 直接受 permissions 规则约束，额外目录才走 `permission.external_directory`
 - 所以这里最适合把 MCP、skills、commands、agents、modes 一起收敛进一个 session config root，并把 update 提示压到 mock-home/session config 这一层处理
 
+## Gemini
+
+- 实现入口：
+  - [`packages/adapters/gemini/src/runtime/init.ts`](../../../packages/adapters/gemini/src/runtime/init.ts)
+  - [`packages/adapters/gemini/src/runtime/shared.ts`](../../../packages/adapters/gemini/src/runtime/shared.ts)
+  - [`packages/adapters/gemini/src/runtime/session/direct.ts`](../../../packages/adapters/gemini/src/runtime/session/direct.ts)
+  - [`packages/adapters/gemini/src/runtime/session/stream.ts`](../../../packages/adapters/gemini/src/runtime/session/stream.ts)
+- 自动生效内容：
+  - `GEMINI_CLI_HOME=.ai/.mock`
+  - 托管的 `.ai/.mock/.gemini/settings.json`
+  - selected MCP servers 映射到 Gemini `mcpServers`
+  - `.ai/.mock/.agents/skills -> .ai/skills`
+  - telemetry / auto-update / relaunch 相关受控 env
+  - routed `modelServices` 映射为本地 Gemini compatibility proxy，并写入 `security.auth.selectedType: gateway`、`security.auth.useExternal: true` 与 `GOOGLE_GEMINI_BASE_URL`
+
+设计考量：
+
+- Gemini 没有稳定公开的通用 `apiHost` / `apiBaseUrl` 适配器配置；不能照搬 Codex/OpenCode 的 provider 写法
+- 外部模型路由继续走共享层 `modelServices`，但当前只接受 OpenAI-compatible `chat/completions` 服务
+- direct 和 stream 共用同一套 mock-home / settings / proxy 准备逻辑，只是进程 I/O 模式不同
+
 ## 共享层职责边界
 
 - [`packages/task/src/run.ts`](../../../packages/task/src/run.ts)
