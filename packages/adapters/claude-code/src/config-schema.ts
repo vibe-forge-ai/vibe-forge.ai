@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { defineAdapterConfigContribution } from '@vibe-forge/core/config-schema'
 
 export const claudeCodeAdapterConfigSchema = z.object({
-  effort: z.enum(['low', 'medium', 'high', 'max']).optional().describe('Reasoning effort level'),
   ccrOptions: z.object({
     LOG: z.boolean().optional().describe('Enable CCR logging'),
     PORT: z.string().optional().describe('CCR port'),
@@ -26,11 +25,7 @@ export const claudeCodeAdapterConfigSchema = z.object({
 })
 
 export type ClaudeCodeAdapterConfig = z.infer<typeof claudeCodeAdapterConfigSchema>
-export type ClaudeCodeCommonAdapterConfigKey = 'effort'
-export type ClaudeCodeNativeAdapterConfig = Omit<
-  ClaudeCodeAdapterConfig,
-  ClaudeCodeCommonAdapterConfigKey
->
+export type ClaudeCodeNativeAdapterConfig = ClaudeCodeAdapterConfig
 
 export const adapterConfigContribution = defineAdapterConfigContribution({
   adapterKey: 'claude-code',
@@ -38,7 +33,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   description: 'Claude Code adapter configuration',
   schema: claudeCodeAdapterConfigSchema,
   configEntry: {
-    extraCommonKeys: ['effort'] as const,
     deepMergeKeys: [
       'ccrOptions',
       'ccrTransformers',

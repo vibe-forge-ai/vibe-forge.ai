@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { defineAdapterConfigContribution, jsonValueSchema } from '@vibe-forge/core/config-schema'
 
 export const openCodeAdapterConfigSchema = z.object({
-  effort: z.enum(['low', 'medium', 'high', 'max']).optional().describe('Reasoning effort level'),
   agent: z.string().optional().describe('Default agent name'),
   planAgent: z.union([z.string(), z.literal(false)]).optional().describe('Plan agent override'),
   titlePrefix: z.string().optional().describe('Session title prefix'),
@@ -13,8 +12,7 @@ export const openCodeAdapterConfigSchema = z.object({
 })
 
 export type OpenCodeAdapterConfig = z.infer<typeof openCodeAdapterConfigSchema>
-export type OpenCodeCommonAdapterConfigKey = 'effort'
-export type OpenCodeNativeAdapterConfig = Omit<OpenCodeAdapterConfig, OpenCodeCommonAdapterConfigKey>
+export type OpenCodeNativeAdapterConfig = OpenCodeAdapterConfig
 
 export const adapterConfigContribution = defineAdapterConfigContribution({
   adapterKey: 'opencode',
@@ -22,7 +20,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   description: 'OpenCode adapter configuration',
   schema: openCodeAdapterConfigSchema,
   configEntry: {
-    extraCommonKeys: ['effort'] as const,
     deepMergeKeys: ['configContent'] as const
   }
 })

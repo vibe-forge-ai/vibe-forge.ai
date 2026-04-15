@@ -2,10 +2,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
 import { resolveAdapterConfigWithContribution as resolveMergedAdapterConfig } from '@vibe-forge/config'
-import type { AdapterCtx } from '@vibe-forge/types'
+import type { AdapterConfigEntry, AdapterCtx } from '@vibe-forge/types'
 
 import { adapterConfigContribution } from '#~/config-schema.js'
-import type { CodexAdapterConfig, CodexCommonAdapterConfigKey } from '#~/config-schema.js'
+import type { CodexAdapterConfig } from '#~/config-schema.js'
 import type { CodexSandboxPolicy } from '#~/types.js'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
@@ -64,7 +64,7 @@ export const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>
   return args
 }
 
-type CodexRuntimeAdapterConfig = Omit<CodexAdapterConfig, 'sandboxPolicy'> & {
+type CodexRuntimeNativeConfig = Omit<CodexAdapterConfig, 'sandboxPolicy'> & {
   sandboxPolicy?: CodexSandboxPolicy
 }
 
@@ -73,7 +73,7 @@ export const resolveCodexAdapterConfig = (
     configState?: AdapterCtx['configState']
     configs?: AdapterCtx['configs']
   } | undefined
-) => resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, CodexCommonAdapterConfigKey>(
+) => resolveMergedAdapterConfig<AdapterConfigEntry<CodexRuntimeNativeConfig>>(
   adapterConfigContribution,
   {
     configState: params?.configState,

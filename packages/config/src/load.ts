@@ -29,12 +29,13 @@ export interface ResolveConfigStateOptions {
   configs?: readonly [Config?, Config?]
 }
 
-type AdapterConfigRecord = Record<string, unknown>
+type AdapterConfigRecord = object
 
 export const ADAPTER_COMMON_CONFIG_KEYS = [
   'defaultModel',
   'includeModels',
-  'excludeModels'
+  'excludeModels',
+  'effort'
 ] as const
 
 const LEGACY_ADAPTER_COMMON_CONFIG_KEYS = ['model'] as const
@@ -639,6 +640,30 @@ export const resolveAdapterConfigWithContribution = <
   options,
   contribution.configEntry
 )
+
+export const resolveAdapterCommonConfig = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never
+>(
+  name: string,
+  options: ResolveAdapterConfigOptions = {},
+  resolveOptions: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
+) => resolveAdapterConfig<TEntry, TExtraCommonKey>(
+  name,
+  options,
+  resolveOptions
+).common
+
+export const resolveAdapterCommonConfigWithContribution = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never
+>(
+  contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
+  options: ResolveAdapterConfigOptions = {}
+) => resolveAdapterConfigWithContribution<TEntry, TExtraCommonKey>(
+  contribution,
+  options
+).common
 
 export const loadAdapterConfig = async (
   name: string,

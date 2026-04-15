@@ -18,7 +18,6 @@ export const codexAdapterConfigSchema = z.object({
     title: z.string().optional().describe('Client title'),
     version: z.string().optional().describe('Client version')
   }).optional().describe('Client metadata reported to Codex'),
-  effort: z.enum(['low', 'medium', 'high', 'max']).optional().describe('Reasoning effort level'),
   configOverrides: z.record(z.string(), jsonValueSchema).optional()
     .describe('Raw Codex config overrides encoded as dotted keys'),
   maxOutputTokens: z.number().int().positive().optional().describe('Maximum output tokens per turn'),
@@ -26,8 +25,7 @@ export const codexAdapterConfigSchema = z.object({
 })
 
 export type CodexAdapterConfig = z.infer<typeof codexAdapterConfigSchema>
-export type CodexCommonAdapterConfigKey = 'effort'
-export type CodexNativeAdapterConfig = Omit<CodexAdapterConfig, CodexCommonAdapterConfigKey>
+export type CodexNativeAdapterConfig = CodexAdapterConfig
 
 export const adapterConfigContribution = defineAdapterConfigContribution({
   adapterKey: 'codex',
@@ -35,7 +33,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   description: 'Codex adapter configuration',
   schema: codexAdapterConfigSchema,
   configEntry: {
-    extraCommonKeys: ['effort'] as const,
     deepMergeKeys: ['sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
   }
 })

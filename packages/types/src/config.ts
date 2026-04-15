@@ -7,6 +7,7 @@ export interface AdapterConfigCommon {
   defaultModel?: string
   includeModels?: string[]
   excludeModels?: string[]
+  effort?: EffortLevel
 }
 
 export type AdapterConfigEntry<T> = T & AdapterConfigCommon

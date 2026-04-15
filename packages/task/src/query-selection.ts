@@ -1,4 +1,5 @@
 import type { AdapterCtx } from '@vibe-forge/types'
+import { resolveAdapterCommonConfig } from '@vibe-forge/config'
 import {
   listServiceModels,
   normalizeNonEmptyString,
@@ -53,8 +54,13 @@ export const resolveQuerySelection = (params: {
   )
 
   const resolveModelForAdapter = (adapter: string | undefined) => {
+    const adapterCommonConfig = adapter == null
+      ? undefined
+      : resolveAdapterCommonConfig(adapter, {
+        mergedConfig: params.mergedConfig as AdapterCtx['configs'][0]
+      })
     const adapterConfiguredModel = resolveAdapterConfiguredDefaultModel({
-      adapterConfig: adapter != null ? mergedAdapters?.[adapter] : undefined,
+      adapterConfig: adapterCommonConfig,
       serviceModels,
       preferredServiceKey: mergedDefaultModelService,
       preserveUnknown: true

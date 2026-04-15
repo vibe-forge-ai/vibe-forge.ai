@@ -1,6 +1,6 @@
 import { callHook, createAdapterHookBridge } from '@vibe-forge/hooks'
 import type { HookInputs } from '@vibe-forge/hooks'
-import { resolveConfigState } from '@vibe-forge/config'
+import { resolveAdapterCommonConfig, resolveConfigState } from '@vibe-forge/config'
 import type {
   AdapterCtx,
   AdapterModelFallbackError,
@@ -149,14 +149,16 @@ export const run = async (
     throw new Error('No adapter found in config, please set adapters in config file')
   }
 
-  const mergedAdapters = mergedConfig.adapters as Record<string, unknown> | undefined
   const mergedModelServices = mergedConfig.modelServices ?? {}
   const serviceModels = listServiceModels(mergedModelServices)
   const mergedDefaultModelService = pickFirstNonEmptyString([mergedConfig.defaultModelService])
+  const adapterCommonConfig = resolveAdapterCommonConfig(adapterType, {
+    mergedConfig
+  })
   const compatibilityResult = resolveAdapterModelCompatibility({
     adapter: adapterType,
     model: resolvedSelection.model,
-    adapterConfig: mergedAdapters?.[adapterType],
+    adapterConfig: adapterCommonConfig,
     serviceModels,
     preferredServiceKey: mergedDefaultModelService,
     preserveUnknownDefaultModel: true
@@ -178,9 +180,8 @@ export const run = async (
     ? resolveEffectiveEffort({
       explicitEffort: adapterOptions.effort,
       model: resolvedModel,
-      adapter: adapterType,
+      adapterConfig: adapterCommonConfig,
       configEffort: mergedConfig.effort,
-      adapters: mergedAdapters,
       models: mergedConfig.models
     })
     : { effort: undefined as undefined }

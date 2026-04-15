@@ -55,7 +55,8 @@ describe('config schema bundle', () => {
     expect((adapters.additionalProperties as Record<string, unknown>).properties).toMatchObject({
       defaultModel: { type: 'string' },
       includeModels: { type: 'array' },
-      excludeModels: { type: 'array' }
+      excludeModels: { type: 'array' },
+      effort: { type: 'string' }
     })
   })
 

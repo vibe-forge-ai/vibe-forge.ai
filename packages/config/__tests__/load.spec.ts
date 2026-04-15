@@ -15,6 +15,7 @@ import {
   resolveAdapterConfig,
   resolveConfigState,
   resolveAdapterConfigEntry,
+  resolveAdapterCommonConfig,
   resolveAdapterConfigWithContribution,
   splitAdapterConfigEntry
 } from '#~/load.js'
@@ -601,12 +602,13 @@ defaultModel: package-model
     })
   })
 
-  it('splits adapter config into common and native sections with adapter-specific common keys', () => {
+  it('splits adapter config into common and native sections while allowing extra common keys', () => {
     const result = splitAdapterConfigEntry({
       defaultModel: 'gpt-5.4',
       includeModels: ['gpt-5.4'],
       excludeModels: ['gpt-4.1'],
       effort: 'high',
+      routingProfile: 'strict',
       settingsContent: {
         nested: true
       },
@@ -616,28 +618,64 @@ defaultModel: package-model
       includeModels?: string[]
       excludeModels?: string[]
       effort?: string
+      routingProfile?: string
       settingsContent?: Record<string, unknown>
       model?: string
     }, {
-      extraCommonKeys: ['effort']
+      extraCommonKeys: ['routingProfile']
     })
 
     expect(ADAPTER_COMMON_CONFIG_KEYS).toEqual([
       'defaultModel',
       'includeModels',
-      'excludeModels'
+      'excludeModels',
+      'effort'
     ])
     expect(result.common).toEqual({
       defaultModel: 'gpt-5.4',
       includeModels: ['gpt-5.4'],
       excludeModels: ['gpt-4.1'],
       effort: 'high',
+      routingProfile: 'strict',
       model: 'legacy-model'
     })
     expect(result.native).toEqual({
       settingsContent: {
         nested: true
       }
+    })
+  })
+
+  it('resolves adapter common config from merged config state', () => {
+    const state = buildResolvedConfigState(
+      {
+        adapters: {
+          codex: {
+            defaultModel: 'project-model',
+            includeModels: ['project-include']
+          }
+        }
+      } as any,
+      {
+        adapters: {
+          codex: {
+            excludeModels: ['user-exclude'],
+            effort: 'high',
+            configOverrides: {
+              model: 'gpt-5.4'
+            }
+          }
+        }
+      } as any
+    )
+
+    expect(resolveAdapterCommonConfig('codex', {
+      configState: state
+    })).toEqual({
+      defaultModel: 'project-model',
+      includeModels: ['project-include'],
+      excludeModels: ['user-exclude'],
+      effort: 'high'
     })
   })
 
@@ -688,10 +726,8 @@ defaultModel: package-model
       defaultModel?: string
       effort?: string
       settingsContent?: Record<string, unknown>
-    }, 'effort'>('claude-code', {
+    }>('claude-code', {
       configState: state
-    }, {
-      extraCommonKeys: ['effort']
     })
 
     expect(result.common).toEqual({
@@ -804,10 +840,9 @@ defaultModel: package-model
       defaultModel?: string
       effort?: string
       settingsContent?: Record<string, unknown>
-    }, 'effort'>({
+    }>({
       adapterKey: 'claude-code',
       configEntry: {
-        extraCommonKeys: ['effort'],
         deepMergeKeys: ['settingsContent']
       }
     }, {
