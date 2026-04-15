@@ -27,6 +27,7 @@ export const codexAdapterConfigSchema = z.object({
 
 export type CodexAdapterConfig = z.infer<typeof codexAdapterConfigSchema>
 export const codexAdapterExtraCommonKeys = ['effort'] as const
+export const codexAdapterDeepMergeKeys = ['sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
 export type CodexNativeAdapterConfig = Omit<CodexAdapterConfig, typeof codexAdapterExtraCommonKeys[number]>
 
 export const adapterConfigContribution = defineAdapterConfigContribution({

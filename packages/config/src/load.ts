@@ -53,6 +53,13 @@ export interface SplitAdapterConfigEntryOptions<
   extraCommonKeys?: readonly TExtraCommonKey[]
 }
 
+export interface ResolveAdapterConfigEntryOptions<
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never
+> extends SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> {
+  deepMergeKeys?: readonly (keyof TEntry)[]
+}
+
 export interface ResolvedAdapterConfig<
   TEntry extends AdapterConfigRecord = AdapterConfigEntry<AdapterConfigRecord>,
   TExtraCommonKey extends keyof TEntry = never
@@ -173,6 +180,46 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 const toAdapterConfigRecord = <TEntry extends AdapterConfigRecord>(value: unknown) => (
   isRecord(value) ? value as TEntry : {} as TEntry
 )
+
+const mergeNestedAdapterConfigValue = (
+  left: unknown,
+  right: unknown
+): unknown => {
+  if (!isRecord(left) || !isRecord(right)) {
+    return right === undefined ? left : right
+  }
+
+  const keys = new Set([
+    ...Object.keys(left),
+    ...Object.keys(right)
+  ])
+
+  return Object.fromEntries(
+    Array.from(keys).map(key => [
+      key,
+      mergeNestedAdapterConfigValue(left[key], right[key])
+    ])
+  )
+}
+
+const mergeAdapterConfigEntries = <TEntry extends AdapterConfigRecord>(
+  left: TEntry | undefined,
+  right: TEntry | undefined,
+  deepMergeKeys: readonly (keyof TEntry)[] = []
+) => {
+  const leftRecord = toAdapterConfigRecord<TEntry>(left)
+  const rightRecord = toAdapterConfigRecord<TEntry>(right)
+  const mergedRecord = {
+    ...leftRecord,
+    ...rightRecord
+  } as TEntry
+
+  for (const key of deepMergeKeys) {
+    mergedRecord[key] = mergeNestedAdapterConfigValue(leftRecord[key], rightRecord[key]) as TEntry[typeof key]
+  }
+
+  return mergedRecord
+}
 
 const toExtendPaths = (value: unknown) => {
   if (typeof value === 'string' && value.trim() !== '') {
@@ -532,15 +579,44 @@ export const resolveAdapterConfig = <
 >(
   name: string,
   options: ResolveAdapterConfigOptions = {},
-  splitOptions: SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
+  resolveOptions: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
 ): ResolvedAdapterConfig<TEntry, TExtraCommonKey> => {
-  const mergedConfig = options.mergedConfig ?? resolveConfigState({
-    configState: options.configState,
-    configs: options.configs
-  }).mergedConfig
+  const resolvedState = options.configState ?? (
+    options.mergedConfig == null
+    ? resolveConfigState({
+      configs: options.configs
+    })
+    : undefined
+  )
+  const mergedConfig = options.mergedConfig ?? resolvedState?.mergedConfig
+  const resolvedEntry = resolvedState != null
+    ? (() => {
+      const projectEntry = resolveAdapterConfigEntry(name, resolvedState.projectConfig) as TEntry
+      const userEntry = resolveAdapterConfigEntry(name, resolvedState.userConfig) as TEntry
+      if (
+        Object.keys(projectEntry).length === 0 &&
+        Object.keys(userEntry).length === 0 &&
+        mergedConfig != null
+      ) {
+        return resolveAdapterConfigEntry(name, mergedConfig) as TEntry
+      }
+      return mergeAdapterConfigEntries(
+        projectEntry,
+        userEntry,
+        resolveOptions.deepMergeKeys
+      )
+    })()
+    : options.configs != null
+    ? mergeAdapterConfigEntries(
+      resolveAdapterConfigEntry(name, options.configs[0]) as TEntry,
+      resolveAdapterConfigEntry(name, options.configs[1]) as TEntry,
+      resolveOptions.deepMergeKeys
+    )
+    : resolveAdapterConfigEntry(name, mergedConfig) as TEntry
+
   return splitAdapterConfigEntry(
-    resolveAdapterConfigEntry(name, mergedConfig) as TEntry,
-    splitOptions
+    resolvedEntry,
+    resolveOptions
   )
 }
 

@@ -14,6 +14,7 @@ export const openCodeAdapterConfigSchema = z.object({
 
 export type OpenCodeAdapterConfig = z.infer<typeof openCodeAdapterConfigSchema>
 export const openCodeAdapterExtraCommonKeys = ['effort'] as const
+export const openCodeAdapterDeepMergeKeys = ['configContent'] as const
 export type OpenCodeNativeAdapterConfig = Omit<OpenCodeAdapterConfig, typeof openCodeAdapterExtraCommonKeys[number]>
 
 export const adapterConfigContribution = defineAdapterConfigContribution({

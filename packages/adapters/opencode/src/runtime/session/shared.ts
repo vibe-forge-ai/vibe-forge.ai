@@ -6,7 +6,7 @@ import type { AdapterCtx } from '@vibe-forge/types'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import type { OpenCodeAdapterConfig } from '#~/config-schema.js'
-import { openCodeAdapterExtraCommonKeys } from '#~/config-schema.js'
+import { openCodeAdapterDeepMergeKeys, openCodeAdapterExtraCommonKeys } from '#~/config-schema.js'
 
 export interface OpenCodeRunResult {
   exitCode: number
@@ -120,7 +120,8 @@ export const resolveAdapterConfig = (ctx: AdapterCtx) => resolveMergedAdapterCon
     configs: ctx.configs
   },
   {
-    extraCommonKeys: openCodeAdapterExtraCommonKeys
+    extraCommonKeys: openCodeAdapterExtraCommonKeys,
+    deepMergeKeys: openCodeAdapterDeepMergeKeys
   }
 )
 

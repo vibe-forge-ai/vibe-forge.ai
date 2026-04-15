@@ -27,6 +27,13 @@ export const claudeCodeAdapterConfigSchema = z.object({
 
 export type ClaudeCodeAdapterConfig = z.infer<typeof claudeCodeAdapterConfigSchema>
 export const claudeCodeAdapterExtraCommonKeys = ['effort'] as const
+export const claudeCodeAdapterDeepMergeKeys = [
+  'ccrOptions',
+  'ccrTransformers',
+  'modelFallbacks',
+  'settingsContent',
+  'nativeEnv'
+] as const
 export type ClaudeCodeNativeAdapterConfig = Omit<
   ClaudeCodeAdapterConfig,
   typeof claudeCodeAdapterExtraCommonKeys[number]

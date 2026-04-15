@@ -5,7 +5,7 @@ import { resolveAdapterConfig as resolveMergedAdapterConfig } from '@vibe-forge/
 import type { AdapterCtx } from '@vibe-forge/types'
 
 import type { CodexAdapterConfig } from '#~/config-schema.js'
-import { codexAdapterExtraCommonKeys } from '#~/config-schema.js'
+import { codexAdapterDeepMergeKeys, codexAdapterExtraCommonKeys } from '#~/config-schema.js'
 import type { CodexSandboxPolicy } from '#~/types.js'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
@@ -80,7 +80,8 @@ export const resolveCodexAdapterConfig = (
     configs: params?.configs
   },
   {
-    extraCommonKeys: codexAdapterExtraCommonKeys
+    extraCommonKeys: codexAdapterExtraCommonKeys,
+    deepMergeKeys: codexAdapterDeepMergeKeys
   }
 )
 

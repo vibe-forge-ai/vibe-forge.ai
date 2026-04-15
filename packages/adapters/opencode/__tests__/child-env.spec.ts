@@ -190,4 +190,88 @@ describe('opencode resolved config consumption', () => {
     expect(adapterConfig.common.effort).toBe('high')
     expect(Object.keys(sessionConfig.mcp ?? {})).toEqual(['docs'])
   })
+
+  it('deep merges configContent across layered adapter config entries', async () => {
+    const workspace = await createWorkspace()
+    const baseConfigDir = join(workspace, 'user-opencode-config')
+    await writeDocument(join(baseConfigDir, 'opencode.json'), '{}\n')
+
+    const { ctx } = makeCtx({
+      cwd: workspace,
+      env: {
+        OPENCODE_CONFIG_DIR: baseConfigDir
+      },
+      configs: [{
+        adapters: {
+          opencode: {
+            configContent: {
+              provider: {
+                openai: {
+                  models: {
+                    'gpt-5': {
+                      options: {
+                        reasoningEffort: 'xhigh'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, {
+        adapters: {
+          opencode: {
+            configContent: {
+              provider: {
+                openai: {
+                  models: {
+                    'gpt-5': {
+                      options: {
+                        verbosity: 'low'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }]
+    })
+
+    const childEnv = await buildChildEnv({
+      ctx: ctx as any,
+      options: {
+        type: 'create',
+        runtime: 'server',
+        sessionId: 'session-deep-merge',
+        model: 'openai/gpt-5',
+        onEvent: () => {}
+      } as any,
+      adapterConfig: resolveAdapterConfig(ctx as any)
+    })
+
+    const configDir = childEnv.env.OPENCODE_CONFIG_DIR
+    const sessionConfig = JSON.parse(
+      typeof configDir === 'string'
+        ? await readFile(join(configDir, 'opencode.json'), 'utf8')
+        : '{}'
+    ) as {
+      provider?: {
+        openai?: {
+          models?: {
+            'gpt-5'?: {
+              options?: Record<string, unknown>
+            }
+          }
+        }
+      }
+    }
+
+    expect(sessionConfig.provider?.openai?.models?.['gpt-5']?.options).toMatchObject({
+      reasoningEffort: 'xhigh',
+      verbosity: 'low'
+    })
+  })
 })

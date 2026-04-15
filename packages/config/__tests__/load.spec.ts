@@ -704,6 +704,68 @@ defaultModel: package-model
     })
   })
 
+  it('deep merges declared native adapter config keys across project and user configs', () => {
+    const state = buildResolvedConfigState(
+      {
+        adapters: {
+          'claude-code': {
+            settingsContent: {
+              outputStyle: {
+                tone: 'concise',
+                bullets: true
+              }
+            },
+            ccrOptions: {
+              PORT: '4123'
+            }
+          }
+        }
+      } as any,
+      {
+        adapters: {
+          'claude-code': {
+            settingsContent: {
+              outputStyle: {
+                bullets: false
+              },
+              approvals: {
+                mode: 'plan'
+              }
+            },
+            ccrOptions: {
+              APIKEY: 'router-key'
+            }
+          }
+        }
+      } as any
+    )
+
+    const result = resolveAdapterConfig<{
+      settingsContent?: Record<string, unknown>
+      ccrOptions?: Record<string, unknown>
+    }>('claude-code', {
+      configState: state
+    }, {
+      deepMergeKeys: ['settingsContent', 'ccrOptions']
+    })
+
+    expect(result.native).toEqual({
+      settingsContent: {
+        outputStyle: {
+          tone: 'concise',
+          bullets: false
+        },
+        approvals: {
+          mode: 'plan'
+        }
+      },
+      ccrOptions: {
+        PORT: '4123',
+        APIKEY: 'router-key'
+      }
+    })
+  })
+
   it('loads adapter config through the resolved config helper path', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-adapter-load-'))
 

@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { initCodexAdapter } from '../src/runtime/init'
+import { resolveCodexConfigOverrides } from '../src/runtime/config'
 
 const tempDirs: string[] = []
 
@@ -263,5 +264,34 @@ describe('initCodexAdapter', () => {
       vi.doUnmock('node:fs/promises')
       vi.resetModules()
     }
+  })
+
+  it('deep merges nested codex configOverrides across layered config files', async () => {
+    const configOverrides = resolveCodexConfigOverrides({
+      configs: [{
+        adapters: {
+          codex: {
+            configOverrides: {
+              model: 'gpt-5.4',
+              approval_policy: 'unlessTrusted'
+            }
+          }
+        }
+      }, {
+        adapters: {
+          codex: {
+            configOverrides: {
+              check_for_update_on_startup: true
+            }
+          }
+        }
+      }]
+    } as any)
+
+    expect(configOverrides).toMatchObject({
+      model: 'gpt-5.4',
+      approval_policy: 'unlessTrusted',
+      check_for_update_on_startup: true
+    })
   })
 })
