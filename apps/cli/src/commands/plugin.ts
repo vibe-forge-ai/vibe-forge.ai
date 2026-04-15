@@ -6,6 +6,8 @@ import type { Command } from 'commander'
 import { createAdapterOption, normalizeCliAdapterOptionValue } from './@core/adapter-option'
 import { addAdapterPlugin } from './@core/plugin-install'
 
+const normalizeManagedPluginAdapter = (adapter: string) => adapter === 'claude-code' ? 'claude' : adapter
+
 export const resolvePluginCommandAdapter = async (
   explicitAdapter: string | undefined,
   cwd: string = process.cwd()
@@ -13,13 +15,15 @@ export const resolvePluginCommandAdapter = async (
   const normalizedExplicitAdapter = explicitAdapter == null
     ? undefined
     : normalizeCliAdapterOptionValue(explicitAdapter)
-  if (normalizedExplicitAdapter) return normalizedExplicitAdapter
+  if (normalizedExplicitAdapter) return normalizeManagedPluginAdapter(normalizedExplicitAdapter)
 
   const [projectConfig, userConfig] = await loadConfig({
     cwd,
     jsonVariables: buildConfigJsonVariables(cwd, process.env)
   })
-  return mergeConfigs(projectConfig, userConfig)?.defaultAdapter ?? 'claude'
+  return normalizeManagedPluginAdapter(
+    mergeConfigs(projectConfig, userConfig)?.defaultAdapter ?? 'claude'
+  )
 }
 
 export function registerPluginCommand(program: Command) {
