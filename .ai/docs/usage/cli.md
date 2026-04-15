@@ -1,6 +1,6 @@
 # CLI 与示例
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## 常用命令
 

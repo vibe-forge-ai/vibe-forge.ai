@@ -72,4 +72,4 @@ adapter 启动任务时会读取 `.ai/plugins` 中对应 adapter 的原生插件
 
 - [使用说明](../../docs/usage/native-plugins.md)
 - [Marketplace 详细示例](../../docs/usage/native-plugins/marketplaces.md)
-- [插件与数据资产](./plugins.md)
+- [插件与数据资产](../../docs/usage/plugins.md)

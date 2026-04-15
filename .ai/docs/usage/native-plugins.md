@@ -1,6 +1,6 @@
 # Adapter 原生插件与 Marketplace
 
-返回入口：[在自己项目中使用](../../rules/USAGE.md)
+返回入口：[index.md](../index.md)
 
 这页讲的是 adapter 自己的原生插件格式，不是顶层 `plugins` 配置里的统一 Vibe Forge 插件。
 
@@ -14,7 +14,7 @@
 - 从配置里的 marketplace 解析 `plugin@marketplace`
 - 把 Claude 插件里可复用的能力接入到当前项目
 
-如果你要配置统一 Vibe Forge 插件，继续看 [插件与数据资产](../../rules/usage/plugins.md)。
+如果你要配置统一 Vibe Forge 插件，继续看 [插件与数据资产](./plugins.md)。
 
 ## 安装命令
 

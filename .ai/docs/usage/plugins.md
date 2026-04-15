@@ -1,6 +1,6 @@
 # 插件与数据资产
 
-返回入口：[USAGE.md](../USAGE.md)
+返回入口：[index.md](../index.md)
 
 ## 两套插件体系
 
