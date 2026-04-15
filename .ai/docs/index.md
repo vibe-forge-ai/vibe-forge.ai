@@ -7,6 +7,7 @@
 ## 先看这些
 
 - [安装与准备](./usage/install.md)
+- [数据资产目录配置](./asset-directories.md)
 - [启动服务](./usage/runtime.md)
 - [Web UI 与 Terminal 视图](./usage/web.md)
 - [CLI 与示例](./usage/cli.md)
