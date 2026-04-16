@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -127,7 +128,7 @@ export interface GeminiProxyRouteConfig {
   timeoutMs?: number
 }
 
-const REQUEST_PATH_RE = /^\/(?<routeKey>[^/]+)\/v1beta\/models\/(?<model>[^/:]+):(?<method>generateContent|streamGenerateContent)$/u
+const REQUEST_PATH_RE = /^\/(?<routeKey>[^/]+)\/v1beta\/models\/[^/:]+:(?<method>generateContent|streamGenerateContent)$/u
 
 const asPlainObject = (value: unknown): Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)

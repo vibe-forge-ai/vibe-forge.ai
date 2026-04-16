@@ -248,7 +248,7 @@ const normalizeToolToken = (value: string) => (
   value
     .split(/[^a-z0-9]+/i)
     .filter(Boolean)
-    .map(token => token[0]?.toUpperCase() + token.slice(1))
+    .map(token => `${token[0]?.toUpperCase() ?? ''}${token.slice(1)}`)
     .join('')
 )
 
