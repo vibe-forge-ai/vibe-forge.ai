@@ -115,7 +115,10 @@ describe('createCodexSession transcript hook integration', () => {
     )
 
     expect(createCodexTranscriptHookWatcherMock).toHaveBeenCalledWith(expect.objectContaining({
+      callHooks: false,
       cwd: '/tmp/project',
+      emitEvents: true,
+      onEvent: expect.any(Function),
       runtime: 'server',
       sessionId: 'session-native-hooks'
     }))

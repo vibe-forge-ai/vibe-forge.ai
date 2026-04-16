@@ -11,17 +11,8 @@ import { createCodexTranscriptHookWatcher } from './transcript-hooks'
  */
 export const createCodexSession = async (ctx: AdapterCtx, options: AdapterQueryOptions) => {
   const base = await resolveSessionBase(ctx, options)
-  const transcriptHookWatcher = base.spawnEnv.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__ === '1'
-    ? createCodexTranscriptHookWatcher({
-      cwd: ctx.cwd,
-      env: ctx.env,
-      homeDir: base.spawnEnv.HOME,
-      logger: ctx.logger,
-      runtime: options.runtime,
-      sessionId: options.sessionId
-    })
-    : undefined
   let didStopTranscriptHookWatcher = false
+  let transcriptHookWatcher: ReturnType<typeof createCodexTranscriptHookWatcher> | undefined
   const stopTranscriptHookWatcher = () => {
     if (didStopTranscriptHookWatcher) return
     didStopTranscriptHookWatcher = true
@@ -33,6 +24,20 @@ export const createCodexSession = async (ctx: AdapterCtx, options: AdapterQueryO
     }
     options.onEvent(event)
   }
+
+  transcriptHookWatcher = base.spawnEnv.__VF_VIBE_FORGE_CODEX_HOOKS_ACTIVE__ === '1'
+    ? createCodexTranscriptHookWatcher({
+      callHooks: false,
+      cwd: ctx.cwd,
+      emitEvents: true,
+      env: ctx.env,
+      homeDir: base.spawnEnv.HOME,
+      logger: ctx.logger,
+      onEvent: wrappedOnEvent,
+      runtime: options.runtime,
+      sessionId: options.sessionId
+    })
+    : undefined
 
   transcriptHookWatcher?.start()
 
