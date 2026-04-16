@@ -6,37 +6,38 @@ import type { AdapterCtx } from '@vibe-forge/types'
 
 import { buildGeminiNativeHooksSettings, prepareGeminiNativeHooks } from '../src/runtime/native-hooks'
 
-const createCtx = (env: Record<string, string | undefined> = {}): AdapterCtx => ({
-  ctxId: 'ctx-gemini-hooks',
-  cwd: '/tmp/project',
-  env,
-  cache: {
-    get: async () => undefined,
-    set: async () => ({ cachePath: '/tmp/project/.ai/cache/base.json' })
-  },
-  logger: {
-    stream: new PassThrough(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  },
-  configs: [undefined, undefined],
-  assets: {
+const createCtx = (env: Record<string, string | undefined> = {}): AdapterCtx =>
+  ({
+    ctxId: 'ctx-gemini-hooks',
     cwd: '/tmp/project',
-    pluginInstances: [],
-    assets: [],
-    rules: [],
-    specs: [],
-    entities: [],
-    skills: [],
-    mcpServers: {},
-    hookPlugins: [{ id: 'hookPlugin:workspace:logger' } as never],
-    opencodeOverlayAssets: [],
-    defaultIncludeMcpServers: [],
-    defaultExcludeMcpServers: []
-  }
-}) as AdapterCtx
+    env,
+    cache: {
+      get: async () => undefined,
+      set: async () => ({ cachePath: '/tmp/project/.ai/cache/base.json' })
+    },
+    logger: {
+      stream: new PassThrough(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn()
+    },
+    configs: [undefined, undefined],
+    assets: {
+      cwd: '/tmp/project',
+      pluginInstances: [],
+      assets: [],
+      rules: [],
+      specs: [],
+      entities: [],
+      skills: [],
+      mcpServers: {},
+      hookPlugins: [{ id: 'hookPlugin:workspace:logger' } as never],
+      opencodeOverlayAssets: [],
+      defaultIncludeMcpServers: [],
+      defaultExcludeMcpServers: []
+    }
+  }) as AdapterCtx
 
 describe('gemini native hook bridge', () => {
   it('prepares the managed hook runtime and marks native hooks available', () => {

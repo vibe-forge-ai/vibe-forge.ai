@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 import '../adapter-config.js'
@@ -7,7 +7,13 @@ import '../adapter-config.js'
 import type { ChatMessage } from '@vibe-forge/core'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV, resolveMockHome } from '@vibe-forge/hooks'
 import type { NativeHookMatcherGroup } from '@vibe-forge/hooks'
-import type { AdapterCtx, AdapterMessageContent, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
+import type {
+  AdapterCtx,
+  AdapterMessageContent,
+  AdapterQueryOptions,
+  Config,
+  ModelServiceConfig
+} from '@vibe-forge/types'
 import { omitAdapterCommonConfig, parseServiceModelSelector } from '@vibe-forge/utils'
 
 import type { GeminiNativeHooksSettings } from './native-hooks'
@@ -387,19 +393,22 @@ export const validateGeminiSelection = (params: {
       throw new Error('Gemini slash commands are disabled in the adapter. Send plain text instead.')
     }
     if (FORBIDDEN_AT_REFERENCE.test(prompt)) {
-      throw new Error('Gemini @path prompt expansion is disabled in the adapter. Reference files with plain text instead.')
+      throw new Error(
+        'Gemini @path prompt expansion is disabled in the adapter. Reference files with plain text instead.'
+      )
     }
   }
 }
 
-const resolveGeneratedContextFilePath = (ctx: AdapterCtx, sessionId: string) => resolve(
-  ctx.cwd,
-  '.ai',
-  '.mock',
-  '.gemini-adapter',
-  sessionId,
-  'VIBE_FORGE.md'
-)
+const resolveGeneratedContextFilePath = (ctx: AdapterCtx, sessionId: string) =>
+  resolve(
+    ctx.cwd,
+    '.ai',
+    '.mock',
+    '.gemini-adapter',
+    sessionId,
+    'VIBE_FORGE.md'
+  )
 
 export const ensureGeminiPromptFiles = async (
   ctx: AdapterCtx,
@@ -477,39 +486,39 @@ export const buildGeminiSettings = (params: {
     },
     ...(externalAuth
       ? {
-          security: {
-            auth: {
-              selectedType: 'gateway',
-              useExternal: true
-            }
+        security: {
+          auth: {
+            selectedType: 'gateway',
+            useExternal: true
           }
         }
+      }
       : {}),
     ...(telemetryOff
       ? {
-          telemetry: {
-            enabled: false,
-            logPrompts: false
-          },
-          privacy: {
-            usageStatisticsEnabled: false
-          }
+        telemetry: {
+          enabled: false,
+          logPrompts: false
+        },
+        privacy: {
+          usageStatisticsEnabled: false
         }
+      }
       : {}),
     ...(generatedContextFileName == null
       ? {}
       : {
-          context: {
-            fileName: ['GEMINI.md', generatedContextFileName]
-          }
-        }),
+        context: {
+          fileName: ['GEMINI.md', generatedContextFileName]
+        }
+      }),
     ...(Object.keys(mcpServers).length === 0
       ? {}
       : {
-          mcpServers: Object.fromEntries(
-            Object.entries(mcpServers).map(([name, server]) => [name, translateMcpServerConfig(server)])
-          )
-        }),
+        mcpServers: Object.fromEntries(
+          Object.entries(mcpServers).map(([name, server]) => [name, translateMcpServerConfig(server)])
+        )
+      }),
     ...(nativeHooks?.hooksConfig == null ? {} : { hooksConfig: nativeHooks.hooksConfig }),
     ...(nativeHooks?.hooks == null ? {} : { hooks: nativeHooks.hooks })
   }
@@ -661,9 +670,9 @@ export const resolveLatestGeminiSessionId = async (params: {
       const parsed = JSON.parse(raw) as { sessionId?: unknown }
       return typeof parsed.sessionId === 'string' && parsed.sessionId.trim() !== ''
         ? {
-            mtimeMs: fileStats.mtimeMs,
-            sessionId: parsed.sessionId
-          }
+          mtimeMs: fileStats.mtimeMs,
+          sessionId: parsed.sessionId
+        }
         : undefined
     } catch (error) {
       params.ctx.logger.warn('Failed to inspect Gemini session transcript', { filePath, err: error })

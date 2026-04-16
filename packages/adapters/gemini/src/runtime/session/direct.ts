@@ -4,8 +4,8 @@ import type { AdapterCtx, AdapterOutputEvent, AdapterQueryOptions, AdapterSessio
 
 import { resolveGeminiBinaryPath } from '#~/paths.js'
 
-import { ensureGeminiProxyRoute } from '../proxy'
 import { buildGeminiNativeHooksSettings } from '../native-hooks'
+import { ensureGeminiProxyRoute } from '../proxy'
 import {
   buildGeminiDirectArgs,
   buildGeminiSettings,

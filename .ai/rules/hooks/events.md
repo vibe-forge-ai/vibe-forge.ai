@@ -4,18 +4,18 @@
 
 ## 支持矩阵
 
-| Hook 事件                | Claude Code | Codex    | Gemini                  | Kimi     | OpenCode |
-| ------------------------ | ----------- | -------- | ----------------------- | -------- | -------- |
-| `TaskStart` / `TaskStop` | 框架触发    | 框架触发 | 框架触发                | 框架触发 | 框架触发 |
-| `SessionStart`           | native      | native   | native                  | native   | native   |
-| `UserPromptSubmit`       | native      | native   | native                  | native   | bridge   |
-| `PreToolUse`             | native      | native   | native                  | native   | native   |
-| `PostToolUse`            | native      | native   | native                  | native   | native   |
-| `Stop`                   | native      | native   | native                  | native   | native   |
-| `SessionEnd`             | bridge      | bridge   | bridge                  | bridge   | bridge   |
-| `Notification`           | native      | 不支持   | 不支持                  | 不支持   | 不支持   |
-| `SubagentStop`           | native      | 不支持   | 不支持                  | 不支持   | 不支持   |
-| `PreCompact`             | native      | 不支持   | native (`PreCompress`)  | 不支持   | 不支持   |
+| Hook 事件                | Claude Code | Codex    | Gemini                 | Kimi     | OpenCode |
+| ------------------------ | ----------- | -------- | ---------------------- | -------- | -------- |
+| `TaskStart` / `TaskStop` | 框架触发    | 框架触发 | 框架触发               | 框架触发 | 框架触发 |
+| `SessionStart`           | native      | native   | native                 | native   | native   |
+| `UserPromptSubmit`       | native      | native   | native                 | native   | bridge   |
+| `PreToolUse`             | native      | native   | native                 | native   | native   |
+| `PostToolUse`            | native      | native   | native                 | native   | native   |
+| `Stop`                   | native      | native   | native                 | native   | native   |
+| `SessionEnd`             | bridge      | bridge   | bridge                 | bridge   | bridge   |
+| `Notification`           | native      | 不支持   | 不支持                 | 不支持   | 不支持   |
+| `SubagentStop`           | native      | 不支持   | 不支持                 | 不支持   | 不支持   |
+| `PreCompact`             | native      | 不支持   | native (`PreCompress`) | 不支持   | 不支持   |
 
 - Gemini 原生 `PreCompress` 已映射到统一 `PreCompact`。
 - `codex` / `kimi` / `opencode` 的 `PreCompact` 缺口跟踪见 [Issue #109](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/109)。

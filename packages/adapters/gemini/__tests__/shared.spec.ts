@@ -19,23 +19,24 @@ import {
   validateGeminiSelection
 } from '#~/runtime/shared.js'
 
-const createCtx = (config?: Config, userConfig?: Config, env: Record<string, string | undefined> = {}) => ({
-  ctxId: 'ctx-1',
-  cwd: '/tmp/project',
-  env,
-  cache: {
-    get: async () => undefined,
-    set: async () => ({ cachePath: '/tmp/project/.ai/cache/test.json' })
-  },
-  logger: {
-    stream: undefined,
-    info: () => undefined,
-    warn: () => undefined,
-    error: () => undefined,
-    debug: () => undefined
-  },
-  configs: [config, userConfig]
-}) as unknown as AdapterCtx
+const createCtx = (config?: Config, userConfig?: Config, env: Record<string, string | undefined> = {}) =>
+  ({
+    ctxId: 'ctx-1',
+    cwd: '/tmp/project',
+    env,
+    cache: {
+      get: async () => undefined,
+      set: async () => ({ cachePath: '/tmp/project/.ai/cache/test.json' })
+    },
+    logger: {
+      stream: undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+      debug: () => undefined
+    },
+    configs: [config, userConfig]
+  }) as unknown as AdapterCtx
 
 describe('resolveGeminiBinaryPath', () => {
   it('returns the env-specified path when set', () => {
@@ -181,11 +182,13 @@ describe('gemini prompt and settings helpers', () => {
   })
 
   it('injects the local Gemini gateway base URL for external services', () => {
-    expect(buildGeminiSpawnEnv({
-      adapterConfig: {},
-      ctx: createCtx(),
-      proxyBaseUrl: 'http://127.0.0.1:3000/route'
-    }).GOOGLE_GEMINI_BASE_URL).toBe('http://127.0.0.1:3000/route')
+    expect(
+      buildGeminiSpawnEnv({
+        adapterConfig: {},
+        ctx: createCtx(),
+        proxyBaseUrl: 'http://127.0.0.1:3000/route'
+      }).GOOGLE_GEMINI_BASE_URL
+    ).toBe('http://127.0.0.1:3000/route')
   })
 
   it('writes native hooks into managed Gemini settings when enabled', () => {
@@ -264,10 +267,12 @@ describe('validateGeminiSelection', () => {
       }
     })
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      model: 'kimi,kimi-k2.5'
-    })).not.toThrow()
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        model: 'kimi,kimi-k2.5'
+      })
+    ).not.toThrow()
 
     expect(resolveGeminiModel({
       ctx,
@@ -283,32 +288,36 @@ describe('validateGeminiSelection', () => {
   })
 
   it('rejects service selectors that point to responses-style endpoints', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        },
-        modelServices: {
-          openai: {
-            apiBaseUrl: 'https://example.com/v1/responses',
-            apiKey: 'secret',
-            models: ['gpt-5.4']
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          },
+          modelServices: {
+            openai: {
+              apiBaseUrl: 'https://example.com/v1/responses',
+              apiKey: 'secret',
+              models: ['gpt-5.4']
+            }
           }
-        }
-      }),
-      model: 'openai,gpt-5.4'
-    })).toThrow(/chat\/completions/)
+        }),
+        model: 'openai,gpt-5.4'
+      })
+    ).toThrow(/chat\/completions/)
   })
 
   it('rejects service selectors that point to unknown services', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }),
-      model: 'missing,kimi-k2.5'
-    })).toThrow(/could not find model service/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          }
+        }),
+        model: 'missing,kimi-k2.5'
+      })
+    ).toThrow(/could not find model service/)
   })
 
   it('rejects forbidden native prompt commands by default', () => {
@@ -318,61 +327,77 @@ describe('validateGeminiSelection', () => {
       }
     })
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      prompt: '/resume latest'
-    })).toThrow(/slash commands/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        prompt: '/resume latest'
+      })
+    ).toThrow(/slash commands/)
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      prompt: 'read @./README.md before continuing'
-    })).toThrow(/@path/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        prompt: 'read @./README.md before continuing'
+      })
+    ).toThrow(/@path/)
   })
 
   it('allows prompt commands when explicitly enabled', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {
-            nativePromptCommands: 'allow'
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {
+              nativePromptCommands: 'allow'
+            }
           }
-        }
-      }),
-      prompt: '/resume latest'
-    })).not.toThrow()
+        }),
+        prompt: '/resume latest'
+      })
+    ).not.toThrow()
   })
 
   it('rejects unsupported extra options and sandbox env', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }, undefined, {
-        GEMINI_SANDBOX: 'docker'
-      }),
-      extraOptions: ['--log-level', 'debug']
-    })).toThrow(/GEMINI_SANDBOX/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx(
+          {
+            adapters: {
+              gemini: {}
+            }
+          },
+          undefined,
+          {
+            GEMINI_SANDBOX: 'docker'
+          }
+        ),
+        extraOptions: ['--log-level', 'debug']
+      })
+    ).toThrow(/GEMINI_SANDBOX/)
 
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }),
-      extraOptions: ['--sandbox']
-    })).toThrow(/extra option/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          }
+        }),
+        extraOptions: ['--sandbox']
+      })
+    ).toThrow(/extra option/)
   })
 
   it('rejects unsupported adapter host/provider keys', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {
-            apiHost: 'https://example.com'
-          } as Record<string, unknown>
-        }
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {
+              apiHost: 'https://example.com'
+            } as Record<string, unknown>
+          }
+        })
       })
-    })).toThrow(/apiHost/)
+    ).toThrow(/apiHost/)
   })
 })
