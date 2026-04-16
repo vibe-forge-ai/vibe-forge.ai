@@ -1,17 +1,15 @@
 import './TodoTool.scss'
-import type { ToolInputs } from '@vibe-forge/core'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
-
-type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
+import type { ClaudeTodoItem, ClaudeTodoWriteToolInput } from './claude-tool-inputs'
 
 export const TodoTool = defineToolRender(({ item }) => {
   const { t } = useTranslation()
-  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['adapter:claude-code:TodoWrite']>
-  const todos = (input.todos ?? []) as TodoItem[]
+  const input = (item.input != null ? item.input : {}) as ClaudeTodoWriteToolInput
+  const todos = (input.todos ?? []) as ClaudeTodoItem[]
   const totalCount = todos.length
   const completedCount = todos.filter(todo => todo.status === 'completed').length
   const inProgressCount = todos.filter(todo => todo.status === 'in_progress').length
