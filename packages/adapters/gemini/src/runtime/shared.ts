@@ -150,7 +150,7 @@ const FORBIDDEN_EXTRA_OPTIONS = new Set([
 ])
 
 const FORBIDDEN_PROMPT_PREFIX = /^\/(?![/*])/
-const FORBIDDEN_AT_REFERENCE = /(^|[\s(])@(?:\/|\.{1,2}\/|~\/|[A-Za-z]:[\\/])/m
+const FORBIDDEN_AT_REFERENCE = /(?:^|[\s(])@(?:\/|\.{1,2}\/|~\/|[a-z]:[\\/])/im
 
 export const MAX_GEMINI_STDIN_BYTES = 8 * 1024 * 1024
 
@@ -233,9 +233,9 @@ export const createAssistantMessage = (id: string, content: string, model?: stri
 
 const normalizeToolToken = (value: string) => (
   value
-    .split(/[^a-zA-Z0-9]+/)
+    .split(/[^a-z0-9]+/i)
     .filter(Boolean)
-    .map(token => token[0]?.toUpperCase() + token.slice(1))
+    .map(token => `${token[0]?.toUpperCase() ?? ''}${token.slice(1)}`)
     .join('')
 )
 
@@ -408,7 +408,7 @@ export const ensureGeminiPromptFiles = async (
 
   return {
     generatedContextFilePath,
-    generatedContextFileName: '.ai/.mock/.gemini-adapter/' + options.sessionId + '/VIBE_FORGE.md'
+    generatedContextFileName: `.ai/.mock/.gemini-adapter/${options.sessionId}/VIBE_FORGE.md`
   }
 }
 
