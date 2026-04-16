@@ -23,6 +23,6 @@ description: 当任务涉及 hooks 方案、托管配置、事件矩阵或启用
 
 ## 结果
 
-- `claude-code`、`codex`、`opencode` 共用同一套 `plugins.<name>` hook 插件实现。
+- `claude-code`、`codex`、`gemini`、`kimi`、`opencode` 共用同一套 `plugins.<name>` hook 插件实现。
 - 用户真实 home 不会被自动改写。
 - 新接 agent 时，只需要补 mock 配置和事件映射，不需要重做一遍 hook 体系。

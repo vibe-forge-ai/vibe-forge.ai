@@ -25,7 +25,14 @@ native hooks 可用时，Vibe Forge 会关闭对应的 bridge 事件，避免同
 
 - `claude-code`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `codex`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
+- `gemini`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
+- `kimi`：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`
 - `opencode`：`SessionStart` / `PreToolUse` / `PostToolUse` / `Stop`
+
+补充说明：
+
+- `claude-code` 的 `PreCompact` 与 `gemini` 的 `PreCompress -> PreCompact` 走 native hook，但当前没有对应的 bridge 重复事件需要关闭。
+- `codex` / `kimi` / `opencode` 暂无可验证的 native `PreCompact` 入口，跟踪见 [Issue #109](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/109)。
 
 Codex 补充说明：
 

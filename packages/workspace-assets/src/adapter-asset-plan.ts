@@ -68,13 +68,13 @@ export function buildAdapterAssetPlan(params: {
     diagnostics.push({
       assetId: asset.id,
       adapter: params.adapter,
-      status: params.adapter === 'copilot' || params.adapter === 'gemini' ? 'translated' : 'native',
+      status: params.adapter === 'copilot' ? 'translated' : 'native',
       reason: params.adapter === 'claude-code'
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
         ? 'Mapped into the Codex native hooks bridge.'
         : params.adapter === 'gemini'
-        ? 'Handled by the Vibe Forge managed hook bridge in V1.'
+        ? 'Mapped into the Gemini native hooks bridge.'
         : params.adapter === 'copilot'
         ? 'Handled by the Vibe Forge task hook bridge.'
         : params.adapter === 'kimi'

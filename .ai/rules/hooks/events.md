@@ -4,16 +4,21 @@
 
 ## 支持矩阵
 
-| Hook 事件                                      | Claude Code | Codex    | OpenCode |
-| ---------------------------------------------- | ----------- | -------- | -------- |
-| `TaskStart` / `TaskStop`                       | 框架触发    | 框架触发 | 框架触发 |
-| `SessionStart`                                 | native      | native   | native   |
-| `UserPromptSubmit`                             | native      | native   | bridge   |
-| `PreToolUse`                                   | native      | native   | native   |
-| `PostToolUse`                                  | native      | native   | native   |
-| `Stop`                                         | native      | native   | native   |
-| `SessionEnd`                                   | bridge      | bridge   | bridge   |
-| `Notification` / `SubagentStop` / `PreCompact` | native      | 不支持   | 不支持   |
+| Hook 事件                | Claude Code | Codex    | Gemini                 | Kimi     | OpenCode |
+| ------------------------ | ----------- | -------- | ---------------------- | -------- | -------- |
+| `TaskStart` / `TaskStop` | 框架触发    | 框架触发 | 框架触发               | 框架触发 | 框架触发 |
+| `SessionStart`           | native      | native   | native                 | native   | native   |
+| `UserPromptSubmit`       | native      | native   | native                 | native   | bridge   |
+| `PreToolUse`             | native      | native   | native                 | native   | native   |
+| `PostToolUse`            | native      | native   | native                 | native   | native   |
+| `Stop`                   | native      | native   | native                 | native   | native   |
+| `SessionEnd`             | bridge      | bridge   | bridge                 | bridge   | bridge   |
+| `Notification`           | native      | 不支持   | 不支持                 | 不支持   | 不支持   |
+| `SubagentStop`           | native      | 不支持   | 不支持                 | 不支持   | 不支持   |
+| `PreCompact`             | native      | 不支持   | native (`PreCompress`) | 不支持   | 不支持   |
+
+- Gemini 原生 `PreCompress` 已映射到统一 `PreCompact`。
+- `codex` / `kimi` / `opencode` 的 `PreCompact` 缺口跟踪见 [Issue #109](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/109)。
 
 ## Codex 特别说明
 
@@ -24,9 +29,14 @@
 - 因此 Codex 的非 Bash JSONL 观测事件统一按 `canBlock: false` 处理，即使它们最终映射成统一 hook 日志，也不能冒充 native `PreToolUse` / `PostToolUse`。
 - `dynamicToolCall` 这类 transcript 形态目前还没有仓库内真实样本和集成验证，文档先不把它写成已支持。
 
+## Gemini / Kimi 补充说明
+
+- Gemini 真实 CLI 已验证 `BeforeTool` / `AfterTool` 会映射成统一 `PreToolUse` / `PostToolUse`，并保持 `canBlock: true`。
+- Kimi 当前原生 hooks 覆盖 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop`，未发现 compaction 类事件入口。
+
 ## 统一输入语义
 
-- `adapter`：`claude-code` / `codex` / `opencode`
+- `adapter`：`claude-code` / `codex` / `gemini` / `kimi` / `opencode`
 - `runtime`：`cli` / `server` / `mcp`
 - `hookSource`：`native` 或 `bridge`
 - `canBlock`：当前事件是否还能真正阻止动作继续

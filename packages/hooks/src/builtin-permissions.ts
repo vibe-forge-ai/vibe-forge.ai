@@ -139,7 +139,12 @@ export const createBuiltinPermissionPlugin = (
       if (input.hookSource !== 'native' || input.canBlock === false) {
         return next()
       }
-      if (input.adapter !== 'claude-code' && input.adapter !== 'kimi' && input.adapter !== 'opencode') {
+      if (
+        input.adapter !== 'claude-code' &&
+        input.adapter !== 'gemini' &&
+        input.adapter !== 'kimi' &&
+        input.adapter !== 'opencode'
+      ) {
         return next()
       }
 

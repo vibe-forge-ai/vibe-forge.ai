@@ -8,6 +8,8 @@ import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveGeminiBinaryPath } from '#~/paths.js'
 
+import { prepareGeminiNativeHooks } from './native-hooks'
+
 const execFileAsync = promisify(execFile)
 
 const syncMockHomeSymlink = async (params: {
@@ -39,6 +41,8 @@ const syncGeminiMockHomeSkills = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) =>
 }
 
 export const initGeminiAdapter = async (ctx: AdapterCtx) => {
+  prepareGeminiNativeHooks(ctx)
+
   const binaryPath = resolveGeminiBinaryPath(ctx.env)
 
   try {

@@ -16,6 +16,7 @@
 - `pnpm test:e2e:adapters`
 - `pnpm tools adapter-e2e run codex`
 - `pnpm tools adapter-e2e run claude-code`
+- `pnpm tools adapter-e2e run gemini`
 - `pnpm tools adapter-e2e run opencode`
 - `pnpm tools adapter-e2e run all`
 - `pnpm tools adapter-e2e test codex-read-once --update`
@@ -44,6 +45,12 @@ __VF_PROJECT_AI_CTX_ID__='hooks-smoke-codex' node apps/cli/cli.js --adapter code
 
 ```bash
 __VF_PROJECT_AI_CTX_ID__='hooks-smoke-claude' node apps/cli/cli.js --adapter claude-code --model 'hook-smoke-mock-ccr,claude-hooks' --print --no-inject-default-system-prompt --exclude-mcp-server ChromeDevtools --include-tool Read --permission-mode bypassPermissions --session-id '<uuid>' "Use the Read tool exactly once on README.md, then reply with exactly E2E_CLAUDE and nothing else."
+```
+
+### Gemini
+
+```bash
+__VF_PROJECT_AI_CTX_ID__='hooks-smoke-gemini' node apps/cli/cli.js run --adapter gemini --model kimi,kimi-k2.5 --print --permission-mode bypassPermissions --no-inject-default-system-prompt --exclude-mcp-server ChromeDevtools --session-id '<uuid>' "Use the Read tool exactly once on README.md, then reply with exactly E2E_GEMINI and nothing else."
 ```
 
 ### OpenCode

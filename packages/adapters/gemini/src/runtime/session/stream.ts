@@ -11,6 +11,7 @@ import type {
 
 import { resolveGeminiBinaryPath } from '#~/paths.js'
 
+import { buildGeminiNativeHooksSettings } from '../native-hooks'
 import { ensureGeminiProxyRoute } from '../proxy'
 import {
   buildGeminiRunArgs,
@@ -50,13 +51,15 @@ export const createStreamGeminiSession = async (
   const proxyRoute = resolvedModel.routedService == null
     ? undefined
     : await ensureGeminiProxyRoute(resolvedModel.routedService)
+  const nativeHooks = buildGeminiNativeHooksSettings(ctx.env)
   const settings = buildGeminiSettings({
     adapterConfig,
     approvalMode,
     externalAuth: proxyRoute != null,
     generatedContextFileName: promptFiles.generatedContextFileName,
     mcpServers: options.assetPlan?.mcpServers ?? {},
-    model: resolvedModel.cliModel
+    model: resolvedModel.cliModel,
+    nativeHooks
   })
   await writeGeminiSettings(ctx, settings)
 
@@ -121,7 +124,10 @@ export const createStreamGeminiSession = async (
     const spawnEnv = buildGeminiSpawnEnv({
       adapterConfig,
       ctx,
-      proxyBaseUrl: proxyRoute?.baseUrl
+      model: resolvedModel.cliModel ?? options.model,
+      proxyBaseUrl: proxyRoute?.baseUrl,
+      runtime: options.runtime,
+      sessionId: options.sessionId
     })
     const resumeSessionId = geminiSessionId
     const proc = spawn(
@@ -152,8 +158,8 @@ export const createStreamGeminiSession = async (
     let stderrBuffer = ''
     let currentAssistantId: string | undefined
     let currentAssistantText = ''
-    let lastAssistantMessage
-      : ReturnType<typeof createAssistantMessage>
+    let lastAssistantMessage:
+      | ReturnType<typeof createAssistantMessage>
       | undefined
     let resultErrorMessage: string | undefined
 
@@ -228,10 +234,10 @@ export const createStreamGeminiSession = async (
           ? eventRecord.tool_id
           : `tool-${Date.now()}`
         const error = (
-          eventRecord.error != null &&
-          typeof eventRecord.error === 'object' &&
-          !Array.isArray(eventRecord.error)
-        )
+            eventRecord.error != null &&
+            typeof eventRecord.error === 'object' &&
+            !Array.isArray(eventRecord.error)
+          )
           ? eventRecord.error as { message?: unknown }
           : undefined
         const output = eventRecord.output ?? (
@@ -270,10 +276,10 @@ export const createStreamGeminiSession = async (
 
       if (eventType === 'result' && eventRecord.status === 'error') {
         const resultError = (
-          eventRecord.error != null &&
-          typeof eventRecord.error === 'object' &&
-          !Array.isArray(eventRecord.error)
-        )
+            eventRecord.error != null &&
+            typeof eventRecord.error === 'object' &&
+            !Array.isArray(eventRecord.error)
+          )
           ? eventRecord.error as { message?: unknown }
           : undefined
         resultErrorMessage = typeof resultError?.message === 'string'

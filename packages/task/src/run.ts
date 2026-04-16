@@ -280,6 +280,8 @@ export const run = async (
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'claude-code' && ctx.env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : adapterType === 'gemini' && ctx.env.__VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'kimi' && ctx.env.__VF_PROJECT_AI_KIMI_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'

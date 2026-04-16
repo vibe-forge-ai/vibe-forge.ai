@@ -375,4 +375,44 @@ describe('buildAdapterAssetPlan', () => {
       })
     ]))
   })
+
+  it('marks Gemini hook plugins as native bridge assets', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'hooks.js': 'module.exports = {}\n'
+    })
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [{ id: 'logger' }]
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+
+    const plan = buildAdapterAssetPlan({
+      adapter: 'gemini',
+      bundle,
+      options: {}
+    })
+
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        adapter: 'gemini',
+        assetId: loggerHookPluginId,
+        status: 'native',
+        reason: 'Mapped into the Gemini native hooks bridge.'
+      })
+    ]))
+  })
 })

@@ -101,16 +101,18 @@
 - 自动生效内容：
   - `GEMINI_CLI_HOME=.ai/.mock`
   - 托管的 `.ai/.mock/.gemini/settings.json`
+  - managed native hooks 对应的 `hooks` / `hooksConfig.enabled`
   - selected MCP servers 映射到 Gemini `mcpServers`
   - `.ai/.mock/.agents/skills -> .ai/skills`
   - telemetry / auto-update / relaunch 相关受控 env
+  - `__VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__`、`__VF_VIBE_FORGE_GEMINI_HOOKS_ACTIVE__` 与 Gemini native hook bridge env
   - routed `modelServices` 映射为本地 Gemini compatibility proxy，并写入 `security.auth.selectedType: gateway`、`security.auth.useExternal: true` 与 `GOOGLE_GEMINI_BASE_URL`
 
 设计考量：
 
 - Gemini 没有稳定公开的通用 `apiHost` / `apiBaseUrl` 适配器配置；不能照搬 Codex/OpenCode 的 provider 写法
 - 外部模型路由继续走共享层 `modelServices`，但当前只接受 OpenAI-compatible `chat/completions` 服务
-- direct 和 stream 共用同一套 mock-home / settings / proxy 准备逻辑，只是进程 I/O 模式不同
+- direct 和 stream 共用同一套 mock-home / settings / native hooks / proxy 准备逻辑，只是进程 I/O 模式不同
 
 ## 共享层职责边界
 
