@@ -75,6 +75,15 @@ describe('gemini native hook bridge', () => {
             matcher: '.*'
           }
         ],
+        PreCompress: [
+          {
+            hooks: [
+              {
+                command: `"${process.execPath}" "/tmp/call-hook.js"`
+              }
+            ]
+          }
+        ],
         AfterAgent: [
           {
             hooks: [

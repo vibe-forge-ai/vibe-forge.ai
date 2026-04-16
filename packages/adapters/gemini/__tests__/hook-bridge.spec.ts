@@ -28,6 +28,21 @@ describe('gemini native hook bridge helpers', () => {
     })
   })
 
+  it('maps Gemini PreCompress into unified PreCompact with blockable semantics', () => {
+    const result = mapGeminiHookInputToVibeForge({
+      cwd: '/tmp/project',
+      sessionId: 'session-1',
+      hookEventName: 'PreCompress'
+    })
+
+    expect(result).toMatchObject({
+      adapter: 'gemini',
+      hookSource: 'native',
+      canBlock: true,
+      hookEventName: 'PreCompact'
+    })
+  })
+
   it('maps blocked Vibe Forge output back into Gemini before-tool decision fields', () => {
     const result = mapVibeForgeHookOutputToGemini('BeforeTool', {
       continue: false,
@@ -66,6 +81,18 @@ describe('gemini native hook bridge helpers', () => {
       hookSpecificOutput: {
         additionalContext: 'Ask for a clearer reproduction before editing files.'
       }
+    })
+  })
+
+  it('passes unified PreCompact output back to Gemini PreCompress fields', () => {
+    const result = mapVibeForgeHookOutputToGemini('PreCompress', {
+      continue: false,
+      stopReason: 'compact later'
+    })
+
+    expect(result).toMatchObject({
+      continue: false,
+      stopReason: 'compact later'
     })
   })
 })
