@@ -1,5 +1,5 @@
 import type { ChatMessage, SessionMessageQueueState } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
+import type { SessionInfo, ToolViewEnvelope } from '@vibe-forge/types'
 
 import type { ChatErrorState, InteractionRequestState } from './interaction-state'
 
@@ -7,6 +7,7 @@ export interface ChatSessionViewSnapshot {
   messages: ChatMessage[]
   sessionInfo: SessionInfo | null
   queuedMessages: SessionMessageQueueState
+  toolViews: Record<string, ToolViewEnvelope>
   errorState: ChatErrorState | null
   interactionRequest: InteractionRequestState | null
   isHydrated: boolean
@@ -20,6 +21,7 @@ export const createChatSessionViewSnapshot = (
   messages: value?.messages ?? [],
   sessionInfo: value?.sessionInfo ?? null,
   queuedMessages: value?.queuedMessages ?? { steer: [], next: [] },
+  toolViews: value?.toolViews ?? {},
   errorState: value?.errorState ?? null,
   interactionRequest: value?.interactionRequest ?? null,
   isHydrated: value?.isHydrated ?? false
@@ -45,6 +47,7 @@ export const restoreChatSessionViewSnapshot = (snapshot?: ChatSessionViewSnapsho
     messages: restorable.messages,
     sessionInfo: restorable.sessionInfo,
     queuedMessages: restorable.queuedMessages,
+    toolViews: restorable.toolViews,
     errorState: restorable.errorState,
     interactionRequest: restorable.interactionRequest,
     isReady: restorable.isHydrated

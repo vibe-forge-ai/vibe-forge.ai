@@ -1,5 +1,5 @@
 ---
-rfc: 0001
+rfc: 0002
 title: Gemini CLI Adapter Support
 status: draft
 authors:
@@ -9,7 +9,7 @@ updated: 2026-04-16
 targetVersion: vNext
 ---
 
-# RFC 0001: Gemini CLI Adapter Support
+# RFC 0002: Gemini CLI Adapter Support
 
 ## Summary
 

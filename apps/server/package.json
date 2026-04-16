@@ -26,6 +26,7 @@
     "@vibe-forge/definition-core": "workspace:^",
     "@vibe-forge/definition-loader": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/tool-view": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "cron-parser": "^4.9.0",

@@ -6,9 +6,9 @@ import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
-import { getAdapterDisplay } from '#~/resources/adapters.js'
 import type { Session } from '@vibe-forge/core'
 import { deleteSession, updateSession, updateSessionTitle } from '../api'
 import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
@@ -59,6 +59,7 @@ export function Sidebar({
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const { t } = useTranslation()
   const isMac = navigator.platform.includes('Mac')
+  const { getAdapterDisplay } = useAdapterCatalog()
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`

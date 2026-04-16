@@ -1,6 +1,7 @@
 import type { ChatMessage, ChatMessageContent, Session, WSEvent } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
+import { buildSessionToolViews, collectAffectedToolUseIdsFromEvent } from '#~/services/session/tool-view.js'
 
 export interface SessionEventCallbacks {
   broadcast?: (event: WSEvent) => void
@@ -66,5 +67,25 @@ export function applySessionEvent(
 
   if (callbacks.broadcast) {
     callbacks.broadcast(event)
+
+    if (event.type === 'message') {
+      const affectedToolUseIds = collectAffectedToolUseIdsFromEvent(event)
+      if (affectedToolUseIds.size > 0) {
+        const session = db.getSession(sessionId)
+        const toolViews = buildSessionToolViews(
+          db.getMessages<WSEvent>(sessionId),
+          { adapterInstanceId: session?.adapter }
+        )
+
+        for (const toolView of Object.values(toolViews)) {
+          if (affectedToolUseIds.has(toolView.toolUseId)) {
+            callbacks.broadcast({
+              type: 'tool_view',
+              view: toolView
+            })
+          }
+        }
+      }
+    }
   }
 }

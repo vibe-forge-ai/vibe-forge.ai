@@ -1,11 +1,13 @@
 import React from 'react'
 
 import type { ChatMessageContent } from '@vibe-forge/core'
+import type { ToolViewEnvelope } from '@vibe-forge/types'
 
 import { DefaultTool } from '../DefaultTool'
 import { GenericClaudeTool, adapterClaudeToolRenders, isClaudeToolName } from '../adapter-claude'
 import { chromeDevtoolsToolRenders } from '../plugin-chrome-devtools'
 import { taskToolRenders } from '../task'
+import { ToolViewRenderer } from './ToolViewRenderer'
 
 const TOOL_RENDERERS: Record<
   string,
@@ -21,11 +23,17 @@ const TOOL_RENDERERS: Record<
 
 export function ToolRenderer({
   item,
-  resultItem
+  resultItem,
+  toolView
 }: {
   item: Extract<ChatMessageContent, { type: 'tool_use' }>
   resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
+  toolView?: ToolViewEnvelope
 }) {
+  if (toolView != null) {
+    return <ToolViewRenderer toolView={toolView} />
+  }
+
   const toolName = item.name
   const foundRenderer = TOOL_RENDERERS[toolName] ?? ToolRenderer.findRendererByInput(item)
   const Renderer = foundRenderer ?? (isClaudeToolName(toolName) ? GenericClaudeTool : DefaultTool)

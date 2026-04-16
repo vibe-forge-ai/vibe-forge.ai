@@ -8,6 +8,7 @@ export interface ToolGroupItem {
   type: 'tool-group'
   id: string
   items: {
+    sourceMessageId: string
     item: Extract<ChatMessageContent, { type: 'tool_use' }>
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
   }[]
@@ -88,6 +89,7 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
       const content = msg.content
       const textParts: ChatMessageContent[] = []
       let currentToolGroup: {
+        sourceMessageId: string
         item: Extract<ChatMessageContent, { type: 'tool_use' }>
         resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
       }[] = []
@@ -134,7 +136,11 @@ export function processMessages(messages: ChatMessage[]): ChatRenderItem[] {
         } else if (item.type === 'tool_use') {
           flushText()
           const resultItem = findResult(item.id, i, messages)
-          currentToolGroup.push({ item, resultItem })
+          currentToolGroup.push({
+            sourceMessageId: msg.id,
+            item,
+            resultItem
+          })
         }
       }
 
