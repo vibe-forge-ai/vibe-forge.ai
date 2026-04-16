@@ -118,12 +118,12 @@ export class SqliteDb {
     return this.tags.replace(sessionId, tags)
   }
 
-  saveMessage(sessionId: string, data: unknown) {
+  saveMessage<T = unknown>(sessionId: string, data: T) {
     return this.messages.save(sessionId, data)
   }
 
-  getMessages(sessionId: string) {
-    return this.messages.list(sessionId)
+  getMessages<T = unknown>(sessionId: string) {
+    return this.messages.list<T>(sessionId)
   }
 
   listSessionQueuedMessages(sessionId: string) {

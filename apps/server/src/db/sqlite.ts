@@ -1,8 +1,8 @@
 import { createRequire } from 'node:module'
 import type { DatabaseSync as NodeDatabaseSync, DatabaseSyncOptions, StatementSync } from 'node:sqlite'
 
-const require = createRequire(__filename)
-const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite')
+const nodeRequire = createRequire(__filename)
+const { DatabaseSync } = nodeRequire('node:sqlite') as typeof import('node:sqlite')
 
 export type SqliteBindValue = null | number | bigint | string | NodeJS.ArrayBufferView
 type SqliteRow = object

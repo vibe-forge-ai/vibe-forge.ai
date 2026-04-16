@@ -6,7 +6,8 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 
 import { callHook } from '@vibe-forge/hooks'
-import type { AdapterCtx, TaskRuntime } from '@vibe-forge/types'
+import type { AdapterCtx, AdapterOutputEvent, TaskRuntime } from '@vibe-forge/types'
+import { uuid } from '@vibe-forge/utils/uuid'
 
 interface CodexTranscriptEvent {
   timestamp?: string
@@ -33,10 +34,13 @@ interface PendingTranscriptToolCall {
 }
 
 interface CodexTranscriptHookWatcherParams {
+  callHooks?: boolean
   cwd: string
+  emitEvents?: boolean
   env: AdapterCtx['env']
   homeDir?: string
   logger: AdapterCtx['logger']
+  onEvent?: (event: AdapterOutputEvent) => void
   runtime: TaskRuntime
   sessionId: string
   pollIntervalMs?: number
@@ -265,6 +269,11 @@ const parseTranscriptLine = (line: string) => {
   }
 }
 
+const resolveCreatedAt = (timestamp?: string) => {
+  const parsed = typeof timestamp === 'string' ? Date.parse(timestamp) : Number.NaN
+  return Number.isFinite(parsed) ? parsed : Date.now()
+}
+
 class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
   private readonly states = new Map<string, TranscriptFileState>()
   private readonly pendingCalls = new Map<string, PendingTranscriptToolCall>()
@@ -428,6 +437,7 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
         `${payloadType}:${event.timestamp ?? Date.now().toString(36)}:${state.byteOffset}`
       const toolInput = extractToolInput(payloadType, payload)
       const toolResponse = extractToolResponse(payloadType, payload)
+      this.emitToolUse(callId, toolName, toolInput, event.timestamp)
       await this.callObservationalHook('PreToolUse', {
         transcriptPath: filePath,
         toolCallId: callId,
@@ -442,6 +452,7 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
         toolResponse,
         isError: extractToolError(toolResponse)
       })
+      this.emitToolResult(callId, toolResponse, extractToolError(toolResponse), event.timestamp)
       return
     }
 
@@ -463,6 +474,7 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
         toolInput,
         transcriptPath: filePath
       })
+      this.emitToolUse(callId, toolName, toolInput, event.timestamp)
       await this.callObservationalHook('PreToolUse', {
         transcriptPath: filePath,
         toolCallId: callId,
@@ -489,13 +501,70 @@ class CodexTranscriptHookWatcherImpl implements CodexTranscriptHookWatcher {
         toolResponse,
         isError: extractToolError(toolResponse)
       })
+      this.emitToolResult(callId, toolResponse, extractToolError(toolResponse), event.timestamp)
     }
+  }
+
+  private emitToolUse(
+    toolCallId: string,
+    toolName: string,
+    toolInput: unknown,
+    timestamp?: string
+  ) {
+    if (this.params.emitEvents !== true || this.params.onEvent == null) {
+      return
+    }
+
+    this.params.onEvent({
+      type: 'message',
+      data: {
+        id: toolCallId,
+        role: 'assistant',
+        content: [{
+          type: 'tool_use',
+          id: toolCallId,
+          name: toolName,
+          input: toolInput
+        }],
+        createdAt: resolveCreatedAt(timestamp)
+      }
+    })
+  }
+
+  private emitToolResult(
+    toolCallId: string,
+    toolResponse: unknown,
+    isError: boolean,
+    timestamp?: string
+  ) {
+    if (this.params.emitEvents !== true || this.params.onEvent == null) {
+      return
+    }
+
+    this.params.onEvent({
+      type: 'message',
+      data: {
+        id: uuid(),
+        role: 'assistant',
+        content: [{
+          type: 'tool_result',
+          tool_use_id: toolCallId,
+          content: toolResponse ?? '[done]',
+          is_error: isError
+        }],
+        createdAt: resolveCreatedAt(timestamp)
+      }
+    })
   }
 
   private async callObservationalHook(
     eventName: 'PreToolUse' | 'PostToolUse',
     input: Record<string, unknown>
   ) {
+    if (this.params.callHooks === false) {
+      return
+    }
+
     try {
       const output = await callHook(eventName, {
         adapter: 'codex',

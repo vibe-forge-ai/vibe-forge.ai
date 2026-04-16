@@ -20,6 +20,7 @@ export {
 } from './api/benchmark'
 
 // 配置读取与更新 API
+export { getAdapterCatalog } from './api/adapter-catalog'
 export { getConfig, updateConfig } from './api/config'
 export {
   checkoutSessionGitBranch,

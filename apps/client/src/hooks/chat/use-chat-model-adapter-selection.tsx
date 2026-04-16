@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type {
-  AdapterBuiltinModel,
   ConfigResponse,
   ModelMetadataConfig,
   ModelServiceConfig,
@@ -13,7 +12,7 @@ import type {
 
 import { getConfig, updateConfig } from '#~/api.js'
 import { ModelSelectOptionLabel } from '#~/components/chat/sender/@components/model-select/ModelSelectOptionLabel'
-import { getAdapterDisplay } from '#~/resources/adapters.js'
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import {
   listServiceModels,
   normalizeNonEmptyString,
@@ -70,7 +69,7 @@ const readSelectionDriver = (): SelectionDriver => {
   return raw === 'model' ? 'model' : 'adapter'
 }
 
-const buildBuiltinModelValues = (models: AdapterBuiltinModel[] | undefined) => (
+const buildBuiltinModelValues = (models: Array<{ value: string }> | undefined) => (
   Array.isArray(models) ? models.map(model => model.value) : []
 )
 
@@ -87,6 +86,7 @@ export function useChatModelAdapterSelection({
   const [selectionDriver, setSelectionDriver] = useState<SelectionDriver>(() => readSelectionDriver())
   const [updatingRecommendedModelValue, setUpdatingRecommendedModelValue] = useState<string | undefined>()
   const { data: configRes, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const { adapterBuiltinModels, getAdapterDisplay } = useAdapterCatalog()
 
   const mergedAdapters = useMemo(() => {
     return (configRes?.sources?.merged?.adapters ?? {}) as Record<string, unknown>
@@ -141,10 +141,6 @@ export function useChatModelAdapterSelection({
         )
     )
   }, [recommendedModels])
-
-  const adapterBuiltinModels = useMemo(() => {
-    return (configRes?.sources?.merged?.adapterBuiltinModels ?? {}) as Record<string, AdapterBuiltinModel[]>
-  }, [configRes?.sources?.merged?.adapterBuiltinModels])
 
   const defaultAdapter = normalizeNonEmptyString(configRes?.sources?.merged?.general?.defaultAdapter)
   const defaultModelService = normalizeNonEmptyString(configRes?.sources?.merged?.general?.defaultModelService)

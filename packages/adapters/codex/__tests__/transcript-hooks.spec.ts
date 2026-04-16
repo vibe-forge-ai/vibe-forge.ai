@@ -148,6 +148,105 @@ describe('createCodexTranscriptHookWatcher', () => {
     )
   })
 
+  it('emits tool_use and tool_result events for transcript-backed apply_patch calls', async () => {
+    const onEvent = vi.fn()
+    const timestamp = createTimestamp()
+    const watcher = createCodexTranscriptHookWatcher({
+      callHooks: false,
+      cwd: '/tmp/project',
+      emitEvents: true,
+      env: {},
+      homeDir,
+      logger: createLogger() as any,
+      onEvent,
+      runtime: 'server',
+      sessionId: 'vf-session',
+      pollIntervalMs: 10
+    })
+
+    watcher.start()
+
+    await writeFile(
+      join(sessionsDir, 'rollout-2026-04-06T00-00-00-events.jsonl'),
+      [
+        JSON.stringify({
+          timestamp,
+          type: 'session_meta',
+          payload: {
+            id: 'codex-session',
+            timestamp,
+            cwd: '/tmp/project'
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'custom_tool_call',
+            status: 'completed',
+            call_id: 'call_apply_patch_events',
+            name: 'apply_patch',
+            input: '*** Begin Patch\n*** Add File: /tmp/project/example.txt\n+hello\n*** End Patch\n'
+          }
+        }),
+        JSON.stringify({
+          timestamp,
+          type: 'response_item',
+          payload: {
+            type: 'custom_tool_call_output',
+            call_id: 'call_apply_patch_events',
+            output: JSON.stringify({
+              output: 'Success. Updated the following files:\nA /tmp/project/example.txt\n',
+              metadata: { exit_code: 0 }
+            })
+          }
+        }),
+        ''
+      ].join('\n')
+    )
+
+    await waitFor(80)
+    watcher.stop()
+
+    expect(callHookMock).not.toHaveBeenCalled()
+    expect(onEvent).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        type: 'message',
+        data: expect.objectContaining({
+          id: 'call_apply_patch_events',
+          role: 'assistant',
+          content: [{
+            type: 'tool_use',
+            id: 'call_apply_patch_events',
+            name: 'adapter:codex:ApplyPatch',
+            input: {
+              patch: '*** Begin Patch\n*** Add File: /tmp/project/example.txt\n+hello\n*** End Patch\n'
+            }
+          }]
+        })
+      })
+    )
+    expect(onEvent).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        type: 'message',
+        data: expect.objectContaining({
+          role: 'assistant',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: 'call_apply_patch_events',
+            content: {
+              output: 'Success. Updated the following files:\nA /tmp/project/example.txt\n',
+              metadata: { exit_code: 0 }
+            },
+            is_error: false
+          }]
+        })
+      })
+    )
+  })
+
   it('flushes pending transcript tool results before stopping', async () => {
     const timestamp = createTimestamp()
     const watcher = createCodexTranscriptHookWatcher({

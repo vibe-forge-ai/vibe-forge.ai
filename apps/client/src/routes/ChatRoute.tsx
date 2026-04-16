@@ -49,6 +49,7 @@ function ChatRouteView({ session }: { session?: Session }) {
     messages,
     sessionInfo,
     queuedMessages,
+    toolViews,
     interactionRequest,
     isReady,
     errorState,
@@ -147,6 +148,7 @@ function ChatRouteView({ session }: { session?: Session }) {
           sessionInfo={sessionInfo}
           historyStatusNotices={historyStatusNotices}
           queuedMessages={queuedMessages}
+          toolViews={toolViews}
           onRetryConnection={retryConnection}
           interactionRequest={interactionRequest}
           onInteractionResponse={handleInteractionResponse}

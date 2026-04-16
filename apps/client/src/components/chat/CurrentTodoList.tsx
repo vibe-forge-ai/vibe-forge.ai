@@ -1,10 +1,11 @@
 import './CurrentTodoList.scss'
-import type { ChatMessage, ChatMessageContent, ToolInputs } from '@vibe-forge/core'
+import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChatComposerCard } from './ChatComposerCard'
+import type { ClaudeTodoItem, ClaudeTodoWriteToolInput } from './tools/adapter-claude/claude-tool-inputs'
 
-type TodoItem = ToolInputs['adapter:claude-code:TodoWrite']['todos'][number]
+type TodoItem = ClaudeTodoItem
 
 const getTodoStatusIcon = (status: TodoItem['status']) => {
   if (status === 'completed') {
@@ -51,7 +52,7 @@ export function CurrentTodoList({ messages }: { messages: ChatMessage[] }) {
       if (
         todoUse != null && todoUse.type === 'tool_use' && todoUse.input != null && typeof todoUse.input === 'object'
       ) {
-        const input = todoUse.input as Partial<ToolInputs['adapter:claude-code:TodoWrite']>
+        const input = todoUse.input as ClaudeTodoWriteToolInput
         if (Array.isArray(input.todos)) {
           latestTodos = input.todos
           break

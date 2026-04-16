@@ -1,4 +1,5 @@
 import type { AskUserQuestionParams, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
+import type { ToolViewEnvelope } from '@vibe-forge/types'
 
 export interface ApiOkResponse {
   ok: boolean
@@ -18,4 +19,5 @@ export interface SessionMessagesResponse {
   session?: Session
   interaction?: SessionInteraction
   queuedMessages?: SessionMessageQueueState
+  toolViews?: Record<string, ToolViewEnvelope>
 }

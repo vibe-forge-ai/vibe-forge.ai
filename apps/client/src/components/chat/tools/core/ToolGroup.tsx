@@ -1,6 +1,8 @@
 import './ToolGroup.scss'
 
 import type { ChatMessage, ChatMessageContent } from '@vibe-forge/core'
+import type { ToolViewEnvelope } from '@vibe-forge/types'
+import { buildToolViewId } from '@vibe-forge/tool-view'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -12,12 +14,14 @@ import { getToolGroupSummaryText } from './tool-summary'
 interface ToolGroupProps {
   anchorId: string
   items: {
+    sourceMessageId: string
     item: Extract<ChatMessageContent, { type: 'tool_use' }>
     resultItem?: Extract<ChatMessageContent, { type: 'tool_result' }>
   }[]
   originalMessage: ChatMessage
   sessionId?: string
   targetToolUseId?: string
+  toolViews?: Record<string, ToolViewEnvelope>
   footer?: {
     model?: string
     usage?: ChatMessage['usage']
@@ -32,6 +36,7 @@ function ToolGroupComponent({
   originalMessage,
   sessionId,
   targetToolUseId,
+  toolViews,
   footer
 }: ToolGroupProps) {
   const { t } = useTranslation()
@@ -68,6 +73,7 @@ function ToolGroupComponent({
             <ToolRenderer
               item={items[0].item}
               resultItem={items[0].resultItem}
+              toolView={toolViews?.[buildToolViewId(items[0].sourceMessageId, items[0].item.id)]}
             />
           </div>
           {footer && isDebugMode && (
@@ -116,9 +122,10 @@ function ToolGroupComponent({
             <div className='tool-group-list'>
               {items.map((it, idx) => (
                 <ToolRenderer
-                  key={it.item.id || idx}
+                  key={buildToolViewId(it.sourceMessageId, it.item.id) || idx}
                   item={it.item}
                   resultItem={it.resultItem}
+                  toolView={toolViews?.[buildToolViewId(it.sourceMessageId, it.item.id)]}
                 />
               ))}
             </div>
@@ -139,6 +146,7 @@ const areToolGroupPropsEqual = (prev: ToolGroupProps, next: ToolGroupProps) => {
   if (prev.anchorId !== next.anchorId) return false
   if (prev.items.length !== next.items.length) return false
   if (prev.targetToolUseId !== next.targetToolUseId) return false
+  if (prev.toolViews !== next.toolViews) return false
   for (let i = 0; i < prev.items.length; i++) {
     if (prev.items[i].item !== next.items[i].item) return false
     if (prev.items[i].resultItem !== next.items[i].resultItem) return false

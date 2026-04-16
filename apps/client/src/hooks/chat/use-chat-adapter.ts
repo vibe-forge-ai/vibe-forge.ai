@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import useSWR from 'swr'
 
 import { getConfig } from '#~/api.js'
-import { getAdapterDisplay } from '#~/resources/adapters.js'
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import type { ConfigResponse } from '@vibe-forge/types'
 
 const ADAPTER_STORAGE_KEY = 'vf_chat_adapter'
@@ -19,6 +19,7 @@ export function useChatAdapter() {
   })
 
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const { adapterCatalog, getAdapterDisplay } = useAdapterCatalog()
 
   const mergedAdapters = useMemo(() => {
     return configRes?.sources?.merged?.adapters ?? {}
@@ -26,13 +27,19 @@ export function useChatAdapter() {
 
   const defaultAdapter = configRes?.sources?.merged?.general?.defaultAdapter
 
+  const availableAdapterKeys = useMemo(() => {
+    if (adapterCatalog.length > 0) {
+      return adapterCatalog.map(entry => entry.instanceId)
+    }
+    return Object.keys(mergedAdapters)
+  }, [adapterCatalog, mergedAdapters])
+
   const resolveAdapter = (value?: string) => {
     const normalizedValue = typeof value === 'string' ? value.trim() : ''
-    const keys = Object.keys(mergedAdapters)
-    if (keys.length === 0) return undefined
-    if (normalizedValue !== '' && keys.includes(normalizedValue)) return normalizedValue
-    if (defaultAdapter && keys.includes(defaultAdapter as string)) return defaultAdapter as string
-    return keys[0]
+    if (availableAdapterKeys.length === 0) return undefined
+    if (normalizedValue !== '' && availableAdapterKeys.includes(normalizedValue)) return normalizedValue
+    if (defaultAdapter && availableAdapterKeys.includes(defaultAdapter as string)) return defaultAdapter as string
+    return availableAdapterKeys[0]
   }
 
   const updateSelectedAdapter = (value?: string) => {
@@ -43,8 +50,7 @@ export function useChatAdapter() {
   }
 
   const adapterOptions = useMemo<Array<{ value: string; label: ReactNode }>>(() => {
-    const keys = Object.keys(mergedAdapters)
-    return keys.map((key) => {
+    return availableAdapterKeys.map((key) => {
       const display = getAdapterDisplay(key)
       return {
         value: key,
@@ -66,17 +72,16 @@ export function useChatAdapter() {
         ])
       }
     })
-  }, [mergedAdapters])
+  }, [availableAdapterKeys, getAdapterDisplay])
 
   // Auto-select: use stored value if valid, else config default, else first available
   useEffect(() => {
-    const keys = Object.keys(mergedAdapters)
-    if (keys.length === 0) {
+    if (availableAdapterKeys.length === 0) {
       setSelectedAdapter(undefined)
       return
     }
     setSelectedAdapter((prev) => resolveAdapter(prev))
-  }, [defaultAdapter, mergedAdapters])
+  }, [availableAdapterKeys, defaultAdapter, mergedAdapters])
 
   // Persist to localStorage
   useEffect(() => {

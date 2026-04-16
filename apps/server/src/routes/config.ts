@@ -5,7 +5,7 @@ import process from 'node:process'
 import Router from '@koa/router'
 
 import { updateConfigFile } from '@vibe-forge/config'
-import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
+import type { Config } from '@vibe-forge/types'
 import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
@@ -80,7 +80,6 @@ const buildSections = (config: Config | undefined) => {
     modelServices: sanitize(config?.modelServices),
     channels: sanitize(config?.channels),
     adapters: sanitize(config?.adapters),
-    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
     plugins: sanitize({
       plugins: config?.plugins,
       marketplaces: config?.marketplaces
@@ -93,26 +92,6 @@ const buildSections = (config: Config | undefined) => {
     }),
     shortcuts: sanitize(shortcuts)
   }
-}
-
-const loadAdapterBuiltinModels = (
-  adapters: Config['adapters']
-): Record<string, AdapterBuiltinModel[]> => {
-  const result: Record<string, AdapterBuiltinModel[]> = {}
-  if (!adapters) return result
-  for (const adapterKey of Object.keys(adapters)) {
-    try {
-      const packageName = adapterKey.startsWith('@') ? adapterKey : `@vibe-forge/adapter-${adapterKey}`
-      // eslint-disable-next-line ts/no-require-imports
-      const mod = require(`${packageName}/models`)
-      if (Array.isArray(mod?.builtinModels)) {
-        result[adapterKey] = mod.builtinModels
-      }
-    } catch {
-      // Adapter does not export builtin models — skip
-    }
-  }
-  return result
 }
 
 export function configRouter(): Router {
@@ -133,7 +112,6 @@ export function configRouter(): Router {
       mergedSections.general.baseDir = process.env.__VF_PROJECT_AI_BASE_DIR__ != null
         ? resolveProjectAiBaseDirName(process.env)
         : mergedConfig.baseDir ?? resolveProjectAiBaseDirName(process.env)
-      mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
       ctx.body = {
         sources: {
           project: buildSections(projectConfig),
