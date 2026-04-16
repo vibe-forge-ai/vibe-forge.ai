@@ -47,9 +47,29 @@ const getSessionOrThrow = (sessionId: string) => {
   return session
 }
 
-const resolveManagedWorktreePath = (workspaceFolder: string, sessionId: string) => {
+const resolveRepositoryDirectoryName = (repositoryRoot: string, fallback: string) => {
+  const segments = repositoryRoot
+    .split(/[\\/]+/)
+    .map(segment => segment.trim())
+    .filter(Boolean)
+
+  return segments.at(-1) ?? fallback
+}
+
+const resolveManagedWorktreePath = (
+  workspaceFolder: string,
+  sessionId: string,
+  repositoryRoot: string
+) => {
   const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder) ?? workspaceFolder
-  return resolveProjectAiPath(primaryWorkspaceFolder, processEnv, 'worktrees', 'sessions', sessionId)
+  return resolveProjectAiPath(
+    primaryWorkspaceFolder,
+    processEnv,
+    'worktrees',
+    'sessions',
+    sessionId,
+    resolveRepositoryDirectoryName(repositoryRoot, sessionId)
+  )
 }
 
 const buildManagedWorktreeBranchName = (baseBranch: string, sessionId: string) => {
@@ -119,7 +139,7 @@ const buildManagedWorkspace = async (
   const currentBranch = await resolveGitCurrentBranch(workspaceFolder).catch(() => '')
   const normalizedBranch = currentBranch.trim() !== '' ? currentBranch.trim() : undefined
   const baseRef = normalizedBranch ?? await resolveGitHeadRef(workspaceFolder).catch(() => 'HEAD')
-  const worktreePath = resolveManagedWorktreePath(workspaceFolder, sessionId)
+  const worktreePath = resolveManagedWorktreePath(workspaceFolder, sessionId, repositoryRoot)
   const branchName = normalizedBranch == null
     ? undefined
     : buildManagedWorktreeBranchName(normalizedBranch, sessionId)

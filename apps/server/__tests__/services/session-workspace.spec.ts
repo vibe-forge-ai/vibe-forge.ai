@@ -26,6 +26,17 @@ const runGit = (cwd: string, args: string[]) => {
   })
 }
 
+const resolveExpectedManagedWorktreePath = (primaryWorkspaceRoot: string, workspaceRoot: string, sessionId: string) => (
+  path.join(
+    primaryWorkspaceRoot,
+    '.ai',
+    'worktrees',
+    'sessions',
+    sessionId,
+    path.basename(workspaceRoot)
+  )
+)
+
 describe('session workspace service', () => {
   let db: SqliteDb
   let workspaceRoot: string
@@ -68,6 +79,7 @@ describe('session workspace service', () => {
     db.createSession('Demo', 'sess-1')
 
     const workspace = await provisionSessionWorkspace('sess-1')
+    const expectedWorktreePath = resolveExpectedManagedWorktreePath(primaryWorkspaceRoot, workspaceRoot, 'sess-1')
     const currentBranch = execFileSync('git', ['branch', '--show-current'], {
       cwd: workspace.workspaceFolder,
       encoding: 'utf8'
@@ -76,9 +88,9 @@ describe('session workspace service', () => {
     expect(workspace).toMatchObject({
       sessionId: 'sess-1',
       kind: 'managed_worktree',
-      workspaceFolder: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
-      repositoryRoot: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
-      worktreePath: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-1'),
+      workspaceFolder: expectedWorktreePath,
+      repositoryRoot: expectedWorktreePath,
+      worktreePath: expectedWorktreePath,
       baseRef: 'main',
       cleanupPolicy: 'delete_on_session_delete',
       state: 'ready'
@@ -133,15 +145,33 @@ describe('session workspace service', () => {
     expect(sharedWorkspace.kind).toBe('shared_workspace')
 
     const managedWorkspace = await createSessionManagedWorktree('sess-shared')
+    const expectedWorktreePath = resolveExpectedManagedWorktreePath(primaryWorkspaceRoot, workspaceRoot, 'sess-shared')
 
     expect(managedWorkspace).toMatchObject({
       sessionId: 'sess-shared',
       kind: 'managed_worktree',
-      workspaceFolder: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-shared'),
-      worktreePath: path.join(primaryWorkspaceRoot, '.ai', 'worktrees', 'sessions', 'sess-shared'),
+      workspaceFolder: expectedWorktreePath,
+      worktreePath: expectedWorktreePath,
       cleanupPolicy: 'delete_on_session_delete',
       state: 'ready'
     })
+  })
+
+  it('keeps the repo root directory name as the final segment when forking from an existing managed worktree', async () => {
+    const { provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Parent', 'sess-parent')
+    db.createSession('Child', 'sess-child')
+
+    const parentWorkspace = await provisionSessionWorkspace('sess-parent')
+    const childWorkspace = await provisionSessionWorkspace('sess-child', {
+      sourceSessionId: 'sess-parent'
+    })
+
+    expect(path.basename(parentWorkspace.workspaceFolder)).toBe(path.basename(workspaceRoot))
+    expect(path.basename(childWorkspace.workspaceFolder)).toBe(path.basename(workspaceRoot))
+    expect(childWorkspace.workspaceFolder).toBe(
+      resolveExpectedManagedWorktreePath(primaryWorkspaceRoot, workspaceRoot, 'sess-child')
+    )
   })
 
   it('transfers a managed worktree to a retained local workspace without deleting files', async () => {
