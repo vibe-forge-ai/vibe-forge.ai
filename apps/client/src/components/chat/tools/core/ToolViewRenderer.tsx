@@ -223,7 +223,7 @@ export function ToolViewRenderer({
     <div className='tool-group tool-group--compact'>
       <ToolCallBox
         variant='inline'
-        defaultExpanded={toolView.call?.defaultExpanded === true || toolView.result?.defaultExpanded === true}
+        defaultExpanded={false}
         collapsible={hasDetails}
         header={({ isExpanded, isCollapsible }) => (
           <ToolSummaryHeader

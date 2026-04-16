@@ -30,7 +30,7 @@ export const BashTool = defineToolRender(({ item, resultItem }) => {
   return (
     <div className='tool-group bash-tool'>
       <ToolCallBox
-        defaultExpanded={true}
+        defaultExpanded={false}
         type={resultItem != null ? 'result' : 'call'}
         isError={resultItem?.is_error ?? false}
         header={

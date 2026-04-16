@@ -152,6 +152,21 @@ importers:
       '@vibe-forge/adapter-claude-code':
         specifier: workspace:^
         version: link:../../packages/adapters/claude-code
+      '@vibe-forge/adapter-codex':
+        specifier: workspace:^
+        version: link:../../packages/adapters/codex
+      '@vibe-forge/adapter-copilot':
+        specifier: workspace:^
+        version: link:../../packages/adapters/copilot
+      '@vibe-forge/adapter-gemini':
+        specifier: workspace:^
+        version: link:../../packages/adapters/gemini
+      '@vibe-forge/adapter-kimi':
+        specifier: workspace:^
+        version: link:../../packages/adapters/kimi
+      '@vibe-forge/adapter-opencode':
+        specifier: workspace:^
+        version: link:../../packages/adapters/opencode
       '@vibe-forge/channel-lark':
         specifier: workspace:^
         version: link:../../packages/channels/lark

@@ -277,7 +277,7 @@ export const buildGenericToolView = (input: ToolPresentationInput): ToolViewEnve
     : buildToolView({
       value: input.toolResult.content,
       artifactPrefix: `${input.toolUse.id}-result`,
-      defaultExpanded: true,
+      defaultExpanded: false,
       artifactPathHint: callPathHint
     })
 

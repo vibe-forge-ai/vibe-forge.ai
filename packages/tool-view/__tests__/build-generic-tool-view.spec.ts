@@ -34,6 +34,8 @@ describe('buildGenericToolView', () => {
     expect(view.toolViewId).toBe('msg-edit:tool-edit')
     expect(view.summary.title).toBe('Edit')
     expect(view.summary.status).toBe('success')
+    expect(view.call?.defaultExpanded).toBe(false)
+    expect(view.result?.defaultExpanded).toBe(false)
     expect(view.artifacts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         kind: 'diff',

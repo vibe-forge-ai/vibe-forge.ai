@@ -20,7 +20,7 @@ export const TodoTool = defineToolRender(({ item }) => {
   return (
     <div className='tool-group todo-tool'>
       <ToolCallBox
-        defaultExpanded={true}
+        defaultExpanded={false}
         header={
           <div className='tool-header-content'>
             <span className='material-symbols-rounded tool-header-icon'>task_alt</span>
