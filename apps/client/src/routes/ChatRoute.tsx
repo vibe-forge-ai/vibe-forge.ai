@@ -103,9 +103,7 @@ function ChatRouteView({ session }: { session?: Session }) {
   const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const shouldShowTerminal = session?.id != null && isTerminalOpen
-  const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(
-    shouldShowTerminal
-  )
+  const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(shouldShowTerminal)
   const handledDeepLinkTargetRef = useRef('')
   useEffect(() => {
     if (deepLinkTargetKey === '') {
@@ -136,12 +134,8 @@ function ChatRouteView({ session }: { session?: Session }) {
           lastUserMessage={session?.lastUserMessage}
           activeView={resolvedActiveView}
           isTerminalOpen={isTerminalOpen}
-          onCreateSession={() => {
-            void navigate('/')
-          }}
-          onOpenSidebar={() => {
-            setIsMobileSidebarOpen(true)
-          }}
+          onCreateSession={() => void navigate('/')}
+          onOpenSidebar={() => setIsMobileSidebarOpen(true)}
           onViewChange={setActiveView}
           onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
         />
@@ -185,25 +179,16 @@ function ChatRouteView({ session }: { session?: Session }) {
         />
       )}
 
-      {resolvedActiveView === 'timeline' && (
-        <ChatTimelineView messages={messages} />
-      )}
-
-      {resolvedActiveView === 'settings' && session?.id && (
-        <ChatSettingsView
-          session={session}
-          sessionInfo={sessionInfo}
-          onClose={() => setActiveView('history')}
-        />
-      )}
-      {isTerminalRendered && session?.id && (
+      {resolvedActiveView === 'timeline' && <ChatTimelineView messages={messages} />}
+      {resolvedActiveView === 'settings' && session?.id &&
+        <ChatSettingsView session={session} sessionInfo={sessionInfo} onClose={() => setActiveView('history')} />}
+      {isTerminalRendered && session?.id &&
         <ChatTerminalView
           key={session.id}
           isOpen={isTerminalVisible}
           sessionId={session.id}
           onClose={() => setIsTerminalOpen(false)}
-        />
-      )}
+        />}
     </div>
   )
 }
