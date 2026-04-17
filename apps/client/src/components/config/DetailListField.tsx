@@ -1,6 +1,10 @@
+/* eslint-disable max-lines -- detail collection list/add/remove flow stays in one renderer for consistency */
 import './record-editors/RecordEditors.scss'
 
-import { Button, Switch, Tooltip } from 'antd'
+import { Button, Input, Select, Switch, Tooltip } from 'antd'
+import { useMemo, useState } from 'react'
+
+import type { ConfigUiSection } from '@vibe-forge/types'
 
 import type { ConfigDetailRoute } from './configDetail'
 import { toDetailCollectionEntries } from './configDetail'
@@ -8,6 +12,7 @@ import { DetailCollectionFieldActions } from './DetailCollectionFieldActions'
 import type { FieldSpec } from './configSchema'
 import { getFieldLabel, getValueByPath, setValueByPath } from './configUtils'
 import type { TranslationFn } from './configUtils'
+import { buildConfigUiObjectDefaultValue } from './record-editors/schemaRecordUtils'
 
 export const DetailCollectionField = ({
   sectionKey,
@@ -17,6 +22,7 @@ export const DetailCollectionField = ({
   onOpenDetail,
   mergedModelServices,
   mergedAdapters,
+  uiSection,
   t
 }: {
   sectionKey: string
@@ -26,10 +32,15 @@ export const DetailCollectionField = ({
   onOpenDetail: (route: ConfigDetailRoute) => void
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
+  uiSection?: ConfigUiSection
   t: TranslationFn
 }) => {
   const detailCollection = field.detailCollection
   if (detailCollection == null) return null
+  const [newRecordKey, setNewRecordKey] = useState('')
+  const [newRecordKind, setNewRecordKind] = useState(
+    uiSection?.kind === 'recordMap' ? (uiSection.recordMap.entryKinds?.[0]?.key ?? '') : ''
+  )
 
   const items = toDetailCollectionEntries({
     field,
@@ -44,6 +55,23 @@ export const DetailCollectionField = ({
     ? t(field.labelKey)
     : getFieldLabel(t, sectionKey, field.path, field.path.at(-1) ?? sectionKey)
   const isListCollection = detailCollection.collectionKind === 'list'
+  const isRecordMapCollection = detailCollection.collectionKind === 'recordMap'
+  const canSelectKind = isRecordMapCollection && uiSection?.kind === 'recordMap' && uiSection.recordMap.mode === 'discriminated'
+  const keyPlaceholder = detailCollection.collectionKind === 'recordMap'
+    ? (
+      detailCollection.keyPlaceholderKey != null
+        ? t(detailCollection.keyPlaceholderKey)
+        : t('config.editor.fieldKey')
+    )
+    : ''
+  const kindOptions = useMemo(() => (
+    uiSection?.kind === 'recordMap'
+      ? (uiSection.recordMap.entryKinds ?? []).map(item => ({
+        value: item.key,
+        label: item.label ?? item.key
+      }))
+      : []
+  ), [uiSection])
 
   const updateRecordEntry = (itemKey: string, nextItem: Record<string, unknown>) => {
     onChange(setValueByPath(value, [itemKey], nextItem))
@@ -67,6 +95,15 @@ export const DetailCollectionField = ({
   const removeItem = (index: number) => {
     if (!isListCollection) return
     updateListItems(items.filter((_, itemIndex) => itemIndex !== index).map(item => item.item))
+  }
+
+  const removeRecordItem = (itemKey: string) => {
+    if (!isRecordMapCollection) return
+    const currentValue = (value != null && typeof value === 'object' && !Array.isArray(value))
+      ? { ...(value as Record<string, unknown>) }
+      : {}
+    delete currentValue[itemKey]
+    onChange(currentValue)
   }
 
   const openDetail = (itemKey: string) => {
@@ -120,6 +157,30 @@ export const DetailCollectionField = ({
     )
   }
 
+  const addRecordItem = () => {
+    if (!isRecordMapCollection) return
+    const itemKey = newRecordKey.trim()
+    if (itemKey === '' || items.some(item => item.key === itemKey)) return
+
+    let nextItem: Record<string, unknown>
+    if (uiSection?.kind === 'recordMap') {
+      const nextSchema = uiSection.recordMap.mode === 'discriminated'
+        ? (uiSection.recordMap.schemas[newRecordKind] ?? uiSection.recordMap.unknownSchema)
+        : (uiSection.recordMap.schemas[itemKey] ?? uiSection.recordMap.unknownSchema)
+      nextItem = buildConfigUiObjectDefaultValue(nextSchema)
+      if (uiSection.recordMap.mode === 'discriminated') {
+        const discriminatorField = uiSection.recordMap.discriminatorField ?? 'type'
+        nextItem = setValueByPath(nextItem, [discriminatorField], newRecordKind) as Record<string, unknown>
+      }
+    } else {
+      nextItem = detailCollection.createItem?.(itemKey, newRecordKind) ?? {}
+    }
+
+    updateRecordEntry(itemKey, nextItem)
+    setNewRecordKey('')
+    openDetail(itemKey)
+  }
+
   return (
     <div className='config-view__detail-list'>
       {items.map(({ item, key, index }) => {
@@ -143,12 +204,18 @@ export const DetailCollectionField = ({
                 </div>
               </button>
               {renderSummaryControls(item, key, title)}
-              {isListCollection && (
+              {(isListCollection || isRecordMapCollection) && (
                 <DetailCollectionFieldActions
                   index={index}
                   itemCount={items.length}
-                  onMove={direction => moveItem(index, direction)}
-                  onRemove={() => removeItem(index)}
+                  onMove={isListCollection ? (direction) => moveItem(index, direction) : undefined}
+                  onRemove={() => {
+                    if (isListCollection) {
+                      removeItem(index)
+                      return
+                    }
+                    removeRecordItem(key)
+                  }}
                   t={t}
                 />
               )}
@@ -181,6 +248,39 @@ export const DetailCollectionField = ({
               }}
             />
           </Tooltip>
+        </div>
+      )}
+      {isRecordMapCollection && (
+        <div className='config-view__record-add'>
+          <div className='config-view__record-add-inputs'>
+            <Input
+              value={newRecordKey}
+              placeholder={keyPlaceholder}
+              onChange={(event) => setNewRecordKey(event.target.value)}
+            />
+            {canSelectKind && (
+              <Select
+                value={newRecordKind}
+                options={kindOptions}
+                onChange={(nextValue) => setNewRecordKind(nextValue)}
+              />
+            )}
+            <Tooltip title={t('common.confirm')}>
+              <Button
+                size='small'
+                type='primary'
+                className='config-view__icon-button'
+                aria-label={t('common.confirm')}
+                icon={<span className='material-symbols-rounded'>check</span>}
+                disabled={
+                  newRecordKey.trim() === '' ||
+                  items.some(item => item.key === newRecordKey.trim()) ||
+                  (canSelectKind && newRecordKind.trim() === '')
+                }
+                onClick={addRecordItem}
+              />
+            </Tooltip>
+          </div>
         </div>
       )}
     </div>

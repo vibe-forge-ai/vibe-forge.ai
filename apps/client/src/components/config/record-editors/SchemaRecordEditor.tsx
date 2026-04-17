@@ -1,54 +1,16 @@
-/* eslint-disable max-lines -- schema-driven editor keeps record rendering in one place for now */
 import './RecordJsonEditor.scss'
 
-import { Button, Input, InputNumber, Select, Switch, Tooltip } from 'antd'
-import type { ReactNode } from 'react'
+import { Button, Input, Select, Tooltip } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { ConfigUiField, ConfigUiRecordMapSchema } from '@vibe-forge/types'
+import type { ConfigUiRecordMapSchema } from '@vibe-forge/types'
 
-import { ComplexTextEditor, StringArrayEditor } from '../ConfigEditors'
-import { FieldRow } from '../ConfigFieldRow'
-import { getTypeIcon, getValueByPath, isSensitiveKey, setValueByPath } from '../configUtils'
+import { ComplexTextEditor } from '../ConfigEditors'
+import { getValueByPath, setValueByPath } from '../configUtils'
 import type { TranslationFn } from '../configUtils'
 
-const toLabel = (value: string) => (
-  value
-    .replace(/_/g, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, char => char.toUpperCase())
-)
-
-const buildDefaultValue = (schema: ConfigUiRecordMapSchema['schemas'][string] | undefined) => {
-  const initial: Record<string, unknown> = {}
-  for (const field of schema?.fields ?? []) {
-    if (field.defaultValue !== undefined) {
-      const nextValue = typeof field.defaultValue === 'object' && field.defaultValue != null
-        ? JSON.parse(JSON.stringify(field.defaultValue))
-        : field.defaultValue
-      Object.assign(initial, setValueByPath(initial, field.path, nextValue))
-    }
-  }
-  return initial
-}
-
-const buildSelectOptions = (field: ConfigUiField) => (
-  (field.options ?? []).map(option => ({
-    value: option.value,
-    label: option.label ?? option.value
-  }))
-)
-
-const resolveFieldIcon = (field: ConfigUiField) => {
-  if (field.icon != null) return field.icon
-  if (field.type === 'json') return getTypeIcon('object')
-  if (field.type === 'string[]') return getTypeIcon('array')
-  if (field.type === 'select' || field.type === 'multiline') return getTypeIcon('string')
-  if (field.type === 'string' || field.type === 'number' || field.type === 'boolean') {
-    return getTypeIcon(field.type)
-  }
-  return getTypeIcon('object')
-}
+import { SchemaObjectEditor } from './SchemaObjectEditor'
+import { buildConfigUiObjectDefaultValue, resolveConfigUiRecordEntry } from './schemaRecordUtils'
 
 export const SchemaRecordEditor = ({
   value,
@@ -80,147 +42,17 @@ export const SchemaRecordEditor = ({
     })
   }, [entries])
 
-  const resolveEntrySchema = (entryKey: string, entryValue: Record<string, unknown>) => {
-    if (schema.mode === 'keyed') {
-      const matchedSchema = schema.schemas[entryKey]
-      return {
-        itemSchema: matchedSchema ?? schema.unknownSchema,
-        isKnownEntry: matchedSchema != null
-      }
-    }
-
-    const discriminatorField = schema.discriminatorField ?? 'type'
-    const discriminatorValue = getValueByPath(entryValue, [discriminatorField])
-    if (typeof discriminatorValue === 'string') {
-      const matchedSchema = schema.schemas[discriminatorValue]
-      return {
-        itemSchema: matchedSchema ?? schema.unknownSchema,
-        isKnownEntry: matchedSchema != null
-      }
-    }
-    return {
-      itemSchema: schema.unknownSchema,
-      isKnownEntry: false
-    }
-  }
-
-  const renderField = (
-    recordKey: string,
-    recordValue: Record<string, unknown>,
-    field: ConfigUiField,
-    options?: {
-      hideDiscriminatorField?: boolean
-    }
-  ) => {
-    const discriminatorField = schema.mode === 'discriminated' ? (schema.discriminatorField ?? 'type') : undefined
-    if (
-      options?.hideDiscriminatorField === true &&
-      discriminatorField != null &&
-      field.path.length === 1 &&
-      field.path[0] === discriminatorField
-    ) {
-      return null
-    }
-
-    const currentValue = getValueByPath(recordValue, field.path)
-    const valueToUse = currentValue !== undefined ? currentValue : field.defaultValue
-    const title = field.label ?? toLabel(field.path[field.path.length - 1] ?? '')
-    const description = field.description ?? ''
-    const nextValue = (updated: unknown) => {
-      onChange({
-        ...value,
-        [recordKey]: setValueByPath(recordValue, field.path, updated)
-      })
-    }
-
-    let control: ReactNode = null
-    const stacked = field.type === 'json' || field.type === 'multiline' || field.type === 'string[]'
-
-    if (field.type === 'string') {
-      const sensitive = field.sensitive === true || isSensitiveKey(field.path[field.path.length - 1] ?? '')
-      control = sensitive
-        ? (
-          <Input.Password
-            value={typeof valueToUse === 'string' ? valueToUse : ''}
-            onChange={(event) => nextValue(event.target.value)}
-            placeholder={field.placeholder ?? t('config.editor.secretPlaceholder')}
-          />
-        )
-        : (
-          <Input
-            value={typeof valueToUse === 'string' ? valueToUse : ''}
-            onChange={(event) => nextValue(event.target.value)}
-            placeholder={field.placeholder}
-          />
-        )
-    } else if (field.type === 'multiline') {
-      control = (
-        <Input.TextArea
-          value={typeof valueToUse === 'string' ? valueToUse : ''}
-          onChange={(event) => nextValue(event.target.value)}
-          autoSize={{ minRows: 2 }}
-          placeholder={field.placeholder}
-        />
-      )
-    } else if (field.type === 'number') {
-      control = (
-        <InputNumber
-          value={typeof valueToUse === 'number' ? valueToUse : undefined}
-          onChange={(input) => nextValue(typeof input === 'number' ? input : undefined)}
-        />
-      )
-    } else if (field.type === 'boolean') {
-      control = (
-        <Switch
-          checked={Boolean(valueToUse)}
-          onChange={(checked) => nextValue(checked)}
-        />
-      )
-    } else if (field.type === 'string[]') {
-      control = (
-        <StringArrayEditor
-          value={Array.isArray(valueToUse) ? valueToUse.filter(item => typeof item === 'string') : []}
-          onChange={(items) => nextValue(items)}
-          t={t}
-        />
-      )
-    } else if (field.type === 'select') {
-      control = (
-        <Select
-          value={typeof valueToUse === 'string' ? valueToUse : undefined}
-          options={buildSelectOptions(field)}
-          onChange={(selected) => nextValue(selected)}
-        />
-      )
-    } else {
-      control = (
-        <ComplexTextEditor
-          value={valueToUse ?? {}}
-          onChange={(updated) => nextValue(updated)}
-        />
-      )
-    }
-
-    return (
-      <FieldRow
-        key={`${recordKey}:${field.path.join('.')}`}
-        title={title}
-        description={description}
-        icon={resolveFieldIcon(field)}
-        layout={stacked ? 'stacked' : 'inline'}
-      >
-        {control}
-      </FieldRow>
-    )
-  }
-
   return (
     <div className='config-view__record-list'>
       {entries.map(([key, itemValue]) => {
         const recordValue = (itemValue != null && typeof itemValue === 'object')
           ? itemValue as Record<string, unknown>
           : {}
-        const { itemSchema, isKnownEntry } = resolveEntrySchema(key, recordValue)
+        const { itemSchema, isKnownEntry } = resolveConfigUiRecordEntry({
+          schema,
+          entryKey: key,
+          entryValue: recordValue
+        })
         const isCollapsed = collapsedKeys[key] === true
         const discriminatorField = schema.discriminatorField ?? 'type'
         const discriminatorValue = schema.mode === 'discriminated'
@@ -279,21 +111,25 @@ export const SchemaRecordEditor = ({
               </Tooltip>
             </div>
             <div className='config-view__record-body'>
-              <div className='config-view__record-fields'>
-                {!shouldRenderJsonFallback && (itemSchema?.fields ?? []).map(field => (
-                  renderField(key, recordValue, field, {
-                    hideDiscriminatorField: isKnownEntry
-                  })
-                ))}
-                {shouldRenderJsonFallback && (
-                  <ComplexTextEditor
-                    value={recordValue}
-                    onChange={(updated) => {
-                      onChange({ ...value, [key]: updated })
-                    }}
-                  />
-                )}
-              </div>
+              {!shouldRenderJsonFallback && itemSchema != null && (
+                <SchemaObjectEditor
+                  value={recordValue}
+                  schema={itemSchema}
+                  onChange={(updated) => {
+                    onChange({ ...value, [key]: updated })
+                  }}
+                  t={t}
+                  hideFieldPath={isKnownEntry && schema.mode === 'discriminated' ? [discriminatorField] : undefined}
+                />
+              )}
+              {shouldRenderJsonFallback && (
+                <ComplexTextEditor
+                  value={recordValue}
+                  onChange={(updated) => {
+                    onChange({ ...value, [key]: updated })
+                  }}
+                />
+              )}
             </div>
           </div>
         )
@@ -331,7 +167,7 @@ export const SchemaRecordEditor = ({
                 const nextSchema = schema.mode === 'discriminated'
                   ? (schema.schemas[newKind] ?? schema.unknownSchema)
                   : (schema.schemas[newKey] ?? schema.unknownSchema)
-                const nextEntry = buildDefaultValue(nextSchema)
+                const nextEntry = buildConfigUiObjectDefaultValue(nextSchema)
 
                 if (schema.mode === 'discriminated') {
                   const discriminatorField = schema.discriminatorField ?? 'type'

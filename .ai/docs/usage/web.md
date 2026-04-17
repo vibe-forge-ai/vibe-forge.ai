@@ -22,7 +22,7 @@
 - 简单字段仍然在 section 页面内直接编辑。
 - 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
-- 当前 `general.recommendedModels` 和 `general.notifications.events` 已经切到这套模式，后续其他复杂字段也会沿着同一套交互收敛。
+- 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
 
 ## Terminal 视图是什么
 

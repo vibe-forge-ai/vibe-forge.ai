@@ -10,6 +10,7 @@ import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUti
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { DetailCollectionField } from './DetailListField'
 import { FieldRow } from './ConfigFieldRow'
+import { McpServerItemEditor } from './McpServerItemEditor'
 import { ShortcutInput } from './ConfigShortcutInput'
 import type { ConfigDetailRoute } from './configDetail'
 import { resolveConfigDetailRouteMeta, toDetailCollectionEntries } from './configDetail'
@@ -31,10 +32,13 @@ import {
   McpServersRecordEditor,
   ModelServicesRecordEditor,
   RecordJsonEditor,
+  SchemaObjectEditor,
   SchemaRecordEditor
 } from './record-editors/index'
+import { resolveConfigUiRecordEntry } from './record-editors/schemaRecordUtils'
 
-const directRecordSections = new Set(['models', 'modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
+const directRecordSections = new Set(['models'])
+const directDetailSections = new Set(['modelServices', 'channels', 'adapters'])
 const defaultGroupOrder = ['base', 'permissions', 'env', 'items', 'default']
 
 export const SectionForm = ({
@@ -69,7 +73,7 @@ export const SectionForm = ({
     t
   }
 
-  if (uiSection?.kind === 'recordMap') {
+  if (uiSection?.kind === 'recordMap' && fields.length === 0) {
     const recordValue = (value != null && typeof value === 'object')
       ? value as Record<string, unknown>
       : {}
@@ -277,6 +281,7 @@ export const SectionForm = ({
           onOpenDetail={(route) => onOpenDetailRoute?.(route)}
           mergedModelServices={mergedModelServices}
           mergedAdapters={mergedAdapters}
+          uiSection={uiSection}
           t={t}
         />
       )
@@ -361,6 +366,14 @@ export const SectionForm = ({
     if (directRecordSections.has(sectionKey) && field.type === 'record') {
       return (
         <div key={`${keyPrefix}:${field.path.join('.')}:${field.type}:${field.recordKind ?? ''}`}>
+          {control}
+        </div>
+      )
+    }
+
+    if (directDetailSections.has(sectionKey) && field.type === 'detailCollection' && field.path.length === 0) {
+      return (
+        <div key={`${keyPrefix}:${field.path.join('.')}:${field.type}`}>
           {control}
         </div>
       )
@@ -597,6 +610,47 @@ export const SectionForm = ({
           t={t}
         />
       )
+    }
+
+    if (detailMeta.field.detailCollection?.detailKind === 'mcpServer') {
+      return (
+        <McpServerItemEditor
+          value={detailMeta.item}
+          onChange={updateDetailItem}
+          t={t}
+        />
+      )
+    }
+
+    if (uiSection?.kind === 'recordMap' && detailMeta.field.path.length === 0) {
+      const { itemSchema, isKnownEntry } = resolveConfigUiRecordEntry({
+        schema: uiSection.recordMap,
+        entryKey: detailMeta.itemKey,
+        entryValue: detailMeta.item
+      })
+      const shouldRenderJsonFallback = !isKnownEntry && uiSection.recordMap.unknownEditor === 'json'
+      const discriminatorField = uiSection.recordMap.discriminatorField ?? 'type'
+
+      if (shouldRenderJsonFallback) {
+        return (
+          <ComplexTextEditor
+            value={detailMeta.item}
+            onChange={(next) => updateDetailItem((next ?? {}) as Record<string, unknown>)}
+          />
+        )
+      }
+
+      if (itemSchema != null) {
+        return (
+          <SchemaObjectEditor
+            value={detailMeta.item}
+            schema={itemSchema}
+            onChange={updateDetailItem}
+            t={t}
+            hideFieldPath={isKnownEntry && uiSection.recordMap.mode === 'discriminated' ? [discriminatorField] : undefined}
+          />
+        )
+      }
     }
 
     if ((detailMeta.field.detailCollection?.itemFields?.length ?? 0) > 0) {

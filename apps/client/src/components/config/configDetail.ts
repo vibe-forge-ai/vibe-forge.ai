@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- detail route helpers intentionally keep path parsing and metadata resolution together */
 import type { DetailCollectionContext, FieldSpec } from './configSchema'
 import { configSchema } from './configSchema'
 import { getFieldLabel, getValueByPath } from './configUtils'
@@ -60,6 +61,15 @@ export const toDetailCollectionEntries = ({
     }))
   }
 
+  if (detailCollection.collectionKind === 'recordMap') {
+    const source = isRecordObject(value) ? value : {}
+    return Object.entries(source).map(([itemKey, item], index) => ({
+      key: itemKey,
+      item: isRecordObject(item) ? item : detailCollection.createItem?.(itemKey) ?? {},
+      index
+    }))
+  }
+
   const source = isRecordObject(value) ? value : {}
   return detailCollection.itemKeys.map((itemKey, index) => {
     const existing = source[itemKey]
@@ -101,6 +111,8 @@ export const getConfigDetailRouteKey = (route: ConfigDetailRoute | null) => (
 export const serializeConfigDetailRoute = (route: ConfigDetailRoute | null) => (
   route == null
     ? ''
+    : route.fieldPath.length === 0
+    ? encodeURIComponent(route.itemKey)
     : [...route.fieldPath, route.itemKey].map(segment => encodeURIComponent(segment)).join('/')
 )
 
@@ -118,7 +130,7 @@ export const parseConfigDetailRoute = ({
     .split('/')
     .map(segment => decodeURIComponent(segment).trim())
     .filter(segment => segment !== '')
-  if (segments.length < 2) return null
+  if (segments.length < 1) return null
 
   const detailField = fields
     .filter(field => field.type === 'detailCollection' && field.detailCollection != null)

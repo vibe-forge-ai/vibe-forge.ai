@@ -56,7 +56,7 @@ export interface DetailCollectionBooleanControlSpec {
 }
 
 interface DetailCollectionBaseSpec {
-  detailKind?: 'recommendedModels'
+  detailKind?: 'recommendedModels' | 'mcpServer'
   itemFields?: FieldSpec[]
   summaryControls?: DetailCollectionBooleanControlSpec[]
   getItemTitle: (
@@ -88,15 +88,26 @@ interface DetailCollectionBaseSpec {
 export interface DetailListCollectionSpec extends DetailCollectionBaseSpec {
   collectionKind: 'list'
   createItem: () => Record<string, unknown>
+  keyPlaceholderKey?: never
 }
 
 export interface DetailRecordCollectionSpec extends DetailCollectionBaseSpec {
   collectionKind: 'record'
   itemKeys: string[]
   createItem?: (itemKey: string) => Record<string, unknown>
+  keyPlaceholderKey?: never
 }
 
-export type DetailCollectionSpec = DetailListCollectionSpec | DetailRecordCollectionSpec
+export interface DetailRecordMapCollectionSpec extends DetailCollectionBaseSpec {
+  collectionKind: 'recordMap'
+  keyPlaceholderKey?: string
+  createItem?: (itemKey: string, itemKind?: string) => Record<string, unknown>
+}
+
+export type DetailCollectionSpec =
+  | DetailListCollectionSpec
+  | DetailRecordCollectionSpec
+  | DetailRecordMapCollectionSpec
 
 export interface ConfigGroupMeta {
   labelKey: string
@@ -167,6 +178,144 @@ const notificationEventDetailFields: FieldSpec[] = [
     icon: 'volume_up',
     labelKey: 'config.fields.general.notifications.events.item.sound.label',
     descriptionKey: 'config.fields.general.notifications.events.item.sound.desc'
+  }
+]
+
+const modelServiceDetailFields: FieldSpec[] = [
+  {
+    path: ['title'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'title',
+    labelKey: 'config.fields.modelServices.item.title.label',
+    descriptionKey: 'config.fields.modelServices.item.title.desc'
+  },
+  {
+    path: ['description'],
+    type: 'multiline',
+    defaultValue: '',
+    icon: 'notes',
+    labelKey: 'config.fields.modelServices.item.description.label',
+    descriptionKey: 'config.fields.modelServices.item.description.desc'
+  },
+  {
+    path: ['apiBaseUrl'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'link',
+    labelKey: 'config.fields.modelServices.item.apiBaseUrl.label',
+    descriptionKey: 'config.fields.modelServices.item.apiBaseUrl.desc'
+  },
+  {
+    path: ['apiKey'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'key',
+    sensitive: true,
+    labelKey: 'config.fields.modelServices.item.apiKey.label',
+    descriptionKey: 'config.fields.modelServices.item.apiKey.desc'
+  },
+  {
+    path: ['models'],
+    type: 'string[]',
+    defaultValue: [],
+    icon: 'view_list',
+    labelKey: 'config.fields.modelServices.item.models.label',
+    descriptionKey: 'config.fields.modelServices.item.models.desc'
+  },
+  {
+    path: ['timeoutMs'],
+    type: 'number',
+    defaultValue: undefined,
+    icon: 'timer',
+    labelKey: 'config.fields.modelServices.item.timeoutMs.label',
+    descriptionKey: 'config.fields.modelServices.item.timeoutMs.desc'
+  },
+  {
+    path: ['maxOutputTokens'],
+    type: 'number',
+    defaultValue: undefined,
+    icon: 'numbers',
+    labelKey: 'config.fields.modelServices.item.maxOutputTokens.label',
+    descriptionKey: 'config.fields.modelServices.item.maxOutputTokens.desc'
+  },
+  {
+    path: ['extra'],
+    type: 'json',
+    defaultValue: {},
+    icon: 'account_tree',
+    labelKey: 'config.fields.modelServices.item.extra.label',
+    descriptionKey: 'config.fields.modelServices.item.extra.desc'
+  }
+]
+
+const pluginInstanceDetailFields: FieldSpec[] = [
+  {
+    path: ['id'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'extension'
+  },
+  {
+    path: ['enabled'],
+    type: 'boolean',
+    defaultValue: true,
+    icon: 'toggle_on',
+    labelKey: 'config.fields.plugins.enabled.label',
+    descriptionKey: 'config.fields.plugins.enabled.desc'
+  },
+  {
+    path: ['scope'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'label'
+  },
+  {
+    path: ['options'],
+    type: 'json',
+    defaultValue: {},
+    icon: 'tune'
+  },
+  {
+    path: ['children'],
+    type: 'json',
+    defaultValue: [],
+    icon: 'device_hub'
+  }
+]
+
+const pluginMarketplaceDetailFields: FieldSpec[] = [
+  {
+    path: ['type'],
+    type: 'string',
+    defaultValue: 'claude-code',
+    icon: 'category'
+  },
+  {
+    path: ['enabled'],
+    type: 'boolean',
+    defaultValue: true,
+    icon: 'toggle_on',
+    labelKey: 'config.fields.plugins.enabled.label',
+    descriptionKey: 'config.fields.plugins.enabled.desc'
+  },
+  {
+    path: ['syncOnRun'],
+    type: 'boolean',
+    defaultValue: false,
+    icon: 'sync'
+  },
+  {
+    path: ['plugins'],
+    type: 'json',
+    defaultValue: {},
+    icon: 'extension'
+  },
+  {
+    path: ['options'],
+    type: 'json',
+    defaultValue: {},
+    icon: 'store'
   }
 ]
 
@@ -349,42 +498,143 @@ export const configSchema: Record<string, FieldSpec[]> = {
   modelServices: [
     {
       path: [],
-      type: 'record',
-      recordKind: 'modelServices',
+      type: 'detailCollection',
       defaultValue: {},
-      icon: 'hub'
+      icon: 'hub',
+      labelKey: 'config.fields.modelServices.items.label',
+      descriptionKey: 'config.fields.modelServices.items.desc',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        keyPlaceholderKey: 'config.editor.newModelServiceName',
+        createItem: () => ({
+          title: '',
+          description: '',
+          apiBaseUrl: '',
+          apiKey: '',
+          models: [],
+          timeoutMs: undefined,
+          maxOutputTokens: undefined,
+          extra: {}
+        }),
+        itemFields: modelServiceDetailFields,
+        getItemTitle: (item, itemKey) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          return title !== '' ? title : itemKey
+        },
+        getItemSubtitle: (item, itemKey) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          return title !== '' ? itemKey : undefined
+        },
+        getItemDescription: (item) => {
+          const description = typeof item.description === 'string' ? item.description.trim() : ''
+          return description !== '' ? description : undefined
+        },
+        getBreadcrumbLabel: (item, itemKey) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          return title !== '' ? title : itemKey
+        }
+      }
     }
   ],
   channels: [
     {
       path: [],
-      type: 'record',
-      recordKind: 'channels',
+      type: 'detailCollection',
       defaultValue: {},
-      icon: 'campaign'
+      icon: 'campaign',
+      labelKey: 'config.sections.channels',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        keyPlaceholderKey: 'config.editor.newChannelName',
+        getItemTitle: (_item, itemKey) => itemKey,
+        getItemSubtitle: (item, _itemKey, _itemIndex, { t }) => {
+          const type = typeof item.type === 'string' ? item.type : ''
+          if (type === '') return undefined
+          const translated = t(`config.options.channels.${type}`, { defaultValue: type })
+          return translated
+        },
+        getItemDescription: (item) => {
+          const description = typeof item.description === 'string' ? item.description.trim() : ''
+          return description !== '' ? description : undefined
+        },
+        getBreadcrumbLabel: (_item, itemKey) => itemKey
+      }
     }
   ],
   adapters: [
     {
       path: [],
-      type: 'record',
-      recordKind: 'json',
+      type: 'detailCollection',
       defaultValue: {},
-      icon: 'settings_input_component'
+      icon: 'settings_input_component',
+      labelKey: 'config.sections.adapters',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        keyPlaceholderKey: 'config.editor.newAdapterName',
+        getItemTitle: (_item, itemKey) => itemKey,
+        getBreadcrumbLabel: (_item, itemKey) => itemKey
+      }
     }
   ],
   plugins: [
     {
       path: ['plugins'],
-      type: 'json',
+      type: 'detailCollection',
       defaultValue: [],
-      icon: 'extension'
+      icon: 'extension',
+      labelKey: 'config.fields.plugins.items.label',
+      descriptionKey: 'config.fields.plugins.items.desc',
+      detailCollection: {
+        collectionKind: 'list',
+        createItem: () => ({
+          id: '',
+          enabled: true,
+          scope: '',
+          options: {},
+          children: []
+        }),
+        itemFields: pluginInstanceDetailFields,
+        summaryControls: [{ kind: 'boolean', path: ['enabled'], checkedValue: true }],
+        getItemTitle: (item, _itemKey, itemIndex) => {
+          const id = typeof item.id === 'string' ? item.id.trim() : ''
+          return id !== '' ? id : `Plugin #${itemIndex + 1}`
+        },
+        getItemSubtitle: (item) => {
+          const scope = typeof item.scope === 'string' ? item.scope.trim() : ''
+          return scope !== '' ? scope : undefined
+        },
+        getBreadcrumbLabel: (item, _itemKey, itemIndex) => {
+          const id = typeof item.id === 'string' ? item.id.trim() : ''
+          return id !== '' ? id : `Plugin #${itemIndex + 1}`
+        }
+      }
     },
     {
       path: ['marketplaces'],
-      type: 'json',
+      type: 'detailCollection',
       defaultValue: {},
-      icon: 'store'
+      icon: 'store',
+      labelKey: 'config.fields.plugins.marketplaces.label',
+      descriptionKey: 'config.fields.plugins.marketplaces.desc',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        keyPlaceholderKey: 'config.editor.newMarketplaceName',
+        createItem: () => ({
+          type: 'claude-code',
+          enabled: true,
+          syncOnRun: false,
+          plugins: {},
+          options: {}
+        }),
+        itemFields: pluginMarketplaceDetailFields,
+        summaryControls: [{ kind: 'boolean', path: ['enabled'], checkedValue: true }],
+        getItemTitle: (_item, itemKey) => itemKey,
+        getItemSubtitle: (item) => {
+          const type = typeof item.type === 'string' ? item.type.trim() : ''
+          return type !== '' ? type : undefined
+        },
+        getBreadcrumbLabel: (_item, itemKey) => itemKey
+      }
     }
   ],
   mcp: [
@@ -393,10 +643,30 @@ export const configSchema: Record<string, FieldSpec[]> = {
     { path: ['noDefaultVibeForgeMcpServer'], type: 'boolean', defaultValue: false, group: 'base', icon: 'block' },
     {
       path: ['mcpServers'],
-      type: 'record',
-      recordKind: 'mcpServers',
+      type: 'detailCollection',
       defaultValue: {},
-      icon: 'account_tree'
+      icon: 'account_tree',
+      labelKey: 'config.fields.mcp.mcpServers.label',
+      descriptionKey: 'config.fields.mcp.mcpServers.desc',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        detailKind: 'mcpServer',
+        keyPlaceholderKey: 'config.editor.newMcpServerName',
+        createItem: () => ({
+          enabled: true,
+          command: '',
+          args: []
+        }),
+        summaryControls: [{ kind: 'boolean', path: ['enabled'], checkedValue: true }],
+        getItemTitle: (_item, itemKey) => itemKey,
+        getItemSubtitle: (item, _itemKey, _itemIndex, { t }) => {
+          const type = typeof item.type === 'string' && item.type.trim() !== ''
+            ? item.type.trim()
+            : 'command'
+          return t(`config.options.mcp.${type}`, { defaultValue: type })
+        },
+        getBreadcrumbLabel: (_item, itemKey) => itemKey
+      }
     }
   ],
   shortcuts: [
