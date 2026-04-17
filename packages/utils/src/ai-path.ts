@@ -17,7 +17,7 @@ const normalizeDirPath = (value: string | null | undefined) => {
 
 const resolvePathFromBase = (
   baseDir: string,
-  value: string | null | undefined,
+  value: string | null | undefined
 ) => {
   const normalizedValue = normalizeDirPath(value)
   if (normalizedValue == null) {

@@ -4,9 +4,9 @@ import {
   DEFAULT_PROJECT_AI_BASE_DIR,
   DEFAULT_PROJECT_AI_ENTITIES_DIR,
   resolveProjectAiBaseDirName,
-  resolveProjectConfigDir,
   resolveProjectAiEntitiesDir,
-  resolveProjectAiEntitiesDirName
+  resolveProjectAiEntitiesDirName,
+  resolveProjectConfigDir
 } from '#~/ai-path.js'
 
 describe('ai path utils', () => {

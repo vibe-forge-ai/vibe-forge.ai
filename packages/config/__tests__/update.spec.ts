@@ -199,9 +199,13 @@ describe('updateConfigFile', () => {
       await mkdir(launchDir, { recursive: true })
       await writeFile(
         path.join(launchDir, '.ai.config.json'),
-        JSON.stringify({
-          defaultModel: 'gpt-5.4'
-        }, null, 2)
+        JSON.stringify(
+          {
+            defaultModel: 'gpt-5.4'
+          },
+          null,
+          2
+        )
       )
 
       process.env.__VF_PROJECT_LAUNCH_CWD__ = launchDir

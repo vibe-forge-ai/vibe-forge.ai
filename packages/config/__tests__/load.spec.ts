@@ -95,6 +95,7 @@ describe('loadConfig', () => {
   it('loads project config from __VF_PROJECT_CONFIG_DIR__ while keeping workspace json variables', async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-workspace-'))
     const launchDir = path.join(workspaceDir, 'c', 'd', 'e')
+    const workspaceFolderPlaceholder = '${' + 'WORKSPACE_FOLDER}'
     const previousConfigDir = process.env.__VF_PROJECT_CONFIG_DIR__
     const previousLaunchCwd = process.env.__VF_PROJECT_LAUNCH_CWD__
     const previousWorkspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
@@ -105,7 +106,7 @@ describe('loadConfig', () => {
         path.join(launchDir, '.ai.config.json'),
         JSON.stringify({
           env: {
-            WORKSPACE_ROOT: '${WORKSPACE_FOLDER}'
+            WORKSPACE_ROOT: workspaceFolderPlaceholder
           }
         })
       )
