@@ -187,9 +187,9 @@ function ChatRouteView({ session }: { session?: Session }) {
           onClose={() => setActiveView('history')}
         />
       )}
-
       {isTerminalRendered && session?.id && (
         <ChatTerminalView
+          key={session.id}
           isOpen={isTerminalVisible}
           sessionId={session.id}
           onClose={() => setIsTerminalOpen(false)}

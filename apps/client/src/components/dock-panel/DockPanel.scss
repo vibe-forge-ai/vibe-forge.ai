@@ -27,6 +27,10 @@
   &.is-resizing {
     cursor: row-resize;
   }
+
+  &.is-resize-disabled .dock-panel__resize-handle {
+    cursor: default;
+  }
 }
 
 .dock-panel.is-closing {

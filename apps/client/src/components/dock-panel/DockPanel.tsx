@@ -27,6 +27,7 @@ export function DockPanel({
   closeLabel,
   defaultHeight = DEFAULT_PANEL_HEIGHT,
   footer,
+  isResizeDisabled = false,
   isOpen = true,
   maxHeight = 520,
   meta,
@@ -45,6 +46,7 @@ export function DockPanel({
   defaultHeight?: number
   footer?: ReactNode
   isOpen?: boolean
+  isResizeDisabled?: boolean
   maxHeight?: number
   meta?: ReactNode
   minHeight?: number
@@ -113,7 +115,7 @@ export function DockPanel({
   }, [isResizing, minHeight])
 
   const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (shouldIgnoreResizePointerDown(event.target as HTMLElement | null)) {
+    if (isResizeDisabled || shouldIgnoreResizePointerDown(event.target as HTMLElement | null)) {
       return
     }
 
@@ -148,7 +150,7 @@ export function DockPanel({
       ref={panelRef}
       className={`dock-panel ${isOpen && enterMotion === 'slide-up' ? 'is-entering-slide-up' : ''} ${
         isOpen ? 'is-open' : 'is-closing'
-      } ${className ?? ''} ${isResizing ? 'is-resizing' : ''}`}
+      } ${className ?? ''} ${isResizing ? 'is-resizing' : ''} ${isResizeDisabled ? 'is-resize-disabled' : ''}`}
       style={panelStyle as CSSProperties}
     >
       <div
