@@ -1,3 +1,5 @@
+import type { TranslationFn } from './configUtils'
+
 export type FieldValueType =
   | 'string'
   | 'number'
@@ -7,6 +9,7 @@ export type FieldValueType =
   | 'json'
   | 'multiline'
   | 'record'
+  | 'detailList'
   | 'shortcut'
 
 export type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue' | 'channels'
@@ -36,6 +39,23 @@ export interface FieldSpec {
     descKey?: string
     togglePath?: string[]
   }
+  detailList?: DetailListSpec
+}
+
+export interface DetailListContext {
+  mergedModelServices: Record<string, unknown>
+  mergedAdapters: Record<string, unknown>
+  t: TranslationFn
+}
+
+export interface DetailListSpec {
+  detailKind?: 'recommendedModels'
+  createItem: () => Record<string, unknown>
+  itemFields?: FieldSpec[]
+  getItemTitle: (item: Record<string, unknown>, index: number, context: DetailListContext) => string
+  getItemSubtitle?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string | undefined
+  getItemDescription?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string | undefined
+  getBreadcrumbLabel?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string
 }
 
 export const configGroupMeta: Record<string, Record<string, { labelKey: string }>> = {
@@ -65,7 +85,50 @@ export const configSchema: Record<string, FieldSpec[]> = {
     { path: ['defaultAdapter'], type: 'select', defaultValue: '', icon: 'settings_input_component', group: 'base' },
     { path: ['defaultModelService'], type: 'select', defaultValue: '', icon: 'hub', group: 'base' },
     { path: ['defaultModel'], type: 'select', defaultValue: '', icon: 'model_training', group: 'base' },
-    { path: ['recommendedModels'], type: 'json', defaultValue: [], icon: 'stars', group: 'base' },
+    {
+      path: ['recommendedModels'],
+      type: 'detailList',
+      defaultValue: [],
+      icon: 'stars',
+      group: 'base',
+      detailList: {
+        detailKind: 'recommendedModels',
+        createItem: () => ({
+          model: '',
+          placement: 'modelSelector'
+        }),
+        getItemTitle: (item, index, { t }) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          if (title !== '') return title
+          const model = typeof item.model === 'string' ? item.model.trim() : ''
+          if (model !== '') return model
+          return `${t('config.fields.general.recommendedModels.label')} #${index + 1}`
+        },
+        getItemSubtitle: (item, _index, { t }) => {
+          const parts: string[] = []
+          const service = typeof item.service === 'string' ? item.service.trim() : ''
+          const model = typeof item.model === 'string' ? item.model.trim() : ''
+          const placement = typeof item.placement === 'string'
+            ? t(`config.options.recommendedModels.${item.placement}`, { defaultValue: item.placement })
+            : ''
+          if (service !== '') parts.push(service)
+          if (model !== '') parts.push(model)
+          if (placement !== '') parts.push(placement)
+          return parts.length > 0 ? parts.join(' · ') : undefined
+        },
+        getItemDescription: (item) => {
+          const description = typeof item.description === 'string' ? item.description.trim() : ''
+          return description !== '' ? description : undefined
+        },
+        getBreadcrumbLabel: (item, index, context) => (
+          typeof item.title === 'string' && item.title.trim() !== ''
+            ? item.title.trim()
+            : typeof item.model === 'string' && item.model.trim() !== ''
+            ? item.model.trim()
+            : `${context.t('config.fields.general.recommendedModels.label')} #${index + 1}`
+        )
+      }
+    },
     {
       path: ['interfaceLanguage'],
       type: 'select',

@@ -831,6 +831,7 @@
       "addField": "添加字段",
       "addItem": "添加项",
       "remove": "移除",
+      "removeItemConfirmTitle": "确认删除这个条目？",
       "collapse": "折叠",
       "expand": "展开",
       "addAdapter": "添加适配器",
@@ -842,6 +843,8 @@
       "addHeader": "添加请求头",
       "addEntry": "添加条目",
       "newModelSelectorName": "新增模型选择器",
+      "moveUp": "上移",
+      "moveDown": "下移",
       "shortcutPlaceholder": "按下快捷键",
       "clearShortcut": "清除快捷键",
       "newModelServiceName": "新增模型服务名称",
@@ -883,6 +886,9 @@
         "max": "最高"
       }
     },
+    "detail": {
+      "back": "返回"
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -907,7 +913,29 @@
         },
         "recommendedModels": {
           "label": "建议模型",
-          "desc": "用于模型下拉推荐展示的列表"
+          "desc": "用于模型下拉推荐展示的列表",
+          "item": {
+            "service": {
+              "label": "模型服务",
+              "desc": "可选，指定模型所属的服务"
+            },
+            "model": {
+              "label": "模型",
+              "desc": "推荐展示的模型标识"
+            },
+            "title": {
+              "label": "标题",
+              "desc": "推荐项展示标题，可选"
+            },
+            "description": {
+              "label": "描述",
+              "desc": "推荐项展示描述，可选"
+            },
+            "placement": {
+              "label": "展示位置",
+              "desc": "推荐项出现的界面位置"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "界面交互语言",
@@ -1209,6 +1237,9 @@
         "command": "命令",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "模型选择器"
       }
     },
     "sectionGroups": {

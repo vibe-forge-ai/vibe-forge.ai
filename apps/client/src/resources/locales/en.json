@@ -830,6 +830,7 @@
       "addField": "Add Field",
       "addItem": "Add Item",
       "remove": "Remove",
+      "removeItemConfirmTitle": "Delete this item?",
       "collapse": "Collapse",
       "expand": "Expand",
       "addAdapter": "Add Adapter",
@@ -841,6 +842,8 @@
       "addHeader": "Add Header",
       "addEntry": "Add Entry",
       "newModelSelectorName": "New model selector",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
       "shortcutPlaceholder": "Press shortcut",
       "clearShortcut": "Clear shortcut",
       "newModelServiceName": "New model service name",
@@ -882,6 +885,9 @@
         "max": "Max"
       }
     },
+    "detail": {
+      "back": "Back"
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -906,7 +912,29 @@
         },
         "recommendedModels": {
           "label": "Recommended Models",
-          "desc": "Models shown in the recommended section of the selector"
+          "desc": "Models shown in the recommended section of the selector",
+          "item": {
+            "service": {
+              "label": "Model Service",
+              "desc": "Optional service that owns this model"
+            },
+            "model": {
+              "label": "Model",
+              "desc": "Model identifier shown in recommendations"
+            },
+            "title": {
+              "label": "Title",
+              "desc": "Optional display title for this recommendation"
+            },
+            "description": {
+              "label": "Description",
+              "desc": "Optional display description for this recommendation"
+            },
+            "placement": {
+              "label": "Placement",
+              "desc": "UI placement where this recommendation appears"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "Interface Language",
@@ -1208,6 +1236,9 @@
         "command": "Command",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "Model Selector"
       }
     },
     "sectionGroups": {

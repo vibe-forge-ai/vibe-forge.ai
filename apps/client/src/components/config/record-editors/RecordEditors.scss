@@ -74,6 +74,77 @@
   gap: 10px;
 }
 
+.config-view__detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-view__detail-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.config-view__detail-list-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.config-view__record-card .config-view__record-actions {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.config-view__record-card:hover .config-view__record-actions,
+.config-view__record-card:focus-within .config-view__record-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.config-view__detail-list-main:hover .config-view__record-heading > div:first-child {
+  color: var(--primary-color);
+}
+
+.config-view__detail-list-empty {
+  padding: 14px 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  background: var(--sub-bg-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-view__detail-list-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.config-view__detail-list-empty-desc {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+@media (hover: none) {
+  .config-view__record-card .config-view__record-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
 .config-view__record-row {
   display: flex;
   align-items: flex-start;

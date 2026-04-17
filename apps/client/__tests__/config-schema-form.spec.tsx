@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import type { ConfigUiSection } from '@vibe-forge/types'
 
 import { SectionForm } from '#~/components/config/ConfigSectionForm'
+import { parseConfigDetailRoute, serializeConfigDetailRoute } from '#~/components/config/configDetail'
+import { configSchema } from '#~/components/config/configSchema'
 
 const t = (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key
 
@@ -238,5 +240,87 @@ describe('config schema form', () => {
 
     expect(html).toContain('teamChat')
     expect(html).not.toContain('ant-select')
+  })
+
+  it('renders detail-list fields as a navigable summary list', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='general'
+        value={{
+          recommendedModels: [
+            {
+              service: 'gpt-responses',
+              model: 'gpt-5.4',
+              title: 'Fast Default',
+              description: 'Recommended for daily work',
+              placement: 'modelSelector'
+            }
+          ]
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{
+          'gpt-responses': {
+            title: 'GPT Responses',
+            models: ['gpt-5.4']
+          }
+        }}
+        mergedAdapters={{}}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('Fast Default')
+    expect(html).toContain('Recommended for daily work')
+    expect(html).toContain('config-view__detail-list')
+  })
+
+  it('renders a detail-list item route as a second-level config page', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='general'
+        value={{
+          recommendedModels: [
+            {
+              service: 'gpt-responses',
+              model: 'gpt-5.4',
+              title: 'Fast Default',
+              description: 'Recommended for daily work',
+              placement: 'modelSelector'
+            }
+          ]
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{
+          'gpt-responses': {
+            title: 'GPT Responses',
+            models: ['gpt-5.4']
+          }
+        }}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailListItem',
+          fieldPath: ['recommendedModels'],
+          itemIndex: 0
+        }}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('config.fields.general.recommendedModels.item.model.label')
+    expect(html).toContain('config.fields.general.recommendedModels.item.description.label')
+    expect(html).not.toContain('config-view__detail-list')
+  })
+
+  it('serializes detail-list routes into query-friendly paths', () => {
+    const route = {
+      kind: 'detailListItem' as const,
+      fieldPath: ['recommendedModels'],
+      itemIndex: 2
+    }
+
+    const raw = serializeConfigDetailRoute(route)
+
+    expect(raw).toBe('recommendedModels/2')
+    expect(parseConfigDetailRoute({ fields: configSchema.general, raw })).toEqual(route)
   })
 })
