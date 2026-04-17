@@ -114,18 +114,50 @@
     .msg-footer {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
+      min-width: 0;
       font-size: 11px;
       color: var(--sub-text-color, #9ca3af);
+
+      > * {
+        min-width: 0;
+      }
 
       .timestamp {
         user-select: none;
         cursor: pointer;
+        overflow-wrap: anywhere;
       }
     }
   }
 
   &:hover .tool-group-footer-wrapper {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  .tool-group-container {
+    scroll-margin-top: 64px;
+
+    .tool-group-footer-wrapper {
+      margin-top: 2px;
+
+      .msg-footer {
+        gap: 6px;
+        font-size: 10px;
+      }
+    }
+
+    &.is-anchor-target {
+      border-radius: 8px;
+    }
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .tool-group-container .tool-group-footer-wrapper {
     opacity: 1;
   }
 }

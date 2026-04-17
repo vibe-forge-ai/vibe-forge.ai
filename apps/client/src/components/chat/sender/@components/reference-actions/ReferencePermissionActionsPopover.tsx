@@ -1,6 +1,8 @@
 import { Popover } from 'antd'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
@@ -27,6 +29,7 @@ export function ReferencePermissionActionsPopover({
   >
 }) {
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
   const { showReferenceActions, showPermissionActions, permissionMode } = state
   const { permissionModeOptions } = data
   const { referenceMenuNavigation, permissionMenuNavigation } = refs
@@ -81,7 +84,7 @@ export function ReferencePermissionActionsPopover({
         onShowPermissionActionsChange(nextOpen)
       }}
       placement='rightTop'
-      trigger={['hover', 'click']}
+      trigger={isTouchInteraction ? ['click'] : ['hover', 'click']}
       classNames={{ root: 'reference-actions-submenu-popover' }}
       destroyOnHidden
       arrow={false}

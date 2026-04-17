@@ -6,6 +6,44 @@
     min-height: 0;
   }
 
+  &__compact-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__compact-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    padding-bottom: 0;
+  }
+
+  &__compact-select {
+    width: 100%;
+
+    .ant-select-selector {
+      min-height: 36px !important;
+      border-radius: 8px !important;
+      padding-inline: 10px !important;
+      background: var(--subpage-content-card-bg) !important;
+    }
+  }
+
+  &__compact-panel {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    margin: var(--subpage-content-card-gap);
+    margin-top: 12px;
+    border-radius: var(--subpage-content-card-radius);
+    background: var(--subpage-content-card-bg);
+    overflow: hidden;
+  }
+
   &__state {
     display: grid;
     place-items: center;
@@ -121,6 +159,12 @@
   line-height: 1;
 }
 
+.config-view__compact-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .config-view__tab-icon {
   font-size: 16px;
   color: var(--sub-text-color);
@@ -230,5 +274,23 @@
   .config-view__tabs > .ant-tabs-content-holder {
     margin-top: 0;
     margin-left: var(--subpage-content-card-gap);
+  }
+}
+
+@media (max-width: 960px) {
+  .config-view--compact {
+    .config-view__body {
+      padding: 0;
+    }
+
+    .config-view__content {
+      padding: 12px;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .config-view__card {
+      overflow: visible;
+    }
   }
 }

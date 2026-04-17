@@ -3,6 +3,7 @@ import './index.scss'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { buildGantt, buildGitGraph } from './mermaid'
 import type { Task } from './types'
 
@@ -13,6 +14,57 @@ export interface SessionTimelinePanelProps {
   style?: React.CSSProperties
 }
 
+const getCompactTimelineLabels = <
+  T extends {
+    allTasksDone: string
+    askUserQuestion: string
+    ganttMainSection: string
+    mainEnd: string
+    mainStart: string
+    receiveReply: string
+    resumeTask: string
+    startTasks: string
+    taskEnd: string
+    taskStart: string
+    userAnswer: string
+    userPrompt: string
+  },
+>(labels: T, isZh: boolean) => {
+  if (isZh) {
+    return {
+      ...labels,
+      mainStart: '启动',
+      mainEnd: '结束',
+      startTasks: '任务',
+      allTasksDone: '完成',
+      askUserQuestion: '提问',
+      resumeTask: '继续',
+      userPrompt: '提示',
+      userAnswer: '回答',
+      receiveReply: '回复',
+      taskStart: '开始',
+      taskEnd: '结束',
+      ganttMainSection: '主'
+    }
+  }
+
+  return {
+    ...labels,
+    mainStart: 'Start',
+    mainEnd: 'End',
+    startTasks: 'Tasks',
+    allTasksDone: 'Done',
+    askUserQuestion: 'Ask',
+    resumeTask: 'Resume',
+    userPrompt: 'Prompt',
+    userAnswer: 'Answer',
+    receiveReply: 'Reply',
+    taskStart: 'Start',
+    taskEnd: 'End',
+    ganttMainSection: 'Main'
+  }
+}
+
 export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
   const {
     task,
@@ -21,7 +73,8 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
     style
   } = props
   const containerRef = React.useRef<HTMLDivElement | null>(null)
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const { isCompactLayout } = useResponsiveLayout()
   const labels = React.useMemo(() => ({
     mainStart: t('chat.timeline.mainStart'),
     mainEnd: t('chat.timeline.mainEnd'),
@@ -39,12 +92,19 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
     ganttMainSection: t('chat.timeline.ganttMainSection'),
     ganttTasksSection: t('chat.timeline.ganttTasksSection')
   }), [t])
+  const diagramLabels = React.useMemo(
+    () =>
+      isCompactLayout
+        ? getCompactTimelineLabels(labels, i18n.resolvedLanguage?.startsWith('zh') === true)
+        : labels,
+    [i18n.resolvedLanguage, isCompactLayout, labels]
+  )
   const diagram = React.useMemo(() => {
     if (viewMode === 'gantt') {
-      return buildGantt(task, labels)
+      return buildGantt(task, diagramLabels, { compact: isCompactLayout })
     }
-    return buildGitGraph(task, labels)
-  }, [labels, task, viewMode])
+    return buildGitGraph(task, diagramLabels, { compact: isCompactLayout })
+  }, [diagramLabels, isCompactLayout, task, viewMode])
   const diagramId = React.useId()
   const safeDiagramId = React.useMemo(() => diagramId.replace(/\W/g, '_'), [diagramId])
   const interactionsRef = React.useRef(new Map<string, { label: string; payload: unknown }>())
@@ -60,15 +120,26 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
         startOnLoad: false,
         securityLevel: 'loose',
         themeVariables: {
-          fontFamily
+          fontFamily,
+          fontSize: isCompactLayout ? '12px' : '14px'
         },
-        gitGraph: {},
+        gitGraph: isCompactLayout
+          ? {
+            rotateCommitLabel: false,
+            showBranches: false
+          }
+          : {},
         gantt: {
           topAxis: true,
           displayMode: 'compact',
           gridLineStartPadding: 0,
-          leftPadding: 16,
-          rightPadding: 16
+          leftPadding: isCompactLayout ? 8 : 16,
+          rightPadding: isCompactLayout ? 8 : 16,
+          topPadding: isCompactLayout ? 28 : 36,
+          barHeight: isCompactLayout ? 16 : 20,
+          barGap: isCompactLayout ? 3 : 4,
+          fontSize: isCompactLayout ? 10 : 11,
+          sectionFontSize: isCompactLayout ? 10 : 11
         }
       })
       if (cancelled) return
@@ -100,7 +171,7 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
     return () => {
       cancelled = true
     }
-  }, [diagram.interactions, mermaidCode, safeDiagramId])
+  }, [diagram.interactions, isCompactLayout, mermaidCode, safeDiagramId])
 
   React.useEffect(() => {
     interactionsRef.current = new Map(
@@ -114,7 +185,12 @@ export function SessionTimelinePanel(props: SessionTimelinePanelProps) {
   return (
     <div
       ref={containerRef}
-      className={`session-timeline-panel session-timeline-panel--${viewMode}${className ? ` ${className}` : ''}`}
+      className={[
+        'session-timeline-panel',
+        `session-timeline-panel--${viewMode}`,
+        isCompactLayout ? 'session-timeline-panel--compact' : '',
+        className ?? ''
+      ].filter(Boolean).join(' ')}
       style={style}
     />
   )

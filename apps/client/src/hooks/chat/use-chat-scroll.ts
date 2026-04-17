@@ -6,6 +6,7 @@ export function useChatScroll({ contentVersion }: { contentVersion: number }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesContentRef = useRef<HTMLDivElement>(null)
+  const scrollTimeoutRef = useRef<number | null>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
 
   const updateScrollState = useCallback(() => {
@@ -15,16 +16,30 @@ export function useChatScroll({ contentVersion }: { contentVersion: number }) {
     setShowScrollBottom(distanceToBottom > SCROLL_THRESHOLD)
   }, [])
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTo({
-          top: messagesContainerRef.current.scrollHeight,
-          behavior
-        })
-      }
-    }, 50)
+  const clearScrollTimeout = useCallback(() => {
+    if (scrollTimeoutRef.current == null) {
+      return
+    }
+
+    window.clearTimeout(scrollTimeoutRef.current)
+    scrollTimeoutRef.current = null
   }, [])
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    clearScrollTimeout()
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      const container = messagesContainerRef.current
+      scrollTimeoutRef.current = null
+      if (!container) {
+        return
+      }
+
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior
+      })
+    }, 50)
+  }, [clearScrollTimeout])
 
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -40,6 +55,8 @@ export function useChatScroll({ contentVersion }: { contentVersion: number }) {
   useEffect(() => {
     updateScrollState()
   }, [contentVersion, updateScrollState])
+
+  useEffect(() => clearScrollTimeout, [clearScrollTimeout])
 
   return {
     messagesEndRef,

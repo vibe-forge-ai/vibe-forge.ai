@@ -47,11 +47,15 @@
   min-height: 24px;
   margin: -12px -12px 0;
   padding: 12px 12px 0;
-  cursor: row-resize;
+  cursor: default;
   flex-shrink: 0;
   transition: opacity .18s ease;
 
-  &:hover {
+  &.is-resizable {
+    cursor: row-resize;
+  }
+
+  &.is-resizable:hover {
     opacity: .92;
   }
 }

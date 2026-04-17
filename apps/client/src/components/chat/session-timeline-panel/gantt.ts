@@ -1,4 +1,4 @@
-import type { Task, TimelineDiagram, TimelineEvent, TimelineInteraction } from './types'
+import type { Task, TimelineDiagram, TimelineDiagramBuildOptions, TimelineEvent, TimelineInteraction } from './types'
 import { normalizeTime, parseTime } from './utils'
 
 interface GanttItem {
@@ -25,7 +25,18 @@ function createGanttItemIdFactory() {
   return (prefix: string) => `${prefix}_${seq++}`
 }
 
-function collectGanttItems(task: Task, labels: GanttLabels) {
+const COMPACT_GANTT_LABEL_MAX_LENGTH = 18
+
+const truncateTaskLabel = (value: string, maxLength: number, suffix = '') => {
+  if (value.length + suffix.length <= maxLength) {
+    return `${value}${suffix}`
+  }
+
+  const availableLength = Math.max(4, maxLength - suffix.length - 1)
+  return `${value.slice(0, availableLength).trimEnd()}…${suffix}`
+}
+
+function collectGanttItems(task: Task, labels: GanttLabels, options?: TimelineDiagramBuildOptions) {
   const nextId = createGanttItemIdFactory()
   const nextSectionId = createGanttItemIdFactory()
   const interactions: TimelineInteraction[] = []
@@ -80,9 +91,10 @@ function collectGanttItems(task: Task, labels: GanttLabels) {
             const segments = collectTaskSegments(task)
             segments.forEach((segment, segmentIndex) => {
               const itemId = nextId('task')
-              const label = segments.length > 1
-                ? `${taskName} - ${segmentIndex}`
-                : taskName
+              const segmentSuffix = segments.length > 1 ? ` ·${segmentIndex + 1}` : ''
+              const label = options?.compact
+                ? truncateTaskLabel(taskName, COMPACT_GANTT_LABEL_MAX_LENGTH, segmentSuffix)
+                : `${taskName}${segmentSuffix}`
               const interaction: TimelineInteraction = {
                 id: itemId,
                 label: taskName,
@@ -168,8 +180,12 @@ function buildGanttLines(items: GanttItem[]) {
   return lines.join('\n')
 }
 
-export function buildGantt(task: Task, labels: GanttLabels): TimelineDiagram {
-  const { items, interactions } = collectGanttItems(task, labels)
+export function buildGantt(
+  task: Task,
+  labels: GanttLabels,
+  options?: TimelineDiagramBuildOptions
+): TimelineDiagram {
+  const { items, interactions } = collectGanttItems(task, labels, options)
   return {
     code: buildGanttLines(items),
     interactions

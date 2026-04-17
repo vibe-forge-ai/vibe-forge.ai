@@ -1,6 +1,7 @@
 import type {
   Task,
   TimelineDiagram,
+  TimelineDiagramBuildOptions,
   TimelineEvent,
   TimelineEventType,
   TimelineInteraction,
@@ -509,7 +510,11 @@ function applyTimelineOps(runtime: MermaidRuntime) {
   }
 }
 
-export function buildGitGraph(task: Task, labels: MermaidLabels): TimelineDiagram {
+export function buildGitGraph(
+  task: Task,
+  labels: MermaidLabels,
+  _options?: TimelineDiagramBuildOptions
+): TimelineDiagram {
   const runtime = createMermaidRuntime(labels)
   const mainBranch = 'main'
   runtime.checkout(mainBranch)

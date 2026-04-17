@@ -6,22 +6,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 const DEFAULT_PANEL_HEIGHT = 240
 
-const clampPanelHeight = (height: number, minHeight: number, maxHeight: number) => {
-  return Math.min(Math.max(height, minHeight), Math.max(minHeight, maxHeight))
-}
+const clampPanelHeight = (height: number, minHeight: number, maxHeight: number) =>
+  Math.min(Math.max(height, minHeight), Math.max(minHeight, maxHeight))
 
-const shouldIgnoreResizePointerDown = (target: HTMLElement | null) => {
-  if (target == null) {
-    return false
-  }
-
-  return target.closest(
+const shouldIgnoreResizePointerDown = (target: HTMLElement | null) =>
+  target?.closest(
     'button, a, input, textarea, select, option, [role="button"], [data-dock-panel-no-resize="true"]'
   ) != null
-}
 
 export function DockPanel({
   enterMotion = 'slide-up',
+  allowResize = true,
   children,
   className,
   closeLabel,
@@ -38,6 +33,7 @@ export function DockPanel({
   actions
 }: {
   enterMotion?: 'none' | 'slide-up'
+  allowResize?: boolean
   actions?: ReactNode
   children: ReactNode
   className?: string
@@ -75,7 +71,7 @@ export function DockPanel({
   }, [])
 
   useEffect(() => {
-    if (!isResizing) {
+    if (!allowResize || !isResizing) {
       return
     }
 
@@ -110,7 +106,7 @@ export function DockPanel({
       window.removeEventListener('pointerup', stopResizing)
       window.removeEventListener('pointercancel', stopResizing)
     }
-  }, [isResizing, minHeight])
+  }, [allowResize, isResizing, minHeight])
 
   const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (shouldIgnoreResizePointerDown(event.target as HTMLElement | null)) {
@@ -148,13 +144,13 @@ export function DockPanel({
       ref={panelRef}
       className={`dock-panel ${isOpen && enterMotion === 'slide-up' ? 'is-entering-slide-up' : ''} ${
         isOpen ? 'is-open' : 'is-closing'
-      } ${className ?? ''} ${isResizing ? 'is-resizing' : ''}`}
+      } ${className ?? ''} ${isResizing ? 'is-resizing' : ''} ${allowResize ? 'is-resizable' : 'is-static'}`}
       style={panelStyle as CSSProperties}
     >
       <div
-        className='dock-panel__resize-handle'
-        title={resizeLabel}
-        onPointerDown={handleResizePointerDown}
+        className={`dock-panel__resize-handle ${allowResize ? 'is-resizable' : 'is-static'}`}
+        title={allowResize ? resizeLabel : undefined}
+        onPointerDown={allowResize ? handleResizePointerDown : undefined}
       >
         <div className='dock-panel__header-main'>
           <span className='dock-panel__title'>{title}</span>

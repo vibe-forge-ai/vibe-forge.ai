@@ -9,11 +9,13 @@ import { GitWorktreeDropdown } from './GitWorktreeDropdown'
 import { useChatDraftGitControls } from './use-chat-draft-git-controls'
 
 export function DraftGitControls({
+  compact = false,
   disabled = false,
   draft,
   placement = 'topLeft',
   onChange
 }: {
+  compact?: boolean
   disabled?: boolean
   draft: ChatSessionWorkspaceDraft
   placement?: 'bottomLeft' | 'topLeft'
@@ -26,11 +28,12 @@ export function DraftGitControls({
   })
 
   return (
-    <div className='chat-draft-git'>
+    <div className={`chat-draft-git ${compact ? 'chat-draft-git--compact' : ''}`.trim()}>
       {git.repoState.available
         ? (
           <div className='chat-header-git chat-draft-git__controls'>
             <GitWorktreeDropdown
+              compact={compact}
               currentBranch={git.repoState.currentBranch}
               open={git.worktreeMenuOpen}
               placement={placement}
@@ -52,6 +55,7 @@ export function DraftGitControls({
             <BranchSwitcherDropdown
               availableLocalBranches={git.availableLocalBranches}
               branchQuery={git.branchQuery}
+              compact={compact}
               canCreateBranch={git.canCreateBranch}
               currentBranchLabel={git.currentBranchLabel}
               hasBranchResults={git.hasBranchResults}

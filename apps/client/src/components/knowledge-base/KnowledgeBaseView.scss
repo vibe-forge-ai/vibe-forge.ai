@@ -2,6 +2,10 @@
   color: var(--text-color);
 }
 
+.knowledge-base-view__mobile-switcher-shell {
+  display: none;
+}
+
 .knowledge-base-view__body {
   display: flex;
   flex: 1;
@@ -156,7 +160,33 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 960px) {
+  .knowledge-base-view--compact {
+    .knowledge-base-view__mobile-switcher-shell {
+      display: block;
+      padding: 12px;
+      padding-bottom: 0;
+    }
+
+    .knowledge-base-view__mobile-switcher {
+      width: 100%;
+
+      .ant-segmented-group {
+        gap: 4px;
+      }
+
+      .ant-segmented-item {
+        min-height: 32px;
+        font-size: 12px;
+      }
+    }
+
+    .knowledge-base-view__right {
+      margin: 12px;
+      margin-top: 12px;
+    }
+  }
+
   .knowledge-base-view__nav-item {
     padding: 8px 10px;
   }
