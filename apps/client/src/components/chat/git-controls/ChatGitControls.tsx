@@ -37,8 +37,7 @@ export function ChatGitControls({
           mode={{
             type: 'session',
             isBusy: git.isBusy,
-            canCreateManagedWorktree:
-              git.repoState?.available === true &&
+            canCreateManagedWorktree: git.repoState?.available === true &&
               git.workspace != null &&
               git.workspace.kind !== 'managed_worktree' &&
               (git.workspace.worktreePath == null || git.workspace.worktreePath.trim() === ''),
@@ -113,7 +112,6 @@ export function ChatGitControls({
             />
           </>
         )}
-
       </div>
 
       {git.repoState?.available === true && (

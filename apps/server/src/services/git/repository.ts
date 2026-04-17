@@ -1,11 +1,6 @@
 import { access } from 'node:fs/promises'
 
-import type {
-  GitAvailabilityReason,
-  GitBranchSummary,
-  GitRepositoryState,
-  GitWorktreeSummary
-} from '@vibe-forge/types'
+import type { GitAvailabilityReason, GitBranchSummary, GitRepositoryState, GitWorktreeSummary } from '@vibe-forge/types'
 
 import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { conflict } from '#~/utils/http.js'

@@ -22,13 +22,13 @@ export function ChatStatusBar({
         {sessionId != null && sessionId !== ''
           ? <ChatGitControls placement='topLeft' sessionId={sessionId} />
           : (
-              <DraftGitControls
-                disabled={isCreating}
-                draft={draftWorkspace}
-                placement='topLeft'
-                onChange={onDraftWorkspaceChange}
-              />
-            )}
+            <DraftGitControls
+              disabled={isCreating}
+              draft={draftWorkspace}
+              placement='topLeft'
+              onChange={onDraftWorkspaceChange}
+            />
+          )}
       </div>
     </div>
   )

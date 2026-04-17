@@ -16,13 +16,13 @@ import type {
 import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
-import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
-import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
-import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
 } from '#~/hooks/chat/chat-session-workspace-draft'
+import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
+import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
 import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'

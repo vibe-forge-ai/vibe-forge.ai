@@ -5,8 +5,8 @@ import { dirname, resolve } from 'node:path'
 import { env as processEnv } from 'node:process'
 
 import type { WSEvent } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
 import { resolvePrimaryWorkspaceFolder } from '@vibe-forge/register/dotenv'
+import type { SessionInfo } from '@vibe-forge/types'
 import {
   addGitWorktree,
   isGitMissingError,

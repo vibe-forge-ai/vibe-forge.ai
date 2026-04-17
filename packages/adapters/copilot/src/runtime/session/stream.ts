@@ -76,11 +76,11 @@ const createToolUseMessage = (event: CopilotJsonEvent): ChatMessage | undefined 
   if (!isRecord(data)) return undefined
 
   const toolCallId = asString(data.toolCallId) ?? asString(data.id) ?? uuid()
-  const toolName = asString(data.toolName)
-    ?? asString(data.tool)
-    ?? asString(data.mcpToolName)
-    ?? asString(data.name)
-    ?? 'tool'
+  const toolName = asString(data.toolName) ??
+    asString(data.tool) ??
+    asString(data.mcpToolName) ??
+    asString(data.name) ??
+    'tool'
 
   return {
     id: toolCallId,
@@ -120,11 +120,11 @@ const createToolResultMessage = (event: CopilotJsonEvent): ChatMessage | undefin
 const formatSessionError = (event: CopilotJsonEvent) => {
   const data = event.data
   if (!isRecord(data)) return 'Copilot session failed'
-  return asString(data.message)
-    ?? asString(data.error)
-    ?? asString(isRecord(data.error) ? data.error.message : undefined)
-    ?? stringifyUnknown(data)
-    ?? 'Copilot session failed'
+  return asString(data.message) ??
+    asString(data.error) ??
+    asString(isRecord(data.error) ? data.error.message : undefined) ??
+    stringifyUnknown(data) ??
+    'Copilot session failed'
 }
 
 export const createStreamCopilotSession = async (

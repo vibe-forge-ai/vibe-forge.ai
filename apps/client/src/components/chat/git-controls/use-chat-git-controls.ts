@@ -9,11 +9,11 @@ import type { GitBranchListResult, GitBranchSummary, GitRepositoryState, Session
 
 import {
   checkoutSessionGitBranch,
-  createSessionManagedWorktree,
   createSessionGitBranch,
+  createSessionManagedWorktree,
   getApiErrorMessage,
-  getSessionWorkspace,
   getSessionGitState,
+  getSessionWorkspace,
   listSessionGitBranches,
   transferSessionWorkspaceToLocal
 } from '#~/api'

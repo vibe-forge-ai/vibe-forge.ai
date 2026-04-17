@@ -277,7 +277,9 @@ describe('gemini proxy server', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(await response.text()).toContain('data: {"candidates":[{"index":0,"content":{"role":"model","parts":[{"text":"KIMI_PROXY_OK"}]}')
+    expect(await response.text()).toContain(
+      'data: {"candidates":[{"index":0,"content":{"role":"model","parts":[{"text":"KIMI_PROXY_OK"}]}'
+    )
     expect(capturedRequest).toMatchObject({
       authorization: 'Bearer kimi-secret',
       url: '/v1/chat/completions?source=vf',

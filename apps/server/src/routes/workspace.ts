@@ -1,10 +1,6 @@
 import Router from '@koa/router'
 
-import {
-  getWorkspaceGitState,
-  listWorkspaceGitBranches,
-  listWorkspaceGitWorktrees
-} from '#~/services/git/index.js'
+import { getWorkspaceGitState, listWorkspaceGitBranches, listWorkspaceGitWorktrees } from '#~/services/git/index.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 
 export function workspaceRouter(): Router {

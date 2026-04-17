@@ -188,15 +188,15 @@ export function sessionsRouter(): Router {
       workspace: workspace == null
         ? undefined
         : {
-            createWorktree: workspace.createWorktree,
-            branch: workspace.branch?.name?.trim()
-              ? {
-                  name: workspace.branch.name.trim(),
-                  kind: workspace.branch.kind,
-                  mode: workspace.branch.mode
-                }
-              : undefined
-          }
+          createWorktree: workspace.createWorktree,
+          branch: workspace.branch?.name?.trim()
+            ? {
+              name: workspace.branch.name.trim(),
+              kind: workspace.branch.kind,
+              mode: workspace.branch.mode
+            }
+            : undefined
+        }
     })
     ctx.body = { session }
   })
