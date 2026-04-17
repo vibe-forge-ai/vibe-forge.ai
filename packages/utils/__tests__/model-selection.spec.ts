@@ -246,11 +246,8 @@ describe('model selection utilities', () => {
     expect(resolveEffectiveEffort({
       explicitEffort: 'max',
       model: 'serviceA,modelX',
-      adapter: 'codex',
+      adapterConfig: { effort: 'medium' },
       configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      },
       models: {
         'serviceA,modelX': { effort: 'high' }
       }
@@ -261,11 +258,8 @@ describe('model selection utilities', () => {
 
     expect(resolveEffectiveEffort({
       model: 'serviceA,modelX',
-      adapter: 'codex',
+      adapterConfig: { effort: 'medium' },
       configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      },
       models: {
         'serviceA,modelX': { effort: 'high' }
       }
@@ -276,18 +270,14 @@ describe('model selection utilities', () => {
 
     expect(resolveEffectiveEffort({
       model: 'serviceA,modelAOnly',
-      adapter: 'codex',
-      configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      }
+      adapterConfig: { effort: 'medium' },
+      configEffort: 'low'
     })).toEqual({
       effort: 'medium',
       source: 'adapter'
     })
 
     expect(resolveEffectiveEffort({
-      adapter: 'codex',
       configEffort: 'low'
     })).toEqual({
       effort: 'low',

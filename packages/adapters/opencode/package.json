@@ -32,6 +32,15 @@
         "require": "./dist/schema.js"
       }
     },
+    "./config-schema": {
+      "__vibe-forge__": {
+        "default": "./src/config-schema.ts"
+      },
+      "default": {
+        "import": "./dist/config-schema.mjs",
+        "require": "./dist/config-schema.js"
+      }
+    },
     "./models": {
       "__vibe-forge__": {
         "default": "./src/models.ts"
@@ -53,11 +62,13 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/definition-loader": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
-    "opencode-ai": "1.3.2"
+    "opencode-ai": "1.3.2",
+    "zod": "^3.24.1"
   }
 }

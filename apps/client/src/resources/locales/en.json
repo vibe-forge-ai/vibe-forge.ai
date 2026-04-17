@@ -807,9 +807,31 @@
       "unknown": "Unknown tool"
     },
     "terminal": {
+      "addSession": "New terminal",
+      "closeNamedSession": "Close {{title}}",
+      "closeSession": "Close terminal {{index}}",
       "connectionError": "Terminal connection failed. Check the server and try again.",
+      "dragSession": "Drag to reorder terminals",
+      "enterFullscreen": "Fullscreen",
+      "exited": "Exited",
+      "exitFullscreen": "Exit fullscreen",
       "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}",
-      "resizePanel": "Drag to resize terminal height"
+      "hideManager": "Hide terminal list",
+      "manageTerminals": "Manage terminals",
+      "paneTitle": "Terminal {{index}}",
+      "renameSession": "Rename {{title}}",
+      "selectShell": "Choose terminal type",
+      "sessionCount": "{{count}} terminals",
+      "resizePanel": "Drag to resize terminal height",
+      "shellTooltip": "Shell: {{shell}}",
+      "shellTooltipExited": "Shell: {{shell}}, exited",
+      "showManager": "Show terminal list",
+      "shell": {
+        "bash": "Bash",
+        "default": "Default shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",
@@ -847,6 +869,7 @@
       "addField": "Add Field",
       "addItem": "Add Item",
       "remove": "Remove",
+      "removeItemConfirmTitle": "Delete this item?",
       "collapse": "Collapse",
       "expand": "Expand",
       "addAdapter": "Add Adapter",
@@ -858,6 +881,8 @@
       "addHeader": "Add Header",
       "addEntry": "Add Entry",
       "newModelSelectorName": "New model selector",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
       "shortcutPlaceholder": "Press shortcut",
       "clearShortcut": "Clear shortcut",
       "newModelServiceName": "New model service name",
@@ -899,6 +924,9 @@
         "max": "Max"
       }
     },
+    "detail": {
+      "back": "Back"
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -923,7 +951,29 @@
         },
         "recommendedModels": {
           "label": "Recommended Models",
-          "desc": "Models shown in the recommended section of the selector"
+          "desc": "Models shown in the recommended section of the selector",
+          "item": {
+            "service": {
+              "label": "Model Service",
+              "desc": "Optional service that owns this model"
+            },
+            "model": {
+              "label": "Model",
+              "desc": "Model identifier shown in recommendations"
+            },
+            "title": {
+              "label": "Title",
+              "desc": "Optional display title for this recommendation"
+            },
+            "description": {
+              "label": "Description",
+              "desc": "Optional display description for this recommendation"
+            },
+            "placement": {
+              "label": "Placement",
+              "desc": "UI placement where this recommendation appears"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "Interface Language",
@@ -966,6 +1016,25 @@
             "desc": "0-1 or 0-100, 0 means mute"
           },
           "events": {
+            "label": "Event Notifications",
+            "desc": "Configure each notification trigger separately",
+            "item": {
+              "enabled": {
+                "label": "Enable notification"
+              },
+              "title": {
+                "label": "Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
             "completed": {
               "label": "Completion Notification",
               "desc": "Triggered when a session completes",
@@ -1225,10 +1294,15 @@
         "command": "Command",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "Model Selector"
       }
     },
     "sectionGroups": {
       "base": "Base Configuration",
+      "models": "Model Configuration",
+      "advanced": "Advanced Configuration",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",

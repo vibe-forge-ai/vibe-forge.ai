@@ -3,55 +3,104 @@ import './ConfigSectionForm.scss'
 import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
+import type { ConfigUiSection } from '@vibe-forge/types'
+
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
+
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
+import { DetailCollectionField } from './DetailListField'
+import { McpServerItemEditor } from './McpServerItemEditor'
+import { RecommendedModelsItemEditor } from './RecommendedModelsItemEditor'
+import type { ConfigDetailRoute } from './configDetail'
+import { resolveConfigDetailRouteMeta, toDetailCollectionEntries } from './configDetail'
 import type { FieldSpec } from './configSchema'
-import { configGroupMeta, configSchema } from './configSchema'
+import { configGroupMeta, configGroupOrder, configSchema } from './configSchema'
 import {
   getFieldDescription,
   getFieldLabel,
   getTypeIcon,
   getValueByPath,
   getValueType,
-  isEmptyValue,
   setValueByPath
 } from './configUtils'
 import type { TranslationFn } from './configUtils'
 import {
   BooleanRecordEditor,
-  ChannelRecordEditor,
   KeyValueEditor,
   McpServersRecordEditor,
   ModelServicesRecordEditor,
-  RecordJsonEditor
+  RecordJsonEditor,
+  SchemaObjectEditor,
+  SchemaRecordEditor
 } from './record-editors/index'
+import { resolveConfigUiRecordEntry } from './record-editors/schemaRecordUtils'
+
+const directRecordSections = new Set(['models'])
+const directDetailSections = new Set(['modelServices', 'channels', 'adapters'])
+const defaultGroupOrder = ['base', 'permissions', 'env', 'items', 'default']
 
 export const SectionForm = ({
   sectionKey,
   fields: providedFields,
+  uiSection,
   value,
   onChange,
   mergedModelServices,
   mergedAdapters,
   selectedModelService,
+  detailRoute = null,
+  onOpenDetailRoute,
   t
 }: {
   sectionKey: string
   fields?: FieldSpec[]
+  uiSection?: ConfigUiSection
   value: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
   selectedModelService?: string
+  detailRoute?: ConfigDetailRoute | null
+  onOpenDetailRoute?: (route: ConfigDetailRoute) => void
   t: TranslationFn
 }) => {
   const fields = providedFields ?? configSchema[sectionKey] ?? []
+  const detailContext = {
+    mergedModelServices,
+    mergedAdapters,
+    t
+  }
+
+  if (uiSection?.kind === 'recordMap' && fields.length === 0) {
+    const recordValue = (value != null && typeof value === 'object')
+      ? value as Record<string, unknown>
+      : {}
+    if (uiSection.recordMap.mode === 'discriminated' && (uiSection.recordMap.entryKinds?.length ?? 0) === 0) {
+      return (
+        <RecordJsonEditor
+          value={recordValue}
+          onChange={onChange}
+          t={t}
+          keyPlaceholder={t('config.editor.fieldKey')}
+        />
+      )
+    }
+    return (
+      <SchemaRecordEditor
+        value={recordValue}
+        schema={uiSection.recordMap}
+        onChange={onChange}
+        t={t}
+        keyPlaceholder={uiSection.recordMap.keyPlaceholder ?? t('config.editor.fieldKey')}
+      />
+    )
+  }
+
   if (fields.length === 0) {
     return <Empty description={t('common.noData')} image={null} />
   }
-  const directRecordSections = new Set(['models', 'modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
 
   const modelServiceEntries = Object.entries(mergedModelServices)
   const modelServiceOptions: Array<{ value: string; label: ReactNode }> = modelServiceEntries.map(([key, entry]) => {
@@ -82,36 +131,23 @@ export const SectionForm = ({
       label: <span>{item}</span>
     }))
     : []
-  const adapterOptions: Array<{ value: string; label: ReactNode }> = Object.keys(mergedAdapters)
-    .map(key => ({
-      value: key,
-      label: <span>{key}</span>
-    }))
+  const adapterOptions: Array<{ value: string; label: ReactNode }> = Object.keys(mergedAdapters).map(key => ({
+    value: key,
+    label: <span>{key}</span>
+  }))
 
-  const groupedFields = fields.reduce<Record<string, FieldSpec[]>>((acc, field) => {
-    const key = field.group ?? 'default'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(field)
-    return acc
-  }, {})
-  const orderedGroups = ['base', 'permissions', 'env', 'items', 'default'].filter(key => groupedFields[key]?.length)
-  const notificationEventOrder = ['completed', 'failed', 'terminated', 'waiting_input']
-
-  const getRecordKeyPlaceholder = (field: FieldSpec) => {
-    if (sectionKey === 'models') return t('config.editor.newModelSelectorName')
-    if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
-    if (sectionKey === 'channels') return t('config.editor.newChannelName')
-    if (sectionKey === 'adapters') return t('config.editor.newAdapterName')
-    if (sectionKey === 'plugins') {
-      return t('config.editor.newPluginName')
-    }
-    if (sectionKey === 'mcp') return t('config.editor.newMcpServerName')
-    if (sectionKey === 'general' && field.path.join('.') === 'env') return t('config.editor.newEnvVarName')
-    return t('config.editor.fieldKey')
-  }
-
-  const renderField = (field: FieldSpec) => {
-    const fieldValue = getValueByPath(value, field.path)
+  const renderField = ({
+    field,
+    currentValue,
+    onCurrentValueChange,
+    keyPrefix
+  }: {
+    field: FieldSpec
+    currentValue: unknown
+    onCurrentValueChange: (nextValue: unknown) => void
+    keyPrefix: string
+  }) => {
+    const fieldValue = getValueByPath(currentValue, field.path)
     const valueToUse = fieldValue !== undefined ? fieldValue : field.defaultValue
     const label = field.labelKey
       ? t(field.labelKey)
@@ -120,14 +156,12 @@ export const SectionForm = ({
       ? t(field.descriptionKey)
       : getFieldDescription(t, sectionKey, field.path)
     const icon = field.icon ?? getTypeIcon(getValueType(valueToUse))
-
     const handleValueChange = (nextValue: unknown) => {
-      const nextSectionValue = setValueByPath(value, field.path, nextValue)
-      onChange(nextSectionValue)
+      onCurrentValueChange(setValueByPath(currentValue, field.path, nextValue))
     }
 
     let control: ReactNode = null
-    const isStacked = ['multiline', 'json', 'record', 'string[]'].includes(field.type)
+    const isStacked = ['multiline', 'json', 'record', 'string[]', 'detailCollection'].includes(field.type)
 
     if (field.type === 'string') {
       const placeholder = field.placeholderKey ? t(field.placeholderKey) : undefined
@@ -237,6 +271,20 @@ export const SectionForm = ({
           onChange={handleValueChange}
         />
       )
+    } else if (field.type === 'detailCollection') {
+      control = (
+        <DetailCollectionField
+          sectionKey={sectionKey}
+          field={field}
+          value={valueToUse}
+          onChange={(next) => handleValueChange(next)}
+          onOpenDetail={(route) => onOpenDetailRoute?.(route)}
+          mergedModelServices={mergedModelServices}
+          mergedAdapters={mergedAdapters}
+          uiSection={uiSection}
+          t={t}
+        />
+      )
     } else if (field.type === 'record') {
       const recordValue = (valueToUse != null && typeof valueToUse === 'object')
         ? valueToUse as Record<string, unknown>
@@ -247,16 +295,16 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       } else if (field.recordKind === 'channels') {
         control = (
-          <ChannelRecordEditor
+          <RecordJsonEditor
             value={recordValue}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       } else if (field.recordKind === 'mcpServers') {
@@ -265,7 +313,7 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       } else if (field.recordKind === 'keyValue') {
@@ -274,7 +322,7 @@ export const SectionForm = ({
             value={recordValue as Record<string, string>}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       } else if (field.recordKind === 'boolean') {
@@ -283,7 +331,7 @@ export const SectionForm = ({
             value={recordValue as Record<string, boolean>}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       } else {
@@ -292,7 +340,7 @@ export const SectionForm = ({
             value={recordValue}
             onChange={handleValueChange}
             t={t}
-            keyPlaceholder={getRecordKeyPlaceholder(field)}
+            keyPlaceholder={getRecordKeyPlaceholder(sectionKey, field, t)}
           />
         )
       }
@@ -317,14 +365,23 @@ export const SectionForm = ({
 
     if (directRecordSections.has(sectionKey) && field.type === 'record') {
       return (
-        <div key={`${field.path.join('.')}-${field.type}-${field.recordKind ?? ''}`}>
+        <div key={`${keyPrefix}:${field.path.join('.')}:${field.type}:${field.recordKind ?? ''}`}>
           {control}
         </div>
       )
     }
+
+    if (directDetailSections.has(sectionKey) && field.type === 'detailCollection' && field.path.length === 0) {
+      return (
+        <div key={`${keyPrefix}:${field.path.join('.')}:${field.type}`}>
+          {control}
+        </div>
+      )
+    }
+
     return (
       <FieldRow
-        key={`${field.path.join('.')}-${field.type}-${field.labelKey ?? ''}-${field.recordKind ?? ''}`}
+        key={`${keyPrefix}:${field.path.join('.')}:${field.type}:${field.labelKey ?? ''}:${field.recordKind ?? ''}`}
         title={label}
         description={description}
         icon={icon}
@@ -335,55 +392,83 @@ export const SectionForm = ({
     )
   }
 
-  return (
-    <div className='config-view__field-stack'>
-      {orderedGroups.map((groupKey) => {
-        const groupFields = groupedFields[groupKey] ?? []
-        const hideEmptyGroups = new Set(['base', 'permissions'])
-        if (hideEmptyGroups.has(groupKey)) {
-          const hasGroupValues = groupFields.some((field) => {
-            const fieldValue = getValueByPath(value, field.path)
-            if (typeof fieldValue === 'boolean') return fieldValue
-            return !isEmptyValue(fieldValue)
-          })
-          if (!hasGroupValues) {
-            return null
-          }
-        }
-        if (groupKey === 'default') {
-          if (directRecordSections.has(sectionKey)) {
+  const renderFieldGroups = ({
+    currentFields,
+    currentValue,
+    onCurrentValueChange,
+    keyPrefix
+  }: {
+    currentFields: FieldSpec[]
+    currentValue: unknown
+    onCurrentValueChange: (nextValue: unknown) => void
+    keyPrefix: string
+  }) => {
+    const groupedFields = currentFields.reduce<Record<string, FieldSpec[]>>((acc, field) => {
+      const key = field.group ?? 'default'
+      if (!acc[key]) acc[key] = []
+      acc[key].push(field)
+      return acc
+    }, {})
+    const orderedGroups = (configGroupOrder[sectionKey] ?? defaultGroupOrder).filter(key => groupedFields[key]?.length)
+
+    return (
+      <div className='config-view__field-stack'>
+        {orderedGroups.map((groupKey) => {
+          const groupFields = groupedFields[groupKey] ?? []
+          if (groupKey === 'default') {
+            if (directRecordSections.has(sectionKey)) {
+              return (
+                <div key={`${keyPrefix}:${groupKey}`}>
+                  {groupFields.map(field =>
+                    renderField({
+                      field,
+                      currentValue,
+                      onCurrentValueChange,
+                      keyPrefix
+                    })
+                  )}
+                </div>
+              )
+            }
             return (
-              <div key={groupKey}>
-                {groupFields.map(renderField)}
+              <div key={`${keyPrefix}:${groupKey}`} className='config-view__field-list'>
+                {groupFields.map(field =>
+                  renderField({
+                    field,
+                    currentValue,
+                    onCurrentValueChange,
+                    keyPrefix
+                  })
+                )}
               </div>
             )
           }
-          return (
-            <div key={groupKey} className='config-view__field-list'>
-              {groupFields.map(renderField)}
-            </div>
-          )
-        }
-        const groupLabel = (() => {
-          const labelKey = configGroupMeta[sectionKey]?.[groupKey]?.labelKey
-          if (labelKey) return t(labelKey)
-          return groupKey === 'base'
-            ? t('config.sectionGroups.base')
-            : groupKey === 'permissions'
-            ? t('config.sectionGroups.permissions')
-            : groupKey === 'env'
-            ? t('config.sectionGroups.env')
-            : sectionKey === 'plugins'
-            ? t('config.sectionGroups.plugins')
-            : t('config.sectionGroups.items')
-        })()
-        const visibleFields = groupFields.filter(field => field.hidden !== true)
-        const collapseFields = visibleFields.filter(field => field.collapse != null)
-        const nonCollapseFields = visibleFields.filter(field => field.collapse == null)
-        const collapseGroups = collapseFields.reduce<
-          Map<string, { meta: NonNullable<FieldSpec['collapse']>; fields: FieldSpec[] }>
-        >(
-          (acc, field) => {
+
+          const groupMeta = configGroupMeta[sectionKey]?.[groupKey]
+          const groupLabel = (() => {
+            const labelKey = groupMeta?.labelKey
+            if (labelKey) return t(labelKey)
+            return groupKey === 'base'
+              ? t('config.sectionGroups.base')
+              : groupKey === 'models'
+              ? t('config.sectionGroups.models')
+              : groupKey === 'advanced'
+              ? t('config.sectionGroups.advanced')
+              : groupKey === 'permissions'
+              ? t('config.sectionGroups.permissions')
+              : groupKey === 'env'
+              ? t('config.sectionGroups.env')
+              : sectionKey === 'plugins'
+              ? t('config.sectionGroups.plugins')
+              : t('config.sectionGroups.items')
+          })()
+
+          const visibleFields = groupFields.filter(field => field.hidden !== true)
+          const collapseFields = visibleFields.filter(field => field.collapse != null)
+          const nonCollapseFields = visibleFields.filter(field => field.collapse == null)
+          const collapseGroups = collapseFields.reduce<
+            Map<string, { meta: NonNullable<FieldSpec['collapse']>; fields: FieldSpec[] }>
+          >((acc, field) => {
             const meta = field.collapse
             if (!meta) return acc
             const existing = acc.get(meta.key)
@@ -393,51 +478,59 @@ export const SectionForm = ({
               acc.set(meta.key, { meta, fields: [field] })
             }
             return acc
-          },
-          new Map()
-        )
-        const collapseItems = Array.from(collapseGroups.values()).map((group) => ({
-          key: group.meta.key,
-          collapsible: 'header' as const,
-          label: (
-            <div className='config-view__collapse-header'>
-              <div className='config-view__collapse-header-main'>
-                <div className='config-view__collapse-title'>
-                  {t(group.meta.labelKey)}
-                </div>
-                {group.meta.descKey && (
-                  <div className='config-view__collapse-desc'>
-                    {t(group.meta.descKey)}
+          }, new Map())
+          const collapseItems = Array.from(collapseGroups.values()).map(group => ({
+            key: group.meta.key,
+            collapsible: 'header' as const,
+            label: (
+              <div className='config-view__collapse-header'>
+                <div className='config-view__collapse-header-main'>
+                  <div className='config-view__collapse-title'>
+                    {t(group.meta.labelKey)}
                   </div>
+                  {group.meta.descKey && (
+                    <div className='config-view__collapse-desc'>
+                      {t(group.meta.descKey)}
+                    </div>
+                  )}
+                </div>
+                {group.meta.togglePath && (
+                  <Switch
+                    checked={!getValueByPath(currentValue, group.meta.togglePath)}
+                    onChange={(next) => {
+                      onCurrentValueChange(setValueByPath(currentValue, group.meta.togglePath!, !next))
+                    }}
+                    onClick={(_, event) => {
+                      event.stopPropagation()
+                    }}
+                  />
                 )}
               </div>
-              {group.meta.togglePath && (
-                <Switch
-                  checked={!getValueByPath(value, group.meta.togglePath)}
-                  onChange={(next) => {
-                    const nextValue = setValueByPath(value, group.meta.togglePath!, !next)
-                    onChange(nextValue)
-                  }}
-                  onClick={(_, event) => {
-                    event.stopPropagation()
-                  }}
-                />
-              )}
-            </div>
-          ),
-          children: (
-            <div className='config-view__field-list'>
-              {group.fields.map(renderField)}
-            </div>
-          )
-        }))
-        return (
-          <div key={groupKey} className='config-view__subsection'>
-            <div className='config-view__subsection-title'>
-              {groupLabel}
-            </div>
+            ),
+            children: (
+              <div className='config-view__field-list'>
+                {group.fields.map(field =>
+                  renderField({
+                    field,
+                    currentValue,
+                    onCurrentValueChange,
+                    keyPrefix
+                  })
+                )}
+              </div>
+            )
+          }))
+
+          const groupBody = (
             <div className='config-view__subsection-body'>
-              {nonCollapseFields.map(renderField)}
+              {nonCollapseFields.map(field =>
+                renderField({
+                  field,
+                  currentValue,
+                  onCurrentValueChange,
+                  keyPrefix
+                })
+              )}
               {collapseItems.length > 0 && (
                 <Collapse
                   className='config-view__collapse-group config-view__field-row'
@@ -446,9 +539,164 @@ export const SectionForm = ({
                 />
               )}
             </div>
-          </div>
+          )
+
+          if (groupMeta?.collapsible === true) {
+            return (
+              <Collapse
+                key={`${keyPrefix}:${groupKey}`}
+                className='config-view__subsection-collapse'
+                ghost
+                expandIconPosition='end'
+                expandIcon={({ isActive }) => (
+                  <span
+                    className={`material-symbols-rounded config-view__subsection-expand-icon${
+                      isActive ? ' is-active' : ''
+                    }`}
+                  >
+                    chevron_right
+                  </span>
+                )}
+                defaultActiveKey={groupMeta.defaultExpanded === false ? [] : [groupKey]}
+                items={[
+                  {
+                    key: groupKey,
+                    label: <div className='config-view__subsection-title'>{groupLabel}</div>,
+                    children: groupBody
+                  }
+                ]}
+              />
+            )
+          }
+
+          return (
+            <div key={`${keyPrefix}:${groupKey}`} className='config-view__subsection'>
+              <div className='config-view__subsection-title'>
+                {groupLabel}
+              </div>
+              {groupBody}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const detailMeta = resolveConfigDetailRouteMeta({
+    sectionKey,
+    fields,
+    value,
+    route: detailRoute,
+    detailContext,
+    t
+  })
+
+  if (detailMeta != null) {
+    const updateDetailItem = (nextItem: unknown) => {
+      if (detailMeta.field.type !== 'detailCollection' || detailMeta.field.detailCollection == null) return
+      const resolvedNextItem = (
+          nextItem != null &&
+          typeof nextItem === 'object' &&
+          !Array.isArray(nextItem)
         )
-      })}
-    </div>
-  )
+        ? nextItem as Record<string, unknown>
+        : {}
+
+      if (detailMeta.field.detailCollection.collectionKind === 'list') {
+        const nextItems = toDetailCollectionEntries({
+          field: detailMeta.field,
+          value: getValueByPath(value, detailMeta.field.path)
+        }).map((entry) => (
+          entry.index === detailMeta.itemIndex ? resolvedNextItem : entry.item
+        ))
+        onChange(setValueByPath(value, detailMeta.field.path, nextItems))
+        return
+      }
+
+      onChange(setValueByPath(value, [...detailMeta.field.path, detailMeta.itemKey], resolvedNextItem))
+    }
+
+    if (detailMeta.field.detailCollection?.detailKind === 'recommendedModels') {
+      return (
+        <RecommendedModelsItemEditor
+          value={detailMeta.item}
+          onChange={updateDetailItem}
+          mergedModelServices={mergedModelServices}
+          t={t}
+        />
+      )
+    }
+
+    if (detailMeta.field.detailCollection?.detailKind === 'mcpServer') {
+      return (
+        <McpServerItemEditor
+          value={detailMeta.item}
+          onChange={updateDetailItem}
+          t={t}
+        />
+      )
+    }
+
+    if (uiSection?.kind === 'recordMap' && detailMeta.field.path.length === 0) {
+      const { itemSchema, isKnownEntry } = resolveConfigUiRecordEntry({
+        schema: uiSection.recordMap,
+        entryKey: detailMeta.itemKey,
+        entryValue: detailMeta.item
+      })
+      const shouldRenderJsonFallback = !isKnownEntry && uiSection.recordMap.unknownEditor === 'json'
+      const discriminatorField = uiSection.recordMap.discriminatorField ?? 'type'
+
+      if (shouldRenderJsonFallback) {
+        return (
+          <ComplexTextEditor
+            value={detailMeta.item}
+            onChange={(next) => updateDetailItem((next ?? {}) as Record<string, unknown>)}
+          />
+        )
+      }
+
+      if (itemSchema != null) {
+        return (
+          <SchemaObjectEditor
+            value={detailMeta.item}
+            schema={itemSchema}
+            onChange={updateDetailItem}
+            t={t}
+            hideFieldPath={isKnownEntry && uiSection.recordMap.mode === 'discriminated'
+              ? [discriminatorField]
+              : undefined}
+          />
+        )
+      }
+    }
+
+    if ((detailMeta.field.detailCollection?.itemFields?.length ?? 0) > 0) {
+      return renderFieldGroups({
+        currentFields: detailMeta.field.detailCollection!.itemFields!,
+        currentValue: detailMeta.item,
+        onCurrentValueChange: updateDetailItem,
+        keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemKey}`
+      })
+    }
+
+    return <Empty description={t('common.noData')} image={null} />
+  }
+
+  return renderFieldGroups({
+    currentFields: fields,
+    currentValue: value,
+    onCurrentValueChange: onChange,
+    keyPrefix: sectionKey
+  })
+}
+
+const getRecordKeyPlaceholder = (sectionKey: string, field: FieldSpec, t: TranslationFn) => {
+  if (sectionKey === 'models') return t('config.editor.newModelSelectorName')
+  if (sectionKey === 'modelServices') return t('config.editor.newModelServiceName')
+  if (sectionKey === 'channels') return t('config.editor.newChannelName')
+  if (sectionKey === 'adapters') return t('config.editor.newAdapterName')
+  if (sectionKey === 'plugins') return t('config.editor.newPluginName')
+  if (sectionKey === 'mcp') return t('config.editor.newMcpServerName')
+  if (sectionKey === 'general' && field.path.join('.') === 'env') return t('config.editor.newEnvVarName')
+  return t('config.editor.fieldKey')
 }

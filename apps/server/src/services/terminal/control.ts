@@ -3,20 +3,29 @@ import type { TerminalSessionCommand } from '@vibe-forge/types'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { resizeTerminalSession, restartTerminalSession } from './runtime'
-import { clearIdleTimer, closeTerminalSocket, sendTerminalEvent, terminalRuntimeStore } from './store'
+import {
+  clearIdleTimer,
+  closeTerminalSocket,
+  getTerminalRuntime,
+  sendTerminalEvent,
+  terminalRuntimeStore
+} from './store'
 
-export function terminateTerminalSession(sessionId: string) {
-  const runtime = terminalRuntimeStore.get(sessionId)
+export function terminateTerminalSession(sessionId: string, terminalId?: string) {
+  const runtime = getTerminalRuntime(sessionId, terminalId)
   if (runtime?.driver == null) {
     return
   }
 
-  getSessionLogger(sessionId, 'server').info({ sessionId }, '[terminal] Terminating shell session')
+  getSessionLogger(sessionId, 'server').info(
+    { sessionId, terminalId: runtime.terminalId },
+    '[terminal] Terminating shell session'
+  )
   runtime.driver.kill()
 }
 
-export function disposeTerminalSession(sessionId: string) {
-  const runtime = terminalRuntimeStore.get(sessionId)
+const disposeTerminalRuntime = (runtimeKey: string) => {
+  const runtime = terminalRuntimeStore.get(runtimeKey)
   if (runtime == null) {
     return
   }
@@ -32,17 +41,33 @@ export function disposeTerminalSession(sessionId: string) {
   }
 
   runtime.sockets.clear()
-  terminalRuntimeStore.delete(sessionId)
+  terminalRuntimeStore.delete(runtime.runtimeKey)
   runtime.driver?.kill()
   for (const socket of sockets) {
     closeTerminalSocket(socket, 1000, 'Terminal session was closed.')
   }
 }
 
-export function handleTerminalCommand(sessionId: string, command: TerminalSessionCommand) {
+export function disposeTerminalSession(sessionId: string, terminalId?: string) {
+  if (terminalId != null) {
+    const runtime = getTerminalRuntime(sessionId, terminalId)
+    if (runtime != null) {
+      disposeTerminalRuntime(runtime.runtimeKey)
+    }
+    return
+  }
+
+  for (const [runtimeKey, runtime] of terminalRuntimeStore) {
+    if (runtime.sessionId === sessionId) {
+      disposeTerminalRuntime(runtimeKey)
+    }
+  }
+}
+
+export function handleTerminalCommand(sessionId: string, command: TerminalSessionCommand, terminalId?: string) {
   switch (command.type) {
     case 'terminal_input': {
-      const runtime = terminalRuntimeStore.get(sessionId)
+      const runtime = getTerminalRuntime(sessionId, terminalId)
       if (runtime?.driver == null) {
         runtime?.sockets.forEach((socket) => {
           sendTerminalEvent(socket, {
@@ -57,12 +82,12 @@ export function handleTerminalCommand(sessionId: string, command: TerminalSessio
       return
     }
     case 'terminal_resize':
-      resizeTerminalSession(sessionId, { cols: command.cols, rows: command.rows })
+      resizeTerminalSession(sessionId, { terminalId, cols: command.cols, rows: command.rows })
       return
     case 'terminal_restart':
-      restartTerminalSession(sessionId, { cols: command.cols, rows: command.rows })
+      restartTerminalSession(sessionId, { terminalId, cols: command.cols, rows: command.rows })
       return
     case 'terminal_terminate':
-      terminateTerminalSession(sessionId)
+      terminateTerminalSession(sessionId, terminalId)
   }
 }

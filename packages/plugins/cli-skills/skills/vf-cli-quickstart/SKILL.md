@@ -1,6 +1,6 @@
 ---
 name: vf-cli-quickstart
-description: 快速说明 Vibe Forge CLI 的常用命令、会话查看和基础技能选择方式。
+description: 快速说明 Vibe Forge CLI 的常用命令、配置命令、会话查看和基础技能选择方式。
 ---
 
 在需要指导用户或代理如何使用 `vf` CLI 时使用这个 skill。
@@ -17,6 +17,17 @@ description: 快速说明 Vibe Forge CLI 的常用命令、会话查看和基础
 - `vf kill <sessionId>`：强制终止运行中的会话。
 - `vf clear`：清理本地缓存和日志。
 
+## 配置命令
+
+- `vf config list`：查看 merged config 下哪些 section 当前有值。
+- `vf config list models`：读取 `models` 视图。
+- `vf config get general.defaultModel`：读取某个配置值。
+- `vf config set general.defaultModel gpt-5.4 --type string`：写入配置值。
+- `vf config unset general.defaultModel`：删除配置值。
+- `vf config list` / `vf config get` 默认读 merged config；只有显式传 `--source project|user|all` 才切换来源。
+- 文本模式默认输出 YAML；`--json` 输出原始结构化结果。
+- `vf config get models` / `vf config list models` 在文本模式下会把 `modelServices` 里的模型列表与 `models` 里的 metadata 合并成人类可读视图；如果需要底层原始 metadata map，使用 `--json`。
+
 ## 技能与资产
 
 - CLI 默认会注入 `@vibe-forge/plugin-cli-skills`。
@@ -28,5 +39,6 @@ description: 快速说明 Vibe Forge CLI 的常用命令、会话查看和基础
 ## 建议说明方式
 
 - 先给出最短可执行命令。
-- 再补 `list` / `resume` / `stop` 等排查命令。
+- 再补 `list` / `resume` / `stop` 或 `config get` / `config set` 等排查命令。
+- 如果用户提到模型列表、`gpt-responses` 或 `models` section，优先说明 `modelServices` 才是服务模型来源，`models` 是 metadata；必要时补一句 CLI 文本模式会对 `models` 做展开展示。
 - 如果涉及 print 模式、权限确认或 stdin 控制，继续阅读 `vf-cli-print-mode`。

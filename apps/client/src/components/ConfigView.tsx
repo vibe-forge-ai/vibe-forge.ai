@@ -6,12 +6,12 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigSource } from '@vibe-forge/core'
-import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
+import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
 import { PageShell } from '#~/components/layout/PageShell'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
-import { getApiErrorMessage, getConfig, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, getConfigSchema, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
@@ -22,12 +22,21 @@ export function ConfigView() {
   const { message } = App.useApp()
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
-  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
-    keys: ['tab', 'source'],
-    defaults: { tab: 'general', source: 'project' }
+  const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
+  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{
+    tab: string
+    source: string
+    detail: string
+  }>({
+    keys: ['tab', 'source', 'detail'],
+    defaults: { tab: 'general', source: 'project', detail: '' },
+    omit: {
+      detail: value => value.trim() === ''
+    }
   })
-  const sourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
-  const setSourceKey = (next: ConfigSource) => updateQuery({ source: next })
+  const querySourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
+  const [sourceKey, setSourceKeyState] = useState<ConfigSource>(querySourceKey)
+  const [detailQuery, setDetailQueryState] = useState(queryValues.detail)
   const [drafts, setDrafts] = useState<Record<string, unknown>>({})
   const configPresent = data?.meta?.configPresent
   const currentSource = data?.sources?.[sourceKey]
@@ -107,8 +116,21 @@ export function ConfigView() {
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
   const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
 
-  const activeTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
-  const setActiveTabKey = (key: string) => updateQuery({ tab: key })
+  const queryTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
+  const [activeTabKey, setActiveTabKeyState] = useState(queryTabKey)
+  const setSourceKey = (next: ConfigSource) => {
+    setSourceKeyState(next)
+    updateQuery({ source: next })
+  }
+  const setDetailQuery = (next: string) => {
+    setDetailQueryState(next)
+    updateQuery({ detail: next })
+  }
+  const setActiveTabKey = (key: string) => {
+    setActiveTabKeyState(key)
+    setDetailQueryState('')
+    updateQuery({ tab: key, detail: '' })
+  }
   const isCompactView = isCompactLayout || isTouchInteraction
 
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
@@ -136,6 +158,7 @@ export function ConfigView() {
 
     return groups
   }, [tabs, t])
+  const uiSections = schemaData?.workspace.uiSchema?.sections ?? {}
 
   useEffect(() => {
     if (activeTab == null) return
@@ -153,6 +176,18 @@ export function ConfigView() {
       return { ...prev, [draftKey]: cloneValue(sourceValue) }
     })
   }, [activeTab, configTabKeys, sourceKey])
+
+  useEffect(() => {
+    setSourceKeyState(querySourceKey)
+  }, [querySourceKey])
+
+  useEffect(() => {
+    setActiveTabKeyState(queryTabKey)
+  }, [queryTabKey])
+
+  useEffect(() => {
+    setDetailQueryState(queryValues.detail)
+  }, [queryValues.detail])
 
   useEffect(() => {
     draftsRef.current = drafts
@@ -210,7 +245,7 @@ export function ConfigView() {
   }
 
   const renderTabContent = (tab: typeof tabs[number]) => (
-    <div className='config-view__content'>
+    <div key={`${sourceKey}:${tab.key}`} className='config-view__content'>
       {tab.key === 'about' && (
         <AboutSection value={tab.value as AboutInfo | undefined} />
       )}
@@ -223,11 +258,16 @@ export function ConfigView() {
       {configTabKeys.has(tab.key) && (
         <ConfigSectionPanel
           sectionKey={tab.key}
+          title={tab.label}
+          icon={tab.icon}
+          uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
           value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
           onChange={(next) => handleDraftChange(tab.key, next)}
           mergedModelServices={mergedModelServices as Record<string, unknown>}
           mergedAdapters={mergedAdapters as Record<string, unknown>}
           selectedModelService={selectedModelService}
+          detailQuery={activeTabKey === tab.key ? detailQuery : ''}
+          onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
           t={t}
           headerExtra={isCompactView
             ? undefined
@@ -318,6 +358,7 @@ export function ConfigView() {
           : (
             <div className='config-view__tabs-wrap'>
               <Tabs
+                destroyOnHidden
                 tabPosition='left'
                 tabBarGutter={4}
                 indicator={{ size: 0 }}

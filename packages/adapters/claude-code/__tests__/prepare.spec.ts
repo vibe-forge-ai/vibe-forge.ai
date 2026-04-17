@@ -214,4 +214,70 @@ describe('prepareClaudeExecution', () => {
     const stagedPluginDir = prepared.args[pluginDirIndex + 1]
     expect(stagedPluginDir).toContain('.ai/caches/ctx-plugins/sess-plugins/.claude-plugins/')
   })
+
+  it('deep merges settingsContent across layered adapter config entries', async () => {
+    const cacheSet = vi.fn(async (key: string, value: unknown) => {
+      if (key === 'adapter.claude-code.settings') {
+        settingsSnapshot = value as Record<string, any>
+      }
+
+      return {
+        cachePath: `/tmp/${key}.json`
+      }
+    })
+
+    await prepareClaudeExecution({
+      ctxId: 'ctx-merge',
+      cwd: '/repo',
+      env: {},
+      cache: {
+        set: cacheSet as any,
+        get: vi.fn(async () => undefined) as any
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      } as any,
+      configs: [{
+        adapters: {
+          'claude-code': {
+            settingsContent: {
+              outputStyle: {
+                tone: 'concise',
+                bullets: true
+              }
+            }
+          }
+        }
+      }, {
+        adapters: {
+          'claude-code': {
+            settingsContent: {
+              outputStyle: {
+                bullets: false
+              },
+              approvals: {
+                mode: 'plan'
+              }
+            }
+          }
+        }
+      }]
+    } as any, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'sess-merge',
+      onEvent: vi.fn()
+    })
+
+    expect(settingsSnapshot?.outputStyle).toEqual({
+      tone: 'concise',
+      bullets: false
+    })
+    expect(settingsSnapshot?.approvals).toEqual({
+      mode: 'plan'
+    })
+  })
 })

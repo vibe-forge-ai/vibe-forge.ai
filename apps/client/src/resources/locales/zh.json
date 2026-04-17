@@ -808,9 +808,31 @@
       "unknown": "未知工具"
     },
     "terminal": {
+      "addSession": "新建终端",
+      "closeNamedSession": "关闭 {{title}}",
+      "closeSession": "关闭终端 {{index}}",
       "connectionError": "终端连接失败，请检查服务状态后重试",
+      "dragSession": "拖拽调整终端顺序",
+      "enterFullscreen": "全屏",
+      "exited": "已退出",
+      "exitFullscreen": "退出全屏",
       "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}",
-      "resizePanel": "拖动调整终端高度"
+      "hideManager": "隐藏终端列表",
+      "manageTerminals": "管理终端",
+      "paneTitle": "终端 {{index}}",
+      "renameSession": "重命名 {{title}}",
+      "selectShell": "选择终端类型",
+      "sessionCount": "{{count}} 个终端",
+      "resizePanel": "拖动调整终端高度",
+      "shellTooltip": "Shell：{{shell}}",
+      "shellTooltipExited": "Shell：{{shell}}，已退出",
+      "showManager": "显示终端列表",
+      "shell": {
+        "bash": "Bash",
+        "default": "默认 Shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "会话设置",
     "enterTitle": "输入会话标题...",
@@ -848,6 +870,7 @@
       "addField": "添加字段",
       "addItem": "添加项",
       "remove": "移除",
+      "removeItemConfirmTitle": "确认删除这个条目？",
       "collapse": "折叠",
       "expand": "展开",
       "addAdapter": "添加适配器",
@@ -859,6 +882,8 @@
       "addHeader": "添加请求头",
       "addEntry": "添加条目",
       "newModelSelectorName": "新增模型选择器",
+      "moveUp": "上移",
+      "moveDown": "下移",
       "shortcutPlaceholder": "按下快捷键",
       "clearShortcut": "清除快捷键",
       "newModelServiceName": "新增模型服务名称",
@@ -900,6 +925,9 @@
         "max": "最高"
       }
     },
+    "detail": {
+      "back": "返回"
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -924,7 +952,29 @@
         },
         "recommendedModels": {
           "label": "建议模型",
-          "desc": "用于模型下拉推荐展示的列表"
+          "desc": "用于模型下拉推荐展示的列表",
+          "item": {
+            "service": {
+              "label": "模型服务",
+              "desc": "可选，指定模型所属的服务"
+            },
+            "model": {
+              "label": "模型",
+              "desc": "推荐展示的模型标识"
+            },
+            "title": {
+              "label": "标题",
+              "desc": "推荐项展示标题，可选"
+            },
+            "description": {
+              "label": "描述",
+              "desc": "推荐项展示描述，可选"
+            },
+            "placement": {
+              "label": "展示位置",
+              "desc": "推荐项出现的界面位置"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "界面交互语言",
@@ -967,6 +1017,25 @@
             "desc": "0-1 或 0-100，0 为静音"
           },
           "events": {
+            "label": "事件通知",
+            "desc": "分别配置每一种会话状态通知",
+            "item": {
+              "enabled": {
+                "label": "启用通知"
+              },
+              "title": {
+                "label": "标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "消息内容",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "提示音",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
             "completed": {
               "label": "完成通知",
               "desc": "会话完成时触发",
@@ -1226,10 +1295,15 @@
         "command": "命令",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "模型选择器"
       }
     },
     "sectionGroups": {
       "base": "基础配置",
+      "models": "模型配置",
+      "advanced": "进阶配置",
       "permissions": "工具权限",
       "env": "环境变量",
       "items": "明细配置",
