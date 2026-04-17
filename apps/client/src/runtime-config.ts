@@ -57,6 +57,14 @@ const normalizePath = (value?: string) => {
   return next
 }
 
+const normalizeServerHost = (value?: string) => {
+  const next = value?.trim()
+  if (next == null || next === '' || next === '0.0.0.0' || next === '::' || next === '[::]') {
+    return undefined
+  }
+  return next
+}
+
 export const getRuntimeEnv = (): RuntimeEnv => getGlobalRuntimeEnv() ?? {}
 
 export const resolveClientBase = (...values: Array<string | undefined>) => (
@@ -73,8 +81,10 @@ export const getClientBase = () => (
 )
 
 export const getServerHostEnv = () =>
-  getRuntimeEnv().__VF_PROJECT_AI_SERVER_HOST__ ??
-    import.meta.env.__VF_PROJECT_AI_SERVER_HOST__
+  normalizeServerHost(
+    getRuntimeEnv().__VF_PROJECT_AI_SERVER_HOST__ ??
+      import.meta.env.__VF_PROJECT_AI_SERVER_HOST__
+  )
 
 export const getServerPortEnv = () =>
   getRuntimeEnv().__VF_PROJECT_AI_SERVER_PORT__ ??
