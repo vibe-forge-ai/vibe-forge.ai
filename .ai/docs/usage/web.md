@@ -6,6 +6,8 @@
 
 - 启动 `vfui-server` 和 `vfui-client` 后，先访问 `/ui`。
 - 会话详情页路径是 `/ui/session/<sessionId>`。
+- 配置页路径是 `/ui/config`；通过 `tab` 和 `source` query 控制当前 section 与 project/user 来源，例如 `/ui/config?tab=general&source=user`。
+- 如果配置页进入了二级详情页，当前详情路径也会写入 `detail` query；复制完整 URL 后，可以直接回到对应的配置子页面。
 - `view` query 目前支持 `history`、`timeline`、`terminal`、`settings`。
 - 终端视图入口是 `/ui/session/<sessionId>?view=terminal`。
 - 聊天页 sender 下方会固定显示一个 status bar：左侧承载当前 session 的 workspace / git 操作；新建会话时这里会继续展示，并允许先决定是否创建 worktree 以及要切到哪个分支。
@@ -14,6 +16,13 @@
 - session managed worktree 会落在 `.ai/worktrees/sessions/<sessionId>/<repo-name>`；最后一级目录始终跟随当前 git 根目录名，方便和真实仓库目录保持一致。
 - 如果当前 session 分支还没有对应的远端分支，`同步` 会优先尝试同名远端分支；如果远端还没有这条分支，则会回退到 worktree 记录的基线分支继续同步。
 - 如果你想给项目设默认值，可以在 `.ai.config.json` / `.ai.config.yaml` 的 `conversation.createSessionWorktree` 里配置；Web UI 新建会话时会按这个项目配置初始化。
+
+## 配置页交互
+
+- 简单字段仍然在 section 页面内直接编辑。
+- 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
+- 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
+- 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
 
 ## Terminal 视图是什么
 

@@ -17,12 +17,16 @@
 - `vf clear`：清理本地日志与缓存
 - `vf stop <sessionId>`：优雅停止正在运行的 CLI 会话
 - `vf kill <sessionId>`：强制终止正在运行的 CLI 会话
+- `vf config list [path]`：查看配置 section 状态，或读取某个配置子树
+- `vf config get [path]`：读取配置值
+- `vf config set [path] [value]`：写入配置值
+- `vf config unset [path]`：删除配置值
 
 ## 内建 Skills
 
 `@vibe-forge/cli` 会默认注入 companion 插件 `@vibe-forge/plugin-cli-skills`，可直接通过 `--include-skill` 使用：
 
-- `vf-cli-quickstart`：介绍 `vf run`、`vf list`、`vf --resume`、`vf stop`、`vf kill` 等常用命令。
+- `vf-cli-quickstart`：介绍 `vf run`、`vf list`、`vf --resume`、`vf stop`、`vf kill`，以及 `vf config list|get|set|unset` 的基本用法和输出语义。
 - `vf-cli-print-mode`：介绍 `--print`、`--input-format`、权限请求、继续会话和 `submit_input` 的写法。
 
 示例：
@@ -70,3 +74,19 @@ npx vf list --view default
 npx vf list --view full
 npx vf --resume <sessionId>
 ```
+
+### 读取配置
+
+```bash
+npx vf config list
+npx vf config get general.defaultModel
+npx vf config get models
+npx vf config get modelServices.gpt-responses.models
+```
+
+说明：
+
+- `vf config list` / `vf config get` 默认读取 merged config；只有显式传 `--source project|user|all` 才切换来源。
+- 文本模式默认输出 YAML，适合直接阅读；`--json` 保留结构化原始结果，适合脚本消费。
+- `vf config get models` 和 `vf config list models` 在文本模式下会按 `modelServices` 展开成 `service -> models` 视图，并把 `models` 里的 metadata 合进去，避免把稀疏 metadata map 误看成完整模型列表。
+- 如果需要看原始 `models` metadata 结构，使用 `--json`。

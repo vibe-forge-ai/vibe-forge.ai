@@ -1,15 +1,23 @@
+/* eslint-disable max-lines -- config route also serves schema endpoints and section presenters */
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
 import Router from '@koa/router'
 
-import { updateConfigFile } from '@vibe-forge/config'
-import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
+import {
+  buildConfigSections,
+  composeBaseConfigSchemaBundle,
+  composeWorkspaceConfigSchemaBundle,
+  updateConfigFile,
+  validateConfigSection,
+  writeWorkspaceConfigSchemaFile
+} from '@vibe-forge/config'
+import type { AdapterBuiltinModel, Config, ConfigSchemaResponse } from '@vibe-forge/types'
 import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
-import { badRequest, internalServerError } from '#~/utils/http.js'
+import { badRequest, internalServerError, isHttpError } from '#~/utils/http.js'
 
 const sanitize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -45,53 +53,11 @@ const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
 }
 
 const buildSections = (config: Config | undefined) => {
-  const {
-    baseDir,
-    effort,
-    defaultAdapter,
-    defaultModelService,
-    defaultModel,
-    recommendedModels,
-    interfaceLanguage,
-    modelLanguage,
-    announcements,
-    shortcuts,
-    conversation,
-    notifications
-  } = config ?? {}
+  const sections = sanitize(buildConfigSections(config)) as ReturnType<typeof buildConfigSections>
 
   return {
-    general: {
-      baseDir,
-      effort,
-      defaultAdapter,
-      defaultModelService,
-      defaultModel,
-      recommendedModels: sanitize(recommendedModels),
-      interfaceLanguage,
-      modelLanguage,
-      announcements,
-      permissions: sanitize(config?.permissions),
-      env: sanitize(config?.env),
-      notifications: sanitize(notifications)
-    },
-    conversation: sanitize(conversation),
-    models: sanitize(config?.models),
-    modelServices: sanitize(config?.modelServices),
-    channels: sanitize(config?.channels),
-    adapters: sanitize(config?.adapters),
-    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
-    plugins: sanitize({
-      plugins: config?.plugins,
-      marketplaces: config?.marketplaces
-    }),
-    mcp: sanitize({
-      mcpServers: config?.mcpServers,
-      defaultIncludeMcpServers: config?.defaultIncludeMcpServers,
-      defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
-      noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
-    }),
-    shortcuts: sanitize(shortcuts)
+    ...sections,
+    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>
   }
 }
 
@@ -117,6 +83,49 @@ const loadAdapterBuiltinModels = (
 
 export function configRouter(): Router {
   const router = new Router()
+
+  router.get('/schema', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const [base, workspace] = await Promise.all([
+        Promise.resolve(composeBaseConfigSchemaBundle()),
+        composeWorkspaceConfigSchemaBundle({ cwd: workspaceFolder })
+      ])
+
+      const body: ConfigSchemaResponse = {
+        base: {
+          jsonSchema: base.jsonSchema,
+          extensions: base.extensions
+        },
+        workspace: {
+          jsonSchema: workspace.jsonSchema,
+          uiSchema: workspace.uiSchema,
+          extensions: workspace.extensions
+        }
+      }
+
+      ctx.body = body
+    } catch (err) {
+      throw internalServerError('Failed to load config schema', { cause: err, code: 'config_schema_load_failed' })
+    }
+  })
+
+  router.post('/schema/generate', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const { outputPath, bundle } = await writeWorkspaceConfigSchemaFile({ cwd: workspaceFolder })
+      ctx.body = {
+        ok: true,
+        outputPath,
+        extensions: bundle.extensions
+      }
+    } catch (err) {
+      throw internalServerError('Failed to generate config schema', {
+        cause: err,
+        code: 'config_schema_generate_failed'
+      })
+    }
+  })
 
   router.get('/', async (ctx) => {
     try {
@@ -176,9 +185,26 @@ export function configRouter(): Router {
 
     try {
       const workspaceFolder = getWorkspaceFolder()
-      await updateConfigFile({ workspaceFolder, source, section, value })
+      const parsed = await validateConfigSection(section, value, { cwd: workspaceFolder })
+      if (!parsed.success) {
+        throw badRequest(
+          'Invalid config section value',
+          {
+            section,
+            issues: parsed.error.issues.map(issue => ({
+              path: issue.path,
+              message: issue.message
+            }))
+          },
+          'invalid_config_section_value'
+        )
+      }
+      await updateConfigFile({ workspaceFolder, source, section, value: parsed.data })
       ctx.body = { ok: true }
     } catch (err) {
+      if (isHttpError(err)) {
+        throw err
+      }
       throw internalServerError('Failed to update config', { cause: err, code: 'config_update_failed' })
     }
   })

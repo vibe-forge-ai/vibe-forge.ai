@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   buildConfigJsonVariables: vi.fn(),
-  loadConfig: vi.fn(),
+  loadConfigState: vi.fn(),
   mergeConfigs: vi.fn(),
   resolveUseDefaultVibeForgeMcpServer: vi.fn(),
   resolveWorkspaceAssetBundle: vi.fn(),
@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@vibe-forge/config', () => ({
   buildConfigJsonVariables: mocks.buildConfigJsonVariables,
-  loadConfig: mocks.loadConfig,
+  loadConfigState: mocks.loadConfigState,
   mergeConfigs: mocks.mergeConfigs,
   resolveUseDefaultVibeForgeMcpServer: mocks.resolveUseDefaultVibeForgeMcpServer
 }))
@@ -44,8 +44,18 @@ describe('prepare', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.buildConfigJsonVariables.mockReturnValue({})
-    mocks.loadConfig.mockResolvedValue([undefined, undefined])
-    mocks.mergeConfigs.mockReturnValue(undefined)
+    mocks.loadConfigState.mockResolvedValue({
+      projectConfig: undefined,
+      userConfig: undefined,
+      mergedConfig: {}
+    })
+    mocks.mergeConfigs.mockImplementation((
+      left: Record<string, unknown> | undefined,
+      right: Record<string, unknown> | undefined
+    ) => ({
+      ...(left ?? {}),
+      ...(right ?? {})
+    }))
     mocks.resolveUseDefaultVibeForgeMcpServer.mockReturnValue(true)
     mocks.resolveWorkspaceAssetBundle.mockResolvedValue(undefined)
     mocks.syncConfiguredMarketplacePlugins.mockResolvedValue([])
@@ -68,6 +78,11 @@ describe('prepare', () => {
     } as any)
 
     expect(ctx.env.__VF_PROJECT_AI_PERMISSION_MODE__).toBe('dontAsk')
+    expect(ctx.configState).toEqual({
+      projectConfig: undefined,
+      userConfig: undefined,
+      mergedConfig: {}
+    })
   })
 
   it('preserves an inherited permission mode when the current run does not override it', async () => {
@@ -116,7 +131,11 @@ describe('prepare', () => {
         }
       }
     }
-    mocks.mergeConfigs.mockReturnValue({ marketplaces })
+    mocks.loadConfigState.mockResolvedValue({
+      projectConfig: undefined,
+      userConfig: undefined,
+      mergedConfig: { marketplaces }
+    })
     mocks.syncConfiguredMarketplacePlugins.mockResolvedValue([
       {
         marketplace: 'team-tools',
@@ -148,10 +167,14 @@ describe('prepare', () => {
 
   it('does not sync declared marketplace plugins when resuming a session', async () => {
     const { prepare } = await import('#~/prepare.js')
-    mocks.mergeConfigs.mockReturnValue({
-      marketplaces: {
-        'team-tools': {
-          type: 'claude-code'
+    mocks.loadConfigState.mockResolvedValue({
+      projectConfig: undefined,
+      userConfig: undefined,
+      mergedConfig: {
+        marketplaces: {
+          'team-tools': {
+            type: 'claude-code'
+          }
         }
       }
     })
@@ -207,19 +230,28 @@ describe('prepare', () => {
 
   it('merges run-scoped plugins with project config plugins when resolving assets', async () => {
     const { prepare } = await import('#~/prepare.js')
-    mocks.loadConfig.mockResolvedValue([
-      {
+    mocks.loadConfigState.mockResolvedValue({
+      projectConfig: {
         plugins: [
           { id: 'logger' }
         ]
       },
-      {
+      userConfig: {
         plugins: [
           { id: 'standard-dev', scope: 'std' }
         ]
+      },
+      mergedConfig: {
+        plugins: [
+          { id: 'logger' },
+          { id: 'standard-dev', scope: 'std' }
+        ]
       }
-    ])
-    mocks.mergeConfigs.mockImplementation((left, right) => ({
+    })
+    mocks.mergeConfigs.mockImplementation((
+      left: { plugins?: any[] } | undefined,
+      right: { plugins?: any[] } | undefined
+    ) => ({
       ...(left ?? {}),
       ...(right ?? {}),
       ...(left?.plugins != null || right?.plugins != null
