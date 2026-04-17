@@ -116,3 +116,24 @@
 .adapter-select-tooltip-target--locked {
   cursor: help;
 }
+
+@media (max-width: 960px) {
+  .sender-select-arrow {
+    font-size: 16px;
+  }
+
+  .model-select,
+  .effort-select,
+  .adapter-select {
+    font-size: 11px;
+
+    .ant-select-selector {
+      padding: 0 0 0 6px !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 11px !important;
+    }
+  }
+}

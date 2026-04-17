@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import type { AutomationRule, AutomationRun } from '#~/api.js'
 
 interface RunHistoryPanelProps {
+  compact?: boolean
   rule: AutomationRule | null
   runs: AutomationRun[]
   runQuery: string
@@ -23,6 +24,7 @@ interface RunHistoryPanelProps {
 }
 
 export function RunHistoryPanel({
+  compact = false,
   rule,
   runs,
   runQuery,
@@ -309,6 +311,40 @@ export function RunHistoryPanel({
           ? (
             <div className='automation-view__empty'>
               <Empty description={t('automation.noRuns')} />
+            </div>
+          )
+          : compact
+          ? (
+            <div className='automation-view__run-card-list'>
+              {filteredRuns.map((run) => (
+                <a
+                  key={run.id}
+                  className='automation-view__run-card'
+                  href={`/session/${run.sessionId}`}
+                >
+                  <div className='automation-view__run-card-header'>
+                    <span className='automation-view__run-card-title'>
+                      {run.taskTitle ?? t('automation.taskUnknown')}
+                    </span>
+                    {run.status
+                      ? (
+                        <span className='automation-view__status' data-status={run.status}>
+                          <span className='material-symbols-rounded automation-view__status-icon'>
+                            fiber_manual_record
+                          </span>
+                          {t(`common.status.${run.status}`, run.status)}
+                        </span>
+                      )
+                      : null}
+                  </div>
+                  <div className='automation-view__run-card-time'>
+                    {dayjs(run.runAt).format('YYYY-MM-DD HH:mm')}
+                  </div>
+                  <div className='automation-view__run-card-summary'>
+                    {run.title ?? run.lastMessage ?? run.lastUserMessage ?? '-'}
+                  </div>
+                </a>
+              ))}
             </div>
           )
           : (

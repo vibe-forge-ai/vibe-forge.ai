@@ -30,6 +30,8 @@ interface MessageItemProps {
   sessionInfo?: SessionInfo | null
   isSessionBusy: boolean
   isEditing: boolean
+  isCompactLayout: boolean
+  isTouchInteraction: boolean
   showAssistantActions: boolean
   onEditMessage: (messageId: string, content: string | ChatMessageContent[]) => Promise<boolean>
   onRecallMessage: (messageId: string) => Promise<boolean>
@@ -53,6 +55,8 @@ function MessageItemComponent({
   sessionInfo,
   isSessionBusy,
   isEditing,
+  isCompactLayout,
+  isTouchInteraction,
   showAssistantActions,
   onEditMessage,
   onRecallMessage,
@@ -80,6 +84,7 @@ function MessageItemComponent({
   const canFork = isPersistedMessage && !isSessionBusy && isUser
   const canCopy = copyableText != null
   const shouldShowAssistantActions = !isUser && showAssistantActions
+  const showCompactActionMenu = isCompactLayout || isTouchInteraction
 
   useEffect(() => {
     setIsSubmitting(false)
@@ -384,6 +389,36 @@ function MessageItemComponent({
     </>
   )
 
+  const compactActionMenu = (
+    <MessageContextMenu
+      anchorId={anchorId}
+      canEdit={canEdit}
+      canFork={canFork}
+      canRecall={canRecall}
+      copyableText={copyableText}
+      isDebugMode={isDebugMode}
+      isEditing={isEditing}
+      message={originalMessage}
+      sessionId={sessionId}
+      trigger={['click']}
+      onFork={handleFork}
+      onRecall={handleRecall}
+      onStartEditing={handleStartEdit}
+    >
+      <button
+        type='button'
+        className='msg-action-button msg-action-button--menu'
+        title={t('common.moreActions')}
+        aria-label={t('common.moreActions')}
+        onClick={(event) => {
+          event.stopPropagation()
+        }}
+      >
+        <span className='material-symbols-rounded'>more_horiz</span>
+      </button>
+    </MessageContextMenu>
+  )
+
   return (
     <MessageContextMenu
       anchorId={anchorId}
@@ -404,13 +439,15 @@ function MessageItemComponent({
         id={anchorId}
         className={`${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${isEditing ? 'is-editing' : ''} ${
           !isFirstInGroup ? 'consecutive' : ''
-        } ${isActionsVisible ? 'is-actions-visible' : ''} ${isTargeted ? 'is-targeted' : ''}`}
+        } ${isActionsVisible ? 'is-actions-visible' : ''} ${isTargeted ? 'is-targeted' : ''} ${
+          showCompactActionMenu ? 'has-compact-menu' : ''
+        }`}
         data-message-id={originalMessage.id}
         onPointerEnter={handleActionsPointerEnter}
         onPointerLeave={handleActionsPointerLeave}
       >
         <div className={`message-body-container ${isEditing ? 'is-editing' : ''}`}>
-          {isUser && !isEditing && (
+          {isUser && !isEditing && !showCompactActionMenu && (
             <div className='message-side-actions'>
               {actionButtons}
             </div>
@@ -440,7 +477,11 @@ function MessageItemComponent({
           </div>
           {!isEditing && (
             <MessageFooter msg={originalMessage} isUser={isUser}>
-              {shouldShowAssistantActions ? actionButtons : undefined}
+              {showCompactActionMenu
+                ? compactActionMenu
+                : shouldShowAssistantActions
+                ? actionButtons
+                : undefined}
             </MessageFooter>
           )}
         </div>
@@ -455,6 +496,8 @@ const areMessageItemPropsEqual = (prev: MessageItemProps, next: MessageItemProps
     prev.isTargeted === next.isTargeted &&
     prev.isSessionBusy === next.isSessionBusy &&
     prev.isEditing === next.isEditing &&
+    prev.isCompactLayout === next.isCompactLayout &&
+    prev.isTouchInteraction === next.isTouchInteraction &&
     prev.sessionId === next.sessionId &&
     prev.sessionInfo === next.sessionInfo &&
     prev.showAssistantActions === next.showAssistantActions &&

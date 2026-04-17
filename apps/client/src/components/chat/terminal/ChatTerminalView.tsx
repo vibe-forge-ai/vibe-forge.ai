@@ -5,6 +5,7 @@ import React, { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { DockPanel } from '#~/components/dock-panel/DockPanel'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useTerminalInstance } from './@hooks/use-terminal-instance'
 import { useTerminalSession } from './@hooks/use-terminal-session'
 
@@ -21,6 +22,7 @@ export function ChatTerminalView({
   sessionId: string
 }) {
   const { t } = useTranslation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const inputHandlerRef = React.useRef<(data: string) => void>(() => undefined)
   const resizeHandlerRef = React.useRef<(cols: number, rows: number) => void>(() => undefined)
   const [shellLabel, setShellLabel] = useState('zsh')
@@ -77,11 +79,15 @@ export function ChatTerminalView({
       code: lastExit.exitCode ?? 'null',
       signal: lastExit.signal ?? 'null'
     })
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   return (
     <DockPanel
+      allowResize={!isCompactView}
       className='chat-terminal-view'
+      defaultHeight={isCompactView ? 208 : undefined}
       isOpen={isOpen}
+      maxHeight={isCompactView ? 320 : 520}
       title={t('chat.viewTerminal')}
       meta={shellLabel}
       closeLabel={t('common.close')}

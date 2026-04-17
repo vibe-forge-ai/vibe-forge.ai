@@ -1,6 +1,6 @@
 import './index.scss'
 
-import { App } from 'antd'
+import { App, Segmented } from 'antd'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -17,6 +17,7 @@ import {
   updateAutomationRule
 } from '#~/api.js'
 import { PageShell } from '#~/components/layout/PageShell'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 
 import { RuleFormPanel } from './RuleFormPanel.js'
@@ -37,6 +38,7 @@ interface AutomationQueryParams extends Record<string, string> {
 export function AutomationView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const navigate = useNavigate()
   const { data, mutate } = useSWR<{ rules: AutomationRule[] }>(
     '/api/automation/rules',
@@ -45,6 +47,8 @@ export function AutomationView() {
   const rules = data?.rules ?? []
   const [panelMode, setPanelMode] = useState<PanelMode>('view')
   const [submitting, setSubmitting] = useState(false)
+  const [mobilePanel, setMobilePanel] = useState<'rules' | 'details'>('rules')
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   const { values, update } = useQueryParams<AutomationQueryParams>({
     keys: ['rule', 'q', 'runQ', 'status', 'time', 'sort'],
@@ -90,23 +94,50 @@ export function AutomationView() {
     }
   }, [rules, update, values.rule])
 
+  useEffect(() => {
+    if (!isCompactView) return
+    if (panelMode !== 'view') {
+      setMobilePanel('details')
+      return
+    }
+    if (selectedRuleId == null) {
+      setMobilePanel('rules')
+    }
+  }, [isCompactView, panelMode, selectedRuleId])
+
   const handleSelectRule = useCallback((ruleId: string) => {
     setPanelMode('view')
     update({ rule: ruleId })
-  }, [update])
+    if (isCompactView) {
+      setMobilePanel('details')
+    }
+  }, [isCompactView, update])
 
   const handleCreateRule = useCallback(() => {
     setPanelMode('create')
-  }, [])
+    if (isCompactView) {
+      setMobilePanel('details')
+    }
+  }, [isCompactView])
 
   const handleEditRule = useCallback((rule: AutomationRule) => {
     setPanelMode('edit')
     update({ rule: rule.id })
-  }, [update])
+    if (isCompactView) {
+      setMobilePanel('details')
+    }
+  }, [isCompactView, update])
 
   const handleCancelForm = useCallback(() => {
     setPanelMode('view')
-  }, [])
+    if (isCompactView) {
+      setMobilePanel(selectedRuleId != null ? 'details' : 'rules')
+    }
+  }, [isCompactView, selectedRuleId])
+
+  const showRuleList = !isCompactView || mobilePanel === 'rules'
+  const showDetails = !isCompactView || mobilePanel === 'details'
+  const detailDisabled = panelMode === 'view' && selectedRule == null
 
   const handleSubmit = useCallback(async (
     payload: Partial<AutomationRule>,
@@ -174,56 +205,78 @@ export function AutomationView() {
   }, [message, mutate, t])
 
   return (
-    <PageShell className='automation-view' bodyClassName='automation-view__body'>
-      <div className='automation-view__left'>
-        <RuleSidebar
-          rules={rules}
-          selectedRuleId={selectedRuleId}
-          query={values.q}
-          isCreating={panelMode === 'create'}
-          onCreate={handleCreateRule}
-          onSelect={handleSelectRule}
-          onRun={handleRun}
-          onDelete={handleDelete}
-          onToggle={handleToggle}
-          onQueryChange={(value: string) => update({ q: value })}
-        />
-      </div>
-      <div className='automation-view__right'>
-        {panelMode === 'create' && (
-          <RuleFormPanel
-            mode='create'
-            rule={null}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            onCancel={handleCancelForm}
+    <PageShell
+      className={`automation-view ${isCompactView ? 'automation-view--compact' : ''}`}
+      bodyClassName='automation-view__body'
+    >
+      {isCompactView && (
+        <div className='automation-view__mobile-switcher-shell'>
+          <Segmented
+            block
+            className='automation-view__mobile-switcher'
+            value={mobilePanel}
+            onChange={(value) => setMobilePanel(value as 'rules' | 'details')}
+            options={[
+              { label: t('automation.mobileRules'), value: 'rules' },
+              { label: t('automation.mobileDetails'), value: 'details', disabled: detailDisabled }
+            ]}
           />
-        )}
-        {panelMode === 'edit' && (
-          <RuleFormPanel
-            mode='edit'
-            rule={selectedRule}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            onCancel={handleCancelForm}
+        </div>
+      )}
+      {showRuleList && (
+        <div className='automation-view__left'>
+          <RuleSidebar
+            rules={rules}
+            selectedRuleId={selectedRuleId}
+            query={values.q}
+            isCreating={panelMode === 'create'}
+            onCreate={handleCreateRule}
+            onSelect={handleSelectRule}
+            onRun={handleRun}
+            onDelete={handleDelete}
+            onToggle={handleToggle}
+            onQueryChange={(value: string) => update({ q: value })}
           />
-        )}
-        {panelMode === 'view' && (
-          <RunHistoryPanel
-            rule={selectedRule}
-            runs={runs}
-            runQuery={values.runQ}
-            statusFilter={values.status}
-            timeFilter={values.time}
-            sortOrder={values.sort}
-            onEditRule={handleEditRule}
-            onRunQueryChange={(value: string) => update({ runQ: value })}
-            onStatusFilterChange={(value: string) => update({ status: value })}
-            onTimeFilterChange={(value: string) => update({ time: value })}
-            onSortOrderChange={(value: string) => update({ sort: value })}
-          />
-        )}
-      </div>
+        </div>
+      )}
+      {showDetails && (
+        <div className='automation-view__right'>
+          {panelMode === 'create' && (
+            <RuleFormPanel
+              mode='create'
+              rule={null}
+              submitting={submitting}
+              onSubmit={handleSubmit}
+              onCancel={handleCancelForm}
+            />
+          )}
+          {panelMode === 'edit' && (
+            <RuleFormPanel
+              mode='edit'
+              rule={selectedRule}
+              submitting={submitting}
+              onSubmit={handleSubmit}
+              onCancel={handleCancelForm}
+            />
+          )}
+          {panelMode === 'view' && (
+            <RunHistoryPanel
+              compact={isCompactView}
+              rule={selectedRule}
+              runs={runs}
+              runQuery={values.runQ}
+              statusFilter={values.status}
+              timeFilter={values.time}
+              sortOrder={values.sort}
+              onEditRule={handleEditRule}
+              onRunQueryChange={(value: string) => update({ runQ: value })}
+              onStatusFilterChange={(value: string) => update({ status: value })}
+              onTimeFilterChange={(value: string) => update({ time: value })}
+              onSortOrderChange={(value: string) => update({ sort: value })}
+            />
+          )}
+        </div>
+      )}
     </PageShell>
   )
 }

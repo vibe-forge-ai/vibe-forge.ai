@@ -24,7 +24,7 @@
   &:focus-within {
     border-color: #3b82f6;
     background-color: var(--input-focus-bg, #f9fafb);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .1);
+    box-shadow: none;
   }
 
   .chat-input-monaco {

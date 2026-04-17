@@ -101,6 +101,7 @@ const filterGitWorktrees = (worktrees: GitWorktreeSummary[], query: string) => {
 }
 
 export function GitWorktreeDropdown({
+  compact = false,
   open,
   workspace,
   worktrees,
@@ -109,6 +110,7 @@ export function GitWorktreeDropdown({
   placement = 'bottomLeft',
   onOpenChange
 }: {
+  compact?: boolean
   open: boolean
   workspace?: SessionWorkspace
   worktrees: GitWorktreeSummary[]
@@ -322,9 +324,9 @@ export function GitWorktreeDropdown({
     >
       <Button
         type='text'
-        className={`chat-header-git__trigger ${open ? 'is-open' : ''} ${
+        className={`chat-header-git__trigger chat-header-git__trigger--worktree ${open ? 'is-open' : ''} ${
           mode.type === 'session' && mode.isBusy ? 'is-disabled' : ''
-        }`}
+        } ${compact ? 'is-compact' : ''}`.trim()}
         title={triggerTitle}
         aria-label={t('chat.sessionWorkspace')}
       >

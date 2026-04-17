@@ -107,3 +107,31 @@
   font-size: 16px;
   color: var(--sub-text-color);
 }
+
+@media (max-width: 960px) {
+  .config-view__field-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .config-view__field-meta {
+    align-items: flex-start;
+  }
+
+  .config-view__field-title,
+  .config-view__field-desc {
+    white-space: normal;
+  }
+
+  .config-view__field-control {
+    min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .config-view__field-control > * {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}

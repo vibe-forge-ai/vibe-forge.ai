@@ -1,6 +1,8 @@
 import { Button, Checkbox, Popconfirm, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+
 interface SidebarHeaderBatchActionsProps {
   isAllSelected: boolean
   selectedCount: number
@@ -21,10 +23,12 @@ export function SidebarHeaderBatchActions({
   onSelectAll
 }: SidebarHeaderBatchActionsProps) {
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
   return (
     <div className='header-batch-actions'>
-      <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
+      <Tooltip title={resolveTooltipTitle(isAllSelected ? t('common.deselectAll') : t('common.selectAll'))}>
         <label className='batch-select-toggle'>
           <Checkbox
             checked={isAllSelected}
@@ -33,7 +37,7 @@ export function SidebarHeaderBatchActions({
           />
         </label>
       </Tooltip>
-      <Tooltip title={t('common.star')}>
+      <Tooltip title={resolveTooltipTitle(t('common.star'))}>
         <Button
           className='sidebar-tool-btn is-icon-only'
           type='text'
@@ -50,7 +54,7 @@ export function SidebarHeaderBatchActions({
         okButtonProps={{ danger: false }}
         disabled={selectedCount === 0}
       >
-        <Tooltip title={t('common.archive')}>
+        <Tooltip title={resolveTooltipTitle(t('common.archive'))}>
           <Button
             className='sidebar-tool-btn is-icon-only'
             type='text'
@@ -67,7 +71,7 @@ export function SidebarHeaderBatchActions({
         okButtonProps={{ danger: true }}
         disabled={selectedCount === 0}
       >
-        <Tooltip title={t('common.delete')}>
+        <Tooltip title={resolveTooltipTitle(t('common.delete'))}>
           <Button
             className='sidebar-tool-btn is-icon-only is-danger'
             type='text'

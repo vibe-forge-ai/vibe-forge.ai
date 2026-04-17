@@ -34,9 +34,21 @@
     margin-top: 4px;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
+    min-width: 0;
     font-size: 11px;
     color: var(--sub-text-color, #9ca3af);
+
+    > * {
+      min-width: 0;
+    }
+
+    .msg-model,
+    .msg-usage,
+    .timestamp {
+      overflow-wrap: anywhere;
+    }
 
     .timestamp {
       user-select: none;
@@ -141,6 +153,13 @@
   }
 }
 
+.chat-message-user.has-compact-menu,
+.chat-message-assistant.has-compact-menu {
+  .msg-footer {
+    opacity: 1;
+  }
+}
+
 .msg-action-button__label {
   font-size: 11px;
   line-height: 1;
@@ -168,6 +187,12 @@
     background: rgba(8, 145, 178, .12);
     color: #0e7490;
   }
+}
+
+.msg-action-button--menu {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
 }
 
 .chat-message-user {
@@ -246,8 +271,9 @@ html.dark {
 }
 
 .message-image {
-  display: inline-block;
-  max-width: 360px;
+  display: block;
+  width: min(100%, 360px);
+  max-width: 100%;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -255,6 +281,7 @@ html.dark {
 
 .message-image img {
   display: block;
+  width: 100%;
   max-width: 100%;
   height: auto;
 }
@@ -292,7 +319,9 @@ html.dark {
   font-size: 14px;
   line-height: 1.5;
   word-wrap: break-word;
+  overflow-wrap: anywhere;
   width: 100%;
+  min-width: 0;
 
   p {
     margin: 0 0 4px 0;
@@ -355,14 +384,28 @@ html.dark {
     color: #6b7280;
   }
 
+  .markdown-table-wrapper {
+    max-width: 100%;
+    margin: 12px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
+  }
+
   table {
     border-collapse: collapse;
-    width: 100%;
-    margin: 12px 0;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
 
     th, td {
       border: 1px solid #e5e7eb;
       padding: 6px 13px;
+      vertical-align: top;
+      overflow-wrap: anywhere;
     }
 
     tr:nth-child(2n) {
@@ -408,5 +451,36 @@ html.dark {
 
   &:hover {
     opacity: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  .chat-message-user, .chat-message-assistant {
+    scroll-margin-top: 64px;
+
+    .msg-footer {
+      gap: 6px;
+      font-size: 10px;
+    }
+  }
+
+  .chat-message-user, .chat-message-assistant {
+    &.is-targeted {
+      scroll-margin-top: 76px;
+
+      .bubble {
+        outline-offset: 4px;
+      }
+    }
+  }
+
+  .message-context-file {
+    width: 100%;
+  }
+
+  .markdown-body {
+    .markdown-table-wrapper {
+      margin: 8px 0;
+    }
   }
 }

@@ -12,9 +12,11 @@ import { GitWorktreeDropdown } from './GitWorktreeDropdown'
 import { useChatGitControls } from './use-chat-git-controls'
 
 export function ChatGitControls({
+  compact = false,
   placement = 'bottomLeft',
   sessionId
 }: {
+  compact?: boolean
   placement?: 'bottomLeft' | 'topLeft'
   sessionId: string
 }) {
@@ -27,8 +29,9 @@ export function ChatGitControls({
 
   return (
     <>
-      <div className='chat-header-git'>
+      <div className={`chat-header-git ${compact ? 'chat-header-git--compact' : ''}`.trim()}>
         <GitWorktreeDropdown
+          compact={compact}
           open={git.worktreeMenuOpen}
           placement={placement}
           workspace={git.workspace}
@@ -57,6 +60,7 @@ export function ChatGitControls({
         {git.repoState?.available === true && (
           <>
             <GitOperationsDropdown
+              compact={compact}
               isBusy={git.isBusy}
               open={git.operationsMenuOpen}
               placement={placement}
@@ -86,6 +90,7 @@ export function ChatGitControls({
 
             <BranchSwitcherDropdown
               availableLocalBranches={git.availableLocalBranches}
+              compact={compact}
               currentBranchLabel={git.currentBranchLabel}
               isBusy={git.isBusy}
               isLoading={git.isBranchListLoading}

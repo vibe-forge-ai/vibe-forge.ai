@@ -2,6 +2,7 @@ import { Button, Input, Tooltip } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { SidebarHeaderBatchActions } from './SidebarHeaderBatchActions'
 import { SidebarHeaderSelectField } from './SidebarHeaderSelectField'
@@ -56,9 +57,11 @@ export function SidebarHeaderSearchActions({
   onToggleSearchActions
 }: SidebarHeaderSearchActionsProps) {
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
   const isAllSelected = totalCount > 0 && selectedCount === totalCount
   const toOptions = useMemo(() => (values: string[]) => values.map((value) => ({ label: value, value })), [])
   const filterSuffixIcon = <span className='material-symbols-rounded toolbar-filter-chevron'>expand_more</span>
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
   const sortOptions = useMemo(
     () => [
       { label: t('automation.sortDesc'), value: 'desc' },
@@ -78,7 +81,7 @@ export function SidebarHeaderSearchActions({
             onChange={(e) => onSearchChange(e.target.value)}
             prefix={<span className='material-symbols-rounded search-icon'>search</span>}
             suffix={
-              <Tooltip title={t('common.searchActions')}>
+              <Tooltip title={resolveTooltipTitle(t('common.searchActions'))}>
                 <button
                   type='button'
                   className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
@@ -102,7 +105,7 @@ export function SidebarHeaderSearchActions({
             <div className='header-toolbar-leading'>
               {isBatchMode
                 ? (
-                  <Tooltip title={t('common.cancelBatch')}>
+                  <Tooltip title={resolveTooltipTitle(t('common.cancelBatch'))}>
                     <Button
                       className='sidebar-tool-btn is-icon-only'
                       type='text'
@@ -112,7 +115,7 @@ export function SidebarHeaderSearchActions({
                   </Tooltip>
                 )
                 : (
-                  <Tooltip title={t('common.batchMode')}>
+                  <Tooltip title={resolveTooltipTitle(t('common.batchMode'))}>
                     <Button
                       className='sidebar-tool-btn is-icon-only'
                       type='text'

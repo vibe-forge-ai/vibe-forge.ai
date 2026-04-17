@@ -4,6 +4,7 @@ import { Button, Tooltip } from 'antd'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { SidebarHeaderSearchActions } from './SidebarHeaderSearchActions'
 
@@ -14,6 +15,7 @@ interface SidebarHeaderProps {
   createButtonRef: React.RefObject<HTMLButtonElement | null>
   hasActiveSearchControls: boolean
   isBatchMode: boolean
+  isCompactLayout: boolean
   isCreatingSession: boolean
   isSidebarCollapsed: boolean
   searchQuery: string
@@ -27,6 +29,7 @@ interface SidebarHeaderProps {
   onBatchDelete: () => void
   onBatchStar: () => void
   onAdapterFilterChange: (filters: string[]) => void
+  onCloseSidebar?: () => void
   onCreateSession: () => void
   onSearchChange: (query: string) => void
   onSortOrderChange: (sort?: SidebarSessionSortOrder) => void
@@ -43,6 +46,7 @@ export function SidebarHeader({
   createButtonRef,
   hasActiveSearchControls,
   isBatchMode,
+  isCompactLayout,
   isCreatingSession,
   isSidebarCollapsed,
   searchQuery,
@@ -56,6 +60,7 @@ export function SidebarHeader({
   onBatchDelete,
   onBatchStar,
   onAdapterFilterChange,
+  onCloseSidebar,
   onCreateSession,
   onSearchChange,
   onSortOrderChange,
@@ -65,11 +70,12 @@ export function SidebarHeader({
   onToggleSidebarCollapsed
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
   const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
   const shouldShowSearchActions = !isSidebarCollapsed && (isSearchActionsOpen || isBatchMode)
 
   return (
-    <div className='sidebar-header'>
+    <div className={`sidebar-header ${isCompactLayout ? 'sidebar-header--compact' : ''}`.trim()}>
       <div className='header-top'>
         {!isSidebarCollapsed
           ? (
@@ -93,7 +99,12 @@ export function SidebarHeader({
             </Button>
           )
           : (
-            <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='right'>
+            <Tooltip
+              title={isTouchInteraction
+                ? undefined
+                : (isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
+              placement='right'
+            >
               <Button
                 className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
                 type='text'
@@ -106,14 +117,25 @@ export function SidebarHeader({
               </Button>
             </Tooltip>
           )}
-        <Tooltip title={isSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
+        <Tooltip
+          title={isTouchInteraction ? undefined : (
+            isCompactLayout ? t('common.close') : (
+              isSidebarCollapsed ? t('common.expand') : t('common.collapse')
+            )
+          )}
+        >
           <Button
             className='sidebar-collapse-btn'
             type='text'
-            onClick={onToggleSidebarCollapsed}
+            aria-label={isCompactLayout ? t('common.close') : (
+              isSidebarCollapsed ? t('common.expand') : t('common.collapse')
+            )}
+            onClick={isCompactLayout
+              ? onCloseSidebar
+              : onToggleSidebarCollapsed}
           >
             <span className='material-symbols-rounded'>
-              {isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
+              {isCompactLayout ? 'close' : isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
             </span>
           </Button>
         </Tooltip>
