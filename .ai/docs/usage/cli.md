@@ -22,6 +22,7 @@
 
 - 如果显式设置了 `__VF_PROJECT_WORKSPACE_FOLDER__`，会直接使用该目录。
 - 如果没有设置，`vf` / `vf-mcp` / `vf-call-hook` / `vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，因此可以在项目任意子目录下启动。
+- 配置文件默认会跟随这个解析后的 workspace 根目录读取；如果需要把 `.ai.config.*` 放到别的目录，可以显式设置 `__VF_PROJECT_CONFIG_DIR__`。
 
 ## 内建 Skills
 
