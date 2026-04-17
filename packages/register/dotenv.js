@@ -3,6 +3,7 @@ const { dirname, isAbsolute, resolve } = require('node:path')
 const process = require('node:process')
 
 const dotenv = require('dotenv')
+const { findWorkspaceRoot } = require('./workspace')
 
 const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
 const PROJECT_LAUNCH_CWD_ENV = '__VF_PROJECT_LAUNCH_CWD__'
@@ -40,7 +41,8 @@ const resolvePathFromLaunchCwd = (cwd, value, env = process.env) => (
 )
 
 const resolveProjectWorkspaceFolder = (cwd = process.cwd(), env = process.env) => (
-  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env) ?? resolve(cwd)
+  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env) ??
+    findWorkspaceRoot(resolveProjectLaunchCwd(cwd, env))
 )
 
 const resolveProjectConfigDir = (cwd = process.cwd(), env = process.env) => (
@@ -90,12 +92,17 @@ const resolvePrimaryWorkspaceFolder = (workspaceFolder) => {
 }
 
 const loadDotenv = (options = {}) => {
+  if (options.workspaceFolder != null) {
+    delete process.env[PROJECT_LAUNCH_CWD_ENV]
+    delete process.env[PROJECT_WORKSPACE_FOLDER_ENV]
+    delete process.env[PROJECT_CONFIG_DIR_ENV]
+  }
+
   const launchCwd = resolveProjectLaunchCwd(
     options.workspaceFolder ?? process.cwd(),
     process.env
   )
   process.env[PROJECT_LAUNCH_CWD_ENV] = launchCwd
-
   const envFiles = process.env.__VF_PROJECT_DOTENV_FILES__
     ? process.env.__VF_PROJECT_DOTENV_FILES__
       .split(',')

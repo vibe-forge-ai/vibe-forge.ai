@@ -83,7 +83,7 @@ const resolveWritableConfigPath = (
   env: Record<string, string | null | undefined> = process.env
 ) => {
   const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(workspaceFolder, env)
-  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolve(workspaceFolder)
+  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolvedWorkspaceFolder
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
     const resolvedPath = resolve(configFolder, path)

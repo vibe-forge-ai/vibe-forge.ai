@@ -18,6 +18,11 @@
 - `vf stop <sessionId>`：优雅停止正在运行的 CLI 会话
 - `vf kill <sessionId>`：强制终止正在运行的 CLI 会话
 
+这些命令默认以项目根目录作为 workspace。
+
+- 如果显式设置了 `__VF_PROJECT_WORKSPACE_FOLDER__`，会直接使用该目录。
+- 如果没有设置，`vf` / `vf-mcp` / `vf-call-hook` / `vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，因此可以在项目任意子目录下启动。
+
 ## 内建 Skills
 
 `@vibe-forge/cli` 会默认注入 companion 插件 `@vibe-forge/plugin-cli-skills`，可直接通过 `--include-skill` 使用：
