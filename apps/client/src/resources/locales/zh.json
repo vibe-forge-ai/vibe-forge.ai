@@ -85,6 +85,23 @@
       "waiting_input": "等待输入"
     }
   },
+  "auth": {
+    "title": "登录 Vibe Forge",
+    "subtitle": "请输入已配置的账号，继续进入当前工作区。",
+    "username": "账号",
+    "usernamePlaceholder": "请输入账号",
+    "usernameRequired": "请输入账号",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "passwordRequired": "请输入密码",
+    "rememberDevice": "记住此设备",
+    "login": "登录",
+    "loginFailed": "登录失败",
+    "statusFailed": "无法读取登录状态",
+    "generatedPasswordTitle": "当前使用自动生成的本地密码",
+    "generatedPasswordDescription": "请从本地密码文件获取密码；也可以在 webAuth.accounts 中配置固定账号。",
+    "generatedPasswordHint": "默认密码文件：{{path}}"
+  },
   "automation": {
     "title": "自动化任务",
     "newRule": "新建规则",

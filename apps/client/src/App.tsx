@@ -1,12 +1,13 @@
 import { ConfigProvider } from 'antd'
 
+import { AuthGate } from '#~/components/auth/AuthGate'
 import { AppShell } from '#~/components/layout/AppShell'
 import { useAppPreferences } from '#~/hooks/use-app-preferences'
 import { useSessionSubscription } from '#~/hooks/use-session-subscription.js'
 import { useSidebarNavigation } from '#~/hooks/use-sidebar-navigation'
 import { AppRoutes } from '#~/routes/AppRoutes'
 
-export default function App() {
+function AuthenticatedApp() {
   useSessionSubscription()
   const { isDarkMode, themeConfig } = useAppPreferences()
   const sidebarNavigation = useSidebarNavigation()
@@ -24,5 +25,13 @@ export default function App() {
         <AppRoutes />
       </AppShell>
     </ConfigProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      <AuthenticatedApp />
+    </AuthGate>
   )
 }

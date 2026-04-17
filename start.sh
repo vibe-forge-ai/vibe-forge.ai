@@ -95,13 +95,13 @@ wait_for_server_ready() {
 
   local attempt
   for attempt in $(seq 1 50); do
-    if curl -fsS "http://localhost:${SERVER_PORT}/api/config" >/dev/null 2>&1; then
+    if curl -fsS "http://localhost:${SERVER_PORT}/api/auth/status" >/dev/null 2>&1; then
       return 0
     fi
     sleep 0.2
   done
 
-  echo "[start] Server failed to become ready on http://localhost:${SERVER_PORT}/api/config."
+  echo "[start] Server failed to become ready on http://localhost:${SERVER_PORT}/api/auth/status."
   echo "[start] See .logs/server.log for details."
   exit 1
 }

@@ -73,7 +73,8 @@ const buildSections = (config: Config | undefined) => {
       announcements,
       permissions: sanitize(config?.permissions),
       env: sanitize(config?.env),
-      notifications: sanitize(notifications)
+      notifications: sanitize(notifications),
+      webAuth: sanitize(config?.webAuth)
     },
     conversation: sanitize(conversation),
     models: sanitize(config?.models),
@@ -91,7 +92,8 @@ const buildSections = (config: Config | undefined) => {
       defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
       noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
     }),
-    shortcuts: sanitize(shortcuts)
+    shortcuts: sanitize(shortcuts),
+    auth: sanitize(config?.webAuth)
   }
 }
 

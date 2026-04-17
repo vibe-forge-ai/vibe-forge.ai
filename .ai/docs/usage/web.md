@@ -5,6 +5,7 @@
 ## Web UI 入口
 
 - 启动 `vfui-server` 和 `vfui-client` 后，先访问 `/ui`。
+- Web UI 默认要求登录；账号配置见 [启动服务](./runtime.md) 中的 `webAuth` 示例。
 - 会话详情页路径是 `/ui/session/<sessionId>`。
 - `view` query 目前支持 `history`、`timeline`、`terminal`、`settings`。
 - 终端视图入口是 `/ui/session/<sessionId>?view=terminal`。

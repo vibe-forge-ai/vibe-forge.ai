@@ -24,6 +24,27 @@ wait
 - `__VF_PROJECT_WORKSPACE_FOLDER__` 指向你的项目根目录。
 - `__VF_PROJECT_AI_BASE_DIR__` 可选；默认是 `.ai`，也可以设成 `.vf` 或 `.config/vibe/ai-data` 之类的嵌套目录。
 - `__VF_PROJECT_AI_ENTITIES_DIR__` 可选；默认是 `entities`，会基于 AI 基目录继续解析。
+- Web UI 在 server 绑定到 `localhost`、`127.*`、`::1` 时默认不启用登录保护；绑定到 `0.0.0.0`、局域网 IP 或域名时默认启用。可以在项目配置中设置多个账号：
+
+```yaml
+webAuth:
+  enabled: true
+  rememberDeviceTtlDays: 30
+  accounts:
+    - username: alice
+      password: change-me
+    - username: bob
+      password: change-me-too
+```
+
+- 如果没有配置 `webAuth.accounts` 或 `webAuth.password`，server 会在数据目录生成 `web-auth-password`，默认账号是 `admin`。默认数据目录是 `.data/`，仓库已忽略该目录，不会提交。
+- 临时关闭登录保护：
+
+```yaml
+webAuth:
+  enabled: false
+```
+
 - `HOME` 可用于隔离运行环境，默认跟随 AI 基目录落到项目内的 `.mock` 子目录。
 - `modelServices` 是共享层配置；各 adapter 会按自己的原生运行时做映射，具体以对应 adapter 文档为准。
   - 例如 `claude-code` 走 Claude Code Router
