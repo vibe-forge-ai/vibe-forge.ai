@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
@@ -9,10 +9,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 const require = createRequire(import.meta.url)
 
 describe('loadDotenv', () => {
-  const restoreKeys = ['TEST_PRIMARY_ONLY', 'TEST_SHARED_VALUE']
+  const restoreKeys = ['TEST_PRIMARY_ONLY', 'TEST_SHARED_VALUE', 'TEST_CONFIG_ONLY']
   const restoreEnv = new Map<string, string | undefined>()
   const restoreScopedEnv = [
+    '__VF_PROJECT_LAUNCH_CWD__',
     '__VF_PROJECT_WORKSPACE_FOLDER__',
+    '__VF_PROJECT_CONFIG_DIR__',
     '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__',
     '__VF_PROJECT_DOTENV_FILES__',
     '__VF_PROJECT_PACKAGE_DIR__'
@@ -82,6 +84,62 @@ describe('loadDotenv', () => {
     } finally {
       await rm(primaryDir, { force: true, recursive: true })
       await rm(worktreeDir, { force: true, recursive: true })
+    }
+  })
+
+  it('loads config-dir env files after launch-dir env sets workspace and config overrides', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-dotenv-workspace-'))
+    const launchDir = path.join(workspaceDir, 'c', 'd', 'e')
+    const configDir = path.join(launchDir, '.iac', 'ai')
+    const previousCwd = process.cwd()
+
+    for (const key of ['TEST_CONFIG_ONLY']) {
+      restoreEnv.set(key, process.env[key])
+      delete process.env[key]
+    }
+    for (const key of restoreScopedEnv) {
+      restoreScopedValues.set(key, process.env[key])
+    }
+
+    try {
+      await mkdir(configDir, { recursive: true })
+      await writeFile(
+        path.join(launchDir, '.env'),
+        [
+          '__VF_PROJECT_WORKSPACE_FOLDER__=../../..',
+          '__VF_PROJECT_CONFIG_DIR__=.iac/ai'
+        ].join('\n')
+      )
+      await writeFile(
+        path.join(configDir, '.env.dev'),
+        'TEST_CONFIG_ONLY=config-value\n'
+      )
+
+      process.chdir(launchDir)
+
+      const modulePath = require.resolve('../dotenv.js')
+      delete require.cache[modulePath]
+      const {
+        loadDotenv,
+        resolveProjectWorkspaceFolder,
+        resolveProjectConfigDir
+      } = require(modulePath) as {
+        loadDotenv: (options?: { workspaceFolder?: string; files?: string[] }) => void
+        resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+        resolveProjectConfigDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string | undefined
+      }
+
+      delete process.env.TEST_CONFIG_ONLY
+      loadDotenv()
+
+      const realWorkspaceDir = await realpath(workspaceDir)
+      const realConfigDir = await realpath(configDir)
+      expect(process.env.TEST_CONFIG_ONLY).toBe('config-value')
+      expect(resolveProjectWorkspaceFolder(process.cwd(), process.env)).toBe(realWorkspaceDir)
+      expect(resolveProjectConfigDir(process.cwd(), process.env)).toBe(realConfigDir)
+    } finally {
+      process.chdir(previousCwd)
+      await rm(workspaceDir, { force: true, recursive: true })
     }
   })
 })
