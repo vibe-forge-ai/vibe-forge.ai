@@ -3,6 +3,7 @@ import process from 'node:process'
 import type { Command } from 'commander'
 
 import { formatListCommand, formatResumeCommand } from '#~/session-cache.js'
+import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
 import { signalCliSession } from './session-control'
 
@@ -21,7 +22,7 @@ Examples:
     .action(async (sessionId: string) => {
       try {
         const result = await signalCliSession({
-          cwd: process.cwd(),
+          cwd: resolveCliWorkspaceCwd(),
           sessionId,
           signal: 'SIGKILL'
         })
