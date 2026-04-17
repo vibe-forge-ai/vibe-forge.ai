@@ -13,6 +13,7 @@ import {
   listBenchmarkCategories,
   startBenchmarkRun
 } from '#~/api.js'
+import { PageShell } from '#~/components/layout/PageShell'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import type { BenchmarkCase } from '@vibe-forge/types'
 
@@ -163,7 +164,7 @@ export function BenchmarkView() {
   const checkedCaseCount = checkedKeys.filter(k => k.startsWith('case:')).length
 
   return (
-    <div className='benchmark-view'>
+    <PageShell className='benchmark-view' bodyClassName='benchmark-view__body'>
       <div className='benchmark-view__left'>
         <BenchmarkSidebar
           cases={cases}
@@ -182,9 +183,6 @@ export function BenchmarkView() {
           onBatchRun={() => void handleBatchRun()}
         />
       </div>
-
-      <div className='benchmark-view__divider' />
-
       <div className='benchmark-view__right'>
         <BenchmarkCasePanel
           selectedCase={selectedCase}
@@ -195,6 +193,6 @@ export function BenchmarkView() {
           onRunCase={() => void (selectedCase && handleRunSpecificCase(selectedCase))}
         />
       </div>
-    </div>
+    </PageShell>
   )
 }

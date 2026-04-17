@@ -1,18 +1,17 @@
 import './KnowledgeBaseView.scss'
 
-import { App, Tabs } from 'antd'
+import { App } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { EntitySummary, RuleSummary, SpecSummary } from '#~/api.js'
+import { PageShell } from '#~/components/layout/PageShell.js'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import { EntitiesTab } from './components/EntitiesTab.js'
 import { FlowsTab } from './components/FlowsTab.js'
-import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader.js'
 import { RulesTab } from './components/RulesTab.js'
 import { SkillsTab } from './components/SkillsTab.js'
-import { TabLabel } from './components/TabLabel.js'
 
 interface KnowledgeQueryParams extends Record<string, string> {
   kbTab: string
@@ -147,12 +146,27 @@ export function KnowledgeBaseView() {
     message.info(t('knowledge.rules.importHint'))
   }
 
-  const tabs = [
+  const skillCount = React.useMemo(() => {
+    const names = new Set<string>()
+    specs.forEach(spec => {
+      spec.skills?.forEach(skill => names.add(skill))
+    })
+    entities.forEach(entity => {
+      entity.skills?.forEach(skill => names.add(skill))
+    })
+    return names.size
+  }, [entities, specs])
+
+  const sections = [
     {
       key: 'skills',
-      label: <TabLabel icon='psychology' label={t('knowledge.tabs.skills')} />,
-      children: (
+      icon: 'psychology',
+      label: t('knowledge.tabs.skills'),
+      description: t('knowledge.skills.desc'),
+      count: skillCount,
+      content: (
         <SkillsTab
+          onRefresh={handleRefresh}
           onCreate={handleCreateSkill}
           onImport={handleImportSkill}
         />
@@ -160,8 +174,11 @@ export function KnowledgeBaseView() {
     },
     {
       key: 'entities',
-      label: <TabLabel icon='group_work' label={t('knowledge.tabs.entities')} />,
-      children: (
+      icon: 'group_work',
+      label: t('knowledge.tabs.entities'),
+      description: t('knowledge.entities.desc'),
+      count: entities.length,
+      content: (
         <EntitiesTab
           entities={entities}
           filteredEntities={filteredEntities}
@@ -169,6 +186,7 @@ export function KnowledgeBaseView() {
           query={entityQuery}
           tagOptions={entityTagOptions}
           tagFilter={entityTagFilter}
+          onRefresh={handleRefresh}
           onQueryChange={setEntityQuery}
           onTagFilterChange={setEntityTagFilter}
           onCreate={handleCreateEntity}
@@ -178,8 +196,11 @@ export function KnowledgeBaseView() {
     },
     {
       key: 'flows',
-      label: <TabLabel icon='account_tree' label={t('knowledge.tabs.flows')} />,
-      children: (
+      icon: 'account_tree',
+      label: t('knowledge.tabs.flows'),
+      description: t('knowledge.flows.desc'),
+      count: specs.length,
+      content: (
         <FlowsTab
           specs={specs}
           filteredSpecs={filteredSpecs}
@@ -187,6 +208,7 @@ export function KnowledgeBaseView() {
           query={specQuery}
           tagOptions={specTagOptions}
           tagFilter={specTagFilter}
+          onRefresh={handleRefresh}
           onQueryChange={setSpecQuery}
           onTagFilterChange={setSpecTagFilter}
           onCreate={handleCreateSpec}
@@ -196,13 +218,17 @@ export function KnowledgeBaseView() {
     },
     {
       key: 'rules',
-      label: <TabLabel icon='gavel' label={t('knowledge.tabs.rules')} />,
-      children: (
+      icon: 'gavel',
+      label: t('knowledge.tabs.rules'),
+      description: t('knowledge.rules.desc'),
+      count: rules.length,
+      content: (
         <RulesTab
           rules={rules}
           filteredRules={filteredRules}
           isLoading={isRulesLoading}
           query={ruleQuery}
+          onRefresh={handleRefresh}
           onQueryChange={setRuleQuery}
           onCreate={handleCreateRule}
           onImport={handleImportRule}
@@ -211,24 +237,50 @@ export function KnowledgeBaseView() {
     }
   ]
 
-  const tabKeys = React.useMemo(() => tabs.map(tab => tab.key), [tabs])
-  const activeTab = tabKeys.includes(values.kbTab) ? values.kbTab : tabKeys[0]
+  const sectionKeys = React.useMemo(() => sections.map(section => section.key), [sections])
+  const activeSectionKey = sectionKeys.includes(values.kbTab) ? values.kbTab : sectionKeys[0]
+  const activeSection = React.useMemo(
+    () => sections.find(section => section.key === activeSectionKey) ?? sections[0],
+    [activeSectionKey, sections]
+  )
 
   React.useEffect(() => {
-    if (values.kbTab !== activeTab) {
-      update({ kbTab: activeTab })
+    if (values.kbTab !== activeSectionKey) {
+      update({ kbTab: activeSectionKey })
     }
-  }, [activeTab, update, values.kbTab])
+  }, [activeSectionKey, update, values.kbTab])
 
   return (
-    <div className='knowledge-base-view'>
-      <KnowledgeBaseHeader onRefresh={handleRefresh} />
-      <Tabs
-        className='knowledge-base-view__tabs'
-        items={tabs}
-        activeKey={activeTab}
-        onChange={(key) => update({ kbTab: key })}
-      />
-    </div>
+    <PageShell
+      className='knowledge-base-view'
+      bodyClassName='knowledge-base-view__body'
+    >
+      <div className='knowledge-base-view__left'>
+        <div className='knowledge-base-view__sidebar'>
+          <div className='knowledge-base-view__nav-list'>
+            {sections.map((section) => (
+              <button
+                key={section.key}
+                type='button'
+                className={`knowledge-base-view__nav-item ${section.key === activeSectionKey ? 'is-active' : ''}`}
+                onClick={() => update({ kbTab: section.key })}
+              >
+                <span className='material-symbols-rounded knowledge-base-view__nav-icon'>{section.icon}</span>
+                <span className='knowledge-base-view__nav-main'>
+                  <span className='knowledge-base-view__nav-row'>
+                    <span className='knowledge-base-view__nav-label'>{section.label}</span>
+                    <span className='knowledge-base-view__nav-count'>{section.count}</span>
+                  </span>
+                  <span className='knowledge-base-view__nav-desc'>{section.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className='knowledge-base-view__right'>
+        <div className='knowledge-base-view__right-body'>{activeSection?.content}</div>
+      </div>
+    </PageShell>
   )
 }

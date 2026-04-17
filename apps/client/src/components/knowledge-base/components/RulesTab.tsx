@@ -14,6 +14,7 @@ interface RulesTabProps {
   filteredRules: RuleSummary[]
   isLoading: boolean
   query: string
+  onRefresh: () => void
   onQueryChange: (value: string) => void
   onCreate: () => void
   onImport: () => void
@@ -24,6 +25,7 @@ export function RulesTab({
   filteredRules,
   isLoading,
   query,
+  onRefresh,
   onQueryChange,
   onCreate,
   onImport
@@ -33,10 +35,14 @@ export function RulesTab({
   return (
     <TabContent className='knowledge-base-view__rules-tab'>
       <SectionHeader
-        title={t('knowledge.rules.title')}
-        description={t('knowledge.rules.desc')}
         actions={
           <Space>
+            <ActionButton
+              icon={<span className='material-symbols-rounded'>refresh</span>}
+              onClick={onRefresh}
+            >
+              {t('knowledge.actions.refresh')}
+            </ActionButton>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
               onClick={onImport}

@@ -8,6 +8,8 @@ import useSWR from 'swr'
 import type { ConfigSource } from '@vibe-forge/core'
 import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
 
+import { PageShell } from '#~/components/layout/PageShell'
+
 import { getApiErrorMessage, getConfig, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
@@ -181,7 +183,10 @@ export function ConfigView() {
   }
 
   return (
-    <div className='config-view'>
+    <PageShell
+      className='config-view'
+      bodyClassName='config-view__body'
+    >
       {isLoading && (
         <div className='config-view__state'>
           <Spin />
@@ -236,8 +241,6 @@ export function ConfigView() {
                     {configTabKeys.has(tab.key) && (
                       <ConfigSectionPanel
                         sectionKey={tab.key}
-                        title={tab.label}
-                        icon={tab.icon}
                         value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
                         onChange={(next) => handleDraftChange(tab.key, next)}
                         mergedModelServices={mergedModelServices as Record<string, unknown>}
@@ -277,6 +280,6 @@ export function ConfigView() {
           />
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

@@ -51,7 +51,12 @@ export function AppShell({
         )}
       </div>
       <Layout.Content
-        className={`app-shell__content ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}
+        className={[
+          'app-shell__content',
+          showSidebar ? 'app-shell__content--session' : '',
+          showSidebar && isSidebarCollapsed ? 'is-sidebar-collapsed' : '',
+          showSidebar ? '' : 'is-flat'
+        ].filter(Boolean).join(' ')}
       >
         {children}
       </Layout.Content>

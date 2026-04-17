@@ -1,12 +1,13 @@
 .config-view__field-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .config-view__field-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .config-view__subsection {
@@ -26,6 +27,7 @@
 .config-view__subsection-body {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .config-view__slider {
@@ -35,11 +37,15 @@
 .config-view__collapse-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
 .config-view__collapse-group .ant-collapse-header {
-  padding: 0;
+  padding: 12px 14px !important;
+}
+
+.config-view__collapse-group .ant-collapse-content-box {
+  padding: 0 12px 12px !important;
 }
 
 .config-view__collapse-header {
@@ -74,7 +80,7 @@
 
 .config-view__multiline-input {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .config-view__option {

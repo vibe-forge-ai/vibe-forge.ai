@@ -9,20 +9,25 @@ import { SectionHeader } from './SectionHeader'
 import { TabContent } from './TabContent'
 
 interface SkillsTabProps {
+  onRefresh: () => void
   onCreate: () => void
   onImport: () => void
 }
 
-export function SkillsTab({ onCreate, onImport }: SkillsTabProps) {
+export function SkillsTab({ onCreate, onImport, onRefresh }: SkillsTabProps) {
   const { t } = useTranslation()
 
   return (
     <TabContent className='knowledge-base-view__skills-tab'>
       <SectionHeader
-        title={t('knowledge.skills.title')}
-        description={t('knowledge.skills.desc')}
         actions={
           <Space>
+            <ActionButton
+              icon={<span className='material-symbols-rounded'>refresh</span>}
+              onClick={onRefresh}
+            >
+              {t('knowledge.actions.refresh')}
+            </ActionButton>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
               onClick={onImport}

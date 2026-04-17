@@ -6,6 +6,9 @@ import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
+
+import { PageShell } from '#~/components/layout/PageShell'
+
 import { deleteSession, getApiErrorMessage, listSessions, updateSession } from '../api'
 
 export function ArchiveView() {
@@ -99,109 +102,105 @@ export function ArchiveView() {
   const isAllSelected = filteredSessions.length > 0 && selectedIds.size === filteredSessions.length
 
   return (
-    <div className='archive-view'>
-      <div className='archive-view__header'>
-        <Space size={8} className='archive-view__title'>
-          <h2 className='archive-view__title-text'>{t('common.archivedSessions')}</h2>
-        </Space>
-
-        <Space>
-          {isBatchMode
-            ? (
-              <>
-                <span className='archive-view__batch-info'>
-                  {t('common.selectedCount', { count: selectedIds.size })}
-                </span>
-                <Tooltip title={t('common.cancel')}>
-                  <Button
-                    icon={
-                      <span className='material-symbols-rounded archive-view__action-icon'>
-                        close
-                      </span>
-                    }
-                    onClick={() => {
-                      setIsBatchMode(false)
-                      setSelectedIds(new Set())
-                    }}
-                    className='archive-view__icon-button'
-                  />
-                </Tooltip>
-                <Tooltip title={t('common.batchRestore')}>
-                  <Button
-                    type='primary'
-                    icon={
-                      <span className='material-symbols-rounded archive-view__action-icon'>
-                        unarchive
-                      </span>
-                    }
-                    onClick={() => {
-                      void handleBatchRestore()
-                    }}
-                    disabled={selectedIds.size === 0}
-                    className='archive-view__icon-button'
-                  />
-                </Tooltip>
-                <Popconfirm
-                  title={t('common.deleteConfirm', { count: selectedIds.size })}
-                  onConfirm={() => {
-                    void handleBatchDelete()
-                  }}
-                  disabled={selectedIds.size === 0}
-                >
-                  <Tooltip title={t('common.batchDelete')}>
+    <PageShell
+      className='archive-view'
+      header={
+        <div className='archive-view__toolbar'>
+          {isBatchMode && (
+            <div className='archive-view__select-all'>
+              <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
+                <Checkbox
+                  checked={isAllSelected}
+                  indeterminate={selectedIds.size > 0 && selectedIds.size < filteredSessions.length}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </Tooltip>
+            </div>
+          )}
+          <Input
+            prefix={<span className='material-symbols-rounded archive-view__search-icon'>search</span>}
+            placeholder={t('common.search')}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            allowClear
+            className='archive-view__search-input'
+          />
+          <Space size={6} className='archive-view__toolbar-actions'>
+            {isBatchMode
+              ? (
+                <>
+                  <span className='archive-view__batch-info'>
+                    {t('common.selectedCount', { count: selectedIds.size })}
+                  </span>
+                  <Tooltip title={t('common.cancel')}>
                     <Button
-                      danger
                       icon={
                         <span className='material-symbols-rounded archive-view__action-icon'>
-                          delete_sweep
+                          close
                         </span>
                       }
+                      onClick={() => {
+                        setIsBatchMode(false)
+                        setSelectedIds(new Set())
+                      }}
+                      className='archive-view__icon-button'
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('common.batchRestore')}>
+                    <Button
+                      type='primary'
+                      icon={
+                        <span className='material-symbols-rounded archive-view__action-icon'>
+                          unarchive
+                        </span>
+                      }
+                      onClick={() => {
+                        void handleBatchRestore()
+                      }}
                       disabled={selectedIds.size === 0}
                       className='archive-view__icon-button'
                     />
                   </Tooltip>
-                </Popconfirm>
-              </>
-            )
-            : (
-              <Tooltip title={t('common.batchMode')}>
-                <Button
-                  icon={
-                    <span className='material-symbols-rounded archive-view__action-icon'>
-                      checklist
-                    </span>
-                  }
-                  onClick={() => setIsBatchMode(true)}
-                  disabled={sessions.length === 0}
-                  className='archive-view__icon-button'
-                />
-              </Tooltip>
-            )}
-        </Space>
-      </div>
-
-      <div className='archive-view__filter-bar'>
-        {isBatchMode && (
-          <div className='archive-view__select-all'>
-            <Tooltip title={isAllSelected ? t('common.deselectAll') : t('common.selectAll')}>
-              <Checkbox
-                checked={isAllSelected}
-                indeterminate={selectedIds.size > 0 && selectedIds.size < filteredSessions.length}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              />
-            </Tooltip>
-          </div>
-        )}
-        <Input
-          prefix={<span className='material-symbols-rounded archive-view__search-icon'>search</span>}
-          placeholder={t('common.search')}
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          allowClear
-          className='archive-view__search-input'
-        />
-      </div>
-
+                  <Popconfirm
+                    title={t('common.deleteConfirm', { count: selectedIds.size })}
+                    onConfirm={() => {
+                      void handleBatchDelete()
+                    }}
+                    disabled={selectedIds.size === 0}
+                  >
+                    <Tooltip title={t('common.batchDelete')}>
+                      <Button
+                        danger
+                        icon={
+                          <span className='material-symbols-rounded archive-view__action-icon'>
+                            delete_sweep
+                          </span>
+                        }
+                        disabled={selectedIds.size === 0}
+                        className='archive-view__icon-button'
+                      />
+                    </Tooltip>
+                  </Popconfirm>
+                </>
+              )
+              : (
+                <Tooltip title={t('common.batchMode')}>
+                  <Button
+                    icon={
+                      <span className='material-symbols-rounded archive-view__action-icon'>
+                        checklist
+                      </span>
+                    }
+                    onClick={() => setIsBatchMode(true)}
+                    disabled={sessions.length === 0}
+                    className='archive-view__icon-button'
+                  />
+                </Tooltip>
+              )}
+          </Space>
+        </div>
+      }
+    >
       <div className='archive-view__list'>
         {filteredSessions.length === 0
           ? (
@@ -294,6 +293,6 @@ export function ArchiveView() {
             />
           )}
       </div>
-    </div>
+    </PageShell>
   )
 }

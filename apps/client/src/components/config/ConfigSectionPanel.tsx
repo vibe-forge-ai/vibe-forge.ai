@@ -21,7 +21,7 @@ export function ConfigSectionPanel({
   className
 }: {
   sectionKey: string
-  title: ReactNode
+  title?: ReactNode
   icon?: ReactNode
   fields?: FieldSpec[]
   value: unknown
@@ -34,19 +34,26 @@ export function ConfigSectionPanel({
   className?: string
 }) {
   const wrapClassName = ['config-view__editor-wrap', className].filter(Boolean).join(' ')
-  const hasHeader = title != null || icon != null || headerExtra != null
+  const hasHeading = title != null || icon != null
+  const hasHeader = hasHeading || headerExtra != null
+  const headerClassName = [
+    'config-view__section-header',
+    !hasHeading ? 'config-view__section-header--actions-only' : ''
+  ].filter(Boolean).join(' ')
   return (
     <div className={wrapClassName}>
       {hasHeader && (
-        <div className='config-view__section-header'>
-          <div className='config-view__section-title'>
-            {icon != null && (
-              <span className='material-symbols-rounded config-view__section-icon'>
-                {icon}
-              </span>
-            )}
-            <span>{title}</span>
-          </div>
+        <div className={headerClassName}>
+          {hasHeading && (
+            <div className='config-view__section-title'>
+              {icon != null && (
+                <span className='material-symbols-rounded config-view__section-icon'>
+                  {icon}
+                </span>
+              )}
+              <span>{title}</span>
+            </div>
+          )}
           {headerExtra}
         </div>
       )}

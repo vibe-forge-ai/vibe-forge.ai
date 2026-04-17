@@ -24,8 +24,7 @@
   overflow: hidden;
   min-width: 0;
   min-height: 0;
-  padding: 4px 4px 4px 0;
-  transition: padding-left .3s cubic-bezier(.4, 0, .2, 1);
+  padding: 0;
   border-radius: 0;
   background-color: var(--sub-bg-color);
   box-shadow:
@@ -33,8 +32,12 @@
     0 2px 8px rgba(15, 23, 42, .04);
 }
 
-.app-shell__content.is-sidebar-collapsed {
-  padding-left: 4px;
+.app-shell__content.app-shell__content--session {
+  padding: 12px 12px 12px 0;
+}
+
+.app-shell__content.app-shell__content--session.is-sidebar-collapsed {
+  padding: 4px;
 }
 
 .app-shell__content > * {
@@ -45,6 +48,16 @@
   overflow: hidden;
 }
 
+.app-shell__content.is-flat {
+  padding: 0;
+  background-color: var(--sub-bg-color);
+  box-shadow: none;
+}
+
+.app-shell__content.is-flat > * {
+  border-radius: 0;
+}
+
 .app-shell--dark {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, 0)),
@@ -53,5 +66,9 @@
   .app-shell__content {
     background-color: var(--sub-bg-color);
     box-shadow: 0 18px 48px rgba(0, 0, 0, .3), 0 2px 10px rgba(0, 0, 0, .22);
+  }
+
+  .app-shell__content.is-flat {
+    box-shadow: none;
   }
 }
