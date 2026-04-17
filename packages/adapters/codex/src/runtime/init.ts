@@ -1,12 +1,12 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, readdir, rm, symlink } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { access, mkdir, readdir, rm } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { writeManagedCodexConfigFile } from './config'
@@ -20,20 +20,10 @@ const syncCodexMockHomeSymlink = async (params: {
   targetPath: string
   type: 'dir' | 'file'
 }) => {
-  const { sourcePath, targetPath, type } = params
-
-  try {
-    await access(sourcePath)
-  } catch {
-    await rm(targetPath, { recursive: true, force: true })
-    return
-  }
-
-  if (resolve(sourcePath) === resolve(targetPath)) return
-
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath, type)
+  await syncSymlinkTarget({
+    ...params,
+    onMissingSource: 'remove'
+  })
 }
 
 /**
@@ -45,25 +35,12 @@ async function linkAuthFile(home: string, mockHome: string): Promise<void> {
   const aiCodexDir = join(mockHome, '.codex')
   const aiAuth = join(aiCodexDir, 'auth.json')
 
-  // Ensure the .codex directory exists inside the AI home
   await mkdir(aiCodexDir, { recursive: true })
-
-  // Check if the real auth.json exists
-  try {
-    await access(realAuth)
-  } catch {
-    return
-  }
-
-  // Check if the target already exists (symlink or file)
-  try {
-    await access(aiAuth)
-    return
-  } catch {
-    // Doesn't exist yet — create the symlink
-  }
-
-  await symlink(realAuth, aiAuth)
+  await syncCodexMockHomeSymlink({
+    sourcePath: realAuth,
+    targetPath: aiAuth,
+    type: 'file'
+  })
 }
 
 async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {

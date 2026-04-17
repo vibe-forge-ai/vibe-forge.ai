@@ -14,7 +14,7 @@ import type {
   Config,
   ModelServiceConfig
 } from '@vibe-forge/types'
-import { omitAdapterCommonConfig, parseServiceModelSelector } from '@vibe-forge/utils'
+import { omitAdapterCommonConfig, parseServiceModelSelector, syncSymlinkTarget } from '@vibe-forge/utils'
 
 import type { GeminiNativeHooksSettings } from './native-hooks'
 import { resolveGeminiModelServiceRoute } from './proxy'
@@ -568,6 +568,21 @@ export const buildGeminiSpawnEnv = (params: {
       [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: nativeHooksActive ? 'gemini' : undefined
     })
   }
+}
+
+export const resolveGeminiMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
+  resolveMockHome(ctx.cwd, ctx.env)
+)
+
+export const syncGeminiMockHomeSymlink = async (params: {
+  sourcePath: string
+  targetPath: string
+}) => {
+  await syncSymlinkTarget({
+    ...params,
+    type: 'dir',
+    onMissingSource: 'remove'
+  })
 }
 
 export const buildGeminiRunArgs = (params: {

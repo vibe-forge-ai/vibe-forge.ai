@@ -1,10 +1,10 @@
-import { access, mkdir, rm, symlink } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
 
 import { ensureClaudeNativeHooksInstalled } from '../hooks/native'
 
@@ -26,20 +26,10 @@ const syncClaudeMockHomeSymlink = async (params: {
   targetPath: string
   type: 'dir' | 'file'
 }) => {
-  const { sourcePath, targetPath, type } = params
-
-  try {
-    await access(sourcePath)
-  } catch {
-    await rm(targetPath, { recursive: true, force: true })
-    return
-  }
-
-  if (resolve(sourcePath) === resolve(targetPath)) return
-
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath, type)
+  await syncSymlinkTarget({
+    ...params,
+    onMissingSource: 'remove'
+  })
 }
 
 const resolveClaudeManagedSkills = (ctx: Pick<AdapterCtx, 'assets'>) => {

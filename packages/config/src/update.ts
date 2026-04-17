@@ -5,10 +5,7 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config, ConfigSource } from '@vibe-forge/types'
-import {
-  resolveProjectConfigDir,
-  resolveProjectWorkspaceFolder
-} from '@vibe-forge/utils'
+import { resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
 import { dump, load } from 'js-yaml'
 
 import { resetConfigCache } from './load'

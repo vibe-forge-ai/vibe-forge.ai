@@ -6,11 +6,7 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config } from '@vibe-forge/types'
-import {
-  PROJECT_WORKSPACE_FOLDER_ENV,
-  resolveProjectConfigDir,
-  resolveProjectWorkspaceFolder
-} from '@vibe-forge/utils'
+import { PROJECT_WORKSPACE_FOLDER_ENV, resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
 import { load } from 'js-yaml'
 
 import { mergeDefaultVibeForgeMcpPermissions } from './default-vibe-forge-mcp'
