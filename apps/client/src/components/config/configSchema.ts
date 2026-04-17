@@ -9,7 +9,7 @@ export type FieldValueType =
   | 'json'
   | 'multiline'
   | 'record'
-  | 'detailList'
+  | 'detailCollection'
   | 'shortcut'
 
 export type RecordKind = 'json' | 'modelServices' | 'mcpServers' | 'boolean' | 'keyValue' | 'channels'
@@ -29,7 +29,7 @@ export interface FieldSpec {
   placeholderKey?: string
   labelKey?: string
   descriptionKey?: string
-  group?: 'base' | 'permissions' | 'env' | 'items'
+  group?: string
   recordKind?: RecordKind
   sensitive?: boolean
   hidden?: boolean
@@ -39,31 +39,148 @@ export interface FieldSpec {
     descKey?: string
     togglePath?: string[]
   }
-  detailList?: DetailListSpec
+  detailCollection?: DetailCollectionSpec
 }
 
-export interface DetailListContext {
+export interface DetailCollectionContext {
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
   t: TranslationFn
 }
 
-export interface DetailListSpec {
-  detailKind?: 'recommendedModels'
-  createItem: () => Record<string, unknown>
-  itemFields?: FieldSpec[]
-  getItemTitle: (item: Record<string, unknown>, index: number, context: DetailListContext) => string
-  getItemSubtitle?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string | undefined
-  getItemDescription?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string | undefined
-  getBreadcrumbLabel?: (item: Record<string, unknown>, index: number, context: DetailListContext) => string
+export interface DetailCollectionBooleanControlSpec {
+  kind: 'boolean'
+  path: string[]
+  checkedValue?: boolean
+  labelKey?: string
 }
 
-export const configGroupMeta: Record<string, Record<string, { labelKey: string }>> = {
+interface DetailCollectionBaseSpec {
+  detailKind?: 'recommendedModels'
+  itemFields?: FieldSpec[]
+  summaryControls?: DetailCollectionBooleanControlSpec[]
+  getItemTitle: (
+    item: Record<string, unknown>,
+    itemKey: string,
+    itemIndex: number,
+    context: DetailCollectionContext
+  ) => string
+  getItemSubtitle?: (
+    item: Record<string, unknown>,
+    itemKey: string,
+    itemIndex: number,
+    context: DetailCollectionContext
+  ) => string | undefined
+  getItemDescription?: (
+    item: Record<string, unknown>,
+    itemKey: string,
+    itemIndex: number,
+    context: DetailCollectionContext
+  ) => string | undefined
+  getBreadcrumbLabel?: (
+    item: Record<string, unknown>,
+    itemKey: string,
+    itemIndex: number,
+    context: DetailCollectionContext
+  ) => string
+}
+
+export interface DetailListCollectionSpec extends DetailCollectionBaseSpec {
+  collectionKind: 'list'
+  createItem: () => Record<string, unknown>
+}
+
+export interface DetailRecordCollectionSpec extends DetailCollectionBaseSpec {
+  collectionKind: 'record'
+  itemKeys: string[]
+  createItem?: (itemKey: string) => Record<string, unknown>
+}
+
+export type DetailCollectionSpec = DetailListCollectionSpec | DetailRecordCollectionSpec
+
+export interface ConfigGroupMeta {
+  labelKey: string
+  collapsible?: boolean
+  defaultExpanded?: boolean
+}
+
+export const configGroupMeta: Record<string, Record<string, ConfigGroupMeta>> = {
   general: {
+    base: {
+      labelKey: 'config.sectionGroups.base',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    models: {
+      labelKey: 'config.sectionGroups.models',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    advanced: {
+      labelKey: 'config.sectionGroups.advanced',
+      collapsible: true,
+      defaultExpanded: false
+    },
+    permissions: {
+      labelKey: 'config.sectionGroups.permissions',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    env: {
+      labelKey: 'config.sectionGroups.env',
+      collapsible: true,
+      defaultExpanded: false
+    },
     items: {
-      labelKey: 'config.fields.general.notifications.label'
+      labelKey: 'config.fields.general.notifications.label',
+      collapsible: true,
+      defaultExpanded: true
     }
   }
+}
+
+export const configGroupOrder: Record<string, string[]> = {
+  general: ['base', 'models', 'permissions', 'env', 'items', 'advanced', 'default']
+}
+
+const notificationEventDetailFields: FieldSpec[] = [
+  {
+    path: ['title'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'title',
+    labelKey: 'config.fields.general.notifications.events.item.title.label',
+    descriptionKey: 'config.fields.general.notifications.events.item.title.desc'
+  },
+  {
+    path: ['description'],
+    type: 'multiline',
+    defaultValue: '',
+    icon: 'notes',
+    labelKey: 'config.fields.general.notifications.events.item.description.label',
+    descriptionKey: 'config.fields.general.notifications.events.item.description.desc'
+  },
+  {
+    path: ['sound'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'volume_up',
+    labelKey: 'config.fields.general.notifications.events.item.sound.label',
+    descriptionKey: 'config.fields.general.notifications.events.item.sound.desc'
+  }
+]
+
+const notificationEventKeys = ['completed', 'failed', 'terminated', 'waiting_input']
+const getNotificationEventLabel = (t: TranslationFn, itemKey: string) => {
+  const labelKey = `config.fields.general.notifications.events.${itemKey}.label`
+  const translated = t(labelKey)
+  return translated === labelKey ? itemKey : translated
+}
+
+const getNotificationEventDescription = (t: TranslationFn, itemKey: string) => {
+  const descKey = `config.fields.general.notifications.events.${itemKey}.desc`
+  const translated = t(descKey, { defaultValue: '' })
+  return translated === descKey ? '' : translated
 }
 
 export const configSchema: Record<string, FieldSpec[]> = {
@@ -74,7 +191,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
       type: 'select',
       defaultValue: '',
       icon: 'psychology',
-      group: 'base',
+      group: 'models',
       options: [
         { value: 'low', label: 'config.options.effort.low' },
         { value: 'medium', label: 'config.options.effort.medium' },
@@ -82,29 +199,36 @@ export const configSchema: Record<string, FieldSpec[]> = {
         { value: 'max', label: 'config.options.effort.max' }
       ]
     },
-    { path: ['defaultAdapter'], type: 'select', defaultValue: '', icon: 'settings_input_component', group: 'base' },
-    { path: ['defaultModelService'], type: 'select', defaultValue: '', icon: 'hub', group: 'base' },
-    { path: ['defaultModel'], type: 'select', defaultValue: '', icon: 'model_training', group: 'base' },
+    {
+      path: ['defaultAdapter'],
+      type: 'select',
+      defaultValue: '',
+      icon: 'settings_input_component',
+      group: 'models'
+    },
+    { path: ['defaultModelService'], type: 'select', defaultValue: '', icon: 'hub', group: 'models' },
+    { path: ['defaultModel'], type: 'select', defaultValue: '', icon: 'model_training', group: 'models' },
     {
       path: ['recommendedModels'],
-      type: 'detailList',
+      type: 'detailCollection',
       defaultValue: [],
       icon: 'stars',
-      group: 'base',
-      detailList: {
+      group: 'models',
+      detailCollection: {
+        collectionKind: 'list',
         detailKind: 'recommendedModels',
         createItem: () => ({
           model: '',
           placement: 'modelSelector'
         }),
-        getItemTitle: (item, index, { t }) => {
+        getItemTitle: (item, _itemKey, itemIndex, { t }) => {
           const title = typeof item.title === 'string' ? item.title.trim() : ''
           if (title !== '') return title
           const model = typeof item.model === 'string' ? item.model.trim() : ''
           if (model !== '') return model
-          return `${t('config.fields.general.recommendedModels.label')} #${index + 1}`
+          return `${t('config.fields.general.recommendedModels.label')} #${itemIndex + 1}`
         },
-        getItemSubtitle: (item, _index, { t }) => {
+        getItemSubtitle: (item, _itemKey, _itemIndex, { t }) => {
           const parts: string[] = []
           const service = typeof item.service === 'string' ? item.service.trim() : ''
           const model = typeof item.model === 'string' ? item.model.trim() : ''
@@ -120,12 +244,12 @@ export const configSchema: Record<string, FieldSpec[]> = {
           const description = typeof item.description === 'string' ? item.description.trim() : ''
           return description !== '' ? description : undefined
         },
-        getBreadcrumbLabel: (item, index, context) => (
+        getBreadcrumbLabel: (item, _itemKey, itemIndex, context) => (
           typeof item.title === 'string' && item.title.trim() !== ''
             ? item.title.trim()
             : typeof item.model === 'string' && item.model.trim() !== ''
             ? item.model.trim()
-            : `${context.t('config.fields.general.recommendedModels.label')} #${index + 1}`
+            : `${context.t('config.fields.general.recommendedModels.label')} #${itemIndex + 1}`
         )
       }
     },
@@ -151,7 +275,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
         { value: 'en', label: 'config.options.language.en' }
       ]
     },
-    { path: ['announcements'], type: 'string[]', defaultValue: [], icon: 'campaign', group: 'base' },
+    { path: ['announcements'], type: 'string[]', defaultValue: [], icon: 'campaign', group: 'advanced' },
     { path: ['permissions', 'allow'], type: 'string[]', defaultValue: [], icon: 'check_circle', group: 'permissions' },
     { path: ['permissions', 'deny'], type: 'string[]', defaultValue: [], icon: 'block', group: 'permissions' },
     { path: ['permissions', 'ask'], type: 'string[]', defaultValue: [], icon: 'help', group: 'permissions' },
@@ -165,159 +289,37 @@ export const configSchema: Record<string, FieldSpec[]> = {
     },
     { path: ['notifications', 'volume'], type: 'number', defaultValue: 100, icon: 'volume_down', group: 'items' },
     {
-      path: ['notifications', 'events', 'completed', 'title'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'title',
+      path: ['notifications', 'events'],
+      type: 'detailCollection',
+      defaultValue: {},
+      icon: 'notifications_active',
       group: 'items',
-      collapse: {
-        key: 'notifications.events.completed',
-        labelKey: 'config.fields.general.notifications.events.completed.label',
-        descKey: 'config.fields.general.notifications.events.completed.desc',
-        togglePath: ['notifications', 'events', 'completed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'completed', 'description'],
-      type: 'multiline',
-      defaultValue: '',
-      icon: 'notes',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.completed',
-        labelKey: 'config.fields.general.notifications.events.completed.label',
-        descKey: 'config.fields.general.notifications.events.completed.desc',
-        togglePath: ['notifications', 'events', 'completed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'completed', 'sound'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'volume_up',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.completed',
-        labelKey: 'config.fields.general.notifications.events.completed.label',
-        descKey: 'config.fields.general.notifications.events.completed.desc',
-        togglePath: ['notifications', 'events', 'completed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'failed', 'title'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'title',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.failed',
-        labelKey: 'config.fields.general.notifications.events.failed.label',
-        descKey: 'config.fields.general.notifications.events.failed.desc',
-        togglePath: ['notifications', 'events', 'failed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'failed', 'description'],
-      type: 'multiline',
-      defaultValue: '',
-      icon: 'notes',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.failed',
-        labelKey: 'config.fields.general.notifications.events.failed.label',
-        descKey: 'config.fields.general.notifications.events.failed.desc',
-        togglePath: ['notifications', 'events', 'failed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'failed', 'sound'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'volume_up',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.failed',
-        labelKey: 'config.fields.general.notifications.events.failed.label',
-        descKey: 'config.fields.general.notifications.events.failed.desc',
-        togglePath: ['notifications', 'events', 'failed', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'terminated', 'title'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'title',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.terminated',
-        labelKey: 'config.fields.general.notifications.events.terminated.label',
-        descKey: 'config.fields.general.notifications.events.terminated.desc',
-        togglePath: ['notifications', 'events', 'terminated', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'terminated', 'description'],
-      type: 'multiline',
-      defaultValue: '',
-      icon: 'notes',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.terminated',
-        labelKey: 'config.fields.general.notifications.events.terminated.label',
-        descKey: 'config.fields.general.notifications.events.terminated.desc',
-        togglePath: ['notifications', 'events', 'terminated', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'terminated', 'sound'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'volume_up',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.terminated',
-        labelKey: 'config.fields.general.notifications.events.terminated.label',
-        descKey: 'config.fields.general.notifications.events.terminated.desc',
-        togglePath: ['notifications', 'events', 'terminated', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'waiting_input', 'title'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'title',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.waiting_input',
-        labelKey: 'config.fields.general.notifications.events.waiting_input.label',
-        descKey: 'config.fields.general.notifications.events.waiting_input.desc',
-        togglePath: ['notifications', 'events', 'waiting_input', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'waiting_input', 'description'],
-      type: 'multiline',
-      defaultValue: '',
-      icon: 'notes',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.waiting_input',
-        labelKey: 'config.fields.general.notifications.events.waiting_input.label',
-        descKey: 'config.fields.general.notifications.events.waiting_input.desc',
-        togglePath: ['notifications', 'events', 'waiting_input', 'disabled']
-      }
-    },
-    {
-      path: ['notifications', 'events', 'waiting_input', 'sound'],
-      type: 'string',
-      defaultValue: '',
-      icon: 'volume_up',
-      group: 'items',
-      collapse: {
-        key: 'notifications.events.waiting_input',
-        labelKey: 'config.fields.general.notifications.events.waiting_input.label',
-        descKey: 'config.fields.general.notifications.events.waiting_input.desc',
-        togglePath: ['notifications', 'events', 'waiting_input', 'disabled']
+      labelKey: 'config.fields.general.notifications.events.label',
+      descriptionKey: 'config.fields.general.notifications.events.desc',
+      detailCollection: {
+        collectionKind: 'record',
+        itemKeys: [...notificationEventKeys],
+        createItem: () => ({}),
+        itemFields: notificationEventDetailFields,
+        summaryControls: [
+          {
+            kind: 'boolean',
+            path: ['disabled'],
+            checkedValue: false,
+            labelKey: 'config.fields.general.notifications.events.item.enabled.label'
+          }
+        ],
+        getItemTitle: (_item, itemKey, _itemIndex, { t }) => getNotificationEventLabel(t, itemKey),
+        getItemSubtitle: (item) => {
+          const parts: string[] = []
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          const sound = typeof item.sound === 'string' ? item.sound.trim() : ''
+          if (title !== '') parts.push(title)
+          if (sound !== '') parts.push(sound)
+          return parts.length > 0 ? parts.join(' · ') : undefined
+        },
+        getItemDescription: (_item, itemKey, _itemIndex, { t }) => getNotificationEventDescription(t, itemKey),
+        getBreadcrumbLabel: (_item, itemKey, _itemIndex, { t }) => getNotificationEventLabel(t, itemKey)
       }
     }
   ],

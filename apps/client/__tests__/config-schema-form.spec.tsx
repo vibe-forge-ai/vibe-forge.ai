@@ -242,7 +242,7 @@ describe('config schema form', () => {
     expect(html).not.toContain('ant-select')
   })
 
-  it('renders detail-list fields as a navigable summary list', () => {
+  it('renders detail-collection list fields as a navigable summary list', () => {
     const html = renderToStaticMarkup(
       <SectionForm
         sectionKey='general'
@@ -274,7 +274,7 @@ describe('config schema form', () => {
     expect(html).toContain('config-view__detail-list')
   })
 
-  it('renders a detail-list item route as a second-level config page', () => {
+  it('renders a detail-collection list item route as a second-level config page', () => {
     const html = renderToStaticMarkup(
       <SectionForm
         sectionKey='general'
@@ -298,9 +298,9 @@ describe('config schema form', () => {
         }}
         mergedAdapters={{}}
         detailRoute={{
-          kind: 'detailListItem',
+          kind: 'detailCollectionItem',
           fieldPath: ['recommendedModels'],
-          itemIndex: 0
+          itemKey: '0'
         }}
         t={t}
       />
@@ -311,16 +311,87 @@ describe('config schema form', () => {
     expect(html).not.toContain('config-view__detail-list')
   })
 
-  it('serializes detail-list routes into query-friendly paths', () => {
+  it('renders detail-collection record fields as a navigable summary list', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='general'
+        value={{
+          notifications: {
+            events: {
+              completed: {
+                title: 'All done',
+                sound: '/tmp/done.mp3'
+              }
+            }
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('completed')
+    expect(html).toContain('All done')
+    expect(html).toContain('config-view__detail-list')
+  })
+
+  it('renders a detail-collection record item route as a second-level config page', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='general'
+        value={{
+          notifications: {
+            events: {
+              completed: {
+                title: 'All done',
+                description: 'Done description',
+                sound: '/tmp/done.mp3'
+              }
+            }
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailCollectionItem',
+          fieldPath: ['notifications', 'events'],
+          itemKey: 'completed'
+        }}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('config.fields.general.notifications.events.item.title.label')
+    expect(html).toContain('config.fields.general.notifications.events.item.description.label')
+    expect(html).not.toContain('config-view__detail-list')
+  })
+
+  it('serializes detail-collection routes into query-friendly paths', () => {
     const route = {
-      kind: 'detailListItem' as const,
+      kind: 'detailCollectionItem' as const,
       fieldPath: ['recommendedModels'],
-      itemIndex: 2
+      itemKey: '2'
     }
 
     const raw = serializeConfigDetailRoute(route)
 
     expect(raw).toBe('recommendedModels/2')
+    expect(parseConfigDetailRoute({ fields: configSchema.general, raw })).toEqual(route)
+  })
+
+  it('serializes object-backed detail-collection routes into query-friendly paths', () => {
+    const route = {
+      kind: 'detailCollectionItem' as const,
+      fieldPath: ['notifications', 'events'],
+      itemKey: 'completed'
+    }
+
+    const raw = serializeConfigDetailRoute(route)
+
+    expect(raw).toBe('notifications/events/completed')
     expect(parseConfigDetailRoute({ fields: configSchema.general, raw })).toEqual(route)
   })
 })

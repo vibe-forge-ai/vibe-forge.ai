@@ -8,13 +8,13 @@ import type { ConfigUiSection } from '@vibe-forge/types'
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
-import { DetailListField } from './DetailListField'
+import { DetailCollectionField } from './DetailListField'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
 import type { ConfigDetailRoute } from './configDetail'
-import { resolveConfigDetailRouteMeta, toDetailListItems } from './configDetail'
+import { resolveConfigDetailRouteMeta, toDetailCollectionEntries } from './configDetail'
 import type { FieldSpec } from './configSchema'
-import { configGroupMeta, configSchema } from './configSchema'
+import { configGroupMeta, configGroupOrder, configSchema } from './configSchema'
 import { RecommendedModelsItemEditor } from './RecommendedModelsItemEditor'
 import {
   getFieldDescription,
@@ -22,7 +22,6 @@ import {
   getTypeIcon,
   getValueByPath,
   getValueType,
-  isEmptyValue,
   setValueByPath
 } from './configUtils'
 import type { TranslationFn } from './configUtils'
@@ -36,7 +35,7 @@ import {
 } from './record-editors/index'
 
 const directRecordSections = new Set(['models', 'modelServices', 'channels', 'adapters', 'plugins', 'mcp'])
-const groupOrder = ['base', 'permissions', 'env', 'items', 'default']
+const defaultGroupOrder = ['base', 'permissions', 'env', 'items', 'default']
 
 export const SectionForm = ({
   sectionKey,
@@ -158,7 +157,7 @@ export const SectionForm = ({
     }
 
     let control: ReactNode = null
-    const isStacked = ['multiline', 'json', 'record', 'string[]', 'detailList'].includes(field.type)
+    const isStacked = ['multiline', 'json', 'record', 'string[]', 'detailCollection'].includes(field.type)
 
     if (field.type === 'string') {
       const placeholder = field.placeholderKey ? t(field.placeholderKey) : undefined
@@ -268,9 +267,9 @@ export const SectionForm = ({
           onChange={handleValueChange}
         />
       )
-    } else if (field.type === 'detailList') {
+    } else if (field.type === 'detailCollection') {
       control = (
-        <DetailListField
+        <DetailCollectionField
           sectionKey={sectionKey}
           field={field}
           value={valueToUse}
@@ -384,14 +383,12 @@ export const SectionForm = ({
     currentFields,
     currentValue,
     onCurrentValueChange,
-    keyPrefix,
-    hideEmptyBaseGroups
+    keyPrefix
   }: {
     currentFields: FieldSpec[]
     currentValue: unknown
     onCurrentValueChange: (nextValue: unknown) => void
     keyPrefix: string
-    hideEmptyBaseGroups: boolean
   }) => {
     const groupedFields = currentFields.reduce<Record<string, FieldSpec[]>>((acc, field) => {
       const key = field.group ?? 'default'
@@ -399,23 +396,12 @@ export const SectionForm = ({
       acc[key].push(field)
       return acc
     }, {})
-    const orderedGroups = groupOrder.filter(key => groupedFields[key]?.length)
+    const orderedGroups = (configGroupOrder[sectionKey] ?? defaultGroupOrder).filter(key => groupedFields[key]?.length)
 
     return (
       <div className='config-view__field-stack'>
         {orderedGroups.map((groupKey) => {
           const groupFields = groupedFields[groupKey] ?? []
-          if (hideEmptyBaseGroups && new Set(['base', 'permissions']).has(groupKey)) {
-            const hasGroupValues = groupFields.some((field) => {
-              if (field.type === 'detailList') return true
-              const fieldValue = getValueByPath(currentValue, field.path)
-              if (typeof fieldValue === 'boolean') return fieldValue
-              return !isEmptyValue(fieldValue)
-            })
-            if (!hasGroupValues) {
-              return null
-            }
-          }
           if (groupKey === 'default') {
             if (directRecordSections.has(sectionKey)) {
               return (
@@ -441,11 +427,16 @@ export const SectionForm = ({
             )
           }
 
+          const groupMeta = configGroupMeta[sectionKey]?.[groupKey]
           const groupLabel = (() => {
-            const labelKey = configGroupMeta[sectionKey]?.[groupKey]?.labelKey
+            const labelKey = groupMeta?.labelKey
             if (labelKey) return t(labelKey)
             return groupKey === 'base'
               ? t('config.sectionGroups.base')
+              : groupKey === 'models'
+              ? t('config.sectionGroups.models')
+              : groupKey === 'advanced'
+              ? t('config.sectionGroups.advanced')
               : groupKey === 'permissions'
               ? t('config.sectionGroups.permissions')
               : groupKey === 'env'
@@ -511,26 +502,58 @@ export const SectionForm = ({
             )
           }))
 
+          const groupBody = (
+            <div className='config-view__subsection-body'>
+              {nonCollapseFields.map(field => renderField({
+                field,
+                currentValue,
+                onCurrentValueChange,
+                keyPrefix
+              }))}
+              {collapseItems.length > 0 && (
+                <Collapse
+                  className='config-view__collapse-group config-view__field-row'
+                  ghost
+                  items={collapseItems}
+                />
+              )}
+            </div>
+          )
+
+          if (groupMeta?.collapsible === true) {
+            return (
+              <Collapse
+                key={`${keyPrefix}:${groupKey}`}
+                className='config-view__subsection-collapse'
+                ghost
+                expandIconPosition='end'
+                expandIcon={({ isActive }) => (
+                  <span
+                    className={`material-symbols-rounded config-view__subsection-expand-icon${
+                      isActive ? ' is-active' : ''
+                    }`}
+                  >
+                    chevron_right
+                  </span>
+                )}
+                defaultActiveKey={groupMeta.defaultExpanded === false ? [] : [groupKey]}
+                items={[
+                  {
+                    key: groupKey,
+                    label: <div className='config-view__subsection-title'>{groupLabel}</div>,
+                    children: groupBody
+                  }
+                ]}
+              />
+            )
+          }
+
           return (
             <div key={`${keyPrefix}:${groupKey}`} className='config-view__subsection'>
               <div className='config-view__subsection-title'>
                 {groupLabel}
               </div>
-              <div className='config-view__subsection-body'>
-                {nonCollapseFields.map(field => renderField({
-                  field,
-                  currentValue,
-                  onCurrentValueChange,
-                  keyPrefix
-                }))}
-                {collapseItems.length > 0 && (
-                  <Collapse
-                    className='config-view__collapse-group config-view__field-row'
-                    ghost
-                    items={collapseItems}
-                  />
-                )}
-              </div>
+              {groupBody}
             </div>
           )
         })}
@@ -548,15 +571,24 @@ export const SectionForm = ({
   })
 
   if (detailMeta != null) {
-    const currentItems = toDetailListItems(getValueByPath(value, detailMeta.field.path))
     const updateDetailItem = (nextItem: Record<string, unknown>) => {
-      const nextItems = currentItems.map((item, index) => (
-        index === detailMeta.itemIndex ? nextItem : item
-      ))
-      onChange(setValueByPath(value, detailMeta.field.path, nextItems))
+      if (detailMeta.field.type !== 'detailCollection' || detailMeta.field.detailCollection == null) return
+
+      if (detailMeta.field.detailCollection.collectionKind === 'list') {
+        const nextItems = toDetailCollectionEntries({
+          field: detailMeta.field,
+          value: getValueByPath(value, detailMeta.field.path)
+        }).map((entry) => (
+          entry.index === detailMeta.itemIndex ? nextItem : entry.item
+        ))
+        onChange(setValueByPath(value, detailMeta.field.path, nextItems))
+        return
+      }
+
+      onChange(setValueByPath(value, [...detailMeta.field.path, detailMeta.itemKey], nextItem))
     }
 
-    if (detailMeta.field.detailList?.detailKind === 'recommendedModels') {
+    if (detailMeta.field.detailCollection?.detailKind === 'recommendedModels') {
       return (
         <RecommendedModelsItemEditor
           value={detailMeta.item}
@@ -567,13 +599,12 @@ export const SectionForm = ({
       )
     }
 
-    if ((detailMeta.field.detailList?.itemFields?.length ?? 0) > 0) {
+    if ((detailMeta.field.detailCollection?.itemFields?.length ?? 0) > 0) {
       return renderFieldGroups({
-        currentFields: detailMeta.field.detailList!.itemFields!,
+        currentFields: detailMeta.field.detailCollection!.itemFields!,
         currentValue: detailMeta.item,
         onCurrentValueChange: updateDetailItem,
-        keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemIndex}`,
-        hideEmptyBaseGroups: false
+        keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemKey}`
       })
     }
 
@@ -584,8 +615,7 @@ export const SectionForm = ({
     currentFields: fields,
     currentValue: value,
     onCurrentValueChange: onChange,
-    keyPrefix: sectionKey,
-    hideEmptyBaseGroups: true
+    keyPrefix: sectionKey
   })
 }
 

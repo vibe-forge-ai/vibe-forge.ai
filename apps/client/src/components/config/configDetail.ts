@@ -1,12 +1,18 @@
-import type { DetailListContext, FieldSpec } from './configSchema'
+import type { DetailCollectionContext, FieldSpec } from './configSchema'
 import { configSchema } from './configSchema'
 import { getFieldLabel, getValueByPath } from './configUtils'
 import type { TranslationFn } from './configUtils'
 
 export interface ConfigDetailRoute {
-  kind: 'detailListItem'
+  kind: 'detailCollectionItem'
   fieldPath: string[]
-  itemIndex: number
+  itemKey: string
+}
+
+export interface DetailCollectionEntry {
+  key: string
+  item: Record<string, unknown>
+  index: number
 }
 
 export interface ConfigDetailRouteMeta {
@@ -14,6 +20,7 @@ export interface ConfigDetailRouteMeta {
   fieldLabel: string
   item: Record<string, unknown>
   itemLabel: string
+  itemKey: string
   itemIndex: number
 }
 
@@ -32,11 +39,40 @@ export const getSectionFields = (sectionKey: string, providedFields?: FieldSpec[
   providedFields ?? configSchema[sectionKey] ?? []
 )
 
-export const toDetailListItems = (value: unknown) => (
-  Array.isArray(value)
-    ? value.filter(isRecordObject)
-    : []
-)
+export const toDetailCollectionEntries = ({
+  field,
+  value
+}: {
+  field: FieldSpec
+  value: unknown
+}): DetailCollectionEntry[] => {
+  const detailCollection = field.detailCollection
+  if (field.type !== 'detailCollection' || detailCollection == null) return []
+
+  if (detailCollection.collectionKind === 'list') {
+    const items = Array.isArray(value)
+      ? value.filter(isRecordObject)
+      : []
+    return items.map((item, index) => ({
+      key: String(index),
+      item,
+      index
+    }))
+  }
+
+  const source = isRecordObject(value) ? value : {}
+  return detailCollection.itemKeys.map((itemKey, index) => {
+    const existing = source[itemKey]
+    const item = isRecordObject(existing)
+      ? existing
+      : detailCollection.createItem?.(itemKey) ?? {}
+    return {
+      key: itemKey,
+      item,
+      index
+    }
+  })
+}
 
 const findFieldByPath = (fields: FieldSpec[], path: string[]) => (
   fields.find(field => isSamePath(field.path, path))
@@ -59,13 +95,13 @@ const getFieldDisplayLabel = ({
 export const getConfigDetailRouteKey = (route: ConfigDetailRoute | null) => (
   route == null
     ? 'root'
-    : `${route.kind}:${route.fieldPath.join('.')}:${route.itemIndex}`
+    : `${route.kind}:${route.fieldPath.join('.')}:${route.itemKey}`
 )
 
 export const serializeConfigDetailRoute = (route: ConfigDetailRoute | null) => (
   route == null
     ? ''
-    : [...route.fieldPath, String(route.itemIndex)].map(segment => encodeURIComponent(segment)).join('/')
+    : [...route.fieldPath, route.itemKey].map(segment => encodeURIComponent(segment)).join('/')
 )
 
 export const parseConfigDetailRoute = ({
@@ -85,19 +121,22 @@ export const parseConfigDetailRoute = ({
   if (segments.length < 2) return null
 
   const detailField = fields
-    .filter(field => field.type === 'detailList' && field.detailList != null)
+    .filter(field => field.type === 'detailCollection' && field.detailCollection != null)
     .sort((left, right) => right.path.length - left.path.length)
-    .find(field => (
-      segments.length >= field.path.length + 1 &&
-      field.path.every((segment, index) => segment === segments[index]) &&
-      /^\d+$/.test(segments[field.path.length] ?? '')
-    ))
+    .find((field) => {
+      if (segments.length !== field.path.length + 1) return false
+      if (!field.path.every((segment, index) => segment === segments[index])) return false
+      const itemKey = segments[field.path.length] ?? ''
+      if (itemKey === '') return false
+      if (field.detailCollection?.collectionKind === 'list') return /^\d+$/.test(itemKey)
+      return true
+    })
   if (detailField == null) return null
 
   return {
-    kind: 'detailListItem',
+    kind: 'detailCollectionItem',
     fieldPath: detailField.path,
-    itemIndex: Number.parseInt(segments[detailField.path.length]!, 10)
+    itemKey: segments[detailField.path.length]!
   }
 }
 
@@ -113,31 +152,44 @@ export const resolveConfigDetailRouteMeta = ({
   fields?: FieldSpec[]
   value: unknown
   route: ConfigDetailRoute | null
-  detailContext: DetailListContext
+  detailContext: DetailCollectionContext
   t: TranslationFn
 }): ConfigDetailRouteMeta | null => {
   if (route == null) return null
-  if (route.kind !== 'detailListItem') return null
+  if (route.kind !== 'detailCollectionItem') return null
 
   const resolvedFields = getSectionFields(sectionKey, fields)
   const field = findFieldByPath(resolvedFields, route.fieldPath)
-  if (field?.type !== 'detailList' || field.detailList == null) {
+  if (field?.type !== 'detailCollection' || field.detailCollection == null) {
     return null
   }
 
-  const itemList = toDetailListItems(getValueByPath(value, field.path))
-  const item = itemList[route.itemIndex]
-  if (item == null) return null
+  const itemEntries = toDetailCollectionEntries({
+    field,
+    value: getValueByPath(value, field.path)
+  })
+  const entry = itemEntries.find(item => item.key === route.itemKey)
+  if (entry == null) return null
 
   const fieldLabel = getFieldDisplayLabel({ field, sectionKey, t })
-  const itemLabel = field.detailList.getBreadcrumbLabel?.(item, route.itemIndex, detailContext)
-    ?? field.detailList.getItemTitle(item, route.itemIndex, detailContext)
+  const itemLabel = field.detailCollection.getBreadcrumbLabel?.(
+    entry.item,
+    entry.key,
+    entry.index,
+    detailContext
+  ) ?? field.detailCollection.getItemTitle(
+    entry.item,
+    entry.key,
+    entry.index,
+    detailContext
+  )
 
   return {
     field,
     fieldLabel,
-    item,
+    item: entry.item,
     itemLabel,
-    itemIndex: route.itemIndex
+    itemKey: entry.key,
+    itemIndex: entry.index
   }
 }

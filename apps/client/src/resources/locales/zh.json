@@ -978,6 +978,25 @@
             "desc": "0-1 或 0-100，0 为静音"
           },
           "events": {
+            "label": "事件通知",
+            "desc": "分别配置每一种会话状态通知",
+            "item": {
+              "enabled": {
+                "label": "启用通知"
+              },
+              "title": {
+                "label": "标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "消息内容",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "提示音",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
             "completed": {
               "label": "完成通知",
               "desc": "会话完成时触发",
@@ -1244,6 +1263,8 @@
     },
     "sectionGroups": {
       "base": "基础配置",
+      "models": "模型配置",
+      "advanced": "进阶配置",
       "permissions": "工具权限",
       "env": "环境变量",
       "items": "明细配置",

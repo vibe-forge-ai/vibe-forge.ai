@@ -977,6 +977,25 @@
             "desc": "0-1 or 0-100, 0 means mute"
           },
           "events": {
+            "label": "Event Notifications",
+            "desc": "Configure each notification trigger separately",
+            "item": {
+              "enabled": {
+                "label": "Enable notification"
+              },
+              "title": {
+                "label": "Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
             "completed": {
               "label": "Completion Notification",
               "desc": "Triggered when a session completes",
@@ -1243,6 +1262,8 @@
     },
     "sectionGroups": {
       "base": "Base Configuration",
+      "models": "Model Configuration",
+      "advanced": "Advanced Configuration",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",
