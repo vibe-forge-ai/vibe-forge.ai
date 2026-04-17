@@ -790,9 +790,31 @@
       "unknown": "Unknown tool"
     },
     "terminal": {
+      "addSession": "New terminal",
+      "closeNamedSession": "Close {{title}}",
+      "closeSession": "Close terminal {{index}}",
       "connectionError": "Terminal connection failed. Check the server and try again.",
+      "dragSession": "Drag to reorder terminals",
+      "enterFullscreen": "Fullscreen",
+      "exited": "Exited",
+      "exitFullscreen": "Exit fullscreen",
       "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}",
-      "resizePanel": "Drag to resize terminal height"
+      "hideManager": "Hide terminal list",
+      "manageTerminals": "Manage terminals",
+      "paneTitle": "Terminal {{index}}",
+      "renameSession": "Rename {{title}}",
+      "selectShell": "Choose terminal type",
+      "sessionCount": "{{count}} terminals",
+      "resizePanel": "Drag to resize terminal height",
+      "shellTooltip": "Shell: {{shell}}",
+      "shellTooltipExited": "Shell: {{shell}}, exited",
+      "showManager": "Show terminal list",
+      "shell": {
+        "bash": "Bash",
+        "default": "Default shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",

@@ -1,8 +1,11 @@
 import process from 'node:process'
 
+import type { TerminalShellKind } from '@vibe-forge/types'
+
 import { getSessionLogger } from '#~/utils/logger.js'
 
 import { createPipeDriver, createPtyDriver } from './driver'
+import { normalizeTerminalShellKind, resolveTerminalShell } from './shells'
 import type { TerminalRuntime } from './store'
 import {
   appendScrollback,
@@ -11,8 +14,7 @@ import {
   clearIdleTimer,
   ensureTerminalRuntime,
   normalizeDimension,
-  resolveTerminalShell,
-  scheduleTerminalRuntimeDispose
+  scheduleTerminalRuntimeDisposeByRuntime
 } from './store'
 
 const MAX_COLS = 320
@@ -20,7 +22,6 @@ const MAX_ROWS = 120
 
 const applyRuntimeExit = (
   runtime: TerminalRuntime,
-  sessionId: string,
   exitCode: number | null,
   signal: number | null
 ) => {
@@ -35,7 +36,7 @@ const applyRuntimeExit = (
   })
 
   if (runtime.sockets.size === 0) {
-    scheduleTerminalRuntimeDispose(sessionId)
+    scheduleTerminalRuntimeDisposeByRuntime(runtime)
   }
 }
 
@@ -50,6 +51,8 @@ const appendTerminalOutput = (runtime: TerminalRuntime, data: string) => {
 export function startTerminalSession(
   sessionId: string,
   options: {
+    terminalId?: string
+    shellKind?: TerminalShellKind
     cols?: number
     rows?: number
     cwd?: string
@@ -61,9 +64,12 @@ export function startTerminalSession(
   }
 
   const logger = getSessionLogger(sessionId, 'server')
-  const shell = resolveTerminalShell()
+  const shellKind = normalizeTerminalShellKind(options.shellKind ?? runtime.shellKind)
+  const shell = resolveTerminalShell(shellKind)
   const cwd = runtime.info.cwd
 
+  runtime.shellKind = shellKind
+  runtime.info.shellKind = shellKind
   runtime.info.shell = shell
   runtime.info.cols = normalizeDimension(options.cols, runtime.info.cols, MAX_COLS)
   runtime.info.rows = normalizeDimension(options.rows, runtime.info.rows, MAX_ROWS)
@@ -73,7 +79,7 @@ export function startTerminalSession(
   clearIdleTimer(runtime)
 
   logger.info(
-    { sessionId, shell, cwd, cols: runtime.info.cols, rows: runtime.info.rows },
+    { sessionId, terminalId: runtime.terminalId, shell, cwd, cols: runtime.info.cols, rows: runtime.info.rows },
     '[terminal] Starting shell session'
   )
 
@@ -81,8 +87,8 @@ export function startTerminalSession(
     appendTerminalOutput(runtime, data)
   }
   const onExit = ({ exitCode, signal }: { exitCode: number | null; signal: number | null }) => {
-    logger.info({ sessionId, exitCode, signal }, '[terminal] Shell session exited')
-    applyRuntimeExit(runtime, sessionId, exitCode, signal)
+    logger.info({ sessionId, terminalId: runtime.terminalId, exitCode, signal }, '[terminal] Shell session exited')
+    applyRuntimeExit(runtime, exitCode, signal)
   }
 
   try {
@@ -148,6 +154,8 @@ export function startTerminalSession(
 export function resizeTerminalSession(
   sessionId: string,
   options: {
+    terminalId?: string
+    shellKind?: TerminalShellKind
     cols?: number
     rows?: number
     cwd?: string
@@ -163,6 +171,8 @@ export function resizeTerminalSession(
 export function restartTerminalSession(
   sessionId: string,
   options: {
+    terminalId?: string
+    shellKind?: TerminalShellKind
     cols?: number
     rows?: number
     cwd?: string

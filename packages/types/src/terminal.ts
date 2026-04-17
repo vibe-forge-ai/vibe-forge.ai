@@ -1,5 +1,9 @@
+export type TerminalShellKind = 'default' | 'zsh' | 'bash' | 'sh' | 'powershell' | 'cmd'
+
 export interface TerminalSessionInfo {
   sessionId: string
+  terminalId?: string
+  shellKind?: TerminalShellKind
   cwd: string
   shell: string
   cols: number

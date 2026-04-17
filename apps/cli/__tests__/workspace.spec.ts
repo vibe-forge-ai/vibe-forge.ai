@@ -6,6 +6,12 @@ import process from 'node:process'
 import { Command } from 'commander'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
+
+import { registerRunCommand } from '#~/commands/run.js'
+import { listCliSessions, writeCliSessionRecord } from '#~/session-cache.js'
+import { resolveCliWorkspaceCwd } from '#~/workspace.js'
+
 vi.mock('@vibe-forge/app-runtime', () => ({
   generateAdapterQueryOptions: vi.fn(async () => [
     {},
@@ -37,12 +43,6 @@ vi.mock('@vibe-forge/config', () => ({
 vi.mock('@vibe-forge/hooks', () => ({
   callHook: vi.fn(async () => undefined)
 }))
-
-import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
-
-import { registerRunCommand } from '#~/commands/run.js'
-import { listCliSessions, writeCliSessionRecord } from '#~/session-cache.js'
-import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
 const tempDirs: string[] = []
 const originalCwd = process.cwd()

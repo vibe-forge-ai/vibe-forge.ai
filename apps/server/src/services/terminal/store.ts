@@ -1,12 +1,13 @@
-import process from 'node:process'
-
 import { WebSocket as WebSocketImpl } from 'ws'
 import type { WebSocket } from 'ws'
 
-import type { TerminalSessionEvent, TerminalSessionInfo } from '@vibe-forge/types'
+import type { TerminalSessionEvent, TerminalSessionInfo, TerminalShellKind } from '@vibe-forge/types'
 
 import { getWorkspaceFolder } from '#~/services/config/index.js'
 import { safeJsonStringify } from '#~/utils/json.js'
+
+import { normalizeTerminalId, resolveTerminalRuntimeKey } from './ids'
+import { normalizeTerminalShellKind, resolveTerminalShell } from './shells'
 
 const DEFAULT_COLS = 120
 const DEFAULT_ROWS = 32
@@ -17,6 +18,9 @@ const IDLE_TIMEOUT_MS = 60_000
 
 export interface TerminalRuntime {
   sessionId: string
+  terminalId: string
+  shellKind: TerminalShellKind
+  runtimeKey: string
   sockets: Set<WebSocket>
   info: TerminalSessionInfo
   scrollback: string
@@ -32,6 +36,9 @@ export interface TerminalRuntime {
 }
 
 export const terminalRuntimeStore = new Map<string, TerminalRuntime>()
+export const getTerminalRuntime = (sessionId: string, terminalId?: string | null) => {
+  return terminalRuntimeStore.get(resolveTerminalRuntimeKey(sessionId, terminalId))
+}
 
 export const normalizeDimension = (value: number | undefined, fallback: number, max: number) => {
   if (value == null || Number.isNaN(value) || !Number.isFinite(value)) {
@@ -44,14 +51,6 @@ export const normalizeDimension = (value: number | undefined, fallback: number, 
   }
 
   return Math.min(normalized, max)
-}
-
-export const resolveTerminalShell = () => {
-  if (process.platform === 'win32') {
-    return process.env.COMSPEC?.trim() || 'powershell.exe'
-  }
-
-  return process.env.SHELL?.trim() || 'bash'
 }
 
 export const sendTerminalEvent = (socket: WebSocket, event: TerminalSessionEvent) => {
@@ -102,6 +101,8 @@ export const appendScrollback = (runtime: TerminalRuntime, chunk: string) => {
 const createTerminalRuntime = (
   sessionId: string,
   options: {
+    terminalId?: string
+    shellKind?: TerminalShellKind
     cols?: number
     rows?: number
     cwd?: string
@@ -109,14 +110,21 @@ const createTerminalRuntime = (
 ): TerminalRuntime => {
   const cols = normalizeDimension(options.cols, DEFAULT_COLS, MAX_COLS)
   const rows = normalizeDimension(options.rows, DEFAULT_ROWS, MAX_ROWS)
+  const terminalId = normalizeTerminalId(options.terminalId)
+  const shellKind = normalizeTerminalShellKind(options.shellKind)
 
   return {
     sessionId,
+    terminalId,
+    shellKind,
+    runtimeKey: resolveTerminalRuntimeKey(sessionId, terminalId),
     sockets: new Set<WebSocket>(),
     info: {
       sessionId,
+      terminalId,
+      shellKind,
       cwd: options.cwd ?? getWorkspaceFolder(),
-      shell: resolveTerminalShell(),
+      shell: resolveTerminalShell(shellKind),
       cols,
       rows,
       status: 'running'
@@ -134,32 +142,40 @@ export const buildReadyEvent = (runtime: TerminalRuntime): TerminalSessionEvent 
   }
 }
 
-export const scheduleTerminalRuntimeDispose = (sessionId: string) => {
-  const runtime = terminalRuntimeStore.get(sessionId)
+export const scheduleTerminalRuntimeDispose = (runtimeKey: string) => {
+  const runtime = terminalRuntimeStore.get(runtimeKey)
   if (runtime == null || runtime.idleTimer != null || runtime.sockets.size > 0) {
     return
   }
 
   runtime.idleTimer = setTimeout(() => {
-    const current = terminalRuntimeStore.get(sessionId)
+    const current = terminalRuntimeStore.get(runtimeKey)
     if (current == null || current.sockets.size > 0) {
       return
     }
 
     current.driver?.kill()
-    terminalRuntimeStore.delete(sessionId)
+    terminalRuntimeStore.delete(runtimeKey)
   }, IDLE_TIMEOUT_MS)
+}
+
+export const scheduleTerminalRuntimeDisposeByRuntime = (runtime: TerminalRuntime) => {
+  scheduleTerminalRuntimeDispose(runtime.runtimeKey)
 }
 
 export const ensureTerminalRuntime = (
   sessionId: string,
   options: {
+    terminalId?: string
+    shellKind?: TerminalShellKind
     cols?: number
     rows?: number
     cwd?: string
   } = {}
 ) => {
-  const existing = terminalRuntimeStore.get(sessionId)
+  const terminalId = normalizeTerminalId(options.terminalId)
+  const runtimeKey = resolveTerminalRuntimeKey(sessionId, terminalId)
+  const existing = terminalRuntimeStore.get(runtimeKey)
   if (existing != null) {
     if (options.cols != null) {
       existing.info.cols = normalizeDimension(options.cols, existing.info.cols, MAX_COLS)
@@ -168,13 +184,16 @@ export const ensureTerminalRuntime = (
       existing.info.rows = normalizeDimension(options.rows, existing.info.rows, MAX_ROWS)
     }
     existing.info.cwd = options.cwd ?? getWorkspaceFolder()
+    existing.info.terminalId = terminalId
     if (existing.driver == null) {
-      existing.info.shell = resolveTerminalShell()
+      existing.shellKind = normalizeTerminalShellKind(options.shellKind ?? existing.shellKind)
+      existing.info.shellKind = existing.shellKind
+      existing.info.shell = resolveTerminalShell(existing.shellKind)
     }
     return existing
   }
 
   const created = createTerminalRuntime(sessionId, options)
-  terminalRuntimeStore.set(sessionId, created)
+  terminalRuntimeStore.set(created.runtimeKey, created)
   return created
 }

@@ -18,9 +18,16 @@
 ## Terminal 视图是什么
 
 - `terminal` 视图会在当前 workspace 上下文里打开一个交互式 shell。
+- 同一个会话页可以通过 terminal 面板右上角 `+` 创建多个 terminal pane；多个 pane 会在同一个 dock 内自动拼接展示，每个 pane 对应一条独立 shell runtime。
+- `+` 和右侧下拉入口作为一个创建按钮组展示，下拉入口可以选择新 terminal 使用的 shell 类型。
+- terminal 输入焦点内支持清屏快捷键：macOS / iPadOS 使用 `Cmd+K`，Windows / Linux 使用 `Ctrl+K`，触发后只清空前端输出，不向 shell 发送控制字符。
+- terminal 输入焦点内会把 macOS / iPadOS 的 `Option` 作为 terminal Meta 键处理，支持 `Option+b/f/d/delete` 等 shell 快捷键；普通 shell 输入行里按词移动可使用 `Option+←/→`，前端会按当前渲染行计算词边界并发送普通左右箭头，避免在 vi keymap 下触发 `ESC f` 的 find-char 行为；进入 vim / tmux 等 alternate screen 后会保留标准 `Alt+←/→` 箭头序列，Windows / Linux 支持 `Alt+←/→` 和 `Ctrl+←/→`。
+- terminal 面板操作栏支持全屏 / 退出全屏；全屏时 terminal dock 覆盖当前会话内容区域，并隐藏上方聊天内容。
+- 多个 terminal pane 存在时，操作栏支持隐藏 / 显示右侧管理列表；列表隐藏时，切换按钮右下角会显示当前 pane 数量。
+- 右侧管理列表支持双击标题进入编辑、hover 后关闭以及通过插入指示线拖拽调整顺序；列表标题固定保存在 pane 配置中，shell 类型在标题 hover tooltip 中展示。
 - 前端使用 `xterm.js` 渲染；后端走独立 terminal websocket channel，而不是复用 chat `WSEvent`。
-- 终端 scrollback 和 socket 生命周期保存在 server runtime 内存里，不写入 chat `messages` 持久化表。
-- 重新打开同一会话页时，页面会尝试重连已有 terminal runtime；如果会话已删除或 sessionId 不存在，会返回 fatal error 并关闭 socket。
+- 终端 pane 的标题、shell 类型和排序保存在当前浏览器的 localStorage；终端 scrollback 和 socket 生命周期保存在 server runtime 内存里，不写入 chat `messages` 持久化表。
+- 重新打开同一会话页时，页面会按已保存的 pane 列表尝试重连已有 terminal runtime；如果会话已删除或 sessionId 不存在，会返回 fatal error 并关闭 socket。
 
 ## 使用前提
 

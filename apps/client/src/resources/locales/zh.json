@@ -791,9 +791,31 @@
       "unknown": "未知工具"
     },
     "terminal": {
+      "addSession": "新建终端",
+      "closeNamedSession": "关闭 {{title}}",
+      "closeSession": "关闭终端 {{index}}",
       "connectionError": "终端连接失败，请检查服务状态后重试",
+      "dragSession": "拖拽调整终端顺序",
+      "enterFullscreen": "全屏",
+      "exited": "已退出",
+      "exitFullscreen": "退出全屏",
       "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}",
-      "resizePanel": "拖动调整终端高度"
+      "hideManager": "隐藏终端列表",
+      "manageTerminals": "管理终端",
+      "paneTitle": "终端 {{index}}",
+      "renameSession": "重命名 {{title}}",
+      "selectShell": "选择终端类型",
+      "sessionCount": "{{count}} 个终端",
+      "resizePanel": "拖动调整终端高度",
+      "shellTooltip": "Shell：{{shell}}",
+      "shellTooltipExited": "Shell：{{shell}}，已退出",
+      "showManager": "显示终端列表",
+      "shell": {
+        "bash": "Bash",
+        "default": "默认 Shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "会话设置",
     "enterTitle": "输入会话标题...",
