@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, readdir, rm, symlink } from 'node:fs/promises'
+import { access, lstat, mkdir, readdir, readlink, rm, symlink } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
@@ -14,6 +14,19 @@ import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
 const execFileAsync = promisify(execFile)
 const CODEX_MANAGED_SKILLS_STATE_FILE = '.vibe-forge-managed-skills.json'
+
+const hasExpectedSymlinkTarget = async (params: { sourcePath: string, targetPath: string }) => {
+  const { sourcePath, targetPath } = params
+
+  try {
+    const existing = await lstat(targetPath)
+    if (!existing.isSymbolicLink()) return false
+
+    return resolve(dirname(targetPath), await readlink(targetPath)) === resolve(sourcePath)
+  } catch {
+    return false
+  }
+}
 
 const syncCodexMockHomeSymlink = async (params: {
   sourcePath: string
@@ -30,10 +43,23 @@ const syncCodexMockHomeSymlink = async (params: {
   }
 
   if (resolve(sourcePath) === resolve(targetPath)) return
+  if (await hasExpectedSymlinkTarget({ sourcePath, targetPath })) return
 
   await rm(targetPath, { recursive: true, force: true })
   await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath, type)
+
+  try {
+    await symlink(sourcePath, targetPath, type)
+  } catch (error) {
+    if (
+      (error as NodeJS.ErrnoException).code === 'EEXIST' &&
+      await hasExpectedSymlinkTarget({ sourcePath, targetPath })
+    ) {
+      return
+    }
+
+    throw error
+  }
 }
 
 /**
@@ -45,25 +71,12 @@ async function linkAuthFile(home: string, mockHome: string): Promise<void> {
   const aiCodexDir = join(mockHome, '.codex')
   const aiAuth = join(aiCodexDir, 'auth.json')
 
-  // Ensure the .codex directory exists inside the AI home
   await mkdir(aiCodexDir, { recursive: true })
-
-  // Check if the real auth.json exists
-  try {
-    await access(realAuth)
-  } catch {
-    return
-  }
-
-  // Check if the target already exists (symlink or file)
-  try {
-    await access(aiAuth)
-    return
-  } catch {
-    // Doesn't exist yet — create the symlink
-  }
-
-  await symlink(realAuth, aiAuth)
+  await syncCodexMockHomeSymlink({
+    sourcePath: realAuth,
+    targetPath: aiAuth,
+    type: 'file'
+  })
 }
 
 async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {
