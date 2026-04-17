@@ -1,12 +1,12 @@
 import { execFile } from 'node:child_process'
-import { access, lstat, mkdir, readdir, readlink, rm, symlink } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { access, mkdir, readdir, rm } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { writeManagedCodexConfigFile } from './config'
@@ -15,51 +15,15 @@ import { ensureCodexNativeHooksInstalled } from './native-hooks'
 const execFileAsync = promisify(execFile)
 const CODEX_MANAGED_SKILLS_STATE_FILE = '.vibe-forge-managed-skills.json'
 
-const hasExpectedSymlinkTarget = async (params: { sourcePath: string, targetPath: string }) => {
-  const { sourcePath, targetPath } = params
-
-  try {
-    const existing = await lstat(targetPath)
-    if (!existing.isSymbolicLink()) return false
-
-    return resolve(dirname(targetPath), await readlink(targetPath)) === resolve(sourcePath)
-  } catch {
-    return false
-  }
-}
-
 const syncCodexMockHomeSymlink = async (params: {
   sourcePath: string
   targetPath: string
   type: 'dir' | 'file'
 }) => {
-  const { sourcePath, targetPath, type } = params
-
-  try {
-    await access(sourcePath)
-  } catch {
-    await rm(targetPath, { recursive: true, force: true })
-    return
-  }
-
-  if (resolve(sourcePath) === resolve(targetPath)) return
-  if (await hasExpectedSymlinkTarget({ sourcePath, targetPath })) return
-
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-
-  try {
-    await symlink(sourcePath, targetPath, type)
-  } catch (error) {
-    if (
-      (error as NodeJS.ErrnoException).code === 'EEXIST' &&
-      await hasExpectedSymlinkTarget({ sourcePath, targetPath })
-    ) {
-      return
-    }
-
-    throw error
-  }
+  await syncSymlinkTarget({
+    ...params,
+    onMissingSource: 'remove'
+  })
 }
 
 /**

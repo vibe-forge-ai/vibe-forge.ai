@@ -1,5 +1,5 @@
-import { access, mkdir, readdir, rm, symlink, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 
 import {
@@ -9,6 +9,7 @@ import {
   writeJsonFile
 } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
+import { syncSymlinkTarget } from '@vibe-forge/utils'
 
 const MANAGED_PLUGIN_FILE_NAME = 'vibe-forge-hooks.js'
 const DEFAULT_OPENCODE_CONFIG = {
@@ -26,16 +27,18 @@ const pathExists = async (targetPath: string) => {
 }
 
 const ensureSymlinkTarget = async (sourcePath: string, targetPath: string) => {
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath)
+  await syncSymlinkTarget({
+    sourcePath,
+    targetPath
+  })
 }
 
 const mirrorDirectory = async (sourceDir: string, targetDir: string) => {
   if (!await pathExists(sourceDir)) return
-  await rm(targetDir, { recursive: true, force: true })
-  await mkdir(dirname(targetDir), { recursive: true })
-  await symlink(sourceDir, targetDir)
+  await syncSymlinkTarget({
+    sourcePath: sourceDir,
+    targetPath: targetDir
+  })
 }
 
 const mirrorFile = async (sourcePath: string, targetPath: string) => {

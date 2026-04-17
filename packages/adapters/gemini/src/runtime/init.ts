@@ -1,41 +1,22 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, rm, symlink } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { mkdir } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
-import { resolveMockHome } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveGeminiBinaryPath } from '#~/paths.js'
 
 import { prepareGeminiNativeHooks } from './native-hooks'
+import { resolveGeminiMockHome, syncGeminiMockHomeSymlink } from './shared'
 
 const execFileAsync = promisify(execFile)
 
-const syncMockHomeSymlink = async (params: {
-  sourcePath: string
-  targetPath: string
-}) => {
-  const { sourcePath, targetPath } = params
-
-  try {
-    await access(sourcePath)
-  } catch {
-    await rm(targetPath, { recursive: true, force: true })
-    return
-  }
-
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath, 'dir')
-}
-
 const syncGeminiMockHomeSkills = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
-  const sourceDir = resolve(ctx.cwd, '.ai', 'skills')
-  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const mockHome = resolveGeminiMockHome(ctx)
 
-  await syncMockHomeSymlink({
-    sourcePath: sourceDir,
+  await syncGeminiMockHomeSymlink({
+    sourcePath: resolve(ctx.cwd, '.ai', 'skills'),
     targetPath: resolve(mockHome, '.agents', 'skills')
   })
 }
@@ -50,6 +31,6 @@ export const initGeminiAdapter = async (ctx: AdapterCtx) => {
   } catch {
   }
 
-  await mkdir(resolve(resolveMockHome(ctx.cwd, ctx.env), '.gemini'), { recursive: true })
+  await mkdir(resolve(resolveGeminiMockHome(ctx), '.gemini'), { recursive: true })
   await syncGeminiMockHomeSkills(ctx)
 }
