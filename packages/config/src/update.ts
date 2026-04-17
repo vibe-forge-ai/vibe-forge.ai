@@ -5,6 +5,10 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config, ConfigSource } from '@vibe-forge/types'
+import {
+  resolveProjectConfigDir,
+  resolveProjectWorkspaceFolder
+} from '@vibe-forge/utils'
 import { dump, load } from 'js-yaml'
 
 import { resetConfigCache } from './load'
@@ -76,17 +80,23 @@ const resolvePrimaryWorkspaceFolder = (
   }
 }
 
-const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource) => {
+const resolveWritableConfigPath = (
+  workspaceFolder: string,
+  source: ConfigSource,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(workspaceFolder, env)
+  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolve(workspaceFolder)
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
-    const resolvedPath = resolve(workspaceFolder, path)
+    const resolvedPath = resolve(configFolder, path)
     if (existsSync(resolvedPath)) {
       return resolvedPath
     }
   }
 
   if (source === 'user') {
-    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
+    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(resolvedWorkspaceFolder, env)
     if (primaryWorkspaceFolder != null) {
       for (const path of paths) {
         const resolvedPath = resolve(primaryWorkspaceFolder, path)
@@ -98,7 +108,7 @@ const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource
     }
   }
 
-  return resolve(workspaceFolder, paths[0])
+  return resolve(configFolder, paths[0])
 }
 
 const parseConfigContent = (format: string, content: string) => {

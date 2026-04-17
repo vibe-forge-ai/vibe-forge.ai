@@ -6,6 +6,11 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config } from '@vibe-forge/types'
+import {
+  PROJECT_WORKSPACE_FOLDER_ENV,
+  resolveProjectConfigDir,
+  resolveProjectWorkspaceFolder
+} from '@vibe-forge/utils'
 import { load } from 'js-yaml'
 
 import { mergeDefaultVibeForgeMcpPermissions } from './default-vibe-forge-mcp'
@@ -43,10 +48,12 @@ const serializeJsonVariables = (value: Record<string, string | null | undefined>
 )
 
 const resolveConfigCacheKey = (options: LoadConfigOptions) => {
-  const cwd = options.cwd ?? process.cwd()
+  const launchCwd = options.cwd ?? process.cwd()
+  const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
   const disableDevConfig = options.disableDevConfig === true ? '1' : '0'
   const jsonVariables = serializeJsonVariables(options.jsonVariables ?? {})
-  return `${cwd}\n${disableDevConfig}\n${jsonVariables}`
+  return `${launchCwd}\n${workspaceFolder}\n${configCwd}\n${disableDevConfig}\n${jsonVariables}`
 }
 
 const resolveConfigPath = (cwd: string, filePath: string) => resolve(cwd, filePath)
@@ -109,8 +116,8 @@ export const buildConfigJsonVariables = (
   env: Record<string, string | null | undefined> = process.env
 ) => ({
   ...env,
-  WORKSPACE_FOLDER: cwd,
-  __VF_PROJECT_WORKSPACE_FOLDER__: cwd
+  WORKSPACE_FOLDER: resolveProjectWorkspaceFolder(cwd, env),
+  [PROJECT_WORKSPACE_FOLDER_ENV]: resolveProjectWorkspaceFolder(cwd, env)
 })
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -342,14 +349,16 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
     return cachedConfig as Promise<readonly [Config | undefined, Config | undefined]>
   }
 
-  const cwd = options.cwd ?? process.cwd()
+  const launchCwd = options.cwd ?? process.cwd()
+  const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
   const shouldLoadDevConfig = options.disableDevConfig !== true &&
     process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
   const jsonVariables = options.jsonVariables ?? {}
 
   const nextConfig = (async () => {
     const projectConfig = await loadConfigFromPaths(
-      cwd,
+      configCwd,
       [
         './.ai.config.json',
         './infra/.ai.config.json',
@@ -364,7 +373,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
     let userConfig: Config | undefined
     if (shouldLoadDevConfig) {
       userConfig = await loadConfigFromPaths(
-        cwd,
+        configCwd,
         [
           './.ai.dev.config.json',
           './infra/.ai.dev.config.json',
@@ -376,7 +385,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
         jsonVariables
       )
       if (userConfig == null) {
-        const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(cwd)
+        const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
         if (primaryWorkspaceFolder != null) {
           userConfig = await loadConfigFromPaths(
             primaryWorkspaceFolder,

@@ -5,7 +5,7 @@ import process from 'node:process'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadConfig, resetConfigCache } from '#~/load.js'
+import { buildConfigJsonVariables, loadConfig, resetConfigCache } from '#~/load.js'
 
 const DISABLE_DEV_CONFIG_ENV = '__VF_PROJECT_AI_DISABLE_DEV_CONFIG__'
 
@@ -89,6 +89,56 @@ describe('loadConfig', () => {
       resetConfigCache()
       await rm(primaryDir, { force: true, recursive: true })
       await rm(worktreeDir, { force: true, recursive: true })
+    }
+  })
+
+  it('loads project config from __VF_PROJECT_CONFIG_DIR__ while keeping workspace json variables', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-workspace-'))
+    const launchDir = path.join(workspaceDir, 'c', 'd', 'e')
+    const previousConfigDir = process.env.__VF_PROJECT_CONFIG_DIR__
+    const previousLaunchCwd = process.env.__VF_PROJECT_LAUNCH_CWD__
+    const previousWorkspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+
+    try {
+      await mkdir(launchDir, { recursive: true })
+      await writeFile(
+        path.join(launchDir, '.ai.config.json'),
+        JSON.stringify({
+          env: {
+            WORKSPACE_ROOT: '${WORKSPACE_FOLDER}'
+          }
+        })
+      )
+
+      process.env.__VF_PROJECT_LAUNCH_CWD__ = launchDir
+      process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = '../../..'
+      process.env.__VF_PROJECT_CONFIG_DIR__ = '.'
+      resetConfigCache()
+
+      const [projectConfig] = await loadConfig({
+        cwd: launchDir,
+        jsonVariables: buildConfigJsonVariables(launchDir, process.env)
+      })
+
+      expect(projectConfig?.env?.WORKSPACE_ROOT).toBe(workspaceDir)
+    } finally {
+      if (previousConfigDir == null) {
+        delete process.env.__VF_PROJECT_CONFIG_DIR__
+      } else {
+        process.env.__VF_PROJECT_CONFIG_DIR__ = previousConfigDir
+      }
+      if (previousLaunchCwd == null) {
+        delete process.env.__VF_PROJECT_LAUNCH_CWD__
+      } else {
+        process.env.__VF_PROJECT_LAUNCH_CWD__ = previousLaunchCwd
+      }
+      if (previousWorkspaceFolder == null) {
+        delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspaceFolder
+      }
+      resetConfigCache()
+      await rm(workspaceDir, { force: true, recursive: true })
     }
   })
 
