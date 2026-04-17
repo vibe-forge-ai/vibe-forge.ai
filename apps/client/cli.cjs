@@ -2,20 +2,15 @@ const { realpathSync } = require('node:fs')
 const { resolve } = require('node:path')
 const process = require('node:process')
 
-const resolveAiBaseDir = () => (
-  process.env.__VF_PROJECT_AI_BASE_DIR__?.trim()?.replace(/[\\/]+$/, '') || '.ai'
-)
+const {
+  resolveProjectAiBaseDir,
+  resolveProjectWorkspaceFolder
+} = require('@vibe-forge/register/dotenv')
 
-require('@vibe-forge/register/dotenv')
-
-process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = resolveProjectWorkspaceFolder(process.cwd(), process.env)
 process.env.__VF_PROJECT_PACKAGE_DIR__ = __dirname
 process.env.__VF_PROJECT_REAL_HOME__ = process.env.__VF_PROJECT_REAL_HOME__ ?? process.env.HOME ?? ''
-process.env.HOME = resolve(
-  process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
-  resolveAiBaseDir(),
-  '.mock'
-)
+process.env.HOME = resolve(resolveProjectAiBaseDir(process.cwd(), process.env), '.mock')
 
 const cwd = realpathSync(resolve(__dirname, './'))
 const args = process.env.__VF_PROJECT_AI_CLIENT_MODE__ === 'dev' ? [] : ['preview']

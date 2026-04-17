@@ -4,6 +4,7 @@ import {
   DEFAULT_PROJECT_AI_BASE_DIR,
   DEFAULT_PROJECT_AI_ENTITIES_DIR,
   resolveProjectAiBaseDirName,
+  resolveProjectConfigDir,
   resolveProjectAiEntitiesDir,
   resolveProjectAiEntitiesDirName
 } from '#~/ai-path.js'
@@ -25,5 +26,19 @@ describe('ai path utils', () => {
     expect(resolveProjectAiEntitiesDir('/tmp/project', {
       __VF_PROJECT_AI_ENTITIES_DIR__: 'knowledge/entities'
     })).toBe('/tmp/project/.ai/knowledge/entities')
+  })
+
+  it('resolves relative AI and config paths from the launch cwd', () => {
+    expect(resolveProjectAiEntitiesDir('/tmp/project/c/d/e', {
+      __VF_PROJECT_LAUNCH_CWD__: '/tmp/project/c/d/e',
+      __VF_PROJECT_WORKSPACE_FOLDER__: '../../..',
+      __VF_PROJECT_AI_BASE_DIR__: '.iac/ai',
+      __VF_PROJECT_AI_ENTITIES_DIR__: 'agents'
+    })).toBe('/tmp/project/c/d/e/.iac/ai/agents')
+
+    expect(resolveProjectConfigDir('/tmp/project/c/d/e', {
+      __VF_PROJECT_LAUNCH_CWD__: '/tmp/project/c/d/e',
+      __VF_PROJECT_CONFIG_DIR__: '.'
+    })).toBe('/tmp/project/c/d/e')
   })
 })
