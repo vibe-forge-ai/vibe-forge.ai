@@ -99,10 +99,15 @@ export function RuleSidebar({
 
   return (
     <div className='automation-view__sidebar'>
-      <div className='automation-view__sidebar-header'>
-        <div className='automation-view__title'>
-          <h2 className='automation-view__title-text'>{t('automation.title')}</h2>
-        </div>
+      <div className='automation-view__sidebar-search-row'>
+        <Input
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          placeholder={t('automation.searchRule')}
+          prefix={<span className='material-symbols-rounded automation-view__search-icon'>search</span>}
+          allowClear
+          className='automation-view__sidebar-search-input'
+        />
         <Tooltip title={isCreating ? t('automation.creatingRule') : t('automation.newRule')}>
           <Button
             className='automation-view__icon-button automation-view__icon-button--add'
@@ -115,15 +120,6 @@ export function RuleSidebar({
             </span>
           </Button>
         </Tooltip>
-      </div>
-      <div className='automation-view__sidebar-search'>
-        <Input
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={t('automation.searchRule')}
-          prefix={<span className='material-symbols-rounded automation-view__search-icon'>search</span>}
-          allowClear
-        />
       </div>
 
       {filteredRules.length === 0

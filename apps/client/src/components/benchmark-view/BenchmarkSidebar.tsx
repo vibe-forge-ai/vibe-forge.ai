@@ -200,12 +200,6 @@ export function BenchmarkSidebar({
 
   return (
     <div className='benchmark-view__sidebar'>
-      <div className='benchmark-view__sidebar-header'>
-        <Typography.Title level={4} className='benchmark-view__sidebar-title'>
-          {t('benchmark.title')}
-        </Typography.Title>
-      </div>
-
       <div className='benchmark-view__search-row'>
         <Input
           value={query}

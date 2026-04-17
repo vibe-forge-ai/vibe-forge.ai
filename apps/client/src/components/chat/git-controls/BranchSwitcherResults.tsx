@@ -85,10 +85,11 @@ export function BranchSwitcherResults({
     [unifiedTreeEntries]
   )
   const defaultExpandedFolderKeys = useMemo(
-    () => new Set([
-      ...(currentLocalBranch != null ? getGitBranchTreeFolderKeysForBranch(currentLocalBranch, 'local') : []),
-      ...(currentRemoteBranch != null ? getGitBranchTreeFolderKeysForBranch(currentRemoteBranch, 'remote') : [])
-    ]),
+    () =>
+      new Set([
+        ...(currentLocalBranch != null ? getGitBranchTreeFolderKeysForBranch(currentLocalBranch, 'local') : []),
+        ...(currentRemoteBranch != null ? getGitBranchTreeFolderKeysForBranch(currentRemoteBranch, 'remote') : [])
+      ]),
     [currentLocalBranch, currentRemoteBranch]
   )
 

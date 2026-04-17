@@ -6,6 +6,11 @@
     height: 100%;
   }
 
+  &__form-panel > .ant-form {
+    flex: 1;
+    min-height: 0;
+  }
+
   &__form-header {
     display: flex;
     align-items: center;
@@ -14,7 +19,7 @@
 
   &__form-header-actions {
     display: inline-flex;
-    gap: 12px;
+    gap: 8px;
   }
 
   &__form-title {
@@ -33,7 +38,7 @@
   &__form-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: 20px;
+    gap: 12px;
     flex: 1;
     overflow: hidden;
   }
@@ -61,12 +66,10 @@
   }
 
   &__form-section {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
-
-    &:last-child {
-      border-bottom: none;
-    }
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--sub-bg-color);
   }
 
   &__label {
@@ -95,8 +98,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    border-radius: 10px;
-    background: var(--tag-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
   }
 
   &__toggle-label {
@@ -114,9 +118,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 8px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0 10px;
+    border-radius: 6px;
 
     &--confirm {
       font-weight: 600;
@@ -125,5 +130,27 @@
 
   &__action-icon {
     font-size: 18px;
+  }
+
+  &__form-section .ant-input,
+  &__form-section .ant-input-affix-wrapper,
+  &__form-section .ant-input-number,
+  &__form-section .ant-select-selector {
+    border-radius: 6px !important;
+    background: var(--bg-color);
+  }
+
+  &__form-section .ant-input,
+  &__form-section .ant-input-affix-wrapper,
+  &__form-section .ant-select-selector {
+    min-height: 30px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .automation-view {
+    &__form-grid {
+      grid-template-columns: 1fr;
+    }
   }
 }

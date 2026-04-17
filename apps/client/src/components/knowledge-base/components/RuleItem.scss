@@ -46,28 +46,6 @@
   flex-shrink: 0;
 }
 
-.knowledge-base-view__meta-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.knowledge-base-view__meta-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-color);
-}
-
-.knowledge-base-view__meta-pill-icon {
-  font-size: 14px;
-  color: var(--sub-text-color);
-}
-
 .knowledge-base-view__tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -86,4 +64,23 @@
 .knowledge-base-view__tag-icon {
   font-size: 12px;
   color: var(--sub-text-color);
+}
+
+.knowledge-base-view__detail {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.knowledge-base-view__markdown {
+  font-size: 12px;
+}
+
+.knowledge-base-view__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 6px;
 }

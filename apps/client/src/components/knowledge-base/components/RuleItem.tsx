@@ -1,3 +1,5 @@
+import './RuleItem.scss'
+
 import { Button, Empty, Tag, Tooltip } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'

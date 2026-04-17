@@ -90,9 +90,9 @@ export function useChatSessionActions({
           workspace: workspaceDraft == null
             ? undefined
             : {
-                createWorktree: workspaceDraft.createWorktree,
-                branch: workspaceDraft.branch
-              }
+              createWorktree: workspaceDraft.createWorktree,
+              branch: workspaceDraft.branch
+            }
         })
 
         await insertSessionIntoCache(newSession)
@@ -144,9 +144,9 @@ export function useChatSessionActions({
           workspace: workspaceDraft == null
             ? undefined
             : {
-                createWorktree: workspaceDraft.createWorktree,
-                branch: workspaceDraft.branch
-              }
+              createWorktree: workspaceDraft.createWorktree,
+              branch: workspaceDraft.branch
+            }
         })
 
         await insertSessionIntoCache(newSession)

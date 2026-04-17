@@ -140,181 +140,187 @@ export function RunHistoryPanel({
 
   return (
     <div className='automation-view__content'>
-      <div className='automation-view__detail'>
-        <div className='automation-view__detail-header'>
-          <div className='automation-view__detail-title'>
-            <h3 className='automation-view__content-text'>{rule.name}</h3>
-            <span className='automation-view__detail-id'>{rule.id}</span>
+      <div className='automation-view__surface automation-view__detail-surface'>
+        <div className='automation-view__detail'>
+          <div className='automation-view__detail-header'>
+            <div className='automation-view__detail-title'>
+              <h3 className='automation-view__content-text'>{rule.name}</h3>
+              <span className='automation-view__detail-id'>{rule.id}</span>
+            </div>
+            <Button
+              className='automation-view__icon-button automation-view__icon-button--edit'
+              type='text'
+              onClick={() => onEditRule(rule)}
+            >
+              <span className='material-symbols-rounded automation-view__action-icon'>edit</span>
+            </Button>
           </div>
-          <Button
-            className='automation-view__icon-button automation-view__icon-button--edit'
-            type='text'
-            onClick={() => onEditRule(rule)}
-          >
-            <span className='material-symbols-rounded automation-view__action-icon'>edit</span>
-          </Button>
-        </div>
-        <div className='automation-view__detail-description'>
-          <span className='material-symbols-rounded automation-view__meta-icon'>description</span>
-          <span>{rule.description || t('automation.noDescription')}</span>
-        </div>
-        <div className='automation-view__detail-body'>
-          <div className='automation-view__detail-left'>
-            <div className='automation-view__detail-row'>
-              <span className='material-symbols-rounded automation-view__meta-icon'>event</span>
-              <span className='automation-view__detail-label'>{t('automation.createdAt')}</span>
-              <span className='automation-view__detail-value'>
-                {dayjs(rule.createdAt).format('YYYY-MM-DD HH:mm')}
-              </span>
-            </div>
-            <div className='automation-view__detail-row'>
-              <span className='material-symbols-rounded automation-view__meta-icon'>toggle_on</span>
-              <span className='automation-view__detail-label'>{t('automation.ruleStatus')}</span>
-              <span className='automation-view__detail-value' data-status={rule.enabled ? 'enabled' : 'disabled'}>
-                {rule.enabled ? t('automation.enabledOn') : t('automation.enabledOff')}
-              </span>
-            </div>
-            <div className='automation-view__detail-list'>
-              <div className='automation-view__detail-row'>
-                <span className='material-symbols-rounded automation-view__meta-icon'>update</span>
-                <span className='automation-view__detail-label'>{t('automation.lastRunLabel')}</span>
+          <div className='automation-view__detail-description'>
+            <span className='material-symbols-rounded automation-view__meta-icon'>description</span>
+            <span>{rule.description || t('automation.noDescription')}</span>
+          </div>
+          <div className='automation-view__detail-body'>
+            <div className='automation-view__detail-column'>
+              <div className='automation-view__detail-panel'>
+                <div className='automation-view__detail-row'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>event</span>
+                  <span className='automation-view__detail-label'>{t('automation.createdAt')}</span>
+                  <span className='automation-view__detail-value'>
+                    {dayjs(rule.createdAt).format('YYYY-MM-DD HH:mm')}
+                  </span>
+                </div>
+                <div className='automation-view__detail-row'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>toggle_on</span>
+                  <span className='automation-view__detail-label'>{t('automation.ruleStatus')}</span>
+                  <span className='automation-view__detail-value' data-status={rule.enabled ? 'enabled' : 'disabled'}>
+                    {rule.enabled ? t('automation.enabledOn') : t('automation.enabledOff')}
+                  </span>
+                </div>
+                {rule.lastSessionId && (
+                  <div className='automation-view__detail-row'>
+                    <span className='material-symbols-rounded automation-view__meta-icon'>open_in_new</span>
+                    <a
+                      className='automation-view__detail-label automation-view__detail-link'
+                      href={`/session/${rule.lastSessionId}?tag=${
+                        encodeURIComponent(`automation:${rule.id}:${rule.name}`)
+                      }`}
+                      target='_blank'
+                      rel='noreferrer'
+                    >
+                      {t('automation.relatedSession')}
+                    </a>
+                  </div>
+                )}
               </div>
-              <div className='automation-view__run-list'>
-                {recentRuns.length > 0
-                  ? recentRuns.map((run) => (
-                    <div key={run.id} className='automation-view__run-item'>
-                      <a
-                        className='automation-view__run-link'
-                        href={`/session/${run.sessionId}?tag=${
-                          encodeURIComponent(`automation:${rule.id}:${rule.name}`)
-                        }`}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        {run.taskTitle ?? t('automation.taskUnknown')}
-                      </a>
-                      <span className='automation-view__run-time'>
-                        {dayjs(run.runAt).format('YYYY-MM-DD HH:mm')}
+              <div className='automation-view__detail-panel automation-view__detail-panel--list'>
+                <div className='automation-view__detail-row'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>update</span>
+                  <span className='automation-view__detail-label'>{t('automation.lastRunLabel')}</span>
+                </div>
+                <div className='automation-view__run-list'>
+                  {recentRuns.length > 0
+                    ? recentRuns.map((run) => (
+                      <div key={run.id} className='automation-view__run-item'>
+                        <a
+                          className='automation-view__run-link'
+                          href={`/session/${run.sessionId}?tag=${
+                            encodeURIComponent(`automation:${rule.id}:${rule.name}`)
+                          }`}
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          {run.taskTitle ?? t('automation.taskUnknown')}
+                        </a>
+                        <span className='automation-view__run-time'>
+                          {dayjs(run.runAt).format('YYYY-MM-DD HH:mm')}
+                        </span>
+                      </div>
+                    ))
+                    : <span className='automation-view__detail-value'>{t('automation.noRunYet')}</span>}
+                </div>
+              </div>
+            </div>
+            <div className='automation-view__detail-column'>
+              <div className='automation-view__detail-panel'>
+                <div className='automation-view__detail-section-title'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>bolt</span>
+                  {t('automation.sectionTriggers')}
+                </div>
+                <div className='automation-view__detail-chips'>
+                  {triggerLabels.length
+                    ? triggerLabels.map((label, index) => (
+                      <span key={`${label}-${index}`} className='automation-view__detail-chip'>
+                        {label}
                       </span>
-                    </div>
-                  ))
-                  : <span className='automation-view__detail-value'>{t('automation.noRunYet')}</span>}
+                    ))
+                    : <span className='automation-view__detail-placeholder'>{t('automation.noTriggers')}</span>}
+                </div>
               </div>
-            </div>
-            {rule.lastSessionId && (
-              <div className='automation-view__detail-row'>
-                <span className='material-symbols-rounded automation-view__meta-icon'>open_in_new</span>
-                <a
-                  className='automation-view__detail-label automation-view__detail-link'
-                  href={`/session/${rule.lastSessionId}?tag=${
-                    encodeURIComponent(`automation:${rule.id}:${rule.name}`)
-                  }`}
-                  target='_blank'
-                  rel='noreferrer'
-                >
-                  {t('automation.relatedSession')}
-                </a>
-              </div>
-            )}
-          </div>
-          <div className='automation-view__detail-right'>
-            <div className='automation-view__detail-section'>
-              <div className='automation-view__detail-section-title'>
-                <span className='material-symbols-rounded automation-view__meta-icon'>bolt</span>
-                {t('automation.sectionTriggers')}
-              </div>
-              <div className='automation-view__detail-chips'>
-                {triggerLabels.length
-                  ? triggerLabels.map((label, index) => (
-                    <span key={`${label}-${index}`} className='automation-view__detail-chip'>
-                      {label}
-                    </span>
-                  ))
-                  : <span className='automation-view__detail-placeholder'>{t('automation.noTriggers')}</span>}
-              </div>
-            </div>
-            <div className='automation-view__detail-section'>
-              <div className='automation-view__detail-section-title'>
-                <span className='material-symbols-rounded automation-view__meta-icon'>task</span>
-                {t('automation.sectionTasks')}
-              </div>
-              <div className='automation-view__detail-chips'>
-                {taskLabels.length
-                  ? taskLabels.map((label, index) => (
-                    <span key={`${label}-${index}`} className='automation-view__detail-chip'>
-                      {label}
-                    </span>
-                  ))
-                  : <span className='automation-view__detail-placeholder'>{t('automation.noTasks')}</span>}
+              <div className='automation-view__detail-panel'>
+                <div className='automation-view__detail-section-title'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>task</span>
+                  {t('automation.sectionTasks')}
+                </div>
+                <div className='automation-view__detail-chips'>
+                  {taskLabels.length
+                    ? taskLabels.map((label, index) => (
+                      <span key={`${label}-${index}`} className='automation-view__detail-chip'>
+                        {label}
+                      </span>
+                    ))
+                    : <span className='automation-view__detail-placeholder'>{t('automation.noTasks')}</span>}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className='automation-view__content-header'>
-        <div className='automation-view__content-title'>
-          <span className='material-symbols-rounded automation-view__content-icon'>history</span>
-          <h3 className='automation-view__content-text'>{t('automation.runHistory')}</h3>
-        </div>
-      </div>
-      <div className='automation-view__run-filters'>
-        <Input
-          value={runQuery}
-          onChange={(event) => onRunQueryChange(event.target.value)}
-          placeholder={t('automation.runSearch')}
-          className='automation-view__run-search'
-          allowClear
-        />
-        <Select
-          value={statusFilter}
-          onChange={onStatusFilterChange}
-          className='automation-view__run-select'
-          options={[
-            { label: t('automation.statusAll'), value: 'all' },
-            { label: t('common.status.running'), value: 'running' },
-            { label: t('common.status.completed'), value: 'completed' },
-            { label: t('common.status.failed'), value: 'failed' },
-            { label: t('common.status.terminated'), value: 'terminated' },
-            { label: t('common.status.waiting_input'), value: 'waiting_input' }
-          ]}
-        />
-        <Select
-          value={timeFilter}
-          onChange={onTimeFilterChange}
-          className='automation-view__run-select'
-          options={[
-            { label: t('automation.timeAll'), value: 'all' },
-            { label: t('automation.time24h'), value: '24h' },
-            { label: t('automation.time7d'), value: '7d' },
-            { label: t('automation.time30d'), value: '30d' }
-          ]}
-        />
-        <Select
-          value={sortOrder}
-          onChange={onSortOrderChange}
-          className='automation-view__run-select'
-          options={[
-            { label: t('automation.sortDesc'), value: 'desc' },
-            { label: t('automation.sortAsc'), value: 'asc' }
-          ]}
-        />
-      </div>
-      {filteredRuns.length === 0
-        ? (
-          <div className='automation-view__empty'>
-            <Empty description={t('automation.noRuns')} />
+      <div className='automation-view__surface automation-view__history-surface'>
+        <div className='automation-view__content-header'>
+          <div className='automation-view__content-title'>
+            <span className='material-symbols-rounded automation-view__content-icon'>history</span>
+            <h3 className='automation-view__content-text'>{t('automation.runHistory')}</h3>
           </div>
-        )
-        : (
-          <Table
-            rowKey='id'
-            className='automation-view__run-table'
-            columns={columns}
-            dataSource={filteredRuns}
-            pagination={{ pageSize: 8, hideOnSinglePage: true }}
+        </div>
+        <div className='automation-view__run-filters'>
+          <Input
+            value={runQuery}
+            onChange={(event) => onRunQueryChange(event.target.value)}
+            placeholder={t('automation.runSearch')}
+            className='automation-view__run-search'
+            allowClear
           />
-        )}
+          <Select
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            className='automation-view__run-select'
+            options={[
+              { label: t('automation.statusAll'), value: 'all' },
+              { label: t('common.status.running'), value: 'running' },
+              { label: t('common.status.completed'), value: 'completed' },
+              { label: t('common.status.failed'), value: 'failed' },
+              { label: t('common.status.terminated'), value: 'terminated' },
+              { label: t('common.status.waiting_input'), value: 'waiting_input' }
+            ]}
+          />
+          <Select
+            value={timeFilter}
+            onChange={onTimeFilterChange}
+            className='automation-view__run-select'
+            options={[
+              { label: t('automation.timeAll'), value: 'all' },
+              { label: t('automation.time24h'), value: '24h' },
+              { label: t('automation.time7d'), value: '7d' },
+              { label: t('automation.time30d'), value: '30d' }
+            ]}
+          />
+          <Select
+            value={sortOrder}
+            onChange={onSortOrderChange}
+            className='automation-view__run-select'
+            options={[
+              { label: t('automation.sortDesc'), value: 'desc' },
+              { label: t('automation.sortAsc'), value: 'asc' }
+            ]}
+          />
+        </div>
+        {filteredRuns.length === 0
+          ? (
+            <div className='automation-view__empty'>
+              <Empty description={t('automation.noRuns')} />
+            </div>
+          )
+          : (
+            <Table
+              rowKey='id'
+              className='automation-view__run-table'
+              columns={columns}
+              dataSource={filteredRuns}
+              pagination={{ pageSize: 8, hideOnSinglePage: true }}
+            />
+          )}
+      </div>
     </div>
   )
 }

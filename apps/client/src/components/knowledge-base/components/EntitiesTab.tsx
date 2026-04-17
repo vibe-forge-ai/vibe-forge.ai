@@ -17,6 +17,7 @@ interface EntitiesTabProps {
   query: string
   tagOptions: Array<{ label: string; value: string }>
   tagFilter: string[]
+  onRefresh: () => void
   onQueryChange: (value: string) => void
   onTagFilterChange: (value: string[]) => void
   onCreate: () => void
@@ -30,6 +31,7 @@ export function EntitiesTab({
   query,
   tagOptions,
   tagFilter,
+  onRefresh,
   onQueryChange,
   onTagFilterChange,
   onCreate,
@@ -40,10 +42,14 @@ export function EntitiesTab({
   return (
     <TabContent className='knowledge-base-view__entities-tab'>
       <SectionHeader
-        title={t('knowledge.entities.title')}
-        description={t('knowledge.entities.desc')}
         actions={
           <Space>
+            <ActionButton
+              icon={<span className='material-symbols-rounded'>refresh</span>}
+              onClick={onRefresh}
+            >
+              {t('knowledge.actions.refresh')}
+            </ActionButton>
             <ActionButton
               icon={<span className='material-symbols-rounded'>download</span>}
               onClick={onImport}

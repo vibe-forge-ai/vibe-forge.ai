@@ -16,6 +16,7 @@ import {
   runAutomationRule,
   updateAutomationRule
 } from '#~/api.js'
+import { PageShell } from '#~/components/layout/PageShell'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 
 import { RuleFormPanel } from './RuleFormPanel.js'
@@ -173,7 +174,7 @@ export function AutomationView() {
   }, [message, mutate, t])
 
   return (
-    <div className='automation-view'>
+    <PageShell className='automation-view' bodyClassName='automation-view__body'>
       <div className='automation-view__left'>
         <RuleSidebar
           rules={rules}
@@ -188,7 +189,6 @@ export function AutomationView() {
           onQueryChange={(value: string) => update({ q: value })}
         />
       </div>
-      <div className='automation-view__divider' />
       <div className='automation-view__right'>
         {panelMode === 'create' && (
           <RuleFormPanel
@@ -224,6 +224,6 @@ export function AutomationView() {
           />
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -1,6 +1,4 @@
 .chat-container {
-  --chat-content-max-width: 1040px;
-
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -245,8 +243,7 @@
 }
 
 .chat-composer-stack__inner {
-  width: min(100%, var(--chat-content-max-width));
-  margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -306,8 +303,16 @@
 
 .chat-settings-panel {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
-  padding: 20px 24px 24px;
+  padding: 6px 12px 12px;
+  box-sizing: border-box;
+}
+
+.chat-settings-panel > .session-settings-drawer {
+  width: 100%;
 }
 
 .chat-route__empty-state {

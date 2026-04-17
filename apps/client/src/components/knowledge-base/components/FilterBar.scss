@@ -1,7 +1,7 @@
 .knowledge-base-view__filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -16,6 +16,17 @@
 }
 
 .knowledge-base-view__filter-icon {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--sub-text-color);
+}
+
+.knowledge-base-view__filter-input .ant-input-affix-wrapper,
+.knowledge-base-view__filter-select .ant-select-selector {
+  height: 30px !important;
+  border-radius: 6px !important;
+  background: var(--bg-color);
+}
+
+.knowledge-base-view__filter-select .ant-select-selector {
+  align-items: center !important;
 }

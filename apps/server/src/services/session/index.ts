@@ -44,7 +44,6 @@ import {
   shouldInterruptForQueuedNext
 } from '#~/services/session/queue.js'
 import type { AdapterSessionRuntime } from '#~/services/session/runtime.js'
-import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import {
   bindAdapterSessionRuntime,
   broadcastSessionEvent,
@@ -59,6 +58,7 @@ import {
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
+import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()

@@ -13,11 +13,6 @@ export function KnowledgeBaseHeader({ onRefresh }: KnowledgeBaseHeaderProps) {
 
   return (
     <div className='knowledge-base-view__header'>
-      <div className='knowledge-base-view__title'>
-        <div className='knowledge-base-view__title-text'>
-          {t('knowledge.title')}
-        </div>
-      </div>
       <ActionButton
         icon={<span className='material-symbols-rounded'>refresh</span>}
         onClick={onRefresh}

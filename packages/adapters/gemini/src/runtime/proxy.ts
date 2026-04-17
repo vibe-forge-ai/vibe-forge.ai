@@ -128,7 +128,8 @@ export interface GeminiProxyRouteConfig {
   timeoutMs?: number
 }
 
-const REQUEST_PATH_RE = /^\/(?<routeKey>[^/]+)\/v1beta\/models\/[^/:]+:(?<method>generateContent|streamGenerateContent)$/u
+const REQUEST_PATH_RE =
+  /^\/(?<routeKey>[^/]+)\/v1beta\/models\/[^/:]+:(?<method>generateContent|streamGenerateContent)$/u
 
 const asPlainObject = (value: unknown): Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -376,7 +377,9 @@ export const convertGeminiRequestToOpenAiRequest = (params: {
     messages,
     ...(disableThinking ? { thinking: { type: 'disabled' as const } } : {}),
     ...(tools.length === 0 ? {} : { tools }),
-    ...(normalizePositiveInteger(maxOutputTokens) == null ? {} : { max_tokens: normalizePositiveInteger(maxOutputTokens) })
+    ...(normalizePositiveInteger(maxOutputTokens) == null
+      ? {}
+      : { max_tokens: normalizePositiveInteger(maxOutputTokens) })
   }
 }
 
@@ -428,8 +431,8 @@ export const convertOpenAiResponseToGeminiResponse = (response: OpenAiChatComple
     ...(text === ''
       ? []
       : [{
-          text
-        }]),
+        text
+      }]),
     ...toolCalls.map((toolCall) => ({
       functionCall: {
         name: toolCall.function?.name?.trim() || 'unknown_tool',
@@ -486,8 +489,8 @@ const fetchOpenAiCompletion = async (
     ...(normalizePositiveInteger(route.timeoutMs) == null
       ? {}
       : {
-          signal: AbortSignal.timeout(normalizePositiveInteger(route.timeoutMs)!)
-        })
+        signal: AbortSignal.timeout(normalizePositiveInteger(route.timeoutMs)!)
+      })
   })
 
   const responseText = await upstreamResponse.text()
@@ -498,9 +501,9 @@ const fetchOpenAiCompletion = async (
   }
 
   if (!upstreamResponse.ok) {
-    const errorMessage = parsedResponse?.error?.message?.trim()
-      || responseText.trim()
-      || `Upstream provider returned ${upstreamResponse.status}.`
+    const errorMessage = parsedResponse?.error?.message?.trim() ||
+      responseText.trim() ||
+      `Upstream provider returned ${upstreamResponse.status}.`
     return {
       ok: false as const,
       status: upstreamResponse.status,

@@ -1,9 +1,10 @@
 .config-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
   color: var(--text-color);
-  background: var(--bg-color);
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+  }
 
   &__state {
     display: grid;
@@ -14,13 +15,19 @@
   &__tabs-wrap {
     display: flex;
     min-height: 0;
+    min-width: 0;
     flex: 1;
+
     .ant-tabs-content-holder > .ant-tabs-content {
       height: 100%;
+      min-height: 0;
+
       & > .ant-tabs-tabpane {
-        padding: 16px 128px;
-        padding-bottom: 0;
+        display: flex;
+        min-height: 0;
+        padding: 12px;
         height: 100%;
+        box-sizing: border-box;
       }
     }
   }
@@ -28,6 +35,7 @@
   &__tabs {
     width: 100%;
     height: 100%;
+    min-width: 0;
   }
 }
 
@@ -37,6 +45,7 @@
   flex: 1;
   gap: 12px;
   height: 100%;
+  min-height: 0;
 }
 
 .config-view__editor-wrap {
@@ -57,12 +66,18 @@
   }
 }
 
+.config-view__section-header--actions-only {
+  justify-content: flex-end;
+}
+
 .config-view__card {
   flex-grow: 1;
-  margin: 0 -20px;
-  padding: 0 20px;
-  padding-bottom: 20px;
-  overflow: scroll;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: auto;
 }
 
 .config-view__card + .config-view__card {
@@ -73,7 +88,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
 }
@@ -101,43 +116,48 @@
 .config-view__tab-label {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   line-height: 1;
 }
 
 .config-view__tab-icon {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--sub-text-color);
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .config-view__tab-text {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-color);
-  line-height: 18px;
+  line-height: 16px;
 }
 
 .config-view__tabs > .ant-tabs-nav {
-  min-width: 320px;
-  padding: 12px 16px;
+  width: var(--subpage-secondary-panel-width);
+  min-width: var(--subpage-secondary-panel-width);
+  max-width: var(--subpage-secondary-panel-width);
+  padding: 10px 12px;
   background-color: var(--sub-bg-color);
-  border-right: 1px solid var(--sub-border-color);
 
   .ant-tabs-tab {
     display: flex;
     align-items: center;
-    min-height: 28px;
-
+    min-height: 30px;
+    margin: 0 0 6px !important;
+    padding: 6px 10px !important;
+    border: 1px solid transparent;
     border-radius: 8px;
-    transition: .3s;
+    background: var(--bg-color);
+    transition: .2s ease;
     &:not(.ant-tabs-tab-disabled):hover {
-      background-color: var(--sub-sub-bg-color);
+      border-color: rgba(37, 99, 235, .18);
+      background-color: var(--tag-hover-bg);
     }
   }
 
@@ -150,20 +170,31 @@
 
   .ant-tabs-tab-disabled {
     cursor: default;
+    min-height: auto;
+    margin: 0 0 4px !important;
+    padding: 4px 2px !important;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .ant-tabs-tab-disabled:hover {
+    border-color: transparent;
+    background: transparent;
   }
 
   .ant-tabs-tab-disabled .ant-tabs-tab-btn {
     cursor: default;
     color: var(--sub-text-color);
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
+    font-weight: 600;
   }
 
   .ant-tabs-tab-active {
     font-weight: 600;
-    color: var(--sub-sub-text-color);
-    background: var(--sub-sub-bg-color);
+    color: var(--sidebar-active-text, var(--primary-color));
+    border-color: var(--primary-color);
+    background: var(--primary-soft-bg);
     .material-symbols-rounded {
       font-variation-settings: 'FILL' 1;
     }
@@ -175,11 +206,29 @@
 }
 
 .config-view__tabs > .ant-tabs-content-holder {
-  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  margin: var(--subpage-content-card-gap);
+  margin-left: 0;
+  border-left: none;
+  border-radius: var(--subpage-content-card-radius);
+  background: var(--subpage-content-card-bg);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .config-view__group-label {
   display: flex;
   width: 100%;
-  margin-left: -24px;
+  margin-left: 0;
+  padding: 0;
+}
+
+@media (max-width: 1100px) {
+  .config-view__tabs > .ant-tabs-content-holder {
+    margin-top: 0;
+    margin-left: var(--subpage-content-card-gap);
+  }
 }
