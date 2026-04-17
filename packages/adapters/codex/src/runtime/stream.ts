@@ -32,6 +32,7 @@ import type {
   McpServerElicitationResponse
 } from '#~/types.js'
 
+import { resolveCodexAdapterConfig } from './config'
 import {
   buildFeatureArgs,
   getErrorMessage,
@@ -40,7 +41,6 @@ import {
   toAdapterErrorData,
   toCodexOutboundApprovalPolicy
 } from './session-common'
-import { resolveCodexAdapterConfig } from './config'
 
 const buildPermissionInteractionOptions = () => [
   { label: '同意本次', value: 'allow_once', description: '仅继续这次被拦截的操作。' },

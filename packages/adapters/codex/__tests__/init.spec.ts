@@ -4,8 +4,8 @@ import { dirname, join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { initCodexAdapter } from '../src/runtime/init'
 import { resolveCodexConfigOverrides } from '../src/runtime/config'
+import { initCodexAdapter } from '../src/runtime/init'
 
 const tempDirs: string[] = []
 

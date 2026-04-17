@@ -1,5 +1,5 @@
-import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveAdapterCommonConfig } from '@vibe-forge/config'
+import type { AdapterCtx } from '@vibe-forge/types'
 import {
   listServiceModels,
   normalizeNonEmptyString,

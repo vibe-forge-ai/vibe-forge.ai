@@ -1,6 +1,6 @@
+import { resolveAdapterCommonConfig, resolveConfigState } from '@vibe-forge/config'
 import { callHook, createAdapterHookBridge } from '@vibe-forge/hooks'
 import type { HookInputs } from '@vibe-forge/hooks'
-import { resolveAdapterCommonConfig, resolveConfigState } from '@vibe-forge/config'
 import type {
   AdapterCtx,
   AdapterModelFallbackError,
@@ -11,11 +11,7 @@ import type {
   WorkspaceAssetAdapter
 } from '@vibe-forge/types'
 import { loadAdapter } from '@vibe-forge/types'
-import {
-  listServiceModels,
-  resolveAdapterModelCompatibility,
-  resolveEffectiveEffort
-} from '@vibe-forge/utils'
+import { listServiceModels, resolveAdapterModelCompatibility, resolveEffectiveEffort } from '@vibe-forge/utils'
 import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
 
 import { prepare } from '#~/prepare.js'

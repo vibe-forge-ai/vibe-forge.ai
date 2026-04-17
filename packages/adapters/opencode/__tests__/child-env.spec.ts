@@ -6,12 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { buildChildEnv } from '#~/runtime/session/child-env.js'
 import { resolveAdapterConfig } from '#~/runtime/session/shared.js'
 
-import {
-  createWorkspace,
-  makeCtx,
-  registerRuntimeTestHooks,
-  writeDocument
-} from './runtime-test-helpers'
+import { createWorkspace, makeCtx, registerRuntimeTestHooks, writeDocument } from './runtime-test-helpers'
 
 describe('opencode resolved config consumption', () => {
   registerRuntimeTestHooks()

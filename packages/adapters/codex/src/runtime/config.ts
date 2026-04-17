@@ -73,13 +73,14 @@ export const resolveCodexAdapterConfig = (
     configState?: AdapterCtx['configState']
     configs?: AdapterCtx['configs']
   } | undefined
-) => resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, CodexCommonAdapterConfigKey>(
-  adapterConfigContribution,
-  {
-    configState: params?.configState,
-    configs: params?.configs
-  }
-)
+) =>
+  resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, CodexCommonAdapterConfigKey>(
+    adapterConfigContribution,
+    {
+      configState: params?.configState,
+      configs: params?.configs
+    }
+  )
 
 export const resolveCodexConfigOverrides = (
   params: {

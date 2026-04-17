@@ -34,12 +34,14 @@ const collectWorkspaceChannelPackageNames = (workspaceFolder: string) => {
         optionalDependencies?: Record<string, string>
         peerDependencies?: Record<string, string>
       }
-      for (const packageName of [
-        ...Object.keys(packageJson.dependencies ?? {}),
-        ...Object.keys(packageJson.devDependencies ?? {}),
-        ...Object.keys(packageJson.optionalDependencies ?? {}),
-        ...Object.keys(packageJson.peerDependencies ?? {})
-      ]) {
+      for (
+        const packageName of [
+          ...Object.keys(packageJson.dependencies ?? {}),
+          ...Object.keys(packageJson.devDependencies ?? {}),
+          ...Object.keys(packageJson.optionalDependencies ?? {}),
+          ...Object.keys(packageJson.peerDependencies ?? {})
+        ]
+      ) {
         if (isChannelPackageName(packageName)) {
           packageNames.add(packageName)
         }

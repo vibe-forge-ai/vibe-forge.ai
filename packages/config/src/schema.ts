@@ -1,10 +1,11 @@
 /* eslint-disable max-lines -- central schema composition registry */
 import { existsSync, readFileSync } from 'node:fs'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import type { ChannelDescriptor } from '@vibe-forge/core/channel'
 import {
   adapterConfigCommonSchema,
   baseAdapterEntrySchema,
@@ -13,7 +14,6 @@ import {
   buildConfigUiObjectSchema,
   configSectionSchemas
 } from '@vibe-forge/core/config-schema'
-import type { ChannelDescriptor } from '@vibe-forge/core/channel'
 import type { Config, ConfigJsonSchema, ConfigUiSchema } from '@vibe-forge/types'
 import { resolveAdapterPackageName } from '@vibe-forge/types'
 import { z } from 'zod'
@@ -264,7 +264,7 @@ const zodToJsonSchema = (schema: z.ZodTypeAny): ConfigJsonSchema => {
   }
   if (isZodType(unwrapped, 'ZodUnion')) {
     return {
-      anyOf: ((unwrapped as unknown as { _def: { options: z.ZodTypeAny[] } })._def.options)
+      anyOf: (unwrapped as unknown as { _def: { options: z.ZodTypeAny[] } })._def.options
         .map(option => zodToJsonSchema(option)),
       ...(description ? { description } : {})
     }
@@ -322,9 +322,10 @@ const resolveAdapterSchemaEntry = (
   isAlias: configKey !== contribution.adapterKey
 })
 
-const dedupeResolvedAdapterSchemaEntries = (entries: readonly ResolvedAdapterSchemaEntry[]) => Array.from(
-  new Map(entries.map(entry => [entry.configKey, entry])).values()
-)
+const dedupeResolvedAdapterSchemaEntries = (entries: readonly ResolvedAdapterSchemaEntry[]) =>
+  Array.from(
+    new Map(entries.map(entry => [entry.configKey, entry])).values()
+  )
 
 const getPreferredAdapterEntries = (entries: readonly ResolvedAdapterSchemaEntry[]) => (
   Array.from(
@@ -401,7 +402,9 @@ const createChannelsSectionSchema = (definitions: readonly ChannelDescriptor[]) 
 
         const knownDefinition = getKnownChannelDefinition(definitionsByType, channelValue)
         if (knownDefinition != null) {
-          for (const issue of collectKnownSchemaUnknownKeyIssues(knownDefinition.configSchema, channelValue, [channelKey])) {
+          for (
+            const issue of collectKnownSchemaUnknownKeyIssues(knownDefinition.configSchema, channelValue, [channelKey])
+          ) {
             ctx.addIssue(issue)
           }
         }
@@ -442,21 +445,25 @@ const collectKnownSchemaUnknownKeyIssues = (
     if (!Array.isArray(value)) {
       return []
     }
-    return value.flatMap((item, index) => collectKnownSchemaUnknownKeyIssues(
-      getArrayElementSchema(schema),
-      item,
-      [...path, String(index)]
-    ))
+    return value.flatMap((item, index) =>
+      collectKnownSchemaUnknownKeyIssues(
+        getArrayElementSchema(schema),
+        item,
+        [...path, String(index)]
+      )
+    )
   }
   if (isZodType(schema, 'ZodRecord')) {
     if (typeof value !== 'object' || Array.isArray(value)) {
       return []
     }
-    return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => collectKnownSchemaUnknownKeyIssues(
-      getRecordValueSchema(schema),
-      item,
-      [...path, key]
-    ))
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) =>
+      collectKnownSchemaUnknownKeyIssues(
+        getRecordValueSchema(schema),
+        item,
+        [...path, key]
+      )
+    )
   }
   if (isZodType(schema, 'ZodUnion')) {
     const matchedOption = getUnionOptions(schema).find(option => option.safeParse(value).success)
@@ -613,10 +620,10 @@ const createBundle = (
   const jsonSchemaRecord = jsonSchema as Record<string, unknown>
 
   const jsonSchemaProperties = (
-    jsonSchemaRecord.properties != null &&
-    typeof jsonSchemaRecord.properties === 'object' &&
-    !Array.isArray(jsonSchemaRecord.properties)
-  )
+      jsonSchemaRecord.properties != null &&
+      typeof jsonSchemaRecord.properties === 'object' &&
+      !Array.isArray(jsonSchemaRecord.properties)
+    )
     ? { ...(jsonSchemaRecord.properties as Record<string, unknown>) }
     : {}
   jsonSchemaProperties.channels = createChannelsSectionJsonSchema(channelDefinitions)
@@ -787,7 +794,7 @@ const comparePackageExportPatternSpecificity = (
 const resolvePackageExportEntry = (
   exportsField: unknown,
   exportKey: string
-): { entry: unknown, patternMatch?: string } | undefined => {
+): { entry: unknown; patternMatch?: string } | undefined => {
   if (exportKey === '.') {
     if (
       exportsField != null &&
@@ -815,7 +822,7 @@ const resolvePackageExportEntry = (
       const patternMatch = matchPackageExportPattern(key, exportKey)
       return patternMatch == null ? undefined : { key, patternMatch }
     })
-    .filter((match): match is { key: string, patternMatch: string } => match != null)
+    .filter((match): match is { key: string; patternMatch: string } => match != null)
     .sort(comparePackageExportPatternSpecificity)[0]
 
   if (matchedPattern == null) {
@@ -843,10 +850,10 @@ const resolvePackageExportPath = (
   const exportPath = resolvedExport == null
     ? undefined
     : resolvePackageExportTarget(
-        resolvedExport.entry,
-        preferredConditions,
-        resolvedExport.patternMatch
-      )
+      resolvedExport.entry,
+      preferredConditions,
+      resolvedExport.patternMatch
+    )
   if (exportPath != null) {
     return resolve(dirname(packageJsonPath), exportPath)
   }
@@ -1020,11 +1027,12 @@ const createIssueErrorResult = (issues: readonly z.ZodIssue[]) => ({
   error: new z.ZodError([...issues])
 })
 
-export const composeBaseConfigSchemaBundle = () => createBundle(
-  BASE_SCHEMA_ID,
-  [],
-  []
-)
+export const composeBaseConfigSchemaBundle = () =>
+  createBundle(
+    BASE_SCHEMA_ID,
+    [],
+    []
+  )
 
 export const composeWorkspaceConfigSchemaBundle = async (
   options: ComposeWorkspaceConfigSchemaOptions
@@ -1044,14 +1052,18 @@ export const composeWorkspaceConfigSchemaBundle = async (
   ])
 
   const adapterEntries = dedupeResolvedAdapterSchemaEntries((
-    await Promise.all(Array.from(adapterSpecifiers).map(async (specifier) => {
-      const contribution = await loadAdapterContribution(specifier, options.cwd)
-      return contribution == null ? undefined : resolveAdapterSchemaEntry(specifier, contribution)
-    }))
+    await Promise.all(
+      Array.from(adapterSpecifiers).map(async (specifier) => {
+        const contribution = await loadAdapterContribution(specifier, options.cwd)
+        return contribution == null ? undefined : resolveAdapterSchemaEntry(specifier, contribution)
+      })
+    )
   ).filter((entry): entry is ResolvedAdapterSchemaEntry => entry != null))
 
   const channelDefinitions = (
-    await Promise.all(Array.from(channelSpecifiers).map(async specifier => await loadChannelDefinition(specifier, options.cwd)))
+    await Promise.all(
+      Array.from(channelSpecifiers).map(async specifier => await loadChannelDefinition(specifier, options.cwd))
+    )
   ).filter((definition): definition is ChannelDescriptor => definition != null)
 
   return createBundle(

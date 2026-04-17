@@ -1,6 +1,11 @@
 import process from 'node:process'
 
-import { buildConfigJsonVariables, buildConfigSections, formatConfigValueAsYaml, loadConfigState } from '@vibe-forge/config'
+import {
+  buildConfigJsonVariables,
+  buildConfigSections,
+  formatConfigValueAsYaml,
+  loadConfigState
+} from '@vibe-forge/config'
 import type { Config, ConfigSource } from '@vibe-forge/types'
 
 export type ConfigReadSource = ConfigSource | 'merged'
@@ -138,15 +143,13 @@ export const parseConfigValueInput = (
     return ''
   }
 
-  const looksLikeJsonLiteral = (
-    trimmed.startsWith('{') ||
+  const looksLikeJsonLiteral = trimmed.startsWith('{') ||
     trimmed.startsWith('[') ||
     trimmed.startsWith('"') ||
     trimmed === 'true' ||
     trimmed === 'false' ||
     trimmed === 'null' ||
     /^[+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i.test(trimmed)
-  )
 
   return looksLikeJsonLiteral ? JSON.parse(trimmed) : rawValue
 }
@@ -158,9 +161,10 @@ export const formatValidationIssues = (
       message: string
     }>
   }
-) => error.issues
-  .map((issue) => {
-    const path = issue.path.length > 0 ? issue.path.join('.') : '<root>'
-    return `${path}: ${issue.message}`
-  })
-  .join('\n')
+) =>
+  error.issues
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : '<root>'
+      return `${path}: ${issue.message}`
+    })
+    .join('\n')

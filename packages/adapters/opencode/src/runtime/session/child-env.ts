@@ -13,16 +13,16 @@ import { toProcessEnv } from './shared'
 import type { OpenCodeResolvedAdapterConfig } from './shared'
 import { ensureOpenCodeConfigDir } from './skill-config'
 
-const resolveMergedConfig = (ctx: AdapterCtx) => resolveConfigState({
-  configState: ctx.configState,
-  configs: ctx.configs
-}).mergedConfig
+const resolveMergedConfig = (ctx: AdapterCtx) =>
+  resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  }).mergedConfig
 
 const resolveMergedModelServices = (ctx: AdapterCtx) =>
   (resolveMergedConfig(ctx).modelServices ?? {}) as Record<string, ModelServiceConfig>
 
-const resolveMergedMcpServers = (ctx: AdapterCtx) =>
-  resolveMergedConfig(ctx).mcpServers as Config['mcpServers']
+const resolveMergedMcpServers = (ctx: AdapterCtx) => resolveMergedConfig(ctx).mcpServers as Config['mcpServers']
 
 const resolveManagedPermissions = (ctx: AdapterCtx): Config['permissions'] => {
   const permissions = resolveMergedConfig(ctx).permissions

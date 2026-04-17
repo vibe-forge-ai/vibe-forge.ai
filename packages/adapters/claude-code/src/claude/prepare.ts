@@ -120,9 +120,7 @@ export const prepareClaudeExecution = async (
     : {}
   const nativeEnv = isPlainObject(nativeConfig.nativeEnv)
     ? Object.fromEntries(
-      Object.entries(nativeConfig.nativeEnv).filter((entry): entry is [string, string] =>
-        typeof entry[1] === 'string'
-      )
+      Object.entries(nativeConfig.nativeEnv).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
     )
     : {}
   const nativeEnvEffort = normalizeEffort(nativeEnv.CLAUDE_CODE_EFFORT_LEVEL)
@@ -150,7 +148,7 @@ export const prepareClaudeExecution = async (
           [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: 'claude-code',
           __VF_CLAUDE_HOOK_RUNTIME__: options.runtime,
           __VF_CLAUDE_TASK_SESSION_ID__: sessionId
-      }
+        }
         : {})
     } as Record<string, string | null | undefined>,
     companyAnnouncements: [...(mergedConfig.announcements ?? [])]

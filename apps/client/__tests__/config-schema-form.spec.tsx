@@ -253,27 +253,27 @@ describe('config schema form', () => {
     }
 
     const html = renderToStaticMarkup(
-        <SectionForm
-          sectionKey='channels'
-          uiSection={uiSection}
-          value={{
-            teamChat: {
-              type: 'lark',
-              appId: 'cli_123',
-              appSecret: 'secret'
-            }
-          }}
-          onChange={() => undefined}
-          mergedModelServices={{}}
-          mergedAdapters={{}}
-          detailRoute={{
-            kind: 'detailCollectionItem',
-            fieldPath: [],
-            itemKey: 'teamChat'
-          }}
-          t={t}
-        />
-      )
+      <SectionForm
+        sectionKey='channels'
+        uiSection={uiSection}
+        value={{
+          teamChat: {
+            type: 'lark',
+            appId: 'cli_123',
+            appSecret: 'secret'
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailCollectionItem',
+          fieldPath: [],
+          itemKey: 'teamChat'
+        }}
+        t={t}
+      />
+    )
 
     expect(html).toContain('App ID')
     expect(html).toContain('App Secret')
@@ -298,26 +298,26 @@ describe('config schema form', () => {
     }
 
     const html = renderToStaticMarkup(
-        <SectionForm
-          sectionKey='channels'
-          uiSection={uiSection}
-          value={{
-            customChat: {
-              type: 'custom-channel',
-              customFlag: true
-            }
-          }}
-          onChange={() => undefined}
-          mergedModelServices={{}}
-          mergedAdapters={{}}
-          detailRoute={{
-            kind: 'detailCollectionItem',
-            fieldPath: [],
-            itemKey: 'customChat'
-          }}
-          t={t}
-        />
-      )
+      <SectionForm
+        sectionKey='channels'
+        uiSection={uiSection}
+        value={{
+          customChat: {
+            type: 'custom-channel',
+            customFlag: true
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailCollectionItem',
+          fieldPath: [],
+          itemKey: 'customChat'
+        }}
+        t={t}
+      />
+    )
 
     expect(html).toContain('config-view__complex-editor')
     expect(html).not.toContain('App ID')

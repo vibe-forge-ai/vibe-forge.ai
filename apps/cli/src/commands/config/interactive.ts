@@ -1,5 +1,5 @@
-import { createInterface } from 'node:readline/promises'
 import process from 'node:process'
+import { createInterface } from 'node:readline/promises'
 
 import type { ConfigSource } from '@vibe-forge/types'
 

@@ -8,9 +8,9 @@ import { setTimeout as delay } from 'node:timers/promises'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
 
+import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 import { generateDefaultCCRConfigJSON } from './config'
 import { resolveAdapterCliPath, resolveTransformerRuntimePreloadPath } from './paths'
-import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 
 const DEFAULT_ROUTER_HOST = '127.0.0.1'
 const DEFAULT_ROUTER_PORT = 3456

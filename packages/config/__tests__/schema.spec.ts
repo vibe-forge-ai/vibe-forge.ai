@@ -28,18 +28,24 @@ const writePackage = async (
   await mkdir(packageDir, { recursive: true })
   await writeFile(
     path.join(packageDir, 'package.json'),
-    JSON.stringify({
-      name: packageName,
-      private: true,
-      exports: exportsMap
-    }, null, 2)
+    JSON.stringify(
+      {
+        name: packageName,
+        private: true,
+        exports: exportsMap
+      },
+      null,
+      2
+    )
   )
 
-  await Promise.all(Object.entries(files).map(async ([fileName, content]) => {
-    const filePath = path.join(packageDir, fileName)
-    await mkdir(path.dirname(filePath), { recursive: true })
-    await writeFile(filePath, content)
-  }))
+  await Promise.all(
+    Object.entries(files).map(async ([fileName, content]) => {
+      const filePath = path.join(packageDir, fileName)
+      await mkdir(path.dirname(filePath), { recursive: true })
+      await writeFile(filePath, content)
+    })
+  )
 }
 
 describe('config schema bundle', () => {
@@ -65,14 +71,18 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/adapter-codex': 'workspace:*',
-            '@vibe-forge/channel-lark': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/adapter-codex': 'workspace:*',
+              '@vibe-forge/channel-lark': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
 
       const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
@@ -103,13 +113,17 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/adapter-codex': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/adapter-codex': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
 
       const knownValid = await validateConfigSection('adapters', {
@@ -159,13 +173,17 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/adapter-codex': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/adapter-codex': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
 
       const parsed = await validateConfigSection('adapters', {
@@ -193,23 +211,31 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/adapter-claude-code': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/adapter-claude-code': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
       await writeFile(
         path.join(tempDir, '.ai.config.json'),
-        JSON.stringify({
-          adapters: {
-            claude: {
-              effort: 'medium'
+        JSON.stringify(
+          {
+            adapters: {
+              claude: {
+                effort: 'medium'
+              }
             }
-          }
-        }, null, 2)
+          },
+          null,
+          2
+        )
       )
 
       const bundle = await composeWorkspaceConfigSchemaBundle({ cwd: tempDir })
@@ -237,13 +263,17 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/channel-lark': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/channel-lark': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
 
       const knownInvalid = await validateConfigSection('channels', {
@@ -273,9 +303,10 @@ describe('config schema bundle', () => {
         expect.arrayContaining(['teamChat.appId', 'teamChat.appSecret'])
       )
       expect(knownWithUnknownKey.success).toBe(false)
-      expect(knownWithUnknownKey.success ? [] : knownWithUnknownKey.error.issues.map(issue => issue.path.join('.'))).toContain(
-        'teamChat'
-      )
+      expect(knownWithUnknownKey.success ? [] : knownWithUnknownKey.error.issues.map(issue => issue.path.join('.')))
+        .toContain(
+          'teamChat'
+        )
       expect(unknownChannel.success).toBe(true)
     } finally {
       await rm(tempDir, { recursive: true, force: true })
@@ -288,14 +319,18 @@ describe('config schema bundle', () => {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@scope/adapter-external': '1.0.0',
-            '@scope/channel-external': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@scope/adapter-external': '1.0.0',
+              '@scope/channel-external': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       await writePackage(tempDir, '@scope/adapter-external', {
@@ -355,14 +390,18 @@ module.exports.channelDefinition = {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@scope/adapter-esm': '1.0.0',
-            '@scope/channel-esm': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@scope/adapter-esm': '1.0.0',
+              '@scope/channel-esm': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       await writePackage(tempDir, '@scope/adapter-esm', {
@@ -426,13 +465,17 @@ export const channelDefinition = {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@scope/adapter-pattern': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@scope/adapter-pattern': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       await writePackage(tempDir, '@scope/adapter-pattern', {
@@ -473,13 +516,17 @@ export const adapterConfigContribution = {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@scope/channel-normalized': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@scope/channel-normalized': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       await writePackage(tempDir, '@scope/channel-normalized', {
@@ -526,13 +573,17 @@ module.exports.channelDefinition = {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@scope/channel-transform-count': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@scope/channel-transform-count': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       await writePackage(tempDir, '@scope/channel-transform-count', {
@@ -583,13 +634,17 @@ module.exports.channelDefinition = {
     try {
       await writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'schema-test-workspace',
-          private: true,
-          dependencies: {
-            '@vibe-forge/adapter-codex': 'workspace:*'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'schema-test-workspace',
+            private: true,
+            dependencies: {
+              '@vibe-forge/adapter-codex': 'workspace:*'
+            }
+          },
+          null,
+          2
+        )
       )
 
       const { outputPath } = await writeWorkspaceConfigSchemaFile({ cwd: tempDir })

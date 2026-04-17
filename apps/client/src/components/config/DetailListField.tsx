@@ -6,9 +6,9 @@ import { useMemo, useState } from 'react'
 
 import type { ConfigUiSection } from '@vibe-forge/types'
 
+import { DetailCollectionFieldActions } from './DetailCollectionFieldActions'
 import type { ConfigDetailRoute } from './configDetail'
 import { toDetailCollectionEntries } from './configDetail'
-import { DetailCollectionFieldActions } from './DetailCollectionFieldActions'
 import type { FieldSpec } from './configSchema'
 import { getFieldLabel, getValueByPath, setValueByPath } from './configUtils'
 import type { TranslationFn } from './configUtils'
@@ -56,7 +56,8 @@ export const DetailCollectionField = ({
     : getFieldLabel(t, sectionKey, field.path, field.path.at(-1) ?? sectionKey)
   const isListCollection = detailCollection.collectionKind === 'list'
   const isRecordMapCollection = detailCollection.collectionKind === 'recordMap'
-  const canSelectKind = isRecordMapCollection && uiSection?.kind === 'recordMap' && uiSection.recordMap.mode === 'discriminated'
+  const canSelectKind = isRecordMapCollection && uiSection?.kind === 'recordMap' &&
+    uiSection.recordMap.mode === 'discriminated'
   const keyPlaceholder = detailCollection.collectionKind === 'recordMap'
     ? (
       detailCollection.keyPlaceholderKey != null
@@ -272,11 +273,9 @@ export const DetailCollectionField = ({
                 className='config-view__icon-button'
                 aria-label={t('common.confirm')}
                 icon={<span className='material-symbols-rounded'>check</span>}
-                disabled={
-                  newRecordKey.trim() === '' ||
+                disabled={newRecordKey.trim() === '' ||
                   items.some(item => item.key === newRecordKey.trim()) ||
-                  (canSelectKind && newRecordKind.trim() === '')
-                }
+                  (canSelectKind && newRecordKind.trim() === '')}
                 onClick={addRecordItem}
               />
             </Tooltip>

@@ -14,7 +14,7 @@ type AdapterConfigSchemaKey<TSchema extends z.AnyZodObject> = Extract<keyof z.in
 
 export interface AdapterConfigEntryMetadata<
   TSchema extends z.AnyZodObject = z.AnyZodObject,
-  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never,
 > {
   extraCommonKeys?: readonly TExtraCommonKey[]
   deepMergeKeys?: readonly AdapterConfigSchemaKey<TSchema>[]
@@ -22,7 +22,7 @@ export interface AdapterConfigEntryMetadata<
 
 export interface AdapterConfigContribution<
   TSchema extends z.AnyZodObject = z.AnyZodObject,
-  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never,
 > {
   adapterKey: string
   title?: string
@@ -35,19 +35,21 @@ export interface AdapterConfigContribution<
 
 export const defineAdapterConfigContribution = <
   TSchema extends z.AnyZodObject,
-  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never
+  TExtraCommonKey extends AdapterConfigSchemaKey<TSchema> = never,
 >(
   contribution: AdapterConfigContribution<TSchema, TExtraCommonKey>
 ) => contribution
 
-export const jsonValueSchema: z.ZodType<unknown> = z.lazy(() => z.union([
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-  z.array(jsonValueSchema),
-  z.record(z.string(), jsonValueSchema)
-]))
+export const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(z.string(), jsonValueSchema)
+  ])
+)
 
 export const effortLevelSchema = z.enum(['low', 'medium', 'high', 'max'])
 export const languageCodeSchema = z.enum(['zh', 'en'])
@@ -127,13 +129,15 @@ export const conversationConfigSchema = z.object({
   injectDefaultSystemPrompt: z.boolean().optional().describe('Inject the default system prompt')
 })
 
-const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() => z.object({
-  id: z.string().min(1).describe('Plugin package name or short id'),
-  enabled: z.boolean().optional().describe('Disable this plugin instance'),
-  scope: z.string().optional().describe('User-defined plugin scope'),
-  options: z.record(z.string(), jsonValueSchema).optional().describe('Plugin instance options'),
-  children: z.array(pluginInstanceConfigSchema).optional().describe('Nested child plugin overrides')
-}))
+const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.object({
+    id: z.string().min(1).describe('Plugin package name or short id'),
+    enabled: z.boolean().optional().describe('Disable this plugin instance'),
+    scope: z.string().optional().describe('User-defined plugin scope'),
+    options: z.record(z.string(), jsonValueSchema).optional().describe('Plugin instance options'),
+    children: z.array(pluginInstanceConfigSchema).optional().describe('Nested child plugin overrides')
+  })
+)
 
 export const pluginConfigSchema = z.array(pluginInstanceConfigSchema).describe('Plugin instance list')
 
@@ -215,13 +219,16 @@ const marketplaceSourceSchema = z.union([
   })
 ])
 
-export const marketplaceConfigSchema = z.record(z.string(), z.object({
-  type: z.literal('claude-code'),
-  enabled: z.boolean().optional(),
-  options: z.object({
-    source: marketplaceSourceSchema
-  }).optional()
-}))
+export const marketplaceConfigSchema = z.record(
+  z.string(),
+  z.object({
+    type: z.literal('claude-code'),
+    enabled: z.boolean().optional(),
+    options: z.object({
+      source: marketplaceSourceSchema
+    }).optional()
+  })
+)
 
 const mcpServerCommonSchema = z.object({
   enabled: z.boolean().optional().describe('Enable this MCP server'),

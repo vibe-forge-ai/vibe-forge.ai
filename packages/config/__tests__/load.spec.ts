@@ -12,11 +12,11 @@ import {
   loadAdapterConfig,
   loadConfig,
   resetConfigCache,
-  resolveAdapterConfig,
-  resolveConfigState,
-  resolveAdapterConfigEntry,
   resolveAdapterCommonConfig,
+  resolveAdapterConfig,
+  resolveAdapterConfigEntry,
   resolveAdapterConfigWithContribution,
+  resolveConfigState,
   splitAdapterConfigEntry
 } from '#~/load.js'
 

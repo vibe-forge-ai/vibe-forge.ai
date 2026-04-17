@@ -110,15 +110,16 @@ export const toProcessEnv = (env: Record<string, string | null | undefined>) => 
   )
 )
 
-export const resolveAdapterConfig = (ctx: AdapterCtx) => resolveMergedAdapterConfig<
-  OpenCodeAdapterConfig,
-  OpenCodeCommonAdapterConfigKey
->(
-  adapterConfigContribution,
-  {
-    configState: ctx.configState,
-    configs: ctx.configs
-  }
-)
+export const resolveAdapterConfig = (ctx: AdapterCtx) =>
+  resolveMergedAdapterConfig<
+    OpenCodeAdapterConfig,
+    OpenCodeCommonAdapterConfigKey
+  >(
+    adapterConfigContribution,
+    {
+      configState: ctx.configState,
+      configs: ctx.configs
+    }
+  )
 
 export type OpenCodeResolvedAdapterConfig = ReturnType<typeof resolveAdapterConfig>

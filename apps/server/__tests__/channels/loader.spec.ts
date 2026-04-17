@@ -93,13 +93,17 @@ describe('loadChannelModule', () => {
     try {
       await writeFile(
         join(tempDir, 'package.json'),
-        JSON.stringify({
-          name: 'channel-loader-test',
-          private: true,
-          dependencies: {
-            '@scope/channel-external': '1.0.0'
-          }
-        }, null, 2)
+        JSON.stringify(
+          {
+            name: 'channel-loader-test',
+            private: true,
+            dependencies: {
+              '@scope/channel-external': '1.0.0'
+            }
+          },
+          null,
+          2
+        )
       )
 
       requireMock.mockImplementation((specifier: string) => {

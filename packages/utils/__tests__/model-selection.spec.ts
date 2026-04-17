@@ -271,7 +271,7 @@ describe('model selection utilities', () => {
     expect(resolveEffectiveEffort({
       model: 'serviceA,modelAOnly',
       adapterConfig: { effort: 'medium' },
-      configEffort: 'low',
+      configEffort: 'low'
     })).toEqual({
       effort: 'medium',
       source: 'adapter'

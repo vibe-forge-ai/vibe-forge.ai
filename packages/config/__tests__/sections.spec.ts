@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  getConfigSectionValueAtPath,
+  setConfigSectionValueAtPath,
+  unsetConfigSectionValueAtPath
+} from '#~/section-path-value.js'
 import { parseConfigSectionPath, resolveConfigSectionPath } from '#~/section-path.js'
-import { getConfigSectionValueAtPath, setConfigSectionValueAtPath, unsetConfigSectionValueAtPath } from '#~/section-path-value.js'
 import { buildConfigSections, hasConfigSectionValue } from '#~/sections.js'
 
 describe('config sections helpers', () => {

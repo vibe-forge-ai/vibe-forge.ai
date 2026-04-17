@@ -1,5 +1,5 @@
-import type { ConfigSections } from './sections'
 import type { ConfigPathSegment, ResolvedConfigSectionPath } from './section-path'
+import type { ConfigSections } from './sections'
 
 const hasOwn = (value: Record<string, unknown>, key: string) => Object.prototype.hasOwnProperty.call(value, key)
 

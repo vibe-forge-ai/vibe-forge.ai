@@ -119,7 +119,9 @@
   transform: translateY(0);
 }
 
-.config-view__detail-list-main:hover .config-view__record-heading > div:first-child {
+.config-view__detail-list-main:hover
+  .config-view__record-heading
+  > div:first-child {
   color: var(--primary-color);
 }
 

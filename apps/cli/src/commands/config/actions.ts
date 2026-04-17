@@ -11,6 +11,10 @@ import {
   validateConfigSection
 } from '@vibe-forge/config'
 
+import { resolveReadableConfigValue } from './display-state'
+import { resolveSetPathInput, resolveSetValueInput, resolveWritableSource } from './interactive'
+import { resolveReadState } from './read-state'
+import { resolveClearedSectionValue, resolveListOutput, resolveTextListRows } from './section-state'
 import {
   formatDisplayValue,
   formatValidationIssues,
@@ -19,10 +23,6 @@ import {
   printJsonResult,
   resolveSourceSections
 } from './shared'
-import { resolveReadableConfigValue } from './display-state'
-import { resolveClearedSectionValue, resolveListOutput, resolveTextListRows } from './section-state'
-import { resolveSetPathInput, resolveSetValueInput, resolveWritableSource } from './interactive'
-import { resolveReadState } from './read-state'
 import type { ConfigGetOptions, ConfigListOptions, ConfigSetOptions, ConfigUnsetOptions } from './shared'
 
 export const runListCommand = async (pathInput: string | undefined, opts: ConfigListOptions) => {
@@ -63,7 +63,9 @@ export const runListCommand = async (pathInput: string | undefined, opts: Config
     return
   }
   console.log(`Workspace: ${cwd}`)
-  console.log(`Config present: project=${state.present.project ? 'yes' : 'no'}, user=${state.present.user ? 'yes' : 'no'}`)
+  console.log(
+    `Config present: project=${state.present.project ? 'yes' : 'no'}, user=${state.present.user ? 'yes' : 'no'}`
+  )
   console.table(resolveTextListRows(state, source))
   console.log('Examples:')
   console.log('  vf config get general.defaultModel')

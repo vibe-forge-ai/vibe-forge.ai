@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   buildConfigJsonVariables: vi.fn(),
   loadConfigState: vi.fn(),
+  mergeConfigs: vi.fn(),
   resolveUseDefaultVibeForgeMcpServer: vi.fn(),
   resolveWorkspaceAssetBundle: vi.fn(),
   syncConfiguredMarketplacePlugins: vi.fn(),
@@ -19,6 +20,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@vibe-forge/config', () => ({
   buildConfigJsonVariables: mocks.buildConfigJsonVariables,
   loadConfigState: mocks.loadConfigState,
+  mergeConfigs: mocks.mergeConfigs,
   resolveUseDefaultVibeForgeMcpServer: mocks.resolveUseDefaultVibeForgeMcpServer
 }))
 
@@ -47,6 +49,13 @@ describe('prepare', () => {
       userConfig: undefined,
       mergedConfig: {}
     })
+    mocks.mergeConfigs.mockImplementation((
+      left: Record<string, unknown> | undefined,
+      right: Record<string, unknown> | undefined
+    ) => ({
+      ...(left ?? {}),
+      ...(right ?? {})
+    }))
     mocks.resolveUseDefaultVibeForgeMcpServer.mockReturnValue(true)
     mocks.resolveWorkspaceAssetBundle.mockResolvedValue(undefined)
     mocks.syncConfiguredMarketplacePlugins.mockResolvedValue([])
@@ -221,19 +230,28 @@ describe('prepare', () => {
 
   it('merges run-scoped plugins with project config plugins when resolving assets', async () => {
     const { prepare } = await import('#~/prepare.js')
-    mocks.loadConfig.mockResolvedValue([
-      {
+    mocks.loadConfigState.mockResolvedValue({
+      projectConfig: {
         plugins: [
           { id: 'logger' }
         ]
       },
-      {
+      userConfig: {
         plugins: [
           { id: 'standard-dev', scope: 'std' }
         ]
+      },
+      mergedConfig: {
+        plugins: [
+          { id: 'logger' },
+          { id: 'standard-dev', scope: 'std' }
+        ]
       }
-    ])
-    mocks.mergeConfigs.mockImplementation((left, right) => ({
+    })
+    mocks.mergeConfigs.mockImplementation((
+      left: { plugins?: any[] } | undefined,
+      right: { plugins?: any[] } | undefined
+    ) => ({
       ...(left ?? {}),
       ...(right ?? {}),
       ...(left?.plugins != null || right?.plugins != null

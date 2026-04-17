@@ -22,11 +22,12 @@ const runCli = (
   options: {
     input?: string
   } = {}
-) => spawnSync(process.execPath, [cliPath, ...args], {
-  cwd,
-  encoding: 'utf8',
-  input: options.input
-})
+) =>
+  spawnSync(process.execPath, [cliPath, ...args], {
+    cwd,
+    encoding: 'utf8',
+    input: options.input
+  })
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { recursive: true, force: true })))
@@ -36,19 +37,25 @@ describe('config command', () => {
   it('lists merged section presence by default in json mode', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      defaultModel: 'project-model',
-      adapters: {
-        codex: {
-          defaultModel: 'gpt-5'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        defaultModel: 'project-model',
+        adapters: {
+          codex: {
+            defaultModel: 'gpt-5'
+          }
         }
-      }
-    }))
-    await fs.writeFile(path.join(cwd, '.ai.dev.config.json'), JSON.stringify({
-      permissions: {
-        allow: ['Read']
-      }
-    }))
+      })
+    )
+    await fs.writeFile(
+      path.join(cwd, '.ai.dev.config.json'),
+      JSON.stringify({
+        permissions: {
+          allow: ['Read']
+        }
+      })
+    )
 
     const result = runCli(cwd, ['config', 'list', '--json'])
 
@@ -74,20 +81,26 @@ describe('config command', () => {
   it('lists merged config subtrees by path in json mode', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      models: {
-        'gpt-4.1': {
-          title: 'Project Title'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        models: {
+          'gpt-4.1': {
+            title: 'Project Title'
+          }
         }
-      }
-    }))
-    await fs.writeFile(path.join(cwd, '.ai.dev.config.json'), JSON.stringify({
-      models: {
-        'gpt-5.4': {
-          title: 'User Title'
+      })
+    )
+    await fs.writeFile(
+      path.join(cwd, '.ai.dev.config.json'),
+      JSON.stringify({
+        models: {
+          'gpt-5.4': {
+            title: 'User Title'
+          }
         }
-      }
-    }))
+      })
+    )
 
     const result = runCli(cwd, ['config', 'list', '--json', 'models'])
 
@@ -112,17 +125,23 @@ describe('config command', () => {
   it('reads merged config values in json mode', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      defaultModel: 'project-model',
-      models: {
-        'gpt-4.1': {
-          title: 'Project Title'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        defaultModel: 'project-model',
+        models: {
+          'gpt-4.1': {
+            title: 'Project Title'
+          }
         }
-      }
-    }))
-    await fs.writeFile(path.join(cwd, '.ai.dev.config.json'), JSON.stringify({
-      defaultModel: 'user-model'
-    }))
+      })
+    )
+    await fs.writeFile(
+      path.join(cwd, '.ai.dev.config.json'),
+      JSON.stringify({
+        defaultModel: 'user-model'
+      })
+    )
 
     const defaultModelResult = runCli(cwd, ['config', 'get', 'defaultModel', '--json'])
     expect(defaultModelResult.status).toBe(0)
@@ -150,20 +169,26 @@ describe('config command', () => {
   it('prints yaml values in text mode for read commands', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      models: {
-        'gpt-4.1': {
-          title: 'Project Title'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        models: {
+          'gpt-4.1': {
+            title: 'Project Title'
+          }
         }
-      }
-    }))
-    await fs.writeFile(path.join(cwd, '.ai.dev.config.json'), JSON.stringify({
-      models: {
-        'gpt-5.4': {
-          title: 'User Title'
+      })
+    )
+    await fs.writeFile(
+      path.join(cwd, '.ai.dev.config.json'),
+      JSON.stringify({
+        models: {
+          'gpt-5.4': {
+            title: 'User Title'
+          }
         }
-      }
-    }))
+      })
+    )
 
     const expectedModelsOutput = `gpt-4.1:\n  title: Project Title\ngpt-5.4:\n  title: User Title\n`
 
@@ -181,23 +206,26 @@ describe('config command', () => {
   it('expands models by service in text mode when model services are configured', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      modelServices: {
-        'gpt-responses': {
-          apiBaseUrl: 'https://example.com/responses',
-          apiKey: 'demo-key',
-          models: ['gpt-5.4', 'gpt-5.2']
-        }
-      },
-      models: {
-        'gpt-responses,gpt-5.4': {
-          description: 'Structured output first.'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        modelServices: {
+          'gpt-responses': {
+            apiBaseUrl: 'https://example.com/responses',
+            apiKey: 'demo-key',
+            models: ['gpt-5.4', 'gpt-5.2']
+          }
         },
-        'gpt-5.4': {
-          effort: 'max'
+        models: {
+          'gpt-responses,gpt-5.4': {
+            description: 'Structured output first.'
+          },
+          'gpt-5.4': {
+            effort: 'max'
+          }
         }
-      }
-    }))
+      })
+    )
 
     const result = runCli(cwd, ['config', 'get', 'models'])
 
@@ -205,12 +233,12 @@ describe('config command', () => {
     expect(result.stderr).toBe('')
     expect(result.stdout).toBe(
       'gpt-responses:\n' +
-      '  gpt-5.4:\n' +
-      '    selector: gpt-responses,gpt-5.4\n' +
-      '    effort: max\n' +
-      '    description: Structured output first.\n' +
-      '  gpt-5.2:\n' +
-      '    selector: gpt-responses,gpt-5.2\n'
+        '  gpt-5.4:\n' +
+        '    selector: gpt-responses,gpt-5.4\n' +
+        '    effort: max\n' +
+        '    description: Structured output first.\n' +
+        '  gpt-5.2:\n' +
+        '    selector: gpt-responses,gpt-5.2\n'
     )
   })
 
@@ -275,22 +303,25 @@ describe('config command', () => {
   it('removes nested values and whole sections in json mode', async () => {
     const cwd = await createTempDir()
 
-    await fs.writeFile(path.join(cwd, '.ai.config.json'), JSON.stringify({
-      defaultModel: 'gpt-5.4',
-      permissions: {
-        allow: ['Read']
-      },
-      plugins: [
-        {
-          id: 'demo'
+    await fs.writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify({
+        defaultModel: 'gpt-5.4',
+        permissions: {
+          allow: ['Read']
+        },
+        plugins: [
+          {
+            id: 'demo'
+          }
+        ],
+        marketplaces: {
+          team: {
+            type: 'claude-code'
+          }
         }
-      ],
-      marketplaces: {
-        team: {
-          type: 'claude-code'
-        }
-      }
-    }))
+      })
+    )
 
     const unsetFieldResult = runCli(cwd, [
       'config',

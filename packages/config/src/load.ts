@@ -43,26 +43,26 @@ export type AdapterCommonConfigKey = typeof ADAPTER_COMMON_CONFIG_KEYS[number]
 type LegacyAdapterCommonConfigKey = typeof LEGACY_ADAPTER_COMMON_CONFIG_KEYS[number]
 type ResolvedAdapterCommonKey<
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry
+  TExtraCommonKey extends keyof TEntry,
 > = Extract<keyof TEntry, AdapterCommonConfigKey | LegacyAdapterCommonConfigKey | TExtraCommonKey>
 
 export interface SplitAdapterConfigEntryOptions<
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 > {
   extraCommonKeys?: readonly TExtraCommonKey[]
 }
 
 export interface ResolveAdapterConfigEntryOptions<
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 > extends SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> {
   deepMergeKeys?: readonly (keyof TEntry)[]
 }
 
 export interface AdapterConfigResolverContribution<
   TEntry extends AdapterConfigRecord = AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 > {
   adapterKey: string
   configEntry?: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey>
@@ -70,7 +70,7 @@ export interface AdapterConfigResolverContribution<
 
 export interface ResolvedAdapterConfig<
   TEntry extends AdapterConfigRecord = AdapterConfigEntry<AdapterConfigRecord>,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 > {
   entry: TEntry
   common: Pick<TEntry, ResolvedAdapterCommonKey<TEntry, TExtraCommonKey>>
@@ -552,7 +552,7 @@ export const resolveAdapterConfigEntry = (
 
 export const splitAdapterConfigEntry = <
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 >(
   entry: TEntry | undefined,
   options: SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
@@ -583,7 +583,7 @@ export const splitAdapterConfigEntry = <
 
 export const resolveAdapterConfig = <
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 >(
   name: string,
   options: ResolveAdapterConfigOptions = {},
@@ -591,10 +591,10 @@ export const resolveAdapterConfig = <
 ): ResolvedAdapterConfig<TEntry, TExtraCommonKey> => {
   const resolvedState = options.configState ?? (
     options.mergedConfig == null
-    ? resolveConfigState({
-      configs: options.configs
-    })
-    : undefined
+      ? resolveConfigState({
+        configs: options.configs
+      })
+      : undefined
   )
   const mergedConfig = options.mergedConfig ?? resolvedState?.mergedConfig
   const resolvedEntry = resolvedState != null
@@ -630,39 +630,42 @@ export const resolveAdapterConfig = <
 
 export const resolveAdapterConfigWithContribution = <
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 >(
   contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
   options: ResolveAdapterConfigOptions = {}
-) => resolveAdapterConfig<TEntry, TExtraCommonKey>(
-  contribution.adapterKey,
-  options,
-  contribution.configEntry
-)
+) =>
+  resolveAdapterConfig<TEntry, TExtraCommonKey>(
+    contribution.adapterKey,
+    options,
+    contribution.configEntry
+  )
 
 export const resolveAdapterCommonConfig = <
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 >(
   name: string,
   options: ResolveAdapterConfigOptions = {},
   resolveOptions: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
-) => resolveAdapterConfig<TEntry, TExtraCommonKey>(
-  name,
-  options,
-  resolveOptions
-).common
+) =>
+  resolveAdapterConfig<TEntry, TExtraCommonKey>(
+    name,
+    options,
+    resolveOptions
+  ).common
 
 export const resolveAdapterCommonConfigWithContribution = <
   TEntry extends AdapterConfigRecord,
-  TExtraCommonKey extends keyof TEntry = never
+  TExtraCommonKey extends keyof TEntry = never,
 >(
   contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
   options: ResolveAdapterConfigOptions = {}
-) => resolveAdapterConfigWithContribution<TEntry, TExtraCommonKey>(
-  contribution,
-  options
-).common
+) =>
+  resolveAdapterConfigWithContribution<TEntry, TExtraCommonKey>(
+    contribution,
+    options
+  ).common
 
 export const loadAdapterConfig = async (
   name: string,

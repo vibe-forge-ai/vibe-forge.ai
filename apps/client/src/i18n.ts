@@ -2,10 +2,7 @@ import i18n from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
-import {
-  applyHotTranslationUpdates,
-  buildTranslationResources
-} from './i18n-resources'
+import { applyHotTranslationUpdates, buildTranslationResources } from './i18n-resources'
 import type { LocaleModule, LocaleModuleMap } from './i18n-resources'
 
 const localeModules = import.meta.glob('./resources/locales/*.json', {

@@ -6,7 +6,8 @@ import type { ClaudeCodeAdapterConfig, ClaudeCodeCommonAdapterConfigKey } from '
 
 export const resolveClaudeCodeAdapterConfig = (
   params: Pick<AdapterCtx, 'configState' | 'configs'>
-) => resolveMergedAdapterConfig<ClaudeCodeAdapterConfig, ClaudeCodeCommonAdapterConfigKey>(
-  adapterConfigContribution,
-  params
-)
+) =>
+  resolveMergedAdapterConfig<ClaudeCodeAdapterConfig, ClaudeCodeCommonAdapterConfigKey>(
+    adapterConfigContribution,
+    params
+  )

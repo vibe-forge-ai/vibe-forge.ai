@@ -12,6 +12,14 @@ const isRecordObject = (value: unknown): value is Record<string, unknown> => (
   !Array.isArray(value)
 )
 
+type EditableRecommendedModel = Record<string, unknown> & {
+  service?: string
+  model?: string
+  title?: string
+  description?: string
+  placement?: RecommendedModelConfig['placement']
+}
+
 export const RecommendedModelsItemEditor = ({
   value,
   onChange,
@@ -19,11 +27,13 @@ export const RecommendedModelsItemEditor = ({
   t
 }: {
   value: unknown
-  onChange: (nextValue: RecommendedModelConfig & Record<string, unknown>) => void
+  onChange: (nextValue: Record<string, unknown>) => void
   mergedModelServices: Record<string, unknown>
   t: TranslationFn
 }) => {
-  const item = isRecordObject(value) ? value : {}
+  const item: EditableRecommendedModel = isRecordObject(value)
+    ? value as EditableRecommendedModel
+    : {}
   const serviceKey = typeof item.service === 'string' ? item.service : undefined
   const serviceOptions = Object.entries(mergedModelServices).map(([key, entry]) => {
     const record = isRecordObject(entry) ? entry : {}
@@ -40,7 +50,7 @@ export const RecommendedModelsItemEditor = ({
     ? serviceRecord.models.filter((model): model is string => typeof model === 'string')
     : []
 
-  const updateItem = (patch: Partial<RecommendedModelConfig>) => {
+  const updateItem = (patch: Partial<EditableRecommendedModel>) => {
     onChange({
       ...item,
       ...patch
@@ -54,7 +64,7 @@ export const RecommendedModelsItemEditor = ({
         description={t('config.fields.general.recommendedModels.item.service.desc')}
         icon={getTypeIcon('string')}
       >
-        <Select
+        <Select<string>
           value={serviceKey}
           options={serviceOptions}
           onChange={(nextValue) => {
@@ -74,7 +84,7 @@ export const RecommendedModelsItemEditor = ({
       >
         {serviceModels.length > 0
           ? (
-            <Select
+            <Select<string>
               value={typeof item.model === 'string' && item.model !== '' ? item.model : undefined}
               options={serviceModels.map(model => ({ value: model, label: model }))}
               onChange={(nextValue) => updateItem({ model: nextValue })}
@@ -119,11 +129,11 @@ export const RecommendedModelsItemEditor = ({
         description={t('config.fields.general.recommendedModels.item.placement.desc')}
         icon={getTypeIcon('string')}
       >
-        <Select
-          value={typeof item.placement === 'string' && item.placement !== '' ? item.placement : undefined}
+        <Select<RecommendedModelConfig['placement']>
+          value={item.placement}
           options={[
             {
-              value: 'modelSelector',
+              value: 'modelSelector' as const,
               label: t('config.options.recommendedModels.modelSelector')
             }
           ]}

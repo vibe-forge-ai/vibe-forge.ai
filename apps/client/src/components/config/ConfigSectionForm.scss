@@ -30,11 +30,16 @@
   align-items: center !important;
 }
 
-.config-view__subsection-collapse > .ant-collapse-item-active > .ant-collapse-header {
+.config-view__subsection-collapse
+  > .ant-collapse-item-active
+  > .ant-collapse-header {
   padding-bottom: 4px !important;
 }
 
-.config-view__subsection-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-expand-icon {
+.config-view__subsection-collapse
+  > .ant-collapse-item
+  > .ant-collapse-header
+  .ant-collapse-expand-icon {
   padding-inline-start: 8px;
   padding-inline-end: 0;
 }
@@ -44,7 +49,10 @@
   background: transparent;
 }
 
-.config-view__subsection-collapse > .ant-collapse-item > .ant-collapse-content > .ant-collapse-content-box {
+.config-view__subsection-collapse
+  > .ant-collapse-item
+  > .ant-collapse-content
+  > .ant-collapse-content-box {
   padding: 0 !important;
 }
 
