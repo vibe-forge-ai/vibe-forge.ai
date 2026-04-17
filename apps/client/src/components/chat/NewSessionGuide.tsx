@@ -1,16 +1,20 @@
 import './NewSessionGuide.scss'
 
-import { App, Button } from 'antd'
+import { App } from 'antd'
 import { useAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { EntitySummary, SpecSummary } from '#~/api.js'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { showAnnouncementsAtom } from '#~/store/index.js'
+import { NewSessionGuideCompactPanel } from './NewSessionGuideCompactPanel'
+import { NewSessionGuideGrid } from './NewSessionGuideGrid'
 
 export function NewSessionGuide() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout } = useResponsiveLayout()
   const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
 
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
@@ -39,6 +43,19 @@ export function NewSessionGuide() {
     t('chat.newSessionGuide.help.item2'),
     t('chat.newSessionGuide.help.item3')
   ]
+  const visibleAnnouncements = isCompactLayout ? announcements.slice(0, 1) : announcements
+  const visibleSpecs = isCompactLayout ? alwaysSpecs.slice(0, 1) : alwaysSpecs
+  const visibleEntities = isCompactLayout ? entities.slice(0, 1) : entities
+  const visibleHelpItems = isCompactLayout ? helpItems.slice(0, 1) : helpItems
+  const hiddenAnnouncementCount = Math.max(announcements.length - visibleAnnouncements.length, 0)
+  const hiddenSpecCount = Math.max(alwaysSpecs.length - visibleSpecs.length, 0)
+  const hiddenEntityCount = Math.max(entities.length - visibleEntities.length, 0)
+  const hiddenHelpCount = Math.max(helpItems.length - visibleHelpItems.length, 0)
+
+  const renderMoreCount = (count: number) =>
+    count > 0
+      ? <div className='new-session-guide__more'>{t('chat.newSessionGuide.moreCount', { count })}</div>
+      : null
 
   const handleCreateSpec = () => {
     message.info(t('chat.newSessionGuide.specs.createToast'))
@@ -49,7 +66,7 @@ export function NewSessionGuide() {
   }
 
   return (
-    <div className='new-session-guide'>
+    <div className={`new-session-guide ${isCompactLayout ? 'new-session-guide--compact' : ''}`}>
       {showAnnouncements && announcements.length > 0 && (
         <div className='new-session-guide__announcements'>
           <div className='new-session-guide__announcements-header'>
@@ -66,112 +83,52 @@ export function NewSessionGuide() {
             </button>
           </div>
           <div className='new-session-guide__announcements-list'>
-            {announcements.map((item, index) => (
+            {visibleAnnouncements.map((item, index) => (
               <div key={`${item}-${index}`} className='new-session-guide__announcements-item'>
                 <span>{item}</span>
               </div>
             ))}
+            {renderMoreCount(hiddenAnnouncementCount)}
           </div>
         </div>
       )}
-      <div className='new-session-guide__grid'>
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>account_tree</span>
-              <span>{t('chat.newSessionGuide.specs.title')}</span>
-            </div>
-            <div className='new-session-guide__count'>{alwaysSpecs.length}</div>
-          </div>
-          <div className='new-session-guide__body'>
-            {!isSpecsReady && (
-              <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-            )}
-            {isSpecsReady && alwaysSpecs.length > 0 && (
-              <div className='new-session-guide__list'>
-                {alwaysSpecs.map((spec) => (
-                  <div key={spec.id} className='new-session-guide__item'>
-                    <div className='new-session-guide__item-title'>
-                      <span>{spec.name}</span>
-                    </div>
-                    <div className='new-session-guide__item-desc'>{spec.description}</div>
-                    {spec.params.length > 0 && (
-                      <div className='new-session-guide__meta'>
-                        {t('chat.newSessionGuide.specs.params', { count: spec.params.length })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {isSpecsReady && alwaysSpecs.length === 0 && (
-              <div className='new-session-guide__empty'>
-                <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.specs.empty')}</div>
-                <Button type='primary' size='small' onClick={handleCreateSpec}>
-                  {t('chat.newSessionGuide.specs.create')}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>group_work</span>
-              <span>{t('chat.newSessionGuide.entities.title')}</span>
-            </div>
-            <div className='new-session-guide__count'>{entities.length}</div>
-          </div>
-          <div className='new-session-guide__body'>
-            {!isEntitiesReady && (
-              <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-            )}
-            {isEntitiesReady && entities.length > 0 && (
-              <div className='new-session-guide__list'>
-                {entities.map((entity) => (
-                  <div key={entity.id} className='new-session-guide__item'>
-                    <div className='new-session-guide__item-title'>
-                      <span>{entity.name}</span>
-                    </div>
-                    <div className='new-session-guide__item-desc'>{entity.description}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {isEntitiesReady && entities.length === 0 && (
-              <div className='new-session-guide__empty'>
-                <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.entities.empty')}</div>
-                <Button type='primary' size='small' onClick={handleCreateEntity}>
-                  {t('chat.newSessionGuide.entities.create')}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>tips_and_updates</span>
-              <span>{t('chat.newSessionGuide.help.title')}</span>
-            </div>
-          </div>
-          <div className='new-session-guide__body'>
-            <div className='new-session-guide__help'>
-              {helpItems.map(item => (
-                <div key={item} className='new-session-guide__help-item'>
-                  <span className='material-symbols-rounded new-session-guide__help-icon'>check_circle</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-            <div className='new-session-guide__help-footer'>
-              {t('chat.newSessionGuide.help.footer')}
-            </div>
-          </div>
-        </div>
-      </div>
+      {isCompactLayout
+        ? (
+          <NewSessionGuideCompactPanel
+            alwaysSpecs={alwaysSpecs}
+            entities={entities}
+            helpItems={helpItems}
+            hiddenEntityCount={hiddenEntityCount}
+            hiddenHelpCount={hiddenHelpCount}
+            hiddenSpecCount={hiddenSpecCount}
+            isEntitiesReady={isEntitiesReady}
+            isSpecsReady={isSpecsReady}
+            onCreateEntity={handleCreateEntity}
+            onCreateSpec={handleCreateSpec}
+            renderMoreCount={renderMoreCount}
+            visibleEntities={visibleEntities}
+            visibleHelpItems={visibleHelpItems}
+            visibleSpecs={visibleSpecs}
+          />
+        )
+        : (
+          <NewSessionGuideGrid
+            alwaysSpecs={alwaysSpecs}
+            entities={entities}
+            hiddenEntityCount={hiddenEntityCount}
+            hiddenHelpCount={hiddenHelpCount}
+            hiddenSpecCount={hiddenSpecCount}
+            isEntitiesReady={isEntitiesReady}
+            isSpecsReady={isSpecsReady}
+            onCreateEntity={handleCreateEntity}
+            onCreateSpec={handleCreateSpec}
+            renderMoreCount={renderMoreCount}
+            visibleEntities={visibleEntities}
+            visibleHelpItems={visibleHelpItems}
+            visibleSpecs={visibleSpecs}
+          />
+        )}
     </div>
   )
 }

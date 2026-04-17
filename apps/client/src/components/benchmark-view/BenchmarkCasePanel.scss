@@ -119,8 +119,8 @@
       align-items: flex-start;
     }
 
-    code,
-    span:last-child {
+    > code,
+    > span:last-child {
       max-width: 70%;
       text-align: right;
       white-space: pre-wrap;

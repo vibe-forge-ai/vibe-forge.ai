@@ -166,6 +166,8 @@
     "lastRunAt": "最近运行：{{time}}",
     "noRunYet": "暂无运行记录",
     "emptyRules": "暂无自动化任务",
+    "mobileRules": "规则",
+    "mobileDetails": "详情",
     "selectRule": "请选择一个自动化任务",
     "ruleId": "规则 ID",
     "createdAt": "创建时间",
@@ -210,6 +212,8 @@
     "caseId": "用例：",
     "searchPlaceholder": "搜索分类、标题或摘要",
     "emptyCases": "暂无 benchmark 用例",
+    "mobileCases": "用例",
+    "mobileDetails": "详情",
     "noSummary": "暂无摘要",
     "configTitle": "用例配置",
     "baseCommit": "基线 Commit",
@@ -655,6 +659,7 @@
       "announcements": {
         "title": "最新公告"
       },
+      "moreCount": "还有 {{count}} 项",
       "specs": {
         "title": "已有流程",
         "params": "{{count}} 个参数",

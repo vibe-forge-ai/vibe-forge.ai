@@ -27,6 +27,7 @@ const createTempDir = async () => {
 afterEach(async () => {
   vi.restoreAllMocks()
   process.chdir(originalCwd)
+  delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { force: true, recursive: true })))
 })
 

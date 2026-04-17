@@ -17,6 +17,7 @@ import {
   resolveCliSessionModel,
   resolveCliSessionUpdatedAt
 } from '#~/session-cache.js'
+import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
 interface ListOptions {
   all?: boolean
@@ -176,7 +177,7 @@ Examples:
     )
     .action(async (opts: ListOptions) => {
       try {
-        const records = await listCliSessions(process.cwd())
+        const records = await listCliSessions(resolveCliWorkspaceCwd())
         if (records.length === 0) {
           console.log('No cached sessions found.')
           return

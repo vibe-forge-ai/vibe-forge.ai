@@ -1,9 +1,11 @@
 import './ChatTimelineView.scss'
 
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { ChatMessage } from '@vibe-forge/core'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { SessionTimelinePanel } from './session-timeline-panel'
 import { SessionTimelineEventList } from './session-timeline-panel/EventList'
 import type { Task } from './session-timeline-panel/types'
@@ -134,6 +136,46 @@ export function ChatTimelineView({
 }: {
   messages: ChatMessage[]
 }) {
+  const { t } = useTranslation()
+  const { isCompactLayout } = useResponsiveLayout()
+  const [compactView, setCompactView] = React.useState<'events' | 'gantt' | 'git'>('events')
+
+  if (isCompactLayout) {
+    const compactViews = [
+      { key: 'events' as const, label: t('chat.timeline.eventListTitle') },
+      { key: 'gantt' as const, label: t('chat.timeline.viewGantt') },
+      { key: 'git' as const, label: t('chat.timeline.viewGit') }
+    ]
+    return (
+      <div className='chat-timeline-view chat-timeline-view--compact'>
+        <div className='chat-timeline-view__tabs' role='tablist' aria-label={t('chat.timelineTiming')}>
+          {compactViews.map((item) => (
+            <button
+              key={item.key}
+              type='button'
+              role='tab'
+              aria-selected={compactView === item.key}
+              className={`chat-timeline-view__tab ${compactView === item.key ? 'is-active' : ''}`}
+              onClick={() => setCompactView(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <section
+          className={`chat-timeline-view__panel ${
+            compactView === 'events' ? 'chat-timeline-view__panel--events' : 'chat-timeline-view__panel--diagram'
+          }`}
+        >
+          {compactView === 'events' && <SessionTimelineEventList task={mockTimelineTask} />}
+          {compactView === 'gantt' && <SessionTimelinePanel task={mockTimelineTask} viewMode='gantt' />}
+          {compactView === 'git' && <SessionTimelinePanel task={mockTimelineTask} viewMode='git' />}
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div className='chat-timeline-view'>
       <section className='session-timeline-section session-timeline-section--fixed'>

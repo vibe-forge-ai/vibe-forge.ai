@@ -1,13 +1,13 @@
 import { execFile } from 'node:child_process'
-import { access, mkdir, rm, symlink } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { rm } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
 import type { AdapterCtx } from '@vibe-forge/types'
 
 import { resolveCopilotBinaryPath } from '#~/paths.js'
-import { resolveAdapterConfig, toProcessEnv } from './shared'
+import { resolveAdapterConfig, syncCopilotManagedSymlink, toProcessEnv } from './shared'
 
 const execFileAsync = promisify(execFile)
 
@@ -21,20 +21,7 @@ const syncCopilotMockHomeSymlink = async (params: {
   targetPath: string
   type: 'dir' | 'file'
 }) => {
-  const { sourcePath, targetPath, type } = params
-
-  try {
-    await access(sourcePath)
-  } catch {
-    await rm(targetPath, { recursive: true, force: true })
-    return
-  }
-
-  if (resolve(sourcePath) === resolve(targetPath)) return
-
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath, type)
+  await syncCopilotManagedSymlink(params)
 }
 
 const syncCopilotMockHomeKeychains = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {

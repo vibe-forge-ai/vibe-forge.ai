@@ -92,3 +92,18 @@
   font-size: 15px;
   line-height: 1;
 }
+
+@media (max-width: 960px) {
+  .adapter-select,
+  .adapter-select--locked {
+    width: var(--sender-control-height);
+    min-width: var(--sender-control-height);
+  }
+
+  .adapter-option__icon,
+  .adapter-option__icon--fallback {
+    width: 14px;
+    height: 14px;
+    margin: 0 auto;
+  }
+}

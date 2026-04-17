@@ -11,7 +11,9 @@ interface SessionListProps {
   activeId?: string
   hasActiveFilters: boolean
   isBatchMode: boolean
+  isCompactLayout: boolean
   selectedIds: Set<string>
+  isTouchInteraction: boolean
   searchQuery?: string
   onSelectSession: (session: Session) => void
   onArchiveSession: (id: string) => void | Promise<void>
@@ -26,7 +28,9 @@ export function SessionList({
   activeId,
   hasActiveFilters,
   isBatchMode,
+  isCompactLayout,
   selectedIds,
+  isTouchInteraction,
   searchQuery,
   onSelectSession,
   onArchiveSession,
@@ -142,7 +146,9 @@ export function SessionList({
                   session={s}
                   isActive={activeId === s.id}
                   isBatchMode={isBatchMode}
+                  isCompactLayout={isCompactLayout}
                   isSelected={selectedIds.has(s.id)}
+                  isTouchInteraction={isTouchInteraction}
                   onSelect={onSelectSession}
                   onArchive={onArchiveSession}
                   onDelete={onDeleteSession}

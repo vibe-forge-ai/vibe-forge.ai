@@ -165,6 +165,8 @@
     "lastRunAt": "Last run: {{time}}",
     "noRunYet": "No runs yet",
     "emptyRules": "No automation rules",
+    "mobileRules": "Rules",
+    "mobileDetails": "Details",
     "selectRule": "Select an automation rule",
     "ruleId": "Rule ID",
     "createdAt": "Created At",
@@ -209,6 +211,8 @@
     "caseId": "Case:",
     "searchPlaceholder": "Search category, title, or summary",
     "emptyCases": "No benchmark cases",
+    "mobileCases": "Cases",
+    "mobileDetails": "Details",
     "noSummary": "No summary",
     "configTitle": "Case Config",
     "baseCommit": "Base Commit",
@@ -654,6 +658,7 @@
       "announcements": {
         "title": "Announcements"
       },
+      "moreCount": "{{count}} more",
       "specs": {
         "title": "Existing Flows",
         "params": "{{count}} params",

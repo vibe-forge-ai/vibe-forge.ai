@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import type { TerminalShellKind } from '@vibe-forge/types'
 
 import { DockPanel } from '#~/components/dock-panel/DockPanel'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
 import { TerminalManagerList } from './@components/TerminalManagerList'
 import type { TerminalPaneInfo } from './@components/TerminalManagerList'
@@ -50,6 +51,7 @@ export function ChatTerminalView({
   sessionId: string
 }) {
   const { t } = useTranslation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const [panes, setPanes] = useState(() => readTerminalPanes(sessionId, t))
   const [activeTerminalId, setActiveTerminalId] = useState(() =>
     readTerminalPanes(sessionId, t)[0]?.id ?? DEFAULT_TERMINAL_ID
@@ -128,14 +130,18 @@ export function ChatTerminalView({
   }, [])
 
   const shouldShowManagerToggle = panes.length > 1
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   return (
     <DockPanel
+      allowResize={!isCompactView && !isFullscreen}
       className={`chat-terminal-view ${isFullscreen ? 'is-fullscreen' : ''} ${
         isFullscreenExiting ? 'is-fullscreen-exiting' : ''
       }`}
+      defaultHeight={isCompactView ? 208 : undefined}
       isOpen={isOpen}
       isResizeDisabled={isFullscreen}
+      maxHeight={isCompactView ? 320 : 520}
       title={t('chat.viewTerminal')}
       closeLabel={t('common.close')}
       resizeLabel={t('chat.terminal.resizePanel')}

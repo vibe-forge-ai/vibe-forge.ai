@@ -7,6 +7,7 @@ import type { GitOperationKind } from './git-operation-utils'
 import { getPrimaryGitOperationKind, isGitOperationDisabled } from './git-operation-utils'
 
 export function GitOperationsDropdown({
+  compact = false,
   isBusy,
   open,
   placement = 'bottomLeft',
@@ -16,6 +17,7 @@ export function GitOperationsDropdown({
   onPush,
   onSync
 }: {
+  compact?: boolean
   isBusy: boolean
   open: boolean
   placement?: 'bottomLeft' | 'topLeft'
@@ -61,7 +63,11 @@ export function GitOperationsDropdown({
   const primaryAction = primaryActionKind != null ? actionMap[primaryActionKind] : null
 
   return (
-    <div className={`chat-header-git__split ${open ? 'is-open' : ''}`}>
+    <div
+      className={`chat-header-git__split chat-header-git__split--operations ${open ? 'is-open' : ''} ${
+        compact ? 'is-compact' : ''
+      }`.trim()}
+    >
       <Button
         type='text'
         className='chat-header-git__split-main'

@@ -8,6 +8,22 @@ import { initCodexAdapter } from '../src/runtime/init'
 
 const tempDirs: string[] = []
 
+const createBarrier = (size: number) => {
+  let pending = size
+  let release: (() => void) | undefined
+  const waitForAll = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  return async () => {
+    pending -= 1
+    if (pending === 0) {
+      release?.()
+    }
+    await waitForAll
+  }
+}
+
 const createWorkspace = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'codex-init-'))
   tempDirs.push(dir)
@@ -191,5 +207,61 @@ describe('initCodexAdapter', () => {
     expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX CONFIG/g)).toHaveLength(1)
     expect(configContent).toContain(`[projects.${JSON.stringify(resolve(workspace))}]`)
     expect(configContent).not.toContain('/tmp/old-workspace')
+  })
+
+  it('keeps concurrent skill sync idempotent when multiple vf processes initialize the same mock home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const barrier = createBarrier(2)
+
+    await mkdir(join(workspace, '.ai', 'skills', 'research'), { recursive: true })
+    await writeFile(join(workspace, '.ai', 'skills', 'research', 'SKILL.md'), '# Research\n')
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('node:fs/promises')>()
+      return {
+        ...actual,
+        symlink: vi.fn(async (...args: Parameters<typeof actual.symlink>) => {
+          const [, targetPath] = args
+          if (String(targetPath).endsWith(join('.agents', 'skills'))) {
+            await barrier()
+          }
+          return actual.symlink(...args)
+        })
+      }
+    })
+
+    try {
+      const { initCodexAdapter: initCodexAdapterWithMockedFs } = await import('../src/runtime/init')
+      const ctx = {
+        cwd: workspace,
+        env: {
+          HOME: mockHome,
+          __VF_PROJECT_REAL_HOME__: realHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: []
+        }
+      } as any
+
+      await expect(
+        Promise.all([initCodexAdapterWithMockedFs(ctx), initCodexAdapterWithMockedFs(ctx)])
+      ).resolves.toHaveLength(2)
+      const targetPath = join(mockHome, '.agents', 'skills')
+      expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(workspace, '.ai', 'skills'))
+    } finally {
+      vi.doUnmock('node:fs/promises')
+      vi.resetModules()
+    }
   })
 })

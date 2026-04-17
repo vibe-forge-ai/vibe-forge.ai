@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
 import { ModelSelectOptionLabel } from '../@components/model-select/ModelSelectOptionLabel'
 
@@ -27,6 +28,7 @@ export const useModelSelectBrowser = ({
   onSelectModel: (value: string) => void
 }) => {
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
 
   const renderCompactModelMenuLabel = useCallback((option: ModelSelectOption) => {
     return (
@@ -175,13 +177,13 @@ export const useModelSelectBrowser = ({
           mode='vertical'
           selectable
           selectedKeys={selectedModelMenuKeys}
-          triggerSubMenuAction='hover'
+          triggerSubMenuAction={isTouchInteraction ? 'click' : 'hover'}
           items={modelMenuItems}
           onClick={handleModelMenuClick}
         />
       </div>
     )
-  }, [hasModelSearchQuery, handleModelMenuClick, modelMenuItems, selectedModelMenuKeys])
+  }, [hasModelSearchQuery, handleModelMenuClick, isTouchInteraction, modelMenuItems, selectedModelMenuKeys])
 
   return {
     renderModelPopup

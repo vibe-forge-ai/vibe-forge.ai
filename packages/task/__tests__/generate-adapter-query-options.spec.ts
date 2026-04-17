@@ -267,7 +267,7 @@ describe('generateAdapterQueryOptions', () => {
       JSON.stringify(
         {
           name: '@vibe-forge/plugin-cli-skills',
-          version: '0.11.0'
+          version: '1.0.0'
         },
         null,
         2
@@ -320,7 +320,7 @@ describe('generateAdapterQueryOptions', () => {
       JSON.stringify(
         {
           name: '@vibe-forge/plugin-cli-skills',
-          version: '0.11.0'
+          version: '1.0.0'
         },
         null,
         2
@@ -335,7 +335,7 @@ describe('generateAdapterQueryOptions', () => {
       JSON.stringify(
         {
           name: '@vibe-forge/plugin-logger',
-          version: '0.11.0'
+          version: '1.0.0'
         },
         null,
         2

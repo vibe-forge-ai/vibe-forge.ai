@@ -1,6 +1,7 @@
 import './ChatRoute.scss'
 
 import { Button, Empty } from 'antd'
+import { useSetAtom } from 'jotai'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -17,6 +18,8 @@ import { buildChatHistoryStatusNotices } from '#~/components/chat/messages/build
 import { ChatTerminalView } from '#~/components/chat/terminal/ChatTerminalView.js'
 import { useChatSession } from '#~/hooks/chat/use-chat-session'
 import { useTerminalDockVisibility } from '#~/hooks/chat/use-terminal-dock-visibility'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+import { isMobileSidebarOpenAtom } from '#~/store/index'
 
 export function ChatRoute() {
   const { t } = useTranslation()
@@ -27,9 +30,7 @@ export function ChatRoute() {
     () => listSessions('active')
   )
   const session = sessionId == null ? undefined : sessionsRes?.sessions.find(item => item.id === sessionId)
-
   if (sessionId != null && isLoading) return null
-
   if (sessionId != null && session == null) {
     return (
       <div className='chat-route__empty-state'>
@@ -45,6 +46,9 @@ export function ChatRoute() {
 function ChatRouteView({ session }: { session?: Session }) {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { isCompactLayout } = useResponsiveLayout()
+  const setIsMobileSidebarOpen = useSetAtom(isMobileSidebarOpenAtom)
   const {
     messages,
     sessionInfo,
@@ -99,9 +103,10 @@ function ChatRouteView({ session }: { session?: Session }) {
   const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const shouldShowTerminal = session?.id != null && isTerminalOpen
-  const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(shouldShowTerminal)
+  const { isRendered: isTerminalRendered, isVisible: isTerminalVisible } = useTerminalDockVisibility(
+    shouldShowTerminal
+  )
   const handledDeepLinkTargetRef = useRef('')
-
   useEffect(() => {
     if (deepLinkTargetKey === '') {
       handledDeepLinkTargetRef.current = ''
@@ -112,31 +117,35 @@ function ChatRouteView({ session }: { session?: Session }) {
       }
     }
   }, [activeView, deepLinkTargetKey, setActiveView])
-
   return (
     <div
       className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''} ${
         shouldShowTerminal ? 'has-terminal' : ''
       }`}
     >
-      {session?.id && (
+      {(session?.id != null || isCompactLayout) && (
         <ChatHeader
           sessionInfo={sessionInfo}
-          sessionId={session.id}
-          sessionTitle={session.title}
-          sessionStatus={session.status}
-          isStarred={session.isStarred}
-          isArchived={session.isArchived}
-          tags={session.tags}
-          lastMessage={session.lastMessage}
-          lastUserMessage={session.lastUserMessage}
+          sessionId={session?.id}
+          sessionTitle={session?.title}
+          sessionStatus={session?.status}
+          isStarred={session?.isStarred}
+          isArchived={session?.isArchived}
+          tags={session?.tags}
+          lastMessage={session?.lastMessage}
+          lastUserMessage={session?.lastUserMessage}
           activeView={resolvedActiveView}
           isTerminalOpen={isTerminalOpen}
+          onCreateSession={() => {
+            void navigate('/')
+          }}
+          onOpenSidebar={() => {
+            setIsMobileSidebarOpen(true)
+          }}
           onViewChange={setActiveView}
           onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
         />
       )}
-
       {resolvedActiveView === 'history' && (
         <ChatHistoryView
           isReady={isReady}

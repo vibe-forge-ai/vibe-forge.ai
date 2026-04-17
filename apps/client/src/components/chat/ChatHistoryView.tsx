@@ -25,6 +25,7 @@ import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
@@ -113,6 +114,7 @@ export function ChatHistoryView({
   const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
   const configWorkspaceDraft = useMemo(
     () => getChatSessionWorkspaceDraftFromConfig(configRes),
@@ -336,6 +338,7 @@ export function ChatHistoryView({
     }
   }
   const isInlineEditing = editingMessageId != null
+  const shouldShowNewSessionGuide = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const renderItems = useMemo(() => processMessages(messages), [messages])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
   const targetAnchorId = useMemo(() => {
@@ -571,6 +574,8 @@ export function ChatHistoryView({
           originalMessage={item.originalMessage}
           sessionInfo={sessionInfo}
           isEditing={editingMessageId === item.originalMessage.id}
+          isCompactLayout={isCompactLayout}
+          isTouchInteraction={isTouchInteraction}
           isSessionBusy={isCreating || session?.status === 'running' ||
             session?.status === 'waiting_input'}
           showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
@@ -651,8 +656,14 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {!session?.id && messages.length === 0 && historyStatusNotices.length === 0 && (
+      {shouldShowNewSessionGuide && !isCompactLayout && (
         <div className='new-session-guide-wrapper'>
+          <NewSessionGuide />
+        </div>
+      )}
+
+      {shouldShowNewSessionGuide && isCompactLayout && (
+        <div className='new-session-guide-wrapper is-compact-layout'>
           <NewSessionGuide />
         </div>
       )}

@@ -1,12 +1,13 @@
 import './KnowledgeBaseView.scss'
 
-import { App } from 'antd'
+import { App, Segmented } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { EntitySummary, RuleSummary, SpecSummary } from '#~/api.js'
 import { PageShell } from '#~/components/layout/PageShell.js'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import { EntitiesTab } from './components/EntitiesTab.js'
 import { FlowsTab } from './components/FlowsTab.js'
@@ -20,6 +21,7 @@ interface KnowledgeQueryParams extends Record<string, string> {
 export function KnowledgeBaseView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const {
     data: specsRes,
     isLoading: isSpecsLoading,
@@ -243,6 +245,7 @@ export function KnowledgeBaseView() {
     () => sections.find(section => section.key === activeSectionKey) ?? sections[0],
     [activeSectionKey, sections]
   )
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   React.useEffect(() => {
     if (values.kbTab !== activeSectionKey) {
@@ -252,32 +255,49 @@ export function KnowledgeBaseView() {
 
   return (
     <PageShell
-      className='knowledge-base-view'
+      className={`knowledge-base-view ${isCompactView ? 'knowledge-base-view--compact' : ''}`}
       bodyClassName='knowledge-base-view__body'
     >
-      <div className='knowledge-base-view__left'>
-        <div className='knowledge-base-view__sidebar'>
-          <div className='knowledge-base-view__nav-list'>
-            {sections.map((section) => (
-              <button
-                key={section.key}
-                type='button'
-                className={`knowledge-base-view__nav-item ${section.key === activeSectionKey ? 'is-active' : ''}`}
-                onClick={() => update({ kbTab: section.key })}
-              >
-                <span className='material-symbols-rounded knowledge-base-view__nav-icon'>{section.icon}</span>
-                <span className='knowledge-base-view__nav-main'>
-                  <span className='knowledge-base-view__nav-row'>
-                    <span className='knowledge-base-view__nav-label'>{section.label}</span>
-                    <span className='knowledge-base-view__nav-count'>{section.count}</span>
-                  </span>
-                  <span className='knowledge-base-view__nav-desc'>{section.description}</span>
-                </span>
-              </button>
-            ))}
+      {isCompactView
+        ? (
+          <div className='knowledge-base-view__mobile-switcher-shell'>
+            <Segmented
+              block
+              className='knowledge-base-view__mobile-switcher'
+              value={activeSectionKey}
+              onChange={(value) => update({ kbTab: value as string })}
+              options={sections.map((section) => ({
+                label: `${section.label} ${section.count}`,
+                value: section.key
+              }))}
+            />
           </div>
-        </div>
-      </div>
+        )
+        : (
+          <div className='knowledge-base-view__left'>
+            <div className='knowledge-base-view__sidebar'>
+              <div className='knowledge-base-view__nav-list'>
+                {sections.map((section) => (
+                  <button
+                    key={section.key}
+                    type='button'
+                    className={`knowledge-base-view__nav-item ${section.key === activeSectionKey ? 'is-active' : ''}`}
+                    onClick={() => update({ kbTab: section.key })}
+                  >
+                    <span className='material-symbols-rounded knowledge-base-view__nav-icon'>{section.icon}</span>
+                    <span className='knowledge-base-view__nav-main'>
+                      <span className='knowledge-base-view__nav-row'>
+                        <span className='knowledge-base-view__nav-label'>{section.label}</span>
+                        <span className='knowledge-base-view__nav-count'>{section.count}</span>
+                      </span>
+                      <span className='knowledge-base-view__nav-desc'>{section.description}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       <div className='knowledge-base-view__right'>
         <div className='knowledge-base-view__right-body'>{activeSection?.content}</div>
       </div>

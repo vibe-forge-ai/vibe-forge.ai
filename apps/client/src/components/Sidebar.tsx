@@ -6,6 +6,7 @@ import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
@@ -30,11 +31,17 @@ const sortSessionsByOrder = (sessions: Session[], sortOrder: SidebarSessionSortO
 
 export function Sidebar({
   activeId,
+  isCompactLayout = false,
+  isMobileOpen = false,
+  onRequestClose,
   onSelectSession,
   onDeletedSession,
   width
 }: {
   activeId?: string
+  isCompactLayout?: boolean
+  isMobileOpen?: boolean
+  onRequestClose?: () => void
   onSelectSession: (session: Session, isNew?: boolean) => void
   onDeletedSession?: (id: string, nextId?: string) => void
   width: number
@@ -58,6 +65,7 @@ export function Sidebar({
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
   const isMac = navigator.platform.includes('Mac')
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
@@ -124,6 +132,7 @@ export function Sidebar({
   }, [adapterFilters, searchQuery, sessions, sortOrder, tagFilters])
 
   async function handleCreateSession() {
+    onRequestClose?.()
     onSelectSession({ id: '' } as Session, true)
   }
 
@@ -259,6 +268,8 @@ export function Sidebar({
   }
 
   const isCreatingSession = activeId === undefined || activeId === ''
+  const effectiveSidebarCollapsed = isCompactLayout ? false : isSidebarCollapsed
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
   const createBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -280,27 +291,37 @@ export function Sidebar({
 
   return (
     <div
-      className={`sidebar-container ${isSidebarCollapsed ? 'collapsed' : ''}`}
-      style={{
-        width: isSidebarCollapsed ? 0 : width,
-        minWidth: isSidebarCollapsed ? 0 : undefined,
-        transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        borderRight: isSidebarCollapsed ? 'none' : undefined
-      }}
+      className={[
+        'sidebar-container',
+        effectiveSidebarCollapsed ? 'collapsed' : '',
+        isCompactLayout ? 'sidebar-container--compact' : '',
+        isMobileOpen ? 'is-mobile-open' : ''
+      ].filter(Boolean).join(' ')}
+      style={isCompactLayout
+        ? undefined
+        : {
+          width: effectiveSidebarCollapsed ? 0 : width,
+          minWidth: effectiveSidebarCollapsed ? 0 : undefined,
+          transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRight: effectiveSidebarCollapsed ? 'none' : undefined
+        }}
     >
       <div
         className='sidebar-content'
-        style={{
-          width,
-          transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isSidebarCollapsed ? `translateX(-${width}px)` : 'translateX(0)'
-        }}
+        style={isCompactLayout
+          ? undefined
+          : {
+            width,
+            transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: effectiveSidebarCollapsed ? `translateX(-${width}px)` : 'translateX(0)'
+          }}
       >
         <SidebarHeader
           adapterFilters={adapterFilters}
           availableAdapters={availableAdapters}
           hasActiveSearchControls={hasActiveSearchControls}
-          isSidebarCollapsed={isSidebarCollapsed}
+          isCompactLayout={isCompactLayout}
+          isSidebarCollapsed={effectiveSidebarCollapsed}
           searchQuery={searchQuery}
           sortOrder={sortOrder}
           sortSelection={sortSelection}
@@ -313,6 +334,7 @@ export function Sidebar({
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
           onToggleSidebarCollapsed={() => setSidebarCollapsed(!isSidebarCollapsed)}
+          onCloseSidebar={onRequestClose}
           selectedCount={selectedIds.size}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
@@ -337,7 +359,9 @@ export function Sidebar({
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}
+          isCompactLayout={isCompactLayout}
           selectedIds={selectedIds}
+          isTouchInteraction={isTouchInteraction}
           searchQuery={searchQuery}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
@@ -347,9 +371,12 @@ export function Sidebar({
           onToggleSelect={handleToggleSelect}
         />
       </div>
-      {isSidebarCollapsed && (
+      {!isCompactLayout && isSidebarCollapsed && (
         <div className='sidebar-collapsed-header'>
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='bottom'>
+          <Tooltip
+            title={resolveTooltipTitle(isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
+            placement='bottom'
+          >
             <Button
               ref={createBtnRef}
               className={`sidebar-collapsed-control ${isCreatingSession ? 'active' : ''}`}
@@ -364,7 +391,7 @@ export function Sidebar({
               </span>
             </Button>
           </Tooltip>
-          <Tooltip title={t('common.expand')} placement='bottom'>
+          <Tooltip title={resolveTooltipTitle(t('common.expand'))} placement='bottom'>
             <Button
               className='sidebar-collapsed-control'
               type='text'
