@@ -109,7 +109,7 @@ const serializeJsonVariables = (value: Record<string, string | null | undefined>
 const resolveConfigCacheKey = (options: LoadConfigOptions) => {
   const launchCwd = options.cwd ?? process.cwd()
   const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
-  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? workspaceFolder
   const disableDevConfig = options.disableDevConfig === true ? '1' : '0'
   const jsonVariables = serializeJsonVariables(options.jsonVariables ?? {})
   return `${launchCwd}\n${workspaceFolder}\n${configCwd}\n${disableDevConfig}\n${jsonVariables}`
@@ -454,7 +454,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
 
   const launchCwd = options.cwd ?? process.cwd()
   const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
-  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? workspaceFolder
   const shouldLoadDevConfig = options.disableDevConfig !== true &&
     process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
   const jsonVariables = options.jsonVariables ?? {}

@@ -22,6 +22,8 @@ wait
 ## 说明
 
 - `__VF_PROJECT_WORKSPACE_FOLDER__` 指向你的项目根目录。
+- 如果没有显式设置 `__VF_PROJECT_WORKSPACE_FOLDER__`，`vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，并自动把项目根目录作为 workspace。
+- 项目配置默认也会跟随这个解析后的 workspace 根目录读取；如果需要单独改配置目录，可以显式设置 `__VF_PROJECT_CONFIG_DIR__`。
 - `__VF_PROJECT_AI_BASE_DIR__` 可选；默认是 `.ai`，也可以设成 `.vf` 或 `.config/vibe/ai-data` 之类的嵌套目录。
 - `__VF_PROJECT_AI_ENTITIES_DIR__` 可选；默认是 `entities`，会基于 AI 基目录继续解析。
 - Web UI 在 server 绑定到 `localhost`、`127.*`、`::1` 时默认不启用登录保护；绑定到 `0.0.0.0`、局域网 IP 或域名时默认启用。可以在项目配置中设置多个账号：

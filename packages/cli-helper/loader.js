@@ -139,7 +139,9 @@ if (!process.env.__IS_LOADER_CLI__) {
     process.exit(code ?? 0)
   })
 } else {
-  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = process.env.__VF_PROJECT_WORKSPACE_FOLDER__ ?? process.cwd()
+  const { resolveProjectWorkspaceFolder } = require('@vibe-forge/register/dotenv')
+
+  process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = resolveProjectWorkspaceFolder(process.cwd(), process.env)
   process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? process.cwd()
   process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ = process.env.__VF_PROJECT_CLI_PACKAGE_DIR__ ??
     process.env.__VF_PROJECT_PACKAGE_DIR__

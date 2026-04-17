@@ -41,7 +41,9 @@ npx vf plugin --adapter claude add <source>
 
 ## Marketplace 配置
 
-在项目根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
+默认在解析后的 workspace 根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
+
+如果显式设置了 `__VF_PROJECT_CONFIG_DIR__`，则会从该目录读取 marketplace 配置。
 
 Claude marketplace entry 的格式是：
 

@@ -93,7 +93,7 @@ describe('loadDotenv', () => {
     const configDir = path.join(launchDir, '.iac', 'ai')
     const previousCwd = process.cwd()
 
-    for (const key of ['TEST_CONFIG_ONLY']) {
+    for (const key of restoreKeys) {
       restoreEnv.set(key, process.env[key])
       delete process.env[key]
     }
@@ -139,6 +139,46 @@ describe('loadDotenv', () => {
       expect(resolveProjectConfigDir(process.cwd(), process.env)).toBe(realConfigDir)
     } finally {
       process.chdir(previousCwd)
+      await rm(workspaceDir, { force: true, recursive: true })
+    }
+  })
+
+  it('loads env files from the detected workspace root when given a nested startup directory', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-dotenv-root-'))
+    const nestedDir = path.join(workspaceDir, 'packages', 'demo', 'src')
+
+    for (const key of restoreKeys) {
+      restoreEnv.set(key, process.env[key])
+      delete process.env[key]
+    }
+    for (const key of restoreScopedEnv) {
+      restoreScopedValues.set(key, process.env[key])
+      delete process.env[key]
+    }
+
+    try {
+      await mkdir(nestedDir, { recursive: true })
+      await writeFile(path.join(workspaceDir, '.ai.config.json'), '{}\n')
+      await writeFile(path.join(workspaceDir, '.env'), 'TEST_PRIMARY_ONLY=nested-root\nTEST_SHARED_VALUE=root\n')
+
+      const modulePath = require.resolve('../dotenv.js')
+      delete require.cache[modulePath]
+      const {
+        loadDotenv,
+        resolveProjectWorkspaceFolder
+      } = require(modulePath) as {
+        loadDotenv: (options?: { workspaceFolder?: string; files?: string[] }) => void
+        resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+      }
+
+      delete process.env.TEST_PRIMARY_ONLY
+      delete process.env.TEST_SHARED_VALUE
+      loadDotenv({ workspaceFolder: nestedDir })
+
+      expect(process.env.TEST_PRIMARY_ONLY).toBe('nested-root')
+      expect(process.env.TEST_SHARED_VALUE).toBe('root')
+      expect(resolveProjectWorkspaceFolder(nestedDir, process.env)).toBe(await realpath(workspaceDir))
+    } finally {
       await rm(workspaceDir, { force: true, recursive: true })
     }
   })

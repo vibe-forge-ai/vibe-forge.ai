@@ -156,6 +156,54 @@ describe('loadConfig', () => {
     }
   })
 
+  it('loads project config from the resolved workspace root when launched from a nested directory', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-root-load-'))
+    const launchDir = path.join(workspaceDir, 'apps', 'client', 'src')
+    const previousLaunchCwd = process.env.__VF_PROJECT_LAUNCH_CWD__
+    const previousWorkspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+    const previousConfigDir = process.env.__VF_PROJECT_CONFIG_DIR__
+
+    try {
+      await mkdir(launchDir, { recursive: true })
+      await writeFile(
+        path.join(workspaceDir, '.ai.config.json'),
+        JSON.stringify({
+          defaultModel: 'root-model'
+        })
+      )
+
+      process.env.__VF_PROJECT_LAUNCH_CWD__ = launchDir
+      process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = workspaceDir
+      delete process.env.__VF_PROJECT_CONFIG_DIR__
+      resetConfigCache()
+
+      const [projectConfig] = await loadConfig({
+        cwd: launchDir,
+        jsonVariables: buildConfigJsonVariables(launchDir, process.env)
+      })
+
+      expect(projectConfig?.defaultModel).toBe('root-model')
+    } finally {
+      if (previousLaunchCwd == null) {
+        delete process.env.__VF_PROJECT_LAUNCH_CWD__
+      } else {
+        process.env.__VF_PROJECT_LAUNCH_CWD__ = previousLaunchCwd
+      }
+      if (previousWorkspaceFolder == null) {
+        delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspaceFolder
+      }
+      if (previousConfigDir == null) {
+        delete process.env.__VF_PROJECT_CONFIG_DIR__
+      } else {
+        process.env.__VF_PROJECT_CONFIG_DIR__ = previousConfigDir
+      }
+      resetConfigCache()
+      await rm(workspaceDir, { force: true, recursive: true })
+    }
+  })
+
   it('resolves extend chains with layered merge semantics', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-extend-'))
 
