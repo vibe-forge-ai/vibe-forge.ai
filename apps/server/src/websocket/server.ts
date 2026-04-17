@@ -8,6 +8,12 @@ import { WebSocketServer } from 'ws'
 import type { ServerEnv } from '@vibe-forge/core'
 
 import { getDb } from '#~/db/index.js'
+import {
+  AUTH_COOKIE_NAME,
+  getCookieFromHeader,
+  resolveWebAuthConfig,
+  verifySessionToken
+} from '#~/services/auth/index.js'
 import { interruptSession, killSession, processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { handleInteractionResponse } from '#~/services/session/interaction.js'
 import {
@@ -25,6 +31,16 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
 
   wss.on('connection', async (ws, req) => {
+    const authConfig = await resolveWebAuthConfig(env)
+    if (authConfig.enabled) {
+      const token = getCookieFromHeader(req.headers.cookie, AUTH_COOKIE_NAME)
+      const authenticated = await verifySessionToken(env, token)
+      if (!authenticated) {
+        ws.close(1008, 'Login required')
+        return
+      }
+    }
+
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
     const subscribeMode = params.get('subscribe')

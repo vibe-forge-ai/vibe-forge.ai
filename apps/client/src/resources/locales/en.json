@@ -84,6 +84,23 @@
       "waiting_input": "Waiting"
     }
   },
+  "auth": {
+    "title": "Sign in to Vibe Forge",
+    "subtitle": "Use a configured account to continue into this workspace.",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "usernameRequired": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "passwordRequired": "Enter password",
+    "rememberDevice": "Remember this device",
+    "login": "Sign in",
+    "loginFailed": "Sign in failed",
+    "statusFailed": "Could not load sign-in status",
+    "generatedPasswordTitle": "Using an auto-generated local password",
+    "generatedPasswordDescription": "Find the password in the local password file, or configure fixed accounts in webAuth.accounts.",
+    "generatedPasswordHint": "Default password file: {{path}}"
+  },
   "automation": {
     "title": "Automation",
     "newRule": "New Rule",

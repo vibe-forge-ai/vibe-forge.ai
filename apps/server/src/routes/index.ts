@@ -11,6 +11,7 @@ import type { loadEnv } from '@vibe-forge/core'
 import { logger } from '#~/utils/logger.js'
 
 import { aiRouter } from './ai'
+import { authRouter } from './auth'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { channelActionsRouter } from './channel-actions'
@@ -84,6 +85,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/sessions/:sessionId/git', router: gitRouter() },
     { prefix: '/api/sessions', router: sessionsRouter() },
     { prefix: '/api/interact', router: interactRouter() },
+    { prefix: '/api/auth', router: authRouter(env) },
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/channels/actions', router: channelActionsRouter() },

@@ -184,6 +184,20 @@ export type MarketplaceConfigEntry = ClaudeCodeMarketplaceConfigEntry
 
 export type MarketplaceConfig = Record<string, MarketplaceConfigEntry>
 
+export interface WebAuthAccountConfig {
+  username: string
+  password: string
+}
+
+export interface WebAuthConfig {
+  enabled?: boolean
+  username?: string
+  password?: string
+  accounts?: WebAuthAccountConfig[]
+  sessionTtlHours?: number
+  rememberDeviceTtlDays?: number
+}
+
 export interface Config {
   extend?: string | string[]
   baseDir?: string
@@ -243,6 +257,7 @@ export interface Config {
     switchPermissionMode?: string
   }
   notifications?: NotificationConfig
+  webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
     customInstructions?: string
@@ -292,6 +307,7 @@ export interface ConfigSection {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']
   models?: Config['models']
@@ -310,6 +326,7 @@ export interface ConfigSection {
     noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
   }
   shortcuts?: Config['shortcuts']
+  auth?: Config['webAuth']
 }
 
 export interface ConfigResponse {

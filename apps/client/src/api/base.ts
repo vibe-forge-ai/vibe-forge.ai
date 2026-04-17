@@ -148,7 +148,7 @@ export const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 export async function fetchApiJson<T>(pathOrUrl: string | URL, init?: RequestInit): Promise<T> {
   const url = typeof pathOrUrl === 'string' ? buildApiUrl(pathOrUrl) : pathOrUrl.toString()
-  const res = await fetch(url, init)
+  const res = await fetch(url, { credentials: 'include', ...init })
   return unwrapApiResponse<T>(res)
 }
 
@@ -158,6 +158,6 @@ export async function fetchApiJsonOrThrow<T>(
   errorLabel: string
 ): Promise<T> {
   const url = typeof pathOrUrl === 'string' ? buildApiUrl(pathOrUrl) : pathOrUrl.toString()
-  const res = await fetch(url, init)
+  const res = await fetch(url, { credentials: 'include', ...init })
   return unwrapApiResponse<T>(res, errorLabel)
 }

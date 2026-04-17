@@ -129,6 +129,20 @@ export const conversationConfigSchema = z.object({
   injectDefaultSystemPrompt: z.boolean().optional().describe('Inject the default system prompt')
 })
 
+export const webAuthAccountConfigSchema = z.object({
+  username: z.string().min(1).describe('Login username'),
+  password: z.string().min(1).describe('Login password')
+})
+
+export const webAuthConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable Web UI login protection'),
+  username: z.string().optional().describe('Fallback single-account username'),
+  password: z.string().optional().describe('Fallback single-account password'),
+  accounts: z.array(webAuthAccountConfigSchema).optional().describe('Allowed Web UI login accounts'),
+  sessionTtlHours: z.number().positive().optional().describe('Browser session token lifetime in hours'),
+  rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
+})
+
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({
     id: z.string().min(1).describe('Plugin package name or short id'),
@@ -270,7 +284,8 @@ export const generalConfigSectionSchema = z.object({
   announcements: z.array(z.string()).optional(),
   permissions: permissionsConfigSchema.optional(),
   env: z.record(z.string(), z.string()).optional(),
-  notifications: notificationConfigSchema.optional()
+  notifications: notificationConfigSchema.optional(),
+  webAuth: webAuthConfigSchema.optional()
 })
 
 export const pluginSectionSchema = z.object({
@@ -297,6 +312,7 @@ export const configSectionSchemas = {
   adapters: z.object({}).catchall(baseAdapterEntrySchema),
   plugins: pluginSectionSchema,
   mcp: mcpConfigSectionSchema,
+  auth: webAuthConfigSchema,
   shortcuts: shortcutsConfigSchema
 } as const
 
@@ -324,6 +340,7 @@ export const baseConfigFileSchema = z.object({
   announcements: z.array(z.string()).optional(),
   shortcuts: shortcutsConfigSchema.optional(),
   notifications: notificationConfigSchema.optional(),
+  webAuth: webAuthConfigSchema.optional(),
   conversation: conversationConfigSchema.optional(),
   plugins: pluginConfigSchema.optional(),
   marketplaces: marketplaceConfigSchema.optional()

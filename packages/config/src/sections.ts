@@ -9,6 +9,7 @@ export const CONFIG_SECTION_KEYS = [
   'adapters',
   'plugins',
   'mcp',
+  'auth',
   'shortcuts'
 ] as const
 
@@ -28,6 +29,7 @@ export interface ConfigSections {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    webAuth?: Config['webAuth']
     shortcuts?: Config['shortcuts']
   }
   conversation: Config['conversation']
@@ -45,6 +47,7 @@ export interface ConfigSections {
     defaultExcludeMcpServers?: Config['defaultExcludeMcpServers']
     noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
   }
+  auth: Config['webAuth']
   shortcuts: Config['shortcuts']
 }
 
@@ -68,6 +71,7 @@ export const buildConfigSections = (config: Config | undefined): ConfigSections 
     permissions: config?.permissions,
     env: config?.env,
     notifications: config?.notifications,
+    webAuth: config?.webAuth,
     shortcuts: config?.shortcuts
   },
   conversation: config?.conversation,
@@ -85,6 +89,7 @@ export const buildConfigSections = (config: Config | undefined): ConfigSections 
     defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
     noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
   },
+  auth: config?.webAuth,
   shortcuts: config?.shortcuts
 })
 
