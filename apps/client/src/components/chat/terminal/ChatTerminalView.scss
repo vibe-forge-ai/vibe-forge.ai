@@ -325,6 +325,10 @@
   }
 }
 
+.dock-panel.chat-terminal-view {
+  gap: 0;
+}
+
 html.dark .chat-terminal-view {
   --terminal-action-hover-bg: var(--nav-hover-bg, #1a1a1a);
 }

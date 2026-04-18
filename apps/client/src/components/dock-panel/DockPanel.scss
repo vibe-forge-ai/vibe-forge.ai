@@ -7,8 +7,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--dock-panel-padding-top, 12px) 12px
-    var(--dock-panel-padding-bottom, 12px);
+  padding: 0;
   background-color: var(--bg-color);
   border-top: 1px solid var(--dock-panel-border-color, var(--border-color));
   gap: 6px;
@@ -18,8 +17,6 @@
   transition:
     flex-basis .24s cubic-bezier(.22, 1, .36, 1),
     height .24s cubic-bezier(.22, 1, .36, 1),
-    padding-top .24s cubic-bezier(.22, 1, .36, 1),
-    padding-bottom .24s cubic-bezier(.22, 1, .36, 1),
     opacity .18s ease,
     transform .24s cubic-bezier(.22, 1, .36, 1),
     border-top-color .18s ease;
@@ -99,8 +96,8 @@
   gap: 8px;
   min-width: 0;
   min-height: 24px;
-  margin: -12px -12px 0;
-  padding: 12px 12px 0;
+  margin: 0;
+  padding: 4px;
   cursor: default;
   flex-shrink: 0;
   transition: opacity .18s ease;
