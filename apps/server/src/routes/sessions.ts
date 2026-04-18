@@ -165,6 +165,7 @@ export function sessionsRouter(): Router {
       adapter?: string
       workspace?: {
         createWorktree?: boolean
+        worktreeEnvironment?: string
         branch?: {
           name?: string
           kind?: GitBranchKind
@@ -189,6 +190,7 @@ export function sessionsRouter(): Router {
         ? undefined
         : {
           createWorktree: workspace.createWorktree,
+          worktreeEnvironment: workspace.worktreeEnvironment,
           branch: workspace.branch?.name?.trim()
             ? {
               name: workspace.branch.name.trim(),

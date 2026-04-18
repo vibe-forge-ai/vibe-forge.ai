@@ -29,6 +29,7 @@ export function ConfigSectionPanel({
   mergedModelServices,
   mergedAdapters,
   selectedModelService,
+  worktreeEnvironmentOptions,
   detailQuery = '',
   onDetailQueryChange,
   headerExtra,
@@ -45,6 +46,7 @@ export function ConfigSectionPanel({
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
   selectedModelService?: string
+  worktreeEnvironmentOptions?: Array<{ value: string; label: ReactNode }>
   detailQuery?: string
   onDetailQueryChange?: (nextQuery: string) => void
   headerExtra?: ReactNode
@@ -170,6 +172,7 @@ export function ConfigSectionPanel({
           mergedModelServices={mergedModelServices}
           mergedAdapters={mergedAdapters}
           selectedModelService={selectedModelService}
+          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
           detailRoute={detailRoute}
           onOpenDetailRoute={handleOpenDetail}
           t={t}

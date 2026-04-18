@@ -519,6 +519,11 @@
     "sessionWorkspaceBaseRef": "Base ref",
     "sessionWorkspaceCurrentSession": "Current session",
     "sessionWorkspaceRepositoryWorktrees": "Repository worktrees",
+    "sessionWorkspaceEnvironment": "Worktree environment",
+    "sessionWorkspaceEnvironmentDefault": "Default environment",
+    "sessionWorkspaceEnvironmentProject": "Project",
+    "sessionWorkspaceEnvironmentLocal": "Local",
+    "sessionWorkspaceNoEnvironments": "No environments",
     "sessionWorkspaceStateReady": "Ready",
     "sessionWorkspaceStateProvisioning": "Provisioning",
     "sessionWorkspaceStateDeleting": "Deleting",
@@ -904,6 +909,7 @@
       "defaultAdapterPlaceholder": "Select adapter",
       "defaultModelServicePlaceholder": "Select model service",
       "defaultModelPlaceholder": "Select model",
+      "worktreeEnvironmentPlaceholder": "Select worktree environment",
       "titlePlaceholder": "Enter title",
       "descriptionPlaceholder": "Enter description",
       "channelType": "Channel Type",
@@ -1127,6 +1133,10 @@
           "label": "Create worktree for new sessions",
           "desc": "Use a managed worktree by default when creating a new session"
         },
+        "worktreeEnvironment": {
+          "label": "Default worktree environment",
+          "desc": "Environment scripts run when managed worktrees are created, started, and destroyed"
+        },
         "customInstructions": {
           "label": "Custom Instructions",
           "desc": "Additional guidance for the assistant"
@@ -1312,6 +1322,79 @@
       "config": "Configuration",
       "app": "Application"
     },
+    "environments": {
+      "newPlaceholder": "Example: env-node-20",
+      "newLocalPlaceholder": "Example: env-node-20",
+      "create": "New",
+      "created": "Environment created",
+      "empty": "No worktree environments",
+      "searchEmpty": "No matching worktree environments",
+      "searchPlaceholder": "Search environments",
+      "exists": "Environment name already exists",
+      "createFailed": "Failed to create environment",
+      "saveFailed": "Failed to save environment",
+      "edit": "Edit",
+      "name": "Name",
+      "createTitle": "Create Environment",
+      "createDescription": "",
+      "projectListTitle": "Project Environments",
+      "projectListDescription": "",
+      "localListTitle": "Local Environments",
+      "localListDescription": "",
+      "detailTitle": "Environment Details",
+      "baseScript": "Script",
+      "availableEnvVars": "Available env vars",
+      "platformOverrides": "Platform Overrides",
+      "platformOverridesDescription": "Override the default script for a specific operating system.",
+      "platformScriptDescription": "Runs only on {{platform}}.",
+      "sources": {
+        "project": "Project",
+        "user": "Local"
+      },
+      "platforms": {
+        "macos": "macOS",
+        "linux": "Linux",
+        "windows": "Windows"
+      },
+      "operationSections": {
+        "create": {
+          "title": "Create Script",
+          "description": "This script runs after the worktree is created."
+        },
+        "start": {
+          "title": "Start Script",
+          "description": "This script runs before the adapter process starts."
+        },
+        "destroy": {
+          "title": "Cleanup Script",
+          "description": "This script runs before deleting a managed worktree."
+        }
+      },
+      "baseScriptDescriptions": {
+        "create": "Runs in the new worktree.",
+        "start": "Runs in the session workspace.",
+        "destroy": "Runs in the worktree being deleted."
+      },
+      "operations": {
+        "create": "Create",
+        "start": "Start",
+        "destroy": "Destroy"
+      },
+      "scripts": {
+        "create": "create.sh",
+        "create.macos": "create.macos.sh",
+        "create.linux": "create.linux.sh",
+        "create.windows": "create.windows.ps1",
+        "start": "start.sh",
+        "start.macos": "start.macos.sh",
+        "start.linux": "start.linux.sh",
+        "start.windows": "start.windows.ps1",
+        "destroy": "destroy.sh",
+        "destroy.macos": "destroy.macos.sh",
+        "destroy.linux": "destroy.linux.sh",
+        "destroy.windows": "destroy.windows.ps1"
+      }
+    },
     "about": {
       "software": "Software Info",
       "version": "Version",
@@ -1330,6 +1413,7 @@
       "channels": "Channels",
       "adapters": "Adapters",
       "plugins": "Plugins",
+      "environments": "Environments",
       "mcp": "MCP",
       "shortcuts": "Shortcuts",
       "appearance": "Appearance",

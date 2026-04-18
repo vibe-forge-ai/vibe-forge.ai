@@ -8,6 +8,7 @@ import type { WSEvent } from '@vibe-forge/core'
 import { resolvePrimaryWorkspaceFolder } from '@vibe-forge/register/dotenv'
 import type { SessionInfo } from '@vibe-forge/types'
 import {
+  PROJECT_WORKSPACE_FOLDER_ENV,
   addGitWorktree,
   isGitMissingError,
   isGitNotRepositoryError,
@@ -26,11 +27,16 @@ import type {
   SessionWorkspaceRow
 } from '#~/db/sessionWorkspaces/repo.js'
 import { getWorkspaceFolder } from '#~/services/config/index.js'
+import {
+  normalizeOptionalWorktreeEnvironmentId,
+  runConfiguredWorktreeEnvironmentScripts
+} from '#~/services/worktree-environments.js'
 import { conflict, notFound } from '#~/utils/http.js'
 
 interface ProvisionSessionWorkspaceOptions {
   sourceSessionId?: string
   createWorktree?: boolean
+  worktreeEnvironment?: string
 }
 
 const DEFAULT_CLEANUP_POLICY: SessionWorkspaceCleanupPolicy = 'delete_on_session_delete'
@@ -62,9 +68,13 @@ const resolveManagedWorktreePath = (
   repositoryRoot: string
 ) => {
   const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder) ?? workspaceFolder
+  const primaryWorkspaceEnv = {
+    ...processEnv,
+    [PROJECT_WORKSPACE_FOLDER_ENV]: primaryWorkspaceFolder
+  }
   return resolveProjectAiPath(
     primaryWorkspaceFolder,
-    processEnv,
+    primaryWorkspaceEnv,
     'worktrees',
     'sessions',
     sessionId,
@@ -110,7 +120,8 @@ const persistSharedWorkspace = async (
   sessionId: string,
   workspaceFolder: string,
   kind: SessionWorkspaceKind,
-  cleanupPolicy: SessionWorkspaceCleanupPolicy
+  cleanupPolicy: SessionWorkspaceCleanupPolicy,
+  worktreeEnvironment?: string
 ) => {
   let repositoryRoot: string | undefined
   try {
@@ -126,6 +137,7 @@ const persistSharedWorkspace = async (
     kind,
     workspaceFolder,
     repositoryRoot,
+    worktreeEnvironment,
     cleanupPolicy,
     state: 'ready'
   })
@@ -133,7 +145,8 @@ const persistSharedWorkspace = async (
 
 const buildManagedWorkspace = async (
   sessionId: string,
-  workspaceFolder: string
+  workspaceFolder: string,
+  worktreeEnvironment?: string
 ) => {
   const repositoryRoot = await resolveGitRepositoryRoot(workspaceFolder)
   const currentBranch = await resolveGitCurrentBranch(workspaceFolder).catch(() => '')
@@ -145,12 +158,35 @@ const buildManagedWorkspace = async (
     : buildManagedWorktreeBranchName(normalizedBranch, sessionId)
 
   await mkdir(dirname(worktreePath), { recursive: true })
-  await addGitWorktree({
-    branch: branchName,
-    cwd: repositoryRoot,
-    path: worktreePath,
-    ref: baseRef
-  })
+  let worktreeCreated = false
+  try {
+    await addGitWorktree({
+      branch: branchName,
+      cwd: repositoryRoot,
+      path: worktreePath,
+      ref: baseRef
+    })
+    worktreeCreated = true
+
+    await runConfiguredWorktreeEnvironmentScripts({
+      operation: 'create',
+      workspaceFolder: worktreePath,
+      sourceWorkspaceFolder: workspaceFolder,
+      repositoryRoot: worktreePath,
+      baseRef,
+      environmentId: worktreeEnvironment,
+      sessionId
+    })
+  } catch (error) {
+    if (worktreeCreated) {
+      await removeGitWorktree({
+        cwd: repositoryRoot,
+        path: worktreePath,
+        force: true
+      }).catch(() => undefined)
+    }
+    throw error
+  }
 
   return persistSessionWorkspace({
     sessionId,
@@ -159,6 +195,7 @@ const buildManagedWorkspace = async (
     repositoryRoot: worktreePath,
     worktreePath,
     baseRef,
+    worktreeEnvironment,
     cleanupPolicy: DEFAULT_CLEANUP_POLICY,
     state: 'ready'
   })
@@ -188,18 +225,20 @@ export const provisionSessionWorkspace = async (
   }
 
   const sourceWorkspaceFolder = await resolveManagedWorkspaceSource(sessionId, options)
+  const worktreeEnvironment = normalizeOptionalWorktreeEnvironmentId(options.worktreeEnvironment)
 
   if (options.createWorktree === false) {
     return await persistSharedWorkspace(
       sessionId,
       sourceWorkspaceFolder,
       'shared_workspace',
-      'retain'
+      'retain',
+      worktreeEnvironment
     )
   }
 
   try {
-    return await buildManagedWorkspace(sessionId, sourceWorkspaceFolder)
+    return await buildManagedWorkspace(sessionId, sourceWorkspaceFolder, worktreeEnvironment)
   } catch (error) {
     if (!isGitMissingError(error) && !isGitNotRepositoryError(error)) {
       throw error
@@ -209,7 +248,8 @@ export const provisionSessionWorkspace = async (
       sessionId,
       sourceWorkspaceFolder,
       'shared_workspace',
-      'retain'
+      'retain',
+      worktreeEnvironment
     )
   }
 }
@@ -248,7 +288,7 @@ export const createSessionManagedWorktree = async (sessionId: string) => {
   }
 
   try {
-    return await buildManagedWorkspace(sessionId, existing.workspaceFolder)
+    return await buildManagedWorkspace(sessionId, existing.workspaceFolder, existing.worktreeEnvironment)
   } catch (error) {
     if (!isGitMissingError(error) && !isGitNotRepositoryError(error)) {
       throw error
@@ -326,6 +366,16 @@ export const deleteSessionWorkspace = async (
   })
 
   try {
+    await runConfiguredWorktreeEnvironmentScripts({
+      operation: 'destroy',
+      workspaceFolder: workspace.worktreePath,
+      repositoryRoot: workspace.repositoryRoot?.trim() || workspace.worktreePath,
+      baseRef: workspace.baseRef,
+      environmentId: workspace.worktreeEnvironment,
+      force: options.force === true,
+      sessionId
+    })
+
     await removeGitWorktree({
       cwd: workspace.repositoryRoot?.trim() || workspace.worktreePath,
       path: workspace.worktreePath,

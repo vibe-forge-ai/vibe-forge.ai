@@ -11,11 +11,13 @@ import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/typ
 import { PageShell } from '#~/components/layout/PageShell'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
-import { getApiErrorMessage, getConfig, getConfigSchema, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, getConfigSchema, listWorktreeEnvironments, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
+import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
+import { toDisplayEnvironmentName, toEnvironmentReference } from './config/worktree-environment-panel-model'
 
 export function ConfigView() {
   const { t } = useTranslation()
@@ -23,6 +25,7 @@ export function ConfigView() {
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
   const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
+  const { data: worktreeEnvironmentData } = useSWR('worktree-environments', listWorktreeEnvironments)
   const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{
     tab: string
     source: string
@@ -81,6 +84,11 @@ export function ConfigView() {
       icon: 'forum',
       label: t('config.sections.conversation'),
       value: currentSource?.conversation
+    },
+    {
+      key: 'worktreeEnvironments',
+      icon: 'deployed_code',
+      label: t('config.sections.environments')
     },
     {
       key: 'models',
@@ -210,6 +218,16 @@ export function ConfigView() {
     const value = getValueByPath(generalDraftValue, ['defaultModelService'])
     return typeof value === 'string' ? value : undefined
   })()
+  const worktreeEnvironmentOptions = useMemo(() => (
+    worktreeEnvironmentData?.environments.map(environment => ({
+      value: toEnvironmentReference(environment),
+      label: `${toDisplayEnvironmentName(environment.id)} (${
+        environment.isLocal
+          ? t('config.environments.sources.user')
+          : t('config.environments.sources.project')
+      })`
+    })) ?? []
+  ), [t, worktreeEnvironmentData?.environments])
 
   const scheduleSave = (sectionKey: string, source: ConfigSource, nextValue: unknown) => {
     const draftKey = getDraftKey(sectionKey, source)
@@ -252,9 +270,15 @@ export function ConfigView() {
       {tab.key === 'appearance' && (
         <AppSettingsPanel t={t} />
       )}
-      {tab.key !== 'about' && tab.key !== 'appearance' && !configTabKeys.has(tab.key) && (
-        <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
+      {tab.key === 'worktreeEnvironments' && (
+        <WorktreeEnvironmentPanel t={t} />
       )}
+      {tab.key !== 'about' &&
+        tab.key !== 'appearance' &&
+        tab.key !== 'worktreeEnvironments' &&
+        !configTabKeys.has(tab.key) && (
+          <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
+        )}
       {configTabKeys.has(tab.key) && (
         <ConfigSectionPanel
           sectionKey={tab.key}
@@ -266,6 +290,7 @@ export function ConfigView() {
           mergedModelServices={mergedModelServices as Record<string, unknown>}
           mergedAdapters={mergedAdapters as Record<string, unknown>}
           selectedModelService={selectedModelService}
+          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
           detailQuery={activeTabKey === tab.key ? detailQuery : ''}
           onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
           t={t}

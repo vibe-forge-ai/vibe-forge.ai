@@ -12,6 +12,7 @@ export interface SessionWorkspaceRow {
   repositoryRoot?: string
   worktreePath?: string
   baseRef?: string
+  worktreeEnvironment?: string
   cleanupPolicy: SessionWorkspaceCleanupPolicy
   state: SessionWorkspaceState
   lastError?: string
@@ -27,6 +28,7 @@ interface SessionWorkspaceDbRow {
   repositoryRoot: string | null
   worktreePath: string | null
   baseRef: string | null
+  worktreeEnvironment: string | null
   cleanupPolicy: SessionWorkspaceCleanupPolicy
   state: SessionWorkspaceState
   lastError: string | null
@@ -41,6 +43,7 @@ type SessionWorkspaceUpdate = Partial<{
   repositoryRoot: string | null
   worktreePath: string | null
   baseRef: string | null
+  worktreeEnvironment: string | null
   cleanupPolicy: SessionWorkspaceCleanupPolicy
   state: SessionWorkspaceState
   lastError: string | null
@@ -53,6 +56,7 @@ const workspaceUpdateFields = [
   { key: 'repositoryRoot', toParam: value => value ?? null },
   { key: 'worktreePath', toParam: value => value ?? null },
   { key: 'baseRef', toParam: value => value ?? null },
+  { key: 'worktreeEnvironment', toParam: value => value ?? null },
   { key: 'cleanupPolicy' },
   { key: 'state' },
   { key: 'lastError', toParam: value => value ?? null },
@@ -67,6 +71,7 @@ const mapSessionWorkspaceRow = (row: SessionWorkspaceDbRow): SessionWorkspaceRow
   repositoryRoot: row.repositoryRoot ?? undefined,
   worktreePath: row.worktreePath ?? undefined,
   baseRef: row.baseRef ?? undefined,
+  worktreeEnvironment: row.worktreeEnvironment ?? undefined,
   lastError: row.lastError ?? undefined,
   deletedAt: row.deletedAt ?? undefined
 })
@@ -81,6 +86,7 @@ export function createSessionWorkspacesRepo(db: SqliteDatabase) {
         repositoryRoot,
         worktreePath,
         baseRef,
+        worktreeEnvironment,
         cleanupPolicy,
         state,
         lastError,
@@ -107,19 +113,21 @@ export function createSessionWorkspacesRepo(db: SqliteDatabase) {
         repositoryRoot,
         worktreePath,
         baseRef,
+        worktreeEnvironment,
         cleanupPolicy,
         state,
         lastError,
         createdAt,
         updatedAt,
         deletedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(sessionId) DO UPDATE SET
         kind = excluded.kind,
         workspaceFolder = excluded.workspaceFolder,
         repositoryRoot = excluded.repositoryRoot,
         worktreePath = excluded.worktreePath,
         baseRef = excluded.baseRef,
+        worktreeEnvironment = excluded.worktreeEnvironment,
         cleanupPolicy = excluded.cleanupPolicy,
         state = excluded.state,
         lastError = excluded.lastError,
@@ -133,6 +141,7 @@ export function createSessionWorkspacesRepo(db: SqliteDatabase) {
       row.repositoryRoot ?? null,
       row.worktreePath ?? null,
       row.baseRef ?? null,
+      row.worktreeEnvironment ?? null,
       row.cleanupPolicy,
       row.state,
       row.lastError ?? null,

@@ -20,6 +20,7 @@ interface CreateSessionWorkspaceBranchOptions {
 
 interface CreateSessionWorkspaceOptions {
   createWorktree?: boolean
+  worktreeEnvironment?: string
   branch?: CreateSessionWorkspaceBranchOptions
 }
 
@@ -105,7 +106,8 @@ export async function createSessionWithInitialMessage(options: {
     const createWorktree = await resolveCreateSessionWorktreeDefault(parentSessionId, workspace)
     await provisionSessionWorkspace(session.id, {
       sourceSessionId: parentSessionId,
-      createWorktree
+      createWorktree,
+      worktreeEnvironment: workspace?.worktreeEnvironment
     })
 
     if (workspace?.branch != null) {
