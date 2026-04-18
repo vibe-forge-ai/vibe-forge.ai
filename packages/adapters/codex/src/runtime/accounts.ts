@@ -1,20 +1,28 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 
 import { resolveMockHome } from '@vibe-forge/hooks'
 import type {
+  AdapterAccountActionDescriptor,
+  AdapterAccountDetail,
+  AdapterAccountDetailQueryOptions,
+  AdapterAccountDetailResult,
+  AdapterAccountCredentialArtifact,
   AdapterAccountInfo,
   AdapterAccountsQueryOptions,
   AdapterAccountsResult,
-  AdapterCtx
+  AdapterCtx,
+  AdapterManageAccountOptions,
+  AdapterManageAccountResult
 } from '@vibe-forge/types'
 import {
   getAdapterConfiguredDefaultAccount,
   mergeAdapterConfigs,
   normalizeNonEmptyString,
+  resolveAdapterAccountsRoot,
   resolveProjectAiPath,
   syncSymlinkTarget
 } from '@vibe-forge/utils'
@@ -57,6 +65,30 @@ interface CodexAccountProbe {
   quota?: AdapterAccountInfo['quota']
 }
 
+const CODEX_ACCOUNT_LIST_ACTIONS: AdapterAccountActionDescriptor[] = [
+  {
+    key: 'add',
+    label: 'Add account',
+    description: 'Run `codex login` in an isolated home and save the resulting auth.json into the workspace.',
+    scope: 'adapter'
+  }
+]
+
+const CODEX_ACCOUNT_DETAIL_ACTIONS: AdapterAccountActionDescriptor[] = [
+  {
+    key: 'refresh',
+    label: 'Refresh quota',
+    description: 'Refresh the latest Codex plan and quota snapshot for this account.',
+    scope: 'account'
+  },
+  {
+    key: 'remove',
+    label: 'Remove account',
+    description: 'Remove the workspace-stored auth snapshot for this account.',
+    scope: 'account'
+  }
+]
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
@@ -78,7 +110,7 @@ const buildSpawnEnv = (env: AdapterCtx['env']): NodeJS.ProcessEnv => ({
 })
 
 const resolveCodexLocalAccountsRoot = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
-  resolveProjectAiPath(ctx.cwd, ctx.env, '.local', 'adapters', 'codex', 'accounts')
+  resolveAdapterAccountsRoot(ctx.cwd, ctx.env, 'codex')
 )
 
 const resolveStoredAccountDir = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>, key: string) => (
@@ -446,6 +478,23 @@ const collectStoredAccountDescriptors = async (
   return descriptors
 }
 
+const compareCodexAccountDescriptors = (
+  left: Pick<CodexAccountDescriptor, 'key' | 'title' | 'status'>,
+  right: Pick<CodexAccountDescriptor, 'key' | 'title' | 'status'>
+) => {
+  if (left.status !== right.status) {
+    if (left.status === 'ready') return -1
+    if (right.status === 'ready') return 1
+  }
+
+  const leftTitle = normalizeNonEmptyString(left.title)?.toLowerCase() ?? ''
+  const rightTitle = normalizeNonEmptyString(right.title)?.toLowerCase() ?? ''
+  const titleOrder = leftTitle.localeCompare(rightTitle)
+  if (titleOrder !== 0) return titleOrder
+
+  return left.key.localeCompare(right.key)
+}
+
 const collectCodexAccountDescriptors = async (
   ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId' | 'configs'>,
   options: { refresh?: boolean } = {}
@@ -476,27 +525,190 @@ const collectCodexAccountDescriptors = async (
   }
 
   const descriptors = Array.from(descriptorMap.values())
+  const sortedDescriptors = descriptors
+    .map(account => ({
+      ...account,
+      title: account.title ??
+        normalizeNonEmptyString(account.metadata?.email) ??
+        account.key
+    }))
+    .sort(compareCodexAccountDescriptors)
   const resolvedDefaultAccount = defaultAccount ??
     importedAccountKey ??
-    descriptors.find(account => account.status === 'ready')?.key
+    sortedDescriptors.find(account => account.status === 'ready')?.key
 
   return {
     defaultAccount: resolvedDefaultAccount,
-    accounts: descriptors
-      .map(account => ({
-        ...account,
-        title: account.title ??
-          normalizeNonEmptyString(account.metadata?.email) ??
-          account.key
-      }))
+    accounts: sortedDescriptors
       .sort((left, right) => {
         if (left.key === resolvedDefaultAccount) return -1
         if (right.key === resolvedDefaultAccount) return 1
-        if (left.status !== right.status) {
-          return left.status === 'ready' ? -1 : 1
-        }
-        return left.title.localeCompare(right.title)
+        return compareCodexAccountDescriptors(left, right)
       })
+  }
+}
+
+const resolveCodexAccountSource = (params: {
+  descriptor: CodexAccountDescriptor
+  configuredAccount?: CodexConfiguredAccount
+}): AdapterAccountDetail['source'] => {
+  const sourceId = params.descriptor.metadata?.source
+
+  if (sourceId === 'imported-real-home') {
+    return {
+      id: sourceId,
+      label: 'Imported',
+      description: params.descriptor.metadata?.description ?? 'Imported from ~/.codex/auth.json'
+    }
+  }
+
+  if (sourceId === 'codex-login') {
+    return {
+      id: sourceId,
+      label: 'Codex Login',
+      description: params.descriptor.metadata?.description ?? 'Logged in via `codex login`.'
+    }
+  }
+
+  if (params.configuredAccount?.authFile != null && params.configuredAccount.authFile.trim() !== '') {
+    return {
+      id: 'configured-auth-file',
+      label: 'Configured authFile',
+      description: params.configuredAccount.authFile
+    }
+  }
+
+  return undefined
+}
+
+const buildCodexAccountDetail = (params: {
+  descriptor: CodexAccountDescriptor
+  defaultAccount?: string
+  probe?: CodexAccountProbe
+  configuredAccount?: CodexConfiguredAccount
+  overrideError?: string
+}): AdapterAccountDetail => {
+  const {
+    descriptor,
+    defaultAccount,
+    probe,
+    configuredAccount,
+    overrideError
+  } = params
+  const baseTitle = descriptor.title ??
+    normalizeNonEmptyString(descriptor.metadata?.email) ??
+    normalizeNonEmptyString(probe?.email) ??
+    descriptor.key
+  const baseDescription = overrideError ??
+    descriptor.description ??
+    normalizeNonEmptyString(descriptor.metadata?.description) ??
+    (probe?.accountType === 'apiKey' ? 'API Key account' : undefined)
+  const status = overrideError != null ? 'error' : descriptor.status
+
+  return {
+    key: descriptor.key,
+    title: baseTitle,
+    description: baseDescription,
+    status,
+    isDefault: descriptor.key === defaultAccount,
+    quota: overrideError == null ? probe?.quota : undefined,
+    email: normalizeNonEmptyString(probe?.email) ?? normalizeNonEmptyString(descriptor.metadata?.email),
+    planType: normalizeNonEmptyString(probe?.planType) ?? normalizeNonEmptyString(descriptor.metadata?.planType),
+    accountType: normalizeNonEmptyString(probe?.accountType) ?? normalizeNonEmptyString(descriptor.metadata?.accountType),
+    source: resolveCodexAccountSource({ descriptor, configuredAccount }),
+    actions: [...CODEX_ACCOUNT_DETAIL_ACTIONS]
+  }
+}
+
+const resolveExistingCodexAccount = async (
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId' | 'configs'>,
+  accountKey: string,
+  options: { refresh?: boolean } = {}
+) => {
+  const normalizedAccount = normalizeNonEmptyString(accountKey)
+  if (normalizedAccount == null) {
+    throw new Error('Codex account key is required.')
+  }
+
+  const catalog = await collectCodexAccountDescriptors(ctx, options)
+  const descriptor = catalog.accounts.find(account => account.key === normalizedAccount)
+  if (descriptor == null) {
+    throw new Error(`Codex account "${normalizedAccount}" was not found.`)
+  }
+
+  return {
+    descriptor,
+    defaultAccount: catalog.defaultAccount,
+    configuredAccount: resolveCodexAdapterConfig(ctx).accounts[normalizedAccount]
+  }
+}
+
+const runCodexLogin = async (params: {
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>
+  onProgress?: AdapterManageAccountOptions['onProgress']
+}) => {
+  const { ctx, onProgress } = params
+  const binaryPath = resolveCodexBinaryPath(ctx.env)
+  const spawnEnv = buildSpawnEnv(ctx.env)
+  const loginKey = `login-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+  const homeDir = resolveCodexProbeHomeDir(ctx, loginKey)
+  const authFilePath = join(homeDir, '.codex', 'auth.json')
+
+  spawnEnv.HOME = homeDir
+  await mkdir(join(homeDir, '.codex'), { recursive: true })
+  onProgress?.({
+    stream: 'status',
+    message: 'Starting isolated `codex login` flow.'
+  })
+
+  let stdout = ''
+  let stderr = ''
+
+  try {
+    await new Promise<void>((resolvePromise, rejectPromise) => {
+      const proc = spawn(String(binaryPath), ['login'], {
+        cwd: ctx.cwd,
+        env: spawnEnv,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+
+      proc.stdout?.on('data', (chunk) => {
+        const text = String(chunk)
+        stdout += text
+        onProgress?.({ stream: 'stdout', message: text })
+      })
+      proc.stderr?.on('data', (chunk) => {
+        const text = String(chunk)
+        stderr += text
+        onProgress?.({ stream: 'stderr', message: text })
+      })
+      proc.once('error', rejectPromise)
+      proc.once('exit', (code) => {
+        if (code === 0) {
+          resolvePromise()
+          return
+        }
+
+        const failureLog = `${stdout}\n${stderr}`.trim()
+        rejectPromise(new Error(
+          failureLog === ''
+            ? `\`codex login\` exited with code ${code ?? 'unknown'}.`
+            : failureLog
+        ))
+      })
+    })
+
+    if (!await pathExists(authFilePath)) {
+      throw new Error('Codex login completed but no auth.json was written to the isolated home.')
+    }
+
+    return {
+      homeDir,
+      authFilePath
+    }
+  } catch (error) {
+    await rm(homeDir, { recursive: true, force: true }).catch(() => {})
+    throw error
   }
 }
 
@@ -578,18 +790,17 @@ export const getCodexAccounts = async (
     refresh: options.refresh
   })
   const accounts: AdapterAccountInfo[] = []
+  const configuredAccounts = resolveCodexAdapterConfig(ctx).accounts
 
   for (const descriptor of catalog.accounts) {
-    const account: AdapterAccountInfo = {
-      key: descriptor.key,
-      title: descriptor.title ?? descriptor.key,
-      description: descriptor.description,
-      status: descriptor.status,
-      isDefault: descriptor.key === catalog.defaultAccount
-    }
-
     if (descriptor.authFilePath == null) {
-      accounts.push(account)
+      accounts.push({
+        key: descriptor.key,
+        title: descriptor.title ?? descriptor.key,
+        description: descriptor.description,
+        status: descriptor.status,
+        isDefault: descriptor.key === catalog.defaultAccount
+      })
       continue
     }
 
@@ -601,28 +812,198 @@ export const getCodexAccounts = async (
         refresh: options.refresh,
         logKey: `list-${descriptor.key}`
       })
-      const title = descriptor.title ??
-        normalizeNonEmptyString(probe.email) ??
-        account.title
+      const detail = buildCodexAccountDetail({
+        descriptor,
+        defaultAccount: catalog.defaultAccount,
+        configuredAccount: configuredAccounts[descriptor.key],
+        probe
+      })
       accounts.push({
-        ...account,
-        title,
-        description: descriptor.description ??
-          normalizeNonEmptyString(descriptor.metadata?.description) ??
-          (probe.accountType === 'apiKey' ? 'API Key account' : undefined),
-        quota: probe.quota
+        key: detail.key,
+        title: detail.title,
+        description: detail.description,
+        status: detail.status,
+        isDefault: detail.isDefault,
+        quota: detail.quota
       })
     } catch (error) {
+      const detail = buildCodexAccountDetail({
+        descriptor,
+        defaultAccount: catalog.defaultAccount,
+        configuredAccount: configuredAccounts[descriptor.key],
+        overrideError: error instanceof Error ? error.message : String(error)
+      })
       accounts.push({
-        ...account,
-        status: 'error',
-        description: error instanceof Error ? error.message : String(error)
+        key: detail.key,
+        title: detail.title,
+        description: detail.description,
+        status: detail.status,
+        isDefault: detail.isDefault
       })
     }
   }
 
   return {
     defaultAccount: catalog.defaultAccount,
-    accounts
+    accounts,
+    actions: [...CODEX_ACCOUNT_LIST_ACTIONS]
+  }
+}
+
+export const getCodexAccountDetail = async (
+  ctx: AdapterCtx,
+  options: AdapterAccountDetailQueryOptions
+): Promise<AdapterAccountDetailResult> => {
+  const { descriptor, defaultAccount, configuredAccount } = await resolveExistingCodexAccount(ctx, options.account, {
+    refresh: options.refresh
+  })
+
+  if (descriptor.authFilePath == null) {
+    return {
+      account: buildCodexAccountDetail({
+        descriptor,
+        defaultAccount,
+        configuredAccount
+      })
+    }
+  }
+
+  try {
+    const probe = await probeCodexAccount({
+      ctx,
+      homeDir: resolveCodexProbeHomeDir(ctx, `detail-${descriptor.key}`),
+      authFilePath: descriptor.authFilePath,
+      refresh: options.refresh,
+      logKey: `detail-${descriptor.key}`
+    })
+    return {
+      account: buildCodexAccountDetail({
+        descriptor,
+        defaultAccount,
+        configuredAccount,
+        probe
+      })
+    }
+  } catch (error) {
+    return {
+      account: buildCodexAccountDetail({
+        descriptor,
+        defaultAccount,
+        configuredAccount,
+        overrideError: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+}
+
+export const manageCodexAccount = async (
+  ctx: AdapterCtx,
+  options: AdapterManageAccountOptions
+): Promise<AdapterManageAccountResult> => {
+  if (options.action === 'refresh') {
+    const normalizedAccount = normalizeNonEmptyString(options.account)
+    if (normalizedAccount == null) {
+      throw new Error('Codex refresh requires an account key.')
+    }
+
+    const detail = await getCodexAccountDetail(ctx, {
+      account: normalizedAccount,
+      model: options.model,
+      refresh: true
+    })
+
+    return {
+      accountKey: normalizedAccount,
+      account: detail.account,
+      message: `Refreshed Codex account "${normalizedAccount}".`
+    }
+  }
+
+  if (options.action === 'remove') {
+    const normalizedAccount = normalizeNonEmptyString(options.account)
+    if (normalizedAccount == null) {
+      throw new Error('Codex remove requires an account key.')
+    }
+
+    const { descriptor, configuredAccount } = await resolveExistingCodexAccount(ctx, normalizedAccount)
+    const storedAuthPath = resolveStoredAccountAuthPath(ctx, normalizedAccount)
+    const hasStoredSnapshot = descriptor.authFilePath != null && descriptor.authFilePath === storedAuthPath
+
+    if (!hasStoredSnapshot) {
+      if (configuredAccount?.authFile != null && configuredAccount.authFile.trim() !== '') {
+        throw new Error(
+          `Codex account "${normalizedAccount}" is backed by adapters.codex.accounts.${normalizedAccount}.authFile. Remove that config entry instead.`
+        )
+      }
+      throw new Error(`Codex account "${normalizedAccount}" does not have a removable workspace snapshot.`)
+    }
+
+    return {
+      accountKey: normalizedAccount,
+      removeStoredAccount: true,
+      message: `Removed the stored Codex account snapshot for "${normalizedAccount}".`
+    }
+  }
+
+  const normalizedRequestedKey = normalizeNonEmptyString(options.account)
+  const loginResult = await runCodexLogin({
+    ctx,
+    onProgress: options.onProgress
+  })
+
+  try {
+    const authContent = await readFile(loginResult.authFilePath, 'utf8')
+    const authDigest = createHash('sha256').update(authContent).digest('hex')
+    const probe = await probeCodexAccount({
+      ctx,
+      homeDir: resolveCodexProbeHomeDir(ctx, `login-probe-${Date.now().toString(36)}`),
+      authFilePath: loginResult.authFilePath,
+      refresh: true,
+      logKey: `login-${normalizedRequestedKey ?? 'new'}`
+    }).catch(() => undefined)
+    const accountKey = normalizedRequestedKey != null && slugifyAccountKey(normalizedRequestedKey) !== ''
+      ? slugifyAccountKey(normalizedRequestedKey)
+      : buildImportedAccountKey({ authDigest, probe })
+    const metadata: CodexStoredAccountMetadata = {
+      title: buildImportedAccountTitle({ key: accountKey, probe }),
+      description: 'Logged in via `codex login`.',
+      email: probe?.email,
+      planType: probe?.planType,
+      accountType: probe?.accountType,
+      source: 'codex-login',
+      authDigest,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    const detail = buildCodexAccountDetail({
+      descriptor: {
+        key: accountKey,
+        title: metadata.title,
+        description: metadata.description,
+        authFilePath: resolveStoredAccountAuthPath(ctx, accountKey),
+        status: 'ready',
+        metadata
+      },
+      probe
+    })
+    const artifacts: AdapterAccountCredentialArtifact[] = [
+      {
+        path: 'auth.json',
+        content: authContent
+      },
+      {
+        path: 'meta.json',
+        content: `${JSON.stringify(metadata, null, 2)}\n`
+      }
+    ]
+
+    return {
+      accountKey,
+      account: detail,
+      artifacts,
+      message: `Connected Codex account "${detail.title}".`
+    }
+  } finally {
+    await rm(loginResult.homeDir, { recursive: true, force: true }).catch(() => {})
   }
 }

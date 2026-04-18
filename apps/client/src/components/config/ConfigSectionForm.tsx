@@ -8,6 +8,7 @@ import type { ConfigUiSection } from '@vibe-forge/types'
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
+import { AdapterAccountsManager } from './AdapterAccountsManager'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
 import { DetailCollectionField } from './DetailListField'
@@ -71,6 +72,13 @@ export const SectionForm = ({
     mergedModelServices,
     mergedAdapters,
     t
+  }
+  const resolveSchemaFieldLabel = (schemaSectionKey: string) => (field: { path: string[] }, fallback: string) => (
+    getFieldLabel(t, schemaSectionKey, field.path, fallback)
+  )
+  const resolveSchemaFieldDescription = (schemaSectionKey: string) => (field: { path: string[] }, fallback: string) => {
+    const translated = getFieldDescription(t, schemaSectionKey, field.path)
+    return translated !== '' ? translated : fallback
   }
 
   if (uiSection?.kind === 'recordMap' && fields.length === 0) {
@@ -656,14 +664,73 @@ export const SectionForm = ({
       }
 
       if (itemSchema != null) {
+        if (sectionKey === 'adapters') {
+          const accountItemSchema = itemSchema.recordFields?.accounts?.itemSchema
+          const isAccountsNestedRoute = detailRoute?.nestedPath?.[0] === 'accounts'
+
+          if (isAccountsNestedRoute) {
+            return (
+              <AdapterAccountsManager
+                adapterKey={detailMeta.itemKey}
+                value={detailMeta.item}
+                accountItemSchema={accountItemSchema}
+                onChange={updateDetailItem}
+                nestedPath={detailRoute?.nestedPath}
+                onOpenNestedPath={(nextPath) => {
+                  onOpenDetailRoute?.({
+                    kind: detailRoute?.kind ?? 'detailCollectionItem',
+                    fieldPath: detailMeta.field.path,
+                    itemKey: detailMeta.itemKey,
+                    nestedPath: nextPath
+                  })
+                }}
+                t={t}
+              />
+            )
+          }
+
+          return (
+            <div className='config-view__record-fields'>
+              <SchemaObjectEditor
+                value={detailMeta.item}
+                schema={itemSchema}
+                onChange={updateDetailItem}
+                t={t}
+                resolveFieldLabel={resolveSchemaFieldLabel('adapters')}
+                resolveFieldDescription={resolveSchemaFieldDescription('adapters')}
+                hideFieldPaths={[
+                  ...(isKnownEntry && uiSection.recordMap.mode === 'discriminated' ? [[discriminatorField]] : []),
+                  ['accounts']
+                ]}
+              />
+              <AdapterAccountsManager
+                adapterKey={detailMeta.itemKey}
+                value={detailMeta.item}
+                accountItemSchema={accountItemSchema}
+                onChange={updateDetailItem}
+                nestedPath={detailRoute?.nestedPath}
+                onOpenNestedPath={(nextPath) => {
+                  onOpenDetailRoute?.({
+                    kind: detailRoute?.kind ?? 'detailCollectionItem',
+                    fieldPath: detailMeta.field.path,
+                    itemKey: detailMeta.itemKey,
+                    nestedPath: nextPath
+                  })
+                }}
+                t={t}
+              />
+            </div>
+          )
+        }
+
         return (
           <SchemaObjectEditor
             value={detailMeta.item}
             schema={itemSchema}
             onChange={updateDetailItem}
             t={t}
-            hideFieldPath={isKnownEntry && uiSection.recordMap.mode === 'discriminated'
-              ? [discriminatorField]
+            hideFieldPaths={isKnownEntry && uiSection.recordMap.mode === 'discriminated'
+              ? [[discriminatorField]]
               : undefined}
           />
         )

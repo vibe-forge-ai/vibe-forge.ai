@@ -380,8 +380,14 @@ export interface ConfigUiField {
   options?: ConfigUiFieldOption[]
 }
 
+export interface ConfigUiRecordFieldSchema {
+  keyPlaceholder?: string
+  itemSchema?: ConfigUiObjectSchema
+}
+
 export interface ConfigUiObjectSchema {
   fields: ConfigUiField[]
+  recordFields?: Record<string, ConfigUiRecordFieldSchema>
 }
 
 export interface ConfigUiRecordKind {

@@ -23,6 +23,7 @@
 - 简单字段仍然在 section 页面内直接编辑。
 - 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
+- `adapters.<adapter>.accounts` 现在额外提供一个账号管理子页：可以直接触发 adapter 的接入动作、查看账号来源和额度摘要，并进入账号三级详情页编辑 `title / description / authFile`。
 - 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
 
 ## Terminal 视图是什么

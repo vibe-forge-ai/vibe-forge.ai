@@ -8,6 +8,7 @@ export interface ConfigDetailRoute {
   kind: 'detailCollectionItem'
   fieldPath: string[]
   itemKey: string
+  nestedPath?: string[]
 }
 
 export interface DetailCollectionEntry {
@@ -105,15 +106,15 @@ const getFieldDisplayLabel = ({
 export const getConfigDetailRouteKey = (route: ConfigDetailRoute | null) => (
   route == null
     ? 'root'
-    : `${route.kind}:${route.fieldPath.join('.')}:${route.itemKey}`
+    : `${route.kind}:${route.fieldPath.join('.')}:${route.itemKey}:${(route.nestedPath ?? []).join('/')}`
 )
 
 export const serializeConfigDetailRoute = (route: ConfigDetailRoute | null) => (
   route == null
     ? ''
-    : route.fieldPath.length === 0
-    ? encodeURIComponent(route.itemKey)
-    : [...route.fieldPath, route.itemKey].map(segment => encodeURIComponent(segment)).join('/')
+    : [...route.fieldPath, route.itemKey, ...(route.nestedPath ?? [])]
+      .map(segment => encodeURIComponent(segment))
+      .join('/')
 )
 
 export const parseConfigDetailRoute = ({
@@ -136,7 +137,7 @@ export const parseConfigDetailRoute = ({
     .filter(field => field.type === 'detailCollection' && field.detailCollection != null)
     .sort((left, right) => right.path.length - left.path.length)
     .find((field) => {
-      if (segments.length !== field.path.length + 1) return false
+      if (segments.length < field.path.length + 1) return false
       if (!field.path.every((segment, index) => segment === segments[index])) return false
       const itemKey = segments[field.path.length] ?? ''
       if (itemKey === '') return false
@@ -148,7 +149,8 @@ export const parseConfigDetailRoute = ({
   return {
     kind: 'detailCollectionItem',
     fieldPath: detailField.path,
-    itemKey: segments[detailField.path.length]!
+    itemKey: segments[detailField.path.length]!,
+    nestedPath: segments.slice(detailField.path.length + 1)
   }
 }
 

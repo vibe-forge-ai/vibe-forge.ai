@@ -33,27 +33,32 @@ export const SchemaObjectEditor = ({
   schema,
   onChange,
   t,
-  hideFieldPath
+  hideFieldPaths,
+  resolveFieldLabel,
+  resolveFieldDescription
 }: {
   value: Record<string, unknown>
   schema: ConfigUiObjectSchema
   onChange: (nextValue: Record<string, unknown>) => void
   t: TranslationFn
-  hideFieldPath?: string[]
+  hideFieldPaths?: string[][]
+  resolveFieldLabel?: (field: ConfigUiField, fallback: string) => string
+  resolveFieldDescription?: (field: ConfigUiField, fallback: string) => string
 }) => {
   const renderField = (field: ConfigUiField) => {
-    if (
-      hideFieldPath != null &&
-      field.path.length === hideFieldPath.length &&
-      field.path.every((segment, index) => segment === hideFieldPath[index])
-    ) {
+    if (hideFieldPaths?.some(hiddenPath => (
+      field.path.length === hiddenPath.length &&
+      field.path.every((segment, index) => segment === hiddenPath[index])
+    ))) {
       return null
     }
 
     const currentValue = getValueByPath(value, field.path)
     const valueToUse = currentValue !== undefined ? currentValue : field.defaultValue
-    const title = field.label ?? toLabel(field.path[field.path.length - 1] ?? '')
-    const description = field.description ?? ''
+    const fallbackTitle = field.label ?? toLabel(field.path[field.path.length - 1] ?? '')
+    const fallbackDescription = field.description ?? ''
+    const title = resolveFieldLabel?.(field, fallbackTitle) ?? fallbackTitle
+    const description = resolveFieldDescription?.(field, fallbackDescription) ?? fallbackDescription
     const nextValue = (updated: unknown) => {
       onChange(setValueByPath(value, field.path, updated) as Record<string, unknown>)
     }

@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- central config schema registry */
 import { z } from 'zod'
 
-import type { ConfigUiField, ConfigUiFieldType, ConfigUiObjectSchema } from '@vibe-forge/types'
+import type { ConfigUiField, ConfigUiFieldType, ConfigUiObjectSchema, ConfigUiRecordFieldSchema } from '@vibe-forge/types'
 
 import { channelBaseSchema } from './channel'
 
@@ -449,5 +449,27 @@ export const buildConfigUiObjectSchema = (schema: z.ZodTypeAny): ConfigUiObjectS
     return uiField
   })
 
-  return { fields }
+  const recordFields = Object.fromEntries(
+    shapeEntries.flatMap(([key, value]): Array<[string, ConfigUiRecordFieldSchema]> => {
+      const recordSchema = unwrapUiSchema(value)
+      if (!isZodType(recordSchema, 'ZodRecord')) {
+        return []
+      }
+
+      const itemSchema = (recordSchema as unknown as { _def: { valueType: z.ZodTypeAny } })._def.valueType
+      const itemObjectSchema = buildConfigUiObjectSchema(itemSchema)
+      if ((itemObjectSchema.fields.length === 0) && itemObjectSchema.recordFields == null) {
+        return []
+      }
+
+      return [[key, {
+        itemSchema: itemObjectSchema
+      }]]
+    })
+  )
+
+  return {
+    fields,
+    ...(Object.keys(recordFields).length > 0 ? { recordFields } : {})
+  }
 }

@@ -96,6 +96,19 @@ export interface AdapterAccountQuotaInfo {
   updatedAt?: number
 }
 
+export interface AdapterAccountActionDescriptor {
+  key: 'add' | 'refresh' | 'remove'
+  label: string
+  description?: string
+  scope?: 'adapter' | 'account'
+}
+
+export interface AdapterAccountSourceInfo {
+  id: string
+  label: string
+  description?: string
+}
+
 export interface AdapterAccountInfo {
   key: string
   title: string
@@ -103,6 +116,14 @@ export interface AdapterAccountInfo {
   status?: 'ready' | 'missing' | 'error'
   isDefault?: boolean
   quota?: AdapterAccountQuotaInfo
+}
+
+export interface AdapterAccountDetail extends AdapterAccountInfo {
+  email?: string
+  planType?: string
+  accountType?: string
+  source?: AdapterAccountSourceInfo
+  actions?: AdapterAccountActionDescriptor[]
 }
 
 export interface AdapterAccountsQueryOptions {
@@ -114,6 +135,43 @@ export interface AdapterAccountsQueryOptions {
 export interface AdapterAccountsResult {
   defaultAccount?: string
   accounts: AdapterAccountInfo[]
+  actions?: AdapterAccountActionDescriptor[]
+}
+
+export interface AdapterAccountDetailQueryOptions {
+  model?: string
+  account: string
+  refresh?: boolean
+}
+
+export interface AdapterAccountDetailResult {
+  account: AdapterAccountDetail
+}
+
+export interface AdapterAccountCredentialArtifact {
+  path: string
+  content: string
+}
+
+export interface AdapterManageAccountProgressEvent {
+  stream: 'stdout' | 'stderr' | 'status'
+  message: string
+}
+
+export interface AdapterManageAccountOptions {
+  action: 'add' | 'refresh' | 'remove'
+  model?: string
+  account?: string
+  refresh?: boolean
+  onProgress?: (event: AdapterManageAccountProgressEvent) => void
+}
+
+export interface AdapterManageAccountResult {
+  accountKey?: string
+  message?: string
+  account?: AdapterAccountDetail
+  artifacts?: AdapterAccountCredentialArtifact[]
+  removeStoredAccount?: boolean
 }
 
 export interface AdapterQueryOptions {
@@ -165,6 +223,14 @@ export interface Adapter {
     ctx: AdapterCtx,
     options: AdapterAccountsQueryOptions
   ) => Promise<AdapterAccountsResult>
+  getAccountDetail?: (
+    ctx: AdapterCtx,
+    options: AdapterAccountDetailQueryOptions
+  ) => Promise<AdapterAccountDetailResult>
+  manageAccount?: (
+    ctx: AdapterCtx,
+    options: AdapterManageAccountOptions
+  ) => Promise<AdapterManageAccountResult>
   query: (
     ctx: AdapterCtx,
     options: AdapterQueryOptions

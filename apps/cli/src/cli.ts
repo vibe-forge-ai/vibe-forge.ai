@@ -7,6 +7,7 @@ import { program } from 'commander'
 import { getCliDescription, getCliVersion } from '#~/utils.js'
 
 import { normalizeCliArgs } from './cli-argv'
+import { registerAccountsCommand } from './commands/accounts'
 import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
 import { registerConfigCommand } from './commands/config'
@@ -37,6 +38,7 @@ Examples:
   )
 
 registerRunCommand(program)
+registerAccountsCommand(program)
 registerBenchmarkCommand(program)
 registerClearCommand(program)
 registerConfigCommand(program)

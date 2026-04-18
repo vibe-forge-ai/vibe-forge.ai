@@ -1,0 +1,359 @@
+.adapter-account-manager__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+}
+
+.adapter-account-manager,
+.adapter-account-manager__detail,
+.adapter-account-manager__detail-body,
+.adapter-account-manager__metrics,
+.adapter-account-manager__section,
+.adapter-account-manager__editor,
+.adapter-account-manager__overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adapter-account-manager__header,
+.adapter-account-manager__detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adapter-account-manager__search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.adapter-account-manager__search .ant-input-affix-wrapper {
+  border-radius: 999px;
+}
+
+.adapter-account-manager__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adapter-account-manager__icon-button.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding-inline: 0;
+}
+
+.adapter-account-manager__header-action.ant-btn {
+  border-color: color-mix(in srgb, var(--border-color) 78%, transparent);
+  background: color-mix(in srgb, var(--text-color) 2%, transparent);
+}
+
+.adapter-account-manager__header-action.ant-btn:not(:disabled):hover,
+.adapter-account-manager__header-action.ant-btn:not(:disabled):focus-visible {
+  border-color: color-mix(in srgb, var(--primary-color) 22%, transparent);
+  color: var(--primary-color);
+}
+
+.adapter-account-manager__icon-button .material-symbols-rounded,
+.adapter-account-manager__icon-tag .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.adapter-account-manager__icon-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding-inline: 6px;
+}
+
+.adapter-account-manager__icon-tag.ant-tag .ant-tag-icon {
+  margin-inline-end: 0;
+}
+
+.adapter-account-manager__tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adapter-account-manager__tooltip-title {
+  font-weight: 600;
+}
+
+.adapter-account-manager__tooltip-description {
+  color: color-mix(in srgb, white 72%, transparent);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.adapter-account-manager__overview-card,
+.adapter-account-manager__metric,
+.adapter-account-manager__fact,
+.adapter-account-manager__hero {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+
+.adapter-account-manager__overview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.adapter-account-manager__overview-card:hover,
+.adapter-account-manager__item:hover,
+.adapter-account-manager__item:focus-within {
+  background: color-mix(in srgb, var(--primary-color) 4%, transparent);
+}
+
+.adapter-account-manager__overview-icon,
+.adapter-account-manager__hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+}
+
+.adapter-account-manager__hero {
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.adapter-account-manager__overview-icon .material-symbols-rounded,
+.adapter-account-manager__hero-icon .material-symbols-rounded,
+.adapter-account-manager__overview-arrow,
+.adapter-account-manager__fact-icon {
+  font-size: 20px;
+}
+
+.adapter-account-manager__overview-body,
+.adapter-account-manager__hero-body,
+.adapter-account-manager__fact-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adapter-account-manager__overview-title,
+.adapter-account-manager__hero-title,
+.adapter-account-manager__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adapter-account-manager__overview-meta,
+.adapter-account-manager__detail-subtitle,
+.adapter-account-manager__text,
+.adapter-account-manager__muted,
+.adapter-account-manager__fact-label,
+.adapter-account-manager__metric-label {
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.adapter-account-manager__overview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.adapter-account-manager__overview-arrow {
+  color: var(--text-color-secondary);
+}
+
+.adapter-account-manager__hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adapter-account-manager__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.adapter-account-manager__item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding-left: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.adapter-account-manager__item-trigger {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adapter-account-manager__item-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adapter-account-manager__item-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.adapter-account-manager__item-description,
+.adapter-account-manager__quota-summary,
+.adapter-account-manager__section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adapter-account-manager__item-description {
+  color: var(--text-color-secondary);
+  font-size: 12px;
+}
+
+.adapter-account-manager__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding-right: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.adapter-account-manager__item:hover .adapter-account-manager__item-actions,
+.adapter-account-manager__item:focus-within .adapter-account-manager__item-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.adapter-account-manager__row-action.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  color: var(--text-color-secondary);
+}
+
+.adapter-account-manager__row-action.ant-btn:hover,
+.adapter-account-manager__row-action.ant-btn:focus-visible {
+  color: var(--text-color);
+}
+
+.adapter-account-manager__row-action--active.ant-btn {
+  color: var(--primary-color);
+}
+
+.adapter-account-manager__quota-summary {
+  margin-top: 4px;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.adapter-account-manager__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.adapter-account-manager__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+}
+
+.adapter-account-manager__fact-value,
+.adapter-account-manager__metric-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adapter-account-manager__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.adapter-account-manager__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+
+.adapter-account-manager__editor {
+  padding-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .adapter-account-manager__header,
+  .adapter-account-manager__detail-header,
+  .adapter-account-manager__hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adapter-account-manager__item {
+    align-items: flex-start;
+  }
+
+  .adapter-account-manager__item-trigger {
+    padding-block: 8px;
+  }
+
+  .adapter-account-manager__item-actions,
+  .adapter-account-manager__item:hover .adapter-account-manager__item-actions,
+  .adapter-account-manager__item:focus-within .adapter-account-manager__item-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .adapter-account-manager__actions {
+    justify-content: flex-start;
+  }
+}

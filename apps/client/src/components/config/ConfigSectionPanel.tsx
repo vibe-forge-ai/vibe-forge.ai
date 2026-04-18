@@ -17,6 +17,7 @@ import {
 } from './configDetail'
 import type { FieldSpec } from './configSchema'
 import type { TranslationFn } from './configUtils'
+import { toLabel } from './record-editors/schemaRecordUtils'
 
 export function ConfigSectionPanel({
   sectionKey,
@@ -92,8 +93,66 @@ export function ConfigSectionPanel({
 
   const handleCloseDetail = () => {
     storeCurrentScroll()
+    if ((detailRoute?.nestedPath?.length ?? 0) > 0 && detailRoute != null) {
+      onDetailQueryChange?.(serializeConfigDetailRoute({
+        ...detailRoute,
+        nestedPath: detailRoute.nestedPath?.slice(0, -1) ?? []
+      }))
+      return
+    }
     onDetailQueryChange?.('')
   }
+
+  const nestedSegments = detailRoute?.nestedPath ?? []
+  const nestedBreadcrumbs = nestedSegments.map((segment, index) => {
+    const label = index === 0 && segment === 'accounts'
+      ? t('config.accounts.title')
+      : toLabel(segment)
+    const isCurrent = index === nestedSegments.length - 1
+    return {
+      key: `${segment}:${index}`,
+      label,
+      isCurrent,
+      onClick: isCurrent
+        ? undefined
+        : () => {
+          if (detailRoute == null) return
+          storeCurrentScroll()
+          onDetailQueryChange?.(serializeConfigDetailRoute({
+            ...detailRoute,
+            nestedPath: nestedSegments.slice(0, index + 1)
+          }))
+        }
+    }
+  })
+  const breadcrumbItems = (() => {
+    if (detailMeta == null) return []
+
+    const items: Array<{ key: string; label: ReactNode; isCurrent?: boolean; onClick?: () => void }> = [
+      {
+        key: 'section',
+        label: title
+      },
+      {
+        key: 'item',
+        label: detailMeta.itemLabel,
+        isCurrent: nestedBreadcrumbs.length === 0,
+        ...(nestedBreadcrumbs.length > 0
+          ? {
+            onClick: () => {
+              storeCurrentScroll()
+              onDetailQueryChange?.(serializeConfigDetailRoute({
+                ...detailRoute!,
+                nestedPath: []
+              }))
+            }
+          }
+          : {})
+      }
+    ]
+
+    return [...items, ...nestedBreadcrumbs]
+  })()
 
   useEffect(() => {
     if (detailQuery !== '' && detailMeta == null) {
@@ -136,19 +195,23 @@ export function ConfigSectionPanel({
                     />
                   </Tooltip>
                   <div className='config-view__detail-breadcrumb'>
-                    <span className='config-view__detail-crumb config-view__detail-crumb--static'>{title}</span>
-                    <span className='config-view__detail-separator'>/</span>
-                    <button
-                      type='button'
-                      className='config-view__detail-crumb config-view__detail-crumb--link'
-                      onClick={handleCloseDetail}
-                    >
-                      {detailMeta.fieldLabel}
-                    </button>
-                    <span className='config-view__detail-separator'>/</span>
-                    <span className='config-view__detail-crumb config-view__detail-crumb--current'>
-                      {detailMeta.itemLabel}
-                    </span>
+                    {breadcrumbItems.map((item, index) => (
+                      <span key={item.key} className='config-view__detail-breadcrumb-item'>
+                        {index > 0 && (
+                          <span className='config-view__detail-separator' aria-hidden='true'>
+                            <span className='material-symbols-rounded'>chevron_right</span>
+                          </span>
+                        )}
+                        <span className={`config-view__detail-crumb ${
+                          item.isCurrent === true
+                            ? 'config-view__detail-crumb--current'
+                            : 'config-view__detail-crumb--static'
+                        }`}
+                        >
+                          {item.label}
+                        </span>
+                      </span>
+                    ))}
                   </div>
                 </div>
               )
@@ -170,8 +233,6 @@ export function ConfigSectionPanel({
           mergedModelServices={mergedModelServices}
           mergedAdapters={mergedAdapters}
           selectedModelService={selectedModelService}
-          detailRoute={detailRoute}
-          onOpenDetailRoute={handleOpenDetail}
           detailRoute={detailRoute}
           onOpenDetailRoute={handleOpenDetail}
           t={t}

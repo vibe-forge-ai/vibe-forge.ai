@@ -42,6 +42,7 @@ Primary implementation entrypoints for Codex hooks:
   - imports the current `~/.codex/auth.json` into `.ai/.local/adapters/codex/accounts/<key>/auth.json`
   - prepares per-session HOME roots under `.ai/caches/<ctxId>/<sessionId>/adapter-codex-home`
   - queries Codex account info and rate-limit/quota snapshots through `codex app-server`
+  - exposes standard adapter account management actions: add via `codex login`, detail lookup, refresh, and remove
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
@@ -156,6 +157,16 @@ Codex 多账号切换走 adapter 通用 `account` 能力：
 - `accounts.<key>.authFile`：可选，显式指定某个账号的 `auth.json` 路径；不填时优先读取 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
 
 如果本机存在 `~/.codex/auth.json`，adapter 会把当前登录态导入到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/`，并在 session 级 HOME 下切换到对应 auth 快照运行。
+
+现在还支持两类额外入口：
+
+- `vf accounts add codex [accountName]`
+  - 在隔离 HOME 下执行 `codex login`
+  - 登录完成后读取生成的 `auth.json`
+  - 通过 adapter 通用 account artifact 协议，把 `auth.json + meta.json` 交回上层并落盘
+- Web 配置页 `Adapters -> Codex -> Accounts`
+  - 根页可直接触发 `Connect account`
+  - 三级详情页可查看额度、来源，并编辑 `title / description / authFile`
 
 ### `sandboxPolicy`
 
