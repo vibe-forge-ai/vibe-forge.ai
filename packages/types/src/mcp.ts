@@ -1,7 +1,7 @@
 import type { ChatMessage } from './message'
 import type { SessionPermissionMode } from './session'
 
-export type McpTaskDefinitionType = 'default' | 'spec' | 'entity'
+export type McpTaskDefinitionType = 'default' | 'spec' | 'entity' | 'workspace'
 
 export interface McpSelectionFilter {
   include?: string[]
@@ -73,7 +73,7 @@ export interface McpTaskHookInputs {
   GenerateSystemPrompt: {
     cwd: string
     sessionId: string
-    type?: Extract<McpTaskDefinitionType, 'spec' | 'entity'>
+    type?: Extract<McpTaskDefinitionType, 'spec' | 'entity' | 'workspace'>
     name?: string
     data: unknown
   }
@@ -87,7 +87,7 @@ export interface McpTaskBindings {
     env?: Record<string, unknown>
   ): Promise<unknown>
   generateAdapterQueryOptions(
-    type: Extract<McpTaskDefinitionType, 'spec' | 'entity'> | undefined,
+    type: Extract<McpTaskDefinitionType, 'spec' | 'entity' | 'workspace'> | undefined,
     name?: string,
     cwd?: string
   ): Promise<readonly [unknown, McpResolvedTaskQueryOptions]>

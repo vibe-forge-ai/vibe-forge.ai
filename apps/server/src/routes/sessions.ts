@@ -1,7 +1,7 @@
 import Router from '@koa/router'
 
 import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
-import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
+import type { GitBranchKind, SessionInfo, SessionInitInfo, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -159,7 +159,7 @@ export function sessionsRouter(): Router {
       start?: boolean
       model?: string
       effort?: 'low' | 'medium' | 'high' | 'max'
-      promptType?: 'spec' | 'entity'
+      promptType?: SessionPromptType
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string

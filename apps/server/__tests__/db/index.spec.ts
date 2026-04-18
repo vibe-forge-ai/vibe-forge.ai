@@ -30,7 +30,9 @@ describe('sqliteDb', () => {
       isStarred: true,
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client'
     })
     db.updateSessionTags(root.id, ['alpha', 'beta', 'alpha'])
 
@@ -48,7 +50,9 @@ describe('sqliteDb', () => {
       status: 'running',
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client'
     })
     expect(stored?.tags?.slice().sort()).toEqual(['alpha', 'beta'])
     expect(db.getMessages(root.id)).toEqual([{ role: 'user', content: 'hello' }])

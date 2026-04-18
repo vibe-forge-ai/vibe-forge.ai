@@ -1,5 +1,5 @@
 import type { ChatMessageContent, Session, SessionMessageQueueState, SessionQueuedMessageMode } from '@vibe-forge/core'
-import type { GitBranchKind, SessionWorkspace } from '@vibe-forge/types'
+import type { GitBranchKind, SessionPromptType, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
@@ -21,7 +21,7 @@ export async function createSession(
     start?: boolean
     parentSessionId?: string
     id?: string
-    promptType?: 'spec' | 'entity'
+    promptType?: SessionPromptType
     promptName?: string
     effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'

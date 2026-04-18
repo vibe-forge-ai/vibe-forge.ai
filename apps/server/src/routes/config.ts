@@ -78,6 +78,7 @@ const buildSections = (config: Config | undefined) => {
     conversation: sanitize(conversation),
     models: sanitize(config?.models),
     modelServices: sanitize(config?.modelServices),
+    workspaces: sanitize(config?.workspaces),
     channels: sanitize(config?.channels),
     adapters: sanitize(config?.adapters),
     adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,

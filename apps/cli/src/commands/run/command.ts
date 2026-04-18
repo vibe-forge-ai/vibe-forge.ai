@@ -88,6 +88,7 @@ const configureRunCommand = (command: Command) => {
     )
     .option('--spec <spec>', 'Load spec definition')
     .option('--entity <entity>', 'Load entity definition')
+    .option('--workspace <workspace>', 'Run in a configured workspace')
     .option('--include-mcp-server <server...>', 'Include MCP server')
     .option('--exclude-mcp-server <server...>', 'Exclude MCP server')
     .option('--no-default-vibe-forge-mcp-server', 'Do not enable the built-in Vibe Forge MCP server')
@@ -102,13 +103,14 @@ Examples:
   vf "实现一个新的 list 筛选"
   vf run -A codex --print "读取 README 并总结"
   vf run -A claude "读取 README 并总结"
+  vf run --workspace billing "修复订单状态回滚问题"
   vf run --include-skill vf-cli-quickstart "介绍一下 vf CLI 怎么恢复会话"
   vf list --view default
   vf --resume <sessionId>
 
 Notes:
   --adapter also supports -A and simplified ids like claude / adapter-codex.
-  When using --resume, startup-only flags like --adapter, --model and --spec are loaded from cache and cannot be set again.
+  When using --resume, startup-only flags like --adapter, --model, --spec and --workspace are loaded from cache and cannot be set again.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
   In print mode, live permission/input replies require --input-format stream-json, then send {"type":"submit_input","data":"allow_once"}.
@@ -125,8 +127,11 @@ Notes:
         const cwd = process.cwd()
         const generatedSessionId = opts.sessionId ?? uuid()
 
-        if (opts.spec && opts.entity) {
-          throw new Error('--spec and --entity are mutually exclusive.')
+        const selectedTargetFlags = [opts.spec, opts.entity, opts.workspace].filter(
+          (value): value is string => value != null && value.trim() !== ''
+        )
+        if (selectedTargetFlags.length > 1) {
+          throw new Error('--spec, --entity and --workspace are mutually exclusive.')
         }
         if (opts.inputFormat != null && !opts.print) {
           throw new Error('--input-format is only supported together with --print.')
@@ -142,13 +147,7 @@ Notes:
           }
           : undefined
 
-        const runTaskOptions = isResume
-          ? undefined
-          : {
-            adapter: opts.adapter,
-            cwd,
-            ctxId: process.env.__VF_PROJECT_AI_CTX_ID__ ?? generatedSessionId
-          }
+        const createCtxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? generatedSessionId
 
         const initialResumeRecord = isResume
           ? (() => {
@@ -161,11 +160,12 @@ Notes:
           : undefined
 
         const cachedSession = await initialResumeRecord
+        let resolvedTaskCwd = cachedSession?.resume?.taskOptions.cwd ?? cwd
         const cachedAdapter = cachedSession == null
           ? undefined
           : (resolveCliSessionAdapter(cachedSession) || undefined)
         const sessionId = cachedSession?.resume?.sessionId ?? generatedSessionId
-        const ctxId = cachedSession?.resume?.ctxId ?? runTaskOptions?.ctxId ?? sessionId
+        const ctxId = cachedSession?.resume?.ctxId ?? createCtxId ?? sessionId
         const outputFormat = getOutputFormat(
           opts.outputFormat,
           outputFormatSource,
@@ -224,7 +224,7 @@ Notes:
           }
           if (shouldApplyPermissionDecision(decision)) {
             await applyCliPermissionDecision({
-              cwd,
+              cwd: resolvedTaskCwd,
               sessionId,
               adapter: pendingPermissionRecovery.adapter,
               subjectKeys: pendingPermissionRecovery.subjectKeys,
@@ -253,8 +253,10 @@ Notes:
             extraOptions
           }
           : await (async () => {
-            const promptType = opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined)
-            const promptName = opts.spec || opts.entity
+            const promptType = opts.workspace
+              ? 'workspace'
+              : (opts.spec ? 'spec' : (opts.entity ? 'entity' : undefined))
+            const promptName = opts.workspace || opts.spec || opts.entity
             const [data, resolvedConfig] = await generateAdapterQueryOptions(
               promptType,
               promptName,
@@ -266,12 +268,15 @@ Notes:
                 plugins: getCliDefaultSkillPluginConfig()
               }
             )
+            resolvedTaskCwd = resolvedConfig.workspace?.cwd ?? cwd
             const env = {
               ...process.env,
-              __VF_PROJECT_AI_CTX_ID__: ctxId
+              __VF_PROJECT_AI_CTX_ID__: ctxId,
+              __VF_PROJECT_WORKSPACE_FOLDER__: resolvedTaskCwd,
+              __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: cwd
             }
             await callHook('GenerateSystemPrompt', {
-              cwd,
+              cwd: resolvedTaskCwd,
               sessionId,
               type: promptType,
               name: promptName,
@@ -279,7 +284,7 @@ Notes:
             }, env)
 
             const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(
-              cwd,
+              resolvedTaskCwd,
               resolveInjectDefaultSystemPromptOption(
                 opts.injectDefaultSystemPrompt,
                 currentCommand.getOptionValueSource('injectDefaultSystemPrompt')
@@ -329,20 +334,27 @@ Notes:
           description: _adapterDescription,
           ...cachedAdapterOptions
         } = adapterOptions
+        const runTaskOptions = isResume
+          ? undefined
+          : {
+            adapter: opts.adapter,
+            cwd: resolvedTaskCwd,
+            ctxId
+          }
 
         const record: ActiveCliSessionRecord = {
           resume: {
             version: 1 as const,
             ctxId,
             sessionId,
-            cwd: cachedSession?.resume?.cwd ?? cwd,
+            cwd: cachedSession?.resume?.cwd ?? resolvedTaskCwd,
             description: description || cachedSession?.resume?.description,
             createdAt: cachedSession?.resume?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
             resolvedAdapter: cachedSession?.resume?.resolvedAdapter ?? cachedAdapter,
             taskOptions: {
               ...(cachedSession?.resume?.taskOptions ?? {
-                cwd,
+                cwd: resolvedTaskCwd,
                 ctxId
               }),
               adapter: cachedAdapter ?? runTaskOptions?.adapter
@@ -424,7 +436,7 @@ Notes:
           void (async () => {
             const endedAt = Date.now()
             const [persistedDetail, control] = await Promise.all([
-              getCache(cwd, ctxId, sessionId, 'detail'),
+              getCache(record.resume.taskOptions.cwd ?? record.resume.cwd, ctxId, sessionId, 'detail'),
               readCliSessionControl(cwd, ctxId, sessionId)
             ])
             record.resume = {
@@ -458,7 +470,11 @@ Notes:
           adapter: record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter,
           cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
           ctxId,
-          env: process.env,
+          env: {
+            ...process.env,
+            __VF_PROJECT_WORKSPACE_FOLDER__: record.resume.taskOptions.cwd ?? record.resume.cwd,
+            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: cwd
+          },
           plugins: getCliDefaultSkillPluginConfig()
         }, {
           ...adapterOptions,

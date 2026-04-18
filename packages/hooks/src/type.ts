@@ -60,7 +60,7 @@ export interface HookInputs {
     tasks: Array<{
       taskId: string
       description: string
-      type: 'default' | 'spec' | 'entity'
+      type: 'default' | 'spec' | 'entity' | 'workspace'
       name?: string
       adapter?: string
       permissionMode?: SessionPermissionMode
@@ -68,7 +68,7 @@ export interface HookInputs {
     }>
   }
   GenerateSystemPrompt: HookInputCore & {
-    type?: 'spec' | 'entity'
+    type?: 'spec' | 'entity' | 'workspace'
     name?: string
     data?: unknown
   }

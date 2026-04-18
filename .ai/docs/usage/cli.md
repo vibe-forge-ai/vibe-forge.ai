@@ -58,9 +58,20 @@ printf '%s\n' '{"hookEventName":"Notification","cwd":"'"$PWD"'","sessionId":"deb
 ```bash
 npx vf run -A codex --print "读取 README 并给出一个三步改进建议"
 npx vf run -A claude "读取 README 并给出一个三步改进建议"
+npx vf run --workspace billing "修复订单状态回滚问题"
 ```
 
 `adapter` 参数支持 `-A` 短写，也接受常见简化值，例如 `claude`、`adapter-codex`。
+
+### 指定 workspace
+
+大型仓库可在 `.ai.config.json` 声明 `workspaces`。指定 `--workspace <id>` 后，任务会在对应 workspace 目录下启动，并使用该目录自己的配置与数据资产。
+
+```bash
+npx vf run --workspace billing "修复订单状态回滚问题"
+```
+
+更多配置见 [Workspace 调度](./workspaces.md)。
 
 ### 恢复会话
 

@@ -201,6 +201,44 @@ describe('resolveWorkspaceAssetBundle', () => {
     expect(disabledBundle.mcpServers).not.toHaveProperty('VibeForge')
   })
 
+  it('discovers configured workspaces from glob patterns and entries', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(join(workspace, 'services/billing/README.md'), '# billing\n')
+    await writeDocument(join(workspace, 'services/legacy/README.md'), '# legacy\n')
+    await writeDocument(join(workspace, 'docs/README.md'), '# docs\n')
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        workspaces: {
+          include: ['services/*'],
+          exclude: ['services/legacy'],
+          entries: {
+            docs: {
+              path: 'docs',
+              description: 'Documentation workspace'
+            }
+          }
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.workspaces.map(asset => asset.displayName)).toEqual(['billing', 'docs'])
+    expect(bundle.workspaces.map(asset => asset.payload)).toEqual([
+      expect.objectContaining({
+        id: 'billing',
+        path: 'services/billing'
+      }),
+      expect.objectContaining({
+        id: 'docs',
+        path: 'docs',
+        description: 'Documentation workspace'
+      })
+    ])
+  })
+
   it('skips disabled plugin instances and lets disabled child overrides suppress default child activation', async () => {
     const workspace = await createWorkspace()
 

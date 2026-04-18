@@ -17,6 +17,12 @@ import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
 import {
+  DEFAULT_CHAT_SESSION_TARGET_DRAFT,
+  getChatSessionTargetDraftFromSession,
+  isChatSessionTargetReady
+} from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
+import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
 } from '#~/hooks/chat/chat-session-workspace-draft'
@@ -119,6 +125,9 @@ export function ChatHistoryView({
     [configRes]
   )
   const workspaceDraftDirtyRef = useRef(false)
+  const [sessionTargetDraft, setSessionTargetDraft] = useState<ChatSessionTargetDraft>(() => ({
+    ...DEFAULT_CHAT_SESSION_TARGET_DRAFT
+  }))
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
@@ -146,6 +155,7 @@ export function ChatHistoryView({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    sessionTargetDraft,
     workspaceDraft,
     onClearMessages
   })
@@ -169,8 +179,20 @@ export function ChatHistoryView({
       createdAt: Date.now()
     }
   }
+  const validateSessionTarget = () => {
+    if (session?.id != null || isChatSessionTargetReady(sessionTargetDraft)) {
+      return true
+    }
+
+    void message.warning(t('chat.sessionTarget.missingResourceWarning'))
+    return false
+  }
 
   const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -208,6 +230,10 @@ export function ChatHistoryView({
   }
 
   const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -251,7 +277,12 @@ export function ChatHistoryView({
     setExpandedTurnIds(new Set())
     setQueuedDraft(null)
     setQueueMode('steer')
-  }, [session?.id])
+    setSessionTargetDraft(
+      session?.id != null
+        ? getChatSessionTargetDraftFromSession(session)
+        : { ...DEFAULT_CHAT_SESSION_TARGET_DRAFT }
+    )
+  }, [session?.id, session?.promptName, session?.promptType])
   useEffect(() => {
     if (session?.id != null) {
       return
@@ -653,7 +684,10 @@ export function ChatHistoryView({
 
       {!session?.id && messages.length === 0 && historyStatusNotices.length === 0 && (
         <div className='new-session-guide-wrapper'>
-          <NewSessionGuide />
+          <NewSessionGuide
+            selectedTarget={sessionTargetDraft}
+            onSelectTarget={setSessionTargetDraft}
+          />
         </div>
       )}
 
@@ -724,6 +758,12 @@ export function ChatHistoryView({
                 adapterOptions={adapterOptions}
                 onAdapterChange={onAdapterChange}
                 modelUnavailable={modelUnavailable}
+                sessionTarget={{
+                  draft: session?.id != null ? getChatSessionTargetDraftFromSession(session) : sessionTargetDraft,
+                  locked: session?.id != null,
+                  disabled: isCreating,
+                  onChange: setSessionTargetDraft
+                }}
                 queueMode={queueMode}
                 onQueueModeChange={setQueueMode}
               />

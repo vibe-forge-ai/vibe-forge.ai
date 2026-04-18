@@ -38,9 +38,10 @@ export const createTaskRegister = () => {
                   .enum([
                     'default',
                     'spec',
-                    'entity'
+                    'entity',
+                    'workspace'
                   ])
-                  .describe('The type of definition to load (default, spec or entity)'),
+                  .describe('The type of definition to load (default, spec, entity or workspace)'),
                 name: z
                   .string()
                   .describe('The name of the spec or entity to load, if type is spec or entity. Otherwise, ignored.')

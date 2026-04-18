@@ -1,3 +1,5 @@
 export { generateAdapterQueryOptions } from '#~/generate-adapter-query-options.js'
 export { run } from '#~/run.js'
 export type { RunTaskOptions } from '#~/type.js'
+export { resolveWorkspaceTaskTarget } from '#~/workspace-target.js'
+export type { ResolvedWorkspaceTaskTarget } from '#~/workspace-target.js'

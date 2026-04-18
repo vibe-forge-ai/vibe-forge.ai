@@ -390,6 +390,29 @@
       "stopShortcutConfirm": "再按一次 Esc 停止当前执行"
     },
     "adapterLockedTooltip": "创建会话后适配器会锁定",
+    "sessionTarget": {
+      "title": "会话目标",
+      "lockedHint": "创建后已固定",
+      "creatingHint": "正在创建会话",
+      "defaultSummary": "使用当前项目默认上下文",
+      "missingResourceWarning": "请先选择当前模式下的资源",
+      "modes": {
+        "default": "默认",
+        "workspace": "Workspace",
+        "entity": "Agent",
+        "spec": "Spec"
+      },
+      "placeholders": {
+        "workspace": "选择 workspace",
+        "entity": "选择 agent",
+        "spec": "选择 spec"
+      },
+      "empty": {
+        "workspace": "暂无 workspace",
+        "entity": "暂无 agent",
+        "spec": "暂无 spec"
+      }
+    },
     "referenceActionsShort": "更多",
     "referenceActionsTitle": "更多",
     "referenceActionsDescription": "添加照片、文件和权限相关设置。",
@@ -655,6 +678,10 @@
       "announcements": {
         "title": "最新公告"
       },
+      "workspaces": {
+        "title": "已有 Workspace",
+        "empty": "暂未发现 workspace，请在 .ai.config.json 中配置 workspaces。"
+      },
       "specs": {
         "title": "已有流程",
         "params": "{{count}} 个参数",
@@ -663,9 +690,9 @@
         "createToast": "请在 .ai/specs 下创建流程文件，保存后刷新页面。"
       },
       "entities": {
-        "title": "已有实体",
-        "empty": "暂未发现实体，加入实体定义文件后即可展示。",
-        "create": "快速创建实体",
+        "title": "已有 Agent",
+        "empty": "暂未发现 Agent，加入实体定义文件后即可展示。",
+        "create": "快速创建 Agent",
         "createToast": "请创建实体定义文件，保存后刷新页面。"
       },
       "help": {

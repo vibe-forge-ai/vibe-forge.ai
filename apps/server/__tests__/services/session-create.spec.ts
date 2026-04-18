@@ -138,4 +138,31 @@ describe('createSessionWithInitialMessage', () => {
       createWorktree: true
     })
   })
+
+  it('persists the fixed prompt target and uses it when starting the adapter', async () => {
+    await createSessionWithInitialMessage({
+      title: 'Demo',
+      initialMessage: 'hello',
+      promptType: 'workspace',
+      promptName: 'client'
+    })
+
+    expect(updateSession).toHaveBeenCalledWith('sess-1', {
+      model: undefined,
+      effort: undefined,
+      permissionMode: undefined,
+      adapter: undefined,
+      promptType: 'workspace',
+      promptName: 'client'
+    })
+    expect(mocks.startAdapterSession).toHaveBeenCalledWith('sess-1', {
+      model: undefined,
+      effort: undefined,
+      promptType: 'workspace',
+      promptName: 'client',
+      permissionMode: undefined,
+      systemPrompt: undefined,
+      adapter: undefined
+    })
+  })
 })

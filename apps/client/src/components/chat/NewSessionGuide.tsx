@@ -1,20 +1,31 @@
 import './NewSessionGuide.scss'
 
-import { App, Button } from 'antd'
+import { App } from 'antd'
 import { useAtom } from 'jotai'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { EntitySummary, SpecSummary } from '#~/api.js'
+import type { EntitySummary, SpecSummary, WorkspaceSummary } from '#~/api.js'
+import { createChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import { showAnnouncementsAtom } from '#~/store/index.js'
+import { NewSessionGuideResourceCard } from './NewSessionGuideResourceCard'
 
-export function NewSessionGuide() {
+export function NewSessionGuide({
+  selectedTarget,
+  onSelectTarget
+}: {
+  selectedTarget: ChatSessionTargetDraft
+  onSelectTarget: (target: ChatSessionTargetDraft) => void
+}) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
 
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
   const { data: entitiesRes } = useSWR<{ entities: EntitySummary[] }>('/api/ai/entities')
+  const { data: workspacesRes } = useSWR<{ workspaces: WorkspaceSummary[] }>('/api/ai/workspaces')
   const { data: configRes } = useSWR<{
     sources: {
       merged: {
@@ -30,8 +41,10 @@ export function NewSessionGuide() {
   const specs = specsRes?.specs ?? []
   const alwaysSpecs = specs.filter(spec => spec.always)
   const entities = entitiesRes?.entities ?? []
+  const workspaces = workspacesRes?.workspaces ?? []
   const isSpecsReady = specsRes != null
   const isEntitiesReady = entitiesRes != null
+  const isWorkspacesReady = workspacesRes != null
   const { announcements = [] } = configRes?.sources.merged?.general ?? {}
 
   const helpItems = [
@@ -47,6 +60,38 @@ export function NewSessionGuide() {
   const handleCreateEntity = () => {
     message.info(t('chat.newSessionGuide.entities.createToast'))
   }
+
+  const isSelected = (type: ChatSessionTargetDraft['type'], name: string) =>
+    selectedTarget.type === type && selectedTarget.name === name
+
+  const workspaceItems = useMemo(() =>
+    workspaces.map(workspace => ({
+      key: workspace.id,
+      name: workspace.name,
+      description: workspace.description || workspace.path,
+      meta: workspace.path,
+      active: isSelected('workspace', workspace.id),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('workspace', workspace))
+    })), [onSelectTarget, selectedTarget.name, selectedTarget.type, workspaces])
+
+  const specItems = useMemo(() =>
+    alwaysSpecs.map(spec => ({
+      key: spec.id,
+      name: spec.name,
+      description: spec.description,
+      meta: spec.params.length > 0 ? t('chat.newSessionGuide.specs.params', { count: spec.params.length }) : undefined,
+      active: isSelected('spec', spec.name),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('spec', spec))
+    })), [alwaysSpecs, onSelectTarget, selectedTarget.name, selectedTarget.type, t])
+
+  const entityItems = useMemo(() =>
+    entities.map(entity => ({
+      key: entity.id,
+      name: entity.name,
+      description: entity.description,
+      active: isSelected('entity', entity.name),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('entity', entity))
+    })), [entities, onSelectTarget, selectedTarget.name, selectedTarget.type])
 
   return (
     <div className='new-session-guide'>
@@ -75,80 +120,36 @@ export function NewSessionGuide() {
         </div>
       )}
       <div className='new-session-guide__grid'>
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>account_tree</span>
-              <span>{t('chat.newSessionGuide.specs.title')}</span>
-            </div>
-            <div className='new-session-guide__count'>{alwaysSpecs.length}</div>
-          </div>
-          <div className='new-session-guide__body'>
-            {!isSpecsReady && (
-              <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-            )}
-            {isSpecsReady && alwaysSpecs.length > 0 && (
-              <div className='new-session-guide__list'>
-                {alwaysSpecs.map((spec) => (
-                  <div key={spec.id} className='new-session-guide__item'>
-                    <div className='new-session-guide__item-title'>
-                      <span>{spec.name}</span>
-                    </div>
-                    <div className='new-session-guide__item-desc'>{spec.description}</div>
-                    {spec.params.length > 0 && (
-                      <div className='new-session-guide__meta'>
-                        {t('chat.newSessionGuide.specs.params', { count: spec.params.length })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {isSpecsReady && alwaysSpecs.length === 0 && (
-              <div className='new-session-guide__empty'>
-                <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.specs.empty')}</div>
-                <Button type='primary' size='small' onClick={handleCreateSpec}>
-                  {t('chat.newSessionGuide.specs.create')}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+        <NewSessionGuideResourceCard
+          icon='workspaces'
+          title={t('chat.newSessionGuide.workspaces.title')}
+          count={workspaces.length}
+          isReady={isWorkspacesReady}
+          items={workspaceItems}
+          emptyText={t('chat.newSessionGuide.workspaces.empty')}
+        />
 
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>group_work</span>
-              <span>{t('chat.newSessionGuide.entities.title')}</span>
-            </div>
-            <div className='new-session-guide__count'>{entities.length}</div>
-          </div>
-          <div className='new-session-guide__body'>
-            {!isEntitiesReady && (
-              <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-            )}
-            {isEntitiesReady && entities.length > 0 && (
-              <div className='new-session-guide__list'>
-                {entities.map((entity) => (
-                  <div key={entity.id} className='new-session-guide__item'>
-                    <div className='new-session-guide__item-title'>
-                      <span>{entity.name}</span>
-                    </div>
-                    <div className='new-session-guide__item-desc'>{entity.description}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {isEntitiesReady && entities.length === 0 && (
-              <div className='new-session-guide__empty'>
-                <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.entities.empty')}</div>
-                <Button type='primary' size='small' onClick={handleCreateEntity}>
-                  {t('chat.newSessionGuide.entities.create')}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+        <NewSessionGuideResourceCard
+          icon='account_tree'
+          title={t('chat.newSessionGuide.specs.title')}
+          count={alwaysSpecs.length}
+          isReady={isSpecsReady}
+          items={specItems}
+          emptyText={t('chat.newSessionGuide.specs.empty')}
+          createLabel={t('chat.newSessionGuide.specs.create')}
+          onCreate={handleCreateSpec}
+        />
+
+        <NewSessionGuideResourceCard
+          icon='group_work'
+          title={t('chat.newSessionGuide.entities.title')}
+          count={entities.length}
+          isReady={isEntitiesReady}
+          items={entityItems}
+          emptyText={t('chat.newSessionGuide.entities.empty')}
+          createLabel={t('chat.newSessionGuide.entities.create')}
+          onCreate={handleCreateEntity}
+        />
 
         <div className='new-session-guide__card'>
           <div className='new-session-guide__header'>

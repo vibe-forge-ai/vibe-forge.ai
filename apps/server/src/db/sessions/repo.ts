@@ -36,6 +36,8 @@ interface SessionRow {
   adapter: string | null
   permissionMode: string | null
   effort: string | null
+  promptType: string | null
+  promptName: string | null
 }
 
 type SessionUpdate = Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
@@ -63,7 +65,9 @@ const sessionUpdateFields = [
   { key: 'model' },
   { key: 'adapter' },
   { key: 'permissionMode' },
-  { key: 'effort' }
+  { key: 'effort' },
+  { key: 'promptType' },
+  { key: 'promptName' }
 ] as const satisfies ReadonlyArray<{
   key: keyof SessionUpdate
   toParam?: (value: any) => string | number | null
@@ -107,7 +111,9 @@ function mapSessionRow(row: SessionRow): Session {
     model: row.model ?? undefined,
     adapter: row.adapter ?? undefined,
     permissionMode: (row.permissionMode as any) ?? undefined,
-    effort: (row.effort as any) ?? undefined
+    effort: (row.effort as any) ?? undefined,
+    promptType: (row.promptType as any) ?? undefined,
+    promptName: row.promptName ?? undefined
   }
 }
 
