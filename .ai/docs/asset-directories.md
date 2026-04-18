@@ -20,6 +20,8 @@
 
 ## Skill 依赖
 
+完整使用说明见 [Skills 与依赖](./usage/skills.md)。
+
 `./.ai/skills/<name>/SKILL.md` 的 frontmatter 可以声明 `dependencies`：
 
 ```yaml
