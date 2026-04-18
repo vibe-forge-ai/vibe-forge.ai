@@ -28,8 +28,29 @@
     cursor: row-resize;
   }
 
-  &.is-resize-disabled .dock-panel__resize-handle {
+  &.is-resize-disabled .dock-panel__resize-strip {
     cursor: default;
+  }
+
+  &.is-fullscreen {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    flex: 1 1 auto;
+    width: auto;
+    height: auto;
+    max-height: none;
+    border-top-color: transparent;
+    transform: none;
+    transform-origin: bottom center;
+    animation: dock-panel-fullscreen-enter .22s cubic-bezier(.22, 1, .36, 1);
+    will-change: clip-path, opacity;
+  }
+
+  &.is-fullscreen.is-fullscreen-exiting {
+    animation: dock-panel-fullscreen-exit .18s cubic-bezier(.4, 0, .2, 1)
+      forwards;
+    pointer-events: none;
   }
 }
 
@@ -43,7 +64,36 @@
   pointer-events: none;
 }
 
-.dock-panel__resize-handle {
+.dock-panel__resize-strip {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 9px;
+  cursor: row-resize;
+
+  &::before {
+    position: absolute;
+    top: 3px;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background-color: var(--primary-color);
+    content: '';
+    opacity: 0;
+    transform: scaleY(.66);
+    transform-origin: top;
+    transition: opacity .16s ease, transform .16s ease;
+  }
+
+  &:hover::before {
+    opacity: .85;
+    transform: scaleY(1);
+  }
+}
+
+.dock-panel__header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -54,14 +104,6 @@
   cursor: default;
   flex-shrink: 0;
   transition: opacity .18s ease;
-
-  &.is-resizable {
-    cursor: row-resize;
-  }
-
-  &.is-resizable:hover {
-    opacity: .92;
-  }
 }
 
 .dock-panel__header-main {
@@ -105,8 +147,7 @@
 }
 
 .dock-panel__header-spacer {
-  flex: 1;
-  min-width: 24px;
+  display: none;
 }
 
 .dock-panel__header-actions {
@@ -153,8 +194,33 @@ html.dark .dock-panel__close-btn.ant-btn.ant-btn-text {
   --nav-hover-bg: #1a1a1a;
 }
 
+@keyframes dock-panel-fullscreen-enter {
+  from {
+    clip-path: inset(calc(100% - var(--dock-panel-height, 240px)) 0 0 0);
+    opacity: .96;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes dock-panel-fullscreen-exit {
+  from {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+
+  to {
+    clip-path: inset(calc(100% - var(--dock-panel-height, 240px)) 0 0 0);
+    opacity: .96;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dock-panel {
+    animation: none;
     transition: none;
   }
 }

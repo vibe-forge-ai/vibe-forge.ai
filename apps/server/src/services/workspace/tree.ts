@@ -21,7 +21,7 @@ export interface WorkspaceTreeEntry {
   type: 'file' | 'directory'
 }
 
-const normalizeWorkspacePath = (workspaceFolder: string, rawPath?: string) => {
+export const normalizeWorkspacePath = (workspaceFolder: string, rawPath?: string) => {
   const trimmed = rawPath?.trim() ?? ''
   if (trimmed === '' || trimmed === '.') {
     return ''

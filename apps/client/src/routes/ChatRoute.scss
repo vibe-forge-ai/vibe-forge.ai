@@ -1,8 +1,28 @@
+.chat-route-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  position: relative;
+}
+
+.chat-route-layout__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: padding-bottom .18s ease;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
   flex: 1;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   background-color: var(--bg-color);
@@ -19,10 +39,12 @@
 
     .new-session-guide-wrapper {
       flex: 1;
+      min-height: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px 24px 12px;
+      overflow: auto;
+      padding: 24px 24px 16px;
     }
   }
 }
@@ -255,6 +277,10 @@
   flex: 0;
   min-width: 0;
   padding: 0 12px max(8px, env(safe-area-inset-bottom));
+}
+
+.chat-route-layout.has-bottom-dock .chat-composer-stack {
+  padding-bottom: 0;
 }
 
 .chat-composer-stack__inner {

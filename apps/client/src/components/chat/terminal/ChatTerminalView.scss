@@ -2,27 +2,6 @@
   position: relative;
   --terminal-action-hover-bg: var(--nav-hover-bg, #f3f4f6);
 
-  &.is-fullscreen.dock-panel {
-    position: absolute;
-    inset: 0;
-    z-index: 30;
-    flex: 1 1 auto;
-    width: auto;
-    height: auto;
-    max-height: none;
-    animation: chat-terminal-fullscreen-enter .22s cubic-bezier(.22, 1, .36, 1);
-    border-top-color: transparent;
-    transform: none;
-    transform-origin: bottom center;
-    will-change: clip-path, opacity;
-  }
-
-  &.is-fullscreen.is-fullscreen-exiting.dock-panel {
-    animation: chat-terminal-fullscreen-exit .18s cubic-bezier(.4, 0, .2, 1)
-      forwards;
-    pointer-events: none;
-  }
-
   &__surface {
     display: flex;
     position: relative;
@@ -106,7 +85,6 @@
     }
   }
 
-  &__fullscreen-btn.ant-btn.ant-btn-text,
   &__manager-toggle-btn.ant-btn.ant-btn-text {
     .material-symbols-rounded {
       font-size: 15px;
@@ -349,35 +327,4 @@
 
 html.dark .chat-terminal-view {
   --terminal-action-hover-bg: var(--nav-hover-bg, #1a1a1a);
-}
-
-@keyframes chat-terminal-fullscreen-enter {
-  from {
-    clip-path: inset(calc(100% - var(--dock-panel-height, 240px)) 0 0 0);
-    opacity: .96;
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
-}
-
-@keyframes chat-terminal-fullscreen-exit {
-  from {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
-
-  to {
-    clip-path: inset(calc(100% - var(--dock-panel-height, 240px)) 0 0 0);
-    opacity: .96;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-terminal-view.is-fullscreen.dock-panel,
-  .chat-terminal-view.is-fullscreen.is-fullscreen-exiting.dock-panel {
-    animation: none;
-  }
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 const FULLSCREEN_EXIT_ANIMATION_MS = 180
 
-export function useTerminalFullscreen() {
+export function useDockPanelFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFullscreenExiting, setIsFullscreenExiting] = useState(false)
   const exitTimerRef = useRef<number | null>(null)

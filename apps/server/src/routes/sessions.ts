@@ -31,6 +31,7 @@ import {
   transferSessionWorkspaceToLocal
 } from '#~/services/session/workspace.js'
 import { disposeTerminalSession } from '#~/services/terminal/index.js'
+import { readWorkspaceFile, updateWorkspaceFile } from '#~/services/workspace/file.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
@@ -84,6 +85,20 @@ export function sessionsRouter(): Router {
     const { path } = ctx.query as { path?: string }
     const workspaceFolder = await resolveSessionWorkspaceFolder(id)
     ctx.body = await listWorkspaceTree(path, { workspaceFolder })
+  })
+
+  router.get('/:id/workspace/file', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { path } = ctx.query as { path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    ctx.body = await readWorkspaceFile(path, { workspaceFolder })
+  })
+
+  router.put('/:id/workspace/file', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { content, path } = ctx.request.body as { content?: unknown; path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    ctx.body = await updateWorkspaceFile(path, content, { workspaceFolder })
   })
 
   router.post('/:id/workspace/create-worktree', async (ctx) => {

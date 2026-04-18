@@ -1,0 +1,4 @@
+export const CHAT_BOTTOM_DOCK_DEFAULT_HEIGHT = 320
+export const CHAT_BOTTOM_DOCK_HEIGHT_STORAGE_KEY = 'chatBottomDockHeight'
+export const CHAT_BOTTOM_DOCK_MAX_HEIGHT = 620
+export const CHAT_BOTTOM_DOCK_MIN_HEIGHT = 220
