@@ -53,6 +53,7 @@ export {
   forkSession,
   getSessionMessages,
   getSessionWorkspace,
+  getSessionWorkspaceResourceUrl,
   listSessionWorkspaceTree,
   listSessions,
   moveQueuedMessage,
@@ -69,7 +70,7 @@ export {
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
 export type { WorkspaceFileContent, WorkspaceTreeEntry } from './api/workspace'
-export { listWorkspaceTree, readWorkspaceFile, updateWorkspaceFile } from './api/workspace'
+export { getWorkspaceResourceUrl, listWorkspaceTree, readWorkspaceFile, updateWorkspaceFile } from './api/workspace'
 
 export type {
   GitAvailabilityReason,

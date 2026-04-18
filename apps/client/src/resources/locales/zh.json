@@ -481,6 +481,7 @@
     "workspaceFileEditorTitle": "文件",
     "workspaceFileEditorLoading": "正在读取文件...",
     "workspaceFileEditorLoadFailed": "文件读取失败",
+    "workspaceImagePreviewLoadFailed": "图片加载失败",
     "workspaceFileEditorSave": "保存",
     "workspaceFileEditorSaved": "已保存",
     "workspaceFileEditorRevert": "还原",

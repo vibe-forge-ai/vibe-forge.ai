@@ -26,11 +26,20 @@ const replaceNodeChildren = (
   })
 
 const toTreeNodes = (entries: WorkspaceTreeEntry[]): WorkspaceDrawerTreeNode[] => entries.map(entry => ({ ...entry }))
+const getLinkKind = (node: WorkspaceDrawerTreeNode) =>
+  node.linkKind ?? (node.isSymlink === true ? 'symlink' : undefined)
 
+const canExpandDirectoryNode = (node: WorkspaceDrawerTreeNode) => {
+  const linkKind = getLinkKind(node)
+  return node.type === 'directory' &&
+    (linkKind == null || (linkKind === 'symlink' && node.linkType === 'directory' && node.isExternal !== true))
+}
+const canAutoExpandDirectoryNode = (node: WorkspaceDrawerTreeNode) =>
+  canExpandDirectoryNode(node) && getLinkKind(node) == null
 const collectDirectoryPaths = (nodes: WorkspaceDrawerTreeNode[]): string[] => {
   const paths: string[] = []
   for (const node of nodes) {
-    if (node.type !== 'directory') {
+    if (!canAutoExpandDirectoryNode(node)) {
       continue
     }
     paths.push(node.path)
@@ -60,14 +69,12 @@ export function WorkspaceDrawerTree({
   const [isTreeLoading, setIsTreeLoading] = useState(false)
   const [hasTreeError, setHasTreeError] = useState(false)
   const treeDataRef = useRef(treeData)
-
   const loadWorkspaceTree = useCallback(async (path?: string) => {
     if (sessionId != null && sessionId !== '') {
       return await listSessionWorkspaceTree(sessionId, path)
     }
     return await listWorkspaceTree(path)
   }, [sessionId])
-
   const loadRootTree = useCallback(async () => {
     setIsTreeLoading(true)
     setHasTreeError(false)
@@ -86,14 +93,13 @@ export function WorkspaceDrawerTree({
   useEffect(() => {
     treeDataRef.current = treeData
   }, [treeData])
-
   useEffect(() => {
     void loadRootTree()
   }, [loadRootTree, refreshKey])
 
   const loadDirectoryRecursive = useCallback(
     async (node: WorkspaceDrawerTreeNode): Promise<WorkspaceDrawerTreeNode> => {
-      if (node.type !== 'directory') {
+      if (!canAutoExpandDirectoryNode(node)) {
         return node
       }
 
@@ -105,7 +111,6 @@ export function WorkspaceDrawerTree({
     },
     [loadWorkspaceTree]
   )
-
   useEffect(() => {
     if (command == null) {
       return
@@ -144,7 +149,6 @@ export function WorkspaceDrawerTree({
       isCancelled = true
     }
   }, [command, loadDirectoryRecursive])
-
   const handleToggleDirectory = async (node: WorkspaceDrawerTreeNode) => {
     if (expandedPaths.has(node.path)) {
       setExpandedPaths(prev => new Set(Array.from(prev).filter(path => path !== node.path)))

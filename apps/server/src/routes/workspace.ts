@@ -1,7 +1,9 @@
+import { createReadStream } from 'node:fs'
+
 import Router from '@koa/router'
 
 import { getWorkspaceGitState, listWorkspaceGitBranches, listWorkspaceGitWorktrees } from '#~/services/git/index.js'
-import { readWorkspaceFile, updateWorkspaceFile } from '#~/services/workspace/file.js'
+import { readWorkspaceFile, resolveWorkspaceImageResource, updateWorkspaceFile } from '#~/services/workspace/file.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 
 export function workspaceRouter(): Router {
@@ -15,6 +17,17 @@ export function workspaceRouter(): Router {
   router.get('/file', async (ctx) => {
     const { path } = ctx.query as { path?: string }
     ctx.body = await readWorkspaceFile(path)
+  })
+
+  router.get('/resource', async (ctx) => {
+    const { path } = ctx.query as { path?: string }
+    const resource = await resolveWorkspaceImageResource(path)
+    ctx.state.skipApiEnvelope = true
+    ctx.type = resource.mimeType
+    ctx.length = resource.size
+    ctx.set('Cache-Control', 'private, no-cache')
+    ctx.set('X-Content-Type-Options', 'nosniff')
+    ctx.body = createReadStream(resource.filePath)
   })
 
   router.put('/file', async (ctx) => {

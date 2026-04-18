@@ -1,3 +1,5 @@
+import { createReadStream } from 'node:fs'
+
 import Router from '@koa/router'
 
 import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
@@ -31,7 +33,7 @@ import {
   transferSessionWorkspaceToLocal
 } from '#~/services/session/workspace.js'
 import { disposeTerminalSession } from '#~/services/terminal/index.js'
-import { readWorkspaceFile, updateWorkspaceFile } from '#~/services/workspace/file.js'
+import { readWorkspaceFile, resolveWorkspaceImageResource, updateWorkspaceFile } from '#~/services/workspace/file.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
@@ -92,6 +94,19 @@ export function sessionsRouter(): Router {
     const { path } = ctx.query as { path?: string }
     const workspaceFolder = await resolveSessionWorkspaceFolder(id)
     ctx.body = await readWorkspaceFile(path, { workspaceFolder })
+  })
+
+  router.get('/:id/workspace/resource', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { path } = ctx.query as { path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    const resource = await resolveWorkspaceImageResource(path, { workspaceFolder })
+    ctx.state.skipApiEnvelope = true
+    ctx.type = resource.mimeType
+    ctx.length = resource.size
+    ctx.set('Cache-Control', 'private, no-cache')
+    ctx.set('X-Content-Type-Options', 'nosniff')
+    ctx.body = createReadStream(resource.filePath)
   })
 
   router.put('/:id/workspace/file', async (ctx) => {

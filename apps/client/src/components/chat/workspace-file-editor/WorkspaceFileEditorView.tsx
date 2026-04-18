@@ -3,10 +3,10 @@ import './WorkspaceFileEditorView.scss'
 import Editor from '@monaco-editor/react'
 import { App, Empty, Spin } from 'antd'
 import type { editor as MonacoEditorNamespace } from 'monaco-editor'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { getApiErrorMessage } from '#~/api'
+import { getApiErrorMessage, getSessionWorkspaceResourceUrl, getWorkspaceResourceUrl } from '#~/api'
 import {
   CHAT_BOTTOM_DOCK_DEFAULT_HEIGHT,
   CHAT_BOTTOM_DOCK_HEIGHT_STORAGE_KEY,
@@ -20,7 +20,7 @@ import { useMonacoTheme } from '#~/components/monaco/use-monaco-theme'
 import { WorkspaceFileBreadcrumb } from './WorkspaceFileBreadcrumb'
 import { WorkspaceFileTabs } from './WorkspaceFileTabs'
 import { useWorkspaceFileEditorState } from './use-workspace-file-editor-state'
-import { getWorkspaceFileEditorLanguage } from './workspace-file-editor-language'
+import { getWorkspaceFileEditorLanguage, isWorkspaceImagePreviewPath } from './workspace-file-editor-language'
 
 export function WorkspaceFileEditorView({
   isOpen,
@@ -44,15 +44,27 @@ export function WorkspaceFileEditorView({
   const themeName = useMonacoTheme()
   const editorRef = useRef<MonacoEditorNamespace.IStandaloneCodeEditor | null>(null)
   const saveHandlerRef = useRef<() => void>(() => undefined)
+  const [imageLoadFailed, setImageLoadFailed] = useState(false)
   const language = useMemo(() => getWorkspaceFileEditorLanguage(path), [path])
+  const isImagePreview = useMemo(() => isWorkspaceImagePreviewPath(path), [path])
+  const imageUrl = useMemo(() => {
+    return sessionId != null && sessionId !== ''
+      ? getSessionWorkspaceResourceUrl(sessionId, path)
+      : getWorkspaceResourceUrl(path)
+  }, [path, sessionId])
   const handleSaveError = useCallback((err: unknown) => {
     void message.error(getApiErrorMessage(err, t('common.operationFailed')))
   }, [message, t])
   const { data, draft, error, isLoading, saveNow, setDraft } = useWorkspaceFileEditorState({
+    enabled: !isImagePreview,
     path,
     sessionId,
     onSaveError: handleSaveError
   })
+
+  useEffect(() => {
+    setImageLoadFailed(false)
+  }, [imageUrl])
 
   useEffect(() => {
     saveHandlerRef.current = () => {
@@ -93,16 +105,30 @@ export function WorkspaceFileEditorView({
       storageKey={CHAT_BOTTOM_DOCK_HEIGHT_STORAGE_KEY}
       onClose={onClose}
     >
-      {isLoading && (
+      {isImagePreview && (
+        <>
+          <WorkspaceFileBreadcrumb path={path} />
+          {imageLoadFailed
+            ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('chat.workspaceImagePreviewLoadFailed')} />
+            )
+            : (
+              <div className='workspace-file-editor__image-preview' data-dock-panel-no-resize='true'>
+                <img src={imageUrl} alt={path} onError={() => setImageLoadFailed(true)} />
+              </div>
+            )}
+        </>
+      )}
+      {!isImagePreview && isLoading && (
         <div className='workspace-file-editor__state'>
           <Spin size='small' />
           <span>{t('chat.workspaceFileEditorLoading')}</span>
         </div>
       )}
-      {!isLoading && error != null && (
+      {!isImagePreview && !isLoading && error != null && (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('chat.workspaceFileEditorLoadFailed')} />
       )}
-      {!isLoading && error == null && data != null && (
+      {!isImagePreview && !isLoading && error == null && data != null && (
         <>
           <WorkspaceFileBreadcrumb path={data.path} />
           <div className='workspace-file-editor__editor' data-dock-panel-no-resize='true'>

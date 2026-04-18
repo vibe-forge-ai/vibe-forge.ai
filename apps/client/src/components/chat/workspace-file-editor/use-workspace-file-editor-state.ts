@@ -6,10 +6,12 @@ import { readSessionWorkspaceFile, readWorkspaceFile, updateSessionWorkspaceFile
 const AUTOSAVE_DELAY_MS = 600
 
 export function useWorkspaceFileEditorState({
+  enabled = true,
   onSaveError,
   path,
   sessionId
 }: {
+  enabled?: boolean
   onSaveError: (err: unknown) => void
   path: string
   sessionId?: string
@@ -20,9 +22,11 @@ export function useWorkspaceFileEditorState({
   const [savedContent, setSavedContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const hasSession = sessionId != null && sessionId !== ''
-  const swrKey = hasSession
-    ? ['workspace-file-editor', sessionId, path]
-    : ['workspace-file-editor', 'workspace', path]
+  const swrKey = enabled
+    ? hasSession
+      ? ['workspace-file-editor', sessionId, path]
+      : ['workspace-file-editor', 'workspace', path]
+    : null
   const { data, error, isLoading, mutate } = useSWR(
     swrKey,
     () =>
@@ -52,6 +56,9 @@ export function useWorkspaceFileEditorState({
   }, [data])
 
   const saveContent = useCallback(async (content: string) => {
+    if (!enabled) {
+      return
+    }
     setIsSaving(true)
     try {
       const result = sessionId != null && sessionId !== ''
@@ -66,7 +73,7 @@ export function useWorkspaceFileEditorState({
     } finally {
       setIsSaving(false)
     }
-  }, [mutate, onSaveError, path, sessionId])
+  }, [enabled, mutate, onSaveError, path, sessionId])
 
   useEffect(() => {
     if (
@@ -88,11 +95,11 @@ export function useWorkspaceFileEditorState({
   }, [data, draft, error, isDirty, isLoading, isSaving, saveContent])
 
   const saveNow = useCallback(() => {
-    if (!isDirty || isSaving) {
+    if (!enabled || !isDirty || isSaving) {
       return
     }
     void saveContent(draft)
-  }, [draft, isDirty, isSaving, saveContent])
+  }, [draft, enabled, isDirty, isSaving, saveContent])
 
   return {
     data,

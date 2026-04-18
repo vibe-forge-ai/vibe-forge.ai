@@ -23,6 +23,24 @@ const LANGUAGE_BY_FILE_NAME: Record<string, string> = {
   Dockerfile: 'dockerfile'
 }
 
+const IMAGE_EXTENSIONS = new Set([
+  'apng',
+  'avif',
+  'bmp',
+  'gif',
+  'ico',
+  'jpeg',
+  'jpg',
+  'png',
+  'svg',
+  'webp'
+])
+
+const getWorkspaceFileExtension = (path: string) => {
+  const fileName = path.split('/').pop() ?? path
+  return fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() ?? '' : ''
+}
+
 export const getWorkspaceFileEditorLanguage = (path: string) => {
   const fileName = path.split('/').pop() ?? path
   const exactLanguage = LANGUAGE_BY_FILE_NAME[fileName]
@@ -30,6 +48,8 @@ export const getWorkspaceFileEditorLanguage = (path: string) => {
     return exactLanguage
   }
 
-  const extension = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() ?? '' : ''
+  const extension = getWorkspaceFileExtension(path)
   return LANGUAGE_BY_EXTENSION[extension] ?? 'plaintext'
 }
+
+export const isWorkspaceImagePreviewPath = (path: string) => IMAGE_EXTENSIONS.has(getWorkspaceFileExtension(path))

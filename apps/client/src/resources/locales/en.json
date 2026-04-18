@@ -480,6 +480,7 @@
     "workspaceFileEditorTitle": "File",
     "workspaceFileEditorLoading": "Loading file...",
     "workspaceFileEditorLoadFailed": "Failed to load file",
+    "workspaceImagePreviewLoadFailed": "Failed to load image",
     "workspaceFileEditorSave": "Save",
     "workspaceFileEditorSaved": "Saved",
     "workspaceFileEditorRevert": "Revert",

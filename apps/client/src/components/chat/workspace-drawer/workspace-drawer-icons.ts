@@ -63,3 +63,48 @@ export const getWorkspaceFileIconMeta = (name: string): WorkspaceDrawerIconMeta 
   if (['sh', 'bash', 'zsh'].includes(extension)) return { icon: 'terminal', tone: 'script' }
   return { icon: 'draft', tone: 'file' }
 }
+
+export const getWorkspaceLinkedIconMeta = (
+  name: string,
+  linkType: 'directory' | 'file' | 'missing' | 'other' | undefined,
+  expanded: boolean,
+  linkKind: 'gitdir' | 'symlink' = 'symlink'
+): WorkspaceDrawerIconMeta => {
+  if (linkKind === 'gitdir') {
+    return {
+      icon: expanded ? 'folder_open' : 'folder',
+      tone: linkType === 'missing' ? 'symlink-broken' : 'git'
+    }
+  }
+
+  if (linkType === 'missing') {
+    return { icon: 'draft', tone: 'symlink-broken', badgeIcon: 'link_off' }
+  }
+
+  if (linkType === 'directory') {
+    return getWorkspaceFolderIconMeta(name, expanded)
+  }
+
+  if (linkType === 'file') {
+    return getWorkspaceFileIconMeta(name)
+  }
+
+  return { icon: 'draft', tone: 'symlink' }
+}
+
+export const getWorkspaceLinkIndicatorIconMeta = (
+  linkKind: 'gitdir' | 'symlink',
+  linkType: 'directory' | 'file' | 'missing' | 'other' | undefined,
+  isExternal?: boolean
+): WorkspaceDrawerIconMeta => {
+  if (linkType === 'missing') {
+    return { icon: 'link_off', tone: 'symlink-broken' }
+  }
+  if (linkKind === 'gitdir') {
+    return { icon: 'account_tree', tone: 'git' }
+  }
+  if (isExternal === true) {
+    return { icon: 'open_in_new', tone: 'symlink-external' }
+  }
+  return { icon: 'link', tone: 'symlink' }
+}

@@ -142,6 +142,12 @@ export async function readSessionWorkspaceFile(
   return fetchApiJson<WorkspaceFileContent>(url)
 }
 
+export function getSessionWorkspaceResourceUrl(id: string, path: string) {
+  const url = createApiUrl(`/api/sessions/${id}/workspace/resource`)
+  url.searchParams.set('path', path)
+  return url.toString()
+}
+
 export async function updateSessionWorkspaceFile(
   id: string,
   path: string,

@@ -1,14 +1,27 @@
 import { Buffer } from 'node:buffer'
-import { lstat, readFile, writeFile } from 'node:fs/promises'
+import { lstat, readFile, stat, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { TextDecoder } from 'node:util'
 
 import { getWorkspaceFolder } from '#~/services/config/index.js'
 import { badRequest, notFound } from '#~/utils/http.js'
 
-import { normalizeWorkspacePath } from './tree'
+import { assertWorkspacePathInsideRealRoot, normalizeWorkspacePath, readGitdirFileTarget } from './tree'
 
 const MAX_WORKSPACE_FILE_BYTES = 2 * 1024 * 1024
+
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  apng: 'image/apng',
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  gif: 'image/gif',
+  ico: 'image/x-icon',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+  webp: 'image/webp'
+}
 
 export interface WorkspaceFileContent {
   content: string
@@ -17,9 +30,22 @@ export interface WorkspaceFileContent {
   size: number
 }
 
+export interface WorkspaceImageResource {
+  filePath: string
+  mimeType: string
+  path: string
+  size: number
+}
+
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true })
 
-const resolveWorkspaceFilePath = async (
+const getFileExtension = (path: string) => {
+  const fileName = path.split('/').filter(Boolean).at(-1) ?? path
+  const dotIndex = fileName.lastIndexOf('.')
+  return dotIndex <= 0 ? '' : fileName.slice(dotIndex + 1).toLowerCase()
+}
+
+const resolveWorkspaceFileEntryPath = async (
   rawPath: string | undefined,
   options: { workspaceFolder?: string } = {}
 ) => {
@@ -30,26 +56,47 @@ const resolveWorkspaceFilePath = async (
   }
 
   const filePath = resolve(workspaceFolder, normalizedPath)
-  let stat
+  let fileStat
   try {
-    stat = await lstat(filePath)
+    const symlinkStat = await lstat(filePath)
+    fileStat = symlinkStat.isSymbolicLink() ? await stat(filePath) : symlinkStat
   } catch {
     throw notFound('Workspace file not found', { path: rawPath }, 'workspace_file_not_found')
   }
 
-  if (!stat.isFile()) {
+  await assertWorkspacePathInsideRealRoot(
+    workspaceFolder,
+    filePath,
+    rawPath,
+    'workspace_file_path_escapes_workspace'
+  )
+
+  if (!fileStat.isFile()) {
     throw badRequest('Workspace path is not a file', { path: rawPath }, 'workspace_path_not_file')
   }
 
-  if (stat.size > MAX_WORKSPACE_FILE_BYTES) {
+  if ((normalizedPath === '.git' || normalizedPath.endsWith('/.git')) && await readGitdirFileTarget(filePath) != null) {
+    throw badRequest('Workspace path is a Git metadata link', { path: rawPath }, 'workspace_file_gitdir_pointer')
+  }
+
+  return { filePath, fileStat, normalizedPath }
+}
+
+const resolveWorkspaceFilePath = async (
+  rawPath: string | undefined,
+  options: { workspaceFolder?: string } = {}
+) => {
+  const resolved = await resolveWorkspaceFileEntryPath(rawPath, options)
+
+  if (resolved.fileStat.size > MAX_WORKSPACE_FILE_BYTES) {
     throw badRequest(
       'Workspace file is too large to edit',
-      { maxSize: MAX_WORKSPACE_FILE_BYTES, path: rawPath, size: stat.size },
+      { maxSize: MAX_WORKSPACE_FILE_BYTES, path: rawPath, size: resolved.fileStat.size },
       'workspace_file_too_large'
     )
   }
 
-  return { filePath, normalizedPath }
+  return resolved
 }
 
 const assertEditableTextFile = async (filePath: string, rawPath: string | undefined) => {
@@ -80,6 +127,24 @@ export const readWorkspaceFile = async (
     content,
     encoding: 'utf-8',
     size: buffer.byteLength
+  }
+}
+
+export const resolveWorkspaceImageResource = async (
+  rawPath: string | undefined,
+  options: { workspaceFolder?: string } = {}
+): Promise<WorkspaceImageResource> => {
+  const { filePath, fileStat, normalizedPath } = await resolveWorkspaceFileEntryPath(rawPath, options)
+  const mimeType = IMAGE_MIME_BY_EXTENSION[getFileExtension(normalizedPath)]
+  if (mimeType == null) {
+    throw badRequest('Workspace resource is not a supported image', { path: rawPath }, 'workspace_resource_not_image')
+  }
+
+  return {
+    filePath,
+    mimeType,
+    path: normalizedPath,
+    size: fileStat.size
   }
 }
 
