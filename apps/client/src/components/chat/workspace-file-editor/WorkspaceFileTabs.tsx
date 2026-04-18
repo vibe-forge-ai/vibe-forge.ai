@@ -39,22 +39,24 @@ export function WorkspaceFileTabs({
             className={`workspace-file-editor__tab ${activePath === path ? 'is-active' : ''}`}
             title={path}
           >
-            <button type='button' className='workspace-file-editor__tab-main' onClick={() => onSelectPath(path)}>
+            <span className='workspace-file-editor__tab-leading'>
               <span className={`material-symbols-rounded workspace-file-editor__tab-icon is-${icon.tone}`}>
                 {icon.icon}
               </span>
+              <button
+                type='button'
+                className='workspace-file-editor__tab-close'
+                aria-label={`${t('common.close')} ${fileName}`}
+                title={`${t('common.close')} ${fileName}`}
+                onClick={() => {
+                  onClosePath(path)
+                }}
+              >
+                <span className='material-symbols-rounded'>close</span>
+              </button>
+            </span>
+            <button type='button' className='workspace-file-editor__tab-main' onClick={() => onSelectPath(path)}>
               <span className='workspace-file-editor__tab-name'>{fileName}</span>
-            </button>
-            <button
-              type='button'
-              className='workspace-file-editor__tab-close'
-              aria-label={`${t('common.close')} ${fileName}`}
-              title={`${t('common.close')} ${fileName}`}
-              onClick={() => {
-                onClosePath(path)
-              }}
-            >
-              <span className='material-symbols-rounded'>close</span>
             </button>
           </span>
         )

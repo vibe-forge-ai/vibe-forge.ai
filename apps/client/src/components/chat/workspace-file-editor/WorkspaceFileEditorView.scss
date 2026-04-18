@@ -113,6 +113,20 @@
     color: var(--text-color);
   }
 
+  &:hover,
+  &:focus-within {
+    .workspace-file-editor__tab-icon {
+      opacity: 0;
+      transform: scale(.82);
+    }
+
+    .workspace-file-editor__tab-close {
+      opacity: .74;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+  }
+
   &.is-active {
     background-color: var(--sub-bg-color);
     color: var(--text-color);
@@ -132,14 +146,23 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 7px;
+  padding: 0 7px 0 3px;
+}
+
+.workspace-file-editor__tab-leading {
+  position: relative;
+  flex: 0 0 20px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .workspace-file-editor__tab-icon {
   flex: 0 0 auto;
   font-size: 14px;
   line-height: 1;
+  transition: opacity .14s ease, transform .14s ease;
 
   &.is-docs,
   &.is-markdown {
@@ -164,8 +187,9 @@
 }
 
 .workspace-file-editor__tab-close {
-  flex: 0 0 auto;
-  width: 22px;
+  position: absolute;
+  inset: 2px 0;
+  width: 20px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -173,7 +197,13 @@
   border-radius: 5px;
   font-size: 13px;
   line-height: 1;
-  opacity: .58;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.82);
+  transition:
+    background-color .14s ease,
+    opacity .14s ease,
+    transform .14s ease;
 
   .material-symbols-rounded {
     font-size: 13px;
