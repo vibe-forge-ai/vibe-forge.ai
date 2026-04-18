@@ -74,6 +74,8 @@ export const createSenderToolbarBindings = ({
     sendBlockedTooltip?: string
     showConfirmInteractionAction: boolean
     modelUnavailable?: boolean
+    hideReferenceActions: boolean
+    hideSubmitAction: boolean
     referenceActions: {
       showReferenceActions: boolean
       showPermissionActions: boolean
@@ -117,6 +119,8 @@ export const createSenderToolbarBindings = ({
     showEffortSelect: ui.selectOverlays.showEffortSelect,
     showReferenceActions: ui.referenceActions.showReferenceActions,
     showPermissionActions: ui.referenceActions.showPermissionActions,
+    hideReferenceActions: ui.hideReferenceActions,
+    hideSubmitAction: ui.hideSubmitAction,
     modelSearchValue: ui.selectOverlays.modelSearchValue,
     selectedModel: selection.selectedModel,
     effort: selection.effort,

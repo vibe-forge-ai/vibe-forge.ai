@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import Router from '@koa/router'
 import { parseExpression } from 'cron-parser'
 
+import type { EffortLevel, GitBranchKind, SessionPermissionMode } from '@vibe-forge/types'
+
 import { getDb } from '#~/db/index.js'
 import type { AutomationRule, AutomationTask, AutomationTrigger } from '#~/db/index.js'
 import {
@@ -16,8 +18,69 @@ import { badRequest, conflict, notFound, unauthorized } from '#~/utils/http.js'
 let schedulerReady = false
 
 type NormalizedAutomationTrigger = Omit<AutomationTrigger, 'ruleId' | 'createdAt'>
+type NormalizedAutomationTask = Omit<AutomationTask, 'ruleId' | 'createdAt'>
+type AutomationBranchMode = NonNullable<AutomationTask['branchMode']>
+interface AutomationRulePayload {
+  name?: string
+  description?: string | null
+  enabled?: boolean
+  immediateRun?: boolean
+  triggers?: Array<Partial<AutomationTrigger>>
+  tasks?: Array<Partial<AutomationTask>>
+}
 
 const invalidPayload = () => badRequest('Invalid payload', undefined, 'invalid_payload')
+
+const normalizeOptionalString = (value: unknown) => {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim()
+  return normalized === '' ? null : normalized
+}
+
+const normalizeEffort = (value: unknown): EffortLevel | null => {
+  return value === 'low' || value === 'medium' || value === 'high' || value === 'max' ? value : null
+}
+
+const normalizePermissionMode = (value: unknown): SessionPermissionMode | null => {
+  return value === 'default' ||
+      value === 'acceptEdits' ||
+      value === 'plan' ||
+      value === 'dontAsk' ||
+      value === 'bypassPermissions'
+    ? value
+    : null
+}
+
+const normalizeBranchKind = (value: unknown): GitBranchKind | null => {
+  return value === 'local' || value === 'remote' ? value : null
+}
+
+const normalizeBranchMode = (value: unknown): AutomationBranchMode | null => {
+  return value === 'checkout' || value === 'create' ? value : null
+}
+
+const normalizeCreateWorktree = (value: unknown) => {
+  return typeof value === 'boolean' ? value : null
+}
+
+const normalizeTaskLaunchOptions = (task: Partial<AutomationTask>) => {
+  const branchName = normalizeOptionalString(task.branchName)
+  const branchMode = normalizeBranchMode(task.branchMode)
+  const normalizedBranchMode = branchName == null ? null : branchMode ?? 'checkout'
+
+  return {
+    model: normalizeOptionalString(task.model),
+    adapter: normalizeOptionalString(task.adapter),
+    effort: normalizeEffort(task.effort),
+    permissionMode: normalizePermissionMode(task.permissionMode),
+    createWorktree: normalizeCreateWorktree(task.createWorktree),
+    branchName,
+    branchMode: normalizedBranchMode,
+    branchKind: branchName == null || normalizedBranchMode === 'create'
+      ? null
+      : normalizeBranchKind(task.branchKind) ?? 'local'
+  }
+}
 
 const normalizeTrigger = (
   trigger: Partial<AutomationTrigger>,
@@ -48,7 +111,7 @@ const normalizeTrigger = (
   }
 }
 
-const normalizeTask = (task: Partial<AutomationTask>, index: number) => {
+const normalizeTask = (task: Partial<AutomationTask>, index: number): NormalizedAutomationTask => {
   const title = (task.title ?? '').trim() || `任务 ${index + 1}`
   const prompt = (task.prompt ?? '').trim()
   if (prompt === '') {
@@ -57,7 +120,8 @@ const normalizeTask = (task: Partial<AutomationTask>, index: number) => {
   return {
     id: task.id ?? randomUUID(),
     title,
-    prompt
+    prompt,
+    ...normalizeTaskLaunchOptions(task)
   }
 }
 
@@ -85,14 +149,7 @@ export function automationRouter(): Router {
   })
 
   router.post('/rules', async (ctx) => {
-    const body = ctx.request.body as {
-      name?: string
-      description?: string
-      enabled?: boolean
-      immediateRun?: boolean
-      triggers?: Array<Partial<AutomationTrigger>>
-      tasks?: Array<Partial<AutomationTask>>
-    }
+    const body = ctx.request.body as AutomationRulePayload
     const name = (body.name ?? '').trim()
     const description = (body.description ?? '').trim()
     const enabled = body.enabled !== false
@@ -123,7 +180,6 @@ export function automationRouter(): Router {
       lastRunAt: null,
       lastSessionId: null
     }
-
     db.createAutomationRule(rule)
     db.replaceAutomationTriggers(rule.id, normalizedTriggers)
     db.replaceAutomationTasks(rule.id, normalizedTasks)
@@ -143,18 +199,11 @@ export function automationRouter(): Router {
     if (!existing) {
       throw notFound('Rule not found', { id }, 'rule_not_found')
     }
-    const body = ctx.request.body as {
-      name?: string
-      description?: string
-      enabled?: boolean
-      immediateRun?: boolean
-      triggers?: Array<Partial<AutomationTrigger>>
-      tasks?: Array<Partial<AutomationTask>>
-    }
+    const body = ctx.request.body as AutomationRulePayload
     const updates: Partial<AutomationRule> = {}
     const immediateRun = body.immediateRun === true
     if (body.name !== undefined) updates.name = body.name.trim()
-    if (body.description !== undefined) updates.description = body.description.trim()
+    if (body.description !== undefined) updates.description = body.description?.trim() ?? null
     if (body.enabled !== undefined) updates.enabled = body.enabled
 
     if (updates.name !== undefined && updates.name.trim() === '') {

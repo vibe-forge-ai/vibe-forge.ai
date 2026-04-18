@@ -1,6 +1,23 @@
 import { getDb } from '#~/db/index.js'
-import type { AutomationRule } from '#~/db/index.js'
+import type { AutomationRule, AutomationTask } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
+
+const buildAutomationWorkspaceOptions = (task: AutomationTask) => {
+  if (task.createWorktree == null && task.branchName == null) {
+    return undefined
+  }
+
+  return {
+    createWorktree: task.createWorktree ?? undefined,
+    branch: task.branchName == null
+      ? undefined
+      : {
+        name: task.branchName,
+        kind: task.branchKind ?? undefined,
+        mode: task.branchMode ?? undefined
+      }
+  }
+}
 
 export function ensureLegacyRuleData(rule: AutomationRule) {
   const db = getDb()
@@ -44,7 +61,12 @@ export async function runAutomationRule(
     createSessionWithInitialMessage({
       title: task.title ? `自动化任务: ${rule.name} · ${task.title}` : `自动化任务: ${rule.name}`,
       initialMessage: task.prompt,
-      tags: [`automation:${rule.id}:${rule.name}`]
+      tags: [`automation:${rule.id}:${rule.name}`],
+      model: task.model ?? undefined,
+      effort: task.effort ?? undefined,
+      permissionMode: task.permissionMode ?? undefined,
+      adapter: task.adapter ?? undefined,
+      workspace: buildAutomationWorkspaceOptions(task)
     })
   ))
 

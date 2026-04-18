@@ -35,47 +35,31 @@
     color: var(--sub-text-color);
   }
 
-  &__form-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: 12px;
+  &__form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     flex: 1;
-    overflow: hidden;
-  }
-
-  &__form-left {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  &__form-right {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    overflow: hidden;
     min-height: 0;
-  }
-
-  &__form-right-scroll {
     overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    min-height: 0;
   }
 
   &__form-section {
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--sub-bg-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
-  &__label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  &__form-section--basic {
+    gap: 8px;
+  }
+
+  &__form-section > .ant-form-item {
+    margin-bottom: 0;
   }
 
   &__label-icon {
@@ -90,17 +74,15 @@
   &__toggle-group {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   &__toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
+    gap: 12px;
+    min-height: 30px;
   }
 
   &__toggle-label {
@@ -118,10 +100,24 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 28px;
-    min-width: 28px;
-    padding: 0 10px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
     border-radius: 6px;
+
+    &--cancel.ant-btn-default {
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none;
+    }
+
+    &--cancel.ant-btn-default:not(:disabled):hover,
+    &--cancel.ant-btn-default:not(:disabled):focus-visible {
+      border: 0 !important;
+      background: var(--tag-hover-bg) !important;
+      color: var(--text-color) !important;
+    }
 
     &--confirm {
       font-weight: 600;
@@ -130,6 +126,12 @@
 
   &__action-icon {
     font-size: 18px;
+  }
+
+  &__icon-button--section-add:not(:disabled):hover,
+  &__icon-button--section-add:not(:disabled):focus-visible {
+    background: var(--tag-hover-bg) !important;
+    color: var(--text-color) !important;
   }
 
   &__form-section .ant-input,
@@ -144,13 +146,5 @@
   &__form-section .ant-input-affix-wrapper,
   &__form-section .ant-select-selector {
     min-height: 30px;
-  }
-}
-
-@media (max-width: 1080px) {
-  .automation-view {
-    &__form-grid {
-      grid-template-columns: 1fr;
-    }
   }
 }

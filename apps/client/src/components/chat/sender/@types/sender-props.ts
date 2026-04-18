@@ -39,9 +39,13 @@ export interface SenderProps {
   }
   placeholder?: string
   initialContent?: SenderInitialContent
+  onInputChange?: (value: string) => void
   onCancel?: () => void
   submitLabel?: string
   submitLoading?: boolean
+  forceEffortControl?: boolean
+  hideReferenceActions?: boolean
+  hideSubmitAction?: boolean
   autoFocus?: boolean
   modelMenuGroups?: ModelSelectMenuGroup[]
   modelSearchOptions?: ModelSelectOption[]

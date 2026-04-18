@@ -273,6 +273,7 @@ export function AutomationView() {
               onStatusFilterChange={(value: string) => update({ status: value })}
               onTimeFilterChange={(value: string) => update({ time: value })}
               onSortOrderChange={(value: string) => update({ sort: value })}
+              onCreateRule={handleCreateRule}
             />
           )}
         </div>

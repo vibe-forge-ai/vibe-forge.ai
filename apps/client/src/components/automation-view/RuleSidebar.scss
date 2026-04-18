@@ -209,8 +209,7 @@
     padding: 0;
     border-radius: 4px;
 
-    &--run .automation-view__action-icon,
-    &--add .automation-view__action-icon {
+    &--run .automation-view__action-icon {
       color: var(--success-color);
     }
 

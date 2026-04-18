@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule, AutomationRun } from '#~/api.js'
 
+import { getEffortLabelKey, getPermissionModeLabelKey } from './@utils/startup-options'
+
 interface RunHistoryPanelProps {
   compact?: boolean
   rule: AutomationRule | null
@@ -21,6 +23,7 @@ interface RunHistoryPanelProps {
   onStatusFilterChange: (value: string) => void
   onTimeFilterChange: (value: string) => void
   onSortOrderChange: (value: string) => void
+  onCreateRule: () => void
 }
 
 export function RunHistoryPanel({
@@ -35,7 +38,8 @@ export function RunHistoryPanel({
   onRunQueryChange,
   onStatusFilterChange,
   onTimeFilterChange,
-  onSortOrderChange
+  onSortOrderChange,
+  onCreateRule
 }: RunHistoryPanelProps) {
   const { t } = useTranslation()
 
@@ -119,8 +123,19 @@ export function RunHistoryPanel({
 
   if (!rule) {
     return (
-      <div className='automation-view__empty'>
-        <Empty description={t('automation.selectRule')} />
+      <div className='automation-view__empty automation-view__empty--details'>
+        <Empty description={t('automation.selectRule')}>
+          <a
+            className='automation-view__empty-link'
+            href='/ui/automation'
+            onClick={(event) => {
+              event.preventDefault()
+              onCreateRule()
+            }}
+          >
+            {t('automation.createRuleLink')}
+          </a>
+        </Empty>
       </div>
     )
   }
@@ -139,6 +154,31 @@ export function RunHistoryPanel({
   const taskLabels = (rule.tasks ?? []).map((task, index) => (
     task.title || t('automation.taskDefaultTitle', { index: index + 1 })
   ))
+  const startupLabels = (rule.tasks ?? [])
+    .map((task, index) => {
+      const labels = [
+        task.adapter ? t('automation.startupSummaryAdapter', { value: task.adapter }) : null,
+        task.model ? t('automation.startupSummaryModel', { value: task.model }) : null,
+        task.effort
+          ? t('automation.startupSummaryEffort', { value: t(getEffortLabelKey(task.effort)) })
+          : null,
+        task.permissionMode && task.permissionMode !== 'default'
+          ? t('automation.startupSummaryPermission', { value: t(getPermissionModeLabelKey(task.permissionMode)) })
+          : null,
+        task.createWorktree === true ? t('automation.startupUseManagedWorktree') : null,
+        task.createWorktree === false ? t('automation.startupUseCurrentWorkspace') : null,
+        task.branchName && task.branchMode === 'create'
+          ? t('automation.startupSummaryCreateBranch', { value: task.branchName })
+          : null,
+        task.branchName && task.branchMode !== 'create'
+          ? t('automation.startupSummaryCheckoutBranch', { value: task.branchName })
+          : null
+      ].filter((label): label is string => label != null && label.trim() !== '')
+      if (labels.length === 0) return null
+      const title = task.title || t('automation.taskDefaultTitle', { index: index + 1 })
+      return `${title}: ${labels.join(' · ')}`
+    })
+    .filter((label): label is string => label != null && label.trim() !== '')
 
   return (
     <div className='automation-view__content'>
@@ -251,6 +291,25 @@ export function RunHistoryPanel({
                       </span>
                     ))
                     : <span className='automation-view__detail-placeholder'>{t('automation.noTasks')}</span>}
+                </div>
+              </div>
+              <div className='automation-view__detail-panel'>
+                <div className='automation-view__detail-section-title'>
+                  <span className='material-symbols-rounded automation-view__meta-icon'>tune</span>
+                  {t('automation.sectionStartup')}
+                </div>
+                <div className='automation-view__detail-chips'>
+                  {startupLabels.length
+                    ? startupLabels.map((label, index) => (
+                      <span key={`${label}-${index}`} className='automation-view__detail-chip'>
+                        {label}
+                      </span>
+                    ))
+                    : (
+                      <span className='automation-view__detail-placeholder'>
+                        {t('automation.startupSummaryDefault')}
+                      </span>
+                    )}
                 </div>
               </div>
             </div>
