@@ -28,6 +28,7 @@ export async function createSession(
     adapter?: string
     workspace?: {
       createWorktree?: boolean
+      worktreeEnvironment?: string
       branch?: {
         name: string
         kind?: GitBranchKind

@@ -21,6 +21,7 @@ import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
 import { uiRouter } from './ui'
 import { workspaceRouter } from './workspace'
+import { worktreeEnvironmentsRouter } from './worktree-environments'
 
 const DEFAULT_CLIENT_BASE = '/ui/'
 const DEFAULT_BASE_PLACEHOLDER = '/__VF_PROJECT_AI_CLIENT_BASE__/'
@@ -91,6 +92,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/channels/actions', router: channelActionsRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/worktree-environments', router: worktreeEnvironmentsRouter() },
     { prefix: '/api/workspace', router: workspaceRouter() }
   ]
 

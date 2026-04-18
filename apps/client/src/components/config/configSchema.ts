@@ -484,6 +484,7 @@ export const configSchema: Record<string, FieldSpec[]> = {
       ]
     },
     { path: ['createSessionWorktree'], type: 'boolean', defaultValue: true, icon: 'account_tree' },
+    { path: ['worktreeEnvironment'], type: 'select', defaultValue: '', icon: 'deployed_code' },
     { path: ['customInstructions'], type: 'multiline', defaultValue: '', icon: 'description' }
   ],
   models: [

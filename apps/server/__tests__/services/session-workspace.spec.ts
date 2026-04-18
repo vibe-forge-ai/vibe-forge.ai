@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -35,6 +35,29 @@ const resolveExpectedManagedWorktreePath = (primaryWorkspaceRoot: string, worksp
     sessionId,
     path.basename(workspaceRoot)
   )
+)
+
+const getPlatformScriptSuffix = () => {
+  if (process.platform === 'darwin') return 'macos'
+  if (process.platform === 'linux') return 'linux'
+  if (process.platform === 'win32') return 'windows'
+  return undefined
+}
+
+const getPlatformScriptFileName = (operation: 'create' | 'start' | 'destroy') => {
+  const platformSuffix = getPlatformScriptSuffix()
+  if (platformSuffix == null) return undefined
+  return platformSuffix === 'windows'
+    ? `${operation}.windows.ps1`
+    : `${operation}.${platformSuffix}.sh`
+}
+
+const getBaseScriptFileName = (operation: 'create' | 'start' | 'destroy') => (
+  process.platform === 'win32' ? `${operation}.ps1` : `${operation}.sh`
+)
+
+const buildScriptContent = (shellContent: string, powershellContent: string) => (
+  process.platform === 'win32' ? powershellContent : shellContent
 )
 
 describe('session workspace service', () => {
@@ -155,6 +178,182 @@ describe('session workspace service', () => {
       cleanupPolicy: 'delete_on_session_delete',
       state: 'ready'
     })
+  })
+
+  it('runs configured worktree environment create scripts after creating a managed worktree', async () => {
+    const { provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Env', 'sess-env')
+
+    await writeFile(
+      path.join(workspaceRoot, '.ai.config.json'),
+      `${JSON.stringify({ conversation: { worktreeEnvironment: 'env-test' } }, null, 2)}\n`,
+      'utf8'
+    )
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-test')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('create')),
+      buildScriptContent(
+        'printf "base:%s:%s:%s\\n" "$VF_SESSION_ID" "$VF_WORKTREE_OPERATION" "$VF_WORKTREE_SOURCE_PATH" > env-create.log\n',
+        'Set-Content -Path env-create.log -Value "base:$($env:VF_SESSION_ID):$($env:VF_WORKTREE_OPERATION):$($env:VF_WORKTREE_SOURCE_PATH)"\n'
+      ),
+      'utf8'
+    )
+    const platformScriptFileName = getPlatformScriptFileName('create')
+    if (platformScriptFileName != null) {
+      await writeFile(
+        path.join(environmentDir, platformScriptFileName),
+        buildScriptContent(
+          'printf "platform:%s\\n" "$VF_WORKTREE_OPERATION" >> env-create.log\n',
+          'Add-Content -Path env-create.log -Value "platform:$($env:VF_WORKTREE_OPERATION)"\n'
+        ),
+        'utf8'
+      )
+    }
+
+    const workspace = await provisionSessionWorkspace('sess-env')
+    const log = await readFile(path.join(workspace.workspaceFolder, 'env-create.log'), 'utf8')
+
+    expect(log).toContain(`base:sess-env:create:${workspaceRoot}`)
+    if (platformScriptFileName != null) {
+      expect(log).toContain('platform:create')
+    }
+  })
+
+  it('saves windows-specific worktree environment scripts as PowerShell files', async () => {
+    const {
+      getWorktreeEnvironment,
+      saveWorktreeEnvironment
+    } = await import('#~/services/worktree-environments.js')
+
+    await saveWorktreeEnvironment('env-windows', {
+      scripts: {
+        'create.windows': 'Write-Output "create windows"',
+        'start.windows': 'Write-Output "start windows"',
+        'destroy.windows': 'Write-Output "destroy windows"'
+      }
+    })
+    const environment = await getWorktreeEnvironment('env-windows')
+    const createScript = environment.scripts.find(script => script.key === 'create.windows')
+
+    expect(createScript).toMatchObject({
+      platform: 'windows',
+      fileName: 'create.windows.ps1',
+      exists: true,
+      content: 'Write-Output "create windows"\n'
+    })
+    await expect(
+      readFile(path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-windows', 'start.windows.ps1'), 'utf8')
+    ).resolves.toBe('Write-Output "start windows"\n')
+  })
+
+  it('marks local worktree environments as user config and ignores them from git', async () => {
+    const {
+      getWorktreeEnvironment,
+      saveWorktreeEnvironment
+    } = await import('#~/services/worktree-environments.js')
+
+    await saveWorktreeEnvironment(
+      'env-private',
+      {
+        scripts: {
+          create: 'printf "private\\n"'
+        }
+      },
+      undefined,
+      'user'
+    )
+    const environment = await getWorktreeEnvironment('env-private', undefined, 'user')
+    const gitignore = await readFile(path.join(primaryWorkspaceRoot, '.gitignore'), 'utf8')
+
+    expect(environment).toMatchObject({
+      id: 'env-private',
+      path: path.join(primaryWorkspaceRoot, '.ai', 'env.local', 'env-private'),
+      source: 'user',
+      isLocal: true
+    })
+    expect(gitignore.split(/\r?\n/)).toContain('.ai/env.local/')
+  })
+
+  it('uses an explicitly selected worktree environment when creating a managed worktree', async () => {
+    const { provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Explicit Env', 'sess-explicit-env')
+
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-explicit')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('create')),
+      buildScriptContent(
+        'printf "%s\\n" "$VF_WORKTREE_ENV" > explicit-env.log\n',
+        'Set-Content -Path explicit-env.log -Value "$($env:VF_WORKTREE_ENV)"\n'
+      ),
+      'utf8'
+    )
+
+    const workspace = await provisionSessionWorkspace('sess-explicit-env', {
+      worktreeEnvironment: 'env-explicit'
+    })
+    const log = await readFile(path.join(workspace.workspaceFolder, 'explicit-env.log'), 'utf8')
+
+    expect(workspace.worktreeEnvironment).toBe('env-explicit')
+    expect(log.trim()).toBe('env-explicit')
+  })
+
+  it('runs configured worktree environment destroy scripts before removing a managed worktree', async () => {
+    const { deleteSessionWorkspace, provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Destroy Env', 'sess-destroy-env')
+
+    await writeFile(
+      path.join(workspaceRoot, '.ai.config.json'),
+      `${JSON.stringify({ conversation: { worktreeEnvironment: 'env-destroy' } }, null, 2)}\n`,
+      'utf8'
+    )
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-destroy')
+    const markerPath = path.join(primaryWorkspaceRoot, 'destroy.log')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('destroy')),
+      buildScriptContent(
+        `printf "%s:%s\\n" "$VF_WORKTREE_PATH" "$VF_WORKTREE_FORCE" > "${markerPath}"\n`,
+        `Set-Content -Path "${markerPath}" -Value "$($env:VF_WORKTREE_PATH):$($env:VF_WORKTREE_FORCE)"\n`
+      ),
+      'utf8'
+    )
+
+    const workspace = await provisionSessionWorkspace('sess-destroy-env')
+    await deleteSessionWorkspace('sess-destroy-env', { force: true })
+    const log = await readFile(markerPath, 'utf8')
+
+    expect(log.trim()).toBe(`${workspace.worktreePath}:true`)
+  })
+
+  it('runs configured worktree environment start scripts for a workspace', async () => {
+    const { runConfiguredWorktreeEnvironmentScripts } = await import('#~/services/worktree-environments.js')
+
+    await writeFile(
+      path.join(workspaceRoot, '.ai.config.json'),
+      `${JSON.stringify({ conversation: { worktreeEnvironment: 'env-start' } }, null, 2)}\n`,
+      'utf8'
+    )
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-start')
+    const markerPath = path.join(workspaceRoot, 'start.log')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('start')),
+      buildScriptContent(
+        `printf "%s:%s\\n" "$VF_SESSION_ID" "$VF_WORKTREE_OPERATION" > "${markerPath}"\n`,
+        `Set-Content -Path "${markerPath}" -Value "$($env:VF_SESSION_ID):$($env:VF_WORKTREE_OPERATION)"\n`
+      ),
+      'utf8'
+    )
+
+    await runConfiguredWorktreeEnvironmentScripts({
+      operation: 'start',
+      workspaceFolder: workspaceRoot,
+      sessionId: 'sess-start'
+    })
+
+    expect((await readFile(markerPath, 'utf8')).trim()).toBe('sess-start:start')
   })
 
   it('keeps the repo root directory name as the final segment when forking from an existing managed worktree', async () => {

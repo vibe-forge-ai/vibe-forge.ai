@@ -520,6 +520,11 @@
     "sessionWorkspaceBaseRef": "基线引用",
     "sessionWorkspaceCurrentSession": "当前会话",
     "sessionWorkspaceRepositoryWorktrees": "仓库 worktree",
+    "sessionWorkspaceEnvironment": "worktree 环境",
+    "sessionWorkspaceEnvironmentDefault": "默认环境",
+    "sessionWorkspaceEnvironmentProject": "项目",
+    "sessionWorkspaceEnvironmentLocal": "本地",
+    "sessionWorkspaceNoEnvironments": "暂无环境",
     "sessionWorkspaceStateReady": "就绪",
     "sessionWorkspaceStateProvisioning": "创建中",
     "sessionWorkspaceStateDeleting": "删除中",
@@ -905,6 +910,7 @@
       "defaultAdapterPlaceholder": "请选择适配器",
       "defaultModelServicePlaceholder": "请选择模型服务",
       "defaultModelPlaceholder": "请选择模型",
+      "worktreeEnvironmentPlaceholder": "请选择 worktree 环境",
       "titlePlaceholder": "请输入标题",
       "descriptionPlaceholder": "请输入描述",
       "channelType": "频道类型",
@@ -1128,6 +1134,10 @@
           "label": "新建会话时创建工作树",
           "desc": "默认给新会话分配一个托管 worktree"
         },
+        "worktreeEnvironment": {
+          "label": "默认 worktree 环境",
+          "desc": "新建、启动和销毁托管 worktree 时执行的环境脚本"
+        },
         "customInstructions": {
           "label": "自定义指令",
           "desc": "为对话提供额外的提示与约束"
@@ -1313,6 +1323,79 @@
       "config": "配置",
       "app": "应用"
     },
+    "environments": {
+      "newPlaceholder": "例如 env-node-20",
+      "newLocalPlaceholder": "例如 env-node-20",
+      "create": "新建",
+      "created": "环境已创建",
+      "empty": "暂无 worktree 环境",
+      "searchEmpty": "没有匹配的 worktree 环境",
+      "searchPlaceholder": "搜索环境",
+      "exists": "环境名称已存在",
+      "createFailed": "创建环境失败",
+      "saveFailed": "保存环境失败",
+      "edit": "编辑",
+      "name": "名称",
+      "createTitle": "创建环境",
+      "createDescription": "",
+      "projectListTitle": "项目环境",
+      "projectListDescription": "",
+      "localListTitle": "本地环境",
+      "localListDescription": "",
+      "detailTitle": "环境详细信息",
+      "baseScript": "脚本",
+      "availableEnvVars": "可用环境变量",
+      "platformOverrides": "平台覆盖",
+      "platformOverridesDescription": "覆盖特定操作系统的默认脚本。",
+      "platformScriptDescription": "只在 {{platform}} 下运行。",
+      "sources": {
+        "project": "项目",
+        "user": "本地"
+      },
+      "platforms": {
+        "macos": "macOS",
+        "linux": "Linux",
+        "windows": "Windows"
+      },
+      "operationSections": {
+        "create": {
+          "title": "创建脚本",
+          "description": "此脚本会在 worktree 创建完成后运行。"
+        },
+        "start": {
+          "title": "启动脚本",
+          "description": "此脚本会在 adapter 进程启动前运行。"
+        },
+        "destroy": {
+          "title": "清理脚本",
+          "description": "此脚本会在删除托管 worktree 前运行。"
+        }
+      },
+      "baseScriptDescriptions": {
+        "create": "在新 worktree 中运行。",
+        "start": "在会话工作区中运行。",
+        "destroy": "在将要删除的 worktree 中运行。"
+      },
+      "operations": {
+        "create": "创建",
+        "start": "启动",
+        "destroy": "销毁"
+      },
+      "scripts": {
+        "create": "create.sh",
+        "create.macos": "create.macos.sh",
+        "create.linux": "create.linux.sh",
+        "create.windows": "create.windows.ps1",
+        "start": "start.sh",
+        "start.macos": "start.macos.sh",
+        "start.linux": "start.linux.sh",
+        "start.windows": "start.windows.ps1",
+        "destroy": "destroy.sh",
+        "destroy.macos": "destroy.macos.sh",
+        "destroy.linux": "destroy.linux.sh",
+        "destroy.windows": "destroy.windows.ps1"
+      }
+    },
     "about": {
       "software": "软件信息",
       "version": "版本",
@@ -1331,6 +1414,7 @@
       "channels": "频道",
       "adapters": "适配器",
       "plugins": "插件",
+      "environments": "环境",
       "mcp": "MCP",
       "shortcuts": "快捷键",
       "appearance": "外观",

@@ -263,6 +263,7 @@ export interface Config {
     customInstructions?: string
     injectDefaultSystemPrompt?: boolean
     createSessionWorktree?: boolean
+    worktreeEnvironment?: string
   }
   /**
    * 当前 workspace 默认启用的插件实例列表。

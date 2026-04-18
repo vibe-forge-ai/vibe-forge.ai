@@ -69,6 +69,14 @@ export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessa
 export type { WorkspaceTreeEntry } from './api/workspace'
 export { listWorkspaceTree } from './api/workspace'
 
+// Worktree 环境脚本 API
+export {
+  deleteWorktreeEnvironment,
+  getWorktreeEnvironment,
+  listWorktreeEnvironments,
+  saveWorktreeEnvironment
+} from './api/worktree-environments'
+
 export type {
   GitAvailabilityReason,
   GitBranchKind,
@@ -85,3 +93,14 @@ export type {
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
 export type { SessionWorkspace } from '@vibe-forge/types'
+export type {
+  WorktreeEnvironmentDetail,
+  WorktreeEnvironmentListResult,
+  WorktreeEnvironmentMutationResult,
+  WorktreeEnvironmentOperation,
+  WorktreeEnvironmentPlatform,
+  WorktreeEnvironmentSavePayload,
+  WorktreeEnvironmentScript,
+  WorktreeEnvironmentScriptKey,
+  WorktreeEnvironmentSummary
+} from '@vibe-forge/types'

@@ -50,6 +50,7 @@ export interface SessionWorkspace {
   repositoryRoot?: string
   worktreePath?: string
   baseRef?: string
+  worktreeEnvironment?: string
   cleanupPolicy: SessionWorkspaceCleanupPolicy
   state: SessionWorkspaceState
   lastError?: string

@@ -50,6 +50,7 @@ export const SectionForm = ({
   mergedModelServices,
   mergedAdapters,
   selectedModelService,
+  worktreeEnvironmentOptions,
   detailRoute = null,
   onOpenDetailRoute,
   t
@@ -62,6 +63,7 @@ export const SectionForm = ({
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
   selectedModelService?: string
+  worktreeEnvironmentOptions?: Array<{ value: string; label: ReactNode }>
   detailRoute?: ConfigDetailRoute | null
   onOpenDetailRoute?: (route: ConfigDetailRoute) => void
   t: TranslationFn
@@ -238,12 +240,15 @@ export const SectionForm = ({
       const isDefaultAdapter = sectionKey === 'general' && field.path.join('.') === 'defaultAdapter'
       const isDefaultModelService = sectionKey === 'general' && field.path.join('.') === 'defaultModelService'
       const isDefaultModel = sectionKey === 'general' && field.path.join('.') === 'defaultModel'
+      const isWorktreeEnvironment = sectionKey === 'conversation' && field.path.join('.') === 'worktreeEnvironment'
       const options: Array<{ value: string; label: ReactNode }> = isDefaultModelService
         ? modelServiceOptions
         : isDefaultModel
         ? modelOptions
         : isDefaultAdapter
         ? adapterOptions
+        : isWorktreeEnvironment
+        ? worktreeEnvironmentOptions ?? []
         : (field.options ?? []).map(option => ({
           value: option.value,
           label: <span>{t(option.label)}</span>
@@ -260,6 +265,8 @@ export const SectionForm = ({
               ? 'config.editor.defaultAdapterPlaceholder'
               : isDefaultModelService
               ? 'config.editor.defaultModelServicePlaceholder'
+              : isWorktreeEnvironment
+              ? 'config.editor.worktreeEnvironmentPlaceholder'
               : 'config.editor.defaultModelPlaceholder'
           )}
         />
