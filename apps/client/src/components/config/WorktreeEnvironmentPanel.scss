@@ -167,14 +167,14 @@
   &__script-sections {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
   }
 
   &__script-section {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-bottom: 14px;
+    gap: 8px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
 
     &:last-child {
@@ -186,7 +186,7 @@
   &__fold-header {
     width: 100%;
     border: 0;
-    padding: 2px 0;
+    padding: 0;
     background: transparent;
     color: var(--text-color);
     display: flex;
@@ -236,7 +236,7 @@
   &__fold-body {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
   }
 
   &__script-card {
