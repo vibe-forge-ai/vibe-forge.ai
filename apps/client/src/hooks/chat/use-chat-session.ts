@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
+import { useChatAdapterAccountSelection } from './use-chat-adapter-account-selection'
 import { useChatEffort } from './use-chat-effort'
 import { useChatInteraction } from './use-chat-interaction'
 import { useChatModelAdapterSelection } from './use-chat-model-adapter-selection'
@@ -33,6 +34,16 @@ export function useChatSession({
   } = useChatModelAdapterSelection({
     adapterLocked: session?.id != null
   })
+  const {
+    accountOptions,
+    selectedAccount,
+    setSelectedAccount,
+    applySessionSelection: applySessionAccountSelection,
+    showAccountSelector
+  } = useChatAdapterAccountSelection({
+    adapter: selectedAdapter,
+    model: selectedModelWithService
+  })
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
   const { effort, setEffort, effortOptions } = useChatEffort()
   const { activeView, isTerminalOpen, setActiveView, setIsTerminalOpen } = useChatView()
@@ -55,13 +66,16 @@ export function useChatSession({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    account: selectedAccount,
     setInteractionRequest
   })
   const handleInteractionResponse = useCallback((id: string, data: string | string[]) => {
     reconcileAfterInteraction()
     submitInteractionResponse(id, data)
   }, [reconcileAfterInteraction, submitInteractionResponse])
-  const lastObservedSessionRef = useRef<Pick<Session, 'id' | 'model' | 'permissionMode' | 'adapter' | 'effort'> | null>(
+  const lastObservedSessionRef = useRef<
+    Pick<Session, 'id' | 'model' | 'permissionMode' | 'adapter' | 'account' | 'effort'> | null
+  >(
     null
   )
   const isThinking = session?.status === 'running'
@@ -82,6 +96,12 @@ export function useChatSession({
       })
     }
 
+    if (sessionChanged || previous?.account !== session.account) {
+      applySessionAccountSelection({
+        account: session.account
+      })
+    }
+
     if (sessionChanged || previous?.permissionMode !== session.permissionMode) {
       setPermissionMode(session.permissionMode)
     }
@@ -95,10 +115,13 @@ export function useChatSession({
       model: session.model,
       permissionMode: session.permissionMode,
       adapter: session.adapter,
+      account: session.account,
       effort: session.effort
     }
   }, [
+    applySessionAccountSelection,
     session?.adapter,
+    session?.account,
     session?.effort,
     session?.id,
     session?.model,
@@ -141,6 +164,10 @@ export function useChatSession({
     permissionModeOptions,
     selectedAdapter,
     setSelectedAdapter,
+    selectedAccount,
+    setSelectedAccount,
+    accountOptions,
+    showAccountSelector,
     adapterOptions,
     hasAvailableModels,
     modelUnavailable: !hasAvailableModels

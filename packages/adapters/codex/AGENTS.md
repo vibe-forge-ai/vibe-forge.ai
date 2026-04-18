@@ -36,8 +36,12 @@ Primary implementation entrypoints for Codex hooks:
   - writes the managed `.ai/.mock/.codex/hooks.json`
 - `src/runtime/init.ts`
   - installs mock-home assets during adapter init
-  - keeps hooks/auth/config in `.ai/.mock/.codex/`, maps workspace skills into `.ai/.mock/.agents/skills`, and mirrors each skill into `.ai/.mock/.codex/skills/<name>`
+  - keeps hooks/config in `.ai/.mock/.codex/`, maps workspace skills into `.ai/.mock/.agents/skills`, and mirrors each skill into `.ai/.mock/.codex/skills/<name>`
   - writes a managed `.ai/.mock/.codex/config.toml` that trusts the current workspace and suppresses startup update checks unless `configOverrides` restores them
+- `src/runtime/accounts.ts`
+  - imports the current `~/.codex/auth.json` into `.ai/.local/adapters/codex/accounts/<key>/auth.json`
+  - prepares per-session HOME roots under `.ai/caches/<ctxId>/<sessionId>/adapter-codex-home`
+  - queries Codex account info and rate-limit/quota snapshots through `codex app-server`
 - `src/runtime/session-common.ts`
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
@@ -119,6 +123,15 @@ export default defineConfig({
     codex: {
       sandboxPolicy: { type: 'workspaceWrite' },
       experimentalApi: false,
+      defaultAccount: 'work',
+      accounts: {
+        work: {
+          title: 'Work'
+        },
+        personal: {
+          title: 'Personal'
+        }
+      },
       effort: 'medium',
       maxOutputTokens: 4096,
       clientInfo: { name: 'vibe-forge', title: 'Vibe Forge', version: '0.1.0' },
@@ -133,6 +146,16 @@ export default defineConfig({
   }
 })
 ```
+
+### `defaultAccount` / `accounts`
+
+Codex 多账号切换走 adapter 通用 `account` 能力：
+
+- `defaultAccount`：没有显式选择账号时使用的账号 key
+- `accounts.<key>.title` / `description`：前端显示信息
+- `accounts.<key>.authFile`：可选，显式指定某个账号的 `auth.json` 路径；不填时优先读取 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
+
+如果本机存在 `~/.codex/auth.json`，adapter 会把当前登录态导入到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/`，并在 session 级 HOME 下切换到对应 auth 快照运行。
 
 ### `sandboxPolicy`
 

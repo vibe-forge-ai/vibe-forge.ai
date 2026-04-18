@@ -81,6 +81,10 @@ function ChatRouteView({ session }: { session?: Session }) {
     permissionModeOptions,
     selectedAdapter,
     setSelectedAdapter,
+    selectedAccount,
+    setSelectedAccount,
+    accountOptions,
+    showAccountSelector,
     adapterOptions,
     hasAvailableModels,
     modelUnavailable
@@ -174,6 +178,10 @@ function ChatRouteView({ session }: { session?: Session }) {
           selectedAdapter={selectedAdapter}
           adapterOptions={adapterOptions}
           onAdapterChange={setSelectedAdapter}
+          selectedAccount={selectedAccount}
+          accountOptions={accountOptions}
+          showAccountSelector={showAccountSelector}
+          onAccountChange={setSelectedAccount}
           modelUnavailable={modelUnavailable}
           hasAvailableModels={hasAvailableModels}
         />

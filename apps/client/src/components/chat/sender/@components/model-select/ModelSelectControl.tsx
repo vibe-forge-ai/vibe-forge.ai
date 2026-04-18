@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
 import { useModelSelectBrowser } from '#~/components/chat/sender/@hooks/use-model-select-browser'
 import type { ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
 import type {
   SenderToolbarData,
@@ -64,6 +65,7 @@ export function ModelSelectControl({
   >
 }) {
   const { t } = useTranslation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { isThinking, modelUnavailable, showModelSelect, showEffortSelect, selectedModel, modelSearchValue, isMac } =
     state
   const {
@@ -85,6 +87,7 @@ export function ModelSelectControl({
     onModelChange,
     onToggleRecommendedModel
   } = handlers
+  const isCompactControl = isCompactLayout || isTouchInteraction
 
   const handleModelSelection = (value: string) => {
     onModelChange?.(value)
@@ -111,7 +114,7 @@ export function ModelSelectControl({
       targetClassName='sender-control-tooltip-target'
       enabled={!showModelSelect}
     >
-      <div className='sender-select-shell'>
+      <div className={`sender-select-shell ${isCompactControl ? 'sender-select-shell--compact' : ''}`.trim()}>
         {!showModelSelect && !(modelUnavailable || isThinking) && (
           <button
             type='button'
@@ -126,7 +129,7 @@ export function ModelSelectControl({
         )}
         <Select
           ref={modelSelectRef}
-          className='model-select'
+          className={`model-select ${isCompactControl ? 'model-select--compact' : ''}`.trim()}
           classNames={{ popup: { root: 'model-select-popup' } }}
           open={showModelSelect}
           value={selectedModel}
@@ -154,16 +157,18 @@ export function ModelSelectControl({
           }}
           popupRender={renderModelPopup}
           popupMatchSelectWidth={false}
-          suffixIcon={renderSelectArrow((event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            if (showModelSelect) {
-              onShowModelSelectChange(false)
-              onQueueTextareaFocusRestore()
-              return
-            }
-            onOpenModelSelector()
-          })}
+          suffixIcon={isCompactControl
+            ? null
+            : renderSelectArrow((event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              if (showModelSelect) {
+                onShowModelSelectChange(false)
+                onQueueTextareaFocusRestore()
+                return
+              }
+              onOpenModelSelector()
+            })}
         />
       </div>
     </ShortcutTooltip>

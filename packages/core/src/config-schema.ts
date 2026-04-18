@@ -54,10 +54,18 @@ export const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
 export const effortLevelSchema = z.enum(['low', 'medium', 'high', 'max'])
 export const languageCodeSchema = z.enum(['zh', 'en'])
 
+export const adapterAccountConfigCommonSchema = z.object({
+  title: z.string().optional().describe('Display title'),
+  description: z.string().optional().describe('Display description')
+})
+
 export const adapterConfigCommonSchema = z.object({
   defaultModel: z.string().optional().describe('Default model override for this adapter'),
   includeModels: z.array(z.string()).optional().describe('Allowed model IDs for this adapter'),
-  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter')
+  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter'),
+  defaultAccount: z.string().optional().describe('Default account override for this adapter'),
+  accounts: z.record(z.string(), adapterAccountConfigCommonSchema).optional()
+    .describe('Adapter account display metadata')
 })
 
 export const modelServiceConfigSchema = z.object({

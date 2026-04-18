@@ -34,6 +34,7 @@ interface SessionRow {
   status: string | null
   model: string | null
   adapter: string | null
+  account: string | null
   permissionMode: string | null
   effort: string | null
 }
@@ -62,6 +63,7 @@ const sessionUpdateFields = [
   { key: 'status' },
   { key: 'model' },
   { key: 'adapter' },
+  { key: 'account' },
   { key: 'permissionMode' },
   { key: 'effort' }
 ] as const satisfies ReadonlyArray<{
@@ -106,6 +108,7 @@ function mapSessionRow(row: SessionRow): Session {
     status: (row.status as any) ?? undefined,
     model: row.model ?? undefined,
     adapter: row.adapter ?? undefined,
+    account: row.account ?? undefined,
     permissionMode: (row.permissionMode as any) ?? undefined,
     effort: (row.effort as any) ?? undefined
   }

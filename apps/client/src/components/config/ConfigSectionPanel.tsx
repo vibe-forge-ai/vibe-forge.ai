@@ -172,6 +172,8 @@ export function ConfigSectionPanel({
           selectedModelService={selectedModelService}
           detailRoute={detailRoute}
           onOpenDetailRoute={handleOpenDetail}
+          detailRoute={detailRoute}
+          onOpenDetailRoute={handleOpenDetail}
           t={t}
         />
       </div>

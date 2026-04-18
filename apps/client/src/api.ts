@@ -21,6 +21,7 @@ export {
 
 // 配置读取与更新 API
 export { getConfig, getConfigSchema, updateConfig } from './api/config'
+export { getAdapterAccounts } from './api/adapters'
 export {
   checkoutSessionGitBranch,
   commitSessionGitChanges,

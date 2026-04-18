@@ -34,7 +34,9 @@ type AdapterConfigRecord = object
 export const ADAPTER_COMMON_CONFIG_KEYS = [
   'defaultModel',
   'includeModels',
-  'excludeModels'
+  'excludeModels',
+  'defaultAccount',
+  'accounts'
 ] as const
 
 const LEGACY_ADAPTER_COMMON_CONFIG_KEYS = ['model'] as const
@@ -222,7 +224,12 @@ const mergeAdapterConfigEntries = <TEntry extends AdapterConfigRecord>(
     ...rightRecord
   } as TEntry
 
-  for (const key of deepMergeKeys) {
+  const mergedDeepMergeKeys = new Set<keyof TEntry>([
+    ...deepMergeKeys,
+    ...(('accounts' in leftRecord || 'accounts' in rightRecord) ? ['accounts' as keyof TEntry] : [])
+  ])
+
+  for (const key of mergedDeepMergeKeys) {
     mergedRecord[key] = mergeNestedAdapterConfigValue(leftRecord[key], rightRecord[key]) as TEntry[typeof key]
   }
 

@@ -4,6 +4,7 @@ import {
   doesModelMatchSelector,
   evaluateAdapterModelRules,
   listServiceModels,
+  mergeAdapterConfigs,
   resolveAdapterConfiguredDefaultModel,
   resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
@@ -162,6 +163,48 @@ describe('model selection utilities', () => {
       preferredServiceKey: 'serviceA',
       preserveUnknown: false
     })).toBe('serviceB,modelBOnly')
+  })
+
+  it('merges adapter account maps by key instead of replacing the whole accounts object', () => {
+    expect(mergeAdapterConfigs(
+      {
+        codex: {
+          defaultAccount: 'work',
+          accounts: {
+            work: {
+              title: 'Work',
+              authFile: '.ai/.local/work/auth.json'
+            }
+          }
+        }
+      },
+      {
+        codex: {
+          accounts: {
+            personal: {
+              title: 'Personal'
+            },
+            work: {
+              description: 'workspace override'
+            }
+          }
+        }
+      }
+    )).toEqual({
+      codex: {
+        defaultAccount: 'work',
+        accounts: {
+          work: {
+            title: 'Work',
+            authFile: '.ai/.local/work/auth.json',
+            description: 'workspace override'
+          },
+          personal: {
+            title: 'Personal'
+          }
+        }
+      }
+    })
   })
 
   it('treats service selectors as valid includeModels rules', () => {

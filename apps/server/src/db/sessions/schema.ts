@@ -20,6 +20,7 @@ export const sessionsSchemaModule: SchemaModule = {
         status TEXT,
         model TEXT,
         adapter TEXT,
+        account TEXT,
         permissionMode TEXT,
         effort TEXT
       );
@@ -72,6 +73,7 @@ export const sessionsSchemaModule: SchemaModule = {
     ensureColumn('sessions', 'status', 'TEXT')
     ensureColumn('sessions', 'model', 'TEXT')
     ensureColumn('sessions', 'adapter', 'TEXT')
+    ensureColumn('sessions', 'account', 'TEXT')
     ensureColumn('sessions', 'permissionMode', 'TEXT')
     ensureColumn('sessions', 'effort', 'TEXT')
     exec(`

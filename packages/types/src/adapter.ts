@@ -44,6 +44,7 @@ export interface SessionInitInfo {
   uuid: string
   model: string
   adapter?: string
+  account?: string
   effort?: EffortLevel
   version: string
   tools: string[]
@@ -81,12 +82,47 @@ export interface AdapterCtx {
   assets?: WorkspaceAssetBundle
 }
 
+export interface AdapterAccountQuotaMetric {
+  id: string
+  label: string
+  value?: string
+  description?: string
+  primary?: boolean
+}
+
+export interface AdapterAccountQuotaInfo {
+  summary?: string
+  metrics?: AdapterAccountQuotaMetric[]
+  updatedAt?: number
+}
+
+export interface AdapterAccountInfo {
+  key: string
+  title: string
+  description?: string
+  status?: 'ready' | 'missing' | 'error'
+  isDefault?: boolean
+  quota?: AdapterAccountQuotaInfo
+}
+
+export interface AdapterAccountsQueryOptions {
+  model?: string
+  account?: string
+  refresh?: boolean
+}
+
+export interface AdapterAccountsResult {
+  defaultAccount?: string
+  accounts: AdapterAccountInfo[]
+}
+
 export interface AdapterQueryOptions {
   description?: string
   type: 'create' | 'resume'
   runtime: TaskRuntime
   sessionId: string
   model?: string
+  account?: string
   effort?: EffortLevel
   mode?: 'stream' | 'direct'
   systemPrompt?: string
@@ -125,6 +161,10 @@ export interface Adapter {
   init?: (
     ctx: AdapterCtx
   ) => Promise<void>
+  getAccounts?: (
+    ctx: AdapterCtx,
+    options: AdapterAccountsQueryOptions
+  ) => Promise<AdapterAccountsResult>
   query: (
     ctx: AdapterCtx,
     options: AdapterQueryOptions

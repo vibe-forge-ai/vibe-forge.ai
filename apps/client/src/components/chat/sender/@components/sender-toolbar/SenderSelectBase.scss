@@ -1,5 +1,6 @@
 .model-select,
-.effort-select {
+.effort-select,
+.account-select {
   .ant-select-selection-search-input {
     height: 100% !important;
   }
@@ -70,9 +71,10 @@
   }
 }
 
-@media (max-width: 960px) {
+  @media (max-width: 960px) {
   .model-select,
-  .effort-select {
+  .effort-select,
+  .account-select {
     .ant-select-arrow {
       width: 20px;
       min-width: 20px;

@@ -422,6 +422,8 @@
     "referenceImageDescription": "从本地选择图片并附在消息中。",
     "referenceFile": "文件",
     "referenceFileDescription": "从当前项目目录树中选择要引用的文件。",
+    "accountSelectPlaceholder": "选择账号",
+    "accountSelectOpenAdapterConfig": "打开 {{adapter}} 配置",
     "effortSelectPlaceholder": "推理强度",
     "effortLabels": {
       "default": "默认",

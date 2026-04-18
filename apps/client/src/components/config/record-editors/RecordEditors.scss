@@ -20,6 +20,13 @@
   background: var(--subpage-tertiary-hover-bg);
 }
 
+.config-view__record-card--highlighted {
+  border-color: color-mix(in srgb, var(--primary-color, #2563eb) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-soft-bg, #eff6ff) 42%, var(--subpage-tertiary-bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color, #2563eb) 18%, transparent);
+  scroll-margin-top: 24px;
+}
+
 .config-view__record-title {
   display: flex;
   align-items: center;

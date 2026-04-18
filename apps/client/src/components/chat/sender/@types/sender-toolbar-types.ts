@@ -3,6 +3,7 @@ import type { ChangeEvent, KeyboardEvent, ReactNode, RefObject } from 'react'
 import type { SessionQueuedMessageMode } from '@vibe-forge/core'
 import type { RefSelectProps } from 'antd'
 
+import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -36,6 +37,8 @@ export interface SenderToolbarState {
   effort: ChatEffort
   permissionMode: PermissionMode
   selectedAdapter?: string
+  selectedAccount?: string
+  showAccountSelector: boolean
   isMac: boolean
   resolvedSendShortcut: string
   hasComposerContent: boolean
@@ -53,6 +56,7 @@ export interface SenderToolbarData {
   effortOptions: Array<{ value: ChatEffort; label: ReactNode }>
   permissionModeOptions: Array<{ value: PermissionMode; label: ReactNode }>
   adapterOptions?: Array<{ value: string; label: ReactNode }>
+  accountOptions?: ChatAdapterAccountOption[]
   composerControlShortcuts: SenderToolbarShortcuts
   submitLabel?: string
   confirmInteractionLabel?: string
@@ -86,6 +90,7 @@ export interface SenderToolbarHandlers {
   onToggleRecommendedModel?: (option: ModelSelectOption) => void | Promise<void>
   onEffortChange?: (effort: ChatEffort) => void
   onAdapterChange?: (adapter: string) => void
+  onAccountChange?: (account: string) => void
   onSend: (mode?: SessionQueuedMessageMode) => void
   onInterrupt: () => void
   onCancel?: () => void

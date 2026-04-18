@@ -421,6 +421,8 @@
     "referenceImageDescription": "Choose a local image and attach it to the message.",
     "referenceFile": "File",
     "referenceFileDescription": "Choose files from the current project tree.",
+    "accountSelectPlaceholder": "Select account",
+    "accountSelectOpenAdapterConfig": "Open {{adapter}} config",
     "effortSelectPlaceholder": "Effort",
     "effortLabels": {
       "default": "Standard",

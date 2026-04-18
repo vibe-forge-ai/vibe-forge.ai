@@ -1,8 +1,19 @@
 import { z } from 'zod'
 
-import { defineAdapterConfigContribution, effortLevelSchema, jsonValueSchema } from '@vibe-forge/core/config-schema'
+import {
+  adapterAccountConfigCommonSchema,
+  defineAdapterConfigContribution,
+  effortLevelSchema,
+  jsonValueSchema
+} from '@vibe-forge/core/config-schema'
+
+const codexAdapterAccountSchema = adapterAccountConfigCommonSchema.extend({
+  authFile: z.string().optional().describe('Path to the Codex auth.json file for this account')
+})
 
 export const codexAdapterConfigSchema = z.object({
+  defaultAccount: z.string().optional().describe('Default Codex account key'),
+  accounts: z.record(z.string(), codexAdapterAccountSchema).optional().describe('Available Codex accounts'),
   sandboxPolicy: z.object({
     type: z.enum(['readOnly', 'workspaceWrite', 'dangerFullAccess', 'externalSandbox'])
       .describe('Sandbox policy type'),
@@ -36,6 +47,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   schema: codexAdapterConfigSchema,
   configEntry: {
     extraCommonKeys: ['effort'] as const,
-    deepMergeKeys: ['sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
+    deepMergeKeys: ['accounts', 'sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
   }
 })

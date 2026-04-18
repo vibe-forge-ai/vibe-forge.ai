@@ -9,5 +9,6 @@ export interface TaskDetail {
   adapter?: string
   adapterType?: string
   model?: string
+  account?: string
   exitCode?: number
 }

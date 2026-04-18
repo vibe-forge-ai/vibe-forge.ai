@@ -17,6 +17,7 @@
 - `./.ai/caches`
 - `./.ai/plugins`
 - `./.ai/.mock`
+- `./.ai/.local`
 
 ## 环境变量
 
@@ -56,6 +57,7 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - workspace assets：`rules`、`skills`、`specs`、`entities`、`mcp`
 - 运行时目录：`logs`、`caches`、`plugins`
+- 本地私有目录：`.local`
 - mock HOME 与 adapter 派生目录：Codex、Claude Code、OpenCode
 - CLI 维护命令：`vf clear`、`vf report`
 - 启动入口：CLI、server、client、hook loader
@@ -65,6 +67,13 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - `__VF_PROJECT_AI_BASE_DIR__` 会影响整棵项目数据资产树
 - `__VF_PROJECT_AI_ENTITIES_DIR__` 只影响 `entities` 的扫描与加载位置
+
+`./.ai/.local` 用于当前 workspace 的私有本地数据，不应提交到 Git。
+
+当前主要用途包括：
+
+- adapter 多账号凭据快照
+- 只应保存在本机的认证状态或临时元数据
 
 ## 不受影响的内容
 

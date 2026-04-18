@@ -146,8 +146,10 @@ describe('initCodexAdapter', () => {
 
     const configContent = await readFile(join(mockHome, '.codex', 'config.toml'), 'utf8')
     expect(configContent).toContain('check_for_update_on_startup = false')
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG')
     expect(configContent).toContain(`[projects.${JSON.stringify(resolve(workspace))}]`)
     expect(configContent).toContain('trust_level = "trusted"')
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG')
   })
 
   it('preserves unmanaged config content and replaces the managed block with user overrides', async () => {
@@ -165,7 +167,6 @@ describe('initCodexAdapter', () => {
         '',
         '# BEGIN VIBE FORGE MANAGED CODEX CONFIG',
         'check_for_update_on_startup = false',
-        '',
         '[projects."/tmp/old-workspace"]',
         'trust_level = "trusted"',
         '# END VIBE FORGE MANAGED CODEX CONFIG',
@@ -205,7 +206,8 @@ describe('initCodexAdapter', () => {
     const configContent = await readFile(configPath, 'utf8')
     expect(configContent).toContain('model = "gpt-5.4"')
     expect(configContent).toContain('check_for_update_on_startup = true')
-    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX CONFIG/g)).toHaveLength(1)
+    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG/g)).toHaveLength(1)
+    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG/g)).toHaveLength(1)
     expect(configContent).toContain(`[projects.${JSON.stringify(resolve(workspace))}]`)
     expect(configContent).not.toContain('/tmp/old-workspace')
   })

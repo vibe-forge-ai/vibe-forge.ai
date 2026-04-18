@@ -28,20 +28,30 @@
   }
 
   .ant-select-selection-wrap,
+  .ant-select-selection-search,
   .ant-select-selection-item,
   .ant-select-selection-placeholder {
     display: flex;
     height: 100%;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    width: auto;
     min-width: 0;
     padding: 0 !important;
+  }
+
+  .ant-select-selection-wrap {
+    flex: 1;
+    justify-content: center;
   }
 
   .ant-select-selection-item,
   .ant-select-selection-placeholder {
     line-height: 1 !important;
+  }
+
+  .ant-select-arrow {
+    display: none !important;
   }
 
   .adapter-option {
@@ -52,8 +62,7 @@
     flex: 0 0 100%;
   }
 
-  .adapter-option__text,
-  .ant-select-arrow {
+  .adapter-option__text {
     display: none !important;
   }
 
@@ -62,6 +71,7 @@
   }
 }
 
+.adapter-select:not(.ant-select-disabled):hover,
 .adapter-select:not(.ant-select-disabled).ant-select-focused,
 .adapter-select:not(.ant-select-disabled).ant-select-open {
   background: var(--sender-control-hover-bg);

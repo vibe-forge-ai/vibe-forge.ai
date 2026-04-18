@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process'
 import { access, mkdir, readdir, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import process from 'node:process'
 import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
@@ -23,23 +22,6 @@ const syncCodexMockHomeSymlink = async (params: {
   await syncSymlinkTarget({
     ...params,
     onMissingSource: 'remove'
-  })
-}
-
-/**
- * Symlink `<home>/.codex/auth.json` into `<aiHome>/.codex/auth.json` so
- * the codex process can authenticate when HOME is redirected to `.ai/.mock`.
- */
-async function linkAuthFile(home: string, mockHome: string): Promise<void> {
-  const realAuth = join(home, '.codex', 'auth.json')
-  const aiCodexDir = join(mockHome, '.codex')
-  const aiAuth = join(aiCodexDir, 'auth.json')
-
-  await mkdir(aiCodexDir, { recursive: true })
-  await syncCodexMockHomeSymlink({
-    sourcePath: realAuth,
-    targetPath: aiAuth,
-    type: 'file'
   })
 }
 
@@ -119,16 +101,11 @@ async function writeManagedCodexConfig(
  *
  * This init step:
  *   1. Verifies that the `codex` binary is reachable.
- *   2. Symlinks the real `~/.codex/auth.json` into the mock HOME directory so
- *      authentication works under HOME isolation.
- *   3. Writes a managed mock-home `config.toml` for trust and startup defaults.
- *   4. Installs a workspace-local native hooks bridge into the mock Codex home.
+ *   2. Writes a managed mock-home `config.toml` for trust and startup defaults.
+ *   3. Installs a workspace-local native hooks bridge into the mock Codex home.
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
-
-  const home = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
-  const mockHome = resolveMockHome(ctx.cwd, ctx.env)
 
   const binaryPath = resolveCodexBinaryPath(env)
 
@@ -139,9 +116,6 @@ export const initCodexAdapter = async (ctx: AdapterCtx) => {
     // installed but the --version flag might not exist in older builds.
   }
 
-  if (home != null && home !== '') {
-    await linkAuthFile(home, mockHome)
-  }
   await syncCodexMockHomeSkills(ctx)
   await writeManagedCodexConfig(ctx)
   await ensureCodexNativeHooksInstalled(ctx)

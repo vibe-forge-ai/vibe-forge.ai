@@ -3,10 +3,17 @@ import type { PluginConfig } from './plugin'
 
 export interface AdapterMap {}
 
+export interface AdapterAccountConfigCommon {
+  title?: string
+  description?: string
+}
+
 export interface AdapterConfigCommon {
   defaultModel?: string
   includeModels?: string[]
   excludeModels?: string[]
+  defaultAccount?: string
+  accounts?: Record<string, AdapterAccountConfigCommon>
 }
 
 export type AdapterConfigEntry<T> = T & AdapterConfigCommon
