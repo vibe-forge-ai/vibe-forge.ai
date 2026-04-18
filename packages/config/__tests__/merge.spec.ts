@@ -29,6 +29,12 @@ describe('mergeConfigs', () => {
             }
           }
         },
+        skills: {
+          registry: {
+            url: 'https://skills.example.com',
+            enabled: true
+          }
+        },
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
@@ -85,6 +91,11 @@ describe('mergeConfigs', () => {
             }
           }
         },
+        skills: {
+          registry: {
+            downloadUrl: 'https://download.skills.example.com'
+          }
+        },
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
@@ -131,6 +142,11 @@ describe('mergeConfigs', () => {
     expect(merged.notifications?.events?.completed).toEqual({
       title: 'Base Title',
       description: 'Child Description'
+    })
+    expect(merged.skills).toEqual({
+      registry: {
+        downloadUrl: 'https://download.skills.example.com'
+      }
     })
     expect(merged.marketplaces).toEqual({
       'team-tools': {

@@ -57,7 +57,8 @@ const buildSections = (config: Config | undefined) => {
     announcements,
     shortcuts,
     conversation,
-    notifications
+    notifications,
+    skills
   } = config ?? {}
 
   return {
@@ -73,7 +74,8 @@ const buildSections = (config: Config | undefined) => {
       announcements,
       permissions: sanitize(config?.permissions),
       env: sanitize(config?.env),
-      notifications: sanitize(notifications)
+      notifications: sanitize(notifications),
+      skills: sanitize(skills)
     },
     conversation: sanitize(conversation),
     models: sanitize(config?.models),

@@ -82,6 +82,81 @@ describe('initCodexAdapter', () => {
     })
   })
 
+  it('symlinks resolved asset skills into both Codex skill locations', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const appSkillDir = join(workspace, '.ai', 'skills', 'app-builder')
+    const dependencySkillDir = join(workspace, '.ai', 'caches', 'skill-dependencies', 'skills.sh', 'frontend-design')
+
+    await mkdir(appSkillDir, { recursive: true })
+    await mkdir(dependencySkillDir, { recursive: true })
+    await writeFile(join(appSkillDir, 'SKILL.md'), '# App Builder\n')
+    await writeFile(join(dependencySkillDir, 'SKILL.md'), '# Frontend Design\n')
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:workspace:app-builder',
+            kind: 'skill',
+            name: 'app-builder',
+            displayName: 'app-builder',
+            origin: 'workspace',
+            sourcePath: join(appSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(appSkillDir, 'SKILL.md'),
+                body: '# App Builder\n',
+                attributes: {}
+              }
+            }
+          },
+          {
+            id: 'skill:workspace:frontend-design',
+            kind: 'skill',
+            name: 'frontend-design',
+            displayName: 'frontend-design',
+            origin: 'workspace',
+            sourcePath: join(dependencySkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(dependencySkillDir, 'SKILL.md'),
+                body: '# Frontend Design\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const agentsAppSkillPath = join(mockHome, '.agents', 'skills', 'app-builder')
+    const agentsDependencySkillPath = join(mockHome, '.agents', 'skills', 'frontend-design')
+    const codexDependencySkillPath = join(mockHome, '.codex', 'skills', 'frontend-design')
+
+    expect(resolve(dirname(agentsAppSkillPath), await readlink(agentsAppSkillPath))).toBe(resolve(appSkillDir))
+    expect(resolve(dirname(agentsDependencySkillPath), await readlink(agentsDependencySkillPath))).toBe(
+      resolve(dependencySkillDir)
+    )
+    expect(resolve(dirname(codexDependencySkillPath), await readlink(codexDependencySkillPath))).toBe(
+      resolve(dependencySkillDir)
+    )
+  })
+
   it('removes stale managed Codex skill links before syncing the current workspace skills', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')

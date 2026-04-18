@@ -131,11 +131,15 @@ describe('createOpenCodeSession runtime config', () => {
     const workspace = await createWorkspace()
     await writeDocument(
       join(workspace, '.ai/skills/research/SKILL.md'),
-      '---\nname: research\ndescription: 检索资料\n---\n阅读 README.md'
+      '---\nname: research\ndescription: 检索资料\ndependencies:\n  - frontend-design\n---\n阅读 README.md'
     )
     await writeDocument(
       join(workspace, '.ai/skills/review/SKILL.md'),
       '---\nname: review\ndescription: 代码评审\n---\n检查风险'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend-design/SKILL.md'),
+      '---\nname: frontend-design\ndescription: 前端设计\n---\n设计界面'
     )
     mockExecFileJsonResponses(execFileMock, [
       { id: 'sess_skill', title: 'Vibe Forge:session-skill-bridge', updatedAt: '2026-03-26T00:00:00.000Z' }
@@ -160,6 +164,7 @@ describe('createOpenCodeSession runtime config', () => {
     const configDir = (spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }).env?.OPENCODE_CONFIG_DIR
     expect(typeof configDir).toBe('string')
     expect((await lstat(join(configDir!, 'skills', 'research'))).isSymbolicLink()).toBe(true)
+    expect((await lstat(join(configDir!, 'skills', 'frontend-design'))).isSymbolicLink()).toBe(true)
     await expect(lstat(join(configDir!, 'skills', 'review'))).rejects.toThrow()
   })
 

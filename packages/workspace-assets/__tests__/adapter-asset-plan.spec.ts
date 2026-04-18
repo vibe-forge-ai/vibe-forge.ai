@@ -180,6 +180,53 @@ describe('buildAdapterAssetPlan', () => {
     ]))
   })
 
+  it('includes transitive skill dependencies in selected native overlays', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend-design/SKILL.md'),
+      '---\nname: frontend-design\ndescription: UI design guidance\n---\nDesign the UI.'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const plan = buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })
+
+    expect(plan.overlays).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/app-builder'
+      }),
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/frontend-design'
+      })
+    ]))
+  })
+
   it('builds copilot native skill overlays and translated runtime diagnostics', async () => {
     const workspace = await createWorkspace()
 

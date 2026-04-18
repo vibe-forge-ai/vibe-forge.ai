@@ -219,6 +219,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'notifications')
       )
       updateField(
+        'skills',
+        mergeMaskedValues(sectionValue.skills, config.skills) as Config['skills'],
+        hasOwn(sectionValue, 'skills')
+      )
+      updateField(
         'shortcuts',
         mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts'],
         hasOwn(sectionValue, 'shortcuts')

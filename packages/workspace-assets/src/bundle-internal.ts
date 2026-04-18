@@ -29,6 +29,9 @@ import {
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
 
+import { findSkillDependencyAsset, normalizeSkillDependencies } from './skill-dependencies'
+import { installRegistrySkillDependency } from './skill-registry'
+
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type OpenCodeOverlayKind = Extract<WorkspaceAssetKind, 'agent' | 'command' | 'mode' | 'nativePlugin'>
 type OpenCodeOverlayAsset<TKind extends OpenCodeOverlayKind> = Extract<WorkspaceAsset, { kind: TKind }>
@@ -339,6 +342,50 @@ const assertNoMcpConflicts = (
   }
 }
 
+const syncSkillDependencyAssets = async (params: {
+  cwd: string
+  configs: [Config?, Config?]
+  assets: WorkspaceAsset[]
+}) => {
+  const skillAssets = params.assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'skill' }> =>
+    asset.kind === 'skill'
+  )
+  const processedSkillIds = new Set<string>()
+  const fetchedDependencyRefs = new Set<string>()
+
+  for (let index = 0; index < skillAssets.length; index++) {
+    const asset = skillAssets[index]
+    if (processedSkillIds.has(asset.id)) continue
+    processedSkillIds.add(asset.id)
+
+    for (const dependency of normalizeSkillDependencies(asset.payload.definition.attributes.dependencies)) {
+      if (findSkillDependencyAsset(skillAssets, dependency, asset.instancePath) != null) continue
+      if (fetchedDependencyRefs.has(dependency.ref)) continue
+      fetchedDependencyRefs.add(dependency.ref)
+
+      const installed = await installRegistrySkillDependency({
+        cwd: params.cwd,
+        configs: params.configs,
+        dependency
+      })
+      const dependencyDefinition = await parseFrontmatterDocument(installed.skillPath)
+      const dependencyAsset = createDocumentAsset({
+        cwd: params.cwd,
+        kind: 'skill',
+        definition: dependencyDefinition,
+        origin: 'workspace'
+      })
+
+      const existingAsset = findSkillDependencyAsset(skillAssets, dependency, asset.instancePath) ??
+        skillAssets.find(existing => existing.displayName === dependencyAsset.displayName)
+      if (existingAsset != null) continue
+
+      params.assets.push(dependencyAsset)
+      skillAssets.push(dependencyAsset)
+    }
+  }
+}
+
 export async function collectWorkspaceAssets(params: {
   cwd: string
   configs?: [Config?, Config?]
@@ -422,6 +469,12 @@ export async function collectWorkspaceAssets(params: {
     await pushDocumentAssets('entity', scan.entityDocPaths, 'plugin', instance)
     await pushDocumentAssets('entity', scan.entityJsonPaths, 'plugin', instance, parseEntityIndexJson)
   }
+
+  await syncSkillDependencyAssets({
+    cwd: params.cwd,
+    configs: [config, userConfig],
+    assets
+  })
 
   const mcpAssets = new Map<string, Extract<WorkspaceAsset, { kind: 'mcpServer' }>>()
   const addMcpAsset = (

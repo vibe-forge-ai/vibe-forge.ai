@@ -31,6 +31,7 @@ import {
   resolveSelectedSkillAssets,
   toDocumentDefinitions
 } from './selection-internal'
+import { expandSkillAssetDependencies } from './skill-dependencies'
 
 export async function resolvePromptAssetSelection(params: {
   bundle: WorkspaceAssetBundle
@@ -144,7 +145,7 @@ export async function resolvePromptAssetSelection(params: {
       resolveNamedAssets(effectiveBundle.skills, excludedRefs, targetInstancePath).map(asset => asset.id)
     )
 
-    includedAssets
+    expandSkillAssetDependencies(effectiveBundle.skills, includedAssets)
       .filter(asset => !excludedIds.has(asset.id))
       .forEach((asset) => {
         targetSkillsAssets.push(asset)

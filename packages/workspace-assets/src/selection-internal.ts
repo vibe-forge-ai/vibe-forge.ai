@@ -22,6 +22,7 @@ import {
   isRemoteRuleReference,
   parseScopedReference
 } from '@vibe-forge/definition-core'
+import { expandSkillAssetDependencies } from './skill-dependencies'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type DocumentAsset<TDefinition> = Extract<WorkspaceAsset, { kind: DocumentAssetKind }> & {
@@ -211,7 +212,8 @@ export const resolveSelectedSkillAssets = (
   const excluded = new Set(
     resolveNamedAssets(assets, selection.exclude).map(asset => asset.id)
   )
-  return included.filter(asset => !excluded.has(asset.id))
+  return expandSkillAssetDependencies(assets, included)
+    .filter(asset => !excluded.has(asset.id))
 }
 
 export const resolveSelectedMcpNames = (

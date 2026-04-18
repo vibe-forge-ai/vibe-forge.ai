@@ -1,11 +1,15 @@
 import { join } from 'node:path'
 import process from 'node:process'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveWorkspaceAssetBundle } from '#~/index.js'
 
 import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('resolveWorkspaceAssetBundle', () => {
   it('loads npm plugin assets via the package-id fallback and exposes OpenCode overlays', async () => {
@@ -95,6 +99,63 @@ describe('resolveWorkspaceAssetBundle', () => {
         process.env.__VF_PROJECT_AI_BASE_DIR__ = previousBaseDir
       }
     }
+  })
+
+  it('installs missing skill dependencies from an API-compatible registry cache', async () => {
+    const workspace = await createWorkspace()
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://registry.example.test/api/search?q=frontend-design&limit=10') {
+        return new Response(JSON.stringify({
+          skills: [{
+            id: 'anthropics/skills/frontend-design',
+            skillId: 'frontend-design',
+            name: 'frontend-design',
+            source: 'anthropics/skills'
+          }]
+        }))
+      }
+      if (url === 'https://registry.example.test/api/download/anthropics/skills/frontend-design') {
+        return new Response(JSON.stringify({
+          files: [{
+            path: 'SKILL.md',
+            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse strong visual hierarchy.\n'
+          }]
+        }))
+      }
+      return new Response('not found', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: {
+          registry: 'https://registry.example.test'
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
+    expect(dependency?.sourcePath).toContain('/.ai/caches/skill-dependencies/registry.example.test/')
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://registry.example.test/api/search?q=frontend-design&limit=10',
+      expect.any(Object)
+    )
   })
 
   it('loads workspace entities from the env-configured entities dir', async () => {

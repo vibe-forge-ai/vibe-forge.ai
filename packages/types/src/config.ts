@@ -67,6 +67,17 @@ export interface NotificationConfig {
   events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
 }
 
+export interface SkillRegistryConfig {
+  enabled?: boolean
+  url?: string
+  searchUrl?: string
+  downloadUrl?: string
+}
+
+export interface SkillsConfig {
+  registry?: string | SkillRegistryConfig
+}
+
 export interface ClaudeCodeMarketplaceSourceGithub {
   source: 'github'
   repo: string
@@ -243,6 +254,7 @@ export interface Config {
     switchPermissionMode?: string
   }
   notifications?: NotificationConfig
+  skills?: SkillsConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
     customInstructions?: string
@@ -292,6 +304,7 @@ export interface ConfigSection {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    skills?: Config['skills']
   }
   conversation?: Config['conversation']
   models?: Config['models']
