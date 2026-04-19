@@ -6,9 +6,10 @@ import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
-import { resolveClaudeCliPath } from '../ccr/paths'
+import { CLAUDE_CODE_CLI_PACKAGE, CLAUDE_CODE_CLI_VERSION, resolveClaudeCliPath } from '../ccr/paths'
 import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 import { stageClaudePluginDirs } from './plugins'
 
@@ -291,8 +292,21 @@ export const prepareClaudeExecution = async (
       : {})
   }
 
+  const cliPath = await ensureManagedNpmCli({
+    adapterKey: 'claude_code',
+    binaryName: 'claude',
+    bundledPath: resolveClaudeCliPath(cwd, executionEnv, nativeConfig.cli),
+    config: nativeConfig.cli,
+    cwd,
+    defaultPackageName: CLAUDE_CODE_CLI_PACKAGE,
+    defaultVersion: CLAUDE_CODE_CLI_VERSION,
+    env: executionEnv,
+    logger: ctx.logger
+  })
+  ctx.env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__ = cliPath
+
   return {
-    cliPath: resolveClaudeCliPath(),
+    cliPath,
     args,
     env: executionEnv,
     cwd,

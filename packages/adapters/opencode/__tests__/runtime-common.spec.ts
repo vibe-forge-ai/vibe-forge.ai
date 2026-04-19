@@ -1,6 +1,12 @@
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
-import { resolveOpenCodeBinaryPath } from '#~/paths.js'
+import { resolveManagedNpmCliPaths } from '@vibe-forge/utils/managed-npm-cli'
+
+import { OPENCODE_CLI_PACKAGE, OPENCODE_CLI_VERSION, resolveOpenCodeBinaryPath } from '#~/paths.js'
 import {
   buildOpenCodeRunArgs,
   buildOpenCodeSessionTitle,
@@ -12,14 +18,41 @@ import {
 } from '#~/runtime/common.js'
 
 describe('resolveOpenCodeBinaryPath', () => {
-  it('resolves to the adapter bundled binary by default', () => {
-    expect(resolveOpenCodeBinaryPath({})).toMatch(/node_modules\/\.bin\/opencode$/)
+  it('resolves to a usable default binary without requiring a bundled dependency', () => {
+    const result = resolveOpenCodeBinaryPath({})
+    expect(result === 'opencode' || /node_modules\/\.bin\/opencode$/.test(result)).toBe(true)
   })
 
   it('returns the env-specified path when set', () => {
     expect(resolveOpenCodeBinaryPath({
       __VF_PROJECT_AI_ADAPTER_OPENCODE_CLI_PATH__: '/usr/local/bin/opencode'
     })).toBe('/usr/local/bin/opencode')
+  })
+
+  it('uses a managed binary from the primary workspace shared cache', async () => {
+    const primary = await mkdtemp(join(tmpdir(), 'vf-opencode-primary-'))
+    const worktree = await mkdtemp(join(tmpdir(), 'vf-opencode-worktree-'))
+    try {
+      const env = {
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primary
+      }
+      const paths = resolveManagedNpmCliPaths({
+        adapterKey: 'opencode',
+        binaryName: 'opencode',
+        cwd: worktree,
+        env,
+        packageName: OPENCODE_CLI_PACKAGE,
+        version: OPENCODE_CLI_VERSION
+      })
+      await mkdir(paths.binDir, { recursive: true })
+      await writeFile(paths.binaryPath, '#!/bin/sh\n')
+      await chmod(paths.binaryPath, 0o755)
+
+      expect(resolveOpenCodeBinaryPath(env, worktree)).toBe(await realpath(paths.binaryPath))
+    } finally {
+      await rm(primary, { recursive: true, force: true })
+      await rm(worktree, { recursive: true, force: true })
+    }
   })
 })
 

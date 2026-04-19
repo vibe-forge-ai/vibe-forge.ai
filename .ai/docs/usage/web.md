@@ -19,6 +19,14 @@
 - 如果你想给项目设默认值，可以在解析后的 workspace 根目录配置文件（默认是 `.ai.config.json` / `.ai.config.yaml`，也支持 `./infra/` 或显式 `__VF_PROJECT_CONFIG_DIR__`）里设置 `conversation.createSessionWorktree`；Web UI 新建会话时会按这个项目配置初始化。
 - worktree 环境脚本通过配置页的“环境”面板维护；项目环境写入 `.ai/env/<environment-id>/`，本地环境写入 `.ai/env.local/<environment-id>/`。脚本内容使用 Monaco 编辑器编辑，详情页里的名称与脚本修改会自动写回本地文件。项目默认环境由 `conversation.worktreeEnvironment` 指定，也可以在新建会话时通过 sender 下方的环境下拉临时覆盖；本地环境在配置值里使用 `<environment-id>.local` 引用。
 
+## 工作区抽屉与文件引用
+
+- 会话页右侧工作区抽屉按当前 session workspace 展示项目目录树和 Git 改动文件。
+- 目录树支持展开、折叠、定位当前打开文件，以及通过 `Shift` 连续多选文件或文件夹。
+- 目录树节点支持右键菜单；选择 `引用到输入框` 会把当前节点或已选节点追加到 sender 的文件引用列表。
+- sender `更多` 里的文件引用弹窗复用同一套项目目录树，也支持选择文件夹。
+- 文件引用只记录 workspace-relative 路径；真正发送时仍由各 adapter 按自己的上下文文件语义处理。
+
 ## 配置页交互
 
 - 简单字段仍然在 section 页面内直接编辑。
@@ -34,7 +42,9 @@
 - `start.sh`、`start.macos.sh`、`start.linux.sh`、`start.windows.ps1`：会话 adapter 进程启动前执行。
 - `destroy.sh`、`destroy.macos.sh`、`destroy.linux.sh`、`destroy.windows.ps1`：托管 worktree 删除前执行；兼容旧拼写 `destory*.sh`。
 
-Windows 下 `*.ps1` 会通过 PowerShell 执行；如果你手动维护文件，也兼容同名 `*.windows.cmd` 和 `*.windows.bat`。通用脚本在 Windows 下还支持 `create.ps1` / `start.ps1` / `destroy.ps1`、`.cmd` 和 `.bat` 变体，避免强依赖 `sh`。
+本仓库内置项目环境 `default`。新建托管 worktree 时，它会先拉取默认远端；如果当前 session 分支有同名远端分支，则同步该分支，否则回退同步创建 worktree 时记录的基线分支。
+
+Windows 下 `*.ps1` 会通过 PowerShell 执行；如果你手动维护文件，也兼容同名 `*.windows.cmd` 和 `*.windows.bat`。通用脚本在 Windows 下支持 `create.ps1` / `start.ps1` / `destroy.ps1`、`.cmd` 和 `.bat` 变体；`.sh` 基础脚本不会在 Windows 上作为默认脚本执行，避免强依赖 `sh`。
 
 配置页右上角选择“项目”时，新建环境会写入 `.ai/env/<environment-id>/`，可随项目提交；选择“本地”时，新建环境会写入 `.ai/env.local/<environment-id>/`，并维护根目录 `.gitignore` 中的 `.ai/env.local/`，作为当前用户自己的配置。旧版 `.ai/env/<environment-id>.local/` 仍会按本地环境读取，但新建和保存都会使用 `.ai/env.local/`。
 

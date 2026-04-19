@@ -37,7 +37,9 @@
   - 统一承载标题、meta、关闭动作和拖拽调高能力。
   - terminal 以及后续其他底部面板优先复用这里，不要再各自复制一套 resize/header 逻辑。
 - `../../components/workspace/ContextFilePicker.tsx`
-  - 工作区文件选择器；如果别的输入入口也要复用目录树选择，直接走这里。
+  - 工作区文件选择器；如果别的输入入口也要复用文件引用弹窗，直接走这里。
+- `../../components/workspace/project-file-tree/ProjectFileTree.tsx`
+  - 可复用项目目录树；目录抽屉和文件引用弹窗共用这里，不要在 chat 局部再复制树结构、展开状态或右键菜单逻辑。
 
 ## 消息级操作的当前约束
 

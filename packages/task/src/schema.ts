@@ -4,6 +4,7 @@ export const TaskOptions = z.object({
   type: z
     .union([
       z.literal('entity'),
+      z.literal('workspace'),
       // 基础库 API 能力开发
       z.literal('spec')
     ])
@@ -77,6 +78,28 @@ export const Options = z
 export type Options = z.infer<typeof Options>
 
 export const Entity = z.object({
+  extends: z
+    .union([
+      z.string(),
+      z.array(z.string())
+    ])
+    .describe('继承的实体标识。可引用本地实体或带 scope 的插件实体，例如 std/dev-reviewer。')
+    .optional(),
+  inherit: z
+    .union([
+      z.enum(['append', 'prepend', 'merge', 'replace', 'none']),
+      z.object({
+        default: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        prompt: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        tags: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        rules: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        skills: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        tools: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional(),
+        mcpServers: z.enum(['append', 'prepend', 'merge', 'replace', 'none']).optional()
+      })
+    ])
+    .describe('当前实体继承父实体组合结果时的字段策略。')
+    .optional(),
   prompt: z
     .string()
     .describe('实体的描述，简单介绍一下当前实体的作用。')
@@ -84,7 +107,7 @@ export const Entity = z.object({
   promptPath: z
     .string()
     .describe(
-      '实体的描述文件路径，文件内容为实体的描述。默认为当前目录下的 AGENTS.md 文件。'
+      '实体的描述文件路径，文件内容为实体的描述。目录型实体还会按顺序追加 INTRODUCTION.md、PERSONALITY.md、MEMORY.md。'
     )
     .optional(),
   rules: z

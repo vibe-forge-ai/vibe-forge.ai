@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { WebSocketServer } from 'ws'
 
 import type { ServerEnv } from '@vibe-forge/core'
+import { WORKSPACE_TERMINAL_SESSION_ID } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import {
@@ -57,8 +58,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const sessionId = params.get('sessionId') ?? uuidv4()
 
     if (channel === 'terminal') {
-      const session = getDb().getSession(sessionId)
-      if (session == null) {
+      const isWorkspaceTerminal = sessionId === WORKSPACE_TERMINAL_SESSION_ID
+      const session = isWorkspaceTerminal ? undefined : getDb().getSession(sessionId)
+      if (!isWorkspaceTerminal && session == null) {
         sendTerminalFatalError(ws, 'Session not found.', 1008)
         return
       }
@@ -73,7 +75,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
     const permissionMode = params.get('permissionMode') ?? undefined
     const promptTypeRaw = params.get('type') ?? undefined
-    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity'
+    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity' || promptTypeRaw === 'workspace'
       ? promptTypeRaw
       : undefined
     const promptName = params.get('name') ?? undefined

@@ -7,6 +7,7 @@ import { program } from 'commander'
 import { getCliDescription, getCliVersion } from '#~/utils.js'
 
 import { normalizeCliArgs } from './cli-argv'
+import { registerAdapterCommand } from './commands/adapter'
 import { registerBenchmarkCommand } from './commands/benchmark'
 import { registerClearCommand } from './commands/clear'
 import { registerConfigCommand } from './commands/config'
@@ -28,6 +29,7 @@ program
 Examples:
   vf "读取 README 并给出改进建议"
   vf run --include-skill vf-cli-quickstart "介绍 vf CLI 的常用命令"
+  vf "帮我创建一个前端评审实体"
   vf list
   vf list --view full
   vf config list
@@ -37,6 +39,7 @@ Examples:
   )
 
 registerRunCommand(program)
+registerAdapterCommand(program)
 registerBenchmarkCommand(program)
 registerClearCommand(program)
 registerConfigCommand(program)

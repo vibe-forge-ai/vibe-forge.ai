@@ -1,10 +1,12 @@
 import { dirname, join } from 'node:path'
 
 import type { Adapter } from './adapter'
+import type { AdapterCliPreparer } from './adapter-cli-prepare'
 import type { AdapterPluginInstaller } from './native-plugin'
 
 const ADAPTER_SCOPE = '@vibe-forge'
 const ADAPTER_PREFIX = 'adapter-'
+const ADAPTER_CLI_PREPARE_EXPORT = '/cli-prepare'
 const ADAPTER_PLUGIN_EXPORT = '/plugins'
 
 const loadWorkspacePackageExport = (params: {
@@ -81,6 +83,34 @@ export const loadAdapterPluginInstaller = async (type: string) => {
         packageName,
         sourcePath: 'src/plugins/index.ts'
       }).default as AdapterPluginInstaller
+    }
+    throw error
+  }
+}
+
+export const loadAdapterCliPreparer = async (type: string) => {
+  const packageName = resolveAdapterPackageName(type)
+  const exportName = `${packageName}${ADAPTER_CLI_PREPARE_EXPORT}`
+
+  try {
+    return (
+      // eslint-disable-next-line ts/no-require-imports
+      require(exportName)
+    ).default as AdapterCliPreparer
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException | undefined)?.code
+    const message = error instanceof Error ? error.message : String(error)
+    if (
+      code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' ||
+      (code === 'MODULE_NOT_FOUND' && message.includes(exportName))
+    ) {
+      throw new Error(`Adapter ${type} does not support CLI preparation.`)
+    }
+    if (code === 'MODULE_NOT_FOUND' && message.includes('/dist/')) {
+      return loadWorkspacePackageExport({
+        packageName,
+        sourcePath: 'src/cli-prepare.ts'
+      }).default as AdapterCliPreparer
     }
     throw error
   }

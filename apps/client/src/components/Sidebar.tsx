@@ -1,20 +1,25 @@
 import './Sidebar.scss'
 
-import { Button, Tooltip } from 'antd'
 import { useAtomValue } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import type { Session } from '@vibe-forge/core'
+
+import { deleteSession, updateSession, updateSessionTitle } from '#~/api'
+import {
+  SidebarListCollapsedActionButton,
+  SidebarListCollapsedActions
+} from '#~/components/sidebar-list/SidebarListHeader'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
+import { useGlobalShortcut } from '#~/hooks/useGlobalShortcut'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
-import type { Session } from '@vibe-forge/core'
-import { deleteSession, updateSession, updateSessionTitle } from '../api'
-import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
-import { isSidebarResizingAtom } from '../store/index'
-import { formatShortcutLabel } from '../utils/shortcutUtils'
+import { isSidebarResizingAtom } from '#~/store/index'
+import { formatShortcutLabel } from '#~/utils/shortcutUtils'
+
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 import { matchesAnyFilterPattern } from './sidebar/filter-utils'
@@ -372,35 +377,26 @@ export function Sidebar({
         />
       </div>
       {!isCompactLayout && isSidebarCollapsed && (
-        <div className='sidebar-collapsed-header'>
-          <Tooltip
-            title={resolveTooltipTitle(isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
-            placement='bottom'
-          >
-            <Button
-              ref={createBtnRef}
-              className={`sidebar-collapsed-control ${isCreatingSession ? 'active' : ''}`}
-              type='text'
-              disabled={!!isCreatingSession}
-              onClick={() => {
-                void handleCreateSession()
-              }}
-            >
-              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                {isCreatingSession ? 'chat_bubble' : 'send'}
-              </span>
-            </Button>
-          </Tooltip>
-          <Tooltip title={resolveTooltipTitle(t('common.expand'))} placement='bottom'>
-            <Button
-              className='sidebar-collapsed-control'
-              type='text'
-              onClick={() => setSidebarCollapsed(false)}
-            >
-              <span className='material-symbols-rounded'>dock_to_right</span>
-            </Button>
-          </Tooltip>
-        </div>
+        <SidebarListCollapsedActions>
+          <SidebarListCollapsedActionButton
+            buttonRef={createBtnRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
+            active={isCreatingSession}
+            disabled={!!isCreatingSession}
+            filled={isCreatingSession}
+            icon={isCreatingSession ? 'chat_bubble' : 'send'}
+            tooltip={resolveTooltipTitle(isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
+            ariaLabel={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')}
+            onClick={() => {
+              void handleCreateSession()
+            }}
+          />
+          <SidebarListCollapsedActionButton
+            icon='dock_to_right'
+            tooltip={resolveTooltipTitle(t('common.expand'))}
+            ariaLabel={t('common.expand')}
+            onClick={() => setSidebarCollapsed(false)}
+          />
+        </SidebarListCollapsedActions>
       )}
     </div>
   )

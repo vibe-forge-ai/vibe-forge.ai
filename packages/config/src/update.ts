@@ -219,6 +219,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'notifications')
       )
       updateField(
+        'skills',
+        mergeMaskedValues(sectionValue.skills, config.skills) as Config['skills'],
+        hasOwn(sectionValue, 'skills')
+      )
+      updateField(
         'webAuth',
         mergeMaskedValues(sectionValue.webAuth, config.webAuth) as Config['webAuth'],
         hasOwn(sectionValue, 'webAuth')
@@ -249,6 +254,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField(
         'modelServices',
         mergeMaskedValues(sectionValue, config.modelServices) as Config['modelServices']
+      )
+      return nextConfig
+    }
+    case 'workspaces': {
+      updateField(
+        'workspaces',
+        mergeMaskedValues(sectionValue, config.workspaces) as Config['workspaces']
       )
       return nextConfig
     }

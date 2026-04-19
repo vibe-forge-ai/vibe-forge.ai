@@ -1,18 +1,16 @@
-import { execFile } from 'node:child_process'
 import { access, mkdir, readdir, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
-import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveCodexBinaryPath } from '#~/paths.js'
-import { writeManagedCodexConfigFile } from './config'
+import { CODEX_CLI_PACKAGE, CODEX_CLI_VERSION, resolveCodexBinaryPath } from '#~/paths.js'
+import { resolveCodexAdapterConfig, writeManagedCodexConfigFile } from './config'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
-const execFileAsync = promisify(execFile)
 const CODEX_MANAGED_SKILLS_STATE_FILE = '.vibe-forge-managed-skills.json'
 
 const syncCodexMockHomeSymlink = async (params: {
@@ -43,9 +41,48 @@ async function linkAuthFile(home: string, mockHome: string): Promise<void> {
   })
 }
 
-async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Promise<void> {
+const resolveCodexManagedSkills = (ctx: Pick<AdapterCtx, 'assets'>) => {
+  const result = new Map<string, string>()
+  for (const asset of ctx.assets?.skills ?? []) {
+    const targetName = asset.displayName.replaceAll('/', '__')
+    if (targetName === '' || result.has(targetName)) continue
+    result.set(targetName, dirname(asset.sourcePath))
+  }
+  return result
+}
+
+const syncCodexMockHomeSkillDirectoryEntries = async (params: {
+  skills: Map<string, string>
+  targetDir: string
+}) => {
+  await rm(params.targetDir, { recursive: true, force: true })
+  await mkdir(params.targetDir, { recursive: true })
+
+  for (const [skillName, sourcePath] of params.skills.entries()) {
+    await syncCodexMockHomeSymlink({
+      sourcePath,
+      targetPath: join(params.targetDir, skillName),
+      type: 'dir'
+    })
+  }
+}
+
+async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'assets' | 'cwd' | 'env'>): Promise<void> {
   const sourceDir = resolveProjectAiPath(ctx.cwd, ctx.env, 'skills')
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const managedSkills = resolveCodexManagedSkills(ctx)
+
+  if (managedSkills.size > 0) {
+    await syncCodexMockHomeSkillDirectoryEntries({
+      skills: managedSkills,
+      targetDir: resolve(mockHome, '.agents', 'skills')
+    })
+    await syncCodexMockHomeNativeSkillEntries({
+      skills: managedSkills,
+      targetDir: resolve(mockHome, '.codex', 'skills')
+    })
+    return
+  }
 
   await syncCodexMockHomeSymlink({
     sourcePath: sourceDir,
@@ -53,16 +90,31 @@ async function syncCodexMockHomeSkills(ctx: Pick<AdapterCtx, 'cwd' | 'env'>): Pr
     type: 'dir'
   })
   await syncCodexMockHomeNativeSkillEntries({
-    sourceDir,
+    skills: await readSourceDirSkillEntries(sourceDir),
     targetDir: resolve(mockHome, '.codex', 'skills')
   })
 }
 
+const readSourceDirSkillEntries = async (sourceDir: string) => {
+  try {
+    await access(sourceDir)
+  } catch {
+    return undefined
+  }
+
+  const skillNames = (await readdir(sourceDir, { withFileTypes: true }))
+    .filter(entry => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()))
+    .map(entry => entry.name)
+    .sort((left, right) => left.localeCompare(right))
+
+  return new Map(skillNames.map(skillName => [skillName, join(sourceDir, skillName)]))
+}
+
 const syncCodexMockHomeNativeSkillEntries = async (params: {
-  sourceDir: string
+  skills: Map<string, string> | undefined
   targetDir: string
 }) => {
-  const { sourceDir, targetDir } = params
+  const { skills, targetDir } = params
   const statePath = join(targetDir, CODEX_MANAGED_SKILLS_STATE_FILE)
   const previousState = await readJsonFileOrDefault<{ skills?: unknown }>(statePath, {})
   const previousManagedSkills = Array.isArray(previousState.skills)
@@ -73,22 +125,19 @@ const syncCodexMockHomeNativeSkillEntries = async (params: {
     await rm(join(targetDir, skillName), { recursive: true, force: true })
   }
 
-  try {
-    await access(sourceDir)
-  } catch {
+  if (skills == null) {
     await writeJsonFile(statePath, { skills: [] })
     return
   }
 
   await mkdir(targetDir, { recursive: true })
-  const nextManagedSkills = (await readdir(sourceDir, { withFileTypes: true }))
-    .filter(entry => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()))
-    .map(entry => entry.name)
-    .sort((left, right) => left.localeCompare(right))
+  const nextManagedSkills = Array.from(skills.keys()).sort((left, right) => left.localeCompare(right))
 
   for (const skillName of nextManagedSkills) {
+    const sourcePath = skills.get(skillName)
+    if (sourcePath == null) continue
     await syncCodexMockHomeSymlink({
-      sourcePath: join(sourceDir, skillName),
+      sourcePath,
       targetPath: join(targetDir, skillName),
       type: 'dir'
     })
@@ -126,18 +175,21 @@ async function writeManagedCodexConfig(
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
-
   const home = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
 
-  const binaryPath = resolveCodexBinaryPath(env)
-
-  try {
-    await execFileAsync(String(binaryPath), ['--version'])
-  } catch {
-    // Non-fatal: the binary might not be installed globally, or it might be
-    // installed but the --version flag might not exist in older builds.
-  }
+  const { native: adapterConfig } = resolveCodexAdapterConfig(ctx)
+  ctx.env.__VF_PROJECT_AI_ADAPTER_CODEX_CLI_PATH__ = await ensureManagedNpmCli({
+    adapterKey: 'codex',
+    binaryName: 'codex',
+    bundledPath: resolveCodexBinaryPath(env, ctx.cwd),
+    config: adapterConfig.cli,
+    cwd: ctx.cwd,
+    defaultPackageName: CODEX_CLI_PACKAGE,
+    defaultVersion: CODEX_CLI_VERSION,
+    env,
+    logger: ctx.logger
+  })
 
   if (home != null && home !== '') {
     await linkAuthFile(home, mockHome)

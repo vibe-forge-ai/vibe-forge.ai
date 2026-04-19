@@ -5,7 +5,7 @@ export interface StopTaskToolInput {
 export interface StartTasksToolInput {
   tasks: Array<{
     description?: string
-    type?: 'default' | 'spec' | 'entity'
+    type?: 'default' | 'spec' | 'entity' | 'workspace'
     name?: string
     adapter?: string
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'

@@ -7,7 +7,7 @@
 Vibe Forge 现在有两套并行的插件使用方式：
 
 - 统一 Vibe Forge 插件：通过 `plugins` 配置加载 npm 包里的 `rules / skills / specs / entities / mcp / hooks`
-- adapter 原生插件：通过 `npx vf plugin --adapter <adapter> add ...` 安装 adapter 自己的原生插件格式，再转成项目可复用的 Vibe Forge 资产
+- adapter 原生插件：通过 `vf plugin --adapter <adapter> add ...` 安装 adapter 自己的原生插件格式，再转成项目可复用的 Vibe Forge 资产
 
 如果你要安装 Claude Code 插件、配置 marketplace，继续看 [Adapter 原生插件与 Marketplace](./native-plugins.md)。
 
@@ -100,6 +100,12 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 - `hooks`
 
 其中 `spec` 和 `entity` 还支持在文档前置元数据里通过 `plugins: { mode, list }` 对当前任务的插件列表做 `extend` 或 `override`。
+
+## 资产细节
+
+- [实体目录默认文件](./plugins/entity-default-files.md)
+- [实体继承](./plugins/entity-inheritance.md)
+- [本地私有规则](./plugins/local-rules.md)
 
 ## 本地数据资产目录
 

@@ -1,31 +1,17 @@
 import './ToolDiffViewer.scss'
 
-import { DiffEditor, loader } from '@monaco-editor/react'
+import { DiffEditor } from '@monaco-editor/react'
 import { Tooltip } from 'antd'
 import type { editor as MonacoEditorNamespace } from 'monaco-editor'
-import * as monacoApi from 'monaco-editor'
-import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import React, { useEffect, useMemo, useState } from 'react'
+
+import '#~/components/monaco/monaco-runtime'
 
 import { TOOL_TOOLTIP_PROPS } from './tool-display'
 
 const DIFF_LINE_HEIGHT = 18
 const MIN_DIFF_HEIGHT = 96
 const MAX_DIFF_HEIGHT = 360
-
-const monacoRuntime = globalThis as typeof globalThis & {
-  MonacoEnvironment?: {
-    getWorker: () => Worker
-  }
-}
-
-if (monacoRuntime.MonacoEnvironment == null) {
-  monacoRuntime.MonacoEnvironment = {
-    getWorker: () => new EditorWorker()
-  }
-}
-
-loader.config({ monaco: monacoApi })
 
 const getThemeName = () => (document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs')
 

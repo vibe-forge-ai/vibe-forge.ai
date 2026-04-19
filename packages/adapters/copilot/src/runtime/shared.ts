@@ -12,11 +12,13 @@ import type {
 } from '@vibe-forge/types'
 import { omitAdapterCommonConfig, syncSymlinkTarget } from '@vibe-forge/utils'
 import { createLogger } from '@vibe-forge/utils/create-logger'
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { registerCopilotProviderProxyRoute } from './provider-proxy'
 
 export interface CopilotAdapterConfig {
+  cli?: ManagedNpmCliConfig
   cliPath?: string
   configDir?: string
   disableWorkspaceTrust?: boolean

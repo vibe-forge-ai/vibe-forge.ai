@@ -1,7 +1,8 @@
-import { Button, Input, Tooltip } from 'antd'
+import { Button, Tooltip } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SidebarListSearchInput } from '#~/components/sidebar-list/SidebarListHeader'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { SidebarHeaderBatchActions } from './SidebarHeaderBatchActions'
@@ -72,33 +73,28 @@ export function SidebarHeaderSearchActions({
 
   return (
     <>
-      <div className='header-search-row'>
-        <div className='search-input-wrap'>
-          <Input
-            className='search-input'
-            placeholder={t('common.search')}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            prefix={<span className='material-symbols-rounded search-icon'>search</span>}
-            suffix={
-              <Tooltip title={resolveTooltipTitle(t('common.searchActions'))}>
-                <button
-                  type='button'
-                  className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
-                    hasActiveSearchControls ? 'has-active-filters' : ''
-                  }`}
-                  aria-label={t('common.searchActions')}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={onToggleSearchActions}
-                >
-                  <span className='material-symbols-rounded search-chevron'>expand_more</span>
-                </button>
-              </Tooltip>
-            }
-            allowClear
-          />
-        </div>
-      </div>
+      <SidebarListSearchInput
+        className='search-input'
+        placeholder={t('common.search')}
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        suffix={
+          <Tooltip title={resolveTooltipTitle(t('common.searchActions'))}>
+            <button
+              type='button'
+              className={`search-toggle-button ${shouldShowSearchActions ? 'is-open' : ''} ${
+                hasActiveSearchControls ? 'has-active-filters' : ''
+              }`}
+              aria-label={t('common.searchActions')}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={onToggleSearchActions}
+            >
+              <span className='material-symbols-rounded search-chevron'>expand_more</span>
+            </button>
+          </Tooltip>
+        }
+        allowClear
+      />
       <div className={`header-search-actions ${shouldShowSearchActions ? 'is-open' : ''}`}>
         <div className='header-search-actions-inner'>
           <div className='header-toolbar-row'>

@@ -5,9 +5,10 @@ import type { AdapterQueryOptions, PluginConfig } from '@vibe-forge/types'
 import { resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
 import { resolveQuerySelection } from '#~/query-selection.js'
+import { resolveWorkspaceTaskTarget } from '#~/workspace-target.js'
 
 export async function generateAdapterQueryOptions(
-  type: 'spec' | 'entity' | undefined,
+  type: 'spec' | 'entity' | 'workspace' | undefined,
   name?: string,
   cwd: string = process.cwd(),
   input?: {
@@ -17,12 +18,19 @@ export async function generateAdapterQueryOptions(
     plugins?: PluginConfig
   }
 ) {
-  const jsonVariables = buildConfigJsonVariables(cwd, process.env)
+  const workspace = type === 'workspace'
+    ? await resolveWorkspaceTaskTarget({ cwd, name })
+    : undefined
+  const effectiveCwd = workspace?.cwd ?? cwd
+  const promptType = type === 'workspace' ? undefined : type
+  const promptName = type === 'workspace' ? undefined : name
+
+  const jsonVariables = buildConfigJsonVariables(effectiveCwd, process.env)
   const {
     projectConfig: config,
     userConfig,
     mergedConfig
-  } = await loadConfigState({ cwd, jsonVariables })
+  } = await loadConfigState({ cwd: effectiveCwd, jsonVariables })
   const mergedPlugins = mergeConfigs(
     {
       plugins: mergedConfig?.plugins
@@ -32,7 +40,7 @@ export async function generateAdapterQueryOptions(
     }
   )?.plugins
   const bundle = await resolveWorkspaceAssetBundle({
-    cwd,
+    cwd: effectiveCwd,
     configs: [config, userConfig],
     plugins: mergedPlugins
   })
@@ -43,13 +51,18 @@ export async function generateAdapterQueryOptions(
   })
   const [data, resolvedOptions] = await resolvePromptAssetSelection({
     bundle,
-    type,
-    name,
+    type: promptType,
+    name: promptName,
     adapter: selection.adapter,
     input
   })
   return [
     data,
-    resolvedOptions as Partial<AdapterQueryOptions>
+    {
+      ...resolvedOptions,
+      workspace
+    } as Partial<AdapterQueryOptions> & {
+      workspace?: Awaited<ReturnType<typeof resolveWorkspaceTaskTarget>>
+    }
   ] as const
 }

@@ -11,6 +11,20 @@ export interface GitChangeSummary {
   deletions: number
 }
 
+export interface GitSubmoduleChange {
+  commitChanged: boolean
+  trackedChanges: boolean
+  untrackedChanges: boolean
+}
+
+export interface GitChangedFile {
+  path: string
+  staged: boolean
+  unstaged: boolean
+  untracked: boolean
+  submodule?: GitSubmoduleChange
+}
+
 export interface GitHeadCommitSummary {
   hash: string
   shortHash: string
@@ -31,6 +45,7 @@ export interface GitRepositoryState {
   hasUnstagedChanges?: boolean
   hasUntrackedChanges?: boolean
   remotes?: string[]
+  changedFiles?: GitChangedFile[]
   stagedSummary?: GitChangeSummary
   workingTreeSummary?: GitChangeSummary
   headCommit?: GitHeadCommitSummary | null

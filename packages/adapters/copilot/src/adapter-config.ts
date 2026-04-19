@@ -1,3 +1,5 @@
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
+
 export {}
 
 declare module '@vibe-forge/types' {
@@ -10,6 +12,7 @@ declare module '@vibe-forge/types' {
 
   interface AdapterMap {
     copilot: {
+      cli?: ManagedNpmCliConfig
       cliPath?: string
       configDir?: string
       disableWorkspaceTrust?: boolean

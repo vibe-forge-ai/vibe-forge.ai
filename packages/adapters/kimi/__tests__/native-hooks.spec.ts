@@ -60,6 +60,7 @@ const createCtx = async (overrides: Partial<AdapterCtx> = {}): Promise<AdapterCt
       specs: [],
       entities: [],
       skills: [],
+      workspaces: [],
       mcpServers: {},
       hookPlugins: [{ id: 'hookPlugin:workspace:logger' } as never],
       opencodeOverlayAssets: [],

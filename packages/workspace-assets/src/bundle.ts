@@ -14,6 +14,7 @@ export async function resolveWorkspaceAssetBundle(params: {
 
   return {
     cwd: params.cwd,
+    configs: collected.configs,
     pluginConfigs: collected.pluginConfigs,
     pluginInstances: collected.pluginInstances,
     assets: collected.assets,
@@ -21,6 +22,7 @@ export async function resolveWorkspaceAssetBundle(params: {
     specs: collected.specs,
     entities: collected.entities,
     skills: collected.skills,
+    workspaces: collected.workspaces,
     mcpServers: collected.mcpServers,
     hookPlugins: collected.hookPlugins,
     opencodeOverlayAssets: collected.opencodeOverlayAssets,

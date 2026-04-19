@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -52,6 +52,98 @@ describe('workspace tree service', () => {
         { path: 'src/index.ts', name: 'index.ts', type: 'file' }
       ]
     })
+  })
+
+  it('lists symbolic links with their resolved link type', async () => {
+    await symlink('src', join(workspaceDir, 'src-link'), 'dir')
+    await symlink('README.md', join(workspaceDir, 'readme-link.md'), 'file')
+    await symlink('missing.md', join(workspaceDir, 'broken-link.md'), 'file')
+    await symlink(join(sessionWorkspaceDir, 'docs'), join(workspaceDir, 'external-docs'), 'dir')
+
+    const result = await listWorkspaceTree()
+
+    expect(result.entries).toEqual(expect.arrayContaining([
+      {
+        path: 'src-link',
+        name: 'src-link',
+        type: 'directory',
+        isSymlink: true,
+        linkKind: 'symlink',
+        linkTarget: 'src',
+        linkType: 'directory',
+        isExternal: false
+      },
+      {
+        path: 'external-docs',
+        name: 'external-docs',
+        type: 'directory',
+        isSymlink: true,
+        linkKind: 'symlink',
+        linkTarget: join(sessionWorkspaceDir, 'docs'),
+        linkType: 'directory',
+        isExternal: true
+      },
+      {
+        path: 'readme-link.md',
+        name: 'readme-link.md',
+        type: 'file',
+        isSymlink: true,
+        linkKind: 'symlink',
+        linkTarget: 'README.md',
+        linkType: 'file',
+        isExternal: false
+      },
+      {
+        path: 'broken-link.md',
+        name: 'broken-link.md',
+        type: 'file',
+        isSymlink: true,
+        linkKind: 'symlink',
+        linkTarget: 'missing.md',
+        linkType: 'missing'
+      }
+    ]))
+  })
+
+  it('lists Git worktree pointer files as special directory links', async () => {
+    const gitdirPath = join(sessionWorkspaceDir, '.git', 'worktrees', 'demo')
+    await mkdir(gitdirPath, { recursive: true })
+    await writeFile(join(workspaceDir, '.git'), `gitdir: ${gitdirPath}\n`)
+
+    const result = await listWorkspaceTree()
+
+    expect(result.entries).toEqual(expect.arrayContaining([
+      {
+        path: '.git',
+        name: '.git',
+        type: 'directory',
+        linkKind: 'gitdir',
+        linkTarget: gitdirPath,
+        linkType: 'directory',
+        isExternal: true
+      }
+    ]))
+  })
+
+  it('lists an internal symbolic link directory through its workspace-relative path', async () => {
+    await symlink('src', join(workspaceDir, 'src-link'), 'dir')
+
+    await expect(listWorkspaceTree('src-link')).resolves.toEqual({
+      path: 'src-link',
+      entries: [
+        { path: 'src-link/nested', name: 'nested', type: 'directory' },
+        { path: 'src-link/index.ts', name: 'index.ts', type: 'file' }
+      ]
+    })
+  })
+
+  it('reports missing workspace tree paths as not found', async () => {
+    await expect(listWorkspaceTree('missing')).rejects.toMatchObject(
+      {
+        status: 404,
+        code: 'workspace_tree_path_not_found'
+      } satisfies Partial<HttpError>
+    )
   })
 
   it('rejects paths outside the workspace root', async () => {

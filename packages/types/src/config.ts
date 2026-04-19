@@ -67,6 +67,38 @@ export interface NotificationConfig {
   events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
 }
 
+export interface SkillRegistryConfig {
+  enabled?: boolean
+  url?: string
+  searchUrl?: string
+  downloadUrl?: string
+}
+
+export interface SkillsConfig {
+  registry?: string | SkillRegistryConfig
+}
+
+export interface WorkspaceConfigEntry {
+  enabled?: boolean
+  name?: string
+  description?: string
+  path?: string
+  glob?: string | string[]
+  globs?: string | string[]
+  include?: string | string[]
+  exclude?: string | string[]
+}
+
+export interface WorkspacesConfig {
+  include?: string | string[]
+  exclude?: string | string[]
+  glob?: string | string[]
+  globs?: string | string[]
+  entries?: Record<string, string | WorkspaceConfigEntry>
+}
+
+export type WorkspaceConfig = string | string[] | WorkspacesConfig
+
 export interface ClaudeCodeMarketplaceSourceGithub {
   source: 'github'
   repo: string
@@ -206,6 +238,7 @@ export interface Config {
   models?: Record<string, ModelMetadataConfig>
   defaultAdapter?: keyof AdapterMap
   modelServices?: Record<string, ModelServiceConfig>
+  workspaces?: WorkspaceConfig
   channels?: Record<string, unknown>
   defaultModelService?: string
   defaultModel?: string
@@ -257,6 +290,7 @@ export interface Config {
     switchPermissionMode?: string
   }
   notifications?: NotificationConfig
+  skills?: SkillsConfig
   webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
@@ -308,11 +342,13 @@ export interface ConfigSection {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    skills?: Config['skills']
     webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']
   models?: Config['models']
   modelServices?: Config['modelServices']
+  workspaces?: Config['workspaces']
   channels?: Config['channels']
   adapters?: Config['adapters']
   adapterBuiltinModels?: Record<string, AdapterBuiltinModel[]>

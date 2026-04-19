@@ -45,7 +45,7 @@ export const createStreamGeminiSession = async (
     ctx,
     model: options.model
   })
-  const binaryPath = resolveGeminiBinaryPath(ctx.env)
+  const binaryPath = resolveGeminiBinaryPath(ctx.env, ctx.cwd)
   const approvalMode = resolveGeminiApprovalMode(options.permissionMode)
   const promptFiles = await ensureGeminiPromptFiles(ctx, options)
   const proxyRoute = resolvedModel.routedService == null

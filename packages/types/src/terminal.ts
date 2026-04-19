@@ -1,5 +1,7 @@
 export type TerminalShellKind = 'default' | 'zsh' | 'bash' | 'sh' | 'powershell' | 'cmd'
 
+export const WORKSPACE_TERMINAL_SESSION_ID = '__workspace__'
+
 export interface TerminalSessionInfo {
   sessionId: string
   terminalId?: string

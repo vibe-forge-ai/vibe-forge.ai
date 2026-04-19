@@ -48,7 +48,8 @@ export type {
   SkillHubSearchResult,
   SkillSummary,
   SpecDetail,
-  SpecSummary
+  SpecSummary,
+  WorkspaceSummary
 } from './api/knowledge'
 export {
   createSkill,
@@ -62,6 +63,7 @@ export {
   listRules,
   listSkills,
   listSpecs,
+  listWorkspaces,
   searchSkillHub
 } from './api/knowledge'
 
@@ -79,21 +81,24 @@ export {
   forkSession,
   getSessionMessages,
   getSessionWorkspace,
+  getSessionWorkspaceResourceUrl,
   listSessionWorkspaceTree,
   listSessions,
   moveQueuedMessage,
+  readSessionWorkspaceFile,
   reorderQueuedMessages,
   respondSessionInteraction,
   transferSessionWorkspaceToLocal,
   updateQueuedMessage,
   updateSession,
-  updateSessionTitle
+  updateSessionTitle,
+  updateSessionWorkspaceFile
 } from './api/sessions'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
-export type { WorkspaceTreeEntry } from './api/workspace'
-export { listWorkspaceTree } from './api/workspace'
+export type { WorkspaceFileContent, WorkspaceTreeEntry } from './api/workspace'
+export { getWorkspaceResourceUrl, listWorkspaceTree, readWorkspaceFile, updateWorkspaceFile } from './api/workspace'
 
 // Worktree 环境脚本 API
 export {
@@ -109,6 +114,7 @@ export type {
   GitBranchListResult,
   GitBranchSummary,
   GitChangeSummary,
+  GitChangedFile,
   GitCommitPayload,
   GitHeadCommitSummary,
   GitMutationResult,

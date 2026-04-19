@@ -30,7 +30,14 @@ describe('sqliteDb', () => {
       isStarred: true,
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     db.updateSessionTags(root.id, ['alpha', 'beta', 'alpha'])
 
@@ -48,7 +55,14 @@ describe('sqliteDb', () => {
       status: 'running',
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     expect(stored?.tags?.slice().sort()).toEqual(['alpha', 'beta'])
     expect(db.getMessages(root.id)).toEqual([{ role: 'user', content: 'hello' }])
@@ -218,7 +232,15 @@ describe('sqliteDb', () => {
       {
         id: 'task-1',
         title: 'Task A',
-        prompt: 'Summarize activity'
+        prompt: 'Summarize activity',
+        model: 'gpt-responses,gpt-5.4',
+        adapter: 'codex',
+        effort: 'high',
+        permissionMode: 'bypassPermissions',
+        createWorktree: true,
+        branchName: 'codex/nightly',
+        branchKind: null,
+        branchMode: 'create'
       }
     ])
 
@@ -256,6 +278,14 @@ describe('sqliteDb', () => {
           ruleId: 'rule-1',
           title: 'Task A',
           prompt: 'Summarize activity',
+          model: 'gpt-responses,gpt-5.4',
+          adapter: 'codex',
+          effort: 'high',
+          permissionMode: 'bypassPermissions',
+          createWorktree: true,
+          branchName: 'codex/nightly',
+          branchKind: null,
+          branchMode: 'create',
           createdAt: Date.now()
         }
       ]

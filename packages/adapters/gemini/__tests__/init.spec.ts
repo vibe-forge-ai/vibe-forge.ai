@@ -65,6 +65,71 @@ describe('initGeminiAdapter', () => {
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(workspace, '.ai', 'skills'))
   })
 
+  it('symlinks resolved asset skills into the shared Gemini mock home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const appSkillDir = join(workspace, '.ai', 'skills', 'app-builder')
+    const dependencySkillDir = join(workspace, '.ai', 'caches', 'skill-dependencies', 'skills.sh', 'frontend-design')
+
+    await mkdir(appSkillDir, { recursive: true })
+    await mkdir(dependencySkillDir, { recursive: true })
+    await writeFile(join(appSkillDir, 'SKILL.md'), '# App Builder\n')
+    await writeFile(join(dependencySkillDir, 'SKILL.md'), '# Frontend Design\n')
+
+    await initGeminiAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:workspace:app-builder',
+            kind: 'skill',
+            name: 'app-builder',
+            displayName: 'app-builder',
+            origin: 'workspace',
+            sourcePath: join(appSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(appSkillDir, 'SKILL.md'),
+                body: '# App Builder\n',
+                attributes: {}
+              }
+            }
+          },
+          {
+            id: 'skill:workspace:frontend-design',
+            kind: 'skill',
+            name: 'frontend-design',
+            displayName: 'frontend-design',
+            origin: 'workspace',
+            sourcePath: join(dependencySkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(dependencySkillDir, 'SKILL.md'),
+                body: '# Frontend Design\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const appSkillPath = join(mockHome, '.agents', 'skills', 'app-builder')
+    const dependencySkillPath = join(mockHome, '.agents', 'skills', 'frontend-design')
+    expect(resolve(dirname(appSkillPath), await readlink(appSkillPath))).toBe(resolve(appSkillDir))
+    expect(resolve(dirname(dependencySkillPath), await readlink(dependencySkillPath))).toBe(resolve(dependencySkillDir))
+  })
+
   it('keeps concurrent Gemini skill sync idempotent when multiple vf processes initialize together', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')

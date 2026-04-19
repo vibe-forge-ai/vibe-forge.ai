@@ -1,14 +1,9 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
 import { mergeAdapterConfigs, mergeMarketplaceConfigs, mergePluginConfigs } from '@vibe-forge/utils'
 
+import { mergeWorkspaceConfigs } from './workspace-config'
+
 const hasOwnKeys = (value: Record<string, unknown>) => Object.keys(value).length > 0
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  value != null &&
-  typeof value === 'object' &&
-  !Array.isArray(value)
-)
-
 export const mergeRecord = <T>(
   left?: Record<string, T>,
   right?: Record<string, T>
@@ -111,6 +106,7 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
     ) as Config['adapters'],
     models: mergeRecord(left?.models, right?.models),
     modelServices: mergeRecord(left?.modelServices, right?.modelServices),
+    workspaces: mergeWorkspaceConfigs(left?.workspaces, right?.workspaces),
     channels: mergeRecord(left?.channels, right?.channels),
     mcpServers: mergeRecord(left?.mcpServers, right?.mcpServers),
     defaultIncludeMcpServers: mergeUniqueList(
@@ -134,6 +130,10 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.webAuth as Record<string, unknown> | undefined
     ) as Config['webAuth'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
+    skills: mergeRecord(
+      left?.skills as Record<string, unknown> | undefined,
+      right?.skills as Record<string, unknown> | undefined
+    ) as Config['skills'],
     plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
     marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }

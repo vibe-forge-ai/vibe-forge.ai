@@ -132,7 +132,7 @@ export const createStreamCopilotSession = async (
   options: AdapterQueryOptions
 ): Promise<AdapterSession> => {
   const adapterConfig = resolveAdapterConfig(ctx)
-  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath)
+  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath, ctx.cwd, adapterConfig.cli)
   const childEnv = await buildCopilotChildEnv(ctx, options, adapterConfig)
   const model = resolveCopilotModelConfig(ctx, options.model).cliModel ?? options.model ?? 'default'
 

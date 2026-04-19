@@ -1,52 +1,109 @@
 .automation-view {
-  &__list {
+  &__task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__task-stack {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  &__task-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 10px;
-
-    &--horizontal {
-      gap: 8px;
-
-      .automation-view__list-item {
-        flex: 0 0 360px;
-        min-width: 360px;
-      }
-    }
-
-    &-scroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-
-      .automation-view__list-item {
-        min-width: 340px;
-        flex: 0 0 340px;
-      }
-    }
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
-  &__list-item {
-    position: relative;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
+  &__task-card + &__task-card {
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__task-composer {
     display: flex;
     flex-direction: column;
-    background: var(--bg-color);
-    transition: border-color .2s ease, background-color .2s ease;
+    gap: 10px;
+    min-width: 0;
   }
 
-  &__list-item:hover {
-    border-color: rgba(37, 99, 235, .18);
-    background: var(--tag-hover-bg);
-  }
-
-  &__list-header {
+  &__task-title-row {
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  &__task-collapse-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    color: var(--sub-text-color);
+  }
+
+  &__task-collapse-button:not(:disabled):hover,
+  &__task-collapse-button:not(:disabled):focus-visible {
+    background: var(--tag-hover-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  &__task-title-item,
+  &__task-prompt-item {
+    width: 100%;
+  }
+
+  &__task-title-item {
+    box-sizing: border-box;
+    padding-right: 42px;
+    min-width: 0;
+  }
+
+  &__task-title-input {
+    width: 100%;
+    font-weight: 600;
+  }
+
+  &__task-collapsible {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__task-collapsible[hidden] {
+    display: none;
+  }
+
+  &__task-sender {
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__task-status-bar {
+    min-width: 0;
+    width: 100%;
+    margin-top: -4px;
+
+    .chat-status-bar__content {
+      display: flex;
+      justify-content: flex-start;
+    }
   }
 
   &__section-header {
@@ -87,9 +144,9 @@
   }
 
   &__form-desc {
+    margin-bottom: 0;
     font-size: 12px;
     color: var(--sub-text-color);
-    margin-bottom: 12px;
   }
 
   &__icon-button {
@@ -103,55 +160,60 @@
     border-radius: 6px;
   }
 
+  &__task-remove-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  &__task-card + &__task-card &__task-remove-button {
+    top: 16px;
+  }
+
   &__action-icon {
     font-size: 18px;
   }
 
-  &__remove-button {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 28px;
-    min-width: 28px;
-    height: 28px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-  }
-
-  &__task-index {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--sub-text-color);
-  }
-
-  &__task-index-icon {
-    font-size: 14px;
-  }
-
-  &__list-item .ant-form-item {
+  &__task-card .ant-form-item {
     margin-bottom: 10px;
   }
 
-  &__list-item .ant-form-item:last-child {
+  &__task-composer .ant-form-item {
     margin-bottom: 0;
   }
 
-  &__list-item .ant-input,
-  &__list-item .ant-input-affix-wrapper,
-  &__list-item .ant-input-number,
-  &__list-item .ant-select-selector {
+  &__task-title-input.ant-input {
     border-radius: 6px !important;
     background: var(--sub-bg-color);
   }
 
-  &__list-item .ant-input,
-  &__list-item .ant-input-affix-wrapper,
-  &__list-item .ant-select-selector {
-    min-height: 30px;
+  &__task-title-input.ant-input {
+    min-height: 32px;
+  }
+}
+
+.automation-view__sender-adapter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.automation-view__sender-adapter-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+
+  &--fallback {
+    font-size: 16px;
+    color: var(--sub-text-color);
   }
 }

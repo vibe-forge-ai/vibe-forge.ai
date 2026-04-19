@@ -3,8 +3,72 @@ import { basename, dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import { DefinitionLoader } from '@vibe-forge/definition-loader'
-import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
+import type { AdapterCtx, AdapterQueryOptions, Definition, Skill } from '@vibe-forge/types'
 import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
+
+const toSkillSlug = (value: string) => (
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+)
+
+const resolveSkillName = (skill: Definition<Skill>) => skill.resolvedName ?? basename(dirname(skill.path))
+
+const resolveDependencyNames = (skill: Definition<Skill>) => {
+  const dependencies = skill.attributes.dependencies
+  if (!Array.isArray(dependencies)) return []
+
+  return dependencies.flatMap((dependency) => {
+    if (typeof dependency === 'string') {
+      const trimmed = dependency.trim()
+      if (trimmed === '') return []
+      const atIndex = trimmed.lastIndexOf('@')
+      if (atIndex > 0 && atIndex < trimmed.length - 1) return [trimmed.slice(atIndex + 1)]
+      const pathMatch = trimmed.match(/^([^/\s]+\/[^/\s]+)\/([^/\s]+)$/)
+      return [pathMatch?.[2] ?? trimmed]
+    }
+    if (dependency == null || typeof dependency !== 'object' || Array.isArray(dependency)) return []
+    return typeof dependency.name === 'string' && dependency.name.trim() !== '' ? [dependency.name.trim()] : []
+  })
+}
+
+const expandSelectedSkills = (
+  allSkills: Definition<Skill>[],
+  selectedSkills: Definition<Skill>[],
+  excludedNames: Set<string>
+) => {
+  const byName = new Map<string, Definition<Skill>>()
+  for (const skill of allSkills) {
+    const name = resolveSkillName(skill)
+    byName.set(name, skill)
+    byName.set(toSkillSlug(name), skill)
+  }
+
+  const result: Definition<Skill>[] = []
+  const seen = new Set<string>()
+  const addSkill = (skill: Definition<Skill>) => {
+    const name = resolveSkillName(skill)
+    if (excludedNames.has(name) || excludedNames.has(toSkillSlug(name))) return
+    if (seen.has(name)) return
+    seen.add(name)
+    result.push(skill)
+
+    for (const dependencyName of resolveDependencyNames(skill)) {
+      const dependency = byName.get(dependencyName) ?? byName.get(toSkillSlug(dependencyName))
+      if (dependency == null) {
+        throw new Error(`Failed to resolve skill dependency ${dependencyName} declared by ${name}`)
+      }
+      addSkill(dependency)
+    }
+  }
+
+  selectedSkills.forEach(addSkill)
+  return result
+}
 
 const filterResolvedSkills = async (
   cwd: string,
@@ -16,11 +80,17 @@ const filterResolvedSkills = async (
     ? new Set(selection.include)
     : undefined
   const exclude = new Set(selection?.exclude ?? [])
+  const excludedNames = new Set(Array.from(exclude).flatMap(name => [name, toSkillSlug(name)]))
   const result = new Map<string, string>()
 
-  for (const skill of allSkills) {
-    const name = basename(dirname(skill.path))
-    if ((include != null && !include.has(name)) || exclude.has(name) || result.has(name)) continue
+  const selectedSkills = allSkills.filter((skill) => {
+    const name = resolveSkillName(skill)
+    return !((include != null && !include.has(name)) || excludedNames.has(name) || excludedNames.has(toSkillSlug(name)))
+  })
+
+  for (const skill of expandSelectedSkills(allSkills, selectedSkills, excludedNames)) {
+    const name = resolveSkillName(skill)
+    if (excludedNames.has(name) || excludedNames.has(toSkillSlug(name)) || result.has(name)) continue
     result.set(name, dirname(skill.path))
   }
 

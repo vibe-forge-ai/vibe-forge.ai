@@ -1,15 +1,12 @@
-import { execFile } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
-import { promisify } from 'node:util'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveCopilotBinaryPath } from '#~/paths.js'
-import { resolveAdapterConfig, syncCopilotManagedSymlink, toProcessEnv } from './shared'
-
-const execFileAsync = promisify(execFile)
+import { COPILOT_CLI_PACKAGE, COPILOT_CLI_VERSION, resolveCopilotBinaryPath } from '#~/paths.js'
+import { resolveAdapterConfig, syncCopilotManagedSymlink } from './shared'
 
 const resolveCopilotMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
   const explicitHome = ctx.env.HOME?.trim() || process.env.HOME?.trim()
@@ -42,15 +39,18 @@ const syncCopilotMockHomeKeychains = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>
 
 export const initCopilotAdapter = async (ctx: AdapterCtx) => {
   const adapterConfig = resolveAdapterConfig(ctx)
-  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath)
+  ctx.env.__VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__ = await ensureManagedNpmCli({
+    adapterKey: 'copilot',
+    binaryName: 'copilot',
+    bundledPath: resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath, ctx.cwd, adapterConfig.cli),
+    config: adapterConfig.cli,
+    configuredPath: adapterConfig.cliPath,
+    cwd: ctx.cwd,
+    defaultPackageName: COPILOT_CLI_PACKAGE,
+    defaultVersion: COPILOT_CLI_VERSION,
+    env: ctx.env,
+    logger: ctx.logger
+  })
 
   await syncCopilotMockHomeKeychains(ctx)
-
-  try {
-    await execFileAsync(binaryPath, ['--version'], {
-      cwd: ctx.cwd,
-      env: toProcessEnv(ctx.env)
-    })
-  } catch {
-  }
 }
