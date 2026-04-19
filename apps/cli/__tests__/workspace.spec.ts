@@ -1,3 +1,4 @@
+import { execFileSync, spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -46,6 +47,7 @@ vi.mock('@vibe-forge/hooks', () => ({
 
 const tempDirs: string[] = []
 const originalCwd = process.cwd()
+const hasGit = spawnSync('git', ['--version']).status === 0
 
 const createWorkspaceFixture = async () => {
   const cleanupDir = await fs.mkdtemp(path.join(tmpdir(), 'vf-cli-workspace-'))
@@ -61,11 +63,19 @@ const createWorkspaceFixture = async () => {
   }
 }
 
+const runGit = (cwd: string, args: string[]) => {
+  execFileSync('git', args, {
+    cwd,
+    stdio: 'pipe'
+  })
+}
+
 afterEach(async () => {
   vi.restoreAllMocks()
   vi.clearAllMocks()
   process.chdir(originalCwd)
   delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+  delete process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { recursive: true, force: true })))
 })
 
@@ -96,6 +106,50 @@ describe('cli workspace resolution', () => {
     expect(run).toHaveBeenCalledWith(
       expect.objectContaining({
         cwd: workspaceDir
+      }),
+      expect.any(Object)
+    )
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it.skipIf(!hasGit)('passes the primary git worktree folder into run command env', async () => {
+    const cleanupDir = await fs.mkdtemp(path.join(tmpdir(), 'vf-cli-worktree-'))
+    tempDirs.push(cleanupDir)
+    const primary = path.join(cleanupDir, 'primary')
+    const linked = path.join(cleanupDir, 'linked')
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await fs.mkdir(primary, { recursive: true })
+    runGit(primary, ['init'])
+    await fs.writeFile(path.join(primary, 'README.md'), 'hello\n', 'utf8')
+    runGit(primary, ['add', 'README.md'])
+    runGit(primary, [
+      '-c',
+      'user.email=vf@example.test',
+      '-c',
+      'user.name=Vibe Forge',
+      'commit',
+      '-m',
+      'init'
+    ])
+    runGit(primary, ['worktree', 'add', '--detach', linked, 'HEAD'])
+
+    process.chdir(linked)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync(['run', '--print', 'smoke'], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: await fs.realpath(linked),
+        env: expect.objectContaining({
+          __VF_PROJECT_WORKSPACE_FOLDER__: await fs.realpath(linked),
+          __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: await fs.realpath(primary)
+        })
       }),
       expect.any(Object)
     )

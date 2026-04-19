@@ -8,6 +8,7 @@ import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-fo
 import { callHook } from '@vibe-forge/hooks'
 import type { AdapterInteractionRequest, AdapterOutputEvent, SessionInitInfo } from '@vibe-forge/types'
 import { getCache } from '@vibe-forge/utils/cache'
+import { resolveProjectPrimaryWorkspaceFolder } from '@vibe-forge/utils/project-cache-path'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { getCliDefaultSkillNames, getCliDefaultSkillPluginConfig } from '#~/default-skill-plugin.js'
@@ -62,6 +63,11 @@ type PrintInputCapableSession = ExitControllableSession & {
   pid?: number
   respondInteraction?: (id: string, data: string | string[]) => void | Promise<void>
 }
+
+const resolveRunPrimaryWorkspaceFolder = (
+  workspaceFolder: string,
+  fallbackWorkspaceFolder: string
+) => resolveProjectPrimaryWorkspaceFolder(workspaceFolder, process.env) ?? fallbackWorkspaceFolder
 
 const configureRunCommand = (command: Command) => {
   command
@@ -274,7 +280,7 @@ Notes:
               ...process.env,
               __VF_PROJECT_AI_CTX_ID__: ctxId,
               __VF_PROJECT_WORKSPACE_FOLDER__: resolvedTaskCwd,
-              __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: cwd
+              __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: resolveRunPrimaryWorkspaceFolder(resolvedTaskCwd, cwd)
             }
             await callHook('GenerateSystemPrompt', {
               cwd: resolvedTaskCwd,
@@ -474,7 +480,10 @@ Notes:
           env: {
             ...process.env,
             __VF_PROJECT_WORKSPACE_FOLDER__: record.resume.taskOptions.cwd ?? record.resume.cwd,
-            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: cwd
+            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: resolveRunPrimaryWorkspaceFolder(
+              record.resume.taskOptions.cwd ?? record.resume.cwd,
+              cwd
+            )
           },
           plugins: getCliDefaultSkillPluginConfig()
         }, {

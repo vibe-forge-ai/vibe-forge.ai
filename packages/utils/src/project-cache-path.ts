@@ -36,10 +36,17 @@ const resolvePathFromBase = (
 }
 
 const resolveGitPrimaryWorkspaceFolder = (cwd: string) => {
-  const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
-    cwd,
-    encoding: 'utf8'
-  })
+  const result = (() => {
+    try {
+      return spawnSync('git', ['rev-parse', '--git-common-dir'], {
+        cwd,
+        encoding: 'utf8'
+      })
+    } catch {
+      return undefined
+    }
+  })()
+  if (result == null) return undefined
   if (result.status !== 0) return undefined
 
   const gitCommonDir = result.stdout?.trim()
