@@ -3,8 +3,9 @@ import type { MenuProps } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { ProjectFileTreeCommand } from '#~/components/workspace/project-file-tree/project-file-tree-types'
+
 import type { ChangedFilesLayout, ChangedTreeCommand } from './changed-files-model'
-import type { WorkspaceTreeCommand } from './workspace-drawer-tree-types'
 
 export type WorkspaceDrawerView = 'tree' | 'changes'
 
@@ -47,7 +48,7 @@ export function ChatWorkspaceDrawerToolbar({
   onChangedLayoutChange: (layout: ChangedFilesLayout) => void
   onChangedTreeCommand: (action: ChangedTreeCommand['action']) => void
   onForceSync: () => void
-  onWorkspaceTreeCommand: (action: WorkspaceTreeCommand['action'], path?: string) => void
+  onWorkspaceTreeCommand: (action: ProjectFileTreeCommand['action'], path?: string) => void
   selectedFilePath?: string | null
 }) {
   const { t } = useTranslation()

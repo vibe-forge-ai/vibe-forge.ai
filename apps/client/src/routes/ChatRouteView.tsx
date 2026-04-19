@@ -1,5 +1,5 @@
 import { useSetAtom } from 'jotai'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -11,6 +11,7 @@ import { ChatSettingsView } from '#~/components/chat/ChatSettingsView.js'
 import { ChatTimelineView } from '#~/components/chat/ChatTimelineView.js'
 import { buildChatHistoryStatusNotices } from '#~/components/chat/messages/build-chat-history-status-notices'
 import { ChatWorkspaceDrawer } from '#~/components/chat/workspace-drawer/ChatWorkspaceDrawer'
+import type { ContextPickerFile, ContextReferenceRequest } from '#~/components/workspace/context-file-types'
 import { useChatRouteBottomPanel } from '#~/hooks/chat/use-chat-route-bottom-panel'
 import { useChatRouteDeepLinkView } from '#~/hooks/chat/use-chat-route-deep-link-view'
 import { useChatSession } from '#~/hooks/chat/use-chat-session'
@@ -26,6 +27,7 @@ const WORKSPACE_TERMINAL_SESSION_ID = '__workspace__'
 export function ChatRouteView({ session }: { session?: Session }) {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
+  const [contextReferenceRequest, setContextReferenceRequest] = useState<ContextReferenceRequest | null>(null)
   const navigate = useNavigate()
   const { isCompactLayout } = useResponsiveLayout()
   const { isWorkspaceDrawerOpen, setWorkspaceDrawerOpen } = useChatLayoutQueryState()
@@ -77,6 +79,16 @@ export function ChatRouteView({ session }: { session?: Session }) {
       t
     }), [errorState, isDebugMode, modelUnavailable, t])
   const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
+  const handleReferenceWorkspacePaths = (files: ContextPickerFile[]) => {
+    if (files.length === 0) {
+      return
+    }
+
+    setContextReferenceRequest(current => ({
+      id: (current?.id ?? 0) + 1,
+      files
+    }))
+  }
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const terminalSessionId = session?.id ?? WORKSPACE_TERMINAL_SESSION_ID
   const bottomPanel = useChatRouteBottomPanel({ isTerminalOpen, session, setIsTerminalOpen })
@@ -150,6 +162,7 @@ export function ChatRouteView({ session }: { session?: Session }) {
               onAdapterChange={setSelectedAdapter}
               modelUnavailable={modelUnavailable}
               hasAvailableModels={hasAvailableModels}
+              contextReferenceRequest={contextReferenceRequest}
             />
           )}
 
@@ -161,6 +174,7 @@ export function ChatRouteView({ session }: { session?: Session }) {
           <ChatWorkspaceDrawer
             selectedFilePath={bottomPanel.selectedWorkspaceFilePath}
             sessionId={session?.id}
+            onReferencePaths={handleReferenceWorkspacePaths}
             onOpenFile={bottomPanel.handleOpenWorkspaceFile}
           />
         )}

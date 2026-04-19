@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import { App } from 'antd'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { buildSenderControllerResult } from '#~/components/chat/sender/@core/build-sender-controller-result'
@@ -22,10 +23,22 @@ import { useSenderSelectOverlays } from './use-sender-select-overlays'
 import { useSenderShortcuts } from './use-sender-shortcuts'
 import { useSenderSubmit } from './use-sender-submit'
 
+const mergePendingContextFiles = <T extends { path: string }>(current: T[], incoming: T[]) => {
+  const nextByPath = new Map(current.map(file => [file.path, file]))
+  for (const file of incoming) {
+    if (file.path.trim() === '') {
+      continue
+    }
+    nextByPath.set(file.path, file)
+  }
+  return Array.from(nextByPath.values())
+}
+
 export const useSenderController = (props: SenderProps) => {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { editorRef, fileInputRef, modelSelectRef, effortSelectRef } = useSenderRefs()
+  const handledContextReferenceRequestIdRef = useRef<number | null>(null)
   const { isInlineEdit, isMac, isThinking, isBusy, supportsEffort } = getSenderRuntimeState(props)
   const composer = useSenderComposerState(props.initialContent)
   const completion = useSenderCompletion({
@@ -134,6 +147,37 @@ export const useSenderController = (props: SenderProps) => {
 
     void handleSend(mode)
   }
+
+  useEffect(() => {
+    const request = props.contextReferenceRequest
+    if (request == null || request.files.length === 0 || isInlineEdit) {
+      return
+    }
+    if (handledContextReferenceRequestIdRef.current === request.id) {
+      return
+    }
+    handledContextReferenceRequestIdRef.current = request.id
+    if (props.modelUnavailable) {
+      void message.warning(t('chat.modelConfigRequired'))
+      return
+    }
+    if (props.interactionRequest != null) {
+      void message.warning(t('chat.fileNotSupportedInInteraction'))
+      return
+    }
+
+    composer.setPendingFiles(current => mergePendingContextFiles(current, request.files))
+    focusRestore.queueEditorFocusRestore()
+  }, [
+    focusRestore,
+    isInlineEdit,
+    message,
+    composer.setPendingFiles,
+    props.contextReferenceRequest,
+    props.interactionRequest,
+    props.modelUnavailable,
+    t
+  ])
 
   useSenderAutofocus({ autoFocus: props.autoFocus === true, editorRef })
   useSenderReferenceFocusRestore({ focusRestore, referenceActions })

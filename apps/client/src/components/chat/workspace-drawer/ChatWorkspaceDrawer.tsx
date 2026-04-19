@@ -8,19 +8,22 @@ import type { GitRepositoryState } from '@vibe-forge/types'
 
 import { getSessionGitState, getWorkspaceGitState } from '#~/api'
 
+import type { ContextPickerFile } from '#~/components/workspace/context-file-types'
+import type { ProjectFileTreeCommand } from '#~/components/workspace/project-file-tree/project-file-tree-types'
 import { ChatWorkspaceDrawerToolbar } from './ChatWorkspaceDrawerToolbar'
 import type { WorkspaceDrawerView } from './ChatWorkspaceDrawerToolbar'
 import { WorkspaceDrawerChangedFiles } from './WorkspaceDrawerChangedFiles'
 import { WorkspaceDrawerTree } from './WorkspaceDrawerTree'
 import type { ChangedFilesLayout, ChangedTreeCommand } from './changed-files-model'
-import type { WorkspaceTreeCommand } from './workspace-drawer-tree-types'
 
 export function ChatWorkspaceDrawer({
   onOpenFile,
+  onReferencePaths,
   selectedFilePath,
   sessionId
 }: {
   onOpenFile?: (path: string) => void
+  onReferencePaths?: (files: ContextPickerFile[]) => void
   selectedFilePath?: string | null
   sessionId?: string
 }) {
@@ -28,7 +31,7 @@ export function ChatWorkspaceDrawer({
   const [activeView, setActiveView] = useState<WorkspaceDrawerView>('tree')
   const [changedLayout, setChangedLayout] = useState<ChangedFilesLayout>('folders')
   const [changedTreeCommand, setChangedTreeCommand] = useState<ChangedTreeCommand | null>(null)
-  const [workspaceTreeCommand, setWorkspaceTreeCommand] = useState<WorkspaceTreeCommand | null>(null)
+  const [workspaceTreeCommand, setWorkspaceTreeCommand] = useState<ProjectFileTreeCommand | null>(null)
   const [treeRefreshKey, setTreeRefreshKey] = useState(0)
   const gitKey = sessionId != null && sessionId !== ''
     ? ['chat-workspace-drawer-git', sessionId]
@@ -56,7 +59,7 @@ export function ChatWorkspaceDrawer({
       id: (prev?.id ?? 0) + 1
     }))
   }
-  const handleWorkspaceTreeCommand = (action: WorkspaceTreeCommand['action'], path?: string) => {
+  const handleWorkspaceTreeCommand = (action: ProjectFileTreeCommand['action'], path?: string) => {
     setActiveView('tree')
     setWorkspaceTreeCommand(prev => ({
       action,
@@ -89,6 +92,7 @@ export function ChatWorkspaceDrawer({
                 selectedFilePath={selectedFilePath}
                 sessionId={sessionId}
                 onOpenFile={onOpenFile}
+                onReferencePaths={onReferencePaths}
               />
             )
             : (

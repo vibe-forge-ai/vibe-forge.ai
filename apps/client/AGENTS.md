@@ -50,7 +50,7 @@
   - sender 私有编排逻辑在 `src/components/chat/sender/@hooks/`
   - sender 私有核心逻辑在 `src/components/chat/sender/@core/`
   - 聊天共用状态提示在 `src/components/chat/`
-  - 工作区文件选择器在 `src/components/workspace/`
+  - 工作区文件选择器和可复用项目目录树在 `src/components/workspace/`
 
 import 约定：
 

@@ -6,29 +6,35 @@ import { useTranslation } from 'react-i18next'
 
 import { copyTextWithFeedback } from '#~/utils/copy'
 
-import type { WorkspaceDrawerTreeNode } from './workspace-drawer-tree-types'
+import type { ProjectFileTreeNode } from './project-file-tree-types'
 
 const renderMenuIcon = (icon: string) =>
-  <span className='material-symbols-rounded chat-workspace-drawer__menu-icon'>{icon}</span>
+  <span className='material-symbols-rounded project-file-tree__menu-icon'>{icon}</span>
 
-export function WorkspaceDrawerTreeRowContextMenu({
+export function ProjectFileTreeRowContextMenu({
   canOpenFile,
+  canReference,
   canToggleDirectory,
   children,
   isDirectory,
   isExpanded,
   node,
+  referenceNodes,
   onOpenFile,
+  onReferenceNodes,
   onToggleDirectory
 }: {
   canOpenFile: boolean
+  canReference: boolean
   canToggleDirectory: boolean
   children: ReactElement
   isDirectory: boolean
   isExpanded: boolean
-  node: WorkspaceDrawerTreeNode
+  node: ProjectFileTreeNode
+  referenceNodes: ProjectFileTreeNode[]
   onOpenFile?: (path: string) => void
-  onToggleDirectory: (node: WorkspaceDrawerTreeNode) => void
+  onReferenceNodes?: (nodes: ProjectFileTreeNode[]) => void
+  onToggleDirectory: (node: ProjectFileTreeNode) => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -52,6 +58,13 @@ export function WorkspaceDrawerTreeRowContextMenu({
           onClick: () => onOpenFile?.(node.path)
         }
       ]),
+    {
+      key: 'reference',
+      label: t('chat.workspaceTreeReferenceToInput'),
+      icon: renderMenuIcon('alternate_email'),
+      disabled: !canReference || onReferenceNodes == null,
+      onClick: () => onReferenceNodes?.(referenceNodes.length > 0 ? referenceNodes : [node])
+    },
     { type: 'divider' as const },
     {
       key: 'copy-path',
@@ -66,12 +79,25 @@ export function WorkspaceDrawerTreeRowContextMenu({
         })
       }
     }
-  ], [canOpenFile, canToggleDirectory, isDirectory, isExpanded, message, node, onOpenFile, onToggleDirectory, t])
+  ], [
+    canOpenFile,
+    canReference,
+    canToggleDirectory,
+    isDirectory,
+    isExpanded,
+    message,
+    node,
+    onOpenFile,
+    onReferenceNodes,
+    onToggleDirectory,
+    referenceNodes,
+    t
+  ])
 
   return (
     <Dropdown
       menu={{ items: menuItems }}
-      overlayClassName='chat-workspace-drawer-context-dropdown'
+      overlayClassName='project-file-tree-context-dropdown'
       trigger={['contextMenu']}
     >
       {children}
