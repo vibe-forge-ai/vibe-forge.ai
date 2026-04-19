@@ -10,9 +10,9 @@ import type { loadEnv } from '@vibe-forge/core'
 
 import { logger } from '#~/utils/logger.js'
 
+import { adaptersRouter } from './adapters'
 import { aiRouter } from './ai'
 import { authRouter } from './auth'
-import { adaptersRouter } from './adapters'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { channelActionsRouter } from './channel-actions'
@@ -37,6 +37,13 @@ const normalizeBase = (value?: string) => {
     base += '/'
   }
   return base
+}
+
+const trimTrailingSlash = (value: string) => {
+  if (value === '/') {
+    return value
+  }
+  return value.replace(/\/+$/, '')
 }
 
 const resolveClientDistPath = (distPath: string | undefined) => {
@@ -75,6 +82,7 @@ const createRuntimeScript = (env: ReturnType<typeof loadEnv>, clientBase: string
     __VF_PROJECT_AI_SERVER_HOST__: env.__VF_PROJECT_AI_SERVER_HOST__,
     __VF_PROJECT_AI_SERVER_PORT__: String(env.__VF_PROJECT_AI_SERVER_PORT__),
     __VF_PROJECT_AI_SERVER_WS_PATH__: env.__VF_PROJECT_AI_SERVER_WS_PATH__,
+    __VF_PROJECT_AI_CLIENT_MODE__: env.__VF_PROJECT_AI_CLIENT_MODE__,
     __VF_PROJECT_AI_CLIENT_BASE__: clientBase
   }
   return `<script>window.__VF_PROJECT_AI_RUNTIME_ENV__=${JSON.stringify(runtimeEnv)}</script>`
@@ -83,6 +91,7 @@ const createRuntimeScript = (env: ReturnType<typeof loadEnv>, clientBase: string
 export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => {
   // Routes
   const router = new Router()
+  const clientBaseRedirects = new Map<string, string>()
   // Register routers
   const routers = [
     { prefix: '/api/sessions/:sessionId/git', router: gitRouter() },
@@ -107,6 +116,16 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     : resolveClientDistPath(env.__VF_PROJECT_AI_CLIENT_DIST_PATH__)
   const runtimeScript = createRuntimeScript(env, clientBase)
   if (clientDistPath && clientMode !== 'dev') {
+    const registerBaseRedirect = (base: string) => {
+      const redirectFrom = trimTrailingSlash(base)
+      if (redirectFrom === '/') {
+        return
+      }
+      clientBaseRedirects.set(redirectFrom, base)
+    }
+
+    registerBaseRedirect(clientBase)
+
     const createStaticUiRouter = () =>
       uiRouter({
         base: clientBase,
@@ -134,6 +153,17 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
   }
 
   app
+    .use(async (ctx, next) => {
+      const redirectTarget = ctx.method === 'GET'
+        ? clientBaseRedirects.get(ctx.path)
+        : undefined
+      if (redirectTarget != null) {
+        ctx.status = 308
+        ctx.redirect(redirectTarget)
+        return
+      }
+      await next()
+    })
     .use(router.routes())
     .use(router.allowedMethods())
 

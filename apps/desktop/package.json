@@ -1,0 +1,31 @@
+{
+  "name": "@vibe-forge/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Vibe Forge contributors",
+  "description": "Vibe Forge desktop shell",
+  "main": "./src/main.cjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vibe-forge-ai/vibe-forge.ai.git"
+  },
+  "scripts": {
+    "build:client": "pnpm -C ../client exec vite build",
+    "dev": "pnpm run build:client && electron .",
+    "make": "pnpm run package && node ./scripts/make.cjs",
+    "make:from-package": "node ./scripts/make.cjs",
+    "package": "pnpm run build:client && node ./scripts/package.cjs",
+    "smoke:package": "node ./scripts/smoke-packaged-server.cjs"
+  },
+  "dependencies": {
+    "@vibe-forge/cli-helper": "workspace:^",
+    "@vibe-forge/server": "workspace:^",
+    "electron-updater": "^6.8.3"
+  },
+  "devDependencies": {
+    "@electron/notarize": "^3.1.1",
+    "@electron/packager": "^19.1.0",
+    "electron": "^41.2.1",
+    "electron-builder": "^26.8.1"
+  }
+}

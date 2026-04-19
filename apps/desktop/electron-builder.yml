@@ -1,0 +1,53 @@
+appId: ai.vibeforge.desktop
+productName: Vibe Forge
+artifactName: vibe-forge-${version}-${os}-${arch}.${ext}
+copyright: Copyright Vibe Forge contributors
+afterSign: scripts/notarize.cjs
+icon: build/icon
+
+directories:
+  output: release
+
+publish:
+  provider: github
+  owner: vibe-forge-ai
+  repo: vibe-forge.ai
+  tagNamePrefix: desktop-v
+  releaseType: release
+
+mac:
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  icon: build/icon.icns
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+    - target: zip
+
+dmg:
+  sign: false
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+    - target: zip
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Vibe Forge
+
+linux:
+  category: Development
+  icon: build/icon.png
+  target:
+    - target: AppImage
+    - target: deb
+    - target: tar.gz

@@ -81,9 +81,11 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to load adapter accounts',
         {
-          adapter: adapterKey,
           cause: error,
-          code: 'adapter_accounts_load_failed'
+          code: 'adapter_accounts_load_failed',
+          details: {
+            adapter: adapterKey
+          }
         }
       )
     }
@@ -102,7 +104,11 @@ export function adaptersRouter(): Router {
     try {
       const { adapter, adapterCtx } = await createAdapterRouteContext(adapterKey)
       if (adapter.getAccountDetail == null) {
-        throw badRequest(`Adapter "${adapterKey}" does not support account detail.`, undefined, 'adapter_account_detail_unsupported')
+        throw badRequest(
+          `Adapter "${adapterKey}" does not support account detail.`,
+          undefined,
+          'adapter_account_detail_unsupported'
+        )
       }
 
       const model = typeof ctx.query.model === 'string' ? ctx.query.model : undefined
@@ -120,10 +126,12 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to load adapter account detail',
         {
-          adapter: adapterKey,
-          account: accountKey,
           cause: error,
-          code: 'adapter_account_detail_load_failed'
+          code: 'adapter_account_detail_load_failed',
+          details: {
+            adapter: adapterKey,
+            account: accountKey
+          }
         }
       )
     }
@@ -162,7 +170,11 @@ export function adaptersRouter(): Router {
     try {
       const { workspaceFolder, adapter, adapterCtx } = await createAdapterRouteContext(adapterKey)
       if (adapter.manageAccount == null) {
-        throw badRequest(`Adapter "${adapterKey}" does not support account management.`, undefined, 'adapter_account_manage_unsupported')
+        throw badRequest(
+          `Adapter "${adapterKey}" does not support account management.`,
+          undefined,
+          'adapter_account_manage_unsupported'
+        )
       }
 
       const result = await adapter.manageAccount(adapterCtx, {
@@ -173,7 +185,8 @@ export function adaptersRouter(): Router {
         signal: abortController.signal
       })
 
-      if ((result.artifacts?.length ?? 0) > 0) {
+      const accountArtifacts = result.artifacts ?? []
+      if (accountArtifacts.length > 0) {
         if (result.accountKey == null || result.accountKey.trim() === '') {
           throw badRequest(
             'Adapter account action returned artifacts without an account key.',
@@ -187,7 +200,7 @@ export function adaptersRouter(): Router {
           env: adapterCtx.env,
           adapter: adapterKey,
           account: result.accountKey,
-          artifacts: result.artifacts
+          artifacts: accountArtifacts
         })
       }
 
@@ -231,9 +244,11 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to run adapter account action',
         {
-          adapter: adapterKey,
           cause: error,
-          code: 'adapter_account_action_failed'
+          code: 'adapter_account_action_failed',
+          details: {
+            adapter: adapterKey
+          }
         }
       )
     } finally {

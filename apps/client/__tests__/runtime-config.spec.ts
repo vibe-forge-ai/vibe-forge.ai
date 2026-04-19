@@ -2,11 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   SERVER_BASE_URL_STORAGE_KEY,
+  SERVER_CONNECTION_PICKER_STORAGE_KEY,
+  clearServerConnectionPickerRequest,
   clearStoredServerBaseUrl,
   createServerUrl,
+  getConfiguredServerBaseUrl,
   getServerBaseUrl,
   getServerHostEnv,
+  isDesktopClientMode,
+  isServerConnectionManagedClientMode,
+  isServerConnectionPickerRequested,
   normalizeServerBaseUrl,
+  requestServerConnectionPicker,
   resolveDevDocumentTitle,
   setStoredServerBaseUrl
 } from '#~/runtime-config'
@@ -14,6 +21,7 @@ import {
 const getGlobalScope = () => (
   globalThis as {
     __VF_PROJECT_AI_RUNTIME_ENV__?: {
+      __VF_PROJECT_AI_SERVER_BASE_URL__?: string
       __VF_PROJECT_AI_CLIENT_MODE__?: string
       __VF_PROJECT_AI_SERVER_HOST__?: string
       __VF_PROJECT_AI_SERVER_PORT__?: string
@@ -135,5 +143,31 @@ describe('server base URL helpers', () => {
   it('persists normalized standalone server addresses', () => {
     expect(setStoredServerBaseUrl('http://localhost:8787/')).toBe('http://localhost:8787')
     expect(localStorage.getItem(SERVER_BASE_URL_STORAGE_KEY)).toBe('http://localhost:8787')
+  })
+
+  it('uses the configured desktop runtime host and port as the default backend', () => {
+    setRuntimeEnv({
+      __VF_PROJECT_AI_CLIENT_MODE__: 'desktop',
+      __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+      __VF_PROJECT_AI_SERVER_PORT__: '43123'
+    })
+
+    expect(isDesktopClientMode()).toBe(true)
+    expect(isServerConnectionManagedClientMode()).toBe(true)
+    expect(getConfiguredServerBaseUrl()).toBe('http://127.0.0.1:43123')
+    expect(getServerBaseUrl()).toBe('http://127.0.0.1:43123')
+  })
+
+  it('stores and clears the forced server picker flag', () => {
+    setStoredServerBaseUrl('https://remote.example.com')
+
+    requestServerConnectionPicker({ clearCurrentServer: true })
+
+    expect(localStorage.getItem(SERVER_BASE_URL_STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(SERVER_CONNECTION_PICKER_STORAGE_KEY)).toBe('true')
+    expect(isServerConnectionPickerRequested()).toBe(true)
+
+    clearServerConnectionPickerRequest()
+    expect(localStorage.getItem(SERVER_CONNECTION_PICKER_STORAGE_KEY)).toBeNull()
   })
 })

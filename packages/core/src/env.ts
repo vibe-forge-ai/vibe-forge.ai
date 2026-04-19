@@ -17,7 +17,7 @@ export interface ServerEnv {
   __VF_PROJECT_AI_SERVER_LOG_LEVEL__: LogLevel
   __VF_PROJECT_AI_SERVER_DEBUG__: boolean
   __VF_PROJECT_AI_SERVER_ALLOW_CORS__: boolean
-  __VF_PROJECT_AI_CLIENT_MODE__?: 'dev' | 'static'
+  __VF_PROJECT_AI_CLIENT_MODE__?: 'dev' | 'static' | 'standalone' | 'independent' | 'desktop'
   __VF_PROJECT_AI_CLIENT_BASE__?: string
   __VF_PROJECT_AI_CLIENT_DIST_PATH__?: string
 }

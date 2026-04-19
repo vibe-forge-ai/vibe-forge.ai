@@ -9,6 +9,8 @@
 - [安装与准备](./usage/install.md)
 - [数据资产目录配置](./asset-directories.md)
 - [启动服务](./usage/runtime.md)
+- [桌面应用](./usage/desktop.md)
+- [桌面签名与发布](./usage/desktop-signing.md)
 - [Web UI 与 Terminal 视图](./usage/web.md)
 - [Adapter 配置与多账号](./usage/adapters.md)
 - [PWA 与独立部署](./usage/pwa.md)

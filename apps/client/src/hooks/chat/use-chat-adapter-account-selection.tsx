@@ -76,7 +76,7 @@ export function useChatAdapterAccountSelection({
 
   const { data } = useSWR<AdapterAccountsResult>(
     normalizedAdapter == null ? null : ['/api/adapters', normalizedAdapter, model ?? ''],
-    () => getAdapterAccounts(normalizedAdapter, { model })
+    () => getAdapterAccounts(normalizedAdapter!, { model })
   )
 
   const accountOptions = useMemo<ChatAdapterAccountOption[]>(() => {

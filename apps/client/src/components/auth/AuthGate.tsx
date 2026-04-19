@@ -9,7 +9,7 @@ import useSWR from 'swr'
 import { getAuthStatus, login } from '#~/api/auth'
 import { setAuthToken } from '#~/api/auth-token'
 import { getApiErrorMessage } from '#~/api/base'
-import { clearStoredServerBaseUrl, isStandaloneClientMode } from '#~/runtime-config'
+import { isServerConnectionManagedClientMode, requestServerConnectionPicker } from '#~/runtime-config'
 
 interface LoginFormValues {
   username?: string
@@ -23,10 +23,10 @@ export function AuthGate({ children }: PropsWithChildren) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const suggestedUsername = data?.usernames[0] ?? 'admin'
-  const standaloneMode = isStandaloneClientMode()
+  const connectionManagedMode = isServerConnectionManagedClientMode()
 
   const handleChangeServer = () => {
-    clearStoredServerBaseUrl()
+    requestServerConnectionPicker({ clearCurrentServer: true })
     window.location.reload()
   }
 
@@ -48,7 +48,7 @@ export function AuthGate({ children }: PropsWithChildren) {
             message={t('auth.statusFailed')}
             description={getApiErrorMessage(error, t('auth.statusFailed'))}
           />
-          {standaloneMode && (
+          {connectionManagedMode && (
             <Button
               className='auth-gate__secondary-action'
               htmlType='button'
@@ -75,7 +75,7 @@ export function AuthGate({ children }: PropsWithChildren) {
         username: values.username?.trim() ?? '',
         password: values.password ?? '',
         rememberDevice: values.rememberDevice === true,
-        returnToken: standaloneMode
+        returnToken: connectionManagedMode
       })
       if (status.token != null) {
         setAuthToken(status.token)
@@ -157,7 +157,7 @@ export function AuthGate({ children }: PropsWithChildren) {
             {t('auth.login')}
           </Button>
 
-          {standaloneMode && (
+          {connectionManagedMode && (
             <Button
               className='auth-gate__secondary-action'
               htmlType='button'

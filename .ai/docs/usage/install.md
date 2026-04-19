@@ -4,6 +4,20 @@
 
 ## 安装基础包
 
+### 下载桌面应用
+
+如果你想直接使用桌面版 Vibe Forge，而不是先在项目里拼装 `server + client`：
+
+- 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` tag 对应的安装包
+- macOS：`.dmg`、`.zip`
+- Windows：`.exe`、`.zip`
+- Linux：`.AppImage`、`.deb`、`.tar.gz`
+
+注意：
+
+- 当前桌面 release / CI artifact 默认不签名
+- 第一次启动时，macOS / Windows 可能会弹出系统安全提示，需要手动确认
+
 ### Homebrew 安装 CLI
 
 如果只需要 `vf` CLI，可以通过 Homebrew 安装和更新：

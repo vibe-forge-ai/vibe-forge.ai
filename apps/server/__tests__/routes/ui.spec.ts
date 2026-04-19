@@ -94,6 +94,15 @@ describe('ui static routing', () => {
     expect(assetBody).toBe('font-data')
   })
 
+  it('redirects the client base without a trailing slash to the mounted ui alias', async () => {
+    const response = await fetch(`${baseUrl}/ui`, {
+      redirect: 'manual'
+    })
+
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe('/ui/')
+  })
+
   it('serves root static files before falling back to the spa shell', async () => {
     const manifestResponse = await fetch(`${baseUrl}/ui/manifest.webmanifest`)
     const manifestBody = await manifestResponse.text()

@@ -1,0 +1,179 @@
+const { spawnSync } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const { packager } = require('@electron/packager')
+
+const desktopRoot = path.resolve(__dirname, '..')
+const workspaceRoot = path.resolve(desktopRoot, '../..')
+const clientDistPath = path.resolve(desktopRoot, '../client/dist')
+const outputDir = path.join(desktopRoot, 'out')
+const releaseDir = path.join(desktopRoot, 'release')
+const stagingDir = path.join(workspaceRoot, '.data/desktop-package-staging')
+const desktopStagingDir = path.join(desktopRoot, '.data/desktop-package-staging')
+const appUpdateConfigPath = path.join(desktopRoot, 'build', 'app-update.yml')
+const electronVersion = require('electron/package.json').version
+const packageJson = require('../package.json')
+const appName = 'Vibe Forge'
+const executableName = process.platform === 'darwin' ? appName : 'vibe-forge'
+
+const isTruthy = value => /^(1|true|yes|on)$/i.test(value ?? '')
+
+const resolveAppVersion = () => {
+  const requestedVersion = process.env.VF_DESKTOP_VERSION?.trim()
+  const version = requestedVersion || packageJson.version
+  if (!/^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$/.test(version)) {
+    throw new Error(`Invalid desktop app version: ${version}`)
+  }
+  return version
+}
+
+const runPnpm = (args) => {
+  const pnpmBin = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const result = spawnSync(pnpmBin, args, {
+    cwd: workspaceRoot,
+    stdio: 'inherit'
+  })
+
+  if (result.error != null) {
+    throw result.error
+  }
+  if (result.status !== 0) {
+    throw new Error(`pnpm ${args.join(' ')} failed with exit code ${result.status}`)
+  }
+}
+
+const removeStagingDirs = () => {
+  fs.rmSync(stagingDir, { recursive: true, force: true })
+  fs.rmSync(desktopStagingDir, { recursive: true, force: true })
+}
+
+const resolvePackagedAppRoot = (appPath) => {
+  if (process.platform === 'darwin') {
+    return path.join(appPath, `${appName}.app`, 'Contents', 'Resources', 'app')
+  }
+
+  return path.join(appPath, 'resources', 'app')
+}
+
+const resolvePackageIconPath = () => {
+  if (process.platform === 'darwin') {
+    return path.join(desktopRoot, 'build', 'icon.icns')
+  }
+
+  if (process.platform === 'win32') {
+    return path.join(desktopRoot, 'build', 'icon.ico')
+  }
+
+  return path.join(desktopRoot, 'build', 'icon.png')
+}
+
+const resolvePackagedSymlinkTarget = (target, packagedAppRoot) => {
+  if (target === stagingDir || target.startsWith(`${stagingDir}${path.sep}`)) {
+    return path.join(packagedAppRoot, path.relative(stagingDir, target))
+  }
+
+  if (target === desktopRoot || target.startsWith(`${desktopRoot}${path.sep}`)) {
+    return path.join(packagedAppRoot, path.relative(desktopRoot, target))
+  }
+
+  return undefined
+}
+
+const rewriteStagingSymlinks = (rootDir, packagedAppRoot) => {
+  const entries = fs.readdirSync(rootDir, { withFileTypes: true })
+  for (const entry of entries) {
+    const entryPath = path.join(rootDir, entry.name)
+    const stat = fs.lstatSync(entryPath)
+
+    if (stat.isSymbolicLink()) {
+      const target = fs.readlinkSync(entryPath)
+      if (path.isAbsolute(target)) {
+        const packagedTarget = resolvePackagedSymlinkTarget(target, packagedAppRoot)
+        if (packagedTarget == null) continue
+        const relativeTarget = path.relative(path.dirname(entryPath), packagedTarget)
+        fs.unlinkSync(entryPath)
+        fs.symlinkSync(relativeTarget, entryPath)
+      }
+      continue
+    }
+
+    if (stat.isDirectory()) {
+      rewriteStagingSymlinks(entryPath, packagedAppRoot)
+    }
+  }
+}
+
+async function main() {
+  removeStagingDirs()
+  fs.rmSync(outputDir, { recursive: true, force: true })
+  fs.rmSync(releaseDir, { recursive: true, force: true })
+
+  try {
+    console.log('[desktop] preparing production app staging')
+    runPnpm([
+      '--filter',
+      '@vibe-forge/desktop',
+      'deploy',
+      '--legacy',
+      '--prod',
+      stagingDir
+    ])
+
+    const iconPath = resolvePackageIconPath()
+    const appVersion = resolveAppVersion()
+    const enableAutoUpdate = isTruthy(process.env.VF_DESKTOP_ENABLE_AUTO_UPDATE)
+    if (!fs.existsSync(iconPath)) {
+      throw new Error(`Desktop package icon is missing: ${iconPath}`)
+    }
+    if (enableAutoUpdate && !fs.existsSync(appUpdateConfigPath)) {
+      throw new Error(`Desktop auto-update config is missing: ${appUpdateConfigPath}`)
+    }
+    if (!enableAutoUpdate) {
+      console.log('[desktop] auto-update config disabled for this package')
+    }
+
+    const appPaths = await packager({
+      appBundleId: 'ai.vibeforge.desktop',
+      appCategoryType: 'public.app-category.developer-tools',
+      appCopyright: 'Copyright Vibe Forge contributors',
+      appVersion,
+      arch: process.arch,
+      asar: false,
+      derefSymlinks: false,
+      dir: stagingDir,
+      electronVersion,
+      executableName,
+      extendInfo: {
+        CFBundleIconFile: 'icon.icns'
+      },
+      extraResource: [
+        ...(enableAutoUpdate ? [appUpdateConfigPath] : []),
+        clientDistPath
+      ],
+      icon: iconPath,
+      ignore: [
+        /^\/out($|\/)/,
+        /^\/scripts($|\/)/
+      ],
+      name: appName,
+      out: outputDir,
+      overwrite: true,
+      platform: process.platform,
+      prune: false
+    })
+
+    for (const appPath of appPaths) {
+      const packagedAppRoot = resolvePackagedAppRoot(appPath)
+      rewriteStagingSymlinks(packagedAppRoot, packagedAppRoot)
+      console.log(`[desktop] packaged ${appPath}`)
+    }
+  } finally {
+    removeStagingDirs()
+  }
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})
