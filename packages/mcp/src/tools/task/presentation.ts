@@ -7,7 +7,7 @@ import type { TaskInfo } from './manager'
 export const SESSION_PERMISSION_MODES = ['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions'] as const
 
 export const START_TASKS_DESCRIPTION =
-  'Start multiple tasks in background or foreground. If a task stalls, fails, or asks for permission/input, call GetTaskInfo. If GetTaskInfo returns pendingInput or pendingInteraction, resolve it with SubmitTaskInput. If logs show permission_required, you can answer the recovery prompt with SubmitTaskInput instead of restarting manually.'
+  'Start multiple tasks in background or foreground. Use type "workspace" plus name to run in a configured workspace. If a task stalls, fails, or asks for permission/input, call GetTaskInfo. If GetTaskInfo returns pendingInput or pendingInteraction, resolve it with SubmitTaskInput. If logs show permission_required, you can answer the recovery prompt with SubmitTaskInput instead of restarting manually.'
 
 export const GET_TASK_INFO_DESCRIPTION =
   'Get the detailed status, logs, pendingInput, pendingInteraction, lastError, and guidance for a task. Use this when a task seems stuck, is waiting for permission/input, or has failed. If pendingInput is present, answer it with SubmitTaskInput.'

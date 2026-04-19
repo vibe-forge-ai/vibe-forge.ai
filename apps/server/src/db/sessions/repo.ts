@@ -37,6 +37,8 @@ interface SessionRow {
   adapter: string | null
   permissionMode: string | null
   effort: string | null
+  promptType: string | null
+  promptName: string | null
   workspaceFileState: string | null
 }
 
@@ -66,6 +68,8 @@ const sessionUpdateFields = [
   { key: 'adapter' },
   { key: 'permissionMode' },
   { key: 'effort' },
+  { key: 'promptType' },
+  { key: 'promptName' },
   { key: 'workspaceFileState', toParam: value => JSON.stringify(normalizeSessionWorkspaceFileState(value)) }
 ] as const satisfies ReadonlyArray<{
   key: keyof SessionUpdate
@@ -112,6 +116,8 @@ function mapSessionRow(row: SessionRow): Session {
     adapter: row.adapter ?? undefined,
     permissionMode: (row.permissionMode as any) ?? undefined,
     effort: (row.effort as any) ?? undefined,
+    promptType: (row.promptType as any) ?? undefined,
+    promptName: row.promptName ?? undefined,
     ...(workspaceFileState == null ? {} : { workspaceFileState })
   }
 }

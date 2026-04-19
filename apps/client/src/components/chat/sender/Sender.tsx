@@ -44,6 +44,7 @@ export function Sender(props: SenderProps) {
           toolbarData={controller.toolbar.toolbarData}
           toolbarRefs={controller.toolbar.toolbarRefs}
           toolbarHandlers={controller.toolbar.toolbarHandlers}
+          sessionTarget={props.sessionTarget}
           showContextPicker={controller.attachments.showContextPicker}
           onCancelContextPicker={controller.onCancelContextPicker}
           onConfirmContextPicker={controller.onConfirmContextPicker}

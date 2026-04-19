@@ -22,6 +22,12 @@ describe('mergeConfigs', () => {
         },
         announcements: ['base'],
         defaultIncludeMcpServers: ['docs'],
+        workspaces: {
+          include: ['apps/*'],
+          entries: {
+            docs: 'docs'
+          }
+        },
         notifications: {
           events: {
             completed: {
@@ -78,6 +84,16 @@ describe('mergeConfigs', () => {
         },
         announcements: ['override'],
         defaultIncludeMcpServers: ['browser', 'docs'],
+        workspaces: {
+          include: ['services/*'],
+          exclude: ['services/legacy'],
+          entries: {
+            web: {
+              path: 'apps/web',
+              description: 'Web app'
+            }
+          }
+        },
         notifications: {
           events: {
             completed: {
@@ -128,6 +144,17 @@ describe('mergeConfigs', () => {
     })
     expect(merged.announcements).toEqual(['base', 'override'])
     expect(merged.defaultIncludeMcpServers).toEqual(['docs', 'browser'])
+    expect(merged.workspaces).toEqual({
+      include: ['apps/*', 'services/*'],
+      exclude: ['services/legacy'],
+      entries: {
+        docs: 'docs',
+        web: {
+          path: 'apps/web',
+          description: 'Web app'
+        }
+      }
+    })
     expect(merged.notifications?.events?.completed).toEqual({
       title: 'Base Title',
       description: 'Child Description'

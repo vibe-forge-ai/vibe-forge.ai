@@ -2,16 +2,25 @@ import './NewSessionGuide.scss'
 
 import { App } from 'antd'
 import { useAtom } from 'jotai'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { EntitySummary, SpecSummary } from '#~/api.js'
+import type { EntitySummary, SpecSummary, WorkspaceSummary } from '#~/api.js'
+import { createChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { showAnnouncementsAtom } from '#~/store/index.js'
 import { NewSessionGuideCompactPanel } from './NewSessionGuideCompactPanel'
 import { NewSessionGuideGrid } from './NewSessionGuideGrid'
 
-export function NewSessionGuide() {
+export function NewSessionGuide({
+  selectedTarget,
+  onSelectTarget
+}: {
+  selectedTarget: ChatSessionTargetDraft
+  onSelectTarget: (target: ChatSessionTargetDraft) => void
+}) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { isCompactLayout } = useResponsiveLayout()
@@ -19,6 +28,7 @@ export function NewSessionGuide() {
 
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
   const { data: entitiesRes } = useSWR<{ entities: EntitySummary[] }>('/api/ai/entities')
+  const { data: workspacesRes } = useSWR<{ workspaces: WorkspaceSummary[] }>('/api/ai/workspaces')
   const { data: configRes } = useSWR<{
     sources: {
       merged: {
@@ -34,8 +44,10 @@ export function NewSessionGuide() {
   const specs = specsRes?.specs ?? []
   const alwaysSpecs = specs.filter(spec => spec.always)
   const entities = entitiesRes?.entities ?? []
+  const workspaces = workspacesRes?.workspaces ?? []
   const isSpecsReady = specsRes != null
   const isEntitiesReady = entitiesRes != null
+  const isWorkspacesReady = workspacesRes != null
   const { announcements = [] } = configRes?.sources.merged?.general ?? {}
 
   const helpItems = [
@@ -43,19 +55,6 @@ export function NewSessionGuide() {
     t('chat.newSessionGuide.help.item2'),
     t('chat.newSessionGuide.help.item3')
   ]
-  const visibleAnnouncements = isCompactLayout ? announcements.slice(0, 1) : announcements
-  const visibleSpecs = isCompactLayout ? alwaysSpecs.slice(0, 1) : alwaysSpecs
-  const visibleEntities = isCompactLayout ? entities.slice(0, 1) : entities
-  const visibleHelpItems = isCompactLayout ? helpItems.slice(0, 1) : helpItems
-  const hiddenAnnouncementCount = Math.max(announcements.length - visibleAnnouncements.length, 0)
-  const hiddenSpecCount = Math.max(alwaysSpecs.length - visibleSpecs.length, 0)
-  const hiddenEntityCount = Math.max(entities.length - visibleEntities.length, 0)
-  const hiddenHelpCount = Math.max(helpItems.length - visibleHelpItems.length, 0)
-
-  const renderMoreCount = (count: number) =>
-    count > 0
-      ? <div className='new-session-guide__more'>{t('chat.newSessionGuide.moreCount', { count })}</div>
-      : null
 
   const handleCreateSpec = () => {
     message.info(t('chat.newSessionGuide.specs.createToast'))
@@ -64,6 +63,54 @@ export function NewSessionGuide() {
   const handleCreateEntity = () => {
     message.info(t('chat.newSessionGuide.entities.createToast'))
   }
+
+  const isSelected = (type: ChatSessionTargetDraft['type'], name: string) =>
+    selectedTarget.type === type && selectedTarget.name === name
+
+  const workspaceItems = useMemo(() =>
+    workspaces.map(workspace => ({
+      key: workspace.id,
+      name: workspace.name,
+      description: workspace.description || workspace.path,
+      meta: workspace.path,
+      active: isSelected('workspace', workspace.id),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('workspace', workspace))
+    })), [onSelectTarget, selectedTarget.name, selectedTarget.type, workspaces])
+
+  const specItems = useMemo(() =>
+    alwaysSpecs.map(spec => ({
+      key: spec.id,
+      name: spec.name,
+      description: spec.description,
+      meta: spec.params.length > 0 ? t('chat.newSessionGuide.specs.params', { count: spec.params.length }) : undefined,
+      active: isSelected('spec', spec.name),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('spec', spec))
+    })), [alwaysSpecs, onSelectTarget, selectedTarget.name, selectedTarget.type, t])
+
+  const entityItems = useMemo(() =>
+    entities.map(entity => ({
+      key: entity.id,
+      name: entity.name,
+      description: entity.description,
+      active: isSelected('entity', entity.name),
+      onSelect: () => onSelectTarget(createChatSessionTargetDraft('entity', entity))
+    })), [entities, onSelectTarget, selectedTarget.name, selectedTarget.type])
+
+  const visibleAnnouncements = isCompactLayout ? announcements.slice(0, 1) : announcements
+  const visibleWorkspaceItems = isCompactLayout ? workspaceItems.slice(0, 1) : workspaceItems
+  const visibleSpecItems = isCompactLayout ? specItems.slice(0, 1) : specItems
+  const visibleEntityItems = isCompactLayout ? entityItems.slice(0, 1) : entityItems
+  const visibleHelpItems = isCompactLayout ? helpItems.slice(0, 1) : helpItems
+  const hiddenAnnouncementCount = Math.max(announcements.length - visibleAnnouncements.length, 0)
+  const hiddenWorkspaceCount = Math.max(workspaceItems.length - visibleWorkspaceItems.length, 0)
+  const hiddenSpecCount = Math.max(specItems.length - visibleSpecItems.length, 0)
+  const hiddenEntityCount = Math.max(entityItems.length - visibleEntityItems.length, 0)
+  const hiddenHelpCount = Math.max(helpItems.length - visibleHelpItems.length, 0)
+
+  const renderMoreCount = (count: number) =>
+    count > 0
+      ? <div className='new-session-guide__more'>{t('chat.newSessionGuide.moreCount', { count })}</div>
+      : null
 
   return (
     <div className={`new-session-guide ${isCompactLayout ? 'new-session-guide--compact' : ''}`}>
@@ -96,37 +143,39 @@ export function NewSessionGuide() {
       {isCompactLayout
         ? (
           <NewSessionGuideCompactPanel
-            alwaysSpecs={alwaysSpecs}
-            entities={entities}
+            entityItems={entityItems}
             helpItems={helpItems}
             hiddenEntityCount={hiddenEntityCount}
             hiddenHelpCount={hiddenHelpCount}
             hiddenSpecCount={hiddenSpecCount}
+            hiddenWorkspaceCount={hiddenWorkspaceCount}
             isEntitiesReady={isEntitiesReady}
             isSpecsReady={isSpecsReady}
+            isWorkspacesReady={isWorkspacesReady}
             onCreateEntity={handleCreateEntity}
             onCreateSpec={handleCreateSpec}
             renderMoreCount={renderMoreCount}
-            visibleEntities={visibleEntities}
+            specItems={specItems}
+            visibleEntityItems={visibleEntityItems}
             visibleHelpItems={visibleHelpItems}
-            visibleSpecs={visibleSpecs}
+            visibleSpecItems={visibleSpecItems}
+            visibleWorkspaceItems={visibleWorkspaceItems}
+            workspaceItems={workspaceItems}
           />
         )
         : (
           <NewSessionGuideGrid
-            alwaysSpecs={alwaysSpecs}
-            entities={entities}
-            hiddenEntityCount={hiddenEntityCount}
+            entityItems={entityItems}
             hiddenHelpCount={hiddenHelpCount}
-            hiddenSpecCount={hiddenSpecCount}
             isEntitiesReady={isEntitiesReady}
             isSpecsReady={isSpecsReady}
+            isWorkspacesReady={isWorkspacesReady}
             onCreateEntity={handleCreateEntity}
             onCreateSpec={handleCreateSpec}
             renderMoreCount={renderMoreCount}
-            visibleEntities={visibleEntities}
+            specItems={specItems}
             visibleHelpItems={visibleHelpItems}
-            visibleSpecs={visibleSpecs}
+            workspaceItems={workspaceItems}
           />
         )}
     </div>

@@ -8,6 +8,7 @@ export type {
   Session,
   SessionMessageQueueState,
   SessionPermissionMode,
+  SessionPromptType,
   SessionQueuedMessage,
   SessionQueuedMessageMode,
   SessionStatus,

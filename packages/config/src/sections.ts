@@ -5,6 +5,7 @@ export const CONFIG_SECTION_KEYS = [
   'conversation',
   'models',
   'modelServices',
+  'workspaces',
   'channels',
   'adapters',
   'plugins',
@@ -35,6 +36,7 @@ export interface ConfigSections {
   conversation: Config['conversation']
   models: Config['models']
   modelServices: Config['modelServices']
+  workspaces: Config['workspaces']
   channels: Config['channels']
   adapters: Config['adapters']
   plugins: {
@@ -77,6 +79,7 @@ export const buildConfigSections = (config: Config | undefined): ConfigSections 
   conversation: config?.conversation,
   models: config?.models,
   modelServices: config?.modelServices,
+  workspaces: config?.workspaces,
   channels: config?.channels,
   adapters: config?.adapters,
   plugins: {

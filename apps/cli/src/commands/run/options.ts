@@ -40,6 +40,7 @@ export const getDisallowedResumeFlags = (
   if (opts.sessionId) disallowed.push('--session-id')
   if (opts.spec) disallowed.push('--spec')
   if (opts.entity) disallowed.push('--entity')
+  if (opts.workspace) disallowed.push('--workspace')
   if ((opts.includeMcpServer?.length ?? 0) > 0) disallowed.push('--include-mcp-server')
   if ((opts.excludeMcpServer?.length ?? 0) > 0) disallowed.push('--exclude-mcp-server')
   if ((opts.includeTool?.length ?? 0) > 0) disallowed.push('--include-tool')

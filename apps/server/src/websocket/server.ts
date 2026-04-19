@@ -75,7 +75,7 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
     const permissionMode = params.get('permissionMode') ?? undefined
     const promptTypeRaw = params.get('type') ?? undefined
-    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity'
+    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity' || promptTypeRaw === 'workspace'
       ? promptTypeRaw
       : undefined
     const promptName = params.get('name') ?? undefined

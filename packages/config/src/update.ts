@@ -252,6 +252,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       )
       return nextConfig
     }
+    case 'workspaces': {
+      updateField(
+        'workspaces',
+        mergeMaskedValues(sectionValue, config.workspaces) as Config['workspaces']
+      )
+      return nextConfig
+    }
     case 'channels': {
       updateField(
         'channels',

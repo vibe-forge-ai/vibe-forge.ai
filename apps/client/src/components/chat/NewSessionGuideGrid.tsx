@@ -1,118 +1,68 @@
-import { Button } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { EntitySummary, SpecSummary } from '#~/api.js'
+import { NewSessionGuideResourceCard } from './NewSessionGuideResourceCard'
+import type { NewSessionGuideResourceItem } from './NewSessionGuideResourceCard'
 
 export function NewSessionGuideGrid({
-  alwaysSpecs,
-  entities,
-  hiddenEntityCount,
+  entityItems,
   hiddenHelpCount,
-  hiddenSpecCount,
   isEntitiesReady,
   isSpecsReady,
+  isWorkspacesReady,
   onCreateEntity,
   onCreateSpec,
   renderMoreCount,
-  visibleEntities,
+  specItems,
   visibleHelpItems,
-  visibleSpecs
+  workspaceItems
 }: {
-  alwaysSpecs: SpecSummary[]
-  entities: EntitySummary[]
-  hiddenEntityCount: number
+  entityItems: NewSessionGuideResourceItem[]
   hiddenHelpCount: number
-  hiddenSpecCount: number
   isEntitiesReady: boolean
   isSpecsReady: boolean
+  isWorkspacesReady: boolean
   onCreateEntity: () => void
   onCreateSpec: () => void
   renderMoreCount: (count: number) => ReactNode
-  visibleEntities: EntitySummary[]
+  specItems: NewSessionGuideResourceItem[]
   visibleHelpItems: string[]
-  visibleSpecs: SpecSummary[]
+  workspaceItems: NewSessionGuideResourceItem[]
 }) {
   const { t } = useTranslation()
 
   return (
     <div className='new-session-guide__grid'>
-      <div className='new-session-guide__card'>
-        <div className='new-session-guide__header'>
-          <div className='new-session-guide__title'>
-            <span className='material-symbols-rounded new-session-guide__title-icon'>account_tree</span>
-            <span>{t('chat.newSessionGuide.specs.title')}</span>
-          </div>
-          <div className='new-session-guide__count'>{alwaysSpecs.length}</div>
-        </div>
-        <div className='new-session-guide__body'>
-          {!isSpecsReady && (
-            <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-          )}
-          {isSpecsReady && alwaysSpecs.length > 0 && (
-            <div className='new-session-guide__list'>
-              {visibleSpecs.map((spec) => (
-                <div key={spec.id} className='new-session-guide__item'>
-                  <div className='new-session-guide__item-title'>
-                    <span>{spec.name}</span>
-                  </div>
-                  <div className='new-session-guide__item-desc'>{spec.description}</div>
-                  {spec.params.length > 0 && (
-                    <div className='new-session-guide__meta'>
-                      {t('chat.newSessionGuide.specs.params', { count: spec.params.length })}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {renderMoreCount(hiddenSpecCount)}
-            </div>
-          )}
-          {isSpecsReady && alwaysSpecs.length === 0 && (
-            <div className='new-session-guide__empty'>
-              <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.specs.empty')}</div>
-              <Button type='primary' size='small' onClick={onCreateSpec}>
-                {t('chat.newSessionGuide.specs.create')}
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      <NewSessionGuideResourceCard
+        icon='workspaces'
+        title={t('chat.newSessionGuide.workspaces.title')}
+        count={workspaceItems.length}
+        isReady={isWorkspacesReady}
+        items={workspaceItems}
+        emptyText={t('chat.newSessionGuide.workspaces.empty')}
+      />
 
-      <div className='new-session-guide__card'>
-        <div className='new-session-guide__header'>
-          <div className='new-session-guide__title'>
-            <span className='material-symbols-rounded new-session-guide__title-icon'>group_work</span>
-            <span>{t('chat.newSessionGuide.entities.title')}</span>
-          </div>
-          <div className='new-session-guide__count'>{entities.length}</div>
-        </div>
-        <div className='new-session-guide__body'>
-          {!isEntitiesReady && (
-            <div className='new-session-guide__loading'>{t('chat.newSessionGuide.loading')}</div>
-          )}
-          {isEntitiesReady && entities.length > 0 && (
-            <div className='new-session-guide__list'>
-              {visibleEntities.map((entity) => (
-                <div key={entity.id} className='new-session-guide__item'>
-                  <div className='new-session-guide__item-title'>
-                    <span>{entity.name}</span>
-                  </div>
-                  <div className='new-session-guide__item-desc'>{entity.description}</div>
-                </div>
-              ))}
-              {renderMoreCount(hiddenEntityCount)}
-            </div>
-          )}
-          {isEntitiesReady && entities.length === 0 && (
-            <div className='new-session-guide__empty'>
-              <div className='new-session-guide__empty-desc'>{t('chat.newSessionGuide.entities.empty')}</div>
-              <Button type='primary' size='small' onClick={onCreateEntity}>
-                {t('chat.newSessionGuide.entities.create')}
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      <NewSessionGuideResourceCard
+        icon='account_tree'
+        title={t('chat.newSessionGuide.specs.title')}
+        count={specItems.length}
+        isReady={isSpecsReady}
+        items={specItems}
+        emptyText={t('chat.newSessionGuide.specs.empty')}
+        createLabel={t('chat.newSessionGuide.specs.create')}
+        onCreate={onCreateSpec}
+      />
+
+      <NewSessionGuideResourceCard
+        icon='group_work'
+        title={t('chat.newSessionGuide.entities.title')}
+        count={entityItems.length}
+        isReady={isEntitiesReady}
+        items={entityItems}
+        emptyText={t('chat.newSessionGuide.entities.empty')}
+        createLabel={t('chat.newSessionGuide.entities.create')}
+        onCreate={onCreateEntity}
+      />
 
       <div className='new-session-guide__card'>
         <div className='new-session-guide__header'>

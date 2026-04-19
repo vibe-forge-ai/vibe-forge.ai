@@ -94,6 +94,28 @@ describe('task tool integration', () => {
     }))
   })
 
+  it('accepts workspace tasks without a separate workspace tool', async () => {
+    const { createTaskRegister } = await import('#~/tools/task/index.js')
+
+    const tester = createToolTester()
+    createTaskRegister()(tester.mockRegister)
+
+    await tester.callTool('StartTasks', {
+      tasks: [{
+        description: 'fix billing',
+        type: 'workspace',
+        name: 'billing'
+      }]
+    })
+
+    expect(mocks.startTask).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task-1',
+      description: 'fix billing',
+      type: 'workspace',
+      name: 'billing'
+    }))
+  })
+
   it('inherits the parent permission mode when the task does not specify one', async () => {
     process.env.__VF_PROJECT_AI_PERMISSION_MODE__ = 'dontAsk'
     mocks.getParentSessionId.mockReturnValue('parent-session')

@@ -4,6 +4,7 @@ import type { ChatMessageContent } from './message'
 export type SessionStatus = 'running' | 'completed' | 'failed' | 'terminated' | 'waiting_input'
 
 export type SessionPermissionMode = 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
+export type SessionPromptType = 'spec' | 'entity' | 'workspace'
 export type SessionWorkspaceKind = 'managed_worktree' | 'shared_workspace' | 'external_workspace'
 export type SessionWorkspaceState = 'provisioning' | 'ready' | 'deleting' | 'deleted' | 'broken'
 export type SessionWorkspaceCleanupPolicy = 'delete_on_session_delete' | 'retain'
@@ -47,6 +48,8 @@ export interface Session {
   adapter?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
+  promptType?: SessionPromptType
+  promptName?: string
   workspaceFileState?: SessionWorkspaceFileState
 }
 

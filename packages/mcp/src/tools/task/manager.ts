@@ -52,8 +52,9 @@ export interface TaskInfo {
   taskId: string
   adapter?: string
   description: string
-  type?: 'default' | 'spec' | 'entity'
+  type?: 'default' | 'spec' | 'entity' | 'workspace'
   name?: string
+  workspaceCwd?: string
   permissionMode?: SessionPermissionMode
   background?: boolean
   status: 'running' | 'waiting_input' | 'completed' | 'failed'
@@ -230,7 +231,7 @@ export class TaskManager {
   public async startTask(options: {
     taskId: string
     description: string
-    type?: 'default' | 'spec' | 'entity'
+    type?: 'default' | 'spec' | 'entity' | 'workspace'
     name?: string
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
@@ -286,6 +287,7 @@ export class TaskManager {
 
   private async launchTask(task: TaskInfo, runType: 'create' | 'resume') {
     try {
+      const rootCwd = process.cwd()
       const promptType = task.type !== 'default' ? task.type : undefined
       const promptName = task.name
       const promptCWD = process.cwd()
@@ -297,25 +299,29 @@ export class TaskManager {
           adapter: task.adapter
         }
       )
+      const taskCwd = resolvedConfig.workspace?.cwd ?? promptCWD
+      task.workspaceCwd = resolvedConfig.workspace?.cwd
       const env = {
         ...process.env,
-        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? task.taskId
+        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? task.taskId,
+        __VF_PROJECT_WORKSPACE_FOLDER__: taskCwd,
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: rootCwd
       }
       await callHook('GenerateSystemPrompt', {
-        cwd: promptCWD,
+        cwd: taskCwd,
         sessionId: task.taskId,
         type: promptType,
         name: promptName,
         data
       }, env)
 
-      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(promptCWD)
+      const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(taskCwd)
       const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? task.taskId
       const { session, resolvedAdapter } = await run({
         adapter: task.adapter,
-        cwd: process.cwd(),
+        cwd: taskCwd,
         env: {
-          ...process.env,
+          ...env,
           __VF_PROJECT_AI_CTX_ID__: ctxId
         }
       }, {
@@ -352,7 +358,7 @@ export class TaskManager {
       current.lastError = undefined
       try {
         await syncTaskPermissionStateMirror({
-          cwd: process.cwd(),
+          cwd: taskCwd,
           adapter: current.adapter,
           sessionId: current.taskId,
           permissionState: current.permissionState

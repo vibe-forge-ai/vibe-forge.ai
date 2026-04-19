@@ -9,6 +9,7 @@ import type {
 import type { SessionInfo } from '@vibe-forge/types'
 
 import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -60,6 +61,12 @@ export interface SenderProps {
   adapterOptions?: Array<{ value: string; label: ReactNode }>
   onAdapterChange?: (adapter: string) => void
   modelUnavailable?: boolean
+  sessionTarget?: {
+    draft: ChatSessionTargetDraft
+    locked: boolean
+    disabled?: boolean
+    onChange: (target: ChatSessionTargetDraft) => void
+  }
   queueMode?: SessionQueuedMessageMode
   onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
   contextReferenceRequest?: ContextReferenceRequest | null

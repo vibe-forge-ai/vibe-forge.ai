@@ -202,6 +202,7 @@ describe('prepare', () => {
       specs: [],
       entities: [],
       skills: [],
+      workspaces: [],
       mcpServers: {},
       hookPlugins: [],
       opencodeOverlayAssets: [],

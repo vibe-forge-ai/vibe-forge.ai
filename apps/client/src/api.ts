@@ -36,8 +36,24 @@ export {
 } from './api/git'
 
 // 知识库与规则说明 API
-export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
-export { getEntityDetail, getRuleDetail, getSpecDetail, listEntities, listRules, listSpecs } from './api/knowledge'
+export type {
+  EntityDetail,
+  EntitySummary,
+  RuleDetail,
+  RuleSummary,
+  SpecDetail,
+  SpecSummary,
+  WorkspaceSummary
+} from './api/knowledge'
+export {
+  getEntityDetail,
+  getRuleDetail,
+  getSpecDetail,
+  listEntities,
+  listRules,
+  listSpecs,
+  listWorkspaces
+} from './api/knowledge'
 
 // 项目与工程 API
 export { createProject, listProjects } from './api/projects'

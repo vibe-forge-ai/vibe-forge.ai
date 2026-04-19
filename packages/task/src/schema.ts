@@ -4,6 +4,7 @@ export const TaskOptions = z.object({
   type: z
     .union([
       z.literal('entity'),
+      z.literal('workspace'),
       // 基础库 API 能力开发
       z.literal('spec')
     ])

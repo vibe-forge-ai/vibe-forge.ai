@@ -31,6 +31,8 @@ describe('sqliteDb', () => {
       model: 'gpt-test',
       adapter: 'adapter-test',
       permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client',
       workspaceFileState: {
         openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
         selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
@@ -54,6 +56,8 @@ describe('sqliteDb', () => {
       model: 'gpt-test',
       adapter: 'adapter-test',
       permissionMode: 'plan',
+      promptType: 'workspace',
+      promptName: 'client',
       workspaceFileState: {
         openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
         selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',

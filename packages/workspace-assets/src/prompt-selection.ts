@@ -31,6 +31,7 @@ import {
   resolveSelectedSkillAssets,
   toDocumentDefinitions
 } from './selection-internal'
+import { generateWorkspaceRoutePrompt } from './workspace-prompt'
 
 export async function resolvePromptAssetSelection(params: {
   bundle: WorkspaceAssetBundle
@@ -89,6 +90,7 @@ export async function resolvePromptAssetSelection(params: {
   const promptAssetIds = new Set<string>([
     ...effectiveBundle.rules.map(asset => asset.id),
     ...effectiveBundle.specs.map(asset => asset.id),
+    ...effectiveBundle.workspaces.map(asset => asset.id),
     ...(useNativeProjectSkills ? [] : selectedSkillAssets.map(asset => asset.id)),
     ...(params.type !== 'entity' ? effectiveBundle.entities.map(asset => asset.id) : [])
   ])
@@ -162,11 +164,13 @@ export async function resolvePromptAssetSelection(params: {
     : []
   const skills = toDocumentDefinitions(selectedSkillAssets)
   const specs = toDocumentDefinitions(effectiveBundle.specs)
+  const workspaces = effectiveBundle.workspaces.map(asset => asset.payload)
 
   options.systemPrompt = [
     generateRulesPrompt(effectiveBundle.cwd, rules),
     generateSkillsPrompt(effectiveBundle.cwd, targetSkills),
     generateEntitiesRoutePrompt(entities),
+    generateWorkspaceRoutePrompt(effectiveBundle.cwd, workspaces),
     useNativeProjectSkills ? '' : generateSkillsRoutePrompt(effectiveBundle.cwd, routedSkills),
     generateSpecRoutePrompt(specs, { active: params.type === 'spec' }),
     targetBody
@@ -174,12 +178,8 @@ export async function resolvePromptAssetSelection(params: {
     .filter(section => section !== '')
     .join('\n\n')
 
-  if (targetToolsFilter != null) {
-    options.tools = targetToolsFilter
-  }
-  if (targetMcpServersFilter != null) {
-    options.mcpServers = targetMcpServersFilter
-  }
+  if (targetToolsFilter != null) options.tools = targetToolsFilter
+  if (targetMcpServersFilter != null) options.mcpServers = targetMcpServersFilter
   options.promptAssetIds = Array.from(promptAssetIds)
 
   return [
@@ -189,6 +189,7 @@ export async function resolvePromptAssetSelection(params: {
       entities,
       skills,
       specs,
+      workspaces,
       targetBody,
       promptAssetIds: Array.from(promptAssetIds)
     },

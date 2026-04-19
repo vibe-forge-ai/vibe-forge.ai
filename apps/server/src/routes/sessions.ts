@@ -9,7 +9,7 @@ import type {
   SessionWorkspaceFileState,
   WSEvent
 } from '@vibe-forge/core'
-import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
+import type { GitBranchKind, SessionInfo, SessionInitInfo, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -196,7 +196,7 @@ export function sessionsRouter(): Router {
       start?: boolean
       model?: string
       effort?: 'low' | 'medium' | 'high' | 'max'
-      promptType?: 'spec' | 'entity'
+      promptType?: SessionPromptType
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
@@ -586,6 +586,16 @@ export function sessionsRouter(): Router {
 
       // 同步历史消息
       db.copyMessages(id, newSession.id)
+      if (original.promptType !== undefined || original.promptName !== undefined) {
+        db.updateSession(newSession.id, {
+          promptType: original.promptType,
+          promptName: original.promptName
+        })
+        const updatedSession = db.getSession(newSession.id)
+        if (updatedSession != null) {
+          Object.assign(newSession, updatedSession)
+        }
+      }
     } catch (error) {
       await deleteSessionWorkspace(newSession.id, { force: true }).catch(() => undefined)
       db.deleteSession(newSession.id)
