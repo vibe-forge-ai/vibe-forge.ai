@@ -486,11 +486,9 @@ const getOperationScriptFileNames = (
         'destroy.cmd',
         'destory.cmd',
         'destroy.bat',
-        'destory.bat',
-        'destroy.sh',
-        'destory.sh'
+        'destory.bat'
       ]
-      : [`${operation}.ps1`, `${operation}.cmd`, `${operation}.bat`, `${operation}.sh`]
+      : [`${operation}.ps1`, `${operation}.cmd`, `${operation}.bat`]
     : operation === 'destroy'
     ? ['destroy.sh', 'destory.sh']
     : [`${operation}.sh`]

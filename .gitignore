@@ -7,7 +7,7 @@
 .ai/env.local/
 .ai/logs
 .ai/results
-.ai/worktress
+.ai/worktrees/
 .ai.dev.config.json
 
 ### Node template
