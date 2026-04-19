@@ -177,7 +177,6 @@ export const run = async (
   }
 
   const adapter = await loadAdapter(adapterType)
-  await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
   const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
@@ -226,7 +225,7 @@ export const run = async (
   })
   const assetPlanBaseRaw = ctx.assets == null || !supportsAssetPlan(adapterType)
     ? undefined
-    : buildAdapterAssetPlan({
+    : await buildAdapterAssetPlan({
       adapter: adapterType,
       bundle: ctx.assets,
       options: {
@@ -275,6 +274,7 @@ export const run = async (
         ...effectiveRuntimeMcpServers
       }
     }
+  await adapter.init?.(ctx)
   const nativeBridgeDisabledEvents: Array<keyof HookInputs> =
     adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS

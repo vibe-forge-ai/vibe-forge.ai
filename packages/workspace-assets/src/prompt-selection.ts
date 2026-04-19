@@ -28,10 +28,10 @@ import {
   resolveNamedAssets,
   resolvePluginOverlay,
   resolveRuleSelection,
-  resolveSelectedSkillAssets,
+  resolveSelectedSkillAssetsWithDependencies,
   toDocumentDefinitions
 } from './selection-internal'
-import { expandSkillAssetDependencies } from './skill-dependencies'
+import { expandSkillAssetDependenciesWithRegistry } from './skill-dependencies'
 
 export async function resolvePromptAssetSelection(params: {
   bundle: WorkspaceAssetBundle
@@ -85,7 +85,7 @@ export async function resolvePromptAssetSelection(params: {
     options.assetBundle = effectiveBundle
   }
 
-  const selectedSkillAssets = resolveSelectedSkillAssets(effectiveBundle.skills, params.input?.skills)
+  const selectedSkillAssets = await resolveSelectedSkillAssetsWithDependencies(effectiveBundle, params.input?.skills)
   const useNativeProjectSkills = supportsNativeProjectSkills(params.adapter)
   const promptAssetIds = new Set<string>([
     ...effectiveBundle.rules.map(asset => asset.id),
@@ -145,12 +145,18 @@ export async function resolvePromptAssetSelection(params: {
       resolveNamedAssets(effectiveBundle.skills, excludedRefs, targetInstancePath).map(asset => asset.id)
     )
 
-    expandSkillAssetDependencies(effectiveBundle.skills, includedAssets)
-      .filter(asset => !excludedIds.has(asset.id))
-      .forEach((asset) => {
-        targetSkillsAssets.push(asset)
-        promptAssetIds.add(asset.id)
-      })
+    const expandedTargetSkills = await expandSkillAssetDependenciesWithRegistry({
+      allAssets: effectiveBundle.assets,
+      configs: effectiveBundle.configs ?? [undefined, undefined],
+      cwd: effectiveBundle.cwd,
+      excludedIds,
+      selectedAssets: includedAssets,
+      skillAssets: effectiveBundle.skills
+    })
+    expandedTargetSkills.forEach((asset) => {
+      targetSkillsAssets.push(asset)
+      promptAssetIds.add(asset.id)
+    })
   }
 
   const rules = Array.from(ruleDefinitions.values())

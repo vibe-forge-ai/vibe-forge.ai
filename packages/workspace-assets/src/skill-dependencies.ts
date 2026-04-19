@@ -1,5 +1,12 @@
-import { parseScopedReference } from '@vibe-forge/definition-core'
-import type { Skill, WorkspaceAsset } from '@vibe-forge/types'
+import { readFile } from 'node:fs/promises'
+
+import fm from 'front-matter'
+
+import { parseScopedReference, resolveSkillIdentifier } from '@vibe-forge/definition-core'
+import type { Config, Definition, Skill, WorkspaceAsset } from '@vibe-forge/types'
+import { resolveRelativePath } from '@vibe-forge/utils'
+
+import { installRegistrySkillDependency } from './skill-registry'
 
 type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
 
@@ -8,6 +15,15 @@ export interface NormalizedSkillDependency {
   name: string
   source?: string
   registry?: string
+}
+
+interface DependencyExpansionParams {
+  allAssets: WorkspaceAsset[]
+  configs: [Config?, Config?]
+  cwd: string
+  excludedIds?: Set<string>
+  selectedAssets: SkillAsset[]
+  skillAssets: SkillAsset[]
 }
 
 const asNonEmptyString = (value: unknown) => (
@@ -57,6 +73,39 @@ const findSkillAssetByRef = (
   }
 
   return resolveUniqueSkillByName(assets, ref)
+}
+
+const resolveDisplayName = (name: string, scope?: string) => (
+  scope != null && scope.trim() !== '' ? `${scope}/${name}` : name
+)
+
+const parseFrontmatterSkill = async (path: string): Promise<Definition<Skill>> => {
+  const content = await readFile(path, 'utf-8')
+  const { body, attributes } = fm<Skill>(content)
+  return {
+    path,
+    body,
+    attributes
+  }
+}
+
+const createRegistrySkillAsset = (params: {
+  cwd: string
+  definition: Definition<Skill>
+}) => {
+  const name = resolveSkillIdentifier(params.definition.path, params.definition.attributes.name)
+  const displayName = resolveDisplayName(name)
+  return {
+    id: `skill:workspace:workspace:${displayName}:${resolveRelativePath(params.cwd, params.definition.path)}`,
+    kind: 'skill',
+    name,
+    displayName,
+    origin: 'workspace',
+    sourcePath: params.definition.path,
+    payload: {
+      definition: params.definition
+    }
+  } satisfies SkillAsset
 }
 
 const parseStringDependency = (value: string): NormalizedSkillDependency => {
@@ -133,12 +182,16 @@ export const findSkillDependencyAsset = (
 
 export const expandSkillAssetDependencies = (
   assets: SkillAsset[],
-  selectedAssets: SkillAsset[]
+  selectedAssets: SkillAsset[],
+  options: {
+    excludedIds?: Set<string>
+  } = {}
 ) => {
   const selected: SkillAsset[] = []
   const seen = new Set<string>()
 
   const addAsset = (asset: SkillAsset) => {
+    if (options.excludedIds?.has(asset.id)) return
     if (seen.has(asset.id)) return
     seen.add(asset.id)
     selected.push(asset)
@@ -153,5 +206,64 @@ export const expandSkillAssetDependencies = (
   }
 
   selectedAssets.forEach(addAsset)
+  return selected
+}
+
+export const expandSkillAssetDependenciesWithRegistry = async (
+  params: DependencyExpansionParams
+) => {
+  const selected: SkillAsset[] = []
+  const seen = new Set<string>()
+  const fetchedDependencyRefs = new Set<string>()
+
+  const installDependencyAsset = async (
+    dependency: NormalizedSkillDependency,
+    currentInstancePath?: string
+  ) => {
+    const fetchKey = `${dependency.registry ?? ''}:${dependency.ref}`
+    if (!fetchedDependencyRefs.has(fetchKey)) {
+      fetchedDependencyRefs.add(fetchKey)
+      const installed = await installRegistrySkillDependency({
+        cwd: params.cwd,
+        configs: params.configs,
+        dependency
+      })
+      const definition = await parseFrontmatterSkill(installed.skillPath)
+      const dependencyAsset = createRegistrySkillAsset({
+        cwd: params.cwd,
+        definition
+      })
+      const existingAsset = findSkillDependencyAsset(params.skillAssets, dependency, currentInstancePath) ??
+        params.skillAssets.find(existing => existing.displayName === dependencyAsset.displayName)
+      if (existingAsset != null) return existingAsset
+
+      params.allAssets.push(dependencyAsset)
+      params.skillAssets.push(dependencyAsset)
+      return dependencyAsset
+    }
+
+    return findSkillDependencyAsset(params.skillAssets, dependency, currentInstancePath)
+  }
+
+  const addAsset = async (asset: SkillAsset): Promise<void> => {
+    if (params.excludedIds?.has(asset.id)) return
+    if (seen.has(asset.id)) return
+    seen.add(asset.id)
+    selected.push(asset)
+
+    for (const dependency of normalizeSkillDependencies(asset.payload.definition.attributes.dependencies)) {
+      const dependencyAsset = findSkillDependencyAsset(params.skillAssets, dependency, asset.instancePath) ??
+        await installDependencyAsset(dependency, asset.instancePath)
+      if (dependencyAsset == null) {
+        throw new Error(`Failed to resolve skill dependency ${dependency.ref} declared by ${asset.displayName}`)
+      }
+      await addAsset(dependencyAsset)
+    }
+  }
+
+  for (const asset of params.selectedAssets) {
+    await addAsset(asset)
+  }
+
   return selected
 }

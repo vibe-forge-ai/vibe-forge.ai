@@ -189,7 +189,7 @@ describe('workspace assets snapshots', () => {
     })
 
     const adapters = ['claude-code', 'codex', 'gemini', 'opencode'] as const
-    const plans = adapters.map(adapter => (
+    const plans = await Promise.all(adapters.map(adapter => (
       buildAdapterAssetPlan({
         adapter,
         bundle,
@@ -201,7 +201,7 @@ describe('workspace assets snapshots', () => {
           }
         }
       })
-    ))
+    )))
 
     await expect(serializeWorkspaceAssetsSnapshot({
       cwd: workspace,

@@ -78,7 +78,7 @@ describe('buildAdapterAssetPlan', () => {
         }
       }
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'codex',
       bundle,
       options: {
@@ -150,7 +150,7 @@ describe('buildAdapterAssetPlan', () => {
       }, undefined],
       useDefaultVibeForgeMcpServer: false
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'opencode',
       bundle,
       options: {
@@ -205,7 +205,7 @@ describe('buildAdapterAssetPlan', () => {
       configs: [undefined, undefined],
       useDefaultVibeForgeMcpServer: false
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'opencode',
       bundle,
       options: {
@@ -225,6 +225,62 @@ describe('buildAdapterAssetPlan', () => {
         targetPath: 'skills/frontend-design'
       })
     ]))
+  })
+
+  it('prunes excluded skill dependency subtrees from selected native overlays', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend-design/SKILL.md'),
+      [
+        '---',
+        'name: frontend-design',
+        'description: UI design guidance',
+        'dependencies:',
+        '  - color-system',
+        '---',
+        'Design the UI.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/color-system/SKILL.md'),
+      '---\nname: color-system\ndescription: Color guidance\n---\nPick accessible colors.'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const plan = await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder'],
+          exclude: ['frontend-design']
+        }
+      }
+    })
+
+    expect(plan.overlays).toEqual([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/app-builder'
+      })
+    ])
   })
 
   it('builds copilot native skill overlays and translated runtime diagnostics', async () => {
@@ -293,7 +349,7 @@ describe('buildAdapterAssetPlan', () => {
         }
       }
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'copilot',
       bundle,
       options: {
@@ -393,7 +449,7 @@ describe('buildAdapterAssetPlan', () => {
     const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
     const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
 
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'kimi',
       bundle,
       options: {
@@ -447,7 +503,7 @@ describe('buildAdapterAssetPlan', () => {
     })
     const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
 
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'gemini',
       bundle,
       options: {}

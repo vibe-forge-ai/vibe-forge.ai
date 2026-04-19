@@ -1,5 +1,6 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 
 import type { Config } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
@@ -30,6 +31,8 @@ interface RegistryDownloadResponse {
 
 const DEFAULT_SKILL_REGISTRY_URL = 'https://skills.sh'
 const FETCH_TIMEOUT_MS = 10_000
+const INSTALL_LOCK_TIMEOUT_MS = 30_000
+const INSTALL_LOCK_RETRY_MS = 100
 
 const asNonEmptyString = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
@@ -80,14 +83,12 @@ const resolveRegistryOptions = (params: {
 
   if (configuredRegistry != null && typeof configuredRegistry === 'object') {
     const baseUrl = normalizeBaseUrl(
-      asNonEmptyString(configuredRegistry.url) ?? envSearchBaseUrl ?? DEFAULT_SKILL_REGISTRY_URL
+      asNonEmptyString(configuredRegistry.url) ?? DEFAULT_SKILL_REGISTRY_URL
     )
     return {
       enabled: configuredRegistry.enabled !== false,
       searchBaseUrl: normalizeBaseUrl(asNonEmptyString(configuredRegistry.searchUrl) ?? baseUrl),
-      downloadBaseUrl: normalizeBaseUrl(
-        asNonEmptyString(configuredRegistry.downloadUrl) ?? envDownloadBaseUrl ?? baseUrl
-      )
+      downloadBaseUrl: normalizeBaseUrl(asNonEmptyString(configuredRegistry.downloadUrl) ?? baseUrl)
     }
   }
 
@@ -189,6 +190,39 @@ const assertInside = (root: string, target: string) => {
   throw new Error(`Skill dependency file resolves outside ${root}`)
 }
 
+const pathExists = async (path: string) => {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const withInstallLock = async <T>(lockDir: string, callback: () => Promise<T>) => {
+  const start = Date.now()
+  await mkdir(dirname(lockDir), { recursive: true })
+
+  while (true) {
+    try {
+      await mkdir(lockDir)
+      break
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      if (Date.now() - start > INSTALL_LOCK_TIMEOUT_MS) {
+        throw new Error(`Timed out waiting for skill dependency install lock ${lockDir}`)
+      }
+      await delay(INSTALL_LOCK_RETRY_MS)
+    }
+  }
+
+  try {
+    return await callback()
+  } finally {
+    await rm(lockDir, { recursive: true, force: true })
+  }
+}
+
 const buildInstallDir = (params: {
   cwd: string
   registry: RegistryOptions
@@ -235,41 +269,60 @@ export const installRegistrySkillDependency = async (params: {
   const downloadUrl = `${registry.downloadBaseUrl}/api/download/${encodeURIComponent(owner)}/${
     encodeURIComponent(repo)
   }/${encodeURIComponent(target.slug)}`
-  const response = await fetchJson<RegistryDownloadResponse>(downloadUrl)
-  const files = Array.isArray(response.files) ? response.files : []
-  if (files.length === 0) {
-    throw new Error(`Skill dependency ${params.dependency.ref} did not include any files`)
-  }
-
   const installDir = buildInstallDir({
     cwd: params.cwd,
     registry,
     source: target.source,
     slug: target.slug
   })
+  const skillPath = resolve(installDir, 'SKILL.md')
 
-  await rm(installDir, { recursive: true, force: true })
-  await mkdir(installDir, { recursive: true })
+  return await withInstallLock(`${installDir}.lock`, async () => {
+    if (await pathExists(skillPath)) {
+      return {
+        installDir,
+        skillPath
+      }
+    }
 
-  let hasSkillMd = false
-  for (const file of files) {
-    const filePath = asNonEmptyString(file.path)
-    if (filePath == null || typeof file.contents !== 'string') continue
-    const relativePath = toSafeRelativePath(filePath)
-    if (relativePath.toLowerCase() === 'skill.md') hasSkillMd = true
+    const response = await fetchJson<RegistryDownloadResponse>(downloadUrl)
+    const files = Array.isArray(response.files) ? response.files : []
+    if (files.length === 0) {
+      throw new Error(`Skill dependency ${params.dependency.ref} did not include any files`)
+    }
 
-    const targetPath = resolve(installDir, relativePath)
-    assertInside(installDir, targetPath)
-    await mkdir(dirname(targetPath), { recursive: true })
-    await writeFile(targetPath, file.contents, 'utf8')
-  }
+    const tempDir = `${installDir}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    await rm(tempDir, { recursive: true, force: true })
+    await mkdir(tempDir, { recursive: true })
 
-  if (!hasSkillMd) {
-    throw new Error(`Skill dependency ${params.dependency.ref} did not include SKILL.md`)
-  }
+    try {
+      let hasSkillMd = false
+      for (const file of files) {
+        const filePath = asNonEmptyString(file.path)
+        if (filePath == null || typeof file.contents !== 'string') continue
+        const relativePath = toSafeRelativePath(filePath)
+        if (relativePath.toLowerCase() === 'skill.md') hasSkillMd = true
 
-  return {
-    installDir,
-    skillPath: resolve(installDir, 'SKILL.md')
-  }
+        const targetPath = resolve(tempDir, relativePath)
+        assertInside(tempDir, targetPath)
+        await mkdir(dirname(targetPath), { recursive: true })
+        await writeFile(targetPath, file.contents, 'utf8')
+      }
+
+      if (!hasSkillMd) {
+        throw new Error(`Skill dependency ${params.dependency.ref} did not include SKILL.md`)
+      }
+
+      await rm(installDir, { recursive: true, force: true })
+      await rename(tempDir, installDir)
+    } catch (error) {
+      await rm(tempDir, { recursive: true, force: true })
+      throw error
+    }
+
+    return {
+      installDir,
+      skillPath
+    }
+  })
 }

@@ -22,7 +22,7 @@ import {
   isRemoteRuleReference,
   parseScopedReference
 } from '@vibe-forge/definition-core'
-import { expandSkillAssetDependencies } from './skill-dependencies'
+import { expandSkillAssetDependencies, expandSkillAssetDependenciesWithRegistry } from './skill-dependencies'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type DocumentAsset<TDefinition> = Extract<WorkspaceAsset, { kind: DocumentAssetKind }> & {
@@ -212,8 +212,29 @@ export const resolveSelectedSkillAssets = (
   const excluded = new Set(
     resolveNamedAssets(assets, selection.exclude).map(asset => asset.id)
   )
-  return expandSkillAssetDependencies(assets, included)
-    .filter(asset => !excluded.has(asset.id))
+  return expandSkillAssetDependencies(assets, included, {
+    excludedIds: excluded
+  })
+}
+
+export const resolveSelectedSkillAssetsWithDependencies = async (
+  bundle: WorkspaceAssetBundle,
+  selection?: WorkspaceSkillSelection
+): Promise<Array<Extract<WorkspaceAsset, { kind: 'skill' }>>> => {
+  const included = selection?.include != null && selection.include.length > 0
+    ? resolveNamedAssets(bundle.skills, selection.include)
+    : bundle.skills
+  const excluded = new Set(
+    resolveNamedAssets(bundle.skills, selection?.exclude).map(asset => asset.id)
+  )
+  return await expandSkillAssetDependenciesWithRegistry({
+    allAssets: bundle.assets,
+    configs: bundle.configs ?? [undefined, undefined],
+    cwd: bundle.cwd,
+    excludedIds: excluded,
+    selectedAssets: included,
+    skillAssets: bundle.skills
+  })
 }
 
 export const resolveSelectedMcpNames = (

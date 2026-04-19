@@ -1,9 +1,10 @@
 import { join } from 'node:path'
 import process from 'node:process'
 
+import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { resolveWorkspaceAssetBundle } from '#~/index.js'
+import { buildAdapterAssetPlan, resolveWorkspaceAssetBundle } from '#~/index.js'
 
 import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
 
@@ -101,7 +102,7 @@ describe('resolveWorkspaceAssetBundle', () => {
     }
   })
 
-  it('installs missing skill dependencies from an API-compatible registry cache', async () => {
+  it('installs selected missing skill dependencies from an API-compatible registry cache', async () => {
     const workspace = await createWorkspace()
     const fetchMock = vi.fn(async (url: string) => {
       if (url === 'https://registry.example.test/api/search?q=frontend-design&limit=10') {
@@ -149,6 +150,19 @@ describe('resolveWorkspaceAssetBundle', () => {
       useDefaultVibeForgeMcpServer: false
     })
 
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder'])
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })
+
     const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
     expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
     expect(dependency?.sourcePath).toContain('/.ai/caches/skill-dependencies/registry.example.test/')
@@ -156,6 +170,137 @@ describe('resolveWorkspaceAssetBundle', () => {
       'https://registry.example.test/api/search?q=frontend-design&limit=10',
       expect.any(Object)
     )
+  })
+
+  it('reuses complete skill dependency caches without deleting or downloading them again', async () => {
+    const workspace = await createWorkspace()
+    const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cachedSkillPath = join(
+      workspace,
+      '.ai/caches/skill-dependencies/registry.example.test/anthropics/skills/frontend-design/SKILL.md'
+    )
+    await writeDocument(
+      cachedSkillPath,
+      '---\nname: frontend-design\ndescription: Cached UI guidance\n---\nUse the cached copy.\n'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - anthropics/skills@frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: {
+          registry: 'https://registry.example.test'
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await readFile(cachedSkillPath, 'utf8')).toContain('Use the cached copy.')
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
+  })
+
+  it('keeps configured registry url search and download endpoints together when env overrides exist', async () => {
+    const workspace = await createWorkspace()
+    const previousDownloadUrl = process.env.SKILLS_DOWNLOAD_URL
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://private-registry.example.test/api/search?q=frontend-design&limit=10') {
+        return new Response(JSON.stringify({
+          skills: [{
+            id: 'anthropics/skills/frontend-design',
+            skillId: 'frontend-design',
+            name: 'frontend-design',
+            source: 'anthropics/skills'
+          }]
+        }))
+      }
+      if (url === 'https://private-registry.example.test/api/download/anthropics/skills/frontend-design') {
+        return new Response(JSON.stringify({
+          files: [{
+            path: 'SKILL.md',
+            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse strong visual hierarchy.\n'
+          }]
+        }))
+      }
+      return new Response('not found', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      process.env.SKILLS_DOWNLOAD_URL = 'https://env-download.example.test'
+      await writeDocument(
+        join(workspace, '.ai/skills/app-builder/SKILL.md'),
+        [
+          '---',
+          'name: app-builder',
+          'description: Build apps',
+          'dependencies:',
+          '  - frontend-design',
+          '---',
+          'Build the app.'
+        ].join('\n')
+      )
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [{
+          skills: {
+            registry: {
+              url: 'https://private-registry.example.test'
+            }
+          }
+        }, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      await buildAdapterAssetPlan({
+        adapter: 'opencode',
+        bundle,
+        options: {
+          skills: {
+            include: ['app-builder']
+          }
+        }
+      })
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://private-registry.example.test/api/download/anthropics/skills/frontend-design',
+        expect.any(Object)
+      )
+      expect(fetchMock).not.toHaveBeenCalledWith(
+        'https://env-download.example.test/api/download/anthropics/skills/frontend-design',
+        expect.any(Object)
+      )
+    } finally {
+      if (previousDownloadUrl == null) {
+        delete process.env.SKILLS_DOWNLOAD_URL
+      } else {
+        process.env.SKILLS_DOWNLOAD_URL = previousDownloadUrl
+      }
+    }
   })
 
   it('loads workspace entities from the env-configured entities dir', async () => {

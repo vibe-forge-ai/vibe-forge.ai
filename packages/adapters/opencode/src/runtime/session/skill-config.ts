@@ -38,7 +38,8 @@ const resolveDependencyNames = (skill: Definition<Skill>) => {
 
 const expandSelectedSkills = (
   allSkills: Definition<Skill>[],
-  selectedSkills: Definition<Skill>[]
+  selectedSkills: Definition<Skill>[],
+  excludedNames: Set<string>
 ) => {
   const byName = new Map<string, Definition<Skill>>()
   for (const skill of allSkills) {
@@ -51,6 +52,7 @@ const expandSelectedSkills = (
   const seen = new Set<string>()
   const addSkill = (skill: Definition<Skill>) => {
     const name = resolveSkillName(skill)
+    if (excludedNames.has(name) || excludedNames.has(toSkillSlug(name))) return
     if (seen.has(name)) return
     seen.add(name)
     result.push(skill)
@@ -78,16 +80,17 @@ const filterResolvedSkills = async (
     ? new Set(selection.include)
     : undefined
   const exclude = new Set(selection?.exclude ?? [])
+  const excludedNames = new Set(Array.from(exclude).flatMap(name => [name, toSkillSlug(name)]))
   const result = new Map<string, string>()
 
   const selectedSkills = allSkills.filter((skill) => {
     const name = resolveSkillName(skill)
-    return !((include != null && !include.has(name)) || exclude.has(name))
+    return !((include != null && !include.has(name)) || excludedNames.has(name) || excludedNames.has(toSkillSlug(name)))
   })
 
-  for (const skill of expandSelectedSkills(allSkills, selectedSkills)) {
+  for (const skill of expandSelectedSkills(allSkills, selectedSkills, excludedNames)) {
     const name = resolveSkillName(skill)
-    if (exclude.has(name) || result.has(name)) continue
+    if (excludedNames.has(name) || excludedNames.has(toSkillSlug(name)) || result.has(name)) continue
     result.set(name, dirname(skill.path))
   }
 

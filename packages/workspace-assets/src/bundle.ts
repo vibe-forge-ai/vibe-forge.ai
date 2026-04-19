@@ -14,6 +14,7 @@ export async function resolveWorkspaceAssetBundle(params: {
 
   return {
     cwd: params.cwd,
+    configs: collected.configs,
     pluginConfigs: collected.pluginConfigs,
     pluginInstances: collected.pluginInstances,
     assets: collected.assets,

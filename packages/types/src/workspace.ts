@@ -84,6 +84,7 @@ export type WorkspaceAsset =
 
 export interface WorkspaceAssetBundle {
   cwd: string
+  configs?: [Config?, Config?]
   pluginConfigs?: PluginConfig
   pluginInstances: ResolvedPluginInstanceMetadata[]
   assets: WorkspaceAsset[]
