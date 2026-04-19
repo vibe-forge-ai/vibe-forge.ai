@@ -155,6 +155,7 @@ Codex 多账号切换走 adapter 通用 `account` 能力：
 - `defaultAccount`：没有显式选择账号时使用的账号 key
 - `accounts.<key>.title` / `description`：前端显示信息
 - `accounts.<key>.authFile`：可选，显式指定某个账号的 `auth.json` 路径；不填时优先读取 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
+- `accounts.<key>` 的本地元数据会落到 `.ai/.local/adapters/codex/accounts/<key>/meta.json`
 
 如果本机存在 `~/.codex/auth.json`，adapter 会把当前登录态导入到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/`，并在 session 级 HOME 下切换到对应 auth 快照运行。
 
@@ -165,8 +166,18 @@ Codex 多账号切换走 adapter 通用 `account` 能力：
   - 登录完成后读取生成的 `auth.json`
   - 通过 adapter 通用 account artifact 协议，把 `auth.json + meta.json` 交回上层并落盘
 - Web 配置页 `Adapters -> Codex -> Accounts`
-  - 根页可直接触发 `Connect account`
-  - 三级详情页可查看额度、来源，并编辑 `title / description / authFile`
+  - adapter 详情页会先展示 `defaultAccount` 选择，再展示 `账号` 入口
+  - 账号根页可直接触发 `Connect account`
+  - 三级详情页可查看来源、rate-limit / quota 摘要，并编辑 `title / description / authFile`
+  - `description` 在前端按 multiline 字段编辑
+  - `authFile` 留空时默认读取 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
+
+额度探测补充：
+
+- Codex quota 现在通过 `codex app-server` 的 `account/rateLimits/read` 读取
+- 配置页默认读 `.ai/.local/adapters/codex/accounts/<key>/meta.json` 里的 quota 快照
+- 当前快照 TTL 是 5 分钟；CLI `vf accounts show codex <account>` 会强制刷新
+- 如果 Codex 只返回套餐信息而没有 credits / rate limits，前端只展示真实返回的套餐或窗口限额，不伪造额度余额
 
 ### `sandboxPolicy`
 

@@ -3,12 +3,14 @@ import '../sender-toolbar/SenderSelectBase.scss'
 import './AccountSelectControl.scss'
 import './AccountSelectDropdown.scss'
 
-import { Select, Tooltip } from 'antd'
+import { App, Button, Modal, Select, Tooltip } from 'antd'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useSWRConfig } from 'swr'
 
+import { getApiErrorMessage, manageAdapterAccount } from '#~/api'
 import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
@@ -18,36 +20,6 @@ const renderSelectArrow = (onMouseDown: (event: ReactMouseEvent<HTMLSpanElement>
   <span className='material-symbols-rounded sender-select-arrow' onMouseDown={onMouseDown}>
     keyboard_arrow_down
   </span>
-)
-
-const renderOption = (option: ChatAdapterAccountOption) => (
-  <div className='account-option'>
-    <div className='account-option__title-row'>
-      <span className='account-option__title'>{option.label}</span>
-      {option.hint != null && option.hint !== '' && (
-        <Tooltip title={option.hint} placement='left' arrow={false}>
-          <button
-            type='button'
-            className='account-option__info'
-            aria-label={option.hint}
-            onMouseDown={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-            }}
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-            }}
-          >
-            <span className='material-symbols-rounded'>info</span>
-          </button>
-        </Tooltip>
-      )}
-    </div>
-    {option.meta != null && option.meta !== '' && (
-      <div className='account-option__meta'>{option.meta}</div>
-    )}
-  </div>
 )
 
 export function AccountSelectControl({
@@ -63,11 +35,16 @@ export function AccountSelectControl({
   handlers: Pick<SenderToolbarHandlers, 'onAccountChange'>
 }) {
   const { t } = useTranslation()
+  const { message } = App.useApp()
   const navigate = useNavigate()
+  const { mutate } = useSWRConfig()
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { isThinking, modelUnavailable, selectedAccount, selectedAdapter, showAccountSelector } = state
   const { accountOptions } = data
   const [showAccountSelect, setShowAccountSelect] = useState(false)
+  const [creatingAccount, setCreatingAccount] = useState(false)
+  const [cancelingCreateAccount, setCancelingCreateAccount] = useState(false)
+  const createAccountAbortRef = useRef<AbortController | null>(null)
   const isCompactControl = isCompactLayout || isTouchInteraction
 
   const selectedOption = useMemo(
@@ -79,6 +56,122 @@ export function AccountSelectControl({
   if (!showAccountSelector || accountOptions == null || accountOptions.length === 0) {
     return null
   }
+
+  const openAdapterConfig = () => {
+    if (selectedAdapter == null || selectedAdapter.trim() === '') {
+      return
+    }
+
+    setShowAccountSelect(false)
+    void navigate(
+      `/config?tab=adapters&source=user&detail=${encodeURIComponent(`${selectedAdapter}/accounts`)}`
+    )
+  }
+
+  const createAccount = () => {
+    if (selectedAdapter == null || selectedAdapter.trim() === '') {
+      return
+    }
+
+    setShowAccountSelect(false)
+    const abortController = new AbortController()
+    createAccountAbortRef.current = abortController
+    setCreatingAccount(true)
+    setCancelingCreateAccount(false)
+
+    void (async () => {
+      try {
+        const result = await manageAdapterAccount(
+          selectedAdapter,
+          { action: 'add' },
+          { signal: abortController.signal }
+        )
+
+        await mutate((key) => (
+          Array.isArray(key) &&
+          key[0] === '/api/adapters' &&
+          key[1] === selectedAdapter
+        ))
+
+        if (result.accountKey != null && result.accountKey.trim() !== '') {
+          handlers.onAccountChange?.(result.accountKey)
+        }
+
+        void message.success(result.message ?? t('config.accounts.actionSuccess.add'))
+      } catch (error) {
+        if (abortController.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+          void message.info(t('chat.accountSelectCreateCanceled'))
+          return
+        }
+
+        void message.error(getApiErrorMessage(error, t('config.accounts.actionFailed.add')))
+      } finally {
+        if (createAccountAbortRef.current === abortController) {
+          createAccountAbortRef.current = null
+        }
+        setCreatingAccount(false)
+        setCancelingCreateAccount(false)
+      }
+    })()
+  }
+
+  const cancelCreateAccount = () => {
+    const controller = createAccountAbortRef.current
+    if (controller == null || controller.signal.aborted) {
+      return
+    }
+
+    setCancelingCreateAccount(true)
+    controller.abort()
+  }
+
+  const openAccountConfig = (accountKey: string) => {
+    if (selectedAdapter == null || selectedAdapter.trim() === '') {
+      return
+    }
+
+    setShowAccountSelect(false)
+    void navigate(
+      `/config?tab=adapters&source=user&detail=${
+        encodeURIComponent(`${selectedAdapter}/accounts/${accountKey}`)
+      }`
+    )
+  }
+
+  const renderOption = (option: ChatAdapterAccountOption) => (
+    <div className='account-option'>
+      <div className='account-option__title-row'>
+        <span className='account-option__title'>{option.label}</span>
+        <div className='account-option__actions'>
+          <Tooltip
+            title={t('chat.accountSelectOpenAccountConfig', { account: option.label })}
+            placement='left'
+            arrow={false}
+          >
+            <button
+              type='button'
+              className='account-option__action'
+              aria-label={t('chat.accountSelectOpenAccountConfig', { account: option.label })}
+              onMouseDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                openAccountConfig(option.value)
+              }}
+            >
+              <span className='material-symbols-rounded'>settings</span>
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+      {option.meta != null && option.meta !== '' && (
+        <div className='account-option__meta'>{option.meta}</div>
+      )}
+    </div>
+  )
 
   const renderPopup = (originNode: ReactNode) => (
     <>
@@ -92,10 +185,19 @@ export function AccountSelectControl({
               event.preventDefault()
               event.stopPropagation()
             }}
-            onClick={() => {
-              setShowAccountSelect(false)
-              void navigate(`/config?tab=adapters&source=user&detail=${encodeURIComponent(selectedAdapter)}`)
+            onClick={createAccount}
+          >
+            <span className='material-symbols-rounded'>person_add</span>
+            <span>{t('chat.accountSelectCreateAccount', { adapter: selectedAdapter })}</span>
+          </button>
+          <button
+            type='button'
+            className='account-select-popup__footer-action'
+            onMouseDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
             }}
+            onClick={openAdapterConfig}
           >
             <span className='material-symbols-rounded'>settings</span>
             <span>{t('chat.accountSelectOpenAdapterConfig', { adapter: selectedAdapter })}</span>
@@ -144,6 +246,36 @@ export function AccountSelectControl({
             setShowAccountSelect(prev => !prev)
           })}
       />
+      <Modal
+        open={creatingAccount}
+        centered
+        maskClosable={false}
+        keyboard={false}
+        closable={false}
+        title={t('chat.accountSelectCreateTitle', { adapter: selectedAdapter ?? 'adapter' })}
+        footer={[
+          <Button
+            key='cancel'
+            danger
+            disabled={cancelingCreateAccount}
+            onClick={cancelCreateAccount}
+          >
+            {cancelingCreateAccount ? t('chat.accountSelectCreateCanceling') : t('common.cancel')}
+          </Button>
+        ]}
+      >
+        <div className='account-select-create-modal'>
+          <span className='material-symbols-rounded account-select-create-modal__icon'>
+            pending_actions
+          </span>
+          <div className='account-select-create-modal__title'>
+            {t('chat.accountSelectCreateWaiting')}
+          </div>
+          <div className='account-select-create-modal__description'>
+            {t('chat.accountSelectCreateDescription', { adapter: selectedAdapter ?? 'adapter' })}
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

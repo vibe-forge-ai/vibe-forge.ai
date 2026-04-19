@@ -37,12 +37,19 @@ interface CodexConfiguredAccount {
   authFile?: string
 }
 
-interface CodexStoredAccountMetadata {
-  title?: string
-  description?: string
+interface CodexAccountIdentity {
   email?: string
   planType?: string
   accountType?: string
+  accountId?: string
+  organizationId?: string
+  organizationTitle?: string
+  organizationRole?: string
+}
+
+interface CodexStoredAccountMetadata extends CodexAccountIdentity {
+  title?: string
+  description?: string
   quota?: AdapterAccountInfo['quota']
   source?: string
   createdAt?: number
@@ -57,13 +64,28 @@ interface CodexAccountDescriptor {
   authFilePath?: string
   status: NonNullable<AdapterAccountInfo['status']>
   metadata?: CodexStoredAccountMetadata
+  identity?: CodexAccountIdentity
 }
 
-interface CodexAccountProbe {
-  accountType?: string
-  email?: string
-  planType?: string
+interface CodexAccountProbe extends CodexAccountIdentity {
   quota?: AdapterAccountInfo['quota']
+}
+
+interface CodexStoredAuthTokens {
+  account_id?: unknown
+  id_token?: unknown
+}
+
+interface CodexStoredAuthFile {
+  auth_mode?: unknown
+  tokens?: unknown
+}
+
+interface CodexJwtOrganizationClaim {
+  id?: unknown
+  title?: unknown
+  role?: unknown
+  is_default?: unknown
 }
 
 const CODEX_ACCOUNT_LIST_ACTIONS: AdapterAccountActionDescriptor[] = [
@@ -102,6 +124,18 @@ const pathExists = async (targetPath: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+const createAbortError = () => {
+  const error = new Error('Codex login canceled.')
+  error.name = 'AbortError'
+  return error
+}
+
+const throwIfAborted = (signal: AbortSignal | undefined) => {
+  if (signal?.aborted === true) {
+    throw createAbortError()
   }
 }
 
@@ -147,6 +181,22 @@ const slugifyAccountKey = (value: string) => (
     .replace(/^-+|-+$/g, '')
 )
 
+const compactIdentityFragment = (value: string | undefined) => {
+  const normalized = normalizeNonEmptyString(value)
+  if (normalized == null) {
+    return undefined
+  }
+
+  const compact = normalized
+    .replace(/^[a-z]+-/i, '')
+    .replace(/[^a-z0-9]+/gi, '')
+    .toLowerCase()
+
+  return compact === ''
+    ? undefined
+    : compact.slice(-8)
+}
+
 const formatPlanType = (value: string | undefined) => {
   switch (value) {
     case 'free':
@@ -170,6 +220,77 @@ const formatPlanType = (value: string | undefined) => {
     default:
       return undefined
   }
+}
+
+const CODEX_GENERATED_CONTEXT_LABELS = new Set([
+  'personal',
+  'free',
+  'go',
+  'plus',
+  'pro',
+  'team',
+  'business',
+  'enterprise',
+  'edu',
+  'unknown'
+])
+
+const isGenericCodexOrganizationTitle = (value: string | undefined) => {
+  const normalized = normalizeNonEmptyString(value)
+  if (normalized == null) {
+    return false
+  }
+
+  return normalized.toLowerCase() === 'personal'
+}
+
+const shouldPreferPlanLabelForTitle = (planType: string | undefined) => {
+  switch (planType) {
+    case 'team':
+    case 'business':
+    case 'enterprise':
+    case 'edu':
+      return true
+    default:
+      return false
+  }
+}
+
+const resolveCodexAccountContextTitle = (probe: CodexAccountProbe | undefined) => {
+  const organizationTitle = normalizeNonEmptyString(probe?.organizationTitle)
+  const normalizedPlanType = normalizeNonEmptyString(probe?.planType)
+  const planLabel = formatPlanType(normalizedPlanType)
+
+  if (
+    organizationTitle != null &&
+    !(
+      isGenericCodexOrganizationTitle(organizationTitle) &&
+      shouldPreferPlanLabelForTitle(normalizedPlanType)
+    )
+  ) {
+    return organizationTitle
+  }
+
+  return planLabel ?? organizationTitle
+}
+
+const buildLegacyImportedAccountTitle = (params: {
+  key: string
+  probe?: CodexAccountProbe
+}) => {
+  const normalizedEmail = normalizeNonEmptyString(params.probe?.email)
+  const normalizedOrganizationTitle = normalizeNonEmptyString(params.probe?.organizationTitle)
+  if (normalizedEmail != null) {
+    return normalizedOrganizationTitle != null
+      ? `${normalizedEmail} · ${normalizedOrganizationTitle}`
+      : normalizedEmail
+  }
+
+  if (params.probe?.accountType === 'apiKey') {
+    return `API Key ${params.key.slice(-8)}`
+  }
+
+  return params.key
 }
 
 const formatCreditsValue = (value: number) => `${value.toLocaleString('en-US')} credits`
@@ -231,22 +352,205 @@ const cloneQuotaInfo = (quota: AdapterAccountInfo['quota']) => (
     }
 )
 
-const buildProbeFromMetadata = (metadata: CodexStoredAccountMetadata | undefined): CodexAccountProbe | undefined => {
-  const email = normalizeNonEmptyString(metadata?.email)
-  const planType = normalizeNonEmptyString(metadata?.planType)
-  const accountType = normalizeNonEmptyString(metadata?.accountType)
-  const quota = cloneQuotaInfo(metadata?.quota)
-
-  if (email == null && planType == null && accountType == null && quota == null) {
+const normalizeCodexIdentity = (
+  identity: CodexAccountIdentity | undefined
+): CodexAccountIdentity | undefined => {
+  if (identity == null) {
     return undefined
   }
 
-  return {
-    email,
-    planType,
-    accountType,
-    quota
+  const normalized: CodexAccountIdentity = {
+    email: normalizeNonEmptyString(identity.email),
+    planType: normalizeNonEmptyString(identity.planType),
+    accountType: normalizeNonEmptyString(identity.accountType),
+    accountId: normalizeNonEmptyString(identity.accountId),
+    organizationId: normalizeNonEmptyString(identity.organizationId),
+    organizationTitle: normalizeNonEmptyString(identity.organizationTitle),
+    organizationRole: normalizeNonEmptyString(identity.organizationRole)
   }
+
+  return Object.values(normalized).some(value => value != null) ? normalized : undefined
+}
+
+const mergeCodexAccountProbes = (
+  ...sources: Array<CodexAccountProbe | CodexAccountIdentity | undefined>
+): CodexAccountProbe | undefined => {
+  const merged: CodexAccountProbe = {}
+
+  for (const source of sources) {
+    if (source == null) {
+      continue
+    }
+
+    const normalizedIdentity = normalizeCodexIdentity(source)
+    if (normalizedIdentity != null) {
+      Object.assign(merged, normalizedIdentity)
+    }
+
+    if ('quota' in source && source.quota != null) {
+      merged.quota = cloneQuotaInfo(source.quota)
+    }
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined
+}
+
+const decodeJwtPayload = (token: string | undefined) => {
+  const normalized = normalizeNonEmptyString(token)
+  if (normalized == null) {
+    return undefined
+  }
+
+  const payload = normalized.split('.')[1]
+  if (payload == null || payload === '') {
+    return undefined
+  }
+
+  try {
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8')
+    const parsed = JSON.parse(decoded)
+    return isRecord(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const parseStoredAuthTokens = (value: unknown): CodexStoredAuthTokens | undefined => (
+  isRecord(value) ? value as CodexStoredAuthTokens : undefined
+)
+
+const pickPrimaryOrganization = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  const organizations = value
+    .filter(isRecord)
+    .map(entry => entry as CodexJwtOrganizationClaim)
+
+  return organizations.find(entry => entry.is_default === true) ?? organizations[0]
+}
+
+const readCodexAuthIdentityFromContent = (authContent: string): CodexAccountProbe | undefined => {
+  try {
+    const parsed = JSON.parse(authContent) as CodexStoredAuthFile
+    const tokens = parseStoredAuthTokens(parsed.tokens)
+    const idTokenPayload = decodeJwtPayload(
+      typeof tokens?.id_token === 'string' ? tokens.id_token : undefined
+    )
+    const authClaims = isRecord(idTokenPayload?.['https://api.openai.com/auth'])
+      ? idTokenPayload['https://api.openai.com/auth']
+      : undefined
+    const organization = pickPrimaryOrganization(authClaims?.organizations)
+    const accountType = typeof parsed.auth_mode === 'string'
+      ? parsed.auth_mode === 'api_key'
+        ? 'apiKey'
+        : parsed.auth_mode
+      : undefined
+
+    return mergeCodexAccountProbes({
+      accountType,
+      email: typeof idTokenPayload?.email === 'string' ? idTokenPayload.email : undefined,
+      planType: typeof authClaims?.chatgpt_plan_type === 'string'
+        ? authClaims.chatgpt_plan_type
+        : undefined,
+      accountId: typeof authClaims?.chatgpt_account_id === 'string'
+        ? authClaims.chatgpt_account_id
+        : typeof tokens?.account_id === 'string'
+          ? tokens.account_id
+          : undefined,
+      organizationId: typeof organization?.id === 'string' ? organization.id : undefined,
+      organizationTitle: typeof organization?.title === 'string' ? organization.title : undefined,
+      organizationRole: typeof organization?.role === 'string' ? organization.role : undefined
+    })
+  } catch {
+    return undefined
+  }
+}
+
+const readCodexAuthIdentityFromFile = async (authFilePath: string | undefined) => {
+  if (authFilePath == null) {
+    return undefined
+  }
+
+  try {
+    return readCodexAuthIdentityFromContent(await readFile(authFilePath, 'utf8'))
+  } catch {
+    return undefined
+  }
+}
+
+const isSameCodexAccountIdentity = (
+  left: CodexAccountIdentity | undefined,
+  right: CodexAccountIdentity | undefined
+) => {
+  const normalizedLeft = normalizeCodexIdentity(left)
+  const normalizedRight = normalizeCodexIdentity(right)
+  if (normalizedLeft == null || normalizedRight == null) {
+    return false
+  }
+
+  const sameAccountId = normalizedLeft.accountId != null &&
+    normalizedRight.accountId != null &&
+    normalizedLeft.accountId === normalizedRight.accountId
+  const sameOrganizationId = normalizedLeft.organizationId != null &&
+    normalizedRight.organizationId != null &&
+    normalizedLeft.organizationId === normalizedRight.organizationId
+  const hasBothAccountIds = normalizedLeft.accountId != null &&
+    normalizedRight.accountId != null
+  const hasBothOrganizationIds = normalizedLeft.organizationId != null &&
+    normalizedRight.organizationId != null
+
+  if (hasBothAccountIds && !sameAccountId) {
+    return false
+  }
+
+  if (hasBothOrganizationIds && !sameOrganizationId) {
+    return false
+  }
+
+  if (sameAccountId && (sameOrganizationId || (
+    normalizedLeft.organizationId == null &&
+    normalizedRight.organizationId == null
+  ))) {
+    return true
+  }
+
+  const sameEmail = normalizedLeft.email != null &&
+    normalizedRight.email != null &&
+    normalizedLeft.email.toLowerCase() === normalizedRight.email.toLowerCase()
+  if (!sameEmail) {
+    return false
+  }
+
+  if (sameOrganizationId) {
+    if (hasBothAccountIds) {
+      return sameAccountId
+    }
+
+    return true
+  }
+
+  if (hasBothAccountIds || hasBothOrganizationIds) {
+    return false
+  }
+
+  return normalizedLeft.organizationTitle != null &&
+    normalizedRight.organizationTitle != null &&
+    normalizedLeft.organizationTitle.toLowerCase() === normalizedRight.organizationTitle.toLowerCase()
+}
+
+const buildProbeFromMetadata = (metadata: CodexStoredAccountMetadata | undefined): CodexAccountProbe | undefined => {
+  return mergeCodexAccountProbes(metadata == null ? undefined : {
+    email: metadata.email,
+    planType: metadata.planType,
+    accountType: metadata.accountType,
+    accountId: metadata.accountId,
+    organizationId: metadata.organizationId,
+    organizationTitle: metadata.organizationTitle,
+    organizationRole: metadata.organizationRole,
+    quota: metadata.quota
+  })
 }
 
 const getCachedProbe = (
@@ -365,6 +669,7 @@ const probeCodexAccount = async (params: {
   const logger = resolveProbeLogger(ctx, logKey)
   const binaryPath = resolveCodexBinaryPath(ctx.env)
   const spawnEnv = buildSpawnEnv(ctx.env)
+  const authIdentity = await readCodexAuthIdentityFromFile(authFilePath)
   spawnEnv.HOME = homeDir
 
   await mkdir(join(homeDir, '.codex'), { recursive: true })
@@ -528,9 +833,10 @@ const probeCodexAccount = async (params: {
       .join(' · ')
 
     return {
-      accountType,
-      email,
-      planType,
+      ...authIdentity,
+      accountType: accountType ?? authIdentity?.accountType,
+      email: email ?? authIdentity?.email,
+      planType: planType ?? authIdentity?.planType,
       quota: summary === '' && metrics.length === 0
         ? undefined
         : {
@@ -552,15 +858,32 @@ const buildImportedAccountKey = (params: {
   probe?: CodexAccountProbe
 }) => {
   const normalizedEmail = normalizeNonEmptyString(params.probe?.email)
+  const normalizedOrganizationTitle = slugifyAccountKey(params.probe?.organizationTitle ?? '')
+  const organizationFragment = compactIdentityFragment(params.probe?.organizationId)
+  const accountFragment = compactIdentityFragment(params.probe?.accountId)
   if (normalizedEmail != null) {
-    return `chatgpt-${slugifyAccountKey(normalizedEmail)}`
+    const segments = [`chatgpt-${slugifyAccountKey(normalizedEmail)}`]
+
+    if (normalizedOrganizationTitle !== '') {
+      segments.push(normalizedOrganizationTitle)
+    }
+
+    if (organizationFragment != null) {
+      segments.push(organizationFragment)
+    }
+
+    if (accountFragment != null && (organizationFragment == null || accountFragment !== organizationFragment)) {
+      segments.push(accountFragment)
+    }
+
+    return segments.join('-')
   }
 
   if (params.probe?.accountType === 'apiKey') {
-    return `api-key-${params.authDigest.slice(0, 8)}`
+    return `api-key-${accountFragment ?? params.authDigest.slice(0, 8)}`
   }
 
-  return `account-${params.authDigest.slice(0, 8)}`
+  return `account-${organizationFragment ?? accountFragment ?? params.authDigest.slice(0, 8)}`
 }
 
 const buildImportedAccountTitle = (params: {
@@ -568,8 +891,11 @@ const buildImportedAccountTitle = (params: {
   probe?: CodexAccountProbe
 }) => {
   const normalizedEmail = normalizeNonEmptyString(params.probe?.email)
+  const contextTitle = resolveCodexAccountContextTitle(params.probe)
   if (normalizedEmail != null) {
-    return normalizedEmail
+    return contextTitle != null
+      ? `${normalizedEmail} · ${contextTitle}`
+      : normalizedEmail
   }
 
   if (params.probe?.accountType === 'apiKey') {
@@ -577,6 +903,79 @@ const buildImportedAccountTitle = (params: {
   }
 
   return params.key
+}
+
+const isGeneratedCodexEmailContextTitle = (params: {
+  email?: string
+  title?: string
+}) => {
+  const normalizedEmail = normalizeNonEmptyString(params.email)
+  const normalizedTitle = normalizeNonEmptyString(params.title)
+  if (normalizedEmail == null || normalizedTitle == null) {
+    return false
+  }
+
+  const prefix = `${normalizedEmail} · `
+  if (!normalizedTitle.startsWith(prefix)) {
+    return false
+  }
+
+  const suffix = normalizeNonEmptyString(normalizedTitle.slice(prefix.length))
+  if (suffix == null) {
+    return false
+  }
+
+  return CODEX_GENERATED_CONTEXT_LABELS.has(suffix.toLowerCase())
+}
+
+const isAutoGeneratedCodexTitle = (params: {
+  key: string
+  title: string | undefined
+  probe?: CodexAccountProbe
+}) => {
+  const normalizedTitle = normalizeNonEmptyString(params.title)
+  if (normalizedTitle == null) {
+    return true
+  }
+
+  const emailOnlyProbe = params.probe == null
+    ? undefined
+    : {
+      ...params.probe,
+      organizationTitle: undefined
+    }
+
+  const generatedTitles = new Set([
+    params.key,
+    buildImportedAccountTitle({
+      key: params.key,
+      probe: emailOnlyProbe
+    }),
+    buildImportedAccountTitle(params),
+    buildLegacyImportedAccountTitle({
+      key: params.key,
+      probe: emailOnlyProbe
+    }),
+    buildLegacyImportedAccountTitle(params)
+  ].filter((value): value is string => value != null && value !== ''))
+
+  return generatedTitles.has(normalizedTitle) || isGeneratedCodexEmailContextTitle({
+    email: params.probe?.email,
+    title: normalizedTitle
+  })
+}
+
+const resolveCodexAccountTitle = (params: {
+  key: string
+  title?: string
+  probe?: CodexAccountProbe
+}) => {
+  const normalizedTitle = normalizeNonEmptyString(params.title)
+  if (normalizedTitle != null && !isAutoGeneratedCodexTitle(params)) {
+    return normalizedTitle
+  }
+
+  return buildImportedAccountTitle(params) ?? normalizedTitle ?? params.key
 }
 
 const ensureImportedRealHomeAccount = async (
@@ -590,16 +989,23 @@ const ensureImportedRealHomeAccount = async (
 
   const authContent = await readFile(realAuthPath, 'utf8')
   const authDigest = createHash('sha256').update(authContent).digest('hex')
-  const existingStoredAccount = await findStoredAccountByAuthDigest(ctx, authDigest)
+  const authIdentity = readCodexAuthIdentityFromContent(authContent)
+  const existingStoredAccount = await findStoredAccountByIdentity(ctx, {
+    authDigest,
+    probe: authIdentity
+  })
   const cachedProbe = getCachedProbe(existingStoredAccount?.metadata, options.refresh)
   const probeHomeDir = resolveCodexProbeHomeDir(ctx, 'import-current')
-  const probe = cachedProbe ?? await probeCodexAccount({
-    ctx,
-    homeDir: probeHomeDir,
-    authFilePath: realAuthPath,
-    refresh: options.refresh,
-    logKey: 'import-current'
-  }).catch(() => buildProbeFromMetadata(existingStoredAccount?.metadata))
+  const probe = mergeCodexAccountProbes(
+    authIdentity,
+    cachedProbe ?? await probeCodexAccount({
+      ctx,
+      homeDir: probeHomeDir,
+      authFilePath: realAuthPath,
+      refresh: options.refresh,
+      logKey: 'import-current'
+    }).catch(() => buildProbeFromMetadata(existingStoredAccount?.metadata))
+  )
   const key = existingStoredAccount?.key ?? buildImportedAccountKey({
     authDigest,
     probe
@@ -612,11 +1018,19 @@ const ensureImportedRealHomeAccount = async (
   await writeFile(authPath, authContent, 'utf8')
   await writeJsonFile(metaPath, {
     ...existingMeta,
-    title: existingMeta?.title ?? buildImportedAccountTitle({ key, probe }),
+    title: resolveCodexAccountTitle({
+      key,
+      title: existingMeta?.title,
+      probe: mergeCodexAccountProbes(probe, buildProbeFromMetadata(existingMeta))
+    }),
     description: existingMeta?.description ?? 'Imported from ~/.codex/auth.json',
     email: probe?.email ?? existingMeta?.email,
     planType: probe?.planType ?? existingMeta?.planType,
     accountType: probe?.accountType ?? existingMeta?.accountType,
+    accountId: probe?.accountId ?? existingMeta?.accountId,
+    organizationId: probe?.organizationId ?? existingMeta?.organizationId,
+    organizationTitle: probe?.organizationTitle ?? existingMeta?.organizationTitle,
+    organizationRole: probe?.organizationRole ?? existingMeta?.organizationRole,
     quota: cloneQuotaInfo(probe?.quota) ?? existingMeta?.quota,
     source: 'imported-real-home',
     authDigest,
@@ -642,30 +1056,123 @@ const collectStoredAccountDescriptors = async (
     const authFilePath = resolveStoredAccountAuthPath(ctx, entry.name)
     const metadata = await readJsonFileIfPresent<CodexStoredAccountMetadata>(resolveStoredAccountMetaPath(ctx, entry.name))
     const hasStoredAuthFile = await pathExists(authFilePath)
+    const authIdentity = hasStoredAuthFile
+      ? await readCodexAuthIdentityFromFile(authFilePath)
+      : undefined
 
     if (!hasStoredAuthFile && metadata == null) {
       continue
     }
 
+    const mergedIdentity = mergeCodexAccountProbes(
+      buildProbeFromMetadata(metadata),
+      authIdentity
+    )
+
     descriptors.push({
       key: entry.name,
-      title: normalizeNonEmptyString(metadata?.title),
+      title: resolveCodexAccountTitle({
+        key: entry.name,
+        title: metadata?.title,
+        probe: mergedIdentity
+      }),
       description: normalizeNonEmptyString(metadata?.description),
       authFilePath: hasStoredAuthFile ? authFilePath : undefined,
       status: hasStoredAuthFile ? 'ready' : 'missing',
-      metadata
+      metadata,
+      identity: mergedIdentity
     })
   }
 
   return descriptors
 }
 
-const findStoredAccountByAuthDigest = async (
+const findStoredAccountByIdentity = async (
   ctx: Pick<AdapterCtx, 'cwd' | 'env'>,
-  authDigest: string
+  params: {
+    authDigest?: string
+    probe?: CodexAccountProbe
+  }
 ) => {
   const descriptors = await collectStoredAccountDescriptors(ctx)
-  return descriptors.find(descriptor => descriptor.metadata?.authDigest === authDigest)
+  const normalizedProbe = mergeCodexAccountProbes(params.probe)
+
+  if (normalizedProbe != null) {
+    const preferredKey = buildImportedAccountKey({
+      authDigest: params.authDigest ?? '00000000',
+      probe: normalizedProbe
+    })
+    const matchedDescriptors = descriptors.filter(descriptor => (
+      isSameCodexAccountIdentity(normalizedProbe, descriptor.identity ?? buildProbeFromMetadata(descriptor.metadata))
+    ))
+    if (matchedDescriptors.length > 0) {
+      return matchedDescriptors.sort((left, right) => {
+        if (left.key === preferredKey) return -1
+        if (right.key === preferredKey) return 1
+
+        const leftFriendly = left.key.startsWith('chatgpt-') || left.key.startsWith('api-key-')
+        const rightFriendly = right.key.startsWith('chatgpt-') || right.key.startsWith('api-key-')
+        if (leftFriendly !== rightFriendly) {
+          return leftFriendly ? -1 : 1
+        }
+
+        const leftUpdatedAt = parseFiniteNumber(left.metadata?.updatedAt) ?? 0
+        const rightUpdatedAt = parseFiniteNumber(right.metadata?.updatedAt) ?? 0
+        return rightUpdatedAt - leftUpdatedAt
+      })[0]
+    }
+  }
+
+  return params.authDigest == null
+    ? undefined
+    : descriptors.find(descriptor => descriptor.metadata?.authDigest === params.authDigest)
+}
+
+const pickPreferredCodexDescriptor = (
+  left: CodexAccountDescriptor,
+  right: CodexAccountDescriptor
+) => {
+  if (left.status !== right.status) {
+    if (left.status === 'ready') return left
+    if (right.status === 'ready') return right
+  }
+
+  const leftFriendly = left.key.startsWith('chatgpt-') || left.key.startsWith('api-key-')
+  const rightFriendly = right.key.startsWith('chatgpt-') || right.key.startsWith('api-key-')
+  if (leftFriendly !== rightFriendly) {
+    return leftFriendly ? left : right
+  }
+
+  const leftUpdatedAt = parseFiniteNumber(left.metadata?.updatedAt) ?? 0
+  const rightUpdatedAt = parseFiniteNumber(right.metadata?.updatedAt) ?? 0
+  if (leftUpdatedAt !== rightUpdatedAt) {
+    return leftUpdatedAt > rightUpdatedAt ? left : right
+  }
+
+  return compareCodexAccountDescriptors(left, right) <= 0 ? left : right
+}
+
+const dedupeCodexAccountDescriptors = (descriptors: CodexAccountDescriptor[]) => {
+  const deduped: CodexAccountDescriptor[] = []
+
+  for (const descriptor of descriptors) {
+    const descriptorIdentity = descriptor.identity ?? buildProbeFromMetadata(descriptor.metadata)
+    const existingIndex = deduped.findIndex(existing => (
+      isSameCodexAccountIdentity(
+        descriptorIdentity,
+        existing.identity ?? buildProbeFromMetadata(existing.metadata)
+      )
+    ))
+
+    if (existingIndex === -1) {
+      deduped.push(descriptor)
+      continue
+    }
+
+    deduped[existingIndex] = pickPreferredCodexDescriptor(deduped[existingIndex], descriptor)
+  }
+
+  return deduped
 }
 
 const writeProbeMetadata = async (params: {
@@ -680,8 +1187,16 @@ const writeProbeMetadata = async (params: {
     ...(probe.email != null ? { email: probe.email } : {}),
     ...(probe.planType != null ? { planType: probe.planType } : {}),
     ...(probe.accountType != null ? { accountType: probe.accountType } : {}),
+    ...(probe.accountId != null ? { accountId: probe.accountId } : {}),
+    ...(probe.organizationId != null ? { organizationId: probe.organizationId } : {}),
+    ...(probe.organizationTitle != null ? { organizationTitle: probe.organizationTitle } : {}),
+    ...(probe.organizationRole != null ? { organizationRole: probe.organizationRole } : {}),
     ...(probe.quota != null ? { quota: cloneQuotaInfo(probe.quota) } : {}),
-    title: descriptor.title ?? descriptor.metadata?.title,
+    title: resolveCodexAccountTitle({
+      key: descriptor.key,
+      title: descriptor.title ?? descriptor.metadata?.title,
+      probe: mergeCodexAccountProbes(descriptor.identity, descriptor.metadata, probe)
+    }),
     description: descriptor.description ?? descriptor.metadata?.description,
     createdAt: descriptor.metadata?.createdAt ?? Date.now(),
     updatedAt: Date.now()
@@ -689,6 +1204,12 @@ const writeProbeMetadata = async (params: {
 
   await writeJsonFile(metaPath, nextMetadata)
   descriptor.metadata = nextMetadata
+  descriptor.identity = mergeCodexAccountProbes(descriptor.identity, nextMetadata)
+  descriptor.title = resolveCodexAccountTitle({
+    key: descriptor.key,
+    title: descriptor.title,
+    probe: descriptor.identity
+  })
 }
 
 const getCodexAccountProbe = async (params: {
@@ -740,13 +1261,61 @@ const compareCodexAccountDescriptors = (
   return left.key.localeCompare(right.key)
 }
 
+const buildCodexTitleDisambiguationSuffix = (descriptor: CodexAccountDescriptor) => {
+  const authDigest = normalizeNonEmptyString(descriptor.metadata?.authDigest)
+  if (authDigest != null) {
+    return authDigest.slice(0, 8)
+  }
+
+  const accountFragment = compactIdentityFragment(
+    descriptor.identity?.accountId ?? descriptor.metadata?.accountId
+  )
+  if (accountFragment != null) {
+    return accountFragment
+  }
+
+  return descriptor.key.slice(-8)
+}
+
+const disambiguateCodexAccountTitles = (descriptors: CodexAccountDescriptor[]) => {
+  const groups = new Map<string, CodexAccountDescriptor[]>()
+
+  for (const descriptor of descriptors) {
+    const normalizedTitle = normalizeNonEmptyString(descriptor.title)?.toLowerCase()
+    if (normalizedTitle == null) {
+      continue
+    }
+
+    const group = groups.get(normalizedTitle)
+    if (group == null) {
+      groups.set(normalizedTitle, [descriptor])
+      continue
+    }
+
+    group.push(descriptor)
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) {
+      continue
+    }
+
+    for (const descriptor of group) {
+      const baseTitle = normalizeNonEmptyString(descriptor.title) ?? descriptor.key
+      descriptor.title = `${baseTitle} · ${buildCodexTitleDisambiguationSuffix(descriptor)}`
+    }
+  }
+
+  return descriptors
+}
+
 const collectCodexAccountDescriptors = async (
   ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId' | 'configs'>,
   options: { refresh?: boolean } = {}
 ) => {
   const { defaultAccount, accounts: configuredAccounts } = resolveCodexAdapterConfig(ctx)
   const importedAccountKey = await ensureImportedRealHomeAccount(ctx, options).catch(() => undefined)
-  const discoveredAccounts = await collectStoredAccountDescriptors(ctx)
+  const discoveredAccounts = dedupeCodexAccountDescriptors(await collectStoredAccountDescriptors(ctx))
   const descriptorMap = new Map<string, CodexAccountDescriptor>(
     discoveredAccounts.map(account => [account.key, account])
   )
@@ -770,14 +1339,16 @@ const collectCodexAccountDescriptors = async (
   }
 
   const descriptors = Array.from(descriptorMap.values())
-  const sortedDescriptors = descriptors
+  const sortedDescriptors = disambiguateCodexAccountTitles(descriptors
     .map(account => ({
       ...account,
-      title: account.title ??
-        normalizeNonEmptyString(account.metadata?.email) ??
-        account.key
+      title: resolveCodexAccountTitle({
+        key: account.key,
+        title: account.title,
+        probe: mergeCodexAccountProbes(account.identity, buildProbeFromMetadata(account.metadata))
+      })
     }))
-    .sort(compareCodexAccountDescriptors)
+    .sort(compareCodexAccountDescriptors))
   const resolvedDefaultAccount = defaultAccount ??
     importedAccountKey ??
     sortedDescriptors.find(account => account.status === 'ready')?.key
@@ -840,14 +1411,16 @@ const buildCodexAccountDetail = (params: {
     configuredAccount,
     overrideError
   } = params
-  const baseTitle = descriptor.title ??
-    normalizeNonEmptyString(descriptor.metadata?.email) ??
-    normalizeNonEmptyString(probe?.email) ??
-    descriptor.key
+  const mergedProbe = mergeCodexAccountProbes(descriptor.identity, descriptor.metadata, probe)
+  const baseTitle = resolveCodexAccountTitle({
+    key: descriptor.key,
+    title: descriptor.title,
+    probe: mergedProbe
+  })
   const baseDescription = overrideError ??
     descriptor.description ??
     normalizeNonEmptyString(descriptor.metadata?.description) ??
-    (probe?.accountType === 'apiKey' ? 'API Key account' : undefined)
+    (mergedProbe?.accountType === 'apiKey' ? 'API Key account' : undefined)
   const status = overrideError != null ? 'error' : descriptor.status
 
   return {
@@ -857,9 +1430,9 @@ const buildCodexAccountDetail = (params: {
     status,
     isDefault: descriptor.key === defaultAccount,
     quota: overrideError == null ? probe?.quota : undefined,
-    email: normalizeNonEmptyString(probe?.email) ?? normalizeNonEmptyString(descriptor.metadata?.email),
-    planType: normalizeNonEmptyString(probe?.planType) ?? normalizeNonEmptyString(descriptor.metadata?.planType),
-    accountType: normalizeNonEmptyString(probe?.accountType) ?? normalizeNonEmptyString(descriptor.metadata?.accountType),
+    email: normalizeNonEmptyString(mergedProbe?.email),
+    planType: normalizeNonEmptyString(mergedProbe?.planType),
+    accountType: normalizeNonEmptyString(mergedProbe?.accountType),
     source: resolveCodexAccountSource({ descriptor, configuredAccount }),
     actions: [...CODEX_ACCOUNT_DETAIL_ACTIONS]
   }
@@ -891,14 +1464,16 @@ const resolveExistingCodexAccount = async (
 const runCodexLogin = async (params: {
   ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>
   onProgress?: AdapterManageAccountOptions['onProgress']
+  signal?: AbortSignal
 }) => {
-  const { ctx, onProgress } = params
+  const { ctx, onProgress, signal } = params
   const binaryPath = resolveCodexBinaryPath(ctx.env)
   const spawnEnv = buildSpawnEnv(ctx.env)
   const loginKey = `login-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
   const homeDir = resolveCodexProbeHomeDir(ctx, loginKey)
   const authFilePath = join(homeDir, '.codex', 'auth.json')
 
+  throwIfAborted(signal)
   spawnEnv.HOME = homeDir
   await mkdir(join(homeDir, '.codex'), { recursive: true })
   onProgress?.({
@@ -916,6 +1491,26 @@ const runCodexLogin = async (params: {
         env: spawnEnv,
         stdio: ['ignore', 'pipe', 'pipe']
       })
+      let settled = false
+
+      const finishResolve = () => {
+        if (settled) return
+        settled = true
+        signal?.removeEventListener('abort', abortLoginFlow)
+        resolvePromise()
+      }
+
+      const finishReject = (error: unknown) => {
+        if (settled) return
+        settled = true
+        signal?.removeEventListener('abort', abortLoginFlow)
+        rejectPromise(error)
+      }
+
+      const abortLoginFlow = () => {
+        proc.kill()
+        finishReject(createAbortError())
+      }
 
       proc.stdout?.on('data', (chunk) => {
         const text = String(chunk)
@@ -927,22 +1522,35 @@ const runCodexLogin = async (params: {
         stderr += text
         onProgress?.({ stream: 'stderr', message: text })
       })
-      proc.once('error', rejectPromise)
+      proc.once('error', finishReject)
       proc.once('exit', (code) => {
+        if (signal?.aborted === true) {
+          finishReject(createAbortError())
+          return
+        }
+
         if (code === 0) {
-          resolvePromise()
+          finishResolve()
           return
         }
 
         const failureLog = `${stdout}\n${stderr}`.trim()
-        rejectPromise(new Error(
+        finishReject(new Error(
           failureLog === ''
             ? `\`codex login\` exited with code ${code ?? 'unknown'}.`
             : failureLog
         ))
       })
+
+      if (signal?.aborted === true) {
+        abortLoginFlow()
+        return
+      }
+
+      signal?.addEventListener('abort', abortLoginFlow, { once: true })
     })
 
+    throwIfAborted(signal)
     if (!await pathExists(authFilePath)) {
       throw new Error('Codex login completed but no auth.json was written to the isolated home.')
     }
@@ -1191,32 +1799,52 @@ export const manageCodexAccount = async (
   const normalizedRequestedKey = normalizeNonEmptyString(options.account)
   const loginResult = await runCodexLogin({
     ctx,
-    onProgress: options.onProgress
+    onProgress: options.onProgress,
+    signal: options.signal
   })
 
   try {
+    throwIfAborted(options.signal)
     const authContent = await readFile(loginResult.authFilePath, 'utf8')
     const authDigest = createHash('sha256').update(authContent).digest('hex')
-    const probe = await probeCodexAccount({
-      ctx,
-      homeDir: resolveCodexProbeHomeDir(ctx, `login-probe-${Date.now().toString(36)}`),
-      authFilePath: loginResult.authFilePath,
-      refresh: true,
-      logKey: `login-${normalizedRequestedKey ?? 'new'}`
-    }).catch(() => undefined)
+    const authIdentity = readCodexAuthIdentityFromContent(authContent)
+    const probe = mergeCodexAccountProbes(
+      authIdentity,
+      await probeCodexAccount({
+        ctx,
+        homeDir: resolveCodexProbeHomeDir(ctx, `login-probe-${Date.now().toString(36)}`),
+        authFilePath: loginResult.authFilePath,
+        refresh: true,
+        logKey: `login-${normalizedRequestedKey ?? 'new'}`
+      }).catch(() => undefined)
+    )
+    const existingStoredAccount = await findStoredAccountByIdentity(ctx, {
+      authDigest,
+      probe
+    })
     const accountKey = normalizedRequestedKey != null && slugifyAccountKey(normalizedRequestedKey) !== ''
       ? slugifyAccountKey(normalizedRequestedKey)
+      : existingStoredAccount?.key != null
+        ? existingStoredAccount.key
       : buildImportedAccountKey({ authDigest, probe })
     const metadata: CodexStoredAccountMetadata = {
-      title: buildImportedAccountTitle({ key: accountKey, probe }),
+      title: resolveCodexAccountTitle({
+        key: accountKey,
+        title: existingStoredAccount?.metadata?.title,
+        probe
+      }),
       description: 'Logged in via `codex login`.',
       email: probe?.email,
       planType: probe?.planType,
       accountType: probe?.accountType,
+      accountId: probe?.accountId,
+      organizationId: probe?.organizationId,
+      organizationTitle: probe?.organizationTitle,
+      organizationRole: probe?.organizationRole,
       quota: cloneQuotaInfo(probe?.quota),
       source: 'codex-login',
       authDigest,
-      createdAt: Date.now(),
+      createdAt: existingStoredAccount?.metadata?.createdAt ?? Date.now(),
       updatedAt: Date.now()
     }
     const detail = buildCodexAccountDetail({
@@ -1226,7 +1854,8 @@ export const manageCodexAccount = async (
         description: metadata.description,
         authFilePath: resolveStoredAccountAuthPath(ctx, accountKey),
         status: 'ready',
-        metadata
+        metadata,
+        identity: mergeCodexAccountProbes(existingStoredAccount?.identity, metadata)
       },
       probe
     })

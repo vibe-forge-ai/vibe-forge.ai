@@ -73,7 +73,20 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 当前主要用途包括：
 
 - adapter 多账号凭据快照
+- adapter 账号的来源、auth digest 与额度快照元数据
 - 只应保存在本机的认证状态或临时元数据
+
+例如 `codex` 当前会在：
+
+- `.ai/.local/adapters/codex/accounts/<accountKey>/auth.json`
+- `.ai/.local/adapters/codex/accounts/<accountKey>/meta.json`
+
+保存账号快照与账号元数据。`meta.json` 里可能包含：
+
+- 账号来源说明
+- auth 摘要
+- 最近一次 quota / rate-limit 快照
+- quota 快照更新时间
 
 ## 不受影响的内容
 

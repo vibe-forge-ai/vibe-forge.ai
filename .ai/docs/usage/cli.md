@@ -22,7 +22,7 @@
 - `vf config set [path] [value]`：写入配置值
 - `vf config unset [path]`：删除配置值
 - `vf accounts add <adapter> [accountName]`：触发 adapter 原生登录流程，并把返回的凭据快照保存到 `.ai/.local/adapters/<adapter>/accounts/<key>/`
-- `vf accounts show <adapter> <accountName>`：查看某个 adapter 账号的详情和最新额度摘要
+- `vf accounts show <adapter> <accountName>`：查看某个 adapter 账号的详情和最新额度摘要（CLI 当前会强制刷新）
 - `vf accounts remove <adapter> <accountName>`：删除某个 adapter 账号在当前 workspace 下保存的凭据快照
 
 这些命令默认以项目根目录作为 workspace。
@@ -114,3 +114,5 @@ npx vf accounts remove codex work
 - `vf accounts add` 会调用对应 adapter 暴露的账号接入能力；当前内建先支持 `codex`。
 - `codex` 会在隔离 HOME 下执行一次 `codex login`，读取生成的 `auth.json`，再落到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/<key>/`。
 - `accountName` 可选；不传时会尽量根据登录后的邮箱或凭据摘要自动生成账号 key。
+- `vf accounts show` 当前会强制刷新 adapter 账号详情；如果你只想看 Web UI 的最近快照，配置页会按 adapter 自己的缓存策略展示。
+- 更完整的 adapter 配置与多账号说明见 [Adapter 配置与多账号](./adapters.md)。

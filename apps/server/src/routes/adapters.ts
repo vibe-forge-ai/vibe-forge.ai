@@ -150,6 +150,15 @@ export function adaptersRouter(): Router {
       throw badRequest('Invalid account action', { action: body.action }, 'invalid_adapter_account_action')
     }
 
+    const abortController = new AbortController()
+    const abortOnRequestClose = () => {
+      if (!abortController.signal.aborted) {
+        abortController.abort(new Error('Adapter account request aborted by client.'))
+      }
+    }
+    ctx.req.once('aborted', abortOnRequestClose)
+    ctx.req.once('close', abortOnRequestClose)
+
     try {
       const { workspaceFolder, adapter, adapterCtx } = await createAdapterRouteContext(adapterKey)
       if (adapter.manageAccount == null) {
@@ -160,7 +169,8 @@ export function adaptersRouter(): Router {
         action: action as AdapterManageAccountOptions['action'],
         account,
         model,
-        refresh
+        refresh,
+        signal: abortController.signal
       })
 
       if ((result.artifacts?.length ?? 0) > 0) {
@@ -212,6 +222,9 @@ export function adaptersRouter(): Router {
         ...(detail != null ? { account: detail.account } : {})
       }
     } catch (error) {
+      if (abortController.signal.aborted) {
+        return
+      }
       if (isHttpError(error)) {
         throw error
       }
@@ -223,6 +236,9 @@ export function adaptersRouter(): Router {
           code: 'adapter_account_action_failed'
         }
       )
+    } finally {
+      ctx.req.off('aborted', abortOnRequestClose)
+      ctx.req.off('close', abortOnRequestClose)
     }
   })
 

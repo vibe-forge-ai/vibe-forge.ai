@@ -10,6 +10,7 @@
 - [数据资产目录配置](./asset-directories.md)
 - [启动服务](./usage/runtime.md)
 - [Web UI 与 Terminal 视图](./usage/web.md)
+- [Adapter 配置与多账号](./usage/adapters.md)
 - [Channel 会话绑定](./usage/channels.md)
 - [CLI 与示例](./usage/cli.md)
 - [插件与数据资产](./usage/plugins.md)

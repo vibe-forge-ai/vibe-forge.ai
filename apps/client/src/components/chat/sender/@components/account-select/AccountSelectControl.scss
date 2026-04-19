@@ -71,3 +71,38 @@
     overflow: hidden !important;
   }
 }
+
+.account-select-create-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 4px;
+  text-align: center;
+}
+
+.account-select-create-modal__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-soft-bg, #eff6ff) 80%, transparent);
+  color: var(--primary-color, #2563eb);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.account-select-create-modal__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.account-select-create-modal__description {
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sub-text-color, #6b7280);
+}

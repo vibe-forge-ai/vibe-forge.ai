@@ -164,6 +164,7 @@ export interface AdapterManageAccountOptions {
   account?: string
   refresh?: boolean
   onProgress?: (event: AdapterManageAccountProgressEvent) => void
+  signal?: AbortSignal
 }
 
 export interface AdapterManageAccountResult {
