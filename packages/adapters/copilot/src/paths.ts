@@ -3,9 +3,15 @@ import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
+import { resolveManagedNpmCliBinaryPath } from '@vibe-forge/utils/managed-npm-cli'
 
 const require = createRequire(import.meta.url ?? __filename)
 const adapterPackageDir = dirname(require.resolve('@vibe-forge/adapter-copilot/package.json'))
+const bundledPath = resolve(adapterPackageDir, 'node_modules/.bin/copilot')
+
+export const COPILOT_CLI_PACKAGE = '@github/copilot'
+export const COPILOT_CLI_VERSION = '1.0.32'
 
 const toRealPath = (targetPath: string) => {
   try {
@@ -15,7 +21,12 @@ const toRealPath = (targetPath: string) => {
   }
 }
 
-export const resolveCopilotBinaryPath = (env: AdapterCtx['env'], configuredPath?: string): string => {
+export const resolveCopilotBinaryPath = (
+  env: AdapterCtx['env'],
+  configuredPath?: string,
+  cwd?: string,
+  config?: ManagedNpmCliConfig
+): string => {
   const envPath = env.__VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__
   if (typeof envPath === 'string' && envPath.trim() !== '') {
     return envPath
@@ -25,10 +36,15 @@ export const resolveCopilotBinaryPath = (env: AdapterCtx['env'], configuredPath?
     return configuredPath
   }
 
-  const bundledPath = resolve(adapterPackageDir, 'node_modules/.bin/copilot')
-  if (existsSync(bundledPath)) {
-    return toRealPath(bundledPath)
-  }
-
-  return 'copilot'
+  return resolveManagedNpmCliBinaryPath({
+    adapterKey: 'copilot',
+    binaryName: 'copilot',
+    bundledPath: existsSync(bundledPath) ? toRealPath(bundledPath) : undefined,
+    config,
+    configuredPath,
+    cwd,
+    defaultPackageName: COPILOT_CLI_PACKAGE,
+    defaultVersion: COPILOT_CLI_VERSION,
+    env
+  })
 }

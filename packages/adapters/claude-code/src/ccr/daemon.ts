@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
@@ -7,10 +7,16 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 import { generateDefaultCCRConfigJSON } from './config'
-import { resolveAdapterCliPath, resolveTransformerRuntimePreloadPath } from './paths'
+import {
+  CLAUDE_CODE_ROUTER_CLI_PACKAGE,
+  CLAUDE_CODE_ROUTER_CLI_VERSION,
+  resolveAdapterCliPath,
+  resolveTransformerRuntimePreloadPath
+} from './paths'
 
 const DEFAULT_ROUTER_HOST = '127.0.0.1'
 const DEFAULT_ROUTER_PORT = 3456
@@ -28,7 +34,7 @@ export interface ClaudeCodeRouterConnection {
 
 export interface ClaudeCodeRouterDeps {
   isProcessAlive: (pid: number) => boolean
-  resolveCliPath: () => string
+  resolveCliPath: () => string | Promise<string>
   resolveRuntimePreloadPath: () => string | undefined
   spawnDetached: (params: {
     cliPath: string
@@ -252,8 +258,23 @@ export const ensureClaudeCodeRouterReady = async (
   }
 
   if (!isRunning) {
-    const cliPath = routerDeps.resolveCliPath()
-    await access(cliPath)
+    const cliPath = deps.resolveCliPath == null
+      ? await ensureManagedNpmCli({
+        adapterKey: 'claude_code_router',
+        binaryName: 'ccr',
+        bundledPath: resolveAdapterCliPath(cwd, env, adapterOptions.routerCli),
+        config: adapterOptions.routerCli,
+        cwd,
+        defaultPackageName: CLAUDE_CODE_ROUTER_CLI_PACKAGE,
+        defaultVersion: CLAUDE_CODE_ROUTER_CLI_VERSION,
+        env,
+        logger: {
+          info: () => undefined
+        },
+        versionArgs: ['version']
+      })
+      : await routerDeps.resolveCliPath()
+    env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_ROUTER_CLI_PATH__ = cliPath
     const spawnEnv: NodeJS.ProcessEnv = {
       ...process.env,
       ...env,

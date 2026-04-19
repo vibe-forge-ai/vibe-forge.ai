@@ -41,6 +41,15 @@
         "require": "./dist/config-schema.js"
       }
     },
+    "./cli-prepare": {
+      "__vibe-forge__": {
+        "default": "./src/cli-prepare.ts"
+      },
+      "default": {
+        "import": "./dist/cli-prepare.mjs",
+        "require": "./dist/cli-prepare.js"
+      }
+    },
     "./models": {
       "__vibe-forge__": {
         "default": "./src/models.ts"
@@ -71,7 +80,6 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@openai/codex": "0.120.0",
     "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",

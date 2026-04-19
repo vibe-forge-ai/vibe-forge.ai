@@ -583,7 +583,7 @@ export async function resolveSessionBase(
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
 
-  const binaryPath = resolveCodexBinaryPath(env)
+  const binaryPath = resolveCodexBinaryPath(env, cwd)
   const spawnEnv = buildSpawnEnv(env)
   await mkdir(resolve(spawnEnv.HOME ?? process.env.HOME!, '.codex'), { recursive: true })
 

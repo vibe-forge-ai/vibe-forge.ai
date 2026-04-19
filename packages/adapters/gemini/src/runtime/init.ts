@@ -1,16 +1,13 @@
-import { execFile } from 'node:child_process'
 import { mkdir, rm } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { promisify } from 'node:util'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveGeminiBinaryPath } from '#~/paths.js'
+import { GEMINI_CLI_PACKAGE, GEMINI_CLI_VERSION, resolveGeminiBinaryPath } from '#~/paths.js'
 
 import { prepareGeminiNativeHooks } from './native-hooks'
-import { resolveGeminiMockHome, syncGeminiMockHomeSymlink } from './shared'
-
-const execFileAsync = promisify(execFile)
+import { resolveGeminiAdapterConfig, resolveGeminiMockHome, syncGeminiMockHomeSymlink } from './shared'
 
 const syncGeminiMockHomeSkills = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
   const mockHome = resolveGeminiMockHome(ctx)
@@ -53,12 +50,18 @@ const syncGeminiMockHomeSkillEntries = async (ctx: Pick<AdapterCtx, 'assets' | '
 export const initGeminiAdapter = async (ctx: AdapterCtx) => {
   prepareGeminiNativeHooks(ctx)
 
-  const binaryPath = resolveGeminiBinaryPath(ctx.env)
-
-  try {
-    await execFileAsync(binaryPath, ['--version'])
-  } catch {
-  }
+  const adapterConfig = resolveGeminiAdapterConfig(ctx)
+  ctx.env.__VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__ = await ensureManagedNpmCli({
+    adapterKey: 'gemini',
+    binaryName: 'gemini',
+    bundledPath: resolveGeminiBinaryPath(ctx.env, ctx.cwd),
+    config: adapterConfig.cli,
+    cwd: ctx.cwd,
+    defaultPackageName: GEMINI_CLI_PACKAGE,
+    defaultVersion: GEMINI_CLI_VERSION,
+    env: ctx.env,
+    logger: ctx.logger
+  })
 
   await mkdir(resolve(resolveGeminiMockHome(ctx), '.gemini'), { recursive: true })
   await syncGeminiMockHomeSkillEntries(ctx)

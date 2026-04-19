@@ -27,6 +27,7 @@
     "vf": "./cli.js"
   },
   "scripts": {
+    "postinstall": "node postinstall.js",
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/cli/__tests__"
   },
   "dependencies": {

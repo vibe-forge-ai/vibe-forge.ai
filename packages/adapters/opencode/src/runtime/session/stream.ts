@@ -37,7 +37,7 @@ export const createStreamOpenCodeSession = async (
     planAgent: adapterConfig.native.planAgent,
     permissionMode: options.permissionMode
   })
-  const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
+  const binaryPath = resolveOpenCodeBinaryPath(ctx.env, ctx.cwd, adapterConfig.native.cli)
   const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.native.titlePrefix)
   const systemPromptFile = await ensureSystemPromptFile(ctx, options)
   const childEnv = await buildChildEnv({ ctx, options, adapterConfig, systemPromptFile })

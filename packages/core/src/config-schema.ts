@@ -60,6 +60,16 @@ export const adapterConfigCommonSchema = z.object({
   excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter')
 })
 
+export const adapterNativeCliConfigSchema = z.object({
+  source: z.enum(['managed', 'system', 'path']).optional().describe('Native CLI source'),
+  path: z.string().optional().describe('Native CLI binary path when source is path'),
+  package: z.string().optional().describe('Managed npm package name'),
+  version: z.string().optional().describe('Managed npm package version'),
+  autoInstall: z.boolean().optional().describe('Install the managed CLI when no usable binary is found'),
+  prepareOnInstall: z.boolean().optional().describe('Preinstall this managed CLI during Vibe Forge package install'),
+  npmPath: z.string().optional().describe('npm binary used for managed installs')
+})
+
 export const modelServiceConfigSchema = z.object({
   title: z.string().optional().describe('Display title'),
   description: z.string().optional().describe('Display description'),

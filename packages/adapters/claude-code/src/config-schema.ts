@@ -1,8 +1,14 @@
 import { z } from 'zod'
 
-import { defineAdapterConfigContribution, effortLevelSchema } from '@vibe-forge/core/config-schema'
+import {
+  adapterNativeCliConfigSchema,
+  defineAdapterConfigContribution,
+  effortLevelSchema
+} from '@vibe-forge/core/config-schema'
 
 export const claudeCodeAdapterConfigSchema = z.object({
+  cli: adapterNativeCliConfigSchema.optional().describe('Managed Claude Code CLI runtime'),
+  routerCli: adapterNativeCliConfigSchema.optional().describe('Managed Claude Code Router CLI runtime'),
   effort: effortLevelSchema.optional().describe('Reasoning effort level'),
   ccrOptions: z.object({
     LOG: z.boolean().optional().describe('Enable CCR logging'),
@@ -41,7 +47,9 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
       'ccrTransformers',
       'modelFallbacks',
       'settingsContent',
-      'nativeEnv'
+      'nativeEnv',
+      'cli',
+      'routerCli'
     ] as const
   }
 })

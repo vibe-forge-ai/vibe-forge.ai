@@ -1,15 +1,13 @@
-import { execFile } from 'node:child_process'
 import { join } from 'node:path'
 import process from 'node:process'
-import { promisify } from 'node:util'
 
 import type { AdapterCtx } from '@vibe-forge/types'
 import { syncSymlinkTarget } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveOpenCodeBinaryPath } from '#~/paths.js'
+import { OPENCODE_CLI_PACKAGE, OPENCODE_CLI_VERSION, resolveOpenCodeBinaryPath } from '#~/paths.js'
 import { ensureOpenCodeNativeHooksInstalled } from './native-hooks'
-
-const execFileAsync = promisify(execFile)
+import { resolveAdapterConfig } from './session/shared'
 
 const ensureSymlink = async (sourcePath: string, targetPath: string) => {
   await syncSymlinkTarget({
@@ -19,12 +17,18 @@ const ensureSymlink = async (sourcePath: string, targetPath: string) => {
 }
 
 export const initOpenCodeAdapter = async (ctx: AdapterCtx) => {
-  const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
-
-  try {
-    await execFileAsync(binaryPath, ['--version'])
-  } catch {
-  }
+  const adapterConfig = resolveAdapterConfig(ctx)
+  ctx.env.__VF_PROJECT_AI_ADAPTER_OPENCODE_CLI_PATH__ = await ensureManagedNpmCli({
+    adapterKey: 'opencode',
+    binaryName: 'opencode',
+    bundledPath: resolveOpenCodeBinaryPath(ctx.env, ctx.cwd, adapterConfig.native.cli),
+    config: adapterConfig.native.cli,
+    cwd: ctx.cwd,
+    defaultPackageName: OPENCODE_CLI_PACKAGE,
+    defaultVersion: OPENCODE_CLI_VERSION,
+    env: ctx.env,
+    logger: ctx.logger
+  })
 
   const realHome = process.env.__VF_PROJECT_REAL_HOME__
   const aiHome = process.env.HOME

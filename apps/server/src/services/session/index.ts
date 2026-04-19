@@ -20,6 +20,7 @@ import type {
   SessionInfo,
   SessionPromptType
 } from '@vibe-forge/types'
+import { resolveProjectPrimaryWorkspaceFolder } from '@vibe-forge/utils/project-cache-path'
 
 import { handleChannelSessionEvent, resolveChannelSessionMcpServers } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
@@ -426,8 +427,8 @@ export async function startAdapterSession(
         }
       )
       const adapterCwd = resolvedConfig.workspace?.cwd ?? promptCwd
-      const primaryWorkspaceFolder = processEnv.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__?.trim() ||
-        processEnv.__VF_PROJECT_WORKSPACE_FOLDER__?.trim() ||
+      const primaryWorkspaceFolder = resolveProjectPrimaryWorkspaceFolder(adapterCwd, processEnv) ??
+        processEnv.__VF_PROJECT_WORKSPACE_FOLDER__?.trim() ??
         promptCwd
       const env = {
         ...processEnv,
