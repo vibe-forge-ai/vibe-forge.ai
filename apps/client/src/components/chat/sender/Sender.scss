@@ -22,7 +22,6 @@
   transition: all .2s;
 
   &:focus-within {
-    border-color: #3b82f6;
     background-color: var(--input-focus-bg, #f9fafb);
     box-shadow: none;
   }

@@ -8,6 +8,7 @@ import type { SkillMarketViewProps } from './SkillMarketView.types'
 import { SkillRegistryErrors } from './SkillRegistryErrors'
 import { ALL_REGISTRIES, ALL_SKILL_SOURCES } from './skill-hub-utils'
 import type { SkillHubInstallFilter, SkillHubSortKey } from './skill-hub-utils'
+import { useSkillMarketQueryInput } from './use-skill-market-query-input'
 
 export function SkillMarketView({
   canLoadMore,
@@ -35,6 +36,10 @@ export function SkillMarketView({
 }: SkillMarketViewProps) {
   const { t } = useTranslation()
   const [actionsOpen, setActionsOpen] = React.useState(false)
+  const { draftQuery, flushDraftQuery, setDraftQuery } = useSkillMarketQueryInput({
+    query,
+    onQueryChange
+  })
   const hasRegistryFilter = registry !== ALL_REGISTRIES
   const hasSourceFilter = sourceFilter !== ALL_SKILL_SOURCES
   const hasInstallFilter = installFilter !== 'all'
@@ -79,8 +84,16 @@ export function SkillMarketView({
           }
           placeholder={t('knowledge.skills.searchHub')}
           allowClear
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          value={draftQuery}
+          onBlur={() => flushDraftQuery()}
+          onChange={(event) => {
+            const nextQuery = event.target.value
+            setDraftQuery(nextQuery)
+            if (nextQuery === '') {
+              flushDraftQuery('')
+            }
+          }}
+          onPressEnter={() => flushDraftQuery()}
         />
       </div>
       <div className={`knowledge-base-view__skill-market-actions ${actionsOpen ? 'is-open' : ''}`}>

@@ -548,7 +548,6 @@
       "title": "会话目标",
       "lockedHint": "创建后已固定",
       "creatingHint": "正在创建会话",
-      "defaultSummary": "使用当前项目默认上下文",
       "missingResourceWarning": "请先选择当前模式下的资源",
       "modes": {
         "default": "默认",
@@ -909,13 +908,6 @@
         "empty": "暂未发现 Agent，加入实体定义文件后即可展示。",
         "create": "快速创建 Agent",
         "createToast": "请创建实体定义文件，保存后刷新页面。"
-      },
-      "help": {
-        "title": "一些帮助",
-        "item1": "流程文件支持 name/description/params 等元信息，便于识别和调用",
-        "item2": "实体可使用 index.json 或 README.md 描述能力与职责",
-        "item3": "创建完成后刷新页面即可出现在这里",
-        "footer": "需要更多引导时，可在流程描述中写明使用方式"
       }
     },
     "attachments": {

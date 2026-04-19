@@ -59,7 +59,7 @@ export function SenderSessionTargetBar({
   const isControlDisabled = locked || disabled === true
   const selectedLabel = draft.label ?? draft.name
   const selectedText = activeType === 'default'
-    ? t('chat.sessionTarget.defaultSummary')
+    ? null
     : selectedLabel ?? t(`chat.sessionTarget.placeholders.${activeType}`)
 
   const handleSelect = (type: ChatSessionTargetType, resource?: ChatSessionTargetResource) => {
@@ -88,6 +88,7 @@ export function SenderSessionTargetBar({
       key: type,
       label: t(`chat.sessionTarget.modes.${type}`),
       icon: <span className='material-symbols-rounded sender-session-target__menu-icon'>{modeIcons[type]}</span>,
+      popupClassName: 'sender-session-target__submenu-popup',
       children: resourcesByType[type].length > 0
         ? resourcesByType[type].map(resource => ({
           key: `${type}${menuKeySeparator}${type === 'workspace' ? resource.id : resource.name}`,
@@ -128,9 +129,19 @@ export function SenderSessionTargetBar({
     <div className={`sender-session-target ${locked ? 'is-locked' : ''}`}>
       <div className='sender-session-target__controls'>
         <Dropdown
-          menu={{ items: menuItems, onClick: handleMenuClick }}
+          menu={{
+            items: menuItems,
+            onClick: handleMenuClick,
+            className: 'sender-session-target__dropdown-menu',
+            expandIcon: (
+              <span className='material-symbols-rounded sender-session-target__submenu-chevron'>
+                chevron_right
+              </span>
+            )
+          }}
           trigger={['click']}
           placement='topLeft'
+          overlayClassName='sender-session-target__dropdown'
           disabled={isControlDisabled}
         >
           <button
@@ -146,7 +157,9 @@ export function SenderSessionTargetBar({
               <span className='sender-session-target__trigger-mode'>
                 {t(`chat.sessionTarget.modes.${activeType}`)}
               </span>
-              <span className='sender-session-target__trigger-value'>{selectedText}</span>
+              {selectedText != null && (
+                <span className='sender-session-target__trigger-value'>{selectedText}</span>
+              )}
             </span>
             <span className='material-symbols-rounded sender-session-target__trigger-chevron'>expand_more</span>
           </button>

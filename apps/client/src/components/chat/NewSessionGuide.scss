@@ -74,7 +74,7 @@
 
 .new-session-guide__grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -202,32 +202,6 @@
   color: var(--sub-text-color);
 }
 
-.new-session-guide__help {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.new-session-guide__help-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--sub-text-color);
-  line-height: 1.4;
-}
-
-.new-session-guide__help-icon {
-  font-size: 14px;
-  margin-top: 2px;
-  color: var(--sub-text-color);
-}
-
-.new-session-guide__help-footer {
-  font-size: 12px;
-  color: var(--sub-text-color);
-}
-
 .new-session-guide__more {
   font-size: 11px;
   color: var(--sub-text-color);
@@ -310,20 +284,6 @@
   overflow-wrap: anywhere;
 }
 
-.new-session-guide__compact-help-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--sub-text-color);
-
-  > span:last-child {
-    overflow-wrap: anywhere;
-  }
-}
-
 .new-session-guide__compact-inline-actions {
   display: flex;
   align-items: center;
@@ -383,14 +343,7 @@
     display: none;
   }
 
-  .new-session-guide--compact .new-session-guide__compact-help-item {
-    line-height: 1.35;
-  }
-
   .new-session-guide--compact .new-session-guide__compact-primary-desc,
-  .new-session-guide--compact
-    .new-session-guide__compact-help-item
-    > span:last-child,
   .new-session-guide--compact .new-session-guide__announcements-item > span {
     overflow-wrap: anywhere;
   }
