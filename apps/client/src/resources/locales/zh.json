@@ -458,6 +458,7 @@
     "workspaceDrawerRefresh": "刷新工作区",
     "workspaceDrawerForceSync": "强制同步",
     "workspaceDrawerDisplayMode": "展示模式",
+    "workspaceDrawerLocateFile": "定位文件",
     "workspaceDrawerExpandAll": "展开",
     "workspaceDrawerCollapseAll": "折叠",
     "workspaceDrawerToggleSection": "展开或折叠分栏",

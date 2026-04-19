@@ -30,6 +30,17 @@
   gap: 4px;
 }
 
+.chat-workspace-drawer__toolbar-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-workspace-drawer__toolbar-button-wrap {
+  display: inline-flex;
+}
+
 .chat-workspace-drawer__view-btn.ant-btn.ant-btn-text {
   min-width: 0;
   position: relative;

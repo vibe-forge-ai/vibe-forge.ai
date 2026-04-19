@@ -56,11 +56,12 @@ export function ChatWorkspaceDrawer({
       id: (prev?.id ?? 0) + 1
     }))
   }
-  const handleWorkspaceTreeCommand = (action: WorkspaceTreeCommand['action']) => {
+  const handleWorkspaceTreeCommand = (action: WorkspaceTreeCommand['action'], path?: string) => {
     setActiveView('tree')
     setWorkspaceTreeCommand(prev => ({
       action,
-      id: (prev?.id ?? 0) + 1
+      id: (prev?.id ?? 0) + 1,
+      path
     }))
   }
 
@@ -75,6 +76,7 @@ export function ChatWorkspaceDrawer({
         onChangedTreeCommand={handleChangedTreeCommand}
         onForceSync={handleForceSync}
         onWorkspaceTreeCommand={handleWorkspaceTreeCommand}
+        selectedFilePath={selectedFilePath}
       />
 
       <div className='chat-workspace-drawer__body'>

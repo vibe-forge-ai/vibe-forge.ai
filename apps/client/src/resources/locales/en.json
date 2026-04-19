@@ -457,6 +457,7 @@
     "workspaceDrawerRefresh": "Refresh workspace",
     "workspaceDrawerForceSync": "Force sync",
     "workspaceDrawerDisplayMode": "Display mode",
+    "workspaceDrawerLocateFile": "Reveal file",
     "workspaceDrawerExpandAll": "Expand",
     "workspaceDrawerCollapseAll": "Collapse",
     "workspaceDrawerToggleSection": "Expand or collapse section",

@@ -37,7 +37,8 @@ export function ChatWorkspaceDrawerToolbar({
   onChangedLayoutChange,
   onChangedTreeCommand,
   onForceSync,
-  onWorkspaceTreeCommand
+  onWorkspaceTreeCommand,
+  selectedFilePath
 }: {
   activeView: WorkspaceDrawerView
   changedFilesCount: number
@@ -46,7 +47,8 @@ export function ChatWorkspaceDrawerToolbar({
   onChangedLayoutChange: (layout: ChangedFilesLayout) => void
   onChangedTreeCommand: (action: ChangedTreeCommand['action']) => void
   onForceSync: () => void
-  onWorkspaceTreeCommand: (action: WorkspaceTreeCommand['action']) => void
+  onWorkspaceTreeCommand: (action: WorkspaceTreeCommand['action'], path?: string) => void
+  selectedFilePath?: string | null
 }) {
   const { t } = useTranslation()
   const viewItems = useMemo(() => [
@@ -66,23 +68,6 @@ export function ChatWorkspaceDrawerToolbar({
       icon: renderMenuIcon('sync'),
       onClick: onForceSync
     },
-    ...(activeView === 'tree'
-      ? [
-        menuDivider,
-        {
-          key: 'expand-all',
-          label: t('chat.workspaceDrawerExpandAll'),
-          icon: renderMenuIcon('unfold_more'),
-          onClick: () => onWorkspaceTreeCommand('expand')
-        },
-        {
-          key: 'collapse-all',
-          label: t('chat.workspaceDrawerCollapseAll'),
-          icon: renderMenuIcon('unfold_less'),
-          onClick: () => onWorkspaceTreeCommand('collapse')
-        }
-      ]
-      : []),
     ...(activeView === 'changes'
       ? [
         menuDivider,
@@ -96,18 +81,6 @@ export function ChatWorkspaceDrawerToolbar({
             icon: renderMenuIcon(changedLayout === item.key ? 'check' : item.icon),
             onClick: () => onChangedLayoutChange(item.key)
           }))
-        },
-        {
-          key: 'expand-all',
-          label: t('chat.workspaceDrawerExpandAll'),
-          icon: renderMenuIcon('unfold_more'),
-          onClick: () => onChangedTreeCommand('expand')
-        },
-        {
-          key: 'collapse-all',
-          label: t('chat.workspaceDrawerCollapseAll'),
-          icon: renderMenuIcon('unfold_less'),
-          onClick: () => onChangedTreeCommand('collapse')
         }
       ]
       : [])
@@ -115,11 +88,24 @@ export function ChatWorkspaceDrawerToolbar({
     activeView,
     changedLayout,
     onChangedLayoutChange,
-    onChangedTreeCommand,
     onForceSync,
-    onWorkspaceTreeCommand,
     t
   ])
+  const hasSelectedFile = selectedFilePath != null && selectedFilePath !== ''
+  const handleExpandAll = () => {
+    if (activeView === 'tree') {
+      onWorkspaceTreeCommand('expand')
+      return
+    }
+    onChangedTreeCommand('expand')
+  }
+  const handleCollapseAll = () => {
+    if (activeView === 'tree') {
+      onWorkspaceTreeCommand('collapse')
+      return
+    }
+    onChangedTreeCommand('collapse')
+  }
 
   return (
     <div className='chat-workspace-drawer__toolbar'>
@@ -141,21 +127,56 @@ export function ChatWorkspaceDrawerToolbar({
           </Tooltip>
         ))}
       </div>
-      <Dropdown
-        menu={{ items: moreMenuItems }}
-        overlayClassName='chat-workspace-drawer-more-dropdown'
-        placement='bottomRight'
-        trigger={['click']}
-      >
-        <Button
-          type='text'
-          className='chat-workspace-drawer__icon-btn'
-          aria-label={t('common.moreActions')}
-          title={t('common.moreActions')}
+      <div className='chat-workspace-drawer__toolbar-actions'>
+        <Tooltip title={t('chat.workspaceDrawerLocateFile')}>
+          <span className='chat-workspace-drawer__toolbar-button-wrap'>
+            <Button
+              type='text'
+              className='chat-workspace-drawer__icon-btn'
+              aria-label={t('chat.workspaceDrawerLocateFile')}
+              disabled={!hasSelectedFile}
+              onClick={() => onWorkspaceTreeCommand('locate', selectedFilePath ?? undefined)}
+            >
+              <span className='material-symbols-rounded'>my_location</span>
+            </Button>
+          </span>
+        </Tooltip>
+        <Tooltip title={t('chat.workspaceDrawerExpandAll')}>
+          <Button
+            type='text'
+            className='chat-workspace-drawer__icon-btn'
+            aria-label={t('chat.workspaceDrawerExpandAll')}
+            onClick={handleExpandAll}
+          >
+            <span className='material-symbols-rounded'>unfold_more</span>
+          </Button>
+        </Tooltip>
+        <Tooltip title={t('chat.workspaceDrawerCollapseAll')}>
+          <Button
+            type='text'
+            className='chat-workspace-drawer__icon-btn'
+            aria-label={t('chat.workspaceDrawerCollapseAll')}
+            onClick={handleCollapseAll}
+          >
+            <span className='material-symbols-rounded'>unfold_less</span>
+          </Button>
+        </Tooltip>
+        <Dropdown
+          menu={{ items: moreMenuItems }}
+          overlayClassName='chat-workspace-drawer-more-dropdown'
+          placement='bottomRight'
+          trigger={['click']}
         >
-          <span className='material-symbols-rounded'>more_vert</span>
-        </Button>
-      </Dropdown>
+          <Button
+            type='text'
+            className='chat-workspace-drawer__icon-btn'
+            aria-label={t('common.moreActions')}
+            title={t('common.moreActions')}
+          >
+            <span className='material-symbols-rounded'>more_vert</span>
+          </Button>
+        </Dropdown>
+      </div>
     </div>
   )
 }

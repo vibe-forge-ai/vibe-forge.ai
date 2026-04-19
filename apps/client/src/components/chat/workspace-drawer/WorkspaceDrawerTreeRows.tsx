@@ -112,6 +112,7 @@ export function WorkspaceDrawerTreeRows({
                   } ${canToggleDirectory ? '' : 'is-disabled'}`}
                   aria-disabled={!canToggleDirectory}
                   aria-label={getTreeNodeTitle(node)}
+                  data-workspace-tree-path={node.path}
                   style={getTreeRowStyle(depth)}
                   tabIndex={canToggleDirectory ? undefined : -1}
                   title={isLinkedNode ? undefined : node.path}
@@ -134,6 +135,7 @@ export function WorkspaceDrawerTreeRows({
                   } ${isLinkedNode ? 'is-symlink' : ''} ${canOpenFile ? '' : 'is-disabled'}`}
                   aria-disabled={!canOpenFile}
                   aria-label={getTreeNodeTitle(node)}
+                  data-workspace-tree-path={node.path}
                   style={getTreeRowStyle(depth)}
                   tabIndex={canOpenFile ? undefined : -1}
                   title={isLinkedNode ? undefined : node.path}
