@@ -130,6 +130,10 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.webAuth as Record<string, unknown> | undefined
     ) as Config['webAuth'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
+    skills: mergeRecord(
+      left?.skills as Record<string, unknown> | undefined,
+      right?.skills as Record<string, unknown> | undefined
+    ) as Config['skills'],
     plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
     marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }

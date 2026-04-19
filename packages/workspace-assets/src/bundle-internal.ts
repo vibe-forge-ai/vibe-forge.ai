@@ -349,6 +349,7 @@ export async function collectWorkspaceAssets(params: {
   useDefaultVibeForgeMcpServer?: boolean
 }): Promise<{
   assets: WorkspaceAsset[]
+  configs: [Config?, Config?]
   defaultExcludeMcpServers: string[]
   defaultIncludeMcpServers: string[]
   entities: Array<Extract<WorkspaceAsset, { kind: 'entity' }>>
@@ -543,6 +544,7 @@ export async function collectWorkspaceAssets(params: {
 
   return {
     assets,
+    configs: [config, userConfig],
     defaultExcludeMcpServers: [
       ...(config?.defaultExcludeMcpServers ?? []),
       ...(userConfig?.defaultExcludeMcpServers ?? [])

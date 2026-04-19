@@ -78,6 +78,14 @@ export interface Skill {
   name?: string
   description?: string
   always?: boolean
+  dependencies?: Array<
+    | string
+    | {
+      name: string
+      source?: string
+      registry?: string
+    }
+  >
 }
 
 export interface Definition<T> {

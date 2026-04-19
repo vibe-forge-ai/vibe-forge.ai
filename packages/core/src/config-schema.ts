@@ -143,6 +143,17 @@ export const webAuthConfigSchema = z.object({
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
 })
 
+export const skillRegistryConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable remote skill registry resolution'),
+  url: z.string().optional().describe('Base URL for remote skill registry search and download'),
+  searchUrl: z.string().optional().describe('Remote skill registry search endpoint'),
+  downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
+})
+
+export const skillsConfigSchema = z.object({
+  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings')
+})
+
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({
     id: z.string().min(1).describe('Plugin package name or short id'),
@@ -285,6 +296,7 @@ export const generalConfigSectionSchema = z.object({
   permissions: permissionsConfigSchema.optional(),
   env: z.record(z.string(), z.string()).optional(),
   notifications: notificationConfigSchema.optional(),
+  skills: skillsConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional()
 })
 
@@ -340,6 +352,7 @@ export const baseConfigFileSchema = z.object({
   announcements: z.array(z.string()).optional(),
   shortcuts: shortcutsConfigSchema.optional(),
   notifications: notificationConfigSchema.optional(),
+  skills: skillsConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional(),
   conversation: conversationConfigSchema.optional(),
   plugins: pluginConfigSchema.optional(),

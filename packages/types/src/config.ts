@@ -67,6 +67,17 @@ export interface NotificationConfig {
   events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
 }
 
+export interface SkillRegistryConfig {
+  enabled?: boolean
+  url?: string
+  searchUrl?: string
+  downloadUrl?: string
+}
+
+export interface SkillsConfig {
+  registry?: string | SkillRegistryConfig
+}
+
 export interface WorkspaceConfigEntry {
   enabled?: boolean
   name?: string
@@ -279,6 +290,7 @@ export interface Config {
     switchPermissionMode?: string
   }
   notifications?: NotificationConfig
+  skills?: SkillsConfig
   webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
@@ -330,6 +342,7 @@ export interface ConfigSection {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    skills?: Config['skills']
     webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']
