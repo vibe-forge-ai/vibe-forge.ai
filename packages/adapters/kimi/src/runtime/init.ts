@@ -142,11 +142,16 @@ const ensureManagedDirs = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
   await mkdir(paths.pythonBinDir, { recursive: true })
 }
 
-export const initKimiAdapter = async (ctx: AdapterCtx) => {
-  prepareKimiNativeHooks(ctx)
-
+export const ensureKimiCli = async (
+  ctx: AdapterCtx,
+  options: { defaultSource?: 'managed' | 'system' | 'path' } = {}
+) => {
   const adapterConfig = resolveAdapterConfig(ctx)
-  const installOptions = resolveKimiCliInstallOptions(ctx.env, adapterConfig)
+  const resolvedInstallOptions = resolveKimiCliInstallOptions(ctx.env, adapterConfig)
+  const installOptions = {
+    ...resolvedInstallOptions,
+    source: resolvedInstallOptions.source ?? options.defaultSource
+  }
   const probeEnv = toProcessEnv({
     ...process.env,
     ...ctx.env
@@ -155,7 +160,7 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
   if (installOptions.binaryPath != null) {
     if (await canRunKimiBinary(installOptions.binaryPath, probeEnv)) {
       ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = installOptions.binaryPath
-      return
+      return installOptions.binaryPath
     }
     throw new Error(`Configured Kimi CLI path is not executable: ${installOptions.binaryPath}`)
   }
@@ -168,13 +173,13 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
     const managedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
     if (managedBinaryPath != null && await canRunKimiBinary(managedBinaryPath, probeEnv)) {
       ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = managedBinaryPath
-      return
+      return managedBinaryPath
     }
   }
 
   if (installOptions.source !== 'managed' && await canRunKimiBinary('kimi', probeEnv)) {
     ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = 'kimi'
-    return
+    return 'kimi'
   }
 
   if (!installOptions.autoInstall) {
@@ -216,4 +221,10 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
   }
 
   ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = installedBinaryPath
+  return installedBinaryPath
+}
+
+export const initKimiAdapter = async (ctx: AdapterCtx) => {
+  prepareKimiNativeHooks(ctx)
+  await ensureKimiCli(ctx)
 }

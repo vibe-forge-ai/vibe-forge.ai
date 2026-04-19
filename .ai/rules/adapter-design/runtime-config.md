@@ -53,6 +53,15 @@ worktree 场景下，共享 CLI cache 必须通过 [`packages/utils/src/project-
 - Kimi：`adapters.kimi.cli.package`、`adapters.kimi.cli.version`、`adapters.kimi.cli.python`、`adapters.kimi.cli.uvPath`
 - 环境变量覆盖遵循 `__VF_PROJECT_AI_ADAPTER_<NAME>_INSTALL_PACKAGE__`、`__VF_PROJECT_AI_ADAPTER_<NAME>_INSTALL_VERSION__`、`__VF_PROJECT_AI_ADAPTER_<NAME>_AUTO_INSTALL__`
 
+预热入口：
+
+- `vf adapter prepare` 只准备配置里 `prepareOnInstall: true` 的 CLI
+- `vf adapter prepare --all` 准备所有已安装 adapter 暴露的 CLI target
+- `vf adapter prepare codex claude-code gemini` 按 adapter 名显式准备；`claude-code.routerCli` / `ccr` 可单独准备 Claude Code Router
+- `@vibe-forge/cli` 的 `postinstall` 只在项目根 `.ai.config.json` 或 `infra/.ai.config.json` 里发现 `adapters.<name>.cli.prepareOnInstall: true` / `routerCli.prepareOnInstall: true` 时触发同一套 prepare 逻辑
+- postinstall 默认不在 `CI=true` 时执行；可以用 `VIBE_FORGE_POSTINSTALL_PREPARE=1` 显式允许，或用 `VIBE_FORGE_SKIP_ADAPTER_PREPARE=1` / `VIBE_FORGE_SKIP_POSTINSTALL=1` 跳过
+- postinstall 失败默认只告警，不阻断依赖安装；需要严格失败时设置 `VIBE_FORGE_POSTINSTALL_STRICT=1`
+
 ## Claude Code
 
 - 实现入口：

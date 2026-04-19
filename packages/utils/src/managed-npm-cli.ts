@@ -16,6 +16,7 @@ export interface ManagedNpmCliConfig {
   package?: string
   version?: string
   autoInstall?: boolean
+  prepareOnInstall?: boolean
   npmPath?: string
 }
 

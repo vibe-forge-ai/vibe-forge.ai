@@ -9,6 +9,7 @@ const kimiCliConfigSchema = z.object({
   version: z.string().optional().describe('Managed uv package version'),
   python: z.string().optional().describe('Python version used by uv tool install'),
   autoInstall: z.boolean().optional().describe('Install Kimi CLI when no usable binary is found'),
+  prepareOnInstall: z.boolean().optional().describe('Preinstall Kimi CLI during Vibe Forge package install'),
   uvPath: z.string().optional().describe('uv binary used for managed installs')
 })
 

@@ -66,6 +66,7 @@ export const adapterNativeCliConfigSchema = z.object({
   package: z.string().optional().describe('Managed npm package name'),
   version: z.string().optional().describe('Managed npm package version'),
   autoInstall: z.boolean().optional().describe('Install the managed CLI when no usable binary is found'),
+  prepareOnInstall: z.boolean().optional().describe('Preinstall this managed CLI during Vibe Forge package install'),
   npmPath: z.string().optional().describe('npm binary used for managed installs')
 })
 

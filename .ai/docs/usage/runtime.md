@@ -56,6 +56,7 @@ adapters:
     cli:
       source: managed
       version: 0.121.0
+      prepareOnInstall: true
   claude-code:
     cli:
       version: 2.1.114
@@ -75,6 +76,38 @@ adapters:
 - `path`：只使用 `cli.path` 指向的 binary
 
 把 `autoInstall` 设为 `false` 可以关闭首次使用时的自动安装。npm 托管 adapter 还支持 `cli.package`、`cli.npmPath`；Kimi 支持 `cli.package`、`cli.python`、`cli.uvPath`。
+
+如果希望提前把托管 CLI 下载到项目共享 cache，可以显式运行：
+
+```bash
+vf adapter prepare codex claude-code gemini
+vf adapter prepare claude-code.routerCli
+vf adapter prepare --all
+```
+
+不传 target 时，`vf adapter prepare` 只准备配置中声明了 `prepareOnInstall: true` 的 CLI：
+
+```json
+{
+  "adapters": {
+    "codex": {
+      "cli": {
+        "source": "managed",
+        "version": "0.121.0",
+        "prepareOnInstall": true
+      }
+    },
+    "claude-code": {
+      "routerCli": {
+        "version": "1.0.73",
+        "prepareOnInstall": true
+      }
+    }
+  }
+}
+```
+
+`@vibe-forge/cli` 的 package `postinstall` 也会读取项目根的 `.ai.config.json` 或 `infra/.ai.config.json`。只有发现上述 `prepareOnInstall: true` 时才会调用 `vf adapter prepare --from-postinstall`，否则不做网络下载。postinstall 默认跳过 `CI=true`；如需在 CI 里预热，设置 `VIBE_FORGE_POSTINSTALL_PREPARE=1`。如需跳过，设置 `VIBE_FORGE_SKIP_ADAPTER_PREPARE=1` 或 `VIBE_FORGE_SKIP_POSTINSTALL=1`。
 
 同样可以用环境变量临时覆盖，`<ADAPTER>` 使用大写下划线，例如 `CODEX`、`GEMINI`、`CLAUDE_CODE`、`CLAUDE_CODE_ROUTER`：
 
