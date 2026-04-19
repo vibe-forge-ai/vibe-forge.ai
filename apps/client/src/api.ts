@@ -42,10 +42,6 @@ export type {
   RuleDetail,
   RuleSummary,
   SkillDetail,
-  SkillHubInstallResult,
-  SkillHubItem,
-  SkillHubRegistrySummary,
-  SkillHubSearchResult,
   SkillSummary,
   SpecDetail,
   SpecSummary,
@@ -58,13 +54,11 @@ export {
   getSkillDetail,
   getSpecDetail,
   importSkillArchive,
-  installSkillHubItem,
   listEntities,
   listRules,
   listSkills,
   listSpecs,
-  listWorkspaces,
-  searchSkillHub
+  listWorkspaces
 } from './api/knowledge'
 
 // 项目与工程 API
@@ -94,6 +88,13 @@ export {
   updateSessionTitle,
   updateSessionWorkspaceFile
 } from './api/sessions'
+export type {
+  SkillHubInstallResult,
+  SkillHubItem,
+  SkillHubRegistrySummary,
+  SkillHubSearchResult
+} from './api/skill-hub'
+export { installSkillHubItem, searchSkillHub } from './api/skill-hub'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
