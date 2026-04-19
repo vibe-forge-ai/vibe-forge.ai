@@ -159,9 +159,8 @@ export const scheduleTerminalRuntimeDispose = (runtimeKey: string) => {
   }, IDLE_TIMEOUT_MS)
 }
 
-export const scheduleTerminalRuntimeDisposeByRuntime = (runtime: TerminalRuntime) => {
+export const scheduleTerminalRuntimeDisposeByRuntime = (runtime: TerminalRuntime) =>
   scheduleTerminalRuntimeDispose(runtime.runtimeKey)
-}
 
 export const ensureTerminalRuntime = (
   sessionId: string,
@@ -183,7 +182,9 @@ export const ensureTerminalRuntime = (
     if (options.rows != null) {
       existing.info.rows = normalizeDimension(options.rows, existing.info.rows, MAX_ROWS)
     }
-    existing.info.cwd = options.cwd ?? getWorkspaceFolder()
+    if (options.cwd != null) {
+      existing.info.cwd = options.cwd
+    }
     existing.info.terminalId = terminalId
     if (existing.driver == null) {
       existing.shellKind = normalizeTerminalShellKind(options.shellKind ?? existing.shellKind)

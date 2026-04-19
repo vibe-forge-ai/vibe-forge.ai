@@ -1,7 +1,9 @@
 import type { WebSocket } from 'ws'
 
+import { WORKSPACE_TERMINAL_SESSION_ID } from '@vibe-forge/types'
 import type { TerminalShellKind } from '@vibe-forge/types'
 
+import { getWorkspaceFolder } from '#~/services/config/index.js'
 import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 
 import { resizeTerminalSession, startTerminalSession } from './runtime'
@@ -14,6 +16,14 @@ import {
   sendTerminalEvent
 } from './store'
 
+const resolveTerminalWorkspaceFolder = async (sessionId: string) => {
+  if (sessionId === WORKSPACE_TERMINAL_SESSION_ID) {
+    return getWorkspaceFolder()
+  }
+
+  return await resolveSessionWorkspaceFolder(sessionId)
+}
+
 export async function attachTerminalSocket(
   sessionId: string,
   socket: WebSocket,
@@ -24,7 +34,7 @@ export async function attachTerminalSocket(
     rows?: number
   } = {}
 ) {
-  const cwd = await resolveSessionWorkspaceFolder(sessionId)
+  const cwd = await resolveTerminalWorkspaceFolder(sessionId)
   let runtime = ensureTerminalRuntime(sessionId, {
     ...options,
     cwd

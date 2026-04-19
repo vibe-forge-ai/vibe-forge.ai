@@ -13,6 +13,7 @@ export type {
   SessionStatus,
   SessionWorkspace,
   SessionWorkspaceCleanupPolicy,
+  SessionWorkspaceFileState,
   SessionWorkspaceKind,
   SessionWorkspaceState,
   TaskDetail,

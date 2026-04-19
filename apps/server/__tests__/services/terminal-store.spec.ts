@@ -37,6 +37,21 @@ describe('terminal runtime store', () => {
     expect(resolveTerminalRuntimeKey('sess-1', 'default')).toBe('sess-1')
   })
 
+  it('keeps an existing terminal cwd when later updates omit cwd', () => {
+    const runtime = ensureTerminalRuntime('sess-1', {
+      cwd: '/tmp/session-workspace'
+    })
+
+    ensureTerminalRuntime('sess-1', {
+      cols: 100,
+      rows: 30
+    })
+
+    expect(runtime.info.cwd).toBe('/tmp/session-workspace')
+    expect(runtime.info.cols).toBe(100)
+    expect(runtime.info.rows).toBe(30)
+  })
+
   it('disposes every terminal runtime owned by a chat session', () => {
     const first = ensureTerminalRuntime('sess-1', {
       terminalId: 'one',

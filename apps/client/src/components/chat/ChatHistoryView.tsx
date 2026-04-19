@@ -16,6 +16,7 @@ import type {
 import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
@@ -74,7 +75,8 @@ export function ChatHistoryView({
   adapterOptions,
   onAdapterChange,
   modelUnavailable,
-  hasAvailableModels
+  hasAvailableModels,
+  contextReferenceRequest
 }: {
   isReady: boolean
   messages: ChatMessage[]
@@ -110,6 +112,7 @@ export function ChatHistoryView({
   onAdapterChange: (adapter: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
+  contextReferenceRequest?: ContextReferenceRequest | null
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -737,6 +740,7 @@ export function ChatHistoryView({
                 modelUnavailable={modelUnavailable}
                 queueMode={queueMode}
                 onQueueModeChange={setQueueMode}
+                contextReferenceRequest={contextReferenceRequest}
               />
               <ChatStatusBar
                 draftWorkspace={workspaceDraft}

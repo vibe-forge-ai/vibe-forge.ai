@@ -19,6 +19,14 @@
 - 如果你想给项目设默认值，可以在解析后的 workspace 根目录配置文件（默认是 `.ai.config.json` / `.ai.config.yaml`，也支持 `./infra/` 或显式 `__VF_PROJECT_CONFIG_DIR__`）里设置 `conversation.createSessionWorktree`；Web UI 新建会话时会按这个项目配置初始化。
 - worktree 环境脚本通过配置页的“环境”面板维护；项目环境写入 `.ai/env/<environment-id>/`，本地环境写入 `.ai/env.local/<environment-id>/`。脚本内容使用 Monaco 编辑器编辑，详情页里的名称与脚本修改会自动写回本地文件。项目默认环境由 `conversation.worktreeEnvironment` 指定，也可以在新建会话时通过 sender 下方的环境下拉临时覆盖；本地环境在配置值里使用 `<environment-id>.local` 引用。
 
+## 工作区抽屉与文件引用
+
+- 会话页右侧工作区抽屉按当前 session workspace 展示项目目录树和 Git 改动文件。
+- 目录树支持展开、折叠、定位当前打开文件，以及通过 `Shift` 连续多选文件或文件夹。
+- 目录树节点支持右键菜单；选择 `引用到输入框` 会把当前节点或已选节点追加到 sender 的文件引用列表。
+- sender `更多` 里的文件引用弹窗复用同一套项目目录树，也支持选择文件夹。
+- 文件引用只记录 workspace-relative 路径；真正发送时仍由各 adapter 按自己的上下文文件语义处理。
+
 ## 配置页交互
 
 - 简单字段仍然在 section 页面内直接编辑。

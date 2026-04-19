@@ -25,6 +25,12 @@ export interface SessionMessageQueueState {
   next: SessionQueuedMessage[]
 }
 
+export interface SessionWorkspaceFileState {
+  openPaths: string[]
+  selectedPath?: string
+  isOpen?: boolean
+}
+
 export interface Session {
   id: string
   parentSessionId?: string
@@ -41,6 +47,7 @@ export interface Session {
   adapter?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
+  workspaceFileState?: SessionWorkspaceFileState
 }
 
 export interface SessionWorkspace {

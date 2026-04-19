@@ -1,4 +1,13 @@
 .context-file-picker {
+  --project-tree-row-hover-bg: var(
+    --workspace-drawer-row-hover-bg,
+    rgba(59, 130, 246, .09)
+  );
+  --project-tree-row-selected-bg: var(
+    --workspace-drawer-row-selected-bg,
+    rgba(59, 130, 246, .14)
+  );
+
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -19,36 +28,10 @@
     font-size: 13px;
   }
 
-  &__switcher {
-    font-size: 18px;
-    color: var(--sub-text-color, #6b7280);
-  }
-
   &__footer {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-  }
-
-  .ant-tree {
-    background: transparent;
-    color: var(--text-color);
-  }
-
-  .ant-tree-list-holder-inner {
-    gap: 2px;
-  }
-
-  .ant-tree-node-content-wrapper {
-    min-height: 34px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .ant-tree-checkbox + .ant-tree-node-content-wrapper:hover,
-  .ant-tree-node-content-wrapper:hover {
-    background: var(--tag-hover-bg, #f3f4f6);
   }
 }
 
