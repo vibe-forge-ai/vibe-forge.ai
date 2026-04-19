@@ -6,12 +6,16 @@
 
 - `vf-cli-quickstart`
 - `vf-cli-print-mode`
+- `create-entity`
+- `update-entity`
 
 其中：
 
 - `vf-cli-quickstart` 负责解释 `vf run` / `vf list` / `vf --resume`，以及 `vf config list|get|set|unset` 的基本用法。
 - `vf config` 的读命令默认面向 merged config；文本模式输出 YAML。
 - `vf config get models` / `vf config list models` 在文本模式下会把 `modelServices` 和 `models` metadata 合成可读视图；`--json` 仍返回原始配置结构。
+- `create-entity` 负责按用户需求创建新的 Vibe Forge entity，覆盖文件布局、frontmatter、继承、规则和技能引用。
+- `update-entity` 负责按用户需求更新已有 Vibe Forge entity，强调最小改动、保留现有内容和维护引用关系。
 
 典型接入方式：
 

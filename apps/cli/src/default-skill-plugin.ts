@@ -4,7 +4,9 @@ const CLI_DEFAULT_SKILL_PLUGIN_ID = '@vibe-forge/plugin-cli-skills'
 
 const CLI_DEFAULT_SKILL_NAMES = [
   'vf-cli-quickstart',
-  'vf-cli-print-mode'
+  'vf-cli-print-mode',
+  'create-entity',
+  'update-entity'
 ] as const
 
 export const getCliDefaultSkillPluginConfig = (): PluginConfig => [

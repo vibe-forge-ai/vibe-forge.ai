@@ -25,6 +25,15 @@ description: Build the app
 
 如果你修改过数据资产根目录，例如把 `.ai` 改成 `.vf`，skill 目录也会跟着变化。目录配置说明见 [数据资产目录配置](../asset-directories.md)。
 
+## CLI 内置 Skills
+
+`vf` CLI 默认会注入 `@vibe-forge/plugin-cli-skills`，提供一组不需要项目手动配置的通用说明型 skills。通常直接描述需求即可；只有需要强制指定某个 skill 时，才使用 `vf run --include-skill <name> "任务描述"`。
+
+- `vf-cli-quickstart`：说明 CLI 常用命令、配置命令和会话恢复方式。
+- `vf-cli-print-mode`：说明 print 模式、stdin 控制和权限确认。
+- `create-entity`：按用户需求创建新的 Vibe Forge entity。
+- `update-entity`：按用户需求更新已有 Vibe Forge entity，强调最小改动和维护引用关系。
+
 ## 声明依赖
 
 在 `SKILL.md` 的 frontmatter 里写 `dependencies`：
