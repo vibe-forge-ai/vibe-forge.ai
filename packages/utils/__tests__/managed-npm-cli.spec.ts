@@ -1,6 +1,11 @@
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import {
+  ensureManagedNpmCli,
   resolveManagedNpmCliBinaryPath,
   resolveManagedNpmCliInstallOptions,
   resolveManagedNpmCliPaths
@@ -58,5 +63,63 @@ describe('managed npm cli utils', () => {
     })).toBe(
       '/tmp/primary/.ai/caches/adapter-opencode/cli/npm/opencode-ai/1.14.18/node_modules/.bin/opencode'
     )
+  })
+
+  it('supports CLIs that use custom version arguments for managed install validation', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-managed-npm-cli-'))
+    const npmPath = join(workspace, 'npm')
+    await writeFile(
+      npmPath,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "10.0.0"
+  exit 0
+fi
+
+prefix=""
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--prefix" ]; then
+    shift
+    prefix="$1"
+  fi
+  shift
+done
+
+if [ -z "$prefix" ]; then
+  exit 2
+fi
+
+mkdir -p "$prefix/node_modules/.bin"
+tool="$prefix/node_modules/.bin/tool"
+{
+  printf '%s\\n' '#!/bin/sh'
+  printf '%s\\n' 'if [ "$1" = "version" ]; then echo "tool 1.0.0"; exit 0; fi'
+  printf '%s\\n' 'exit 42'
+} > "$tool"
+chmod +x "$tool"
+`
+    )
+    await chmod(npmPath, 0o755)
+
+    try {
+      const binaryPath = await ensureManagedNpmCli({
+        adapterKey: 'custom_tool',
+        binaryName: 'tool',
+        cwd: workspace,
+        defaultPackageName: '@example/tool',
+        defaultVersion: '1.0.0',
+        env: {
+          __VF_PROJECT_AI_ADAPTER_CUSTOM_TOOL_NPM_PATH__: npmPath
+        },
+        logger: {
+          info: () => undefined
+        },
+        versionArgs: ['version']
+      })
+
+      expect(binaryPath.endsWith('/node_modules/.bin/tool')).toBe(true)
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
   })
 })

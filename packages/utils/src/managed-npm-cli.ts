@@ -49,6 +49,7 @@ interface ResolveManagedNpmCliPathParams extends ResolveManagedNpmCliOptionsPara
   bundledPath?: string
   cwd?: string
   configuredPath?: string
+  versionArgs?: string[]
 }
 
 interface EnsureManagedNpmCliParams extends ResolveManagedNpmCliPathParams {
@@ -109,7 +110,12 @@ const canRunCommand = async (binaryPath: string, args: string[], env?: NodeJS.Pr
   }
 }
 
-const canRunBinary = (binaryPath: string, env?: NodeJS.ProcessEnv) => canRunCommand(binaryPath, ['--version'], env)
+const normalizeVersionArgs = (versionArgs: string[] | undefined) => (
+  versionArgs == null || versionArgs.length === 0 ? ['--version'] : versionArgs
+)
+
+const canRunBinary = (binaryPath: string, versionArgs: string[] | undefined, env?: NodeJS.ProcessEnv) =>
+  canRunCommand(binaryPath, normalizeVersionArgs(versionArgs), env)
 const canRunNpm = (binaryPath: string, env?: NodeJS.ProcessEnv) => canRunCommand(binaryPath, ['--version'], env)
 
 export const resolveManagedNpmCliInstallOptions = (
@@ -249,18 +255,18 @@ export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => 
     return explicitPath
   }
 
-  if (existsSync(paths.binaryPath) && await canRunBinary(paths.binaryPath, probeEnv)) {
+  if (existsSync(paths.binaryPath) && await canRunBinary(paths.binaryPath, params.versionArgs, probeEnv)) {
     return toRealPath(paths.binaryPath)
   }
 
   if (
     installOptions.source !== 'managed' && params.bundledPath != null &&
-    await canRunBinary(params.bundledPath, probeEnv)
+    await canRunBinary(params.bundledPath, params.versionArgs, probeEnv)
   ) {
     return toRealPath(params.bundledPath)
   }
 
-  if (installOptions.source !== 'managed' && await canRunBinary(params.binaryName, probeEnv)) {
+  if (installOptions.source !== 'managed' && await canRunBinary(params.binaryName, params.versionArgs, probeEnv)) {
     return params.binaryName
   }
 
@@ -316,7 +322,7 @@ export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => 
     }
   )
 
-  if (!await canRunBinary(paths.binaryPath, installEnv)) {
+  if (!await canRunBinary(paths.binaryPath, params.versionArgs, installEnv)) {
     throw new Error(
       `${params.binaryName} CLI installation completed, but the managed binary could not be executed.\n\n${
         buildManagedNpmCliInstallInstructions({

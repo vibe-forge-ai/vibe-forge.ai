@@ -270,7 +270,8 @@ export const ensureClaudeCodeRouterReady = async (
         env,
         logger: {
           info: () => undefined
-        }
+        },
+        versionArgs: ['version']
       })
       : await routerDeps.resolveCliPath()
     env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_ROUTER_CLI_PATH__ = cliPath
