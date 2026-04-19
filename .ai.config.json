@@ -79,5 +79,9 @@
     "sendMessage": "mod+enter",
     "clearInput": "escape",
     "newSession": "mod+k"
+  },
+  "conversation": {
+    "createSessionWorktree": true,
+    "worktreeEnvironment": "default"
   }
 }

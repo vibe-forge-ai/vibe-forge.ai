@@ -42,6 +42,8 @@
 - `start.sh`、`start.macos.sh`、`start.linux.sh`、`start.windows.ps1`：会话 adapter 进程启动前执行。
 - `destroy.sh`、`destroy.macos.sh`、`destroy.linux.sh`、`destroy.windows.ps1`：托管 worktree 删除前执行；兼容旧拼写 `destory*.sh`。
 
+本仓库内置项目环境 `default`。新建托管 worktree 时，它会先拉取默认远端；如果当前 session 分支有同名远端分支，则同步该分支，否则回退同步创建 worktree 时记录的基线分支。
+
 Windows 下 `*.ps1` 会通过 PowerShell 执行；如果你手动维护文件，也兼容同名 `*.windows.cmd` 和 `*.windows.bat`。通用脚本在 Windows 下支持 `create.ps1` / `start.ps1` / `destroy.ps1`、`.cmd` 和 `.bat` 变体；`.sh` 基础脚本不会在 Windows 上作为默认脚本执行，避免强依赖 `sh`。
 
 配置页右上角选择“项目”时，新建环境会写入 `.ai/env/<environment-id>/`，可随项目提交；选择“本地”时，新建环境会写入 `.ai/env.local/<environment-id>/`，并维护根目录 `.gitignore` 中的 `.ai/env.local/`，作为当前用户自己的配置。旧版 `.ai/env/<environment-id>.local/` 仍会按本地环境读取，但新建和保存都会使用 `.ai/env.local/`。
