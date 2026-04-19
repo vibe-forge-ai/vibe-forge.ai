@@ -1078,6 +1078,10 @@
       "projectMissing": "Project (Not created)",
       "userMissing": "User (Not created)"
     },
+    "navigation": {
+      "search": "Search config sections",
+      "noResults": "No matching sections"
+    },
     "actions": {
       "edit": "Edit",
       "save": "Save",
@@ -1366,7 +1370,7 @@
       },
       "models": {
         "items": {
-          "label": "Model Selector Entries",
+          "label": "Model Metadata Entries",
           "desc": "Model metadata keyed by `service` or `service,model`. Display metadata like alias/title/description only applies to exact `model` or `service,model` matches"
         }
       },
@@ -1528,7 +1532,7 @@
         "http": "HTTP"
       },
       "recommendedModels": {
-        "modelSelector": "Model Selector"
+        "modelSelector": "Model Metadata"
       }
     },
     "sectionGroups": {

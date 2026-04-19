@@ -22,6 +22,7 @@ export function ConfigSectionPanel({
   sectionKey,
   title,
   icon,
+  headerLeading,
   fields,
   uiSection,
   value,
@@ -40,6 +41,7 @@ export function ConfigSectionPanel({
   sectionKey: string
   title?: ReactNode
   icon?: ReactNode
+  headerLeading?: ReactNode
   fields?: FieldSpec[]
   uiSection?: ConfigUiSection
   value: unknown
@@ -78,7 +80,7 @@ export function ConfigSectionPanel({
     t
   })
   const currentViewKey = getConfigDetailRouteKey(detailRoute)
-  const hasHeader = hasHeading || headerExtra != null || detailMeta != null
+  const hasHeader = hasHeading || headerLeading != null || headerExtra != null || detailMeta != null
   const headerClassName = [
     'config-view__section-header',
     !hasHeading ? 'config-view__section-header--actions-only' : ''
@@ -120,6 +122,7 @@ export function ConfigSectionPanel({
             ? detailMeta == null
               ? (
                 <div className='config-view__section-title'>
+                  {headerLeading}
                   {icon != null && (
                     <span className='material-symbols-rounded config-view__section-icon'>
                       {icon}
@@ -130,6 +133,7 @@ export function ConfigSectionPanel({
               )
               : (
                 <div className='config-view__detail-trail'>
+                  {headerLeading}
                   <Tooltip title={t('config.detail.back')}>
                     <Button
                       size='small'
