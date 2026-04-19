@@ -1,6 +1,6 @@
 import './AdapterAccountsManager.scss'
 
-import { App, Button, Empty, Input, Popconfirm, Spin, Tag, Tooltip } from 'antd'
+import { App, Button, Empty, Input, Popconfirm, Spin, Tooltip } from 'antd'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
 
@@ -84,6 +84,37 @@ const getActionDescription = (action: AdapterAccountActionDescriptor, t: Transla
 )
 
 const normalizeText = (value: string | undefined) => value?.trim().toLowerCase() ?? ''
+const normalizeDisplayText = (value: string | undefined) => value?.trim() ?? ''
+
+const dedupeDisplayTexts = (...values: Array<string | undefined>) => {
+  const uniqueValues = new Set<string>()
+
+  return values
+    .map(normalizeDisplayText)
+    .filter((value) => {
+      if (value === '' || uniqueValues.has(value)) return false
+      uniqueValues.add(value)
+      return true
+    })
+}
+
+const parsePercentMetricValue = (value: string | undefined) => {
+  if (value == null) return undefined
+
+  const normalized = value.trim()
+  if (!normalized.endsWith('%')) return undefined
+
+  const parsed = Number(normalized.slice(0, -1))
+  if (!Number.isFinite(parsed)) return undefined
+
+  return Math.min(100, Math.max(0, parsed))
+}
+
+const getPercentRingColor = (percent: number) => {
+  if (percent >= 85) return 'var(--error-color, #ff4d4f)'
+  if (percent >= 60) return 'var(--warning-color, #faad14)'
+  return 'var(--success-color, #52c41a)'
+}
 
 const compareAccountInfo = (
   left: Pick<AdapterAccountInfo, 'key' | 'title' | 'status' | 'isDefault'>,
@@ -118,26 +149,109 @@ const renderTooltipContent = (label: string, description?: string) => {
 }
 
 const IconTag = ({
+  color,
   icon,
   label,
-  description,
-  color
+  description
 }: {
+  color?: 'default' | 'success' | 'error'
   icon: string
   label: string
   description?: string
-  color?: 'success' | 'error' | 'default'
-}) => (
-  <Tooltip title={renderTooltipContent(label, description)}>
-    <Tag
-      color={color}
-      className='adapter-account-manager__icon-tag'
-      icon={<span className='material-symbols-rounded'>{icon}</span>}
-    />
-  </Tooltip>
-)
+}) => {
+  const colorStyle = color === 'success'
+    ? {
+        color: 'var(--success-color, #52c41a)',
+        borderColor: 'color-mix(in srgb, var(--success-color, #52c41a) 36%, transparent)',
+        background: 'color-mix(in srgb, var(--success-color, #52c41a) 8%, transparent)'
+      }
+    : color === 'error'
+      ? {
+          color: 'var(--error-color, #ff4d4f)',
+          borderColor: 'color-mix(in srgb, var(--error-color, #ff4d4f) 36%, transparent)',
+          background: 'color-mix(in srgb, var(--error-color, #ff4d4f) 8%, transparent)'
+        }
+      : undefined
 
-const mergeAccounts = (
+  return (
+    <Tooltip title={renderTooltipContent(label, description)}>
+      <span className='adapter-account-manager__icon-tag' style={colorStyle} aria-label={label}>
+        <span className='material-symbols-rounded' aria-hidden='true'>{icon}</span>
+      </span>
+    </Tooltip>
+  )
+}
+
+const AccountActionButtons = ({
+  actions,
+  loadingAction,
+  onRunAction,
+  t
+}: {
+  actions: AdapterAccountActionDescriptor[]
+  loadingAction?: string
+  onRunAction: (action: AdapterAccountActionDescriptor) => Promise<void>
+  t: TranslationFn
+}) => {
+  if (actions.length === 0) return null
+
+  return (
+    <div className='adapter-account-manager__actions'>
+      {actions.map((action) => {
+        const label = getActionLabel(action, t)
+        const description = getActionDescription(action, t)
+        const icon = ACCOUNT_ACTION_ICON[action.key]
+
+        if (action.key === 'remove') {
+          return (
+            <Popconfirm
+              key={action.key}
+              title={t('config.accounts.deleteConfirmTitle', {
+                defaultValue: 'Delete the stored snapshot for {{account}}?',
+                account: label
+              })}
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
+              onConfirm={async () => {
+                await onRunAction(action)
+              }}
+            >
+              <Tooltip title={renderTooltipContent(label, description)}>
+                <Button
+                  type='default'
+                  size='small'
+                  danger
+                  loading={loadingAction === action.key}
+                  aria-label={label}
+                  className='adapter-account-manager__icon-button adapter-account-manager__header-action'
+                  icon={<span className='material-symbols-rounded'>{icon}</span>}
+                />
+              </Tooltip>
+            </Popconfirm>
+          )
+        }
+
+        return (
+          <Tooltip key={action.key} title={renderTooltipContent(label, description)}>
+            <Button
+              type='default'
+              size='small'
+              loading={loadingAction === action.key}
+              aria-label={label}
+              className='adapter-account-manager__icon-button adapter-account-manager__header-action'
+              icon={<span className='material-symbols-rounded'>{icon}</span>}
+              onClick={async () => {
+                await onRunAction(action)
+              }}
+            />
+          </Tooltip>
+        )
+      })}
+    </div>
+  )
+}
+
+export const mergeAccounts = (
   configured: Record<string, unknown>,
   discovered: AdapterAccountInfo[],
   defaultAccountKey?: string
@@ -174,38 +288,6 @@ const mergeAccounts = (
     .sort(compareAccountInfo)
 }
 
-const AccountActionButtons = ({
-  actions,
-  loadingAction,
-  onRunAction,
-  t
-}: {
-  actions: AdapterAccountActionDescriptor[]
-  loadingAction?: string
-  onRunAction: (action: AdapterAccountActionDescriptor) => void
-  t: TranslationFn
-}) => (
-  <div className='adapter-account-manager__actions'>
-    {actions.map(action => (
-      <Tooltip
-        key={action.key}
-        title={renderTooltipContent(getActionLabel(action, t), getActionDescription(action, t))}
-      >
-        <Button
-          size='small'
-          type={action.key === 'add' ? 'primary' : 'default'}
-          danger={action.key === 'remove'}
-          loading={loadingAction === action.key}
-          aria-label={getActionLabel(action, t)}
-          className='adapter-account-manager__icon-button'
-          icon={<span className='material-symbols-rounded'>{ACCOUNT_ACTION_ICON[action.key]}</span>}
-          onClick={() => onRunAction(action)}
-        />
-      </Tooltip>
-    ))}
-  </div>
-)
-
 const AccountFacts = ({
   detail,
   t
@@ -214,28 +296,12 @@ const AccountFacts = ({
   t: TranslationFn
 }) => {
   const facts = [
-    detail.email != null
-      ? {
-        key: 'email',
-        icon: 'mail',
-        label: t('config.accounts.facts.email'),
-        value: detail.email
-      }
-      : null,
     detail.accountType != null
       ? {
         key: 'accountType',
         icon: 'badge',
         label: t('config.accounts.facts.type'),
         value: detail.accountType
-      }
-      : null,
-    detail.planType != null
-      ? {
-        key: 'planType',
-        icon: 'workspace_premium',
-        label: t('config.accounts.facts.plan'),
-        value: detail.planType
       }
       : null
   ].filter((item): item is { key: string; icon: string; label: string; value: string } => item != null)
@@ -276,6 +342,21 @@ const AccountEditor = ({
     return null
   }
 
+  const editorSchema: ConfigUiObjectSchema = {
+    ...accountItemSchema,
+    fields: accountItemSchema.fields.map((field) => {
+      if (field.path.length === 1 && field.path[0] === 'description') {
+        return {
+          ...field,
+          type: 'multiline'
+        }
+      }
+
+      return field
+    })
+  }
+  const defaultAuthFilePath = `.ai/.local/adapters/${adapterKey}/accounts/${accountKey}/auth.json`
+
   return (
     <div className='adapter-account-manager__editor'>
       <div className='adapter-account-manager__section-title'>
@@ -284,26 +365,28 @@ const AccountEditor = ({
       </div>
       <SchemaObjectEditor
         value={getConfiguredAccountEntry(value, accountKey)}
-        schema={accountItemSchema}
+        schema={editorSchema}
         onChange={(nextEntry) => onChange(setConfiguredAccountEntry(value, accountKey, nextEntry))}
         t={t}
         resolveFieldLabel={(field, fallback) => getFieldLabel(t, 'adapterAccount', field.path, fallback)}
         resolveFieldDescription={(field, fallback) => {
           const translated = getFieldDescription(t, 'adapterAccount', field.path)
-          return translated !== '' ? translated : fallback
+          const baseDescription = translated !== '' ? translated : fallback
+          if (field.path.length === 1 && field.path[0] === 'authFile') {
+            const defaultLookupHint = t('config.accounts.authFileDefaultLookup', {
+              defaultValue: 'Leave empty to use {{path}}.',
+              path: defaultAuthFilePath
+            })
+
+            return [baseDescription, defaultLookupHint]
+              .map(item => item.trim())
+              .filter(item => item !== '')
+              .join(' ')
+          }
+
+          return baseDescription
         }}
       />
-      <div className='adapter-account-manager__muted'>
-        {t('config.accounts.settingsDescription', {
-          defaultValue: 'These fields are stored in adapter config and override the workspace snapshot when supported.'
-        })}
-      </div>
-      <div className='adapter-account-manager__muted'>
-        {t('config.accounts.adapterKeyHint', {
-          defaultValue: 'Adapter: {{adapter}}',
-          adapter: adapterKey
-        })}
-      </div>
     </div>
   )
 }
@@ -330,11 +413,17 @@ const AccountDetailView = ({
   const { message } = App.useApp()
   const { data, isLoading, mutate } = useSWR(
     `/api/adapters/${adapterKey}/accounts/${accountKey}`,
-    () => getAdapterAccountDetail(adapterKey, accountKey, { refresh: true })
+    () => getAdapterAccountDetail(adapterKey, accountKey)
   )
   const [loadingAction, setLoadingAction] = useState<string>()
   const detail = data?.account
   const statusMeta = formatStatus(detail?.status, t)
+  const detailNotes = detail == null ? [] : dedupeDisplayTexts(detail.source?.description, detail.description)
+  const detailActions = (detail?.actions ?? []).filter(action => action.key !== 'refresh')
+  const quotaMetrics = detail?.quota?.metrics?.filter((metric) => {
+    if (typeof metric.value === 'string') return metric.value.trim() !== ''
+    return metric.value != null
+  }) ?? []
 
   const handleRunAction = async (action: AdapterAccountActionDescriptor) => {
     setLoadingAction(action.key)
@@ -367,17 +456,6 @@ const AccountDetailView = ({
 
   return (
     <div className='adapter-account-manager__detail'>
-      <div className='adapter-account-manager__detail-header'>
-        {detail != null && (detail.actions?.length ?? 0) > 0 && (
-          <AccountActionButtons
-            actions={detail.actions ?? []}
-            loadingAction={loadingAction}
-            onRunAction={handleRunAction}
-            t={t}
-          />
-        )}
-      </div>
-
       {isLoading && (
         <div className='adapter-account-manager__state'>
           <Spin size='small' />
@@ -391,63 +469,76 @@ const AccountDetailView = ({
       {detail != null && (
         <div className='adapter-account-manager__detail-body'>
           <div className='adapter-account-manager__hero'>
-            <div className='adapter-account-manager__hero-icon'>
-              <span className='material-symbols-rounded'>manage_accounts</span>
-            </div>
             <div className='adapter-account-manager__hero-body'>
               <div className='adapter-account-manager__hero-title-row'>
-                <div className='adapter-account-manager__hero-title'>{detail.title}</div>
-                <IconTag
-                  color={statusMeta.color}
-                  icon={statusMeta.icon}
-                  label={statusMeta.label}
-                />
-                {detail.isDefault === true && (
-                  <IconTag
-                    icon='star'
-                    label={t('config.accounts.default')}
-                  />
-                )}
-                {detail.source != null && (
-                  <IconTag
-                    icon='inventory_2'
-                    label={detail.source.label}
-                    description={detail.source.description}
+                <div className='adapter-account-manager__hero-heading'>
+                  <div className='adapter-account-manager__hero-title'>{detail.title}</div>
+                  <div className='adapter-account-manager__hero-badges'>
+                    <IconTag
+                      color={statusMeta.color}
+                      icon={statusMeta.icon}
+                      label={statusMeta.label}
+                    />
+                    {detail.isDefault === true && (
+                      <IconTag
+                        icon='star'
+                        label={t('config.accounts.default')}
+                      />
+                    )}
+                  </div>
+                </div>
+                {detailActions.length > 0 && (
+                  <AccountActionButtons
+                    actions={detailActions}
+                    loadingAction={loadingAction}
+                    onRunAction={handleRunAction}
+                    t={t}
                   />
                 )}
               </div>
-              <div className='adapter-account-manager__detail-subtitle'>{accountKey}</div>
-              {detail.quota?.summary != null && detail.quota.summary !== '' && (
-                <div className='adapter-account-manager__quota-summary'>
-                  <span className='material-symbols-rounded'>speed</span>
-                  <span>{detail.quota.summary}</span>
-                </div>
-              )}
             </div>
           </div>
 
-          {detail.source?.description != null && detail.source.description !== '' && (
-            <div className='adapter-account-manager__muted'>{detail.source.description}</div>
-          )}
-          {detail.description != null && detail.description !== '' && (
-            <div className='adapter-account-manager__text'>{detail.description}</div>
-          )}
+          {detailNotes.map(note => (
+            <div key={note} className='adapter-account-manager__muted'>{note}</div>
+          ))}
 
           <AccountFacts detail={detail} t={t} />
 
-          {(detail.quota?.metrics?.length ?? 0) > 0 && (
+          {quotaMetrics.length > 0 && (
             <div className='adapter-account-manager__section'>
               <div className='adapter-account-manager__section-title'>
                 <span className='material-symbols-rounded'>query_stats</span>
                 <span>{t('config.accounts.quotaTitle', { defaultValue: 'Quota' })}</span>
               </div>
               <div className='adapter-account-manager__metrics'>
-                {detail.quota?.metrics?.map(metric => (
+                {quotaMetrics.map(metric => (
                   <div key={metric.id} className='adapter-account-manager__metric'>
                     <div className='adapter-account-manager__metric-label'>
                       {metric.label}
                     </div>
-                    <div className='adapter-account-manager__metric-value'>{metric.value ?? '-'}</div>
+                    <div className='adapter-account-manager__metric-value'>
+                      {metric.value ?? '-'}
+                      {(() => {
+                        const percent = parsePercentMetricValue(metric.value)
+                        if (percent == null) return null
+
+                        return (
+                          <span
+                            className='adapter-account-manager__metric-ring'
+                            aria-hidden='true'
+                            style={{
+                              background: `conic-gradient(${getPercentRingColor(percent)} ${percent}%, color-mix(in srgb, var(--border-color) 72%, transparent) 0)`
+                            }}
+                          >
+                            <span className='adapter-account-manager__metric-ring-inner' />
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    {metric.description != null && metric.description.trim() !== '' && (
+                      <div className='adapter-account-manager__metric-description'>{metric.description}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -482,23 +573,27 @@ const AccountsOverviewCard = ({
 
   return (
     <div className='adapter-account-manager__overview'>
-      <button type='button' className='adapter-account-manager__overview-card' onClick={onOpenAccounts}>
-        <div className='adapter-account-manager__overview-icon'>
-          <span className='material-symbols-rounded'>manage_accounts</span>
-        </div>
-        <div className='adapter-account-manager__overview-body'>
-          <div className='adapter-account-manager__overview-title'>
-            {t('config.accounts.title')}
+      <button
+        type='button'
+        className='adapter-account-manager__overview-card config-view__field-row'
+        onClick={onOpenAccounts}
+      >
+        <div className='config-view__field-meta'>
+          <span className='material-symbols-rounded config-view__field-icon'>manage_accounts</span>
+          <div className='config-view__field-text'>
+            <div className='config-view__field-title'>{t('config.accounts.title')}</div>
+            <div className='config-view__field-desc adapter-account-manager__overview-meta'>
+              <span>{t('config.accounts.count', { count: accounts.length })}</span>
+              <span>{t('config.accounts.readyCount', { count: readyCount })}</span>
+              {defaultAccount != null && (
+                <span>{t('config.accounts.defaultHint', { account: defaultAccount.title })}</span>
+              )}
+            </div>
           </div>
-          <div className='adapter-account-manager__overview-meta'>
-            <span>{t('config.accounts.count', { count: accounts.length })}</span>
-            <span>{t('config.accounts.readyCount', { count: readyCount })}</span>
-            {defaultAccount != null && (
-              <span>{t('config.accounts.defaultHint', { account: defaultAccount.title })}</span>
-            )}
-          </div>
         </div>
-        <span className='material-symbols-rounded adapter-account-manager__overview-arrow'>chevron_right</span>
+        <div className='config-view__field-control adapter-account-manager__overview-control'>
+          <span className='material-symbols-rounded adapter-account-manager__overview-arrow'>chevron_right</span>
+        </div>
       </button>
     </div>
   )

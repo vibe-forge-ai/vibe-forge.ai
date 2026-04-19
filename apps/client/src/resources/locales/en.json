@@ -984,7 +984,8 @@
         "add": "Failed to connect account",
         "refresh": "Failed to refresh quota",
         "remove": "Failed to remove account snapshot"
-      }
+      },
+      "authFileDefaultLookup": "Leave empty to use {{path}}."
     },
     "fields": {
       "general": {
@@ -1392,6 +1393,12 @@
       "base": "Base Configuration",
       "models": "Model Configuration",
       "advanced": "Advanced Configuration",
+      "advancedModels": "Advanced Model Rules",
+      "advancedRuntime": "Runtime Options",
+      "advancedSandbox": "Sandbox",
+      "advancedClient": "Client Identity",
+      "advancedOverrides": "Raw Overrides",
+      "advancedMisc": "Other Options",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",

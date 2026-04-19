@@ -65,6 +65,40 @@
   gap: 2px;
 }
 
+.config-view__record-heading.has-adapter-icon {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__record-heading-text {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-view__adapter-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+}
+
+.config-view__adapter-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.config-view__adapter-icon-fallback {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
 .config-view__record-subtitle {
   font-size: 12px;
   color: var(--sub-text-color);

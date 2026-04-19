@@ -2,13 +2,16 @@ import './ConfigSectionForm.scss'
 
 import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
+import { useMemo } from 'react'
+import useSWR from 'swr'
 
-import type { ConfigUiSection } from '@vibe-forge/types'
+import type { ConfigUiObjectSchema, ConfigUiSection } from '@vibe-forge/types'
 
+import { getAdapterAccounts } from '#~/api'
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
-import { AdapterAccountsManager } from './AdapterAccountsManager'
+import { AdapterAccountsManager, mergeAccounts } from './AdapterAccountsManager'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
 import { DetailCollectionField } from './DetailListField'
@@ -41,6 +44,13 @@ import { resolveConfigUiRecordEntry } from './record-editors/schemaRecordUtils'
 const directRecordSections = new Set(['models'])
 const directDetailSections = new Set(['modelServices', 'channels', 'adapters'])
 const defaultGroupOrder = ['base', 'permissions', 'env', 'items', 'default']
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null && typeof value === 'object' && !Array.isArray(value)
+)
+const isTopLevelField = (path: string[], key: string) => path.length === 1 && path[0] === key
+const configSelectSuffixIcon = (
+  <span className='material-symbols-rounded config-view__select-chevron'>expand_more</span>
+)
 
 export const SectionForm = ({
   sectionKey,
@@ -79,6 +89,157 @@ export const SectionForm = ({
   const resolveSchemaFieldDescription = (schemaSectionKey: string) => (field: { path: string[] }, fallback: string) => {
     const translated = getFieldDescription(t, schemaSectionKey, field.path)
     return translated !== '' ? translated : fallback
+  }
+  const renderAdapterSection = ({
+    body,
+    title,
+    collapsible = false,
+    defaultExpanded = true,
+    collapseKey = 'section'
+  }: {
+    body: ReactNode
+    title?: string
+    collapsible?: boolean
+    defaultExpanded?: boolean
+    collapseKey?: string
+  }) => {
+    if (collapsible) {
+      return (
+        <Collapse
+          className='config-view__subsection-collapse'
+          ghost
+          expandIconPosition='end'
+          expandIcon={({ isActive }) => (
+            <span
+              className={`material-symbols-rounded config-view__subsection-expand-icon${
+                isActive ? ' is-active' : ''
+              }`}
+            >
+              chevron_right
+            </span>
+          )}
+          defaultActiveKey={defaultExpanded ? [collapseKey] : []}
+          items={[
+            {
+              key: collapseKey,
+              label: <div className='config-view__subsection-title'>{title}</div>,
+              children: body
+            }
+          ]}
+        />
+      )
+    }
+
+    return (
+      <div className='config-view__subsection'>
+        {title != null && title !== '' && (
+          <div className='config-view__subsection-title'>{title}</div>
+        )}
+        {body}
+      </div>
+    )
+  }
+  const renderAdapterSchemaSection = ({
+    schema,
+    currentValue,
+    onCurrentValueChange,
+    visibleFieldPaths,
+    title,
+    collapsible = false,
+    defaultExpanded = true,
+    collapseKey,
+    resolveFieldOptions
+  }: {
+    schema: ConfigUiObjectSchema
+    currentValue: Record<string, unknown>
+    onCurrentValueChange: (nextValue: Record<string, unknown>) => void
+    visibleFieldPaths: string[][]
+    title?: string
+    collapsible?: boolean
+    defaultExpanded?: boolean
+    collapseKey?: string
+    resolveFieldOptions?: Parameters<typeof SchemaObjectEditor>[0]['resolveFieldOptions']
+  }) => {
+    if (visibleFieldPaths.length === 0) return null
+
+    return renderAdapterSection({
+      title,
+      collapsible,
+      defaultExpanded,
+      collapseKey,
+      body: (
+        <div className='config-view__subsection-body'>
+          <SchemaObjectEditor
+            value={currentValue}
+            schema={schema}
+            onChange={onCurrentValueChange}
+            t={t}
+            visibleFieldPaths={visibleFieldPaths}
+            resolveFieldLabel={resolveSchemaFieldLabel('adapters')}
+            resolveFieldDescription={resolveSchemaFieldDescription('adapters')}
+            resolveFieldOptions={resolveFieldOptions}
+          />
+        </div>
+      )
+    })
+  }
+  const renderAdapterAdvancedSections = ({
+    schema,
+    currentValue,
+    onCurrentValueChange,
+    modelSection,
+    advancedSections
+  }: {
+    schema: ConfigUiObjectSchema
+    currentValue: Record<string, unknown>
+    onCurrentValueChange: (nextValue: Record<string, unknown>) => void
+    modelSection?: {
+      title: string
+      visibleFieldPaths: string[][]
+    }
+    advancedSections: Array<{
+      key: string
+      title: string
+      visibleFieldPaths: string[][]
+    }>
+  }) => {
+    const visibleAdvancedSections = advancedSections.filter(section => section.visibleFieldPaths.length > 0)
+    const hasModelSection = modelSection != null && modelSection.visibleFieldPaths.length > 0
+    if (!hasModelSection && visibleAdvancedSections.length === 0) return null
+
+    return (
+      <div className='config-view__field-stack'>
+        {hasModelSection && renderAdapterSchemaSection({
+          schema,
+          currentValue,
+          onCurrentValueChange,
+          visibleFieldPaths: modelSection.visibleFieldPaths,
+          title: modelSection.title,
+          collapsible: true,
+          defaultExpanded: true,
+          collapseKey: 'models'
+        })}
+        {visibleAdvancedSections.length > 0 && renderAdapterSection({
+          title: t('config.sectionGroups.advanced'),
+          collapsible: true,
+          defaultExpanded: false,
+          collapseKey: 'advanced',
+          body: (
+            <div className='config-view__subsection-body'>
+              <div className='config-view__field-stack'>
+                {visibleAdvancedSections.map(section => renderAdapterSchemaSection({
+                  schema,
+                  currentValue,
+                  onCurrentValueChange,
+                  visibleFieldPaths: section.visibleFieldPaths,
+                  title: section.title
+                }))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   if (uiSection?.kind === 'recordMap' && fields.length === 0) {
@@ -262,6 +423,7 @@ export const SectionForm = ({
           options={options}
           onChange={(next) => handleValueChange(next)}
           allowClear
+          suffixIcon={configSelectSuffixIcon}
           disabled={isDefaultModel && modelOptions.length === 0}
           placeholder={t(
             isDefaultAdapter
@@ -598,6 +760,36 @@ export const SectionForm = ({
     detailContext,
     t
   })
+  const adapterDetailKey = (
+    sectionKey === 'adapters' &&
+    uiSection?.kind === 'recordMap' &&
+    detailMeta?.field.path.length === 0
+  )
+    ? detailMeta.itemKey
+    : null
+  const { data: adapterAccountsData } = useSWR(
+    adapterDetailKey != null ? `/api/adapters/${adapterDetailKey}/accounts` : null,
+    () => getAdapterAccounts(adapterDetailKey!)
+  )
+  const adapterDefaultAccountOptions = useMemo(() => {
+    if (adapterDetailKey == null || !isRecord(detailMeta?.item)) return undefined
+
+    const configuredDefaultAccount = typeof detailMeta.item.defaultAccount === 'string' && detailMeta.item.defaultAccount.trim() !== ''
+      ? detailMeta.item.defaultAccount.trim()
+      : undefined
+    const configuredAccountsValue = getValueByPath(detailMeta.item, ['accounts'])
+    const configuredAccounts = isRecord(configuredAccountsValue) ? { ...configuredAccountsValue } : {}
+
+    if (configuredDefaultAccount != null && configuredAccounts[configuredDefaultAccount] == null) {
+      configuredAccounts[configuredDefaultAccount] = { title: configuredDefaultAccount }
+    }
+
+    return mergeAccounts(configuredAccounts, adapterAccountsData?.accounts ?? [], configuredDefaultAccount)
+      .map((account) => ({
+        value: account.key,
+        label: account.title === account.key ? account.key : `${account.title} (${account.key})`
+      }))
+  }, [adapterAccountsData?.accounts, adapterDetailKey, detailMeta?.item])
 
   if (detailMeta != null) {
     const updateDetailItem = (nextItem: unknown) => {
@@ -667,6 +859,100 @@ export const SectionForm = ({
         if (sectionKey === 'adapters') {
           const accountItemSchema = itemSchema.recordFields?.accounts?.itemSchema
           const isAccountsNestedRoute = detailRoute?.nestedPath?.[0] === 'accounts'
+          const hiddenFieldPaths = [
+            ...(isKnownEntry && uiSection.recordMap.mode === 'discriminated' ? [[discriminatorField]] : []),
+            ['accounts']
+          ]
+          const visibleAdapterFields = itemSchema.fields.filter(field => !hiddenFieldPaths.some(hiddenPath => (
+            field.path.length === hiddenPath.length &&
+            field.path.every((segment, index) => segment === hiddenPath[index])
+          )))
+          const defaultAccountFieldPaths = visibleAdapterFields
+            .filter(field => field.path.length === 1 && field.path[0] === 'defaultAccount')
+            .map(field => field.path)
+          const advancedFields = visibleAdapterFields
+            .filter(field => (
+              (field.path.length === 1 && (
+                field.path[0] === 'includeModels' ||
+                field.path[0] === 'excludeModels' ||
+                field.path[0] === 'experimentalApi' ||
+                field.path[0] === 'maxOutputTokens'
+              )) ||
+              field.type === 'json' ||
+              field.type === 'multiline' ||
+              field.type === 'string[]'
+            ))
+          const primaryFieldPaths = visibleAdapterFields
+            .filter(field => !defaultAccountFieldPaths.some(path => (
+              field.path.length === path.length &&
+              field.path.every((segment, index) => segment === path[index])
+            )))
+            .filter(field => !advancedFields.some(advancedField => (
+              field.path.length === advancedField.path.length &&
+              field.path.every((segment, index) => segment === advancedField.path[index])
+            )))
+            .map(field => field.path)
+          const modelSection = {
+            title: t('config.sectionGroups.models'),
+            visibleFieldPaths: advancedFields
+              .filter(field => (
+                isTopLevelField(field.path, 'includeModels') ||
+                isTopLevelField(field.path, 'excludeModels')
+              ))
+              .map(field => field.path)
+          }
+          const advancedSections = [
+            {
+              key: 'runtime',
+              title: t('config.sectionGroups.advancedRuntime'),
+              visibleFieldPaths: advancedFields
+                .filter(field => (
+                  isTopLevelField(field.path, 'experimentalApi') ||
+                  isTopLevelField(field.path, 'maxOutputTokens')
+                ))
+                .map(field => field.path)
+            },
+            {
+              key: 'sandbox',
+              title: t('config.sectionGroups.advancedSandbox'),
+              visibleFieldPaths: advancedFields
+                .filter(field => isTopLevelField(field.path, 'sandboxPolicy'))
+                .map(field => field.path)
+            },
+            {
+              key: 'client',
+              title: t('config.sectionGroups.advancedClient'),
+              visibleFieldPaths: advancedFields
+                .filter(field => isTopLevelField(field.path, 'clientInfo'))
+                .map(field => field.path)
+            },
+            {
+              key: 'overrides',
+              title: t('config.sectionGroups.advancedOverrides'),
+              visibleFieldPaths: advancedFields
+                .filter(field => (
+                  isTopLevelField(field.path, 'configOverrides') ||
+                  isTopLevelField(field.path, 'features')
+                ))
+                .map(field => field.path)
+            },
+            {
+              key: 'misc',
+              title: t('config.sectionGroups.advancedMisc'),
+              visibleFieldPaths: advancedFields
+                .filter(field => !(
+                  isTopLevelField(field.path, 'includeModels') ||
+                  isTopLevelField(field.path, 'excludeModels') ||
+                  isTopLevelField(field.path, 'experimentalApi') ||
+                  isTopLevelField(field.path, 'maxOutputTokens') ||
+                  isTopLevelField(field.path, 'sandboxPolicy') ||
+                  isTopLevelField(field.path, 'clientInfo') ||
+                  isTopLevelField(field.path, 'configOverrides') ||
+                  isTopLevelField(field.path, 'features')
+                ))
+                .map(field => field.path)
+            }
+          ]
 
           if (isAccountsNestedRoute) {
             return (
@@ -690,19 +976,29 @@ export const SectionForm = ({
           }
 
           return (
-            <div className='config-view__record-fields'>
-              <SchemaObjectEditor
-                value={detailMeta.item}
-                schema={itemSchema}
-                onChange={updateDetailItem}
-                t={t}
-                resolveFieldLabel={resolveSchemaFieldLabel('adapters')}
-                resolveFieldDescription={resolveSchemaFieldDescription('adapters')}
-                hideFieldPaths={[
-                  ...(isKnownEntry && uiSection.recordMap.mode === 'discriminated' ? [[discriminatorField]] : []),
-                  ['accounts']
-                ]}
-              />
+            <div className='config-view__field-stack'>
+              {renderAdapterSchemaSection({
+                schema: itemSchema,
+                currentValue: detailMeta.item,
+                onCurrentValueChange: updateDetailItem,
+                visibleFieldPaths: primaryFieldPaths,
+                title: t('config.sectionGroups.base'),
+                collapsible: true,
+                defaultExpanded: true,
+                collapseKey: 'base'
+              })}
+              {renderAdapterSchemaSection({
+                schema: itemSchema,
+                currentValue: detailMeta.item,
+                onCurrentValueChange: updateDetailItem,
+                visibleFieldPaths: defaultAccountFieldPaths,
+                title: undefined,
+                resolveFieldOptions: (field) => (
+                  field.path.length === 1 && field.path[0] === 'defaultAccount'
+                    ? adapterDefaultAccountOptions ?? []
+                    : undefined
+                )
+              })}
               <AdapterAccountsManager
                 adapterKey={detailMeta.itemKey}
                 value={detailMeta.item}
@@ -719,6 +1015,13 @@ export const SectionForm = ({
                 }}
                 t={t}
               />
+              {renderAdapterAdvancedSections({
+                schema: itemSchema,
+                currentValue: detailMeta.item,
+                onCurrentValueChange: updateDetailItem,
+                modelSection,
+                advancedSections
+              })}
             </div>
           )
         }

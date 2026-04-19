@@ -95,35 +95,40 @@
   line-height: 1.4;
 }
 
-.adapter-account-manager__overview-card,
 .adapter-account-manager__metric,
-.adapter-account-manager__fact,
-.adapter-account-manager__hero {
+.adapter-account-manager__fact {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-elevated);
 }
 
 .adapter-account-manager__overview-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   width: 100%;
-  padding: 14px;
+  appearance: none;
   color: inherit;
+  font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.adapter-account-manager__overview-card:hover,
+.adapter-account-manager__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .adapter-account-manager__item:hover,
 .adapter-account-manager__item:focus-within {
   background: color-mix(in srgb, var(--primary-color) 4%, transparent);
 }
 
-.adapter-account-manager__overview-icon,
-.adapter-account-manager__hero-icon {
+.adapter-account-manager__overview-control.config-view__field-control {
+  flex: 0 0 auto;
+  min-width: auto;
+  width: auto;
+}
+
+.adapter-account-manager__overview-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -135,13 +140,7 @@
   color: var(--primary-color);
 }
 
-.adapter-account-manager__hero {
-  align-items: flex-start;
-  padding: 16px;
-}
-
 .adapter-account-manager__overview-icon .material-symbols-rounded,
-.adapter-account-manager__hero-icon .material-symbols-rounded,
 .adapter-account-manager__overview-arrow,
 .adapter-account-manager__fact-icon {
   font-size: 20px;
@@ -172,7 +171,8 @@
 .adapter-account-manager__text,
 .adapter-account-manager__muted,
 .adapter-account-manager__fact-label,
-.adapter-account-manager__metric-label {
+.adapter-account-manager__metric-label,
+.adapter-account-manager__metric-description {
   color: var(--text-color-secondary);
   font-size: 12px;
   line-height: 1.5;
@@ -190,6 +190,20 @@
 
 .adapter-account-manager__hero-title-row {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adapter-account-manager__hero-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.adapter-account-manager__hero-badges {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
@@ -239,7 +253,6 @@
 }
 
 .adapter-account-manager__item-description,
-.adapter-account-manager__quota-summary,
 .adapter-account-manager__section-title {
   display: flex;
   align-items: center;
@@ -287,13 +300,6 @@
   color: var(--primary-color);
 }
 
-.adapter-account-manager__quota-summary {
-  margin-top: 4px;
-  color: var(--primary-color);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .adapter-account-manager__facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -311,6 +317,27 @@
 .adapter-account-manager__metric-value {
   font-size: 13px;
   font-weight: 600;
+}
+
+.adapter-account-manager__metric-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adapter-account-manager__metric-ring {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+}
+
+.adapter-account-manager__metric-ring-inner {
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  background: var(--bg-elevated);
 }
 
 .adapter-account-manager__metrics {
@@ -335,6 +362,12 @@
   .adapter-account-manager__detail-header,
   .adapter-account-manager__hero {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adapter-account-manager__hero-title-row,
+  .adapter-account-manager__hero-heading {
+    align-items: flex-start;
     flex-direction: column;
   }
 

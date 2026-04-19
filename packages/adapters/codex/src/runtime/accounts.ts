@@ -43,6 +43,7 @@ interface CodexStoredAccountMetadata {
   email?: string
   planType?: string
   accountType?: string
+  quota?: AdapterAccountInfo['quota']
   source?: string
   createdAt?: number
   updatedAt?: number
@@ -88,6 +89,8 @@ const CODEX_ACCOUNT_DETAIL_ACTIONS: AdapterAccountActionDescriptor[] = [
     scope: 'account'
   }
 ]
+
+const CODEX_QUOTA_CACHE_TTL_MS = 5 * 60 * 1000
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -171,6 +174,97 @@ const formatPlanType = (value: string | undefined) => {
 
 const formatCreditsValue = (value: number) => `${value.toLocaleString('en-US')} credits`
 
+const parseFiniteNumber = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    if (normalized !== '') {
+      const parsed = Number(normalized)
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+  }
+
+  return undefined
+}
+
+const formatRateLimitWindow = (minutes: number | undefined) => {
+  if (minutes == null || !Number.isFinite(minutes) || minutes <= 0) {
+    return undefined
+  }
+
+  if (minutes % (60 * 24) === 0) {
+    return `${minutes / (60 * 24)}d`
+  }
+
+  if (minutes % 60 === 0) {
+    return `${minutes / 60}h`
+  }
+
+  return `${minutes}m`
+}
+
+const formatRateLimitResetAt = (epochSeconds: number | undefined) => {
+  if (epochSeconds == null || !Number.isFinite(epochSeconds) || epochSeconds <= 0) {
+    return undefined
+  }
+
+  const date = new Date(epochSeconds * 1000)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+const cloneQuotaInfo = (quota: AdapterAccountInfo['quota']) => (
+  quota == null
+    ? undefined
+    : {
+      ...quota,
+      metrics: quota.metrics?.map(metric => ({ ...metric }))
+    }
+)
+
+const buildProbeFromMetadata = (metadata: CodexStoredAccountMetadata | undefined): CodexAccountProbe | undefined => {
+  const email = normalizeNonEmptyString(metadata?.email)
+  const planType = normalizeNonEmptyString(metadata?.planType)
+  const accountType = normalizeNonEmptyString(metadata?.accountType)
+  const quota = cloneQuotaInfo(metadata?.quota)
+
+  if (email == null && planType == null && accountType == null && quota == null) {
+    return undefined
+  }
+
+  return {
+    email,
+    planType,
+    accountType,
+    quota
+  }
+}
+
+const getCachedProbe = (
+  metadata: CodexStoredAccountMetadata | undefined,
+  refresh?: boolean
+): CodexAccountProbe | undefined => {
+  if (refresh === true) {
+    return undefined
+  }
+
+  const updatedAt = parseFiniteNumber(metadata?.quota?.updatedAt)
+  if (updatedAt == null || Date.now() - updatedAt > CODEX_QUOTA_CACHE_TTL_MS) {
+    return undefined
+  }
+
+  return buildProbeFromMetadata(metadata)
+}
+
 const readJsonFileIfPresent = async <T>(filePath: string): Promise<T | undefined> => {
   try {
     return JSON.parse(await readFile(filePath, 'utf8')) as T
@@ -196,6 +290,37 @@ const resolveConfiguredAuthFilePath = (ctx: Pick<AdapterCtx, 'cwd'>, authFile: s
   return isAbsolute(normalized)
     ? resolve(normalized)
     : resolve(ctx.cwd, normalized)
+}
+
+const collectRateLimitEntries = (value: unknown) => {
+  const uniqueEntries = new Map<string, Record<string, unknown>>()
+
+  const appendEntry = (entry: unknown, fallbackKey: string) => {
+    if (!isRecord(entry)) {
+      return
+    }
+
+    const entryKey = typeof entry.limitId === 'string' && entry.limitId.trim() !== ''
+      ? entry.limitId
+      : fallbackKey
+    if (!uniqueEntries.has(entryKey)) {
+      uniqueEntries.set(entryKey, entry)
+    }
+  }
+
+  if (isRecord(value)) {
+    if (Array.isArray(value.rateLimits)) {
+      value.rateLimits.forEach((entry, index) => appendEntry(entry, `array-${index}`))
+    } else {
+      appendEntry(value.rateLimits, 'primary')
+    }
+
+    if (isRecord(value.rateLimitsByLimitId)) {
+      Object.entries(value.rateLimitsByLimitId).forEach(([key, entry]) => appendEntry(entry, key))
+    }
+  }
+
+  return Array.from(uniqueEntries.values())
 }
 
 const resolveRealHomeAuthPath = (ctx: Pick<AdapterCtx, 'env'>) => {
@@ -298,10 +423,13 @@ const probeCodexAccount = async (params: {
     const email = typeof account?.email === 'string' ? account.email : undefined
     const planType = typeof account?.planType === 'string' ? account.planType : undefined
 
-    const rateLimits = isRecord(rateLimitsResult) && Array.isArray(rateLimitsResult.rateLimits)
-      ? rateLimitsResult.rateLimits.filter(isRecord)
-      : []
-    const primaryRateLimit = rateLimits.find(item => item.primary === true) ??
+    const rateLimits = collectRateLimitEntries(rateLimitsResult)
+    const directRateLimit = isRecord(rateLimitsResult) && isRecord(rateLimitsResult.rateLimits)
+      ? rateLimitsResult.rateLimits
+      : undefined
+    const primaryRateLimit = directRateLimit ??
+      rateLimits.find(item => item.limitId === 'codex') ??
+      rateLimits.find(item => item.primary === true) ??
       rateLimits.find(item => item.secondary !== true) ??
       rateLimits[0]
 
@@ -327,14 +455,58 @@ const probeCodexAccount = async (params: {
         label: 'Credits',
         value: 'Unlimited'
       })
-    } else if (typeof credits?.balance === 'number' && Number.isFinite(credits.balance)) {
-      creditsSummary = formatCreditsValue(credits.balance)
-      metrics.push({
-        id: 'credits',
-        label: 'Credits',
-        value: creditsSummary
-      })
+    } else if (credits?.hasCredits === true) {
+      const creditsBalance = parseFiniteNumber(credits.balance)
+      if (creditsBalance != null) {
+        creditsSummary = formatCreditsValue(creditsBalance)
+        metrics.push({
+          id: 'credits',
+          label: 'Credits',
+          value: creditsSummary
+        })
+      }
     }
+
+    const pushUsageMetric = (params: {
+      key: 'primary' | 'secondary'
+      label: string
+      payload: unknown
+      primary?: boolean
+    }) => {
+      const payload = isRecord(params.payload) ? params.payload : undefined
+      const usedPercent = parseFiniteNumber(payload?.usedPercent)
+      if (usedPercent == null) {
+        return undefined
+      }
+
+      const windowMins = parseFiniteNumber(payload?.windowDurationMins)
+      const resetAt = parseFiniteNumber(payload?.resetsAt)
+      const windowLabel = formatRateLimitWindow(windowMins)
+      const value = `${usedPercent}%`
+      const resetDescription = formatRateLimitResetAt(resetAt)
+
+      metrics.push({
+        id: `${params.key}-usage`,
+        label: windowLabel == null ? params.label : `${windowLabel} ${params.label}`,
+        value,
+        ...(resetDescription != null ? { description: `Resets ${resetDescription}` } : {}),
+        primary: params.primary
+      })
+
+      return windowLabel == null ? value : `${windowLabel} ${value}`
+    }
+
+    const primaryUsageSummary = pushUsageMetric({
+      key: 'primary',
+      label: 'used',
+      payload: primaryRateLimit?.primary,
+      primary: true
+    })
+    const secondaryUsageSummary = pushUsageMetric({
+      key: 'secondary',
+      label: 'used',
+      payload: primaryRateLimit?.secondary
+    })
 
     const limitName = typeof primaryRateLimit?.limitName === 'string'
       ? primaryRateLimit.limitName
@@ -347,7 +519,12 @@ const probeCodexAccount = async (params: {
       })
     }
 
-    const summary = [formattedPlan, creditsSummary].filter((value): value is string => value != null && value !== '')
+    const summary = [
+      formattedPlan,
+      primaryUsageSummary,
+      secondaryUsageSummary,
+      creditsSummary
+    ].filter((value): value is string => value != null && value !== '')
       .join(' · ')
 
     return {
@@ -413,15 +590,17 @@ const ensureImportedRealHomeAccount = async (
 
   const authContent = await readFile(realAuthPath, 'utf8')
   const authDigest = createHash('sha256').update(authContent).digest('hex')
+  const existingStoredAccount = await findStoredAccountByAuthDigest(ctx, authDigest)
+  const cachedProbe = getCachedProbe(existingStoredAccount?.metadata, options.refresh)
   const probeHomeDir = resolveCodexProbeHomeDir(ctx, 'import-current')
-  const probe = await probeCodexAccount({
+  const probe = cachedProbe ?? await probeCodexAccount({
     ctx,
     homeDir: probeHomeDir,
     authFilePath: realAuthPath,
     refresh: options.refresh,
     logKey: 'import-current'
-  }).catch(() => undefined)
-  const key = buildImportedAccountKey({
+  }).catch(() => buildProbeFromMetadata(existingStoredAccount?.metadata))
+  const key = existingStoredAccount?.key ?? buildImportedAccountKey({
     authDigest,
     probe
   })
@@ -438,6 +617,7 @@ const ensureImportedRealHomeAccount = async (
     email: probe?.email ?? existingMeta?.email,
     planType: probe?.planType ?? existingMeta?.planType,
     accountType: probe?.accountType ?? existingMeta?.accountType,
+    quota: cloneQuotaInfo(probe?.quota) ?? existingMeta?.quota,
     source: 'imported-real-home',
     authDigest,
     createdAt: existingMeta?.createdAt ?? Date.now(),
@@ -460,22 +640,87 @@ const collectStoredAccountDescriptors = async (
     }
 
     const authFilePath = resolveStoredAccountAuthPath(ctx, entry.name)
-    if (!await pathExists(authFilePath)) {
+    const metadata = await readJsonFileIfPresent<CodexStoredAccountMetadata>(resolveStoredAccountMetaPath(ctx, entry.name))
+    const hasStoredAuthFile = await pathExists(authFilePath)
+
+    if (!hasStoredAuthFile && metadata == null) {
       continue
     }
 
-    const metadata = await readJsonFileIfPresent<CodexStoredAccountMetadata>(resolveStoredAccountMetaPath(ctx, entry.name))
     descriptors.push({
       key: entry.name,
       title: normalizeNonEmptyString(metadata?.title),
       description: normalizeNonEmptyString(metadata?.description),
-      authFilePath,
-      status: 'ready',
+      authFilePath: hasStoredAuthFile ? authFilePath : undefined,
+      status: hasStoredAuthFile ? 'ready' : 'missing',
       metadata
     })
   }
 
   return descriptors
+}
+
+const findStoredAccountByAuthDigest = async (
+  ctx: Pick<AdapterCtx, 'cwd' | 'env'>,
+  authDigest: string
+) => {
+  const descriptors = await collectStoredAccountDescriptors(ctx)
+  return descriptors.find(descriptor => descriptor.metadata?.authDigest === authDigest)
+}
+
+const writeProbeMetadata = async (params: {
+  ctx: Pick<AdapterCtx, 'cwd' | 'env'>
+  descriptor: CodexAccountDescriptor
+  probe: CodexAccountProbe
+}) => {
+  const { ctx, descriptor, probe } = params
+  const metaPath = resolveStoredAccountMetaPath(ctx, descriptor.key)
+  const nextMetadata: CodexStoredAccountMetadata = {
+    ...descriptor.metadata,
+    ...(probe.email != null ? { email: probe.email } : {}),
+    ...(probe.planType != null ? { planType: probe.planType } : {}),
+    ...(probe.accountType != null ? { accountType: probe.accountType } : {}),
+    ...(probe.quota != null ? { quota: cloneQuotaInfo(probe.quota) } : {}),
+    title: descriptor.title ?? descriptor.metadata?.title,
+    description: descriptor.description ?? descriptor.metadata?.description,
+    createdAt: descriptor.metadata?.createdAt ?? Date.now(),
+    updatedAt: Date.now()
+  }
+
+  await writeJsonFile(metaPath, nextMetadata)
+  descriptor.metadata = nextMetadata
+}
+
+const getCodexAccountProbe = async (params: {
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>
+  descriptor: CodexAccountDescriptor
+  refresh?: boolean
+  scope: string
+}): Promise<CodexAccountProbe | undefined> => {
+  const { ctx, descriptor, refresh, scope } = params
+  const cachedProbe = getCachedProbe(descriptor.metadata, refresh)
+  if (cachedProbe != null) {
+    return cachedProbe
+  }
+
+  if (descriptor.authFilePath == null) {
+    return buildProbeFromMetadata(descriptor.metadata)
+  }
+
+  const probe = await probeCodexAccount({
+    ctx,
+    homeDir: resolveCodexProbeHomeDir(ctx, `${scope}-${descriptor.key}`),
+    authFilePath: descriptor.authFilePath,
+    refresh,
+    logKey: `${scope}-${descriptor.key}`
+  })
+  await writeProbeMetadata({
+    ctx,
+    descriptor,
+    probe
+  })
+
+  return probe
 }
 
 const compareCodexAccountDescriptors = (
@@ -805,12 +1050,11 @@ export const getCodexAccounts = async (
     }
 
     try {
-      const probe = await probeCodexAccount({
+      const probe = await getCodexAccountProbe({
         ctx,
-        homeDir: resolveCodexProbeHomeDir(ctx, `list-${descriptor.key}`),
-        authFilePath: descriptor.authFilePath,
+        descriptor,
         refresh: options.refresh,
-        logKey: `list-${descriptor.key}`
+        scope: 'list'
       })
       const detail = buildCodexAccountDetail({
         descriptor,
@@ -869,12 +1113,11 @@ export const getCodexAccountDetail = async (
   }
 
   try {
-    const probe = await probeCodexAccount({
+    const probe = await getCodexAccountProbe({
       ctx,
-      homeDir: resolveCodexProbeHomeDir(ctx, `detail-${descriptor.key}`),
-      authFilePath: descriptor.authFilePath,
+      descriptor,
       refresh: options.refresh,
-      logKey: `detail-${descriptor.key}`
+      scope: 'detail'
     })
     return {
       account: buildCodexAccountDetail({
@@ -970,6 +1213,7 @@ export const manageCodexAccount = async (
       email: probe?.email,
       planType: probe?.planType,
       accountType: probe?.accountType,
+      quota: cloneQuotaInfo(probe?.quota),
       source: 'codex-login',
       authDigest,
       createdAt: Date.now(),

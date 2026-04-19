@@ -230,7 +230,7 @@ html.dark .config-view__card {
 .config-view__detail-trail {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   min-height: 32px;
   flex: 1 1 auto;
@@ -238,15 +238,26 @@ html.dark .config-view__card {
   overflow: hidden;
 }
 
-.config-view__detail-back {
+.config-view__detail-back.ant-btn {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
   margin-left: 0;
-  padding: 0;
+  padding: 0 !important;
   border-radius: 999px;
   color: var(--sub-text-color);
+  line-height: 18px !important;
+}
+
+.config-view__detail-back .ant-btn-icon {
+  margin-inline-end: 0 !important;
+  line-height: 1;
+}
+
+.config-view__detail-back .material-symbols-rounded {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .config-view__detail-back.ant-btn-text:not(:disabled):hover,
@@ -265,7 +276,7 @@ html.dark .config-view__card {
   flex: 1 1 auto;
   flex-wrap: nowrap;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
   line-height: 20px;

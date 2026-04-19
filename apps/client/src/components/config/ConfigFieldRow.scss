@@ -81,7 +81,8 @@
   min-width: 220px;
 }
 
-.config-view__field-control .ant-select {
+.config-view__field-control .ant-select,
+.config-view__field-control .ant-input-number {
   width: 100%;
 }
 
@@ -95,12 +96,22 @@
 
 .config-view__field-control .ant-input,
 .config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-input-number,
 .config-view__field-control .ant-select-selector {
   min-height: 30px;
 }
 
+.config-view__field-control .ant-input-number-input {
+  min-height: 28px;
+}
+
 .config-view__field-control .ant-input-textarea {
   width: 100%;
+}
+
+.config-view__select-chevron {
+  font-size: 18px;
+  color: var(--sub-text-color);
 }
 
 .config-view__field-icon {
