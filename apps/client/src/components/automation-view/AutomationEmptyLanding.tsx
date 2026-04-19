@@ -12,6 +12,10 @@ import { Sender } from '#~/components/chat/sender/Sender'
 import { ChatStatusBar } from '#~/components/chat/status-bar/ChatStatusBar'
 import { ComposerLanding } from '#~/components/composer-landing/ComposerLanding'
 import {
+  SidebarListCollapsedActionButton,
+  SidebarListCollapsedActions
+} from '#~/components/sidebar-list/SidebarListHeader'
+import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
 } from '#~/hooks/chat/chat-session-workspace-draft'
@@ -24,7 +28,21 @@ import { AutomationEmptyGuide } from './AutomationEmptyGuide'
 
 const noop = () => {}
 
-export function AutomationEmptyLanding() {
+interface AutomationEmptyLandingProps {
+  flushPanelPadding?: boolean
+  isCreatingRule?: boolean
+  isRulePanelCollapsed?: boolean
+  onCreateRule?: () => void
+  onExpandRulePanel?: () => void
+}
+
+export function AutomationEmptyLanding({
+  flushPanelPadding = false,
+  isCreatingRule = false,
+  isRulePanelCollapsed = false,
+  onCreateRule,
+  onExpandRulePanel
+}: AutomationEmptyLandingProps) {
   const { t } = useTranslation()
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
@@ -32,9 +50,7 @@ export function AutomationEmptyLanding() {
   const defaultWorkspaceDraft = useMemo(() => (
     configRes == null ? DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT : getChatSessionWorkspaceDraftFromConfig(configRes)
   ), [configRes])
-  const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
-    ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
-  }))
+  const [workspaceDraft, setWorkspaceDraft] = useState(() => ({ ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT }))
   const [starterContent, setStarterContent] = useState('')
   const [starterContentKey, setStarterContentKey] = useState(0)
   const {
@@ -54,12 +70,7 @@ export function AutomationEmptyLanding() {
   } = useChatModelAdapterSelection()
   const { effort, setEffort, effortOptions } = useChatEffort()
   const { permissionMode, setPermissionMode, permissionModeOptions } = useChatPermissionMode()
-  const {
-    isCreating,
-    send,
-    sendContent,
-    interrupt
-  } = useChatSessionActions({
+  const { isCreating: isCreatingSession, send, sendContent, interrupt } = useChatSessionActions({
     modelForQuery: selectedModelWithService,
     hasAvailableModels,
     effort,
@@ -97,9 +108,7 @@ export function AutomationEmptyLanding() {
       }
     })
 
-    if (didWrapText) {
-      return nextContent
-    }
+    if (didWrapText) return nextContent
 
     return [
       { type: 'text' as const, text: t('automation.emptyLandingAttachmentInstruction') },
@@ -114,7 +123,7 @@ export function AutomationEmptyLanding() {
         initialContent={starterContent}
         placeholder={t('automation.emptyLandingPlaceholder')}
         autoFocus
-        sessionStatus={isCreating ? 'running' : undefined}
+        sessionStatus={isCreatingSession ? 'running' : undefined}
         onInterrupt={interrupt}
         onSend={(text) => send(buildAutomationCreationText(text))}
         onSendContent={(content: ChatMessageContent[]) => sendContent(buildAutomationCreationContent(content))}
@@ -139,7 +148,7 @@ export function AutomationEmptyLanding() {
       />
       <ChatStatusBar
         draftWorkspace={workspaceDraft}
-        isCreating={isCreating}
+        isCreating={isCreatingSession}
         onDraftWorkspaceChange={(nextDraft) => {
           workspaceDraftDirtyRef.current = true
           setWorkspaceDraft(nextDraft)
@@ -149,19 +158,42 @@ export function AutomationEmptyLanding() {
   )
 
   useEffect(() => {
-    if (workspaceDraftDirtyRef.current) {
-      return
-    }
+    if (workspaceDraftDirtyRef.current) return
     setWorkspaceDraft({ ...defaultWorkspaceDraft })
   }, [defaultWorkspaceDraft])
 
+  const shellClassName = flushPanelPadding
+    ? 'automation-empty-landing-shell automation-empty-landing-shell--flush-panel'
+    : 'automation-empty-landing-shell'
+
   return (
-    <ComposerLanding
-      className='automation-empty-landing'
-      compact={isCompactLayout || isTouchInteraction}
-      composer={composer}
-    >
-      <AutomationEmptyGuide onSelectStarter={handleSelectStarter} />
-    </ComposerLanding>
+    <div className={shellClassName}>
+      {isRulePanelCollapsed && (
+        <SidebarListCollapsedActions className='automation-empty-landing__collapsed-actions'>
+          <SidebarListCollapsedActionButton
+            active={isCreatingRule}
+            disabled={isCreatingRule}
+            filled={isCreatingRule}
+            icon={isCreatingRule ? 'progress_activity' : 'add'}
+            tooltip={isCreatingRule ? t('automation.creatingRule') : t('automation.newRule')}
+            ariaLabel={isCreatingRule ? t('automation.creatingRule') : t('automation.newRule')}
+            onClick={onCreateRule}
+          />
+          <SidebarListCollapsedActionButton
+            icon='dock_to_right'
+            tooltip={t('automation.expandRulePanel')}
+            ariaLabel={t('automation.expandRulePanel')}
+            onClick={onExpandRulePanel}
+          />
+        </SidebarListCollapsedActions>
+      )}
+      <ComposerLanding
+        className='automation-empty-landing'
+        compact={isCompactLayout || isTouchInteraction}
+        composer={composer}
+      >
+        <AutomationEmptyGuide onSelectStarter={handleSelectStarter} />
+      </ComposerLanding>
+    </div>
   )
 }
