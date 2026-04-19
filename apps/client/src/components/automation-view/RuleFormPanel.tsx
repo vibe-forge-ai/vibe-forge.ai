@@ -1,17 +1,20 @@
 import './RuleFormPanel.scss'
 
 import { Button, Form, Input, Switch, Tooltip } from 'antd'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
-import { getServerHost, getServerPort } from '#~/api/base.js'
+import { createApiUrl } from '#~/api/base.js'
 
 import { DEFAULT_SELECT_VALUE, DEFAULT_STARTUP_FORM_VALUES } from './@utils/startup-options'
+import { AutomationEmptyLanding } from './AutomationEmptyLanding'
 import { AutomationPanelTitleActions } from './PanelTitleActions'
 import { TaskList } from './TaskList'
 import { TriggerList } from './TriggerList'
 import type { RuleFormValues } from './types'
+
+type CreateMode = 'form' | 'chat'
 
 interface RuleFormPanelProps {
   isRulePanelCollapsed?: boolean
@@ -23,10 +26,6 @@ interface RuleFormPanelProps {
   onSubmit: (payload: Partial<AutomationRule>, immediateRun: boolean) => Promise<void>
   onCancel: () => void
 }
-
-const serverHost = getServerHost()
-const serverPort = getServerPort()
-const serverUrl = `http://${serverHost}:${serverPort}`
 
 const normalizeSelectText = (value?: string) => {
   const normalized = value?.trim()
@@ -60,6 +59,8 @@ export function RuleFormPanel({
 }: RuleFormPanelProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<RuleFormValues>()
+  const [createMode, setCreateMode] = useState<CreateMode>('form')
+  const isChatCreateMode = mode === 'create' && createMode === 'chat'
 
   const updateWeeklyCron = useCallback((index: number, nextDay?: string, nextTime?: string) => {
     const triggers = form.getFieldValue('triggers') as RuleFormValues['triggers'] | undefined
@@ -83,10 +84,15 @@ export function RuleFormPanel({
 
   const getWebhookUrl = useCallback((triggerId?: string, webhookKey?: string) => {
     if (!triggerId || !webhookKey) return ''
-    return `${serverUrl}/api/automation/webhook/${triggerId}?key=${webhookKey}`
+    const url = createApiUrl(`/api/automation/webhook/${triggerId}`)
+    url.searchParams.set('key', webhookKey)
+    return url.toString()
   }, [])
 
   useEffect(() => {
+    if (mode === 'edit') {
+      setCreateMode('form')
+    }
     if (mode === 'create') {
       form.setFieldsValue({
         name: '',
@@ -216,7 +222,12 @@ export function RuleFormPanel({
   }, [form, onSubmit])
 
   return (
-    <div className='automation-view__form-panel'>
+    <div
+      className={[
+        'automation-view__form-panel',
+        isChatCreateMode ? 'automation-view__form-panel--chat-create' : ''
+      ].filter(Boolean).join(' ')}
+    >
       <div className='automation-view__form-header'>
         <div className='automation-view__form-title'>
           <AutomationPanelTitleActions
@@ -227,7 +238,9 @@ export function RuleFormPanel({
             onCreateRule={onCreateRule}
             onExpandRulePanel={onExpandRulePanel}
           />
-          {mode === 'create' ? t('automation.newRule') : t('automation.editRule')}
+          <span className='automation-view__form-title-text'>
+            {mode === 'create' ? t('automation.newRule') : t('automation.editRule')}
+          </span>
         </div>
         <div className='automation-view__form-header-actions'>
           <Tooltip title={t('common.cancel')}>
@@ -238,81 +251,115 @@ export function RuleFormPanel({
               onClick={onCancel}
             />
           </Tooltip>
-          <Tooltip title={t('common.confirm')}>
-            <Button
-              className='automation-view__square-button automation-view__square-button--confirm'
-              type='primary'
-              aria-label={t('common.confirm')}
-              loading={submitting}
-              icon={<span className='material-symbols-rounded automation-view__action-icon'>check</span>}
-              onClick={() => void handleSubmit()}
-            />
-          </Tooltip>
+          {!isChatCreateMode && (
+            <Tooltip title={t('common.confirm')}>
+              <Button
+                className='automation-view__square-button automation-view__square-button--confirm'
+                type='primary'
+                aria-label={t('common.confirm')}
+                loading={submitting}
+                icon={<span className='material-symbols-rounded automation-view__action-icon'>check</span>}
+                onClick={() => void handleSubmit()}
+              />
+            </Tooltip>
+          )}
         </div>
       </div>
-      <Form
-        form={form}
-        layout='vertical'
-        initialValues={{
-          enabled: true,
-          immediateRun: false,
-          tasks: [{
-            ...DEFAULT_STARTUP_FORM_VALUES
-          }]
-        }}
-      >
-        <div className='automation-view__form-stack'>
-          <div className='automation-view__form-section automation-view__form-section--basic'>
-            <Form.Item
-              name='name'
-              rules={[{ required: true, message: t('automation.ruleNameRequired') }]}
-            >
-              <Input aria-label={t('automation.ruleName')} placeholder={t('automation.ruleNameRequired')} />
-            </Form.Item>
-            <Form.Item name='description'>
-              <Input.TextArea
-                aria-label={t('automation.ruleDescription')}
-                placeholder={t('automation.ruleDescriptionPlaceholder')}
-                rows={1}
-              />
-            </Form.Item>
-            <div className='automation-view__toggle-group'>
-              <div className='automation-view__toggle-row'>
-                <span className='automation-view__toggle-label'>
-                  <span className='material-symbols-rounded automation-view__label-icon'>toggle_on</span>
-                  {t('automation.enabledStatus')}
-                </span>
-                <Form.Item name='enabled' valuePropName='checked' noStyle>
-                  <Switch />
+      {mode === 'create' && (
+        <div className='automation-view__create-mode-switch' role='tablist' aria-label={t('automation.createMode')}>
+          <Button
+            className={`automation-view__create-mode-button ${createMode === 'form' ? 'is-active' : ''}`.trim()}
+            type='text'
+            role='tab'
+            aria-selected={createMode === 'form'}
+            onClick={() => setCreateMode('form')}
+          >
+            <span className='material-symbols-rounded automation-view__create-mode-icon'>edit_note</span>
+            <span>{t('automation.createModeForm')}</span>
+          </Button>
+          <Button
+            className={`automation-view__create-mode-button ${createMode === 'chat' ? 'is-active' : ''}`.trim()}
+            type='text'
+            role='tab'
+            aria-selected={createMode === 'chat'}
+            onClick={() => setCreateMode('chat')}
+          >
+            <span className='material-symbols-rounded automation-view__create-mode-icon'>forum</span>
+            <span>{t('automation.createModeChat')}</span>
+          </Button>
+        </div>
+      )}
+      {isChatCreateMode
+        ? (
+          <div className='automation-view__create-chat-panel'>
+            <AutomationEmptyLanding />
+          </div>
+        )
+        : (
+          <Form
+            form={form}
+            layout='vertical'
+            initialValues={{
+              enabled: true,
+              immediateRun: false,
+              tasks: [{
+                ...DEFAULT_STARTUP_FORM_VALUES
+              }]
+            }}
+          >
+            <div className='automation-view__form-stack'>
+              <div className='automation-view__form-section automation-view__form-section--basic'>
+                <Form.Item
+                  name='name'
+                  rules={[{ required: true, message: t('automation.ruleNameRequired') }]}
+                >
+                  <Input aria-label={t('automation.ruleName')} placeholder={t('automation.ruleNameRequired')} />
                 </Form.Item>
+                <Form.Item name='description'>
+                  <Input.TextArea
+                    aria-label={t('automation.ruleDescription')}
+                    placeholder={t('automation.ruleDescriptionPlaceholder')}
+                    rows={1}
+                  />
+                </Form.Item>
+                <div className='automation-view__toggle-group'>
+                  <div className='automation-view__toggle-row'>
+                    <span className='automation-view__toggle-label'>
+                      <span className='material-symbols-rounded automation-view__label-icon'>toggle_on</span>
+                      {t('automation.enabledStatus')}
+                    </span>
+                    <Form.Item name='enabled' valuePropName='checked' noStyle>
+                      <Switch />
+                    </Form.Item>
+                  </div>
+                  <div className='automation-view__toggle-row'>
+                    <span className='automation-view__toggle-label automation-view__toggle-label--run'>
+                      <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>
+                        play_circle
+                      </span>
+                      {t('automation.immediateRun')}
+                    </span>
+                    <Form.Item name='immediateRun' valuePropName='checked' noStyle>
+                      <Switch />
+                    </Form.Item>
+                  </div>
+                </div>
               </div>
-              <div className='automation-view__toggle-row'>
-                <span className='automation-view__toggle-label automation-view__toggle-label--run'>
-                  <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>
-                    play_circle
-                  </span>
-                  {t('automation.immediateRun')}
-                </span>
-                <Form.Item name='immediateRun' valuePropName='checked' noStyle>
-                  <Switch />
-                </Form.Item>
+
+              <div className='automation-view__form-section'>
+                <TriggerList
+                  form={form}
+                  updateWeeklyCron={updateWeeklyCron}
+                  getWebhookUrl={getWebhookUrl}
+                />
+              </div>
+
+              <div className='automation-view__form-section'>
+                <TaskList form={form} />
               </div>
             </div>
-          </div>
-
-          <div className='automation-view__form-section'>
-            <TriggerList
-              form={form}
-              updateWeeklyCron={updateWeeklyCron}
-              getWebhookUrl={getWebhookUrl}
-            />
-          </div>
-
-          <div className='automation-view__form-section'>
-            <TaskList form={form} />
-          </div>
-        </div>
-      </Form>
+          </Form>
+        )}
     </div>
   )
 }

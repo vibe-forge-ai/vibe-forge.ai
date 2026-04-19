@@ -295,3 +295,38 @@ html.dark .automation-view {
     background: var(--primary-soft-bg);
   }
 }
+
+@media (max-width: 960px) {
+  .automation-view--compact {
+    .automation-view__sidebar {
+      background: var(--sub-bg-color);
+    }
+
+    .automation-view__rule-list {
+      padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    }
+
+    .automation-view__rule-card {
+      min-height: 76px;
+      background: var(--bg-color);
+    }
+
+    .automation-view__rule-content {
+      gap: 5px;
+      padding-right: 52px;
+    }
+
+    .automation-view__rule-name {
+      padding-right: 44px;
+    }
+
+    .automation-view__rule-actions-bottom {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .automation-view__rule-created-at {
+      opacity: 0;
+    }
+  }
+}

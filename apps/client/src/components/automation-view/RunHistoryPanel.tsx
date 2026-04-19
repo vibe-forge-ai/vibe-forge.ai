@@ -129,7 +129,14 @@ export function RunHistoryPanel({
   ], [t])
 
   if (!rule) {
-    return <AutomationEmptyLanding />
+    return (
+      <AutomationEmptyLanding
+        flushPanelPadding
+        isRulePanelCollapsed={isRulePanelCollapsed}
+        onCreateRule={onCreateRule}
+        onExpandRulePanel={onExpandRulePanel}
+      />
+    )
   }
 
   const statusOptions = [

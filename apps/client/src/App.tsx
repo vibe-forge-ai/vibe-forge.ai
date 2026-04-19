@@ -2,6 +2,7 @@ import { ConfigProvider } from 'antd'
 
 import { AuthGate } from '#~/components/auth/AuthGate'
 import { AppShell } from '#~/components/layout/AppShell'
+import { ServerConnectionGate } from '#~/components/server-connection/ServerConnectionGate'
 import { useAppPreferences } from '#~/hooks/use-app-preferences'
 import { useSessionSubscription } from '#~/hooks/use-session-subscription.js'
 import { useSidebarNavigation } from '#~/hooks/use-sidebar-navigation'
@@ -30,8 +31,10 @@ function AuthenticatedApp() {
 
 export default function App() {
   return (
-    <AuthGate>
-      <AuthenticatedApp />
-    </AuthGate>
+    <ServerConnectionGate>
+      <AuthGate>
+        <AuthenticatedApp />
+      </AuthGate>
+    </ServerConnectionGate>
   )
 }

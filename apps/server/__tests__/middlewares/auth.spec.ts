@@ -2,15 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const resolveWebAuthConfig = vi.fn()
 const verifySessionToken = vi.fn()
+const getBearerTokenFromHeader = vi.fn()
 
 vi.mock('#~/services/auth/index.js', () => ({
   AUTH_COOKIE_NAME: 'vf_web_auth',
+  getBearerTokenFromHeader,
   resolveWebAuthConfig,
   verifySessionToken
 }))
 
-const createCtx = (path = '/api/sessions') => ({
+const createCtx = (path = '/api/sessions', authorization = '') => ({
   path,
+  get: vi.fn((name: string) => name === 'Authorization' ? authorization : ''),
   cookies: {
     get: vi.fn(() => 'token')
   }
@@ -19,6 +22,7 @@ const createCtx = (path = '/api/sessions') => ({
 describe('authMiddleware', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getBearerTokenFromHeader.mockReturnValue(undefined)
   })
 
   it('skips public auth routes', async () => {
@@ -51,5 +55,18 @@ describe('authMiddleware', () => {
 
     expect(next).toHaveBeenCalledOnce()
     expect(verifySessionToken).not.toHaveBeenCalled()
+  })
+
+  it('accepts bearer tokens on protected api routes', async () => {
+    resolveWebAuthConfig.mockResolvedValueOnce({ enabled: true })
+    getBearerTokenFromHeader.mockReturnValueOnce('bearer-token')
+    verifySessionToken.mockResolvedValueOnce(true)
+    const next = vi.fn()
+    const { authMiddleware } = await import('#~/middlewares/auth.js')
+
+    await authMiddleware({} as any)(createCtx('/api/sessions', 'Bearer bearer-token') as any, next)
+
+    expect(verifySessionToken).toHaveBeenCalledWith(expect.anything(), 'bearer-token')
+    expect(next).toHaveBeenCalledOnce()
   })
 })

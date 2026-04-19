@@ -11,6 +11,7 @@ import { WORKSPACE_TERMINAL_SESSION_ID } from '@vibe-forge/types'
 import { getDb } from '#~/db/index.js'
 import {
   AUTH_COOKIE_NAME,
+  getBearerTokenFromHeader,
   getCookieFromHeader,
   resolveWebAuthConfig,
   verifySessionToken
@@ -32,9 +33,13 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
   const wss = new WebSocketServer({ server, path: env.__VF_PROJECT_AI_SERVER_WS_PATH__ })
 
   wss.on('connection', async (ws, req) => {
+    const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
+    const params = url.searchParams
     const authConfig = await resolveWebAuthConfig(env)
     if (authConfig.enabled) {
-      const token = getCookieFromHeader(req.headers.cookie, AUTH_COOKIE_NAME)
+      const token = params.get('authToken') ??
+        getBearerTokenFromHeader(req.headers.authorization) ??
+        getCookieFromHeader(req.headers.cookie, AUTH_COOKIE_NAME)
       const authenticated = await verifySessionToken(env, token)
       if (!authenticated) {
         ws.close(1008, 'Login required')
@@ -42,8 +47,6 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
       }
     }
 
-    const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
-    const params = url.searchParams
     const subscribeMode = params.get('subscribe')
     const channel = params.get('channel')
 

@@ -17,6 +17,7 @@ const getSession = vi.fn()
 const getSessionRuntimeState = vi.fn()
 const resolveWebAuthConfig = vi.fn()
 const verifySessionToken = vi.fn()
+const getBearerTokenFromHeader = vi.fn()
 
 let connectionHandler: ((ws: any, req: any) => Promise<void>) | undefined
 
@@ -45,6 +46,7 @@ vi.mock('#~/db/index.js', () => ({
 
 vi.mock('#~/services/auth/index.js', () => ({
   AUTH_COOKIE_NAME: 'vf_web_auth',
+  getBearerTokenFromHeader,
   getCookieFromHeader: vi.fn(() => 'token'),
   resolveWebAuthConfig,
   verifySessionToken
@@ -83,6 +85,7 @@ describe('setupWebSocket', () => {
     getAdapterSessionRuntime.mockReturnValue(undefined)
     resolveWebAuthConfig.mockResolvedValue({ enabled: false })
     verifySessionToken.mockResolvedValue(true)
+    getBearerTokenFromHeader.mockReturnValue(undefined)
     getSessionRuntimeState.mockReturnValue({
       runtimeKind: 'interactive',
       historySeedPending: false
@@ -112,6 +115,27 @@ describe('setupWebSocket', () => {
 
     expect(ws.close).toHaveBeenCalledWith(1008, 'Login required')
     expect(startAdapterSession).not.toHaveBeenCalled()
+  })
+
+  it('accepts auth tokens from websocket query params', async () => {
+    resolveWebAuthConfig.mockResolvedValueOnce({ enabled: true })
+    verifySessionToken.mockResolvedValueOnce(true)
+
+    const ws = {
+      close: vi.fn(),
+      on: vi.fn(),
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    await connectionHandler?.(ws, {
+      url: '/ws?subscribe=sessions&authToken=query-token',
+      headers: { host: 'localhost', cookie: '' }
+    })
+
+    expect(verifySessionToken).toHaveBeenCalledWith(expect.anything(), 'query-token')
+    expect(ws.close).not.toHaveBeenCalled()
+    expect(addSessionSubscriberSocket).toHaveBeenCalledWith(ws)
   })
 
   it('registers session list subscribers only for subscribe=sessions connections', async () => {

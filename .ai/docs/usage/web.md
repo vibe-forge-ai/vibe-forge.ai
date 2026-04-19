@@ -6,6 +6,7 @@
 
 - 启动 `vfui-server` 和 `vfui-client` 后，先访问 `/ui`。
 - Web UI 默认要求登录；账号配置见 [启动服务](./runtime.md) 中的 `webAuth` 示例。
+- 如果前端需要独立部署到静态站点或安装成 PWA，继续看 [PWA 与独立部署](./pwa.md)。
 - 会话详情页路径是 `/ui/session/<sessionId>`。
 - 配置页路径是 `/ui/config`；通过 `tab` 和 `source` query 控制当前 section 与 project/user 来源，例如 `/ui/config?tab=general&source=user`。
 - 如果配置页进入了二级详情页，当前详情路径也会写入 `detail` query；复制完整 URL 后，可以直接回到对应的配置子页面。

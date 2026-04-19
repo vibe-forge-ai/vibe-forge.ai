@@ -115,14 +115,20 @@ export function RuleSidebar({
         }
         sideAction={collapsible
           ? (
-            <Tooltip title={isTouchInteraction ? undefined : t('automation.collapseRulePanel')}>
+            <Tooltip
+              title={isTouchInteraction
+                ? undefined
+                : isCompactHeader
+                ? t('common.close')
+                : t('automation.collapseRulePanel')}
+            >
               <Button
                 className='sidebar-list-header__icon-action automation-view__sidebar-collapse-button'
                 type='text'
-                aria-label={t('automation.collapseRulePanel')}
+                aria-label={isCompactHeader ? t('common.close') : t('automation.collapseRulePanel')}
                 onClick={onToggleCollapsed}
               >
-                <span className='material-symbols-rounded'>left_panel_close</span>
+                <span className='material-symbols-rounded'>{isCompactHeader ? 'close' : 'left_panel_close'}</span>
               </Button>
             </Tooltip>
           )

@@ -1,11 +1,8 @@
 import type { WSEvent } from '@vibe-forge/core'
 
-import { getServerHostEnv, getServerPortEnv, getServerWsPath } from '#~/runtime-config.js'
+import { createServerUrl, getServerWsPath } from '#~/runtime-config.js'
 
-const SERVER_HOST = getServerHostEnv() || window.location.hostname
-const SERVER_PORT = getServerPortEnv() || '8787'
-const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss' : 'ws'
-const WS_URL = `${WS_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}${getServerWsPath()}`
+import { getAuthToken } from './api/auth-token'
 
 export interface WSHandlers<TMessage = WSEvent> {
   onOpen?: () => void
@@ -14,12 +11,26 @@ export interface WSHandlers<TMessage = WSEvent> {
   onClose?: () => void
 }
 
-export function createSocket<TMessage = WSEvent>(handlers: WSHandlers<TMessage>, params?: Record<string, string>) {
-  let url = WS_URL
-  if (params) {
-    const searchParams = new URLSearchParams(params)
-    url += (url.includes('?') ? '&' : '?') + searchParams.toString()
+const createWebSocketUrl = (params?: Record<string, string>) => {
+  const url = new URL(createServerUrl(getServerWsPath()))
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+
+  const authToken = getAuthToken()
+  if (authToken != null) {
+    url.searchParams.set('authToken', authToken)
   }
+
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value)
+    }
+  }
+
+  return url.toString()
+}
+
+export function createSocket<TMessage = WSEvent>(handlers: WSHandlers<TMessage>, params?: Record<string, string>) {
+  const url = createWebSocketUrl(params)
   const ws = new WebSocket(url)
   ws.addEventListener('open', () => handlers.onOpen?.())
   ws.addEventListener('message', (ev) => {

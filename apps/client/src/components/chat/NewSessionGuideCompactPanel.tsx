@@ -81,9 +81,7 @@ function CompactResourceRow({
 
 export function NewSessionGuideCompactPanel({
   entityItems,
-  helpItems,
   hiddenEntityCount,
-  hiddenHelpCount,
   hiddenSpecCount,
   hiddenWorkspaceCount,
   isEntitiesReady,
@@ -94,15 +92,12 @@ export function NewSessionGuideCompactPanel({
   renderMoreCount,
   specItems,
   visibleEntityItems,
-  visibleHelpItems,
   visibleSpecItems,
   visibleWorkspaceItems,
   workspaceItems
 }: {
   entityItems: NewSessionGuideResourceItem[]
-  helpItems: string[]
   hiddenEntityCount: number
-  hiddenHelpCount: number
   hiddenSpecCount: number
   hiddenWorkspaceCount: number
   isEntitiesReady: boolean
@@ -113,7 +108,6 @@ export function NewSessionGuideCompactPanel({
   renderMoreCount: (count: number) => ReactNode
   specItems: NewSessionGuideResourceItem[]
   visibleEntityItems: NewSessionGuideResourceItem[]
-  visibleHelpItems: string[]
   visibleSpecItems: NewSessionGuideResourceItem[]
   visibleWorkspaceItems: NewSessionGuideResourceItem[]
   workspaceItems: NewSessionGuideResourceItem[]
@@ -158,26 +152,6 @@ export function NewSessionGuideCompactPanel({
         onCreate={onCreateEntity}
         renderMoreCount={renderMoreCount}
       />
-
-      <div className='new-session-guide__compact-row'>
-        <div className='new-session-guide__compact-row-header'>
-          <div className='new-session-guide__title'>
-            <span className='material-symbols-rounded new-session-guide__title-icon'>tips_and_updates</span>
-            <span>{t('chat.newSessionGuide.help.title')}</span>
-          </div>
-          <div className='new-session-guide__count'>{helpItems.length}</div>
-        </div>
-
-        <div className='new-session-guide__compact-row-main'>
-          {visibleHelpItems[0] != null && (
-            <div className='new-session-guide__compact-help-item'>
-              <span className='material-symbols-rounded new-session-guide__help-icon'>check_circle</span>
-              <span>{visibleHelpItems[0]}</span>
-            </div>
-          )}
-          {renderMoreCount(hiddenHelpCount)}
-        </div>
-      </div>
     </div>
   )
 }

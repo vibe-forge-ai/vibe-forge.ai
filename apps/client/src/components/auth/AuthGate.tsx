@@ -7,7 +7,9 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import { getAuthStatus, login } from '#~/api/auth'
+import { setAuthToken } from '#~/api/auth-token'
 import { getApiErrorMessage } from '#~/api/base'
+import { clearStoredServerBaseUrl, isStandaloneClientMode } from '#~/runtime-config'
 
 interface LoginFormValues {
   username?: string
@@ -21,6 +23,12 @@ export function AuthGate({ children }: PropsWithChildren) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const suggestedUsername = data?.usernames[0] ?? 'admin'
+  const standaloneMode = isStandaloneClientMode()
+
+  const handleChangeServer = () => {
+    clearStoredServerBaseUrl()
+    window.location.reload()
+  }
 
   if (isLoading) {
     return (
@@ -40,6 +48,16 @@ export function AuthGate({ children }: PropsWithChildren) {
             message={t('auth.statusFailed')}
             description={getApiErrorMessage(error, t('auth.statusFailed'))}
           />
+          {standaloneMode && (
+            <Button
+              className='auth-gate__secondary-action'
+              htmlType='button'
+              onClick={handleChangeServer}
+              block
+            >
+              {t('auth.changeServer')}
+            </Button>
+          )}
         </div>
       </div>
     )
@@ -56,8 +74,12 @@ export function AuthGate({ children }: PropsWithChildren) {
       const status = await login({
         username: values.username?.trim() ?? '',
         password: values.password ?? '',
-        rememberDevice: values.rememberDevice === true
+        rememberDevice: values.rememberDevice === true,
+        returnToken: standaloneMode
       })
+      if (status.token != null) {
+        setAuthToken(status.token)
+      }
       await mutate(status, { revalidate: false })
     } catch (err) {
       setSubmitError(getApiErrorMessage(err, t('auth.loginFailed')))
@@ -134,6 +156,17 @@ export function AuthGate({ children }: PropsWithChildren) {
           >
             {t('auth.login')}
           </Button>
+
+          {standaloneMode && (
+            <Button
+              className='auth-gate__secondary-action'
+              htmlType='button'
+              onClick={handleChangeServer}
+              block
+            >
+              {t('auth.changeServer')}
+            </Button>
+          )}
         </Form>
       </main>
     </div>

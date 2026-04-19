@@ -1,7 +1,7 @@
 import './index.scss'
 
-import { App, Segmented } from 'antd'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { App } from 'antd'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
@@ -16,6 +16,7 @@ import {
   runAutomationRule,
   updateAutomationRule
 } from '#~/api.js'
+import { useMobileSidebarModal } from '#~/components/layout/@hooks/use-mobile-sidebar-modal'
 import { PageShell } from '#~/components/layout/PageShell'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
@@ -47,8 +48,10 @@ export function AutomationView() {
   const rules = data?.rules ?? []
   const [panelMode, setPanelMode] = useState<PanelMode>('view')
   const [submitting, setSubmitting] = useState(false)
-  const [mobilePanel, setMobilePanel] = useState<'rules' | 'details'>('rules')
+  const [mobilePanel, setMobilePanel] = useState<'rules' | 'details'>('details')
   const [isRulePanelCollapsed, setIsRulePanelCollapsed] = useState(false)
+  const detailPanelRef = useRef<HTMLDivElement | null>(null)
+  const mobileRulePanelSheetRef = useRef<HTMLDivElement | null>(null)
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const raw = window.localStorage.getItem('automationRuleFavorites')
@@ -61,6 +64,8 @@ export function AutomationView() {
     }
   })
   const isCompactView = isCompactLayout || isTouchInteraction
+  const isMobileRulePanelOpen = isCompactView && mobilePanel === 'rules'
+  const mobileRulePanelBackgroundRefs = useMemo(() => [detailPanelRef], [])
 
   const { values, update } = useQueryParams<AutomationQueryParams>({
     keys: ['rule', 'q', 'runQ', 'status', 'time', 'sort'],
@@ -85,7 +90,7 @@ export function AutomationView() {
   const selectedRuleId = useMemo(() => {
     const fromUrl = values.rule
     if (fromUrl && rules.some(rule => rule.id === fromUrl)) return fromUrl
-    return rules[0]?.id ?? null
+    return null
   }, [rules, values.rule])
 
   const selectedRule = useMemo(
@@ -105,36 +110,64 @@ export function AutomationView() {
   }, [favorites])
 
   useEffect(() => {
-    if (rules.length === 0) return
-    if (!values.rule || !rules.some(rule => rule.id === values.rule)) {
-      update({ rule: rules[0].id })
-    }
+    if (!values.rule) return
+    if (rules.some(rule => rule.id === values.rule)) return
+    update({ rule: '' })
   }, [rules, update, values.rule])
 
   useEffect(() => {
     if (!isCompactView) return
-    if (panelMode !== 'view') {
+    if (panelMode !== 'view' || values.rule) {
       setMobilePanel('details')
-      return
     }
-    if (selectedRuleId == null) {
-      setMobilePanel(rules.length === 0 ? 'details' : 'rules')
-    }
-  }, [isCompactView, panelMode, rules.length, selectedRuleId])
+  }, [isCompactView, panelMode, values.rule])
+
+  useMobileSidebarModal({
+    backgroundRefs: mobileRulePanelBackgroundRefs,
+    isCompactLayout: isCompactView,
+    isMobileSidebarOpen: isMobileRulePanelOpen,
+    setIsMobileSidebarOpen: (nextOpen) => setMobilePanel(nextOpen ? 'rules' : 'details'),
+    sheetRef: mobileRulePanelSheetRef
+  })
 
   const handleSelectRule = useCallback((ruleId: string) => {
     setPanelMode('view')
+    if (panelMode === 'view' && selectedRuleId === ruleId) {
+      update({ rule: '' })
+      if (isCompactView) {
+        setMobilePanel('details')
+      }
+      return
+    }
     update({ rule: ruleId })
     if (isCompactView) {
       setMobilePanel('details')
     }
-  }, [isCompactView, update])
+  }, [isCompactView, panelMode, selectedRuleId, update])
 
   const handleCreateRule = useCallback(() => {
     setPanelMode('create')
     if (isCompactView) {
       setMobilePanel('details')
     }
+  }, [isCompactView])
+
+  const handleCollapseRulePanel = useCallback(() => {
+    if (isCompactView) {
+      setMobilePanel('details')
+      return
+    }
+
+    setIsRulePanelCollapsed(true)
+  }, [isCompactView])
+
+  const handleExpandRulePanel = useCallback(() => {
+    if (isCompactView) {
+      setMobilePanel('rules')
+      return
+    }
+
+    setIsRulePanelCollapsed(false)
   }, [isCompactView])
 
   const handleEditRule = useCallback((rule: AutomationRule) => {
@@ -148,13 +181,11 @@ export function AutomationView() {
   const handleCancelForm = useCallback(() => {
     setPanelMode('view')
     if (isCompactView) {
-      setMobilePanel(selectedRuleId != null ? 'details' : 'rules')
+      setMobilePanel('details')
     }
-  }, [isCompactView, selectedRuleId])
+  }, [isCompactView])
 
-  const showRuleList = isCompactView ? mobilePanel === 'rules' : true
-  const showDetails = !isCompactView || mobilePanel === 'details'
-  const detailDisabled = panelMode === 'view' && selectedRule == null && rules.length > 0
+  const detailsShouldShowRulePanelAction = isCompactView || (!isCompactView && isRulePanelCollapsed)
 
   const handleSubmit = useCallback(async (
     payload: Partial<AutomationRule>,
@@ -225,6 +256,25 @@ export function AutomationView() {
     setFavorites(prev => prev.includes(ruleId) ? prev.filter(id => id !== ruleId) : [...prev, ruleId])
   }, [])
 
+  const ruleSidebar = (
+    <RuleSidebar
+      rules={rules}
+      selectedRuleId={selectedRuleId}
+      query={values.q}
+      isCreating={panelMode === 'create'}
+      favoriteIds={favorites}
+      collapsible
+      onCreate={handleCreateRule}
+      onSelect={handleSelectRule}
+      onRun={handleRun}
+      onDelete={handleDelete}
+      onToggleFavorite={handleToggleFavorite}
+      onToggle={handleToggle}
+      onToggleCollapsed={handleCollapseRulePanel}
+      onQueryChange={(value: string) => update({ q: value })}
+    />
+  )
+
   return (
     <PageShell
       className={[
@@ -234,91 +284,86 @@ export function AutomationView() {
       ].filter(Boolean).join(' ')}
       bodyClassName='automation-view__body'
     >
-      {isCompactView && (
-        <div className='automation-view__mobile-switcher-shell'>
-          <Segmented
-            block
-            className='automation-view__mobile-switcher'
-            value={mobilePanel}
-            onChange={(value) => setMobilePanel(value as 'rules' | 'details')}
-            options={[
-              { label: t('automation.mobileRules'), value: 'rules' },
-              { label: t('automation.mobileDetails'), value: 'details', disabled: detailDisabled }
-            ]}
+      {isCompactView
+        ? (
+          <>
+            <button
+              type='button'
+              className={`automation-view__mobile-rule-backdrop ${isMobileRulePanelOpen ? 'is-open' : ''}`}
+              aria-label={t('common.close')}
+              aria-hidden={!isMobileRulePanelOpen}
+              tabIndex={-1}
+              onClick={() => setMobilePanel('details')}
+            />
+            <div
+              ref={mobileRulePanelSheetRef}
+              className={`automation-view__mobile-rule-sheet ${isMobileRulePanelOpen ? 'is-open' : ''}`}
+              role='dialog'
+              aria-modal={isMobileRulePanelOpen ? 'true' : undefined}
+              aria-label={t('automation.mobileRules')}
+              aria-hidden={!isMobileRulePanelOpen}
+              tabIndex={-1}
+            >
+              <div className='automation-view__left automation-view__left--mobile-sheet'>
+                {ruleSidebar}
+              </div>
+            </div>
+          </>
+        )
+        : (
+          <div className={`automation-view__left ${!isCompactView && isRulePanelCollapsed ? 'is-collapsed' : ''}`}>
+            {ruleSidebar}
+          </div>
+        )}
+      <div ref={detailPanelRef} className='automation-view__right'>
+        {panelMode === 'create' && (
+          <RuleFormPanel
+            isRulePanelCollapsed={detailsShouldShowRulePanelAction}
+            mode='create'
+            rule={null}
+            submitting={submitting}
+            onCreateRule={handleCreateRule}
+            onExpandRulePanel={handleExpandRulePanel}
+            onSubmit={handleSubmit}
+            onCancel={handleCancelForm}
           />
-        </div>
-      )}
-      {showRuleList && (
-        <div className={`automation-view__left ${!isCompactView && isRulePanelCollapsed ? 'is-collapsed' : ''}`}>
-          <RuleSidebar
-            rules={rules}
-            selectedRuleId={selectedRuleId}
-            query={values.q}
-            isCreating={panelMode === 'create'}
-            favoriteIds={favorites}
-            collapsible={!isCompactView}
-            onCreate={handleCreateRule}
-            onSelect={handleSelectRule}
-            onRun={handleRun}
-            onDelete={handleDelete}
+        )}
+        {panelMode === 'edit' && (
+          <RuleFormPanel
+            isRulePanelCollapsed={detailsShouldShowRulePanelAction}
+            mode='edit'
+            rule={selectedRule}
+            submitting={submitting}
+            onCreateRule={handleCreateRule}
+            onExpandRulePanel={handleExpandRulePanel}
+            onSubmit={handleSubmit}
+            onCancel={handleCancelForm}
+          />
+        )}
+        {panelMode === 'view' && (
+          <RunHistoryPanel
+            compact={isCompactView}
+            isRulePanelCollapsed={detailsShouldShowRulePanelAction}
+            rule={selectedRule}
+            runs={runs}
+            runQuery={values.runQ}
+            statusFilter={values.status}
+            timeFilter={values.time}
+            sortOrder={values.sort}
+            onCreateRule={handleCreateRule}
+            onExpandRulePanel={handleExpandRulePanel}
+            onEditRule={handleEditRule}
+            onRunRule={handleRun}
+            onDeleteRule={handleDelete}
+            isFavorite={selectedRule != null && favoriteSet.has(selectedRule.id)}
             onToggleFavorite={handleToggleFavorite}
-            onToggle={handleToggle}
-            onToggleCollapsed={() => setIsRulePanelCollapsed(true)}
-            onQueryChange={(value: string) => update({ q: value })}
+            onRunQueryChange={(value: string) => update({ runQ: value })}
+            onStatusFilterChange={(value: string) => update({ status: value })}
+            onTimeFilterChange={(value: string) => update({ time: value })}
+            onSortOrderChange={(value: string) => update({ sort: value })}
           />
-        </div>
-      )}
-      {showDetails && (
-        <div className='automation-view__right'>
-          {panelMode === 'create' && (
-            <RuleFormPanel
-              isRulePanelCollapsed={!isCompactView && isRulePanelCollapsed}
-              mode='create'
-              rule={null}
-              submitting={submitting}
-              onCreateRule={handleCreateRule}
-              onExpandRulePanel={() => setIsRulePanelCollapsed(false)}
-              onSubmit={handleSubmit}
-              onCancel={handleCancelForm}
-            />
-          )}
-          {panelMode === 'edit' && (
-            <RuleFormPanel
-              isRulePanelCollapsed={!isCompactView && isRulePanelCollapsed}
-              mode='edit'
-              rule={selectedRule}
-              submitting={submitting}
-              onCreateRule={handleCreateRule}
-              onExpandRulePanel={() => setIsRulePanelCollapsed(false)}
-              onSubmit={handleSubmit}
-              onCancel={handleCancelForm}
-            />
-          )}
-          {panelMode === 'view' && (
-            <RunHistoryPanel
-              compact={isCompactView}
-              isRulePanelCollapsed={!isCompactView && isRulePanelCollapsed}
-              rule={selectedRule}
-              runs={runs}
-              runQuery={values.runQ}
-              statusFilter={values.status}
-              timeFilter={values.time}
-              sortOrder={values.sort}
-              onCreateRule={handleCreateRule}
-              onExpandRulePanel={() => setIsRulePanelCollapsed(false)}
-              onEditRule={handleEditRule}
-              onRunRule={handleRun}
-              onDeleteRule={handleDelete}
-              isFavorite={selectedRule != null && favoriteSet.has(selectedRule.id)}
-              onToggleFavorite={handleToggleFavorite}
-              onRunQueryChange={(value: string) => update({ runQ: value })}
-              onStatusFilterChange={(value: string) => update({ status: value })}
-              onTimeFilterChange={(value: string) => update({ time: value })}
-              onSortOrderChange={(value: string) => update({ sort: value })}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </PageShell>
   )
 }

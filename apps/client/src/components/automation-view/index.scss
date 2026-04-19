@@ -1,13 +1,11 @@
 .automation-view {
+  position: relative;
+
   &__body {
     flex-direction: row;
     gap: 0;
     padding: 0;
     position: relative;
-  }
-
-  &__mobile-switcher-shell {
-    display: none;
   }
 
   display: flex;
@@ -44,6 +42,9 @@
   }
 
   &__right {
+    --automation-view-right-padding-x: 12px;
+    --automation-view-right-padding-bottom: 12px;
+
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -54,6 +55,11 @@
     padding: 10px 12px 12px;
     border-radius: var(--subpage-content-card-radius);
     background: var(--subpage-content-card-bg);
+  }
+
+  &__mobile-rule-backdrop,
+  &__mobile-rule-sheet {
+    display: none;
   }
 
   &__select-arrow {
@@ -129,47 +135,11 @@
   }
 }
 
-@media (max-width: 1100px) {
-  .automation-view {
-    &__body {
-      flex-direction: column;
-    }
-
-    &__left {
-      width: 100%;
-      min-width: 0;
-      max-height: 360px;
-    }
-
-    &__right {
-      margin-top: 0;
-      margin-left: var(--subpage-content-card-gap);
-    }
-  }
-}
-
 @media (max-width: 960px) {
   .automation-view--compact {
     .automation-view__body {
       gap: 0;
-    }
-
-    .automation-view__mobile-switcher-shell {
-      display: block;
-      padding: 12px;
-      padding-bottom: 0;
-    }
-
-    .automation-view__mobile-switcher {
-      width: 100%;
-
-      .ant-segmented-group {
-        gap: 4px;
-      }
-
-      .ant-segmented-item {
-        min-height: 32px;
-      }
+      height: 100%;
     }
 
     .automation-view__left,
@@ -178,9 +148,9 @@
       min-width: 0;
       max-width: none;
       max-height: none;
-      margin: 12px;
-      margin-top: 12px;
-      border-radius: var(--subpage-content-card-radius);
+      height: 100%;
+      margin: 0;
+      border-radius: 0;
       background: var(--subpage-content-card-bg);
       overflow: hidden;
     }
@@ -188,5 +158,73 @@
     .automation-view__right {
       padding: 12px;
     }
+
+    .automation-view__mobile-rule-backdrop {
+      position: absolute;
+      inset: 0;
+      display: block;
+      border: none;
+      background: rgba(0, 0, 0, .28);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .24s ease, visibility 0s linear .24s;
+      z-index: 30;
+    }
+
+    .automation-view__mobile-rule-backdrop.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
+
+    .automation-view__mobile-rule-sheet {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      display: block;
+      width: min(320px, calc(100% - 24px));
+      max-width: calc(100% - 24px);
+      transform: translateX(-100%);
+      visibility: hidden;
+      pointer-events: none;
+      transition:
+        transform .24s cubic-bezier(.4, 0, .2, 1),
+        visibility 0s linear .24s;
+      z-index: 31;
+      overscroll-behavior: contain;
+    }
+
+    .automation-view__mobile-rule-sheet.is-open {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
+
+    .automation-view__left--mobile-sheet {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      height: 100%;
+      border-right: 1px solid var(--border-color);
+      border-radius: 0 8px 8px 0;
+      background: var(--sub-bg-color);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, .22);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+  }
+}
+
+html.dark .automation-view--compact {
+  .automation-view__mobile-rule-backdrop {
+    background: rgba(0, 0, 0, .48);
+  }
+
+  .automation-view__left--mobile-sheet {
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .42);
   }
 }

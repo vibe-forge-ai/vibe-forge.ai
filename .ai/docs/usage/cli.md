@@ -4,7 +4,7 @@
 
 ## 常用命令
 
-通过 Homebrew 安装后可以直接使用 `vf`；不安装到项目依赖时，用 `npx -p <package> <bin>` 临时运行对应命令。
+通过 Homebrew、Scoop 或 Windows PowerShell 安装后可以直接使用 `vf`；不安装到项目依赖时，用 `npx -p <package> <bin>` 临时运行对应命令。
 
 - `vf run --help`
 - `npx -y -p @vibe-forge/cli vf run --help`

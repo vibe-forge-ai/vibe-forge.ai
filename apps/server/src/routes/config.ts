@@ -1,12 +1,8 @@
-/* eslint-disable max-lines -- config route also serves schema endpoints and section presenters */
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import process from 'node:process'
 
 import Router from '@koa/router'
 
 import {
-  buildConfigSections,
   composeBaseConfigSchemaBundle,
   composeWorkspaceConfigSchemaBundle,
   resolveWritableConfigPath,
@@ -14,73 +10,13 @@ import {
   validateConfigSection,
   writeWorkspaceConfigSchemaFile
 } from '@vibe-forge/config'
-import type { AdapterBuiltinModel, Config, ConfigSchemaResponse } from '@vibe-forge/types'
+import type { ConfigSchemaResponse } from '@vibe-forge/types'
 import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
 import { badRequest, internalServerError, isHttpError } from '#~/utils/http.js'
 
-const sanitize = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map(item => sanitize(item))
-  }
-  if (value != null && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-    return entries.reduce<Record<string, unknown>>((acc, [key, val]) => {
-      acc[key] = sanitize(val)
-      return acc
-    }, {})
-  }
-  return value
-}
-
-interface AppInfo {
-  version?: string
-  lastReleaseAt?: string
-}
-
-const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
-  try {
-    const pkgPath = resolve(workspaceFolder, 'package.json')
-    const content = await readFile(pkgPath, 'utf-8')
-    const pkg = JSON.parse(content) as { version?: string; lastReleaseAt?: string; releaseDate?: string }
-    return {
-      version: pkg.version,
-      lastReleaseAt: pkg.lastReleaseAt ?? pkg.releaseDate
-    }
-  } catch {
-    return {}
-  }
-}
-
-const buildSections = (config: Config | undefined) => {
-  const sections = sanitize(buildConfigSections(config)) as ReturnType<typeof buildConfigSections>
-
-  return {
-    ...sections,
-    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>
-  }
-}
-
-const loadAdapterBuiltinModels = (
-  adapters: Config['adapters']
-): Record<string, AdapterBuiltinModel[]> => {
-  const result: Record<string, AdapterBuiltinModel[]> = {}
-  if (!adapters) return result
-  for (const adapterKey of Object.keys(adapters)) {
-    try {
-      const packageName = adapterKey.startsWith('@') ? adapterKey : `@vibe-forge/adapter-${adapterKey}`
-      // eslint-disable-next-line ts/no-require-imports
-      const mod = require(`${packageName}/models`)
-      if (Array.isArray(mod?.builtinModels)) {
-        result[adapterKey] = mod.builtinModels
-      }
-    } catch {
-      // Adapter does not export builtin models — skip
-    }
-  }
-  return result
-}
+import { buildConfigAbout, buildSections, loadAdapterBuiltinModels } from './config-helpers.js'
 
 export function configRouter(): Router {
   const router = new Router()
@@ -136,19 +72,12 @@ export function configRouter(): Router {
         projectSource,
         userSource
       } = await loadConfigState()
-      const urls = {
-        repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        contact: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        issues: 'https://github.com/vibe-forge-ai/vibe-forge.ai/issues',
-        releases: 'https://github.com/vibe-forge-ai/vibe-forge.ai/releases'
-      }
-      const appInfo = await getAppInfo(workspaceFolder)
       const mergedSections = buildSections(mergedConfig)
       mergedSections.general.baseDir = process.env.__VF_PROJECT_AI_BASE_DIR__ != null
         ? resolveProjectAiBaseDirName(process.env)
         : mergedConfig.baseDir ?? resolveProjectAiBaseDirName(process.env)
       mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
+      const about = await buildConfigAbout()
       ctx.body = {
         sources: {
           project: buildSections(projectSource?.rawConfig),
@@ -178,11 +107,7 @@ export function configRouter(): Router {
             }
           },
           experiments: {},
-          about: {
-            version: appInfo.version,
-            lastReleaseAt: appInfo.lastReleaseAt,
-            urls
-          }
+          about
         }
       }
     } catch (err) {

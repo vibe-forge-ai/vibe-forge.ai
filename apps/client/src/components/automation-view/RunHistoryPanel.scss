@@ -10,6 +10,8 @@
     flex-direction: column;
     gap: 18px;
     height: 100%;
+    min-height: 0;
+    overflow: auto;
   }
 
   &__detail-surface,
@@ -20,6 +22,7 @@
   &__history-surface {
     padding-top: 16px;
     border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
   }
 
   &__content-header {
@@ -42,6 +45,7 @@
 
   &__content-text {
     margin: 0;
+    min-width: 0;
     color: var(--text-color);
     font-size: 16px;
   }
@@ -64,6 +68,7 @@
     display: flex;
     align-items: flex-start;
     gap: 8px;
+    flex: 1;
     min-width: 0;
   }
 
@@ -71,6 +76,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 1;
     min-width: 0;
   }
 
@@ -587,12 +593,31 @@
   .automation-view {
     &__content {
       gap: 14px;
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
     }
 
     &__detail-header,
     &__content-header {
       align-items: flex-start;
       gap: 10px;
+    }
+
+    &__detail-title-shell {
+      align-items: center;
+    }
+
+    &__detail-title {
+      gap: 6px;
+    }
+
+    &__detail-title .automation-view__content-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__detail-actions {
+      gap: 4px;
     }
 
     &__detail-description {
