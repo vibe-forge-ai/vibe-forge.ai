@@ -1,3 +1,4 @@
+import { clearAuthToken } from './auth-token'
 import { fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 
 export interface AuthStatus {
@@ -6,12 +7,15 @@ export interface AuthStatus {
   usernames: string[]
   passwordSource: 'config' | 'env' | 'generated'
   passwordFilePath?: string
+  version?: string
+  token?: string
 }
 
 export interface LoginInput {
   username: string
   password: string
   rememberDevice: boolean
+  returnToken?: boolean
 }
 
 export const getAuthStatus = () => fetchApiJson<AuthStatus>('/api/auth/status')
@@ -28,8 +32,8 @@ export const login = (input: LoginInput) => (
   )
 )
 
-export const logout = () => (
-  fetchApiJsonOrThrow<{ ok: boolean }>(
+export const logout = async () => {
+  const result = await fetchApiJsonOrThrow<{ ok: boolean }>(
     '/api/auth/logout',
     {
       method: 'POST',
@@ -37,4 +41,6 @@ export const logout = () => (
     },
     '[api] logout failed:'
   )
-)
+  clearAuthToken()
+  return result
+}

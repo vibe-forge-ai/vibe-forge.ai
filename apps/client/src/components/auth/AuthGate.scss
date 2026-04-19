@@ -1,11 +1,15 @@
 .auth-gate {
-  min-height: 100dvh;
+  min-height: var(--vf-visual-viewport-height, 100dvh);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 28px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--bg-color);
   color: var(--text-color);
+  scroll-padding-bottom: 24px;
 }
 
 .auth-gate--loading {
@@ -37,6 +41,10 @@
   margin-bottom: 18px;
 }
 
+.auth-gate__secondary-action {
+  margin-top: 18px;
+}
+
 .auth-gate__remember {
   margin-bottom: 8px;
 }
@@ -53,6 +61,12 @@
     align-items: center;
     padding: max(16px, env(safe-area-inset-top)) 14px
       max(16px, env(safe-area-inset-bottom));
+  }
+
+  html.has-mobile-keyboard .auth-gate {
+    align-items: flex-start;
+    justify-content: flex-start;
+    scroll-padding-bottom: calc(24px + var(--vf-keyboard-inset-bottom, 0px));
   }
 
   .auth-gate__panel {

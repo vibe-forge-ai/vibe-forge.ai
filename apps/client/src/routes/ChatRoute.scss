@@ -282,11 +282,15 @@
 .chat-composer-stack {
   flex: 0;
   min-width: 0;
-  padding: 0 12px max(8px, env(safe-area-inset-bottom));
+  padding: 0 12px
+    calc(
+      max(8px, env(safe-area-inset-bottom)) +
+        var(--vf-keyboard-inset-bottom, 0px)
+    );
 }
 
 .chat-route-layout.has-bottom-dock .chat-composer-stack {
-  padding-bottom: 6px;
+  padding-bottom: calc(6px + var(--vf-keyboard-inset-bottom, 0px));
 }
 
 .chat-composer-stack__inner {
@@ -323,7 +327,10 @@
 
 .scroll-bottom-btn {
   position: sticky;
-  bottom: max(16px, env(safe-area-inset-bottom));
+  bottom: calc(
+    max(16px, env(safe-area-inset-bottom)) +
+      var(--vf-keyboard-inset-bottom, 0px)
+  );
   left: 100%;
   transform: translateX(-44px);
   width: 36px;
@@ -440,8 +447,10 @@
 
   .chat-composer-stack {
     padding: 0 max(12px, env(safe-area-inset-right))
-      max(8px, env(safe-area-inset-bottom))
-      max(12px, env(safe-area-inset-left));
+      calc(
+        max(8px, env(safe-area-inset-bottom)) +
+          var(--vf-keyboard-inset-bottom, 0px)
+      ) max(12px, env(safe-area-inset-left));
   }
 
   .chat-settings-panel {

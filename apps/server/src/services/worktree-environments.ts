@@ -17,7 +17,7 @@ import type {
   WorktreeEnvironmentSource,
   WorktreeEnvironmentSummary
 } from '@vibe-forge/types'
-import { PROJECT_WORKSPACE_FOLDER_ENV, resolveProjectAiPath } from '@vibe-forge/utils'
+import { PROJECT_AI_BASE_DIR_ENV, PROJECT_WORKSPACE_FOLDER_ENV, resolveProjectAiPath } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
 
@@ -136,6 +136,25 @@ const resolveWorktreeEnvironmentDirectory = (
   join(resolveWorktreeEnvironmentRoot(workspaceFolder, source), normalizeEnvironmentIdForSource(id, source))
 )
 
+const resolveWorkspaceProjectWorktreeEnvironmentDirectory = (
+  id: string,
+  workspaceFolder = getWorkspaceFolder()
+) => (
+  join(
+    resolveProjectAiPath(
+      workspaceFolder,
+      {
+        [PROJECT_WORKSPACE_FOLDER_ENV]: workspaceFolder,
+        ...(processEnv[PROJECT_AI_BASE_DIR_ENV] != null
+          ? { [PROJECT_AI_BASE_DIR_ENV]: processEnv[PROJECT_AI_BASE_DIR_ENV] }
+          : {})
+      },
+      'env'
+    ),
+    normalizeEnvironmentIdForSource(id, 'project')
+  )
+)
+
 const resolveLegacyLocalWorktreeEnvironmentDirectory = (
   id: string,
   workspaceFolder = getWorkspaceFolder()
@@ -176,6 +195,17 @@ const resolveExistingEnvironmentDirectory = async (
       environmentId,
       source: requestedSource,
       directory: primaryDirectory
+    }
+  }
+
+  if (requestedSource === 'project') {
+    const workspaceDirectory = resolveWorkspaceProjectWorktreeEnvironmentDirectory(environmentId, workspaceFolder)
+    if (await isDirectory(workspaceDirectory)) {
+      return {
+        environmentId,
+        source: requestedSource,
+        directory: workspaceDirectory
+      }
     }
   }
 
@@ -627,7 +657,8 @@ export const runConfiguredWorktreeEnvironmentScripts = async (
     return []
   }
 
-  const location = await resolveExistingEnvironmentDirectory(environmentId, options.workspaceFolder)
+  const environmentWorkspaceFolder = options.sourceWorkspaceFolder ?? options.workspaceFolder
+  const location = await resolveExistingEnvironmentDirectory(environmentId, environmentWorkspaceFolder)
   if (!await isDirectory(location.directory)) {
     throw new Error(`Worktree environment not found: ${environmentId}`)
   }

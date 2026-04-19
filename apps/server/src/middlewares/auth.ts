@@ -2,7 +2,12 @@ import type Koa from 'koa'
 
 import type { ServerEnv } from '@vibe-forge/core'
 
-import { AUTH_COOKIE_NAME, resolveWebAuthConfig, verifySessionToken } from '#~/services/auth/index.js'
+import {
+  AUTH_COOKIE_NAME,
+  getBearerTokenFromHeader,
+  resolveWebAuthConfig,
+  verifySessionToken
+} from '#~/services/auth/index.js'
 import { unauthorized } from '#~/utils/http.js'
 
 const PUBLIC_API_PATHS = new Set([
@@ -24,7 +29,8 @@ export const authMiddleware = (env: ServerEnv): Koa.Middleware => {
       return
     }
 
-    const authenticated = await verifySessionToken(env, ctx.cookies.get(AUTH_COOKIE_NAME))
+    const token = getBearerTokenFromHeader(ctx.get('Authorization')) ?? ctx.cookies.get(AUTH_COOKIE_NAME)
+    const authenticated = await verifySessionToken(env, token)
     if (!authenticated) {
       throw unauthorized('Login required', undefined, 'auth_required')
     }

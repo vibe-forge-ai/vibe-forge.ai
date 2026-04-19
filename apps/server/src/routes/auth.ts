@@ -7,33 +7,50 @@ import {
   clearAuthCookie,
   createSessionToken,
   findMatchingAccount,
+  getBearerTokenFromHeader,
   resolveWebAuthConfig,
   setAuthCookie,
   toAuthPublicStatus,
   verifySessionToken
 } from '#~/services/auth/index.js'
+import { getServerAppInfo } from '#~/utils/app-info.js'
 import { badRequest, unauthorized } from '#~/utils/http.js'
 
 export function authRouter(env: ServerEnv): Router {
   const router = new Router()
 
+  const getPublicStatus = async (
+    config: Awaited<ReturnType<typeof resolveWebAuthConfig>>,
+    authenticated: boolean
+  ) => ({
+    ...toAuthPublicStatus(config, authenticated),
+    version: (await getServerAppInfo()).version
+  })
+
   router.get('/status', async (ctx) => {
     const config = await resolveWebAuthConfig(env)
-    const authenticated = await verifySessionToken(env, ctx.cookies.get(AUTH_COOKIE_NAME))
-    ctx.body = toAuthPublicStatus(config, authenticated)
+    const token = getBearerTokenFromHeader(ctx.get('Authorization')) ?? ctx.cookies.get(AUTH_COOKIE_NAME)
+    const authenticated = await verifySessionToken(env, token)
+    ctx.body = await getPublicStatus(config, authenticated)
   })
 
   router.post('/login', async (ctx) => {
     const config = await resolveWebAuthConfig(env)
     if (!config.enabled) {
-      ctx.body = toAuthPublicStatus(config, true)
+      ctx.body = await getPublicStatus(config, true)
       return
     }
 
-    const body = ctx.request.body as { username?: unknown; password?: unknown; rememberDevice?: unknown } | undefined
+    const body = ctx.request.body as {
+      username?: unknown
+      password?: unknown
+      rememberDevice?: unknown
+      returnToken?: unknown
+    } | undefined
     const username = typeof body?.username === 'string' ? body.username.trim() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
     const rememberDevice = body?.rememberDevice === true
+    const returnToken = body?.returnToken === true
     if (username === '' || password === '') {
       throw badRequest('Username and password are required', undefined, 'auth_missing_credentials')
     }
@@ -46,7 +63,10 @@ export function authRouter(env: ServerEnv): Router {
     const ttlMs = rememberDevice ? config.rememberDeviceTtlMs : config.sessionTtlMs
     const token = await createSessionToken(env, account.username, ttlMs)
     setAuthCookie(ctx, token, rememberDevice ? ttlMs : undefined)
-    ctx.body = toAuthPublicStatus(config, true)
+    ctx.body = {
+      ...(await getPublicStatus(config, true)),
+      ...(returnToken ? { token } : {})
+    }
   })
 
   router.post('/logout', (ctx) => {
