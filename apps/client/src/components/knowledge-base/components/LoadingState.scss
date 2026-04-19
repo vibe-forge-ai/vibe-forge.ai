@@ -1,8 +1,9 @@
 .knowledge-base-view__loading {
+  flex: 1;
+  min-height: 0;
   padding: 24px;
   display: grid;
   place-items: center;
-  min-height: 120px;
   border-radius: 8px;
   border: 1px dashed var(--border-color);
   background: var(--sub-bg-color);

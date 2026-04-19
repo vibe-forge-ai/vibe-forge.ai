@@ -41,16 +41,22 @@ export type {
   EntitySummary,
   RuleDetail,
   RuleSummary,
+  SkillDetail,
+  SkillSummary,
   SpecDetail,
   SpecSummary,
   WorkspaceSummary
 } from './api/knowledge'
 export {
+  createSkill,
   getEntityDetail,
   getRuleDetail,
+  getSkillDetail,
   getSpecDetail,
+  importSkillArchive,
   listEntities,
   listRules,
+  listSkills,
   listSpecs,
   listWorkspaces
 } from './api/knowledge'
@@ -82,6 +88,13 @@ export {
   updateSessionTitle,
   updateSessionWorkspaceFile
 } from './api/sessions'
+export type {
+  SkillHubInstallResult,
+  SkillHubItem,
+  SkillHubRegistrySummary,
+  SkillHubSearchResult
+} from './api/skill-hub'
+export { installSkillHubItem, searchSkillHub } from './api/skill-hub'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'

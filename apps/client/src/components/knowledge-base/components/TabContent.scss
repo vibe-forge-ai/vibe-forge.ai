@@ -1,8 +1,9 @@
 .knowledge-base-view__content {
   height: 100%;
-  overflow: auto;
-  padding: 16px 24px 24px;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--subpage-content-card-gap);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--subpage-tertiary-gap);
 }

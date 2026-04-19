@@ -41,7 +41,9 @@ vf plugin --adapter claude add <source>
 
 ## Marketplace 配置
 
-默认在解析后的 workspace 根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
+Vibe Forge 默认内置 `skills` 官方源，指向 Vercel 的 [skills.sh](https://skills.sh/) hub；没有配置 `marketplaces` 时，Web 前端的「知识库 -> 技能 -> 市场」也可以搜索并安装 skills.sh 上的技能。
+
+自定义源默认在解析后的 workspace 根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
 
 如果显式设置了 `__VF_PROJECT_CONFIG_DIR__`，则会从该目录读取 marketplace 配置。
 
