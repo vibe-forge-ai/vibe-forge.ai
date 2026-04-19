@@ -523,6 +523,225 @@ describe('resolvePromptAssetSelection', () => {
     expect(data.targetBody).toContain('## Memory\n\n记住上次评审指出过缺少验证。')
   })
 
+  it('inherits prompt, rules, and skills from scoped plugin entities', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-standard-dev', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-standard-dev',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'rules/base-review.md': '---\ndescription: 标准评审规则\n---\n父规则正文',
+      'skills/base-review/SKILL.md': '---\ndescription: 标准评审技能\n---\n父技能正文',
+      'entities/base-reviewer/README.md': [
+        '---',
+        'description: 标准评审实体',
+        'rules:',
+        '  - base-review',
+        'skills:',
+        '  - base-review',
+        'tools:',
+        '  include:',
+        '    - Read',
+        '---',
+        '父实体提示。'
+      ].join('\n')
+    })
+    await writeDocument(
+      join(workspace, '.ai/rules/base-review.md'),
+      '---\ndescription: 同名本地规则\n---\n同名本地规则正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/rules/frontend.md'),
+      '---\ndescription: 前端规则\n---\n子规则正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/base-review/SKILL.md'),
+      '---\ndescription: 同名本地技能\n---\n同名本地技能正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend/SKILL.md'),
+      '---\ndescription: 前端技能\n---\n子技能正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/frontend-reviewer/README.md'),
+      [
+        '---',
+        'description: 前端评审实体',
+        'extends: std/base-reviewer',
+        'rules:',
+        '  - frontend',
+        'skills:',
+        '  - frontend',
+        'tools:',
+        '  include:',
+        '    - Grep',
+        '---',
+        '子实体提示。'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [
+          { id: 'standard-dev', scope: 'std' }
+        ]
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'frontend-reviewer'
+    })
+    const parentEntityId = bundle.entities.find(asset => asset.displayName === 'std/base-reviewer')?.id
+    const childEntityId = bundle.entities.find(asset => asset.displayName === 'frontend-reviewer')?.id
+
+    expect(data.targetBody).toContain('父实体提示。\n\n子实体提示。')
+    expect(data.targetSkills.map(skill => skill.resolvedName)).toEqual(['std/base-review', 'frontend'])
+    expect(options.systemPrompt).toContain('> 父规则正文')
+    expect(options.systemPrompt).toContain('> 子规则正文')
+    expect(options.systemPrompt).not.toContain('> 同名本地规则正文')
+    expect(options.systemPrompt).not.toContain('<skill-content>\n同名本地技能正文\n</skill-content>')
+    expect(options.tools).toEqual({ include: ['Grep'] })
+    expect(options.promptAssetIds).toEqual(expect.arrayContaining([parentEntityId, childEntityId]))
+  })
+
+  it('composes multiple parent entities in extends order', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/entities/base-a.md'),
+      [
+        '---',
+        'description: 父实体 A',
+        'tools:',
+        '  include:',
+        '    - Read',
+        '---',
+        '父实体 A 提示。'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/base-b.md'),
+      [
+        '---',
+        'description: 父实体 B',
+        'tools:',
+        '  include:',
+        '    - Bash',
+        '---',
+        '父实体 B 提示。'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/child.md'),
+      [
+        '---',
+        'description: 子实体',
+        'extends:',
+        '  - base-a',
+        '  - base-b',
+        '---',
+        '子实体提示。'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'child'
+    })
+
+    expect(data.targetBody).toContain('父实体 A 提示。\n\n父实体 B 提示。\n\n子实体提示。')
+    expect(options.tools).toEqual({ include: ['Bash'] })
+  })
+
+  it('lets the current entity replace inherited rules', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/rules/base.md'),
+      '---\ndescription: 父规则\n---\n父规则正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/rules/child.md'),
+      '---\ndescription: 子规则\n---\n子规则正文'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/base.md'),
+      [
+        '---',
+        'description: 父实体',
+        'rules:',
+        '  - base',
+        '---',
+        '父实体提示。'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/child.md'),
+      [
+        '---',
+        'description: 子实体',
+        'extends: base',
+        'inherit:',
+        '  rules: replace',
+        'rules:',
+        '  - child',
+        '---',
+        '子实体提示。'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'child'
+    })
+
+    expect(options.systemPrompt).toContain('> 子规则正文')
+    expect(options.systemPrompt).toContain('> Use when: 父规则')
+    expect(options.systemPrompt).not.toContain('> 父规则正文')
+  })
+
+  it('rejects circular entity inheritance', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/entities/a.md'),
+      '---\ndescription: A\nextends: b\n---\nA'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/b.md'),
+      '---\ndescription: B\nextends: a\n---\nB'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await expect(resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'a'
+    })).rejects.toThrow('Circular entity inheritance detected: a -> b -> a')
+  })
+
   it('does not preload all skills when the target entity omits skill references', async () => {
     const workspace = await createWorkspace()
 

@@ -104,6 +104,7 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 ## 资产细节
 
 - [实体目录默认文件](./plugins/entity-default-files.md)
+- [实体继承](./plugins/entity-inheritance.md)
 - [本地私有规则](./plugins/local-rules.md)
 
 ## 本地数据资产目录
