@@ -1,11 +1,13 @@
 /* eslint-disable max-lines -- prompt asset selection coordinates routing, overlays, and dependency expansion */
 import type {
   Definition,
+  Entity,
   Filter,
   PluginOverlayConfig,
   Rule,
   RuleReference,
   SkillSelection,
+  Spec,
   WorkspaceAsset,
   WorkspaceAssetBundle,
   WorkspaceMcpSelection,
@@ -24,6 +26,7 @@ import {
 import {
   definitionWithResolvedName,
   pickDocumentAsset,
+  resolveEntityInheritance,
   resolveExcludedSkillRefs,
   resolveIncludedSkillRefs,
   resolveNamedAssets,
@@ -60,6 +63,8 @@ export async function resolvePromptAssetSelection(params: {
   let targetToolsFilter: Filter | undefined
   let targetMcpServersFilter: Filter | undefined
   let targetInstancePath: string | undefined
+  let targetAssetIds: string[] = []
+  let targetDefinition: Definition<Entity | Spec> | undefined
 
   if (params.type && params.name) {
     const baseTarget = params.type === 'spec'
@@ -80,9 +85,20 @@ export async function resolvePromptAssetSelection(params: {
     }
 
     pinnedTargetAsset = baseTarget
-    targetBody = baseTarget.payload.definition.body
-    targetToolsFilter = baseTarget.payload.definition.attributes.tools
-    targetMcpServersFilter = baseTarget.payload.definition.attributes.mcpServers
+    if (params.type === 'entity') {
+      const resolvedEntity = resolveEntityInheritance(
+        effectiveBundle,
+        baseTarget as Extract<WorkspaceAsset, { kind: 'entity' }>
+      )
+      targetDefinition = resolvedEntity.definition
+      targetAssetIds = resolvedEntity.assetIds
+    } else {
+      targetDefinition = baseTarget.payload.definition
+      targetAssetIds = [baseTarget.id]
+    }
+    targetBody = targetDefinition.body
+    targetToolsFilter = targetDefinition.attributes.tools
+    targetMcpServersFilter = targetDefinition.attributes.mcpServers
     targetInstancePath = baseTarget.instancePath
     options.assetBundle = effectiveBundle
   }
@@ -105,8 +121,8 @@ export async function resolvePromptAssetSelection(params: {
   const targetSkillsAssets: Array<Extract<WorkspaceAsset, { kind: 'skill' }>> = []
 
   if (pinnedTargetAsset != null) {
-    promptAssetIds.add(pinnedTargetAsset.id)
-    const attributes = pinnedTargetAsset.payload.definition.attributes
+    targetAssetIds.forEach(assetId => promptAssetIds.add(assetId))
+    const attributes = targetDefinition?.attributes ?? pinnedTargetAsset.payload.definition.attributes
 
     if (attributes.rules != null) {
       const selection = await resolveRuleSelection(
