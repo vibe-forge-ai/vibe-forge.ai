@@ -585,7 +585,7 @@ export async function resolveSessionBase(
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
 
-  const binaryPath = resolveCodexBinaryPath(env)
+  const binaryPath = resolveCodexBinaryPath(env, cwd)
   const spawnEnv = buildSpawnEnv(env)
   const runtimeHome = await prepareCodexSessionHome({
     ctx,

@@ -32,6 +32,8 @@ export interface SenderToolbarState {
   showEffortSelect: boolean
   showReferenceActions: boolean
   showPermissionActions: boolean
+  hideReferenceActions: boolean
+  hideSubmitAction: boolean
   modelSearchValue: string
   selectedModel?: string
   effort: ChatEffort

@@ -125,6 +125,26 @@ describe('git service', () => {
       hasUnstagedChanges: true,
       hasUntrackedChanges: true,
       remotes: ['origin', 'upstream'],
+      changedFiles: [
+        {
+          path: 'README.md',
+          staged: false,
+          unstaged: false,
+          untracked: true
+        },
+        {
+          path: 'src/app.ts',
+          staged: true,
+          unstaged: false,
+          untracked: false
+        },
+        {
+          path: 'src/other.ts',
+          staged: false,
+          unstaged: true,
+          untracked: false
+        }
+      ],
       stagedSummary: {
         changedFiles: 1,
         additions: 10,
@@ -176,6 +196,31 @@ describe('git service', () => {
     })
   })
 
+  it('parses submodule status details from porcelain v2 output', async () => {
+    const { parseGitStatus } = await import('#~/services/git/parsers.js')
+    expect(parseGitStatus([
+      '# branch.head main',
+      '1 .M S.MU 160000 160000 160000 123456 123456 vendor/engine'
+    ].join('\n'))).toMatchObject({
+      hasChanges: true,
+      hasStagedChanges: false,
+      hasUnstagedChanges: true,
+      changedFiles: [
+        {
+          path: 'vendor/engine',
+          staged: false,
+          unstaged: true,
+          untracked: false,
+          submodule: {
+            commitChanged: false,
+            trackedChanges: true,
+            untrackedChanges: true
+          }
+        }
+      ]
+    })
+  })
+
   it('falls back to the empty tree when HEAD is missing', async () => {
     mockExecResponses(
       { stdout: '/workspace\n' },
@@ -214,6 +259,20 @@ describe('git service', () => {
       hasUnstagedChanges: false,
       hasUntrackedChanges: true,
       remotes: ['origin'],
+      changedFiles: [
+        {
+          path: 'README.md',
+          staged: false,
+          unstaged: false,
+          untracked: true
+        },
+        {
+          path: 'src/app.ts',
+          staged: true,
+          unstaged: false,
+          untracked: false
+        }
+      ],
       stagedSummary: {
         changedFiles: 1,
         additions: 3,

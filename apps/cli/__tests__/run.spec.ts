@@ -5,6 +5,7 @@ import {
   createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
+  getCliDefaultSkillNames,
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
@@ -19,6 +20,15 @@ import {
 } from '#~/commands/run.js'
 
 describe('run command print output', () => {
+  it('lists entity helpers as default CLI skills', () => {
+    expect(getCliDefaultSkillNames()).toEqual([
+      'vf-cli-quickstart',
+      'vf-cli-print-mode',
+      'create-entity',
+      'update-entity'
+    ])
+  })
+
   it('extracts printable assistant text from string content', () => {
     expect(getPrintableAssistantText({
       id: 'msg-1',

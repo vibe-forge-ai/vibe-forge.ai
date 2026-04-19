@@ -1,7 +1,15 @@
+import { createReadStream } from 'node:fs'
+
 import Router from '@koa/router'
 
-import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
-import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
+import type {
+  ChatMessage,
+  ChatMessageContent,
+  SessionQueuedMessageMode,
+  SessionWorkspaceFileState,
+  WSEvent
+} from '@vibe-forge/core'
+import type { GitBranchKind, SessionInfo, SessionInitInfo, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -31,6 +39,7 @@ import {
   transferSessionWorkspaceToLocal
 } from '#~/services/session/workspace.js'
 import { disposeTerminalSession } from '#~/services/terminal/index.js'
+import { readWorkspaceFile, resolveWorkspaceImageResource, updateWorkspaceFile } from '#~/services/workspace/file.js'
 import { listWorkspaceTree } from '#~/services/workspace/tree.js'
 import { badRequest, conflict, methodNotAllowed, notFound } from '#~/utils/http.js'
 
@@ -86,6 +95,33 @@ export function sessionsRouter(): Router {
     ctx.body = await listWorkspaceTree(path, { workspaceFolder })
   })
 
+  router.get('/:id/workspace/file', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { path } = ctx.query as { path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    ctx.body = await readWorkspaceFile(path, { workspaceFolder })
+  })
+
+  router.get('/:id/workspace/resource', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { path } = ctx.query as { path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    const resource = await resolveWorkspaceImageResource(path, { workspaceFolder })
+    ctx.state.skipApiEnvelope = true
+    ctx.type = resource.mimeType
+    ctx.length = resource.size
+    ctx.set('Cache-Control', 'private, no-cache')
+    ctx.set('X-Content-Type-Options', 'nosniff')
+    ctx.body = createReadStream(resource.filePath)
+  })
+
+  router.put('/:id/workspace/file', async (ctx) => {
+    const { id } = ctx.params as { id: string }
+    const { content, path } = ctx.request.body as { content?: unknown; path?: string }
+    const workspaceFolder = await resolveSessionWorkspaceFolder(id)
+    ctx.body = await updateWorkspaceFile(path, content, { workspaceFolder })
+  })
+
   router.post('/:id/workspace/create-worktree', async (ctx) => {
     const { id } = ctx.params as { id: string }
     const workspace = await createSessionManagedWorktree(id)
@@ -103,15 +139,16 @@ export function sessionsRouter(): Router {
 
   router.patch('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
-    const { title, isStarred, isArchived, tags } = ctx.request.body as {
+    const { title, isStarred, isArchived, tags, workspaceFileState } = ctx.request.body as {
       title?: string
       isStarred?: boolean
       isArchived?: boolean
       tags?: string[]
+      workspaceFileState?: SessionWorkspaceFileState
     }
 
-    if (title !== undefined || isStarred !== undefined) {
-      updateAndNotifySession(id, { title, isStarred })
+    if (title !== undefined || isStarred !== undefined || workspaceFileState !== undefined) {
+      updateAndNotifySession(id, { title, isStarred, workspaceFileState })
     }
 
     if (isArchived !== undefined) {
@@ -160,13 +197,14 @@ export function sessionsRouter(): Router {
       start?: boolean
       model?: string
       effort?: 'low' | 'medium' | 'high' | 'max'
-      promptType?: 'spec' | 'entity'
+      promptType?: SessionPromptType
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
       account?: string
       workspace?: {
         createWorktree?: boolean
+        worktreeEnvironment?: string
         branch?: {
           name?: string
           kind?: GitBranchKind
@@ -192,6 +230,7 @@ export function sessionsRouter(): Router {
         ? undefined
         : {
           createWorktree: workspace.createWorktree,
+          worktreeEnvironment: workspace.worktreeEnvironment,
           branch: workspace.branch?.name?.trim()
             ? {
               name: workspace.branch.name.trim(),
@@ -550,6 +589,16 @@ export function sessionsRouter(): Router {
 
       // 同步历史消息
       db.copyMessages(id, newSession.id)
+      if (original.promptType !== undefined || original.promptName !== undefined) {
+        db.updateSession(newSession.id, {
+          promptType: original.promptType,
+          promptName: original.promptName
+        })
+        const updatedSession = db.getSession(newSession.id)
+        if (updatedSession != null) {
+          Object.assign(newSession, updatedSession)
+        }
+      }
     } catch (error) {
       await deleteSessionWorkspace(newSession.id, { force: true }).catch(() => undefined)
       db.deleteSession(newSession.id)

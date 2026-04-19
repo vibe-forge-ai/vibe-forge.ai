@@ -1,6 +1,7 @@
 import './EntitiesTab.scss'
 
-import { Space } from 'antd'
+import { Space, Tooltip } from 'antd'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { EntitySummary } from '#~/api.js'
@@ -13,7 +14,9 @@ import { TabContent } from './TabContent'
 interface EntitiesTabProps {
   entities: EntitySummary[]
   filteredEntities: EntitySummary[]
+  hideContentSearch?: boolean
   isLoading: boolean
+  leading?: ReactNode
   query: string
   tagOptions: Array<{ label: string; value: string }>
   tagFilter: string[]
@@ -27,7 +30,9 @@ interface EntitiesTabProps {
 export function EntitiesTab({
   entities,
   filteredEntities,
+  hideContentSearch = false,
   isLoading,
+  leading,
   query,
   tagOptions,
   tagFilter,
@@ -44,29 +49,24 @@ export function EntitiesTab({
       <SectionHeader
         actions={
           <Space>
-            <ActionButton
-              icon={<span className='material-symbols-rounded'>refresh</span>}
-              onClick={onRefresh}
-            >
-              {t('knowledge.actions.refresh')}
-            </ActionButton>
-            <ActionButton
-              icon={<span className='material-symbols-rounded'>download</span>}
-              onClick={onImport}
-            >
-              {t('knowledge.actions.import')}
-            </ActionButton>
-            <ActionButton
-              type='primary'
-              icon={<span className='material-symbols-rounded'>add_circle</span>}
-              onClick={onCreate}
-            >
-              {t('knowledge.entities.create')}
-            </ActionButton>
+            <Tooltip title={t('knowledge.actions.refresh')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>refresh</span>}
+                onClick={onRefresh}
+              />
+            </Tooltip>
+            <Tooltip title={t('knowledge.actions.import')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>download</span>}
+                onClick={onImport}
+              />
+            </Tooltip>
           </Space>
         }
+        leading={leading}
       />
       <FilterBar
+        hideSearch={hideContentSearch}
         query={query}
         tagOptions={tagOptions}
         tagFilter={tagFilter}

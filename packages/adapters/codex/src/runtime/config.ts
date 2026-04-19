@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- managed Codex config block parsing and write ordering are safer kept together. */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
@@ -151,6 +152,7 @@ const upsertManagedRootBlock = (params: {
     checkForUpdateOnStartup: params.checkForUpdateOnStartup
   })
   const firstTableMatch = strippedContent.match(/^\s*\[/m)
+  const managedProjectBlockIndex = strippedContent.indexOf(MANAGED_PROJECT_BLOCK_START)
 
   if (strippedContent === '') {
     return managedBlock
@@ -160,8 +162,11 @@ const upsertManagedRootBlock = (params: {
     return `${strippedContent}\n\n${managedBlock}`
   }
 
-  const beforeTables = strippedContent.slice(0, firstTableMatch.index).trimEnd()
-  const fromFirstTable = strippedContent.slice(firstTableMatch.index).trimStart()
+  const insertionIndex = managedProjectBlockIndex >= 0 && managedProjectBlockIndex < firstTableMatch.index
+    ? managedProjectBlockIndex
+    : firstTableMatch.index
+  const beforeTables = strippedContent.slice(0, insertionIndex).trimEnd()
+  const fromFirstTable = strippedContent.slice(insertionIndex).trimStart()
 
   return [
     beforeTables,

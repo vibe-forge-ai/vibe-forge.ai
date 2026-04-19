@@ -296,6 +296,61 @@ describe('generateAdapterQueryOptions', () => {
     expect(resolvedConfig.systemPrompt).toContain('> Skill description: CLI 快速入门')
   })
 
+  it('adds configured workspace routes to the default system prompt', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify(
+        {
+          workspaces: {
+            include: ['services/*']
+          }
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(join(workspace, 'services/billing/README.md'), '# billing\n')
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      undefined,
+      undefined,
+      workspace
+    )
+
+    expect(resolvedConfig.systemPrompt).toContain('The project includes the following registered workspaces')
+    expect(resolvedConfig.systemPrompt).toContain('Identifier: billing')
+    expect(resolvedConfig.systemPrompt).toContain('type: "workspace"')
+  })
+
+  it('loads task assets from the selected workspace target', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai.config.json'),
+      JSON.stringify(
+        {
+          workspaces: {
+            include: ['services/*']
+          }
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(join(workspace, 'services/billing/.ai/rules/always.md'), '---\nalways: true\n---\nBilling rule')
+
+    const [, resolvedConfig] = await generateAdapterQueryOptions(
+      'workspace',
+      'billing',
+      workspace
+    )
+
+    expect(resolvedConfig.workspace?.path).toBe('services/billing')
+    expect(resolvedConfig.systemPrompt).toContain('Billing rule')
+  })
+
   it('merges injected plugins with workspace config plugins in the returned asset bundle', async () => {
     const workspace = await createWorkspace()
     const cliPluginDir = join(workspace, 'node_modules', '@vibe-forge', 'plugin-cli-skills')

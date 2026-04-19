@@ -166,6 +166,77 @@ describe('initClaudeCodeAdapter', () => {
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
   })
 
+  it('syncs resolved dependency skills from workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const appSkillDir = join(workspace, '.ai', 'skills', 'app-builder')
+    const dependencySkillDir = join(workspace, '.ai', 'caches', 'skill-dependencies', 'skills.sh', 'frontend-design')
+
+    await mkdir(appSkillDir, { recursive: true })
+    await writeFile(join(appSkillDir, 'SKILL.md'), '# app-builder\n')
+    await mkdir(dependencySkillDir, { recursive: true })
+    await writeFile(join(dependencySkillDir, 'SKILL.md'), '# frontend-design\n')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:workspace:app-builder',
+            kind: 'skill',
+            name: 'app-builder',
+            displayName: 'app-builder',
+            origin: 'workspace',
+            sourcePath: join(appSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(appSkillDir, 'SKILL.md'),
+                body: '# app-builder\n',
+                attributes: {
+                  dependencies: ['frontend-design']
+                }
+              }
+            }
+          },
+          {
+            id: 'skill:workspace:frontend-design',
+            kind: 'skill',
+            name: 'frontend-design',
+            displayName: 'frontend-design',
+            origin: 'workspace',
+            sourcePath: join(dependencySkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(dependencySkillDir, 'SKILL.md'),
+                body: '# frontend-design\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const appSkillPath = join(mockHome, '.claude', 'skills', 'app-builder')
+    const dependencySkillPath = join(mockHome, '.claude', 'skills', 'frontend-design')
+    expect((await lstat(appSkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(appSkillPath), await readlink(appSkillPath))).toBe(resolve(appSkillDir))
+    expect((await lstat(dependencySkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(dependencySkillPath), await readlink(dependencySkillPath))).toBe(
+      resolve(dependencySkillDir)
+    )
+  })
+
   it('writes managed project trust state into the isolated Claude app-state file', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')

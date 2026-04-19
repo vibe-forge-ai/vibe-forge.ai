@@ -13,6 +13,8 @@
 - [Adapter 配置与多账号](./usage/adapters.md)
 - [Channel 会话绑定](./usage/channels.md)
 - [CLI 与示例](./usage/cli.md)
+- [Skills 与依赖](./usage/skills.md)
+- [Workspace 调度](./usage/workspaces.md)
 - [插件与数据资产](./usage/plugins.md)
 - [Adapter 原生插件与 Marketplace](./usage/native-plugins.md)
 

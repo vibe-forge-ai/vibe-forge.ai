@@ -8,6 +8,8 @@ import type {
 } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
@@ -38,9 +40,13 @@ export interface SenderProps {
   }
   placeholder?: string
   initialContent?: SenderInitialContent
+  onInputChange?: (value: string) => void
   onCancel?: () => void
   submitLabel?: string
   submitLoading?: boolean
+  forceEffortControl?: boolean
+  hideReferenceActions?: boolean
+  hideSubmitAction?: boolean
   autoFocus?: boolean
   modelMenuGroups?: ModelSelectMenuGroup[]
   modelSearchOptions?: ModelSelectOption[]
@@ -64,6 +70,13 @@ export interface SenderProps {
   showAccountSelector?: boolean
   onAccountChange?: (account: string) => void
   modelUnavailable?: boolean
+  sessionTarget?: {
+    draft: ChatSessionTargetDraft
+    locked: boolean
+    disabled?: boolean
+    onChange: (target: ChatSessionTargetDraft) => void
+  }
   queueMode?: SessionQueuedMessageMode
   onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
+  contextReferenceRequest?: ContextReferenceRequest | null
 }

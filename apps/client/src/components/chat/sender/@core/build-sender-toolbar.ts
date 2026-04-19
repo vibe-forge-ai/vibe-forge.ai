@@ -136,6 +136,8 @@ export const buildSenderToolbar = ({
       sendBlockedTooltip,
       showConfirmInteractionAction,
       modelUnavailable: props.modelUnavailable,
+      hideReferenceActions: props.hideReferenceActions === true,
+      hideSubmitAction: props.hideSubmitAction === true,
       referenceActions,
       refs,
       selectOverlays,

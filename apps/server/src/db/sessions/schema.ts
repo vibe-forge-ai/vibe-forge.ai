@@ -22,7 +22,10 @@ export const sessionsSchemaModule: SchemaModule = {
         adapter TEXT,
         account TEXT,
         permissionMode TEXT,
-        effort TEXT
+        effort TEXT,
+        promptType TEXT,
+        promptName TEXT,
+        workspaceFileState TEXT
       );
 
       CREATE TABLE IF NOT EXISTS messages (
@@ -76,6 +79,9 @@ export const sessionsSchemaModule: SchemaModule = {
     ensureColumn('sessions', 'account', 'TEXT')
     ensureColumn('sessions', 'permissionMode', 'TEXT')
     ensureColumn('sessions', 'effort', 'TEXT')
+    ensureColumn('sessions', 'promptType', 'TEXT')
+    ensureColumn('sessions', 'promptName', 'TEXT')
+    ensureColumn('sessions', 'workspaceFileState', 'TEXT')
     exec(`
       UPDATE sessions
       SET runtimeKind = CASE

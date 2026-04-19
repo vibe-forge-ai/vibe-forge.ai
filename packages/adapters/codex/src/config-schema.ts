@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import {
   adapterAccountConfigCommonSchema,
+  adapterNativeCliConfigSchema,
   defineAdapterConfigContribution,
   effortLevelSchema,
   jsonValueSchema
@@ -12,6 +13,7 @@ const codexAdapterAccountSchema = adapterAccountConfigCommonSchema.extend({
 })
 
 export const codexAdapterConfigSchema = z.object({
+  cli: adapterNativeCliConfigSchema.optional().describe('Managed Codex CLI runtime'),
   defaultAccount: z.string().optional().describe('Default Codex account key'),
   accounts: z.record(z.string(), codexAdapterAccountSchema).optional().describe('Available Codex accounts'),
   sandboxPolicy: z.object({
@@ -47,6 +49,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   schema: codexAdapterConfigSchema,
   configEntry: {
     extraCommonKeys: ['effort'] as const,
-    deepMergeKeys: ['accounts', 'sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
+    deepMergeKeys: ['cli', 'accounts', 'sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
   }
 })

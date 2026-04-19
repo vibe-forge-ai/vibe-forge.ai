@@ -11,9 +11,9 @@ import type {
 } from '@vibe-forge/types'
 
 import { resolveNativeSkillDiagnosticReason, supportsNativeProjectSkills } from './adapter-capabilities'
-import { resolveSelectedMcpNames, resolveSelectedSkillAssets } from './selection-internal'
+import { resolveSelectedMcpNames, resolveSelectedSkillAssetsWithDependencies } from './selection-internal'
 
-export function buildAdapterAssetPlan(params: {
+export async function buildAdapterAssetPlan(params: {
   adapter: WorkspaceAssetAdapter
   bundle: WorkspaceAssetBundle
   options: {
@@ -21,7 +21,7 @@ export function buildAdapterAssetPlan(params: {
     skills?: WorkspaceSkillSelection
     promptAssetIds?: string[]
   }
-}): AdapterAssetPlan {
+}): Promise<AdapterAssetPlan> {
   const diagnostics: AssetDiagnostic[] = []
 
   for (const assetId of params.options.promptAssetIds ?? []) {
@@ -89,7 +89,7 @@ export function buildAdapterAssetPlan(params: {
     })
   })
 
-  const selectedSkillAssets = resolveSelectedSkillAssets(params.bundle.skills, params.options.skills)
+  const selectedSkillAssets = await resolveSelectedSkillAssetsWithDependencies(params.bundle, params.options.skills)
   if (supportsNativeProjectSkills(params.adapter)) {
     selectedSkillAssets.forEach((asset) => {
       diagnostics.push({

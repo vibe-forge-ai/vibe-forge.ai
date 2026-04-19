@@ -68,6 +68,16 @@ export const adapterConfigCommonSchema = z.object({
     .describe('Adapter account display metadata')
 })
 
+export const adapterNativeCliConfigSchema = z.object({
+  source: z.enum(['managed', 'system', 'path']).optional().describe('Native CLI source'),
+  path: z.string().optional().describe('Native CLI binary path when source is path'),
+  package: z.string().optional().describe('Managed npm package name'),
+  version: z.string().optional().describe('Managed npm package version'),
+  autoInstall: z.boolean().optional().describe('Install the managed CLI when no usable binary is found'),
+  prepareOnInstall: z.boolean().optional().describe('Preinstall this managed CLI during Vibe Forge package install'),
+  npmPath: z.string().optional().describe('npm binary used for managed installs')
+})
+
 export const modelServiceConfigSchema = z.object({
   title: z.string().optional().describe('Display title'),
   description: z.string().optional().describe('Display description'),
@@ -149,6 +159,17 @@ export const webAuthConfigSchema = z.object({
   accounts: z.array(webAuthAccountConfigSchema).optional().describe('Allowed Web UI login accounts'),
   sessionTtlHours: z.number().positive().optional().describe('Browser session token lifetime in hours'),
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
+})
+
+export const skillRegistryConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable remote skill registry resolution'),
+  url: z.string().optional().describe('Base URL for remote skill registry search and download'),
+  searchUrl: z.string().optional().describe('Remote skill registry search endpoint'),
+  downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
+})
+
+export const skillsConfigSchema = z.object({
+  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings')
 })
 
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
@@ -241,11 +262,21 @@ const marketplaceSourceSchema = z.union([
   })
 ])
 
+const marketplaceDeclaredPluginConfigSchema = z.union([
+  z.boolean().transform(enabled => ({ enabled })),
+  z.object({
+    enabled: z.boolean().optional(),
+    scope: z.string().optional()
+  })
+])
+
 export const marketplaceConfigSchema = z.record(
   z.string(),
   z.object({
     type: z.literal('claude-code'),
     enabled: z.boolean().optional(),
+    syncOnRun: z.boolean().optional(),
+    plugins: z.record(z.string(), marketplaceDeclaredPluginConfigSchema).optional(),
     options: z.object({
       source: marketplaceSourceSchema
     }).optional()
@@ -293,6 +324,7 @@ export const generalConfigSectionSchema = z.object({
   permissions: permissionsConfigSchema.optional(),
   env: z.record(z.string(), z.string()).optional(),
   notifications: notificationConfigSchema.optional(),
+  skills: skillsConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional()
 })
 
@@ -348,6 +380,7 @@ export const baseConfigFileSchema = z.object({
   announcements: z.array(z.string()).optional(),
   shortcuts: shortcutsConfigSchema.optional(),
   notifications: notificationConfigSchema.optional(),
+  skills: skillsConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional(),
   conversation: conversationConfigSchema.optional(),
   plugins: pluginConfigSchema.optional(),

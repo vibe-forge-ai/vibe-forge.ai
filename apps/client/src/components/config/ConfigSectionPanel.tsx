@@ -23,13 +23,16 @@ export function ConfigSectionPanel({
   sectionKey,
   title,
   icon,
+  headerLeading,
   fields,
   uiSection,
   value,
+  resolvedValue,
   onChange,
   mergedModelServices,
   mergedAdapters,
   selectedModelService,
+  worktreeEnvironmentOptions,
   detailQuery = '',
   onDetailQueryChange,
   headerExtra,
@@ -39,13 +42,16 @@ export function ConfigSectionPanel({
   sectionKey: string
   title?: ReactNode
   icon?: ReactNode
+  headerLeading?: ReactNode
   fields?: FieldSpec[]
   uiSection?: ConfigUiSection
   value: unknown
+  resolvedValue?: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
   selectedModelService?: string
+  worktreeEnvironmentOptions?: Array<{ value: string; label: ReactNode }>
   detailQuery?: string
   onDetailQueryChange?: (nextQuery: string) => void
   headerExtra?: ReactNode
@@ -65,6 +71,7 @@ export function ConfigSectionPanel({
     sectionKey,
     fields: resolvedFields,
     value,
+    resolvedValue,
     route: detailRoute,
     detailContext: {
       mergedModelServices,
@@ -74,7 +81,7 @@ export function ConfigSectionPanel({
     t
   })
   const currentViewKey = getConfigDetailRouteKey(detailRoute)
-  const hasHeader = hasHeading || headerExtra != null || detailMeta != null
+  const hasHeader = hasHeading || headerLeading != null || headerExtra != null || detailMeta != null
   const headerClassName = [
     'config-view__section-header',
     !hasHeading ? 'config-view__section-header--actions-only' : ''
@@ -168,6 +175,7 @@ export function ConfigSectionPanel({
             ? detailMeta == null
               ? (
                 <div className='config-view__section-title'>
+                  {headerLeading}
                   {icon != null && (
                     <span className='material-symbols-rounded config-view__section-icon'>
                       {icon}
@@ -178,6 +186,7 @@ export function ConfigSectionPanel({
               )
               : (
                 <div className='config-view__detail-trail'>
+                  {headerLeading}
                   <Tooltip title={t('config.detail.back')}>
                     <Button
                       size='small'
@@ -223,10 +232,12 @@ export function ConfigSectionPanel({
           fields={resolvedFields}
           uiSection={uiSection}
           value={value}
+          resolvedValue={resolvedValue}
           onChange={onChange}
           mergedModelServices={mergedModelServices}
           mergedAdapters={mergedAdapters}
           selectedModelService={selectedModelService}
+          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
           detailRoute={detailRoute}
           onOpenDetailRoute={handleOpenDetail}
           t={t}

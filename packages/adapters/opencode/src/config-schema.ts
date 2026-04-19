@@ -1,8 +1,14 @@
 import { z } from 'zod'
 
-import { defineAdapterConfigContribution, effortLevelSchema, jsonValueSchema } from '@vibe-forge/core/config-schema'
+import {
+  adapterNativeCliConfigSchema,
+  defineAdapterConfigContribution,
+  effortLevelSchema,
+  jsonValueSchema
+} from '@vibe-forge/core/config-schema'
 
 export const openCodeAdapterConfigSchema = z.object({
+  cli: adapterNativeCliConfigSchema.optional().describe('Managed OpenCode CLI runtime'),
   effort: effortLevelSchema.optional().describe('Reasoning effort level'),
   agent: z.string().optional().describe('Default agent name'),
   planAgent: z.union([z.string(), z.literal(false)]).optional().describe('Plan agent override'),
@@ -23,6 +29,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   schema: openCodeAdapterConfigSchema,
   configEntry: {
     extraCommonKeys: ['effort'] as const,
-    deepMergeKeys: ['configContent'] as const
+    deepMergeKeys: ['cli', 'configContent'] as const
   }
 })

@@ -21,7 +21,7 @@
 命令入口是：
 
 ```bash
-npx vf plugin --adapter claude add <source>
+vf plugin --adapter claude add <source>
 ```
 
 当前支持的常见 source 形式：
@@ -41,7 +41,9 @@ npx vf plugin --adapter claude add <source>
 
 ## Marketplace 配置
 
-默认在解析后的 workspace 根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
+Vibe Forge 默认内置 `skills` 官方源，指向 Vercel 的 [skills.sh](https://skills.sh/) hub；没有配置 `marketplaces` 时，Web 前端的「知识库 -> 技能 -> 市场」也可以搜索并安装 skills.sh 上的技能。
+
+自定义源默认在解析后的 workspace 根目录的 `.ai.config.yaml`、`.ai.config.json`、`.ai.dev.config.yaml` 或 `.ai.dev.config.json` 中配置 `marketplaces`。
 
 如果显式设置了 `__VF_PROJECT_CONFIG_DIR__`，则会从该目录读取 marketplace 配置。
 
@@ -105,15 +107,15 @@ marketplaces:
 然后安装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers@superpowers-marketplace
-npx vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
-npx vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
+vf plugin --adapter claude add superpowers@superpowers-marketplace
+vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
+vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
 ```
 
 如果你还想装浏览器插件，也可以继续装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
+vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 ```
 
 前提是这个 plugin 名字已经存在于该 marketplace 的 `marketplace.json` 里。

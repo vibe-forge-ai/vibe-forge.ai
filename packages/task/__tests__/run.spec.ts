@@ -56,6 +56,7 @@ const createAssets = (): WorkspaceAssetBundle => ({
   specs: [],
   entities: [],
   skills: [],
+  workspaces: [],
   mcpServers: {},
   hookPlugins: [],
   opencodeOverlayAssets: [],

@@ -11,22 +11,74 @@
 - 如果配置页进入了二级详情页，当前详情路径也会写入 `detail` query；复制完整 URL 后，可以直接回到对应的配置子页面。
 - `view` query 目前支持 `history`、`timeline`、`terminal`、`settings`。
 - 终端视图入口是 `/ui/session/<sessionId>?view=terminal`。
-- 聊天页 sender 下方会固定显示一个 status bar：左侧承载当前 session 的 workspace / git 操作；新建会话时这里会继续展示，并允许先决定是否创建 worktree 以及要切到哪个分支。
+- 聊天页 sender 下方会固定显示一个 status bar：左侧承载当前 session 的 workspace / git 操作；新建会话时这里会继续展示，并允许先决定是否创建 worktree、使用哪个 worktree 环境，以及要切到哪个分支。
 - 分支面板支持 `树状 / 平铺` 两种展示模式；两种视图共用同一套搜索和切换逻辑。
 - 如果新建会话启用了 worktree，但没有显式指定分支，server 会默认从源 worktree 当前分支派生一个新的 session worktree 分支；只有源目录本身是 detached HEAD 时，才会退回 detached 模式。
 - session managed worktree 会落在 `.ai/worktrees/sessions/<sessionId>/<repo-name>`；最后一级目录始终跟随当前 git 根目录名，方便和真实仓库目录保持一致。
 - 如果当前 session 分支还没有对应的远端分支，`同步` 会优先尝试同名远端分支；如果远端还没有这条分支，则会回退到 worktree 记录的基线分支继续同步。
 - 如果你想给项目设默认值，可以在解析后的 workspace 根目录配置文件（默认是 `.ai.config.json` / `.ai.config.yaml`，也支持 `./infra/` 或显式 `__VF_PROJECT_CONFIG_DIR__`）里设置 `conversation.createSessionWorktree`；Web UI 新建会话时会按这个项目配置初始化。
+- worktree 环境脚本通过配置页的“环境”面板维护；项目环境写入 `.ai/env/<environment-id>/`，本地环境写入 `.ai/env.local/<environment-id>/`。脚本内容使用 Monaco 编辑器编辑，详情页里的名称与脚本修改会自动写回本地文件。项目默认环境由 `conversation.worktreeEnvironment` 指定，也可以在新建会话时通过 sender 下方的环境下拉临时覆盖；本地环境在配置值里使用 `<environment-id>.local` 引用。
+
+## 工作区抽屉与文件引用
+
+- 会话页右侧工作区抽屉按当前 session workspace 展示项目目录树和 Git 改动文件。
+- 目录树支持展开、折叠、定位当前打开文件，以及通过 `Shift` 连续多选文件或文件夹。
+- 目录树节点支持右键菜单；选择 `引用到输入框` 会把当前节点或已选节点追加到 sender 的文件引用列表。
+- sender `更多` 里的文件引用弹窗复用同一套项目目录树，也支持选择文件夹。
+- 文件引用只记录 workspace-relative 路径；真正发送时仍由各 adapter 按自己的上下文文件语义处理。
 
 ## 配置页交互
 
 - 简单字段仍然在 section 页面内直接编辑。
+- 桌面端配置页左侧 section 导航支持搜索和折叠；收起左侧导航后，内容区标题左侧会出现一个展开按钮，方便在不离开当前配置页的情况下重新打开导航。
 - 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
 - adapter 配置页现在会把字段拆到 `基础配置 / 模型配置 / 高阶配置 / 账号` 这些前端分组里；`defaultAccount` 位于基础配置，`账号` 作为独立入口展示。
 - `adapters.<adapter>.accounts` 现在额外提供一个账号管理子页：可以直接触发 adapter 的接入动作、查看账号来源和额度摘要，并进入账号三级详情页编辑 `title / description / authFile`。
 - 具体的 adapter 配置与多账号说明见 [Adapter 配置与多账号](./adapters.md)。
 - 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
+
+### 继承与覆盖规则
+
+- `project` / `user` 配置页编辑的是当前 source 文件里的原始配置，不是 `extends` 展开后的结果。
+- `merged` 视图展示的是最终生效配置；它用于查看效果，不承担 source 文件编辑语义。
+- 如果某个值只来自 `extends`，界面会先按“继承值”展示；是否允许直接开始编辑，取决于字段类型和集合合并语义。
+
+| 类别                                | 代表字段                                                              | 继承态展示                       | 开始编辑方式                                | 写回粒度           |
+| ----------------------------------- | --------------------------------------------------------------------- | -------------------------------- | ------------------------------------------- | ------------------ |
+| inline override                     | `string` / `multiline` / `number` / `boolean` / `select` / `shortcut` | 直接把 inherited 值显示在控件里  | 直接修改                                    | 单个 field         |
+| 显式 whole-field override           | `string[]` / `json` / `record`                                        | 先只读展示 inherited 值          | 点 `Override in current config` 后再修改    | 整个 field         |
+| 显式 item override                  | `record` / `recordMap` 型 detail collection                           | 列表里标 `Inherited`，详情页只读 | 进入详情页后点 `Override in current config` | 单个 item          |
+| 允许 item override 的 list          | 有稳定 merge key 的 list detail collection                            | 同上                             | 同上                                        | 单个 item          |
+| 不允许 single-item override 的 list | append-only list detail collection                                    | 列表里标 `Inherited`，详情页只读 | 不能直接覆盖继承条目，只能新增本地项        | 只能 append 本地项 |
+
+- 当前按 `id + scope` 识别稳定 merge key 的列表是 `plugins.plugins`。
+- 当前按追加语义处理、不能单条覆盖继承项的列表是 `general.recommendedModels`。
+- 当前按对象条目做显式 item override 的字段包括：`modelServices`、`channels`、`adapters`、`plugins.marketplaces`、`mcp.mcpServers`、`general.notifications.events`。
+- 简单标量字段如果来自 `extends`，修改后会在当前 source 文件里落一个本地 override，不会回写到上游继承文件。
+
+## Worktree 环境脚本
+
+每个环境目录可以包含这些脚本：
+
+- `create.sh`、`create.macos.sh`、`create.linux.sh`、`create.windows.ps1`：托管 worktree 创建完成后执行。
+- `start.sh`、`start.macos.sh`、`start.linux.sh`、`start.windows.ps1`：会话 adapter 进程启动前执行。
+- `destroy.sh`、`destroy.macos.sh`、`destroy.linux.sh`、`destroy.windows.ps1`：托管 worktree 删除前执行；兼容旧拼写 `destory*.sh`。
+
+本仓库内置项目环境 `default`。新建托管 worktree 时，它会先拉取默认远端；如果当前 session 分支有同名远端分支，则同步该分支，否则回退同步创建 worktree 时记录的基线分支。
+
+Windows 下 `*.ps1` 会通过 PowerShell 执行；如果你手动维护文件，也兼容同名 `*.windows.cmd` 和 `*.windows.bat`。通用脚本在 Windows 下支持 `create.ps1` / `start.ps1` / `destroy.ps1`、`.cmd` 和 `.bat` 变体；`.sh` 基础脚本不会在 Windows 上作为默认脚本执行，避免强依赖 `sh`。
+
+配置页右上角选择“项目”时，新建环境会写入 `.ai/env/<environment-id>/`，可随项目提交；选择“本地”时，新建环境会写入 `.ai/env.local/<environment-id>/`，并维护根目录 `.gitignore` 中的 `.ai/env.local/`，作为当前用户自己的配置。旧版 `.ai/env/<environment-id>.local/` 仍会按本地环境读取，但新建和保存都会使用 `.ai/env.local/`。
+
+执行顺序是通用脚本先执行，再执行当前系统对应脚本。脚本工作目录是当前 session workspace，并会收到这些环境变量：
+
+- `VF_WORKTREE_ENV`：环境名称。
+- `VF_WORKTREE_OPERATION`：`create`、`start` 或 `destroy`。
+- `VF_WORKTREE_PATH`：当前 worktree 路径。
+- `VF_SESSION_ID`：当前 session ID。
+- `VF_WORKTREE_SOURCE_PATH`：创建 worktree 时的来源 workspace。
+- `VF_REPOSITORY_ROOT`、`VF_WORKTREE_BASE_REF`、`VF_WORKTREE_FORCE`：仓库、基线和强制删除上下文。
 
 ## Terminal 视图是什么
 

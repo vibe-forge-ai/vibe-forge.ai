@@ -1,3 +1,5 @@
+import type { EffortLevel, GitBranchKind, SessionPermissionMode } from '@vibe-forge/types'
+
 import { createApiUrl, fetchApiJson, jsonHeaders } from './base'
 
 export interface AutomationTrigger {
@@ -12,6 +14,14 @@ export interface AutomationTask {
   id: string
   title: string
   prompt: string
+  model?: string | null
+  adapter?: string | null
+  effort?: EffortLevel | null
+  permissionMode?: SessionPermissionMode | null
+  createWorktree?: boolean | null
+  branchName?: string | null
+  branchKind?: GitBranchKind | null
+  branchMode?: 'checkout' | 'create' | null
 }
 
 export interface AutomationRule {

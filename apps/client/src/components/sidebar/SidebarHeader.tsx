@@ -4,6 +4,7 @@ import { Button, Tooltip } from 'antd'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SidebarListHeader } from '#~/components/sidebar-list/SidebarListHeader'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { SidebarHeaderSearchActions } from './SidebarHeaderSearchActions'
@@ -74,73 +75,80 @@ export function SidebarHeader({
   const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
   const shouldShowSearchActions = !isSidebarCollapsed && (isSearchActionsOpen || isBatchMode)
 
-  return (
-    <div className={`sidebar-header ${isCompactLayout ? 'sidebar-header--compact' : ''}`.trim()}>
-      <div className='header-top'>
-        {!isSidebarCollapsed
-          ? (
-            <Button
-              ref={createButtonRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
-              className={`new-chat-btn ${isCreatingSession ? 'active' : ''}`}
-              type={isCreatingSession ? 'default' : 'primary'}
-              block
-              disabled={!!isCreatingSession}
-              onClick={onCreateSession}
-            >
-              <span className='btn-content'>
-                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                  {isCreatingSession ? 'chat_bubble' : 'send'}
-                </span>
-                <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
-              </span>
-              <span className='shortcut-tag'>
-                {shortcutLabel}
-              </span>
-            </Button>
-          )
-          : (
-            <Tooltip
-              title={isTouchInteraction
-                ? undefined
-                : (isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
-              placement='right'
-            >
-              <Button
-                className={`sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
-                type='text'
-                disabled={!!isCreatingSession}
-                onClick={onCreateSession}
-              >
-                <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                  {isCreatingSession ? 'chat_bubble' : 'send'}
-                </span>
-              </Button>
-            </Tooltip>
-          )}
-        <Tooltip
-          title={isTouchInteraction ? undefined : (
-            isCompactLayout ? t('common.close') : (
-              isSidebarCollapsed ? t('common.expand') : t('common.collapse')
-            )
-          )}
+  const primaryAction = !isSidebarCollapsed
+    ? (
+      <Button
+        ref={createButtonRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
+        className={`sidebar-list-header__primary-action new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+        type={isCreatingSession ? 'default' : 'primary'}
+        block
+        disabled={!!isCreatingSession}
+        onClick={onCreateSession}
+      >
+        <span className='sidebar-list-header__button-content btn-content'>
+          <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+            {isCreatingSession ? 'chat_bubble' : 'send'}
+          </span>
+          <span>{isCreatingSession ? t('common.creatingChat') : t('common.newChat')}</span>
+        </span>
+        <span className='sidebar-list-header__shortcut shortcut-tag'>
+          {shortcutLabel}
+        </span>
+      </Button>
+    )
+    : (
+      <Tooltip
+        title={isTouchInteraction
+          ? undefined
+          : (isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
+        placement='right'
+      >
+        <Button
+          className={`sidebar-list-header__icon-action sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+          type='text'
+          disabled={!!isCreatingSession}
+          onClick={onCreateSession}
         >
-          <Button
-            className='sidebar-collapse-btn'
-            type='text'
-            aria-label={isCompactLayout ? t('common.close') : (
-              isSidebarCollapsed ? t('common.expand') : t('common.collapse')
-            )}
-            onClick={isCompactLayout
-              ? onCloseSidebar
-              : onToggleSidebarCollapsed}
-          >
-            <span className='material-symbols-rounded'>
-              {isCompactLayout ? 'close' : isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
-            </span>
-          </Button>
-        </Tooltip>
-      </div>
+          <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
+            {isCreatingSession ? 'chat_bubble' : 'send'}
+          </span>
+        </Button>
+      </Tooltip>
+    )
 
+  const sideAction = (
+    <Tooltip
+      title={isTouchInteraction ? undefined : (
+        isCompactLayout ? t('common.close') : (
+          isSidebarCollapsed ? t('common.expand') : t('common.collapse')
+        )
+      )}
+    >
+      <Button
+        className='sidebar-list-header__icon-action sidebar-collapse-btn'
+        type='text'
+        aria-label={isCompactLayout ? t('common.close') : (
+          isSidebarCollapsed ? t('common.expand') : t('common.collapse')
+        )}
+        onClick={isCompactLayout
+          ? onCloseSidebar
+          : onToggleSidebarCollapsed}
+      >
+        <span className='material-symbols-rounded'>
+          {isCompactLayout ? 'close' : isSidebarCollapsed ? 'dock_to_right' : 'left_panel_close'}
+        </span>
+      </Button>
+    </Tooltip>
+  )
+
+  return (
+    <SidebarListHeader
+      className='sidebar-header'
+      compact={isCompactLayout}
+      collapsed={isSidebarCollapsed}
+      primaryAction={primaryAction}
+      sideAction={sideAction}
+    >
       {!isSidebarCollapsed && (
         <SidebarHeaderSearchActions
           adapterFilters={adapterFilters}
@@ -167,6 +175,6 @@ export function SidebarHeader({
           onToggleSearchActions={() => setIsSearchActionsOpen((prev) => !prev)}
         />
       )}
-    </div>
+    </SidebarListHeader>
   )
 }

@@ -1,9 +1,9 @@
 import type { ChatMessageContent, Session, SessionMessageQueueState, SessionQueuedMessageMode } from '@vibe-forge/core'
-import type { GitBranchKind, SessionWorkspace } from '@vibe-forge/types'
+import type { GitBranchKind, SessionPromptType, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
-import type { WorkspaceTreeEntry } from './workspace'
+import type { WorkspaceFileContent, WorkspaceTreeEntry } from './workspace'
 
 export async function listSessions(
   filter: 'active' | 'archived' | 'all' = 'active'
@@ -21,7 +21,7 @@ export async function createSession(
     start?: boolean
     parentSessionId?: string
     id?: string
-    promptType?: 'spec' | 'entity'
+    promptType?: SessionPromptType
     promptName?: string
     effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
@@ -29,6 +29,7 @@ export async function createSession(
     account?: string
     workspace?: {
       createWorktree?: boolean
+      worktreeEnvironment?: string
       branch?: {
         name: string
         kind?: GitBranchKind
@@ -133,6 +134,33 @@ export async function listSessionWorkspaceTree(
     path: string
     entries: WorkspaceTreeEntry[]
   }>(url)
+}
+
+export async function readSessionWorkspaceFile(
+  id: string,
+  path: string
+): Promise<WorkspaceFileContent> {
+  const url = createApiUrl(`/api/sessions/${id}/workspace/file`)
+  url.searchParams.set('path', path)
+  return fetchApiJson<WorkspaceFileContent>(url)
+}
+
+export function getSessionWorkspaceResourceUrl(id: string, path: string) {
+  const url = createApiUrl(`/api/sessions/${id}/workspace/resource`)
+  url.searchParams.set('path', path)
+  return url.toString()
+}
+
+export async function updateSessionWorkspaceFile(
+  id: string,
+  path: string,
+  content: string
+): Promise<WorkspaceFileContent> {
+  return fetchApiJson<WorkspaceFileContent>(`/api/sessions/${id}/workspace/file`, {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({ path, content })
+  })
 }
 
 export async function respondSessionInteraction(

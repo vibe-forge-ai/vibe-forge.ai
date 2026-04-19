@@ -1,5 +1,5 @@
 import type { AskUserQuestionParams, EffortLevel, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
-import type { AdapterSession } from '@vibe-forge/types'
+import type { AdapterSession, SessionPromptType } from '@vibe-forge/types'
 import { WebSocket as WebSocketImpl } from 'ws'
 import type { WebSocket } from 'ws'
 
@@ -29,6 +29,8 @@ export interface AdapterSessionConfig {
   account?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
+  promptType?: SessionPromptType
+  promptName?: string
   seededFromHistory?: boolean
 }
 

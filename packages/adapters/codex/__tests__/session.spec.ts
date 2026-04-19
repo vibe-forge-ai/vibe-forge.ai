@@ -1,13 +1,14 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { AdapterOutputEvent } from '@vibe-forge/types'
+import { resolveManagedNpmCliPaths } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveCodexBinaryPath } from '#~/paths.js'
+import { CODEX_CLI_PACKAGE, CODEX_CLI_VERSION, resolveCodexBinaryPath } from '#~/paths.js'
 import { createCodexSession } from '#~/runtime/session.js'
 
 // ─── Availability check ───────────────────────────────────────────────────────
@@ -24,9 +25,13 @@ const codexAvailable = (() => {
 // ─── Path utilities ───────────────────────────────────────────────────────────
 
 describe('resolveCodexBinaryPath', () => {
-  it('resolves to the adapter bundled binary by default', () => {
+  const expectDefaultCodexBinary = (result: string) => {
+    expect(result === 'codex' || /node_modules\/\.bin\/codex$/.test(result)).toBe(true)
+  }
+
+  it('resolves to a usable default binary without requiring a bundled dependency', () => {
     const result = resolveCodexBinaryPath({})
-    expect(result).toMatch(/node_modules\/\.bin\/codex$/)
+    expectDefaultCodexBinary(result)
   })
 
   it('returns the env-specified path when set', () => {
@@ -35,11 +40,37 @@ describe('resolveCodexBinaryPath', () => {
     })).toBe('/usr/local/bin/codex')
   })
 
-  it('falls back to bundled binary when env value is empty string', () => {
+  it('falls back to the default binary when env value is empty string', () => {
     const result = resolveCodexBinaryPath({
       __VF_PROJECT_AI_ADAPTER_CODEX_CLI_PATH__: ''
     })
-    expect(result).toMatch(/node_modules\/\.bin\/codex$/)
+    expectDefaultCodexBinary(result)
+  })
+
+  it('uses a managed binary from the primary workspace shared cache', async () => {
+    const primary = await mkdtemp(join(tmpdir(), 'vf-codex-primary-'))
+    const worktree = await mkdtemp(join(tmpdir(), 'vf-codex-worktree-'))
+    try {
+      const env = {
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primary
+      }
+      const paths = resolveManagedNpmCliPaths({
+        adapterKey: 'codex',
+        binaryName: 'codex',
+        cwd: worktree,
+        env,
+        packageName: CODEX_CLI_PACKAGE,
+        version: CODEX_CLI_VERSION
+      })
+      await mkdir(paths.binDir, { recursive: true })
+      await writeFile(paths.binaryPath, '#!/bin/sh\n')
+      await chmod(paths.binaryPath, 0o755)
+
+      expect(resolveCodexBinaryPath(env, worktree)).toBe(await realpath(paths.binaryPath))
+    } finally {
+      await rm(primary, { recursive: true, force: true })
+      await rm(worktree, { recursive: true, force: true })
+    }
   })
 })
 

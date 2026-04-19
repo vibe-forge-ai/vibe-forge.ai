@@ -8,6 +8,7 @@ interface FilterOption {
 }
 
 interface FilterBarProps {
+  hideSearch?: boolean
   query: string
   tagOptions: FilterOption[]
   tagFilter: string[]
@@ -18,6 +19,7 @@ interface FilterBarProps {
 }
 
 export function FilterBar({
+  hideSearch = false,
   query,
   tagOptions,
   tagFilter,
@@ -28,14 +30,16 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div className='knowledge-base-view__filters'>
-      <Input
-        className='knowledge-base-view__filter-input'
-        prefix={<span className='material-symbols-rounded knowledge-base-view__filter-icon'>search</span>}
-        placeholder={searchPlaceholder}
-        allowClear
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-      />
+      {!hideSearch && (
+        <Input
+          className='knowledge-base-view__filter-input'
+          prefix={<span className='material-symbols-rounded knowledge-base-view__filter-icon'>search</span>}
+          placeholder={searchPlaceholder}
+          allowClear
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+        />
+      )}
       <Select
         className='knowledge-base-view__filter-select'
         mode='multiple'

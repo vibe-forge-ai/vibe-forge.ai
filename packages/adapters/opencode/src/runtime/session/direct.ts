@@ -23,7 +23,7 @@ export const createDirectOpenCodeSession = async (
     planAgent: adapterConfig.native.planAgent,
     permissionMode: options.permissionMode
   })
-  const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
+  const binaryPath = resolveOpenCodeBinaryPath(ctx.env, ctx.cwd, adapterConfig.native.cli)
   const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.native.titlePrefix)
   const cachedSession = options.type === 'resume' ? await ctx.cache.get('adapter.opencode.session') : undefined
   const systemPromptFile = await ensureSystemPromptFile(ctx, options)

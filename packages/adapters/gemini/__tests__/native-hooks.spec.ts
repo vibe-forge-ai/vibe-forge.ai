@@ -31,6 +31,7 @@ const createCtx = (env: Record<string, string | undefined> = {}): AdapterCtx =>
       specs: [],
       entities: [],
       skills: [],
+      workspaces: [],
       mcpServers: {},
       hookPlugins: [{ id: 'hookPlugin:workspace:logger' } as never],
       opencodeOverlayAssets: [],

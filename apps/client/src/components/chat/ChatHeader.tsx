@@ -52,10 +52,12 @@ export function ChatHeader({
   lastUserMessage,
   activeView,
   isTerminalOpen,
+  isWorkspaceDrawerOpen,
   onCreateSession,
   onOpenSidebar,
   onViewChange,
-  onToggleTerminal
+  onToggleTerminal,
+  onToggleWorkspaceDrawer
 }: {
   sessionInfo: SessionInfo | null
   sessionId?: string
@@ -68,10 +70,12 @@ export function ChatHeader({
   lastUserMessage?: string
   activeView: ChatHeaderView
   isTerminalOpen: boolean
+  isWorkspaceDrawerOpen: boolean
   onCreateSession?: () => void
   onOpenSidebar?: () => void
   onViewChange: (view: ChatHeaderView) => void
   onToggleTerminal: () => void
+  onToggleWorkspaceDrawer: () => void
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -94,7 +98,9 @@ export function ChatHeader({
 
   const summary = sessionInfo?.type === 'summary' ? sessionInfo.summary : null
   const title = (sessionInfo?.type === 'init' ? sessionInfo.title : null) ?? sessionTitle
-  const displayTitle = (title != null && title !== '')
+  const displayTitle = !hasSession
+    ? t('chat.newSessionTitle')
+    : (title != null && title !== '')
     ? title
     : (summary != null && summary !== '')
     ? summary
@@ -167,14 +173,6 @@ export function ChatHeader({
     }
   }))
   const compactMoreItems: MenuProps['items'] = [
-    {
-      key: 'terminal',
-      label: t('chat.viewTerminal'),
-      icon: <span className={`material-symbols-rounded chat-header-icon ${isTerminalOpen ? 'is-filled' : ''}`}>
-        terminal
-      </span>,
-      onClick: onToggleTerminal
-    },
     ...moreItems,
     ...(shouldShowDebugButton
       ? [{
@@ -187,6 +185,35 @@ export function ChatHeader({
       }]
       : [])
   ]
+  const terminalButton = (
+    <Tooltip title={resolveTooltipTitle(t('chat.viewTerminal'))}>
+      <Button
+        type='text'
+        className={`chat-header-action-button ${isTerminalOpen ? 'is-active' : ''}`}
+        title={t('chat.viewTerminal')}
+        aria-label={t('chat.viewTerminal')}
+        onClick={onToggleTerminal}
+        icon={<span className='chat-header-view-option material-symbols-rounded'>terminal</span>}
+      />
+    </Tooltip>
+  )
+  const workspaceDrawerButton = (
+    <Tooltip title={resolveTooltipTitle(t('chat.workspaceDrawerToggle'))}>
+      <Button
+        type='text'
+        className={`chat-header-action-button ${isWorkspaceDrawerOpen ? 'is-active' : ''}`}
+        title={t('chat.workspaceDrawerToggle')}
+        aria-label={t('chat.workspaceDrawerToggle')}
+        aria-pressed={isWorkspaceDrawerOpen}
+        onClick={onToggleWorkspaceDrawer}
+        icon={
+          <span className='chat-header-view-option material-symbols-rounded'>
+            {isWorkspaceDrawerOpen ? 'folder_open' : 'folder'}
+          </span>
+        }
+      />
+    </Tooltip>
+  )
 
   useEffect(() => {
     return () => {
@@ -293,6 +320,8 @@ export function ChatHeader({
                   </Dropdown>
                 </Tooltip>
               )}
+              {terminalButton}
+              {workspaceDrawerButton}
               {hasSession && (
                 <Tooltip title={resolveTooltipTitle(t('common.moreActions'))}>
                   <Dropdown menu={{ items: compactMoreItems }} placement='bottomRight' trigger={['click']}>
@@ -310,7 +339,7 @@ export function ChatHeader({
           )
           : (
             <>
-              {viewItems.map(item => (
+              {hasSession && viewItems.map(item => (
                 <Tooltip key={item.value} title={resolveTooltipTitle(item.title)}>
                   <Button
                     type='text'
@@ -324,17 +353,9 @@ export function ChatHeader({
                   />
                 </Tooltip>
               ))}
-              <Tooltip title={resolveTooltipTitle(t('chat.viewTerminal'))}>
-                <Button
-                  type='text'
-                  className={`chat-header-action-button ${isTerminalOpen ? 'is-active' : ''}`}
-                  title={t('chat.viewTerminal')}
-                  aria-label={t('chat.viewTerminal')}
-                  onClick={onToggleTerminal}
-                  icon={<span className='chat-header-view-option material-symbols-rounded'>terminal</span>}
-                />
-              </Tooltip>
-              {shouldShowDebugButton && (
+              {terminalButton}
+              {workspaceDrawerButton}
+              {hasSession && shouldShowDebugButton && (
                 <Tooltip title={resolveTooltipTitle(isDebugMode ? t('chat.debugDisable') : t('chat.debugEnable'))}>
                   <Button
                     type='text'
@@ -346,17 +367,19 @@ export function ChatHeader({
                   />
                 </Tooltip>
               )}
-              <Tooltip title={resolveTooltipTitle(t('common.moreActions'))}>
-                <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
-                  <Button
-                    type='text'
-                    className='chat-header-action-button'
-                    title={t('common.moreActions')}
-                    aria-label={t('common.moreActions')}
-                    icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
-                  />
-                </Dropdown>
-              </Tooltip>
+              {hasSession && (
+                <Tooltip title={resolveTooltipTitle(t('common.moreActions'))}>
+                  <Dropdown menu={{ items: moreItems }} placement='bottomRight' trigger={['click']}>
+                    <Button
+                      type='text'
+                      className='chat-header-action-button'
+                      title={t('common.moreActions')}
+                      aria-label={t('common.moreActions')}
+                      icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
+                    />
+                  </Dropdown>
+                </Tooltip>
+              )}
             </>
           )}
       </div>

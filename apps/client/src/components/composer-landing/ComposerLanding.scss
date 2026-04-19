@@ -1,0 +1,75 @@
+.composer-landing {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 24px 12px;
+  }
+}
+
+.composer-landing--compact {
+  .composer-landing__content {
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: max(8px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right)) 12px
+      max(12px, env(safe-area-inset-left));
+  }
+}
+
+.composer-stack {
+  flex: 0;
+  min-width: 0;
+  padding: 0 12px max(8px, env(safe-area-inset-bottom));
+}
+
+.composer-stack__inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.composer-stack__inner > * {
+  width: 100%;
+}
+
+.composer-stack__inner > :not(:first-child).chat-composer-card,
+.composer-stack__inner > :not(:first-child) .chat-composer-card {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.composer-stack__inner > :not(:last-child).chat-composer-card,
+.composer-stack__inner > :not(:last-child) .chat-composer-card {
+  margin-bottom: -1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.composer-stack__inner > :not(:first-child):not(:last-child).chat-composer-card,
+.composer-stack__inner
+  > :not(:first-child):not(:last-child)
+  .chat-composer-card {
+  border-radius: 0;
+}
+
+@media (max-width: 768px) {
+  .composer-stack {
+    padding: 0 max(12px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+}

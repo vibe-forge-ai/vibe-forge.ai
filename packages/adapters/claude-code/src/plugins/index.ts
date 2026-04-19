@@ -41,3 +41,6 @@ export const claudeCodePluginInstaller: AdapterPluginInstaller<ClaudePluginManif
 }
 
 export default claudeCodePluginInstaller
+
+export { loadMarketplaceCatalogFromSource } from './marketplace-catalog'
+export type { ClaudeMarketplaceCatalog } from './marketplace-catalog'

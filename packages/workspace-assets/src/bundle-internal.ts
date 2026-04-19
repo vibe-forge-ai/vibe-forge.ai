@@ -28,6 +28,7 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
+import { resolveConfiguredWorkspaceAssets } from './workspaces'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type OpenCodeOverlayKind = Extract<WorkspaceAssetKind, 'agent' | 'command' | 'mode' | 'nativePlugin'>
@@ -49,6 +50,69 @@ interface OpenCodeOverlayAssetEntry {
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
+
+const ENTITY_DIRECTORY_ENTRY_FILES = new Set(['readme.md', 'index.json'])
+
+const DEFAULT_ENTITY_PROMPT_FILE_SECTIONS = [
+  {
+    heading: 'Introduction',
+    fileNames: ['INTRODUCTION.md', 'introduction.md', '介绍.md']
+  },
+  {
+    heading: 'Personality',
+    fileNames: ['PERSONALITY.md', 'personality.md', '人格.md']
+  },
+  {
+    heading: 'Memory',
+    fileNames: ['MEMORY.md', 'memory.md', '记忆.md']
+  }
+] as const
+
+const isMissingFileError = (error: unknown) => (
+  error != null &&
+  typeof error === 'object' &&
+  'code' in error &&
+  (error as { code?: unknown }).code === 'ENOENT'
+)
+
+const readOptionalMarkdownBody = async (path: string) => {
+  try {
+    const content = await readFile(path, 'utf-8')
+    return fm<Record<string, never>>(content).body.trim()
+  } catch (err) {
+    if (isMissingFileError(err)) return undefined
+    throw err
+  }
+}
+
+const loadDefaultEntityPromptSection = async (
+  entityDir: string,
+  section: (typeof DEFAULT_ENTITY_PROMPT_FILE_SECTIONS)[number]
+) => {
+  for (const fileName of section.fileNames) {
+    const body = await readOptionalMarkdownBody(resolve(entityDir, fileName))
+    if (body == null || body === '') continue
+
+    return `## ${section.heading}\n\n${body}`
+  }
+
+  return undefined
+}
+
+const appendDefaultEntityPromptFiles = async (path: string, body: string) => {
+  if (!ENTITY_DIRECTORY_ENTRY_FILES.has(basename(path).toLowerCase())) return body
+
+  const sections = await Promise.all(
+    DEFAULT_ENTITY_PROMPT_FILE_SECTIONS.map(section => loadDefaultEntityPromptSection(dirname(path), section))
+  )
+
+  return [
+    body.trim(),
+    ...sections
+  ]
+    .filter((section): section is string => section != null && section !== '')
+    .join('\n\n')
+}
 
 const resolveDisplayName = (name: string, scope?: string) => (
   scope != null && scope.trim() !== '' ? `${scope}/${name}` : name
@@ -73,6 +137,15 @@ const parseFrontmatterDocument = async <TDefinition extends object>(
   }
 }
 
+const parseEntityMarkdownDocument = async (path: string): Promise<Definition<Entity>> => {
+  const definition = await parseFrontmatterDocument<Entity>(path)
+
+  return {
+    ...definition,
+    body: await appendDefaultEntityPromptFiles(path, definition.body)
+  }
+}
+
 const parseEntityIndexJson = async (path: string): Promise<Definition<Entity>> => {
   const raw = JSON.parse(await readFile(path, 'utf-8')) as Record<string, unknown>
   const promptPath = typeof raw.promptPath === 'string'
@@ -86,7 +159,7 @@ const parseEntityIndexJson = async (path: string): Promise<Definition<Entity>> =
 
   return {
     path,
-    body: prompt,
+    body: await appendDefaultEntityPromptFiles(path, prompt),
     attributes: raw as Entity
   }
 }
@@ -348,6 +421,7 @@ export async function collectWorkspaceAssets(params: {
   useDefaultVibeForgeMcpServer?: boolean
 }): Promise<{
   assets: WorkspaceAsset[]
+  configs: [Config?, Config?]
   defaultExcludeMcpServers: string[]
   defaultIncludeMcpServers: string[]
   entities: Array<Extract<WorkspaceAsset, { kind: 'entity' }>>
@@ -359,6 +433,7 @@ export async function collectWorkspaceAssets(params: {
   rules: Array<Extract<WorkspaceAsset, { kind: 'rule' }>>
   skills: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>
   specs: Array<Extract<WorkspaceAsset, { kind: 'spec' }>>
+  workspaces: Array<Extract<WorkspaceAsset, { kind: 'workspace' }>>
 }> {
   const [config, userConfig] = params.configs ?? await loadWorkspaceConfig(params.cwd)
   const managedPluginConfigs = params.includeManagedPlugins === false
@@ -410,7 +485,7 @@ export async function collectWorkspaceAssets(params: {
   await pushDocumentAssets('rule', localScan.rulePaths, 'workspace')
   await pushDocumentAssets('skill', localScan.skillPaths, 'workspace')
   await pushDocumentAssets('spec', localScan.specPaths, 'workspace')
-  await pushDocumentAssets('entity', localScan.entityDocPaths, 'workspace')
+  await pushDocumentAssets('entity', localScan.entityDocPaths, 'workspace', undefined, parseEntityMarkdownDocument)
   await pushDocumentAssets('entity', localScan.entityJsonPaths, 'workspace', undefined, parseEntityIndexJson)
 
   for (let index = 0; index < flattenedPluginInstances.length; index++) {
@@ -419,7 +494,7 @@ export async function collectWorkspaceAssets(params: {
     await pushDocumentAssets('rule', scan.rulePaths, 'plugin', instance)
     await pushDocumentAssets('skill', scan.skillPaths, 'plugin', instance)
     await pushDocumentAssets('spec', scan.specPaths, 'plugin', instance)
-    await pushDocumentAssets('entity', scan.entityDocPaths, 'plugin', instance)
+    await pushDocumentAssets('entity', scan.entityDocPaths, 'plugin', instance, parseEntityMarkdownDocument)
     await pushDocumentAssets('entity', scan.entityJsonPaths, 'plugin', instance, parseEntityIndexJson)
   }
 
@@ -507,6 +582,12 @@ export async function collectWorkspaceAssets(params: {
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 
+  const workspaces = await resolveConfiguredWorkspaceAssets({
+    cwd: params.cwd,
+    configs: [config, userConfig]
+  })
+  assets.push(...workspaces)
+
   const opencodeOverlayAssets = flattenedPluginInstances.flatMap((instance, index) => (
     pluginOverlayScans[index].map((entry) =>
       createOpenCodeOverlayAsset({
@@ -535,6 +616,7 @@ export async function collectWorkspaceAssets(params: {
 
   return {
     assets,
+    configs: [config, userConfig],
     defaultExcludeMcpServers: [
       ...(config?.defaultExcludeMcpServers ?? []),
       ...(userConfig?.defaultExcludeMcpServers ?? [])
@@ -551,6 +633,7 @@ export async function collectWorkspaceAssets(params: {
     pluginInstances,
     rules,
     skills,
-    specs
+    specs,
+    workspaces
   }
 }

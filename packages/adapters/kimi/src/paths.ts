@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import { resolveProjectSharedCachePath } from '@vibe-forge/utils/project-cache-path'
 
 const KIMI_BINARY_NAMES = process.platform === 'win32'
   ? ['kimi.exe', 'kimi.cmd', 'kimi']
@@ -16,8 +17,11 @@ const toRealPath = (targetPath: string) => {
   }
 }
 
-export const resolveKimiManagedToolPaths = (cwd: string) => {
-  const rootDir = resolve(cwd, '.ai', 'caches', 'adapter-kimi', 'cli')
+export const resolveKimiManagedToolPaths = (
+  cwd: string,
+  env: AdapterCtx['env'] = process.env
+) => {
+  const rootDir = resolveProjectSharedCachePath(cwd, env, 'adapter-kimi', 'cli')
   const binDir = resolve(rootDir, 'bin')
   return {
     rootDir,
@@ -30,9 +34,12 @@ export const resolveKimiManagedToolPaths = (cwd: string) => {
   }
 }
 
-export const resolveKimiManagedBinaryPath = (cwd?: string) => {
+export const resolveKimiManagedBinaryPath = (
+  cwd?: string,
+  env: AdapterCtx['env'] = process.env
+) => {
   if (cwd == null || cwd.trim() === '') return undefined
-  return resolveKimiManagedToolPaths(cwd).binaryCandidates
+  return resolveKimiManagedToolPaths(cwd, env).binaryCandidates
     .find(candidate => existsSync(candidate))
 }
 
@@ -42,7 +49,7 @@ export const resolveKimiBinaryPath = (env: AdapterCtx['env'], cwd?: string) => {
     return envPath
   }
 
-  const managedPath = resolveKimiManagedBinaryPath(cwd)
+  const managedPath = resolveKimiManagedBinaryPath(cwd, env)
   if (managedPath != null) {
     return toRealPath(managedPath)
   }

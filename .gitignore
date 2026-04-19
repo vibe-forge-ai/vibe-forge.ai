@@ -5,10 +5,15 @@
 .ai/.mock
 .ai/.local
 .ai/caches
+.ai/env.local/
 .ai/logs
 .ai/results
-.ai/worktress
+.ai/worktrees/
 .ai.dev.config.json
+.ai/rules/*.local.md
+.ai/rules/*.dev.md
+.ai/rules/**/*.local.md
+.ai/rules/**/*.dev.md
 
 ### Node template
 # Logs

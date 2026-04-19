@@ -129,7 +129,28 @@ describe('kimi runtime helpers', () => {
     }
   })
 
-  it('builds workspace-local uv tool install options for managed Kimi CLI installs', async () => {
+  it('uses the primary workspace shared cache for managed Kimi CLI paths', async () => {
+    const { ctx, cleanup } = await createCtx()
+    const primary = await mkdtemp(join(tmpdir(), 'vf-kimi-primary-'))
+    try {
+      ctx.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = primary
+      const paths = resolveKimiManagedToolPaths(ctx.cwd, ctx.env)
+      const binaryPath = paths.binaryCandidates[0]
+
+      await mkdir(paths.binDir, { recursive: true })
+      await writeFile(binaryPath, '#!/bin/sh\n')
+      await chmod(binaryPath, 0o755)
+
+      expect(paths.rootDir).toBe(join(primary, '.ai', 'caches', 'adapter-kimi', 'cli'))
+      expect(resolveKimiBinaryPath(ctx.env, ctx.cwd)).toBe(await realpath(binaryPath))
+      expect(buildKimiCliInstallEnv(ctx).UV_TOOL_DIR).toBe(paths.toolDir)
+    } finally {
+      await cleanup()
+      await rm(primary, { recursive: true, force: true })
+    }
+  })
+
+  it('builds shared-cache uv tool install options for managed Kimi CLI installs', async () => {
     const { ctx, cleanup } = await createCtx()
     try {
       const options = resolveKimiCliInstallOptions({
@@ -148,8 +169,10 @@ describe('kimi runtime helpers', () => {
 
       expect(options).toEqual({
         autoInstall: false,
+        binaryPath: undefined,
         packageName: 'kimi-cli==1.2.3',
         python: '3.14',
+        source: undefined,
         uvPath: '/opt/bin/uv'
       })
       expect(buildKimiCliInstallArgs(options)).toEqual([
@@ -168,6 +191,31 @@ describe('kimi runtime helpers', () => {
     } finally {
       await cleanup()
     }
+  })
+
+  it('accepts nested Kimi CLI config for managed package version control', () => {
+    expect(resolveKimiCliInstallOptions({}, {
+      cli: {
+        autoInstall: false,
+        package: 'kimi-cli',
+        path: '/opt/kimi/bin/kimi',
+        python: '3.14',
+        source: 'path',
+        uvPath: '/opt/bin/uv',
+        version: '1.2.3'
+      },
+      autoInstall: true,
+      installPackage: 'ignored',
+      installPython: '3.13',
+      uvPath: 'ignored'
+    })).toEqual({
+      autoInstall: false,
+      binaryPath: '/opt/kimi/bin/kimi',
+      packageName: 'kimi-cli==1.2.3',
+      python: '3.14',
+      source: 'path',
+      uvPath: '/opt/bin/uv'
+    })
   })
 
   it('renders actionable install instructions when Kimi CLI or uv is missing', async () => {

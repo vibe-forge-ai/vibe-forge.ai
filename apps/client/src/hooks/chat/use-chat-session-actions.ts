@@ -16,6 +16,8 @@ import {
 } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
 import type { ChatMessageContent, Session, SessionQueuedMessageMode } from '@vibe-forge/core'
+import { getChatSessionTargetPrompt } from './chat-session-target'
+import type { ChatSessionTargetDraft } from './chat-session-target'
 import type { ChatSessionWorkspaceDraft } from './chat-session-workspace-draft'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
@@ -28,6 +30,7 @@ export function useChatSessionActions({
   permissionMode,
   adapter,
   account,
+  sessionTargetDraft,
   workspaceDraft,
   onClearMessages
 }: {
@@ -38,6 +41,7 @@ export function useChatSessionActions({
   permissionMode: PermissionMode
   adapter?: string
   account?: string
+  sessionTargetDraft?: ChatSessionTargetDraft
   workspaceDraft?: ChatSessionWorkspaceDraft
   onClearMessages: () => void
 }) {
@@ -85,7 +89,9 @@ export function useChatSessionActions({
     if (!session?.id) {
       setIsCreating(true)
       try {
+        const targetPrompt = getChatSessionTargetPrompt(sessionTargetDraft)
         const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
+          ...targetPrompt,
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter,
@@ -94,6 +100,7 @@ export function useChatSessionActions({
             ? undefined
             : {
               createWorktree: workspaceDraft.createWorktree,
+              worktreeEnvironment: workspaceDraft.worktreeEnvironment,
               branch: workspaceDraft.branch
             }
         })
@@ -125,6 +132,7 @@ export function useChatSessionActions({
     navigateWithCurrentSearch,
     effort,
     permissionMode,
+    sessionTargetDraft,
     workspaceDraft,
     modelForQuery,
     session?.id,
@@ -141,7 +149,9 @@ export function useChatSessionActions({
     if (!session?.id) {
       setIsCreating(true)
       try {
+        const targetPrompt = getChatSessionTargetPrompt(sessionTargetDraft)
         const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
+          ...targetPrompt,
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter,
@@ -150,6 +160,7 @@ export function useChatSessionActions({
             ? undefined
             : {
               createWorktree: workspaceDraft.createWorktree,
+              worktreeEnvironment: workspaceDraft.worktreeEnvironment,
               branch: workspaceDraft.branch
             }
         })
@@ -181,6 +192,7 @@ export function useChatSessionActions({
     message,
     effort,
     permissionMode,
+    sessionTargetDraft,
     workspaceDraft,
     modelForQuery,
     session?.id,

@@ -70,7 +70,7 @@ describe('config schema form', () => {
       />
     )
 
-    expect(html).toContain('custom-adapter')
+    expect(html).toContain('Custom Adapter')
     expect(html).toContain('config-view__detail-list')
   })
 
@@ -477,6 +477,90 @@ describe('config schema form', () => {
 
     expect(html).toContain('config.fields.modelServices.item.apiBaseUrl.label')
     expect(html).toContain('config.fields.modelServices.item.models.label')
+  })
+
+  it('renders inherited detail-collection entries as readonly summaries in source views', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='modelServices'
+        value={{}}
+        resolvedValue={{
+          openai: {
+            title: 'OpenAI',
+            description: 'Inherited service'
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('OpenAI')
+    expect(html).toContain('config.detail.inheritedBadge')
+  })
+
+  it('renders inherited detail routes as readonly pages with an explicit override action', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='modelServices'
+        value={{}}
+        resolvedValue={{
+          openai: {
+            title: 'OpenAI',
+            description: 'Inherited service',
+            apiBaseUrl: 'https://api.openai.com/v1'
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailCollectionItem',
+          fieldPath: [],
+          itemKey: 'openai'
+        }}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('config.detail.inheritedReadonly')
+    expect(html).toContain('config.detail.override')
+    expect(html).toContain('config.fields.modelServices.item.apiBaseUrl.label')
+  })
+
+  it('renders local detail overrides with inherited field context', () => {
+    const html = renderToStaticMarkup(
+      <SectionForm
+        sectionKey='modelServices'
+        value={{
+          openai: {
+            apiBaseUrl: 'https://proxy.internal/v1'
+          }
+        }}
+        resolvedValue={{
+          openai: {
+            title: 'OpenAI',
+            description: 'Inherited service',
+            apiBaseUrl: 'https://proxy.internal/v1'
+          }
+        }}
+        onChange={() => undefined}
+        mergedModelServices={{}}
+        mergedAdapters={{}}
+        detailRoute={{
+          kind: 'detailCollectionItem',
+          fieldPath: [],
+          itemKey: 'openai'
+        }}
+        t={t}
+      />
+    )
+
+    expect(html).toContain('config.detail.partialOverride')
+    expect(html).toContain('config.fields.modelServices.item.title.label')
+    expect(html).toContain('config.fields.modelServices.item.description.label')
   })
 
   it('renders mcp server detail collections as second-level config pages', () => {

@@ -3,8 +3,10 @@ import process from 'node:process'
 import Router from '@koa/router'
 
 import { DefinitionLoader } from '@vibe-forge/definition-loader'
-import type { Definition, Entity, Rule, Spec } from '@vibe-forge/types'
+import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
 
+import { importSkillArchive } from '#~/services/ai/skill-archive-import.js'
+import { createProjectSkill } from '#~/services/ai/skill-create.js'
 import { badRequest, internalServerError, isHttpError, notFound } from '#~/utils/http.js'
 import {
   matchesDefinitionPath,
@@ -12,8 +14,11 @@ import {
   presentEntityDetail,
   presentRule,
   presentRuleDetail,
+  presentSkill,
+  presentSkillDetail,
   presentSpec,
-  presentSpecDetail
+  presentSpecDetail,
+  presentWorkspace
 } from './ai-presenters'
 
 export function aiRouter(): Router {
@@ -29,6 +34,57 @@ export function aiRouter(): Router {
       }
     } catch (err) {
       throw internalServerError('Failed to load specs', { cause: err, code: 'ai_specs_load_failed' })
+    }
+  })
+
+  router.get('/skills', async (ctx) => {
+    try {
+      const skills = await loader.loadDefaultSkills()
+      ctx.body = {
+        skills: skills.map((skill: Definition<Skill>) => presentSkill(skill, workspaceRoot))
+      }
+    } catch (err) {
+      throw internalServerError('Failed to load skills', { cause: err, code: 'ai_skills_load_failed' })
+    }
+  })
+
+  router.post('/skills', async (ctx) => {
+    try {
+      ctx.status = 201
+      ctx.body = {
+        skill: await createProjectSkill(workspaceRoot, (ctx.request.body ?? {}) as Record<string, unknown>)
+      }
+    } catch (err) {
+      if (isHttpError(err)) throw err
+      throw internalServerError('Failed to create skill', { cause: err, code: 'ai_skill_create_failed' })
+    }
+  })
+
+  router.post('/skills/import', async (ctx) => {
+    const archiveName = ctx.get('x-file-name')
+    ctx.body = await importSkillArchive(workspaceRoot, ctx.req, archiveName)
+  })
+
+  router.get('/skills/detail', async (ctx) => {
+    const targetPath = typeof ctx.query.path === 'string' ? ctx.query.path : undefined
+    if (!targetPath) {
+      throw badRequest('Missing path', undefined, 'missing_path')
+    }
+
+    try {
+      const skills = await loader.loadDefaultSkills()
+      const skill = skills.find((item: Definition<Skill>) => matchesDefinitionPath(item, targetPath, workspaceRoot))
+
+      if (!skill) {
+        throw notFound('Skill not found', { path: targetPath }, 'skill_not_found')
+      }
+
+      ctx.body = {
+        skill: presentSkillDetail(skill, workspaceRoot)
+      }
+    } catch (err) {
+      if (isHttpError(err)) throw err
+      throw internalServerError('Failed to load skill detail', { cause: err, code: 'ai_skill_detail_load_failed' })
     }
   })
 
@@ -63,6 +119,17 @@ export function aiRouter(): Router {
       }
     } catch (err) {
       throw internalServerError('Failed to load entities', { cause: err, code: 'ai_entities_load_failed' })
+    }
+  })
+
+  router.get('/workspaces', async (ctx) => {
+    try {
+      const workspaces = await loader.loadWorkspaces()
+      ctx.body = {
+        workspaces: workspaces.map(presentWorkspace)
+      }
+    } catch (err) {
+      throw internalServerError('Failed to load workspaces', { cause: err, code: 'ai_workspaces_load_failed' })
     }
   })
 

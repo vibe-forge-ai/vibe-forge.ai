@@ -13,6 +13,7 @@ import {
   runChromeDebugMessengerSend,
   runChromeDebugTargets
 } from './chrome-debug'
+import { runHomebrewTapSyncCli } from './homebrew-tap'
 import { runMessageActionsVerify } from './message-actions'
 
 const runVitestAdapterE2E = async (input: {
@@ -64,6 +65,7 @@ interface ScriptsCliDeps {
   runChromeDebugMessengerClickReply: typeof runChromeDebugMessengerClickReply
   runChromeDebugMessengerClickText: typeof runChromeDebugMessengerClickText
   runMessageActionsVerify: typeof runMessageActionsVerify
+  runHomebrewTapSyncCli: typeof runHomebrewTapSyncCli
   runPublishPlan: (args: string[]) => Promise<unknown>
 }
 
@@ -94,6 +96,7 @@ const defaultDeps: ScriptsCliDeps = {
   runChromeDebugMessengerClickReply,
   runChromeDebugMessengerClickText,
   runMessageActionsVerify,
+  runHomebrewTapSyncCli,
   runPublishPlan: async (args) => {
     const { runPublishPlanCli } = await import('./publish-plan-core.mjs')
     return runPublishPlanCli(args)
@@ -314,6 +317,31 @@ export const createScriptsCli = (inputDeps: Partial<ScriptsCliDeps> = {}) => {
     .description('Run the publish plan tool with passthrough arguments')
     .action(async (args: string[] = []) => {
       await deps.runPublishPlan(args)
+    })
+
+  const homebrewTapCommand = program
+    .command('homebrew-tap')
+    .description('Maintain the Homebrew tap submodule')
+
+  homebrewTapCommand
+    .command('sync-cli')
+    .requiredOption('--version <version>', 'Published @vibe-forge/cli version to sync')
+    .option('--tap-dir <path>', 'Homebrew tap submodule directory', 'infra/homebrew-tap')
+    .option('--formula <path>', 'Formula path inside the tap directory', 'Formula/vibe-forge.rb')
+    .option('--dry-run', 'Calculate the update without writing the formula', false)
+    .description('Update Formula/vibe-forge.rb to the published @vibe-forge/cli tarball')
+    .action(async (options: {
+      dryRun?: boolean
+      formula: string
+      tapDir: string
+      version: string
+    }) => {
+      await deps.runHomebrewTapSyncCli({
+        version: options.version,
+        tapDir: options.tapDir,
+        formulaPath: options.formula,
+        dryRun: options.dryRun ?? false
+      })
     })
 
   return program

@@ -19,6 +19,45 @@
 - `./.ai/.mock`
 - `./.ai/.local`
 
+## Skill 依赖
+
+完整使用说明见 [Skills 与依赖](./usage/skills.md)。
+
+`./.ai/skills/<name>/SKILL.md` 的 frontmatter 可以声明 `dependencies`：
+
+```yaml
+---
+name: app-builder
+description: Build the app
+dependencies:
+  - frontend-design
+  - anthropics/skills@frontend-design
+---
+```
+
+解析规则：
+
+- 先在当前 workspace 和已启用插件的 skills 中按名称解析。
+- 本地找不到时，会按 registry 拉取并缓存到 `./.ai/caches/skill-dependencies/`。
+- 未配置 registry 时，默认使用 Vercel 的公开 Skills Hub：`https://skills.sh`。
+- 如果需要切到兼容的私有 registry，可以在 `.ai.config.*` 配置：
+
+```yaml
+skills:
+  registry: https://skills.example.com
+```
+
+也可以拆开搜索和下载入口：
+
+```yaml
+skills:
+  registry:
+    searchUrl: https://skills.example.com
+    downloadUrl: https://skills.example.com
+```
+
+依赖安装只会写入项目 AI 目录的 cache，不会修改用户真实 home。adapter 启动时会把最终解析出的 skill 列表投影到对应原生目录。
+
 ## 环境变量
 
 可以在项目根 `.env` 中覆盖：

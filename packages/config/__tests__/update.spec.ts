@@ -137,6 +137,9 @@ describe('updateConfigFile', () => {
             shortcuts: {
               openConfig: 'mod+,'
             },
+            skills: {
+              registry: 'https://skills.example.com'
+            },
             permissions: {
               allow: ['ChromeDevtools'],
               deny: [],
@@ -165,6 +168,9 @@ describe('updateConfigFile', () => {
       expect(result.updatedConfig.shortcuts).toEqual({
         openConfig: 'mod+,'
       })
+      expect(result.updatedConfig.skills).toEqual({
+        registry: 'https://skills.example.com'
+      })
       expect(result.updatedConfig.permissions).toEqual({
         allow: ['Bash'],
         deny: [],
@@ -176,6 +182,9 @@ describe('updateConfigFile', () => {
         announcements: ['hello'],
         shortcuts: {
           openConfig: 'mod+,'
+        },
+        skills: {
+          registry: 'https://skills.example.com'
         },
         permissions: {
           allow: ['Bash'],

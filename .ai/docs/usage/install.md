@@ -4,6 +4,25 @@
 
 ## 安装基础包
 
+### Homebrew 安装 CLI
+
+如果只需要 `vf` CLI，可以通过 Homebrew 安装和更新：
+
+```bash
+brew install vibe-forge-ai/tap/vibe-forge
+```
+
+更新：
+
+```bash
+brew update
+brew upgrade vibe-forge
+```
+
+当前 Homebrew formula 安装 `@vibe-forge/cli`，会暴露 `vf`、`vforge` 和 `vibe-forge` 三个命令。
+
+### 在项目中安装 npm 包
+
 ```bash
 pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
@@ -29,8 +48,8 @@ pnpm add -D @vibe-forge/hooks
 不想写入依赖也可以直接用 `npx`：
 
 ```bash
-npx -y vfui-server --help
-npx -y vfui-client --help
+npx -y -p @vibe-forge/server vfui-server --help
+npx -y -p @vibe-forge/client vfui-client --help
 ```
 
 ## 配置文件

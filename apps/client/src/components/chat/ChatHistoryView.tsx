@@ -16,6 +16,14 @@ import type {
 import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
+import { ComposerLanding, ComposerStack } from '#~/components/composer-landing/ComposerLanding'
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
+import {
+  DEFAULT_CHAT_SESSION_TARGET_DRAFT,
+  getChatSessionTargetDraftFromSession,
+  isChatSessionTargetReady
+} from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
@@ -79,7 +87,8 @@ export function ChatHistoryView({
   showAccountSelector,
   onAccountChange,
   modelUnavailable,
-  hasAvailableModels
+  hasAvailableModels,
+  contextReferenceRequest
 }: {
   isReady: boolean
   messages: ChatMessage[]
@@ -119,6 +128,7 @@ export function ChatHistoryView({
   onAccountChange: (account: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
+  contextReferenceRequest?: ContextReferenceRequest | null
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -130,6 +140,9 @@ export function ChatHistoryView({
     [configRes]
   )
   const workspaceDraftDirtyRef = useRef(false)
+  const [sessionTargetDraft, setSessionTargetDraft] = useState<ChatSessionTargetDraft>(() => ({
+    ...DEFAULT_CHAT_SESSION_TARGET_DRAFT
+  }))
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
@@ -158,6 +171,7 @@ export function ChatHistoryView({
     permissionMode,
     adapter: selectedAdapter,
     account: selectedAccount,
+    sessionTargetDraft,
     workspaceDraft,
     onClearMessages
   })
@@ -181,8 +195,20 @@ export function ChatHistoryView({
       createdAt: Date.now()
     }
   }
+  const validateSessionTarget = () => {
+    if (session?.id != null || isChatSessionTargetReady(sessionTargetDraft)) {
+      return true
+    }
+
+    void message.warning(t('chat.sessionTarget.missingResourceWarning'))
+    return false
+  }
 
   const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -220,6 +246,10 @@ export function ChatHistoryView({
   }
 
   const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -263,7 +293,12 @@ export function ChatHistoryView({
     setExpandedTurnIds(new Set())
     setQueuedDraft(null)
     setQueueMode('steer')
-  }, [session?.id])
+    setSessionTargetDraft(
+      session?.id != null
+        ? getChatSessionTargetDraftFromSession(session)
+        : { ...DEFAULT_CHAT_SESSION_TARGET_DRAFT }
+    )
+  }, [session?.id, session?.promptName, session?.promptType])
   useEffect(() => {
     if (session?.id != null) {
       return
@@ -614,6 +649,111 @@ export function ChatHistoryView({
     )
   }
 
+  const composerContent = (
+    <>
+      {isPermissionInteraction && interactionPanel}
+      <CurrentTodoList messages={messages} />
+      {!isInlineEditing && (
+        <QueuedMessagesCard
+          mode='next'
+          items={queuedMessages.next}
+          onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+          onDelete={(item) => void removeQueuedContent(item.id)}
+          onEdit={(item) => void handleEditQueuedMessage(item)}
+          onReorder={(ids) => reorderQueuedContent('next', ids)}
+        />
+      )}
+      {!isInlineEditing && (
+        <QueuedMessagesCard
+          mode='steer'
+          items={queuedMessages.steer}
+          onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+          onDelete={(item) => void removeQueuedContent(item.id)}
+          onEdit={(item) => void handleEditQueuedMessage(item)}
+          onReorder={(ids) => reorderQueuedContent('steer', ids)}
+        />
+      )}
+      {!isPermissionInteraction && interactionPanel}
+      {!isInlineEditing && (
+        <div className='sender-container'>
+          <Sender
+            onSend={handleSend}
+            onSendContent={handleSendContent}
+            adapterLocked={session?.id != null}
+            sessionId={session?.id}
+            sessionStatus={isCreating ? 'running' : session?.status}
+            onInterrupt={interrupt}
+            onClear={clearMessages}
+            sessionInfo={sessionInfo}
+            interactionRequest={interactionRequest}
+            onInteractionResponse={onInteractionResponse}
+            interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
+              ? {
+                optionCount: interactionOptions.length,
+                activeIndex: activeInteractionOptionIndex,
+                onMove: handleMoveInteractionOption,
+                onSubmit: handleSubmitActiveInteractionOption
+              }
+              : undefined}
+            initialContent={queuedDraft?.content}
+            placeholder={placeholder}
+            submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
+            modelMenuGroups={modelMenuGroups}
+            modelSearchOptions={modelSearchOptions}
+            recommendedModelOptions={recommendedModelOptions}
+            servicePreviewModelOptions={servicePreviewModelOptions}
+            onToggleRecommendedModel={onToggleRecommendedModel}
+            updatingRecommendedModelValue={updatingRecommendedModelValue}
+            selectedModel={selectedModel}
+            onModelChange={onModelChange}
+            effort={effort}
+            effortOptions={effortOptions}
+            onEffortChange={onEffortChange}
+            permissionMode={permissionMode}
+            permissionModeOptions={permissionModeOptions}
+            onPermissionModeChange={onPermissionModeChange}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
+            modelUnavailable={modelUnavailable}
+            sessionTarget={{
+              draft: session?.id != null ? getChatSessionTargetDraftFromSession(session) : sessionTargetDraft,
+              locked: session?.id != null,
+              disabled: isCreating,
+              onChange: setSessionTargetDraft
+            }}
+            queueMode={queueMode}
+            onQueueModeChange={setQueueMode}
+            contextReferenceRequest={contextReferenceRequest}
+          />
+          <ChatStatusBar
+            draftWorkspace={workspaceDraft}
+            isCreating={isCreating}
+            sessionId={session?.id}
+            adapterLocked={session?.id != null}
+            isThinking={isCreating || session?.status === 'running'}
+            modelUnavailable={modelUnavailable}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
+            onDraftWorkspaceChange={(nextDraft) => {
+              workspaceDraftDirtyRef.current = true
+              setWorkspaceDraft(nextDraft)
+            }}
+          />
+        </div>
+      )}
+    </>
+  )
+
   return (
     <>
       <div className={`chat-messages ${isReady ? 'ready' : ''}`} ref={messagesContainerRef}>
@@ -666,115 +806,20 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {shouldShowNewSessionGuide && !isCompactLayout && (
-        <div className='new-session-guide-wrapper'>
-          <NewSessionGuide />
-        </div>
-      )}
-
-      {shouldShowNewSessionGuide && isCompactLayout && (
-        <div className='new-session-guide-wrapper is-compact-layout'>
-          <NewSessionGuide />
-        </div>
-      )}
-
-      <div className='chat-composer-stack'>
-        <div className='chat-composer-stack__inner'>
-          {isPermissionInteraction && interactionPanel}
-          <CurrentTodoList messages={messages} />
-          {!isInlineEditing && (
-            <QueuedMessagesCard
-              mode='next'
-              items={queuedMessages.next}
-              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
-              onDelete={(item) => void removeQueuedContent(item.id)}
-              onEdit={(item) => void handleEditQueuedMessage(item)}
-              onReorder={(ids) => reorderQueuedContent('next', ids)}
+      {shouldShowNewSessionGuide
+        ? (
+          <ComposerLanding compact={isCompactLayout} composer={composerContent}>
+            <NewSessionGuide
+              selectedTarget={sessionTargetDraft}
+              onSelectTarget={setSessionTargetDraft}
             />
-          )}
-          {!isInlineEditing && (
-            <QueuedMessagesCard
-              mode='steer'
-              items={queuedMessages.steer}
-              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
-              onDelete={(item) => void removeQueuedContent(item.id)}
-              onEdit={(item) => void handleEditQueuedMessage(item)}
-              onReorder={(ids) => reorderQueuedContent('steer', ids)}
-            />
-          )}
-          {!isPermissionInteraction && interactionPanel}
-          {!isInlineEditing && (
-            <div className='sender-container'>
-              <Sender
-                onSend={handleSend}
-                onSendContent={handleSendContent}
-                adapterLocked={session?.id != null}
-                sessionId={session?.id}
-                sessionStatus={isCreating ? 'running' : session?.status}
-                onInterrupt={interrupt}
-                onClear={clearMessages}
-                sessionInfo={sessionInfo}
-                interactionRequest={interactionRequest}
-                onInteractionResponse={onInteractionResponse}
-                interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
-                  ? {
-                    optionCount: interactionOptions.length,
-                    activeIndex: activeInteractionOptionIndex,
-                    onMove: handleMoveInteractionOption,
-                    onSubmit: handleSubmitActiveInteractionOption
-                  }
-                  : undefined}
-                initialContent={queuedDraft?.content}
-                placeholder={placeholder}
-                submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
-                modelMenuGroups={modelMenuGroups}
-                modelSearchOptions={modelSearchOptions}
-                recommendedModelOptions={recommendedModelOptions}
-                servicePreviewModelOptions={servicePreviewModelOptions}
-                onToggleRecommendedModel={onToggleRecommendedModel}
-                updatingRecommendedModelValue={updatingRecommendedModelValue}
-                selectedModel={selectedModel}
-                onModelChange={onModelChange}
-                effort={effort}
-                effortOptions={effortOptions}
-                onEffortChange={onEffortChange}
-                permissionMode={permissionMode}
-                permissionModeOptions={permissionModeOptions}
-                onPermissionModeChange={onPermissionModeChange}
-                selectedAdapter={selectedAdapter}
-                adapterOptions={adapterOptions}
-                onAdapterChange={onAdapterChange}
-                selectedAccount={selectedAccount}
-                accountOptions={accountOptions}
-                showAccountSelector={showAccountSelector}
-                onAccountChange={onAccountChange}
-                modelUnavailable={modelUnavailable}
-                queueMode={queueMode}
-                onQueueModeChange={setQueueMode}
-              />
-              <ChatStatusBar
-                draftWorkspace={workspaceDraft}
-                isCreating={isCreating}
-                sessionId={session?.id}
-                adapterLocked={session?.id != null}
-                isThinking={isCreating || session?.status === 'running'}
-                modelUnavailable={modelUnavailable}
-                selectedAdapter={selectedAdapter}
-                adapterOptions={adapterOptions}
-                onAdapterChange={onAdapterChange}
-                selectedAccount={selectedAccount}
-                accountOptions={accountOptions}
-                showAccountSelector={showAccountSelector}
-                onAccountChange={onAccountChange}
-                onDraftWorkspaceChange={(nextDraft) => {
-                  workspaceDraftDirtyRef.current = true
-                  setWorkspaceDraft(nextDraft)
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+          </ComposerLanding>
+        )
+        : (
+          <ComposerStack>
+            {composerContent}
+          </ComposerStack>
+        )}
     </>
   )
 }

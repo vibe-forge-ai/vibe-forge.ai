@@ -4,6 +4,17 @@
 
 这页补充用户侧更完整的 marketplace 配置示例，适合你已经确定要把 Claude Code 插件接进项目时参考。
 
+Web 前端的「知识库 -> 技能」页会把 `marketplaces` 展示为可搜索的 skills hub 源。Vibe Forge 默认内置 `skills` 官方源，指向 Vercel 的 [skills.sh](https://skills.sh/) hub；你也可以在界面里新增 URL、目录、GitHub 或 Git 源，或者直接编辑配置文件。skills.sh 搜索结果会安装到项目 `.ai/skills`，Claude marketplace 搜索结果安装后会转换成当前项目可用的 Vibe Forge skills / entities / MCP / hooks 资产。
+
+如果你想隐藏内置官方源，可以声明同名 marketplace 并禁用它；`skills` 这个源名由内置 skills.sh 源保留：
+
+```yaml
+marketplaces:
+  skills:
+    type: claude-code
+    enabled: false
+```
+
 ## 示例：接入 Superpowers Marketplace
 
 如果你想直接使用 Superpowers 维护的 Claude marketplace，可以这样配：
@@ -29,15 +40,15 @@ marketplaces:
 然后安装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers@superpowers-marketplace
-npx vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
-npx vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
+vf plugin --adapter claude add superpowers@superpowers-marketplace
+vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
+vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
 ```
 
 如果你还想装浏览器插件，也可以继续装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
+vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 ```
 
 前提是这个 plugin 名字已经存在于该 marketplace 的 `marketplace.json` 里。
@@ -80,9 +91,9 @@ marketplaces:
 然后安装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers@superpowers
-npx vf plugin --adapter claude add superpowers-chrome@superpowers
-npx vf plugin --adapter claude add private-journal-mcp@superpowers
+vf plugin --adapter claude add superpowers@superpowers
+vf plugin --adapter claude add superpowers-chrome@superpowers
+vf plugin --adapter claude add private-journal-mcp@superpowers
 ```
 
 说明：

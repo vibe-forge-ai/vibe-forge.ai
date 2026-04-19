@@ -1,6 +1,6 @@
 export type EditorValueType = 'string' | 'number' | 'boolean' | 'object' | 'array'
 
-export type TranslationFn = (key: string, options?: { defaultValue?: string }) => string
+export type TranslationFn = (key: string, options?: Record<string, unknown> & { defaultValue?: string }) => string
 
 export const isEmptyValue = (value: unknown) => {
   if (value == null) return true

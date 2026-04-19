@@ -1,13 +1,21 @@
+// Official OpenCode square logo from https://opencode.ai/brand.
 const OPENCODE_ICON_SVG = `
-<svg height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg">
-  <rect width="24" height="24" rx="6" fill="#0F172A"></rect>
-  <path d="M12 3.25 4.75 7.5v9L12 20.75l7.25-4.25v-9L12 3.25Zm0 2.06 5.5 3.22-5.5 3.22-5.5-3.22L12 5.31Zm-6 4.97 5 2.93v5.46l-5-2.93v-5.4Zm7 8.39v-5.46l5-2.93v5.4l-5 2.99Z" fill="url(#opencode-fill)"></path>
+<svg height="1em" style="flex:none;line-height:1" viewBox="0 0 300 300" width="1em" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(30, 0)">
+    <g clip-path="url(#opencode-clip)">
+      <mask id="opencode-mask" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="300">
+        <path d="M240 0H0V300H240V0Z" fill="white"></path>
+      </mask>
+      <g mask="url(#opencode-mask)">
+        <path d="M180 240H60V120H180V240Z" fill="#CFCECD"></path>
+        <path d="M180 60H60V240H180V60ZM240 300H0V0H240V300Z" fill="#211E1E"></path>
+      </g>
+    </g>
+  </g>
   <defs>
-    <linearGradient id="opencode-fill" x1="4.75" x2="19.25" y1="3.25" y2="20.75" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#34D399"></stop>
-      <stop offset=".55" stop-color="#22C55E"></stop>
-      <stop offset="1" stop-color="#14B8A6"></stop>
-    </linearGradient>
+    <clipPath id="opencode-clip">
+      <rect width="240" height="300" fill="white"></rect>
+    </clipPath>
   </defs>
 </svg>
 `

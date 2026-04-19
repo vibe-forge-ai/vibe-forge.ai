@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { apiEnvelopeMiddleware } from '#~/middlewares/api-envelope.js'
@@ -30,6 +32,7 @@ const runMiddleware = async ({
     method,
     status,
     body,
+    state: {},
     type
   } as any
 
@@ -172,5 +175,21 @@ describe('apiEnvelopeMiddleware', () => {
     expect(ctx.status).toBe(200)
     expect(ctx.type).toBe('text/plain')
     expect(ctx.body).toBe('ok')
+  })
+
+  it('allows api routes to opt out for streamed resources', async () => {
+    const ctx = await runMiddleware({
+      path: '/api/workspace/resource',
+      next: async (ctx) => {
+        ctx.status = 200
+        ctx.state.skipApiEnvelope = true
+        ctx.type = 'image/png'
+        ctx.body = Buffer.from([1, 2, 3])
+      }
+    })
+
+    expect(ctx.status).toBe(200)
+    expect(ctx.type).toBe('image/png')
+    expect(ctx.body).toEqual(Buffer.from([1, 2, 3]))
   })
 })

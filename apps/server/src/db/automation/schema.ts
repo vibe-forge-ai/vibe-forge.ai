@@ -35,6 +35,14 @@ export const automationSchemaModule: SchemaModule = {
         ruleId TEXT NOT NULL,
         title TEXT NOT NULL,
         prompt TEXT NOT NULL,
+        model TEXT,
+        adapter TEXT,
+        effort TEXT,
+        permissionMode TEXT,
+        createWorktree INTEGER,
+        branchName TEXT,
+        branchKind TEXT,
+        branchMode TEXT,
         createdAt INTEGER NOT NULL,
         FOREIGN KEY(ruleId) REFERENCES automation_rules(id) ON DELETE CASCADE
       );
@@ -72,7 +80,44 @@ export const automationSchemaModule: SchemaModule = {
     if (getColumns('automation_tasks').length > 0) {
       ensureColumn('automation_tasks', 'title', 'TEXT NOT NULL DEFAULT ""')
       ensureColumn('automation_tasks', 'prompt', 'TEXT NOT NULL DEFAULT ""')
+      ensureColumn('automation_tasks', 'model', 'TEXT')
+      ensureColumn('automation_tasks', 'adapter', 'TEXT')
+      ensureColumn('automation_tasks', 'effort', 'TEXT')
+      ensureColumn('automation_tasks', 'permissionMode', 'TEXT')
+      ensureColumn('automation_tasks', 'createWorktree', 'INTEGER')
+      ensureColumn('automation_tasks', 'branchName', 'TEXT')
+      ensureColumn('automation_tasks', 'branchKind', 'TEXT')
+      ensureColumn('automation_tasks', 'branchMode', 'TEXT')
       ensureColumn('automation_tasks', 'createdAt', 'INTEGER NOT NULL DEFAULT 0')
+
+      const legacyStartupColumns = [
+        'model',
+        'adapter',
+        'effort',
+        'permissionMode',
+        'createWorktree',
+        'branchName',
+        'branchKind',
+        'branchMode'
+      ]
+      const ruleColumns = getColumns('automation_rules')
+      if (legacyStartupColumns.every(column => ruleColumns.includes(column))) {
+        exec(`
+          UPDATE automation_tasks
+          SET
+            model = COALESCE(model, (SELECT model FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            adapter = COALESCE(adapter, (SELECT adapter FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            effort = COALESCE(effort, (SELECT effort FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            permissionMode = COALESCE(permissionMode, (SELECT permissionMode FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            createWorktree = COALESCE(createWorktree, (SELECT createWorktree FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            branchName = COALESCE(branchName, (SELECT branchName FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            branchKind = COALESCE(branchKind, (SELECT branchKind FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId)),
+            branchMode = COALESCE(branchMode, (SELECT branchMode FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId))
+          WHERE EXISTS (
+            SELECT 1 FROM automation_rules WHERE automation_rules.id = automation_tasks.ruleId
+          );
+        `)
+      }
     }
 
     if (getColumns('automation_runs').length > 0) {

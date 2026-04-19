@@ -20,6 +20,7 @@ export interface RunOptions {
   resume?: string
   spec?: string
   entity?: string
+  workspace?: string
   outputFormat?: RunOutputFormat
   inputFormat?: RunInputFormat
   includeMcpServer?: string[]
