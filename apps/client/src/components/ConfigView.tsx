@@ -8,8 +8,8 @@ import useSWR from 'swr'
 import type { ConfigSource } from '@vibe-forge/core'
 import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
-import { PageShell } from '#~/components/layout/PageShell'
 import { useMobileSidebarModal } from '#~/components/layout/@hooks/use-mobile-sidebar-modal'
+import { PageShell } from '#~/components/layout/PageShell'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
 import { getApiErrorMessage, getConfig, getConfigSchema, listWorktreeEnvironments, updateConfig } from '../api'
@@ -132,9 +132,16 @@ export function ConfigView() {
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
   const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
   const desktopNavGroups = useMemo(() => {
+    type NavTab = Exclude<(typeof tabs)[number], { type: 'group' }>
+    interface NavGroup {
+      key: string
+      label: string
+      tabs: NavTab[]
+    }
+
     const query = navSearchQuery.trim().toLowerCase()
-    const groups: Array<{ key: string; label: string; tabs: Array<typeof tabs[number]> }> = []
-    let currentGroup: { key: string; label: string; tabs: Array<typeof tabs[number]> } | null = null
+    const groups: NavGroup[] = []
+    let currentGroup: NavGroup | null = null
 
     tabs.forEach((tab) => {
       if (tab.type === 'group') {
@@ -148,22 +155,24 @@ export function ConfigView() {
       if (currentGroup == null) {
         currentGroup = { key: 'group-config', label: t('config.groups.config'), tabs: [] }
       }
+      const targetGroup = currentGroup
+      const navTab = tab as NavTab
 
       const label = String(tab.label)
-      const matches = query === ''
-        || label.toLowerCase().includes(query)
-        || tab.key.toLowerCase().includes(query)
+      const matches = query === '' ||
+        label.toLowerCase().includes(query) ||
+        tab.key.toLowerCase().includes(query)
 
       if (matches) {
-        currentGroup.tabs.push(tab)
+        targetGroup.tabs.push(navTab)
       }
     })
 
-    if (currentGroup != null && currentGroup.tabs.length > 0) {
+    if (currentGroup != null) {
       groups.push(currentGroup)
     }
 
-    return groups
+    return groups.filter(group => group.tabs.length > 0)
   }, [navSearchQuery, t, tabs])
 
   const queryTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
@@ -453,7 +462,7 @@ export function ConfigView() {
           onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
           t={t}
           headerLeading={showSidebarToggle ? renderSidebarExpandButton() : undefined}
-          headerExtra={(
+          headerExtra={
             <Space size={12}>
               <ConfigSourceSwitch
                 value={sourceKey}
@@ -461,7 +470,7 @@ export function ConfigView() {
                 options={sourceOptions}
               />
             </Space>
-          )}
+          }
         />
       )}
     </div>

@@ -1,8 +1,8 @@
 import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
 
-import type { ConfigSource } from '@vibe-forge/core'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+import type { ConfigSource } from '@vibe-forge/core'
 
 export function ConfigSourceSwitch({
   value,
@@ -31,12 +31,12 @@ export function ConfigSourceSwitch({
               aria-pressed={isActive}
               aria-label={String(opt.label)}
               className={`config-view__source-switch-button ${isActive ? 'is-active' : ''}`}
-              icon={(
+              icon={
                 <span className='config-view__source-option' aria-hidden='true'>
                   <span className='material-symbols-rounded'>{opt.icon}</span>
                   <span className='config-view__source-option-label'>{opt.label}</span>
                 </span>
-              )}
+              }
               onClick={() => {
                 onChange(opt.value)
               }}
