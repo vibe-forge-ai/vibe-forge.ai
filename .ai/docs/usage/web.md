@@ -34,6 +34,25 @@
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
 - 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
 
+### 继承与覆盖规则
+
+- `project` / `user` 配置页编辑的是当前 source 文件里的原始配置，不是 `extends` 展开后的结果。
+- `merged` 视图展示的是最终生效配置；它用于查看效果，不承担 source 文件编辑语义。
+- 如果某个值只来自 `extends`，界面会先按“继承值”展示；是否允许直接开始编辑，取决于字段类型和集合合并语义。
+
+| 类别                                | 代表字段                                                              | 继承态展示                       | 开始编辑方式                                | 写回粒度           |
+| ----------------------------------- | --------------------------------------------------------------------- | -------------------------------- | ------------------------------------------- | ------------------ |
+| inline override                     | `string` / `multiline` / `number` / `boolean` / `select` / `shortcut` | 直接把 inherited 值显示在控件里  | 直接修改                                    | 单个 field         |
+| 显式 whole-field override           | `string[]` / `json` / `record`                                        | 先只读展示 inherited 值          | 点 `Override in current config` 后再修改    | 整个 field         |
+| 显式 item override                  | `record` / `recordMap` 型 detail collection                           | 列表里标 `Inherited`，详情页只读 | 进入详情页后点 `Override in current config` | 单个 item          |
+| 允许 item override 的 list          | 有稳定 merge key 的 list detail collection                            | 同上                             | 同上                                        | 单个 item          |
+| 不允许 single-item override 的 list | append-only list detail collection                                    | 列表里标 `Inherited`，详情页只读 | 不能直接覆盖继承条目，只能新增本地项        | 只能 append 本地项 |
+
+- 当前按 `id + scope` 识别稳定 merge key 的列表是 `plugins.plugins`。
+- 当前按追加语义处理、不能单条覆盖继承项的列表是 `general.recommendedModels`。
+- 当前按对象条目做显式 item override 的字段包括：`modelServices`、`channels`、`adapters`、`plugins.marketplaces`、`mcp.mcpServers`、`general.notifications.events`。
+- 简单标量字段如果来自 `extends`，修改后会在当前 source 文件里落一个本地 override，不会回写到上游继承文件。
+
 ## Worktree 环境脚本
 
 每个环境目录可以包含这些脚本：

@@ -25,6 +25,7 @@ export function ConfigSectionPanel({
   fields,
   uiSection,
   value,
+  resolvedValue,
   onChange,
   mergedModelServices,
   mergedAdapters,
@@ -42,6 +43,7 @@ export function ConfigSectionPanel({
   fields?: FieldSpec[]
   uiSection?: ConfigUiSection
   value: unknown
+  resolvedValue?: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
@@ -66,6 +68,7 @@ export function ConfigSectionPanel({
     sectionKey,
     fields: resolvedFields,
     value,
+    resolvedValue,
     route: detailRoute,
     detailContext: {
       mergedModelServices,
@@ -168,6 +171,7 @@ export function ConfigSectionPanel({
           fields={resolvedFields}
           uiSection={uiSection}
           value={value}
+          resolvedValue={resolvedValue}
           onChange={onChange}
           mergedModelServices={mergedModelServices}
           mergedAdapters={mergedAdapters}

@@ -18,10 +18,19 @@ export interface LoadConfigOptions {
   disableDevConfig?: boolean
 }
 
+export interface ConfigSourceState {
+  rawConfig?: Config
+  resolvedConfig?: Config
+  configPath?: string
+  extendPaths: string[]
+}
+
 export interface ResolvedConfigState {
   projectConfig?: Config
   userConfig?: Config
   mergedConfig: Config
+  projectSource?: ConfigSourceState
+  userSource?: ConfigSourceState
 }
 
 export interface ResolveConfigStateOptions {
@@ -359,11 +368,11 @@ const readConfigFile = async (
   throw new Error(`Unsupported config file extension "${extension || '<none>'}"`)
 }
 
-const loadResolvedConfigFile = async (
+const loadResolvedConfigFileState = async (
   configPath: string,
   jsonVariables: Record<string, string | null | undefined>,
   loadingStack: Set<string>
-): Promise<Config> => {
+): Promise<Required<Pick<ConfigSourceState, 'rawConfig' | 'resolvedConfig' | 'extendPaths'>>> => {
   if (loadingStack.has(configPath)) {
     throw new Error(`Circular config extend detected: ${
       [
@@ -392,25 +401,39 @@ const loadResolvedConfigFile = async (
       throw new Error(`Extended config "${extendPath}" not found from "${configPath}"`)
     }
 
-    const extendedConfig = await loadResolvedConfigFile(
+    const extendedConfig = await loadResolvedConfigFileState(
       extendedConfigPath,
       jsonVariables,
       nextLoadingStack
     )
-    mergedExtendedConfig = mergeConfigs(mergedExtendedConfig, extendedConfig)
+    mergedExtendedConfig = mergeConfigs(mergedExtendedConfig, extendedConfig.resolvedConfig)
   }
 
-  return mergeConfigs(
-    mergedExtendedConfig,
-    omitExtendField(rawConfig)
-  ) ?? omitExtendField(rawConfig)
+  const rawEntryConfig = omitExtendField(rawConfig)
+
+  return {
+    rawConfig: rawEntryConfig,
+    resolvedConfig: mergeConfigs(
+      mergedExtendedConfig,
+      rawEntryConfig
+    ) ?? rawEntryConfig,
+    extendPaths: toExtendPaths(rawConfig.extend)
+  }
 }
 
-const loadConfigFromPaths = async (
+const loadResolvedConfigFile = async (
+  configPath: string,
+  jsonVariables: Record<string, string | null | undefined>,
+  loadingStack: Set<string>
+): Promise<Config> => (
+  (await loadResolvedConfigFileState(configPath, jsonVariables, loadingStack)).resolvedConfig
+)
+
+const loadConfigSourceFromPaths = async (
   cwd: string,
   paths: string[],
   jsonVariables: Record<string, string | null | undefined>
-) => {
+): Promise<ConfigSourceState | undefined> => {
   for (const path of paths) {
     try {
       const configPath = resolveConfigPath(cwd, path)
@@ -418,18 +441,22 @@ const loadConfigFromPaths = async (
         continue
       }
 
-      return await loadResolvedConfigFile(
+      const sourceState = await loadResolvedConfigFileState(
         configPath,
         jsonVariables,
         new Set()
       )
+      return {
+        ...sourceState,
+        configPath
+      }
     } catch (e) {
       console.error(`Failed to load config file ${path}: ${e}`)
     }
   }
 }
 
-const configCache = new Map<string, Promise<readonly [unknown | undefined, unknown | undefined]>>()
+const configCache = new Map<string, Promise<readonly [ConfigSourceState | undefined, ConfigSourceState | undefined]>>()
 export const DISABLE_DEV_CONFIG_ENV = '__VF_PROJECT_AI_DISABLE_DEV_CONFIG__'
 
 export const resetConfigCache = (cwd?: string) => {
@@ -446,10 +473,21 @@ export const resetConfigCache = (cwd?: string) => {
 }
 
 export const loadConfig = (options: LoadConfigOptions = {}) => {
+  return (async () => {
+    const [projectSource, userSource] = await loadConfigSources(options)
+    const [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
+      projectConfig: projectSource?.resolvedConfig,
+      userConfig: userSource?.resolvedConfig
+    })
+    return [projectConfig, userConfig] as const
+  })()
+}
+
+export const loadConfigSources = (options: LoadConfigOptions = {}) => {
   const cacheKey = resolveConfigCacheKey(options)
   const cachedConfig = configCache.get(cacheKey)
   if (cachedConfig != null) {
-    return cachedConfig as Promise<readonly [Config | undefined, Config | undefined]>
+    return cachedConfig
   }
 
   const launchCwd = options.cwd ?? process.cwd()
@@ -460,7 +498,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
   const jsonVariables = options.jsonVariables ?? {}
 
   const nextConfig = (async () => {
-    const projectConfig = await loadConfigFromPaths(
+    const projectSource = await loadConfigSourceFromPaths(
       configCwd,
       [
         './.ai.config.json',
@@ -473,9 +511,9 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
       jsonVariables
     )
 
-    let userConfig: Config | undefined
+    let userSource: ConfigSourceState | undefined
     if (shouldLoadDevConfig) {
-      userConfig = await loadConfigFromPaths(
+      userSource = await loadConfigSourceFromPaths(
         configCwd,
         [
           './.ai.dev.config.json',
@@ -487,10 +525,10 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
         ],
         jsonVariables
       )
-      if (userConfig == null) {
+      if (userSource == null) {
         const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
         if (primaryWorkspaceFolder != null) {
-          userConfig = await loadConfigFromPaths(
+          userSource = await loadConfigSourceFromPaths(
             primaryWorkspaceFolder,
             [
               './.ai.dev.config.json',
@@ -506,10 +544,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
       }
     }
 
-    return mergeDefaultVibeForgeMcpPermissions({
-      projectConfig,
-      userConfig
-    })
+    return [projectSource, userSource] as const
   })()
   configCache.set(cacheKey, nextConfig)
   return nextConfig
@@ -522,11 +557,15 @@ export const resolveMergedConfig = (
 
 export const buildResolvedConfigState = (
   projectConfig?: Config,
-  userConfig?: Config
+  userConfig?: Config,
+  projectSource?: ConfigSourceState,
+  userSource?: ConfigSourceState
 ): ResolvedConfigState => ({
   projectConfig,
   userConfig,
-  mergedConfig: resolveMergedConfig(projectConfig, userConfig)
+  mergedConfig: resolveMergedConfig(projectConfig, userConfig),
+  projectSource,
+  userSource
 })
 
 export const resolveConfigState = (
@@ -538,8 +577,12 @@ export const resolveConfigState = (
 export const loadConfigState = async (
   options: LoadConfigOptions = {}
 ): Promise<ResolvedConfigState> => {
-  const [projectConfig, userConfig] = await loadConfig(options)
-  return buildResolvedConfigState(projectConfig, userConfig)
+  const [projectSource, userSource] = await loadConfigSources(options)
+  const [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
+    projectConfig: projectSource?.resolvedConfig,
+    userConfig: userSource?.resolvedConfig
+  })
+  return buildResolvedConfigState(projectConfig, userConfig, projectSource, userSource)
 }
 
 export const resolveAdapterConfigEntry = (

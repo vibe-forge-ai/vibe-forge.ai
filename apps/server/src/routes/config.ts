@@ -9,6 +9,7 @@ import {
   buildConfigSections,
   composeBaseConfigSchemaBundle,
   composeWorkspaceConfigSchemaBundle,
+  resolveWritableConfigPath,
   updateConfigFile,
   validateConfigSection,
   writeWorkspaceConfigSchemaFile
@@ -129,7 +130,12 @@ export function configRouter(): Router {
 
   router.get('/', async (ctx) => {
     try {
-      const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadConfigState()
+      const {
+        workspaceFolder,
+        mergedConfig,
+        projectSource,
+        userSource
+      } = await loadConfigState()
       const urls = {
         repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
         docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
@@ -145,15 +151,31 @@ export function configRouter(): Router {
       mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
       ctx.body = {
         sources: {
-          project: buildSections(projectConfig),
-          user: buildSections(userConfig),
+          project: buildSections(projectSource?.rawConfig),
+          user: buildSections(userSource?.rawConfig),
           merged: mergedSections
+        },
+        resolvedSources: {
+          project: buildSections(projectSource?.resolvedConfig),
+          user: buildSections(userSource?.resolvedConfig)
         },
         meta: {
           workspaceFolder,
           configPresent: {
-            project: projectConfig != null,
-            user: userConfig != null
+            project: projectSource?.configPath != null,
+            user: userSource?.configPath != null
+          },
+          sourceFiles: {
+            project: {
+              configPath: projectSource?.configPath,
+              writableConfigPath: resolveWritableConfigPath(workspaceFolder, 'project'),
+              extendPaths: projectSource?.extendPaths ?? []
+            },
+            user: {
+              configPath: userSource?.configPath,
+              writableConfigPath: resolveWritableConfigPath(workspaceFolder, 'user'),
+              extendPaths: userSource?.extendPaths ?? []
+            }
           },
           experiments: {},
           about: {

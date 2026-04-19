@@ -1,12 +1,13 @@
 import './ConfigSectionForm.scss'
 
-import { Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
+import { Button, Collapse, Empty, Input, InputNumber, Select, Slider, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
 import type { ConfigUiSection } from '@vibe-forge/types'
 
 import { normalizeSendShortcut, resolveSendShortcut } from '#~/utils/shortcutUtils'
 
+import { DisplayValue } from './ConfigDisplayValue'
 import { ComplexTextEditor, StringArrayEditor } from './ConfigEditors'
 import { FieldRow } from './ConfigFieldRow'
 import { ShortcutInput } from './ConfigShortcutInput'
@@ -14,7 +15,7 @@ import { DetailCollectionField } from './DetailListField'
 import { McpServerItemEditor } from './McpServerItemEditor'
 import { RecommendedModelsItemEditor } from './RecommendedModelsItemEditor'
 import type { ConfigDetailRoute } from './configDetail'
-import { resolveConfigDetailRouteMeta, toDetailCollectionEntries } from './configDetail'
+import { resolveConfigDetailRouteMeta } from './configDetail'
 import type { FieldSpec } from './configSchema'
 import { configGroupMeta, configGroupOrder, configSchema } from './configSchema'
 import {
@@ -46,6 +47,7 @@ export const SectionForm = ({
   fields: providedFields,
   uiSection,
   value,
+  resolvedValue,
   onChange,
   mergedModelServices,
   mergedAdapters,
@@ -59,6 +61,7 @@ export const SectionForm = ({
   fields?: FieldSpec[]
   uiSection?: ConfigUiSection
   value: unknown
+  resolvedValue?: unknown
   onChange: (nextValue: unknown) => void
   mergedModelServices: Record<string, unknown>
   mergedAdapters: Record<string, unknown>
@@ -138,19 +141,58 @@ export const SectionForm = ({
     label: <span>{key}</span>
   }))
 
+  const renderInheritedReadonlyControl = ({
+    fieldValue,
+    fieldPath,
+    onOverride
+  }: {
+    fieldValue: unknown
+    fieldPath: string[]
+    onOverride?: () => void
+  }) => (
+    <div className='config-view__field-readonly'>
+      <div className='config-view__field-readonly-value'>
+        <DisplayValue value={fieldValue} sectionKey={sectionKey} path={fieldPath} t={t} />
+      </div>
+      {onOverride != null && (
+        <Button size='small' onClick={onOverride}>
+          {t('config.detail.override')}
+        </Button>
+      )}
+    </div>
+  )
+
   const renderField = ({
     field,
     currentValue,
+    currentResolvedValue,
     onCurrentValueChange,
-    keyPrefix
+    keyPrefix,
+    readOnly = false
   }: {
     field: FieldSpec
     currentValue: unknown
+    currentResolvedValue?: unknown
     onCurrentValueChange: (nextValue: unknown) => void
     keyPrefix: string
+    readOnly?: boolean
   }) => {
     const fieldValue = getValueByPath(currentValue, field.path)
-    const valueToUse = fieldValue !== undefined ? fieldValue : field.defaultValue
+    const resolvedFieldValue = getValueByPath(currentResolvedValue, field.path)
+    const hasLocalValue = fieldValue !== undefined
+    const hasResolvedValue = resolvedFieldValue !== undefined
+    const inheritedOnly = !hasLocalValue && hasResolvedValue
+    const canInlineOverride = field.type === 'string' ||
+      field.type === 'multiline' ||
+      field.type === 'number' ||
+      field.type === 'boolean' ||
+      field.type === 'select' ||
+      field.type === 'shortcut'
+    const valueToUse = hasLocalValue
+      ? fieldValue
+      : hasResolvedValue && canInlineOverride
+      ? resolvedFieldValue
+      : field.defaultValue
     const label = field.labelKey
       ? t(field.labelKey)
       : getFieldLabel(t, sectionKey, field.path, field.path[field.path.length - 1] ?? '')
@@ -164,8 +206,42 @@ export const SectionForm = ({
 
     let control: ReactNode = null
     const isStacked = ['multiline', 'json', 'record', 'string[]', 'detailCollection'].includes(field.type)
+    const overrideCurrentField = () => {
+      if (!hasResolvedValue) return
+      handleValueChange(resolvedFieldValue)
+    }
 
-    if (field.type === 'string') {
+    if (readOnly) {
+      control = (
+        <DisplayValue
+          value={hasResolvedValue ? resolvedFieldValue : fieldValue ?? field.defaultValue}
+          sectionKey={sectionKey}
+          path={field.path}
+          t={t}
+        />
+      )
+    } else if (field.type === 'detailCollection') {
+      control = (
+        <DetailCollectionField
+          sectionKey={sectionKey}
+          field={field}
+          value={fieldValue}
+          resolvedValue={resolvedFieldValue}
+          onChange={(next) => handleValueChange(next)}
+          onOpenDetail={(route) => onOpenDetailRoute?.(route)}
+          mergedModelServices={mergedModelServices}
+          mergedAdapters={mergedAdapters}
+          uiSection={uiSection}
+          t={t}
+        />
+      )
+    } else if (inheritedOnly && !canInlineOverride) {
+      control = renderInheritedReadonlyControl({
+        fieldValue: resolvedFieldValue,
+        fieldPath: field.path,
+        onOverride: overrideCurrentField
+      })
+    } else if (field.type === 'string') {
       const placeholder = field.placeholderKey ? t(field.placeholderKey) : undefined
       if (field.sensitive === true) {
         control = (
@@ -278,20 +354,6 @@ export const SectionForm = ({
           onChange={handleValueChange}
         />
       )
-    } else if (field.type === 'detailCollection') {
-      control = (
-        <DetailCollectionField
-          sectionKey={sectionKey}
-          field={field}
-          value={valueToUse}
-          onChange={(next) => handleValueChange(next)}
-          onOpenDetail={(route) => onOpenDetailRoute?.(route)}
-          mergedModelServices={mergedModelServices}
-          mergedAdapters={mergedAdapters}
-          uiSection={uiSection}
-          t={t}
-        />
-      )
     } else if (field.type === 'record') {
       const recordValue = (valueToUse != null && typeof valueToUse === 'object')
         ? valueToUse as Record<string, unknown>
@@ -402,13 +464,17 @@ export const SectionForm = ({
   const renderFieldGroups = ({
     currentFields,
     currentValue,
+    currentResolvedValue,
     onCurrentValueChange,
-    keyPrefix
+    keyPrefix,
+    readOnly = false
   }: {
     currentFields: FieldSpec[]
     currentValue: unknown
+    currentResolvedValue?: unknown
     onCurrentValueChange: (nextValue: unknown) => void
     keyPrefix: string
+    readOnly?: boolean
   }) => {
     const groupedFields = currentFields.reduce<Record<string, FieldSpec[]>>((acc, field) => {
       const key = field.group ?? 'default'
@@ -430,8 +496,10 @@ export const SectionForm = ({
                     renderField({
                       field,
                       currentValue,
+                      currentResolvedValue,
                       onCurrentValueChange,
-                      keyPrefix
+                      keyPrefix,
+                      readOnly
                     })
                   )}
                 </div>
@@ -443,8 +511,10 @@ export const SectionForm = ({
                   renderField({
                     field,
                     currentValue,
+                    currentResolvedValue,
                     onCurrentValueChange,
-                    keyPrefix
+                    keyPrefix,
+                    readOnly
                   })
                 )}
               </div>
@@ -507,6 +577,7 @@ export const SectionForm = ({
                     onChange={(next) => {
                       onCurrentValueChange(setValueByPath(currentValue, group.meta.togglePath!, !next))
                     }}
+                    disabled={readOnly}
                     onClick={(_, event) => {
                       event.stopPropagation()
                     }}
@@ -520,8 +591,10 @@ export const SectionForm = ({
                   renderField({
                     field,
                     currentValue,
+                    currentResolvedValue,
                     onCurrentValueChange,
-                    keyPrefix
+                    keyPrefix,
+                    readOnly
                   })
                 )}
               </div>
@@ -534,8 +607,10 @@ export const SectionForm = ({
                 renderField({
                   field,
                   currentValue,
+                  currentResolvedValue,
                   onCurrentValueChange,
-                  keyPrefix
+                  keyPrefix,
+                  readOnly
                 })
               )}
               {collapseItems.length > 0 && (
@@ -593,13 +668,20 @@ export const SectionForm = ({
     sectionKey,
     fields,
     value,
+    resolvedValue,
     route: detailRoute,
     detailContext,
     t
   })
 
   if (detailMeta != null) {
-    const updateDetailItem = (nextItem: unknown) => {
+    const detailCollection = detailMeta.field.detailCollection
+    const canOverrideInheritedDetailItem = detailCollection != null &&
+      (
+        detailCollection.collectionKind !== 'list' ||
+        detailCollection.getMergeKey != null
+      )
+    const writeDetailItem = (nextItem: unknown) => {
       if (detailMeta.field.type !== 'detailCollection' || detailMeta.field.detailCollection == null) return
       const resolvedNextItem = (
           nextItem != null &&
@@ -610,37 +692,104 @@ export const SectionForm = ({
         : {}
 
       if (detailMeta.field.detailCollection.collectionKind === 'list') {
-        const nextItems = toDetailCollectionEntries({
-          field: detailMeta.field,
-          value: getValueByPath(value, detailMeta.field.path)
-        }).map((entry) => (
-          entry.index === detailMeta.itemIndex ? resolvedNextItem : entry.item
-        ))
+        const currentListValue = getValueByPath(value, detailMeta.field.path)
+        const currentItems = Array.isArray(currentListValue)
+          ? currentListValue.filter((item): item is Record<string, unknown> => (
+            item != null &&
+            typeof item === 'object' &&
+            !Array.isArray(item)
+          ))
+          : []
+        const nextItems = [...currentItems]
+        if (detailMeta.localItemIndex == null) {
+          nextItems.push(resolvedNextItem)
+        } else {
+          nextItems[detailMeta.localItemIndex] = resolvedNextItem
+        }
         onChange(setValueByPath(value, detailMeta.field.path, nextItems))
         return
       }
 
       onChange(setValueByPath(value, [...detailMeta.field.path, detailMeta.itemKey], resolvedNextItem))
     }
+    const overrideDetailItem = () => {
+      if (!canOverrideInheritedDetailItem) return
+      writeDetailItem(detailMeta.resolvedItem)
+    }
+    const detailNotice = detailMeta.itemSource === 'inherited'
+      ? (
+        <div className='config-view__detail-notice'>
+          <div className='config-view__detail-notice-text'>
+            {canOverrideInheritedDetailItem
+              ? t('config.detail.inheritedReadonly')
+              : t('config.detail.inheritedAppendOnly')}
+          </div>
+          {canOverrideInheritedDetailItem && (
+            <Button size='small' type='primary' onClick={overrideDetailItem}>
+              {t('config.detail.override')}
+            </Button>
+          )}
+        </div>
+      )
+      : detailMeta.hasResolvedOverlay
+      ? (
+        <div className='config-view__detail-notice'>
+          <div className='config-view__detail-notice-text'>
+            {t('config.detail.partialOverride')}
+          </div>
+        </div>
+      )
+      : null
+
+    if (detailMeta.itemSource === 'inherited') {
+      if ((detailMeta.field.detailCollection?.itemFields?.length ?? 0) > 0) {
+        return (
+          <div className='config-view__detail-panel'>
+            {detailNotice}
+            {renderFieldGroups({
+              currentFields: detailMeta.field.detailCollection!.itemFields!,
+              currentValue: undefined,
+              currentResolvedValue: detailMeta.resolvedItem,
+              onCurrentValueChange: () => undefined,
+              keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemKey}`,
+              readOnly: true
+            })}
+          </div>
+        )
+      }
+
+      return (
+        <div className='config-view__detail-panel'>
+          {detailNotice}
+          <DisplayValue value={detailMeta.resolvedItem} sectionKey={sectionKey} path={detailMeta.field.path} t={t} />
+        </div>
+      )
+    }
 
     if (detailMeta.field.detailCollection?.detailKind === 'recommendedModels') {
       return (
-        <RecommendedModelsItemEditor
-          value={detailMeta.item}
-          onChange={updateDetailItem}
-          mergedModelServices={mergedModelServices}
-          t={t}
-        />
+        <div className='config-view__detail-panel'>
+          {detailNotice}
+          <RecommendedModelsItemEditor
+            value={detailMeta.item}
+            onChange={writeDetailItem}
+            mergedModelServices={mergedModelServices}
+            t={t}
+          />
+        </div>
       )
     }
 
     if (detailMeta.field.detailCollection?.detailKind === 'mcpServer') {
       return (
-        <McpServerItemEditor
-          value={detailMeta.item}
-          onChange={updateDetailItem}
-          t={t}
-        />
+        <div className='config-view__detail-panel'>
+          {detailNotice}
+          <McpServerItemEditor
+            value={detailMeta.item}
+            onChange={writeDetailItem}
+            t={t}
+          />
+        </div>
       )
     }
 
@@ -655,43 +804,61 @@ export const SectionForm = ({
 
       if (shouldRenderJsonFallback) {
         return (
-          <ComplexTextEditor
-            value={detailMeta.item}
-            onChange={(next) => updateDetailItem((next ?? {}) as Record<string, unknown>)}
-          />
+          <div className='config-view__detail-panel'>
+            {detailNotice}
+            <ComplexTextEditor
+              value={detailMeta.item}
+              onChange={(next) => writeDetailItem((next ?? {}) as Record<string, unknown>)}
+            />
+          </div>
         )
       }
 
       if (itemSchema != null) {
         return (
-          <SchemaObjectEditor
-            value={detailMeta.item}
-            schema={itemSchema}
-            onChange={updateDetailItem}
-            t={t}
-            hideFieldPath={isKnownEntry && uiSection.recordMap.mode === 'discriminated'
-              ? [discriminatorField]
-              : undefined}
-          />
+          <div className='config-view__detail-panel'>
+            {detailNotice}
+            <SchemaObjectEditor
+              value={detailMeta.item}
+              schema={itemSchema}
+              onChange={writeDetailItem}
+              t={t}
+              hideFieldPath={isKnownEntry && uiSection.recordMap.mode === 'discriminated'
+                ? [discriminatorField]
+                : undefined}
+            />
+          </div>
         )
       }
     }
 
     if ((detailMeta.field.detailCollection?.itemFields?.length ?? 0) > 0) {
-      return renderFieldGroups({
-        currentFields: detailMeta.field.detailCollection!.itemFields!,
-        currentValue: detailMeta.item,
-        onCurrentValueChange: updateDetailItem,
-        keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemKey}`
-      })
+      return (
+        <div className='config-view__detail-panel'>
+          {detailNotice}
+          {renderFieldGroups({
+            currentFields: detailMeta.field.detailCollection!.itemFields!,
+            currentValue: detailMeta.item,
+            currentResolvedValue: detailMeta.resolvedItem,
+            onCurrentValueChange: writeDetailItem,
+            keyPrefix: `detail:${detailMeta.field.path.join('.')}:${detailMeta.itemKey}`
+          })}
+        </div>
+      )
     }
 
-    return <Empty description={t('common.noData')} image={null} />
+    return (
+      <div className='config-view__detail-panel'>
+        {detailNotice}
+        <Empty description={t('common.noData')} image={null} />
+      </div>
+    )
   }
 
   return renderFieldGroups({
     currentFields: fields,
     currentValue: value,
+    currentResolvedValue: resolvedValue,
     onCurrentValueChange: onChange,
     keyPrefix: sectionKey
   })

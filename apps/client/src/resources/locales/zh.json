@@ -1147,7 +1147,14 @@
       }
     },
     "detail": {
-      "back": "返回"
+      "back": "返回",
+      "override": "覆盖到当前配置",
+      "inheritedReadonly": "这个值来自 extends 继承配置。先覆盖到当前配置，再进行编辑。",
+      "inheritedAppendOnly": "这个条目来自 extends 继承配置。当前集合按追加方式合并，不能直接在这里改这个继承条目；需要去源配置修改，或者整体覆盖当前集合。",
+      "partialOverride": "这个条目正在覆盖一份继承配置。未在本地设置的字段仍然来自继承层。",
+      "inheritedBadge": "继承",
+      "overrideBadge": "覆盖",
+      "localBadge": "本地"
     },
     "fields": {
       "general": {

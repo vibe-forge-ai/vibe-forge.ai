@@ -1146,7 +1146,14 @@
       }
     },
     "detail": {
-      "back": "Back"
+      "back": "Back",
+      "override": "Override in current config",
+      "inheritedReadonly": "This value comes from an extended config. Override it here before editing.",
+      "inheritedAppendOnly": "This item comes from an extended config. This collection merges by append, so edit it in the source config or override the whole collection here.",
+      "partialOverride": "This entry overrides an inherited config. Fields not set locally still come from the inherited layer.",
+      "inheritedBadge": "Inherited",
+      "overrideBadge": "Override",
+      "localBadge": "Local"
     },
     "fields": {
       "general": {

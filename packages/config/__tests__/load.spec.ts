@@ -11,6 +11,7 @@ import {
   buildResolvedConfigState,
   loadAdapterConfig,
   loadConfig,
+  loadConfigState,
   resetConfigCache,
   resolveAdapterCommonConfig,
   resolveAdapterConfig,
@@ -201,6 +202,62 @@ describe('loadConfig', () => {
       }
       resetConfigCache()
       await rm(workspaceDir, { force: true, recursive: true })
+    }
+  })
+
+  it('exposes raw and resolved source config state for extended configs', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-source-state-'))
+
+    try {
+      await writeFile(
+        path.join(tempDir, 'base.yaml'),
+        `
+permissions:
+  allow:
+    - Read
+notifications:
+  events:
+    completed:
+      title: Base Title
+`
+      )
+      await writeFile(
+        path.join(tempDir, '.ai.config.json'),
+        JSON.stringify({
+          extend: './base.yaml',
+          permissions: {
+            allow: ['Edit']
+          },
+          notifications: {
+            events: {
+              completed: {
+                sound: '/tmp/done.mp3'
+              }
+            }
+          }
+        })
+      )
+
+      resetConfigCache()
+      const state = await loadConfigState({
+        cwd: tempDir,
+        jsonVariables: {}
+      })
+
+      expect(state.projectSource?.configPath).toBe(path.join(tempDir, '.ai.config.json'))
+      expect(state.projectSource?.extendPaths).toEqual(['./base.yaml'])
+      expect(state.projectSource?.rawConfig?.permissions?.allow).toEqual(['Edit'])
+      expect(state.projectSource?.resolvedConfig?.permissions?.allow).toEqual(['Read', 'Edit'])
+      expect(state.projectSource?.rawConfig?.notifications?.events?.completed).toEqual({
+        sound: '/tmp/done.mp3'
+      })
+      expect(state.projectSource?.resolvedConfig?.notifications?.events?.completed).toEqual({
+        title: 'Base Title',
+        sound: '/tmp/done.mp3'
+      })
+    } finally {
+      resetConfigCache()
+      await rm(tempDir, { force: true, recursive: true })
     }
   })
 

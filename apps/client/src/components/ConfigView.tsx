@@ -43,6 +43,7 @@ export function ConfigView() {
   const [drafts, setDrafts] = useState<Record<string, unknown>>({})
   const configPresent = data?.meta?.configPresent
   const currentSource = data?.sources?.[sourceKey]
+  const currentResolvedSource = data?.resolvedSources?.[sourceKey]
   const draftsRef = useRef<Record<string, unknown>>(drafts)
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const savingRef = useRef<Record<string, boolean>>({})
@@ -216,7 +217,9 @@ export function ConfigView() {
   }, [drafts, currentSource?.general, sourceKey])
   const selectedModelService = (() => {
     const value = getValueByPath(generalDraftValue, ['defaultModelService'])
-    return typeof value === 'string' ? value : undefined
+    if (typeof value === 'string' && value !== '') return value
+    const fallbackValue = getValueByPath(currentResolvedSource?.general, ['defaultModelService'])
+    return typeof fallbackValue === 'string' && fallbackValue !== '' ? fallbackValue : undefined
   })()
   const worktreeEnvironmentOptions = useMemo(() => (
     worktreeEnvironmentData?.environments.map(environment => ({
@@ -286,6 +289,11 @@ export function ConfigView() {
           icon={tab.icon}
           uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
           value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
+          resolvedValue={cloneValue(
+            currentResolvedSource != null
+              ? (currentResolvedSource as Record<string, unknown>)[tab.key]
+              : undefined
+          ) ?? {}}
           onChange={(next) => handleDraftChange(tab.key, next)}
           mergedModelServices={mergedModelServices as Record<string, unknown>}
           mergedAdapters={mergedAdapters as Record<string, unknown>}
