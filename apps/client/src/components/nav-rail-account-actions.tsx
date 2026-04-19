@@ -7,7 +7,7 @@ import useSWR, { useSWRConfig } from 'swr'
 import { getAuthStatus, logout } from '#~/api/auth'
 import { clearAuthToken } from '#~/api/auth-token'
 import { getApiErrorMessage } from '#~/api/base'
-import { clearStoredServerBaseUrl, isStandaloneClientMode } from '#~/runtime-config'
+import { isServerConnectionManagedClientMode, requestServerConnectionPicker } from '#~/runtime-config'
 
 import type { NavRailCompactMoreAction } from './NavRailCompact'
 
@@ -16,7 +16,7 @@ export function useNavRailAccountActions() {
   const { message } = AntdApp.useApp()
   const { mutate } = useSWRConfig()
   const { data: authStatus } = useSWR('/api/auth/status', getAuthStatus)
-  const standaloneMode = isStandaloneClientMode()
+  const connectionManagedMode = isServerConnectionManagedClientMode()
   const authEnabled = authStatus?.enabled === true
 
   const refreshAuthStatus = React.useCallback(async () => {
@@ -28,7 +28,7 @@ export function useNavRailAccountActions() {
   }, [mutate])
 
   const handleChangeServer = React.useCallback(() => {
-    clearStoredServerBaseUrl()
+    requestServerConnectionPicker({ clearCurrentServer: true })
     window.location.reload()
   }, [])
 
@@ -46,7 +46,7 @@ export function useNavRailAccountActions() {
   const accountItems = React.useMemo<NonNullable<MenuProps['items']>>(() => {
     const items: NonNullable<MenuProps['items']> = []
 
-    if (standaloneMode) {
+    if (connectionManagedMode) {
       items.push({
         key: 'change-server',
         label: t('auth.changeServer'),
@@ -72,10 +72,10 @@ export function useNavRailAccountActions() {
     }
 
     return items
-  }, [authEnabled, handleChangeServer, handleLogout, standaloneMode, t])
+  }, [authEnabled, connectionManagedMode, handleChangeServer, handleLogout, t])
 
   const compactAccountActions = React.useMemo<NavRailCompactMoreAction[]>(() => [
-    ...(standaloneMode
+    ...(connectionManagedMode
       ? [{
         icon: 'sync_alt',
         key: 'change-server',
@@ -93,7 +93,7 @@ export function useNavRailAccountActions() {
         }
       }]
       : [])
-  ], [authEnabled, handleChangeServer, handleLogout, standaloneMode, t])
+  ], [authEnabled, connectionManagedMode, handleChangeServer, handleLogout, t])
 
   return {
     accountItems,

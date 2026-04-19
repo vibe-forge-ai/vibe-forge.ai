@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "desktop:dev": "pnpm -C apps/desktop dev",
+    "desktop:make": "pnpm -C apps/desktop make",
+    "desktop:package": "pnpm -C apps/desktop package",
     "start": "./start.sh",
     "tools": "node ./scripts/run-tools.mjs",
     "test:e2e:adapters": "pnpm tools adapter-e2e test",
@@ -55,6 +58,8 @@
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "electron",
+      "electron-winstaller",
       "node-pty"
     ]
   }

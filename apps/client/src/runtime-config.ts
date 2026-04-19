@@ -10,6 +10,7 @@ export type RuntimeEnv = Partial<{
 }>
 
 export const SERVER_BASE_URL_STORAGE_KEY = 'vf_server_base_url'
+export const SERVER_CONNECTION_PICKER_STORAGE_KEY = 'vf_server_connection_picker_requested'
 
 export const resolveDevDocumentTitle = (
   baseTitle: string,
@@ -85,6 +86,14 @@ const getBrowserProtocol = () => (
   globalThis.location?.protocol === 'https:' ? 'https' : 'http'
 )
 
+const getClientMode = () => (
+  pickNonEmptyValue(
+    getRuntimeEnv().__VF_PROJECT_AI_CLIENT_MODE__,
+    import.meta.env.__VF_PROJECT_AI_CLIENT_MODE__,
+    import.meta.env.__VF_PROJECT_AI_CLIENT_DEPLOY_MODE__
+  )?.trim().toLowerCase()
+)
+
 export const normalizeServerBaseUrl = (value?: string) => {
   const trimmed = value?.trim() ?? ''
   if (trimmed === '') {
@@ -133,12 +142,15 @@ export const clearStoredServerBaseUrl = () => {
 }
 
 export const isStandaloneClientMode = () => {
-  const mode = pickNonEmptyValue(
-    getRuntimeEnv().__VF_PROJECT_AI_CLIENT_MODE__,
-    import.meta.env.__VF_PROJECT_AI_CLIENT_MODE__,
-    import.meta.env.__VF_PROJECT_AI_CLIENT_DEPLOY_MODE__
-  )?.trim().toLowerCase()
+  const mode = getClientMode()
   return mode === 'standalone' || mode === 'independent'
+}
+
+export const isDesktopClientMode = () => getClientMode() === 'desktop'
+
+export const isServerConnectionManagedClientMode = () => {
+  const mode = getClientMode()
+  return mode === 'standalone' || mode === 'independent' || mode === 'desktop'
 }
 
 export const getRuntimeEnv = (): RuntimeEnv => getGlobalRuntimeEnv() ?? {}
@@ -166,23 +178,55 @@ export const getServerPortEnv = () =>
   getRuntimeEnv().__VF_PROJECT_AI_SERVER_PORT__ ??
     import.meta.env.__VF_PROJECT_AI_SERVER_PORT__
 
+export const getConfiguredServerBaseUrl = () => {
+  const configuredServerBaseUrl = normalizeServerBaseUrl(
+    getRuntimeEnv().__VF_PROJECT_AI_SERVER_BASE_URL__ ??
+      import.meta.env.__VF_PROJECT_AI_SERVER_BASE_URL__
+  )
+  if (configuredServerBaseUrl != null) {
+    return configuredServerBaseUrl
+  }
+
+  const serverHost = getServerHostEnv()
+  const serverPort = getServerPortEnv()?.trim()
+  if (serverHost == null || serverPort == null || serverPort === '') {
+    return undefined
+  }
+
+  return normalizeServerBaseUrl(`${serverHost}:${serverPort}`)
+}
+
+export const isServerConnectionPickerRequested = () => (
+  getStorage()?.getItem(SERVER_CONNECTION_PICKER_STORAGE_KEY) === 'true'
+)
+
+export const requestServerConnectionPicker = (
+  { clearCurrentServer = false }: { clearCurrentServer?: boolean } = {}
+) => {
+  if (clearCurrentServer) {
+    clearStoredServerBaseUrl()
+  }
+  getStorage()?.setItem(SERVER_CONNECTION_PICKER_STORAGE_KEY, 'true')
+}
+
+export const clearServerConnectionPickerRequest = () => {
+  getStorage()?.removeItem(SERVER_CONNECTION_PICKER_STORAGE_KEY)
+}
+
 export const getServerWsPath = () =>
   normalizePath(
     getRuntimeEnv().__VF_PROJECT_AI_SERVER_WS_PATH__ ?? import.meta.env.__VF_PROJECT_AI_SERVER_WS_PATH__
   )
 
 export const getServerBaseUrl = () => {
-  if (isStandaloneClientMode()) {
+  if (isServerConnectionManagedClientMode()) {
     const storedServerBaseUrl = getStoredServerBaseUrl()
     if (storedServerBaseUrl != null) {
       return storedServerBaseUrl
     }
   }
 
-  const configuredServerBaseUrl = normalizeServerBaseUrl(
-    getRuntimeEnv().__VF_PROJECT_AI_SERVER_BASE_URL__ ??
-      import.meta.env.__VF_PROJECT_AI_SERVER_BASE_URL__
-  )
+  const configuredServerBaseUrl = getConfiguredServerBaseUrl()
   if (configuredServerBaseUrl != null) {
     return configuredServerBaseUrl
   }

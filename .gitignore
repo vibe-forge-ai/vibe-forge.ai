@@ -10,6 +10,7 @@
 .ai/results
 .ai/worktrees/
 .ai.dev.config.json
+apps/desktop/release/
 .ai/rules/*.local.md
 .ai/rules/*.dev.md
 .ai/rules/**/*.local.md

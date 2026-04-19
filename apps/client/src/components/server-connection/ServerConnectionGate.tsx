@@ -2,18 +2,26 @@ import './ServerConnectionGate.scss'
 
 import { Alert, Button, Form } from 'antd'
 import type { PropsWithChildren } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { getClientVersion } from '#~/client-build-info'
 import {
+  clearServerConnectionPickerRequest,
   createServerUrlFromBase,
+  getConfiguredServerBaseUrl,
   getStoredServerBaseUrl,
-  isStandaloneClientMode,
+  isDesktopClientMode,
+  isServerConnectionManagedClientMode,
+  isServerConnectionPickerRequested,
   normalizeServerBaseUrl,
   setStoredServerBaseUrl
 } from '#~/runtime-config'
-import { getServerConnectionProfiles, rememberServerBaseUrl } from '#~/server-connection-history'
+import {
+  getServerConnectionProfiles,
+  rememberServerBaseUrl,
+  updateServerConnectionProfile
+} from '#~/server-connection-history'
 import { areSemverVersionsCompatible } from '#~/version-compatibility'
 
 import { ServerConnectionProfiles } from './ServerConnectionProfiles'
@@ -67,14 +75,36 @@ const pingServer = async (serverBaseUrl: string) => {
 
 export function ServerConnectionGate({ children }: PropsWithChildren) {
   const { t } = useTranslation()
-  const standaloneMode = isStandaloneClientMode()
+  const connectionManagedMode = isServerConnectionManagedClientMode()
+  const desktopMode = isDesktopClientMode()
+  const configuredServerUrl = getConfiguredServerBaseUrl()
+  const pickerRequested = isServerConnectionPickerRequested()
   const [form] = Form.useForm<ServerConnectionFormValues>()
   const [connectedServerUrl, setConnectedServerUrl] = useState(() => getStoredServerBaseUrl())
   const [connectionProfiles, setConnectionProfiles] = useState(() => getServerConnectionProfiles())
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (!standaloneMode || connectedServerUrl != null) {
+  useEffect(() => {
+    if (configuredServerUrl == null) return
+    setConnectionProfiles((profiles) => {
+      if (profiles.some(profile => profile.serverUrl === configuredServerUrl)) {
+        return profiles
+      }
+
+      const rememberedProfiles = rememberServerBaseUrl(configuredServerUrl)
+      if (!desktopMode) {
+        return rememberedProfiles
+      }
+
+      return updateServerConnectionProfile(configuredServerUrl, {
+        alias: t('serverConnection.localServiceAlias'),
+        description: t('serverConnection.localServiceProfileDescription')
+      })
+    })
+  }, [configuredServerUrl, desktopMode, t])
+
+  if (!connectionManagedMode || (!pickerRequested && (connectedServerUrl != null || configuredServerUrl != null))) {
     return children
   }
 
@@ -94,6 +124,7 @@ export function ServerConnectionGate({ children }: PropsWithChildren) {
         setSubmitError(t('serverConnection.invalidUrl'))
         return
       }
+      clearServerConnectionPickerRequest()
       setConnectionProfiles(rememberServerBaseUrl(storedServerUrl, { serverVersion: publicStatus.version }))
       setConnectedServerUrl(storedServerUrl)
     } catch (err) {
@@ -123,23 +154,38 @@ export function ServerConnectionGate({ children }: PropsWithChildren) {
     <div className='server-connection-gate'>
       <main className='server-connection-gate__panel' aria-labelledby='server-connection-title'>
         <div className='server-connection-gate__intro'>
-          <h1 id='server-connection-title'>{t('serverConnection.title')}</h1>
-          <p>{t('serverConnection.subtitle')}</p>
+          <h1 id='server-connection-title'>
+            {desktopMode ? t('serverConnection.desktopTitle') : t('serverConnection.title')}
+          </h1>
+          <p>{desktopMode ? t('serverConnection.desktopSubtitle') : t('serverConnection.subtitle')}</p>
         </div>
 
-        <div className='server-connection-gate__setup'>
-          <div className='server-connection-gate__setup-title'>
-            <span className='material-symbols-rounded'>terminal</span>
-            <span>{t('serverConnection.setupTitle')}</span>
-          </div>
-          <code>npx vfui-server</code>
-          <p>
-            {t('serverConnection.setupDescription')}
-            <a href={PWA_DOCS_URL} target='_blank' rel='noreferrer'>
-              {t('serverConnection.docsLink')}
-            </a>
-          </p>
-        </div>
+        {desktopMode
+          ? configuredServerUrl != null && (
+            <div className='server-connection-gate__setup'>
+              <div className='server-connection-gate__setup-title'>
+                <span className='material-symbols-rounded'>computer</span>
+                <span>{t('serverConnection.localServiceTitle')}</span>
+              </div>
+              <code>{configuredServerUrl}</code>
+              <p>{t('serverConnection.localServiceBannerDescription')}</p>
+            </div>
+          )
+          : (
+            <div className='server-connection-gate__setup'>
+              <div className='server-connection-gate__setup-title'>
+                <span className='material-symbols-rounded'>terminal</span>
+                <span>{t('serverConnection.setupTitle')}</span>
+              </div>
+              <code>npx vfui-server</code>
+              <p>
+                {t('serverConnection.setupDescription')}
+                <a href={PWA_DOCS_URL} target='_blank' rel='noreferrer'>
+                  {t('serverConnection.docsLink')}
+                </a>
+              </p>
+            </div>
+          )}
 
         {submitError != null && (
           <Alert

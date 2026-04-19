@@ -19,6 +19,7 @@
   "types": "./index.d.ts",
   "dependencies": {
     "dotenv": "^16.4.5",
+    "esbuild": "^0.27.2",
     "esbuild-register": "^3.6.0"
   }
 }

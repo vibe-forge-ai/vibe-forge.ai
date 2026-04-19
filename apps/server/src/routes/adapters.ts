@@ -184,7 +184,8 @@ export function adaptersRouter(): Router {
         signal: abortController.signal
       })
 
-      if ((result.artifacts?.length ?? 0) > 0) {
+      const accountArtifacts = result.artifacts ?? []
+      if (accountArtifacts.length > 0) {
         if (result.accountKey == null || result.accountKey.trim() === '') {
           throw badRequest(
             'Adapter account action returned artifacts without an account key.',

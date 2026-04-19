@@ -15,6 +15,10 @@ const splitNodePath = (value) => (
     : []
 )
 
+const quoteNodeOptionValue = (value) => (
+  /[\s"']/.test(value) ? JSON.stringify(value) : value
+)
+
 const resolvePackageNodePaths = (packageDir) => {
   if (!packageDir || typeof packageDir !== 'string') return []
 
@@ -95,7 +99,7 @@ if (!process.env.__IS_LOADER_CLI__) {
       ...process.env,
       NODE_OPTIONS: [
         '--conditions=__vibe-forge__',
-        `--require=${require.resolve('@vibe-forge/register/preload')}`,
+        `--require=${quoteNodeOptionValue(require.resolve('@vibe-forge/register/preload'))}`,
         process.env.NODE_OPTIONS ?? ''
       ].filter(Boolean).join(' ').trim(),
       __IS_LOADER_CLI__: 'true'
