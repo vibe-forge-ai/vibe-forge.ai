@@ -412,9 +412,14 @@ export async function startAdapterSession(
         }
       )
       const adapterCwd = resolvedConfig.workspace?.cwd ?? promptCwd
+      const primaryWorkspaceFolder = processEnv.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__?.trim() ||
+        processEnv.__VF_PROJECT_WORKSPACE_FOLDER__?.trim() ||
+        promptCwd
       const env = {
         ...processEnv,
-        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId,
+        __VF_PROJECT_WORKSPACE_FOLDER__: adapterCwd,
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primaryWorkspaceFolder
       }
       const finalSystemPrompt = options.appendSystemPrompt === false
         ? (options.systemPrompt ?? resolvedConfig.systemPrompt)

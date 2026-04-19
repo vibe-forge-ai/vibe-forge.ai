@@ -284,6 +284,63 @@ describe('startAdapterSession', () => {
     )
   })
 
+  it('sets workspace env to the selected child workspace when resolving workspace targets', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    const previousWorkspace = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+    const previousPrimaryWorkspace = process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+    process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = '/workspace'
+    process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = '/workspace-primary'
+    mocks.resolveSessionWorkspaceFolder.mockResolvedValueOnce('/workspace/.ai/worktrees/sessions/sess-1')
+    mocks.generateAdapterQueryOptions.mockResolvedValueOnce([
+      {},
+      {
+        systemPrompt: undefined,
+        tools: undefined,
+        mcpServers: undefined,
+        workspace: {
+          cwd: '/workspace/.ai/worktrees/sessions/sess-1/apps/client'
+        }
+      }
+    ])
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    try {
+      await startAdapterSession('sess-1', {
+        adapter: 'codex',
+        promptType: 'workspace',
+        promptName: 'client'
+      })
+
+      expect(mocks.run).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cwd: '/workspace/.ai/worktrees/sessions/sess-1/apps/client',
+          env: expect.objectContaining({
+            __VF_PROJECT_WORKSPACE_FOLDER__: '/workspace/.ai/worktrees/sessions/sess-1/apps/client',
+            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: '/workspace-primary'
+          })
+        }),
+        expect.any(Object)
+      )
+    } finally {
+      if (previousWorkspace == null) {
+        delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspace
+      }
+      if (previousPrimaryWorkspace == null) {
+        delete process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = previousPrimaryWorkspace
+      }
+    }
+  })
+
   it('passes channel companion MCP servers into the runtime query options', async () => {
     const emit = vi.fn()
     const kill = vi.fn()
