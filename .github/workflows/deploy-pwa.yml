@@ -1,111 +1,46 @@
-name: Deploy PWA
+name: Trigger PWA Deploy
 
 on:
   push:
     branches:
       - master
+    paths:
+      - apps/client/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .node-version
+      - .github/workflows/deploy-pwa.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: deploy-pwa
+  group: trigger-pwa-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: deploy-gh-pages
+  trigger:
+    name: trigger-pwa-repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build standalone PWA
-        run: pnpm --filter @vibe-forge/client exec vite build
+      - name: Trigger pwa repository deployment
         env:
-          __VF_PROJECT_AI_CLIENT_MODE__: standalone
-          __VF_PROJECT_AI_CLIENT_BASE__: /vibe-forge.ai/
-
-      - name: Check PWA artifact
-        id: pwa-artifact
-        run: |
-          missing=0
-          for artifact_path in \
-            apps/client/dist/manifest.webmanifest \
-            apps/client/dist/sw.js \
-            apps/client/dist/pwa-icon-192.png \
-            apps/client/dist/pwa-icon-512.png
-          do
-            if [ ! -f "$artifact_path" ]; then
-              echo "::warning::Missing $artifact_path; skipping gh-pages publish."
-              missing=1
-            fi
-          done
-
-          if [ "$missing" -eq 0 ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Prepare PWA artifact
-        if: steps.pwa-artifact.outputs.ready == 'true'
-        run: |
-          if [ -f .ai/docs/usage/pwa.md ]; then
-            cp .ai/docs/usage/pwa.md apps/client/dist/pwa.md
-          else
-            echo "No .ai/docs/usage/pwa.md found; preserving the existing gh-pages pwa.md when available."
-          fi
-          touch apps/client/dist/.nojekyll
-
-      - name: Publish to gh-pages
-        if: steps.pwa-artifact.outputs.ready == 'true'
+          GH_TOKEN: ${{ secrets.PWA_DEPLOY_TOKEN }}
+          SOURCE_REF: master
+          SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          rm -rf .gh-pages
-          git fetch origin gh-pages --depth=1 || true
-
-          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
-            git worktree add --detach .gh-pages origin/gh-pages
-          else
-            git worktree add --detach .gh-pages
-            git -C .gh-pages checkout --orphan gh-pages
-            git -C .gh-pages rm -rf . || true
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::Missing PWA_DEPLOY_TOKEN secret."
+            exit 1
           fi
 
-          if [ ! -f apps/client/dist/pwa.md ] && [ -f .gh-pages/pwa.md ]; then
-            cp .gh-pages/pwa.md apps/client/dist/pwa.md
-          fi
-
-          find .gh-pages -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -R apps/client/dist/. .gh-pages/
-
-          git -C .gh-pages add -A
-          if git -C .gh-pages diff --cached --quiet; then
-            echo "No PWA deployment changes."
-            exit 0
-          fi
-
-          git -C .gh-pages commit -m "Deploy PWA from ${GITHUB_SHA}"
-          git -C .gh-pages push origin HEAD:gh-pages
+          gh workflow run deploy-pwa.yml \
+            --repo vibe-forge-ai/pwa \
+            --ref master \
+            -f source_ref="${SOURCE_REF}" \
+            -f source_sha="${SOURCE_SHA}"

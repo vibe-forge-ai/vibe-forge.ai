@@ -26,7 +26,7 @@ import {
 } from './ServerConnectionUrlInput'
 import type { ServerConnectionFormValues } from './ServerConnectionUrlInput'
 
-const PWA_DOCS_URL = 'https://github.com/vibe-forge-ai/vibe-forge.ai/blob/gh-pages/pwa.md'
+const PWA_DOCS_URL = 'https://github.com/vibe-forge-ai/vibe-forge.ai/blob/master/.ai/docs/usage/pwa.md'
 
 interface ServerPublicStatus {
   version?: string
