@@ -90,6 +90,7 @@ describe('session workspace service', () => {
   })
 
   afterEach(async () => {
+    vi.doUnmock('node:process')
     process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspaceEnv
     process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = previousPrimaryWorkspaceEnv
     db.close()
@@ -247,6 +248,28 @@ describe('session workspace service', () => {
     ).resolves.toBe('Write-Output "start windows"\n')
   })
 
+  it('does not run shell base scripts as Windows worktree environment defaults', async () => {
+    vi.doMock('node:process', async () => {
+      const actual = await vi.importActual<typeof import('node:process')>('node:process')
+      return {
+        ...actual,
+        platform: 'win32'
+      }
+    })
+    const { runConfiguredWorktreeEnvironmentScripts } = await import('#~/services/worktree-environments.js')
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-windows-default')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(path.join(environmentDir, 'create.sh'), 'exit 42\n', 'utf8')
+
+    await expect(
+      runConfiguredWorktreeEnvironmentScripts({
+        operation: 'create',
+        workspaceFolder: workspaceRoot,
+        environmentId: 'env-windows-default'
+      })
+    ).resolves.toEqual([])
+  })
+
   it('marks local worktree environments as user config and ignores them from git', async () => {
     const {
       getWorktreeEnvironment,
@@ -297,6 +320,40 @@ describe('session workspace service', () => {
 
     expect(workspace.worktreeEnvironment).toBe('env-explicit')
     expect(log.trim()).toBe('env-explicit')
+  })
+
+  it('runs configured destroy scripts when create scripts fail after creating a managed worktree', async () => {
+    const { provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Create Fail Cleanup Env', 'sess-create-fail-cleanup')
+
+    const environmentDir = path.join(primaryWorkspaceRoot, '.ai', 'env', 'env-create-fail-cleanup')
+    const markerPath = path.join(primaryWorkspaceRoot, 'create-fail-destroy.log')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('create')),
+      buildScriptContent(
+        'printf "created\\n" > create-resource.log\nexit 17\n',
+        'Set-Content -Path create-resource.log -Value "created"\nexit 17\n'
+      ),
+      'utf8'
+    )
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('destroy')),
+      buildScriptContent(
+        `printf "%s:%s\\n" "$VF_WORKTREE_PATH" "$VF_WORKTREE_FORCE" > "${markerPath}"\n`,
+        `Set-Content -Path "${markerPath}" -Value "$($env:VF_WORKTREE_PATH):$($env:VF_WORKTREE_FORCE)"\n`
+      ),
+      'utf8'
+    )
+
+    await expect(
+      provisionSessionWorkspace('sess-create-fail-cleanup', {
+        worktreeEnvironment: 'env-create-fail-cleanup'
+      })
+    ).rejects.toThrow('Worktree environment script failed')
+    await expect(readFile(markerPath, 'utf8')).resolves.toBe(
+      `${resolveExpectedManagedWorktreePath(primaryWorkspaceRoot, workspaceRoot, 'sess-create-fail-cleanup')}:true\n`
+    )
   })
 
   it('runs configured worktree environment destroy scripts before removing a managed worktree', async () => {

@@ -179,6 +179,21 @@ const buildManagedWorkspace = async (
     })
   } catch (error) {
     if (worktreeCreated) {
+      await runConfiguredWorktreeEnvironmentScripts({
+        operation: 'destroy',
+        workspaceFolder: worktreePath,
+        sourceWorkspaceFolder: workspaceFolder,
+        repositoryRoot: worktreePath,
+        baseRef,
+        environmentId: worktreeEnvironment,
+        force: true,
+        sessionId
+      }).catch((cleanupError) => {
+        console.error(
+          '[sessions] Failed to run worktree environment destroy scripts after create failure:',
+          cleanupError
+        )
+      })
       await removeGitWorktree({
         cwd: repositoryRoot,
         path: worktreePath,
