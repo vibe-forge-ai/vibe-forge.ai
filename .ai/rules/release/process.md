@@ -75,3 +75,44 @@
 
 - `sync-cli` 会从 npm tarball 计算真实 `sha256`，所以必须在 npm 包已经发布后执行。
 - 只发 alpha / beta 时，除非明确要让 Homebrew 跟进预发布版本，否则不要更新 stable formula。
+
+## CLI 发布后的 Windows 安装同步
+
+`@vibe-forge/cli` 正式版发布成功并能通过 `npm view @vibe-forge/cli@<version>` 查到后，需要同步 Windows 安装资产：
+
+1. 更新 Scoop manifest 和 winget manifest 模板：
+
+   ```bash
+   pnpm tools windows-install sync-cli --version <version>
+   ```
+
+2. 在 Scoop bucket submodule 内检查、提交并推送：
+
+   ```bash
+   git -C infra/windows/scoop-bucket status
+   git -C infra/windows/scoop-bucket add bucket/vibe-forge.json
+   git -C infra/windows/scoop-bucket commit -m "chore: update vibe-forge to <version>"
+   git -C infra/windows/scoop-bucket push origin main
+   ```
+
+3. 如果本次发布了 Windows portable zip，用真实下载地址和 SHA256 重新同步 winget 模板：
+
+   ```bash
+   pnpm tools windows-install sync-cli \
+     --version <version> \
+     --winget-installer-url <windows-zip-url> \
+     --winget-installer-sha256 <windows-zip-sha256>
+   ```
+
+4. 把 `infra/windows/winget/` 下的 manifest 模板复制到 `microsoft/winget-pkgs` fork 中对应版本目录，执行 `winget validate` 后提交 PR。也可以使用 `wingetcreate` 生成 / 更新 manifest，但需要保证 `PackageIdentifier` 仍为 `VibeForge.VibeForge`。
+
+5. 回到主仓库提交 submodule 指针、winget 模板和一键安装脚本：
+
+   ```bash
+   git add infra/windows scripts/install-windows.ps1
+   ```
+
+注意：
+
+- Scoop bucket 使用 npm tarball 作为下载源，`sync-cli` 会计算真实 tarball `sha256`。
+- winget 公开安装依赖 `microsoft/winget-pkgs` 接受 manifest；未接受前，用户应使用 PowerShell 一键安装脚本或 Scoop。

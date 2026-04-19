@@ -15,6 +15,7 @@ import {
 } from './chrome-debug'
 import { runHomebrewTapSyncCli } from './homebrew-tap'
 import { runMessageActionsVerify } from './message-actions'
+import { runWindowsInstallSyncCli } from './windows-install'
 
 const runVitestAdapterE2E = async (input: {
   selection: string | undefined
@@ -66,6 +67,7 @@ interface ScriptsCliDeps {
   runChromeDebugMessengerClickText: typeof runChromeDebugMessengerClickText
   runMessageActionsVerify: typeof runMessageActionsVerify
   runHomebrewTapSyncCli: typeof runHomebrewTapSyncCli
+  runWindowsInstallSyncCli: typeof runWindowsInstallSyncCli
   runPublishPlan: (args: string[]) => Promise<unknown>
 }
 
@@ -97,6 +99,7 @@ const defaultDeps: ScriptsCliDeps = {
   runChromeDebugMessengerClickText,
   runMessageActionsVerify,
   runHomebrewTapSyncCli,
+  runWindowsInstallSyncCli,
   runPublishPlan: async (args) => {
     const { runPublishPlanCli } = await import('./publish-plan-core.mjs')
     return runPublishPlanCli(args)
@@ -341,6 +344,55 @@ export const createScriptsCli = (inputDeps: Partial<ScriptsCliDeps> = {}) => {
         tapDir: options.tapDir,
         formulaPath: options.formula,
         dryRun: options.dryRun ?? false
+      })
+    })
+
+  const windowsInstallCommand = program
+    .command('windows-install')
+    .description('Maintain Windows install metadata')
+
+  windowsInstallCommand
+    .command('sync-cli')
+    .requiredOption('--version <version>', 'Published @vibe-forge/cli version to sync')
+    .option('--scoop-manifest <path>', 'Scoop manifest path', 'infra/windows/scoop-bucket/bucket/vibe-forge.json')
+    .option(
+      '--winget-version-manifest <path>',
+      'Winget version manifest path',
+      'infra/windows/winget/VibeForge.VibeForge.yaml'
+    )
+    .option(
+      '--winget-locale-manifest <path>',
+      'Winget default locale manifest path',
+      'infra/windows/winget/VibeForge.VibeForge.locale.en-US.yaml'
+    )
+    .option(
+      '--winget-template <path>',
+      'Winget installer manifest template path',
+      'infra/windows/winget/VibeForge.VibeForge.installer.template.yaml'
+    )
+    .option('--winget-installer-url <url>', 'Windows portable zip URL for winget template')
+    .option('--winget-installer-sha256 <sha256>', 'Windows portable zip SHA256 for winget template')
+    .option('--dry-run', 'Calculate the update without writing files', false)
+    .description('Update Scoop and winget Windows install metadata for the CLI package')
+    .action(async (options: {
+      dryRun?: boolean
+      scoopManifest: string
+      version: string
+      wingetInstallerSha256?: string
+      wingetInstallerUrl?: string
+      wingetLocaleManifest: string
+      wingetTemplate: string
+      wingetVersionManifest: string
+    }) => {
+      await deps.runWindowsInstallSyncCli({
+        version: options.version,
+        dryRun: options.dryRun ?? false,
+        scoopManifestPath: options.scoopManifest,
+        wingetInstallerUrl: options.wingetInstallerUrl,
+        wingetInstallerSha256: options.wingetInstallerSha256,
+        wingetLocaleManifestPath: options.wingetLocaleManifest,
+        wingetVersionManifestPath: options.wingetVersionManifest,
+        wingetTemplatePath: options.wingetTemplate
       })
     })
 
