@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildVibeForgeCliTarballUrl, normalizeCliVersion, updateVibeForgeFormula } from '../homebrew-tap'
+import { buildVibeForgeCliTarballUrl, normalizeCliVersion } from '../cli-package-release'
+import { updateVibeForgeFormula } from '../homebrew-tap'
 
 describe('homebrew tap tooling', () => {
   it('builds the npm tarball url for the CLI package', () => {

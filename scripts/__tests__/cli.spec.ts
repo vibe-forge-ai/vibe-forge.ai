@@ -287,4 +287,52 @@ describe('scripts cli', () => {
       dryRun: true
     })
   })
+
+  it('dispatches Windows install metadata sync', async () => {
+    const runWindowsInstallSyncCli = vi.fn(async () => ({
+      scoopManifestPath: '/repo/infra/windows/scoop-bucket/bucket/vibe-forge.json',
+      sha256: '0'.repeat(64),
+      tarballUrl: 'https://registry.npmjs.org/@vibe-forge/cli/-/cli-1.2.3.tgz',
+      wingetInstallerUrl: 'https://example.com/vibe-forge-cli-windows-1.2.3.zip',
+      wingetLocaleManifestPath: '/repo/infra/windows/winget/VibeForge.VibeForge.locale.en-US.yaml',
+      wingetTemplatePath: '/repo/infra/windows/winget/VibeForge.VibeForge.installer.template.yaml',
+      wingetVersionManifestPath: '/repo/infra/windows/winget/VibeForge.VibeForge.yaml',
+      written: true
+    }))
+    const cli = createScriptsCli({
+      runAdapterSuite: vi.fn(async () => []),
+      runAdapterVitest: vi.fn(async () => {}),
+      runChromeDebugTargets: vi.fn(async () => {}),
+      runChromeDebugMessengerConversations: vi.fn(async () => {}),
+      runChromeDebugMessengerSend: vi.fn(async () => {}),
+      runChromeDebugMessengerClickReply: vi.fn(async () => {}),
+      runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
+      runWindowsInstallSyncCli,
+      runPublishPlan: vi.fn(async () => ({}))
+    })
+
+    await cli.parseAsync([
+      'node',
+      'vf-dev',
+      'windows-install',
+      'sync-cli',
+      '--version',
+      '1.2.3',
+      '--winget-installer-url',
+      'https://example.com/vibe-forge-cli-windows-1.2.3.zip',
+      '--dry-run'
+    ])
+
+    expect(runWindowsInstallSyncCli).toHaveBeenCalledWith({
+      version: '1.2.3',
+      dryRun: true,
+      scoopManifestPath: 'infra/windows/scoop-bucket/bucket/vibe-forge.json',
+      wingetInstallerUrl: 'https://example.com/vibe-forge-cli-windows-1.2.3.zip',
+      wingetInstallerSha256: undefined,
+      wingetLocaleManifestPath: 'infra/windows/winget/VibeForge.VibeForge.locale.en-US.yaml',
+      wingetVersionManifestPath: 'infra/windows/winget/VibeForge.VibeForge.yaml',
+      wingetTemplatePath: 'infra/windows/winget/VibeForge.VibeForge.installer.template.yaml'
+    })
+  })
 })

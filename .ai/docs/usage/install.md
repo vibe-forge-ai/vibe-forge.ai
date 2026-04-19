@@ -21,6 +21,50 @@ brew upgrade vibe-forge
 
 当前 Homebrew formula 安装 `@vibe-forge/cli`，会暴露 `vf`、`vforge` 和 `vibe-forge` 三个命令。
 
+### Windows 安装 CLI
+
+Windows 可以用 PowerShell 一键安装最新 CLI。脚本会检查 Node.js 22+ / npm；如果缺失，会优先通过 winget 安装 Node.js LTS，其次尝试 Scoop：
+
+```powershell
+irm https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 | iex
+```
+
+如果你的 PowerShell 执行策略较严格，先下载再执行：
+
+```powershell
+iwr https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 -OutFile install-vibe-forge.ps1
+powershell -ExecutionPolicy Bypass -File .\install-vibe-forge.ps1
+```
+
+安装完成后可以直接检查：
+
+```powershell
+vf --version
+vf run --help
+```
+
+如果已经安装 Scoop，也可以通过 Vibe Forge 的 bucket 安装和更新：
+
+```powershell
+scoop bucket add vibe-forge https://github.com/vibe-forge-ai/scoop-bucket
+scoop install vibe-forge
+```
+
+更新：
+
+```powershell
+scoop update
+scoop update vibe-forge
+```
+
+winget 的公开安装命令会在 manifest 被 `microsoft/winget-pkgs` 接受后可用：
+
+```powershell
+winget install --id VibeForge.VibeForge -e
+```
+
+在此之前，Windows 用户优先使用 PowerShell 脚本或 Scoop。
+
 ### 在项目中安装 npm 包
 
 ```bash
