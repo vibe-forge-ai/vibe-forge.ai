@@ -101,11 +101,10 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 
 其中 `spec` 和 `entity` 还支持在文档前置元数据里通过 `plugins: { mode, list }` 对当前任务的插件列表做 `extend` 或 `override`。
 
-## 实体目录默认文件
+## 资产细节
 
-目录型实体可以把常驻内容拆到 `INTRODUCTION.md`、`PERSONALITY.md`、`MEMORY.md`。
-
-继续看：[实体目录默认文件](./plugins/entity-default-files.md)。
+- [实体目录默认文件](./plugins/entity-default-files.md)
+- [本地私有规则](./plugins/local-rules.md)
 
 ## 本地数据资产目录
 
