@@ -263,10 +263,6 @@ export function RuleFormPanel({
       >
         <div className='automation-view__form-stack'>
           <div className='automation-view__form-section automation-view__form-section--basic'>
-            <div className='automation-view__form-title'>
-              <span className='material-symbols-rounded automation-view__form-icon'>info</span>
-              {t('automation.sectionBasic')}
-            </div>
             <Form.Item
               name='name'
               rules={[{ required: true, message: t('automation.ruleNameRequired') }]}

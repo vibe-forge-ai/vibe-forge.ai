@@ -40,6 +40,9 @@ export function AutomationTriggerRow({
   updateWeeklyCron
 }: AutomationTriggerRowProps) {
   const { t } = useTranslation()
+  const selectArrow = <span className='material-symbols-rounded automation-view__select-arrow'>
+    keyboard_arrow_down
+  </span>
 
   return (
     <Form.Item
@@ -78,6 +81,7 @@ export function AutomationTriggerRow({
                     { label: t('automation.typeWebhook'), value: 'webhook' },
                     { label: t('automation.typeCron'), value: 'cron' }
                   ]}
+                  suffixIcon={selectArrow}
                   onChange={(value) => resetTriggerFields(form, fieldName, value)}
                 />
               </Form.Item>

@@ -49,6 +49,17 @@ export function AutomationView() {
   const [submitting, setSubmitting] = useState(false)
   const [mobilePanel, setMobilePanel] = useState<'rules' | 'details'>('rules')
   const [isRulePanelCollapsed, setIsRulePanelCollapsed] = useState(false)
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const raw = window.localStorage.getItem('automationRuleFavorites')
+      if (!raw) return []
+      const parsed = JSON.parse(raw) as string[]
+      if (!Array.isArray(parsed)) return []
+      return parsed
+    } catch {
+      return []
+    }
+  })
   const isCompactView = isCompactLayout || isTouchInteraction
 
   const { values, update } = useQueryParams<AutomationQueryParams>({
@@ -87,6 +98,11 @@ export function AutomationView() {
     () => listAutomationRuns(selectedRuleId ?? '')
   )
   const runs = runsData?.runs ?? []
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites])
+
+  useEffect(() => {
+    window.localStorage.setItem('automationRuleFavorites', JSON.stringify(favorites))
+  }, [favorites])
 
   useEffect(() => {
     if (rules.length === 0) return
@@ -205,6 +221,10 @@ export function AutomationView() {
     }
   }, [message, mutate, t])
 
+  const handleToggleFavorite = useCallback((ruleId: string) => {
+    setFavorites(prev => prev.includes(ruleId) ? prev.filter(id => id !== ruleId) : [...prev, ruleId])
+  }, [])
+
   return (
     <PageShell
       className={[
@@ -235,11 +255,13 @@ export function AutomationView() {
             selectedRuleId={selectedRuleId}
             query={values.q}
             isCreating={panelMode === 'create'}
+            favoriteIds={favorites}
             collapsible={!isCompactView}
             onCreate={handleCreateRule}
             onSelect={handleSelectRule}
             onRun={handleRun}
             onDelete={handleDelete}
+            onToggleFavorite={handleToggleFavorite}
             onToggle={handleToggle}
             onToggleCollapsed={() => setIsRulePanelCollapsed(true)}
             onQueryChange={(value: string) => update({ q: value })}
@@ -285,6 +307,10 @@ export function AutomationView() {
               onCreateRule={handleCreateRule}
               onExpandRulePanel={() => setIsRulePanelCollapsed(false)}
               onEditRule={handleEditRule}
+              onRunRule={handleRun}
+              onDeleteRule={handleDelete}
+              isFavorite={selectedRule != null && favoriteSet.has(selectedRule.id)}
+              onToggleFavorite={handleToggleFavorite}
               onRunQueryChange={(value: string) => update({ runQ: value })}
               onStatusFilterChange={(value: string) => update({ status: value })}
               onTimeFilterChange={(value: string) => update({ time: value })}

@@ -56,6 +56,23 @@
     background: var(--subpage-content-card-bg);
   }
 
+  &__select-arrow {
+    color: var(--sub-text-color);
+    font-size: 16px;
+    line-height: 1;
+    pointer-events: none;
+    transition: transform .18s ease, color .18s ease;
+  }
+
+  .ant-select-open &__select-arrow,
+  .ant-select-focused &__select-arrow {
+    color: var(--text-color);
+  }
+
+  .ant-select-open &__select-arrow {
+    transform: rotate(180deg);
+  }
+
   &__title-leading-actions {
     display: inline-flex;
     align-items: center;
@@ -108,6 +125,7 @@
   &--left-collapsed {
     .automation-view__right {
       margin-left: var(--subpage-content-card-gap);
+      padding: 4px;
     }
   }
 }

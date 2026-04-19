@@ -3,7 +3,7 @@ import './RuleSidebar.scss'
 import { Button, Dropdown, Empty, List, Switch, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import dayjs from 'dayjs'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
@@ -15,11 +15,13 @@ interface RuleSidebarProps {
   selectedRuleId: string | null
   query: string
   isCreating: boolean
+  favoriteIds: string[]
   collapsible?: boolean
   onCreate: () => void
   onSelect: (id: string) => void
   onRun: (rule: AutomationRule) => void
   onDelete: (rule: AutomationRule) => void
+  onToggleFavorite: (ruleId: string) => void
   onToggle: (rule: AutomationRule, enabled: boolean) => void
   onToggleCollapsed?: () => void
   onQueryChange: (value: string) => void
@@ -30,11 +32,13 @@ export function RuleSidebar({
   selectedRuleId,
   query,
   isCreating,
+  favoriteIds,
   collapsible = false,
   onCreate,
   onSelect,
   onRun,
   onDelete,
+  onToggleFavorite,
   onToggle,
   onToggleCollapsed,
   onQueryChange
@@ -42,23 +46,7 @@ export function RuleSidebar({
   const { t } = useTranslation()
   const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const isCompactHeader = isCompactLayout || isTouchInteraction
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const raw = window.localStorage.getItem('automationRuleFavorites')
-      if (!raw) return []
-      const parsed = JSON.parse(raw) as string[]
-      if (!Array.isArray(parsed)) return []
-      return parsed
-    } catch {
-      return []
-    }
-  })
-
-  useEffect(() => {
-    window.localStorage.setItem('automationRuleFavorites', JSON.stringify(favorites))
-  }, [favorites])
-
-  const favoriteSet = useMemo(() => new Set(favorites), [favorites])
+  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds])
   const filteredRules = useMemo(() => {
     const keyword = query.trim().toLowerCase()
     const list = keyword
@@ -75,10 +63,6 @@ export function RuleSidebar({
       return b.createdAt - a.createdAt
     })
   }, [favoriteSet, query, rules])
-
-  const toggleFavorite = useCallback((ruleId: string) => {
-    setFavorites(prev => prev.includes(ruleId) ? prev.filter(id => id !== ruleId) : [...prev, ruleId])
-  }, [])
 
   const renderTriggerBadge = useCallback((trigger: NonNullable<AutomationRule['triggers']>[number]) => {
     if (trigger.type === 'interval') {
@@ -204,7 +188,7 @@ export function RuleSidebar({
                   return
                 }
                 if (key === 'favorite') {
-                  toggleFavorite(rule.id)
+                  onToggleFavorite(rule.id)
                   return
                 }
                 if (key === 'delete') {
@@ -250,12 +234,6 @@ export function RuleSidebar({
                         <span className='automation-view__rule-tasks'>
                           <span className='material-symbols-rounded automation-view__meta-icon'>checklist</span>
                           {t('automation.taskCount', { count: taskCount })}
-                        </span>
-                        <span className='automation-view__rule-last'>
-                          <span className='material-symbols-rounded automation-view__meta-icon'>update</span>
-                          {rule.lastRunAt
-                            ? t('automation.lastRunAt', { time: dayjs(rule.lastRunAt).format('YYYY-MM-DD HH:mm') })
-                            : t('automation.noRunYet')}
                         </span>
                       </div>
                     </div>
@@ -304,6 +282,26 @@ export function RuleSidebar({
                                   </span>
                                 </Button>
                               </Tooltip>
+                              <Tooltip title={isFavorite ? t('automation.unfavorite') : t('automation.favorite')}>
+                                <Button
+                                  className={`automation-view__icon-button automation-view__icon-button--favorite ${
+                                    isFavorite ? 'automation-view__icon-button--active' : ''
+                                  }`}
+                                  type='text'
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    onToggleFavorite(rule.id)
+                                  }}
+                                >
+                                  <span
+                                    className={`material-symbols-rounded automation-view__action-icon ${
+                                      isFavorite ? 'automation-view__action-icon--star' : ''
+                                    }`}
+                                  >
+                                    {isFavorite ? 'star' : 'star_outline'}
+                                  </span>
+                                </Button>
+                              </Tooltip>
                               <Tooltip title={t('automation.delete')}>
                                 <Button
                                   className='automation-view__icon-button automation-view__icon-button--delete'
@@ -316,29 +314,12 @@ export function RuleSidebar({
                                   <span className='material-symbols-rounded automation-view__action-icon'>delete</span>
                                 </Button>
                               </Tooltip>
-                              <Tooltip title={isFavorite ? t('automation.unfavorite') : t('automation.favorite')}>
-                                <Button
-                                  className={`automation-view__icon-button automation-view__icon-button--favorite ${
-                                    isFavorite ? 'automation-view__icon-button--active' : ''
-                                  }`}
-                                  type='text'
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    toggleFavorite(rule.id)
-                                  }}
-                                >
-                                  <span
-                                    className={`material-symbols-rounded automation-view__action-icon ${
-                                      isFavorite ? 'automation-view__action-icon--star' : ''
-                                    }`}
-                                  >
-                                    {isFavorite ? 'star' : 'star_outline'}
-                                  </span>
-                                </Button>
-                              </Tooltip>
                             </>
                           )}
                       </div>
+                      <span className='automation-view__rule-created-at'>
+                        {dayjs(rule.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </span>
                     </div>
                   </div>
                 </List.Item>

@@ -30,13 +30,15 @@
     display: flex;
     border-block-end: none !important;
 
-    &--active .automation-view__rule-card {
+    &--active .automation-view__rule-card,
+    &--active .automation-view__rule-card:hover {
       border-color: var(--primary-color);
       background: var(--primary-soft-bg);
     }
   }
 
   &__rule-card {
+    position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -51,7 +53,7 @@
       color .2s ease;
   }
 
-  &__rule-card:hover {
+  &__rule-item:not(.automation-view__rule-item--active) &__rule-card:hover {
     border-color: var(--sidebar-hover-bg, #e5e5e5);
     background: var(--sidebar-hover-bg, #e5e5e5);
   }
@@ -61,7 +63,9 @@
     flex-direction: column;
     gap: 6px;
     align-items: flex-start;
+    width: 100%;
     min-width: 0;
+    padding-right: 118px;
   }
 
   &__rule-name {
@@ -105,6 +109,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    width: 100%;
     color: var(--sub-text-color);
     font-size: 11px;
   }
@@ -142,14 +147,13 @@
   }
 
   &__rule-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-    padding-left: 8px;
+    display: contents;
     flex-shrink: 0;
 
     &-top {
+      position: absolute;
+      top: 8px;
+      right: 8px;
       display: inline-flex;
       align-items: center;
       justify-content: flex-end;
@@ -157,28 +161,51 @@
     }
 
     &-bottom {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
       opacity: 0;
-      max-width: 0;
-      overflow: hidden;
       pointer-events: none;
-      transition: opacity .2s ease, max-width .24s ease;
+      transition: opacity .2s ease;
     }
   }
 
-  &__rule-item--active .automation-view__rule-actions-bottom,
-  &__rule-card:hover .automation-view__rule-actions-bottom {
+  &__rule-created-at {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 20px;
+    color: var(--sub-text-color);
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  &__rule-card:hover .automation-view__rule-actions-bottom,
+  &__rule-card:focus-within .automation-view__rule-actions-bottom {
     opacity: 1;
-    max-width: 88px;
     pointer-events: auto;
+  }
+
+  &__rule-card:hover .automation-view__rule-created-at,
+  &__rule-card:focus-within .automation-view__rule-created-at {
+    opacity: 0;
   }
 
   &__rule-item--touch .automation-view__rule-actions-bottom {
     opacity: 1;
-    max-width: 40px;
     pointer-events: auto;
+  }
+
+  &__rule-item--touch .automation-view__rule-created-at {
+    opacity: 0;
   }
 
   &__rule-item--touch .automation-view__icon-button--more {
@@ -186,13 +213,6 @@
     min-width: 36px;
     height: 36px;
     border-radius: 8px;
-  }
-
-  &__rule-last {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--sub-text-color);
   }
 
   &__meta-icon {
@@ -260,4 +280,18 @@
 html.dark .automation-view__sidebar-header {
   --sidebar-active-bg: #111b26;
   --sidebar-active-text: #3b82f6;
+}
+
+html.dark .automation-view {
+  &__rule-item:not(.automation-view__rule-item--active)
+    .automation-view__rule-card:hover {
+    border-color: var(--border-color);
+    background: var(--tag-hover-bg);
+  }
+
+  &__rule-item--active .automation-view__rule-card,
+  &__rule-item--active .automation-view__rule-card:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-soft-bg);
+  }
 }
