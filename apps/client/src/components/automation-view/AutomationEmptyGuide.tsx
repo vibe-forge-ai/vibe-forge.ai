@@ -37,7 +37,6 @@ export function AutomationEmptyGuide({ onSelectStarter }: AutomationEmptyGuidePr
   return (
     <div className='automation-empty-guide'>
       <div className='automation-empty-guide__header'>
-        <div className='automation-empty-guide__eyebrow'>{t('automation.emptyLandingEyebrow')}</div>
         <h2>{t('automation.emptyLandingTitle')}</h2>
         <p>{t('automation.emptyLandingDescription')}</p>
       </div>
