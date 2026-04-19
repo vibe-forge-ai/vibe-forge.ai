@@ -6,7 +6,6 @@ import useSWR from 'swr'
 
 import type {
   AdapterAccountActionDescriptor,
-  AdapterAccountDetail,
   AdapterAccountInfo,
   ConfigUiObjectSchema
 } from '@vibe-forge/types'
@@ -161,15 +160,11 @@ const IconTag = ({
 }) => {
   const colorStyle = color === 'success'
     ? {
-        color: 'var(--success-color, #52c41a)',
-        borderColor: 'color-mix(in srgb, var(--success-color, #52c41a) 36%, transparent)',
-        background: 'color-mix(in srgb, var(--success-color, #52c41a) 8%, transparent)'
+        color: 'var(--success-color, #52c41a)'
       }
     : color === 'error'
       ? {
-          color: 'var(--error-color, #ff4d4f)',
-          borderColor: 'color-mix(in srgb, var(--error-color, #ff4d4f) 36%, transparent)',
-          background: 'color-mix(in srgb, var(--error-color, #ff4d4f) 8%, transparent)'
+          color: 'var(--error-color, #ff4d4f)'
         }
       : undefined
 
@@ -288,41 +283,6 @@ export const mergeAccounts = (
     .sort(compareAccountInfo)
 }
 
-const AccountFacts = ({
-  detail,
-  t
-}: {
-  detail: AdapterAccountDetail
-  t: TranslationFn
-}) => {
-  const facts = [
-    detail.accountType != null
-      ? {
-        key: 'accountType',
-        icon: 'badge',
-        label: t('config.accounts.facts.type'),
-        value: detail.accountType
-      }
-      : null
-  ].filter((item): item is { key: string; icon: string; label: string; value: string } => item != null)
-
-  if (facts.length === 0) return null
-
-  return (
-    <div className='adapter-account-manager__facts'>
-      {facts.map(fact => (
-        <div key={fact.key} className='adapter-account-manager__fact'>
-          <span className='material-symbols-rounded adapter-account-manager__fact-icon'>{fact.icon}</span>
-          <div className='adapter-account-manager__fact-body'>
-            <div className='adapter-account-manager__fact-label'>{fact.label}</div>
-            <div className='adapter-account-manager__fact-value'>{fact.value}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 const AccountEditor = ({
   adapterKey,
   accountKey,
@@ -418,7 +378,6 @@ const AccountDetailView = ({
   const [loadingAction, setLoadingAction] = useState<string>()
   const detail = data?.account
   const statusMeta = formatStatus(detail?.status, t)
-  const detailNotes = detail == null ? [] : dedupeDisplayTexts(detail.source?.description, detail.description)
   const detailActions = (detail?.actions ?? []).filter(action => action.key !== 'refresh')
   const quotaMetrics = detail?.quota?.metrics?.filter((metric) => {
     if (typeof metric.value === 'string') return metric.value.trim() !== ''
@@ -471,8 +430,8 @@ const AccountDetailView = ({
           <div className='adapter-account-manager__hero'>
             <div className='adapter-account-manager__hero-body'>
               <div className='adapter-account-manager__hero-title-row'>
-                <div className='adapter-account-manager__hero-heading'>
-                  <div className='adapter-account-manager__hero-title'>{detail.title}</div>
+                <div className='adapter-account-manager__hero-title'>{detail.title}</div>
+                <div className='adapter-account-manager__hero-meta'>
                   <div className='adapter-account-manager__hero-badges'>
                     <IconTag
                       color={statusMeta.color}
@@ -486,24 +445,18 @@ const AccountDetailView = ({
                       />
                     )}
                   </div>
+                  {detailActions.length > 0 && (
+                    <AccountActionButtons
+                      actions={detailActions}
+                      loadingAction={loadingAction}
+                      onRunAction={handleRunAction}
+                      t={t}
+                    />
+                  )}
                 </div>
-                {detailActions.length > 0 && (
-                  <AccountActionButtons
-                    actions={detailActions}
-                    loadingAction={loadingAction}
-                    onRunAction={handleRunAction}
-                    t={t}
-                  />
-                )}
               </div>
             </div>
           </div>
-
-          {detailNotes.map(note => (
-            <div key={note} className='adapter-account-manager__muted'>{note}</div>
-          ))}
-
-          <AccountFacts detail={detail} t={t} />
 
           {quotaMetrics.length > 0 && (
             <div className='adapter-account-manager__section'>

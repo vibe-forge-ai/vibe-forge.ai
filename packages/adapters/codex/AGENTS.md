@@ -154,8 +154,10 @@ Codex 多账号切换走 adapter 通用 `account` 能力：
 
 - `defaultAccount`：没有显式选择账号时使用的账号 key
 - `accounts.<key>.title` / `description`：前端显示信息
-- `accounts.<key>.authFile`：可选，显式指定某个账号的 `auth.json` 路径；不填时优先读取 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
+- `accounts.<key>.authFile`：可选，显式指定某个账号的 `auth.json` 路径；不填时优先读取主 worktree 下的 `.ai/.local/adapters/codex/accounts/<key>/auth.json`
 - `accounts.<key>` 的本地元数据会落到 `.ai/.local/adapters/codex/accounts/<key>/meta.json`
+- 如果当前目录是 Git worktree，账号导入、`vf accounts add codex` 和 Web 侧新增账号会优先写到主 worktree 的共享 `.ai/.local/.../accounts/`
+- 账号发现也优先读主 worktree 的共享目录；只有共享目录缺失时，才回退当前 worktree 的旧目录
 
 如果本机存在 `~/.codex/auth.json`，adapter 会把当前登录态导入到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/`，并在 session 级 HOME 下切换到对应 auth 快照运行。
 

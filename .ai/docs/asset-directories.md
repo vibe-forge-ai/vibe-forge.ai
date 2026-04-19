@@ -88,6 +88,12 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 - 最近一次 quota / rate-limit 快照
 - quota 快照更新时间
 
+如果当前目录是 Git worktree，adapter 账号目录会共享到主 worktree：
+
+- 写入和导入优先落到主 worktree 的 `.ai/.local`
+- 读取时先读主 worktree 的共享目录
+- 只有共享目录里没有对应账号时，才回退当前 worktree 的旧 `.ai/.local`
+
 ## 不受影响的内容
 
 当前不会跟随这些环境变量一起变化的内容：

@@ -2,7 +2,7 @@ import '../ConfigView.scss'
 
 import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 import type { ConfigUiSection } from '@vibe-forge/types'
 
@@ -153,12 +153,6 @@ export function ConfigSectionPanel({
 
     return [...items, ...nestedBreadcrumbs]
   })()
-
-  useEffect(() => {
-    if (detailQuery !== '' && detailMeta == null) {
-      onDetailQueryChange?.('')
-    }
-  }, [detailMeta, detailQuery, onDetailQueryChange])
 
   useLayoutEffect(() => {
     const node = scrollRef.current

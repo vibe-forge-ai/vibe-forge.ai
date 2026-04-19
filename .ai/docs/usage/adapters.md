@@ -47,6 +47,14 @@ adapter 可以实现统一的账号目录、账号详情和账号管理动作。
 
 这些文件属于当前 workspace 的本地私有数据，不应该提交到 Git。
 
+在 Git worktree 场景下，账号快照会共享到主 worktree：
+
+- 新增账号、登录导入和 artifact 落盘优先写入主 worktree 下的 `.ai/.local/adapters/<adapter>/accounts/`
+- 读取时也优先读主 worktree 下的共享目录
+- 如果共享目录里没有对应账号，才回退读取当前 worktree 下的旧目录
+
+这样可以避免每新建一个 worktree 都重复登录，同时兼容历史上已经写在各个 worktree 里的本地账号快照。
+
 ## Web 配置页里的账号管理
 
 在 `Adapters -> <adapter> -> 账号` 中：
@@ -67,7 +75,7 @@ adapter 可以实现统一的账号目录、账号详情和账号管理动作。
 其中：
 
 - `description` 会用多行输入框编辑
-- `authFile` 留空时，会优先读取 `.ai/.local/adapters/codex/accounts/<accountKey>/auth.json`
+- `authFile` 留空时，会优先读取主 worktree 下的 `.ai/.local/adapters/codex/accounts/<accountKey>/auth.json`
 
 ## CLI 管理账号
 

@@ -63,7 +63,7 @@
       & > .ant-tabs-tabpane {
         display: flex;
         min-height: 0;
-        padding: 12px;
+        padding: 0;
         height: 100%;
         box-sizing: border-box;
       }
@@ -91,6 +91,9 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  padding-block-start: var(--subpage-content-card-gap);
+  padding-inline: var(--subpage-content-card-gap);
+  box-sizing: border-box;
 }
 
 .config-view__section-header {
@@ -99,6 +102,8 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 32px;
+  padding-inline: 0;
+  box-sizing: border-box;
   .ant-radio-group {
     display: flex;
     align-items: center;
@@ -123,10 +128,12 @@
   flex-grow: 1;
   min-height: 0;
   padding: 0;
+  padding-inline: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   overflow: auto;
+  box-sizing: border-box;
   --config-surface-bg-1: #ffffff;
   --config-surface-border-1: #d8e0ea;
   --config-surface-hover-bg-1: #f6f9fc;
@@ -478,6 +485,10 @@ html.dark .config-view__card {
 }
 
 @media (max-width: 960px) {
+  .config-view__editor-wrap {
+    padding-inline: 0;
+  }
+
   .config-view__section-header {
     align-items: flex-start;
     flex-direction: column;
@@ -486,6 +497,7 @@ html.dark .config-view__card {
   .config-view__section-header-extra {
     width: 100%;
     justify-content: space-between;
+    padding-inline-end: 0;
   }
 
   .config-view__detail-trail {

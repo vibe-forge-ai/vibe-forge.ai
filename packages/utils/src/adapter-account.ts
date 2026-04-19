@@ -1,9 +1,13 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
-import { dirname, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 
 import type { AdapterAccountCredentialArtifact, AdapterCtx } from '@vibe-forge/types'
 
-import { resolveProjectAiPath } from './ai-path'
+import {
+  resolvePrimaryWorkspaceFolder,
+  resolveProjectAiBaseDirName,
+  resolveProjectAiPath
+} from './ai-path'
 
 const assertRelativeArtifactPath = (value: string) => {
   const normalized = value.trim().replace(/\\/g, '/')
@@ -20,7 +24,51 @@ export const resolveAdapterAccountsRoot = (
   cwd: string,
   env: AdapterCtx['env'],
   adapter: string
-) => resolveProjectAiPath(cwd, env, '.local', 'adapters', adapter, 'accounts')
+) => {
+  const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(cwd, env)
+  if (primaryWorkspaceFolder != null) {
+    return resolveAdapterAccountsRootForWorkspace(primaryWorkspaceFolder, env, adapter)
+  }
+
+  return resolveProjectAiPath(cwd, env, '.local', 'adapters', adapter, 'accounts')
+}
+
+const resolveAdapterAccountsRootForWorkspace = (
+  workspaceFolder: string,
+  env: AdapterCtx['env'],
+  adapter: string
+) => {
+  const aiBaseDirName = resolveProjectAiBaseDirName(env)
+  const aiBaseDir = isAbsolute(aiBaseDirName)
+    ? resolve(aiBaseDirName)
+    : resolve(workspaceFolder, aiBaseDirName)
+
+  return resolve(aiBaseDir, '.local', 'adapters', adapter, 'accounts')
+}
+
+export const resolveAdapterAccountReadRoots = (
+  cwd: string,
+  env: AdapterCtx['env'],
+  adapter: string
+) => {
+  const roots = [
+    resolveAdapterAccountsRoot(cwd, env, adapter)
+  ]
+
+  const currentWorktreeRoot = resolveProjectAiPath(cwd, env, '.local', 'adapters', adapter, 'accounts')
+  if (currentWorktreeRoot !== roots[0]) {
+    roots.push(currentWorktreeRoot)
+  }
+
+  return Array.from(new Set(roots.map(root => resolve(root))))
+}
+
+export const resolveAdapterAccountReadDirs = (
+  cwd: string,
+  env: AdapterCtx['env'],
+  adapter: string,
+  account: string
+) => resolveAdapterAccountReadRoots(cwd, env, adapter).map(root => resolve(root, account))
 
 export const resolveAdapterAccountDir = (
   cwd: string,
@@ -61,9 +109,14 @@ export const removeStoredAdapterAccount = async (params: {
   adapter: string
   account: string
 }) => {
-  const accountDir = resolveAdapterAccountDir(params.cwd, params.env, params.adapter, params.account)
-  await rm(accountDir, { recursive: true, force: true })
+  const accountDirs = resolveAdapterAccountReadDirs(
+    params.cwd,
+    params.env,
+    params.adapter,
+    params.account
+  )
+  await Promise.all(accountDirs.map(accountDir => rm(accountDir, { recursive: true, force: true })))
   return {
-    accountDir
+    accountDir: accountDirs[0]
   }
 }

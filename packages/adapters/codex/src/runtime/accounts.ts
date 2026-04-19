@@ -22,6 +22,8 @@ import {
   getAdapterConfiguredDefaultAccount,
   mergeAdapterConfigs,
   normalizeNonEmptyString,
+  resolveAdapterAccountReadDirs,
+  resolveAdapterAccountReadRoots,
   resolveAdapterAccountsRoot,
   resolveProjectAiPath,
   syncSymlinkTarget
@@ -61,7 +63,9 @@ interface CodexAccountDescriptor {
   key: string
   title?: string
   description?: string
+  accountDir?: string
   authFilePath?: string
+  metaFilePath?: string
   status: NonNullable<AdapterAccountInfo['status']>
   metadata?: CodexStoredAccountMetadata
   identity?: CodexAccountIdentity
@@ -146,12 +150,20 @@ const buildSpawnEnv = (env: AdapterCtx['env']): NodeJS.ProcessEnv => ({
   )
 })
 
-const resolveCodexLocalAccountsRoot = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
+const resolveCodexSharedAccountsRoot = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
   resolveAdapterAccountsRoot(ctx.cwd, ctx.env, 'codex')
 )
 
+const resolveCodexReadableAccountsRoots = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
+  resolveAdapterAccountReadRoots(ctx.cwd, ctx.env, 'codex')
+)
+
 const resolveStoredAccountDir = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>, key: string) => (
-  resolve(resolveCodexLocalAccountsRoot(ctx), key)
+  resolve(resolveCodexSharedAccountsRoot(ctx), key)
+)
+
+const resolveStoredAccountReadDirs = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>, key: string) => (
+  resolveAdapterAccountReadDirs(ctx.cwd, ctx.env, 'codex', key)
 )
 
 const resolveStoredAccountAuthPath = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>, key: string) => (
@@ -1044,47 +1056,79 @@ const ensureImportedRealHomeAccount = async (
 const collectStoredAccountDescriptors = async (
   ctx: Pick<AdapterCtx, 'cwd' | 'env'>
 ): Promise<CodexAccountDescriptor[]> => {
-  const root = resolveCodexLocalAccountsRoot(ctx)
-  const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
-  const descriptors: CodexAccountDescriptor[] = []
+  const descriptorMap = new Map<string, CodexAccountDescriptor>()
 
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name.startsWith('.')) {
-      continue
-    }
+  for (const root of resolveCodexReadableAccountsRoots(ctx)) {
+    const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
 
-    const authFilePath = resolveStoredAccountAuthPath(ctx, entry.name)
-    const metadata = await readJsonFileIfPresent<CodexStoredAccountMetadata>(resolveStoredAccountMetaPath(ctx, entry.name))
-    const hasStoredAuthFile = await pathExists(authFilePath)
-    const authIdentity = hasStoredAuthFile
-      ? await readCodexAuthIdentityFromFile(authFilePath)
-      : undefined
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) {
+        continue
+      }
 
-    if (!hasStoredAuthFile && metadata == null) {
-      continue
-    }
+      const accountDir = resolve(root, entry.name)
+      const authFilePath = join(accountDir, 'auth.json')
+      const metaFilePath = join(accountDir, 'meta.json')
+      const metadata = await readJsonFileIfPresent<CodexStoredAccountMetadata>(metaFilePath)
+      const hasStoredAuthFile = await pathExists(authFilePath)
+      const authIdentity = hasStoredAuthFile
+        ? await readCodexAuthIdentityFromFile(authFilePath)
+        : undefined
 
-    const mergedIdentity = mergeCodexAccountProbes(
-      buildProbeFromMetadata(metadata),
-      authIdentity
-    )
+      if (!hasStoredAuthFile && metadata == null) {
+        continue
+      }
 
-    descriptors.push({
-      key: entry.name,
-      title: resolveCodexAccountTitle({
+      const mergedIdentity = mergeCodexAccountProbes(
+        buildProbeFromMetadata(metadata),
+        authIdentity
+      )
+
+      const descriptor: CodexAccountDescriptor = {
         key: entry.name,
-        title: metadata?.title,
-        probe: mergedIdentity
-      }),
-      description: normalizeNonEmptyString(metadata?.description),
-      authFilePath: hasStoredAuthFile ? authFilePath : undefined,
-      status: hasStoredAuthFile ? 'ready' : 'missing',
-      metadata,
-      identity: mergedIdentity
-    })
+        title: resolveCodexAccountTitle({
+          key: entry.name,
+          title: metadata?.title,
+          probe: mergedIdentity
+        }),
+        description: normalizeNonEmptyString(metadata?.description),
+        accountDir,
+        authFilePath: hasStoredAuthFile ? authFilePath : undefined,
+        metaFilePath,
+        status: hasStoredAuthFile ? 'ready' : 'missing',
+        metadata,
+        identity: mergedIdentity
+      }
+      const existing = descriptorMap.get(entry.name)
+      descriptorMap.set(
+        entry.name,
+        existing == null
+          ? descriptor
+          : pickPreferredCodexStoredSnapshotDescriptor(existing, descriptor)
+      )
+    }
   }
 
-  return descriptors
+  return Array.from(descriptorMap.values())
+}
+
+const pickPreferredCodexStoredSnapshotDescriptor = (
+  preferred: CodexAccountDescriptor,
+  fallback: CodexAccountDescriptor
+) => {
+  if (preferred.status !== 'ready' && fallback.status === 'ready') {
+    return fallback
+  }
+
+  return {
+    ...preferred,
+    title: preferred.title ?? fallback.title,
+    description: preferred.description ?? fallback.description,
+    authFilePath: preferred.authFilePath ?? fallback.authFilePath,
+    metaFilePath: preferred.metaFilePath ?? fallback.metaFilePath,
+    metadata: preferred.metadata ?? fallback.metadata,
+    identity: mergeCodexAccountProbes(preferred.identity, fallback.identity) ?? preferred.identity
+  }
 }
 
 const findStoredAccountByIdentity = async (
@@ -1181,7 +1225,7 @@ const writeProbeMetadata = async (params: {
   probe: CodexAccountProbe
 }) => {
   const { ctx, descriptor, probe } = params
-  const metaPath = resolveStoredAccountMetaPath(ctx, descriptor.key)
+  const metaPath = descriptor.metaFilePath ?? resolveStoredAccountMetaPath(ctx, descriptor.key)
   const nextMetadata: CodexStoredAccountMetadata = {
     ...descriptor.metadata,
     ...(probe.email != null ? { email: probe.email } : {}),
@@ -1777,8 +1821,8 @@ export const manageCodexAccount = async (
     }
 
     const { descriptor, configuredAccount } = await resolveExistingCodexAccount(ctx, normalizedAccount)
-    const storedAuthPath = resolveStoredAccountAuthPath(ctx, normalizedAccount)
-    const hasStoredSnapshot = descriptor.authFilePath != null && descriptor.authFilePath === storedAuthPath
+    const storedAuthPaths = resolveStoredAccountReadDirs(ctx, normalizedAccount).map(accountDir => join(accountDir, 'auth.json'))
+    const hasStoredSnapshot = descriptor.authFilePath != null && storedAuthPaths.includes(descriptor.authFilePath)
 
     if (!hasStoredSnapshot) {
       if (configuredAccount?.authFile != null && configuredAccount.authFile.trim() !== '') {
