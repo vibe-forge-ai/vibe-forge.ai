@@ -1,0 +1,79 @@
+name: Deploy PWA
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-pwa
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: deploy-gh-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build standalone PWA
+        run: pnpm --filter @vibe-forge/client exec vite build
+        env:
+          __VF_PROJECT_AI_CLIENT_MODE__: standalone
+          __VF_PROJECT_AI_CLIENT_BASE__: /vibe-forge.ai/
+
+      - name: Prepare PWA artifact
+        run: |
+          cp .ai/docs/usage/pwa.md apps/client/dist/pwa.md
+          touch apps/client/dist/.nojekyll
+
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          rm -rf .gh-pages
+          git fetch origin gh-pages --depth=1 || true
+
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git worktree add --detach .gh-pages origin/gh-pages
+          else
+            git worktree add --detach .gh-pages
+            git -C .gh-pages checkout --orphan gh-pages
+            git -C .gh-pages rm -rf . || true
+          fi
+
+          find .gh-pages -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R apps/client/dist/. .gh-pages/
+
+          git -C .gh-pages add -A
+          if git -C .gh-pages diff --cached --quiet; then
+            echo "No PWA deployment changes."
+            exit 0
+          fi
+
+          git -C .gh-pages commit -m "Deploy PWA from ${GITHUB_SHA}"
+          git -C .gh-pages push origin HEAD:gh-pages
