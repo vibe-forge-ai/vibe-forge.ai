@@ -19,6 +19,7 @@ import { configRouter } from './config'
 import { gitRouter } from './git'
 import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
+import { skillHubRouter } from './skill-hub'
 import { uiRouter } from './ui'
 import { workspaceRouter } from './workspace'
 import { worktreeEnvironmentsRouter } from './worktree-environments'
@@ -89,6 +90,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/auth', router: authRouter(env) },
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
+    { prefix: '/api/skill-hub', router: skillHubRouter() },
     { prefix: '/channels/actions', router: channelActionsRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },

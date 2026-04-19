@@ -1,26 +1,33 @@
 .knowledge-base-view__list {
   background: transparent;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 1px;
 }
 
 .knowledge-base-view__list .ant-list-items {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .knowledge-base-view__list .ant-list-item {
+  width: 100%;
   padding: 0;
   align-items: stretch;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color) !important;
   border-radius: 8px;
   background: var(--bg-color);
   overflow: hidden;
+  box-sizing: border-box;
   transition: border-color .2s ease, background-color .2s ease;
 }
 
 .knowledge-base-view__list .ant-list-item:hover {
-  border-color: var(--subpage-tertiary-hover-border);
-  background: var(--subpage-tertiary-hover-bg);
+  border-color: var(--sub-border-color) !important;
+  background: var(--tag-hover-bg);
 }
 
 .knowledge-base-view__list-item {

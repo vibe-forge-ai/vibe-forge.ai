@@ -1,16 +1,22 @@
 import './KnowledgeBaseView.scss'
 
-import { App, Segmented } from 'antd'
+import { App, Form } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { EntitySummary, RuleSummary, SpecSummary } from '#~/api.js'
+import { createSkill, getApiErrorMessage } from '#~/api.js'
+import type { EntitySummary, RuleSummary, SkillSummary, SpecSummary } from '#~/api.js'
 import { PageShell } from '#~/components/layout/PageShell.js'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
+import { CreateSkillModal } from './components/CreateSkillModal.js'
+import type { CreateSkillFormValues } from './components/CreateSkillModal.js'
 import { EntitiesTab } from './components/EntitiesTab.js'
 import { FlowsTab } from './components/FlowsTab.js'
+import { KnowledgeContentControls } from './components/KnowledgeContentControls.js'
+import { KnowledgeMobilePanel } from './components/KnowledgeMobilePanel.js'
+import { KnowledgeSidebar } from './components/KnowledgeSidebar.js'
 import { RulesTab } from './components/RulesTab.js'
 import { SkillsTab } from './components/SkillsTab.js'
 
@@ -37,6 +43,10 @@ export function KnowledgeBaseView() {
     isLoading: isRulesLoading,
     mutate: mutateRules
   } = useSWR<{ rules: RuleSummary[] }>('/api/ai/rules')
+  const {
+    data: skillsRes,
+    mutate: mutateSkills
+  } = useSWR<{ skills: SkillSummary[] }>('/api/ai/skills')
 
   const specs = specsRes?.specs ?? []
   const entities = entitiesRes?.entities ?? []
@@ -47,6 +57,13 @@ export function KnowledgeBaseView() {
   const [entityQuery, setEntityQuery] = React.useState('')
   const [entityTagFilter, setEntityTagFilter] = React.useState<string[]>([])
   const [ruleQuery, setRuleQuery] = React.useState('')
+  const [skillProjectQuery, setSkillProjectQuery] = React.useState('')
+  const [skillViewMode, setSkillViewMode] = React.useState<'project' | 'market'>('project')
+  const [isKnowledgeSidebarCollapsed, setKnowledgeSidebarCollapsed] = React.useState(false)
+  const [isMobileKnowledgePanelOpen, setMobileKnowledgePanelOpen] = React.useState(false)
+  const [createSkillOpen, setCreateSkillOpen] = React.useState(false)
+  const [savingSkill, setSavingSkill] = React.useState(false)
+  const [createSkillForm] = Form.useForm<CreateSkillFormValues>()
 
   const { values, update } = useQueryParams<KnowledgeQueryParams>({
     keys: ['kbTab'],
@@ -112,7 +129,7 @@ export function KnowledgeBaseView() {
   }, [ruleQuery, rules])
 
   const handleRefresh = async () => {
-    await Promise.all([mutateSpecs(), mutateEntities(), mutateRules()])
+    await Promise.all([mutateSpecs(), mutateEntities(), mutateRules(), mutateSkills()])
     void message.success(t('knowledge.actions.refreshed'))
   }
 
@@ -133,11 +150,28 @@ export function KnowledgeBaseView() {
   }
 
   const handleCreateSkill = () => {
-    message.info(t('knowledge.skills.createHint'))
+    createSkillForm.resetFields()
+    setCreateSkillOpen(true)
   }
 
-  const handleImportSkill = () => {
-    message.info(t('knowledge.skills.importHint'))
+  const handleSaveSkill = async () => {
+    const values = await createSkillForm.validateFields()
+    setSavingSkill(true)
+    try {
+      await createSkill({
+        name: values.name,
+        description: values.description,
+        body: values.body
+      })
+      setCreateSkillOpen(false)
+      createSkillForm.resetFields()
+      await mutateSkills()
+      void message.success(t('knowledge.skills.createSuccess'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('knowledge.skills.createFailed')))
+    } finally {
+      setSavingSkill(false)
+    }
   }
 
   const handleCreateRule = () => {
@@ -148,7 +182,26 @@ export function KnowledgeBaseView() {
     message.info(t('knowledge.rules.importHint'))
   }
 
+  const isCompactView = isCompactLayout || isTouchInteraction
+  const getContentControls = (onCreate: () => void) =>
+    isCompactView
+      ? (
+        <KnowledgeContentControls
+          onCreate={onCreate}
+          onExpandSidebar={() => setMobileKnowledgePanelOpen(true)}
+        />
+      )
+      : isKnowledgeSidebarCollapsed
+      ? (
+        <KnowledgeContentControls
+          onCreate={onCreate}
+          onExpandSidebar={() => setKnowledgeSidebarCollapsed(false)}
+        />
+      )
+      : undefined
+
   const skillCount = React.useMemo(() => {
+    if (skillsRes?.skills != null) return skillsRes.skills.length
     const names = new Set<string>()
     specs.forEach(spec => {
       spec.skills?.forEach(skill => names.add(skill))
@@ -157,7 +210,7 @@ export function KnowledgeBaseView() {
       entity.skills?.forEach(skill => names.add(skill))
     })
     return names.size
-  }, [entities, specs])
+  }, [entities, skillsRes?.skills, specs])
 
   const sections = [
     {
@@ -168,9 +221,12 @@ export function KnowledgeBaseView() {
       count: skillCount,
       content: (
         <SkillsTab
+          leading={getContentControls(handleCreateSkill)}
+          projectQuery={skillProjectQuery}
+          viewMode={skillViewMode}
           onRefresh={handleRefresh}
           onCreate={handleCreateSkill}
-          onImport={handleImportSkill}
+          onViewModeChange={setSkillViewMode}
         />
       )
     },
@@ -184,7 +240,9 @@ export function KnowledgeBaseView() {
         <EntitiesTab
           entities={entities}
           filteredEntities={filteredEntities}
+          hideContentSearch={isCompactView}
           isLoading={isEntitiesLoading}
+          leading={getContentControls(handleCreateEntity)}
           query={entityQuery}
           tagOptions={entityTagOptions}
           tagFilter={entityTagFilter}
@@ -206,7 +264,9 @@ export function KnowledgeBaseView() {
         <FlowsTab
           specs={specs}
           filteredSpecs={filteredSpecs}
+          hideContentSearch={isCompactView}
           isLoading={isSpecsLoading}
+          leading={getContentControls(handleCreateSpec)}
           query={specQuery}
           tagOptions={specTagOptions}
           tagFilter={specTagFilter}
@@ -228,7 +288,9 @@ export function KnowledgeBaseView() {
         <RulesTab
           rules={rules}
           filteredRules={filteredRules}
+          hideContentSearch={isCompactView}
           isLoading={isRulesLoading}
+          leading={getContentControls(handleCreateRule)}
           query={ruleQuery}
           onRefresh={handleRefresh}
           onQueryChange={setRuleQuery}
@@ -245,7 +307,72 @@ export function KnowledgeBaseView() {
     () => sections.find(section => section.key === activeSectionKey) ?? sections[0],
     [activeSectionKey, sections]
   )
-  const isCompactView = isCompactLayout || isTouchInteraction
+  const activeSearchValue = activeSectionKey === 'skills'
+    ? skillProjectQuery
+    : activeSectionKey === 'entities'
+    ? entityQuery
+    : activeSectionKey === 'flows'
+    ? specQuery
+    : activeSectionKey === 'rules'
+    ? ruleQuery
+    : ''
+  const activeSearchPlaceholder = activeSectionKey === 'skills'
+    ? t('knowledge.skills.searchProject')
+    : t('knowledge.filters.searchActive')
+  const showMobileSearch = !(activeSectionKey === 'skills' && skillViewMode === 'market')
+
+  React.useEffect(() => {
+    if (!isCompactView) {
+      setMobileKnowledgePanelOpen(false)
+    }
+  }, [isCompactView])
+
+  const handleActiveSearchChange = (value: string) => {
+    if (activeSectionKey === 'skills') {
+      setSkillProjectQuery(value)
+      return
+    }
+    if (activeSectionKey === 'entities') {
+      setEntityQuery(value)
+      return
+    }
+    if (activeSectionKey === 'flows') {
+      setSpecQuery(value)
+      return
+    }
+    if (activeSectionKey === 'rules') {
+      setRuleQuery(value)
+    }
+  }
+
+  const handleSidebarCreate = () => {
+    if (isCompactView) {
+      setMobileKnowledgePanelOpen(false)
+    }
+
+    if (activeSectionKey === 'skills') {
+      handleCreateSkill()
+      return
+    }
+    if (activeSectionKey === 'entities') {
+      handleCreateEntity()
+      return
+    }
+    if (activeSectionKey === 'flows') {
+      handleCreateSpec()
+      return
+    }
+    if (activeSectionKey === 'rules') {
+      handleCreateRule()
+    }
+  }
+
+  const handleSelectSection = (key: string) => {
+    update({ kbTab: key })
+    if (isCompactView) {
+      setMobileKnowledgePanelOpen(false)
+    }
+  }
 
   React.useEffect(() => {
     if (values.kbTab !== activeSectionKey) {
@@ -260,47 +387,43 @@ export function KnowledgeBaseView() {
     >
       {isCompactView
         ? (
-          <div className='knowledge-base-view__mobile-switcher-shell'>
-            <Segmented
-              block
-              className='knowledge-base-view__mobile-switcher'
-              value={activeSectionKey}
-              onChange={(value) => update({ kbTab: value as string })}
-              options={sections.map((section) => ({
-                label: `${section.label} ${section.count}`,
-                value: section.key
-              }))}
-            />
-          </div>
+          <KnowledgeMobilePanel
+            activeKey={activeSectionKey}
+            open={isMobileKnowledgePanelOpen}
+            searchPlaceholder={activeSearchPlaceholder}
+            searchValue={activeSearchValue}
+            sections={sections}
+            showSearch={showMobileSearch}
+            onClose={() => setMobileKnowledgePanelOpen(false)}
+            onCreate={handleSidebarCreate}
+            onSearchChange={handleActiveSearchChange}
+            onSelect={handleSelectSection}
+          />
         )
         : (
-          <div className='knowledge-base-view__left'>
-            <div className='knowledge-base-view__sidebar'>
-              <div className='knowledge-base-view__nav-list'>
-                {sections.map((section) => (
-                  <button
-                    key={section.key}
-                    type='button'
-                    className={`knowledge-base-view__nav-item ${section.key === activeSectionKey ? 'is-active' : ''}`}
-                    onClick={() => update({ kbTab: section.key })}
-                  >
-                    <span className='material-symbols-rounded knowledge-base-view__nav-icon'>{section.icon}</span>
-                    <span className='knowledge-base-view__nav-main'>
-                      <span className='knowledge-base-view__nav-row'>
-                        <span className='knowledge-base-view__nav-label'>{section.label}</span>
-                        <span className='knowledge-base-view__nav-count'>{section.count}</span>
-                      </span>
-                      <span className='knowledge-base-view__nav-desc'>{section.description}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <KnowledgeSidebar
+            activeKey={activeSectionKey}
+            collapsed={isKnowledgeSidebarCollapsed}
+            isCompact={isCompactView}
+            searchPlaceholder={activeSearchPlaceholder}
+            searchValue={activeSearchValue}
+            sections={sections}
+            onCreate={handleSidebarCreate}
+            onSearchChange={handleActiveSearchChange}
+            onSelect={handleSelectSection}
+            onToggleCollapsed={() => setKnowledgeSidebarCollapsed(prev => !prev)}
+          />
         )}
       <div className='knowledge-base-view__right'>
         <div className='knowledge-base-view__right-body'>{activeSection?.content}</div>
       </div>
+      <CreateSkillModal
+        open={createSkillOpen}
+        saving={savingSkill}
+        form={createSkillForm}
+        onSave={() => void handleSaveSkill()}
+        onClose={() => setCreateSkillOpen(false)}
+      />
     </PageShell>
   )
 }

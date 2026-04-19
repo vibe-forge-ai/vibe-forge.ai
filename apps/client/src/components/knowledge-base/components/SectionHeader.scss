@@ -1,7 +1,18 @@
 .knowledge-base-view__section-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 16px;
   padding: 0;
+}
+
+.knowledge-base-view__section-leading,
+.knowledge-base-view__section-actions {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.knowledge-base-view__section-actions {
+  justify-content: flex-end;
 }

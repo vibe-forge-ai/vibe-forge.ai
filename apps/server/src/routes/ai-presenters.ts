@@ -1,7 +1,7 @@
 import { relative } from 'node:path'
 
 import { isAlwaysRule, resolveDefinitionName, resolveDocumentDescription } from '@vibe-forge/definition-core'
-import type { Definition, Entity, Rule, Spec } from '@vibe-forge/types'
+import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
 
 const toRelativePath = (absolutePath: string, cwd: string) => {
   const rel = relative(cwd, absolutePath)
@@ -79,6 +79,14 @@ const resolveRuleSummary = (rule: Definition<Rule>) => {
   }
 }
 
+const resolveSkillSummary = (skill: Definition<Skill>) => {
+  const name = resolveDefinitionName(skill, ['skill.md'])
+  return {
+    name,
+    description: resolveDocumentDescription(skill.body, skill.attributes.description, name)
+  }
+}
+
 export const matchesDefinitionPath = (
   definition: Pick<Definition<object>, 'path'>,
   targetPath: string,
@@ -142,4 +150,20 @@ export const presentRule = (rule: Definition<Rule>, cwd: string) => {
 export const presentRuleDetail = (rule: Definition<Rule>, cwd: string) => ({
   ...presentRule(rule, cwd),
   body: rule.body ?? ''
+})
+
+export const presentSkill = (skill: Definition<Skill>, cwd: string) => {
+  const { name, description } = resolveSkillSummary(skill)
+  return {
+    id: toRelativePath(skill.path, cwd),
+    name,
+    description,
+    always: skill.attributes.always ?? false,
+    instancePath: skill.resolvedInstancePath
+  }
+}
+
+export const presentSkillDetail = (skill: Definition<Skill>, cwd: string) => ({
+  ...presentSkill(skill, cwd),
+  body: skill.body ?? ''
 })

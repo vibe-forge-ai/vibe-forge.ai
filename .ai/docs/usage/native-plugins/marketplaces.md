@@ -4,6 +4,8 @@
 
 这页补充用户侧更完整的 marketplace 配置示例，适合你已经确定要把 Claude Code 插件接进项目时参考。
 
+Web 前端的「知识库 -> 技能」页会把 `marketplaces` 展示为可搜索的 skills hub 源。你可以在界面里新增 URL、目录、GitHub 或 Git 源，也可以直接编辑配置文件；搜索结果中的插件安装后会转换成当前项目可用的 Vibe Forge skills / entities / MCP / hooks 资产。
+
 ## 示例：接入 Superpowers Marketplace
 
 如果你想直接使用 Superpowers 维护的 Claude marketplace，可以这样配：

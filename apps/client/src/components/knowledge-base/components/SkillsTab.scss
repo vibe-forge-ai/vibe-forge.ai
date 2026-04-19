@@ -1,5 +1,299 @@
 .knowledge-base-view__skills-tab {
   display: flex;
   flex-direction: column;
+  gap: var(--subpage-tertiary-gap);
+}
+
+.knowledge-base-view__skill-view-switch {
+  height: 36px;
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.knowledge-base-view__skill-view-switch .ant-segmented-group {
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+}
+
+.knowledge-base-view__skill-view-switch .ant-segmented-item,
+.knowledge-base-view__skill-view-switch .ant-segmented-thumb {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 6px !important;
+}
+
+.knowledge-base-view__skill-view-switch .ant-segmented-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.knowledge-base-view__skill-view-switch .ant-segmented-item-label {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  line-height: 1;
+}
+
+.knowledge-base-view__skill-section-leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.knowledge-base-view__switch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.knowledge-base-view__hidden-file-input {
+  display: none;
+}
+
+.knowledge-base-view__skill-market-search-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.knowledge-base-view__skill-market-search {
+  min-width: 0;
+}
+
+.knowledge-base-view__search-toggle-button {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-inline-end: -1px;
+  border: none;
+  background: transparent;
+  color: var(--sub-text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: color .2s ease, background-color .2s ease;
+}
+
+.knowledge-base-view__search-toggle-button.is-open {
+  color: var(--primary-color);
+}
+
+.knowledge-base-view__search-toggle-button.has-active-filters::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #dc2626;
+  box-shadow: 0 0 0 1px var(--bg-color);
+}
+
+.knowledge-base-view__search-toggle-button:hover {
+  background-color: rgba(37, 99, 235, .08);
+  color: var(--primary-color);
+}
+
+.knowledge-base-view__search-chevron {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform .2s ease, color .2s ease;
+}
+
+.knowledge-base-view__search-toggle-button.is-open
+  .knowledge-base-view__search-chevron {
+  transform: rotate(180deg);
+}
+
+.knowledge-base-view__skill-market-actions {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition:
+    max-height .24s cubic-bezier(.4, 0, .2, 1),
+    opacity .18s ease,
+    transform .18s ease,
+    margin-top .18s ease;
+}
+
+.knowledge-base-view__skill-market-actions.is-open {
+  max-height: 56px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  margin-top: -8px;
+}
+
+.knowledge-base-view__skill-market-actions-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.knowledge-base-view__skill-registry-filter {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.knowledge-base-view__toolbar-filter-icon {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--sub-text-color);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.knowledge-base-view__skill-registry-select {
+  width: 100%;
+}
+
+.knowledge-base-view__skill-registry-select .ant-select-selector {
+  height: 30px !important;
+  padding-left: 28px !important;
+  border-radius: 6px !important;
+  background: var(--bg-color) !important;
+  align-items: center !important;
+}
+
+.knowledge-base-view__select-chevron {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--sub-text-color);
+  transition: transform .2s ease, color .2s ease;
+}
+
+.knowledge-base-view__skill-registry-select.ant-select-open
+  .knowledge-base-view__select-chevron {
+  transform: rotate(180deg);
+  color: var(--primary-color);
+}
+
+.knowledge-base-view__skill-registry-errors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.knowledge-base-view__skill-registry-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.knowledge-base-view__skill-capability,
+.knowledge-base-view__skill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.knowledge-base-view__skill-result {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
+  padding: var(--subpage-tertiary-padding);
+}
+
+.knowledge-base-view__skill-result-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.knowledge-base-view__skill-subtitle {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--sub-text-color);
+}
+
+.knowledge-base-view__skill-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.knowledge-base-view__registry-form {
+  padding-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .knowledge-base-view--compact .knowledge-base-view__skill-view-switch {
+    height: 44px;
+  }
+
+  .knowledge-base-view--compact
+    .knowledge-base-view__skill-view-switch
+    .ant-segmented-group {
+    height: 36px;
+  }
+
+  .knowledge-base-view--compact
+    .knowledge-base-view__skill-view-switch
+    .ant-segmented-item,
+  .knowledge-base-view--compact
+    .knowledge-base-view__skill-view-switch
+    .ant-segmented-thumb {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 8px !important;
+  }
+
+  .knowledge-base-view--compact
+    .knowledge-base-view__skill-view-switch
+    .ant-segmented-item-label {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .knowledge-base-view__skill-registry-select,
+  .knowledge-base-view__skill-market-search-row
+    .knowledge-base-view__filter-input {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .knowledge-base-view__skill-result {
+    gap: 10px;
+  }
 }

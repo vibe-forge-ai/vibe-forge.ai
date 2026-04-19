@@ -233,11 +233,21 @@ const marketplaceSourceSchema = z.union([
   })
 ])
 
+const marketplaceDeclaredPluginConfigSchema = z.union([
+  z.boolean().transform(enabled => ({ enabled })),
+  z.object({
+    enabled: z.boolean().optional(),
+    scope: z.string().optional()
+  })
+])
+
 export const marketplaceConfigSchema = z.record(
   z.string(),
   z.object({
     type: z.literal('claude-code'),
     enabled: z.boolean().optional(),
+    syncOnRun: z.boolean().optional(),
+    plugins: z.record(z.string(), marketplaceDeclaredPluginConfigSchema).optional(),
     options: z.object({
       source: marketplaceSourceSchema
     }).optional()
