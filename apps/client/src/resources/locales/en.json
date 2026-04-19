@@ -584,7 +584,6 @@
       "title": "Session target",
       "lockedHint": "Fixed after creation",
       "creatingHint": "Creating session",
-      "defaultSummary": "Use the current project defaults",
       "missingResourceWarning": "Choose a resource for the current mode first",
       "modes": {
         "default": "Default",
@@ -945,13 +944,6 @@
         "empty": "No agents found. Add entity definition files to show them here.",
         "create": "Quick Create Agent",
         "createToast": "Create an entity definition file, then refresh the page."
-      },
-      "help": {
-        "title": "Help",
-        "item1": "Flow files can include name/description/params for better discovery",
-        "item2": "Entities can be described with index.json or README.md",
-        "item3": "After creation, refresh the page to see them here",
-        "footer": "Add usage guidance to flow descriptions when needed"
       }
     },
     "attachments": {

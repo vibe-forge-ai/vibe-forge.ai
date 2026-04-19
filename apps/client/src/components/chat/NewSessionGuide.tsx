@@ -50,12 +50,6 @@ export function NewSessionGuide({
   const isWorkspacesReady = workspacesRes != null
   const { announcements = [] } = configRes?.sources.merged?.general ?? {}
 
-  const helpItems = [
-    t('chat.newSessionGuide.help.item1'),
-    t('chat.newSessionGuide.help.item2'),
-    t('chat.newSessionGuide.help.item3')
-  ]
-
   const handleCreateSpec = () => {
     message.info(t('chat.newSessionGuide.specs.createToast'))
   }
@@ -100,12 +94,10 @@ export function NewSessionGuide({
   const visibleWorkspaceItems = isCompactLayout ? workspaceItems.slice(0, 1) : workspaceItems
   const visibleSpecItems = isCompactLayout ? specItems.slice(0, 1) : specItems
   const visibleEntityItems = isCompactLayout ? entityItems.slice(0, 1) : entityItems
-  const visibleHelpItems = isCompactLayout ? helpItems.slice(0, 1) : helpItems
   const hiddenAnnouncementCount = Math.max(announcements.length - visibleAnnouncements.length, 0)
   const hiddenWorkspaceCount = Math.max(workspaceItems.length - visibleWorkspaceItems.length, 0)
   const hiddenSpecCount = Math.max(specItems.length - visibleSpecItems.length, 0)
   const hiddenEntityCount = Math.max(entityItems.length - visibleEntityItems.length, 0)
-  const hiddenHelpCount = Math.max(helpItems.length - visibleHelpItems.length, 0)
 
   const renderMoreCount = (count: number) =>
     count > 0
@@ -144,9 +136,7 @@ export function NewSessionGuide({
         ? (
           <NewSessionGuideCompactPanel
             entityItems={entityItems}
-            helpItems={helpItems}
             hiddenEntityCount={hiddenEntityCount}
-            hiddenHelpCount={hiddenHelpCount}
             hiddenSpecCount={hiddenSpecCount}
             hiddenWorkspaceCount={hiddenWorkspaceCount}
             isEntitiesReady={isEntitiesReady}
@@ -157,7 +147,6 @@ export function NewSessionGuide({
             renderMoreCount={renderMoreCount}
             specItems={specItems}
             visibleEntityItems={visibleEntityItems}
-            visibleHelpItems={visibleHelpItems}
             visibleSpecItems={visibleSpecItems}
             visibleWorkspaceItems={visibleWorkspaceItems}
             workspaceItems={workspaceItems}
@@ -166,7 +155,6 @@ export function NewSessionGuide({
         : (
           <NewSessionGuideGrid
             entityItems={entityItems}
-            hiddenHelpCount={hiddenHelpCount}
             isEntitiesReady={isEntitiesReady}
             isSpecsReady={isSpecsReady}
             isWorkspacesReady={isWorkspacesReady}
@@ -174,7 +162,6 @@ export function NewSessionGuide({
             onCreateSpec={handleCreateSpec}
             renderMoreCount={renderMoreCount}
             specItems={specItems}
-            visibleHelpItems={visibleHelpItems}
             workspaceItems={workspaceItems}
           />
         )}
