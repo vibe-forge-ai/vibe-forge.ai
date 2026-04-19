@@ -33,6 +33,9 @@ describe('ui static routing', () => {
       'body{background:url(/__VF_PROJECT_AI_CLIENT_BASE__/assets/font.woff2)}'
     )
     await writeFile(path.join(distDir, 'assets/font.woff2'), 'font-data')
+    await writeFile(path.join(distDir, 'favicon.svg'), '<svg></svg>')
+    await writeFile(path.join(distDir, 'manifest.webmanifest'), '{"name":"Vibe Forge Web"}')
+    await writeFile(path.join(distDir, 'sw.js'), 'self.addEventListener("fetch", () => {})')
 
     const app = new Koa()
     await mountRoutes(
@@ -89,5 +92,28 @@ describe('ui static routing', () => {
     const assetBody = await assetResponse.text()
     expect(assetResponse.status).toBe(200)
     expect(assetBody).toBe('font-data')
+  })
+
+  it('serves root static files before falling back to the spa shell', async () => {
+    const manifestResponse = await fetch(`${baseUrl}/ui/manifest.webmanifest`)
+    const manifestBody = await manifestResponse.text()
+    expect(manifestResponse.status).toBe(200)
+    expect(manifestBody).toBe('{"name":"Vibe Forge Web"}')
+
+    const workerResponse = await fetch(`${baseUrl}/ui/sw.js`)
+    const workerBody = await workerResponse.text()
+    expect(workerResponse.status).toBe(200)
+    expect(workerResponse.headers.get('cache-control')).toContain('no-cache')
+    expect(workerBody).toBe('self.addEventListener("fetch", () => {})')
+
+    const routeResponse = await fetch(`${baseUrl}/ui/session/example`)
+    const routeBody = await routeResponse.text()
+    expect(routeResponse.status).toBe(200)
+    expect(routeBody).toContain('<body>ok</body>')
+
+    const indexResponse = await fetch(`${baseUrl}/ui/index.html`)
+    const indexBody = await indexResponse.text()
+    expect(indexResponse.status).toBe(200)
+    expect(indexBody).toContain('window.__VF_PROJECT_AI_RUNTIME_ENV__=')
   })
 })

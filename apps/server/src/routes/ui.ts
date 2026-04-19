@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 import Router from '@koa/router'
@@ -9,6 +9,24 @@ const replaceBase = (content: string, base: string, placeholder: string) => {
     return content
   }
   return content.split(placeholder).join(base)
+}
+
+const resolveStaticPath = (distPath: string, requestPath: string) => {
+  const relativePath = requestPath.replace(/^\/+/, '')
+  if (!relativePath || relativePath === 'index.html' || relativePath.includes('\0')) {
+    return null
+  }
+
+  const absolutePath = path.resolve(distPath, relativePath)
+  const pathFromRoot = path.relative(distPath, absolutePath)
+  if (pathFromRoot.startsWith('..') || path.isAbsolute(pathFromRoot)) {
+    return null
+  }
+
+  return {
+    absolutePath,
+    relativePath
+  }
 }
 
 export interface ClientStaticOptions {
@@ -26,6 +44,24 @@ export const uiRouter = ({
 }: ClientStaticOptions) => {
   const router = new Router()
   let cachedIndexHtml: string | null = null
+
+  const sendStaticFile = async (ctx: Router.RouterContext, requestPath: string) => {
+    const resolved = resolveStaticPath(distPath, requestPath)
+    if (resolved == null) return false
+
+    const fileStat = await stat(resolved.absolutePath).catch(() => null)
+    if (fileStat == null || !fileStat.isFile()) return false
+
+    if (resolved.relativePath === 'sw.js') {
+      ctx.set('Cache-Control', 'no-cache')
+    }
+    if (resolved.relativePath.endsWith('.webmanifest')) {
+      ctx.type = 'application/manifest+json'
+    }
+
+    await send(ctx, resolved.relativePath, { root: distPath })
+    return true
+  }
 
   const loadIndexHtml = async () => {
     if (cachedIndexHtml) return cachedIndexHtml
@@ -74,7 +110,12 @@ export const uiRouter = ({
   }
 
   router.get('/', handleIndex)
-  router.get(':path(.*)', handleIndex)
+  router.get(':path(.*)', async (ctx) => {
+    const requestPath = ctx.params.path ?? ''
+    if (await sendStaticFile(ctx, requestPath)) return
+
+    await handleIndex(ctx)
+  })
 
   return router
 }

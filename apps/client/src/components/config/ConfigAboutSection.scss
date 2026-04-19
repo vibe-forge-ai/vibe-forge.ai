@@ -53,8 +53,14 @@
   color: var(--sub-text-color);
 }
 
-.config-about__app-version {
+.config-about__app-version,
+.config-about__app-server-version,
+.config-about__app-commit {
   color: var(--text-color);
+}
+
+.config-about__app-version {
+  cursor: default;
 }
 
 .config-about__primary {

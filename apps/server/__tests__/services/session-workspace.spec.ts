@@ -221,6 +221,32 @@ describe('session workspace service', () => {
     }
   })
 
+  it('uses workspace project environment scripts when the primary checkout does not have them', async () => {
+    const { provisionSessionWorkspace } = await import('#~/services/session/workspace.js')
+    db.createSession('Workspace Env', 'sess-workspace-env')
+
+    await writeFile(
+      path.join(workspaceRoot, '.ai.config.json'),
+      `${JSON.stringify({ conversation: { worktreeEnvironment: 'default' } }, null, 2)}\n`,
+      'utf8'
+    )
+    const environmentDir = path.join(workspaceRoot, '.ai', 'env', 'default')
+    await mkdir(environmentDir, { recursive: true })
+    await writeFile(
+      path.join(environmentDir, getBaseScriptFileName('create')),
+      buildScriptContent(
+        'printf "workspace:%s\\n" "$VF_WORKTREE_ENV" > workspace-env.log\n',
+        'Set-Content -Path workspace-env.log -Value "workspace:$($env:VF_WORKTREE_ENV)"\n'
+      ),
+      'utf8'
+    )
+
+    const workspace = await provisionSessionWorkspace('sess-workspace-env')
+    const log = await readFile(path.join(workspace.workspaceFolder, 'workspace-env.log'), 'utf8')
+
+    expect(log.trim()).toBe('workspace:default')
+  })
+
   it('saves windows-specific worktree environment scripts as PowerShell files', async () => {
     const {
       getWorktreeEnvironment,

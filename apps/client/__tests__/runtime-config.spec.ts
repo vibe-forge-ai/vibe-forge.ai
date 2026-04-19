@@ -1,9 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getServerHostEnv, resolveDevDocumentTitle } from '#~/runtime-config'
+import {
+  SERVER_BASE_URL_STORAGE_KEY,
+  clearStoredServerBaseUrl,
+  createServerUrl,
+  getServerBaseUrl,
+  getServerHostEnv,
+  normalizeServerBaseUrl,
+  resolveDevDocumentTitle,
+  setStoredServerBaseUrl
+} from '#~/runtime-config'
 
 const getGlobalScope = () => (
-  globalThis as { __VF_PROJECT_AI_RUNTIME_ENV__?: { __VF_PROJECT_AI_SERVER_HOST__: string } }
+  globalThis as {
+    __VF_PROJECT_AI_RUNTIME_ENV__?: {
+      __VF_PROJECT_AI_CLIENT_MODE__?: string
+      __VF_PROJECT_AI_SERVER_HOST__?: string
+      __VF_PROJECT_AI_SERVER_PORT__?: string
+    }
+  }
 )
 
 const setRuntimeServerHost = (host: string) => {
@@ -14,6 +29,28 @@ const setRuntimeServerHost = (host: string) => {
 
 const clearRuntimeEnv = () => {
   delete getGlobalScope().__VF_PROJECT_AI_RUNTIME_ENV__
+}
+
+const setRuntimeEnv = (env: NonNullable<ReturnType<typeof getGlobalScope>['__VF_PROJECT_AI_RUNTIME_ENV__']>) => {
+  getGlobalScope().__VF_PROJECT_AI_RUNTIME_ENV__ = env
+}
+
+const createStorage = (): Storage => {
+  const values = new Map<string, string>()
+  return {
+    get length() {
+      return values.size
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(key) ?? null,
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      values.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    }
+  }
 }
 
 describe('resolveDevDocumentTitle', () => {
@@ -49,6 +86,7 @@ describe('resolveDevDocumentTitle', () => {
 describe('getServerHostEnv', () => {
   afterEach(() => {
     clearRuntimeEnv()
+    clearStoredServerBaseUrl()
   })
 
   it('ignores unspecified listen addresses for browser requests', () => {
@@ -61,5 +99,41 @@ describe('getServerHostEnv', () => {
   it('returns a concrete runtime host', () => {
     setRuntimeServerHost(' 192.168.31.125 ')
     expect(getServerHostEnv()).toBe('192.168.31.125')
+  })
+})
+
+describe('server base URL helpers', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage())
+  })
+
+  afterEach(() => {
+    clearRuntimeEnv()
+    clearStoredServerBaseUrl()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('normalizes backend addresses with optional paths', () => {
+    expect(normalizeServerBaseUrl(' http://localhost:8787/ ')).toBe('http://localhost:8787')
+    expect(normalizeServerBaseUrl('https://api.example.com/vf/')).toBe('https://api.example.com/vf')
+    expect(normalizeServerBaseUrl('ftp://api.example.com')).toBeUndefined()
+  })
+
+  it('uses the stored backend address only in standalone client mode', () => {
+    localStorage.setItem(SERVER_BASE_URL_STORAGE_KEY, 'https://standalone.example.com')
+    setRuntimeEnv({
+      __VF_PROJECT_AI_CLIENT_MODE__: 'standalone',
+      __VF_PROJECT_AI_SERVER_HOST__: 'server.example.com',
+      __VF_PROJECT_AI_SERVER_PORT__: '8787'
+    })
+
+    expect(getServerBaseUrl()).toBe('https://standalone.example.com')
+    expect(createServerUrl('/api/auth/status')).toBe('https://standalone.example.com/api/auth/status')
+  })
+
+  it('persists normalized standalone server addresses', () => {
+    expect(setStoredServerBaseUrl('http://localhost:8787/')).toBe('http://localhost:8787')
+    expect(localStorage.getItem(SERVER_BASE_URL_STORAGE_KEY)).toBe('http://localhost:8787')
   })
 })

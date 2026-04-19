@@ -86,6 +86,22 @@ export const verifySessionToken = async (env: ServerEnv, token?: string | null) 
   }
 }
 
+export const getBearerTokenFromHeader = (authorizationHeader?: string | string[] | null) => {
+  const headerValue = Array.isArray(authorizationHeader) ? authorizationHeader[0] : authorizationHeader
+  const normalized = headerValue?.trim()
+  if (normalized == null || normalized === '') {
+    return undefined
+  }
+
+  const [scheme, ...tokenParts] = normalized.split(/\s+/)
+  if (scheme?.toLowerCase() !== 'bearer') {
+    return undefined
+  }
+
+  const token = tokenParts.join(' ').trim()
+  return token === '' ? undefined : token
+}
+
 export const setAuthCookie = (
   ctx: Koa.Context,
   token: string,

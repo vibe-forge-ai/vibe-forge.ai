@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
-import { getServerHost, getServerPort } from '#~/api/base.js'
+import { createApiUrl } from '#~/api/base.js'
 
 import { DEFAULT_SELECT_VALUE, DEFAULT_STARTUP_FORM_VALUES } from './@utils/startup-options'
 import { AutomationEmptyLanding } from './AutomationEmptyLanding'
@@ -26,10 +26,6 @@ interface RuleFormPanelProps {
   onSubmit: (payload: Partial<AutomationRule>, immediateRun: boolean) => Promise<void>
   onCancel: () => void
 }
-
-const serverHost = getServerHost()
-const serverPort = getServerPort()
-const serverUrl = `http://${serverHost}:${serverPort}`
 
 const normalizeSelectText = (value?: string) => {
   const normalized = value?.trim()
@@ -88,7 +84,9 @@ export function RuleFormPanel({
 
   const getWebhookUrl = useCallback((triggerId?: string, webhookKey?: string) => {
     if (!triggerId || !webhookKey) return ''
-    return `${serverUrl}/api/automation/webhook/${triggerId}?key=${webhookKey}`
+    const url = createApiUrl(`/api/automation/webhook/${triggerId}`)
+    url.searchParams.set('key', webhookKey)
+    return url.toString()
   }, [])
 
   useEffect(() => {

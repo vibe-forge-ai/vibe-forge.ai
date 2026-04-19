@@ -13,6 +13,7 @@ export {
   AUTH_COOKIE_NAME,
   clearAuthCookie,
   createSessionToken,
+  getBearerTokenFromHeader,
   getCookieFromHeader,
   setAuthCookie,
   verifySessionToken

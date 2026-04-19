@@ -11,7 +11,8 @@ import { authMiddleware } from './auth'
 export async function initMiddlewares(app: Koa, env: ServerEnv = loadEnv()) {
   app.use(cors({
     origin: (ctx) => ctx.get('Origin') || '*',
-    credentials: true
+    credentials: true,
+    allowHeaders: ['Content-Type', 'Authorization']
   }))
   app.use(apiEnvelopeMiddleware())
   app.use(bodyParser())

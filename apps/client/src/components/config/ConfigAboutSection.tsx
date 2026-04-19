@@ -1,15 +1,21 @@
 import './ConfigAboutSection.scss'
 
 import type { AboutInfo } from '@vibe-forge/types'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import { getClientCommitHash, getClientVersion } from '#~/client-build-info'
 
 export const AboutSection = ({ value }: { value?: AboutInfo }) => {
   const { t } = useTranslation()
+  const [showCommitHash, setShowCommitHash] = useState(false)
   const aboutInfo = (value != null && typeof value === 'object')
     ? value
     : undefined
   const urls = aboutInfo?.urls
-  const version = aboutInfo?.version
+  const serverVersion = aboutInfo?.version
+  const clientVersion = getClientVersion()
+  const clientCommitHash = getClientCommitHash()
   const lastReleaseAt = aboutInfo?.lastReleaseAt
 
   return (
@@ -24,8 +30,20 @@ export const AboutSection = ({ value }: { value?: AboutInfo }) => {
               {t('config.about.software')}
             </div>
             <div className='config-about__app-meta'>
-              <span className='config-about__app-version'>
-                {t('config.about.version')}: {version ?? t('config.about.unknown')}
+              <span
+                className='config-about__app-version'
+                title={t('config.about.commitHash')}
+                onDoubleClick={() => setShowCommitHash(true)}
+              >
+                {t('config.about.clientVersion')}: {clientVersion}
+              </span>
+              {showCommitHash && (
+                <span className='config-about__app-commit'>
+                  {t('config.about.commitHash')}: {clientCommitHash ?? t('config.about.unknown')}
+                </span>
+              )}
+              <span className='config-about__app-server-version'>
+                {t('config.about.serverVersion')}: {serverVersion ?? t('config.about.unknown')}
               </span>
               <span className='config-about__app-date'>
                 {lastReleaseAt ?? t('config.about.unknown')}

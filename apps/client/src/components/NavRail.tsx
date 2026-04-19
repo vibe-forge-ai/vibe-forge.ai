@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { themeAtom } from '../store'
 import { NavRailCompact } from './NavRailCompact'
+import { useNavRailAccountActions } from './nav-rail-account-actions'
 import {
   buildCompactLanguageActions,
   buildCompactMoreActions,
@@ -33,6 +34,7 @@ export function NavRail({
   const navigate = useNavigate()
   const location = useLocation()
   const { isTouchInteraction } = useResponsiveLayout()
+  const { accountItems, accountMenuLabel, compactAccountActions, showAccountMenu } = useNavRailAccountActions()
 
   const currentPath = location.pathname
   const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
@@ -52,14 +54,23 @@ export function NavRail({
 
   const navItems = React.useMemo(() => buildNavItems({ currentPath, t }), [currentPath, t])
 
-  const compactMoreActions = React.useMemo(() =>
-    buildCompactMoreActions({
+  const compactMoreActions = React.useMemo(() => [
+    ...buildCompactMoreActions({
       currentPath,
       navigate,
       onOpenSidebar,
       showSidebar,
       t
-    }), [currentPath, navigate, onOpenSidebar, showSidebar, t])
+    }),
+    ...compactAccountActions
+  ], [
+    compactAccountActions,
+    currentPath,
+    navigate,
+    onOpenSidebar,
+    showSidebar,
+    t
+  ])
 
   const compactThemeActions = React.useMemo(() =>
     buildCompactThemeActions({
@@ -152,6 +163,25 @@ export function NavRail({
             </Dropdown>
           </span>
         </Tooltip>
+        {showAccountMenu && (
+          <Tooltip title={resolveTooltipTitle(accountMenuLabel)} placement='right'>
+            <span>
+              <Dropdown
+                menu={{
+                  items: accountItems
+                }}
+                placement='topRight'
+                trigger={['click']}
+              >
+                <Button
+                  type='text'
+                  className='nav-item'
+                  icon={<span className='material-symbols-rounded'>account_circle</span>}
+                />
+              </Dropdown>
+            </span>
+          </Tooltip>
+        )}
         <Tooltip title={resolveTooltipTitle(t('common.settings'))} placement='right'>
           <span>
             <Button
