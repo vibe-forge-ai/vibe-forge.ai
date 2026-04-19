@@ -1,31 +1,18 @@
 import { ChatTerminalView } from '#~/components/chat/terminal/ChatTerminalView.js'
 import { WorkspaceFileEditorView } from '#~/components/chat/workspace-file-editor/WorkspaceFileEditorView'
+import type { ChatRouteBottomPanelState } from '#~/hooks/chat/use-chat-route-bottom-panel'
 
 export function ChatRouteBottomPanel({
+  bottomPanel,
   isRendered,
   isVisible,
-  onCloseFileEditor,
-  onCloseTerminal,
-  onCloseWorkspaceFileTab,
-  onSelectWorkspaceFile,
-  openWorkspaceFilePaths,
-  selectedWorkspaceFilePath,
   sessionId,
-  shouldShowFileEditor,
-  shouldShowTerminal,
   terminalSessionId
 }: {
+  bottomPanel: ChatRouteBottomPanelState
   isRendered: boolean
   isVisible: boolean
-  onCloseFileEditor: () => void
-  onCloseTerminal: () => void
-  onCloseWorkspaceFileTab: (path: string) => void
-  onSelectWorkspaceFile: (path: string) => void
-  openWorkspaceFilePaths: string[]
-  selectedWorkspaceFilePath: string | null
   sessionId?: string
-  shouldShowFileEditor: boolean
-  shouldShowTerminal: boolean
   terminalSessionId: string
 }) {
   if (!isRendered) {
@@ -34,23 +21,26 @@ export function ChatRouteBottomPanel({
 
   return (
     <>
-      {shouldShowTerminal &&
+      {bottomPanel.shouldShowTerminal &&
         <ChatTerminalView
           key={terminalSessionId}
           isOpen={isVisible}
           sessionId={terminalSessionId}
-          onClose={onCloseTerminal}
+          onClose={bottomPanel.handleCloseTerminal}
         />}
-      {shouldShowFileEditor && selectedWorkspaceFilePath != null &&
+      {bottomPanel.shouldShowFileEditor && bottomPanel.selectedWorkspaceFilePath != null &&
         <WorkspaceFileEditorView
-          key={selectedWorkspaceFilePath}
+          key={bottomPanel.selectedWorkspaceFilePath}
           isOpen={isVisible}
-          openPaths={openWorkspaceFilePaths}
-          path={selectedWorkspaceFilePath}
+          openPaths={bottomPanel.openWorkspaceFilePaths}
+          path={bottomPanel.selectedWorkspaceFilePath}
           sessionId={sessionId}
-          onClose={onCloseFileEditor}
-          onClosePath={onCloseWorkspaceFileTab}
-          onSelectPath={onSelectWorkspaceFile}
+          onClose={bottomPanel.handleCloseWorkspaceFile}
+          onCloseAllPaths={bottomPanel.handleCloseAllWorkspaceFileTabs}
+          onCloseOtherPaths={bottomPanel.handleCloseOtherWorkspaceFileTabs}
+          onClosePath={bottomPanel.handleCloseWorkspaceFileTab}
+          onClosePathsToRight={bottomPanel.handleCloseWorkspaceFileTabsToRight}
+          onSelectPath={bottomPanel.handleSelectWorkspaceFile}
         />}
     </>
   )

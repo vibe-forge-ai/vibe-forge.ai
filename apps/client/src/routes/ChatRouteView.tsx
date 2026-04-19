@@ -79,29 +79,17 @@ export function ChatRouteView({ session }: { session?: Session }) {
   const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const resolvedActiveView = session?.id != null ? activeView : 'history'
   const terminalSessionId = session?.id ?? WORKSPACE_TERMINAL_SESSION_ID
-  const {
-    handleCloseTerminal,
-    handleCloseWorkspaceFile,
-    handleCloseWorkspaceFileTab,
-    handleOpenWorkspaceFile,
-    handleSelectWorkspaceFile,
-    handleToggleTerminal,
-    openWorkspaceFilePaths,
-    selectedWorkspaceFilePath,
-    shouldShowBottomPanel,
-    shouldShowFileEditor,
-    shouldShowTerminal
-  } = useChatRouteBottomPanel({ isTerminalOpen, setIsTerminalOpen })
+  const bottomPanel = useChatRouteBottomPanel({ isTerminalOpen, session, setIsTerminalOpen })
   const shouldShowWorkspaceDrawer = isWorkspaceDrawerOpen && !isCompactLayout
   const { isRendered: isBottomPanelRendered, isVisible: isBottomPanelVisible } = useTerminalDockVisibility(
-    shouldShowBottomPanel
+    bottomPanel.shouldShowBottomPanel
   )
   useChatRouteDeepLinkView({ activeView, setActiveView, targetMessageId, targetToolUseId })
   return (
     <div
       className={`chat-route-layout ${shouldShowWorkspaceDrawer ? 'has-workspace-drawer' : ''} ${
-        shouldShowTerminal ? 'has-terminal' : ''
-      } ${shouldShowBottomPanel ? 'has-bottom-dock' : ''}`}
+        bottomPanel.shouldShowTerminal ? 'has-terminal' : ''
+      } ${bottomPanel.shouldShowBottomPanel ? 'has-bottom-dock' : ''}`}
     >
       <div className='chat-route-layout__main'>
         <div
@@ -118,12 +106,12 @@ export function ChatRouteView({ session }: { session?: Session }) {
             lastMessage={session?.lastMessage}
             lastUserMessage={session?.lastUserMessage}
             activeView={resolvedActiveView}
-            isTerminalOpen={shouldShowTerminal}
+            isTerminalOpen={bottomPanel.shouldShowTerminal}
             isWorkspaceDrawerOpen={shouldShowWorkspaceDrawer}
             onCreateSession={() => void navigate('/')}
             onOpenSidebar={() => setIsMobileSidebarOpen(true)}
             onViewChange={setActiveView}
-            onToggleTerminal={handleToggleTerminal}
+            onToggleTerminal={bottomPanel.handleToggleTerminal}
             onToggleWorkspaceDrawer={() => setWorkspaceDrawerOpen(!isWorkspaceDrawerOpen)}
           />
           {resolvedActiveView === 'history' && (
@@ -171,25 +159,18 @@ export function ChatRouteView({ session }: { session?: Session }) {
         </div>
         {shouldShowWorkspaceDrawer && (
           <ChatWorkspaceDrawer
-            selectedFilePath={selectedWorkspaceFilePath}
+            selectedFilePath={bottomPanel.selectedWorkspaceFilePath}
             sessionId={session?.id}
-            onOpenFile={handleOpenWorkspaceFile}
+            onOpenFile={bottomPanel.handleOpenWorkspaceFile}
           />
         )}
       </div>
       <ChatRouteBottomPanel
+        bottomPanel={bottomPanel}
         isRendered={isBottomPanelRendered}
         isVisible={isBottomPanelVisible}
-        openWorkspaceFilePaths={openWorkspaceFilePaths}
-        selectedWorkspaceFilePath={selectedWorkspaceFilePath}
         sessionId={session?.id}
-        shouldShowFileEditor={shouldShowFileEditor}
-        shouldShowTerminal={shouldShowTerminal}
         terminalSessionId={terminalSessionId}
-        onCloseFileEditor={handleCloseWorkspaceFile}
-        onCloseWorkspaceFileTab={handleCloseWorkspaceFileTab}
-        onCloseTerminal={handleCloseTerminal}
-        onSelectWorkspaceFile={handleSelectWorkspaceFile}
       />
     </div>
   )

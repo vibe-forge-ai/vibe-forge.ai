@@ -31,13 +31,13 @@
 
   &.is-fullscreen {
     position: absolute;
-    inset: 0;
+    inset: var(--dock-panel-fullscreen-inset-top, 0) 0 0 0;
     z-index: 30;
     flex: 1 1 auto;
     width: auto;
     height: auto;
     max-height: none;
-    border-top-color: transparent;
+    border-top-color: var(--dock-panel-border-color, var(--border-color));
     transform: none;
     transform-origin: bottom center;
     animation: dock-panel-fullscreen-enter .22s cubic-bezier(.22, 1, .36, 1);

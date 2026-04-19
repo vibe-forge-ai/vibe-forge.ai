@@ -2,7 +2,13 @@ import { createReadStream } from 'node:fs'
 
 import Router from '@koa/router'
 
-import type { ChatMessage, ChatMessageContent, SessionQueuedMessageMode, WSEvent } from '@vibe-forge/core'
+import type {
+  ChatMessage,
+  ChatMessageContent,
+  SessionQueuedMessageMode,
+  SessionWorkspaceFileState,
+  WSEvent
+} from '@vibe-forge/core'
 import type { GitBranchKind, SessionInfo, SessionInitInfo } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
@@ -133,15 +139,16 @@ export function sessionsRouter(): Router {
 
   router.patch('/:id', (ctx) => {
     const { id } = ctx.params as { id: string }
-    const { title, isStarred, isArchived, tags } = ctx.request.body as {
+    const { title, isStarred, isArchived, tags, workspaceFileState } = ctx.request.body as {
       title?: string
       isStarred?: boolean
       isArchived?: boolean
       tags?: string[]
+      workspaceFileState?: SessionWorkspaceFileState
     }
 
-    if (title !== undefined || isStarred !== undefined) {
-      updateAndNotifySession(id, { title, isStarred })
+    if (title !== undefined || isStarred !== undefined || workspaceFileState !== undefined) {
+      updateAndNotifySession(id, { title, isStarred, workspaceFileState })
     }
 
     if (isArchived !== undefined) {

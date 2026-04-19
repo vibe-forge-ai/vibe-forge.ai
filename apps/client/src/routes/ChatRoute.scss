@@ -1,4 +1,6 @@
 .chat-route-layout {
+  --dock-panel-fullscreen-inset-top: 40px;
+
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -8,6 +10,10 @@
   overflow: hidden;
   background-color: var(--bg-color);
   position: relative;
+}
+
+.chat-route-layout:has(.chat-header.is-compact) {
+  --dock-panel-fullscreen-inset-top: 54px;
 }
 
 .chat-route-layout__main {

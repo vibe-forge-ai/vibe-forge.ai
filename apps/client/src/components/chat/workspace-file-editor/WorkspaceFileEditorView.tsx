@@ -25,7 +25,10 @@ import { getWorkspaceFileEditorLanguage, isWorkspaceImagePreviewPath } from './w
 export function WorkspaceFileEditorView({
   isOpen,
   onClose,
+  onCloseAllPaths,
+  onCloseOtherPaths,
   onClosePath,
+  onClosePathsToRight,
   onSelectPath,
   openPaths,
   path,
@@ -33,7 +36,10 @@ export function WorkspaceFileEditorView({
 }: {
   isOpen: boolean
   onClose: () => void
+  onCloseAllPaths: () => void
+  onCloseOtherPaths: (path: string) => void
   onClosePath: (path: string) => void
+  onClosePathsToRight: (path: string) => void
   onSelectPath: (path: string) => void
   openPaths: string[]
   path: string
@@ -96,7 +102,10 @@ export function WorkspaceFileEditorView({
         <WorkspaceFileTabs
           activePath={path}
           paths={openPaths.length > 0 ? openPaths : [path]}
+          onCloseAllPaths={onCloseAllPaths}
+          onCloseOtherPaths={onCloseOtherPaths}
           onClosePath={onClosePath}
+          onClosePathsToRight={onClosePathsToRight}
           onSelectPath={onSelectPath}
         />
       }
@@ -142,25 +151,10 @@ export function WorkspaceFileEditorView({
               onMount={handleMount}
               options={{
                 automaticLayout: true,
-                contextmenu: true,
-                folding: false,
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 fontSize: 12,
-                glyphMargin: false,
-                lineDecorationsWidth: 2,
                 lineHeight: 18,
-                lineNumbersMinChars: 2,
-                minimap: { enabled: false },
-                overviewRulerBorder: false,
-                padding: { top: 0, bottom: 10 },
-                renderLineHighlight: 'line',
-                scrollBeyondLastLine: false,
-                scrollbar: {
-                  alwaysConsumeMouseWheel: false,
-                  useShadows: false
-                },
-                tabSize: 2,
-                wordWrap: 'off'
+                tabSize: 2
               }}
             />
           </div>

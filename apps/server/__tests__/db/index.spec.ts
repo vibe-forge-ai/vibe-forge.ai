@@ -30,7 +30,12 @@ describe('sqliteDb', () => {
       isStarred: true,
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     db.updateSessionTags(root.id, ['alpha', 'beta', 'alpha'])
 
@@ -48,7 +53,12 @@ describe('sqliteDb', () => {
       status: 'running',
       model: 'gpt-test',
       adapter: 'adapter-test',
-      permissionMode: 'plan'
+      permissionMode: 'plan',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     expect(stored?.tags?.slice().sort()).toEqual(['alpha', 'beta'])
     expect(db.getMessages(root.id)).toEqual([{ role: 'user', content: 'hello' }])
