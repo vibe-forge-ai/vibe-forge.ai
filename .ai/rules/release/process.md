@@ -38,3 +38,40 @@
 - 先逐包检查 registry 当前版本
 - 已经在 registry 上出现目标版本的包，不要重复发布
 - 分别核对 npm registry、远端分支和远端 tag，缺什么补什么
+
+## CLI 发布后的 Homebrew tap 同步
+
+`@vibe-forge/cli` 正式版发布成功并能通过 `npm view @vibe-forge/cli@<version>` 查到后，需要同步 Homebrew tap：
+
+1. 更新 tap formula：
+
+   ```bash
+   pnpm tools homebrew-tap sync-cli --version <version>
+   ```
+
+2. 在 tap submodule 内格式检查、提交并推送：
+
+   ```bash
+   brew style infra/homebrew-tap/Formula/vibe-forge.rb
+   git -C infra/homebrew-tap status
+   git -C infra/homebrew-tap add Formula/vibe-forge.rb
+   git -C infra/homebrew-tap commit -m "chore: update vibe-forge to <version>"
+   git -C infra/homebrew-tap push origin main
+   ```
+
+3. 用正式 tap 路径验证并回到主仓库提交 submodule 指针：
+
+   ```bash
+   brew update
+   brew audit --strict vibe-forge-ai/tap/vibe-forge
+   brew reinstall --build-from-source vibe-forge-ai/tap/vibe-forge
+   brew test vibe-forge-ai/tap/vibe-forge
+   git add infra/homebrew-tap
+   ```
+
+4. 如本次 CLI 发布已经修复 npm bin shebang，删除 `Formula/vibe-forge.rb` 里的临时 `inreplace "cli.js"` 补丁，并随同 tap 更新一起提交。
+
+注意：
+
+- `sync-cli` 会从 npm tarball 计算真实 `sha256`，所以必须在 npm 包已经发布后执行。
+- 只发 alpha / beta 时，除非明确要让 Homebrew 跟进预发布版本，否则不要更新 stable formula。

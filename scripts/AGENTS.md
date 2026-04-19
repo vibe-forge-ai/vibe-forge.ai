@@ -30,6 +30,9 @@
   - 跑消息级 `编辑 / 撤回 / 分叉 / 复制原文` 的固定质量检查组合，并打印真实 Chrome 回归清单
 - `pnpm tools commitmsg-check [base] [head]`
   - 校验一个 git range 里的 commit title 是否符合 Conventional Commit；GitHub 默认 merge commit 例外
+- `pnpm tools homebrew-tap sync-cli --version <version>`
+  - 根据已发布的 `@vibe-forge/cli@<version>` npm tarball 更新 `infra/homebrew-tap/Formula/vibe-forge.rb` 的 `url` 和 `sha256`
+  - CLI 发版后执行；随后在 `infra/homebrew-tap` 内提交并 push，再回到主仓库提交 submodule 指针
 - `pnpm tools publish-plan -- [args]`
   - 透传到 `scripts/publish-plan-core.mjs`
   - 发布规则、检查清单和 tag 约定统一见 `.ai/rules/RELEASE.md`
