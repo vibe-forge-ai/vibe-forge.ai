@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- dependency normalization and graph expansion share the same local helpers */
 import { readFile } from 'node:fs/promises'
 
 import fm from 'front-matter'

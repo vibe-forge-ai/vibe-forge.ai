@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- prompt asset selection coordinates routing, overlays, and dependency expansion */
 import type {
   Definition,
   Filter,

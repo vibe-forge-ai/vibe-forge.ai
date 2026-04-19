@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adapter asset plan scenarios share setup helpers and assertions */
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'

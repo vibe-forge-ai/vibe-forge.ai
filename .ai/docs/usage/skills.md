@@ -137,30 +137,7 @@ skills:
 
 禁用后，本地缺失的依赖会直接报错。
 
-## Registry 协议
-
-Registry 需要兼容 Vercel Skills Hub 的两个接口：
-
-```text
-GET /api/search?q=<skill-name>&limit=10
-GET /api/download/<owner>/<repo>/<skill-slug>
-```
-
-搜索接口返回的 skill 项应包含可解析的 `source` 和 skill id 信息。下载接口返回文件列表，且必须包含 `SKILL.md`。
-
-Vibe Forge 会拒绝下载包里的绝对路径和 `..` 路径，避免远程文件写出缓存目录。
-
-## 缓存位置
-
-远程依赖会写入项目数据资产目录的 cache：
-
-```text
-.ai/caches/skill-dependencies/
-```
-
-缓存目录按 registry、source 和 skill slug 分组。重新下载同一个远程依赖时，会刷新对应缓存目录。
-
-这个过程不会写入用户真实 home，也不会修改 `.ai/skills` 下的手写 skill。
+Registry 协议、缓存目录与安全约束见 [Skills registry 细节](./skills/registry.md)。
 
 ## 与选择规则的关系
 

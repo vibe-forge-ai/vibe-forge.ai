@@ -1,5 +1,7 @@
+/* eslint-disable max-lines -- registry install logic keeps URL resolution, locking, and cache writes together */
 import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import type { Config } from '@vibe-forge/types'
@@ -169,7 +171,7 @@ const resolveRegistrySkillTarget = async (
 
 const toSafeRelativePath = (filePath: string) => {
   const normalized = filePath.replace(/\\/g, '/')
-  if (normalized.startsWith('/') || normalized.split('/').some(segment => segment === '..')) {
+  if (normalized.startsWith('/') || normalized.split('/').includes('..')) {
     throw new Error(`Unsafe skill dependency file path ${filePath}`)
   }
   return normalized
