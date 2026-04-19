@@ -106,6 +106,8 @@ Examples:
   vf run -A claude "读取 README 并总结"
   vf run --workspace billing "修复订单状态回滚问题"
   vf run --include-skill vf-cli-quickstart "介绍一下 vf CLI 怎么恢复会话"
+  vf "帮我创建一个前端评审实体"
+  vf "给 frontend-reviewer 加上移动端布局记忆"
   vf list --view default
   vf --resume <sessionId>
 
