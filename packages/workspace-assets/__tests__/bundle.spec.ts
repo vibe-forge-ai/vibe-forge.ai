@@ -103,6 +103,35 @@ describe('resolveWorkspaceAssetBundle', () => {
     }
   })
 
+  it('loads local and dev rule files as workspace rules', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/rules/team.md'),
+      '---\ndescription: 团队规则\n---\n团队共享约束'
+    )
+    await writeDocument(
+      join(workspace, '.ai/rules/preference.local.md'),
+      '---\ndescription: 本地偏好\nalwaysApply: true\n---\n使用当前用户偏好的输出风格'
+    )
+    await writeDocument(
+      join(workspace, '.ai/rules/debug.dev.md'),
+      '---\ndescription: 本地调试\nalwaysApply: true\n---\n优先保留调试证据'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.rules.map(asset => asset.displayName).sort()).toEqual(['debug.dev', 'preference.local', 'team'])
+    expect(bundle.rules.find(asset => asset.displayName === 'preference.local')?.payload.definition.body)
+      .toContain('当前用户偏好')
+    expect(bundle.rules.find(asset => asset.displayName === 'debug.dev')?.payload.definition.attributes.alwaysApply)
+      .toBe(true)
+  })
+
   it('installs selected missing skill dependencies from an API-compatible registry cache', async () => {
     const workspace = await createWorkspace()
     const fetchMock = vi.fn(async (url: string) => {
