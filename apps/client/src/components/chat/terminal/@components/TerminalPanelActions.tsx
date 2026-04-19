@@ -7,24 +7,19 @@ import type { TerminalShellKind } from '@vibe-forge/types'
 import { TERMINAL_SHELL_KINDS } from '../@utils/terminal-panes'
 
 export function TerminalPanelActions({
-  isFullscreen,
   isManagerToggleVisible,
   isManagerVisible,
   terminalCount,
   onAddTerminal,
-  onToggleFullscreen,
   onToggleManager
 }: {
-  isFullscreen: boolean
   isManagerToggleVisible: boolean
   isManagerVisible: boolean
   terminalCount: number
   onAddTerminal: (shellKind?: TerminalShellKind) => void
-  onToggleFullscreen: () => void
   onToggleManager: () => void
 }) {
   const { t } = useTranslation()
-  const fullscreenLabel = isFullscreen ? t('chat.terminal.exitFullscreen') : t('chat.terminal.enterFullscreen')
   const managerLabel = isManagerVisible ? t('chat.terminal.hideManager') : t('chat.terminal.showManager')
   const shellMenuItems: MenuProps['items'] = TERMINAL_SHELL_KINDS.map(shellKind => ({
     key: shellKind,
@@ -75,14 +70,6 @@ export function TerminalPanelActions({
           )}
         </Button>
       )}
-      <Button
-        type='text'
-        className='dock-panel__close-btn chat-terminal-view__fullscreen-btn'
-        icon={<span className='material-symbols-rounded'>{isFullscreen ? 'fullscreen_exit' : 'fullscreen'}</span>}
-        title={fullscreenLabel}
-        aria-label={fullscreenLabel}
-        onClick={onToggleFullscreen}
-      />
     </div>
   )
 }

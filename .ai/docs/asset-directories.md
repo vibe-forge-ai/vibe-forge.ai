@@ -111,9 +111,11 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - `.ai.config.json` / `.ai.config.yaml` / `.ai.config.yml`
 - `.ai.dev.config.*`
-- 这些配置文件位于项目根或 `./infra/` 的规则
+- 这些配置文件默认位于解析后的 workspace 根目录或 `./infra/` 的规则
 
-也就是说，当前可配置的是“数据资产目录”，不是“配置文件文件名与位置”。
+也就是说，`__VF_PROJECT_AI_BASE_DIR__` / `__VF_PROJECT_AI_ENTITIES_DIR__` 只配置“数据资产目录”，不配置“配置文件文件名与位置”。
+
+如果你需要改配置文件目录，应单独使用 `__VF_PROJECT_CONFIG_DIR__`；否则配置读写会默认跟随解析后的 workspace 根目录。
 
 ## 使用建议
 

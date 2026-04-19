@@ -1,8 +1,10 @@
 import './DockPanel.scss'
 
-import { Button } from 'antd'
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+
+import { DockPanelHeader } from './DockPanelHeader'
+import { useDockPanelFullscreen } from './use-dock-panel-fullscreen'
 
 const DEFAULT_PANEL_HEIGHT = 240
 
@@ -17,11 +19,14 @@ const shouldIgnoreResizePointerDown = (target: HTMLElement | null) =>
 export function DockPanel({
   enterMotion = 'slide-up',
   allowResize = true,
+  allowFullscreen = false,
   children,
   className,
   closeLabel,
   defaultHeight = DEFAULT_PANEL_HEIGHT,
   footer,
+  fullscreenEnterLabel,
+  fullscreenExitLabel,
   isResizeDisabled = false,
   isOpen = true,
   maxHeight = 520,
@@ -34,6 +39,7 @@ export function DockPanel({
   actions
 }: {
   enterMotion?: 'none' | 'slide-up'
+  allowFullscreen?: boolean
   allowResize?: boolean
   actions?: ReactNode
   children: ReactNode
@@ -41,6 +47,8 @@ export function DockPanel({
   closeLabel?: string
   defaultHeight?: number
   footer?: ReactNode
+  fullscreenEnterLabel?: string
+  fullscreenExitLabel?: string
   isOpen?: boolean
   isResizeDisabled?: boolean
   maxHeight?: number
@@ -54,13 +62,14 @@ export function DockPanel({
   const panelRef = useRef<HTMLDivElement | null>(null)
   const resizeSessionRef = useRef<{ maxHeight: number; startHeight: number; startY: number } | null>(null)
   const [isResizing, setIsResizing] = useState(false)
+  const { isFullscreen, isFullscreenExiting, toggleFullscreen } = useDockPanelFullscreen()
   const [panelHeight, setPanelHeight] = useState(() => {
     const storedHeight = Number(localStorage.getItem(storageKey))
     return Number.isFinite(storedHeight) && storedHeight > 0
       ? clampPanelHeight(storedHeight, minHeight, maxHeight)
       : clampPanelHeight(defaultHeight, minHeight, maxHeight)
   })
-  const resizeEnabled = allowResize && !isResizeDisabled
+  const resizeEnabled = allowResize && !isResizeDisabled && !isFullscreen
 
   useEffect(() => {
     localStorage.setItem(storageKey, String(panelHeight))
@@ -148,39 +157,28 @@ export function DockPanel({
       className={`dock-panel ${isOpen && enterMotion === 'slide-up' ? 'is-entering-slide-up' : ''} ${
         isOpen ? 'is-open' : 'is-closing'
       } ${className ?? ''} ${isResizing ? 'is-resizing' : ''} ${resizeEnabled ? 'is-resizable' : 'is-static'} ${
-        isResizeDisabled ? 'is-resize-disabled' : ''
-      }`}
+        isResizeDisabled || isFullscreen ? 'is-resize-disabled' : ''
+      } ${isFullscreen ? 'is-fullscreen' : ''} ${isFullscreenExiting ? 'is-fullscreen-exiting' : ''}`}
       style={panelStyle as CSSProperties}
     >
-      <div
-        className={`dock-panel__resize-handle ${resizeEnabled ? 'is-resizable' : 'is-static'}`}
-        title={resizeEnabled ? resizeLabel : undefined}
-        onPointerDown={resizeEnabled ? handleResizePointerDown : undefined}
-      >
-        <div className='dock-panel__header-main'>
-          <span className='dock-panel__title'>{title}</span>
-          {meta != null && (
-            <span className='dock-panel__meta'>{meta}</span>
-          )}
-        </div>
-        <div className='dock-panel__header-spacer' />
-        {(actions != null || onClose != null) && (
-          <div className='dock-panel__header-actions'>
-            {actions}
-            {onClose != null && closeLabel != null && (
-              <Button
-                type='text'
-                className='dock-panel__close-btn'
-                data-dock-panel-no-resize='true'
-                icon={<span className='material-symbols-rounded'>close</span>}
-                title={closeLabel}
-                aria-label={closeLabel}
-                onClick={onClose}
-              />
-            )}
-          </div>
-        )}
-      </div>
+      {resizeEnabled && (
+        <div
+          className='dock-panel__resize-strip'
+          title={resizeLabel}
+          onPointerDown={handleResizePointerDown}
+        />
+      )}
+      <DockPanelHeader
+        actions={actions}
+        closeLabel={closeLabel}
+        fullscreenEnterLabel={fullscreenEnterLabel}
+        fullscreenExitLabel={fullscreenExitLabel}
+        isFullscreen={isFullscreen}
+        meta={meta}
+        title={title}
+        onClose={onClose}
+        onToggleFullscreen={allowFullscreen ? toggleFullscreen : undefined}
+      />
 
       <div className='dock-panel__body'>
         {children}

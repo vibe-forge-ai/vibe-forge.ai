@@ -10,11 +10,16 @@ import type { TerminalShellKind } from '@vibe-forge/types'
 import { DockPanel } from '#~/components/dock-panel/DockPanel'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
+import {
+  CHAT_BOTTOM_DOCK_DEFAULT_HEIGHT,
+  CHAT_BOTTOM_DOCK_HEIGHT_STORAGE_KEY,
+  CHAT_BOTTOM_DOCK_MAX_HEIGHT,
+  CHAT_BOTTOM_DOCK_MIN_HEIGHT
+} from '../bottom-dock-constants'
 import { TerminalManagerList } from './@components/TerminalManagerList'
 import type { TerminalPaneInfo } from './@components/TerminalManagerList'
 import { TerminalPane } from './@components/TerminalPane'
 import { TerminalPanelActions } from './@components/TerminalPanelActions'
-import { useTerminalFullscreen } from './@hooks/use-terminal-fullscreen'
 import {
   DEFAULT_TERMINAL_ID,
   createTerminalPane,
@@ -26,7 +31,6 @@ import {
 import type { MoveTerminalPanePlacement } from './@utils/terminal-panes'
 
 const buildTerminalPaneStorageKey = (sessionId: string) => `chatTerminalPaneIds:${sessionId}`
-const TERMINAL_HEIGHT_STORAGE_KEY = 'chatTerminalHeight'
 
 const readTerminalPanes = (sessionId: string, t: TFunction) => {
   const raw = localStorage.getItem(buildTerminalPaneStorageKey(sessionId))
@@ -58,7 +62,6 @@ export function ChatTerminalView({
   )
   const [terminalInfoById, setTerminalInfoById] = useState<Record<string, TerminalPaneInfo>>({})
   const [isManagerVisible, setIsManagerVisible] = useState(true)
-  const { isFullscreen, isFullscreenExiting, toggleFullscreen } = useTerminalFullscreen()
   const terminateHandlersRef = useRef(new Map<string, () => boolean>())
 
   useEffect(() => {
@@ -134,27 +137,26 @@ export function ChatTerminalView({
 
   return (
     <DockPanel
-      allowResize={!isCompactView && !isFullscreen}
-      className={`chat-terminal-view ${isFullscreen ? 'is-fullscreen' : ''} ${
-        isFullscreenExiting ? 'is-fullscreen-exiting' : ''
-      }`}
-      defaultHeight={isCompactView ? 208 : undefined}
+      allowFullscreen={!isCompactView}
+      allowResize={!isCompactView}
+      className='chat-terminal-view'
+      defaultHeight={isCompactView ? 208 : CHAT_BOTTOM_DOCK_DEFAULT_HEIGHT}
+      fullscreenEnterLabel={t('common.enterFullscreen')}
+      fullscreenExitLabel={t('common.exitFullscreen')}
       isOpen={isOpen}
-      isResizeDisabled={isFullscreen}
-      maxHeight={isCompactView ? 320 : 520}
+      maxHeight={isCompactView ? 320 : CHAT_BOTTOM_DOCK_MAX_HEIGHT}
+      minHeight={isCompactView ? 180 : CHAT_BOTTOM_DOCK_MIN_HEIGHT}
       title={t('chat.viewTerminal')}
       closeLabel={t('common.close')}
       resizeLabel={t('chat.terminal.resizePanel')}
-      storageKey={TERMINAL_HEIGHT_STORAGE_KEY}
+      storageKey={CHAT_BOTTOM_DOCK_HEIGHT_STORAGE_KEY}
       onClose={onClose}
       actions={
         <TerminalPanelActions
-          isFullscreen={isFullscreen}
           isManagerToggleVisible={shouldShowManagerToggle}
           isManagerVisible={isManagerVisible}
           terminalCount={panes.length}
           onAddTerminal={handleAddTerminal}
-          onToggleFullscreen={toggleFullscreen}
           onToggleManager={() => setIsManagerVisible(current => !current)}
         />
       }

@@ -1,5 +1,5 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
-import type { GitBranchKind } from '@vibe-forge/types'
+import type { GitBranchKind, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
@@ -20,6 +20,7 @@ interface CreateSessionWorkspaceBranchOptions {
 
 interface CreateSessionWorkspaceOptions {
   createWorktree?: boolean
+  worktreeEnvironment?: string
   branch?: CreateSessionWorkspaceBranchOptions
 }
 
@@ -58,7 +59,7 @@ export async function createSessionWithInitialMessage(options: {
   tags?: string[]
   model?: string
   effort?: 'low' | 'medium' | 'high' | 'max'
-  promptType?: 'spec' | 'entity'
+  promptType?: SessionPromptType
   promptName?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   systemPrompt?: string
@@ -85,8 +86,11 @@ export async function createSessionWithInitialMessage(options: {
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
-  if (model !== undefined || effort !== undefined || permissionMode !== undefined || adapter !== undefined) {
-    db.updateSession(session.id, { model, effort, permissionMode, adapter })
+  if (
+    model !== undefined || effort !== undefined || permissionMode !== undefined || adapter !== undefined ||
+    promptType !== undefined || promptName !== undefined
+  ) {
+    db.updateSession(session.id, { model, effort, permissionMode, adapter, promptType, promptName })
     const updatedSession = db.getSession(session.id)
     if (updatedSession) {
       Object.assign(session, updatedSession)
@@ -105,7 +109,8 @@ export async function createSessionWithInitialMessage(options: {
     const createWorktree = await resolveCreateSessionWorktreeDefault(parentSessionId, workspace)
     await provisionSessionWorkspace(session.id, {
       sourceSessionId: parentSessionId,
-      createWorktree
+      createWorktree,
+      worktreeEnvironment: workspace?.worktreeEnvironment
     })
 
     if (workspace?.branch != null) {

@@ -7,7 +7,7 @@ import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
 import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { getSessionLogger } from '#~/utils/logger.js'
-import { updateConfigFile } from '@vibe-forge/config'
+import { buildConfigSections, updateConfigFile } from '@vibe-forge/config'
 import type {
   AskUserQuestionParams,
   Config,
@@ -64,21 +64,12 @@ const removeKeys = (values: string[], keys: Set<string>) => (
   })
 )
 
-const buildGeneralSectionValue = (config: Config | undefined, permissions: Config['permissions']) => ({
-  baseDir: config?.baseDir,
-  effort: config?.effort,
-  defaultAdapter: config?.defaultAdapter,
-  defaultModelService: config?.defaultModelService,
-  defaultModel: config?.defaultModel,
-  recommendedModels: config?.recommendedModels,
-  interfaceLanguage: config?.interfaceLanguage,
-  modelLanguage: config?.modelLanguage,
-  announcements: config?.announcements,
-  permissions,
-  env: config?.env,
-  notifications: config?.notifications,
-  shortcuts: config?.shortcuts
-})
+const buildGeneralSectionValue = (config: Config | undefined, permissions: Config['permissions']) => (
+  buildConfigSections({
+    ...(config ?? {}),
+    permissions
+  }).general
+)
 
 const getSessionPermissionState = (sessionId: string): SessionPermissionState => (
   normalizeSessionPermissionState(

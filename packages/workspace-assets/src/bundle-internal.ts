@@ -28,6 +28,7 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
+import { resolveConfiguredWorkspaceAssets } from './workspaces'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type OpenCodeOverlayKind = Extract<WorkspaceAssetKind, 'agent' | 'command' | 'mode' | 'nativePlugin'>
@@ -360,6 +361,7 @@ export async function collectWorkspaceAssets(params: {
   rules: Array<Extract<WorkspaceAsset, { kind: 'rule' }>>
   skills: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>
   specs: Array<Extract<WorkspaceAsset, { kind: 'spec' }>>
+  workspaces: Array<Extract<WorkspaceAsset, { kind: 'workspace' }>>
 }> {
   const [config, userConfig] = params.configs ?? await loadWorkspaceConfig(params.cwd)
   const managedPluginConfigs = params.includeManagedPlugins === false
@@ -508,6 +510,12 @@ export async function collectWorkspaceAssets(params: {
     .map(instance => createHookPluginAsset(instance))
   assets.push(...hookPlugins)
 
+  const workspaces = await resolveConfiguredWorkspaceAssets({
+    cwd: params.cwd,
+    configs: [config, userConfig]
+  })
+  assets.push(...workspaces)
+
   const opencodeOverlayAssets = flattenedPluginInstances.flatMap((instance, index) => (
     pluginOverlayScans[index].map((entry) =>
       createOpenCodeOverlayAsset({
@@ -553,6 +561,7 @@ export async function collectWorkspaceAssets(params: {
     pluginInstances,
     rules,
     skills,
-    specs
+    specs,
+    workspaces
   }
 }

@@ -16,6 +16,13 @@ import type {
 import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
+import {
+  DEFAULT_CHAT_SESSION_TARGET_DRAFT,
+  getChatSessionTargetDraftFromSession,
+  isChatSessionTargetReady
+} from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
@@ -74,7 +81,8 @@ export function ChatHistoryView({
   adapterOptions,
   onAdapterChange,
   modelUnavailable,
-  hasAvailableModels
+  hasAvailableModels,
+  contextReferenceRequest
 }: {
   isReady: boolean
   messages: ChatMessage[]
@@ -110,6 +118,7 @@ export function ChatHistoryView({
   onAdapterChange: (adapter: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
+  contextReferenceRequest?: ContextReferenceRequest | null
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -121,6 +130,9 @@ export function ChatHistoryView({
     [configRes]
   )
   const workspaceDraftDirtyRef = useRef(false)
+  const [sessionTargetDraft, setSessionTargetDraft] = useState<ChatSessionTargetDraft>(() => ({
+    ...DEFAULT_CHAT_SESSION_TARGET_DRAFT
+  }))
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
@@ -148,6 +160,7 @@ export function ChatHistoryView({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    sessionTargetDraft,
     workspaceDraft,
     onClearMessages
   })
@@ -171,8 +184,20 @@ export function ChatHistoryView({
       createdAt: Date.now()
     }
   }
+  const validateSessionTarget = () => {
+    if (session?.id != null || isChatSessionTargetReady(sessionTargetDraft)) {
+      return true
+    }
+
+    void message.warning(t('chat.sessionTarget.missingResourceWarning'))
+    return false
+  }
 
   const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -210,6 +235,10 @@ export function ChatHistoryView({
   }
 
   const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -253,7 +282,12 @@ export function ChatHistoryView({
     setExpandedTurnIds(new Set())
     setQueuedDraft(null)
     setQueueMode('steer')
-  }, [session?.id])
+    setSessionTargetDraft(
+      session?.id != null
+        ? getChatSessionTargetDraftFromSession(session)
+        : { ...DEFAULT_CHAT_SESSION_TARGET_DRAFT }
+    )
+  }, [session?.id, session?.promptName, session?.promptType])
   useEffect(() => {
     if (session?.id != null) {
       return
@@ -658,13 +692,19 @@ export function ChatHistoryView({
 
       {shouldShowNewSessionGuide && !isCompactLayout && (
         <div className='new-session-guide-wrapper'>
-          <NewSessionGuide />
+          <NewSessionGuide
+            selectedTarget={sessionTargetDraft}
+            onSelectTarget={setSessionTargetDraft}
+          />
         </div>
       )}
 
       {shouldShowNewSessionGuide && isCompactLayout && (
         <div className='new-session-guide-wrapper is-compact-layout'>
-          <NewSessionGuide />
+          <NewSessionGuide
+            selectedTarget={sessionTargetDraft}
+            onSelectTarget={setSessionTargetDraft}
+          />
         </div>
       )}
 
@@ -735,8 +775,15 @@ export function ChatHistoryView({
                 adapterOptions={adapterOptions}
                 onAdapterChange={onAdapterChange}
                 modelUnavailable={modelUnavailable}
+                sessionTarget={{
+                  draft: session?.id != null ? getChatSessionTargetDraftFromSession(session) : sessionTargetDraft,
+                  locked: session?.id != null,
+                  disabled: isCreating,
+                  onChange: setSessionTargetDraft
+                }}
                 queueMode={queueMode}
                 onQueueModeChange={setQueueMode}
+                contextReferenceRequest={contextReferenceRequest}
               />
               <ChatStatusBar
                 draftWorkspace={workspaceDraft}

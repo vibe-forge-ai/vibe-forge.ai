@@ -17,7 +17,8 @@ import type {
   AdapterQueryOptions,
   AskUserQuestionParams,
   PermissionInteractionDecision,
-  SessionInfo
+  SessionInfo,
+  SessionPromptType
 } from '@vibe-forge/types'
 
 import { handleChannelSessionEvent, resolveChannelSessionMcpServers } from '#~/channels/index.js'
@@ -58,7 +59,8 @@ import {
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
-import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
+import { provisionSessionWorkspace, resolveSessionWorkspace } from '#~/services/session/workspace.js'
+import { runConfiguredWorktreeEnvironmentScripts } from '#~/services/worktree-environments.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()
@@ -286,7 +288,7 @@ export async function startAdapterSession(
     systemPrompt?: string
     appendSystemPrompt?: boolean
     permissionMode?: SessionPermissionMode
-    promptType?: 'spec' | 'entity'
+    promptType?: SessionPromptType
     promptName?: string
     adapter?: string
   } = {}
@@ -307,6 +309,8 @@ export async function startAdapterSession(
     const resolvedAdapter = options.adapter ?? existing?.adapter
     const resolvedEffort = options.effort ?? existing?.effort
     const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
+    const resolvedPromptType = existing?.promptType ?? options.promptType
+    const resolvedPromptName = existing?.promptName ?? options.promptName
     const seededFromHistory = runtimeState?.historySeedPending === true &&
       runtimeState.historySeed != null &&
       runtimeState.historySeed.trim() !== ''
@@ -319,10 +323,14 @@ export async function startAdapterSession(
       const currentAdapter = cached.config?.adapter
       const currentEffort = cached.config?.effort
       const currentPermissionMode = cached.config?.permissionMode
+      const currentPromptType = cached.config?.promptType
+      const currentPromptName = cached.config?.promptName
       const configChanged = currentModel !== resolvedModel ||
         currentAdapter !== resolvedAdapter ||
         currentEffort !== resolvedEffort ||
-        currentPermissionMode !== resolvedPermissionMode
+        currentPermissionMode !== resolvedPermissionMode ||
+        currentPromptType !== resolvedPromptType ||
+        currentPromptName !== resolvedPromptName
 
       if (!configChanged) {
         serverLogger.info({ sessionId }, '[server] Reusing existing adapter process')
@@ -338,7 +346,11 @@ export async function startAdapterSession(
         currentEffort,
         resolvedEffort,
         currentPermissionMode,
-        resolvedPermissionMode
+        resolvedPermissionMode,
+        currentPromptType,
+        resolvedPromptType,
+        currentPromptName,
+        resolvedPromptName
       }, '[server] Restarting adapter process due to session config change')
       activeAdapterRunStore.delete(sessionId)
       cached.session.kill()
@@ -355,7 +367,9 @@ export async function startAdapterSession(
       persistedAdapter: existing?.adapter,
       resolvedAdapter,
       resolvedEffort,
-      resolvedPermissionMode
+      resolvedPermissionMode,
+      resolvedPromptType,
+      resolvedPromptName
     }, '[server] Starting new adapter process')
 
     if (existing == null) {
@@ -369,13 +383,17 @@ export async function startAdapterSession(
     if (
       resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
       resolvedEffort !== existing?.effort ||
-      resolvedPermissionMode !== existing?.permissionMode
+      resolvedPermissionMode !== existing?.permissionMode ||
+      resolvedPromptType !== existing?.promptType ||
+      resolvedPromptName !== existing?.promptName
     ) {
       updateAndNotifySession(sessionId, {
         model: resolvedModel,
         adapter: resolvedAdapter,
         effort: resolvedEffort,
-        permissionMode: resolvedPermissionMode
+        permissionMode: resolvedPermissionMode,
+        promptType: resolvedPromptType,
+        promptName: resolvedPromptName
       })
     }
 
@@ -384,26 +402,45 @@ export async function startAdapterSession(
     activeAdapterRunStore.set(sessionId, runId)
 
     try {
-      const promptCwd = await resolveSessionWorkspaceFolder(sessionId)
+      const workspace = await resolveSessionWorkspace(sessionId)
+      const promptCwd = workspace.workspaceFolder
+      const startScriptResults = await runConfiguredWorktreeEnvironmentScripts({
+        operation: 'start',
+        workspaceFolder: promptCwd,
+        environmentId: workspace.worktreeEnvironment,
+        sessionId
+      })
+      if (startScriptResults.length > 0) {
+        serverLogger.info({
+          sessionId,
+          scripts: startScriptResults.map(result => result.scriptPath)
+        }, '[server] Ran worktree environment start scripts')
+      }
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
-        options.promptType,
-        options.promptName,
+        resolvedPromptType,
+        resolvedPromptName,
         promptCwd,
         {
           adapter: resolvedAdapter,
           model: resolvedModel
         }
       )
+      const adapterCwd = resolvedConfig.workspace?.cwd ?? promptCwd
+      const primaryWorkspaceFolder = processEnv.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__?.trim() ||
+        processEnv.__VF_PROJECT_WORKSPACE_FOLDER__?.trim() ||
+        promptCwd
       const env = {
         ...processEnv,
-        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId
+        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId,
+        __VF_PROJECT_WORKSPACE_FOLDER__: adapterCwd,
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primaryWorkspaceFolder
       }
       const finalSystemPrompt = options.appendSystemPrompt === false
         ? (options.systemPrompt ?? resolvedConfig.systemPrompt)
         : [resolvedConfig.systemPrompt, options.systemPrompt]
           .filter(Boolean)
           .join('\n\n')
-      const { mergedConfig } = await loadConfigState(promptCwd)
+      const { mergedConfig } = await loadConfigState(adapterCwd)
         .catch(() => ({ mergedConfig: {} as { modelLanguage?: string } }))
       const { modelLanguage } = mergedConfig
       const languagePrompt = modelLanguage == null
@@ -435,7 +472,7 @@ export async function startAdapterSession(
 
       const { session } = await run({
         env,
-        cwd: promptCwd,
+        cwd: adapterCwd,
         adapter: resolvedAdapter
       }, {
         type,
@@ -497,7 +534,9 @@ export async function startAdapterSession(
                   model: persistedModel,
                   adapter: persistedAdapter,
                   effort: resolvedEffort,
-                  permissionMode: resolvedPermissionMode
+                  permissionMode: resolvedPermissionMode,
+                  promptType: resolvedPromptType,
+                  promptName: resolvedPromptName
                 })
                 applyEvent({
                   type: 'session_info',
@@ -716,7 +755,9 @@ export async function startAdapterSession(
                         model: resolvedModel,
                         adapter: resolvedAdapter,
                         effort: resolvedEffort,
-                        permissionMode: resolvedPermissionMode
+                        permissionMode: resolvedPermissionMode,
+                        promptType: resolvedPromptType,
+                        promptName: resolvedPromptName
                       })
                       recovered.session.emit({
                         type: 'message',
@@ -847,6 +888,8 @@ export async function startAdapterSession(
           adapter: resolvedAdapter,
           effort: resolvedEffort,
           permissionMode: resolvedPermissionMode,
+          promptType: resolvedPromptType,
+          promptName: resolvedPromptName,
           seededFromHistory
         })
       )

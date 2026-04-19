@@ -17,12 +17,22 @@
 - `vf clear`：清理本地日志与缓存
 - `vf stop <sessionId>`：优雅停止正在运行的 CLI 会话
 - `vf kill <sessionId>`：强制终止正在运行的 CLI 会话
+- `vf config list [path]`：查看配置 section 状态，或读取某个配置子树
+- `vf config get [path]`：读取配置值
+- `vf config set [path] [value]`：写入配置值
+- `vf config unset [path]`：删除配置值
+
+这些命令默认以项目根目录作为 workspace。
+
+- 如果显式设置了 `__VF_PROJECT_WORKSPACE_FOLDER__`，会直接使用该目录。
+- 如果没有设置，`vf` / `vf-mcp` / `vf-call-hook` / `vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，因此可以在项目任意子目录下启动。
+- 配置文件默认会跟随这个解析后的 workspace 根目录读取；如果需要把 `.ai.config.*` 放到别的目录，可以显式设置 `__VF_PROJECT_CONFIG_DIR__`。
 
 ## 内建 Skills
 
 `@vibe-forge/cli` 会默认注入 companion 插件 `@vibe-forge/plugin-cli-skills`，可直接通过 `--include-skill` 使用：
 
-- `vf-cli-quickstart`：介绍 `vf run`、`vf list`、`vf --resume`、`vf stop`、`vf kill` 等常用命令。
+- `vf-cli-quickstart`：介绍 `vf run`、`vf list`、`vf --resume`、`vf stop`、`vf kill`，以及 `vf config list|get|set|unset` 的基本用法和输出语义。
 - `vf-cli-print-mode`：介绍 `--print`、`--input-format`、权限请求、继续会话和 `submit_input` 的写法。
 
 示例：
@@ -58,9 +68,20 @@ printf '%s\n' '{"hookEventName":"Notification","cwd":"'"$PWD"'","sessionId":"deb
 ```bash
 npx vf run -A codex --print "读取 README 并给出一个三步改进建议"
 npx vf run -A claude "读取 README 并给出一个三步改进建议"
+npx vf run --workspace billing "修复订单状态回滚问题"
 ```
 
 `adapter` 参数支持 `-A` 短写，也接受常见简化值，例如 `claude`、`adapter-codex`。
+
+### 指定 workspace
+
+大型仓库可在 `.ai.config.json` 声明 `workspaces`。指定 `--workspace <id>` 后，任务会在对应 workspace 目录下启动，并使用该目录自己的配置与数据资产。
+
+```bash
+npx vf run --workspace billing "修复订单状态回滚问题"
+```
+
+更多配置见 [Workspace 调度](./workspaces.md)。
 
 ### 恢复会话
 
@@ -70,3 +91,19 @@ npx vf list --view default
 npx vf list --view full
 npx vf --resume <sessionId>
 ```
+
+### 读取配置
+
+```bash
+npx vf config list
+npx vf config get general.defaultModel
+npx vf config get models
+npx vf config get modelServices.gpt-responses.models
+```
+
+说明：
+
+- `vf config list` / `vf config get` 默认读取 merged config；只有显式传 `--source project|user|all` 才切换来源。
+- 文本模式默认输出 YAML，适合直接阅读；`--json` 保留结构化原始结果，适合脚本消费。
+- `vf config get models` 和 `vf config list models` 在文本模式下会按 `modelServices` 展开成 `service -> models` 视图，并把 `models` 里的 metadata 合进去，避免把稀疏 metadata map 误看成完整模型列表。
+- 如果需要看原始 `models` metadata 结构，使用 `--json`。

@@ -13,7 +13,8 @@ import {
   presentRule,
   presentRuleDetail,
   presentSpec,
-  presentSpecDetail
+  presentSpecDetail,
+  presentWorkspace
 } from './ai-presenters'
 
 export function aiRouter(): Router {
@@ -63,6 +64,17 @@ export function aiRouter(): Router {
       }
     } catch (err) {
       throw internalServerError('Failed to load entities', { cause: err, code: 'ai_entities_load_failed' })
+    }
+  })
+
+  router.get('/workspaces', async (ctx) => {
+    try {
+      const workspaces = await loader.loadWorkspaces()
+      ctx.body = {
+        workspaces: workspaces.map(presentWorkspace)
+      }
+    } catch (err) {
+      throw internalServerError('Failed to load workspaces', { cause: err, code: 'ai_workspaces_load_failed' })
     }
   })
 

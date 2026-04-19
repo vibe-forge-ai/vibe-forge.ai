@@ -1,7 +1,7 @@
+import { resolveAdapterCommonConfig } from '@vibe-forge/config'
 import type { AdapterCtx } from '@vibe-forge/types'
 import {
   listServiceModels,
-  mergeAdapterConfigs,
   normalizeNonEmptyString,
   resolveAdapterConfiguredDefaultModel,
   resolveDefaultModelSelection,
@@ -15,31 +15,16 @@ const pickFirstNonEmptyString = (values: unknown[]) =>
     .find((value): value is string => value != null)
 
 export const resolveQuerySelection = (params: {
-  config: AdapterCtx['configs'][0]
-  userConfig: AdapterCtx['configs'][1]
+  mergedConfig?: AdapterCtx['configs'][0]
   inputAdapter?: string
   inputModel?: string
 }) => {
-  const mergedAdapters = mergeAdapterConfigs(
-    params.config?.adapters as Record<string, unknown> | undefined,
-    params.userConfig?.adapters as Record<string, unknown> | undefined
-  )
-  const mergedModels = {
-    ...(params.config?.models ?? {}),
-    ...(params.userConfig?.models ?? {})
-  }
-  const mergedModelServices = {
-    ...(params.config?.modelServices ?? {}),
-    ...(params.userConfig?.modelServices ?? {})
-  }
+  const mergedAdapters = params.mergedConfig?.adapters as Record<string, unknown> | undefined
+  const mergedModels = params.mergedConfig?.models
+  const mergedModelServices = params.mergedConfig?.modelServices ?? {}
   const availableAdapters = Object.keys(mergedAdapters ?? {})
   const serviceModels = listServiceModels(mergedModelServices)
-  const mergedDefaultModelService = pickFirstNonEmptyString(
-    [
-      params.userConfig?.defaultModelService,
-      params.config?.defaultModelService
-    ]
-  )
+  const mergedDefaultModelService = pickFirstNonEmptyString([params.mergedConfig?.defaultModelService])
   const explicitAdapter = normalizeNonEmptyString(params.inputAdapter)
   const explicitModel = resolveModelSelection({
     value: params.inputModel,
@@ -47,18 +32,8 @@ export const resolveQuerySelection = (params: {
     preferredServiceKey: mergedDefaultModelService,
     preserveUnknown: true
   })
-  const mergedDefaultAdapter = pickFirstNonEmptyString(
-    [
-      params.userConfig?.defaultAdapter,
-      params.config?.defaultAdapter
-    ]
-  )
-  const mergedDefaultModel = pickFirstNonEmptyString(
-    [
-      params.userConfig?.defaultModel,
-      params.config?.defaultModel
-    ]
-  )
+  const mergedDefaultAdapter = pickFirstNonEmptyString([params.mergedConfig?.defaultAdapter])
+  const mergedDefaultModel = pickFirstNonEmptyString([params.mergedConfig?.defaultModel])
   const resolvedDefaultModel = resolveDefaultModelSelection({
     defaultModel: mergedDefaultModel,
     defaultModelService: mergedDefaultModelService,
@@ -79,8 +54,13 @@ export const resolveQuerySelection = (params: {
   )
 
   const resolveModelForAdapter = (adapter: string | undefined) => {
+    const adapterCommonConfig = adapter == null
+      ? undefined
+      : resolveAdapterCommonConfig(adapter, {
+        mergedConfig: params.mergedConfig as AdapterCtx['configs'][0]
+      })
     const adapterConfiguredModel = resolveAdapterConfiguredDefaultModel({
-      adapterConfig: adapter != null ? mergedAdapters?.[adapter] : undefined,
+      adapterConfig: adapterCommonConfig,
       serviceModels,
       preferredServiceKey: mergedDefaultModelService,
       preserveUnknown: true

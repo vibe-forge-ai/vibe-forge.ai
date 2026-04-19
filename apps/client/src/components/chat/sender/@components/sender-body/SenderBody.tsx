@@ -14,10 +14,12 @@ import type {
 
 import type { PendingContextFile } from '../../@types/sender-composer'
 import type { SenderEditorHandle } from '../../@types/sender-editor'
+import type { SenderProps } from '../../@types/sender-props'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '../../@utils/sender-completion'
 import { SenderAttachments } from '../sender-attachments/SenderAttachments'
 import { SenderMonacoEditor } from '../sender-monaco-editor/SenderMonacoEditor'
 import { SenderToolbar } from '../sender-toolbar/SenderToolbar'
+import { SenderSessionTargetBar } from '../session-target/SenderSessionTargetBar'
 
 export function SenderBody({
   isInlineEdit,
@@ -44,6 +46,7 @@ export function SenderBody({
   toolbarData,
   toolbarRefs,
   toolbarHandlers,
+  sessionTarget,
   showContextPicker,
   onCancelContextPicker,
   onConfirmContextPicker
@@ -76,6 +79,7 @@ export function SenderBody({
   toolbarData: SenderToolbarData
   toolbarRefs: SenderToolbarRefs
   toolbarHandlers: SenderToolbarHandlers
+  sessionTarget?: SenderProps['sessionTarget']
   showContextPicker: boolean
   onCancelContextPicker: () => void
   onConfirmContextPicker: (files: PendingContextFile[]) => void
@@ -84,6 +88,14 @@ export function SenderBody({
 
   return (
     <div className={`chat-input-container ${isInlineEdit ? 'chat-input-container--inline-edit' : ''}`.trim()}>
+      {!isInlineEdit && sessionTarget != null && (
+        <SenderSessionTargetBar
+          draft={sessionTarget.draft}
+          locked={sessionTarget.locked}
+          disabled={sessionTarget.disabled}
+          onChange={sessionTarget.onChange}
+        />
+      )}
       <SenderAttachments
         pendingImages={pendingImages}
         pendingFiles={pendingFiles}

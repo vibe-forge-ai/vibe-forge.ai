@@ -21,6 +21,15 @@ export interface EntitySummary {
   rules: string[]
 }
 
+export interface WorkspaceSummary {
+  id: string
+  name: string
+  description: string
+  path: string
+  cwd: string
+  pattern?: string
+}
+
 export interface RuleSummary {
   id: string
   name: string
@@ -47,6 +56,10 @@ export async function listSpecs(): Promise<{ specs: SpecSummary[] }> {
 
 export async function listEntities(): Promise<{ entities: EntitySummary[] }> {
   return fetchApiJson<{ entities: EntitySummary[] }>('/api/ai/entities')
+}
+
+export async function listWorkspaces(): Promise<{ workspaces: WorkspaceSummary[] }> {
+  return fetchApiJson<{ workspaces: WorkspaceSummary[] }>('/api/ai/workspaces')
 }
 
 export async function listRules(): Promise<{ rules: RuleSummary[] }> {

@@ -83,7 +83,7 @@ const resolveWritableConfigPath = (
   env: Record<string, string | null | undefined> = process.env
 ) => {
   const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(workspaceFolder, env)
-  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolve(workspaceFolder)
+  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolvedWorkspaceFolder
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
     const resolvedPath = resolve(configFolder, path)
@@ -224,6 +224,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'skills')
       )
       updateField(
+        'webAuth',
+        mergeMaskedValues(sectionValue.webAuth, config.webAuth) as Config['webAuth'],
+        hasOwn(sectionValue, 'webAuth')
+      )
+      updateField(
         'shortcuts',
         mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts'],
         hasOwn(sectionValue, 'shortcuts')
@@ -232,6 +237,10 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
     }
     case 'conversation': {
       updateField('conversation', mergeMaskedValues(sectionValue, config.conversation) as Config['conversation'])
+      return nextConfig
+    }
+    case 'auth': {
+      updateField('webAuth', mergeMaskedValues(sectionValue, config.webAuth) as Config['webAuth'])
       return nextConfig
     }
     case 'models': {
@@ -245,6 +254,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField(
         'modelServices',
         mergeMaskedValues(sectionValue, config.modelServices) as Config['modelServices']
+      )
+      return nextConfig
+    }
+    case 'workspaces': {
+      updateField(
+        'workspaces',
+        mergeMaskedValues(sectionValue, config.workspaces) as Config['workspaces']
       )
       return nextConfig
     }

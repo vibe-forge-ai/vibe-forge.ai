@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { ChatSessionWorkspaceDraft } from '#~/hooks/chat/chat-session-workspace-draft'
 
 import { BranchSwitcherDropdown } from './BranchSwitcherDropdown'
+import { DraftWorktreeEnvironmentDropdown } from './DraftWorktreeEnvironmentDropdown'
 import { GitWorktreeDropdown } from './GitWorktreeDropdown'
 import { useChatDraftGitControls } from './use-chat-draft-git-controls'
 
@@ -49,6 +50,19 @@ export function DraftGitControls({
                 if (nextOpen) {
                   git.setBranchMenuOpen(false)
                 }
+              }}
+            />
+
+            <DraftWorktreeEnvironmentDropdown
+              compact={compact}
+              disabled={disabled}
+              placement={placement}
+              value={draft.worktreeEnvironment}
+              onChange={(worktreeEnvironment) => {
+                onChange({
+                  ...draft,
+                  worktreeEnvironment
+                })
               }}
             />
 

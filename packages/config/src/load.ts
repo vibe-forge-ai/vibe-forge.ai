@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
-import type { Config } from '@vibe-forge/types'
+import type { AdapterConfigEntry, Config } from '@vibe-forge/types'
 import { PROJECT_WORKSPACE_FOLDER_ENV, resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
 import { load } from 'js-yaml'
 
@@ -16,6 +16,69 @@ export interface LoadConfigOptions {
   cwd?: string
   jsonVariables?: Record<string, string | null | undefined>
   disableDevConfig?: boolean
+}
+
+export interface ResolvedConfigState {
+  projectConfig?: Config
+  userConfig?: Config
+  mergedConfig: Config
+}
+
+export interface ResolveConfigStateOptions {
+  configState?: ResolvedConfigState
+  configs?: readonly [Config?, Config?]
+}
+
+type AdapterConfigRecord = object
+
+export const ADAPTER_COMMON_CONFIG_KEYS = [
+  'defaultModel',
+  'includeModels',
+  'excludeModels'
+] as const
+
+const LEGACY_ADAPTER_COMMON_CONFIG_KEYS = ['model'] as const
+
+export type AdapterCommonConfigKey = typeof ADAPTER_COMMON_CONFIG_KEYS[number]
+type LegacyAdapterCommonConfigKey = typeof LEGACY_ADAPTER_COMMON_CONFIG_KEYS[number]
+type ResolvedAdapterCommonKey<
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry,
+> = Extract<keyof TEntry, AdapterCommonConfigKey | LegacyAdapterCommonConfigKey | TExtraCommonKey>
+
+export interface SplitAdapterConfigEntryOptions<
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+> {
+  extraCommonKeys?: readonly TExtraCommonKey[]
+}
+
+export interface ResolveAdapterConfigEntryOptions<
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+> extends SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> {
+  deepMergeKeys?: readonly (keyof TEntry)[]
+}
+
+export interface AdapterConfigResolverContribution<
+  TEntry extends AdapterConfigRecord = AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+> {
+  adapterKey: string
+  configEntry?: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey>
+}
+
+export interface ResolvedAdapterConfig<
+  TEntry extends AdapterConfigRecord = AdapterConfigEntry<AdapterConfigRecord>,
+  TExtraCommonKey extends keyof TEntry = never,
+> {
+  entry: TEntry
+  common: Pick<TEntry, ResolvedAdapterCommonKey<TEntry, TExtraCommonKey>>
+  native: Omit<TEntry, ResolvedAdapterCommonKey<TEntry, TExtraCommonKey>>
+}
+
+export interface ResolveAdapterConfigOptions extends ResolveConfigStateOptions {
+  mergedConfig?: Config
 }
 
 interface ConfigWithExtend {
@@ -46,7 +109,7 @@ const serializeJsonVariables = (value: Record<string, string | null | undefined>
 const resolveConfigCacheKey = (options: LoadConfigOptions) => {
   const launchCwd = options.cwd ?? process.cwd()
   const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
-  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? workspaceFolder
   const disableDevConfig = options.disableDevConfig === true ? '1' : '0'
   const jsonVariables = serializeJsonVariables(options.jsonVariables ?? {})
   return `${launchCwd}\n${workspaceFolder}\n${configCwd}\n${disableDevConfig}\n${jsonVariables}`
@@ -121,6 +184,50 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' &&
   !Array.isArray(value)
 )
+
+const toAdapterConfigRecord = <TEntry extends AdapterConfigRecord>(value: unknown) => (
+  isRecord(value) ? value as TEntry : {} as TEntry
+)
+
+const mergeNestedAdapterConfigValue = (
+  left: unknown,
+  right: unknown
+): unknown => {
+  if (!isRecord(left) || !isRecord(right)) {
+    return right === undefined ? left : right
+  }
+
+  const keys = new Set([
+    ...Object.keys(left),
+    ...Object.keys(right)
+  ])
+
+  return Object.fromEntries(
+    Array.from(keys).map(key => [
+      key,
+      mergeNestedAdapterConfigValue(left[key], right[key])
+    ])
+  )
+}
+
+const mergeAdapterConfigEntries = <TEntry extends AdapterConfigRecord>(
+  left: TEntry | undefined,
+  right: TEntry | undefined,
+  deepMergeKeys: readonly (keyof TEntry)[] = []
+) => {
+  const leftRecord = toAdapterConfigRecord<TEntry>(left)
+  const rightRecord = toAdapterConfigRecord<TEntry>(right)
+  const mergedRecord = {
+    ...leftRecord,
+    ...rightRecord
+  } as TEntry
+
+  for (const key of deepMergeKeys) {
+    mergedRecord[key] = mergeNestedAdapterConfigValue(leftRecord[key], rightRecord[key]) as TEntry[typeof key]
+  }
+
+  return mergedRecord
+}
 
 const toExtendPaths = (value: unknown) => {
   if (typeof value === 'string' && value.trim() !== '') {
@@ -347,7 +454,7 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
 
   const launchCwd = options.cwd ?? process.cwd()
   const workspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
-  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? resolve(launchCwd)
+  const configCwd = resolveProjectConfigDir(launchCwd, process.env) ?? workspaceFolder
   const shouldLoadDevConfig = options.disableDevConfig !== true &&
     process.env[DISABLE_DEV_CONFIG_ENV] !== '1'
   const jsonVariables = options.jsonVariables ?? {}
@@ -408,15 +515,162 @@ export const loadConfig = (options: LoadConfigOptions = {}) => {
   return nextConfig
 }
 
+export const resolveMergedConfig = (
+  projectConfig?: Config,
+  userConfig?: Config
+): Config => mergeConfigs(projectConfig, userConfig) ?? {}
+
+export const buildResolvedConfigState = (
+  projectConfig?: Config,
+  userConfig?: Config
+): ResolvedConfigState => ({
+  projectConfig,
+  userConfig,
+  mergedConfig: resolveMergedConfig(projectConfig, userConfig)
+})
+
+export const resolveConfigState = (
+  options: ResolveConfigStateOptions = {}
+): ResolvedConfigState => (
+  options.configState ?? buildResolvedConfigState(options.configs?.[0], options.configs?.[1])
+)
+
+export const loadConfigState = async (
+  options: LoadConfigOptions = {}
+): Promise<ResolvedConfigState> => {
+  const [projectConfig, userConfig] = await loadConfig(options)
+  return buildResolvedConfigState(projectConfig, userConfig)
+}
+
+export const resolveAdapterConfigEntry = (
+  name: string,
+  mergedConfig?: Config
+): Record<string, unknown> => {
+  const adapters = mergedConfig?.adapters as Record<string, unknown> | undefined
+  return isRecord(adapters?.[name]) ? adapters[name] : {}
+}
+
+export const splitAdapterConfigEntry = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+>(
+  entry: TEntry | undefined,
+  options: SplitAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
+): ResolvedAdapterConfig<TEntry, TExtraCommonKey> => {
+  const resolvedEntry = toAdapterConfigRecord<TEntry>(entry)
+  const commonKeys = new Set<string>([
+    ...ADAPTER_COMMON_CONFIG_KEYS,
+    ...LEGACY_ADAPTER_COMMON_CONFIG_KEYS,
+    ...(options.extraCommonKeys ?? []).map(String)
+  ])
+  const commonEntries: Array<[string, unknown]> = []
+  const nativeEntries: Array<[string, unknown]> = []
+
+  for (const [key, value] of Object.entries(resolvedEntry)) {
+    if (commonKeys.has(key)) {
+      commonEntries.push([key, value])
+      continue
+    }
+    nativeEntries.push([key, value])
+  }
+
+  return {
+    entry: resolvedEntry,
+    common: Object.fromEntries(commonEntries) as Pick<TEntry, ResolvedAdapterCommonKey<TEntry, TExtraCommonKey>>,
+    native: Object.fromEntries(nativeEntries) as Omit<TEntry, ResolvedAdapterCommonKey<TEntry, TExtraCommonKey>>
+  }
+}
+
+export const resolveAdapterConfig = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+>(
+  name: string,
+  options: ResolveAdapterConfigOptions = {},
+  resolveOptions: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
+): ResolvedAdapterConfig<TEntry, TExtraCommonKey> => {
+  const resolvedState = options.configState ?? (
+    options.mergedConfig == null
+      ? resolveConfigState({
+        configs: options.configs
+      })
+      : undefined
+  )
+  const mergedConfig = options.mergedConfig ?? resolvedState?.mergedConfig
+  const resolvedEntry = resolvedState != null
+    ? (() => {
+      const projectEntry = resolveAdapterConfigEntry(name, resolvedState.projectConfig) as TEntry
+      const userEntry = resolveAdapterConfigEntry(name, resolvedState.userConfig) as TEntry
+      if (
+        Object.keys(projectEntry).length === 0 &&
+        Object.keys(userEntry).length === 0 &&
+        mergedConfig != null
+      ) {
+        return resolveAdapterConfigEntry(name, mergedConfig) as TEntry
+      }
+      return mergeAdapterConfigEntries(
+        projectEntry,
+        userEntry,
+        resolveOptions.deepMergeKeys
+      )
+    })()
+    : options.configs != null
+    ? mergeAdapterConfigEntries(
+      resolveAdapterConfigEntry(name, options.configs[0]) as TEntry,
+      resolveAdapterConfigEntry(name, options.configs[1]) as TEntry,
+      resolveOptions.deepMergeKeys
+    )
+    : resolveAdapterConfigEntry(name, mergedConfig) as TEntry
+
+  return splitAdapterConfigEntry(
+    resolvedEntry,
+    resolveOptions
+  )
+}
+
+export const resolveAdapterConfigWithContribution = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+>(
+  contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
+  options: ResolveAdapterConfigOptions = {}
+) =>
+  resolveAdapterConfig<TEntry, TExtraCommonKey>(
+    contribution.adapterKey,
+    options,
+    contribution.configEntry
+  )
+
+export const resolveAdapterCommonConfig = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+>(
+  name: string,
+  options: ResolveAdapterConfigOptions = {},
+  resolveOptions: ResolveAdapterConfigEntryOptions<TEntry, TExtraCommonKey> = {}
+) =>
+  resolveAdapterConfig<TEntry, TExtraCommonKey>(
+    name,
+    options,
+    resolveOptions
+  ).common
+
+export const resolveAdapterCommonConfigWithContribution = <
+  TEntry extends AdapterConfigRecord,
+  TExtraCommonKey extends keyof TEntry = never,
+>(
+  contribution: AdapterConfigResolverContribution<TEntry, TExtraCommonKey>,
+  options: ResolveAdapterConfigOptions = {}
+) =>
+  resolveAdapterConfigWithContribution<TEntry, TExtraCommonKey>(
+    contribution,
+    options
+  ).common
+
 export const loadAdapterConfig = async (
   name: string,
   options: LoadConfigOptions = {}
 ) => {
-  const [projectConfig, userConfig] = await loadConfig(options)
-  const projectAdapters = projectConfig?.adapters as Record<string, unknown> | undefined
-  const userAdapters = userConfig?.adapters as Record<string, unknown> | undefined
-  return {
-    ...(projectAdapters?.[name] as Record<string, unknown> | undefined ?? {}),
-    ...(userAdapters?.[name] as Record<string, unknown> | undefined ?? {})
-  } as Record<string, unknown>
+  const { mergedConfig } = await loadConfigState(options)
+  return resolveAdapterConfigEntry(name, mergedConfig)
 }

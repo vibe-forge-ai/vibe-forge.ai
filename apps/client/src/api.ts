@@ -20,7 +20,7 @@ export {
 } from './api/benchmark'
 
 // 配置读取与更新 API
-export { getConfig, updateConfig } from './api/config'
+export { getConfig, getConfigSchema, updateConfig } from './api/config'
 export {
   checkoutSessionGitBranch,
   commitSessionGitChanges,
@@ -36,8 +36,24 @@ export {
 } from './api/git'
 
 // 知识库与规则说明 API
-export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
-export { getEntityDetail, getRuleDetail, getSpecDetail, listEntities, listRules, listSpecs } from './api/knowledge'
+export type {
+  EntityDetail,
+  EntitySummary,
+  RuleDetail,
+  RuleSummary,
+  SpecDetail,
+  SpecSummary,
+  WorkspaceSummary
+} from './api/knowledge'
+export {
+  getEntityDetail,
+  getRuleDetail,
+  getSpecDetail,
+  listEntities,
+  listRules,
+  listSpecs,
+  listWorkspaces
+} from './api/knowledge'
 
 // 项目与工程 API
 export { createProject, listProjects } from './api/projects'
@@ -53,21 +69,32 @@ export {
   forkSession,
   getSessionMessages,
   getSessionWorkspace,
+  getSessionWorkspaceResourceUrl,
   listSessionWorkspaceTree,
   listSessions,
   moveQueuedMessage,
+  readSessionWorkspaceFile,
   reorderQueuedMessages,
   respondSessionInteraction,
   transferSessionWorkspaceToLocal,
   updateQueuedMessage,
   updateSession,
-  updateSessionTitle
+  updateSessionTitle,
+  updateSessionWorkspaceFile
 } from './api/sessions'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
-export type { WorkspaceTreeEntry } from './api/workspace'
-export { listWorkspaceTree } from './api/workspace'
+export type { WorkspaceFileContent, WorkspaceTreeEntry } from './api/workspace'
+export { getWorkspaceResourceUrl, listWorkspaceTree, readWorkspaceFile, updateWorkspaceFile } from './api/workspace'
+
+// Worktree 环境脚本 API
+export {
+  deleteWorktreeEnvironment,
+  getWorktreeEnvironment,
+  listWorktreeEnvironments,
+  saveWorktreeEnvironment
+} from './api/worktree-environments'
 
 export type {
   GitAvailabilityReason,
@@ -75,6 +102,7 @@ export type {
   GitBranchListResult,
   GitBranchSummary,
   GitChangeSummary,
+  GitChangedFile,
   GitCommitPayload,
   GitHeadCommitSummary,
   GitMutationResult,
@@ -85,3 +113,14 @@ export type {
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
 export type { SessionWorkspace } from '@vibe-forge/types'
+export type {
+  WorktreeEnvironmentDetail,
+  WorktreeEnvironmentListResult,
+  WorktreeEnvironmentMutationResult,
+  WorktreeEnvironmentOperation,
+  WorktreeEnvironmentPlatform,
+  WorktreeEnvironmentSavePayload,
+  WorktreeEnvironmentScript,
+  WorktreeEnvironmentScriptKey,
+  WorktreeEnvironmentSummary
+} from '@vibe-forge/types'

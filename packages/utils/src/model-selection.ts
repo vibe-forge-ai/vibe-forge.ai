@@ -337,9 +337,8 @@ export const resolveAdapterConfiguredDefaultModel = (params: {
 export const resolveEffectiveEffort = (params: {
   explicitEffort?: unknown
   model?: string
-  adapter?: string
+  adapterConfig?: unknown
   configEffort?: unknown
-  adapters?: Record<string, unknown>
   models?: Record<string, ModelMetadataConfig>
 }) => {
   const explicitEffort = normalizeEffortLevel(params.explicitEffort)
@@ -361,9 +360,7 @@ export const resolveEffectiveEffort = (params: {
     }
   }
 
-  const adapterEffort = params.adapter == null
-    ? undefined
-    : getAdapterConfiguredEffort(params.adapters?.[params.adapter])
+  const adapterEffort = getAdapterConfiguredEffort(params.adapterConfig)
   if (adapterEffort != null) {
     return {
       effort: adapterEffort,

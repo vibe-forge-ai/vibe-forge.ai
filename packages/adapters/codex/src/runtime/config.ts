@@ -1,7 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
+import { resolveAdapterConfigWithContribution as resolveMergedAdapterConfig } from '@vibe-forge/config'
 import type { AdapterCtx } from '@vibe-forge/types'
+
+import { adapterConfigContribution } from '#~/config-schema.js'
+import type { CodexAdapterConfig, CodexCommonAdapterConfigKey } from '#~/config-schema.js'
+import type { CodexSandboxPolicy } from '#~/types.js'
 
 const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
 const MANAGED_CONFIG_BLOCK_END = '# END VIBE FORGE MANAGED CODEX CONFIG'
@@ -59,16 +64,32 @@ export const buildNativeConfigOverrideArgs = (overrides: Record<string, unknown>
   return args
 }
 
+type CodexRuntimeAdapterConfig = Omit<CodexAdapterConfig, 'sandboxPolicy'> & {
+  sandboxPolicy?: CodexSandboxPolicy
+}
+
+export const resolveCodexAdapterConfig = (
+  params: {
+    configState?: AdapterCtx['configState']
+    configs?: AdapterCtx['configs']
+  } | undefined
+) =>
+  resolveMergedAdapterConfig<CodexRuntimeAdapterConfig, CodexCommonAdapterConfigKey>(
+    adapterConfigContribution,
+    {
+      configState: params?.configState,
+      configs: params?.configs
+    }
+  )
+
 export const resolveCodexConfigOverrides = (
-  configs: AdapterCtx['configs'] | undefined
+  params: {
+    configState?: AdapterCtx['configState']
+    configs?: AdapterCtx['configs']
+  } | undefined
 ) => {
-  const [config, userConfig] = configs ?? []
-  const { configOverrides: configOverridesValue } = {
-    ...(config?.adapters?.codex ?? {}),
-    ...(userConfig?.adapters?.codex ?? {})
-  } as {
-    configOverrides?: Record<string, unknown>
-  }
+  const { native } = resolveCodexAdapterConfig(params)
+  const { configOverrides: configOverridesValue } = native
 
   return mergeCodexConfigOverrides(
     isPlainObject(configOverridesValue) ? configOverridesValue : {}
@@ -115,6 +136,7 @@ export const writeManagedCodexConfigFile = async (params: {
   configPath: string
   workspacePath: string
   configs: AdapterCtx['configs'] | undefined
+  configState?: AdapterCtx['configState']
 }) => {
   let currentContent = ''
 
@@ -126,7 +148,10 @@ export const writeManagedCodexConfigFile = async (params: {
     }
   }
 
-  const configOverrides = resolveCodexConfigOverrides(params.configs)
+  const configOverrides = resolveCodexConfigOverrides({
+    configs: params.configs,
+    configState: params.configState
+  })
   const nextContent = upsertManagedCodexConfig({
     currentContent,
     workspacePath: params.workspacePath,

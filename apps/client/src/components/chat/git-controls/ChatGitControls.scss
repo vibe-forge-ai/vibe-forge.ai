@@ -199,6 +199,28 @@
   }
 }
 
+.chat-header-git__trigger.ant-btn.ant-btn-text.chat-header-git__trigger--environment.is-compact {
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+
+  .chat-header-git__trigger-label {
+    display: none;
+  }
+
+  .chat-header-git__trigger-main {
+    width: 100%;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .chat-header-git__trigger-chevron {
+    display: none;
+  }
+}
+
 .chat-header-git__split--operations.is-compact {
   gap: 4px;
 
@@ -264,6 +286,10 @@
 }
 
 .chat-header-git__overlay--branches {
+  width: 236px;
+}
+
+.chat-header-git__overlay--environment {
   width: 236px;
 }
 
@@ -436,6 +462,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.chat-header-git__empty--environment {
+  padding: 10px 0 4px;
 }
 
 .chat-header-git__sections {

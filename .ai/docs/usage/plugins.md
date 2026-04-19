@@ -25,7 +25,7 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 
 ## 基本配置
 
-在项目根目录的 `.ai.config.json` 或 `.ai.config.yaml` 中配置 `plugins`：
+默认情况下，在解析后的 workspace 根目录的 `.ai.config.json` 或 `.ai.config.yaml` 中配置 `plugins`：
 
 ```json
 {
@@ -136,7 +136,8 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 边界说明：
 
 - 这里修改的是项目数据资产目录，不是配置文件位置
-- `.ai.config.json` / `.ai.dev.config.*` 仍然放在项目根或 `./infra/`
+- `.ai.config.json` / `.ai.dev.config.*` 默认仍然放在解析后的 workspace 根目录或 `./infra/`
+- 如果显式设置了 `__VF_PROJECT_CONFIG_DIR__`，插件配置会改为从该目录读取
 - 修改 `.env` 后需要重启相关进程
 
 ## Adapter 兼容范围

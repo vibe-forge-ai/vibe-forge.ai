@@ -1,11 +1,13 @@
 .DS_Store
 .idea
 .logs
+.data
 .ai/.mock
 .ai/caches
+.ai/env.local/
 .ai/logs
 .ai/results
-.ai/worktress
+.ai/worktrees/
 .ai.dev.config.json
 
 ### Node template

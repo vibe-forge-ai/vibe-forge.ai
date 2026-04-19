@@ -8,18 +8,25 @@ export interface ChatSessionWorkspaceDraftBranch {
 
 export interface ChatSessionWorkspaceDraft {
   createWorktree: boolean
+  worktreeEnvironment?: string
   branch?: ChatSessionWorkspaceDraftBranch
 }
 
-export const buildChatSessionWorkspaceDraft = (createWorktree = true): ChatSessionWorkspaceDraft => ({
-  createWorktree
+export const buildChatSessionWorkspaceDraft = (
+  createWorktree = true,
+  worktreeEnvironment?: string
+): ChatSessionWorkspaceDraft => ({
+  createWorktree,
+  ...(worktreeEnvironment != null && worktreeEnvironment.trim() !== ''
+    ? { worktreeEnvironment: worktreeEnvironment.trim() }
+    : {})
 })
 
 export const getChatSessionWorkspaceDraftFromConfig = (
   configRes?: ConfigResponse
 ): ChatSessionWorkspaceDraft => {
-  const createWorktree = configRes?.sources?.merged?.conversation?.createSessionWorktree
-  return buildChatSessionWorkspaceDraft(createWorktree ?? true)
+  const conversation = configRes?.sources?.merged?.conversation
+  return buildChatSessionWorkspaceDraft(conversation?.createSessionWorktree ?? true, conversation?.worktreeEnvironment)
 }
 
 export const DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT: ChatSessionWorkspaceDraft = buildChatSessionWorkspaceDraft()

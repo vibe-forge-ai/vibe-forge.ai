@@ -34,6 +34,12 @@ export type SessionInfo =
   | ({ type: 'init' } & SessionInitInfo)
   | ({ type: 'summary' } & SessionSummaryInfo)
 
+export interface AdapterConfigState {
+  projectConfig?: Config
+  userConfig?: Config
+  mergedConfig: Config
+}
+
 export interface SessionInitInfo {
   uuid: string
   model: string
@@ -71,6 +77,7 @@ export interface AdapterCtx {
   }
   logger: Logger
   configs: [Config?, Config?]
+  configState?: AdapterConfigState
   assets?: WorkspaceAssetBundle
 }
 

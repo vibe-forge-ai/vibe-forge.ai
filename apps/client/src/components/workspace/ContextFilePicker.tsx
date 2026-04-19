@@ -1,62 +1,15 @@
 import './ContextFilePicker.scss'
 
-import { App, Button, Empty, Modal, Spin, Tree } from 'antd'
-import type { DataNode } from 'antd/es/tree'
+import { Button, Modal } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { listSessionWorkspaceTree, listWorkspaceTree } from '#~/api'
+import type { ContextPickerFile } from './context-file-types'
+import { toContextPickerFiles } from './context-file-types'
+import { ProjectFileTree } from './project-file-tree/ProjectFileTree'
+import type { ProjectFileTreeSelection } from './project-file-tree/project-file-tree-types'
 
-export interface ContextPickerFile {
-  path: string
-  name?: string
-}
-
-interface ContextFileTreeNode extends DataNode {
-  key: string
-  path: string
-  title: string
-  children?: ContextFileTreeNode[]
-  isLeaf?: boolean
-  disableCheckbox?: boolean
-}
-
-const replaceNodeChildren = (
-  nodes: ContextFileTreeNode[],
-  targetPath: string,
-  children: ContextFileTreeNode[]
-): ContextFileTreeNode[] => {
-  return nodes.map((node) => {
-    if (node.path === targetPath) {
-      return {
-        ...node,
-        children
-      }
-    }
-    if (node.children == null) {
-      return node
-    }
-    return {
-      ...node,
-      children: replaceNodeChildren(node.children, targetPath, children)
-    }
-  })
-}
-
-const toTreeNodes = (entries: Awaited<ReturnType<typeof listWorkspaceTree>>['entries']): ContextFileTreeNode[] =>
-  entries.map(entry => ({
-    key: entry.path,
-    path: entry.path,
-    title: entry.name,
-    isLeaf: entry.type === 'file',
-    disableCheckbox: entry.type !== 'file'
-  }))
-
-const toPendingFiles = (paths: string[]): ContextPickerFile[] =>
-  paths.map(path => ({
-    path,
-    name: path.split('/').pop() ?? path
-  }))
+export type { ContextPickerFile } from './context-file-types'
 
 export function ContextFilePicker({
   open,
@@ -74,83 +27,48 @@ export function ContextFilePicker({
   onConfirm: (files: ContextPickerFile[]) => void
 }) {
   const { t } = useTranslation()
-  const { message } = App.useApp()
-  const [checkedKeys, setCheckedKeys] = useState<string[]>(selectedPaths)
-  const [treeData, setTreeData] = useState<ContextFileTreeNode[]>([])
-  const [loadingRoot, setLoadingRoot] = useState(false)
-  const loadWorkspaceTree = async (path?: string) => {
-    if (sessionId != null && sessionId !== '') {
-      return await listSessionWorkspaceTree(sessionId, path)
-    }
-    return await listWorkspaceTree(path)
-  }
+  const [checkedPaths, setCheckedPaths] = useState<string[]>(selectedPaths)
+  const [selectedFiles, setSelectedFiles] = useState<ContextPickerFile[]>([])
+  const selectedPathsKey = selectedPaths.join('\0')
 
   useEffect(() => {
     if (!open) {
       return
     }
 
-    setCheckedKeys(selectedPaths)
-    setLoadingRoot(true)
-    void loadWorkspaceTree()
-      .then((result) => {
-        setTreeData(toTreeNodes(result.entries))
-      })
-      .catch(() => {
-        void message.error(t('chat.contextPickerLoadFailed'))
-      })
-      .finally(() => {
-        setLoadingRoot(false)
-      })
-  }, [message, open, selectedPaths, sessionId, t])
+    const nextPaths = selectedPathsKey === '' ? [] : selectedPathsKey.split('\0')
+    setCheckedPaths(nextPaths)
+    setSelectedFiles(toContextPickerFiles(nextPaths, []))
+  }, [open, selectedPathsKey])
 
-  const loadData = async (node: DataNode) => {
-    const path = String(node.key)
-    const result = await loadWorkspaceTree(path)
-    setTreeData(prev => replaceNodeChildren(prev, path, toTreeNodes(result.entries)))
+  const handleSelectionChange = (selection: ProjectFileTreeSelection) => {
+    setCheckedPaths(selection.paths)
+    setSelectedFiles(toContextPickerFiles(selection.paths, selection.nodes))
+  }
+  const handleConfirm = () => {
+    onConfirm(toContextPickerFiles(checkedPaths, selectedFiles))
   }
 
   const body = (
     <div className={`context-file-picker ${variant === 'inline' ? 'context-file-picker--inline' : ''}`.trim()}>
       <div className='context-file-picker__body'>
-        {loadingRoot
-          ? (
-            <div className='context-file-picker__loading'>
-              <Spin size='small' />
-              <span>{t('chat.contextPickerLoading')}</span>
-            </div>
-          )
-          : treeData.length === 0
-          ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t('chat.contextPickerEmpty')}
-            />
-          )
-          : (
-            <Tree
-              blockNode
-              checkable
-              checkStrictly
-              treeData={treeData}
-              checkedKeys={checkedKeys}
-              loadData={loadData}
-              switcherIcon={
-                <span className='material-symbols-rounded context-file-picker__switcher'>chevron_right</span>
-              }
-              onCheck={(keys) => {
-                const nextKeys = Array.isArray(keys) ? keys : keys.checked
-                setCheckedKeys(nextKeys.map(String))
-              }}
-            />
-          )}
+        {open && (
+          <ProjectFileTree
+            selectableTypes='all'
+            selectedPaths={checkedPaths}
+            selectionMode='multiple'
+            sessionId={sessionId}
+            showLoadingState
+            onSelectionChange={handleSelectionChange}
+          />
+        )}
       </div>
       {variant === 'inline' && (
         <div className='context-file-picker__footer'>
           <Button size='small' onClick={onCancel}>
             {t('common.cancel')}
           </Button>
-          <Button type='primary' size='small' onClick={() => onConfirm(toPendingFiles(checkedKeys))}>
+          <Button type='primary' size='small' onClick={handleConfirm}>
             {t('chat.contextPickerConfirm')}
           </Button>
         </div>
@@ -170,7 +88,7 @@ export function ContextFilePicker({
       cancelText={t('common.cancel')}
       width={640}
       onCancel={onCancel}
-      onOk={() => onConfirm(toPendingFiles(checkedKeys))}
+      onOk={handleConfirm}
       className='context-file-picker-modal'
     >
       {body}
