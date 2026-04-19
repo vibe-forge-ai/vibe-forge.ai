@@ -4,7 +4,16 @@
 
 这页补充用户侧更完整的 marketplace 配置示例，适合你已经确定要把 Claude Code 插件接进项目时参考。
 
-Web 前端的「知识库 -> 技能」页会把 `marketplaces` 展示为可搜索的 skills hub 源。你可以在界面里新增 URL、目录、GitHub 或 Git 源，也可以直接编辑配置文件；搜索结果中的插件安装后会转换成当前项目可用的 Vibe Forge skills / entities / MCP / hooks 资产。
+Web 前端的「知识库 -> 技能」页会把 `marketplaces` 展示为可搜索的 skills hub 源。Vibe Forge 默认内置 `skills` 官方源，指向 Vercel 的 [skills.sh](https://skills.sh/) hub；你也可以在界面里新增 URL、目录、GitHub 或 Git 源，或者直接编辑配置文件。skills.sh 搜索结果会安装到项目 `.ai/skills`，Claude marketplace 搜索结果安装后会转换成当前项目可用的 Vibe Forge skills / entities / MCP / hooks 资产。
+
+如果你想隐藏内置官方源，可以声明同名 marketplace 并禁用它；`skills` 这个源名由内置 skills.sh 源保留：
+
+```yaml
+marketplaces:
+  skills:
+    type: claude-code
+    enabled: false
+```
 
 ## 示例：接入 Superpowers Marketplace
 

@@ -1,5 +1,8 @@
 .knowledge-base-view__entity-list {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }

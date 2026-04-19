@@ -370,27 +370,6 @@
   }
 }
 
-@media (max-width: 1100px) {
-  .knowledge-base-view__body {
-    flex-direction: column;
-  }
-
-  .knowledge-base-view__left {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .knowledge-base-view__right {
-    margin-top: 0;
-    margin-left: var(--subpage-content-card-gap);
-  }
-
-  .knowledge-base-view__nav-list {
-    padding-bottom: 10px;
-  }
-}
-
 @media (max-width: 960px) {
   .knowledge-base-view--compact {
     .knowledge-base-view__right {
@@ -430,7 +409,7 @@
 
     .knowledge-base-view__filter-input .ant-input-affix-wrapper,
     .knowledge-base-view__filter-select .ant-select-selector,
-    .knowledge-base-view__skill-registry-select .ant-select-selector {
+    .knowledge-base-view__skill-toolbar-select .ant-select-selector {
       min-height: 40px !important;
       height: 40px !important;
       border-radius: 8px !important;

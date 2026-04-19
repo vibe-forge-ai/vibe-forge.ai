@@ -28,6 +28,26 @@ function SkillCapabilityTags({ item }: { item: SkillHubItem }) {
   )
 }
 
+const formatInstalls = (count: number) => {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+  return `${count}`
+}
+
+const openExternalUrl = (url: string) => {
+  const opened = window.open(url, '_blank')
+  if (opened == null) {
+    window.location.assign(url)
+    return
+  }
+  try {
+    opened.opener = null
+  } catch {
+    // Ignore browsers that do not allow changing opener.
+  }
+  opened.focus()
+}
+
 export function SkillHubResultItem({
   item,
   installing,
@@ -38,9 +58,11 @@ export function SkillHubResultItem({
   onInstall: (item: SkillHubItem) => void
 }) {
   const { t } = useTranslation()
+  const detailUrl = item.detailUrl
   const subtitle = joinValues([
-    item.registry,
+    item.source ?? item.registry,
     item.version ?? '',
+    item.installs != null ? t('knowledge.skills.installs', { value: formatInstalls(item.installs) }) : '',
     item.installScope != null ? `${t('knowledge.skills.scope')}: ${item.installScope}` : ''
   ])
 
@@ -60,19 +82,30 @@ export function SkillHubResultItem({
           )}
           <SkillCapabilityTags item={item} />
         </div>
-        <Tooltip title={item.installed ? t('knowledge.skills.reinstall') : t('knowledge.skills.install')}>
-          <Button
-            type={item.installed ? 'default' : 'primary'}
-            className='knowledge-base-view__icon-button'
-            loading={installing}
-            onClick={() => onInstall(item)}
-            icon={
-              <span className='material-symbols-rounded'>
-                {item.installed ? 'sync' : 'download'}
-              </span>
-            }
-          />
-        </Tooltip>
+        <div className='knowledge-base-view__skill-result-actions'>
+          {detailUrl != null && (
+            <Tooltip title={t('knowledge.skills.openOfficialSite')}>
+              <Button
+                className='knowledge-base-view__icon-button'
+                onClick={() => openExternalUrl(detailUrl)}
+                icon={<span className='material-symbols-rounded'>open_in_new</span>}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title={item.installed ? t('knowledge.skills.reinstall') : t('knowledge.skills.install')}>
+            <Button
+              type={item.installed ? 'default' : 'primary'}
+              className='knowledge-base-view__icon-button'
+              loading={installing}
+              onClick={() => onInstall(item)}
+              icon={
+                <span className='material-symbols-rounded'>
+                  {item.installed ? 'sync' : 'download'}
+                </span>
+              }
+            />
+          </Tooltip>
+        </div>
       </div>
     </List.Item>
   )

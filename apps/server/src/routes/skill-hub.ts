@@ -7,12 +7,19 @@ const normalizeString = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 )
 
+const normalizePositiveInteger = (value: unknown) => {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined
+}
+
 export function skillHubRouter(): Router {
   const router = new Router()
 
   router.get('/search', async (ctx) => {
     try {
       ctx.body = await searchSkillHub({
+        limit: normalizePositiveInteger(ctx.query.limit),
         query: typeof ctx.query.q === 'string' ? ctx.query.q : '',
         registry: typeof ctx.query.registry === 'string' ? ctx.query.registry : undefined
       })

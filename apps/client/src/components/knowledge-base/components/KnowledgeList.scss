@@ -2,7 +2,11 @@
   background: transparent;
   width: 100%;
   min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
   padding-bottom: 1px;
+  overscroll-behavior: contain;
 }
 
 .knowledge-base-view__list .ant-list-items {

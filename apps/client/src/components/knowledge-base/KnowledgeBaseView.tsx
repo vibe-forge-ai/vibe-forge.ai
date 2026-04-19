@@ -19,10 +19,32 @@ import { KnowledgeMobilePanel } from './components/KnowledgeMobilePanel.js'
 import { KnowledgeSidebar } from './components/KnowledgeSidebar.js'
 import { RulesTab } from './components/RulesTab.js'
 import { SkillsTab } from './components/SkillsTab.js'
+import {
+  ALL_REGISTRIES,
+  ALL_SKILL_SOURCES,
+  isSkillHubInstallFilter,
+  isSkillHubSortKey
+} from './components/skill-hub-utils.js'
+import type { SkillHubInstallFilter, SkillHubSortKey } from './components/skill-hub-utils.js'
 
 interface KnowledgeQueryParams extends Record<string, string> {
   kbTab: string
+  skillInstall: string
+  skillMarketSearch: string
+  skillProjectSearch: string
+  skillRegistry: string
+  skillSort: string
+  skillSource: string
+  skillView: string
 }
+
+const toSkillViewMode = (value: string): 'project' | 'market' => value === 'market' ? 'market' : 'project'
+const toSkillHubInstallFilter = (value: string): SkillHubInstallFilter => (
+  isSkillHubInstallFilter(value) ? value : 'all'
+)
+const toSkillHubSortKey = (value: string): SkillHubSortKey => (
+  isSkillHubSortKey(value) ? value : 'default'
+)
 
 export function KnowledgeBaseView() {
   const { t } = useTranslation()
@@ -57,8 +79,6 @@ export function KnowledgeBaseView() {
   const [entityQuery, setEntityQuery] = React.useState('')
   const [entityTagFilter, setEntityTagFilter] = React.useState<string[]>([])
   const [ruleQuery, setRuleQuery] = React.useState('')
-  const [skillProjectQuery, setSkillProjectQuery] = React.useState('')
-  const [skillViewMode, setSkillViewMode] = React.useState<'project' | 'market'>('project')
   const [isKnowledgeSidebarCollapsed, setKnowledgeSidebarCollapsed] = React.useState(false)
   const [isMobileKnowledgePanelOpen, setMobileKnowledgePanelOpen] = React.useState(false)
   const [createSkillOpen, setCreateSkillOpen] = React.useState(false)
@@ -66,11 +86,64 @@ export function KnowledgeBaseView() {
   const [createSkillForm] = Form.useForm<CreateSkillFormValues>()
 
   const { values, update } = useQueryParams<KnowledgeQueryParams>({
-    keys: ['kbTab'],
+    keys: [
+      'kbTab',
+      'skillView',
+      'skillProjectSearch',
+      'skillMarketSearch',
+      'skillRegistry',
+      'skillSource',
+      'skillInstall',
+      'skillSort'
+    ],
     defaults: {
-      kbTab: 'skills'
+      kbTab: 'skills',
+      skillView: 'project',
+      skillProjectSearch: '',
+      skillMarketSearch: '',
+      skillRegistry: ALL_REGISTRIES,
+      skillSource: ALL_SKILL_SOURCES,
+      skillInstall: 'all',
+      skillSort: 'default'
+    },
+    omit: {
+      skillView: value => value === 'project',
+      skillProjectSearch: value => value === '',
+      skillMarketSearch: value => value === '',
+      skillRegistry: value => value === ALL_REGISTRIES,
+      skillSource: value => value === ALL_SKILL_SOURCES,
+      skillInstall: value => value === 'all',
+      skillSort: value => value === 'default'
     }
   })
+  const skillViewMode = toSkillViewMode(values.skillView)
+  const skillInstallFilter = toSkillHubInstallFilter(values.skillInstall)
+  const skillSortKey = toSkillHubSortKey(values.skillSort)
+  const skillProjectQuery = values.skillProjectSearch
+  const skillMarketQuery = values.skillMarketSearch
+  const skillRegistry = values.skillRegistry || ALL_REGISTRIES
+  const skillSourceFilter = values.skillSource || ALL_SKILL_SOURCES
+  const updateSkillProjectQuery = React.useCallback((value: string) => {
+    update({ skillProjectSearch: value })
+  }, [update])
+  const updateSkillViewMode = React.useCallback((value: 'project' | 'market') => {
+    update({ skillView: value })
+  }, [update])
+  const updateSkillMarketQuery = React.useCallback((value: string) => {
+    update({ skillMarketSearch: value })
+  }, [update])
+  const updateSkillRegistry = React.useCallback((value: string) => {
+    update({ skillRegistry: value })
+  }, [update])
+  const updateSkillSourceFilter = React.useCallback((value: string) => {
+    update({ skillSource: value })
+  }, [update])
+  const updateSkillInstallFilter = React.useCallback((value: SkillHubInstallFilter) => {
+    update({ skillInstall: value })
+  }, [update])
+  const updateSkillSortKey = React.useCallback((value: SkillHubSortKey) => {
+    update({ skillSort: value })
+  }, [update])
 
   const specTagOptions = React.useMemo(() => {
     const tags = new Set<string>()
@@ -221,12 +294,22 @@ export function KnowledgeBaseView() {
       count: skillCount,
       content: (
         <SkillsTab
+          installFilter={skillInstallFilter}
           leading={getContentControls(handleCreateSkill)}
+          marketQuery={skillMarketQuery}
           projectQuery={skillProjectQuery}
+          registry={skillRegistry}
+          sortKey={skillSortKey}
+          sourceFilter={skillSourceFilter}
           viewMode={skillViewMode}
           onRefresh={handleRefresh}
           onCreate={handleCreateSkill}
-          onViewModeChange={setSkillViewMode}
+          onInstallFilterChange={updateSkillInstallFilter}
+          onMarketQueryChange={updateSkillMarketQuery}
+          onRegistryChange={updateSkillRegistry}
+          onSortChange={updateSkillSortKey}
+          onSourceFilterChange={updateSkillSourceFilter}
+          onViewModeChange={updateSkillViewMode}
         />
       )
     },
@@ -329,7 +412,7 @@ export function KnowledgeBaseView() {
 
   const handleActiveSearchChange = (value: string) => {
     if (activeSectionKey === 'skills') {
-      setSkillProjectQuery(value)
+      updateSkillProjectQuery(value)
       return
     }
     if (activeSectionKey === 'entities') {

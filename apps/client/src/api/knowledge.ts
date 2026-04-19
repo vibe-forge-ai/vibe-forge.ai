@@ -55,7 +55,7 @@ export interface SkillDetail extends SkillSummary {
 
 export interface SkillHubRegistrySummary {
   id: string
-  type: 'claude-code'
+  type: 'claude-code' | 'skills-sh'
   enabled: boolean
   searchable: boolean
   source: string
@@ -77,9 +77,14 @@ export interface SkillHubItem {
   installed: boolean
   installScope?: string
   installedAt?: string
+  installRef?: string
+  source?: string
+  detailUrl?: string
+  installs?: number
 }
 
 export interface SkillHubSearchResult {
+  hasMore?: boolean
   registries: SkillHubRegistrySummary[]
   items: SkillHubItem[]
 }
@@ -157,10 +162,14 @@ export async function getSkillDetail(path: string): Promise<{ skill: SkillDetail
 }
 
 export async function searchSkillHub(params: {
+  limit?: number
   registry?: string
   query?: string
 } = {}): Promise<SkillHubSearchResult> {
   const url = createApiUrl('/api/skill-hub/search')
+  if (params.limit != null) {
+    url.searchParams.set('limit', String(params.limit))
+  }
   if (params.registry != null && params.registry !== '') {
     url.searchParams.set('registry', params.registry)
   }

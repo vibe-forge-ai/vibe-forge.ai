@@ -1,6 +1,6 @@
 export interface SkillHubRegistrySummary {
   id: string
-  type: 'claude-code'
+  type: 'claude-code' | 'skills-sh'
   enabled: boolean
   searchable: boolean
   source: string
@@ -22,9 +22,14 @@ export interface SkillHubItem {
   installed: boolean
   installScope?: string
   installedAt?: string
+  installRef?: string
+  source?: string
+  detailUrl?: string
+  installs?: number
 }
 
 export interface SkillHubSearchResult {
+  hasMore?: boolean
   registries: SkillHubRegistrySummary[]
   items: SkillHubItem[]
 }

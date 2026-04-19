@@ -1,47 +1,60 @@
-import { Button, Empty, Input, List, Select, Spin, Tooltip } from 'antd'
+import { Button, Empty, Input, Select, Spin, Tooltip } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { SkillHubItem, SkillHubRegistrySummary } from '#~/api.js'
 import { EmptyState } from './EmptyState'
-import { SkillHubResultItem } from './SkillHubResultItem'
+import { SkillMarketResults } from './SkillMarketResults'
+import type { SkillMarketViewProps } from './SkillMarketView.types'
 import { SkillRegistryErrors } from './SkillRegistryErrors'
-
-interface SkillMarketViewProps {
-  hubItems: SkillHubItem[]
-  installingId: string | null
-  isLoading: boolean
-  query: string
-  registries: SkillHubRegistrySummary[]
-  registry: string
-  registryOptions: Array<{ label: string; value: string }>
-  skillCount: number
-  onAddRegistry: () => void
-  onInstall: (item: SkillHubItem) => void
-  onQueryChange: (value: string) => void
-  onRegistryChange: (value: string) => void
-}
+import { ALL_REGISTRIES, ALL_SKILL_SOURCES } from './skill-hub-utils'
+import type { SkillHubInstallFilter, SkillHubSortKey } from './skill-hub-utils'
 
 export function SkillMarketView({
+  canLoadMore,
   hubItems,
   installingId,
+  installFilter,
   isLoading,
+  loadingMore,
   query,
   registries,
   registry,
   registryOptions,
-  skillCount,
+  resetKey,
+  sortKey,
+  sourceFilter,
+  sourceOptions,
   onAddRegistry,
   onInstall,
+  onInstallFilterChange,
+  onLoadMore,
   onQueryChange,
-  onRegistryChange
+  onRegistryChange,
+  onSortChange,
+  onSourceFilterChange
 }: SkillMarketViewProps) {
   const { t } = useTranslation()
   const [actionsOpen, setActionsOpen] = React.useState(false)
-  const hasRegistryFilter = registry !== 'all'
+  const hasRegistryFilter = registry !== ALL_REGISTRIES
+  const hasSourceFilter = sourceFilter !== ALL_SKILL_SOURCES
+  const hasInstallFilter = installFilter !== 'all'
+  const hasSort = sortKey !== 'default'
+  const hasActiveControls = hasRegistryFilter || hasSourceFilter || hasInstallFilter || hasSort
+  const hasSearchCriteria = query.trim() !== '' || hasRegistryFilter || hasSourceFilter || hasInstallFilter
   const registryChevron = <span className='material-symbols-rounded knowledge-base-view__select-chevron'>
     expand_more
   </span>
+  const installFilterOptions: Array<{ label: string; value: SkillHubInstallFilter }> = [
+    { label: t('knowledge.skills.allStatuses'), value: 'all' },
+    { label: t('knowledge.skills.installedOnly'), value: 'installed' },
+    { label: t('knowledge.skills.notInstalled'), value: 'notInstalled' }
+  ]
+  const sortOptions: Array<{ label: string; value: SkillHubSortKey }> = [
+    { label: t('knowledge.skills.sortDefault'), value: 'default' },
+    { label: t('knowledge.skills.sortInstallsDesc'), value: 'installsDesc' },
+    { label: t('knowledge.skills.sortNameAsc'), value: 'nameAsc' },
+    { label: t('knowledge.skills.sortNameDesc'), value: 'nameDesc' }
+  ]
 
   return (
     <>
@@ -54,7 +67,7 @@ export function SkillMarketView({
               <button
                 type='button'
                 className={`knowledge-base-view__search-toggle-button ${actionsOpen ? 'is-open' : ''} ${
-                  hasRegistryFilter ? 'has-active-filters' : ''
+                  hasActiveControls ? 'has-active-filters' : ''
                 }`}
                 aria-label={t('knowledge.skills.marketActions')}
                 onMouseDown={(event) => event.preventDefault()}
@@ -72,14 +85,48 @@ export function SkillMarketView({
       </div>
       <div className={`knowledge-base-view__skill-market-actions ${actionsOpen ? 'is-open' : ''}`}>
         <div className='knowledge-base-view__skill-market-actions-inner'>
-          <div className='knowledge-base-view__skill-registry-filter'>
+          <div className='knowledge-base-view__skill-toolbar-field knowledge-base-view__skill-toolbar-field--wide'>
             <span className='material-symbols-rounded knowledge-base-view__toolbar-filter-icon'>source</span>
             <Select
-              className='knowledge-base-view__skill-registry-select'
+              className='knowledge-base-view__skill-toolbar-select'
+              aria-label={t('knowledge.skills.registryFilter')}
               value={registry}
               options={registryOptions}
               suffixIcon={registryChevron}
               onChange={onRegistryChange}
+            />
+          </div>
+          <div className='knowledge-base-view__skill-toolbar-field knowledge-base-view__skill-toolbar-field--wide'>
+            <span className='material-symbols-rounded knowledge-base-view__toolbar-filter-icon'>inventory_2</span>
+            <Select
+              className='knowledge-base-view__skill-toolbar-select'
+              aria-label={t('knowledge.skills.sourceFilter')}
+              value={sourceFilter}
+              options={sourceOptions}
+              suffixIcon={registryChevron}
+              onChange={onSourceFilterChange}
+            />
+          </div>
+          <div className='knowledge-base-view__skill-toolbar-field'>
+            <span className='material-symbols-rounded knowledge-base-view__toolbar-filter-icon'>filter_list</span>
+            <Select
+              className='knowledge-base-view__skill-toolbar-select'
+              aria-label={t('knowledge.skills.installFilter')}
+              value={installFilter}
+              options={installFilterOptions}
+              suffixIcon={registryChevron}
+              onChange={onInstallFilterChange}
+            />
+          </div>
+          <div className='knowledge-base-view__skill-toolbar-field'>
+            <span className='material-symbols-rounded knowledge-base-view__toolbar-filter-icon'>sort</span>
+            <Select
+              className='knowledge-base-view__skill-toolbar-select'
+              aria-label={t('knowledge.skills.sort')}
+              value={sortKey}
+              options={sortOptions}
+              suffixIcon={registryChevron}
+              onChange={onSortChange}
             />
           </div>
           <Tooltip title={t('knowledge.skills.addRegistry')}>
@@ -99,28 +146,29 @@ export function SkillMarketView({
         </div>
       )}
       {!isLoading && hubItems.length > 0 && (
-        <List
-          className='knowledge-base-view__list'
-          dataSource={hubItems}
-          renderItem={(item) => (
-            <SkillHubResultItem
-              item={item}
-              installing={installingId === item.id}
-              onInstall={onInstall}
-            />
-          )}
+        <SkillMarketResults
+          canLoadMore={canLoadMore}
+          hubItems={hubItems}
+          installingId={installingId}
+          loadingMore={loadingMore}
+          resetKey={resetKey}
+          onInstall={onInstall}
+          onLoadMore={onLoadMore}
         />
       )}
-      {!isLoading && hubItems.length === 0 && skillCount > 0 && (
+      {!isLoading && hubItems.length === 0 && registries.length > 0 && (
         <div className='knowledge-base-view__empty-simple'>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('knowledge.filters.noResults')} />
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={hasSearchCriteria ? t('knowledge.filters.noResults') : t('knowledge.skills.emptyHub')}
+          />
         </div>
       )}
-      {!isLoading && hubItems.length === 0 && skillCount === 0 && (
+      {!isLoading && hubItems.length === 0 && registries.length === 0 && (
         <EmptyState
-          description={registries.length === 0 ? t('knowledge.skills.noRegistry') : t('knowledge.skills.empty')}
-          actionLabel={registries.length === 0 ? t('knowledge.skills.addRegistry') : undefined}
-          onAction={registries.length === 0 ? onAddRegistry : undefined}
+          description={t('knowledge.skills.noRegistry')}
+          actionLabel={t('knowledge.skills.addRegistry')}
+          onAction={onAddRegistry}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 .knowledge-base-view__content {
   height: 100%;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: var(--subpage-content-card-gap);
   display: flex;
   flex-direction: column;
