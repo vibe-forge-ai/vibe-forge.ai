@@ -45,7 +45,11 @@ jobs:
 
       - name: Prepare PWA artifact
         run: |
-          cp .ai/docs/usage/pwa.md apps/client/dist/pwa.md
+          if [ -f .ai/docs/usage/pwa.md ]; then
+            cp .ai/docs/usage/pwa.md apps/client/dist/pwa.md
+          else
+            echo "No .ai/docs/usage/pwa.md found; preserving the existing gh-pages pwa.md when available."
+          fi
           touch apps/client/dist/.nojekyll
 
       - name: Publish to gh-pages
@@ -64,6 +68,10 @@ jobs:
             git worktree add --detach .gh-pages
             git -C .gh-pages checkout --orphan gh-pages
             git -C .gh-pages rm -rf . || true
+          fi
+
+          if [ ! -f apps/client/dist/pwa.md ] && [ -f .gh-pages/pwa.md ]; then
+            cp .gh-pages/pwa.md apps/client/dist/pwa.md
           fi
 
           find .gh-pages -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
