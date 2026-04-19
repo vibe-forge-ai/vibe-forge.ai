@@ -6,6 +6,44 @@
     min-height: 0;
   }
 
+  &__compact-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__compact-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    padding-bottom: 0;
+  }
+
+  &__compact-select {
+    width: 100%;
+
+    .ant-select-selector {
+      min-height: 36px !important;
+      border-radius: 8px !important;
+      padding-inline: 10px !important;
+      background: var(--subpage-content-card-bg) !important;
+    }
+  }
+
+  &__compact-panel {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    margin: var(--subpage-content-card-gap);
+    margin-top: 12px;
+    border-radius: var(--subpage-content-card-radius);
+    background: var(--subpage-content-card-bg);
+    overflow: hidden;
+  }
+
   &__state {
     display: grid;
     place-items: center;
@@ -60,6 +98,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 32px;
   .ant-radio-group {
     display: flex;
     align-items: center;
@@ -70,6 +109,16 @@
   justify-content: flex-end;
 }
 
+.config-view__section-header-extra {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
 .config-view__card {
   flex-grow: 1;
   min-height: 0;
@@ -78,6 +127,79 @@
   border-radius: 0;
   background: transparent;
   overflow: auto;
+  --config-surface-bg-1: #ffffff;
+  --config-surface-border-1: #d8e0ea;
+  --config-surface-hover-bg-1: #f6f9fc;
+  --config-surface-hover-border-1: #c8d5e4;
+  --config-surface-bg-2: #f7f9fc;
+  --config-surface-border-2: #d3dbe6;
+  --config-surface-hover-bg-2: #eef3f8;
+  --config-surface-hover-border-2: #c2cfde;
+  --config-surface-bg-3: #eef3f8;
+  --config-surface-border-3: #c9d5e2;
+  --config-surface-hover-bg-3: #e4ebf3;
+  --config-surface-hover-border-3: #b5c5d8;
+  --config-surface-bg-4: #e6edf5;
+  --config-surface-border-4: #bfccdc;
+  --config-surface-hover-bg-4: #dde6f0;
+  --config-surface-hover-border-4: #acbfd5;
+}
+
+html.dark .config-view__card {
+  --config-surface-bg-1: #171b22;
+  --config-surface-border-1: #2d3541;
+  --config-surface-hover-bg-1: #202834;
+  --config-surface-hover-border-1: #3d4a5b;
+  --config-surface-bg-2: #1d242d;
+  --config-surface-border-2: #343f4e;
+  --config-surface-hover-bg-2: #273140;
+  --config-surface-hover-border-2: #48586d;
+  --config-surface-bg-3: #232c37;
+  --config-surface-border-3: #3c495a;
+  --config-surface-hover-bg-3: #2e3948;
+  --config-surface-hover-border-3: #53667d;
+  --config-surface-bg-4: #29333f;
+  --config-surface-border-4: #455365;
+  --config-surface-hover-bg-4: #354253;
+  --config-surface-hover-border-4: #60758d;
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-1);
+  --subpage-tertiary-bg: var(--config-surface-bg-1);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-1);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-1);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-2);
+  --subpage-tertiary-bg: var(--config-surface-bg-2);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-2);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-2);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-3);
+  --subpage-tertiary-bg: var(--config-surface-bg-3);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-3);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-3);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-4);
+  --subpage-tertiary-bg: var(--config-surface-bg-4);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-4);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-4);
 }
 
 .config-view__card + .config-view__card {
@@ -88,8 +210,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 32px;
   font-size: 14px;
   font-weight: 600;
+  line-height: 20px;
   color: var(--text-color);
 }
 
@@ -100,6 +224,92 @@
 
 .config-view__section-hint {
   font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__detail-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 32px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.config-view__detail-back {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  margin-left: -6px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.config-view__detail-back.ant-btn-text:not(:disabled):hover,
+.config-view__detail-back.ant-btn-text:not(:disabled):focus-visible,
+.config-view__detail-back.ant-btn-text:not(:disabled):active {
+  background: transparent;
+}
+
+.config-view__detail-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 32px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  line-height: 20px;
+}
+
+.config-view__detail-crumb {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--sub-text-color);
+  line-height: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.config-view__detail-crumb:not(button) {
+  cursor: default;
+}
+
+.config-view__detail-crumb--static,
+.config-view__detail-crumb--link {
+  flex: 0 1 auto;
+}
+
+.config-view__detail-crumb:hover {
+  color: var(--text-color);
+}
+
+.config-view__detail-crumb--current {
+  flex: 1 1 auto;
+  color: var(--text-color);
+  font-weight: 600;
+  cursor: default;
+}
+
+.config-view__detail-separator {
+  flex: 0 0 auto;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--sub-text-color);
 }
 
@@ -119,6 +329,12 @@
   gap: 8px;
   width: 100%;
   line-height: 1;
+}
+
+.config-view__compact-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .config-view__tab-icon {
@@ -230,5 +446,41 @@
   .config-view__tabs > .ant-tabs-content-holder {
     margin-top: 0;
     margin-left: var(--subpage-content-card-gap);
+  }
+}
+
+@media (max-width: 960px) {
+  .config-view__section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .config-view__section-header-extra {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .config-view__detail-trail {
+    width: 100%;
+  }
+
+  .config-view__detail-breadcrumb {
+    flex: 1;
+  }
+
+  .config-view--compact {
+    .config-view__body {
+      padding: 0;
+    }
+
+    .config-view__content {
+      padding: 12px;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .config-view__card {
+      overflow: visible;
+    }
   }
 }

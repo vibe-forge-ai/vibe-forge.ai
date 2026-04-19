@@ -6,6 +6,7 @@ import type { SessionPermissionState } from '@vibe-forge/utils'
 
 import { buildUpdateStatement } from '../repo.utils'
 import type { SqliteDatabase } from '../sqlite'
+import { normalizeSessionWorkspaceFileState, parseSessionWorkspaceFileState } from './workspace-file-state'
 
 export type SessionRuntimeKind = 'interactive' | 'external'
 
@@ -38,6 +39,7 @@ interface SessionRow {
   effort: string | null
   promptType: string | null
   promptName: string | null
+  workspaceFileState: string | null
 }
 
 type SessionUpdate = Partial<Omit<Session, 'id' | 'createdAt' | 'messageCount'>>
@@ -67,7 +69,8 @@ const sessionUpdateFields = [
   { key: 'permissionMode' },
   { key: 'effort' },
   { key: 'promptType' },
-  { key: 'promptName' }
+  { key: 'promptName' },
+  { key: 'workspaceFileState', toParam: value => JSON.stringify(normalizeSessionWorkspaceFileState(value)) }
 ] as const satisfies ReadonlyArray<{
   key: keyof SessionUpdate
   toParam?: (value: any) => string | number | null
@@ -96,6 +99,7 @@ const parsePermissionState = (value: string | null) => {
 }
 
 function mapSessionRow(row: SessionRow): Session {
+  const workspaceFileState = parseSessionWorkspaceFileState(row.workspaceFileState)
   return {
     id: row.id,
     parentSessionId: row.parentSessionId ?? undefined,
@@ -113,7 +117,8 @@ function mapSessionRow(row: SessionRow): Session {
     permissionMode: (row.permissionMode as any) ?? undefined,
     effort: (row.effort as any) ?? undefined,
     promptType: (row.promptType as any) ?? undefined,
-    promptName: row.promptName ?? undefined
+    promptName: row.promptName ?? undefined,
+    ...(workspaceFileState == null ? {} : { workspaceFileState })
   }
 }
 

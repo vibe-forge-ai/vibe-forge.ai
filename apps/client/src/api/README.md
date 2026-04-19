@@ -11,6 +11,7 @@
 - `projects.ts`: 项目列表与创建
 - `sessions.ts`: 会话与消息
 - `types.ts`: 跨模块共享的响应类型
+- `worktree-environments.ts`: worktree 环境脚本管理
 
 ## 新增或修改 API 的标准流程
 

@@ -26,6 +26,12 @@ export interface SessionMessageQueueState {
   next: SessionQueuedMessage[]
 }
 
+export interface SessionWorkspaceFileState {
+  openPaths: string[]
+  selectedPath?: string
+  isOpen?: boolean
+}
+
 export interface Session {
   id: string
   parentSessionId?: string
@@ -44,6 +50,7 @@ export interface Session {
   effort?: EffortLevel
   promptType?: SessionPromptType
   promptName?: string
+  workspaceFileState?: SessionWorkspaceFileState
 }
 
 export interface SessionWorkspace {
@@ -53,6 +60,7 @@ export interface SessionWorkspace {
   repositoryRoot?: string
   worktreePath?: string
   baseRef?: string
+  worktreeEnvironment?: string
   cleanupPolicy: SessionWorkspaceCleanupPolicy
   state: SessionWorkspaceState
   lastError?: string

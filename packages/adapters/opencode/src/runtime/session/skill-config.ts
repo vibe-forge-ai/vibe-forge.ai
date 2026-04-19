@@ -1,10 +1,10 @@
-import { lstat, mkdir, readdir, rm, symlink } from 'node:fs/promises'
+import { mkdir, readdir, rm } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import { DefinitionLoader } from '@vibe-forge/definition-loader'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
 
 const filterResolvedSkills = async (
   cwd: string,
@@ -28,16 +28,10 @@ const filterResolvedSkills = async (
 }
 
 const ensureSymlinkTarget = async (sourcePath: string, targetPath: string) => {
-  try {
-    const existing = await lstat(targetPath)
-    if (existing.isSymbolicLink() || existing.isDirectory() || existing.isFile()) {
-      await rm(targetPath, { recursive: true, force: true })
-    }
-  } catch {
-  }
-
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath)
+  await syncSymlinkTarget({
+    sourcePath,
+    targetPath
+  })
 }
 
 const mirrorDirectoryEntries = async (sourceDir: string, targetDir: string) => {

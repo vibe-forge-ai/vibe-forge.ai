@@ -1,13 +1,13 @@
 /* eslint-disable max-lines */
 
 import { accessSync, constants } from 'node:fs'
-import { copyFile, cp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
-import { parseServiceModelSelector } from '@vibe-forge/utils'
+import { parseServiceModelSelector, syncSymlinkTarget } from '@vibe-forge/utils'
 
 import { resolveKimiBinaryPath } from '../paths'
 import type { KimiAdapterConfig, KimiProviderType } from './common'
@@ -150,7 +150,11 @@ const ensureCredentialsLink = async (shareDir: string, realShareDir: string) => 
   if (!pathExists(sourcePath) || pathExists(targetPath)) return
 
   try {
-    await symlink(sourcePath, targetPath, 'dir')
+    await syncSymlinkTarget({
+      sourcePath,
+      targetPath,
+      type: 'dir'
+    })
   } catch {
     await cp(sourcePath, targetPath, { recursive: true })
   }
@@ -372,7 +376,11 @@ const stageSkillOverlays = async (sessionRoot: string, options: AdapterQueryOpti
   for (const overlay of overlays) {
     const targetPath = resolve(skillsDir, overlay.targetPath)
     await mkdir(dirname(targetPath), { recursive: true })
-    await symlink(overlay.sourcePath, targetPath, 'dir')
+    await syncSymlinkTarget({
+      sourcePath: overlay.sourcePath,
+      targetPath,
+      type: 'dir'
+    })
   }
 
   return skillsDir

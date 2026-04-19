@@ -50,6 +50,8 @@
     "deselectAll": "Deselect all",
     "collapse": "Collapse sidebar",
     "close": "Close",
+    "enterFullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
     "sort": "Sort order",
     "allTags": "All tags",
     "allAdapters": "All adapters",
@@ -83,6 +85,23 @@
       "terminated": "Stopped",
       "waiting_input": "Waiting"
     }
+  },
+  "auth": {
+    "title": "Sign in to Vibe Forge",
+    "subtitle": "Use a configured account to continue into this workspace.",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "usernameRequired": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "passwordRequired": "Enter password",
+    "rememberDevice": "Remember this device",
+    "login": "Sign in",
+    "loginFailed": "Sign in failed",
+    "statusFailed": "Could not load sign-in status",
+    "generatedPasswordTitle": "Using an auto-generated local password",
+    "generatedPasswordDescription": "Find the password in the local password file, or configure fixed accounts in webAuth.accounts.",
+    "generatedPasswordHint": "Default password file: {{path}}"
   },
   "automation": {
     "title": "Automation",
@@ -165,6 +184,8 @@
     "lastRunAt": "Last run: {{time}}",
     "noRunYet": "No runs yet",
     "emptyRules": "No automation rules",
+    "mobileRules": "Rules",
+    "mobileDetails": "Details",
     "selectRule": "Select an automation rule",
     "ruleId": "Rule ID",
     "createdAt": "Created At",
@@ -209,6 +230,8 @@
     "caseId": "Case:",
     "searchPlaceholder": "Search category, title, or summary",
     "emptyCases": "No benchmark cases",
+    "mobileCases": "Cases",
+    "mobileDetails": "Details",
     "noSummary": "No summary",
     "configTitle": "Case Config",
     "baseCommit": "Base Commit",
@@ -446,12 +469,66 @@
     "imageReadFailed": "Failed to read image",
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
     "fileNotSupportedInInteraction": "Files are not supported for this interaction",
-    "contextPickerTitle": "Reference files",
-    "contextPickerDescription": "Choose one or more files from the current project tree.",
-    "contextPickerConfirm": "Reference files",
+    "contextPickerTitle": "Reference files or folders",
+    "contextPickerDescription": "Choose one or more files or folders from the current project tree.",
+    "contextPickerConfirm": "Reference",
     "contextPickerLoading": "Loading workspace tree...",
-    "contextPickerEmpty": "No files available in this directory",
+    "contextPickerEmpty": "No items available in this directory",
     "contextPickerLoadFailed": "Failed to load workspace tree",
+    "workspaceDrawerToggle": "Workspace drawer",
+    "workspaceDrawerTitle": "Workspace",
+    "workspaceDrawerRefresh": "Refresh workspace",
+    "workspaceDrawerForceSync": "Force sync",
+    "workspaceDrawerDisplayMode": "Display mode",
+    "workspaceDrawerLocateFile": "Reveal file",
+    "workspaceDrawerExpandAll": "Expand",
+    "workspaceDrawerCollapseAll": "Collapse",
+    "workspaceDrawerToggleSection": "Expand or collapse section",
+    "workspaceFileOpen": "Open file",
+    "workspaceTreeReferenceToInput": "Reference in input",
+    "workspaceTreeTargetMissing": "Target missing",
+    "workspaceTreeTargetMissingState": " (target missing)",
+    "workspaceTreeExternalLinkState": " (external link)",
+    "workspaceTreeNodeLinkTitle": "{{path}} -> {{target}}{{state}}",
+    "workspaceTreeLinkTargetMissing": "Link target missing: {{target}}",
+    "workspaceTreeLinkTarget": "Link target: {{target}}",
+    "workspaceFileCopyPath": "Copy path",
+    "workspaceFilePathCopied": "Path copied",
+    "workspaceFileCloseOthers": "Close others",
+    "workspaceFileCloseRight": "Close to the right",
+    "workspaceFileCloseAll": "Close all",
+    "workspaceDrawerChangedFiles": "Changed files",
+    "workspaceDrawerChangedCount": "{{count}}",
+    "workspaceDrawerLoadingGit": "Loading Git status...",
+    "workspaceDrawerGitUnavailable": "Git is unavailable for this workspace.",
+    "workspaceDrawerNoChangedFiles": "No changed files",
+    "workspaceDrawerTree": "Directory tree",
+    "workspaceDrawerChangedFolders": "Group by folder",
+    "workspaceDrawerChangedFlat": "Flat view",
+    "workspaceDrawerChangedSection": {
+      "staged": "Staged",
+      "tracked": "Tracked",
+      "untracked": "Untracked"
+    },
+    "workspaceDrawerSubmodule": "Submodule",
+    "workspaceDrawerSubmoduleCommit": "commit changed",
+    "workspaceDrawerSubmoduleTracked": "tracked changes",
+    "workspaceDrawerSubmoduleUntracked": "untracked changes",
+    "workspaceFileEditorTitle": "File",
+    "workspaceFileEditorLoading": "Loading file...",
+    "workspaceFileEditorLoadFailed": "Failed to load file",
+    "workspaceImagePreviewLoadFailed": "Failed to load image",
+    "workspaceFileEditorSave": "Save",
+    "workspaceFileEditorSaved": "Saved",
+    "workspaceFileEditorRevert": "Revert",
+    "workspaceFileEditorResizePanel": "Drag to resize file editor height",
+    "workspaceDrawerFileStatus": {
+      "staged": "Staged",
+      "tracked": "Tracked changes",
+      "unstaged": "Unstaged",
+      "untracked": "Untracked",
+      "mixed": "Mixed"
+    },
     "modelGroupRecommended": "Recommended Models",
     "modelMoreModels": "More models",
     "availableTools": "Available Tools",
@@ -487,6 +564,7 @@
     "viewTimeline": "Timeline",
     "viewTerminal": "Terminal",
     "viewSettings": "Settings",
+    "newSessionTitle": "New session",
     "gitBranchSwitcher": "Switch branch",
     "gitOperations": "Git actions",
     "gitWorktree": "Worktree",
@@ -521,6 +599,11 @@
     "sessionWorkspaceBaseRef": "Base ref",
     "sessionWorkspaceCurrentSession": "Current session",
     "sessionWorkspaceRepositoryWorktrees": "Repository worktrees",
+    "sessionWorkspaceEnvironment": "Worktree environment",
+    "sessionWorkspaceEnvironmentDefault": "Default environment",
+    "sessionWorkspaceEnvironmentProject": "Project",
+    "sessionWorkspaceEnvironmentLocal": "Local",
+    "sessionWorkspaceNoEnvironments": "No environments",
     "sessionWorkspaceStateReady": "Ready",
     "sessionWorkspaceStateProvisioning": "Provisioning",
     "sessionWorkspaceStateDeleting": "Deleting",
@@ -681,6 +764,7 @@
         "title": "Existing Workspaces",
         "empty": "No workspaces found. Configure workspaces in .ai.config.json."
       },
+      "moreCount": "{{count}} more",
       "specs": {
         "title": "Existing Flows",
         "params": "{{count}} params",
@@ -812,9 +896,31 @@
       "unknown": "Unknown tool"
     },
     "terminal": {
+      "addSession": "New terminal",
+      "closeNamedSession": "Close {{title}}",
+      "closeSession": "Close terminal {{index}}",
       "connectionError": "Terminal connection failed. Check the server and try again.",
+      "dragSession": "Drag to reorder terminals",
+      "enterFullscreen": "Fullscreen",
+      "exited": "Exited",
+      "exitFullscreen": "Exit fullscreen",
       "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}",
-      "resizePanel": "Drag to resize terminal height"
+      "hideManager": "Hide terminal list",
+      "manageTerminals": "Manage terminals",
+      "paneTitle": "Terminal {{index}}",
+      "renameSession": "Rename {{title}}",
+      "selectShell": "Choose terminal type",
+      "sessionCount": "{{count}} terminals",
+      "resizePanel": "Drag to resize terminal height",
+      "shellTooltip": "Shell: {{shell}}",
+      "shellTooltipExited": "Shell: {{shell}}, exited",
+      "showManager": "Show terminal list",
+      "shell": {
+        "bash": "Bash",
+        "default": "Default shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",
@@ -852,6 +958,7 @@
       "addField": "Add Field",
       "addItem": "Add Item",
       "remove": "Remove",
+      "removeItemConfirmTitle": "Delete this item?",
       "collapse": "Collapse",
       "expand": "Expand",
       "addAdapter": "Add Adapter",
@@ -863,6 +970,8 @@
       "addHeader": "Add Header",
       "addEntry": "Add Entry",
       "newModelSelectorName": "New model selector",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
       "shortcutPlaceholder": "Press shortcut",
       "clearShortcut": "Clear shortcut",
       "newModelServiceName": "New model service name",
@@ -884,6 +993,7 @@
       "defaultAdapterPlaceholder": "Select adapter",
       "defaultModelServicePlaceholder": "Select model service",
       "defaultModelPlaceholder": "Select model",
+      "worktreeEnvironmentPlaceholder": "Select worktree environment",
       "titlePlaceholder": "Enter title",
       "descriptionPlaceholder": "Enter description",
       "channelType": "Channel Type",
@@ -903,6 +1013,9 @@
         "high": "High",
         "max": "Max"
       }
+    },
+    "detail": {
+      "back": "Back"
     },
     "fields": {
       "general": {
@@ -928,7 +1041,29 @@
         },
         "recommendedModels": {
           "label": "Recommended Models",
-          "desc": "Models shown in the recommended section of the selector"
+          "desc": "Models shown in the recommended section of the selector",
+          "item": {
+            "service": {
+              "label": "Model Service",
+              "desc": "Optional service that owns this model"
+            },
+            "model": {
+              "label": "Model",
+              "desc": "Model identifier shown in recommendations"
+            },
+            "title": {
+              "label": "Title",
+              "desc": "Optional display title for this recommendation"
+            },
+            "description": {
+              "label": "Description",
+              "desc": "Optional display description for this recommendation"
+            },
+            "placement": {
+              "label": "Placement",
+              "desc": "UI placement where this recommendation appears"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "Interface Language",
@@ -971,6 +1106,25 @@
             "desc": "0-1 or 0-100, 0 means mute"
           },
           "events": {
+            "label": "Event Notifications",
+            "desc": "Configure each notification trigger separately",
+            "item": {
+              "enabled": {
+                "label": "Enable notification"
+              },
+              "title": {
+                "label": "Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
             "completed": {
               "label": "Completion Notification",
               "desc": "Triggered when a session completes",
@@ -1062,6 +1216,10 @@
         "createSessionWorktree": {
           "label": "Create worktree for new sessions",
           "desc": "Use a managed worktree by default when creating a new session"
+        },
+        "worktreeEnvironment": {
+          "label": "Default worktree environment",
+          "desc": "Environment scripts run when managed worktrees are created, started, and destroyed"
         },
         "customInstructions": {
           "label": "Custom Instructions",
@@ -1230,10 +1388,15 @@
         "command": "Command",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "Model Selector"
       }
     },
     "sectionGroups": {
       "base": "Base Configuration",
+      "models": "Model Configuration",
+      "advanced": "Advanced Configuration",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",
@@ -1242,6 +1405,79 @@
     "groups": {
       "config": "Configuration",
       "app": "Application"
+    },
+    "environments": {
+      "newPlaceholder": "Example: env-node-20",
+      "newLocalPlaceholder": "Example: env-node-20",
+      "create": "New",
+      "created": "Environment created",
+      "empty": "No worktree environments",
+      "searchEmpty": "No matching worktree environments",
+      "searchPlaceholder": "Search environments",
+      "exists": "Environment name already exists",
+      "createFailed": "Failed to create environment",
+      "saveFailed": "Failed to save environment",
+      "edit": "Edit",
+      "name": "Name",
+      "createTitle": "Create Environment",
+      "createDescription": "",
+      "projectListTitle": "Project Environments",
+      "projectListDescription": "",
+      "localListTitle": "Local Environments",
+      "localListDescription": "",
+      "detailTitle": "Environment Details",
+      "baseScript": "Script",
+      "availableEnvVars": "Available env vars",
+      "platformOverrides": "Platform Overrides",
+      "platformOverridesDescription": "Override the default script for a specific operating system.",
+      "platformScriptDescription": "Runs only on {{platform}}.",
+      "sources": {
+        "project": "Project",
+        "user": "Local"
+      },
+      "platforms": {
+        "macos": "macOS",
+        "linux": "Linux",
+        "windows": "Windows"
+      },
+      "operationSections": {
+        "create": {
+          "title": "Create Script",
+          "description": "This script runs after the worktree is created."
+        },
+        "start": {
+          "title": "Start Script",
+          "description": "This script runs before the adapter process starts."
+        },
+        "destroy": {
+          "title": "Cleanup Script",
+          "description": "This script runs before deleting a managed worktree."
+        }
+      },
+      "baseScriptDescriptions": {
+        "create": "Runs in the new worktree.",
+        "start": "Runs in the session workspace.",
+        "destroy": "Runs in the worktree being deleted."
+      },
+      "operations": {
+        "create": "Create",
+        "start": "Start",
+        "destroy": "Destroy"
+      },
+      "scripts": {
+        "create": "create.sh",
+        "create.macos": "create.macos.sh",
+        "create.linux": "create.linux.sh",
+        "create.windows": "create.windows.ps1",
+        "start": "start.sh",
+        "start.macos": "start.macos.sh",
+        "start.linux": "start.linux.sh",
+        "start.windows": "start.windows.ps1",
+        "destroy": "destroy.sh",
+        "destroy.macos": "destroy.macos.sh",
+        "destroy.linux": "destroy.linux.sh",
+        "destroy.windows": "destroy.windows.ps1"
+      }
     },
     "about": {
       "software": "Software Info",
@@ -1261,6 +1497,7 @@
       "channels": "Channels",
       "adapters": "Adapters",
       "plugins": "Plugins",
+      "environments": "Environments",
       "mcp": "MCP",
       "shortcuts": "Shortcuts",
       "appearance": "Appearance",

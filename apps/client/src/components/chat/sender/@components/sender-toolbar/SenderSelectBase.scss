@@ -69,3 +69,24 @@
     opacity: .56;
   }
 }
+
+@media (max-width: 960px) {
+  .model-select,
+  .effort-select {
+    .ant-select-arrow {
+      width: 20px;
+      min-width: 20px;
+      flex: 0 0 20px;
+    }
+
+    &.ant-select-single .ant-select-selector {
+      padding-left: 6px !important;
+      padding-inline-start: 6px !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 11px;
+    }
+  }
+}

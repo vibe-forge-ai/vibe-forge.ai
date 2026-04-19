@@ -1,6 +1,6 @@
 import './BenchmarkView.scss'
 
-import { App } from 'antd'
+import { App, Segmented } from 'antd'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
@@ -14,6 +14,7 @@ import {
   startBenchmarkRun
 } from '#~/api.js'
 import { PageShell } from '#~/components/layout/PageShell'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
 import type { BenchmarkCase } from '@vibe-forge/types'
 
@@ -25,12 +26,15 @@ import { isTerminalRun } from './utils.js'
 export function BenchmarkView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
 
   // State
   const [activeRunId, setActiveRunId] = useState('')
   const [treeQuery, setTreeQuery] = useState('')
   const [expandedKeys, setExpandedKeys] = useState<string[]>([])
   const [checkedKeys, setCheckedKeys] = useState<string[]>([])
+  const [mobilePanel, setMobilePanel] = useState<'cases' | 'details'>('cases')
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   const { values, update } = useQueryParams<BenchmarkQueryParams>({
     keys: ['category', 'title'],
@@ -149,6 +153,13 @@ export function BenchmarkView() {
   }, [selectedCase, update, values.category, values.title])
 
   useEffect(() => {
+    if (!isCompactView) return
+    if (selectedCase == null) {
+      setMobilePanel('cases')
+    }
+  }, [isCompactView, selectedCase])
+
+  useEffect(() => {
     if (!isTerminalRun(activeRun)) return
     void mutateCases()
     void mutateCategories()
@@ -162,37 +173,65 @@ export function BenchmarkView() {
   }, [activeRun, activeRunId, message, mutateCases, mutateCategories, mutateResult, mutateRun, t])
 
   const checkedCaseCount = checkedKeys.filter(k => k.startsWith('case:')).length
+  const showCases = !isCompactView || mobilePanel === 'cases'
+  const showDetails = !isCompactView || mobilePanel === 'details'
 
   return (
-    <PageShell className='benchmark-view' bodyClassName='benchmark-view__body'>
-      <div className='benchmark-view__left'>
-        <BenchmarkSidebar
-          cases={cases}
-          categories={categories}
-          selectedCase={selectedCase}
-          query={treeQuery}
-          expandedKeys={expandedKeys}
-          checkedKeys={checkedKeys}
-          checkedCaseCount={checkedCaseCount}
-          onQueryChange={setTreeQuery}
-          onExpandedKeysChange={setExpandedKeys}
-          onCheckedKeysChange={setCheckedKeys}
-          onSelectCase={(category, title) => update({ category, title })}
-          onRunCase={(item) => void handleRunSpecificCase(item)}
-          onRunCategory={(category) => void handleRunCategory(category)}
-          onBatchRun={() => void handleBatchRun()}
-        />
-      </div>
-      <div className='benchmark-view__right'>
-        <BenchmarkCasePanel
-          selectedCase={selectedCase}
-          latestResult={latestResult}
-          activeRun={activeRun}
-          activeRunId={activeRunId}
-          progressPercent={progressPercent}
-          onRunCase={() => void (selectedCase && handleRunSpecificCase(selectedCase))}
-        />
-      </div>
+    <PageShell
+      className={`benchmark-view ${isCompactView ? 'benchmark-view--compact' : ''}`}
+      bodyClassName='benchmark-view__body'
+    >
+      {isCompactView && (
+        <div className='benchmark-view__mobile-switcher-shell'>
+          <Segmented
+            block
+            className='benchmark-view__mobile-switcher'
+            value={mobilePanel}
+            onChange={(value) => setMobilePanel(value as 'cases' | 'details')}
+            options={[
+              { label: t('benchmark.mobileCases'), value: 'cases' },
+              { label: t('benchmark.mobileDetails'), value: 'details', disabled: selectedCase == null }
+            ]}
+          />
+        </div>
+      )}
+      {showCases && (
+        <div className='benchmark-view__left'>
+          <BenchmarkSidebar
+            cases={cases}
+            categories={categories}
+            selectedCase={selectedCase}
+            query={treeQuery}
+            expandedKeys={expandedKeys}
+            checkedKeys={checkedKeys}
+            checkedCaseCount={checkedCaseCount}
+            onQueryChange={setTreeQuery}
+            onExpandedKeysChange={setExpandedKeys}
+            onCheckedKeysChange={setCheckedKeys}
+            onSelectCase={(category, title) => {
+              update({ category, title })
+              if (isCompactView) {
+                setMobilePanel('details')
+              }
+            }}
+            onRunCase={(item) => void handleRunSpecificCase(item)}
+            onRunCategory={(category) => void handleRunCategory(category)}
+            onBatchRun={() => void handleBatchRun()}
+          />
+        </div>
+      )}
+      {showDetails && (
+        <div className='benchmark-view__right'>
+          <BenchmarkCasePanel
+            selectedCase={selectedCase}
+            latestResult={latestResult}
+            activeRun={activeRun}
+            activeRunId={activeRunId}
+            progressPercent={progressPercent}
+            onRunCase={() => void (selectedCase && handleRunSpecificCase(selectedCase))}
+          />
+        </div>
+      )}
     </PageShell>
   )
 }

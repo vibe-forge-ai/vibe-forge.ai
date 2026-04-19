@@ -1,6 +1,20 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { resolveDevDocumentTitle } from '#~/runtime-config'
+import { getServerHostEnv, resolveDevDocumentTitle } from '#~/runtime-config'
+
+const getGlobalScope = () => (
+  globalThis as { __VF_PROJECT_AI_RUNTIME_ENV__?: { __VF_PROJECT_AI_SERVER_HOST__: string } }
+)
+
+const setRuntimeServerHost = (host: string) => {
+  getGlobalScope().__VF_PROJECT_AI_RUNTIME_ENV__ = {
+    __VF_PROJECT_AI_SERVER_HOST__: host
+  }
+}
+
+const clearRuntimeEnv = () => {
+  delete getGlobalScope().__VF_PROJECT_AI_RUNTIME_ENV__
+}
 
 describe('resolveDevDocumentTitle', () => {
   it('keeps the base title in production', () => {
@@ -29,5 +43,23 @@ describe('resolveDevDocumentTitle', () => {
       isDev: true,
       gitRef: 'codex/feature-a'
     })).toBe('Vibe Forge Web [codex/feature-a]')
+  })
+})
+
+describe('getServerHostEnv', () => {
+  afterEach(() => {
+    clearRuntimeEnv()
+  })
+
+  it('ignores unspecified listen addresses for browser requests', () => {
+    for (const host of ['0.0.0.0', '::', '[::]', '   ']) {
+      setRuntimeServerHost(host)
+      expect(getServerHostEnv()).toBeUndefined()
+    }
+  })
+
+  it('returns a concrete runtime host', () => {
+    setRuntimeServerHost(' 192.168.31.125 ')
+    expect(getServerHostEnv()).toBe('192.168.31.125')
   })
 })

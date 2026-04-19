@@ -4,6 +4,7 @@ import { Tooltip } from 'antd'
 import type { TooltipPlacement } from 'antd/es/tooltip'
 import React, { forwardRef, useMemo } from 'react'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { formatShortcutLabel } from '#~/utils/shortcutUtils'
 import { ShortcutDisplay } from './ShortcutDisplay'
 
@@ -38,14 +39,15 @@ export const ShortcutTooltip = forwardRef<HTMLDivElement, ShortcutTooltipProps>(
   className,
   ...divProps
 }, ref) => {
+  const { isTouchInteraction } = useResponsiveLayout()
   const shortcutLabel = useMemo(() => formatShortcutLabel(shortcut, isMac), [isMac, shortcut])
   const resolvedTitle = useMemo(() => {
-    if (!enabled || shortcutLabel === '') {
+    if (!enabled || isTouchInteraction || shortcutLabel === '') {
       return null
     }
 
     return resolveShortcutTooltipTitle(title, shortcutLabel)
-  }, [enabled, shortcutLabel, title])
+  }, [enabled, isTouchInteraction, shortcutLabel, title])
 
   const trigger = (
     <div

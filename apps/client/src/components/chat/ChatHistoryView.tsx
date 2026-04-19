@@ -16,6 +16,7 @@ import type {
 import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
 import {
   DEFAULT_CHAT_SESSION_TARGET_DRAFT,
   getChatSessionTargetDraftFromSession,
@@ -31,6 +32,7 @@ import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
@@ -79,7 +81,8 @@ export function ChatHistoryView({
   adapterOptions,
   onAdapterChange,
   modelUnavailable,
-  hasAvailableModels
+  hasAvailableModels,
+  contextReferenceRequest
 }: {
   isReady: boolean
   messages: ChatMessage[]
@@ -115,10 +118,12 @@ export function ChatHistoryView({
   onAdapterChange: (adapter: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
+  contextReferenceRequest?: ContextReferenceRequest | null
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
   const configWorkspaceDraft = useMemo(
     () => getChatSessionWorkspaceDraftFromConfig(configRes),
@@ -367,6 +372,7 @@ export function ChatHistoryView({
     }
   }
   const isInlineEditing = editingMessageId != null
+  const shouldShowNewSessionGuide = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const renderItems = useMemo(() => processMessages(messages), [messages])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
   const targetAnchorId = useMemo(() => {
@@ -602,6 +608,8 @@ export function ChatHistoryView({
           originalMessage={item.originalMessage}
           sessionInfo={sessionInfo}
           isEditing={editingMessageId === item.originalMessage.id}
+          isCompactLayout={isCompactLayout}
+          isTouchInteraction={isTouchInteraction}
           isSessionBusy={isCreating || session?.status === 'running' ||
             session?.status === 'waiting_input'}
           showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
@@ -682,8 +690,17 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {!session?.id && messages.length === 0 && historyStatusNotices.length === 0 && (
+      {shouldShowNewSessionGuide && !isCompactLayout && (
         <div className='new-session-guide-wrapper'>
+          <NewSessionGuide
+            selectedTarget={sessionTargetDraft}
+            onSelectTarget={setSessionTargetDraft}
+          />
+        </div>
+      )}
+
+      {shouldShowNewSessionGuide && isCompactLayout && (
+        <div className='new-session-guide-wrapper is-compact-layout'>
           <NewSessionGuide
             selectedTarget={sessionTargetDraft}
             onSelectTarget={setSessionTargetDraft}
@@ -766,6 +783,7 @@ export function ChatHistoryView({
                 }}
                 queueMode={queueMode}
                 onQueueModeChange={setQueueMode}
+                contextReferenceRequest={contextReferenceRequest}
               />
               <ChatStatusBar
                 draftWorkspace={workspaceDraft}

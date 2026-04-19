@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   resolveChannelSessionMcpServers: vi.fn(),
   requestInteraction: vi.fn(),
   canRequestInteraction: vi.fn(),
+  resolveSessionWorkspace: vi.fn(),
   resolveSessionWorkspaceFolder: vi.fn(),
   provisionSessionWorkspace: vi.fn(),
   mkdir: vi.fn(),
@@ -43,9 +44,13 @@ vi.mock('#~/services/config/index.js', () => ({
   getWorkspaceFolder: vi.fn(() => process.cwd())
 }))
 
-vi.mock('@vibe-forge/config', () => ({
-  updateConfigFile: mocks.updateConfigFile
-}))
+vi.mock('@vibe-forge/config', async () => {
+  const actual = await vi.importActual<typeof import('@vibe-forge/config')>('@vibe-forge/config')
+  return {
+    ...actual,
+    updateConfigFile: mocks.updateConfigFile
+  }
+})
 
 vi.mock('#~/services/session/interaction.js', () => ({
   requestInteraction: mocks.requestInteraction,
@@ -53,6 +58,7 @@ vi.mock('#~/services/session/interaction.js', () => ({
 }))
 
 vi.mock('#~/services/session/workspace.js', () => ({
+  resolveSessionWorkspace: mocks.resolveSessionWorkspace,
   resolveSessionWorkspaceFolder: mocks.resolveSessionWorkspaceFolder,
   provisionSessionWorkspace: mocks.provisionSessionWorkspace
 }))
@@ -151,6 +157,9 @@ describe('startAdapterSession', () => {
     mocks.resolveChannelSessionMcpServers.mockResolvedValue({})
     mocks.requestInteraction.mockReset()
     mocks.canRequestInteraction.mockReturnValue(false)
+    mocks.resolveSessionWorkspace.mockResolvedValue({
+      workspaceFolder: process.cwd()
+    })
     mocks.resolveSessionWorkspaceFolder.mockResolvedValue(process.cwd())
     mocks.provisionSessionWorkspace.mockResolvedValue(undefined)
     mocks.mkdir.mockResolvedValue(undefined)
@@ -252,7 +261,9 @@ describe('startAdapterSession', () => {
   it('resolves the adapter cwd from the session workspace service', async () => {
     const emit = vi.fn()
     const kill = vi.fn()
-    mocks.resolveSessionWorkspaceFolder.mockResolvedValueOnce('/workspace/.ai/worktrees/sessions/sess-1')
+    mocks.resolveSessionWorkspace.mockResolvedValueOnce({
+      workspaceFolder: '/workspace/.ai/worktrees/sessions/sess-1'
+    })
     mocks.run.mockResolvedValueOnce({
       session: {
         emit,
@@ -291,7 +302,9 @@ describe('startAdapterSession', () => {
     const previousPrimaryWorkspace = process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
     process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = '/workspace'
     process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = '/workspace-primary'
-    mocks.resolveSessionWorkspaceFolder.mockResolvedValueOnce('/workspace/.ai/worktrees/sessions/sess-1')
+    mocks.resolveSessionWorkspace.mockResolvedValueOnce({
+      workspaceFolder: '/workspace/.ai/worktrees/sessions/sess-1'
+    })
     mocks.generateAdapterQueryOptions.mockResolvedValueOnce([
       {},
       {

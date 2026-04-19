@@ -205,6 +205,20 @@ export type MarketplaceConfigEntry = ClaudeCodeMarketplaceConfigEntry
 
 export type MarketplaceConfig = Record<string, MarketplaceConfigEntry>
 
+export interface WebAuthAccountConfig {
+  username: string
+  password: string
+}
+
+export interface WebAuthConfig {
+  enabled?: boolean
+  username?: string
+  password?: string
+  accounts?: WebAuthAccountConfig[]
+  sessionTtlHours?: number
+  rememberDeviceTtlDays?: number
+}
+
 export interface Config {
   extend?: string | string[]
   baseDir?: string
@@ -265,11 +279,13 @@ export interface Config {
     switchPermissionMode?: string
   }
   notifications?: NotificationConfig
+  webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
     customInstructions?: string
     injectDefaultSystemPrompt?: boolean
     createSessionWorktree?: boolean
+    worktreeEnvironment?: string
   }
   /**
    * 当前 workspace 默认启用的插件实例列表。
@@ -314,6 +330,7 @@ export interface ConfigSection {
     permissions?: Config['permissions']
     env?: Config['env']
     notifications?: Config['notifications']
+    webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']
   models?: Config['models']
@@ -333,6 +350,7 @@ export interface ConfigSection {
     noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
   }
   shortcuts?: Config['shortcuts']
+  auth?: Config['webAuth']
 }
 
 export interface ConfigResponse {
@@ -350,4 +368,81 @@ export interface ConfigResponse {
     experiments?: Record<string, unknown>
     about?: AboutInfo
   }
+}
+
+export type ConfigUiFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'string[]'
+  | 'select'
+  | 'json'
+  | 'multiline'
+
+export interface ConfigUiFieldOption {
+  value: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiField {
+  path: string[]
+  type: ConfigUiFieldType
+  defaultValue?: unknown
+  label?: string
+  description?: string
+  icon?: string
+  placeholder?: string
+  sensitive?: boolean
+  options?: ConfigUiFieldOption[]
+}
+
+export interface ConfigUiObjectSchema {
+  fields: ConfigUiField[]
+}
+
+export interface ConfigUiRecordKind {
+  key: string
+  label?: string
+  description?: string
+}
+
+export interface ConfigUiRecordMapSchema {
+  mode: 'keyed' | 'discriminated'
+  keyPlaceholder?: string
+  discriminatorField?: string
+  entryKinds?: ConfigUiRecordKind[]
+  schemas: Record<string, ConfigUiObjectSchema>
+  unknownSchema?: ConfigUiObjectSchema
+  unknownEditor?: 'json'
+}
+
+export interface ConfigUiSection {
+  key: string
+  title?: string
+  description?: string
+  kind: 'recordMap'
+  recordMap: ConfigUiRecordMapSchema
+}
+
+export interface ConfigUiSchema {
+  version: 1
+  sections: Record<string, ConfigUiSection>
+}
+
+export type ConfigJsonSchema = Record<string, unknown>
+
+export interface ConfigSchemaVariant {
+  jsonSchema: ConfigJsonSchema
+  uiSchema?: ConfigUiSchema
+  outputPath?: string
+  extensions?: {
+    adapters: string[]
+    channels: string[]
+  }
+}
+
+export interface ConfigSchemaResponse {
+  base: ConfigSchemaVariant
+  workspace: ConfigSchemaVariant
 }

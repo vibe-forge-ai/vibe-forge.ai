@@ -9,8 +9,10 @@ import useSWR from 'swr'
 import type { EntitySummary, SpecSummary, WorkspaceSummary } from '#~/api.js'
 import { createChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { showAnnouncementsAtom } from '#~/store/index.js'
-import { NewSessionGuideResourceCard } from './NewSessionGuideResourceCard'
+import { NewSessionGuideCompactPanel } from './NewSessionGuideCompactPanel'
+import { NewSessionGuideGrid } from './NewSessionGuideGrid'
 
 export function NewSessionGuide({
   selectedTarget,
@@ -21,6 +23,7 @@ export function NewSessionGuide({
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout } = useResponsiveLayout()
   const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
 
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
@@ -93,8 +96,24 @@ export function NewSessionGuide({
       onSelect: () => onSelectTarget(createChatSessionTargetDraft('entity', entity))
     })), [entities, onSelectTarget, selectedTarget.name, selectedTarget.type])
 
+  const visibleAnnouncements = isCompactLayout ? announcements.slice(0, 1) : announcements
+  const visibleWorkspaceItems = isCompactLayout ? workspaceItems.slice(0, 1) : workspaceItems
+  const visibleSpecItems = isCompactLayout ? specItems.slice(0, 1) : specItems
+  const visibleEntityItems = isCompactLayout ? entityItems.slice(0, 1) : entityItems
+  const visibleHelpItems = isCompactLayout ? helpItems.slice(0, 1) : helpItems
+  const hiddenAnnouncementCount = Math.max(announcements.length - visibleAnnouncements.length, 0)
+  const hiddenWorkspaceCount = Math.max(workspaceItems.length - visibleWorkspaceItems.length, 0)
+  const hiddenSpecCount = Math.max(specItems.length - visibleSpecItems.length, 0)
+  const hiddenEntityCount = Math.max(entityItems.length - visibleEntityItems.length, 0)
+  const hiddenHelpCount = Math.max(helpItems.length - visibleHelpItems.length, 0)
+
+  const renderMoreCount = (count: number) =>
+    count > 0
+      ? <div className='new-session-guide__more'>{t('chat.newSessionGuide.moreCount', { count })}</div>
+      : null
+
   return (
-    <div className='new-session-guide'>
+    <div className={`new-session-guide ${isCompactLayout ? 'new-session-guide--compact' : ''}`}>
       {showAnnouncements && announcements.length > 0 && (
         <div className='new-session-guide__announcements'>
           <div className='new-session-guide__announcements-header'>
@@ -111,68 +130,54 @@ export function NewSessionGuide({
             </button>
           </div>
           <div className='new-session-guide__announcements-list'>
-            {announcements.map((item, index) => (
+            {visibleAnnouncements.map((item, index) => (
               <div key={`${item}-${index}`} className='new-session-guide__announcements-item'>
                 <span>{item}</span>
               </div>
             ))}
+            {renderMoreCount(hiddenAnnouncementCount)}
           </div>
         </div>
       )}
-      <div className='new-session-guide__grid'>
-        <NewSessionGuideResourceCard
-          icon='workspaces'
-          title={t('chat.newSessionGuide.workspaces.title')}
-          count={workspaces.length}
-          isReady={isWorkspacesReady}
-          items={workspaceItems}
-          emptyText={t('chat.newSessionGuide.workspaces.empty')}
-        />
 
-        <NewSessionGuideResourceCard
-          icon='account_tree'
-          title={t('chat.newSessionGuide.specs.title')}
-          count={alwaysSpecs.length}
-          isReady={isSpecsReady}
-          items={specItems}
-          emptyText={t('chat.newSessionGuide.specs.empty')}
-          createLabel={t('chat.newSessionGuide.specs.create')}
-          onCreate={handleCreateSpec}
-        />
-
-        <NewSessionGuideResourceCard
-          icon='group_work'
-          title={t('chat.newSessionGuide.entities.title')}
-          count={entities.length}
-          isReady={isEntitiesReady}
-          items={entityItems}
-          emptyText={t('chat.newSessionGuide.entities.empty')}
-          createLabel={t('chat.newSessionGuide.entities.create')}
-          onCreate={handleCreateEntity}
-        />
-
-        <div className='new-session-guide__card'>
-          <div className='new-session-guide__header'>
-            <div className='new-session-guide__title'>
-              <span className='material-symbols-rounded new-session-guide__title-icon'>tips_and_updates</span>
-              <span>{t('chat.newSessionGuide.help.title')}</span>
-            </div>
-          </div>
-          <div className='new-session-guide__body'>
-            <div className='new-session-guide__help'>
-              {helpItems.map(item => (
-                <div key={item} className='new-session-guide__help-item'>
-                  <span className='material-symbols-rounded new-session-guide__help-icon'>check_circle</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-            <div className='new-session-guide__help-footer'>
-              {t('chat.newSessionGuide.help.footer')}
-            </div>
-          </div>
-        </div>
-      </div>
+      {isCompactLayout
+        ? (
+          <NewSessionGuideCompactPanel
+            entityItems={entityItems}
+            helpItems={helpItems}
+            hiddenEntityCount={hiddenEntityCount}
+            hiddenHelpCount={hiddenHelpCount}
+            hiddenSpecCount={hiddenSpecCount}
+            hiddenWorkspaceCount={hiddenWorkspaceCount}
+            isEntitiesReady={isEntitiesReady}
+            isSpecsReady={isSpecsReady}
+            isWorkspacesReady={isWorkspacesReady}
+            onCreateEntity={handleCreateEntity}
+            onCreateSpec={handleCreateSpec}
+            renderMoreCount={renderMoreCount}
+            specItems={specItems}
+            visibleEntityItems={visibleEntityItems}
+            visibleHelpItems={visibleHelpItems}
+            visibleSpecItems={visibleSpecItems}
+            visibleWorkspaceItems={visibleWorkspaceItems}
+            workspaceItems={workspaceItems}
+          />
+        )
+        : (
+          <NewSessionGuideGrid
+            entityItems={entityItems}
+            hiddenHelpCount={hiddenHelpCount}
+            isEntitiesReady={isEntitiesReady}
+            isSpecsReady={isSpecsReady}
+            isWorkspacesReady={isWorkspacesReady}
+            onCreateEntity={handleCreateEntity}
+            onCreateSpec={handleCreateSpec}
+            renderMoreCount={renderMoreCount}
+            specItems={specItems}
+            visibleHelpItems={visibleHelpItems}
+            workspaceItems={workspaceItems}
+          />
+        )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import { buildConfigJsonVariables, loadConfig, mergeConfigs } from '@vibe-forge/config'
+import { buildConfigJsonVariables, loadConfigState, mergeConfigs } from '@vibe-forge/config'
 import type { AdapterQueryOptions, PluginConfig } from '@vibe-forge/types'
 import { resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
@@ -26,13 +26,14 @@ export async function generateAdapterQueryOptions(
   const promptName = type === 'workspace' ? undefined : name
 
   const jsonVariables = buildConfigJsonVariables(effectiveCwd, process.env)
-  const [config, userConfig] = await loadConfig({ cwd: effectiveCwd, jsonVariables })
+  const {
+    projectConfig: config,
+    userConfig,
+    mergedConfig
+  } = await loadConfigState({ cwd: effectiveCwd, jsonVariables })
   const mergedPlugins = mergeConfigs(
     {
-      plugins: mergeConfigs(
-        { plugins: config?.plugins },
-        { plugins: userConfig?.plugins }
-      )?.plugins
+      plugins: mergedConfig?.plugins
     },
     {
       plugins: input?.plugins
@@ -44,8 +45,7 @@ export async function generateAdapterQueryOptions(
     plugins: mergedPlugins
   })
   const selection = resolveQuerySelection({
-    config,
-    userConfig,
+    mergedConfig,
     inputAdapter: input?.adapter,
     inputModel: input?.model
   })

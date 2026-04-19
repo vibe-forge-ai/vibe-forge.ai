@@ -1,10 +1,10 @@
 import { execFile } from 'node:child_process'
-import { access, lstat, mkdir, symlink } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import { syncSymlinkTarget } from '@vibe-forge/utils'
 
 import { resolveOpenCodeBinaryPath } from '#~/paths.js'
 import { ensureOpenCodeNativeHooksInstalled } from './native-hooks'
@@ -12,20 +12,10 @@ import { ensureOpenCodeNativeHooksInstalled } from './native-hooks'
 const execFileAsync = promisify(execFile)
 
 const ensureSymlink = async (sourcePath: string, targetPath: string) => {
-  try {
-    await access(sourcePath)
-  } catch {
-    return
-  }
-
-  try {
-    await lstat(targetPath)
-    return
-  } catch {
-  }
-
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath)
+  await syncSymlinkTarget({
+    sourcePath,
+    targetPath
+  })
 }
 
 export const initOpenCodeAdapter = async (ctx: AdapterCtx) => {

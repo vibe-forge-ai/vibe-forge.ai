@@ -11,6 +11,7 @@ import type { loadEnv } from '@vibe-forge/core'
 import { logger } from '#~/utils/logger.js'
 
 import { aiRouter } from './ai'
+import { authRouter } from './auth'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { channelActionsRouter } from './channel-actions'
@@ -20,6 +21,7 @@ import { interactRouter } from './interact'
 import { sessionsRouter } from './sessions'
 import { uiRouter } from './ui'
 import { workspaceRouter } from './workspace'
+import { worktreeEnvironmentsRouter } from './worktree-environments'
 
 const DEFAULT_CLIENT_BASE = '/ui/'
 const DEFAULT_BASE_PLACEHOLDER = '/__VF_PROJECT_AI_CLIENT_BASE__/'
@@ -84,11 +86,13 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
     { prefix: '/api/sessions/:sessionId/git', router: gitRouter() },
     { prefix: '/api/sessions', router: sessionsRouter() },
     { prefix: '/api/interact', router: interactRouter() },
+    { prefix: '/api/auth', router: authRouter(env) },
     { prefix: '/api/ai', router: aiRouter() },
     { prefix: '/api/benchmark', router: benchmarkRouter() },
     { prefix: '/channels/actions', router: channelActionsRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/worktree-environments', router: worktreeEnvironmentsRouter() },
     { prefix: '/api/workspace', router: workspaceRouter() }
   ]
 

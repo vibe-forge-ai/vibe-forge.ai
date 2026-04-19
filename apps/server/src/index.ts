@@ -29,7 +29,7 @@ async function init() {
 
 async function bootstrap() {
   const { app, env, server, configs } = await init()
-  await initMiddlewares(app)
+  await initMiddlewares(app, env)
   const { onListen: mountRoutesOnListen } = await mountRoutes(app, env)
   setupWebSocket(server, env)
   await initChannels(configs)

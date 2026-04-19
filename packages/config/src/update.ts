@@ -5,6 +5,7 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config, ConfigSource } from '@vibe-forge/types'
+import { resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
 import { dump, load } from 'js-yaml'
 
 import { resetConfigCache } from './load'
@@ -76,17 +77,23 @@ const resolvePrimaryWorkspaceFolder = (
   }
 }
 
-const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource) => {
+const resolveWritableConfigPath = (
+  workspaceFolder: string,
+  source: ConfigSource,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(workspaceFolder, env)
+  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolvedWorkspaceFolder
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
-    const resolvedPath = resolve(workspaceFolder, path)
+    const resolvedPath = resolve(configFolder, path)
     if (existsSync(resolvedPath)) {
       return resolvedPath
     }
   }
 
   if (source === 'user') {
-    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
+    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(resolvedWorkspaceFolder, env)
     if (primaryWorkspaceFolder != null) {
       for (const path of paths) {
         const resolvedPath = resolve(primaryWorkspaceFolder, path)
@@ -98,7 +105,7 @@ const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource
     }
   }
 
-  return resolve(workspaceFolder, paths[0])
+  return resolve(configFolder, paths[0])
 }
 
 const parseConfigContent = (format: string, content: string) => {
@@ -212,6 +219,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'notifications')
       )
       updateField(
+        'webAuth',
+        mergeMaskedValues(sectionValue.webAuth, config.webAuth) as Config['webAuth'],
+        hasOwn(sectionValue, 'webAuth')
+      )
+      updateField(
         'shortcuts',
         mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts'],
         hasOwn(sectionValue, 'shortcuts')
@@ -220,6 +232,10 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
     }
     case 'conversation': {
       updateField('conversation', mergeMaskedValues(sectionValue, config.conversation) as Config['conversation'])
+      return nextConfig
+    }
+    case 'auth': {
+      updateField('webAuth', mergeMaskedValues(sectionValue, config.webAuth) as Config['webAuth'])
       return nextConfig
     }
     case 'models': {

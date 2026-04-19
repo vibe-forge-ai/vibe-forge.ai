@@ -24,7 +24,11 @@
       "description": "Local offline mock LLM service for hook smoke tests.",
       "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/responses",
       "apiKey": "hook-smoke-local",
-      "models": ["codex-hooks", "claude-hooks", "opencode-hooks"],
+      "models": [
+        "codex-hooks",
+        "claude-hooks",
+        "opencode-hooks"
+      ],
       "extra": {
         "codex": {
           "wireApi": "responses"
@@ -39,7 +43,9 @@
       "description": "Local offline mock LLM service for Claude Code Router smoke tests.",
       "apiBaseUrl": "http://127.0.0.1:${HOOK_SMOKE_MOCK_PORT}/chat/completions",
       "apiKey": "hook-smoke-local",
-      "models": ["claude-hooks"]
+      "models": [
+        "claude-hooks"
+      ]
     }
   },
   "mcpServers": {
@@ -56,11 +62,18 @@
     }
   },
   "permissions": {
-    "allow": ["ChromeDevtools"],
+    "allow": [
+      "ChromeDevtools"
+    ],
     "deny": [],
-    "ask": ["Bash(kill:*)", "Bash(chmod:*)"]
+    "ask": [
+      "Bash(kill:*)",
+      "Bash(chmod:*)"
+    ]
   },
-  "announcements": ["欢迎使用 AI 时代的代码工业机床。"],
+  "announcements": [
+    "欢迎使用 AI 时代的代码工业机床。"
+  ],
   "shortcuts": {
     "openConfig": "mod+,",
     "sendMessage": "mod+enter",

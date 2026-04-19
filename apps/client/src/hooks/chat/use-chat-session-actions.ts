@@ -97,6 +97,7 @@ export function useChatSessionActions({
             ? undefined
             : {
               createWorktree: workspaceDraft.createWorktree,
+              worktreeEnvironment: workspaceDraft.worktreeEnvironment,
               branch: workspaceDraft.branch
             }
         })
@@ -154,6 +155,7 @@ export function useChatSessionActions({
             ? undefined
             : {
               createWorktree: workspaceDraft.createWorktree,
+              worktreeEnvironment: workspaceDraft.worktreeEnvironment,
               branch: workspaceDraft.branch
             }
         })

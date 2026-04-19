@@ -5,6 +5,10 @@
     padding: 0;
   }
 
+  &__mobile-switcher-shell {
+    display: none;
+  }
+
   display: flex;
   height: 100%;
   overflow: hidden;
@@ -73,6 +77,45 @@
   .benchmark-view {
     &__right {
       padding: 10px 12px;
+    }
+  }
+}
+
+@media (max-width: 960px) {
+  .benchmark-view--compact {
+    .benchmark-view__mobile-switcher-shell {
+      display: block;
+      padding: 12px;
+      padding-bottom: 0;
+    }
+
+    .benchmark-view__mobile-switcher {
+      width: 100%;
+
+      .ant-segmented-group {
+        gap: 4px;
+      }
+
+      .ant-segmented-item {
+        min-height: 32px;
+      }
+    }
+
+    .benchmark-view__left,
+    .benchmark-view__right {
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      max-height: none;
+      margin: 12px;
+      margin-top: 12px;
+      border-radius: var(--subpage-content-card-radius);
+      background: var(--subpage-content-card-bg);
+      overflow: hidden;
+    }
+
+    .benchmark-view__right {
+      padding: 12px;
     }
   }
 }

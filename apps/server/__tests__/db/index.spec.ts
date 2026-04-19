@@ -32,7 +32,12 @@ describe('sqliteDb', () => {
       adapter: 'adapter-test',
       permissionMode: 'plan',
       promptType: 'workspace',
-      promptName: 'client'
+      promptName: 'client',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     db.updateSessionTags(root.id, ['alpha', 'beta', 'alpha'])
 
@@ -52,7 +57,12 @@ describe('sqliteDb', () => {
       adapter: 'adapter-test',
       permissionMode: 'plan',
       promptType: 'workspace',
-      promptName: 'client'
+      promptName: 'client',
+      workspaceFileState: {
+        openPaths: ['apps/client/src/routes/ChatRouteView.tsx'],
+        selectedPath: 'apps/client/src/routes/ChatRouteView.tsx',
+        isOpen: true
+      }
     })
     expect(stored?.tags?.slice().sort()).toEqual(['alpha', 'beta'])
     expect(db.getMessages(root.id)).toEqual([{ role: 'user', content: 'hello' }])

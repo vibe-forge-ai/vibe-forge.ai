@@ -43,8 +43,11 @@ describe('cli-helper loader wrapper', () => {
     const workspaceDir = await mkdtemp(resolve(tmpdir(), 'vf-cli-helper-entry-'))
     tempDirs.push(workspaceDir)
 
+    const nestedCwd = resolve(workspaceDir, 'packages/demo/src')
     const packageDir = resolve(workspaceDir, 'packages/fake-cli')
+    await mkdir(nestedCwd, { recursive: true })
     await mkdir(packageDir, { recursive: true })
+    await writeFile(resolve(workspaceDir, '.ai.config.json'), '{}\n')
     const realWorkspaceDir = await realpath(workspaceDir)
     const entryPath = resolve(process.cwd(), 'packages/cli-helper/entry.js')
     const result = spawnSync(
@@ -58,7 +61,10 @@ const originalLoad = Module._load
 
 Module._load = function(request, parent, isMain) {
   if (request === '@vibe-forge/register/dotenv') {
-    return {}
+    return {
+      resolveProjectWorkspaceFolder: () => ${JSON.stringify(realWorkspaceDir)},
+      resolveProjectAiBaseDir: () => ${JSON.stringify(resolve(realWorkspaceDir, '.ai'))}
+    }
   }
 
   if (request === './loader' && parent?.filename === entryPath) {
@@ -84,7 +90,7 @@ require(entryPath).runCliPackageEntrypoint({
       `
       ],
       {
-        cwd: workspaceDir,
+        cwd: nestedCwd,
         env: {
           ...process.env,
           HOME: '/tmp/original-home'

@@ -5,6 +5,8 @@ import type { ColumnsType } from 'antd/es/table'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+
 import type { Task, TimelineEvent } from './types'
 import { normalizeTime, parseTime } from './utils'
 
@@ -83,6 +85,7 @@ const collectTimelineEntries = (task: Task, labels: TimelineLabels) => {
 
 export function SessionTimelineEventList({ task }: { task: Task }) {
   const { t } = useTranslation()
+  const { isCompactLayout } = useResponsiveLayout()
   const [query, setQuery] = React.useState('')
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = React.useState(240)
@@ -105,55 +108,104 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
     })
   }, [items, query])
   const emptyValue = t('chat.timelineEmptyValue')
-  const columns: ColumnsType<TimelineListItem> = React.useMemo(() => [
-    {
-      title: t('chat.timelineEventName'),
-      key: 'label',
-      width: 180,
-      render: (_value, item) => (
-        <span
-          className='session-timeline-event-table__label'
-          style={{ paddingLeft: `${item.depth * 16}px` }}
-        >
-          {item.label}
-        </span>
-      )
-    },
-    {
-      title: t('chat.timelineInput'),
-      key: 'input',
-      width: 180,
-      render: (_value, item) => (
-        <span className='session-timeline-event-table__value'>
-          {item.input ?? emptyValue}
-        </span>
-      )
-    },
-    {
-      title: t('chat.timelineOutput'),
-      key: 'output',
-      width: 180,
-      render: (_value, item) => (
-        <span className='session-timeline-event-table__value'>
-          {item.output ?? emptyValue}
-        </span>
-      )
-    },
-    {
-      title: t('chat.timelineTiming'),
-      key: 'time',
-      width: 160,
-      render: (_value, item) => {
-        const startTime = normalizeTime(item.startTime)
-        const endTime = normalizeTime(item.endTime)
-        return (
-          <span className='session-timeline-event-table__time'>
-            {startTime === endTime ? startTime : `${startTime} → ${endTime}`}
+  const renderTiming = React.useCallback((item: TimelineListItem) => {
+    const startTime = normalizeTime(item.startTime)
+    const endTime = normalizeTime(item.endTime)
+    return (
+      <span className='session-timeline-event-table__time'>
+        {startTime === endTime ? startTime : `${startTime} → ${endTime}`}
+      </span>
+    )
+  }, [])
+  const columns: ColumnsType<TimelineListItem> = React.useMemo(() => {
+    if (isCompactLayout) {
+      return [
+        {
+          title: t('chat.timelineEventName'),
+          key: 'summary',
+          render: (_value, item) => {
+            const detailItems = [
+              { key: t('chat.timelineInput'), value: item.input },
+              { key: t('chat.timelineOutput'), value: item.output }
+            ].filter((detail) => detail.value != null && detail.value !== '')
+
+            return (
+              <div className='session-timeline-event-table__summary'>
+                <span
+                  className='session-timeline-event-table__label'
+                  style={{ paddingLeft: `${item.depth * 12}px` }}
+                >
+                  {item.label}
+                </span>
+                {detailItems.length > 0 && (
+                  <div className='session-timeline-event-table__detail-list'>
+                    {detailItems.map((detail) => (
+                      <span className='session-timeline-event-table__detail-item' key={detail.key}>
+                        <span className='session-timeline-event-table__detail-key'>{detail.key}</span>
+                        <span className='session-timeline-event-table__detail-text'>{detail.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          }
+        },
+        {
+          title: t('chat.timelineTiming'),
+          key: 'time',
+          width: 120,
+          render: (_value, item) => (
+            <span className='session-timeline-event-table__cell-timing'>
+              {renderTiming(item)}
+            </span>
+          )
+        }
+      ]
+    }
+
+    return [
+      {
+        title: t('chat.timelineEventName'),
+        key: 'label',
+        width: 180,
+        render: (_value, item) => (
+          <span
+            className='session-timeline-event-table__label'
+            style={{ paddingLeft: `${item.depth * 16}px` }}
+          >
+            {item.label}
           </span>
         )
+      },
+      {
+        title: t('chat.timelineInput'),
+        key: 'input',
+        width: 180,
+        render: (_value, item) => (
+          <span className='session-timeline-event-table__value'>
+            {item.input ?? emptyValue}
+          </span>
+        )
+      },
+      {
+        title: t('chat.timelineOutput'),
+        key: 'output',
+        width: 180,
+        render: (_value, item) => (
+          <span className='session-timeline-event-table__value'>
+            {item.output ?? emptyValue}
+          </span>
+        )
+      },
+      {
+        title: t('chat.timelineTiming'),
+        key: 'time',
+        width: 160,
+        render: (_value, item) => renderTiming(item)
       }
-    }
-  ], [emptyValue, t])
+    ]
+  }, [emptyValue, isCompactLayout, renderTiming, t])
 
   React.useEffect(() => {
     const element = containerRef.current
@@ -201,7 +253,7 @@ export function SessionTimelineEventList({ task }: { task: Task }) {
         })}
         pagination={{
           pageSize: 20,
-          showSizeChanger: true,
+          showSizeChanger: !isCompactLayout,
           pageSizeOptions: ['10', '20', '50']
         }}
         scroll={{ y: scrollY }}

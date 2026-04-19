@@ -1,31 +1,45 @@
 import './ConfigView.scss'
 
-import { App, Empty, Space, Spin, Tabs } from 'antd'
+import { App, Empty, Select, Space, Spin, Tabs } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigSource } from '@vibe-forge/core'
-import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
+import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
 import { PageShell } from '#~/components/layout/PageShell'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
-import { getApiErrorMessage, getConfig, updateConfig } from '../api'
+import { getApiErrorMessage, getConfig, getConfigSchema, listWorktreeEnvironments, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
+import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
+import { toDisplayEnvironmentName, toEnvironmentReference } from './config/worktree-environment-panel-model'
 
 export function ConfigView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
-  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
-    keys: ['tab', 'source'],
-    defaults: { tab: 'general', source: 'project' }
+  const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
+  const { data: worktreeEnvironmentData } = useSWR('worktree-environments', listWorktreeEnvironments)
+  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{
+    tab: string
+    source: string
+    detail: string
+  }>({
+    keys: ['tab', 'source', 'detail'],
+    defaults: { tab: 'general', source: 'project', detail: '' },
+    omit: {
+      detail: value => value.trim() === ''
+    }
   })
-  const sourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
-  const setSourceKey = (next: ConfigSource) => updateQuery({ source: next })
+  const querySourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
+  const [sourceKey, setSourceKeyState] = useState<ConfigSource>(querySourceKey)
+  const [detailQuery, setDetailQueryState] = useState(queryValues.detail)
   const [drafts, setDrafts] = useState<Record<string, unknown>>({})
   const configPresent = data?.meta?.configPresent
   const currentSource = data?.sources?.[sourceKey]
@@ -72,6 +86,11 @@ export function ConfigView() {
       value: currentSource?.conversation
     },
     {
+      key: 'worktreeEnvironments',
+      icon: 'deployed_code',
+      label: t('config.sections.environments')
+    },
+    {
       key: 'models',
       icon: 'tune',
       label: t('config.sections.models'),
@@ -105,10 +124,49 @@ export function ConfigView() {
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
   const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
 
-  const activeTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
-  const setActiveTabKey = (key: string) => updateQuery({ tab: key })
+  const queryTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
+  const [activeTabKey, setActiveTabKeyState] = useState(queryTabKey)
+  const setSourceKey = (next: ConfigSource) => {
+    setSourceKeyState(next)
+    updateQuery({ source: next })
+  }
+  const setDetailQuery = (next: string) => {
+    setDetailQueryState(next)
+    updateQuery({ detail: next })
+  }
+  const setActiveTabKey = (key: string) => {
+    setActiveTabKeyState(key)
+    setDetailQueryState('')
+    updateQuery({ tab: key, detail: '' })
+  }
+  const isCompactView = isCompactLayout || isTouchInteraction
 
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
+  const compactTabOptions = useMemo(() => {
+    const groups: Array<{ label: string; options: Array<{ label: string; value: string }> }> = []
+    let currentGroup: { label: string; options: Array<{ label: string; value: string }> } | null = null
+
+    tabs.forEach((tab) => {
+      if (tab.type === 'group') {
+        currentGroup = { label: String(tab.label), options: [] }
+        groups.push(currentGroup)
+        return
+      }
+
+      if (currentGroup == null) {
+        currentGroup = { label: t('config.groups.config'), options: [] }
+        groups.push(currentGroup)
+      }
+
+      currentGroup.options.push({
+        value: tab.key,
+        label: String(tab.label)
+      })
+    })
+
+    return groups
+  }, [tabs, t])
+  const uiSections = schemaData?.workspace.uiSchema?.sections ?? {}
 
   useEffect(() => {
     if (activeTab == null) return
@@ -126,6 +184,18 @@ export function ConfigView() {
       return { ...prev, [draftKey]: cloneValue(sourceValue) }
     })
   }, [activeTab, configTabKeys, sourceKey])
+
+  useEffect(() => {
+    setSourceKeyState(querySourceKey)
+  }, [querySourceKey])
+
+  useEffect(() => {
+    setActiveTabKeyState(queryTabKey)
+  }, [queryTabKey])
+
+  useEffect(() => {
+    setDetailQueryState(queryValues.detail)
+  }, [queryValues.detail])
 
   useEffect(() => {
     draftsRef.current = drafts
@@ -148,6 +218,16 @@ export function ConfigView() {
     const value = getValueByPath(generalDraftValue, ['defaultModelService'])
     return typeof value === 'string' ? value : undefined
   })()
+  const worktreeEnvironmentOptions = useMemo(() => (
+    worktreeEnvironmentData?.environments.map(environment => ({
+      value: toEnvironmentReference(environment),
+      label: `${toDisplayEnvironmentName(environment.id)} (${
+        environment.isLocal
+          ? t('config.environments.sources.user')
+          : t('config.environments.sources.project')
+      })`
+    })) ?? []
+  ), [t, worktreeEnvironmentData?.environments])
 
   const scheduleSave = (sectionKey: string, source: ConfigSource, nextValue: unknown) => {
     const draftKey = getDraftKey(sectionKey, source)
@@ -182,9 +262,72 @@ export function ConfigView() {
     scheduleSave(sectionKey, sourceKey, nextValue)
   }
 
+  const renderTabContent = (tab: typeof tabs[number]) => (
+    <div key={`${sourceKey}:${tab.key}`} className='config-view__content'>
+      {tab.key === 'about' && (
+        <AboutSection value={tab.value as AboutInfo | undefined} />
+      )}
+      {tab.key === 'appearance' && (
+        <AppSettingsPanel t={t} />
+      )}
+      {tab.key === 'worktreeEnvironments' && (
+        <WorktreeEnvironmentPanel t={t} />
+      )}
+      {tab.key !== 'about' &&
+        tab.key !== 'appearance' &&
+        tab.key !== 'worktreeEnvironments' &&
+        !configTabKeys.has(tab.key) && (
+          <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
+        )}
+      {configTabKeys.has(tab.key) && (
+        <ConfigSectionPanel
+          sectionKey={tab.key}
+          title={tab.label}
+          icon={tab.icon}
+          uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
+          value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
+          onChange={(next) => handleDraftChange(tab.key, next)}
+          mergedModelServices={mergedModelServices as Record<string, unknown>}
+          mergedAdapters={mergedAdapters as Record<string, unknown>}
+          selectedModelService={selectedModelService}
+          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
+          detailQuery={activeTabKey === tab.key ? detailQuery : ''}
+          onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
+          t={t}
+          headerExtra={isCompactView
+            ? undefined
+            : (
+              <Space size={12}>
+                <ConfigSourceSwitch
+                  value={sourceKey}
+                  onChange={setSourceKey}
+                  options={[
+                    {
+                      value: 'project',
+                      icon: 'folder',
+                      label: configPresent?.project === true
+                        ? t('config.sources.project')
+                        : t('config.sources.projectMissing')
+                    },
+                    {
+                      value: 'user',
+                      icon: 'person',
+                      label: configPresent?.user === true
+                        ? t('config.sources.user')
+                        : t('config.sources.userMissing')
+                    }
+                  ]}
+                />
+              </Space>
+            )}
+        />
+      )}
+    </div>
+  )
+
   return (
     <PageShell
-      className='config-view'
+      className={`config-view ${isCompactView ? 'config-view--compact' : ''}`}
       bodyClassName='config-view__body'
     >
       {isLoading && (
@@ -198,87 +341,82 @@ export function ConfigView() {
         </div>
       )}
       {!isLoading && error == null && (
-        <div className='config-view__tabs-wrap'>
-          <Tabs
-            tabPosition='left'
-            tabBarGutter={4}
-            indicator={{ size: 0 }}
-            className='config-view__tabs'
-            activeKey={activeTabKey}
-            onChange={(key) => {
-              if (key !== 'group-config' && key !== 'group-app') {
-                setActiveTabKey(key)
-              }
-            }}
-            items={tabs.map((tab) => {
-              if (tab.type === 'group') {
-                return {
-                  key: tab.key,
-                  label: <span className='config-view__group-label'>{tab.label}</span>,
-                  disabled: true,
-                  children: <div />
-                }
-              }
-              return {
-                key: tab.key,
-                label: (
-                  <span className='config-view__tab-label'>
-                    <span className='material-symbols-rounded config-view__tab-icon'>{tab.icon}</span>
-                    <span className='config-view__tab-text'>{tab.label}</span>
-                  </span>
-                ),
-                children: (
-                  <div className='config-view__content'>
-                    {tab.key === 'about' && (
-                      <AboutSection value={tab.value as AboutInfo | undefined} />
-                    )}
-                    {tab.key === 'appearance' && (
-                      <AppSettingsPanel t={t} />
-                    )}
-                    {tab.key !== 'about' && tab.key !== 'appearance' && !configTabKeys.has(tab.key) && (
-                      <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
-                    )}
-                    {configTabKeys.has(tab.key) && (
-                      <ConfigSectionPanel
-                        sectionKey={tab.key}
-                        value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
-                        onChange={(next) => handleDraftChange(tab.key, next)}
-                        mergedModelServices={mergedModelServices as Record<string, unknown>}
-                        mergedAdapters={mergedAdapters as Record<string, unknown>}
-                        selectedModelService={selectedModelService}
-                        t={t}
-                        headerExtra={
-                          <Space size={12}>
-                            <ConfigSourceSwitch
-                              value={sourceKey}
-                              onChange={setSourceKey}
-                              options={[
-                                {
-                                  value: 'project',
-                                  icon: 'folder',
-                                  label: configPresent?.project === true
-                                    ? t('config.sources.project')
-                                    : t('config.sources.projectMissing')
-                                },
-                                {
-                                  value: 'user',
-                                  icon: 'person',
-                                  label: configPresent?.user === true
-                                    ? t('config.sources.user')
-                                    : t('config.sources.userMissing')
-                                }
-                              ]}
-                            />
-                          </Space>
-                        }
-                      />
-                    )}
-                  </div>
-                )
-              }
-            })}
-          />
-        </div>
+        isCompactView
+          ? (
+            <div className='config-view__compact-shell'>
+              <div className='config-view__compact-controls'>
+                <Select
+                  value={activeTabKey}
+                  onChange={setActiveTabKey}
+                  options={compactTabOptions}
+                  className='config-view__compact-select'
+                  popupMatchSelectWidth={false}
+                />
+                {activeTab != null && configTabKeys.has(activeTab.key) && (
+                  <ConfigSourceSwitch
+                    value={sourceKey}
+                    onChange={setSourceKey}
+                    options={[
+                      {
+                        value: 'project',
+                        icon: 'folder',
+                        label: configPresent?.project === true
+                          ? t('config.sources.project')
+                          : t('config.sources.projectMissing')
+                      },
+                      {
+                        value: 'user',
+                        icon: 'person',
+                        label: configPresent?.user === true
+                          ? t('config.sources.user')
+                          : t('config.sources.userMissing')
+                      }
+                    ]}
+                  />
+                )}
+              </div>
+              <div className='config-view__compact-panel'>
+                {activeTab != null ? renderTabContent(activeTab) : null}
+              </div>
+            </div>
+          )
+          : (
+            <div className='config-view__tabs-wrap'>
+              <Tabs
+                destroyOnHidden
+                tabPosition='left'
+                tabBarGutter={4}
+                indicator={{ size: 0 }}
+                className='config-view__tabs'
+                activeKey={activeTabKey}
+                onChange={(key) => {
+                  if (key !== 'group-config' && key !== 'group-app') {
+                    setActiveTabKey(key)
+                  }
+                }}
+                items={tabs.map((tab) => {
+                  if (tab.type === 'group') {
+                    return {
+                      key: tab.key,
+                      label: <span className='config-view__group-label'>{tab.label}</span>,
+                      disabled: true,
+                      children: <div />
+                    }
+                  }
+                  return {
+                    key: tab.key,
+                    label: (
+                      <span className='config-view__tab-label'>
+                        <span className='material-symbols-rounded config-view__tab-icon'>{tab.icon}</span>
+                        <span className='config-view__tab-text'>{tab.label}</span>
+                      </span>
+                    ),
+                    children: renderTabContent(tab)
+                  }
+                })}
+              />
+            </div>
+          )
       )}
     </PageShell>
   )

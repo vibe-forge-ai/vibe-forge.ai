@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -185,6 +185,118 @@ describe('updateConfigFile', () => {
       })
     } finally {
       await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  it('writes config updates into __VF_PROJECT_CONFIG_DIR__ when provided', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-update-workspace-'))
+    const launchDir = path.join(workspaceDir, 'c', 'd', 'e')
+    const previousConfigDir = process.env.__VF_PROJECT_CONFIG_DIR__
+    const previousLaunchCwd = process.env.__VF_PROJECT_LAUNCH_CWD__
+    const previousWorkspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+
+    try {
+      await mkdir(launchDir, { recursive: true })
+      await writeFile(
+        path.join(launchDir, '.ai.config.json'),
+        JSON.stringify(
+          {
+            defaultModel: 'gpt-5.4'
+          },
+          null,
+          2
+        )
+      )
+
+      process.env.__VF_PROJECT_LAUNCH_CWD__ = launchDir
+      process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = '../../..'
+      process.env.__VF_PROJECT_CONFIG_DIR__ = '.'
+
+      const result = await updateConfigFile({
+        workspaceFolder: launchDir,
+        source: 'project',
+        section: 'general',
+        value: {
+          defaultModel: 'gpt-5.4-mini'
+        }
+      })
+
+      expect(result.configPath).toBe(path.join(launchDir, '.ai.config.json'))
+      const written = JSON.parse(await readFile(result.configPath, 'utf-8'))
+      expect(written.defaultModel).toBe('gpt-5.4-mini')
+    } finally {
+      if (previousConfigDir == null) {
+        delete process.env.__VF_PROJECT_CONFIG_DIR__
+      } else {
+        process.env.__VF_PROJECT_CONFIG_DIR__ = previousConfigDir
+      }
+      if (previousLaunchCwd == null) {
+        delete process.env.__VF_PROJECT_LAUNCH_CWD__
+      } else {
+        process.env.__VF_PROJECT_LAUNCH_CWD__ = previousLaunchCwd
+      }
+      if (previousWorkspaceFolder == null) {
+        delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspaceFolder
+      }
+      await rm(workspaceDir, { recursive: true, force: true })
+    }
+  })
+
+  it('writes project config updates into the resolved workspace root when launched from a nested directory', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-update-root-'))
+    const launchDir = path.join(workspaceDir, 'apps', 'client', 'src')
+    const previousLaunchCwd = process.env.__VF_PROJECT_LAUNCH_CWD__
+    const previousWorkspaceFolder = process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+    const previousConfigDir = process.env.__VF_PROJECT_CONFIG_DIR__
+
+    try {
+      await mkdir(launchDir, { recursive: true })
+      await writeFile(
+        path.join(workspaceDir, '.ai.config.json'),
+        JSON.stringify(
+          {
+            defaultModel: 'gpt-5.4'
+          },
+          null,
+          2
+        )
+      )
+
+      process.env.__VF_PROJECT_LAUNCH_CWD__ = launchDir
+      process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = workspaceDir
+      delete process.env.__VF_PROJECT_CONFIG_DIR__
+
+      const result = await updateConfigFile({
+        workspaceFolder: launchDir,
+        source: 'project',
+        section: 'general',
+        value: {
+          defaultModel: 'gpt-5.4-mini'
+        }
+      })
+
+      expect(result.configPath).toBe(path.join(workspaceDir, '.ai.config.json'))
+      const written = JSON.parse(await readFile(result.configPath, 'utf-8'))
+      expect(written.defaultModel).toBe('gpt-5.4-mini')
+    } finally {
+      if (previousLaunchCwd == null) {
+        delete process.env.__VF_PROJECT_LAUNCH_CWD__
+      } else {
+        process.env.__VF_PROJECT_LAUNCH_CWD__ = previousLaunchCwd
+      }
+      if (previousWorkspaceFolder == null) {
+        delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = previousWorkspaceFolder
+      }
+      if (previousConfigDir == null) {
+        delete process.env.__VF_PROJECT_CONFIG_DIR__
+      } else {
+        process.env.__VF_PROJECT_CONFIG_DIR__ = previousConfigDir
+      }
+      await rm(workspaceDir, { recursive: true, force: true })
     }
   })
 })

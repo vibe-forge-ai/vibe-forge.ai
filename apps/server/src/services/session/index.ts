@@ -59,7 +59,8 @@ import {
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
-import { provisionSessionWorkspace, resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
+import { provisionSessionWorkspace, resolveSessionWorkspace } from '#~/services/session/workspace.js'
+import { runConfiguredWorktreeEnvironmentScripts } from '#~/services/worktree-environments.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const activeAdapterRunStore = new Map<string, string>()
@@ -401,7 +402,20 @@ export async function startAdapterSession(
     activeAdapterRunStore.set(sessionId, runId)
 
     try {
-      const promptCwd = await resolveSessionWorkspaceFolder(sessionId)
+      const workspace = await resolveSessionWorkspace(sessionId)
+      const promptCwd = workspace.workspaceFolder
+      const startScriptResults = await runConfiguredWorktreeEnvironmentScripts({
+        operation: 'start',
+        workspaceFolder: promptCwd,
+        environmentId: workspace.worktreeEnvironment,
+        sessionId
+      })
+      if (startScriptResults.length > 0) {
+        serverLogger.info({
+          sessionId,
+          scripts: startScriptResults.map(result => result.scriptPath)
+        }, '[server] Ran worktree environment start scripts')
+      }
       const [data, resolvedConfig] = await generateAdapterQueryOptions(
         resolvedPromptType,
         resolvedPromptName,

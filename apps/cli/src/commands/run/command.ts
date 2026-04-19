@@ -25,6 +25,7 @@ import {
   readCliSessionPermissionRecovery,
   writeCliSessionPermissionRecovery
 } from '#~/session-permission-cache.js'
+import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 import { createAdapterOption } from '../@core/adapter-option'
 import { extraOptions } from '../@core/extra-options'
 import { attachInputBridge } from './input-bridge'
@@ -124,7 +125,7 @@ Notes:
         let inputClosed = false
         let pendingInteraction: AdapterInteractionRequest | undefined
         const exitController = createSessionExitController()
-        const cwd = process.cwd()
+        const cwd = resolveCliWorkspaceCwd()
         const generatedSessionId = opts.sessionId ?? uuid()
 
         const selectedTargetFlags = [opts.spec, opts.entity, opts.workspace].filter(

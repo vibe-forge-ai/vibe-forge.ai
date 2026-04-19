@@ -50,6 +50,8 @@
     "deselectAll": "取消全选",
     "collapse": "收起侧边栏",
     "close": "关闭",
+    "enterFullscreen": "全屏",
+    "exitFullscreen": "退出全屏",
     "sort": "排序规则",
     "allTags": "全部标签",
     "allAdapters": "全部适配器",
@@ -84,6 +86,23 @@
       "terminated": "已终止",
       "waiting_input": "等待输入"
     }
+  },
+  "auth": {
+    "title": "登录 Vibe Forge",
+    "subtitle": "请输入已配置的账号，继续进入当前工作区。",
+    "username": "账号",
+    "usernamePlaceholder": "请输入账号",
+    "usernameRequired": "请输入账号",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "passwordRequired": "请输入密码",
+    "rememberDevice": "记住此设备",
+    "login": "登录",
+    "loginFailed": "登录失败",
+    "statusFailed": "无法读取登录状态",
+    "generatedPasswordTitle": "当前使用自动生成的本地密码",
+    "generatedPasswordDescription": "请从本地密码文件获取密码；也可以在 webAuth.accounts 中配置固定账号。",
+    "generatedPasswordHint": "默认密码文件：{{path}}"
   },
   "automation": {
     "title": "自动化任务",
@@ -166,6 +185,8 @@
     "lastRunAt": "最近运行：{{time}}",
     "noRunYet": "暂无运行记录",
     "emptyRules": "暂无自动化任务",
+    "mobileRules": "规则",
+    "mobileDetails": "详情",
     "selectRule": "请选择一个自动化任务",
     "ruleId": "规则 ID",
     "createdAt": "创建时间",
@@ -210,6 +231,8 @@
     "caseId": "用例：",
     "searchPlaceholder": "搜索分类、标题或摘要",
     "emptyCases": "暂无 benchmark 用例",
+    "mobileCases": "用例",
+    "mobileDetails": "详情",
     "noSummary": "暂无摘要",
     "configTitle": "用例配置",
     "baseCommit": "基线 Commit",
@@ -447,12 +470,66 @@
     "imageReadFailed": "图片读取失败",
     "imageNotSupportedInInteraction": "当前交互不支持图片",
     "fileNotSupportedInInteraction": "当前交互不支持文件上下文",
-    "contextPickerTitle": "引用文件",
-    "contextPickerDescription": "从当前项目目录树中选择一个或多个文件。",
-    "contextPickerConfirm": "引用文件",
+    "contextPickerTitle": "引用文件或文件夹",
+    "contextPickerDescription": "从当前项目目录树中选择一个或多个文件或文件夹。",
+    "contextPickerConfirm": "引用",
     "contextPickerLoading": "正在加载项目目录树...",
-    "contextPickerEmpty": "当前目录下没有可选文件",
+    "contextPickerEmpty": "当前目录下没有可选项目",
     "contextPickerLoadFailed": "项目目录树加载失败",
+    "workspaceDrawerToggle": "工作区抽屉",
+    "workspaceDrawerTitle": "工作区",
+    "workspaceDrawerRefresh": "刷新工作区",
+    "workspaceDrawerForceSync": "强制同步",
+    "workspaceDrawerDisplayMode": "展示模式",
+    "workspaceDrawerLocateFile": "定位文件",
+    "workspaceDrawerExpandAll": "展开",
+    "workspaceDrawerCollapseAll": "折叠",
+    "workspaceDrawerToggleSection": "展开或折叠分栏",
+    "workspaceFileOpen": "打开文件",
+    "workspaceTreeReferenceToInput": "引用到输入框",
+    "workspaceTreeTargetMissing": "目标不存在",
+    "workspaceTreeTargetMissingState": "（目标不存在）",
+    "workspaceTreeExternalLinkState": "（外部链接）",
+    "workspaceTreeNodeLinkTitle": "{{path}} -> {{target}}{{state}}",
+    "workspaceTreeLinkTargetMissing": "链接目标不存在：{{target}}",
+    "workspaceTreeLinkTarget": "链接目标：{{target}}",
+    "workspaceFileCopyPath": "复制路径",
+    "workspaceFilePathCopied": "路径已复制",
+    "workspaceFileCloseOthers": "关闭其他",
+    "workspaceFileCloseRight": "关闭右侧",
+    "workspaceFileCloseAll": "关闭全部",
+    "workspaceDrawerChangedFiles": "改动文件",
+    "workspaceDrawerChangedCount": "{{count}} 个",
+    "workspaceDrawerLoadingGit": "正在读取 Git 状态...",
+    "workspaceDrawerGitUnavailable": "当前工作区不可用 Git。",
+    "workspaceDrawerNoChangedFiles": "暂无改动文件",
+    "workspaceDrawerTree": "目录树",
+    "workspaceDrawerChangedFolders": "按文件夹展示",
+    "workspaceDrawerChangedFlat": "平铺展示",
+    "workspaceDrawerChangedSection": {
+      "staged": "已暂存",
+      "tracked": "已跟踪",
+      "untracked": "未跟踪"
+    },
+    "workspaceDrawerSubmodule": "子模块",
+    "workspaceDrawerSubmoduleCommit": "提交已变化",
+    "workspaceDrawerSubmoduleTracked": "已跟踪改动",
+    "workspaceDrawerSubmoduleUntracked": "未跟踪改动",
+    "workspaceFileEditorTitle": "文件",
+    "workspaceFileEditorLoading": "正在读取文件...",
+    "workspaceFileEditorLoadFailed": "文件读取失败",
+    "workspaceImagePreviewLoadFailed": "图片加载失败",
+    "workspaceFileEditorSave": "保存",
+    "workspaceFileEditorSaved": "已保存",
+    "workspaceFileEditorRevert": "还原",
+    "workspaceFileEditorResizePanel": "拖拽调整文件编辑器高度",
+    "workspaceDrawerFileStatus": {
+      "staged": "已暂存",
+      "tracked": "已跟踪改动",
+      "unstaged": "未暂存",
+      "untracked": "未跟踪",
+      "mixed": "混合"
+    },
     "modelGroupRecommended": "推荐模型",
     "modelMoreModels": "更多模型",
     "availableTools": "可用工具",
@@ -488,6 +565,7 @@
     "viewTimeline": "时序",
     "viewTerminal": "终端",
     "viewSettings": "配置",
+    "newSessionTitle": "新会话",
     "gitBranchSwitcher": "切换分支",
     "gitOperations": "Git 操作",
     "gitWorktree": "Worktree",
@@ -522,6 +600,11 @@
     "sessionWorkspaceBaseRef": "基线引用",
     "sessionWorkspaceCurrentSession": "当前会话",
     "sessionWorkspaceRepositoryWorktrees": "仓库 worktree",
+    "sessionWorkspaceEnvironment": "worktree 环境",
+    "sessionWorkspaceEnvironmentDefault": "默认环境",
+    "sessionWorkspaceEnvironmentProject": "项目",
+    "sessionWorkspaceEnvironmentLocal": "本地",
+    "sessionWorkspaceNoEnvironments": "暂无环境",
     "sessionWorkspaceStateReady": "就绪",
     "sessionWorkspaceStateProvisioning": "创建中",
     "sessionWorkspaceStateDeleting": "删除中",
@@ -682,6 +765,7 @@
         "title": "已有 Workspace",
         "empty": "暂未发现 workspace，请在 .ai.config.json 中配置 workspaces。"
       },
+      "moreCount": "还有 {{count}} 项",
       "specs": {
         "title": "已有流程",
         "params": "{{count}} 个参数",
@@ -813,9 +897,31 @@
       "unknown": "未知工具"
     },
     "terminal": {
+      "addSession": "新建终端",
+      "closeNamedSession": "关闭 {{title}}",
+      "closeSession": "关闭终端 {{index}}",
       "connectionError": "终端连接失败，请检查服务状态后重试",
+      "dragSession": "拖拽调整终端顺序",
+      "enterFullscreen": "全屏",
+      "exited": "已退出",
+      "exitFullscreen": "退出全屏",
       "exitSummary": "终端已退出，exitCode={{code}}，signal={{signal}}",
-      "resizePanel": "拖动调整终端高度"
+      "hideManager": "隐藏终端列表",
+      "manageTerminals": "管理终端",
+      "paneTitle": "终端 {{index}}",
+      "renameSession": "重命名 {{title}}",
+      "selectShell": "选择终端类型",
+      "sessionCount": "{{count}} 个终端",
+      "resizePanel": "拖动调整终端高度",
+      "shellTooltip": "Shell：{{shell}}",
+      "shellTooltipExited": "Shell：{{shell}}，已退出",
+      "showManager": "显示终端列表",
+      "shell": {
+        "bash": "Bash",
+        "default": "默认 Shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "会话设置",
     "enterTitle": "输入会话标题...",
@@ -853,6 +959,7 @@
       "addField": "添加字段",
       "addItem": "添加项",
       "remove": "移除",
+      "removeItemConfirmTitle": "确认删除这个条目？",
       "collapse": "折叠",
       "expand": "展开",
       "addAdapter": "添加适配器",
@@ -864,6 +971,8 @@
       "addHeader": "添加请求头",
       "addEntry": "添加条目",
       "newModelSelectorName": "新增模型选择器",
+      "moveUp": "上移",
+      "moveDown": "下移",
       "shortcutPlaceholder": "按下快捷键",
       "clearShortcut": "清除快捷键",
       "newModelServiceName": "新增模型服务名称",
@@ -885,6 +994,7 @@
       "defaultAdapterPlaceholder": "请选择适配器",
       "defaultModelServicePlaceholder": "请选择模型服务",
       "defaultModelPlaceholder": "请选择模型",
+      "worktreeEnvironmentPlaceholder": "请选择 worktree 环境",
       "titlePlaceholder": "请输入标题",
       "descriptionPlaceholder": "请输入描述",
       "channelType": "频道类型",
@@ -904,6 +1014,9 @@
         "high": "高",
         "max": "最高"
       }
+    },
+    "detail": {
+      "back": "返回"
     },
     "fields": {
       "general": {
@@ -929,7 +1042,29 @@
         },
         "recommendedModels": {
           "label": "建议模型",
-          "desc": "用于模型下拉推荐展示的列表"
+          "desc": "用于模型下拉推荐展示的列表",
+          "item": {
+            "service": {
+              "label": "模型服务",
+              "desc": "可选，指定模型所属的服务"
+            },
+            "model": {
+              "label": "模型",
+              "desc": "推荐展示的模型标识"
+            },
+            "title": {
+              "label": "标题",
+              "desc": "推荐项展示标题，可选"
+            },
+            "description": {
+              "label": "描述",
+              "desc": "推荐项展示描述，可选"
+            },
+            "placement": {
+              "label": "展示位置",
+              "desc": "推荐项出现的界面位置"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "界面交互语言",
@@ -972,6 +1107,25 @@
             "desc": "0-1 或 0-100，0 为静音"
           },
           "events": {
+            "label": "事件通知",
+            "desc": "分别配置每一种会话状态通知",
+            "item": {
+              "enabled": {
+                "label": "启用通知"
+              },
+              "title": {
+                "label": "标题",
+                "desc": "留空使用默认标题"
+              },
+              "description": {
+                "label": "消息内容",
+                "desc": "留空使用默认文案"
+              },
+              "sound": {
+                "label": "提示音",
+                "desc": "音频文件路径，留空使用默认音效"
+              }
+            },
             "completed": {
               "label": "完成通知",
               "desc": "会话完成时触发",
@@ -1063,6 +1217,10 @@
         "createSessionWorktree": {
           "label": "新建会话时创建工作树",
           "desc": "默认给新会话分配一个托管 worktree"
+        },
+        "worktreeEnvironment": {
+          "label": "默认 worktree 环境",
+          "desc": "新建、启动和销毁托管 worktree 时执行的环境脚本"
         },
         "customInstructions": {
           "label": "自定义指令",
@@ -1231,10 +1389,15 @@
         "command": "命令",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "模型选择器"
       }
     },
     "sectionGroups": {
       "base": "基础配置",
+      "models": "模型配置",
+      "advanced": "进阶配置",
       "permissions": "工具权限",
       "env": "环境变量",
       "items": "明细配置",
@@ -1243,6 +1406,79 @@
     "groups": {
       "config": "配置",
       "app": "应用"
+    },
+    "environments": {
+      "newPlaceholder": "例如 env-node-20",
+      "newLocalPlaceholder": "例如 env-node-20",
+      "create": "新建",
+      "created": "环境已创建",
+      "empty": "暂无 worktree 环境",
+      "searchEmpty": "没有匹配的 worktree 环境",
+      "searchPlaceholder": "搜索环境",
+      "exists": "环境名称已存在",
+      "createFailed": "创建环境失败",
+      "saveFailed": "保存环境失败",
+      "edit": "编辑",
+      "name": "名称",
+      "createTitle": "创建环境",
+      "createDescription": "",
+      "projectListTitle": "项目环境",
+      "projectListDescription": "",
+      "localListTitle": "本地环境",
+      "localListDescription": "",
+      "detailTitle": "环境详细信息",
+      "baseScript": "脚本",
+      "availableEnvVars": "可用环境变量",
+      "platformOverrides": "平台覆盖",
+      "platformOverridesDescription": "覆盖特定操作系统的默认脚本。",
+      "platformScriptDescription": "只在 {{platform}} 下运行。",
+      "sources": {
+        "project": "项目",
+        "user": "本地"
+      },
+      "platforms": {
+        "macos": "macOS",
+        "linux": "Linux",
+        "windows": "Windows"
+      },
+      "operationSections": {
+        "create": {
+          "title": "创建脚本",
+          "description": "此脚本会在 worktree 创建完成后运行。"
+        },
+        "start": {
+          "title": "启动脚本",
+          "description": "此脚本会在 adapter 进程启动前运行。"
+        },
+        "destroy": {
+          "title": "清理脚本",
+          "description": "此脚本会在删除托管 worktree 前运行。"
+        }
+      },
+      "baseScriptDescriptions": {
+        "create": "在新 worktree 中运行。",
+        "start": "在会话工作区中运行。",
+        "destroy": "在将要删除的 worktree 中运行。"
+      },
+      "operations": {
+        "create": "创建",
+        "start": "启动",
+        "destroy": "销毁"
+      },
+      "scripts": {
+        "create": "create.sh",
+        "create.macos": "create.macos.sh",
+        "create.linux": "create.linux.sh",
+        "create.windows": "create.windows.ps1",
+        "start": "start.sh",
+        "start.macos": "start.macos.sh",
+        "start.linux": "start.linux.sh",
+        "start.windows": "start.windows.ps1",
+        "destroy": "destroy.sh",
+        "destroy.macos": "destroy.macos.sh",
+        "destroy.linux": "destroy.linux.sh",
+        "destroy.windows": "destroy.windows.ps1"
+      }
     },
     "about": {
       "software": "软件信息",
@@ -1262,6 +1498,7 @@
       "channels": "频道",
       "adapters": "适配器",
       "plugins": "插件",
+      "environments": "环境",
       "mcp": "MCP",
       "shortcuts": "快捷键",
       "appearance": "外观",

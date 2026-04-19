@@ -6,6 +6,7 @@ import type { WebSocket } from 'ws'
 import type { TerminalSessionCommand } from '@vibe-forge/types'
 
 import { attachTerminalSocket, detachTerminalSocket, handleTerminalCommand } from '#~/services/terminal/index.js'
+import { normalizeTerminalShellKind } from '#~/services/terminal/shells.js'
 import { getSessionLogger } from '#~/utils/logger.js'
 
 const DEFAULT_COLS = 120
@@ -71,12 +72,14 @@ export async function handleTerminalSocketConnection(
   const logger = getSessionLogger(sessionId, 'server')
   const cols = parseDimension(params.get('cols'), DEFAULT_COLS)
   const rows = parseDimension(params.get('rows'), DEFAULT_ROWS)
+  const terminalId = params.get('terminalId') ?? undefined
+  const shellKind = normalizeTerminalShellKind(params.get('shellKind'))
 
   try {
-    await attachTerminalSocket(sessionId, ws, { cols, rows })
+    await attachTerminalSocket(sessionId, ws, { terminalId, shellKind, cols, rows })
   } catch (error) {
     logger.error(
-      { err: error, sessionId, cols, rows },
+      { err: error, sessionId, terminalId, shellKind, cols, rows },
       '[terminal] Failed to establish terminal websocket session'
     )
     sendTerminalFatalError(ws, error instanceof Error ? error.message : String(error))
@@ -90,16 +93,16 @@ export async function handleTerminalSocketConnection(
         throw new Error('Invalid terminal command')
       }
 
-      handleTerminalCommand(sessionId, payload)
+      handleTerminalCommand(sessionId, payload, terminalId)
     } catch (error) {
       logger.warn(
-        { sessionId, error: error instanceof Error ? error.message : String(error) },
+        { sessionId, terminalId, error: error instanceof Error ? error.message : String(error) },
         '[terminal] Failed to handle terminal websocket message'
       )
     }
   })
 
   ws.on('close', () => {
-    detachTerminalSocket(sessionId, ws)
+    detachTerminalSocket(sessionId, terminalId, ws)
   })
 }

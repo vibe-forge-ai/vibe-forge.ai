@@ -16,6 +16,13 @@ export function MarkdownContent({
           pre({ children }) {
             return <>{children}</>
           },
+          table({ children, ...props }: any) {
+            return (
+              <div className='markdown-table-wrapper'>
+                <table {...props}>{children}</table>
+              </div>
+            )
+          },
           code({ inline, className, children, ...props }: any) {
             const langClass = typeof className === 'string' ? className : ''
             const match = /language-(\w+)/.exec(langClass)

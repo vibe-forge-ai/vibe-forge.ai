@@ -7,133 +7,106 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { themeAtom } from '../store'
+import { NavRailCompact } from './NavRailCompact'
+import {
+  buildCompactLanguageActions,
+  buildCompactMoreActions,
+  buildCompactThemeActions
+} from './nav-rail-compact-config'
+import { buildLanguageItems, buildNavItems, buildThemeItems } from './nav-rail-items'
 
 export function NavRail({
-  collapsed,
-  onToggleCollapse
+  ariaHidden = false,
+  isCompactLayout = false,
+  onOpenSidebar,
+  showSidebar = false
 }: {
-  collapsed?: boolean
-  onToggleCollapse?: () => void
+  ariaHidden?: boolean
+  isCompactLayout?: boolean
+  onOpenSidebar?: () => void
+  showSidebar?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const [themeMode, setThemeMode] = useAtom(themeAtom)
   const navigate = useNavigate()
   const location = useLocation()
+  const { isTouchInteraction } = useResponsiveLayout()
 
   const currentPath = location.pathname
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
-  const langItems: MenuProps['items'] = React.useMemo(() => [
-    {
-      key: 'zh',
-      label: '简体中文',
-      icon: i18n.language.startsWith('zh')
-        ? (
-          <span className='material-symbols-rounded nav-menu-icon active'>check</span>
-        )
-        : <div className='nav-menu-icon-placeholder' />,
-      onClick: () => {
-        void i18n.changeLanguage('zh')
-      }
-    },
-    {
-      key: 'en',
-      label: 'English',
-      icon: i18n.language.startsWith('en')
-        ? (
-          <span className='material-symbols-rounded nav-menu-icon active'>check</span>
-        )
-        : <div className='nav-menu-icon-placeholder' />,
-      onClick: () => {
-        void i18n.changeLanguage('en')
-      }
-    }
-  ], [i18n.language])
+  const langItems: MenuProps['items'] = React.useMemo(() =>
+    buildLanguageItems({
+      currentLanguage: i18n.language,
+      onChangeLanguage: (language) => i18n.changeLanguage(language)
+    }), [i18n.language])
 
-  const themeItems: MenuProps['items'] = React.useMemo(() => [
-    {
-      key: 'light',
-      label: t('common.themeLight'),
-      icon: themeMode === 'light'
-        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
-        : <span className='material-symbols-rounded nav-menu-icon'>light_mode</span>,
-      onClick: () => {
-        setThemeMode('light')
-        localStorage.setItem('theme', 'light')
-      }
-    },
-    {
-      key: 'dark',
-      label: t('common.themeDark'),
-      icon: themeMode === 'dark'
-        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
-        : <span className='material-symbols-rounded nav-menu-icon'>dark_mode</span>,
-      onClick: () => {
-        setThemeMode('dark')
-        localStorage.setItem('theme', 'dark')
-      }
-    },
-    {
-      key: 'system',
-      label: t('common.themeSystem'),
-      icon: themeMode === 'system'
-        ? <span className='material-symbols-rounded nav-menu-icon active'>check</span>
-        : <span className='material-symbols-rounded nav-menu-icon'>desktop_windows</span>,
-      onClick: () => {
-        setThemeMode('system')
-        localStorage.setItem('theme', 'system')
-      }
-    }
-  ], [themeMode, t, setThemeMode])
+  const themeItems: MenuProps['items'] = React.useMemo(() =>
+    buildThemeItems({
+      setThemeMode,
+      t,
+      themeMode
+    }), [setThemeMode, t, themeMode])
 
-  const navItems = React.useMemo(() => [
-    {
-      key: 'sessions',
-      icon: 'chat_bubble',
-      label: t('common.sessions'),
-      path: '/',
-      active: currentPath === '/' || currentPath.startsWith('/session/')
-    },
-    {
-      key: 'knowledge',
-      icon: 'library_books',
-      label: t('common.knowledgeBase'),
-      path: '/knowledge',
-      active: currentPath === '/knowledge'
-    },
-    {
-      key: 'automation',
-      icon: 'schedule',
-      label: t('common.automation'),
-      path: '/automation',
-      active: currentPath === '/automation'
-    },
-    {
-      key: 'benchmark',
-      icon: 'speed',
-      label: t('common.benchmark'),
-      path: '/benchmark',
-      active: currentPath === '/benchmark'
-    },
-    {
-      key: 'archive',
-      icon: 'archive',
-      label: t('common.archivedSessions'),
-      path: '/archive',
-      active: currentPath === '/archive'
-    }
-  ], [currentPath, t])
+  const navItems = React.useMemo(() => buildNavItems({ currentPath, t }), [currentPath, t])
+
+  const compactMoreActions = React.useMemo(() =>
+    buildCompactMoreActions({
+      currentPath,
+      navigate,
+      onOpenSidebar,
+      showSidebar,
+      t
+    }), [currentPath, navigate, onOpenSidebar, showSidebar, t])
+
+  const compactThemeActions = React.useMemo(() =>
+    buildCompactThemeActions({
+      setThemeMode,
+      t,
+      themeMode
+    }), [setThemeMode, t, themeMode])
+
+  const compactLanguageActions = React.useMemo(() =>
+    buildCompactLanguageActions({
+      currentLanguage: i18n.language,
+      onChangeLanguage: (language) => {
+        void i18n.changeLanguage(language)
+      }
+    }), [i18n.language])
+
+  const handleNavClick = (_key: string, path: string) => {
+    void navigate(path)
+  }
+
+  if (isCompactLayout) {
+    return (
+      <NavRailCompact
+        ariaHidden={ariaHidden}
+        currentPath={currentPath}
+        languageActions={compactLanguageActions}
+        languageLabel={t('common.language')}
+        moreLabel={t('common.moreActions')}
+        moreSheetActions={compactMoreActions}
+        navItems={navItems}
+        themeActions={compactThemeActions}
+        themeLabel={t('common.theme')}
+        onNavClick={handleNavClick}
+      />
+    )
+  }
 
   return (
-    <div className='nav-rail'>
+    <div className='nav-rail' aria-hidden={ariaHidden || undefined}>
       <div className='nav-rail-top'>
         {navItems.map(item => (
-          <Tooltip key={item.key} title={item.label} placement='right'>
+          <Tooltip key={item.key} title={resolveTooltipTitle(item.label)} placement='right'>
             <span>
               <Button
                 type='text'
                 className={`nav-item ${item.active ? 'active' : ''}`}
-                onClick={() => void navigate(item.path)}
+                onClick={() => handleNavClick(item.key, item.path)}
                 icon={<span className='material-symbols-rounded'>{item.icon}</span>}
               />
             </span>
@@ -141,7 +114,7 @@ export function NavRail({
         ))}
       </div>
       <div className='nav-rail-bottom'>
-        <Tooltip title={t('common.theme')} placement='right'>
+        <Tooltip title={resolveTooltipTitle(t('common.theme'))} placement='right'>
           <span>
             <Dropdown
               menu={{
@@ -162,7 +135,7 @@ export function NavRail({
             </Dropdown>
           </span>
         </Tooltip>
-        <Tooltip title={t('common.language')} placement='right'>
+        <Tooltip title={resolveTooltipTitle(t('common.language'))} placement='right'>
           <span>
             <Dropdown
               menu={{
@@ -179,7 +152,7 @@ export function NavRail({
             </Dropdown>
           </span>
         </Tooltip>
-        <Tooltip title={t('common.settings')} placement='right'>
+        <Tooltip title={resolveTooltipTitle(t('common.settings'))} placement='right'>
           <span>
             <Button
               type='text'

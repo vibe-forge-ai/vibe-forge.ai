@@ -21,6 +21,23 @@
   }
 }
 
+@media (max-width: 960px) {
+  .toolbar-btn.toolbar-btn--reference {
+    width: var(--sender-control-height);
+    min-width: var(--sender-control-height);
+    height: var(--sender-control-height);
+    padding: 0 !important;
+    justify-content: center;
+
+    .toolbar-btn__icon-shell {
+      width: 100%;
+      min-width: 100%;
+      height: 100%;
+      border-radius: var(--sender-control-radius);
+    }
+  }
+}
+
 .reference-actions-popover,
 .reference-actions-submenu-popover {
   .ant-popover-inner {

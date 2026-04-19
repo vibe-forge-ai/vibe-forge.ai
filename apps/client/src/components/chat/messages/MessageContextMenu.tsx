@@ -21,6 +21,7 @@ interface MessageContextMenuProps {
   isEditing: boolean
   message: ChatMessage
   sessionId?: string
+  trigger?: ('click' | 'contextMenu')[]
   onFork: () => void
   onRecall: () => void
   onStartEditing: () => void
@@ -39,6 +40,7 @@ export function MessageContextMenu({
   isEditing,
   message: sourceMessage,
   sessionId,
+  trigger = ['contextMenu'],
   onFork,
   onRecall,
   onStartEditing
@@ -86,7 +88,7 @@ export function MessageContextMenu({
 
   return (
     <Dropdown
-      trigger={['contextMenu']}
+      trigger={trigger}
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)

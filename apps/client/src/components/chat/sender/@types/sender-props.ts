@@ -8,6 +8,7 @@ import type {
 } from '@vibe-forge/core'
 import type { SessionInfo } from '@vibe-forge/types'
 
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
 import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
@@ -68,4 +69,5 @@ export interface SenderProps {
   }
   queueMode?: SessionQueuedMessageMode
   onQueueModeChange?: (mode: SessionQueuedMessageMode) => void
+  contextReferenceRequest?: ContextReferenceRequest | null
 }
