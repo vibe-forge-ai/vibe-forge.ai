@@ -176,11 +176,9 @@ https://vf-api.example.com
 
 ## GitHub Pages 部署建议
 
-GitHub Pages 可以托管独立 client。推荐形态：
+GitHub Pages 可以托管独立 client。官方 PWA 部署由 `vibe-forge-ai/pwa` 仓库维护，访问地址是 `https://vibe-forge-ai.github.io/pwa/`。
 
-```text
-https://<github-user>.github.io/<repo-name>/
-```
+主仓库 `master` 出现 client 相关更新后，会触发 `vibe-forge-ai/pwa` 重新构建并发布自己的 `gh-pages`。主仓库的 `gh-pages` 不再承载 PWA，后续主要用于项目文档站。fork 或私有部署仍可使用 `https://<github-user>.github.io/<repo-name>/` 这类项目站点形态。
 
 用户首次打开后端地址时，优先填写 HTTPS 地址：
 
@@ -195,6 +193,4 @@ https://<random>.trycloudflare.com
 
 ## 安装、验证与排查
 
-继续阅读：[安装、验证与排查](./pwa/operations.md)。
-
-这里包括 Android / iOS 安装步骤、MIUI / HyperOS 桌面快捷方式权限、连接历史和登录态管理、移动端键盘遮挡处理、版本兼容规则、连通性检查、安全建议与参考资料。
+继续阅读：[安装、验证与排查](./pwa/operations.md)，包括 Android / iOS 安装、桌面快捷方式权限、连接历史、登录态管理、键盘遮挡、版本兼容、连通性检查和安全建议。
