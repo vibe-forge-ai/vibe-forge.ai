@@ -43,7 +43,30 @@ jobs:
           __VF_PROJECT_AI_CLIENT_MODE__: standalone
           __VF_PROJECT_AI_CLIENT_BASE__: /vibe-forge.ai/
 
+      - name: Check PWA artifact
+        id: pwa-artifact
+        run: |
+          missing=0
+          for artifact_path in \
+            apps/client/dist/manifest.webmanifest \
+            apps/client/dist/sw.js \
+            apps/client/dist/pwa-icon-192.png \
+            apps/client/dist/pwa-icon-512.png
+          do
+            if [ ! -f "$artifact_path" ]; then
+              echo "::warning::Missing $artifact_path; skipping gh-pages publish."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Prepare PWA artifact
+        if: steps.pwa-artifact.outputs.ready == 'true'
         run: |
           if [ -f .ai/docs/usage/pwa.md ]; then
             cp .ai/docs/usage/pwa.md apps/client/dist/pwa.md
@@ -53,6 +76,7 @@ jobs:
           touch apps/client/dist/.nojekyll
 
       - name: Publish to gh-pages
+        if: steps.pwa-artifact.outputs.ready == 'true'
         run: |
           set -euo pipefail
 
