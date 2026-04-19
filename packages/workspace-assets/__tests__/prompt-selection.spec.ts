@@ -435,6 +435,94 @@ describe('resolvePromptAssetSelection', () => {
     expect(options.systemPrompt).not.toContain('<skill-content>\n先读 README.md\n</skill-content>')
   })
 
+  it('appends conventional prompt files when loading a directory entity', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/README.md'),
+      [
+        '---',
+        'description: 代码评审实体',
+        '---',
+        '基础身份。'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/INTRODUCTION.md'),
+      '负责发现行为回归。'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/PERSONALITY.md'),
+      '说话克制，先给出高风险问题。'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/MEMORY.md'),
+      '记住上次评审指出过缺少验证。'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data, options] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'reviewer'
+    })
+
+    expect(data.targetBody).toContain('基础身份。')
+    expect(data.targetBody).toContain('## Introduction\n\n负责发现行为回归。')
+    expect(data.targetBody).toContain('## Personality\n\n说话克制，先给出高风险问题。')
+    expect(data.targetBody).toContain('## Memory\n\n记住上次评审指出过缺少验证。')
+    expect(options.systemPrompt).toContain('## Introduction\n\n负责发现行为回归。')
+    expect(data.targetBody.indexOf('基础身份。')).toBeLessThan(data.targetBody.indexOf('## Introduction'))
+    expect(data.targetBody.indexOf('## Introduction')).toBeLessThan(data.targetBody.indexOf('## Personality'))
+    expect(data.targetBody.indexOf('## Personality')).toBeLessThan(data.targetBody.indexOf('## Memory'))
+  })
+
+  it('appends alias prompt files for index json entities', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/index.json'),
+      JSON.stringify(
+        {
+          description: '代码评审实体',
+          prompt: '基础身份。'
+        },
+        null,
+        2
+      )
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/介绍.md'),
+      '负责发现行为回归。'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/personality.md'),
+      '说话克制，先给出高风险问题。'
+    )
+    await writeDocument(
+      join(workspace, '.ai/entities/reviewer/记忆.md'),
+      '记住上次评审指出过缺少验证。'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      useDefaultVibeForgeMcpServer: false
+    })
+    const [data] = await resolvePromptAssetSelection({
+      bundle,
+      type: 'entity',
+      name: 'reviewer'
+    })
+
+    expect(data.targetBody).toContain('基础身份。')
+    expect(data.targetBody).toContain('## Introduction\n\n负责发现行为回归。')
+    expect(data.targetBody).toContain('## Personality\n\n说话克制，先给出高风险问题。')
+    expect(data.targetBody).toContain('## Memory\n\n记住上次评审指出过缺少验证。')
+  })
+
   it('does not preload all skills when the target entity omits skill references', async () => {
     const workspace = await createWorkspace()
 

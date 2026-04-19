@@ -85,7 +85,7 @@ export const Entity = z.object({
   promptPath: z
     .string()
     .describe(
-      '实体的描述文件路径，文件内容为实体的描述。默认为当前目录下的 AGENTS.md 文件。'
+      '实体的描述文件路径，文件内容为实体的描述。目录型实体还会按顺序追加 INTRODUCTION.md、PERSONALITY.md、MEMORY.md。'
     )
     .optional(),
   rules: z
