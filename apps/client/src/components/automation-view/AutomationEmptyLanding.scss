@@ -1,0 +1,142 @@
+.automation-empty-landing {
+  height: 100%;
+  background: transparent;
+}
+
+.automation-empty-guide {
+  width: min(100%, 980px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.automation-empty-guide__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 24px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  p {
+    max-width: 620px;
+    margin: 0;
+    color: var(--sub-text-color);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+.automation-empty-guide__eyebrow {
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.automation-empty-guide__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.automation-empty-guide__item {
+  min-width: 0;
+  min-height: 92px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color .2s ease,
+    border-color .2s ease,
+    transform .2s ease;
+
+  &:hover {
+    background: var(--tag-hover-bg, var(--tag-bg));
+    border-color: rgba(37, 99, 235, .32);
+  }
+
+  &:active {
+    transform: scale(.99);
+  }
+}
+
+.automation-empty-guide__icon {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--tag-bg);
+  color: var(--primary-color);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.automation-empty-guide__item-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.automation-empty-guide__item-title {
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.automation-empty-guide__item-desc {
+  color: var(--sub-text-color);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.automation-empty-guide__composer {
+  .chat-input-wrapper {
+    background: transparent;
+  }
+}
+
+.composer-landing--compact {
+  .automation-empty-guide {
+    width: 100%;
+    gap: 14px;
+  }
+
+  .automation-empty-guide__header {
+    gap: 6px;
+
+    h2 {
+      font-size: 20px;
+    }
+
+    p {
+      font-size: 12px;
+    }
+  }
+
+  .automation-empty-guide__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .automation-empty-guide__item {
+    min-height: 78px;
+  }
+}

@@ -109,7 +109,7 @@ export function SenderBody({
         placeholder={placeholder || t('chat.inputPlaceholder')}
         disabled={(!isInlineEdit && modelUnavailable) || (isInlineEdit && isBusy)}
         sendShortcut={toolbarState.resolvedSendShortcut}
-        sendShortcutDisabled={toolbarState.sendBlocked}
+        sendShortcutDisabled={toolbarState.sendBlocked || toolbarState.hideSubmitAction}
         onSendShortcut={toolbarHandlers.onSend}
         secondarySendShortcut={secondarySendShortcut}
         onSecondarySendShortcut={onSecondarySendShortcut}

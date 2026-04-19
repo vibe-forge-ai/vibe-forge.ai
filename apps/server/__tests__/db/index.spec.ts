@@ -232,7 +232,15 @@ describe('sqliteDb', () => {
       {
         id: 'task-1',
         title: 'Task A',
-        prompt: 'Summarize activity'
+        prompt: 'Summarize activity',
+        model: 'gpt-responses,gpt-5.4',
+        adapter: 'codex',
+        effort: 'high',
+        permissionMode: 'bypassPermissions',
+        createWorktree: true,
+        branchName: 'codex/nightly',
+        branchKind: null,
+        branchMode: 'create'
       }
     ])
 
@@ -270,6 +278,14 @@ describe('sqliteDb', () => {
           ruleId: 'rule-1',
           title: 'Task A',
           prompt: 'Summarize activity',
+          model: 'gpt-responses,gpt-5.4',
+          adapter: 'codex',
+          effort: 'high',
+          permissionMode: 'bypassPermissions',
+          createWorktree: true,
+          branchName: 'codex/nightly',
+          branchKind: null,
+          branchMode: 'create',
           createdAt: Date.now()
         }
       ]

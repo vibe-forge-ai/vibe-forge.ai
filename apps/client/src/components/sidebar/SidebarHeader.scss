@@ -358,47 +358,11 @@
   }
 }
 
-.sidebar-header--compact {
-  padding-top: 12px;
-
-  .header-top {
-    align-items: stretch;
-  }
-
-  .new-chat-btn {
-    height: 40px;
-    min-height: 40px;
-    padding: 0 12px;
-    font-size: 13px;
-  }
-
-  .sidebar-collapse-btn,
-  .sidebar-new-chat-btn {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    border-radius: 8px;
-  }
-
-  .header-search-row {
-    margin-top: 8px;
-  }
-
-  .search-input {
-    height: 40px;
-    min-height: 40px;
-    padding: 0 10px !important;
-
-    .ant-input {
-      font-size: 13px;
-    }
-
-    .search-toggle-button {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-    }
+.sidebar-list-header--compact.sidebar-header {
+  .search-input .search-toggle-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
   }
 
   .toolbar-filter-select .ant-select-selector,

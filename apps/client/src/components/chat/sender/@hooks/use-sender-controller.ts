@@ -140,6 +140,9 @@ export const useSenderController = (props: SenderProps) => {
     })
   }
   const triggerSend = (mode?: 'steer' | 'next') => {
+    if (props.hideSubmitAction === true) {
+      return
+    }
     if (isPermissionInteraction) {
       handleBlockedSendAttempt()
       return
@@ -253,7 +256,7 @@ export const useSenderController = (props: SenderProps) => {
     t
   })
 
-  return buildSenderControllerResult({
+  const controller = buildSenderControllerResult({
     attachments,
     completion,
     composer,
@@ -277,4 +280,12 @@ export const useSenderController = (props: SenderProps) => {
       : undefined,
     toolbar
   })
+
+  return {
+    ...controller,
+    onInputChange: (value: string, cursorOffset: number | null) => {
+      controller.onInputChange(value, cursorOffset)
+      props.onInputChange?.(value)
+    }
+  }
 }

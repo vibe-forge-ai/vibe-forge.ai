@@ -125,6 +125,14 @@ describe('db schema modules', () => {
     expect(automationTaskColumns.map(column => column.name)).toEqual(expect.arrayContaining([
       'title',
       'prompt',
+      'model',
+      'adapter',
+      'effort',
+      'permissionMode',
+      'createWorktree',
+      'branchName',
+      'branchKind',
+      'branchMode',
       'createdAt'
     ]))
     expect(automationRunColumns.map(column => column.name)).toEqual(expect.arrayContaining([

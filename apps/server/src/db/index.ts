@@ -1,5 +1,6 @@
 import { createAutomationRepo } from './automation/repo'
 import type {
+  AutomationBranchMode,
   AutomationRule,
   AutomationRuleDetail,
   AutomationRun,
@@ -313,5 +314,12 @@ export function getDb() {
   return dbInstance
 }
 
-export type { AutomationRule, AutomationRuleDetail, AutomationRun, AutomationTask, AutomationTrigger }
+export type {
+  AutomationBranchMode,
+  AutomationRule,
+  AutomationRuleDetail,
+  AutomationRun,
+  AutomationTask,
+  AutomationTrigger
+}
 export type { SessionWorkspaceRow }
