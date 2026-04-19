@@ -247,4 +247,44 @@ describe('scripts cli', () => {
       quiet: true
     })
   })
+
+  it('dispatches homebrew tap CLI formula sync', async () => {
+    const runHomebrewTapSyncCli = vi.fn(async () => ({
+      formulaPath: '/repo/infra/homebrew-tap/Formula/vibe-forge.rb',
+      sha256: '0'.repeat(64),
+      tarballUrl: 'https://registry.npmjs.org/@vibe-forge/cli/-/cli-1.2.3.tgz',
+      written: true
+    }))
+    const cli = createScriptsCli({
+      runAdapterSuite: vi.fn(async () => []),
+      runAdapterVitest: vi.fn(async () => {}),
+      runChromeDebugTargets: vi.fn(async () => {}),
+      runChromeDebugMessengerConversations: vi.fn(async () => {}),
+      runChromeDebugMessengerSend: vi.fn(async () => {}),
+      runChromeDebugMessengerClickReply: vi.fn(async () => {}),
+      runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
+      runHomebrewTapSyncCli,
+      runPublishPlan: vi.fn(async () => ({}))
+    })
+
+    await cli.parseAsync([
+      'node',
+      'vf-dev',
+      'homebrew-tap',
+      'sync-cli',
+      '--version',
+      '1.2.3',
+      '--tap-dir',
+      'infra/homebrew-tap',
+      '--dry-run'
+    ])
+
+    expect(runHomebrewTapSyncCli).toHaveBeenCalledWith({
+      version: '1.2.3',
+      tapDir: 'infra/homebrew-tap',
+      formulaPath: 'Formula/vibe-forge.rb',
+      dryRun: true
+    })
+  })
 })

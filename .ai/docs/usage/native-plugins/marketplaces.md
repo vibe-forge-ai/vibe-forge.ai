@@ -29,15 +29,15 @@ marketplaces:
 然后安装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers@superpowers-marketplace
-npx vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
-npx vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
+vf plugin --adapter claude add superpowers@superpowers-marketplace
+vf plugin --adapter claude add superpowers-developing-for-claude-code@superpowers-marketplace
+vf plugin --adapter claude add private-journal-mcp@superpowers-marketplace
 ```
 
 如果你还想装浏览器插件，也可以继续装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
+vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 ```
 
 前提是这个 plugin 名字已经存在于该 marketplace 的 `marketplace.json` 里。
@@ -80,9 +80,9 @@ marketplaces:
 然后安装：
 
 ```bash
-npx vf plugin --adapter claude add superpowers@superpowers
-npx vf plugin --adapter claude add superpowers-chrome@superpowers
-npx vf plugin --adapter claude add private-journal-mcp@superpowers
+vf plugin --adapter claude add superpowers@superpowers
+vf plugin --adapter claude add superpowers-chrome@superpowers
+vf plugin --adapter claude add private-journal-mcp@superpowers
 ```
 
 说明：

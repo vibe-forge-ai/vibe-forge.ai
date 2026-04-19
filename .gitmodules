@@ -1,0 +1,4 @@
+[submodule "infra/homebrew-tap"]
+	path = infra/homebrew-tap
+	url = https://github.com/vibe-forge-ai/homebrew-tap.git
+	branch = main
