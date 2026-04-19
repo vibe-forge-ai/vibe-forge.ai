@@ -1,18 +1,16 @@
-import { execFile } from 'node:child_process'
 import { access, mkdir, readdir, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
-import { promisify } from 'node:util'
 
 import { readJsonFileOrDefault, resolveMockHome, writeJsonFile } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
 import { resolveProjectAiPath, syncSymlinkTarget } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveCodexBinaryPath } from '#~/paths.js'
-import { writeManagedCodexConfigFile } from './config'
+import { CODEX_CLI_PACKAGE, CODEX_CLI_VERSION, resolveCodexBinaryPath } from '#~/paths.js'
+import { resolveCodexAdapterConfig, writeManagedCodexConfigFile } from './config'
 import { ensureCodexNativeHooksInstalled } from './native-hooks'
 
-const execFileAsync = promisify(execFile)
 const CODEX_MANAGED_SKILLS_STATE_FILE = '.vibe-forge-managed-skills.json'
 
 const syncCodexMockHomeSymlink = async (params: {
@@ -177,18 +175,21 @@ async function writeManagedCodexConfig(
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx
-
   const home = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
 
-  const binaryPath = resolveCodexBinaryPath(env)
-
-  try {
-    await execFileAsync(String(binaryPath), ['--version'])
-  } catch {
-    // Non-fatal: the binary might not be installed globally, or it might be
-    // installed but the --version flag might not exist in older builds.
-  }
+  const { native: adapterConfig } = resolveCodexAdapterConfig(ctx)
+  ctx.env.__VF_PROJECT_AI_ADAPTER_CODEX_CLI_PATH__ = await ensureManagedNpmCli({
+    adapterKey: 'codex',
+    binaryName: 'codex',
+    bundledPath: resolveCodexBinaryPath(env, ctx.cwd),
+    config: adapterConfig.cli,
+    cwd: ctx.cwd,
+    defaultPackageName: CODEX_CLI_PACKAGE,
+    defaultVersion: CODEX_CLI_VERSION,
+    env,
+    logger: ctx.logger
+  })
 
   if (home != null && home !== '') {
     await linkAuthFile(home, mockHome)

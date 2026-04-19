@@ -1,8 +1,14 @@
 import { z } from 'zod'
 
-import { defineAdapterConfigContribution, effortLevelSchema, jsonValueSchema } from '@vibe-forge/core/config-schema'
+import {
+  adapterNativeCliConfigSchema,
+  defineAdapterConfigContribution,
+  effortLevelSchema,
+  jsonValueSchema
+} from '@vibe-forge/core/config-schema'
 
 export const codexAdapterConfigSchema = z.object({
+  cli: adapterNativeCliConfigSchema.optional().describe('Managed Codex CLI runtime'),
   sandboxPolicy: z.object({
     type: z.enum(['readOnly', 'workspaceWrite', 'dangerFullAccess', 'externalSandbox'])
       .describe('Sandbox policy type'),
@@ -36,6 +42,6 @@ export const adapterConfigContribution = defineAdapterConfigContribution({
   schema: codexAdapterConfigSchema,
   configEntry: {
     extraCommonKeys: ['effort'] as const,
-    deepMergeKeys: ['sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
+    deepMergeKeys: ['cli', 'sandboxPolicy', 'clientInfo', 'configOverrides', 'features'] as const
   }
 })

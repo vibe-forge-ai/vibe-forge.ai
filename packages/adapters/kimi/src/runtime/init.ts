@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Kimi CLI bootstrap keeps install helpers and init flow together. */
 import { execFile } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -13,6 +14,7 @@ import { prepareKimiNativeHooks } from './native-hooks'
 const execFileAsync = promisify(execFile)
 
 const DEFAULT_KIMI_INSTALL_PACKAGE = 'kimi-cli'
+const DEFAULT_KIMI_INSTALL_VERSION = '1.36.0'
 const DEFAULT_KIMI_INSTALL_PYTHON = '3.13'
 const COMMAND_CHECK_TIMEOUT_MS = 15000
 
@@ -22,22 +24,43 @@ const normalizeNonEmptyString = (value: unknown) => (
 
 const isFalseLike = (value: string) => ['0', 'false', 'no', 'off'].includes(value.trim().toLowerCase())
 
+const normalizeSource = (value: unknown) => (
+  value === 'managed' || value === 'system' || value === 'path' ? value : undefined
+)
+
+const hasUvVersionSpec = (packageName: string) => /[<>=!~@]/u.test(packageName)
+
+const toUvPackageSpec = (packageName: string, version?: string) => (
+  version != null && !hasUvVersionSpec(packageName) ? `${packageName}==${version}` : packageName
+)
+
 export const resolveKimiCliInstallOptions = (
   env: AdapterCtx['env'],
   adapterConfig: KimiAdapterConfig = {}
 ) => {
   const rawAutoInstall = normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_AUTO_INSTALL__)
+  const packageName = normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_INSTALL_PACKAGE__) ??
+    normalizeNonEmptyString(adapterConfig.cli?.package) ??
+    normalizeNonEmptyString(adapterConfig.installPackage) ??
+    DEFAULT_KIMI_INSTALL_PACKAGE
+  const version = normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_INSTALL_VERSION__) ??
+    normalizeNonEmptyString(adapterConfig.cli?.version) ??
+    DEFAULT_KIMI_INSTALL_VERSION
   return {
     autoInstall: rawAutoInstall == null
-      ? adapterConfig.autoInstall !== false
+      ? (adapterConfig.cli?.autoInstall ?? adapterConfig.autoInstall) !== false
       : !isFalseLike(rawAutoInstall),
-    packageName: normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_INSTALL_PACKAGE__) ??
-      normalizeNonEmptyString(adapterConfig.installPackage) ??
-      DEFAULT_KIMI_INSTALL_PACKAGE,
+    binaryPath: normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__) ??
+      normalizeNonEmptyString(adapterConfig.cli?.path),
+    packageName: toUvPackageSpec(packageName, version),
     python: normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_INSTALL_PYTHON__) ??
+      normalizeNonEmptyString(adapterConfig.cli?.python) ??
       normalizeNonEmptyString(adapterConfig.installPython) ??
       DEFAULT_KIMI_INSTALL_PYTHON,
+    source: normalizeSource(env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_SOURCE__) ??
+      normalizeSource(adapterConfig.cli?.source),
     uvPath: normalizeNonEmptyString(env.__VF_PROJECT_AI_ADAPTER_KIMI_UV_PATH__) ??
+      normalizeNonEmptyString(adapterConfig.cli?.uvPath) ??
       normalizeNonEmptyString(adapterConfig.uvPath) ??
       'uv'
   }
@@ -46,7 +69,7 @@ export const resolveKimiCliInstallOptions = (
 export const buildKimiCliInstallEnv = (
   ctx: Pick<AdapterCtx, 'cwd' | 'env'>
 ) => {
-  const paths = resolveKimiManagedToolPaths(ctx.cwd)
+  const paths = resolveKimiManagedToolPaths(ctx.cwd, ctx.env)
   return toProcessEnv({
     ...process.env,
     ...ctx.env,
@@ -70,10 +93,10 @@ export const buildKimiCliInstallArgs = (
 ]
 
 export const buildKimiCliInstallInstructions = (
-  ctx: Pick<AdapterCtx, 'cwd'>,
+  ctx: Pick<AdapterCtx, 'cwd' | 'env'>,
   options: ReturnType<typeof resolveKimiCliInstallOptions>
 ) => {
-  const paths = resolveKimiManagedToolPaths(ctx.cwd)
+  const paths = resolveKimiManagedToolPaths(ctx.cwd, ctx.env)
   const manualInstallCommand = `${options.uvPath} tool install --python ${options.python} ${options.packageName}`
   return [
     'Install Kimi CLI with one of these options:',
@@ -110,8 +133,8 @@ const canRunCommand = async (binaryPath: string, args: string[], env?: NodeJS.Pr
 const canRunKimiBinary = (binaryPath: string, env?: NodeJS.ProcessEnv) => canRunCommand(binaryPath, ['--version'], env)
 const canRunUvBinary = (binaryPath: string, env?: NodeJS.ProcessEnv) => canRunCommand(binaryPath, ['--version'], env)
 
-const ensureManagedDirs = async (ctx: Pick<AdapterCtx, 'cwd'>) => {
-  const paths = resolveKimiManagedToolPaths(ctx.cwd)
+const ensureManagedDirs = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
+  const paths = resolveKimiManagedToolPaths(ctx.cwd, ctx.env)
   await mkdir(paths.binDir, { recursive: true })
   await mkdir(paths.toolDir, { recursive: true })
   await mkdir(paths.cacheDir, { recursive: true })
@@ -124,24 +147,32 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
 
   const adapterConfig = resolveAdapterConfig(ctx)
   const installOptions = resolveKimiCliInstallOptions(ctx.env, adapterConfig)
-  const explicitBinaryPath = normalizeNonEmptyString(ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__)
   const probeEnv = toProcessEnv({
     ...process.env,
     ...ctx.env
   })
 
-  if (explicitBinaryPath != null) {
-    if (await canRunKimiBinary(explicitBinaryPath, probeEnv)) return
-    throw new Error(`Configured Kimi CLI path is not executable: ${explicitBinaryPath}`)
+  if (installOptions.binaryPath != null) {
+    if (await canRunKimiBinary(installOptions.binaryPath, probeEnv)) {
+      ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = installOptions.binaryPath
+      return
+    }
+    throw new Error(`Configured Kimi CLI path is not executable: ${installOptions.binaryPath}`)
   }
 
-  const managedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd)
-  if (managedBinaryPath != null && await canRunKimiBinary(managedBinaryPath, probeEnv)) {
-    ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = managedBinaryPath
-    return
+  if (installOptions.source === 'path') {
+    throw new Error('Kimi CLI source is set to path, but no Kimi CLI path is configured.')
   }
 
-  if (await canRunKimiBinary('kimi', probeEnv)) {
+  if (installOptions.source !== 'system') {
+    const managedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
+    if (managedBinaryPath != null && await canRunKimiBinary(managedBinaryPath, probeEnv)) {
+      ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = managedBinaryPath
+      return
+    }
+  }
+
+  if (installOptions.source !== 'managed' && await canRunKimiBinary('kimi', probeEnv)) {
     ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = 'kimi'
     return
   }
@@ -164,7 +195,7 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
 
   await ensureManagedDirs(ctx)
   const installEnv = buildKimiCliInstallEnv(ctx)
-  ctx.logger.info(`Installing Kimi CLI into ${resolveKimiManagedToolPaths(ctx.cwd).binDir}`)
+  ctx.logger.info(`Installing Kimi CLI into ${resolveKimiManagedToolPaths(ctx.cwd, ctx.env).binDir}`)
   await execFileAsync(
     installOptions.uvPath,
     buildKimiCliInstallArgs(installOptions),
@@ -175,7 +206,7 @@ export const initKimiAdapter = async (ctx: AdapterCtx) => {
     }
   )
 
-  const installedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd)
+  const installedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
   if (installedBinaryPath == null || !await canRunKimiBinary(installedBinaryPath, installEnv)) {
     throw new Error(
       `Kimi CLI installation completed, but the managed kimi binary could not be executed.\n\n${

@@ -202,6 +202,83 @@ describe('resolveWorkspaceAssetBundle', () => {
     )
   })
 
+  it('installs skill dependencies into the primary workspace shared cache', async () => {
+    const primary = await createWorkspace()
+    const worktree = await createWorkspace()
+    const previousPrimaryWorkspace = process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://registry.example.test/api/search?q=frontend-design&limit=10') {
+        return new Response(JSON.stringify({
+          skills: [{
+            id: 'anthropics/skills/frontend-design',
+            skillId: 'frontend-design',
+            name: 'frontend-design',
+            source: 'anthropics/skills'
+          }]
+        }))
+      }
+      if (url === 'https://registry.example.test/api/download/anthropics/skills/frontend-design') {
+        return new Response(JSON.stringify({
+          files: [{
+            path: 'SKILL.md',
+            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse primary cache.\n'
+          }]
+        }))
+      }
+      return new Response('not found', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = primary
+      await writeDocument(
+        join(worktree, '.ai/skills/app-builder/SKILL.md'),
+        [
+          '---',
+          'name: app-builder',
+          'description: Build apps',
+          'dependencies:',
+          '  - frontend-design',
+          '---',
+          'Build the app.'
+        ].join('\n')
+      )
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: worktree,
+        configs: [{
+          skills: {
+            registry: 'https://registry.example.test'
+          }
+        }, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      await buildAdapterAssetPlan({
+        adapter: 'opencode',
+        bundle,
+        options: {
+          skills: {
+            include: ['app-builder']
+          }
+        }
+      })
+
+      const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
+      expect(dependency?.sourcePath).toContain(join(
+        primary,
+        '.ai/caches/skill-dependencies/registry.example.test/'
+      ))
+      expect(dependency?.sourcePath).not.toContain(join(worktree, '.ai/caches'))
+    } finally {
+      if (previousPrimaryWorkspace == null) {
+        delete process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+      } else {
+        process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = previousPrimaryWorkspace
+      }
+    }
+  })
+
   it('reuses complete skill dependency caches without deleting or downloading them again', async () => {
     const workspace = await createWorkspace()
     const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }))

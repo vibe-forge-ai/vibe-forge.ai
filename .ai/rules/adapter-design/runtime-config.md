@@ -33,6 +33,26 @@
 
 因此同一份 workspace 配置会产生不同的原生结果。
 
+## 原生 CLI 托管
+
+原生 CLI 不作为 adapter package 的运行时依赖。npm 分发的 CLI 统一走 [`packages/utils/src/managed-npm-cli.ts`](../../../packages/utils/src/managed-npm-cli.ts)，Kimi 继续走 uv tool 安装；两者都必须把托管产物写到项目级共享 cache，而不是写进真实 home 或 adapter 依赖树。
+
+查找顺序：
+
+1. 显式 binary path：`adapters.<name>.cli.path` 或 `__VF_PROJECT_AI_ADAPTER_<NAME>_CLI_PATH__`
+2. primary workspace 的共享 cache：`<primary>/.ai/caches/adapter-<name>/cli`
+3. 系统 `PATH`
+4. `autoInstall !== false` 时安装到共享 cache
+
+worktree 场景下，共享 CLI cache 必须通过 [`packages/utils/src/project-cache-path.ts`](../../../packages/utils/src/project-cache-path.ts) 向主工作树归并。session share、mock home、日志仍然保持在当前 worktree，避免多个 worktree 互相污染会话状态。
+
+用户侧版本控制入口：
+
+- npm adapter：`adapters.<name>.cli.package`、`adapters.<name>.cli.version`、`adapters.<name>.cli.npmPath`
+- `claude-code` 有两套 CLI：`cli` 是 Claude Code，`routerCli` 是 Claude Code Router
+- Kimi：`adapters.kimi.cli.package`、`adapters.kimi.cli.version`、`adapters.kimi.cli.python`、`adapters.kimi.cli.uvPath`
+- 环境变量覆盖遵循 `__VF_PROJECT_AI_ADAPTER_<NAME>_INSTALL_PACKAGE__`、`__VF_PROJECT_AI_ADAPTER_<NAME>_INSTALL_VERSION__`、`__VF_PROJECT_AI_ADAPTER_<NAME>_AUTO_INSTALL__`
+
 ## Claude Code
 
 - 实现入口：

@@ -18,7 +18,7 @@ export const createDirectCopilotSession = async (
   options: AdapterQueryOptions
 ): Promise<AdapterSession> => {
   const adapterConfig = resolveAdapterConfig(ctx)
-  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath)
+  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath, ctx.cwd, adapterConfig.cli)
   const prompt = options.description?.trim() !== '' ? options.description?.trim() : undefined
   const childEnv = await buildCopilotChildEnv(ctx, options, adapterConfig)
   const model = resolveCopilotModelConfig(ctx, options.model).cliModel ?? options.model ?? 'default'

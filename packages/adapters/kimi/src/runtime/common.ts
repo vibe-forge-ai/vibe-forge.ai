@@ -4,6 +4,10 @@ import type { ChatMessageContent } from '@vibe-forge/core'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { omitAdapterCommonConfig } from '@vibe-forge/utils'
 
+import type { KimiAdapterConfig } from '../config-schema'
+
+export type { KimiAdapterConfig } from '../config-schema'
+
 export type KimiProviderType =
   | 'kimi'
   | 'openai_legacy'
@@ -11,20 +15,6 @@ export type KimiProviderType =
   | 'anthropic'
   | 'gemini'
   | 'vertexai'
-
-export interface KimiAdapterConfig {
-  agent?: 'default' | 'okabe' | (string & {})
-  thinking?: boolean
-  showThinkingStream?: boolean
-  maxStepsPerTurn?: number
-  maxRetriesPerStep?: number
-  maxRalphIterations?: number
-  autoInstall?: boolean
-  installPackage?: string
-  installPython?: string
-  uvPath?: string
-  configContent?: Record<string, unknown>
-}
 
 export const DEFAULT_KIMI_TOOL_REFS = [
   'kimi_cli.tools.agent:Agent',

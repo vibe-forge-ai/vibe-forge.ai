@@ -15,11 +15,13 @@ import type {
   ModelServiceConfig
 } from '@vibe-forge/types'
 import { omitAdapterCommonConfig, parseServiceModelSelector, syncSymlinkTarget } from '@vibe-forge/utils'
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
 
 import type { GeminiNativeHooksSettings } from './native-hooks'
 import { resolveGeminiModelServiceRoute } from './proxy'
 
 export interface GeminiAdapterConfig {
+  cli?: ManagedNpmCliConfig
   disableExtensions?: boolean
   disableSubagents?: boolean
   disableAutoUpdate?: boolean

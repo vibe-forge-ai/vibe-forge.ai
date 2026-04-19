@@ -5,7 +5,7 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import type { Config } from '@vibe-forge/types'
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectSharedCachePath } from '@vibe-forge/utils/project-cache-path'
 
 import type { NormalizedSkillDependency } from './skill-dependencies'
 
@@ -238,10 +238,9 @@ const buildInstallDir = (params: {
   } catch {
   }
 
-  return resolveProjectAiPath(
+  return resolveProjectSharedCachePath(
     params.cwd,
     process.env,
-    'caches',
     'skill-dependencies',
     toCacheSegment(registryKey),
     ...params.source.split('/').map(toCacheSegment),
