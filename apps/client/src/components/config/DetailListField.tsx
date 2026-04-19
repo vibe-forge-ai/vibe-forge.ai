@@ -18,6 +18,7 @@ export const DetailCollectionField = ({
   sectionKey,
   field,
   value,
+  resolvedValue,
   onChange,
   onOpenDetail,
   mergedModelServices,
@@ -28,6 +29,7 @@ export const DetailCollectionField = ({
   sectionKey: string
   field: FieldSpec
   value: unknown
+  resolvedValue?: unknown
   onChange: (nextValue: unknown) => void
   onOpenDetail: (route: ConfigDetailRoute) => void
   mergedModelServices: Record<string, unknown>
@@ -44,7 +46,8 @@ export const DetailCollectionField = ({
 
   const items = toDetailCollectionEntries({
     field,
-    value
+    value,
+    resolvedValue
   })
   const detailContext = {
     mergedModelServices,
@@ -73,6 +76,11 @@ export const DetailCollectionField = ({
       }))
       : []
   ), [uiSection])
+  const localListItems = isListCollection && Array.isArray(value)
+    ? value.filter(item => item != null && typeof item === 'object' && !Array.isArray(item)) as Array<
+      Record<string, unknown>
+    >
+    : []
 
   const updateRecordEntry = (itemKey: string, nextItem: Record<string, unknown>) => {
     onChange(setValueByPath(value, [itemKey], nextItem))
@@ -82,20 +90,20 @@ export const DetailCollectionField = ({
     onChange(nextItems)
   }
 
-  const moveItem = (index: number, direction: -1 | 1) => {
+  const moveItem = (localIndex: number, direction: -1 | 1) => {
     if (!isListCollection) return
-    const targetIndex = index + direction
-    if (targetIndex < 0 || targetIndex >= items.length) return
-    const next = items.map(item => item.item)
-    const [current] = next.splice(index, 1)
+    const targetIndex = localIndex + direction
+    if (targetIndex < 0 || targetIndex >= localListItems.length) return
+    const next = [...localListItems]
+    const [current] = next.splice(localIndex, 1)
     if (current == null) return
     next.splice(targetIndex, 0, current)
     updateListItems(next)
   }
 
-  const removeItem = (index: number) => {
+  const removeItem = (localIndex: number) => {
     if (!isListCollection) return
-    updateListItems(items.filter((_, itemIndex) => itemIndex !== index).map(item => item.item))
+    updateListItems(localListItems.filter((_, itemIndex) => itemIndex !== localIndex))
   }
 
   const removeRecordItem = (itemKey: string) => {
@@ -115,7 +123,20 @@ export const DetailCollectionField = ({
     })
   }
 
-  const renderSummaryControls = (item: Record<string, unknown>, itemKey: string, title: string) => {
+  const renderSummaryControls = ({
+    item,
+    itemKey,
+    title,
+    localIndex,
+    source
+  }: {
+    item: Record<string, unknown>
+    itemKey: string
+    title: string
+    localIndex?: number
+    source: 'local' | 'inherited'
+  }) => {
+    if (source !== 'local') return null
     if ((detailCollection.summaryControls?.length ?? 0) === 0) return null
 
     return (
@@ -143,9 +164,9 @@ export const DetailCollectionField = ({
                   nextChecked ? checkedValue : !checkedValue
                 ) as Record<string, unknown>
                 if (isListCollection) {
-                  const nextItems = items.map(entry => (
-                    entry.key === itemKey ? nextItem : entry.item
-                  ))
+                  if (localIndex == null) return
+                  const nextItems = [...localListItems]
+                  nextItems[localIndex] = nextItem
                   updateListItems(nextItems)
                   return
                 }
@@ -184,16 +205,34 @@ export const DetailCollectionField = ({
 
   return (
     <div className='config-view__detail-list'>
-      {items.map(({ item, key, index }) => {
+      {items.map(({ item, key, index, localIndex, source, hasResolvedOverlay }) => {
         const title = detailCollection.getItemTitle(item, key, index, detailContext)
         const subtitle = detailCollection.getItemSubtitle?.(item, key, index, detailContext)
         const description = detailCollection.getItemDescription?.(item, key, index, detailContext)
         return (
-          <div key={`${field.path.join('.')}:${key}:${title}`} className='config-view__record-card'>
+          <div
+            key={`${field.path.join('.')}:${key}:${title}`}
+            className={`config-view__record-card${source === 'inherited' ? ' config-view__record-card--readonly' : ''}`}
+          >
             <div className='config-view__detail-list-row'>
               <button type='button' className='config-view__detail-list-main' onClick={() => openDetail(key)}>
                 <div className='config-view__record-heading'>
-                  <div>{title}</div>
+                  <div className='config-view__detail-list-title'>
+                    <span>{title}</span>
+                    {(source === 'inherited' || hasResolvedOverlay) && (
+                      <span
+                        className={`config-view__detail-badge${
+                          source === 'inherited'
+                            ? ' config-view__detail-badge--readonly'
+                            : ' config-view__detail-badge--override'
+                        }`}
+                      >
+                        {source === 'inherited'
+                          ? t('config.detail.inheritedBadge')
+                          : t('config.detail.overrideBadge')}
+                      </span>
+                    )}
+                  </div>
                   {subtitle != null && subtitle !== '' && (
                     <div className='config-view__record-subtitle'>
                       {subtitle}
@@ -204,15 +243,23 @@ export const DetailCollectionField = ({
                   )}
                 </div>
               </button>
-              {renderSummaryControls(item, key, title)}
-              {(isListCollection || isRecordMapCollection) && (
+              {renderSummaryControls({ item, itemKey: key, title, localIndex, source })}
+              {(isListCollection || isRecordMapCollection) && source === 'local' && (
                 <DetailCollectionFieldActions
-                  index={index}
-                  itemCount={items.length}
-                  onMove={isListCollection ? (direction) => moveItem(index, direction) : undefined}
+                  index={localIndex ?? 0}
+                  itemCount={isListCollection
+                    ? localListItems.length
+                    : items.filter(entry => entry.source === 'local').length}
+                  onMove={isListCollection
+                    ? (direction) => {
+                      if (localIndex == null) return
+                      moveItem(localIndex, direction)
+                    }
+                    : undefined}
                   onRemove={() => {
                     if (isListCollection) {
-                      removeItem(index)
+                      if (localIndex == null) return
+                      removeItem(localIndex)
                       return
                     }
                     removeRecordItem(key)
@@ -240,12 +287,15 @@ export const DetailCollectionField = ({
               aria-label={t('config.editor.addItem')}
               icon={<span className='material-symbols-rounded'>add</span>}
               onClick={() => {
-                const next = [
-                  ...items.map(item => item.item),
-                  detailCollection.createItem()
-                ]
+                const next = [...localListItems, detailCollection.createItem()]
                 updateListItems(next)
-                openDetail(String(next.length - 1))
+                const nextEntries = toDetailCollectionEntries({
+                  field,
+                  value: next,
+                  resolvedValue
+                })
+                const nextEntry = nextEntries.find(entry => entry.localIndex === next.length - 1)
+                openDetail(nextEntry?.key ?? String(next.length - 1))
               }}
             />
           </Tooltip>

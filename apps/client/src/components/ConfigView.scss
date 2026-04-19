@@ -10,35 +10,22 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    flex-direction: column;
-    gap: 0;
+    position: relative;
+    overflow: hidden;
   }
 
-  &__compact-controls {
+  &__compact-region {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-    padding-bottom: 0;
-  }
-
-  &__compact-select {
-    width: 100%;
-
-    .ant-select-selector {
-      min-height: 36px !important;
-      border-radius: 8px !important;
-      padding-inline: 10px !important;
-      background: var(--subpage-content-card-bg) !important;
-    }
+    min-width: 0;
+    min-height: 0;
   }
 
   &__compact-panel {
     display: flex;
     flex: 1;
     min-height: 0;
-    margin: var(--subpage-content-card-gap);
-    margin-top: 12px;
+    margin: max(4px, env(safe-area-inset-top)) 4px 4px;
     border-radius: var(--subpage-content-card-radius);
     background: var(--subpage-content-card-bg);
     overflow: hidden;
@@ -316,7 +303,70 @@ html.dark .config-view__card {
 .config-view__source-option {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 0;
+}
+
+.config-view__source-option-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.config-view__source-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--sub-bg-color);
+}
+
+.config-view__source-switch-button.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sub-text-color);
+  box-shadow: none;
+}
+
+.config-view__source-switch-button.ant-btn:hover,
+.config-view__source-switch-button.ant-btn:focus-visible {
+  background: color-mix(in srgb, var(--tag-hover-bg) 82%, transparent);
+  color: var(--text-color);
+}
+
+.config-view__source-switch-button.ant-btn.is-active,
+.config-view__source-switch-button.ant-btn.is-active:hover,
+.config-view__source-switch-button.ant-btn.is-active:focus-visible {
+  background: var(--subpage-content-card-bg);
+  color: var(--sidebar-active-text, var(--primary-color));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+.config-view__source-switch-button.ant-btn
+  .material-symbols-rounded {
+  display: block;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
 }
 
 .config-view .ant-empty-image {
@@ -348,10 +398,273 @@ html.dark .config-view__card {
   justify-content: center;
 }
 
+.config-view__compact-backdrop {
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, .28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .24s ease, visibility 0s linear .24s;
+  z-index: 60;
+}
+
+.config-view__compact-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.config-view__compact-sidebar-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  padding: max(4px, env(safe-area-inset-top)) 0
+    max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform .24s cubic-bezier(.4, 0, .2, 1),
+    visibility 0s linear .24s;
+  z-index: 61;
+  pointer-events: none;
+  overscroll-behavior: contain;
+}
+
+.config-view__compact-sidebar-sheet.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.config-view__compact-sidebar-sheet > * {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, .22);
+  overscroll-behavior: contain;
+}
+
 .config-view__tab-text {
   font-size: 12px;
   color: var(--text-color);
   line-height: 16px;
+}
+
+.config-view__desktop-shell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.config-view__sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--subpage-secondary-panel-width);
+  min-width: var(--subpage-secondary-panel-width);
+  max-width: var(--subpage-secondary-panel-width);
+  overflow: hidden;
+  background: var(--sub-bg-color);
+  transition:
+    width .24s cubic-bezier(.4, 0, .2, 1),
+    min-width .24s cubic-bezier(.4, 0, .2, 1),
+    max-width .24s cubic-bezier(.4, 0, .2, 1),
+    opacity .18s ease;
+}
+
+.config-view__sidebar--compact {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+}
+
+.config-view__desktop-shell.is-sidebar-collapsed .config-view__sidebar {
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+}
+
+.config-view__sidebar-header {
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.config-view__sidebar-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__sidebar-toggle.ant-btn {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--sub-text-color);
+}
+
+.config-view__sidebar-toggle.ant-btn .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.config-view__sidebar-search-input {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.config-view__sidebar-search-input.ant-input-affix-wrapper {
+  padding-inline: 8px;
+}
+
+.config-view__sidebar-search-input.ant-input-affix-wrapper-focused,
+.config-view__sidebar-search-input.ant-input-affix-wrapper:focus-within {
+  border-color: rgba(37, 99, 235, .32) !important;
+  box-shadow: none !important;
+}
+
+.config-view__sidebar-search-input .ant-input {
+  font-size: 12px;
+}
+
+.config-view__sidebar-search-input .ant-input-prefix {
+  margin-inline-end: 4px;
+}
+
+.config-view__sidebar-search-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--sub-text-color);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.config-view__sidebar-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+  overflow: auto;
+}
+
+.config-view__sidebar-empty {
+  padding: 8px 2px;
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-view__nav-group-label {
+  padding: 2px;
+  color: var(--sub-text-color);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.config-view__nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-view__nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.config-view__nav-item:hover {
+  border-color: rgba(37, 99, 235, .18);
+  background-color: var(--tag-hover-bg);
+}
+
+.config-view__nav-item.is-active {
+  border-color: var(--primary-color);
+  background: var(--primary-soft-bg);
+  color: var(--sidebar-active-text, var(--primary-color));
+}
+
+.config-view__nav-item.is-active .config-view__tab-icon,
+.config-view__nav-item.is-active .config-view__tab-text {
+  color: var(--sidebar-active-text, var(--primary-color));
+}
+
+.config-view__nav-item.is-active .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1;
+}
+
+.config-view__desktop-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--subpage-content-card-gap);
+  margin-left: 0;
+  padding: 12px;
+  border-radius: var(--subpage-content-card-radius);
+  background: var(--subpage-content-card-bg);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: margin-left .24s cubic-bezier(.4, 0, .2, 1);
+}
+
+.config-view__desktop-shell.is-sidebar-collapsed .config-view__desktop-content {
+  margin-left: var(--subpage-content-card-gap);
+}
+
+.config-view__standalone-header {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.config-view__section-toggle.ant-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.config-view__section-toggle.ant-btn .material-symbols-rounded {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.config-view__section-toggle.ant-btn:hover,
+.config-view__section-toggle.ant-btn:focus-visible,
+.config-view__section-toggle.ant-btn:active {
+  background: transparent;
 }
 
 .config-view__tabs > .ant-tabs-nav {
@@ -442,13 +755,6 @@ html.dark .config-view__card {
   padding: 0;
 }
 
-@media (max-width: 1100px) {
-  .config-view__tabs > .ant-tabs-content-holder {
-    margin-top: 0;
-    margin-left: var(--subpage-content-card-gap);
-  }
-}
-
 @media (max-width: 960px) {
   .config-view__section-header {
     align-items: flex-start;
@@ -469,6 +775,26 @@ html.dark .config-view__card {
   }
 
   .config-view--compact {
+    .config-view__section-header {
+      align-items: flex-start;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .config-view__section-header-extra {
+      width: auto;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .config-view__section-title,
+    .config-view__detail-trail {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
     .config-view__body {
       padding: 0;
     }
@@ -482,5 +808,17 @@ html.dark .config-view__card {
     .config-view__card {
       overflow: visible;
     }
+
+    .config-view__compact-panel {
+      border-radius: 8px;
+    }
   }
+}
+
+html.dark .config-view__compact-backdrop {
+  background: rgba(0, 0, 0, .48);
+}
+
+html.dark .config-view__compact-sidebar-sheet > * {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .42);
 }

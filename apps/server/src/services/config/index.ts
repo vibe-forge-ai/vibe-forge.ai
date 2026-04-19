@@ -16,7 +16,7 @@ export function buildConfigJsonVariables(
 }
 
 export async function loadConfigState(workspaceFolder = getWorkspaceFolder()) {
-  const { projectConfig, userConfig, mergedConfig } = await loadWorkspaceConfigState({
+  const { projectConfig, userConfig, mergedConfig, projectSource, userSource } = await loadWorkspaceConfigState({
     cwd: workspaceFolder,
     jsonVariables: buildConfigJsonVariables(workspaceFolder)
   })
@@ -24,6 +24,8 @@ export async function loadConfigState(workspaceFolder = getWorkspaceFolder()) {
     workspaceFolder,
     projectConfig,
     userConfig,
-    mergedConfig
+    mergedConfig,
+    projectSource,
+    userSource
   }
 }

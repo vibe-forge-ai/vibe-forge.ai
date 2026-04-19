@@ -1079,6 +1079,10 @@
       "projectMissing": "项目（未创建）",
       "userMissing": "用户（未创建）"
     },
+    "navigation": {
+      "search": "搜索配置分类",
+      "noResults": "没有匹配的配置分类"
+    },
     "actions": {
       "edit": "编辑",
       "save": "保存",
@@ -1101,7 +1105,7 @@
       "addEnvVar": "添加环境变量",
       "addHeader": "添加请求头",
       "addEntry": "添加条目",
-      "newModelSelectorName": "新增模型选择器",
+      "newModelSelectorName": "新增模型元数据",
       "moveUp": "上移",
       "moveDown": "下移",
       "shortcutPlaceholder": "按下快捷键",
@@ -1147,7 +1151,14 @@
       }
     },
     "detail": {
-      "back": "返回"
+      "back": "返回",
+      "override": "覆盖到当前配置",
+      "inheritedReadonly": "这个值来自 extends 继承配置。先覆盖到当前配置，再进行编辑。",
+      "inheritedAppendOnly": "这个条目来自 extends 继承配置。当前集合按追加方式合并，不能直接在这里改这个继承条目；需要去源配置修改，或者整体覆盖当前集合。",
+      "partialOverride": "这个条目正在覆盖一份继承配置。未在本地设置的字段仍然来自继承层。",
+      "inheritedBadge": "继承",
+      "overrideBadge": "覆盖",
+      "localBadge": "本地"
     },
     "fields": {
       "general": {
@@ -1360,7 +1371,7 @@
       },
       "models": {
         "items": {
-          "label": "模型选择器明细",
+          "label": "模型元数据明细",
           "desc": "按 `service` 或 `service,model` 配置模型元信息；展示元数据如 alias/title/description 仅在 `model` 或 `service,model` 精确匹配时生效"
         }
       },
@@ -1522,7 +1533,7 @@
         "http": "HTTP"
       },
       "recommendedModels": {
-        "modelSelector": "模型选择器"
+        "modelSelector": "模型元数据"
       }
     },
     "sectionGroups": {
@@ -1624,7 +1635,7 @@
     "sections": {
       "general": "通用",
       "conversation": "会话",
-      "models": "模型选择器",
+      "models": "模型元数据",
       "modelServices": "模型服务",
       "channels": "频道",
       "adapters": "适配器",

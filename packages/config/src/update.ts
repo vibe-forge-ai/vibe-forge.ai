@@ -77,7 +77,7 @@ const resolvePrimaryWorkspaceFolder = (
   }
 }
 
-const resolveWritableConfigPath = (
+export const resolveWritableConfigPath = (
   workspaceFolder: string,
   source: ConfigSource,
   env: Record<string, string | null | undefined> = process.env

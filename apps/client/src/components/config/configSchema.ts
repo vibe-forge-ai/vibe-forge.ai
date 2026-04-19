@@ -88,6 +88,7 @@ interface DetailCollectionBaseSpec {
 export interface DetailListCollectionSpec extends DetailCollectionBaseSpec {
   collectionKind: 'list'
   createItem: () => Record<string, unknown>
+  getMergeKey?: (item: Record<string, unknown>) => string | undefined
   keyPlaceholderKey?: never
 }
 
@@ -594,6 +595,12 @@ export const configSchema: Record<string, FieldSpec[]> = {
           options: {},
           children: []
         }),
+        getMergeKey: (item) => {
+          const id = typeof item.id === 'string' ? item.id.trim() : ''
+          if (id === '') return undefined
+          const scope = typeof item.scope === 'string' ? item.scope.trim() : ''
+          return `${id}::${scope}`
+        },
         itemFields: pluginInstanceDetailFields,
         summaryControls: [{ kind: 'boolean', path: ['enabled'], checkedValue: true }],
         getItemTitle: (item, _itemKey, itemIndex) => {

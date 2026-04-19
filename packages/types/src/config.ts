@@ -372,11 +372,27 @@ export interface ConfigResponse {
     user?: ConfigSection
     merged?: ConfigSection
   }
+  resolvedSources?: {
+    project?: ConfigSection
+    user?: ConfigSection
+  }
   meta?: {
     workspaceFolder?: string
     configPresent?: {
       project?: boolean
       user?: boolean
+    }
+    sourceFiles?: {
+      project?: {
+        configPath?: string
+        writableConfigPath?: string
+        extendPaths?: string[]
+      }
+      user?: {
+        configPath?: string
+        writableConfigPath?: string
+        extendPaths?: string[]
+      }
     }
     experiments?: Record<string, unknown>
     about?: AboutInfo

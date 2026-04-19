@@ -20,6 +20,10 @@
   background: var(--subpage-tertiary-hover-bg);
 }
 
+.config-view__record-card--readonly {
+  border-style: dashed;
+}
+
 .config-view__record-title {
   display: flex;
   align-items: center;
@@ -56,6 +60,45 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.config-view__detail-list-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.config-view__detail-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--subpage-tertiary-hover-bg) 72%,
+    transparent
+  );
+  color: var(--sub-text-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.config-view__detail-badge--readonly {
+  background: color-mix(
+    in srgb,
+    var(--subpage-tertiary-hover-border) 30%,
+    transparent
+  );
+}
+
+.config-view__detail-badge--override {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
 }
 
 .config-view__record-subtitle {
