@@ -1,5 +1,7 @@
 # PWA 与独立部署
 
+返回入口：[index.md](../index.md)
+
 Vibe Forge Web 可以作为普通 Web UI 使用，也可以把 client 单独构建成静态 PWA，部署到 GitHub Pages、对象存储、CDN 或其他静态站点，再让用户在首次打开时填写后端服务地址。
 
 ## 适用场景
