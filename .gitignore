@@ -3,6 +3,7 @@
 .logs
 .data
 .ai/.mock
+.ai/.local
 .ai/caches
 .ai/env.local/
 .ai/logs

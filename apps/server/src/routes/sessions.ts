@@ -186,6 +186,7 @@ export function sessionsRouter(): Router {
       promptName,
       permissionMode,
       adapter,
+      account,
       workspace
     } = ctx.request.body as {
       id?: string
@@ -200,6 +201,7 @@ export function sessionsRouter(): Router {
       promptName?: string
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
+      account?: string
       workspace?: {
         createWorktree?: boolean
         worktreeEnvironment?: string
@@ -223,6 +225,7 @@ export function sessionsRouter(): Router {
       promptName,
       permissionMode,
       adapter,
+      account,
       workspace: workspace == null
         ? undefined
         : {

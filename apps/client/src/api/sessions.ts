@@ -26,6 +26,7 @@ export async function createSession(
     effort?: 'low' | 'medium' | 'high' | 'max'
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
+    account?: string
     workspace?: {
       createWorktree?: boolean
       worktreeEnvironment?: string
@@ -53,6 +54,7 @@ export async function createSession(
       effort: options?.effort,
       permissionMode: options?.permissionMode,
       adapter: options?.adapter,
+      account: options?.account,
       workspace: options?.workspace
     })
   })

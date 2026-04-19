@@ -92,6 +92,7 @@ export const buildSenderToolbar = ({
     attachments,
     callbacks: {
       onAdapterChange: props.onAdapterChange,
+      onAccountChange: props.onAccountChange,
       onEffortChange: props.onEffortChange,
       onInterrupt: props.onInterrupt,
       onModelChange: props.onModelChange,
@@ -106,6 +107,7 @@ export const buildSenderToolbar = ({
     resources: { message, t },
     selection: {
       adapterOptions: props.adapterOptions,
+      accountOptions: props.accountOptions,
       effort: props.effort ?? 'default',
       effortOptions: props.effortOptions ?? [],
       modelMenuGroups: props.modelMenuGroups,
@@ -118,6 +120,7 @@ export const buildSenderToolbar = ({
       servicePreviewModelOptions: props.servicePreviewModelOptions,
       resolvedSendShortcut,
       selectedAdapter: props.selectedAdapter,
+      selectedAccount: props.selectedAccount,
       selectedModel: props.selectedModel,
       updatingRecommendedModelValue: props.updatingRecommendedModelValue
     },
@@ -138,6 +141,7 @@ export const buildSenderToolbar = ({
       referenceActions,
       refs,
       selectOverlays,
+      showAccountSelector: props.showAccountSelector === true,
       confirmInteractionLabel,
       submitLabel: props.submitLabel,
       submitLoading: props.submitLoading === true,

@@ -15,6 +15,7 @@ export const createSenderToolbarHandlers = ({
   message,
   modelUnavailable,
   onAdapterChange,
+  onAccountChange,
   onEffortChange,
   onInterrupt,
   onModelChange,
@@ -39,6 +40,7 @@ export const createSenderToolbarHandlers = ({
   message: { warning: (content: ReactNode) => unknown }
   modelUnavailable?: boolean
   onAdapterChange?: (adapter: string) => void
+  onAccountChange?: (account: string) => void
   onEffortChange?: (effort: ChatEffort) => void
   onInterrupt: () => void
   onModelChange?: (model: string) => void
@@ -113,6 +115,7 @@ export const createSenderToolbarHandlers = ({
     onToggleRecommendedModel,
     onEffortChange,
     onAdapterChange,
+    onAccountChange,
     onQueueModeChange,
     onSend,
     onInterrupt,

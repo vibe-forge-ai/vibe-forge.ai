@@ -26,6 +26,7 @@ export interface AdapterSessionConfig {
   runId: string
   model?: string
   adapter?: string
+  account?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
   promptType?: SessionPromptType

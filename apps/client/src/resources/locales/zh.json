@@ -614,6 +614,15 @@
     "referenceImageDescription": "从本地选择图片并附在消息中。",
     "referenceFile": "文件",
     "referenceFileDescription": "从当前项目目录树中选择要引用的文件。",
+    "accountSelectPlaceholder": "选择账号",
+    "accountSelectCreateAccount": "快速创建 {{adapter}} 账号",
+    "accountSelectCreateTitle": "接入 {{adapter}} 账号",
+    "accountSelectCreateWaiting": "等待账号接入完成",
+    "accountSelectCreateDescription": "请在 Codex 打开的浏览器登录流程中完成认证。完成前请保持此弹窗打开；如果不再继续，可以主动取消。",
+    "accountSelectCreateCanceling": "取消中…",
+    "accountSelectCreateCanceled": "已取消账号接入",
+    "accountSelectOpenAdapterConfig": "打开 {{adapter}} 配置",
+    "accountSelectOpenAccountConfig": "打开 {{account}} 设置",
     "effortSelectPlaceholder": "推理强度",
     "effortLabels": {
       "default": "默认",
@@ -1189,6 +1198,64 @@
       "overrideBadge": "覆盖",
       "localBadge": "本地"
     },
+    "accounts": {
+      "title": "账号",
+      "back": "返回账号列表",
+      "backToAdapter": "返回适配器",
+      "empty": "暂无可用账号",
+      "detailMissing": "暂时无法读取账号详情。",
+      "default": "默认",
+      "count": "{{count}} 个账号",
+      "readyCount": "{{count}} 个可用",
+      "defaultHint": "默认：{{account}}",
+      "quotaTitle": "额度",
+      "settingsTitle": "账号配置",
+      "settingsDescription": "这里编辑的是 adapter 配置里的账号字段；如果 adapter 支持，会覆盖 workspace 保存的登录快照。",
+      "adapterKeyHint": "适配器：{{adapter}}",
+      "searchPlaceholder": "搜索账号",
+      "searchEmpty": "没有匹配的账号",
+      "deleteConfirmTitle": "确定删除 {{account}} 的工作区登录快照吗？",
+      "rowActions": {
+        "setDefault": "设为默认账号",
+        "clearDefault": "取消默认账号",
+        "delete": "删除账号快照"
+      },
+      "facts": {
+        "email": "邮箱",
+        "type": "类型",
+        "plan": "套餐"
+      },
+      "status": {
+        "ready": "可用",
+        "missing": "缺失",
+        "error": "异常"
+      },
+      "actions": {
+        "add": {
+          "label": "接入账号",
+          "description": "触发 adapter 的登录接入动作，并把凭据保存到当前工作区。"
+        },
+        "refresh": {
+          "label": "刷新额度",
+          "description": "重新拉取这个账号的套餐和额度信息。"
+        },
+        "remove": {
+          "label": "删除快照",
+          "description": "移除当前工作区里保存的这个账号快照。"
+        }
+      },
+      "actionSuccess": {
+        "add": "账号接入成功",
+        "refresh": "额度已刷新",
+        "remove": "账号快照已删除"
+      },
+      "actionFailed": {
+        "add": "账号接入失败",
+        "refresh": "刷新额度失败",
+        "remove": "删除账号快照失败"
+      },
+      "authFileDefaultLookup": "留空时默认读取 {{path}}。"
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -1445,9 +1512,39 @@
         }
       },
       "adapters": {
+        "defaultModel": {
+          "label": "默认模型",
+          "desc": "这个适配器优先使用的模型。"
+        },
+        "includeModels": {
+          "label": "允许模型",
+          "desc": "限制这个适配器仅可使用的模型列表。"
+        },
+        "excludeModels": {
+          "label": "禁用模型",
+          "desc": "禁止这个适配器使用的模型列表。"
+        },
+        "defaultAccount": {
+          "label": "默认账号",
+          "desc": "这个适配器默认选中的账号 key。"
+        },
         "items": {
           "label": "适配器明细",
           "desc": "按适配器名称平铺配置，公共字段包括 `defaultModel`、`includeModels` 和 `excludeModels`"
+        }
+      },
+      "adapterAccount": {
+        "title": {
+          "label": "显示名称",
+          "desc": "这个账号在界面里的展示标题。"
+        },
+        "description": {
+          "label": "描述",
+          "desc": "补充说明这个账号的用途或来源。"
+        },
+        "authFile": {
+          "label": "认证文件",
+          "desc": "显式指定这个账号对应的 auth.json 路径。"
         }
       },
       "plugins": {
@@ -1569,6 +1666,12 @@
       "base": "基础配置",
       "models": "模型配置",
       "advanced": "进阶配置",
+      "advancedModels": "高阶模型配置",
+      "advancedRuntime": "运行时选项",
+      "advancedSandbox": "沙箱配置",
+      "advancedClient": "客户端标识",
+      "advancedOverrides": "原始覆盖",
+      "advancedMisc": "其他配置",
       "permissions": "工具权限",
       "env": "环境变量",
       "items": "明细配置",

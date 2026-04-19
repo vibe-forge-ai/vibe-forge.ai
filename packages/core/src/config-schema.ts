@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- central config schema registry */
 import { z } from 'zod'
 
-import type { ConfigUiField, ConfigUiFieldType, ConfigUiObjectSchema } from '@vibe-forge/types'
+import type { ConfigUiField, ConfigUiFieldType, ConfigUiObjectSchema, ConfigUiRecordFieldSchema } from '@vibe-forge/types'
 
 import { channelBaseSchema } from './channel'
 
@@ -54,10 +54,18 @@ export const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
 export const effortLevelSchema = z.enum(['low', 'medium', 'high', 'max'])
 export const languageCodeSchema = z.enum(['zh', 'en'])
 
+export const adapterAccountConfigCommonSchema = z.object({
+  title: z.string().optional().describe('Display title'),
+  description: z.string().optional().describe('Display description')
+})
+
 export const adapterConfigCommonSchema = z.object({
   defaultModel: z.string().optional().describe('Default model override for this adapter'),
   includeModels: z.array(z.string()).optional().describe('Allowed model IDs for this adapter'),
-  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter')
+  excludeModels: z.array(z.string()).optional().describe('Blocked model IDs for this adapter'),
+  defaultAccount: z.string().optional().describe('Default account override for this adapter'),
+  accounts: z.record(z.string(), adapterAccountConfigCommonSchema).optional()
+    .describe('Adapter account display metadata')
 })
 
 export const adapterNativeCliConfigSchema = z.object({
@@ -474,5 +482,27 @@ export const buildConfigUiObjectSchema = (schema: z.ZodTypeAny): ConfigUiObjectS
     return uiField
   })
 
-  return { fields }
+  const recordFields = Object.fromEntries(
+    shapeEntries.flatMap(([key, value]): Array<[string, ConfigUiRecordFieldSchema]> => {
+      const recordSchema = unwrapUiSchema(value)
+      if (!isZodType(recordSchema, 'ZodRecord')) {
+        return []
+      }
+
+      const itemSchema = (recordSchema as unknown as { _def: { valueType: z.ZodTypeAny } })._def.valueType
+      const itemObjectSchema = buildConfigUiObjectSchema(itemSchema)
+      if ((itemObjectSchema.fields.length === 0) && itemObjectSchema.recordFields == null) {
+        return []
+      }
+
+      return [[key, {
+        itemSchema: itemObjectSchema
+      }]]
+    })
+  )
+
+  return {
+    fields,
+    ...(Object.keys(recordFields).length > 0 ? { recordFields } : {})
+  }
 }

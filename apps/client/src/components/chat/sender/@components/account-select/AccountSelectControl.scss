@@ -1,0 +1,108 @@
+.account-select {
+  min-width: 116px;
+  max-width: 220px;
+
+  .ant-select-selector {
+    position: relative;
+  }
+
+  .ant-select-selector::before {
+    content: 'switch_account';
+    font-family: 'Material Symbols Rounded';
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: currentColor;
+    margin-right: 6px;
+  }
+
+  .ant-select-selection-wrap {
+    min-width: 0;
+  }
+
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+}
+
+.account-select--compact {
+  min-width: var(--sender-control-height);
+  max-width: var(--sender-control-height);
+
+  &.ant-select-single .ant-select-selector {
+    position: relative;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-inline-start: 0 !important;
+    padding-inline-end: 0 !important;
+    justify-content: center;
+  }
+
+  .ant-select-selector::before {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .ant-select-selection-wrap,
+  .ant-select-selection-search {
+    display: none !important;
+  }
+
+  &.ant-select-single .ant-select-selector .ant-select-selection-item,
+  &.ant-select-single .ant-select-selector .ant-select-selection-placeholder,
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+.account-select-create-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 4px;
+  text-align: center;
+}
+
+.account-select-create-modal__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-soft-bg, #eff6ff) 80%, transparent);
+  color: var(--primary-color, #2563eb);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.account-select-create-modal__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.account-select-create-modal__description {
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sub-text-color, #6b7280);
+}

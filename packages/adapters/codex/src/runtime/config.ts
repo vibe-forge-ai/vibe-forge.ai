@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- managed Codex config block parsing and write ordering are safer kept together. */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
@@ -8,12 +9,30 @@ import { adapterConfigContribution } from '#~/config-schema.js'
 import type { CodexAdapterConfig, CodexCommonAdapterConfigKey } from '#~/config-schema.js'
 import type { CodexSandboxPolicy } from '#~/types.js'
 
-const MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
-const MANAGED_CONFIG_BLOCK_END = '# END VIBE FORGE MANAGED CODEX CONFIG'
+const MANAGED_ROOT_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG'
+const MANAGED_ROOT_BLOCK_END = '# END VIBE FORGE MANAGED CODEX ROOT CONFIG'
+const MANAGED_PROJECT_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG'
+const MANAGED_PROJECT_BLOCK_END = '# END VIBE FORGE MANAGED CODEX PROJECT CONFIG'
+const LEGACY_MANAGED_CONFIG_BLOCK_START = '# BEGIN VIBE FORGE MANAGED CODEX CONFIG'
+const LEGACY_MANAGED_CONFIG_BLOCK_END = '# END VIBE FORGE MANAGED CODEX CONFIG'
 
-const MANAGED_CONFIG_BLOCK_PATTERN = new RegExp(
-  `${MANAGED_CONFIG_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
-    MANAGED_CONFIG_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const MANAGED_ROOT_BLOCK_PATTERN = new RegExp(
+  `${MANAGED_ROOT_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
+    MANAGED_ROOT_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }\\n?`,
+  'g'
+)
+
+const MANAGED_PROJECT_BLOCK_PATTERN = new RegExp(
+  `${MANAGED_PROJECT_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
+    MANAGED_PROJECT_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }\\n?`,
+  'g'
+)
+
+const LEGACY_MANAGED_CONFIG_BLOCK_PATTERN = new RegExp(
+  `${LEGACY_MANAGED_CONFIG_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
+    LEGACY_MANAGED_CONFIG_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }\\n?`,
   'g'
 )
@@ -96,35 +115,76 @@ export const resolveCodexConfigOverrides = (
   )
 }
 
-const buildManagedCodexConfigBlock = (params: {
-  workspacePath: string
+const buildManagedCodexRootBlock = (params: {
   checkForUpdateOnStartup: unknown
 }) => {
   const encodedUpdateCheck = encodeCodexConfigValue(params.checkForUpdateOnStartup) ?? 'false'
 
   return [
-    MANAGED_CONFIG_BLOCK_START,
-    '# This block is managed by Vibe Forge.',
+    MANAGED_ROOT_BLOCK_START,
+    '# This root-level block is managed by Vibe Forge.',
     `check_for_update_on_startup = ${encodedUpdateCheck}`,
-    '',
-    `[projects.${JSON.stringify(resolve(params.workspacePath))}]`,
-    'trust_level = "trusted"',
-    MANAGED_CONFIG_BLOCK_END,
+    MANAGED_ROOT_BLOCK_END,
     ''
   ].join('\n')
 }
 
-const upsertManagedCodexConfig = (params: {
-  currentContent: string
+const buildManagedCodexProjectBlock = (params: {
   workspacePath: string
+}) => [
+  MANAGED_PROJECT_BLOCK_START,
+  '# This project block is managed by Vibe Forge.',
+  `[projects.${JSON.stringify(resolve(params.workspacePath))}]`,
+  'trust_level = "trusted"',
+  MANAGED_PROJECT_BLOCK_END,
+  ''
+].join('\n')
+
+const upsertManagedRootBlock = (params: {
+  currentContent: string
   checkForUpdateOnStartup: unknown
 }) => {
   const strippedContent = params.currentContent
-    .replace(MANAGED_CONFIG_BLOCK_PATTERN, '')
+    .replace(MANAGED_ROOT_BLOCK_PATTERN, '')
+    .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
     .trim()
-  const managedBlock = buildManagedCodexConfigBlock({
-    workspacePath: params.workspacePath,
+  const managedBlock = buildManagedCodexRootBlock({
     checkForUpdateOnStartup: params.checkForUpdateOnStartup
+  })
+  const firstTableMatch = strippedContent.match(/^\s*\[/m)
+  const managedProjectBlockIndex = strippedContent.indexOf(MANAGED_PROJECT_BLOCK_START)
+
+  if (strippedContent === '') {
+    return managedBlock
+  }
+
+  if (firstTableMatch == null || firstTableMatch.index == null) {
+    return `${strippedContent}\n\n${managedBlock}`
+  }
+
+  const insertionIndex = managedProjectBlockIndex >= 0 && managedProjectBlockIndex < firstTableMatch.index
+    ? managedProjectBlockIndex
+    : firstTableMatch.index
+  const beforeTables = strippedContent.slice(0, insertionIndex).trimEnd()
+  const fromFirstTable = strippedContent.slice(insertionIndex).trimStart()
+
+  return [
+    beforeTables,
+    managedBlock.trimEnd(),
+    fromFirstTable
+  ].filter(Boolean).join('\n\n')
+}
+
+const upsertManagedProjectBlock = (params: {
+  currentContent: string
+  workspacePath: string
+}) => {
+  const strippedContent = params.currentContent
+    .replace(MANAGED_PROJECT_BLOCK_PATTERN, '')
+    .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
+    .trim()
+  const managedBlock = buildManagedCodexProjectBlock({
+    workspacePath: params.workspacePath
   })
 
   return strippedContent === ''
@@ -152,10 +212,13 @@ export const writeManagedCodexConfigFile = async (params: {
     configs: params.configs,
     configState: params.configState
   })
-  const nextContent = upsertManagedCodexConfig({
+  const withManagedRootBlock = upsertManagedRootBlock({
     currentContent,
-    workspacePath: params.workspacePath,
     checkForUpdateOnStartup: configOverrides.check_for_update_on_startup
+  })
+  const nextContent = upsertManagedProjectBlock({
+    currentContent: withManagedRootBlock,
+    workspacePath: params.workspacePath
   })
 
   if (nextContent === currentContent) return

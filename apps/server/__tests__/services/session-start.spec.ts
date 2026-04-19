@@ -111,6 +111,7 @@ describe('startAdapterSession', () => {
       status: 'completed',
       model: 'gpt-4o',
       adapter: 'codex',
+      account: 'work',
       effort: 'medium',
       permissionMode: 'default'
     }
@@ -177,6 +178,7 @@ describe('startAdapterSession', () => {
         runId: 'run-same',
         model: 'gpt-4o',
         adapter: 'codex',
+        account: 'work',
         effort: 'medium',
         permissionMode: 'default'
       }
@@ -515,6 +517,50 @@ describe('startAdapterSession', () => {
     expect(restartedRuntime).not.toBe(initialRuntime)
     expect(restartedRuntime.config?.effort).toBe('high')
     expect(currentSession.effort).toBe('high')
+  })
+
+  it('restarts the runtime when account changes', async () => {
+    const oldKill = vi.fn()
+    const oldEmit = vi.fn()
+    const newKill = vi.fn()
+    const newEmit = vi.fn()
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: oldKill,
+          emit: oldEmit
+        }
+      }
+    })
+
+    const initialRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      account: 'work',
+      permissionMode: 'default'
+    })
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: newKill,
+          emit: newEmit
+        }
+      }
+    })
+
+    const restartedRuntime = await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      account: 'personal',
+      permissionMode: 'default'
+    })
+
+    expect(oldKill).toHaveBeenCalledOnce()
+    expect(restartedRuntime).not.toBe(initialRuntime)
+    expect(restartedRuntime.config?.account).toBe('personal')
+    expect(currentSession.account).toBe('personal')
   })
 
   it('restarts the runtime when the persisted session is updated but the cached permission mode is still stale', async () => {

@@ -34,6 +34,9 @@
 - 桌面端配置页左侧 section 导航支持搜索和折叠；收起左侧导航后，内容区标题左侧会出现一个展开按钮，方便在不离开当前配置页的情况下重新打开导航。
 - 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
+- adapter 配置页现在会把字段拆到 `基础配置 / 模型配置 / 高阶配置 / 账号` 这些前端分组里；`defaultAccount` 位于基础配置，`账号` 作为独立入口展示。
+- `adapters.<adapter>.accounts` 现在额外提供一个账号管理子页：可以直接触发 adapter 的接入动作、查看账号来源和额度摘要，并进入账号三级详情页编辑 `title / description / authFile`。
+- 具体的 adapter 配置与多账号说明见 [Adapter 配置与多账号](./adapters.md)。
 - 当前 `general.recommendedModels`、`general.notifications.events`、`modelServices`、`channels`、`adapters`、`plugins.plugins`、`plugins.marketplaces` 和 `mcp.mcpServers` 已经切到这套模式。
 
 ### 继承与覆盖规则

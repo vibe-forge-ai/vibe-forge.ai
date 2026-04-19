@@ -30,6 +30,7 @@ export const createSenderToolbarBindings = ({
   }
   callbacks: {
     onAdapterChange?: (adapter: string) => void
+    onAccountChange?: (account: string) => void
     onEffortChange?: (effort: ChatEffort) => void
     onInterrupt: () => void
     onModelChange?: (model: string) => void
@@ -44,6 +45,7 @@ export const createSenderToolbarBindings = ({
   resources: { message: { warning: (content: ReactNode) => unknown }; t: (key: string) => string }
   selection: {
     adapterOptions?: Array<{ value: string; label: ReactNode }>
+    accountOptions?: SenderToolbarData['accountOptions']
     effort: ChatEffort
     effortOptions: SenderToolbarData['effortOptions']
     modelMenuGroups?: ModelSelectMenuGroup[]
@@ -56,6 +58,7 @@ export const createSenderToolbarBindings = ({
     servicePreviewModelOptions?: ModelSelectOption[]
     resolvedSendShortcut: string
     selectedAdapter?: string
+    selectedAccount?: string
     selectedModel?: string
     updatingRecommendedModelValue?: string
   }
@@ -98,6 +101,7 @@ export const createSenderToolbarBindings = ({
       openModelSelector: () => boolean
       openEffortSelector: () => boolean
     }
+    showAccountSelector: boolean
     submitLabel?: string
     confirmInteractionLabel?: string
     submitLoading: boolean
@@ -126,6 +130,8 @@ export const createSenderToolbarBindings = ({
     effort: selection.effort,
     permissionMode: selection.permissionMode,
     selectedAdapter: selection.selectedAdapter,
+    selectedAccount: selection.selectedAccount,
+    showAccountSelector: ui.showAccountSelector,
     isMac: ui.isMac,
     resolvedSendShortcut: selection.resolvedSendShortcut,
     queueMode: selection.queueMode,
@@ -143,6 +149,7 @@ export const createSenderToolbarBindings = ({
     effortOptions: selection.effortOptions,
     permissionModeOptions: selection.permissionModeOptions,
     adapterOptions: selection.adapterOptions,
+    accountOptions: selection.accountOptions,
     composerControlShortcuts: {
       ...ui.composerControlShortcuts,
       ...selection.queuedMessageShortcuts
@@ -165,6 +172,7 @@ export const createSenderToolbarBindings = ({
     message: resources.message,
     modelUnavailable: ui.modelUnavailable,
     onAdapterChange: callbacks.onAdapterChange,
+    onAccountChange: callbacks.onAccountChange,
     onEffortChange: callbacks.onEffortChange,
     onInterrupt: callbacks.onInterrupt,
     onModelChange: callbacks.onModelChange,

@@ -28,18 +28,63 @@
 }
 
 .config-view__field-row--stacked {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
+  height: auto;
+  min-height: 0;
+}
+
+.config-view__field-row--stacked .config-view__field-meta {
+  display: flex;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
 }
 
 .config-view__field-row--stacked .config-view__field-control {
-  justify-content: flex-start;
+  display: block;
+  flex: 0 0 auto;
+  height: auto !important;
   min-width: 0;
+  min-height: 0;
   width: 100%;
+  max-width: 100%;
+  align-self: stretch;
 }
 
 .config-view__field-row--stacked .config-view__field-control > * {
-  flex: 1 1 auto;
+  display: block;
+  flex: 0 0 auto;
+  height: auto !important;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked .config-view__field-control .ant-input-textarea-affix-wrapper,
+.config-view__field-row--stacked .config-view__field-control .ant-input-textarea-show-count {
+  display: block;
+  height: auto !important;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked .config-view__field-control .ant-input-textarea,
+.config-view__field-row--stacked .config-view__field-control .ant-input-textarea textarea,
+.config-view__field-row--stacked .config-view__field-control > textarea.ant-input {
+  height: auto !important;
+  min-height: 0;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked .config-view__field-control .ant-input-textarea textarea,
+.config-view__field-row--stacked .config-view__field-control > textarea.ant-input {
+  display: block;
+  width: 100% !important;
+  min-height: 56px;
 }
 
 .config-view__field-meta {
@@ -47,6 +92,10 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.config-view__field-row:not(.config-view__field-row--stacked) .config-view__field-meta {
+  flex: 1 1 280px;
 }
 
 .config-view__field-text {
@@ -76,13 +125,19 @@
 
 .config-view__field-control {
   display: flex;
+  flex: 0 1 220px;
   justify-content: flex-end;
   gap: 8px;
-  min-width: 220px;
+  min-width: 0;
+  max-width: min(320px, 100%);
 }
 
-.config-view__field-control .ant-select {
+.config-view__field-control .ant-input,
+.config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-select,
+.config-view__field-control .ant-input-number {
   width: 100%;
+  max-width: 100%;
 }
 
 .config-view__field-control .ant-btn,
@@ -95,12 +150,22 @@
 
 .config-view__field-control .ant-input,
 .config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-input-number,
 .config-view__field-control .ant-select-selector {
   min-height: 30px;
 }
 
+.config-view__field-control .ant-input-number-input {
+  min-height: 28px;
+}
+
 .config-view__field-control .ant-input-textarea {
   width: 100%;
+}
+
+.config-view__select-chevron {
+  font-size: 18px;
+  color: var(--sub-text-color);
 }
 
 .config-view__field-icon {
@@ -125,8 +190,10 @@
   }
 
   .config-view__field-control {
+    flex: 0 0 auto;
     min-width: 0;
     width: 100%;
+    max-width: none;
     justify-content: flex-start;
   }
 

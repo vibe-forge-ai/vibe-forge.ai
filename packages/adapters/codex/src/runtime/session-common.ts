@@ -11,6 +11,7 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
+import { prepareCodexSessionHome } from './accounts'
 import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides, resolveCodexAdapterConfig } from './config'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
@@ -364,6 +365,7 @@ export interface CodexSessionBase {
   cwd: string
   binaryPath: string
   spawnEnv: NodeJS.ProcessEnv
+  resolvedAccount: string | undefined
   useYolo: boolean
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
@@ -431,14 +433,14 @@ async function buildThreadCacheKey(params: {
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
   resolvedModel: string | undefined
+  authPath: string | undefined
   configFingerprintArgs: string[]
   features: Record<string, boolean>
 }) {
-  const authPath = resolve(process.env.HOME!, '.codex', 'auth.json')
   let authDigest: string | undefined
 
   try {
-    const authContent = await readFile(authPath, 'utf8')
+    const authContent = await readFile(params.authPath ?? resolve(process.env.HOME!, '.codex', 'auth.json'), 'utf8')
     authDigest = createHash('sha256').update(authContent).digest('hex')
   } catch {
     authDigest = undefined
@@ -585,6 +587,12 @@ export async function resolveSessionBase(
 
   const binaryPath = resolveCodexBinaryPath(env, cwd)
   const spawnEnv = buildSpawnEnv(env)
+  const runtimeHome = await prepareCodexSessionHome({
+    ctx,
+    sessionId: options.sessionId,
+    account: options.account
+  })
+  spawnEnv.HOME = runtimeHome.homeDir
   await mkdir(resolve(spawnEnv.HOME ?? process.env.HOME!, '.codex'), { recursive: true })
 
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
@@ -601,6 +609,7 @@ export async function resolveSessionBase(
     approvalPolicy,
     sandboxPolicy,
     resolvedModel,
+    authPath: runtimeHome.authFilePath ?? resolve(spawnEnv.HOME, '.codex', 'auth.json'),
     configFingerprintArgs,
     features
   })
@@ -615,6 +624,7 @@ export async function resolveSessionBase(
     cwd,
     binaryPath,
     spawnEnv,
+    resolvedAccount: runtimeHome.accountKey,
     useYolo,
     approvalPolicy,
     sandboxPolicy,

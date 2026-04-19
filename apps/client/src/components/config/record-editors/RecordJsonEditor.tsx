@@ -1,7 +1,7 @@
 import './RecordJsonEditor.scss'
 
 import { Button, Input, Tooltip } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ComplexTextEditor } from '../ConfigEditors'
 import type { TranslationFn } from '../configUtils'
@@ -9,16 +9,19 @@ import type { TranslationFn } from '../configUtils'
 export const RecordJsonEditor = ({
   value,
   onChange,
+  highlightedKey,
   t,
   keyPlaceholder
 }: {
   value: Record<string, unknown>
   onChange: (nextValue: Record<string, unknown>) => void
+  highlightedKey?: string
   t: TranslationFn
   keyPlaceholder: string
 }) => {
   const [newKey, setNewKey] = useState('')
   const entries = useMemo(() => Object.entries(value), [value])
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [collapsedKeys, setCollapsedKeys] = useState<Record<string, boolean>>(() => (
     Object.fromEntries(entries.map(([key]) => [key, true]))
   ))
@@ -33,6 +36,21 @@ export const RecordJsonEditor = ({
     })
   }, [entries])
 
+  useEffect(() => {
+    if (highlightedKey == null || highlightedKey.trim() === '' || !Object.hasOwn(value, highlightedKey)) {
+      return
+    }
+
+    setCollapsedKeys(prev => prev[highlightedKey] === false ? prev : { ...prev, [highlightedKey]: false })
+    const frame = window.requestAnimationFrame(() => {
+      cardRefs.current[highlightedKey]?.scrollIntoView({
+        block: 'center',
+        behavior: 'smooth'
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [highlightedKey, value])
+
   return (
     <div className='config-view__record-list'>
       {entries.map(([key, itemValue]) => {
@@ -40,7 +58,14 @@ export const RecordJsonEditor = ({
         return (
           <div
             key={key}
-            className={`config-view__record-card${isCollapsed ? ' config-view__record-card--collapsed' : ''}`}
+            ref={(node) => {
+              cardRefs.current[key] = node
+            }}
+            className={[
+              'config-view__record-card',
+              isCollapsed ? 'config-view__record-card--collapsed' : '',
+              highlightedKey === key ? 'config-view__record-card--highlighted' : ''
+            ].filter(Boolean).join(' ')}
           >
             <div className='config-view__record-title'>
               <div className='config-view__record-title-left'>

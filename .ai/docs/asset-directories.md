@@ -17,6 +17,7 @@
 - `./.ai/caches`
 - `./.ai/plugins`
 - `./.ai/.mock`
+- `./.ai/.local`
 
 ## Skill 依赖
 
@@ -95,6 +96,7 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - workspace assets：`rules`、`skills`、`specs`、`entities`、`mcp`
 - 运行时目录：`logs`、`caches`、`plugins`
+- 本地私有目录：`.local`
 - mock HOME 与 adapter 派生目录：Codex、Claude Code、OpenCode
 - CLI 维护命令：`vf clear`、`vf report`
 - 启动入口：CLI、server、client、hook loader
@@ -104,6 +106,32 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - `__VF_PROJECT_AI_BASE_DIR__` 会影响整棵项目数据资产树
 - `__VF_PROJECT_AI_ENTITIES_DIR__` 只影响 `entities` 的扫描与加载位置
+
+`./.ai/.local` 用于当前 workspace 的私有本地数据，不应提交到 Git。
+
+当前主要用途包括：
+
+- adapter 多账号凭据快照
+- adapter 账号的来源、auth digest 与额度快照元数据
+- 只应保存在本机的认证状态或临时元数据
+
+例如 `codex` 当前会在：
+
+- `.ai/.local/adapters/codex/accounts/<accountKey>/auth.json`
+- `.ai/.local/adapters/codex/accounts/<accountKey>/meta.json`
+
+保存账号快照与账号元数据。`meta.json` 里可能包含：
+
+- 账号来源说明
+- auth 摘要
+- 最近一次 quota / rate-limit 快照
+- quota 快照更新时间
+
+如果当前目录是 Git worktree，adapter 账号目录会共享到主 worktree：
+
+- 写入和导入优先落到主 worktree 的 `.ai/.local`
+- 读取时先读主 worktree 的共享目录
+- 只有共享目录里没有对应账号时，才回退当前 worktree 的旧 `.ai/.local`
 
 ## 不受影响的内容
 

@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -6,7 +5,12 @@ import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterConfigEntry, Config } from '@vibe-forge/types'
-import { PROJECT_WORKSPACE_FOLDER_ENV, resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
+import {
+  PROJECT_WORKSPACE_FOLDER_ENV,
+  resolvePrimaryWorkspaceFolder,
+  resolveProjectConfigDir,
+  resolveProjectWorkspaceFolder
+} from '@vibe-forge/utils'
 import { load } from 'js-yaml'
 
 import { mergeDefaultVibeForgeMcpPermissions } from './default-vibe-forge-mcp'
@@ -43,7 +47,9 @@ type AdapterConfigRecord = object
 export const ADAPTER_COMMON_CONFIG_KEYS = [
   'defaultModel',
   'includeModels',
-  'excludeModels'
+  'excludeModels',
+  'defaultAccount',
+  'accounts'
 ] as const
 
 const LEGACY_ADAPTER_COMMON_CONFIG_KEYS = ['model'] as const
@@ -106,8 +112,6 @@ const PACKAGE_DEFAULT_CONFIG_FILES = [
   '.ai.config.yml'
 ]
 
-const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
-
 const serializeJsonVariables = (value: Record<string, string | null | undefined>) => (
   JSON.stringify(
     Object.entries(value)
@@ -125,42 +129,6 @@ const resolveConfigCacheKey = (options: LoadConfigOptions) => {
 }
 
 const resolveConfigPath = (cwd: string, filePath: string) => resolve(cwd, filePath)
-
-const resolvePrimaryWorkspaceFolder = (
-  cwd: string,
-  env: Record<string, string | null | undefined> = process.env
-) => {
-  const normalizedWorkspaceFolder = resolve(cwd)
-  const explicitPrimaryWorkspaceFolder = env[PRIMARY_WORKSPACE_ENV]?.trim()
-  if (explicitPrimaryWorkspaceFolder) {
-    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
-    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : resolvedPrimaryWorkspaceFolder
-  }
-
-  try {
-    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
-      cwd,
-      encoding: 'utf8'
-    })
-    if (result.status !== 0) {
-      return undefined
-    }
-
-    const gitCommonDir = result.stdout?.trim()
-    if (!gitCommonDir) {
-      return undefined
-    }
-
-    const primaryWorkspaceFolder = dirname(resolve(cwd, gitCommonDir))
-    return primaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : primaryWorkspaceFolder
-  } catch {
-    return undefined
-  }
-}
 
 const isExistingFilePath = (filePath: string) => {
   if (!existsSync(filePath)) return false
@@ -231,7 +199,12 @@ const mergeAdapterConfigEntries = <TEntry extends AdapterConfigRecord>(
     ...rightRecord
   } as TEntry
 
-  for (const key of deepMergeKeys) {
+  const mergedDeepMergeKeys = new Set<keyof TEntry>([
+    ...deepMergeKeys,
+    ...(('accounts' in leftRecord || 'accounts' in rightRecord) ? ['accounts' as keyof TEntry] : [])
+  ])
+
+  for (const key of mergedDeepMergeKeys) {
     mergedRecord[key] = mergeNestedAdapterConfigValue(leftRecord[key], rightRecord[key]) as TEntry[typeof key]
   }
 

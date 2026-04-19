@@ -1,7 +1,7 @@
 import { Input, InputNumber, Select, Switch } from 'antd'
 import type { ReactNode } from 'react'
 
-import type { ConfigUiField, ConfigUiObjectSchema } from '@vibe-forge/types'
+import type { ConfigUiField, ConfigUiFieldOption, ConfigUiObjectSchema } from '@vibe-forge/types'
 
 import { ComplexTextEditor, StringArrayEditor } from '../ConfigEditors'
 import { FieldRow } from '../ConfigFieldRow'
@@ -10,11 +10,14 @@ import type { TranslationFn } from '../configUtils'
 
 import { toLabel } from './schemaRecordUtils'
 
-const buildSelectOptions = (field: ConfigUiField) => (
-  (field.options ?? []).map(option => ({
+const buildSelectOptions = (options: ConfigUiFieldOption[] = []) => (
+  options.map(option => ({
     value: option.value,
     label: option.label ?? option.value
   }))
+)
+const configSelectSuffixIcon = (
+  <span className='material-symbols-rounded config-view__select-chevron'>expand_more</span>
 )
 
 const resolveFieldIcon = (field: ConfigUiField) => {
@@ -33,27 +36,44 @@ export const SchemaObjectEditor = ({
   schema,
   onChange,
   t,
-  hideFieldPath
+  hideFieldPaths,
+  visibleFieldPaths,
+  resolveFieldLabel,
+  resolveFieldDescription,
+  resolveFieldOptions
 }: {
   value: Record<string, unknown>
   schema: ConfigUiObjectSchema
   onChange: (nextValue: Record<string, unknown>) => void
   t: TranslationFn
-  hideFieldPath?: string[]
+  hideFieldPaths?: string[][]
+  visibleFieldPaths?: string[][]
+  resolveFieldLabel?: (field: ConfigUiField, fallback: string) => string
+  resolveFieldDescription?: (field: ConfigUiField, fallback: string) => string
+  resolveFieldOptions?: (field: ConfigUiField) => ConfigUiFieldOption[] | undefined
 }) => {
   const renderField = (field: ConfigUiField) => {
-    if (
-      hideFieldPath != null &&
-      field.path.length === hideFieldPath.length &&
-      field.path.every((segment, index) => segment === hideFieldPath[index])
-    ) {
+    if (visibleFieldPaths != null && !visibleFieldPaths.some(visiblePath => (
+      field.path.length === visiblePath.length &&
+      field.path.every((segment, index) => segment === visiblePath[index])
+    ))) {
+      return null
+    }
+
+    if (hideFieldPaths?.some(hiddenPath => (
+      field.path.length === hiddenPath.length &&
+      field.path.every((segment, index) => segment === hiddenPath[index])
+    ))) {
       return null
     }
 
     const currentValue = getValueByPath(value, field.path)
     const valueToUse = currentValue !== undefined ? currentValue : field.defaultValue
-    const title = field.label ?? toLabel(field.path[field.path.length - 1] ?? '')
-    const description = field.description ?? ''
+    const fallbackTitle = field.label ?? toLabel(field.path[field.path.length - 1] ?? '')
+    const fallbackDescription = field.description ?? ''
+    const title = resolveFieldLabel?.(field, fallbackTitle) ?? fallbackTitle
+    const description = resolveFieldDescription?.(field, fallbackDescription) ?? fallbackDescription
+    const resolvedOptions = resolveFieldOptions?.(field)
     const nextValue = (updated: unknown) => {
       onChange(setValueByPath(value, field.path, updated) as Record<string, unknown>)
     }
@@ -61,7 +81,18 @@ export const SchemaObjectEditor = ({
     let control: ReactNode = null
     const stacked = field.type === 'json' || field.type === 'multiline' || field.type === 'string[]'
 
-    if (field.type === 'string') {
+    if (field.type === 'string' && resolvedOptions != null) {
+      control = (
+        <Select
+          allowClear
+          value={typeof valueToUse === 'string' && valueToUse !== '' ? valueToUse : undefined}
+          options={buildSelectOptions(resolvedOptions)}
+          placeholder={field.placeholder}
+          suffixIcon={configSelectSuffixIcon}
+          onChange={(selected) => nextValue(typeof selected === 'string' ? selected : undefined)}
+        />
+      )
+    } else if (field.type === 'string') {
       const sensitive = field.sensitive === true || isSensitiveKey(field.path[field.path.length - 1] ?? '')
       control = sensitive
         ? (
@@ -113,7 +144,8 @@ export const SchemaObjectEditor = ({
       control = (
         <Select
           value={typeof valueToUse === 'string' ? valueToUse : undefined}
-          options={buildSelectOptions(field)}
+          options={buildSelectOptions(resolvedOptions ?? field.options ?? [])}
+          suffixIcon={configSelectSuffixIcon}
           onChange={(selected) => nextValue(selected)}
         />
       )

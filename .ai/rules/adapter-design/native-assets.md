@@ -22,7 +22,7 @@ Skill frontmatter 支持 `dependencies`。依赖先按本地 workspace / 插件 
 | Adapter       | Hooks                                                                       | Skills                                                                                                         | MCP                                                    | 其他原生资产                                                                                                                                              |
 | ------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `claude-code` | `.ai/.mock/.claude/settings.json`                                           | `.ai/.mock/.claude/skills -> .ai/skills`                                                                       | 选中 MCP 写进 cache 文件，再用 `--mcp-config` 注入     | keychains 软链到 mock home；managed `.claude.json` 写 workspace trust state；managed Claude plugins stage 到 `.ai/caches/<ctx>/<session>/.claude-plugins` |
-| `codex`       | `.ai/.mock/.codex/hooks.json`                                               | `.ai/.mock/.agents/skills -> .ai/skills`，并把每个 workspace skill 目录软链到 `.ai/.mock/.codex/skills/<name>` | 翻译成 `-c mcp_servers.<name>.*`                       | auth 软链到 `.ai/.mock/.codex/auth.json`；managed `config.toml` 写 workspace trust 与 update-check 默认值                                                 |
+| `codex`       | `.ai/.mock/.codex/hooks.json`                                               | `.ai/.mock/.agents/skills -> .ai/skills`，并把每个 workspace skill 目录软链到 `.ai/.mock/.codex/skills/<name>` | 翻译成 `-c mcp_servers.<name>.*`                       | managed `config.toml` 写 workspace trust 与 update-check 默认值；账号 auth 快照落到 `.ai/.local/adapters/codex/accounts/<key>/auth.json`，账号元数据与 quota 快照落到 `meta.json`，session HOME 隔离到 `.ai/caches/<ctx>/<session>/adapter-codex-home` |
 | `gemini`      | `.ai/.mock/.gemini/settings.json` 里的 `hooks` / `hooksConfig`              | `.ai/.mock/.agents/skills -> .ai/skills`                                                                       | 写进 `.ai/.mock/.gemini/settings.json` 的 `mcpServers` | `.ai/.mock/.gemini/settings.json`、本地 Gemini compatibility proxy、`GEMINI_CLI_HOME`                                                                     |
 | `opencode`    | `.ai/.mock/.config/opencode/opencode.json` 与 `plugins/vibe-forge-hooks.js` | session 级 `OPENCODE_CONFIG_DIR/skills`                                                                        | 写进最终 `opencode.json`                               | fallback `opencode.json` 默认写 `$schema` 与 `autoupdate: false`；`agents/commands/modes/plugins` 与 overlay 一起进入 session config dir                  |
 
@@ -46,13 +46,15 @@ Skill frontmatter 支持 `dependencies`。依赖先按本地 workspace / 插件 
 ## Codex
 
 - init 阶段把 `.ai/skills` 软链到 [`packages/adapters/codex/src/runtime/init.ts`](../../../packages/adapters/codex/src/runtime/init.ts) 里的 `.ai/.mock/.agents/skills`，把每个 skill 目录镜像进 `.ai/.mock/.codex/skills/<name>`，并写 managed `.ai/.mock/.codex/config.toml`
-- query 阶段在 [`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts) 注入 `developer_instructions`、`mcp_servers.*`、feature flags 和 provider overrides
+- query 阶段在 [`packages/adapters/codex/src/runtime/session-common.ts`](../../../packages/adapters/codex/src/runtime/session-common.ts) 注入 `developer_instructions`、`mcp_servers.*`、feature flags 和 provider overrides，并为每个 session 组装独立 HOME
+- 账号快照和额度探测在 [`packages/adapters/codex/src/runtime/accounts.ts`](../../../packages/adapters/codex/src/runtime/accounts.ts) 收口：`~/.codex/auth.json` 会导入到 workspace 私有目录 `.ai/.local/adapters/codex/accounts/`，运行时按会话切换到对应 auth 快照
+- 账号目录下的 `meta.json` 还会缓存账号来源与 quota / rate-limit 快照；当前 Codex 默认对这份快照使用 5 分钟 TTL，避免配置页每次打开都重新探测一次
 
 设计考量：
 
 - Codex 官方文档里的用户级 skills 入口仍是 `.agents/skills`
 - 但当前真实运行时会在 `.codex/skills/.system` 下维护系统技能；只同步 `.agents/skills` 会和这条真实加载路径脱节
-- 所以现在保持两处都同步：`.agents/skills` 继续承载用户级入口，`.codex/skills/<name>` 承载与当前 Codex 运行时兼容的镜像，hooks / auth / managed config 仍留在 `.codex/`
+- 所以现在保持两处都同步：`.agents/skills` 继续承载用户级入口，`.codex/skills/<name>` 承载与当前 Codex 运行时兼容的镜像，hooks / managed config 留在共享 mock home，auth 改成 session 级切换
 
 官方文档：
 

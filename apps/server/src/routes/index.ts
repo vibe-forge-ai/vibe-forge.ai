@@ -12,6 +12,7 @@ import { logger } from '#~/utils/logger.js'
 
 import { aiRouter } from './ai'
 import { authRouter } from './auth'
+import { adaptersRouter } from './adapters'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { channelActionsRouter } from './channel-actions'
@@ -86,6 +87,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
   const routers = [
     { prefix: '/api/sessions/:sessionId/git', router: gitRouter() },
     { prefix: '/api/sessions', router: sessionsRouter() },
+    { prefix: '/api/adapters', router: adaptersRouter() },
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/auth', router: authRouter(env) },
     { prefix: '/api/ai', router: aiRouter() },

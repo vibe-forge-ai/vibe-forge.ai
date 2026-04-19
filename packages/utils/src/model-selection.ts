@@ -282,19 +282,49 @@ export const mergeAdapterConfigs = <
   left: T,
   right: T
 ) => {
+  const mergeNestedRecord = (leftValue: unknown, rightValue: unknown) => {
+    const leftRecord = asRecord(leftValue)
+    const rightRecord = asRecord(rightValue)
+    const nestedKeys = new Set([
+      ...Object.keys(leftRecord),
+      ...Object.keys(rightRecord)
+    ])
+
+    if (nestedKeys.size === 0) {
+      return undefined
+    }
+
+    return Object.fromEntries(
+      Array.from(nestedKeys).map((nestedKey) => [
+        nestedKey,
+        {
+          ...asRecord(leftRecord[nestedKey]),
+          ...asRecord(rightRecord[nestedKey])
+        }
+      ])
+    )
+  }
+
   const keys = new Set([
     ...Object.keys(left ?? {}),
     ...Object.keys(right ?? {})
   ])
 
   const merged = Object.fromEntries(
-    Array.from(keys).map((key) => [
-      key,
-      {
-        ...asRecord(left?.[key]),
-        ...asRecord(right?.[key])
-      }
-    ])
+    Array.from(keys).map((key) => {
+      const leftEntry = asRecord(left?.[key])
+      const rightEntry = asRecord(right?.[key])
+      const mergedAccounts = mergeNestedRecord(leftEntry.accounts, rightEntry.accounts)
+
+      return [
+        key,
+        {
+          ...leftEntry,
+          ...rightEntry,
+          ...(mergedAccounts == null ? {} : { accounts: mergedAccounts })
+        }
+      ]
+    })
   )
 
   return merged as T
@@ -304,6 +334,10 @@ export const getAdapterConfiguredDefaultModel = (adapterConfig: unknown) => {
   const record = asRecord(adapterConfig)
   return normalizeNonEmptyString(record.defaultModel) ?? normalizeNonEmptyString(record.model)
 }
+
+export const getAdapterConfiguredDefaultAccount = (adapterConfig: unknown) => (
+  normalizeNonEmptyString(asRecord(adapterConfig).defaultAccount)
+)
 
 export const getAdapterConfiguredEffort = (adapterConfig: unknown) => (
   normalizeEffortLevel(asRecord(adapterConfig).effort)

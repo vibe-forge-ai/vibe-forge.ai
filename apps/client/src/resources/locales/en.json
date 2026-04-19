@@ -613,6 +613,15 @@
     "referenceImageDescription": "Choose a local image and attach it to the message.",
     "referenceFile": "File",
     "referenceFileDescription": "Choose files from the current project tree.",
+    "accountSelectPlaceholder": "Select account",
+    "accountSelectCreateAccount": "Quick create {{adapter}} account",
+    "accountSelectCreateTitle": "Connect {{adapter}} account",
+    "accountSelectCreateWaiting": "Waiting for account connection",
+    "accountSelectCreateDescription": "Complete authentication in the browser flow opened by Codex. Keep this dialog open until the account is connected, or cancel if you want to stop.",
+    "accountSelectCreateCanceling": "Canceling…",
+    "accountSelectCreateCanceled": "Account connection canceled",
+    "accountSelectOpenAdapterConfig": "Open {{adapter}} config",
+    "accountSelectOpenAccountConfig": "Open {{account}} settings",
     "effortSelectPlaceholder": "Effort",
     "effortLabels": {
       "default": "Standard",
@@ -1188,6 +1197,64 @@
       "overrideBadge": "Override",
       "localBadge": "Local"
     },
+    "accounts": {
+      "title": "Accounts",
+      "back": "Back to accounts",
+      "backToAdapter": "Back to adapter",
+      "empty": "No accounts available yet.",
+      "detailMissing": "Account detail is currently unavailable.",
+      "default": "Default",
+      "count": "{{count}} accounts",
+      "readyCount": "{{count}} ready",
+      "defaultHint": "Default: {{account}}",
+      "quotaTitle": "Quota",
+      "settingsTitle": "Account settings",
+      "settingsDescription": "These fields edit the adapter config entry for this account. When supported, they override the stored workspace snapshot.",
+      "adapterKeyHint": "Adapter: {{adapter}}",
+      "searchPlaceholder": "Search accounts",
+      "searchEmpty": "No matching accounts",
+      "deleteConfirmTitle": "Delete the stored workspace snapshot for {{account}}?",
+      "rowActions": {
+        "setDefault": "Set as default account",
+        "clearDefault": "Clear default account",
+        "delete": "Delete account snapshot"
+      },
+      "facts": {
+        "email": "Email",
+        "type": "Type",
+        "plan": "Plan"
+      },
+      "status": {
+        "ready": "Ready",
+        "missing": "Missing",
+        "error": "Error"
+      },
+      "actions": {
+        "add": {
+          "label": "Connect account",
+          "description": "Run the adapter login action and save its credentials into this workspace."
+        },
+        "refresh": {
+          "label": "Refresh quota",
+          "description": "Fetch the latest plan and quota info for this account."
+        },
+        "remove": {
+          "label": "Remove snapshot",
+          "description": "Remove the stored workspace snapshot for this account."
+        }
+      },
+      "actionSuccess": {
+        "add": "Account connected",
+        "refresh": "Quota refreshed",
+        "remove": "Account snapshot removed"
+      },
+      "actionFailed": {
+        "add": "Failed to connect account",
+        "refresh": "Failed to refresh quota",
+        "remove": "Failed to remove account snapshot"
+      },
+      "authFileDefaultLookup": "Leave empty to use {{path}}."
+    },
     "fields": {
       "general": {
         "baseDir": {
@@ -1444,9 +1511,39 @@
         }
       },
       "adapters": {
+        "defaultModel": {
+          "label": "Default Model",
+          "desc": "Preferred model override for this adapter."
+        },
+        "includeModels": {
+          "label": "Allowed Models",
+          "desc": "Restrict this adapter to the listed models."
+        },
+        "excludeModels": {
+          "label": "Blocked Models",
+          "desc": "Models that this adapter must not use."
+        },
+        "defaultAccount": {
+          "label": "Default Account",
+          "desc": "Default account key selected for this adapter."
+        },
         "items": {
           "label": "Adapter Entries",
           "desc": "Flattened configuration by adapter name. Common fields include `defaultModel`, `includeModels`, and `excludeModels`."
+        }
+      },
+      "adapterAccount": {
+        "title": {
+          "label": "Display Name",
+          "desc": "Title shown for this account in the UI."
+        },
+        "description": {
+          "label": "Description",
+          "desc": "Optional notes about the account purpose or source."
+        },
+        "authFile": {
+          "label": "Auth File",
+          "desc": "Explicit path to the auth.json file for this account."
         }
       },
       "plugins": {
@@ -1568,6 +1665,12 @@
       "base": "Base Configuration",
       "models": "Model Configuration",
       "advanced": "Advanced Configuration",
+      "advancedModels": "Advanced Model Rules",
+      "advancedRuntime": "Runtime Options",
+      "advancedSandbox": "Sandbox",
+      "advancedClient": "Client Identity",
+      "advancedOverrides": "Raw Overrides",
+      "advancedMisc": "Other Options",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",

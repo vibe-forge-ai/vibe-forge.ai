@@ -10,6 +10,7 @@ import type { SessionInfo } from '@vibe-forge/types'
 
 import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
 import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
+import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -64,6 +65,10 @@ export interface SenderProps {
   selectedAdapter?: string
   adapterOptions?: Array<{ value: string; label: ReactNode }>
   onAdapterChange?: (adapter: string) => void
+  selectedAccount?: string
+  accountOptions?: ChatAdapterAccountOption[]
+  showAccountSelector?: boolean
+  onAccountChange?: (account: string) => void
   modelUnavailable?: boolean
   sessionTarget?: {
     draft: ChatSessionTargetDraft

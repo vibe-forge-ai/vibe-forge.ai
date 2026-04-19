@@ -168,10 +168,8 @@ async function writeManagedCodexConfig(
  *
  * This init step:
  *   1. Verifies that the `codex` binary is reachable.
- *   2. Symlinks the real `~/.codex/auth.json` into the mock HOME directory so
- *      authentication works under HOME isolation.
- *   3. Writes a managed mock-home `config.toml` for trust and startup defaults.
- *   4. Installs a workspace-local native hooks bridge into the mock Codex home.
+ *   2. Writes a managed mock-home `config.toml` for trust and startup defaults.
+ *   3. Installs a workspace-local native hooks bridge into the mock Codex home.
  */
 export const initCodexAdapter = async (ctx: AdapterCtx) => {
   const { env } = ctx

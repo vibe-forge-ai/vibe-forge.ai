@@ -60,6 +60,7 @@ export function useChatSessionMessages({
   effort,
   permissionMode,
   adapter,
+  account,
   setInteractionRequest
 }: {
   session?: Session
@@ -67,6 +68,7 @@ export function useChatSessionMessages({
   effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
+  account?: string
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
   const { t } = useTranslation()
@@ -82,6 +84,7 @@ export function useChatSessionMessages({
   const lastConnectedEffortRef = useRef<string | undefined>(undefined)
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
+  const lastConnectedAccountRef = useRef<string | undefined>(undefined)
   const lastObservedSessionStatusRef = useRef<Session['status'] | undefined>(session?.status)
   const expectedCloseRef = useRef(false)
   const interactionRequestRef = useRef<InteractionRequestState | null>(null)
@@ -255,6 +258,7 @@ export function useChatSessionMessages({
       lastConnectedEffortRef.current = undefined
       lastConnectedPermissionModeRef.current = undefined
       lastConnectedAdapterRef.current = undefined
+      lastConnectedAccountRef.current = undefined
       clearScheduledReconciles()
       return
     }
@@ -320,7 +324,12 @@ export function useChatSessionMessages({
       lastConnectedAdapterRef.current != null &&
       normalizedAdapter !== lastConnectedAdapterRef.current &&
       session?.status !== 'running'
-    if (modelChanged || effortChanged || permissionModeChanged || adapterChanged) {
+    const normalizedAccount = account ?? ''
+    const accountChanged = account != null &&
+      lastConnectedAccountRef.current != null &&
+      normalizedAccount !== lastConnectedAccountRef.current &&
+      session?.status !== 'running'
+    if (modelChanged || effortChanged || permissionModeChanged || adapterChanged || accountChanged) {
       expectedCloseRef.current = true
       setErrorState(null)
       connectionManager.send(session.id, { type: 'terminate_session' })
@@ -330,6 +339,7 @@ export function useChatSessionMessages({
     lastConnectedEffortRef.current = normalizedEffort
     lastConnectedPermissionModeRef.current = normalizedPermissionMode
     lastConnectedAdapterRef.current = normalizedAdapter
+    lastConnectedAccountRef.current = normalizedAccount
 
     const timer = setTimeout(() => {
       if (isDisposed) return
@@ -346,6 +356,9 @@ export function useChatSessionMessages({
       }
       if (adapter) {
         connectionParams.adapter = adapter
+      }
+      if (account) {
+        connectionParams.account = account
       }
 
       cleanup = connectionManager.connect(session.id, {
@@ -502,7 +515,7 @@ export function useChatSessionMessages({
           })
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
-    }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
+    }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged || accountChanged) ? 200 : 100)
 
     return () => {
       isDisposed = true
@@ -511,6 +524,7 @@ export function useChatSessionMessages({
     }
   }, [
     adapter,
+    account,
     clearScheduledReconciles,
     effort,
     modelForQuery,

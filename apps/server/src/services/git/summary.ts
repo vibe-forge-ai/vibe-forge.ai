@@ -14,9 +14,29 @@ const isMissingHeadError = (error: unknown) => {
   return /does not have any commits yet/i.test(message) || /ambiguous argument 'HEAD'/i.test(message)
 }
 
+const isGitOutputOverflowError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  const message = resolveGitErrorMessage(error, '')
+  return (
+    (error as NodeJS.ErrnoException).code === 'ENOBUFS' ||
+    /maxbuffer/i.test(message) ||
+    /stdout maxbuffer length exceeded/i.test(message)
+  )
+}
+
 const listUntrackedFiles = async (repositoryRoot: string) => {
-  const { stdout } = await runGit(['ls-files', '--others', '--exclude-standard', '-z'], repositoryRoot)
-  return stdout.split('\0').map(item => item.trim()).filter(Boolean)
+  try {
+    const { stdout } = await runGit(['ls-files', '--others', '--exclude-standard', '-z'], repositoryRoot)
+    return stdout.split('\0').map(item => item.trim()).filter(Boolean)
+  } catch (error) {
+    if (isGitOutputOverflowError(error)) {
+      return []
+    }
+    throw error
+  }
 }
 
 const getUntrackedNumstatEntries = async (repositoryRoot: string) => {

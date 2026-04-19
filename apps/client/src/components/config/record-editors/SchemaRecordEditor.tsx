@@ -119,7 +119,7 @@ export const SchemaRecordEditor = ({
                     onChange({ ...value, [key]: updated })
                   }}
                   t={t}
-                  hideFieldPath={isKnownEntry && schema.mode === 'discriminated' ? [discriminatorField] : undefined}
+                  hideFieldPaths={isKnownEntry && schema.mode === 'discriminated' ? [[discriminatorField]] : undefined}
                 />
               )}
               {shouldRenderJsonFallback && (

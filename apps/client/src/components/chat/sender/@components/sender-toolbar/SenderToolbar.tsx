@@ -7,7 +7,6 @@ import type {
   SenderToolbarState
 } from '../../@types/sender-toolbar-types'
 
-import { AdapterSelectControl } from '../adapter-select/AdapterSelectControl'
 import { EffortSelectControl } from '../effort-select/EffortSelectControl'
 import { ModelSelectControl } from '../model-select/ModelSelectControl'
 import { ReferenceActionsControl } from '../reference-actions/ReferenceActionsControl'
@@ -38,10 +37,6 @@ export function SenderToolbar({
       )}
 
       <div className='toolbar-left'>
-        {!state.isInlineEdit && (
-          <AdapterSelectControl state={state} data={data} handlers={handlers} />
-        )}
-
         {!state.hideReferenceActions && (
           <ReferenceActionsControl
             state={state}

@@ -28,6 +28,7 @@ import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
 } from '#~/hooks/chat/chat-session-workspace-draft'
+import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
 import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
 import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
@@ -81,6 +82,10 @@ export function ChatHistoryView({
   selectedAdapter,
   adapterOptions,
   onAdapterChange,
+  selectedAccount,
+  accountOptions,
+  showAccountSelector,
+  onAccountChange,
   modelUnavailable,
   hasAvailableModels,
   contextReferenceRequest
@@ -117,6 +122,10 @@ export function ChatHistoryView({
   selectedAdapter?: string
   adapterOptions: Array<{ value: string; label: React.ReactNode }>
   onAdapterChange: (adapter: string) => void
+  selectedAccount?: string
+  accountOptions: ChatAdapterAccountOption[]
+  showAccountSelector: boolean
+  onAccountChange: (account: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
   contextReferenceRequest?: ContextReferenceRequest | null
@@ -161,6 +170,7 @@ export function ChatHistoryView({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    account: selectedAccount,
     sessionTargetDraft,
     workspaceDraft,
     onClearMessages
@@ -705,6 +715,10 @@ export function ChatHistoryView({
             selectedAdapter={selectedAdapter}
             adapterOptions={adapterOptions}
             onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
             modelUnavailable={modelUnavailable}
             sessionTarget={{
               draft: session?.id != null ? getChatSessionTargetDraftFromSession(session) : sessionTargetDraft,
@@ -720,6 +734,16 @@ export function ChatHistoryView({
             draftWorkspace={workspaceDraft}
             isCreating={isCreating}
             sessionId={session?.id}
+            adapterLocked={session?.id != null}
+            isThinking={isCreating || session?.status === 'running'}
+            modelUnavailable={modelUnavailable}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
             onDraftWorkspaceChange={(nextDraft) => {
               workspaceDraftDirtyRef.current = true
               setWorkspaceDraft(nextDraft)

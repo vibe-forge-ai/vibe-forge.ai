@@ -29,6 +29,7 @@ export function useChatSessionActions({
   effort,
   permissionMode,
   adapter,
+  account,
   sessionTargetDraft,
   workspaceDraft,
   onClearMessages
@@ -39,6 +40,7 @@ export function useChatSessionActions({
   effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
+  account?: string
   sessionTargetDraft?: ChatSessionTargetDraft
   workspaceDraft?: ChatSessionWorkspaceDraft
   onClearMessages: () => void
@@ -93,6 +95,7 @@ export function useChatSessionActions({
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter,
+          account,
           workspace: workspaceDraft == null
             ? undefined
             : {
@@ -121,6 +124,7 @@ export function useChatSessionActions({
     return true
   }, [
     adapter,
+    account,
     hasAvailableModels,
     isThinking,
     insertSessionIntoCache,
@@ -151,6 +155,7 @@ export function useChatSessionActions({
           effort: effort === 'default' ? undefined : effort,
           permissionMode,
           adapter,
+          account,
           workspace: workspaceDraft == null
             ? undefined
             : {
@@ -179,6 +184,7 @@ export function useChatSessionActions({
     return true
   }, [
     adapter,
+    account,
     hasAvailableModels,
     insertSessionIntoCache,
     isThinking,

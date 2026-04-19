@@ -4,6 +4,7 @@ import './record-editors/RecordEditors.scss'
 import { Button, Input, Select, Switch, Tooltip } from 'antd'
 import { useMemo, useState } from 'react'
 
+import { getAdapterDisplay } from '#~/resources/adapters'
 import type { ConfigUiSection } from '@vibe-forge/types'
 
 import { DetailCollectionFieldActions } from './DetailCollectionFieldActions'
@@ -13,6 +14,55 @@ import type { FieldSpec } from './configSchema'
 import { getFieldLabel, getValueByPath, setValueByPath } from './configUtils'
 import type { TranslationFn } from './configUtils'
 import { buildConfigUiObjectDefaultValue } from './record-editors/schemaRecordUtils'
+
+const normalizeConfigText = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== ''
+    ? value.trim()
+    : ''
+)
+
+const formatAdapterKeyTitle = (adapterKey: string) => (
+  adapterKey
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[-_]+/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+)
+
+const resolveAdapterListTitle = (adapterKey: string) => {
+  const adapterDisplay = getAdapterDisplay(adapterKey)
+  const displayTitle = normalizeConfigText(adapterDisplay.title)
+  return displayTitle !== '' && displayTitle !== adapterKey
+    ? displayTitle
+    : formatAdapterKeyTitle(adapterKey)
+}
+
+const resolveAdapterListSubtitle = ({
+  item,
+  fallbackSubtitle,
+  t
+}: {
+  item: Record<string, unknown>
+  fallbackSubtitle?: string
+  t: TranslationFn
+}) => {
+  const summaryParts: string[] = []
+  const defaultModel = normalizeConfigText(item.defaultModel)
+  const defaultAccount = normalizeConfigText(item.defaultAccount)
+
+  if (defaultModel !== '') {
+    summaryParts.push(`${t('config.fields.adapters.defaultModel.label')}: ${defaultModel}`)
+  }
+
+  if (defaultAccount !== '') {
+    summaryParts.push(`${t('config.fields.adapters.defaultAccount.label')}: ${defaultAccount}`)
+  }
+
+  if (summaryParts.length > 0) return summaryParts.join(' · ')
+  return fallbackSubtitle
+}
 
 export const DetailCollectionField = ({
   sectionKey,
@@ -209,6 +259,11 @@ export const DetailCollectionField = ({
         const title = detailCollection.getItemTitle(item, key, index, detailContext)
         const subtitle = detailCollection.getItemSubtitle?.(item, key, index, detailContext)
         const description = detailCollection.getItemDescription?.(item, key, index, detailContext)
+        const adapterDisplay = sectionKey === 'adapters' ? getAdapterDisplay(key) : undefined
+        const displayTitle = sectionKey === 'adapters' ? resolveAdapterListTitle(key) : title
+        const displaySubtitle = sectionKey === 'adapters'
+          ? resolveAdapterListSubtitle({ item, fallbackSubtitle: subtitle, t })
+          : subtitle
         return (
           <div
             key={`${field.path.join('.')}:${key}:${title}`}
@@ -216,34 +271,55 @@ export const DetailCollectionField = ({
           >
             <div className='config-view__detail-list-row'>
               <button type='button' className='config-view__detail-list-main' onClick={() => openDetail(key)}>
-                <div className='config-view__record-heading'>
-                  <div className='config-view__detail-list-title'>
-                    <span>{title}</span>
-                    {(source === 'inherited' || hasResolvedOverlay) && (
-                      <span
-                        className={`config-view__detail-badge${
-                          source === 'inherited'
-                            ? ' config-view__detail-badge--readonly'
-                            : ' config-view__detail-badge--override'
-                        }`}
-                      >
-                        {source === 'inherited'
-                          ? t('config.detail.inheritedBadge')
-                          : t('config.detail.overrideBadge')}
-                      </span>
-                    )}
-                  </div>
-                  {subtitle != null && subtitle !== '' && (
-                    <div className='config-view__record-subtitle'>
-                      {subtitle}
+                <div
+                  className={`config-view__record-heading${adapterDisplay?.icon != null ? ' has-adapter-icon' : ''}`}
+                >
+                  {adapterDisplay != null && (
+                    <div className='config-view__adapter-icon-wrap' aria-hidden='true'>
+                      {adapterDisplay.icon != null
+                        ? (
+                          <img
+                            className='config-view__adapter-icon'
+                            src={adapterDisplay.icon}
+                            alt=''
+                          />
+                        )
+                        : (
+                          <span className='config-view__adapter-icon-fallback material-symbols-rounded'>
+                            deployed_code
+                          </span>
+                        )}
                     </div>
                   )}
-                  {description != null && description !== '' && (
-                    <div className='config-view__record-desc'>{description}</div>
-                  )}
+                  <div className='config-view__record-heading-text'>
+                    <div className='config-view__detail-list-title'>
+                      <span>{displayTitle}</span>
+                      {(source === 'inherited' || hasResolvedOverlay) && (
+                        <span
+                          className={`config-view__detail-badge${
+                            source === 'inherited'
+                              ? ' config-view__detail-badge--readonly'
+                              : ' config-view__detail-badge--override'
+                          }`}
+                        >
+                          {source === 'inherited'
+                            ? t('config.detail.inheritedBadge')
+                            : t('config.detail.overrideBadge')}
+                        </span>
+                      )}
+                    </div>
+                    {displaySubtitle != null && displaySubtitle !== '' && (
+                      <div className='config-view__record-subtitle'>
+                        {displaySubtitle}
+                      </div>
+                    )}
+                    {description != null && description !== '' && (
+                      <div className='config-view__record-desc'>{description}</div>
+                    )}
+                  </div>
                 </div>
               </button>
-              {renderSummaryControls({ item, itemKey: key, title, localIndex, source })}
+              {renderSummaryControls({ item, itemKey: key, title: displayTitle, localIndex, source })}
               {(isListCollection || isRecordMapCollection) && source === 'local' && (
                 <DetailCollectionFieldActions
                   index={localIndex ?? 0}

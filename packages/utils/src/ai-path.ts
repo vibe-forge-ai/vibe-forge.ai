@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
 
@@ -8,6 +9,7 @@ export const PROJECT_AI_BASE_DIR_ENV = '__VF_PROJECT_AI_BASE_DIR__'
 export const DEFAULT_PROJECT_AI_BASE_DIR = '.ai'
 export const PROJECT_AI_ENTITIES_DIR_ENV = '__VF_PROJECT_AI_ENTITIES_DIR__'
 export const DEFAULT_PROJECT_AI_ENTITIES_DIR = 'entities'
+export const PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
 
 const normalizeDirPath = (value: string | null | undefined) => {
   const trimmed = value?.trim()
@@ -52,6 +54,42 @@ export const resolveProjectWorkspaceFolder = (
 ) => (
   resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env) ?? resolve(cwd)
 )
+
+export const resolvePrimaryWorkspaceFolder = (
+  cwd: string,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const normalizedWorkspaceFolder = resolveProjectWorkspaceFolder(cwd, env)
+  const explicitPrimaryWorkspaceFolder = env[PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV]?.trim()
+  if (explicitPrimaryWorkspaceFolder != null && explicitPrimaryWorkspaceFolder !== '') {
+    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
+    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : resolvedPrimaryWorkspaceFolder
+  }
+
+  try {
+    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd: normalizedWorkspaceFolder,
+      encoding: 'utf8'
+    })
+    if (result.status !== 0) {
+      return undefined
+    }
+
+    const gitCommonDir = result.stdout?.trim()
+    if (gitCommonDir == null || gitCommonDir === '') {
+      return undefined
+    }
+
+    const primaryWorkspaceFolder = resolve(normalizedWorkspaceFolder, gitCommonDir, '..')
+    return primaryWorkspaceFolder === normalizedWorkspaceFolder
+      ? undefined
+      : primaryWorkspaceFolder
+  } catch {
+    return undefined
+  }
+}
 
 export const resolveProjectConfigDir = (
   cwd: string,

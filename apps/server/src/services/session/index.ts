@@ -285,6 +285,7 @@ export async function startAdapterSession(
   sessionId: string,
   options: {
     model?: string
+    account?: string
     effort?: EffortLevel
     systemPrompt?: string
     appendSystemPrompt?: boolean
@@ -308,6 +309,7 @@ export async function startAdapterSession(
     const runtimeState = db.getSessionRuntimeState(sessionId)
     const resolvedModel = options.model ?? existing?.model
     const resolvedAdapter = options.adapter ?? existing?.adapter
+    const resolvedAccount = options.account ?? existing?.account
     const resolvedEffort = options.effort ?? existing?.effort
     const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
     const resolvedPromptType = existing?.promptType ?? options.promptType
@@ -322,12 +324,14 @@ export async function startAdapterSession(
     if (cached != null) {
       const currentModel = cached.config?.model
       const currentAdapter = cached.config?.adapter
+      const currentAccount = cached.config?.account
       const currentEffort = cached.config?.effort
       const currentPermissionMode = cached.config?.permissionMode
       const currentPromptType = cached.config?.promptType
       const currentPromptName = cached.config?.promptName
       const configChanged = currentModel !== resolvedModel ||
         currentAdapter !== resolvedAdapter ||
+        currentAccount !== resolvedAccount ||
         currentEffort !== resolvedEffort ||
         currentPermissionMode !== resolvedPermissionMode ||
         currentPromptType !== resolvedPromptType ||
@@ -344,6 +348,8 @@ export async function startAdapterSession(
         resolvedModel,
         currentAdapter,
         resolvedAdapter,
+        currentAccount,
+        resolvedAccount,
         currentEffort,
         resolvedEffort,
         currentPermissionMode,
@@ -367,6 +373,9 @@ export async function startAdapterSession(
       requestedAdapter: options.adapter,
       persistedAdapter: existing?.adapter,
       resolvedAdapter,
+      requestedAccount: options.account,
+      persistedAccount: existing?.account,
+      resolvedAccount,
       resolvedEffort,
       resolvedPermissionMode,
       resolvedPromptType,
@@ -382,7 +391,9 @@ export async function startAdapterSession(
     }
 
     if (
-      resolvedModel !== existing?.model || resolvedAdapter !== existing?.adapter ||
+      resolvedModel !== existing?.model ||
+      resolvedAdapter !== existing?.adapter ||
+      resolvedAccount !== existing?.account ||
       resolvedEffort !== existing?.effort ||
       resolvedPermissionMode !== existing?.permissionMode ||
       resolvedPromptType !== existing?.promptType ||
@@ -391,6 +402,7 @@ export async function startAdapterSession(
       updateAndNotifySession(sessionId, {
         model: resolvedModel,
         adapter: resolvedAdapter,
+        account: resolvedAccount,
         effort: resolvedEffort,
         permissionMode: resolvedPermissionMode,
         promptType: resolvedPromptType,
@@ -480,6 +492,7 @@ export async function startAdapterSession(
         runtime: 'server',
         sessionId,
         model: resolvedModel,
+        account: resolvedAccount,
         effort: resolvedEffort,
         systemPrompt: mergedSystemPrompt,
         permissionMode: resolvedPermissionMode,
@@ -518,8 +531,12 @@ export async function startAdapterSession(
                 const reportedAdapter = typeof (event.data as any).adapter === 'string'
                   ? (event.data as any).adapter
                   : undefined
+                const reportedAccount = typeof (event.data as any).account === 'string'
+                  ? (event.data as any).account
+                  : undefined
                 const persistedModel = resolvedModel ?? reportedModel
                 const persistedAdapter = resolvedAdapter ?? reportedAdapter
+                const persistedAccount = resolvedAccount ?? reportedAccount
                 serverLogger.info({
                   sessionId,
                   requestedModel: options.model,
@@ -529,11 +546,16 @@ export async function startAdapterSession(
                   requestedAdapter: options.adapter,
                   resolvedAdapter,
                   reportedAdapter,
-                  persistedAdapter
+                  persistedAdapter,
+                  requestedAccount: options.account,
+                  resolvedAccount,
+                  reportedAccount,
+                  persistedAccount
                 }, '[server] Adapter init received')
                 updateAndNotifySession(sessionId, {
                   model: persistedModel,
                   adapter: persistedAdapter,
+                  account: persistedAccount,
                   effort: resolvedEffort,
                   permissionMode: resolvedPermissionMode,
                   promptType: resolvedPromptType,
@@ -887,6 +909,7 @@ export async function startAdapterSession(
           runId,
           model: resolvedModel,
           adapter: resolvedAdapter,
+          account: resolvedAccount,
           effort: resolvedEffort,
           permissionMode: resolvedPermissionMode,
           promptType: resolvedPromptType,

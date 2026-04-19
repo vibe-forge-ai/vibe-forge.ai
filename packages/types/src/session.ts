@@ -46,6 +46,7 @@ export interface Session {
   status?: SessionStatus
   model?: string
   adapter?: string
+  account?: string
   permissionMode?: SessionPermissionMode
   effort?: EffortLevel
   promptType?: SessionPromptType

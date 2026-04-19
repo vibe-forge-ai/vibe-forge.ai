@@ -70,7 +70,7 @@ describe('config schema form', () => {
       />
     )
 
-    expect(html).toContain('custom-adapter')
+    expect(html).toContain('Custom Adapter')
     expect(html).toContain('config-view__detail-list')
   })
 

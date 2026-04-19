@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PROJECT_AI_BASE_DIR,
   DEFAULT_PROJECT_AI_ENTITIES_DIR,
+  PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV,
   resolveProjectAiBaseDirName,
   resolveProjectAiEntitiesDir,
   resolveProjectAiEntitiesDirName,
-  resolveProjectConfigDir
+  resolveProjectConfigDir,
+  resolvePrimaryWorkspaceFolder
 } from '#~/ai-path.js'
 
 describe('ai path utils', () => {
@@ -40,5 +42,15 @@ describe('ai path utils', () => {
       __VF_PROJECT_LAUNCH_CWD__: '/tmp/project/c/d/e',
       __VF_PROJECT_CONFIG_DIR__: '.'
     })).toBe('/tmp/project/c/d/e')
+  })
+
+  it('resolves the primary workspace from the explicit worktree override env', () => {
+    expect(resolvePrimaryWorkspaceFolder('/tmp/worktrees/feature/project', {
+      [PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV]: '/tmp/project'
+    })).toBe('/tmp/project')
+
+    expect(resolvePrimaryWorkspaceFolder('/tmp/project', {
+      [PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV]: '/tmp/project'
+    })).toBeUndefined()
   })
 })

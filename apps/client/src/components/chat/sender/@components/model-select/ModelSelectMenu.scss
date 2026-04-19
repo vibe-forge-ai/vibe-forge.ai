@@ -86,6 +86,8 @@
     var(--primary-color, #2563eb) 18%,
     var(--bg-color) 82%
   ) !important;
+  color: var(--text-color) !important;
+  -webkit-text-fill-color: var(--text-color) !important;
 }
 
 .model-select-menu .ant-menu-submenu-arrow,

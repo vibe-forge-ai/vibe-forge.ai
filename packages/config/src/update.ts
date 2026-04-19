@@ -1,11 +1,14 @@
-import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config, ConfigSource } from '@vibe-forge/types'
-import { resolveProjectConfigDir, resolveProjectWorkspaceFolder } from '@vibe-forge/utils'
+import {
+  resolvePrimaryWorkspaceFolder,
+  resolveProjectConfigDir,
+  resolveProjectWorkspaceFolder
+} from '@vibe-forge/utils'
 import { dump, load } from 'js-yaml'
 
 import { resetConfigCache } from './load'
@@ -38,44 +41,6 @@ const userConfigPaths = [
   './infra/.ai.dev.config.yaml',
   './infra/.ai.dev.config.yml'
 ]
-
-const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
-
-const resolvePrimaryWorkspaceFolder = (
-  cwd: string,
-  env: Record<string, string | null | undefined> = process.env
-) => {
-  const normalizedWorkspaceFolder = resolve(cwd)
-  const explicitPrimaryWorkspaceFolder = env[PRIMARY_WORKSPACE_ENV]?.trim()
-  if (explicitPrimaryWorkspaceFolder) {
-    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
-    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : resolvedPrimaryWorkspaceFolder
-  }
-
-  try {
-    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
-      cwd,
-      encoding: 'utf8'
-    })
-    if (result.status !== 0) {
-      return undefined
-    }
-
-    const gitCommonDir = result.stdout?.trim()
-    if (!gitCommonDir) {
-      return undefined
-    }
-
-    const primaryWorkspaceFolder = dirname(resolve(cwd, gitCommonDir))
-    return primaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : primaryWorkspaceFolder
-  } catch {
-    return undefined
-  }
-}
 
 export const resolveWritableConfigPath = (
   workspaceFolder: string,
