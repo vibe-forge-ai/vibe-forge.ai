@@ -1,4 +1,5 @@
-import { Form, Input } from 'antd'
+/* eslint-disable max-lines -- task composer wires Sender, status bar, and collapse behavior together */
+import { Button, Form, Input, Tooltip } from 'antd'
 import type { FormInstance } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -176,24 +177,42 @@ function AutomationTaskStatusBar({ fieldName, form }: AutomationTaskComposerProp
 
 export function AutomationTaskComposer({ fieldName, form }: AutomationTaskComposerProps) {
   const { t } = useTranslation()
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className='automation-view__task-composer'>
-      <Form.Item className='automation-view__task-title-item' name={[fieldName, 'title']}>
-        <Input
-          aria-label={t('automation.taskTitle')}
-          className='automation-view__task-title-input'
-          placeholder={t('automation.taskTitlePlaceholder')}
-        />
-      </Form.Item>
-      <Form.Item
-        className='automation-view__task-prompt-item'
-        name={[fieldName, 'prompt']}
-        rules={[{ required: true, message: t('automation.promptRequired') }]}
-      >
-        <AutomationTaskSender fieldName={fieldName} form={form} />
-      </Form.Item>
-      <AutomationTaskStatusBar fieldName={fieldName} form={form} />
+    <div className={`automation-view__task-composer ${collapsed ? 'is-collapsed' : ''}`.trim()}>
+      <div className='automation-view__task-title-row'>
+        <Tooltip title={collapsed ? t('automation.expandTask') : t('automation.collapseTask')}>
+          <Button
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t('automation.expandTask') : t('automation.collapseTask')}
+            className='automation-view__task-collapse-button'
+            type='text'
+            onClick={() => setCollapsed(prev => !prev)}
+          >
+            <span className='material-symbols-rounded automation-view__action-icon'>
+              {collapsed ? 'chevron_right' : 'keyboard_arrow_down'}
+            </span>
+          </Button>
+        </Tooltip>
+        <Form.Item className='automation-view__task-title-item' name={[fieldName, 'title']}>
+          <Input
+            aria-label={t('automation.taskTitle')}
+            className='automation-view__task-title-input'
+            placeholder={t('automation.taskTitlePlaceholder')}
+          />
+        </Form.Item>
+      </div>
+      <div className='automation-view__task-collapsible' hidden={collapsed}>
+        <Form.Item
+          className='automation-view__task-prompt-item'
+          name={[fieldName, 'prompt']}
+          rules={[{ required: true, message: t('automation.promptRequired') }]}
+        >
+          <AutomationTaskSender fieldName={fieldName} form={form} />
+        </Form.Item>
+        <AutomationTaskStatusBar fieldName={fieldName} form={form} />
+      </div>
     </div>
   )
 }

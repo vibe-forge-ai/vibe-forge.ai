@@ -7,8 +7,11 @@
   }
 
   &__form-panel > .ant-form {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
 
   &__form-header {
@@ -97,24 +100,50 @@
   }
 
   &__square-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 6px;
+    &.ant-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px !important;
+      min-width: 32px !important;
+      max-width: 32px;
+      height: 32px !important;
+      min-height: 32px;
+      padding: 0 !important;
+      border-radius: 6px;
+      flex: 0 0 32px;
+      aspect-ratio: 1 / 1;
+      box-shadow: none !important;
+
+      .ant-btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-inline-end: 0 !important;
+        line-height: 1;
+      }
+
+      .ant-btn-loading-icon {
+        margin-inline-end: 0 !important;
+      }
+
+      .anticon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+    }
 
     &--cancel.ant-btn-default {
-      border: 0 !important;
+      border: 1px solid var(--border-color) !important;
       background: transparent !important;
       box-shadow: none;
     }
 
     &--cancel.ant-btn-default:not(:disabled):hover,
     &--cancel.ant-btn-default:not(:disabled):focus-visible {
-      border: 0 !important;
+      border-color: var(--border-color) !important;
       background: var(--tag-hover-bg) !important;
       color: var(--text-color) !important;
     }
@@ -126,6 +155,7 @@
 
   &__action-icon {
     font-size: 18px;
+    line-height: 1;
   }
 
   &__icon-button--section-add:not(:disabled):hover,
@@ -134,17 +164,14 @@
     color: var(--text-color) !important;
   }
 
-  &__form-section .ant-input,
-  &__form-section .ant-input-affix-wrapper,
-  &__form-section .ant-input-number,
-  &__form-section .ant-select-selector {
+  &__form-section--basic > .ant-form-item .ant-input,
+  &__form-section--basic > .ant-form-item .ant-input-affix-wrapper {
     border-radius: 6px !important;
     background: var(--bg-color);
   }
 
-  &__form-section .ant-input,
-  &__form-section .ant-input-affix-wrapper,
-  &__form-section .ant-select-selector {
+  &__form-section--basic > .ant-form-item .ant-input,
+  &__form-section--basic > .ant-form-item .ant-input-affix-wrapper {
     min-height: 30px;
   }
 }

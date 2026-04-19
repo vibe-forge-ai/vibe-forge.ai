@@ -9,37 +9,43 @@ import { useTranslation } from 'react-i18next'
 import type { AutomationRule, AutomationRun } from '#~/api.js'
 
 import { getEffortLabelKey, getPermissionModeLabelKey } from './@utils/startup-options'
+import { AutomationEmptyLanding } from './AutomationEmptyLanding'
+import { AutomationPanelTitleActions } from './PanelTitleActions'
 
 interface RunHistoryPanelProps {
   compact?: boolean
+  isRulePanelCollapsed?: boolean
   rule: AutomationRule | null
   runs: AutomationRun[]
   runQuery: string
   statusFilter: string
   timeFilter: string
   sortOrder: string
+  onCreateRule?: () => void
+  onExpandRulePanel?: () => void
   onEditRule: (rule: AutomationRule) => void
   onRunQueryChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onTimeFilterChange: (value: string) => void
   onSortOrderChange: (value: string) => void
-  onCreateRule: () => void
 }
 
 export function RunHistoryPanel({
   compact = false,
+  isRulePanelCollapsed = false,
   rule,
   runs,
   runQuery,
   statusFilter,
   timeFilter,
   sortOrder,
+  onCreateRule,
+  onExpandRulePanel,
   onEditRule,
   onRunQueryChange,
   onStatusFilterChange,
   onTimeFilterChange,
-  onSortOrderChange,
-  onCreateRule
+  onSortOrderChange
 }: RunHistoryPanelProps) {
   const { t } = useTranslation()
 
@@ -122,22 +128,7 @@ export function RunHistoryPanel({
   }, [runs])
 
   if (!rule) {
-    return (
-      <div className='automation-view__empty automation-view__empty--details'>
-        <Empty description={t('automation.selectRule')}>
-          <a
-            className='automation-view__empty-link'
-            href='/ui/automation'
-            onClick={(event) => {
-              event.preventDefault()
-              onCreateRule()
-            }}
-          >
-            {t('automation.createRuleLink')}
-          </a>
-        </Empty>
-      </div>
-    )
+    return <AutomationEmptyLanding />
   }
 
   const triggerLabels = (rule.triggers ?? []).map((trigger) => {
@@ -185,9 +176,17 @@ export function RunHistoryPanel({
       <div className='automation-view__surface automation-view__detail-surface'>
         <div className='automation-view__detail'>
           <div className='automation-view__detail-header'>
-            <div className='automation-view__detail-title'>
-              <h3 className='automation-view__content-text'>{rule.name}</h3>
-              <span className='automation-view__detail-id'>{rule.id}</span>
+            <div className='automation-view__detail-title-shell'>
+              <AutomationPanelTitleActions
+                collapsed={isRulePanelCollapsed}
+                isCreating={false}
+                onCreateRule={onCreateRule}
+                onExpandRulePanel={onExpandRulePanel}
+              />
+              <div className='automation-view__detail-title'>
+                <h3 className='automation-view__content-text'>{rule.name}</h3>
+                <span className='automation-view__detail-id'>{rule.id}</span>
+              </div>
             </div>
             <Button
               className='automation-view__icon-button automation-view__icon-button--edit'

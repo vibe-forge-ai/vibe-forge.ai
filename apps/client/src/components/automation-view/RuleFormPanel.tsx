@@ -8,14 +8,18 @@ import type { AutomationRule } from '#~/api.js'
 import { getServerHost, getServerPort } from '#~/api/base.js'
 
 import { DEFAULT_SELECT_VALUE, DEFAULT_STARTUP_FORM_VALUES } from './@utils/startup-options'
+import { AutomationPanelTitleActions } from './PanelTitleActions'
 import { TaskList } from './TaskList'
 import { TriggerList } from './TriggerList'
 import type { RuleFormValues } from './types'
 
 interface RuleFormPanelProps {
+  isRulePanelCollapsed?: boolean
   mode: 'create' | 'edit'
   rule: AutomationRule | null
   submitting: boolean
+  onCreateRule?: () => void
+  onExpandRulePanel?: () => void
   onSubmit: (payload: Partial<AutomationRule>, immediateRun: boolean) => Promise<void>
   onCancel: () => void
 }
@@ -44,7 +48,16 @@ const getBranchAction = (
   return task.branchMode === 'create' ? 'create' : 'checkout'
 }
 
-export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: RuleFormPanelProps) {
+export function RuleFormPanel({
+  isRulePanelCollapsed = false,
+  mode,
+  rule,
+  submitting,
+  onCreateRule,
+  onExpandRulePanel,
+  onSubmit,
+  onCancel
+}: RuleFormPanelProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<RuleFormValues>()
 
@@ -206,27 +219,34 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
     <div className='automation-view__form-panel'>
       <div className='automation-view__form-header'>
         <div className='automation-view__form-title'>
-          <span className='material-symbols-rounded automation-view__form-icon'>edit_square</span>
+          <AutomationPanelTitleActions
+            collapsed={isRulePanelCollapsed}
+            defaultIcon='edit_square'
+            defaultIconClassName='automation-view__form-icon'
+            isCreating={mode === 'create'}
+            onCreateRule={onCreateRule}
+            onExpandRulePanel={onExpandRulePanel}
+          />
           {mode === 'create' ? t('automation.newRule') : t('automation.editRule')}
         </div>
         <div className='automation-view__form-header-actions'>
           <Tooltip title={t('common.cancel')}>
             <Button
               className='automation-view__square-button automation-view__square-button--cancel'
+              aria-label={t('common.cancel')}
+              icon={<span className='material-symbols-rounded automation-view__action-icon'>close</span>}
               onClick={onCancel}
-            >
-              <span className='material-symbols-rounded automation-view__action-icon'>close</span>
-            </Button>
+            />
           </Tooltip>
           <Tooltip title={t('common.confirm')}>
             <Button
               className='automation-view__square-button automation-view__square-button--confirm'
               type='primary'
+              aria-label={t('common.confirm')}
               loading={submitting}
+              icon={<span className='material-symbols-rounded automation-view__action-icon'>check</span>}
               onClick={() => void handleSubmit()}
-            >
-              <span className='material-symbols-rounded automation-view__action-icon'>check</span>
-            </Button>
+            />
           </Tooltip>
         </div>
       </div>

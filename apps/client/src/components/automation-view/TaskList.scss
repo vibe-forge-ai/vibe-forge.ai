@@ -37,6 +37,32 @@
     min-width: 0;
   }
 
+  &__task-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  &__task-collapse-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    color: var(--sub-text-color);
+  }
+
+  &__task-collapse-button:not(:disabled):hover,
+  &__task-collapse-button:not(:disabled):focus-visible {
+    background: var(--tag-hover-bg) !important;
+    color: var(--text-color) !important;
+  }
+
   &__task-title-item,
   &__task-prompt-item {
     width: 100%;
@@ -45,6 +71,7 @@
   &__task-title-item {
     box-sizing: border-box;
     padding-right: 42px;
+    min-width: 0;
   }
 
   &__task-title-input {
@@ -52,58 +79,20 @@
     font-weight: 600;
   }
 
+  &__task-collapsible {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__task-collapsible[hidden] {
+    display: none;
+  }
+
   &__task-sender {
     width: 100%;
     min-width: 0;
-
-    .chat-input-wrapper {
-      background: transparent;
-    }
-
-    .chat-input-container {
-      border-radius: 8px;
-      background: var(--sub-bg-color);
-      padding: 12px;
-    }
-
-    .chat-input-container:focus-within {
-      background: var(--bg-color);
-    }
-
-    .chat-input-monaco__editor {
-      min-height: 112px;
-    }
-
-    .chat-input-toolbar {
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin: 10px -4px -4px;
-    }
-
-    .chat-input-toolbar .toolbar-left {
-      flex-wrap: wrap;
-      gap: 6px;
-      width: 100%;
-    }
-
-    .sender-select-shell,
-    .sender-control-tooltip-target,
-    .adapter-select-tooltip-target {
-      max-width: 100%;
-    }
-
-    .adapter-select {
-      max-width: 160px;
-    }
-
-    .model-select {
-      max-width: 240px;
-    }
-
-    .effort-select {
-      max-width: 128px;
-    }
   }
 
   &__task-status-bar {
@@ -201,17 +190,12 @@
     margin-bottom: 0;
   }
 
-  &__task-card .ant-input,
-  &__task-card .ant-input-affix-wrapper,
-  &__task-card .ant-input-number,
-  &__task-card .ant-select-selector {
+  &__task-title-input.ant-input {
     border-radius: 6px !important;
     background: var(--sub-bg-color);
   }
 
-  &__task-card .ant-input,
-  &__task-card .ant-input-affix-wrapper,
-  &__task-card .ant-select-selector {
+  &__task-title-input.ant-input {
     min-height: 32px;
   }
 }
