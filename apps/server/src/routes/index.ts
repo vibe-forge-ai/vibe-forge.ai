@@ -10,9 +10,9 @@ import type { loadEnv } from '@vibe-forge/core'
 
 import { logger } from '#~/utils/logger.js'
 
+import { adaptersRouter } from './adapters'
 import { aiRouter } from './ai'
 import { authRouter } from './auth'
-import { adaptersRouter } from './adapters'
 import { automationRouter } from './automation'
 import { benchmarkRouter } from './benchmark'
 import { channelActionsRouter } from './channel-actions'

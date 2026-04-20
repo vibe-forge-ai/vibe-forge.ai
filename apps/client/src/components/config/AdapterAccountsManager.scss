@@ -307,11 +307,12 @@
   padding-right: 12px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: opacity .15s ease;
 }
 
 .adapter-account-manager__item:hover .adapter-account-manager__item-actions,
-.adapter-account-manager__item:focus-within .adapter-account-manager__item-actions {
+.adapter-account-manager__item:focus-within
+  .adapter-account-manager__item-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -402,20 +403,25 @@
   justify-content: flex-start;
 }
 
-.adapter-account-manager__editor .config-view__field-row:not(.config-view__field-row--stacked) {
+.adapter-account-manager__editor
+  .config-view__field-row:not(.config-view__field-row--stacked) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
 }
 
-.adapter-account-manager__editor .config-view__field-row:not(.config-view__field-row--stacked) .config-view__field-meta {
+.adapter-account-manager__editor
+  .config-view__field-row:not(.config-view__field-row--stacked)
+  .config-view__field-meta {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   max-width: none;
 }
 
-.adapter-account-manager__editor .config-view__field-row:not(.config-view__field-row--stacked) .config-view__field-control {
+.adapter-account-manager__editor
+  .config-view__field-row:not(.config-view__field-row--stacked)
+  .config-view__field-control {
   flex: 1 1 auto;
   justify-content: stretch;
   min-width: 0;
@@ -423,7 +429,10 @@
   max-width: none !important;
 }
 
-.adapter-account-manager__editor .config-view__field-row:not(.config-view__field-row--stacked) .config-view__field-control > * {
+.adapter-account-manager__editor
+  .config-view__field-row:not(.config-view__field-row--stacked)
+  .config-view__field-control
+  > * {
   width: 100% !important;
   max-width: none !important;
 }
@@ -434,11 +443,15 @@
   align-items: stretch;
 }
 
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-meta {
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-meta {
   width: 100%;
 }
 
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-control {
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-control {
   flex: 0 0 auto;
   justify-content: stretch;
   min-width: 0;
@@ -447,15 +460,28 @@
   align-self: stretch;
 }
 
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-control > * {
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-control
+  > * {
   display: block;
   width: 100% !important;
   max-width: none !important;
 }
 
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-control > textarea.ant-input,
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-control .ant-input-textarea,
-.adapter-account-manager__editor .config-view__field-row--stacked .config-view__field-control .ant-input-textarea textarea {
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-control
+  > textarea.ant-input,
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea,
+.adapter-account-manager__editor
+  .config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea
+  textarea {
   width: 100% !important;
   max-width: none !important;
 }
@@ -497,7 +523,8 @@
 
   .adapter-account-manager__item-actions,
   .adapter-account-manager__item:hover .adapter-account-manager__item-actions,
-  .adapter-account-manager__item:focus-within .adapter-account-manager__item-actions {
+  .adapter-account-manager__item:focus-within
+    .adapter-account-manager__item-actions {
     opacity: 1;
     pointer-events: auto;
   }
@@ -506,7 +533,8 @@
     justify-content: flex-start;
   }
 
-  .adapter-account-manager__editor .config-view__field-row:not(.config-view__field-row--stacked) {
+  .adapter-account-manager__editor
+    .config-view__field-row:not(.config-view__field-row--stacked) {
     display: flex;
   }
 }

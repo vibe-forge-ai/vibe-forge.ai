@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adapter contracts and loader types stay colocated for shared exports. */
 import type { Cache } from './cache'
 import type { EffortLevel, TaskRuntime } from './common'
 import type { Config } from './config'

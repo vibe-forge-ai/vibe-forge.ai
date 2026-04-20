@@ -110,7 +110,10 @@ describe('adapter routes', () => {
     expect(response.status).toBe(200)
     expect(payload.account?.key).toBe('work')
     await expect(
-      readFile(path.join(workspaceFolder, '.ai', '.local', 'adapters', 'codex', 'accounts', 'work', 'auth.json'), 'utf8')
+      readFile(
+        path.join(workspaceFolder, '.ai', '.local', 'adapters', 'codex', 'accounts', 'work', 'auth.json'),
+        'utf8'
+      )
     ).resolves.toBe('{"token":"demo"}\n')
   })
 

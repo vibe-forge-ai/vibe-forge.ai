@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   persistAdapterAccountArtifacts,
   removeStoredAdapterAccount,
-  resolveAdapterAccountsRoot,
   resolveAdapterAccountReadDirs,
-  resolveAdapterAccountReadRoots
+  resolveAdapterAccountReadRoots,
+  resolveAdapterAccountsRoot
 } from '#~/adapter-account.js'
 
 const tempDirs: string[] = []

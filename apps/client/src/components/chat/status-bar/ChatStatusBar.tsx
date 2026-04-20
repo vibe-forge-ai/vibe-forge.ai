@@ -2,10 +2,10 @@ import './ChatStatusBar.scss'
 
 import type { ReactNode } from 'react'
 
-import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import { AccountSelectControl } from '#~/components/chat/sender/@components/account-select/AccountSelectControl'
 import { AdapterSelectControl } from '#~/components/chat/sender/@components/adapter-select/AdapterSelectControl'
 import type { ChatSessionWorkspaceDraft } from '#~/hooks/chat/chat-session-workspace-draft'
+import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 
 import { ChatGitControls } from '../git-controls/ChatGitControls'

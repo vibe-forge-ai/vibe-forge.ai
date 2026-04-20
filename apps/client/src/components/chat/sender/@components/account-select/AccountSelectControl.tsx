@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- account selector keeps control, menu actions, and connect flow together. */
 import '../sender-toolbar/SenderSelectShared.scss'
 import '../sender-toolbar/SenderSelectBase.scss'
 import './AccountSelectControl.scss'
@@ -132,9 +133,7 @@ export function AccountSelectControl({
 
     setShowAccountSelect(false)
     void navigate(
-      `/config?tab=adapters&source=user&detail=${
-        encodeURIComponent(`${selectedAdapter}/accounts/${accountKey}`)
-      }`
+      `/config?tab=adapters&source=user&detail=${encodeURIComponent(`${selectedAdapter}/accounts/${accountKey}`)}`
     )
   }
 

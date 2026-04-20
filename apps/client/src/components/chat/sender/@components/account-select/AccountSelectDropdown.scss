@@ -120,7 +120,8 @@
 .account-select-popup__footer {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  border-top: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
 }
 
 .account-select-popup__footer-action {
