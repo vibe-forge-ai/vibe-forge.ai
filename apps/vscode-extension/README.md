@@ -4,7 +4,7 @@ This package is a thin VS Code shell for the existing Vibe Forge Web UI.
 
 ## Preview
 
-![Vibe Forge running in the VS Code sidebar](https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/.docs/zh-hans/vscode-extension-sidebar.png)
+![Vibe Forge running in the VS Code right sidebar](https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/.docs/zh-hans/vscode-extension-sidebar.png)
 
 ## Local Use
 
@@ -14,9 +14,9 @@ From the repository root:
 pnpm -C apps/vscode-extension build
 ```
 
-Run the extension from VS Code and open the Vibe Forge Activity Bar view, or execute `Vibe Forge: Open Workspace`.
+Run the extension from VS Code and open Vibe Forge from the right Secondary Side Bar, or execute `Vibe Forge: Open Workspace`.
 
-The extension starts one local Vibe Forge server per selected workspace folder, disables local web auth, and opens the built client inside a VS Code sidebar webview. Multiple workspace folders can keep separate servers running while the sidebar shows the selected workspace.
+The extension starts one local Vibe Forge server per selected workspace folder, disables local web auth, and opens the built client inside a VS Code right sidebar webview. Multiple workspace folders can keep separate servers running while the right sidebar shows the selected workspace.
 
 The extension does not bundle or install Vibe Forge runtime packages. It searches the selected workspace `node_modules/.bin` and then the system `PATH` for `vfui-server` / `vibe-forge-ui-server`.
 
@@ -33,7 +33,7 @@ pnpm add -D @vibe-forge/server @vibe-forge/client
 
 ## Boundary
 
-The extension does not duplicate client or server business logic. It only owns workspace selection, server process lifecycle, and the sidebar webview wrapper.
+The extension does not duplicate client or server business logic. It only owns workspace selection, server process lifecycle, and the right sidebar webview wrapper.
 
 ## Release
 

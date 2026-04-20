@@ -24,7 +24,7 @@
   ],
   "contributes": {
     "viewsContainers": {
-      "activitybar": [
+      "secondarySidebar": [
         {
           "id": "vibeForge",
           "title": "Vibe Forge",

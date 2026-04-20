@@ -58,7 +58,7 @@ pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/ad
 
 ### 直接用 VS Code 扩展
 
-- 在 Activity Bar 打开 Vibe Forge，完整 client 会嵌入左侧边栏。
+- 在右侧 Secondary Side Bar 打开 Vibe Forge，完整 client 会嵌入 VS Code 右侧边栏。
 - workspace server 发现、配置项和本地源码试用方式见 [VS Code 扩展](./.ai/docs/usage/vscode-extension.md)。
 
 ### 从源码试用桌面端
