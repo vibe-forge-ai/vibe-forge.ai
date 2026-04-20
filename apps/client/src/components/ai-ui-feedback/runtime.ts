@@ -1,4 +1,10 @@
 const AI_UI_FEEDBACK_EVENT = 'vf:ai-ui-feedback'
+const AI_UI_FEEDBACK_PRE_ACTION_DELAY_MS = 240
+const AI_UI_FEEDBACK_APPROACH_DELAY_MS = 280
+const AI_UI_FEEDBACK_APPROACH_OFFSET = {
+  x: -92,
+  y: 30
+}
 
 interface FeedbackPoint {
   x: number
@@ -82,14 +88,34 @@ const dispatchFeedbackEvent = (detail: AiUiFeedbackEventDetail) => {
 
 const wait = (timeoutMs: number) => new Promise<void>(resolve => window.setTimeout(resolve, timeoutMs))
 
-const AI_UI_FEEDBACK_PRE_ACTION_DELAY_MS = 220
+const clampPoint = (point: FeedbackPoint): FeedbackPoint => ({
+  x: Math.max(24, Math.min(window.innerWidth - 24, point.x)),
+  y: Math.max(24, Math.min(window.innerHeight - 24, point.y))
+})
+
+const createApproachDetail = (detail: {
+  point: FeedbackPoint
+  rect: FeedbackRect
+}) => ({
+  point: clampPoint({
+    x: detail.point.x + AI_UI_FEEDBACK_APPROACH_OFFSET.x,
+    y: detail.point.y + AI_UI_FEEDBACK_APPROACH_OFFSET.y
+  }),
+  rect: detail.rect
+})
 
 export const runAiUiActionFeedback = async <T>({
   anchorId,
   execute
 }: RunAiUiActionFeedbackParams<T>) => {
+  const targetDetail = resolveDetail(anchorId)
   dispatchFeedbackEvent({
-    ...resolveDetail(anchorId),
+    ...createApproachDetail(targetDetail),
+    status: 'running'
+  })
+  await wait(AI_UI_FEEDBACK_APPROACH_DELAY_MS)
+  dispatchFeedbackEvent({
+    ...targetDetail,
     status: 'running'
   })
   await wait(AI_UI_FEEDBACK_PRE_ACTION_DELAY_MS)

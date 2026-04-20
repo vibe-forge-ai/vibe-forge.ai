@@ -505,7 +505,7 @@ export function useMdpBrowserRuntime() {
             const search = patchSearchString(currentState.search, {
               sidebar: null
             })
-            await navigateWithFeedback('layout.sidebar.collapse', async () => {
+            await navigateWithFeedback(['session.title', 'layout.sidebar.collapse'], async () => {
               await navigate({ pathname: currentState.pathname, search })
             })
             return { ok: true, search }
