@@ -51,6 +51,7 @@ nsisWeb:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: always
   createStartMenuShortcut: true
+  differentialPackage: false
   shortcutName: Vibe Forge
 
 linux:
