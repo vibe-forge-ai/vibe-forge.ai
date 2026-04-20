@@ -20,7 +20,7 @@ Vibe Forge is an AI-assisted development framework with a desktop app, PWA / Web
 - **Conversational workflow**: streaming responses, session management, and tool-call visualization.
 - **Tasks and automation**: session archive, rule triggers, and run history in one place.
 - **Extensible architecture**: adapters and plugins with config-driven integration.
-- **Multiple entry points**: desktop app, PWA / Web UI, and CLI for standalone use or project integration.
+- **Multiple entry points**: desktop app, VS Code extension, PWA / Web UI, and CLI for standalone use or project integration.
 
 ## Installation
 
@@ -57,6 +57,11 @@ pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/ad
 - Hosted entry: [https://vibe-forge-ai.github.io/pwa/](https://vibe-forge-ai.github.io/pwa/)
 - Setup, self-hosting, and backend connection notes: [PWA and Standalone Deployment](./.ai/docs/usage/pwa.md)
 
+### VS Code Extension
+
+- Open Vibe Forge from the Activity Bar while keeping the full client inside the sidebar.
+- Workspace server discovery, settings, and local source package notes: [VS Code Extension](./.ai/docs/usage/vscode-extension.md)
+
 ### Run the Desktop App from Source
 
 ```bash
@@ -80,6 +85,7 @@ pnpm desktop:make
 - [Installation and Setup](./.ai/docs/usage/install.md)
 - [Desktop App](./.ai/docs/usage/desktop.md)
 - [PWA and Standalone Deployment](./.ai/docs/usage/pwa.md)
+- [VS Code Extension](./.ai/docs/usage/vscode-extension.md)
 - [Runtime Guide](./.ai/docs/usage/runtime.md)
 - [Repository Development Guide](./.ai/rules/DEVELOPMENT.md)
 

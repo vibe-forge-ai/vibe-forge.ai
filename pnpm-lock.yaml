@@ -402,6 +402,12 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
 
+  apps/vscode-extension:
+    devDependencies:
+      '@types/vscode':
+        specifier: 1.95.0
+        version: 1.95.0
+
   apps/web:
     dependencies:
       '@vibe-forge/cli-helper':
@@ -2168,6 +2174,9 @@ packages:
 
   '@types/verror@1.10.11':
     resolution: {integrity: sha512-RlDm9K7+o5stv0Co8i8ZRGxDbrTxhJtgjqjFyVh/tXQyl/rYtTKlnTvZ88oSTeYREWurwx20Js4kTuKCsFkUtg==, tarball: https://registry.npmjs.org/@types/verror/-/verror-1.10.11.tgz}
+
+  '@types/vscode@1.95.0':
+    resolution: {integrity: sha512-0LBD8TEiNbet3NvWsmn59zLzOFu/txSlGxnv5yAFHCrhG9WvAnR3IvfHzMOs2aeWqgvNjq9pO99IUw8d3n+unw==, tarball: https://registry.npmjs.org/@types/vscode/-/vscode-1.95.0.tgz}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==, tarball: https://registry.npmjs.org/@types/ws/-/ws-8.18.1.tgz}
@@ -7615,6 +7624,8 @@ snapshots:
 
   '@types/verror@1.10.11':
     optional: true
+
+  '@types/vscode@1.95.0': {}
 
   '@types/ws@8.18.1':
     dependencies:
