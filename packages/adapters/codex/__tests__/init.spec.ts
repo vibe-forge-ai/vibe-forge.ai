@@ -287,6 +287,54 @@ describe('initCodexAdapter', () => {
     expect(configContent).not.toContain('/tmp/old-workspace')
   })
 
+  it('removes stale unmanaged workspace trust blocks before writing the managed block', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        'model_reasoning_effort = "medium"',
+        'approvals_reviewer = "user"',
+        projectKey,
+        'trust_level = "trusted"',
+        '',
+        '[notice]',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('[notice]')
+    expect(configContent).toContain('hide_full_access_warning = true')
+    expect(configContent).toContain('check_for_update_on_startup = false')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+  })
+
   it('keeps concurrent skill sync idempotent when multiple vf processes initialize the same mock home', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')

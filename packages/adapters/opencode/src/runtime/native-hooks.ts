@@ -149,6 +149,31 @@ const normalizeToolResponse = (input, output) => (
   output?.result ?? output?.response ?? output?.data ?? input?.result ?? output
 )
 
+const readPreCompactHookSpecificOutput = (result) => {
+  const hookSpecificOutput = result?.hookSpecificOutput
+  if (hookSpecificOutput?.hookEventName !== "PreCompact") {
+    return {}
+  }
+
+  const additionalContext = (
+    typeof hookSpecificOutput.additionalContext === "string" &&
+    hookSpecificOutput.additionalContext.trim() !== ""
+  )
+    ? hookSpecificOutput.additionalContext
+    : undefined
+  const replacementPrompt = (
+    typeof hookSpecificOutput.replacementPrompt === "string" &&
+    hookSpecificOutput.replacementPrompt.trim() !== ""
+  )
+    ? hookSpecificOutput.replacementPrompt
+    : undefined
+
+  return {
+    additionalContext,
+    replacementPrompt,
+  }
+}
+
 export const VibeForgeHooks = async ({ directory }) => ({
   event: async ({ event }) => {
     if (event?.type === "session.created") {
@@ -185,6 +210,19 @@ export const VibeForgeHooks = async ({ directory }) => ({
 
     if (result?.continue === false) {
       throw new Error(stopReason(result, "blocked by Vibe Forge PostToolUse hook"))
+    }
+  },
+  "experimental.session.compacting": async (_input, output) => {
+    const result = callVibeForgeHook(createBaseInput("PreCompact", directory, false))
+    const { additionalContext, replacementPrompt } = readPreCompactHookSpecificOutput(result)
+
+    if (replacementPrompt != null) {
+      output.prompt = replacementPrompt
+      return
+    }
+
+    if (additionalContext != null) {
+      output.context.push(additionalContext)
     }
   },
 })

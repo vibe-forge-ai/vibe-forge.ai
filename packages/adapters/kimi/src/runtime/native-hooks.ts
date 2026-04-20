@@ -12,6 +12,7 @@ export const KIMI_NATIVE_HOOK_EVENTS = [
   'UserPromptSubmit',
   'PreToolUse',
   'PostToolUse',
+  'PreCompact',
   'Stop'
 ] as const
 

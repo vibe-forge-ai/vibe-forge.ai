@@ -47,6 +47,10 @@ Primary implementation entrypoints for Codex hooks:
   - enables `codex_hooks`, injects runtime config, model/provider settings, and session env
 - `src/hook-bridge.ts`
   - translates Codex native payloads into Vibe Forge hook input/output
+- `src/runtime/stream.ts`
+  - maps app-server `item/started -> contextCompaction` into observational `PreCompact`
+- `src/runtime/transcript-hooks.ts`
+  - bridges transcript JSONL tool observations for non-Bash events
 - `packages/hooks/call-hook.js`
 - `packages/hooks/src/entry.ts`
 - `packages/hooks/src/native.ts`
@@ -102,6 +106,7 @@ Codex maintenance notes:
 - `SessionEnd` is still framework-owned and should not be reintroduced in Codex-native config
 - when native hooks are active, bridge duplicates must stay disabled in `packages/task/src/run.ts`
 - Codex native `PreToolUse` / `PostToolUse` should be treated as Bash-first until official coverage expands; transcript JSONL can supplement non-Bash analytics, but it cannot block or rewrite the live session
+- Codex stream app-server now surfaces `contextCompaction`; we map that to unified `PreCompact` as a bridge-only observation with `canBlock: false`
 
 Relevant official docs:
 
@@ -256,8 +261,9 @@ and OpenCode. `SessionEnd` still comes from the framework bridge.
 Codex limitation:
 
 - today the reliable native `PreToolUse` / `PostToolUse` control surface is still `Bash`
+- official Codex hooks docs still do not expose a native `PreCompact`; current `PreCompact` support comes from app-server `contextCompaction` in stream mode only
 - if we add transcript JSONL watching for non-Bash tools, treat it as a stats-only side channel
-- JSONL observation does not carry hook return semantics, so it must not be documented or implemented as a blocking substitute for native hooks
+- bridge observation does not carry hook return semantics, so it must not be documented or implemented as a blocking substitute for native hooks
 
 ### `effort`
 

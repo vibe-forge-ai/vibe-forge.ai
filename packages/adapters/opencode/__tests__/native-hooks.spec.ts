@@ -84,7 +84,11 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
     expect(ctx.env.OPENCODE_CONFIG_DIR).toBe(managedConfigDir)
     expect((await lstat(managedConfigDir)).isDirectory()).toBe(true)
     expect((await lstat(join(managedConfigDir, 'commands'))).isSymbolicLink()).toBe(true)
-    expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    const pluginSource = await readFile(pluginPath, 'utf8')
+    expect(pluginSource).toContain('tool.execute.before')
+    expect(pluginSource).toContain('"experimental.session.compacting"')
+    expect(pluginSource).toContain('createBaseInput("PreCompact", directory, false)')
+    expect(pluginSource).toContain('replacementPrompt')
     expect(JSON.parse(await readFile(join(managedConfigDir, 'opencode.json'), 'utf8'))).toMatchObject({
       $schema: 'https://opencode.ai/config.json'
     })
@@ -114,7 +118,9 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
 
     expect(installed).toBe(true)
     expect(ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__).toBe('1')
-    expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    const pluginSource = await readFile(pluginPath, 'utf8')
+    expect(pluginSource).toContain('tool.execute.before')
+    expect(pluginSource).toContain('"experimental.session.compacting"')
     expect(JSON.parse(await readFile(configPath, 'utf8'))).toMatchObject({
       $schema: 'https://opencode.ai/config.json',
       autoupdate: false

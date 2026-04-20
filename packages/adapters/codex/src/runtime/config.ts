@@ -37,6 +37,8 @@ const LEGACY_MANAGED_CONFIG_BLOCK_PATTERN = new RegExp(
   'g'
 )
 
+const escapeRegExp = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
@@ -180,9 +182,16 @@ const upsertManagedProjectBlock = (params: {
   currentContent: string
   workspacePath: string
 }) => {
+  const workspaceTrustBlockPattern = new RegExp(
+    `(^|\\n)\\[projects\\.${
+      escapeRegExp(JSON.stringify(resolve(params.workspacePath)))
+    }\\]\\ntrust_level = "trusted"\\n?`,
+    'g'
+  )
   const strippedContent = params.currentContent
     .replace(MANAGED_PROJECT_BLOCK_PATTERN, '')
     .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
+    .replace(workspaceTrustBlockPattern, '$1')
     .trim()
   const managedBlock = buildManagedCodexProjectBlock({
     workspacePath: params.workspacePath

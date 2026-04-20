@@ -175,6 +175,8 @@ export interface CodexItemExitedReviewMode {
 export interface CodexItemContextCompaction {
   type: 'contextCompaction'
   id: string
+  trigger?: string
+  tokenCount?: number
 }
 
 export type CodexThreadItem =
