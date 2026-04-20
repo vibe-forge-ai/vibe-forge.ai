@@ -12,6 +12,7 @@
 
 - adapter runtime / mock home / 原生资产自动适配：`.ai/rules/ADAPTERS.md`
 - 前端 / 后端约束：`.ai/rules/FRONTEND-STANDARD.md`、`.ai/rules/BACKEND-STANDARD.md`
+- 桌面端 / Electron 打包、发布与本地调试：`apps/desktop/AGENTS.md`、`.ai/docs/usage/desktop.md`、`.ai/docs/usage/desktop-signing.md`
 - 仓库开发与贡献：`.ai/rules/DEVELOPMENT.md`
 - 项目接入方式：`.ai/docs/index.md`
 - 使用文档边界约定：`.ai/rules/USAGE.md`
