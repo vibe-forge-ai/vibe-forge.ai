@@ -12,6 +12,8 @@ const dictionary = {
   'chat.connectionClosedHelp': 'Retry to reconnect and continue receiving new messages.',
   'chat.sessionErrorTitle': 'Task failed',
   'chat.sessionErrorHelp': 'Check the latest tool output or terminal logs.',
+  'chat.sessionCreateFailedTitle': 'Session creation failed',
+  'chat.sessionCreateFailedHelp': 'Retry with the same message.',
   'chat.sessionErrorCode': 'Error code: {{code}}',
   'chat.debugMockConnectionErrorMessage': 'Mock connection error',
   'chat.debugMockConnectionClosedMessage': 'Mock connection closed',
@@ -68,6 +70,31 @@ describe('buildChatHistoryStatusNotices', () => {
         meta: 'Error code: adapter_runtime_failed',
         tone: 'error',
         title: 'Task failed'
+      }
+    ])
+  })
+
+  it('maps an optimistic session creation failure to a retryable notice', () => {
+    expect(buildChatHistoryStatusNotices({
+      errorState: {
+        action: 'retry-session-creation',
+        kind: 'session',
+        message: 'Worktree provisioning failed.',
+        code: 'session_create_failed'
+      },
+      isDebugMode: false,
+      modelUnavailable: false,
+      t
+    })).toEqual([
+      {
+        action: 'retry-session-creation',
+        detail: 'Retry with the same message.',
+        icon: 'error',
+        id: 'session-create-failed',
+        isMock: false,
+        message: 'Worktree provisioning failed.',
+        tone: 'error',
+        title: 'Session creation failed'
       }
     ])
   })

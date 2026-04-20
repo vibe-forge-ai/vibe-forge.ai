@@ -3,7 +3,7 @@ import type { ChatErrorState } from '#~/hooks/chat/interaction-state'
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
 export interface ChatHistoryStatusNotice {
-  action?: 'retry-connection'
+  action?: 'retry-connection' | 'retry-session-creation'
   detail?: string
   icon: string
   id: string
@@ -51,18 +51,23 @@ const createSessionNotice = (
   t: Translate,
   state: ChatErrorState,
   isMock = false
-): ChatHistoryStatusNotice => ({
-  detail: t('chat.sessionErrorHelp'),
-  icon: 'error',
-  id: isMock ? 'mock-session-error' : 'session-error',
-  isMock,
-  message: state.message,
-  meta: state.code != null && state.code !== ''
-    ? t('chat.sessionErrorCode', { code: state.code })
-    : undefined,
-  tone: 'error',
-  title: t('chat.sessionErrorTitle')
-})
+): ChatHistoryStatusNotice => {
+  const isCreateFailure = state.action === 'retry-session-creation'
+
+  return {
+    ...(isMock || state.action == null ? {} : { action: state.action }),
+    detail: isCreateFailure ? t('chat.sessionCreateFailedHelp') : t('chat.sessionErrorHelp'),
+    icon: 'error',
+    id: isMock ? 'mock-session-error' : isCreateFailure ? 'session-create-failed' : 'session-error',
+    isMock,
+    message: state.message,
+    ...(!isCreateFailure && state.code != null && state.code !== ''
+      ? { meta: t('chat.sessionErrorCode', { code: state.code }) }
+      : {}),
+    tone: 'error',
+    title: isCreateFailure ? t('chat.sessionCreateFailedTitle') : t('chat.sessionErrorTitle')
+  }
+}
 
 export const buildChatHistoryStatusNotices = ({
   errorState,

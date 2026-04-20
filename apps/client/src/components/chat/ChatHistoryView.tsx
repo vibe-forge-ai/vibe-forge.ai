@@ -155,6 +155,7 @@ export function ChatHistoryView({
     isCreating,
     send,
     sendContent,
+    retrySessionCreation,
     enqueueContent,
     removeQueuedContent,
     moveQueuedContent,
@@ -222,12 +223,7 @@ export function ChatHistoryView({
     }
 
     if (!session?.id) {
-      const optimisticMessage = buildUserMessage(content)
-      setMessages((prev) => [...prev, optimisticMessage])
       const didSend = await sendContent(content, mode)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
-      }
       if (didSend && queuedDraft != null) {
         setQueuedDraft(null)
         setQueueMode('steer')
@@ -263,12 +259,7 @@ export function ChatHistoryView({
     }
 
     if (!session?.id) {
-      const optimisticMessage = buildUserMessage(text)
-      setMessages((prev) => [...prev, optimisticMessage])
       const didSend = await send(text, mode)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
-      }
       if (didSend && queuedDraft != null) {
         setQueuedDraft(null)
         setQueueMode('steer')
@@ -786,6 +777,9 @@ export function ChatHistoryView({
               key={notice.id}
               notice={notice}
               onRetryConnection={onRetryConnection}
+              onRetrySessionCreation={() => {
+                void retrySessionCreation()
+              }}
             />
           ))}
           <div ref={messagesEndRef} />
