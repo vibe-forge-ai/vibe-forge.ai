@@ -85,6 +85,7 @@ function MessageItemComponent({
   const canCopy = copyableText != null
   const shouldShowAssistantActions = !isUser && showAssistantActions
   const showCompactActionMenu = isCompactLayout || isTouchInteraction
+  const shouldShowCompactActionMenu = showCompactActionMenu && (isUser || shouldShowAssistantActions)
 
   useEffect(() => {
     setIsSubmitting(false)
@@ -440,7 +441,7 @@ function MessageItemComponent({
         className={`${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${isEditing ? 'is-editing' : ''} ${
           !isFirstInGroup ? 'consecutive' : ''
         } ${isActionsVisible ? 'is-actions-visible' : ''} ${isTargeted ? 'is-targeted' : ''} ${
-          showCompactActionMenu ? 'has-compact-menu' : ''
+          shouldShowCompactActionMenu ? 'has-compact-menu' : ''
         }`}
         data-message-id={originalMessage.id}
         onPointerEnter={handleActionsPointerEnter}
@@ -477,7 +478,7 @@ function MessageItemComponent({
           </div>
           {!isEditing && (
             <MessageFooter msg={originalMessage} isUser={isUser}>
-              {showCompactActionMenu
+              {shouldShowCompactActionMenu
                 ? compactActionMenu
                 : shouldShowAssistantActions
                 ? actionButtons
