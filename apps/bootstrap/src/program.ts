@@ -3,8 +3,8 @@ import process from 'node:process'
 
 import { launchDesktopApp } from './desktop-app'
 import type { DesktopInstallMode, LaunchDesktopAppOptions } from './desktop-app'
-import { launchInstalledPackage } from './package-launcher'
 import { getBootstrapDescription, getBootstrapVersion } from './package-config'
+import { launchInstalledPackage } from './package-launcher'
 
 interface BootstrapCliDeps {
   launchDesktopApp: (options: LaunchDesktopAppOptions) => Promise<void>
