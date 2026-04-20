@@ -26,7 +26,7 @@ Vibe Forge 是一个 AI 辅助开发框架，提供桌面应用、Web UI 与 CLI
 ### 桌面应用
 
 - 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` 发布产物。
-- macOS：`.dmg`、`.zip`
+- macOS：Intel（`x64`）与 Apple Silicon（`arm64`）分别提供 `.dmg`、`.zip`
 - Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 - 当前桌面 release / CI artifact 默认不签名，首次启动时系统可能会提示安全确认。

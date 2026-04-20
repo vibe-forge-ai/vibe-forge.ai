@@ -9,7 +9,7 @@
 如果你想直接使用桌面版 Vibe Forge，而不是先在项目里拼装 `server + client`：
 
 - 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` tag 对应的安装包
-- macOS：`.dmg`、`.zip`
+- macOS：Intel（`x64`）与 Apple Silicon（`arm64`）分别提供 `.dmg`、`.zip`
 - Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 

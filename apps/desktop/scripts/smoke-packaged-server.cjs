@@ -4,6 +4,8 @@ const http = require('node:http')
 const net = require('node:net')
 const path = require('node:path')
 
+const { normalizeArch } = require('./desktop-archs.cjs')
+
 const desktopRoot = path.resolve(__dirname, '..')
 const workspaceRoot = path.resolve(desktopRoot, '../..')
 const outputDir = path.join(desktopRoot, 'out')
@@ -19,7 +21,19 @@ const findPackageDir = () => {
   if (packageDirs.length === 0) {
     throw new Error(`Packaged app directory was not found in ${outputDir}`)
   }
-  return packageDirs[0]
+
+  const preferredArch = normalizeArch(process.env.VF_DESKTOP_SMOKE_ARCH?.trim() || process.arch)
+  const preferredSuffix = `-${preferredArch}`
+  const matchedPackageDir = packageDirs.find(packageDir => packageDir.endsWith(preferredSuffix))
+  if (matchedPackageDir != null) {
+    return matchedPackageDir
+  }
+
+  if (packageDirs.length === 1) {
+    return packageDirs[0]
+  }
+
+  throw new Error(`Unable to resolve packaged app for arch ${preferredArch} in ${outputDir}`)
 }
 
 const firstExistingPath = (...candidates) => {

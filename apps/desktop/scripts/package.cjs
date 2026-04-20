@@ -3,14 +3,13 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const { packager } = require('@electron/packager')
+const { resolveTargetArchs } = require('./desktop-archs.cjs')
 
 const desktopRoot = path.resolve(__dirname, '..')
 const workspaceRoot = path.resolve(desktopRoot, '../..')
 const clientDistPath = path.resolve(desktopRoot, '../client/dist')
 const outputDir = path.join(desktopRoot, 'out')
 const releaseDir = path.join(desktopRoot, 'release')
-const stagingDir = path.join(workspaceRoot, '.data/desktop-package-staging')
-const desktopStagingDir = path.join(desktopRoot, '.data/desktop-package-staging')
 const appUpdateConfigPath = path.join(desktopRoot, 'build', 'app-update.yml')
 const electronVersion = require('electron/package.json').version
 const packageJson = require('../package.json')
@@ -73,7 +72,15 @@ const runPnpm = (args) => {
   }
 }
 
-const removeStagingDirs = () => {
+const resolveStagingPaths = (arch) => {
+  const suffix = arch === process.arch ? '' : `-${arch}`
+  return {
+    desktopStagingDir: path.join(desktopRoot, `.data/desktop-package-staging${suffix}`),
+    stagingDir: path.join(workspaceRoot, `.data/desktop-package-staging${suffix}`)
+  }
+}
+
+const removeStagingDirs = ({ desktopStagingDir, stagingDir }) => {
   fs.rmSync(stagingDir, { recursive: true, force: true })
   fs.rmSync(desktopStagingDir, { recursive: true, force: true })
 }
@@ -83,7 +90,7 @@ const removeIfExists = (targetPath) => {
   fs.rmSync(targetPath, { recursive: true, force: true })
 }
 
-const resolveStagingPackageRoot = (packageName) => {
+const resolveStagingPackageRoot = (stagingDir, packageName) => {
   const pnpmDir = path.join(stagingDir, 'node_modules', '.pnpm')
   if (!fs.existsSync(pnpmDir)) {
     return undefined
@@ -103,12 +110,12 @@ const resolveStagingPackageRoot = (packageName) => {
   return undefined
 }
 
-const pruneNodePtyPrebuilds = () => {
-  const packageRoot = resolveStagingPackageRoot('node-pty')
+const pruneNodePtyPrebuilds = (stagingDir, targetArch) => {
+  const packageRoot = resolveStagingPackageRoot(stagingDir, 'node-pty')
   if (packageRoot == null) return
 
   const prebuildsDir = path.join(packageRoot, 'prebuilds')
-  const targetPrebuildName = `${process.platform}-${process.arch}`
+  const targetPrebuildName = `${process.platform}-${targetArch}`
   if (fs.existsSync(prebuildsDir)) {
     for (const entry of fs.readdirSync(prebuildsDir, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.name === targetPrebuildName) {
@@ -123,8 +130,8 @@ const pruneNodePtyPrebuilds = () => {
   }
 }
 
-const pruneNodeNotifierVendors = () => {
-  const packageRoot = resolveStagingPackageRoot('node-notifier')
+const pruneNodeNotifierVendors = (stagingDir) => {
+  const packageRoot = resolveStagingPackageRoot(stagingDir, 'node-notifier')
   if (packageRoot == null) return
 
   const vendorDir = path.join(packageRoot, 'vendor')
@@ -139,9 +146,9 @@ const pruneNodeNotifierVendors = () => {
   }
 }
 
-const pruneUnusedPlatformBinaries = () => {
-  pruneNodePtyPrebuilds()
-  pruneNodeNotifierVendors()
+const pruneUnusedPlatformBinaries = (stagingDir, targetArch) => {
+  pruneNodePtyPrebuilds(stagingDir, targetArch)
+  pruneNodeNotifierVendors(stagingDir)
 }
 
 const resolvePackagedAppRoot = (appPath) => {
@@ -164,7 +171,7 @@ const resolvePackageIconPath = () => {
   return path.join(desktopRoot, 'build', 'icon.png')
 }
 
-const resolvePackagedSymlinkTarget = (target, packagedAppRoot) => {
+const resolvePackagedSymlinkTarget = (target, packagedAppRoot, stagingDir) => {
   if (target === stagingDir || target.startsWith(`${stagingDir}${path.sep}`)) {
     return path.join(packagedAppRoot, path.relative(stagingDir, target))
   }
@@ -176,7 +183,7 @@ const resolvePackagedSymlinkTarget = (target, packagedAppRoot) => {
   return undefined
 }
 
-const rewriteStagingSymlinks = (rootDir, packagedAppRoot) => {
+const rewriteStagingSymlinks = (rootDir, packagedAppRoot, stagingDir) => {
   const entries = fs.readdirSync(rootDir, { withFileTypes: true })
   for (const entry of entries) {
     const entryPath = path.join(rootDir, entry.name)
@@ -185,7 +192,7 @@ const rewriteStagingSymlinks = (rootDir, packagedAppRoot) => {
     if (stat.isSymbolicLink()) {
       const target = fs.readlinkSync(entryPath)
       if (path.isAbsolute(target)) {
-        const packagedTarget = resolvePackagedSymlinkTarget(target, packagedAppRoot)
+        const packagedTarget = resolvePackagedSymlinkTarget(target, packagedAppRoot, stagingDir)
         if (packagedTarget == null) continue
         const relativeTarget = path.relative(path.dirname(entryPath), packagedTarget)
         fs.unlinkSync(entryPath)
@@ -195,18 +202,18 @@ const rewriteStagingSymlinks = (rootDir, packagedAppRoot) => {
     }
 
     if (stat.isDirectory()) {
-      rewriteStagingSymlinks(entryPath, packagedAppRoot)
+      rewriteStagingSymlinks(entryPath, packagedAppRoot, stagingDir)
     }
   }
 }
 
-async function main() {
-  removeStagingDirs()
-  fs.rmSync(outputDir, { recursive: true, force: true })
-  fs.rmSync(releaseDir, { recursive: true, force: true })
+const packageDesktopArch = async (targetArch) => {
+  const { desktopStagingDir, stagingDir } = resolveStagingPaths(targetArch)
+
+  removeStagingDirs({ desktopStagingDir, stagingDir })
 
   try {
-    console.log('[desktop] preparing production app staging')
+    console.log(`[desktop] preparing production app staging (${targetArch})`)
     runPnpm([
       '--filter',
       '@vibe-forge/desktop',
@@ -215,7 +222,7 @@ async function main() {
       '--prod',
       stagingDir
     ])
-    pruneUnusedPlatformBinaries()
+    pruneUnusedPlatformBinaries(stagingDir, targetArch)
 
     const iconPath = resolvePackageIconPath()
     const appVersion = resolveAppVersion()
@@ -235,7 +242,7 @@ async function main() {
       appCategoryType: 'public.app-category.developer-tools',
       appCopyright: 'Copyright Vibe Forge contributors',
       appVersion,
-      arch: process.arch,
+      arch: targetArch,
       asar: false,
       derefSymlinks: false,
       dir: stagingDir,
@@ -262,11 +269,21 @@ async function main() {
 
     for (const appPath of appPaths) {
       const packagedAppRoot = resolvePackagedAppRoot(appPath)
-      rewriteStagingSymlinks(packagedAppRoot, packagedAppRoot)
+      rewriteStagingSymlinks(packagedAppRoot, packagedAppRoot, stagingDir)
       console.log(`[desktop] packaged ${appPath}`)
     }
   } finally {
-    removeStagingDirs()
+    removeStagingDirs({ desktopStagingDir, stagingDir })
+  }
+}
+
+async function main() {
+  const targetArchs = resolveTargetArchs()
+  fs.rmSync(outputDir, { recursive: true, force: true })
+  fs.rmSync(releaseDir, { recursive: true, force: true })
+
+  for (const targetArch of targetArchs) {
+    await packageDesktopArch(targetArch)
   }
 }
 
