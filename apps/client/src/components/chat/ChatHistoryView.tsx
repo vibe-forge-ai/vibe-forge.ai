@@ -42,6 +42,7 @@ import { QueuedMessagesCard } from './QueuedMessagesCard'
 import { MessageItem } from './messages/MessageItem'
 import { MessageStatusNotice } from './messages/MessageStatusNotice'
 import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
+import { getLastAssistantActionAnchorId } from './messages/message-action-utils'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
@@ -410,16 +411,7 @@ export function ChatHistoryView({
       hashAnchorId: hashAnchorId !== '' ? hashAnchorId : targetAnchorId,
       keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
     }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status, targetAnchorId])
-  const lastAssistantActionAnchorId = useMemo(() => {
-    for (let index = renderItems.length - 1; index >= 0; index -= 1) {
-      const item = renderItems[index]
-      if (item == null) continue
-      if (item.type === 'tool-group') continue
-      if (item.message.role === 'user') continue
-      return item.anchorId
-    }
-    return null
-  }, [renderItems])
+  const lastAssistantActionAnchorId = useMemo(() => getLastAssistantActionAnchorId(renderItems), [renderItems])
   const handleEditQueuedMessage = async (item: SessionQueuedMessage) => {
     const removed = await removeQueuedContent(item.id)
     if (!removed) {
