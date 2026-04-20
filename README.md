@@ -79,6 +79,15 @@ pnpm desktop:make
 - `npx @vibe-forge/bootstrap server`
 - `npx @vibe-forge/bootstrap run "summarize the repo"`
 
+### Run the VS Code Extension from Source
+
+```bash
+pnpm vscode:compile
+pnpm vscode:package
+```
+
+Open the Extension Development Host and use the Vibe Forge Activity Bar entry, or run `Vibe Forge: Open Workspace`.
+
 ## Docs
 
 - [Use Vibe Forge in Your Project](./.ai/docs/index.md)

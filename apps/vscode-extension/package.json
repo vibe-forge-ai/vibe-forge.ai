@@ -120,11 +120,19 @@
     "virtualWorkspaces": false
   },
   "scripts": {
+    "build": "pnpm run compile",
     "compile": "tsc -p ./tsconfig.json",
-    "package": "pnpm run compile",
+    "package": "pnpm run build && pnpm run package:vsix",
+    "package:vsix": "node ./scripts/package.mjs",
+    "publish:vsix": "node ./scripts/publish.mjs",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json --pretty false",
     "watch": "tsc -w -p ./tsconfig.json"
   },
+  "vibeForgeRelease": {
+    "extensionName": "vibe-forge-vscode-extension"
+  },
   "devDependencies": {
-    "@types/vscode": "1.95.0"
+    "@types/vscode": "1.95.0",
+    "@vscode/vsce": "^3.9.1"
   }
 }

@@ -18,10 +18,10 @@ VS Code 扩展位于 `apps/vscode-extension`，当前是一个薄壳：
 在仓库根目录执行：
 
 ```bash
-pnpm vscode:package
+pnpm vscode:compile
 ```
 
-该命令只编译 VS Code extension。随后在 VS Code 的 Extension Development Host 中执行：
+随后在 VS Code 的 Extension Development Host 中执行：
 
 ```text
 Vibe Forge: Open Workspace
@@ -59,5 +59,14 @@ pnpm add -D @vibe-forge/server @vibe-forge/client
 
 - 当前扩展只提供 webview 壳和 per-project server 生命周期管理。
 - 完整 client 当前直接嵌入 VS Code 侧边栏；宽度由用户拖拽侧边栏控制。
-- 打包分发与 VSIX 发布流程尚未接入 CI。
 - 扩展不会为用户自动安装 `@vibe-forge/server` / `@vibe-forge/client`。
+
+## 打包与发布
+
+在仓库根目录执行：
+
+```bash
+pnpm vscode:package
+```
+
+该命令会生成本地 `.vsix`。CI 中，VS Code extension 变更会触发专用 workflow 构建并上传 `.vsix` artifact；推送 `vscode-extension-v*` tag 时会校验 tag 版本与 `apps/vscode-extension/package.json` 版本一致，打包 VSIX，配置了 `VSCODE_EXTENSION_PUBLISHER` 与 `VSCE_PAT` 时发布到 VS Code Marketplace，并把 VSIX 附加到 GitHub Release。

@@ -13,7 +13,8 @@
     "typebuild": "pnpm exec tsc -b --pretty false",
     "typebuild:clean": "pnpm exec tsc -b --clean",
     "vscode:compile": "pnpm -C apps/vscode-extension compile",
-    "vscode:package": "pnpm -C apps/vscode-extension package"
+    "vscode:package": "pnpm -C apps/vscode-extension package",
+    "vscode:publish": "pnpm -C apps/vscode-extension publish:vsix"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.0.0",

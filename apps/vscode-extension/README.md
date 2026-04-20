@@ -7,7 +7,7 @@ This package is a thin VS Code shell for the existing Vibe Forge Web UI.
 From the repository root:
 
 ```bash
-pnpm -C apps/vscode-extension package
+pnpm -C apps/vscode-extension build
 ```
 
 Run the extension from VS Code and open the Vibe Forge Activity Bar view, or execute `Vibe Forge: Open Workspace`.
@@ -30,3 +30,20 @@ pnpm add -D @vibe-forge/server @vibe-forge/client
 ## Boundary
 
 The extension does not duplicate client or server business logic. It only owns workspace selection, server process lifecycle, and the sidebar webview wrapper.
+
+## Release
+
+Package a local VSIX:
+
+```bash
+pnpm -C apps/vscode-extension package
+```
+
+Publish from an existing VSIX:
+
+```bash
+VSCODE_EXTENSION_PUBLISHER=your-publisher-id VSCE_PAT=your-token \
+pnpm -C apps/vscode-extension publish:vsix -- --packagePath ./vibe-forge-vscode-extension-v0.1.0.vsix
+```
+
+CI builds and uploads a VSIX artifact on VS Code extension changes. Tags that match `vscode-extension-v*` package the same VSIX, optionally publish it to Marketplace when `VSCODE_EXTENSION_PUBLISHER` and `VSCE_PAT` are configured, and attach it to a GitHub Release.
