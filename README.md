@@ -60,7 +60,7 @@ pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/ad
 ### VS Code Extension
 
 - Open Vibe Forge from the right Secondary Side Bar while keeping the full client inside the right sidebar.
-- Workspace server discovery, settings, and local source package notes: [VS Code Extension](./.ai/docs/usage/vscode-extension.md)
+- Bootstrap web runtime discovery, settings, and local source package notes: [VS Code Extension](./.ai/docs/usage/vscode-extension.md)
 
 ### Run the Desktop App from Source
 

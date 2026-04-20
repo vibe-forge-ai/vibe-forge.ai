@@ -16,20 +16,19 @@ pnpm -C apps/vscode-extension build
 
 Run the extension from VS Code and open Vibe Forge from the right Secondary Side Bar, or execute `Vibe Forge: Open Workspace`.
 
-The extension starts one local Vibe Forge server per selected workspace folder, disables local web auth, and opens the built client inside a VS Code right sidebar webview. Multiple workspace folders can keep separate servers running while the right sidebar shows the selected workspace.
+The extension starts one local Vibe Forge web runtime per selected workspace folder through `vibe-forge-bootstrap web`, disables local web auth, and opens the integrated client inside a VS Code right sidebar webview. Multiple workspace folders can keep separate servers running while the right sidebar shows the selected workspace.
 
-The extension does not bundle or install Vibe Forge runtime packages. It searches the selected workspace `node_modules/.bin` and then the system `PATH` for `vfui-server` / `vibe-forge-ui-server`.
+The extension does not bundle or install Vibe Forge runtime packages. It searches the selected workspace `node_modules/.bin` and then the system `PATH` for `vibe-forge-bootstrap` / `vfb`, then runs the `web` subcommand.
 
-Install runtime packages in the project that you want to control:
+Install the bootstrap launcher in the project that you want to control:
 
 ```bash
-pnpm add -D @vibe-forge/server @vibe-forge/client
+pnpm add -D @vibe-forge/bootstrap
 ```
 
 ## Settings
 
-- `vibeForge.clientDistPath`: optional absolute path to a built `@vibe-forge/client` dist directory.
-- `vibeForge.serverCommand`: optional `vfui-server` executable, command name, or wrapper command.
+- `vibeForge.bootstrapCommand`: optional `vibe-forge-bootstrap` executable, command name, or wrapper command.
 
 ## Boundary
 

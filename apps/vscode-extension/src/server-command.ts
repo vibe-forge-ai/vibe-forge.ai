@@ -5,22 +5,22 @@ import type * as vscode from 'vscode'
 import { createSearchPath, findExecutable } from './path-search'
 import { normalizeOptionalString } from './utils'
 
-const SERVER_COMMAND_CANDIDATES = ['vfui-server', 'vibe-forge-ui-server']
+const BOOTSTRAP_COMMAND_CANDIDATES = ['vibe-forge-bootstrap', 'vfb']
 
-export interface ResolvedServerCommand {
+export interface ResolvedBootstrapCommand {
   command: string
   shell: boolean
   source: string
 }
 
-const getConfiguredServerCommand = () => (
-  normalizeOptionalString(process.env.VF_VSCODE_SERVER_COMMAND)
+const getConfiguredBootstrapCommand = () => (
+  normalizeOptionalString(process.env.VF_VSCODE_BOOTSTRAP_COMMAND)
 )
 
-export const resolveServerCommand = (
+export const resolveBootstrapCommand = (
   workspaceFolder: vscode.WorkspaceFolder,
   configuredCommand: string | undefined
-): ResolvedServerCommand | undefined => {
+): ResolvedBootstrapCommand | undefined => {
   const searchPaths = createSearchPath(workspaceFolder.uri.fsPath)
   if (configuredCommand != null) {
     const executable = findExecutable(configuredCommand, searchPaths)
@@ -31,7 +31,7 @@ export const resolveServerCommand = (
     }
   }
 
-  const envCommand = getConfiguredServerCommand()
+  const envCommand = getConfiguredBootstrapCommand()
   if (envCommand != null) {
     const executable = findExecutable(envCommand, searchPaths)
     return {
@@ -41,7 +41,7 @@ export const resolveServerCommand = (
     }
   }
 
-  for (const candidate of SERVER_COMMAND_CANDIDATES) {
+  for (const candidate of BOOTSTRAP_COMMAND_CANDIDATES) {
     const executable = findExecutable(candidate, searchPaths)
     if (executable != null) {
       return {
@@ -55,13 +55,16 @@ export const resolveServerCommand = (
   return undefined
 }
 
-export const createMissingServerCommandMessage = () => (
+export const createMissingBootstrapCommandMessage = () => (
   [
-    'Vibe Forge server command was not found.',
+    'Vibe Forge bootstrap command was not found.',
     '',
-    'Install Vibe Forge UI packages in this workspace:',
-    'pnpm add -D @vibe-forge/server @vibe-forge/client',
+    'Install the Vibe Forge bootstrap launcher:',
+    'pnpm add -D @vibe-forge/bootstrap',
     '',
-    'Or configure `vibeForge.serverCommand` with a `vfui-server` executable or wrapper command.'
+    'Or install the Homebrew launcher:',
+    'brew install vibe-forge-ai/tap/vibe-forge-bootstrap',
+    '',
+    'Or configure `vibeForge.bootstrapCommand` with a `vibe-forge-bootstrap` executable or wrapper command.'
   ].join('\n')
 )

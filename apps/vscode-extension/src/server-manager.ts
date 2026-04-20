@@ -7,10 +7,9 @@ import process from 'node:process'
 import type { ChildProcess } from 'node:child_process'
 import * as vscode from 'vscode'
 
-import { resolveClientDistPath } from './client-dist'
 import { CLIENT_BASE, SERVER_HOST } from './constants'
 import { createProcessPath } from './path-search'
-import { createMissingServerCommandMessage, resolveServerCommand } from './server-command'
+import { createMissingBootstrapCommandMessage, resolveBootstrapCommand } from './server-command'
 import { assertServerUiReady, getAvailablePort, isRunning, stopChild, waitForServerStartup } from './server-process'
 import { normalizeOptionalString } from './utils'
 
@@ -84,25 +83,33 @@ export class ServerManager {
   }
 
   private createServer = async (workspaceFolder: vscode.WorkspaceFolder) => {
-    const configuredServerCommand = normalizeOptionalString(getConfig().get('serverCommand'))
-    const serverCommand = resolveServerCommand(workspaceFolder, configuredServerCommand)
-    if (serverCommand == null) {
-      throw new Error(createMissingServerCommandMessage())
+    const configuredBootstrapCommand = normalizeOptionalString(getConfig().get('bootstrapCommand'))
+    const bootstrapCommand = resolveBootstrapCommand(workspaceFolder, configuredBootstrapCommand)
+    if (bootstrapCommand == null) {
+      throw new Error(createMissingBootstrapCommandMessage())
     }
 
-    const clientDistPath = resolveClientDistPath(workspaceFolder)
     const port = await getAvailablePort()
     const dataDir = this.getWorkspaceDataDir(workspaceFolder)
-    this.output.appendLine(`[server:${workspaceFolder.name}] starting ${serverCommand.source}`)
-    if (clientDistPath != null) {
-      this.output.appendLine(`[server:${workspaceFolder.name}] client dist ${clientDistPath}`)
-    } else {
-      this.output.appendLine(
-        `[server:${workspaceFolder.name}] client dist not configured; relying on vfui-server fallback`
-      )
-    }
+    this.output.appendLine(`[server:${workspaceFolder.name}] starting ${bootstrapCommand.source} web`)
 
-    const child = spawn(serverCommand.command, [], {
+    const args = [
+      'web',
+      '--host',
+      SERVER_HOST,
+      '--port',
+      String(port),
+      '--base',
+      CLIENT_BASE,
+      '--workspace',
+      workspaceFolder.uri.fsPath,
+      '--data-dir',
+      path.join(dataDir, 'data'),
+      '--log-dir',
+      path.join(dataDir, 'logs')
+    ]
+
+    const child = spawn(bootstrapCommand.command, args, {
       cwd: workspaceFolder.uri.fsPath,
       detached: process.platform !== 'win32',
       env: {
@@ -110,16 +117,9 @@ export class ServerManager {
         DB_PATH: path.join(dataDir, 'db.sqlite'),
         PATH: createProcessPath(workspaceFolder.uri.fsPath),
         __VF_PROJECT_WORKSPACE_FOLDER__: workspaceFolder.uri.fsPath,
-        __VF_PROJECT_AI_CLIENT_BASE__: CLIENT_BASE,
-        ...(clientDistPath != null ? { __VF_PROJECT_AI_CLIENT_DIST_PATH__: clientDistPath } : {}),
-        __VF_PROJECT_AI_CLIENT_MODE__: 'independent',
-        __VF_PROJECT_AI_SERVER_DATA_DIR__: path.join(dataDir, 'data'),
-        __VF_PROJECT_AI_SERVER_HOST__: SERVER_HOST,
-        __VF_PROJECT_AI_SERVER_LOG_DIR__: path.join(dataDir, 'logs'),
-        __VF_PROJECT_AI_SERVER_PORT__: String(port),
         __VF_PROJECT_AI_WEB_AUTH_ENABLED__: 'false'
       },
-      shell: serverCommand.shell,
+      shell: bootstrapCommand.shell,
       stdio: ['ignore', 'pipe', 'pipe']
     })
 

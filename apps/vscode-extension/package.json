@@ -100,15 +100,10 @@
     "configuration": {
       "title": "Vibe Forge",
       "properties": {
-        "vibeForge.clientDistPath": {
+        "vibeForge.bootstrapCommand": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Optional absolute path to a built `@vibe-forge/client` dist directory."
-        },
-        "vibeForge.serverCommand": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "Optional `vfui-server` executable, command name, or wrapper command. When empty, the extension searches the workspace `node_modules/.bin` and system `PATH`."
+          "markdownDescription": "Optional `vibe-forge-bootstrap` executable, command name, or wrapper command. When empty, the extension searches the workspace `node_modules/.bin` and system `PATH` for `vibe-forge-bootstrap` / `vfb`, then runs the `web` subcommand."
         }
       }
     }
@@ -120,7 +115,7 @@
     "virtualWorkspaces": false
   },
   "scripts": {
-    "build": "pnpm run compile",
+    "build": "node ./scripts/clean-dist.mjs && pnpm run compile",
     "compile": "tsc -p ./tsconfig.json",
     "package": "pnpm run build && pnpm run package:vsix",
     "package:vsix": "node ./scripts/package.mjs",

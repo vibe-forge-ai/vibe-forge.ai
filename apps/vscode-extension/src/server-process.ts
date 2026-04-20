@@ -89,10 +89,10 @@ export const assertServerUiReady = async (port: number) => {
       [
         `Vibe Forge UI was not served from ${SERVER_UI_READY_PATH} (status ${statusCode}).`,
         '',
-        'Install the UI package in this workspace:',
-        'pnpm add -D @vibe-forge/client',
+        'Install or update the integrated web runtime:',
+        'pnpm add -D @vibe-forge/bootstrap',
         '',
-        'Or configure `vibeForge.clientDistPath` with a built @vibe-forge/client dist directory.'
+        'Or configure `vibeForge.bootstrapCommand` with a working bootstrap launcher.'
       ].join('\n')
     )
   }

@@ -8,10 +8,10 @@ VS Code 扩展位于 `apps/vscode-extension`，当前是一个薄壳：
 - 通过 `Vibe Forge: Open Workspace` 切换当前右侧边栏控制的 workspace。
 - 每个 workspace folder 会启动并复用一个本机 Vibe Forge UI server。
 - 多个 workspace folder 可以同时保留各自的 server；右侧边栏显示当前选中的 workspace。
-- Webview 内打开该 server 托管的 `/ui/`，界面仍复用 `@vibe-forge/client`。
-- Server 通过用户环境里的 `vfui-server` / `vibe-forge-ui-server` 启动，业务逻辑不在扩展中重复实现。
+- Webview 内打开该 server 托管的 `/ui/`，界面复用 `@vibe-forge/bootstrap web` 启动的集成 Web UI。
+- Server 通过用户环境里的 `vibe-forge-bootstrap` / `vfb` 启动 `web` 子命令，业务逻辑不在扩展中重复实现。
 
-扩展不内置、不自动安装 Vibe Forge runtime 包。它只嗅探用户环境，并在找不到时提示安装或配置。
+扩展不内置、不自动安装 Vibe Forge runtime 包。它只嗅探用户环境里的 bootstrap 启动器，并在找不到时提示安装或配置。
 
 ## 效果预览
 
@@ -33,18 +33,20 @@ pnpm vscode:compile
 Vibe Forge: Open Workspace
 ```
 
-要控制某个项目，需要先在该项目里安装 UI runtime：
+要控制某个项目，需要先让该项目或系统环境里能找到 bootstrap 启动器：
 
 ```bash
-pnpm add -D @vibe-forge/server @vibe-forge/client
+pnpm add -D @vibe-forge/bootstrap
 ```
+
+也可以通过 Homebrew 安装全局启动器：`brew install vibe-forge-ai/tap/vibe-forge-bootstrap`。
 
 ## 运行模型
 
 扩展默认按 workspace folder 隔离 server：
 
-- `vfui-server` 查找顺序：`vibeForge.serverCommand`、`VF_VSCODE_SERVER_COMMAND`、当前 workspace 的 `node_modules/.bin`、系统 `PATH`。
-- client dist 查找顺序：`vibeForge.clientDistPath`、`VF_VSCODE_CLIENT_DIST_PATH`、当前 workspace 的 `node_modules/@vibe-forge/client/dist`、`apps/client/dist`、`client/dist`。
+- bootstrap 查找顺序：`vibeForge.bootstrapCommand`、`VF_VSCODE_BOOTSTRAP_COMMAND`、当前 workspace 的 `node_modules/.bin`、系统 `PATH`。
+- 扩展找到 `vibe-forge-bootstrap` / `vfb` 后，会执行 `web` 子命令，并传入当前 workspace、随机端口、`/ui` base、extension global storage 下的数据目录与日志目录。
 - server 监听 `127.0.0.1` 的随机端口。
 - `webAuth` 默认关闭。
 - 数据库、日志和运行数据写入 VS Code extension 的 global storage，并按 workspace path hash 分目录。
@@ -56,16 +58,15 @@ pnpm add -D @vibe-forge/server @vibe-forge/client
 
 ## 配置项
 
-- `vibeForge.clientDistPath`：可选的 client `dist` 目录绝对路径。
-- `vibeForge.serverCommand`：可选的 `vfui-server` 可执行文件、命令名或 wrapper command。
+- `vibeForge.bootstrapCommand`：可选的 `vibe-forge-bootstrap` 可执行文件、命令名或 wrapper command。
 
-如果项目未把 `@vibe-forge/server` / `@vibe-forge/client` 安装到本地依赖，也可以把 `vibeForge.serverCommand` 指向系统安装的 `vfui-server`，并用 `vibeForge.clientDistPath` 指向已构建的 client `dist`。
+如果项目未把 `@vibe-forge/bootstrap` 安装到本地依赖，也可以把 `vibeForge.bootstrapCommand` 指向系统安装的 `vibe-forge-bootstrap`、`vfb` 或其他兼容 wrapper。
 
 ## 当前边界
 
 - 当前扩展只提供 webview 壳和 per-project server 生命周期管理。
 - 完整 client 当前直接嵌入 VS Code 右侧边栏；宽度由用户拖拽右侧边栏控制。
-- 扩展不会为用户自动安装 `@vibe-forge/server` / `@vibe-forge/client`。
+- 扩展不会为用户自动安装 `@vibe-forge/bootstrap`。
 
 ## 打包与发布
 
