@@ -22,12 +22,20 @@ const runCli = (
   options: {
     input?: string
   } = {}
-) =>
-  spawnSync(process.execPath, [cliPath, ...args], {
+) => {
+  const env = { ...process.env }
+  delete env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
+  delete env.__VF_PROJECT_CONFIG_DIR__
+  env.__VF_PROJECT_LAUNCH_CWD__ = cwd
+  env.__VF_PROJECT_WORKSPACE_FOLDER__ = cwd
+
+  return spawnSync(process.execPath, [cliPath, ...args], {
     cwd,
+    env,
     encoding: 'utf8',
     input: options.input
   })
+}
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { recursive: true, force: true })))
@@ -69,10 +77,13 @@ describe('config command', () => {
         conversation: false,
         models: false,
         modelServices: false,
+        workspaces: false,
         channels: false,
         adapters: true,
         plugins: false,
         mcp: false,
+        mdp: false,
+        auth: false,
         shortcuts: false
       }
     })

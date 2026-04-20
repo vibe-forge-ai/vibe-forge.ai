@@ -18,6 +18,23 @@ import {
 } from './nav-rail-compact-config'
 import { buildLanguageItems, buildNavItems, buildThemeItems } from './nav-rail-items'
 
+const resolveNavAnchorId = (key: string) => {
+  switch (key) {
+    case 'sessions':
+      return 'navigation.chat'
+    case 'knowledge':
+      return 'navigation.knowledge'
+    case 'automation':
+      return 'navigation.automation'
+    case 'benchmark':
+      return 'navigation.benchmark'
+    case 'archive':
+      return 'navigation.archive'
+    default:
+      return `navigation.${key}`
+  }
+}
+
 export function NavRail({
   ariaHidden = false,
   isCompactLayout = false,
@@ -117,6 +134,7 @@ export function NavRail({
               <Button
                 type='text'
                 className={`nav-item ${item.active ? 'active' : ''}`}
+                data-ai-ui-anchor={resolveNavAnchorId(item.key)}
                 onClick={() => handleNavClick(item.key, item.path)}
                 icon={<span className='material-symbols-rounded'>{item.icon}</span>}
               />
@@ -184,12 +202,13 @@ export function NavRail({
         )}
         <Tooltip title={resolveTooltipTitle(t('common.settings'))} placement='right'>
           <span>
-            <Button
-              type='text'
-              className={`nav-item ${currentPath === '/config' ? 'active' : ''}`}
-              icon={<span className='material-symbols-rounded'>settings</span>}
-              onClick={() => void navigate('/config')}
-            />
+              <Button
+                type='text'
+                className={`nav-item ${currentPath === '/config' ? 'active' : ''}`}
+                data-ai-ui-anchor='navigation.config'
+                icon={<span className='material-symbols-rounded'>settings</span>}
+                onClick={() => void navigate('/config')}
+              />
           </span>
         </Tooltip>
       </div>

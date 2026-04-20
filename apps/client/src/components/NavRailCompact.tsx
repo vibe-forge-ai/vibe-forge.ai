@@ -70,6 +70,7 @@ export function NavRailCompact({
             key={item.key}
             type='text'
             className={`nav-item nav-item--compact ${item.active ? 'active' : ''}`}
+            data-ai-ui-anchor={`navigation.${item.key === 'sessions' ? 'chat' : item.key}`}
             title={item.label}
             aria-label={item.label}
             onClick={() => {
@@ -83,6 +84,7 @@ export function NavRailCompact({
         <Button
           type='text'
           className={`nav-item nav-item--compact ${isMoreSheetOpen || currentPath === '/config' ? 'active' : ''}`}
+          data-ai-ui-anchor='navigation.more'
           title={moreLabel}
           aria-expanded={isMoreSheetOpen}
           aria-haspopup='dialog'

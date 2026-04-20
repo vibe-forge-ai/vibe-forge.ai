@@ -10,6 +10,7 @@ export const CONFIG_SECTION_KEYS = [
   'adapters',
   'plugins',
   'mcp',
+  'mdp',
   'auth',
   'shortcuts'
 ] as const
@@ -50,6 +51,7 @@ export interface ConfigSections {
     defaultExcludeMcpServers?: Config['defaultExcludeMcpServers']
     noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
   }
+  mdp: Config['mdp']
   auth: Config['webAuth']
   shortcuts: Config['shortcuts']
 }
@@ -94,6 +96,7 @@ export const buildConfigSections = (config: Config | undefined): ConfigSections 
     defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
     noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
   },
+  mdp: config?.mdp,
   auth: config?.webAuth,
   shortcuts: config?.shortcuts
 })

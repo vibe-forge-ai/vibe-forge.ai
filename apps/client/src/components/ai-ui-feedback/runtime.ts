@@ -1,0 +1,123 @@
+const AI_UI_FEEDBACK_EVENT = 'vf:ai-ui-feedback'
+
+interface FeedbackPoint {
+  x: number
+  y: number
+}
+
+interface FeedbackRect {
+  height: number
+  width: number
+}
+
+export interface AiUiFeedbackEventDetail {
+  point: FeedbackPoint
+  rect: FeedbackRect
+  status: 'error' | 'running' | 'success'
+}
+
+interface RunAiUiActionFeedbackParams<T> {
+  anchorId?: string | string[]
+  execute: () => Promise<T> | T
+}
+
+const resolveAnchorSelector = (anchorId: string) => {
+  const escaped = typeof window.CSS?.escape === 'function'
+    ? window.CSS.escape(anchorId)
+    : anchorId.replace(/["\\]/g, '\\$&')
+  return `[data-ai-ui-anchor="${escaped}"]`
+}
+
+const resolveElement = (anchorId?: string | string[]) => {
+  if (anchorId == null) {
+    return null
+  }
+
+  const anchorIds = Array.isArray(anchorId) ? anchorId : [anchorId]
+  for (const candidate of anchorIds) {
+    if (candidate.trim() === '') {
+      continue
+    }
+
+    const match = document.querySelector<HTMLElement>(resolveAnchorSelector(candidate))
+    if (match != null) {
+      return match
+    }
+  }
+
+  return null
+}
+
+const resolveDetail = (anchorId?: string | string[]) => {
+  const element = resolveElement(anchorId)
+  const rect = element?.getBoundingClientRect()
+  if (rect != null) {
+    return {
+      point: {
+        x: rect.left + Math.min(rect.width - 12, 28),
+        y: rect.top + Math.min(rect.height - 12, 28)
+      },
+      rect: {
+        width: rect.width,
+        height: rect.height
+      }
+    }
+  }
+
+  return {
+    point: {
+      x: Math.max(80, window.innerWidth * 0.5),
+      y: Math.max(80, window.innerHeight * 0.25)
+    },
+    rect: {
+      width: 0,
+      height: 0
+    }
+  }
+}
+
+const dispatchFeedbackEvent = (detail: AiUiFeedbackEventDetail) => {
+  window.dispatchEvent(new CustomEvent<AiUiFeedbackEventDetail>(AI_UI_FEEDBACK_EVENT, { detail }))
+}
+
+const wait = (timeoutMs: number) => new Promise<void>(resolve => window.setTimeout(resolve, timeoutMs))
+
+export const runAiUiActionFeedback = async <T>({
+  anchorId,
+  execute
+}: RunAiUiActionFeedbackParams<T>) => {
+  dispatchFeedbackEvent({
+    ...resolveDetail(anchorId),
+    status: 'running'
+  })
+  await wait(140)
+
+  try {
+    const result = await execute()
+    dispatchFeedbackEvent({
+      ...resolveDetail(anchorId),
+      status: 'success'
+    })
+    return result
+  } catch (error) {
+    dispatchFeedbackEvent({
+      ...resolveDetail(anchorId),
+      status: 'error'
+    })
+    throw error
+  }
+}
+
+export const subscribeAiUiFeedback = (
+  listener: (detail: AiUiFeedbackEventDetail) => void
+) => {
+  const handler = (event: Event) => {
+    const customEvent = event as CustomEvent<AiUiFeedbackEventDetail>
+    listener(customEvent.detail)
+  }
+
+  window.addEventListener(AI_UI_FEEDBACK_EVENT, handler)
+  return () => {
+    window.removeEventListener(AI_UI_FEEDBACK_EVENT, handler)
+  }
+}

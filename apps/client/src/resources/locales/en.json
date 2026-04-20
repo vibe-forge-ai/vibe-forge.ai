@@ -1040,10 +1040,11 @@
       "dangerouslyDisableSandbox": "sandbox disabled",
       "viewCommand": "View command",
       "noParameters": "No parameters",
-      "groupSummaryCount": "{{name}} {{count}}x",
-      "groupSummaryMoreCount": "+{{count}}x",
-      "singleSelect": "single",
-      "multiSelect": "multi",
+    "groupSummaryCount": "{{name}} {{count}}x",
+    "groupSummaryMoreCount": "+{{count}}x",
+    "largeResultPreview": "Output is too large to render inline. Showing the first {{preview}} characters out of {{total}}.",
+    "singleSelect": "single",
+    "multiSelect": "multi",
       "fields": {
         "activeForm": "Active Form",
         "addBlockedBy": "Add Blocked By",
@@ -1185,7 +1186,8 @@
       "newAdapterName": "New adapter name",
       "newPluginName": "New plugin name",
       "newMcpServerName": "New MCP server name",
-      "newMarketplaceName": "New registry name",
+      "newMdpConnectionName": "New MDP connection name",
+      "newMarketplaceName": "New marketplace name",
       "newEnvVarName": "New environment variable name",
       "newHeaderName": "New header name",
       "fieldKey": "Field Key",
@@ -1711,6 +1713,78 @@
           "desc": "Flattened configuration by server name"
         }
       },
+      "mdp": {
+        "enabled": {
+          "label": "Enable MDP",
+          "desc": "Enable first-party Model Drive Protocol integration"
+        },
+        "noDefaultBridge": {
+          "label": "Disable Default Bridge",
+          "desc": "Do not inject the default Vibe Forge MDP bridge MCP server"
+        },
+        "connections": {
+          "label": "Connections",
+          "desc": "Logical MDP connections keyed by connection name"
+        },
+        "filters": {
+          "excludeClientIds": {
+            "label": "Hidden Client IDs",
+            "desc": "Glob patterns for hidden client ids"
+          },
+          "excludeNames": {
+            "label": "Hidden Client Names",
+            "desc": "Glob patterns for hidden client names"
+          },
+          "excludePaths": {
+            "label": "Hidden Paths",
+            "desc": "Glob patterns for hidden paths"
+          }
+        },
+        "workspaceProjection": {
+          "enabled": {
+            "label": "Enable Workspace Projection",
+            "desc": "Register workspace skills into the configured MDP connections"
+          },
+          "includeWorkspaceSkills": {
+            "label": "Include Workspace Skills",
+            "desc": "Project skill assets from the project asset root"
+          },
+          "includePluginSkills": {
+            "label": "Include Plugin Skills",
+            "desc": "Project skill assets from installed plugins"
+          },
+          "includeSkillIds": {
+            "label": "Only Include Skill IDs",
+            "desc": "Restrict projection to these skill asset ids"
+          },
+          "excludeSkillIds": {
+            "label": "Exclude Skill IDs",
+            "desc": "Do not project these skill asset ids"
+          }
+        },
+        "connection": {
+          "enabled": {
+            "label": "Enabled",
+            "desc": "Toggle this connection"
+          },
+          "title": {
+            "label": "Display Title",
+            "desc": "Shown in topology summaries"
+          },
+          "description": {
+            "label": "Description",
+            "desc": "Optional connection description"
+          },
+          "hosts": {
+            "label": "Hosts",
+            "desc": "Candidate MDP server URLs in priority order"
+          },
+          "auth": {
+            "label": "Auth",
+            "desc": "Static auth payload used when connecting"
+          }
+        }
+      },
       "mcpServer": {
         "enabled": {
           "label": "Enabled",
@@ -1823,6 +1897,9 @@
       "advancedOverrides": "Raw Overrides",
       "advancedMisc": "Other Options",
       "permissions": "Tool Permissions",
+      "filters": "Filters",
+      "projection": "Projection",
+      "connections": "Connections",
       "env": "Environment Variables",
       "items": "Entry Configuration",
       "plugins": "Plugin Configuration"
@@ -1927,10 +2004,39 @@
       "plugins": "Plugins",
       "environments": "Environments",
       "mcp": "MCP",
+      "mdp": "MDP",
+      "mdpTopology": "MDP Topology",
       "shortcuts": "Shortcuts",
       "appearance": "Appearance",
       "experiments": "Experiments",
       "about": "About"
+    },
+    "mdpTopology": {
+      "title": "MDP Topology",
+      "refresh": "Refresh",
+      "loading": "Loading MDP topology...",
+      "loadFailed": "Failed to load MDP topology",
+      "disabled": "MDP integration is disabled",
+      "defaultConnection": "Default connection",
+      "connections": "{{count}} connections",
+      "clients": "{{count}} clients",
+      "paths": "{{count}} paths",
+      "hidden": "{{count}} hidden",
+      "connection": "Connection",
+      "status": "Status",
+      "host": "Host",
+      "error": "Error",
+      "clientName": "Client",
+      "clientId": "Client ID",
+      "clientIdLabel": "Client ID: {{id}}",
+      "revealClientId": "Double-click the name to reveal the Client ID",
+      "browserPath": "Page Path",
+      "createdAt": "Created At",
+      "openClient": "Open Client",
+      "path": "Path",
+      "type": "Type",
+      "connected": "Connected",
+      "failed": "Failed"
     },
     "appSettings": {
       "senderHeaderDisplay": {

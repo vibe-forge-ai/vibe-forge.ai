@@ -11,6 +11,41 @@ export type SessionWorkspaceCleanupPolicy = 'delete_on_session_delete' | 'retain
 
 export type SessionQueuedMessageMode = 'steer' | 'next'
 
+export interface SessionEntryMdpClientRef {
+  connectionKey: string
+  clientId: string
+  rawClientId: string
+}
+
+export interface SessionEntryMdpContext {
+  refs: SessionEntryMdpClientRef[]
+}
+
+export interface BrowserSessionEntryContext {
+  kind: 'browser'
+  page: string
+  route: string
+  search?: string
+  href?: string
+  activeSessionId?: string
+  mdp?: SessionEntryMdpContext
+}
+
+export interface CliSessionEntryContext {
+  kind: 'cli'
+  sessionId: string
+  cwd: string
+  ctxId?: string
+  primaryWorkspaceCwd?: string
+  pid?: number
+  outputFormat?: string
+  adapter?: string
+  model?: string
+  mdp?: SessionEntryMdpContext
+}
+
+export type SessionEntryContext = BrowserSessionEntryContext | CliSessionEntryContext
+
 export interface SessionQueuedMessage {
   id: string
   sessionId: string

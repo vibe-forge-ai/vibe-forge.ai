@@ -27,17 +27,47 @@ export interface ChannelPreferenceRow {
 }
 
 export function createChannelSessionsRepo(db: SqliteDatabase) {
+  const list = (filters?: {
+    channelType?: string
+    channelKey?: string
+    sessionType?: string
+  }): ChannelSessionRow[] => {
+    const clauses: string[] = []
+    const params: Array<string> = []
+    if (filters?.channelType) {
+      clauses.push('channelType = ?')
+      params.push(filters.channelType)
+    }
+    if (filters?.channelKey) {
+      clauses.push('channelKey = ?')
+      params.push(filters.channelKey)
+    }
+    if (filters?.sessionType) {
+      clauses.push('sessionType = ?')
+      params.push(filters.sessionType)
+    }
+
+    const stmt = db.prepare(`
+      SELECT channelType, sessionType, channelId, channelKey, replyReceiveId, replyReceiveIdType, sessionId, createdAt, updatedAt
+      FROM channel_sessions
+      ${clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''}
+      ORDER BY updatedAt DESC
+    `)
+    return stmt.all<ChannelSessionRow>(...params)
+  }
+
   const get = (
     channelType: string,
+    channelKey: string,
     sessionType: string,
     channelId: string
   ): ChannelSessionRow | undefined => {
     const stmt = db.prepare(`
       SELECT channelType, sessionType, channelId, channelKey, replyReceiveId, replyReceiveIdType, sessionId, createdAt, updatedAt
       FROM channel_sessions
-      WHERE channelType = ? AND sessionType = ? AND channelId = ?
+      WHERE channelType = ? AND channelKey = ? AND sessionType = ? AND channelId = ?
     `)
-    return stmt.get<ChannelSessionRow>(channelType, sessionType, channelId)
+    return stmt.get<ChannelSessionRow>(channelType, channelKey, sessionType, channelId)
   }
 
   const getBySessionId = (sessionId: string): ChannelSessionRow | undefined => {
@@ -56,8 +86,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     const stmt = db.prepare(`
       INSERT INTO channel_sessions (channelType, sessionType, channelId, channelKey, replyReceiveId, replyReceiveIdType, sessionId, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET
-        channelKey = excluded.channelKey,
+      ON CONFLICT(channelType, channelKey, sessionType, channelId) DO UPDATE SET
         replyReceiveId = excluded.replyReceiveId,
         replyReceiveIdType = excluded.replyReceiveIdType,
         sessionId = excluded.sessionId,
@@ -84,25 +113,55 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     return stmt.run(sessionId).changes
   }
 
-  const remove = (channelType: string, sessionType: string, channelId: string) => {
+  const remove = (channelType: string, channelKey: string, sessionType: string, channelId: string) => {
     const stmt = db.prepare(`
       DELETE FROM channel_sessions
-      WHERE channelType = ? AND sessionType = ? AND channelId = ?
+      WHERE channelType = ? AND channelKey = ? AND sessionType = ? AND channelId = ?
     `)
-    return stmt.run(channelType, sessionType, channelId).changes
+    return stmt.run(channelType, channelKey, sessionType, channelId).changes
   }
 
   const getPreference = (
     channelType: string,
+    channelKey: string,
     sessionType: string,
     channelId: string
   ): ChannelPreferenceRow | undefined => {
     const stmt = db.prepare(`
       SELECT channelType, sessionType, channelId, channelKey, adapter, permissionMode, effort, createdAt, updatedAt
       FROM channel_preferences
-      WHERE channelType = ? AND sessionType = ? AND channelId = ?
+      WHERE channelType = ? AND channelKey = ? AND sessionType = ? AND channelId = ?
     `)
-    return stmt.get<ChannelPreferenceRow>(channelType, sessionType, channelId)
+    return stmt.get<ChannelPreferenceRow>(channelType, channelKey, sessionType, channelId)
+  }
+
+  const listPreferences = (filters?: {
+    channelType?: string
+    channelKey?: string
+    sessionType?: string
+  }): ChannelPreferenceRow[] => {
+    const clauses: string[] = []
+    const params: Array<string> = []
+    if (filters?.channelType) {
+      clauses.push('channelType = ?')
+      params.push(filters.channelType)
+    }
+    if (filters?.channelKey) {
+      clauses.push('channelKey = ?')
+      params.push(filters.channelKey)
+    }
+    if (filters?.sessionType) {
+      clauses.push('sessionType = ?')
+      params.push(filters.sessionType)
+    }
+
+    const stmt = db.prepare(`
+      SELECT channelType, sessionType, channelId, channelKey, adapter, permissionMode, effort, createdAt, updatedAt
+      FROM channel_preferences
+      ${clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''}
+      ORDER BY updatedAt DESC
+    `)
+    return stmt.all<ChannelPreferenceRow>(...params)
   }
 
   const upsertPreference = (row: Omit<ChannelPreferenceRow, 'createdAt' | 'updatedAt'>) => {
@@ -112,8 +171,7 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
         channelType, sessionType, channelId, channelKey, adapter, permissionMode, effort, createdAt, updatedAt
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(channelType, sessionType, channelId) DO UPDATE SET
-        channelKey = excluded.channelKey,
+      ON CONFLICT(channelType, channelKey, sessionType, channelId) DO UPDATE SET
         adapter = excluded.adapter,
         permissionMode = excluded.permissionMode,
         effort = excluded.effort,
@@ -132,11 +190,22 @@ export function createChannelSessionsRepo(db: SqliteDatabase) {
     )
   }
 
+  const removePreference = (channelType: string, channelKey: string, sessionType: string, channelId: string) => {
+    const stmt = db.prepare(`
+      DELETE FROM channel_preferences
+      WHERE channelType = ? AND channelKey = ? AND sessionType = ? AND channelId = ?
+    `)
+    return stmt.run(channelType, channelKey, sessionType, channelId).changes
+  }
+
   return {
     get,
     getPreference,
     getBySessionId,
+    list,
+    listPreferences,
     remove,
+    removePreference,
     removeBySessionId,
     upsert,
     upsertPreference

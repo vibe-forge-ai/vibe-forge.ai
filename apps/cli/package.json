@@ -31,12 +31,14 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/cli/__tests__"
   },
   "dependencies": {
+    "@modeldriveprotocol/client": "^2.2.0",
     "@vibe-forge/app-runtime": "workspace:^",
     "@vibe-forge/cli-helper": "workspace:^",
     "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/managed-plugins": "workspace:^",
+    "@vibe-forge/mdp": "workspace:^",
     "@vibe-forge/plugin-cli-skills": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",

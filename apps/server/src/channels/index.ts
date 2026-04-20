@@ -129,10 +129,33 @@ export const initChannels = async (
   return manager
 }
 
+export const closeChannels = async () => {
+  if (channelManager == null) {
+    return
+  }
+
+  const manager = channelManager
+  channelManager = null
+  await manager.closeAll()
+}
+
+export const reloadChannels = async (
+  configs: ReadonlyArray<{ channels?: Record<string, unknown> } | undefined>
+) => {
+  await closeChannels()
+  return await initChannels(configs)
+}
+
 export const handleChannelSessionEvent = async (sessionId: string, event: WSEvent) => {
   if (!channelManager) return false
   return await channelManager.handleSessionEvent(sessionId, event)
 }
+
+export const listChannelRuntimeStates = () => (
+  channelManager == null
+    ? []
+    : Array.from(channelManager.states.values())
+)
 
 export const resolveChannelSessionMcpServers = async (sessionId: string) => {
   if (!channelManager) {

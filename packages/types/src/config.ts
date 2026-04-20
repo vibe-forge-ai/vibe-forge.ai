@@ -93,6 +93,43 @@ export interface SkillsConfig {
   homeBridge?: SkillHomeBridgeConfig
 }
 
+export interface MdpAuthConfig {
+  scheme?: string
+  token?: string
+  headers?: Record<string, string>
+  metadata?: Record<string, unknown>
+}
+
+export interface MdpConnectionConfig {
+  enabled?: boolean
+  title?: string
+  description?: string
+  hosts?: string[]
+  auth?: MdpAuthConfig
+}
+
+export interface MdpFilterConfig {
+  excludeClientIds?: string[]
+  excludeNames?: string[]
+  excludePaths?: string[]
+}
+
+export interface MdpWorkspaceProjectionConfig {
+  enabled?: boolean
+  includeWorkspaceSkills?: boolean
+  includePluginSkills?: boolean
+  includeSkillIds?: string[]
+  excludeSkillIds?: string[]
+}
+
+export interface MdpConfig {
+  enabled?: boolean
+  noDefaultBridge?: boolean
+  connections?: Record<string, MdpConnectionConfig>
+  filters?: MdpFilterConfig
+  workspaceProjection?: MdpWorkspaceProjectionConfig
+}
+
 export interface WorkspaceConfigEntry {
   enabled?: boolean
   name?: string
@@ -339,6 +376,7 @@ export interface Config {
   }
   notifications?: NotificationConfig
   skills?: SkillsConfig
+  mdp?: MdpConfig
   webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
@@ -364,6 +402,47 @@ export interface Config {
    */
   plugins?: PluginConfig
   marketplaces?: MarketplaceConfig
+}
+
+export interface MdpConnectionHealth {
+  key: string
+  title?: string
+  selectedHost?: string
+  hosts: string[]
+  ok: boolean
+  error?: string
+}
+
+export interface MdpClientSummary {
+  connectionKey: string
+  clientId: string
+  rawClientId: string
+  name: string
+  description?: string
+  connectedAt?: string
+  lastSeenAt?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface MdpPathSummary {
+  connectionKey: string
+  clientId: string
+  rawClientId: string
+  path: string
+  type?: string
+  description?: string
+  methods?: string[]
+}
+
+export interface MdpSummaryResponse {
+  enabled: boolean
+  connections: MdpConnectionHealth[]
+  clients: MdpClientSummary[]
+  paths: MdpPathSummary[]
+  hidden: {
+    clients: number
+    paths: number
+  }
 }
 
 export interface AboutInfo {
@@ -412,6 +491,7 @@ export interface ConfigSection {
     defaultExcludeMcpServers?: Config['defaultExcludeMcpServers']
     noDefaultVibeForgeMcpServer?: Config['noDefaultVibeForgeMcpServer']
   }
+  mdp?: Config['mdp']
   shortcuts?: Config['shortcuts']
   auth?: Config['webAuth']
 }

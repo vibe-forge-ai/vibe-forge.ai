@@ -12,6 +12,7 @@ import type {
   WSEvent
 } from '@vibe-forge/core'
 import type {
+  AdapterCtx,
   AdapterErrorData,
   AdapterOutputEvent,
   AdapterQueryOptions,
@@ -20,11 +21,14 @@ import type {
   SessionInfo,
   SessionPromptType
 } from '@vibe-forge/types'
+import { loadAdapter } from '@vibe-forge/types'
+import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveProjectPrimaryWorkspaceFolder } from '@vibe-forge/utils/project-cache-path'
 
 import { handleChannelSessionEvent, resolveChannelSessionMcpServers } from '#~/channels/index.js'
 import { getDb } from '#~/db/index.js'
 import { loadConfigState } from '#~/services/config/index.js'
+import { DEFAULT_SESSION_TITLE } from '#~/services/session/default-title.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import {
   canRequestInteraction,
@@ -54,15 +58,22 @@ import {
   deleteExternalSessionRuntime,
   emitRuntimeEvent,
   getAdapterSessionRuntime,
+  getSessionEntryContext,
   getExternalSessionRuntime,
   notifySessionUpdated,
   parkAdapterSessionRuntime,
+  setSessionEntryContext,
   setAdapterSessionRuntime,
   takeExternalSessionRuntime
 } from '#~/services/session/runtime.js'
 import { provisionSessionWorkspace, resolveSessionWorkspace } from '#~/services/session/workspace.js'
 import { runConfiguredWorktreeEnvironmentScripts } from '#~/services/worktree-environments.js'
 import { getSessionLogger } from '#~/utils/logger.js'
+import {
+  buildSessionEntryContextSystemPrompt,
+  prependSessionEntryContextToMessageContent
+} from '@vibe-forge/utils'
+import type { SessionEntryContext } from '@vibe-forge/types'
 
 const activeAdapterRunStore = new Map<string, string>()
 export const adapterSessionStartStore = new Map<string, Promise<AdapterSessionRuntime>>()
@@ -79,6 +90,101 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
 
 const uniqueStrings = (values: string[]) => [...new Set(values)]
+const normalizeString = (value: unknown) => typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
+
+const createTransientAdapterCache = (): AdapterCtx['cache'] => {
+  const store = new Map<string, unknown>()
+
+  return {
+    set: async (key: string, value: unknown) => {
+      store.set(String(key), value)
+      return { cachePath: '' }
+    },
+    get: async (key: string) => store.get(String(key)) as any
+  }
+}
+
+const resolveCatalogAccountKey = (params: {
+  requestedAccount: string
+  accounts: Array<{ key: string; title: string; status?: string }>
+}) => {
+  const requestedAccount = normalizeString(params.requestedAccount)
+  if (requestedAccount == null) {
+    return undefined
+  }
+
+  const availableAccounts = params.accounts.filter(account => normalizeString(account.key) != null && account.status !== 'missing')
+  if (availableAccounts.some(account => account.key === requestedAccount)) {
+    return requestedAccount
+  }
+
+  const normalizedRequestedTitle = requestedAccount.toLowerCase()
+  const titleMatches = availableAccounts.filter(account => account.title.trim().toLowerCase() === normalizedRequestedTitle)
+  if (titleMatches.length === 1) {
+    return titleMatches[0]?.key
+  }
+
+  return requestedAccount
+}
+
+const normalizeSessionAdapterAccount = async (params: {
+  adapter?: string
+  account?: string
+  model?: string
+  sessionId: string
+}) => {
+  const requestedAccount = normalizeString(params.account)
+  const adapterKey = normalizeString(params.adapter)
+  if (requestedAccount == null || adapterKey == null) {
+    return requestedAccount
+  }
+
+  try {
+    const { workspaceFolder, projectConfig, userConfig } = await loadConfigState()
+    const adapter = await loadAdapter(adapterKey)
+    if (adapter.getAccounts == null) {
+      return requestedAccount
+    }
+    const logger = createLogger(workspaceFolder, `server/session-account/${params.sessionId}`, 'server')
+
+    const adapterCtx = {
+      ctxId: `server-session-account-${params.sessionId}-${adapterKey}`,
+      cwd: workspaceFolder,
+      env: {
+        ...processEnv
+      },
+      cache: createTransientAdapterCache(),
+      logger,
+      configs: [projectConfig, userConfig]
+    } satisfies AdapterCtx
+
+    const accountCatalog = await adapter.getAccounts(adapterCtx, {
+      model: params.model
+    })
+    const normalizedAccount = resolveCatalogAccountKey({
+      requestedAccount,
+      accounts: accountCatalog.accounts
+    })
+
+    if (normalizedAccount !== requestedAccount) {
+      logger.info({
+        adapter: adapterKey,
+        requestedAccount,
+        normalizedAccount
+      }, '[server] Normalized adapter account value before session start')
+    }
+
+    return normalizedAccount
+  } catch (error) {
+    const fallbackLogger = getSessionLogger(params.sessionId, 'server')
+    fallbackLogger.warn({
+      adapter: adapterKey,
+      requestedAccount,
+      error: error instanceof Error ? error.message : String(error)
+    }, '[server] Failed to normalize adapter account before session start')
+    return requestedAccount
+  }
+}
 
 const getPermissionToolUseCache = (sessionId: string) => {
   let cache = recentPermissionToolUseStore.get(sessionId)
@@ -293,6 +399,7 @@ export async function startAdapterSession(
     promptType?: SessionPromptType
     promptName?: string
     adapter?: string
+    entryContext?: SessionEntryContext
   } = {}
 ) {
   const inFlight = adapterSessionStartStore.get(sessionId)
@@ -309,7 +416,12 @@ export async function startAdapterSession(
     const runtimeState = db.getSessionRuntimeState(sessionId)
     const resolvedModel = options.model ?? existing?.model
     const resolvedAdapter = options.adapter ?? existing?.adapter
-    const resolvedAccount = options.account ?? existing?.account
+    const resolvedAccount = await normalizeSessionAdapterAccount({
+      adapter: resolvedAdapter,
+      account: options.account ?? existing?.account,
+      model: resolvedModel,
+      sessionId
+    })
     const resolvedEffort = options.effort ?? existing?.effort
     const resolvedPermissionMode = options.permissionMode ?? existing?.permissionMode
     const resolvedPromptType = existing?.promptType ?? options.promptType
@@ -384,7 +496,7 @@ export async function startAdapterSession(
 
     if (existing == null) {
       serverLogger.info({ sessionId }, '[server] Session not found in DB, creating new entry')
-      db.createSession(undefined, sessionId, undefined, undefined, {
+      db.createSession(DEFAULT_SESSION_TITLE, sessionId, undefined, undefined, {
         runtimeKind: 'interactive'
       })
       await provisionSessionWorkspace(sessionId)
@@ -411,6 +523,10 @@ export async function startAdapterSession(
     }
 
     const connectionState = takeExternalSessionRuntime(sessionId) ?? createSessionConnectionState()
+    if (options.entryContext != null) {
+      connectionState.entryContext = options.entryContext
+    }
+    const entryContext = options.entryContext ?? connectionState.entryContext
     const runId = uuidv4()
     activeAdapterRunStore.set(sessionId, runId)
 
@@ -461,6 +577,7 @@ export async function startAdapterSession(
         : (modelLanguage === 'en' ? 'Please respond in English.' : '请使用中文进行对话。')
       const mergedSystemPrompt = [
         finalSystemPrompt,
+        entryContext == null ? undefined : buildSessionEntryContextSystemPrompt(entryContext),
         seededFromHistory ? runtimeState?.historySeed?.trim() : undefined,
         languagePrompt
       ].filter(Boolean).join('\n\n')
@@ -967,7 +1084,13 @@ function extractTextFromContent(content: ChatMessageContent[]) {
   return undefined
 }
 
-export async function processUserMessage(sessionId: string, content: string | ChatMessageContent[]) {
+export async function processUserMessage(
+  sessionId: string,
+  content: string | ChatMessageContent[],
+  options: {
+    entryContext?: SessionEntryContext
+  } = {}
+) {
   const serverLogger = getSessionLogger(sessionId, 'server')
   const userText = typeof content === 'string' ? String(content ?? '') : ''
   const contentItems: ChatMessageContent[] = Array.isArray(content)
@@ -984,6 +1107,9 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   const ev: WSEvent = { type: 'message', message: userMessage }
   const db = getDb()
   db.saveMessage(sessionId, ev)
+  if (options.entryContext != null) {
+    setSessionEntryContext(sessionId, options.entryContext)
+  }
 
   const currentSessionData = db.getSession(sessionId)
   const runtimeState = db.getSessionRuntimeState(sessionId)
@@ -996,7 +1122,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
 
   if (
     currentSessionData?.title == null || currentSessionData.title === '' ||
-    currentSessionData.title === 'New Session'
+    currentSessionData.title === DEFAULT_SESSION_TITLE
   ) {
     const firstLine = summaryText.split('\n')[0].trim()
     updates.title = firstLine.length > 50 ? `${firstLine.slice(0, 50)}...` : firstLine
@@ -1017,7 +1143,9 @@ export async function processUserMessage(sessionId: string, content: string | Ch
   let runtime = getAdapterSessionRuntime(sessionId)
   if (runtime == null) {
     serverLogger.info({ sessionId }, '[server] Adapter runtime missing for user message, starting a new process')
-    runtime = await startAdapterSession(sessionId)
+    runtime = await startAdapterSession(sessionId, {
+      entryContext: options.entryContext
+    })
   }
 
   if (runtime == null) {
@@ -1038,7 +1166,7 @@ export async function processUserMessage(sessionId: string, content: string | Ch
 
   runtime.session.emit({
     type: 'message',
-    content: contentItems,
+    content: prependSessionEntryContextToMessageContent(contentItems, options.entryContext ?? getSessionEntryContext(sessionId)),
     parentUuid: runtime.config?.seededFromHistory === true ? undefined : parentUuid
   })
 }

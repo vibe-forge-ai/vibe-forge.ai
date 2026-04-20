@@ -134,7 +134,7 @@ describe('sqliteDb', () => {
       replyReceiveIdType: 'message'
     })
 
-    expect(db.getChannelSession('lark', 'thread', 'channel-1')).toEqual(expect.objectContaining({
+    expect(db.getChannelSession('lark', 'key-1', 'thread', 'channel-1')).toEqual(expect.objectContaining({
       channelKey: 'key-1',
       sessionId: 'session-mapped'
     }))
@@ -156,7 +156,7 @@ describe('sqliteDb', () => {
       effort: 'high'
     })
 
-    expect(db.getChannelPreference('lark', 'direct', 'channel-1')).toEqual(expect.objectContaining({
+    expect(db.getChannelPreference('lark', 'key-1', 'direct', 'channel-1')).toEqual(expect.objectContaining({
       channelKey: 'key-1',
       adapter: 'codex',
       permissionMode: 'bypassPermissions',

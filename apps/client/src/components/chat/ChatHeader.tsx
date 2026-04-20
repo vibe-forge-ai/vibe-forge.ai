@@ -190,6 +190,7 @@ export function ChatHeader({
       <Button
         type='text'
         className={`chat-header-action-button ${isTerminalOpen ? 'is-active' : ''}`}
+        data-ai-ui-anchor='panels.terminal.toggle'
         title={t('chat.viewTerminal')}
         aria-label={t('chat.viewTerminal')}
         onClick={onToggleTerminal}
@@ -202,6 +203,7 @@ export function ChatHeader({
       <Button
         type='text'
         className={`chat-header-action-button ${isWorkspaceDrawerOpen ? 'is-active' : ''}`}
+        data-ai-ui-anchor='panels.workspace.toggle'
         title={t('chat.workspaceDrawerToggle')}
         aria-label={t('chat.workspaceDrawerToggle')}
         aria-pressed={isWorkspaceDrawerOpen}
@@ -268,6 +270,7 @@ export function ChatHeader({
                 <Button
                   type='text'
                   className='chat-header-action-button'
+                  data-ai-ui-anchor='layout.sidebar.mobile-toggle'
                   title={t('common.sessions')}
                   aria-label={t('common.sessions')}
                   onClick={onOpenSidebar}
@@ -280,6 +283,7 @@ export function ChatHeader({
                 <Button
                   type='text'
                   className={`chat-header-action-button ${!hasSession ? 'is-active' : ''}`}
+                  data-ai-ui-anchor='session.create'
                   title={t('common.newChat')}
                   aria-label={t('common.newChat')}
                   onClick={onCreateSession}
@@ -292,6 +296,7 @@ export function ChatHeader({
         <div className='chat-header-info'>
           <div
             className='chat-header-title'
+            data-ai-ui-anchor='session.title'
             onClick={handleTitleClick}
           >
             {displayTitle}
@@ -309,6 +314,7 @@ export function ChatHeader({
                     <Button
                       type='text'
                       className='chat-header-action-button'
+                      data-ai-ui-anchor='session.view.menu'
                       title={activeViewItem.title}
                       aria-label={activeViewItem.title}
                       icon={
@@ -328,6 +334,7 @@ export function ChatHeader({
                     <Button
                       type='text'
                       className='chat-header-action-button'
+                      data-ai-ui-anchor='session.more'
                       title={t('common.moreActions')}
                       aria-label={t('common.moreActions')}
                       icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}
@@ -344,6 +351,7 @@ export function ChatHeader({
                   <Button
                     type='text'
                     className={`chat-header-action-button ${activeView === item.value ? 'is-active' : ''}`}
+                    data-ai-ui-anchor={`session.view.${item.value}`}
                     title={item.title}
                     aria-label={item.title}
                     onClick={() => {
@@ -373,6 +381,7 @@ export function ChatHeader({
                     <Button
                       type='text'
                       className='chat-header-action-button'
+                      data-ai-ui-anchor='session.more'
                       title={t('common.moreActions')}
                       aria-label={t('common.moreActions')}
                       icon={<span className='chat-header-view-option material-symbols-rounded'>more_vert</span>}

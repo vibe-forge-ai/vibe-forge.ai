@@ -171,12 +171,20 @@ export class SqliteDb {
     return this.sessionQueue.reorder(sessionId, mode, ids)
   }
 
-  getChannelSession(channelType: string, sessionType: string, channelId: string) {
-    return this.channelSessions.get(channelType, sessionType, channelId)
+  getChannelSession(channelType: string, channelKey: string, sessionType: string, channelId: string) {
+    return this.channelSessions.get(channelType, channelKey, sessionType, channelId)
   }
 
-  getChannelPreference(channelType: string, sessionType: string, channelId: string) {
-    return this.channelSessions.getPreference(channelType, sessionType, channelId)
+  listChannelSessions(filters?: Parameters<typeof this.channelSessions.list>[0]) {
+    return this.channelSessions.list(filters)
+  }
+
+  getChannelPreference(channelType: string, channelKey: string, sessionType: string, channelId: string) {
+    return this.channelSessions.getPreference(channelType, channelKey, sessionType, channelId)
+  }
+
+  listChannelPreferences(filters?: Parameters<typeof this.channelSessions.listPreferences>[0]) {
+    return this.channelSessions.listPreferences(filters)
   }
 
   getChannelSessionBySessionId(sessionId: string) {
@@ -191,12 +199,16 @@ export class SqliteDb {
     return this.channelSessions.upsertPreference(row)
   }
 
+  deleteChannelPreference(channelType: string, channelKey: string, sessionType: string, channelId: string) {
+    return this.channelSessions.removePreference(channelType, channelKey, sessionType, channelId)
+  }
+
   deleteChannelSessionBySessionId(sessionId: string) {
     return this.channelSessions.removeBySessionId(sessionId)
   }
 
-  deleteChannelSession(channelType: string, sessionType: string, channelId: string) {
-    return this.channelSessions.remove(channelType, sessionType, channelId)
+  deleteChannelSession(channelType: string, channelKey: string, sessionType: string, channelId: string) {
+    return this.channelSessions.remove(channelType, channelKey, sessionType, channelId)
   }
 
   consumeChannelActionTokenNonce(nonce: string, action: string, expiresAt: number, consumedAt = Date.now()) {

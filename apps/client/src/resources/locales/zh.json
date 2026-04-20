@@ -1041,10 +1041,11 @@
       "dangerouslyDisableSandbox": "禁用沙箱",
       "viewCommand": "查看指令",
       "noParameters": "无参数",
-      "groupSummaryCount": "{{name}} {{count}} 次",
-      "groupSummaryMoreCount": "+{{count}} 次",
-      "singleSelect": "单选",
-      "multiSelect": "多选",
+    "groupSummaryCount": "{{name}} {{count}} 次",
+    "groupSummaryMoreCount": "+{{count}} 次",
+    "largeResultPreview": "输出内容过大，页面不再完整渲染。当前仅显示前 {{preview}} 个字符，共 {{total}} 个字符。",
+    "singleSelect": "单选",
+    "multiSelect": "多选",
       "fields": {
         "activeForm": "当前表述",
         "addBlockedBy": "新增阻塞源",
@@ -1186,7 +1187,8 @@
       "newAdapterName": "新增适配器名称",
       "newPluginName": "新增插件名称",
       "newMcpServerName": "新增 MCP 服务名称",
-      "newMarketplaceName": "新增源名称",
+      "newMdpConnectionName": "新增 MDP 连接名称",
+      "newMarketplaceName": "新增市场名称",
       "newEnvVarName": "新增环境变量名称",
       "newHeaderName": "新增请求头名称",
       "fieldKey": "字段名",
@@ -1712,6 +1714,78 @@
           "desc": "按服务器名称平铺配置"
         }
       },
+      "mdp": {
+        "enabled": {
+          "label": "启用 MDP",
+          "desc": "启用第一方 Model Drive Protocol 集成"
+        },
+        "noDefaultBridge": {
+          "label": "禁用默认桥接",
+          "desc": "不注入默认的 Vibe Forge MDP bridge MCP 服务"
+        },
+        "connections": {
+          "label": "连接",
+          "desc": "按连接名配置逻辑 MDP 连接"
+        },
+        "filters": {
+          "excludeClientIds": {
+            "label": "隐藏的 Client ID",
+            "desc": "用于隐藏 client id 的 glob 模式"
+          },
+          "excludeNames": {
+            "label": "隐藏的 Client 名称",
+            "desc": "用于隐藏 client 名称的 glob 模式"
+          },
+          "excludePaths": {
+            "label": "隐藏的路径",
+            "desc": "用于隐藏 path 的 glob 模式"
+          }
+        },
+        "workspaceProjection": {
+          "enabled": {
+            "label": "启用 Workspace Projection",
+            "desc": "把 workspace skills 注册到配置的 MDP 连接里"
+          },
+          "includeWorkspaceSkills": {
+            "label": "包含项目技能",
+            "desc": "投影项目资产目录里的 skill"
+          },
+          "includePluginSkills": {
+            "label": "包含插件技能",
+            "desc": "投影插件提供的 skill"
+          },
+          "includeSkillIds": {
+            "label": "仅包含这些 Skill ID",
+            "desc": "只投影这些 skill asset id"
+          },
+          "excludeSkillIds": {
+            "label": "排除这些 Skill ID",
+            "desc": "不投影这些 skill asset id"
+          }
+        },
+        "connection": {
+          "enabled": {
+            "label": "是否启用",
+            "desc": "控制当前连接的启用状态"
+          },
+          "title": {
+            "label": "显示名称",
+            "desc": "用于拓扑面板展示"
+          },
+          "description": {
+            "label": "描述",
+            "desc": "可选的连接说明"
+          },
+          "hosts": {
+            "label": "Hosts",
+            "desc": "按优先级排列的候选 MDP 服务地址"
+          },
+          "auth": {
+            "label": "鉴权",
+            "desc": "连接时附带的静态鉴权信息"
+          }
+        }
+      },
       "mcpServer": {
         "enabled": {
           "label": "是否启用",
@@ -1824,6 +1898,9 @@
       "advancedOverrides": "原始覆盖",
       "advancedMisc": "其他配置",
       "permissions": "工具权限",
+      "filters": "过滤规则",
+      "projection": "Projection",
+      "connections": "连接",
       "env": "环境变量",
       "items": "明细配置",
       "plugins": "插件配置"
@@ -1928,10 +2005,39 @@
       "plugins": "插件",
       "environments": "环境",
       "mcp": "MCP",
+      "mdp": "MDP",
+      "mdpTopology": "MDP 拓扑",
       "shortcuts": "快捷键",
       "appearance": "外观",
       "experiments": "实验功能",
       "about": "关于"
+    },
+    "mdpTopology": {
+      "title": "MDP 拓扑",
+      "refresh": "刷新",
+      "loading": "正在加载 MDP 拓扑...",
+      "loadFailed": "加载 MDP 拓扑失败",
+      "disabled": "MDP 集成已禁用",
+      "defaultConnection": "默认连接",
+      "connections": "{{count}} 个连接",
+      "clients": "{{count}} 个 client",
+      "paths": "{{count}} 条 path",
+      "hidden": "{{count}} 个已隐藏",
+      "connection": "连接",
+      "status": "状态",
+      "host": "Host",
+      "error": "错误",
+      "clientName": "Client",
+      "clientId": "Client ID",
+      "clientIdLabel": "Client ID: {{id}}",
+      "revealClientId": "双击名称显示 Client ID",
+      "browserPath": "网页路径",
+      "createdAt": "创建时间",
+      "openClient": "查看 Client",
+      "path": "Path",
+      "type": "类型",
+      "connected": "已连接",
+      "failed": "失败"
     },
     "appSettings": {
       "senderHeaderDisplay": {

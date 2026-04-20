@@ -1,5 +1,5 @@
 import { useSetAtom } from 'jotai'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -18,6 +18,7 @@ import { useChatSession } from '#~/hooks/chat/use-chat-session'
 import { useTerminalDockVisibility } from '#~/hooks/chat/use-terminal-dock-visibility'
 import { useChatLayoutQueryState } from '#~/hooks/use-chat-layout-query-state'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+import { setMdpChatRuntime, type MdpChatRuntimeHandle } from '#~/hooks/mdp-browser-runtime/runtime-registry'
 import { isMobileSidebarOpenAtom } from '#~/store/index'
 
 import { ChatRouteBottomPanel } from './ChatRouteBottomPanel'
@@ -75,13 +76,15 @@ export function ChatRouteView({ session }: { session?: Session }) {
   const targetMessageId = searchParams.get('messageId') ?? undefined
   const targetToolUseId = searchParams.get('toolUseId') ?? undefined
   const isDebugMode = searchParams.get('debug') === 'true'
+  const showMockPreviews = searchParams.get('debugPreview') === 'true'
   const historyStatusNotices = useMemo(() =>
     buildChatHistoryStatusNotices({
       errorState,
       isDebugMode,
+      showMockPreviews,
       modelUnavailable,
       t
-    }), [errorState, isDebugMode, modelUnavailable, t])
+    }), [errorState, isDebugMode, modelUnavailable, showMockPreviews, t])
   const isEmptyNewSession = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const handleReferenceWorkspacePaths = (files: ContextPickerFile[]) => {
     if (files.length === 0) {
@@ -100,16 +103,68 @@ export function ChatRouteView({ session }: { session?: Session }) {
   const { isRendered: isBottomPanelRendered, isVisible: isBottomPanelVisible } = useTerminalDockVisibility(
     bottomPanel.shouldShowBottomPanel
   )
+  const runtimeRef = useRef<MdpChatRuntimeHandle | null>(null)
+
+  runtimeRef.current = {
+    closeWorkspaceFile: (path) => {
+      if (path == null || bottomPanel.selectedWorkspaceFilePath == null || bottomPanel.selectedWorkspaceFilePath === path) {
+        bottomPanel.handleCloseWorkspaceFile()
+        return
+      }
+      bottomPanel.handleCloseWorkspaceFileTab(path)
+    },
+    getState: () => ({
+      activeView,
+      isTerminalOpen,
+      isWorkspaceDrawerOpen,
+      openWorkspaceFilePaths: bottomPanel.openWorkspaceFilePaths,
+      selectedWorkspaceFilePath: bottomPanel.selectedWorkspaceFilePath,
+      sessionId: session?.id
+    }),
+    openWorkspaceFile: bottomPanel.handleOpenWorkspaceFile,
+    selectWorkspaceFile: bottomPanel.handleSelectWorkspaceFile,
+    setActiveView,
+    setTerminalOpen: (open) => {
+      setIsTerminalOpen(open)
+    },
+    setWorkspaceDrawerOpen
+  }
+
+  useEffect(() => {
+    const runtime: MdpChatRuntimeHandle = {
+      closeWorkspaceFile: (path) => runtimeRef.current?.closeWorkspaceFile(path),
+      getState: () => runtimeRef.current?.getState() ?? {
+        activeView: 'history',
+        isTerminalOpen: false,
+        isWorkspaceDrawerOpen: false,
+        openWorkspaceFilePaths: [],
+        selectedWorkspaceFilePath: null
+      },
+      openWorkspaceFile: (path) => runtimeRef.current?.openWorkspaceFile(path),
+      selectWorkspaceFile: (path) => runtimeRef.current?.selectWorkspaceFile(path),
+      setActiveView: (view) => runtimeRef.current?.setActiveView(view),
+      setTerminalOpen: (open) => runtimeRef.current?.setTerminalOpen(open),
+      setWorkspaceDrawerOpen: (open) => runtimeRef.current?.setWorkspaceDrawerOpen(open)
+    }
+
+    setMdpChatRuntime(runtime)
+    return () => {
+      setMdpChatRuntime(null)
+    }
+  }, [])
+
   useChatRouteDeepLinkView({ activeView, setActiveView, targetMessageId, targetToolUseId })
   return (
     <div
       className={`chat-route-layout ${shouldShowWorkspaceDrawer ? 'has-workspace-drawer' : ''} ${
         bottomPanel.shouldShowTerminal ? 'has-terminal' : ''
       } ${bottomPanel.shouldShowBottomPanel ? 'has-bottom-dock' : ''}`}
+      data-ai-ui-anchor='session.root'
     >
       <div className='chat-route-layout__main'>
         <div
           className={`chat-container ${isReady ? 'ready' : ''} ${isEmptyNewSession ? 'is-new-session' : ''}`}
+          data-ai-ui-anchor='session.content'
         >
           <ChatHeader
             sessionInfo={sessionInfo}
@@ -131,60 +186,70 @@ export function ChatRouteView({ session }: { session?: Session }) {
             onToggleWorkspaceDrawer={() => setWorkspaceDrawerOpen(!isWorkspaceDrawerOpen)}
           />
           {resolvedActiveView === 'history' && (
-            <ChatHistoryView
-              isReady={isReady}
-              messages={messages}
-              session={session}
-              targetMessageId={targetMessageId}
-              targetToolUseId={targetToolUseId}
-              sessionInfo={sessionInfo}
-              historyStatusNotices={historyStatusNotices}
-              queuedMessages={queuedMessages}
-              onRetryConnection={retryConnection}
-              interactionRequest={interactionRequest}
-              onInteractionResponse={handleInteractionResponse}
-              setMessages={setMessages}
-              onClearMessages={() => setMessages([])}
-              placeholder={placeholder}
-              modelMenuGroups={modelMenuGroups}
-              modelSearchOptions={modelSearchOptions}
-              recommendedModelOptions={recommendedModelOptions}
-              servicePreviewModelOptions={servicePreviewModelOptions}
-              onToggleRecommendedModel={toggleRecommendedModel}
-              updatingRecommendedModelValue={updatingRecommendedModelValue}
-              selectedModel={selectedModel}
-              modelForQuery={modelForQuery}
-              onModelChange={setSelectedModel}
-              effort={effort}
-              effortOptions={effortOptions}
-              onEffortChange={setEffort}
-              permissionMode={permissionMode}
-              permissionModeOptions={permissionModeOptions}
-              onPermissionModeChange={setPermissionMode}
-              selectedAdapter={selectedAdapter}
-              adapterOptions={adapterOptions}
-              onAdapterChange={setSelectedAdapter}
-              selectedAccount={selectedAccount}
-              accountOptions={accountOptions}
-              showAccountSelector={showAccountSelector}
-              onAccountChange={setSelectedAccount}
-              modelUnavailable={modelUnavailable}
-              hasAvailableModels={hasAvailableModels}
-              contextReferenceRequest={contextReferenceRequest}
-            />
+            <div className='chat-route-layout__view' data-ai-ui-anchor='session.view.history'>
+              <ChatHistoryView
+                isReady={isReady}
+                messages={messages}
+                session={session}
+                targetMessageId={targetMessageId}
+                targetToolUseId={targetToolUseId}
+                sessionInfo={sessionInfo}
+                historyStatusNotices={historyStatusNotices}
+                queuedMessages={queuedMessages}
+                onRetryConnection={retryConnection}
+                interactionRequest={interactionRequest}
+                onInteractionResponse={handleInteractionResponse}
+                setMessages={setMessages}
+                onClearMessages={() => setMessages([])}
+                placeholder={placeholder}
+                modelMenuGroups={modelMenuGroups}
+                modelSearchOptions={modelSearchOptions}
+                recommendedModelOptions={recommendedModelOptions}
+                servicePreviewModelOptions={servicePreviewModelOptions}
+                onToggleRecommendedModel={toggleRecommendedModel}
+                updatingRecommendedModelValue={updatingRecommendedModelValue}
+                selectedModel={selectedModel}
+                modelForQuery={modelForQuery}
+                onModelChange={setSelectedModel}
+                effort={effort}
+                effortOptions={effortOptions}
+                onEffortChange={setEffort}
+                permissionMode={permissionMode}
+                permissionModeOptions={permissionModeOptions}
+                onPermissionModeChange={setPermissionMode}
+                selectedAdapter={selectedAdapter}
+                adapterOptions={adapterOptions}
+                onAdapterChange={setSelectedAdapter}
+                selectedAccount={selectedAccount}
+                accountOptions={accountOptions}
+                showAccountSelector={showAccountSelector}
+                onAccountChange={setSelectedAccount}
+                modelUnavailable={modelUnavailable}
+                hasAvailableModels={hasAvailableModels}
+                contextReferenceRequest={contextReferenceRequest}
+              />
+            </div>
           )}
 
-          {resolvedActiveView === 'timeline' && <ChatTimelineView messages={messages} />}
+          {resolvedActiveView === 'timeline' && (
+            <div className='chat-route-layout__view' data-ai-ui-anchor='session.view.timeline'>
+              <ChatTimelineView messages={messages} />
+            </div>
+          )}
           {resolvedActiveView === 'settings' && session?.id &&
-            <ChatSettingsView session={session} sessionInfo={sessionInfo} onClose={() => setActiveView('history')} />}
+            <div className='chat-route-layout__view' data-ai-ui-anchor='session.view.settings'>
+              <ChatSettingsView session={session} sessionInfo={sessionInfo} onClose={() => setActiveView('history')} />
+            </div>}
         </div>
         {shouldShowWorkspaceDrawer && (
-          <ChatWorkspaceDrawer
-            selectedFilePath={bottomPanel.selectedWorkspaceFilePath}
-            sessionId={session?.id}
-            onReferencePaths={handleReferenceWorkspacePaths}
-            onOpenFile={bottomPanel.handleOpenWorkspaceFile}
-          />
+          <div data-ai-ui-anchor='panels.workspace.drawer'>
+            <ChatWorkspaceDrawer
+              selectedFilePath={bottomPanel.selectedWorkspaceFilePath}
+              sessionId={session?.id}
+              onReferencePaths={handleReferenceWorkspacePaths}
+              onOpenFile={bottomPanel.handleOpenWorkspaceFile}
+            />
+          </div>
         )}
       </div>
       <ChatRouteBottomPanel

@@ -25,6 +25,15 @@
   transition: padding-bottom .18s ease;
 }
 
+.chat-route-layout__view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;

@@ -30,6 +30,7 @@ export function ToolCallBox({
   const isCollapsible = collapsible && hasBody
 
   const isExpanded = hasBody && (!isCollapsible || expanded)
+  const shouldRenderBodyContent = hasBody && (isExpanded || !isCollapsible)
   const headerContent = typeof header === 'function'
     ? header({ isExpanded, isCollapsible })
     : header
@@ -68,7 +69,7 @@ export function ToolCallBox({
           aria-hidden={!isExpanded}
         >
           <div className='tool-call-body'>
-            {content}
+            {shouldRenderBodyContent ? content : null}
           </div>
         </div>
       )}

@@ -40,6 +40,7 @@ import type {
   OptimisticSessionCreationOptions,
   OptimisticSessionCreationRequest
 } from './optimistic-session-creation'
+import { useBrowserSessionEntryContext } from './use-browser-session-entry-context'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
@@ -74,6 +75,7 @@ export function useChatSessionActions({
   const { setHeaderCollapsed } = useSenderHeaderQueryState()
   const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
   const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
+  const browserEntryContext = useBrowserSessionEntryContext()
   const [isCreating, setIsCreating] = useState(false)
   const isThinking = isCreating || session?.status === 'running'
   const optimisticCreation = session?.id == null || session.id === ''
@@ -205,6 +207,7 @@ export function useChatSessionActions({
       permissionMode,
       adapter,
       account,
+      entryContext: browserEntryContext,
       workspace: workspaceDraft == null
         ? undefined
         : {
@@ -217,6 +220,7 @@ export function useChatSessionActions({
     account,
     adapter,
     effort,
+    browserEntryContext,
     permissionMode,
     sessionTargetDraft,
     workspaceDraft
@@ -320,11 +324,13 @@ export function useChatSessionActions({
 
     connectionManager.send(session.id, {
       type: 'user_message',
-      text: text.trim()
+      text: text.trim(),
+      entryContext: browserEntryContext
     })
     return true
   }, [
     buildCreateSessionOptions,
+    browserEntryContext,
     hasAvailableModels,
     isThinking,
     message,
@@ -359,11 +365,13 @@ export function useChatSessionActions({
 
     connectionManager.send(session.id, {
       type: 'user_message',
-      content
+      content,
+      entryContext: browserEntryContext
     })
     return true
   }, [
     buildCreateSessionOptions,
+    browserEntryContext,
     hasAvailableModels,
     isThinking,
     message,
@@ -396,7 +404,10 @@ export function useChatSessionActions({
     }
 
     try {
-      const { session: newSession } = await branchSessionFromMessage(session.id, messageId, action, options)
+      const { session: newSession } = await branchSessionFromMessage(session.id, messageId, action, {
+        ...options,
+        entryContext: browserEntryContext
+      })
       await insertSessionIntoCache(newSession)
       navigateWithCurrentSearch(`/session/${newSession.id}`)
       return true
@@ -405,7 +416,7 @@ export function useChatSessionActions({
       void message.error(getApiErrorMessage(err, t('common.operationFailed')))
       return false
     }
-  }, [insertSessionIntoCache, message, navigateWithCurrentSearch, session?.id, t])
+  }, [browserEntryContext, insertSessionIntoCache, message, navigateWithCurrentSearch, session?.id, t])
 
   const forkMessage = useCallback((messageId: string) => {
     return runMessageAction(messageId, 'fork')

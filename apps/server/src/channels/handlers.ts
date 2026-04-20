@@ -134,9 +134,9 @@ export const handleInboundEvent = async (
       }
     },
     unbindSession: () => {
-      const currentBinding = getDb().getChannelSession(inbound.channelType, inbound.sessionType, inbound.channelId)
+      const currentBinding = getDb().getChannelSession(inbound.channelType, channelKey, inbound.sessionType, inbound.channelId)
       const sessionId = currentBinding?.sessionId ?? ctx.sessionId
-      getDb().deleteChannelSession(inbound.channelType, inbound.sessionType, inbound.channelId)
+      getDb().deleteChannelSession(inbound.channelType, channelKey, inbound.sessionType, inbound.channelId)
       if (sessionId) {
         deleteBinding(sessionId)
       }

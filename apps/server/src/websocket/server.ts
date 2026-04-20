@@ -7,6 +7,7 @@ import { WebSocketServer } from 'ws'
 
 import type { ServerEnv } from '@vibe-forge/core'
 import { WORKSPACE_TERMINAL_SESSION_ID } from '@vibe-forge/types'
+import { normalizeSessionEntryContext } from '@vibe-forge/utils'
 
 import { getDb } from '#~/db/index.js'
 import {
@@ -152,7 +153,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
         serverLogger.info({ event: 'user_input', data: msg }, 'Received user message')
         if (msg.type === 'user_message') {
           const content = msg.content ?? msg.text
-          void processUserMessage(sessionId, content)
+          void processUserMessage(sessionId, content, {
+            entryContext: normalizeSessionEntryContext(msg.entryContext)
+          })
         } else if (msg.type === 'interrupt') {
           serverLogger.info({ sessionId }, '[server] Received interrupt request')
           const sessionRuntimeState = getDb().getSessionRuntimeState(sessionId)

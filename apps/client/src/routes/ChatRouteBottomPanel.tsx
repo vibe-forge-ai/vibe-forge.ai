@@ -22,26 +22,30 @@ export function ChatRouteBottomPanel({
   return (
     <>
       {bottomPanel.shouldShowTerminal &&
-        <ChatTerminalView
-          key={terminalSessionId}
-          isOpen={isVisible}
-          sessionId={terminalSessionId}
-          onClose={bottomPanel.handleCloseTerminal}
-        />}
+        <div data-ai-ui-anchor='panels.terminal.panel'>
+          <ChatTerminalView
+            key={terminalSessionId}
+            isOpen={isVisible}
+            sessionId={terminalSessionId}
+            onClose={bottomPanel.handleCloseTerminal}
+          />
+        </div>}
       {bottomPanel.shouldShowFileEditor && bottomPanel.selectedWorkspaceFilePath != null &&
-        <WorkspaceFileEditorView
-          key={bottomPanel.selectedWorkspaceFilePath}
-          isOpen={isVisible}
-          openPaths={bottomPanel.openWorkspaceFilePaths}
-          path={bottomPanel.selectedWorkspaceFilePath}
-          sessionId={sessionId}
-          onClose={bottomPanel.handleCloseWorkspaceFile}
-          onCloseAllPaths={bottomPanel.handleCloseAllWorkspaceFileTabs}
-          onCloseOtherPaths={bottomPanel.handleCloseOtherWorkspaceFileTabs}
-          onClosePath={bottomPanel.handleCloseWorkspaceFileTab}
-          onClosePathsToRight={bottomPanel.handleCloseWorkspaceFileTabsToRight}
-          onSelectPath={bottomPanel.handleSelectWorkspaceFile}
-        />}
+        <div data-ai-ui-anchor='panels.workspace.file.panel'>
+          <WorkspaceFileEditorView
+            key={bottomPanel.selectedWorkspaceFilePath}
+            isOpen={isVisible}
+            openPaths={bottomPanel.openWorkspaceFilePaths}
+            path={bottomPanel.selectedWorkspaceFilePath}
+            sessionId={sessionId}
+            onClose={bottomPanel.handleCloseWorkspaceFile}
+            onCloseAllPaths={bottomPanel.handleCloseAllWorkspaceFileTabs}
+            onCloseOtherPaths={bottomPanel.handleCloseOtherWorkspaceFileTabs}
+            onClosePath={bottomPanel.handleCloseWorkspaceFileTab}
+            onClosePathsToRight={bottomPanel.handleCloseWorkspaceFileTabsToRight}
+            onSelectPath={bottomPanel.handleSelectWorkspaceFile}
+          />
+        </div>}
     </>
   )
 }

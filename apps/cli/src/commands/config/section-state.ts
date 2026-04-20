@@ -86,6 +86,8 @@ export const resolveClearedSectionValue = (section: ConfigSectionKey): ConfigSec
         defaultExcludeMcpServers: undefined,
         noDefaultVibeForgeMcpServer: undefined
       }
+    case 'mdp':
+      return {}
     case 'conversation':
     case 'models':
     case 'modelServices':

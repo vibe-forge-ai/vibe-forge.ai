@@ -113,6 +113,14 @@ describe('createSessionWithInitialMessage', () => {
     })
   })
 
+  it('falls back to the default title when no explicit title is provided', async () => {
+    await createSessionWithInitialMessage({
+      shouldStart: false
+    })
+
+    expect(createSession).toHaveBeenCalledWith('New Session', undefined, undefined, undefined)
+  })
+
   it('prefers the explicit workspace option over the project config default', async () => {
     mocks.loadConfigState.mockResolvedValueOnce({
       workspaceFolder: '/workspace/root',

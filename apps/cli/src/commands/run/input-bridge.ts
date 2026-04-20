@@ -9,9 +9,10 @@ import type { CliInputControlEvent, CliInputSession, RunInputFormat } from './ty
 const dispatchCliInputControlEvent = async (params: {
   session: CliInputSession
   event: CliInputControlEvent
+  transformMessageContent?: (content: ChatMessageContent[]) => ChatMessageContent[]
   submitInput?: (event: Extract<CliInputControlEvent, { type: 'submit_input' }>) => void | Promise<void>
 }) => {
-  const { session, event, submitInput } = params
+  const { session, event, submitInput, transformMessageContent } = params
   if (event.type === 'interrupt') {
     session.emit({ type: 'interrupt' })
     return
@@ -34,7 +35,7 @@ const dispatchCliInputControlEvent = async (params: {
 
   session.emit({
     type: 'message',
-    content
+    content: transformMessageContent?.(content) ?? content
   })
 }
 
@@ -44,9 +45,10 @@ export const attachInputBridge = (params: {
   stdin: NodeJS.ReadStream
   onError: (message: string) => void
   onInputClosed: () => void
+  transformMessageContent?: (content: ChatMessageContent[]) => ChatMessageContent[]
   submitInput?: (event: Extract<CliInputControlEvent, { type: 'submit_input' }>) => void | Promise<void>
 }) => {
-  const { format, session, stdin, onError, onInputClosed, submitInput } = params
+  const { format, session, stdin, onError, onInputClosed, submitInput, transformMessageContent } = params
   stdin.setEncoding('utf8')
 
   if (format === 'stream-json') {
@@ -61,6 +63,7 @@ export const attachInputBridge = (params: {
         void dispatchCliInputControlEvent({
           session,
           event: parseCliInputControlEvent(JSON.parse(trimmed)),
+          transformMessageContent,
           submitInput
         }).catch((error) => {
           onError(error instanceof Error ? error.message : String(error))
@@ -88,6 +91,7 @@ export const attachInputBridge = (params: {
         void dispatchCliInputControlEvent({
           session,
           event: parseCliInputControlEvent(payload),
+          transformMessageContent,
           submitInput
         }).catch((error) => {
           onError(error instanceof Error ? error.message : String(error))

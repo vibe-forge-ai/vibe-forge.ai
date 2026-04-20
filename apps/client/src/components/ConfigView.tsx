@@ -21,6 +21,7 @@ import {
   resolveRemoteConfigChangeAction,
   serializeComparableConfigValue
 } from './config/configConflict'
+import { MdpTopologyPanel } from './config/MdpTopologyPanel'
 import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
 import { toDisplayEnvironmentName, toEnvironmentReference } from './config/worktree-environment-panel-model'
@@ -98,6 +99,7 @@ export function ConfigView() {
       'adapters',
       'plugins',
       'mcp',
+      'mdp',
       'shortcuts'
     ]), [])
 
@@ -141,6 +143,8 @@ export function ConfigView() {
     },
     { key: 'plugins', icon: 'extension', label: t('config.sections.plugins'), value: currentSource?.plugins },
     { key: 'mcp', icon: 'account_tree', label: t('config.sections.mcp'), value: currentSource?.mcp },
+    { key: 'mdp', icon: 'hub', label: t('config.sections.mdp'), value: currentSource?.mdp },
+    { key: 'mdpTopology', icon: 'lan', label: t('config.sections.mdpTopology') },
     { key: 'shortcuts', icon: 'keyboard', label: t('config.sections.shortcuts'), value: currentSource?.shortcuts },
     { key: 'group-app', type: 'group', label: t('config.groups.app') },
     { key: 'appearance', icon: 'tune', label: t('config.sections.appearance') },
@@ -684,43 +688,51 @@ export function ConfigView() {
       {tab.key === 'worktreeEnvironments' && (
         <WorktreeEnvironmentPanel t={t} />
       )}
+      {tab.key === 'mdpTopology' && (
+        <MdpTopologyPanel t={t} />
+      )}
       {tab.key !== 'about' &&
         tab.key !== 'appearance' &&
+        tab.key !== 'mdpTopology' &&
         tab.key !== 'worktreeEnvironments' &&
         !configTabKeys.has(tab.key) && (
           <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
         )}
       {configTabKeys.has(tab.key) && (
-        <ConfigSectionPanel
-          sectionKey={tab.key}
-          title={tab.label}
-          icon={tab.icon}
-          uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
-          value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
-          resolvedValue={cloneValue(
-            currentResolvedSource != null
-              ? (currentResolvedSource as Record<string, unknown>)[tab.key]
-              : undefined
-          ) ?? {}}
-          onChange={(next) => handleDraftChange(tab.key, next)}
-          mergedModelServices={mergedModelServices as Record<string, unknown>}
-          mergedAdapters={mergedAdapters as Record<string, unknown>}
-          selectedModelService={selectedModelService}
-          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
-          detailQuery={activeTabKey === tab.key ? detailQuery : ''}
-          onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
-          t={t}
-          headerLeading={showSidebarToggle ? renderSidebarExpandButton() : undefined}
-          headerExtra={
-            <Space size={12}>
-              <ConfigSourceSwitch
-                value={sourceKey}
-                onChange={setSourceKey}
-                options={sourceOptions}
-              />
-            </Space>
-          }
-        />
+        <>
+          <ConfigSectionPanel
+            sectionKey={tab.key}
+            title={tab.label}
+            icon={tab.icon}
+            uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
+            value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
+            resolvedValue={cloneValue(
+              currentResolvedSource != null
+                ? (currentResolvedSource as Record<string, unknown>)[tab.key]
+                : undefined
+            ) ?? {}}
+            onChange={(next) => handleDraftChange(tab.key, next)}
+            mergedModelServices={mergedModelServices as Record<string, unknown>}
+            mergedAdapters={mergedAdapters as Record<string, unknown>}
+            selectedModelService={selectedModelService}
+            worktreeEnvironmentOptions={worktreeEnvironmentOptions}
+            detailQuery={activeTabKey === tab.key ? detailQuery : ''}
+            onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
+            t={t}
+            headerLeading={showSidebarToggle ? renderSidebarExpandButton() : undefined}
+            headerExtra={isCompactView
+              ? undefined
+              : (
+                <Space size={12}>
+                  <ConfigSourceSwitch
+                    value={sourceKey}
+                    onChange={setSourceKey}
+                    options={sourceOptions}
+                  />
+                </Space>
+              )}
+          />
+        </>
       )}
     </div>
   )

@@ -72,11 +72,13 @@ const createSessionNotice = (
 export const buildChatHistoryStatusNotices = ({
   errorState,
   isDebugMode,
+  showMockPreviews = false,
   modelUnavailable,
   t
 }: {
   errorState?: ChatErrorState | null
   isDebugMode: boolean
+  showMockPreviews?: boolean
   modelUnavailable: boolean
   t: Translate
 }) => {
@@ -98,7 +100,7 @@ export const buildChatHistoryStatusNotices = ({
     }
   }
 
-  if (!isDebugMode) {
+  if (!isDebugMode || !showMockPreviews) {
     return notices
   }
 

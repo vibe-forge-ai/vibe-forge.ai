@@ -4,12 +4,14 @@ import { AuthGate } from '#~/components/auth/AuthGate'
 import { AppShell } from '#~/components/layout/AppShell'
 import { ServerConnectionGate } from '#~/components/server-connection/ServerConnectionGate'
 import { useAppPreferences } from '#~/hooks/use-app-preferences'
+import { useMdpBrowserRuntime } from '#~/hooks/use-mdp-browser-runtime'
 import { useSessionSubscription } from '#~/hooks/use-session-subscription.js'
 import { useSidebarNavigation } from '#~/hooks/use-sidebar-navigation'
 import { AppRoutes } from '#~/routes/AppRoutes'
 
 function AuthenticatedApp() {
   useSessionSubscription()
+  useMdpBrowserRuntime()
   const { isDarkMode, themeConfig } = useAppPreferences()
   const sidebarNavigation = useSidebarNavigation()
 

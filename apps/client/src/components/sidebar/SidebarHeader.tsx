@@ -80,6 +80,7 @@ export function SidebarHeader({
       <Button
         ref={createButtonRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
         className={`sidebar-list-header__primary-action new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+        data-ai-ui-anchor='session.create'
         type={isCreatingSession ? 'default' : 'primary'}
         block
         disabled={!!isCreatingSession}
@@ -105,6 +106,7 @@ export function SidebarHeader({
       >
         <Button
           className={`sidebar-list-header__icon-action sidebar-new-chat-btn ${isCreatingSession ? 'active' : ''}`}
+          data-ai-ui-anchor='session.create'
           type='text'
           disabled={!!isCreatingSession}
           onClick={onCreateSession}
@@ -126,6 +128,7 @@ export function SidebarHeader({
     >
       <Button
         className='sidebar-list-header__icon-action sidebar-collapse-btn'
+        data-ai-ui-anchor={isCompactLayout ? 'layout.sidebar.mobile-close' : 'layout.sidebar.collapse'}
         type='text'
         aria-label={isCompactLayout ? t('common.close') : (
           isSidebarCollapsed ? t('common.expand') : t('common.collapse')

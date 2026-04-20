@@ -16,7 +16,6 @@ vi.mock('@vibe-forge/hooks', async (importOriginal) => {
     callHook: vi.fn()
   }
 })
-
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
   return {
@@ -779,7 +778,9 @@ describe('createCodexSession RPC approval policy mapping', () => {
     const session = await createCodexSession(
       makeCtx({
         env: {
+          __VF_PROJECT_LAUNCH_CWD__: '/tmp/launch',
           __VF_PROJECT_WORKSPACE_FOLDER__: '/tmp/project',
+          __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: '/tmp/primary',
           __VF_PROJECT_PACKAGE_DIR__: '/tmp/project/infra',
           __VF_PROJECT_CLI_PACKAGE_DIR__: '/tmp/project/infra/node_modules/@vibe-forge/cli',
           __VF_PROJECT_AI_SESSION_ID__: 'vf-session',
@@ -822,7 +823,9 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_PERMISSION_MODE__ = "dontAsk"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_HOST__ = "127.0.0.1"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_AI_SERVER_PORT__ = "8787"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_LAUNCH_CWD__ = "/tmp/launch"')
     expect(mcpEnvOverride).toContain('__VF_PROJECT_WORKSPACE_FOLDER__ = "/tmp/project"')
+    expect(mcpEnvOverride).toContain('__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = "/tmp/primary"')
     expect(mcpEnvOverride).toContain('EXPLICIT_ENV = "1"')
     expect(mcpEnvOverride).not.toContain('IGNORED_ENV')
 

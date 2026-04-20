@@ -4,9 +4,14 @@ import { Option } from 'commander'
 import type { Command } from 'commander'
 
 import { generateAdapterQueryOptions, run } from '@vibe-forge/app-runtime'
-import { loadInjectDefaultSystemPromptValue, mergeSystemPrompts } from '@vibe-forge/config'
+import {
+  buildConfigJsonVariables,
+  loadConfigState,
+  loadInjectDefaultSystemPromptValue,
+  mergeSystemPrompts
+} from '@vibe-forge/config'
 import { callHook } from '@vibe-forge/hooks'
-import type { AdapterInteractionRequest, AdapterOutputEvent, SessionInitInfo } from '@vibe-forge/types'
+import type { AdapterInteractionRequest, AdapterOutputEvent, AdapterSession, SessionInitInfo } from '@vibe-forge/types'
 import { getCache } from '@vibe-forge/utils/cache'
 import { resolveProjectPrimaryWorkspaceFolder } from '@vibe-forge/utils/project-cache-path'
 import { uuid } from '@vibe-forge/utils/uuid'
@@ -33,6 +38,11 @@ import { attachInputBridge } from './input-bridge'
 import { supportsPrintInteractionResponses } from './input-control'
 import { readCliPermissionDecision } from './input-decision'
 import {
+  buildCliSessionEntryContext,
+  injectCliEntryContextIntoContent,
+  mergeCliSessionEntrySystemPrompt
+} from '#~/mdp/entry-context.js'
+import {
   getDisallowedResumeFlags,
   getOutputFormat,
   mergeListConfig,
@@ -57,18 +67,38 @@ import {
 } from './permission-recovery'
 import { applyCliPermissionDecision } from './permission-state'
 import { createSessionExitController } from './session-exit-controller'
-import type { ActiveCliSessionRecord, ExitControllableSession, RunOptions } from './types'
+import type { ActiveCliSessionRecord, RunOptions } from './types'
 import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './types'
 
-type PrintInputCapableSession = ExitControllableSession & {
-  pid?: number
-  respondInteraction?: (id: string, data: string | string[]) => void | Promise<void>
+type PrintInputCapableSession = AdapterSession
+
+interface CliMdpRuntimeHandle {
+  sync(state: {
+    pendingInteraction?: AdapterInteractionRequest
+    record: ActiveCliSessionRecord
+    resolvedAdapter?: string
+    session?: PrintInputCapableSession
+  }): void
+  stop(): Promise<void>
 }
 
 const resolveRunPrimaryWorkspaceFolder = (
   workspaceFolder: string,
   fallbackWorkspaceFolder: string
 ) => resolveProjectPrimaryWorkspaceFolder(workspaceFolder, process.env) ?? fallbackWorkspaceFolder
+
+const loadEntryContextConfig = async (cwd: string, env: NodeJS.ProcessEnv) => {
+  if (typeof loadConfigState !== 'function' || typeof buildConfigJsonVariables !== 'function') {
+    return undefined
+  }
+
+  return loadConfigState({
+    cwd,
+    jsonVariables: buildConfigJsonVariables(cwd, env)
+  })
+    .then(state => state.mergedConfig)
+    .catch(() => undefined)
+}
 
 const configureRunCommand = (command: Command) => {
   command
@@ -263,7 +293,7 @@ Notes:
           }
         }
 
-        const adapterOptions = cachedSession?.resume != null
+        const baseAdapterOptions = cachedSession?.resume != null
           ? {
             ...resolveResumeAdapterOptions(cachedSession.resume.adapterOptions, opts),
             type: 'resume' as const,
@@ -357,7 +387,7 @@ Notes:
           type: _adapterType,
           description: _adapterDescription,
           ...cachedAdapterOptions
-        } = adapterOptions
+        } = baseAdapterOptions
         const runTaskOptions = isResume
           ? undefined
           : {
@@ -396,6 +426,26 @@ Notes:
             model: adapterOptions.model ?? cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
           }
         }
+        const runtimeTaskCwd = record.resume.taskOptions.cwd ?? record.resume.cwd
+        const primaryWorkspaceCwd = resolveRunPrimaryWorkspaceFolder(runtimeTaskCwd, cwd)
+        const runtimeMergedConfig = await loadEntryContextConfig(runtimeTaskCwd, process.env)
+        const cliEntryContext = buildCliSessionEntryContext({
+          config: runtimeMergedConfig,
+          cwd: runtimeTaskCwd,
+          primaryWorkspaceCwd,
+          ctxId,
+          sessionId,
+          outputFormat,
+          adapter: record.resume.resolvedAdapter ?? record.detail.adapter ?? undefined,
+          model: record.detail.model ?? undefined
+        })
+        const adapterOptions = {
+          ...baseAdapterOptions,
+          systemPrompt: mergeCliSessionEntrySystemPrompt(
+            baseAdapterOptions.systemPrompt,
+            cliEntryContext
+          )
+        }
 
         let persistQueue = Promise.resolve()
         const persistRecord = () => {
@@ -432,14 +482,24 @@ Notes:
             model: info.model ?? record.detail.model
           }
           void persistRecord()
+          syncMdpRuntime()
         }
 
         await persistRecord()
 
         let boundSession: PrintInputCapableSession | undefined
+        let mdpRuntime: CliMdpRuntimeHandle | undefined
         let stopInputBridge: (() => void) | undefined
         const permissionToolUseCache = new Map<string, string>()
         let permissionRecoveryQueue: Promise<void> = Promise.resolve()
+        const syncMdpRuntime = () => {
+          mdpRuntime?.sync({
+            pendingInteraction,
+            record,
+            resolvedAdapter: record.resume.resolvedAdapter ?? record.detail.adapter,
+            session: boundSession
+          })
+        }
         const submitPrintInput = async (params: { interactionId?: string; data: string | string[] }) => {
           const interactionId = params.interactionId ?? pendingInteraction?.id
           if (interactionId == null || interactionId.trim() === '') {
@@ -454,6 +514,7 @@ Notes:
 
           if (pendingInteraction?.id === interactionId) {
             pendingInteraction = undefined
+            syncMdpRuntime()
           }
         }
         const handleExit = (exitCode: number) => {
@@ -482,6 +543,7 @@ Notes:
             await persistQueue
             await permissionRecoveryQueue
             await clearCliSessionControl(cwd, ctxId, sessionId)
+            await mdpRuntime?.stop()
             stopInputBridge?.()
             if (shouldPrintResumeHint({ shouldPrintOutput, status })) {
               console.error(formatResumeCommand(sessionId))
@@ -496,11 +558,8 @@ Notes:
           ctxId,
           env: {
             ...process.env,
-            __VF_PROJECT_WORKSPACE_FOLDER__: record.resume.taskOptions.cwd ?? record.resume.cwd,
-            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: resolveRunPrimaryWorkspaceFolder(
-              record.resume.taskOptions.cwd ?? record.resume.cwd,
-              cwd
-            )
+            __VF_PROJECT_WORKSPACE_FOLDER__: runtimeTaskCwd,
+            __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primaryWorkspaceCwd
           },
           plugins: getCliDefaultSkillPluginConfig()
         }, {
@@ -547,6 +606,7 @@ Notes:
                   lastAssistantText = nextState.lastAssistantText
                   didExitAfterError = nextState.didExitAfterError
                 }
+                syncMdpRuntime()
                 return
               }
             }
@@ -557,6 +617,7 @@ Notes:
                   'Print-mode interaction responses require --input-format stream-json. Exiting after printing the request.'
                 )
               }
+              syncMdpRuntime()
             }
             if (
               event.type === 'stop' ||
@@ -564,6 +625,7 @@ Notes:
               (event.type === 'error' && event.data.fatal !== false)
             ) {
               pendingInteraction = undefined
+              syncMdpRuntime()
             }
             if (shouldPrintOutput) {
               const nextState = handlePrintEvent({
@@ -603,6 +665,26 @@ Notes:
           adapter: resolvedAdapter ?? record.detail.adapter
         }
         void persistRecord()
+        try {
+          const { startCliMdpRuntime } = await import('#~/mdp/runtime.js')
+          mdpRuntime = await startCliMdpRuntime({
+            cwd: runtimeTaskCwd,
+            primaryWorkspaceCwd,
+            env: {
+              ...process.env,
+              __VF_PROJECT_WORKSPACE_FOLDER__: runtimeTaskCwd,
+              __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primaryWorkspaceCwd
+            },
+            record,
+            session,
+            resolvedAdapter: resolvedAdapter ?? record.resume.resolvedAdapter ?? record.detail.adapter,
+            pendingInteraction
+          })
+          syncMdpRuntime()
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          console.error(`[vf] Failed to start CLI MDP runtime: ${message}`)
+        }
         exitController.bindSession(session)
         if (shouldPrintOutput && opts.inputFormat != null) {
           stopInputBridge = attachInputBridge({
@@ -619,6 +701,7 @@ Notes:
                 exitController.requestExit(1)
               }
             },
+            transformMessageContent: (content) => injectCliEntryContextIntoContent(content, cliEntryContext),
             submitInput: submitPrintInput
           })
         }

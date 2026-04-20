@@ -1,8 +1,30 @@
+import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+
 import { CodeBlock } from '#~/components/CodeBlock'
 import { MarkdownContent } from '#~/components/MarkdownContent'
 import { safeJsonStringify } from '#~/utils/safe-serialize'
 
 import { getStringList, getStructuredBlocks, looksLikeMarkdown } from './tool-result-content-utils'
+
+const LARGE_RESULT_PREVIEW_CHARS = 12000
+
+function LargeResultPreview({ content }: { content: string }) {
+  const { t } = useTranslation()
+  const preview = useMemo(() => content.slice(0, LARGE_RESULT_PREVIEW_CHARS), [content])
+
+  return (
+    <div className='tool-result-large-preview'>
+      <div className='tool-result-large-preview__meta'>
+        {t('chat.tools.largeResultPreview', {
+          preview: LARGE_RESULT_PREVIEW_CHARS.toLocaleString(),
+          total: content.length.toLocaleString()
+        })}
+      </div>
+      <pre className='tool-result-large-preview__content'>{preview}</pre>
+    </div>
+  )
+}
 
 export function ToolResultContent({
   content,
@@ -55,6 +77,10 @@ export function ToolResultContent({
   }
 
   if (typeof content === 'string') {
+    if (content.length > LARGE_RESULT_PREVIEW_CHARS) {
+      return <LargeResultPreview content={content} />
+    }
+
     if (content.startsWith('```') || (preferMarkdown && looksLikeMarkdown(content))) {
       return <MarkdownContent content={content} />
     }

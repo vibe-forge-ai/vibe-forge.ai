@@ -1,9 +1,10 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
-import type { GitBranchKind, SessionPromptType } from '@vibe-forge/types'
+import type { GitBranchKind, SessionEntryContext, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
 import { checkoutSessionGitBranch, createSessionGitBranch } from '#~/services/git/index.js'
+import { normalizeSessionTitle } from '#~/services/session/default-title.js'
 import { processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
 import {
@@ -65,6 +66,7 @@ export async function createSessionWithInitialMessage(options: {
   systemPrompt?: string
   adapter?: string
   account?: string
+  entryContext?: SessionEntryContext
   workspace?: CreateSessionWorkspaceOptions
 }): Promise<Session> {
   const {
@@ -84,10 +86,12 @@ export async function createSessionWithInitialMessage(options: {
     systemPrompt,
     adapter,
     account,
+    entryContext,
     workspace
   } = options
   const db = getDb()
-  const session = db.createSession(title, id, undefined, parentSessionId)
+  const sessionTitle = normalizeSessionTitle(title)
+  const session = db.createSession(sessionTitle, id, undefined, parentSessionId)
   if (
     model !== undefined ||
     effort !== undefined ||
@@ -146,12 +150,12 @@ export async function createSessionWithInitialMessage(options: {
       await beforeStart?.(session.id)
       await startAdapterSession(
         session.id,
-        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter, account }
+        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter, account, entryContext }
       )
       if (initialContent) {
-        processUserMessage(session.id, initialContent)
+        processUserMessage(session.id, initialContent, { entryContext })
       } else if (initialMessage) {
-        processUserMessage(session.id, initialMessage)
+        processUserMessage(session.id, initialMessage, { entryContext })
       }
 
       const updated = db.getSession(session.id)

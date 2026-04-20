@@ -1,5 +1,5 @@
 import type { ChatMessageContent, Session, SessionMessageQueueState, SessionQueuedMessageMode } from '@vibe-forge/core'
-import type { GitBranchKind, SessionPromptType, SessionWorkspace } from '@vibe-forge/types'
+import type { GitBranchKind, SessionEntryContext, SessionPromptType, SessionWorkspace } from '@vibe-forge/types'
 
 import { createApiUrl, fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse, ApiRemoveResponse, SessionMessagesResponse } from './types'
@@ -27,6 +27,7 @@ export async function createSession(
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
     account?: string
+    entryContext?: SessionEntryContext
     workspace?: {
       createWorktree?: boolean
       worktreeEnvironment?: string
@@ -55,6 +56,7 @@ export async function createSession(
       permissionMode: options?.permissionMode,
       adapter: options?.adapter,
       account: options?.account,
+      entryContext: options?.entryContext,
       workspace: options?.workspace
     })
   })
@@ -75,6 +77,7 @@ export async function branchSessionFromMessage(
   options?: {
     content?: string | ChatMessageContent[]
     title?: string
+    entryContext?: SessionEntryContext
   }
 ): Promise<{ session: Session }> {
   return fetchApiJson<{ session: Session }>(`/api/sessions/${sessionId}/messages/${messageId}/branch`, {
@@ -83,7 +86,8 @@ export async function branchSessionFromMessage(
     body: JSON.stringify({
       action,
       content: options?.content,
-      title: options?.title
+      title: options?.title,
+      entryContext: options?.entryContext
     })
   })
 }

@@ -93,7 +93,7 @@ describe('resolveSessionMiddleware', () => {
     expect(next).toHaveBeenCalledOnce()
   })
 
-  it('queries using channelType, sessionType, and channelId', async () => {
+  it('queries using channelType, channelKey, sessionType, and channelId', async () => {
     const getChannelSession = vi.fn().mockReturnValue(null)
     const getChannelPreference = vi.fn().mockReturnValue(null)
     vi.mocked(getDb).mockReturnValue({ getChannelSession, getChannelPreference } as any)
@@ -101,8 +101,8 @@ describe('resolveSessionMiddleware', () => {
 
     await resolveSessionMiddleware(ctx, vi.fn())
 
-    expect(getChannelSession).toHaveBeenCalledWith('lark', 'direct', 'ch1')
-    expect(getChannelPreference).toHaveBeenCalledWith('lark', 'direct', 'ch1')
+    expect(getChannelSession).toHaveBeenCalledWith('lark', 'lark:default', 'direct', 'ch1')
+    expect(getChannelPreference).toHaveBeenCalledWith('lark', 'lark:default', 'direct', 'ch1')
   })
 
   it('loads the pending channel adapter preference', async () => {

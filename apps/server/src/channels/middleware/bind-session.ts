@@ -8,16 +8,19 @@ import type { ChannelMiddleware } from './@types'
 const isSameChannel = (
   row: {
     channelType: string
+    channelKey: string
     sessionType: string
     channelId: string
   },
   input: {
     channelType: string
+    channelKey: string
     sessionType: string
     channelId: string
   }
 ) => (
   row.channelType === input.channelType &&
+  row.channelKey === input.channelKey &&
   row.sessionType === input.sessionType &&
   row.channelId === input.channelId
 )
@@ -43,16 +46,17 @@ export const bindChannelSession = (input: {
     sessionId
   } = input
   const db = getDb()
-  const previousChannelBinding = db.getChannelSession(channelType, sessionType, channelId)
+  const previousChannelBinding = db.getChannelSession(channelType, channelKey, sessionType, channelId)
   const transferredBinding = db.getChannelSessionBySessionId(sessionId)
 
   if (previousChannelBinding?.sessionId != null && previousChannelBinding.sessionId !== sessionId) {
     deleteBinding(previousChannelBinding.sessionId)
   }
 
-  if (transferredBinding != null && !isSameChannel(transferredBinding, { channelType, sessionType, channelId })) {
+  if (transferredBinding != null && !isSameChannel(transferredBinding, { channelType, channelKey, sessionType, channelId })) {
     db.deleteChannelSession(
       transferredBinding.channelType,
+      transferredBinding.channelKey,
       transferredBinding.sessionType,
       transferredBinding.channelId
     )
@@ -83,7 +87,7 @@ export const bindChannelSession = (input: {
       ? previousChannelBinding?.sessionId
       : undefined,
     transferredFrom:
-      transferredBinding != null && !isSameChannel(transferredBinding, { channelType, sessionType, channelId })
+      transferredBinding != null && !isSameChannel(transferredBinding, { channelType, channelKey, sessionType, channelId })
         ? transferredBinding
         : undefined
   }

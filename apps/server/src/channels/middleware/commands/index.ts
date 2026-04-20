@@ -10,10 +10,11 @@ import { splitCommand } from './utils'
 
 let _sharedMessagesRegistered = false
 
-const ensureSharedMessagesRegistered = (ctx: ChannelContext) => {
+export const ensureSharedCommandMessagesRegistered = (
+  register: typeof defineMessages = defineMessages
+) => {
   if (_sharedMessagesRegistered) return
 
-  const register = ctx.defineMessages ?? defineMessages
   register('zh', {
     'system.unknownCommand': ({ token }) => `未知指令：${token}`,
     'system.emptyCommand': '空指令。',
@@ -137,7 +138,7 @@ const handleCommand = async (ctx: ChannelContext) => {
 }
 
 export const channelCommandMiddleware: ChannelMiddleware = async (ctx, next) => {
-  ensureSharedMessagesRegistered(ctx)
+  ensureSharedCommandMessagesRegistered(ctx.defineMessages ?? defineMessages)
   const prefix = getPrefix(ctx)
   const command = splitCommand(ctx.commandText)[0] ?? ''
   if (command === '' || !command.startsWith(prefix)) {

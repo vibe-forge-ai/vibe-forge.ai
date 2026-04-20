@@ -19,6 +19,7 @@ import { channelActionsRouter } from './channel-actions'
 import { configRouter } from './config'
 import { gitRouter } from './git'
 import { interactRouter } from './interact'
+import { mdpRouter } from './mdp'
 import { sessionsRouter } from './sessions'
 import { skillHubRouter } from './skill-hub'
 import { uiRouter } from './ui'
@@ -114,6 +115,7 @@ export const mountRoutes = async (
     { prefix: '/channels/actions', router: channelActionsRouter() },
     { prefix: '/api/automation', router: automationRouter() },
     { prefix: '/api/config', router: configRouter() },
+    { prefix: '/api/mdp', router: mdpRouter() },
     { prefix: '/api/worktree-environments', router: worktreeEnvironmentsRouter() },
     { prefix: '/api/workspace', router: workspaceRouter() }
   ]

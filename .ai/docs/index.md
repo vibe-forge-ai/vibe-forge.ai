@@ -17,6 +17,7 @@
 - [PWA 与独立部署](./usage/pwa.md)
 - [Channel 会话绑定](./usage/channels.md)
 - [CLI 与示例](./usage/cli.md)
+- [MDP 集成](./usage/mdp.md)
 - [Skills 与依赖](./usage/skills.md)
 - [Workspace 调度](./usage/workspaces.md)
 - [插件与数据资产](./usage/plugins.md)
@@ -26,5 +27,5 @@
 
 - 不需要 clone 本仓库，只需要安装相关包。
 - 配置与会话基于你的项目目录，而不是 Vibe Forge 仓库本身。
-- UI、CLI、MCP、hooks runtime 都可以按需单独接入。
+- UI、CLI、MDP bridge、hooks runtime 都可以按需单独接入。
 - Web UI 的会话页支持独立 `terminal` 视图，但它和 chat 消息流是两条不同的运行链路。

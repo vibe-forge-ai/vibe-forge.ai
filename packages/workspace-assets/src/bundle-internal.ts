@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { basename, dirname, extname, isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
 
@@ -48,6 +50,8 @@ interface OpenCodeOverlayAssetEntry {
   entryName: string
   targetSubpath: string
 }
+
+const DEFAULT_MDP_MCP_SERVER_NAME = 'MDP'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -246,6 +250,25 @@ const parseStructuredMcpFile = async (path: string) => {
   return extension === '.yaml' || extension === '.yml'
     ? yaml.load(raw)
     : JSON.parse(raw)
+}
+
+const resolveDefaultMdpBridgeServerConfig = () => {
+  try {
+    const packageResolver = typeof require === 'function'
+      ? require
+      : createRequire(resolve(process.cwd(), '__vf_workspace_assets_mdp_resolver__.js'))
+    const workspacePackageJsonPath = resolve(process.cwd(), 'packages/mdp/package.json')
+    const packageJsonPath = existsSync(workspacePackageJsonPath)
+      ? workspacePackageJsonPath
+      : packageResolver.resolve('@vibe-forge/mdp/package.json')
+    const packageDir = dirname(packageJsonPath)
+    return {
+      command: process.execPath,
+      args: [resolve(packageDir, 'cli.js')]
+    } satisfies NonNullable<Config['mcpServers']>[string]
+  } catch {
+    return undefined
+  }
 }
 
 const createDocumentAsset = <
@@ -527,6 +550,7 @@ export async function collectWorkspaceAssets(params: {
   overlaySource?: string
   includeManagedPlugins?: boolean
   useDefaultVibeForgeMcpServer?: boolean
+  useDefaultMdpMcpServer?: boolean
 }): Promise<{
   assets: WorkspaceAsset[]
   configs: [Config?, Config?]
@@ -544,6 +568,12 @@ export async function collectWorkspaceAssets(params: {
   workspaces: Array<Extract<WorkspaceAsset, { kind: 'workspace' }>>
 }> {
   const [config, userConfig] = params.configs ?? await loadWorkspaceConfig(params.cwd)
+  const useDefaultMdpMcpServer = params.useDefaultMdpMcpServer ??
+    (userConfig?.mdp?.enabled === false ? false : undefined) ??
+    (config?.mdp?.enabled === false ? false : undefined) ??
+    (userConfig?.mdp?.noDefaultBridge != null ? !userConfig.mdp.noDefaultBridge : undefined) ??
+    (config?.mdp?.noDefaultBridge != null ? !config.mdp.noDefaultBridge : undefined) ??
+    true
   const managedPluginConfigs = params.includeManagedPlugins === false
     ? undefined
     : toManagedPluginConfig(await listManagedPluginInstalls(params.cwd))
@@ -640,6 +670,19 @@ export async function collectWorkspaceAssets(params: {
         cwd: params.cwd,
         name: DEFAULT_VIBE_FORGE_MCP_SERVER_NAME,
         config: defaultVibeForgeMcpServer,
+        origin: 'workspace',
+        sourcePath: resolveProjectAiBaseDir(params.cwd, process.env)
+      }))
+    }
+  }
+
+  if (useDefaultMdpMcpServer) {
+    const defaultMdpBridgeServer = resolveDefaultMdpBridgeServerConfig()
+    if (defaultMdpBridgeServer != null) {
+      addMcpAsset(createMcpAsset({
+        cwd: params.cwd,
+        name: DEFAULT_MDP_MCP_SERVER_NAME,
+        config: defaultMdpBridgeServer,
         origin: 'workspace',
         sourcePath: resolveProjectAiBaseDir(params.cwd, process.env)
       }))

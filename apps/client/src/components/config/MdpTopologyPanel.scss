@@ -1,0 +1,120 @@
+.mdp-topology {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.mdp-topology__header-extra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.mdp-topology__header-button.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mdp-topology__table {
+  min-width: 0;
+}
+
+.mdp-topology__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mdp-topology__client-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mdp-topology__client-name--interactive {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.mdp-topology__client-name--interactive:focus-visible {
+  outline: 2px solid var(--primary-color, #1677ff);
+  outline-offset: 2px;
+}
+
+.mdp-topology__client-name-text {
+  min-width: 0;
+}
+
+.mdp-topology__client-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mdp-topology__client-route {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  word-break: break-all;
+}
+
+.mdp-topology__client-meta {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mdp-topology__client-row {
+  cursor: pointer;
+}
+
+.mdp-topology__detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mdp-topology__detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--vf-border-color, rgba(5, 5, 5, 0.06));
+  border-radius: 12px;
+  background: var(--vf-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.mdp-topology__detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mdp-topology__detail-label {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mdp-topology__detail-value {
+  min-width: 0;
+}
+
+.mdp-topology__detail-value--break {
+  word-break: break-all;
+}
+
+.mdp-topology__detail-empty {
+  padding: 8px 0;
+}
+
+.mdp-topology__path-tree {
+  padding: 2px 0;
+}

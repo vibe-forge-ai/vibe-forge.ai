@@ -21,6 +21,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
     "@monaco-editor/react": "^4.7.0",
+    "@modeldriveprotocol/client": "^2.2.0",
     "@vibe-forge/adapter-claude-code": "workspace:^",
     "@vibe-forge/adapter-codex": "workspace:^",
     "@vibe-forge/adapter-copilot": "workspace:^",
@@ -29,6 +30,7 @@
     "@vibe-forge/adapter-opencode": "workspace:^",
     "@vibe-forge/channel-lark": "workspace:^",
     "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/mdp": "workspace:^",
     "@vibe-forge/plugin-chrome-devtools": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",

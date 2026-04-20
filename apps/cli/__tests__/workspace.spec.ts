@@ -36,6 +36,10 @@ vi.mock('@vibe-forge/app-runtime', () => ({
 }))
 
 vi.mock('@vibe-forge/config', () => ({
+  buildConfigJsonVariables: vi.fn(() => ({})),
+  loadConfigState: vi.fn(async () => ({
+    mergedConfig: {}
+  })),
   loadInjectDefaultSystemPromptValue: vi.fn(async () => undefined),
   mergeSystemPrompts: vi.fn(({ generatedSystemPrompt, userSystemPrompt }) => (
     userSystemPrompt ?? generatedSystemPrompt
@@ -44,6 +48,13 @@ vi.mock('@vibe-forge/config', () => ({
 
 vi.mock('@vibe-forge/hooks', () => ({
   callHook: vi.fn(async () => undefined)
+}))
+
+vi.mock('#~/mdp/runtime.js', () => ({
+  startCliMdpRuntime: vi.fn(async () => ({
+    sync: vi.fn(),
+    stop: vi.fn(async () => undefined)
+  }))
 }))
 
 const tempDirs: string[] = []

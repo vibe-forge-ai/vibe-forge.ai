@@ -1,5 +1,5 @@
 import type { AskUserQuestionParams, EffortLevel, Session, SessionPermissionMode, WSEvent } from '@vibe-forge/core'
-import type { AdapterSession, SessionPromptType } from '@vibe-forge/types'
+import type { AdapterSession, SessionEntryContext, SessionPromptType } from '@vibe-forge/types'
 import { WebSocket as WebSocketImpl } from 'ws'
 import type { WebSocket } from 'ws'
 
@@ -20,6 +20,7 @@ export interface SessionConnectionState {
   messages: WSEvent[]
   currentInteraction?: SessionInteractionState
   queueRuntime: SessionQueueRuntimeState
+  entryContext?: SessionEntryContext
 }
 
 export interface AdapterSessionConfig {
@@ -101,7 +102,8 @@ export function parkAdapterSessionRuntime(sessionId: string) {
     sockets: runtime.sockets,
     messages: runtime.messages,
     currentInteraction: runtime.currentInteraction,
-    queueRuntime: runtime.queueRuntime
+    queueRuntime: runtime.queueRuntime,
+    entryContext: runtime.entryContext
   }
   externalSessionStore.set(sessionId, parked)
   adapterSessionStore.delete(sessionId)
@@ -139,6 +141,19 @@ export function deleteExternalSessionRuntime(sessionId: string) {
 
 export function getSessionConnectionState(sessionId: string) {
   return adapterSessionStore.get(sessionId) ?? externalSessionStore.get(sessionId)
+}
+
+export function getSessionEntryContext(sessionId: string) {
+  return getSessionConnectionState(sessionId)?.entryContext
+}
+
+export function setSessionEntryContext(sessionId: string, entryContext?: SessionEntryContext) {
+  const runtime = getSessionConnectionState(sessionId)
+  if (runtime == null) {
+    return undefined
+  }
+  runtime.entryContext = entryContext
+  return runtime.entryContext
 }
 
 export function getSessionQueueRuntimeState(sessionId: string) {

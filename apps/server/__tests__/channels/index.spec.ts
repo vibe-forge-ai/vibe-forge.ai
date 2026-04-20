@@ -164,4 +164,95 @@ describe('initChannels', () => {
       '[channels] channel initialization failed'
     )
   })
+
+  it('reloads channels by closing previous connections before reconnecting', async () => {
+    const closeFirst = vi.fn()
+    const closeSecond = vi.fn()
+    const create = vi.fn()
+      .mockResolvedValueOnce({
+        startReceiving: vi.fn(),
+        close: closeFirst
+      })
+      .mockResolvedValueOnce({
+        startReceiving: vi.fn(),
+        close: closeSecond
+      })
+
+    loadChannelModule.mockReturnValue({
+      definition: {
+        configSchema: z.object({
+          type: z.literal('lark'),
+          appId: z.string()
+        })
+      },
+      create
+    })
+
+    const { initChannels, reloadChannels, listChannelRuntimeStates } = await import('#~/channels/index.js')
+
+    await initChannels([{
+      channels: {
+        'miniapp-gear': {
+          type: 'lark',
+          appId: 'cli_first'
+        }
+      }
+    }])
+
+    expect(listChannelRuntimeStates()).toHaveLength(1)
+
+    const nextManager = await reloadChannels([{
+      channels: {
+        'miniapp-gear': {
+          type: 'lark',
+          appId: 'cli_second'
+        }
+      }
+    }])
+
+    expect(closeFirst).toHaveBeenCalledOnce()
+    expect(nextManager.states.get('miniapp-gear')).toMatchObject({
+      status: 'connected',
+      config: {
+        type: 'lark',
+        appId: 'cli_second'
+      }
+    })
+    expect(closeSecond).not.toHaveBeenCalled()
+  })
+
+  it('closes active channel connections when the manager is stopped', async () => {
+    const close = vi.fn()
+
+    loadChannelModule.mockReturnValue({
+      definition: {
+        configSchema: z.object({
+          type: z.literal('lark'),
+          appId: z.string()
+        })
+      },
+      create: vi.fn().mockResolvedValue({
+        startReceiving: vi.fn(),
+        close
+      })
+    })
+
+    const { initChannels, closeChannels, listChannelRuntimeStates } = await import('#~/channels/index.js')
+
+    await initChannels([{
+      channels: {
+        'miniapp-gear': {
+          type: 'lark',
+          appId: 'cli_xxx'
+        }
+      }
+    }])
+
+    expect(listChannelRuntimeStates()).toHaveLength(1)
+
+    await closeChannels()
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(listChannelRuntimeStates()).toEqual([])
+  })
 })

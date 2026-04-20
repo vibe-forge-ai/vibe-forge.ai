@@ -4,6 +4,7 @@ import useSWR from 'swr'
 import type { AdapterAccountInfo, AdapterAccountQuotaMetric, AdapterAccountsResult } from '@vibe-forge/types'
 
 import { getAdapterAccounts } from '#~/api.js'
+import { resolveChatAdapterAccountKey } from './account-selection'
 import { normalizeNonEmptyString } from './model-selector'
 
 export interface ChatAdapterAccountOption {
@@ -90,25 +91,18 @@ export function useChatAdapterAccountSelection({
       }))
   }, [data?.accounts])
 
-  const resolveSelectableAccount = useCallback((value?: string, preserveUnknown = false) => {
-    const normalizedValue = normalizeNonEmptyString(value)
-    const accountValues = new Set(accountOptions.map(option => option.value))
-    if (normalizedValue != null) {
-      if (accountValues.has(normalizedValue)) {
-        return normalizedValue
-      }
-      if (preserveUnknown) {
-        return normalizedValue
-      }
-    }
+  const resolveSelectableAccount = useCallback((value?: string) => (
+    resolveChatAdapterAccountKey({
+      value,
+      accountOptions,
+      defaultAccount: data?.defaultAccount
+    })
+  ), [accountOptions, data?.defaultAccount])
 
-    const defaultAccount = normalizeNonEmptyString(data?.defaultAccount)
-    if (defaultAccount != null && accountValues.has(defaultAccount)) {
-      return defaultAccount
-    }
-
-    return accountOptions[0]?.value
-  }, [accountOptions, data?.defaultAccount])
+  const resolvedSelectedAccount = useMemo(
+    () => resolveSelectableAccount(selectedAccount),
+    [resolveSelectableAccount, selectedAccount]
+  )
 
   useEffect(() => {
     if (normalizedAdapter == null) {
@@ -116,9 +110,13 @@ export function useChatAdapterAccountSelection({
       return
     }
 
+    if (accountOptions.length === 0 && normalizeNonEmptyString(data?.defaultAccount) == null) {
+      return
+    }
+
     const nextValue = resolveSelectableAccount(selectedAccount)
     setSelectedAccountState((prev) => prev === nextValue ? prev : nextValue)
-  }, [normalizedAdapter, resolveSelectableAccount, selectedAccount])
+  }, [accountOptions.length, data?.defaultAccount, normalizedAdapter, resolveSelectableAccount, selectedAccount])
 
   useEffect(() => {
     if (normalizedAdapter == null) {
@@ -127,28 +125,27 @@ export function useChatAdapterAccountSelection({
 
     try {
       const storageKey = `${ACCOUNT_STORAGE_KEY_PREFIX}${normalizedAdapter}`
-      if (selectedAccount == null || selectedAccount.trim() === '') {
+      if (resolvedSelectedAccount == null || resolvedSelectedAccount.trim() === '') {
         localStorage.removeItem(storageKey)
       } else {
-        localStorage.setItem(storageKey, selectedAccount)
+        localStorage.setItem(storageKey, resolvedSelectedAccount)
       }
     } catch {}
-  }, [normalizedAdapter, selectedAccount])
+  }, [normalizedAdapter, resolvedSelectedAccount])
 
   const applySessionSelection = useCallback((params: { account?: string }) => {
-    const nextAccount = resolveSelectableAccount(params.account, true) ??
-      normalizeNonEmptyString(params.account)
+    const nextAccount = resolveSelectableAccount(params.account) ?? normalizeNonEmptyString(params.account)
     setSelectedAccountState((prev) => prev === nextAccount ? prev : nextAccount)
   }, [resolveSelectableAccount])
 
   const updateSelectedAccount = useCallback((value?: string) => {
-    const nextAccount = resolveSelectableAccount(value)
+    const nextAccount = resolveSelectableAccount(value) ?? normalizeNonEmptyString(value)
     setSelectedAccountState((prev) => prev === nextAccount ? prev : nextAccount)
   }, [resolveSelectableAccount])
 
   return {
     accountOptions,
-    selectedAccount: resolveSelectableAccount(selectedAccount, true) ?? selectedAccount,
+    selectedAccount: resolvedSelectedAccount,
     setSelectedAccount: updateSelectedAccount,
     applySessionSelection,
     showAccountSelector: normalizedAdapter != null && accountOptions.length > 0

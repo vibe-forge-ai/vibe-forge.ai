@@ -268,6 +268,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       )
       return nextConfig
     }
+    case 'mdp': {
+      updateField(
+        'mdp',
+        mergeMaskedValues(sectionValue, config.mdp) as Config['mdp']
+      )
+      return nextConfig
+    }
     case 'shortcuts': {
       updateField(
         'shortcuts',

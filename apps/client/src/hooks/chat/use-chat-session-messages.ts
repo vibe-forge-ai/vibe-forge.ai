@@ -310,7 +310,6 @@ export function useChatSessionMessages({
     isInitialLoadRef.current = !restoredState.isReady
 
     void refreshHistory()
-    void refreshHistory()
 
     return () => {
       clearScheduledReconciles()

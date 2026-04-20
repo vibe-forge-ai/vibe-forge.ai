@@ -9,6 +9,7 @@ import { useLocation } from 'react-router-dom'
 
 import type { Session } from '@vibe-forge/core'
 
+import { AiUiFeedbackLayer } from '#~/components/ai-ui-feedback/AiUiFeedbackLayer'
 import { NavRail } from '#~/components/NavRail'
 import { Sidebar } from '#~/components/Sidebar'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
@@ -96,6 +97,7 @@ export function AppShell({
   if (isCompactLayout) {
     return (
       <Layout className={`app-shell app-shell--compact ${isDarkMode ? 'app-shell--dark' : ''}`}>
+        <AiUiFeedbackLayer />
         {content}
 
         {showSidebar && (
@@ -151,6 +153,7 @@ export function AppShell({
 
   return (
     <Layout className={`app-shell ${isDarkMode ? 'app-shell--dark' : ''}`}>
+      <AiUiFeedbackLayer />
       <div className='app-shell__sidebar-region'>
         <NavRail />
         {showSidebar && (

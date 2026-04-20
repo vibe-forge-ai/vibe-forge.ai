@@ -230,6 +230,35 @@ export const skillsConfigSchema = z.object({
   homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
 
+export const mdpAuthConfigSchema = z.object({
+  scheme: z.string().optional().describe('Authentication scheme'),
+  token: z.string().optional().describe('Authentication token'),
+  headers: z.record(z.string(), z.string()).optional().describe('Static authentication headers'),
+  metadata: z.record(z.string(), jsonValueSchema).optional().describe('Opaque auth metadata')
+})
+
+export const mdpConnectionConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable this MDP connection'),
+  title: z.string().optional().describe('Display title'),
+  description: z.string().optional().describe('Display description'),
+  hosts: z.array(z.string()).optional().describe('Candidate MDP server URLs in priority order'),
+  auth: mdpAuthConfigSchema.optional().describe('Connection authentication settings')
+})
+
+export const mdpFilterConfigSchema = z.object({
+  excludeClientIds: z.array(z.string()).optional().describe('Glob patterns for hidden client ids'),
+  excludeNames: z.array(z.string()).optional().describe('Glob patterns for hidden client names'),
+  excludePaths: z.array(z.string()).optional().describe('Glob patterns for hidden paths')
+})
+
+export const mdpWorkspaceProjectionConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable workspace skill projection'),
+  includeWorkspaceSkills: z.boolean().optional().describe('Project workspace skill assets'),
+  includePluginSkills: z.boolean().optional().describe('Project plugin skill assets'),
+  includeSkillIds: z.array(z.string()).optional().describe('Only project these skill asset ids'),
+  excludeSkillIds: z.array(z.string()).optional().describe('Do not project these skill asset ids')
+})
+
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({
     id: z.string().min(1).describe('Plugin package name or short id'),
@@ -398,6 +427,15 @@ export const mcpConfigSectionSchema = z.object({
   noDefaultVibeForgeMcpServer: z.boolean().optional()
 })
 
+export const mdpConfigSectionSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable first-party MDP integration'),
+  noDefaultBridge: z.boolean().optional().describe('Disable the default Vibe Forge MDP bridge MCP server'),
+  connections: z.record(z.string(), mdpConnectionConfigSchema).optional().describe('Configured MDP connections'),
+  filters: mdpFilterConfigSchema.optional().describe('Visibility filters applied to bridged MDP catalogs'),
+  workspaceProjection: mdpWorkspaceProjectionConfigSchema.optional()
+    .describe('Workspace skill projection settings')
+})
+
 export const baseAdapterEntrySchema = adapterConfigCommonSchema.passthrough()
 export const baseChannelEntrySchema = channelBaseSchema.passthrough()
 
@@ -410,6 +448,7 @@ export const configSectionSchemas = {
   adapters: z.object({}).catchall(baseAdapterEntrySchema),
   plugins: pluginSectionSchema,
   mcp: mcpConfigSectionSchema,
+  mdp: mdpConfigSectionSchema,
   auth: webAuthConfigSchema,
   shortcuts: shortcutsConfigSchema
 } as const
@@ -433,6 +472,7 @@ export const baseConfigFileSchema = z.object({
   defaultIncludeMcpServers: z.array(z.string()).optional(),
   defaultExcludeMcpServers: z.array(z.string()).optional(),
   noDefaultVibeForgeMcpServer: z.boolean().optional(),
+  mdp: mdpConfigSectionSchema.optional(),
   permissions: permissionsConfigSchema.optional(),
   env: z.record(z.string(), z.string()).optional(),
   announcements: z.array(z.string()).optional(),

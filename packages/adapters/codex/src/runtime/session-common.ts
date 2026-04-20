@@ -136,7 +136,9 @@ const toTomlInlineTable = (obj: Record<string, string>) =>
   `{${Object.entries(obj).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}}`
 
 const MCP_INHERITED_ENV_KEYS = [
+  '__VF_PROJECT_LAUNCH_CWD__',
   '__VF_PROJECT_WORKSPACE_FOLDER__',
+  '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__',
   '__VF_PROJECT_PACKAGE_DIR__',
   '__VF_PROJECT_CLI_PACKAGE_DIR__',
   '__VF_PROJECT_AI_SESSION_ID__',

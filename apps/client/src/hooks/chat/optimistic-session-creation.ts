@@ -8,7 +8,7 @@ import type {
   SessionPermissionMode,
   SessionPromptType
 } from '@vibe-forge/core'
-import type { GitBranchKind } from '@vibe-forge/types'
+import type { GitBranchKind, SessionEntryContext } from '@vibe-forge/types'
 
 export interface OptimisticSessionCreationOptions {
   start?: boolean
@@ -20,6 +20,7 @@ export interface OptimisticSessionCreationOptions {
   permissionMode?: SessionPermissionMode
   adapter?: string
   account?: string
+  entryContext?: SessionEntryContext
   workspace?: {
     createWorktree?: boolean
     worktreeEnvironment?: string

@@ -148,17 +148,18 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
       if (!session) {
         return { alreadyBound: false }
       }
-      const previous = getChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      const previous = getChannelSession(ctx.inbound.channelType, ctx.channelKey, ctx.inbound.sessionType, ctx.inbound.channelId)
       const transferred = getChannelSessionBySessionId(sessionId)
       if (
         transferred &&
         (
           transferred.channelType !== ctx.inbound.channelType ||
+          transferred.channelKey !== ctx.channelKey ||
           transferred.sessionType !== ctx.inbound.sessionType ||
           transferred.channelId !== ctx.inbound.channelId
         )
       ) {
-        deleteChannelSession(transferred.channelType, transferred.sessionType, transferred.channelId)
+        deleteChannelSession(transferred.channelType, transferred.channelKey, transferred.sessionType, transferred.channelId)
       }
       upsertChannelSession({
         channelType: ctx.inbound.channelType,
@@ -187,11 +188,11 @@ const makeCtx = (overrides: Partial<ChannelContext> = {}): ChannelContext => {
   }
   if (!overrides.unbindSession) {
     ctx.unbindSession = vi.fn(() => {
-      const current = getChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      const current = getChannelSession(ctx.inbound.channelType, ctx.channelKey, ctx.inbound.sessionType, ctx.inbound.channelId)
       if (!current?.sessionId) {
         return { sessionId: undefined }
       }
-      deleteChannelSession(ctx.inbound.channelType, ctx.inbound.sessionType, ctx.inbound.channelId)
+      deleteChannelSession(ctx.inbound.channelType, ctx.channelKey, ctx.inbound.sessionType, ctx.inbound.channelId)
       ctx.sessionId = undefined
       return { sessionId: current.sessionId }
     })
@@ -561,7 +562,7 @@ describe('/session command', () => {
 
     await channelCommandMiddleware(ctx, vi.fn())
 
-    expect(deleteChannelSession).toHaveBeenCalledWith('lark', 'direct', 'ch1')
+    expect(deleteChannelSession).toHaveBeenCalledWith('lark', 'lark:default', 'direct', 'ch1')
     expect(updateSessionArchivedWithChildren).not.toHaveBeenCalled()
     expect(ctx.reply).toHaveBeenCalledWith('已解除当前频道与会话 sess-abc 的绑定，会话内容已保留。')
   })

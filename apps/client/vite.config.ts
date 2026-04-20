@@ -92,8 +92,24 @@ export default defineConfig({
         replacement: fileURLToPath(new URL('../../packages/utils/src/log-level.ts', import.meta.url))
       },
       {
+        find: '@vibe-forge/utils/managed-plugin',
+        replacement: fileURLToPath(new URL('../../packages/utils/src/managed-plugin.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/utils/plugin-resolver',
+        replacement: fileURLToPath(new URL('../../packages/utils/src/plugin-resolver.ts', import.meta.url))
+      },
+      {
         find: '@vibe-forge/channel-lark',
         replacement: fileURLToPath(new URL('../../packages/channels/lark/src/index.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/mdp/browser',
+        replacement: fileURLToPath(new URL('../../packages/mdp/src/browser.ts', import.meta.url))
+      },
+      {
+        find: '@vibe-forge/core/config-schema',
+        replacement: fileURLToPath(new URL('../../packages/core/src/config-schema.ts', import.meta.url))
       },
       {
         find: '@vibe-forge/core',

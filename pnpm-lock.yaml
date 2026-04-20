@@ -109,6 +109,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@modeldriveprotocol/client':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@vibe-forge/app-runtime':
         specifier: workspace:^
         version: link:../../packages/app-runtime
@@ -127,6 +130,9 @@ importers:
       '@vibe-forge/managed-plugins':
         specifier: workspace:^
         version: link:../../packages/managed-plugins
+      '@vibe-forge/mdp':
+        specifier: workspace:^
+        version: link:../../packages/mdp
       '@vibe-forge/plugin-cli-skills':
         specifier: workspace:^
         version: link:../../packages/plugins/cli-skills
@@ -158,6 +164,9 @@ importers:
       '@ant-design/icons':
         specifier: ^5.3.7
         version: 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@modeldriveprotocol/client':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -185,6 +194,9 @@ importers:
       '@vibe-forge/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@vibe-forge/mdp':
+        specifier: workspace:^
+        version: link:../../packages/mdp
       '@vibe-forge/plugin-chrome-devtools':
         specifier: workspace:^
         version: link:../../packages/plugins/chrome-devtools
@@ -307,6 +319,9 @@ importers:
       '@koa/router':
         specifier: ^12.0.0
         version: 12.0.2
+      '@modeldriveprotocol/client':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@vibe-forge/adapter-claude-code':
         specifier: workspace:^
         version: link:../../packages/adapters/claude-code
@@ -334,6 +349,9 @@ importers:
       '@vibe-forge/managed-plugins':
         specifier: workspace:^
         version: link:../../packages/managed-plugins
+      '@vibe-forge/mdp':
+        specifier: workspace:^
+        version: link:../../packages/mdp
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
@@ -730,6 +748,33 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/mdp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.25.3
+        version: 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@modeldriveprotocol/client':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@modeldriveprotocol/server':
+        specifier: ^2.2.0
+        version: 2.2.0(hono@4.11.4)
+      '@vibe-forge/cli-helper':
+        specifier: workspace:^
+        version: link:../cli-helper
+      '@vibe-forge/config':
+        specifier: workspace:^
+        version: link:../config
+      '@vibe-forge/types':
+        specifier: workspace:^
+        version: link:../types
+      '@vibe-forge/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@vibe-forge/workspace-assets':
+        specifier: workspace:^
+        version: link:../workspace-assets
 
   packages/plugins/chrome-devtools:
     dependencies:
@@ -1694,6 +1739,16 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@modeldriveprotocol/client@2.2.0':
+    resolution: {integrity: sha512-D9VZ1jIrSBVKAaqmzRzwJ7nNCvXfKp6Wtk8DHI7tg8aKZMq6vVWYswOsWLV55lJPXXv2EnwLW2jE+4hIO17soA==, tarball: https://registry.npmjs.org/@modeldriveprotocol/client/-/client-2.2.0.tgz}
+
+  '@modeldriveprotocol/protocol@2.2.0':
+    resolution: {integrity: sha512-nwi8YDlUchOPX7a0RPBFnDch42R77ULxdKiu4JVGFsrrSJcApWwyCUf6IYLmuQNPZjV4Ad3fVSAtfJ1B3+Xm8w==, tarball: https://registry.npmjs.org/@modeldriveprotocol/protocol/-/protocol-2.2.0.tgz}
+
+  '@modeldriveprotocol/server@2.2.0':
+    resolution: {integrity: sha512-/nAWV3MxNk9w1+v1BdairxzZ+yzs05wRehzpLf71gRPfDsEoHBBeJklbvghvdTTem+52oZTw+WXkifP6Xq5x0A==, tarball: https://registry.npmjs.org/@modeldriveprotocol/server/-/server-2.2.0.tgz}
+    hasBin: true
 
   '@monaco-editor/loader@1.7.0':
     resolution: {integrity: sha512-gIwR1HrJrrx+vfyOhYmCZ0/JcWqG5kbfG7+d3f/C1LXk2EvzAbHSg3MQ5lO2sMlo9izoAZ04shohfKLVT6crVA==, tarball: https://registry.npmjs.org/@monaco-editor/loader/-/loader-1.7.0.tgz}
@@ -7779,6 +7834,30 @@ snapshots:
     transitivePeerDependencies:
       - hono
       - supports-color
+
+  '@modeldriveprotocol/client@2.2.0':
+    dependencies:
+      '@modeldriveprotocol/protocol': 2.2.0
+      ws: 8.19.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@modeldriveprotocol/protocol@2.2.0': {}
+
+  '@modeldriveprotocol/server@2.2.0(hono@4.11.4)':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@modeldriveprotocol/protocol': 2.2.0
+      semver: 7.7.4
+      ws: 8.19.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - bufferutil
+      - hono
+      - supports-color
+      - utf-8-validate
 
   '@monaco-editor/loader@1.7.0':
     dependencies:

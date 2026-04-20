@@ -9,7 +9,14 @@ import type {
   SessionWorkspaceFileState,
   WSEvent
 } from '@vibe-forge/core'
-import type { GitBranchKind, SessionInfo, SessionInitInfo, SessionPromptType } from '@vibe-forge/types'
+import type {
+  GitBranchKind,
+  SessionEntryContext,
+  SessionInfo,
+  SessionInitInfo,
+  SessionPromptType
+} from '@vibe-forge/types'
+import { normalizeSessionEntryContext } from '@vibe-forge/utils'
 
 import { getDb } from '#~/db/index.js'
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
@@ -187,6 +194,7 @@ export function sessionsRouter(): Router {
       permissionMode,
       adapter,
       account,
+      entryContext,
       workspace
     } = ctx.request.body as {
       id?: string
@@ -202,6 +210,7 @@ export function sessionsRouter(): Router {
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
       account?: string
+      entryContext?: SessionEntryContext
       workspace?: {
         createWorktree?: boolean
         worktreeEnvironment?: string
@@ -226,6 +235,7 @@ export function sessionsRouter(): Router {
       permissionMode,
       adapter,
       account,
+      entryContext: normalizeSessionEntryContext(entryContext),
       workspace: workspace == null
         ? undefined
         : {
@@ -543,10 +553,11 @@ export function sessionsRouter(): Router {
 
   router.post('/:id/messages/:messageId/branch', async (ctx) => {
     const { id, messageId } = ctx.params as { id: string; messageId: string }
-    const { action, content, title } = ctx.request.body as {
+    const { action, content, title, entryContext } = ctx.request.body as {
       action?: 'fork' | 'recall' | 'edit'
       content?: string | ChatMessageContent[]
       title?: string
+      entryContext?: SessionEntryContext
     }
 
     if (action !== 'fork' && action !== 'recall' && action !== 'edit') {
@@ -562,7 +573,9 @@ export function sessionsRouter(): Router {
     })
 
     if (branchResult.replayContent != null) {
-      void processUserMessage(branchResult.session.id, branchResult.replayContent).catch((error) => {
+      void processUserMessage(branchResult.session.id, branchResult.replayContent, {
+        entryContext: normalizeSessionEntryContext(entryContext)
+      }).catch((error) => {
         console.error('[sessions] failed to continue branched session:', error)
       })
     }

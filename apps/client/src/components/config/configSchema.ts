@@ -165,12 +165,35 @@ export const configGroupMeta: Record<string, Record<string, ConfigGroupMeta>> = 
       collapsible: true,
       defaultExpanded: true
     }
+  },
+  mdp: {
+    base: {
+      labelKey: 'config.sectionGroups.base',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    filters: {
+      labelKey: 'config.sectionGroups.filters',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    projection: {
+      labelKey: 'config.sectionGroups.projection',
+      collapsible: true,
+      defaultExpanded: true
+    },
+    connections: {
+      labelKey: 'config.sectionGroups.connections',
+      collapsible: true,
+      defaultExpanded: true
+    }
   }
 }
 
 export const configGroupOrder: Record<string, string[]> = {
   general: ['base', 'models', 'permissions', 'env', 'items', 'advanced', 'default'],
-  conversation: ['defaults', 'presets', 'actions', 'default']
+  conversation: ['defaults', 'presets', 'actions', 'default'],
+  mdp: ['base', 'filters', 'projection', 'connections', 'default']
 }
 
 const notificationEventDetailFields: FieldSpec[] = [
@@ -545,6 +568,49 @@ const pluginMarketplaceDetailFields: FieldSpec[] = [
     type: 'json',
     defaultValue: {},
     icon: 'store'
+  }
+]
+
+const mdpConnectionDetailFields: FieldSpec[] = [
+  {
+    path: ['enabled'],
+    type: 'boolean',
+    defaultValue: true,
+    icon: 'power_settings_new',
+    labelKey: 'config.fields.mdp.connection.enabled.label',
+    descriptionKey: 'config.fields.mdp.connection.enabled.desc'
+  },
+  {
+    path: ['title'],
+    type: 'string',
+    defaultValue: '',
+    icon: 'title',
+    labelKey: 'config.fields.mdp.connection.title.label',
+    descriptionKey: 'config.fields.mdp.connection.title.desc'
+  },
+  {
+    path: ['description'],
+    type: 'multiline',
+    defaultValue: '',
+    icon: 'notes',
+    labelKey: 'config.fields.mdp.connection.description.label',
+    descriptionKey: 'config.fields.mdp.connection.description.desc'
+  },
+  {
+    path: ['hosts'],
+    type: 'string[]',
+    defaultValue: [],
+    icon: 'dns',
+    labelKey: 'config.fields.mdp.connection.hosts.label',
+    descriptionKey: 'config.fields.mdp.connection.hosts.desc'
+  },
+  {
+    path: ['auth'],
+    type: 'json',
+    defaultValue: {},
+    icon: 'shield_lock',
+    labelKey: 'config.fields.mdp.connection.auth.label',
+    descriptionKey: 'config.fields.mdp.connection.auth.desc'
   }
 ]
 
@@ -1002,6 +1068,133 @@ export const configSchema: Record<string, FieldSpec[]> = {
           return t(`config.options.mcp.${type}`, { defaultValue: type })
         },
         getBreadcrumbLabel: (_item, itemKey) => itemKey
+      }
+    }
+  ],
+  mdp: [
+    {
+      path: ['enabled'],
+      type: 'boolean',
+      defaultValue: true,
+      group: 'base',
+      icon: 'hub',
+      labelKey: 'config.fields.mdp.enabled.label',
+      descriptionKey: 'config.fields.mdp.enabled.desc'
+    },
+    {
+      path: ['noDefaultBridge'],
+      type: 'boolean',
+      defaultValue: false,
+      group: 'base',
+      icon: 'block',
+      labelKey: 'config.fields.mdp.noDefaultBridge.label',
+      descriptionKey: 'config.fields.mdp.noDefaultBridge.desc'
+    },
+    {
+      path: ['filters', 'excludeClientIds'],
+      type: 'string[]',
+      defaultValue: [],
+      group: 'filters',
+      icon: 'badge',
+      labelKey: 'config.fields.mdp.filters.excludeClientIds.label',
+      descriptionKey: 'config.fields.mdp.filters.excludeClientIds.desc'
+    },
+    {
+      path: ['filters', 'excludeNames'],
+      type: 'string[]',
+      defaultValue: [],
+      group: 'filters',
+      icon: 'title',
+      labelKey: 'config.fields.mdp.filters.excludeNames.label',
+      descriptionKey: 'config.fields.mdp.filters.excludeNames.desc'
+    },
+    {
+      path: ['filters', 'excludePaths'],
+      type: 'string[]',
+      defaultValue: [],
+      group: 'filters',
+      icon: 'route',
+      labelKey: 'config.fields.mdp.filters.excludePaths.label',
+      descriptionKey: 'config.fields.mdp.filters.excludePaths.desc'
+    },
+    {
+      path: ['workspaceProjection', 'enabled'],
+      type: 'boolean',
+      defaultValue: true,
+      group: 'projection',
+      icon: 'account_tree',
+      labelKey: 'config.fields.mdp.workspaceProjection.enabled.label',
+      descriptionKey: 'config.fields.mdp.workspaceProjection.enabled.desc'
+    },
+    {
+      path: ['workspaceProjection', 'includeWorkspaceSkills'],
+      type: 'boolean',
+      defaultValue: true,
+      group: 'projection',
+      icon: 'folder',
+      labelKey: 'config.fields.mdp.workspaceProjection.includeWorkspaceSkills.label',
+      descriptionKey: 'config.fields.mdp.workspaceProjection.includeWorkspaceSkills.desc'
+    },
+    {
+      path: ['workspaceProjection', 'includePluginSkills'],
+      type: 'boolean',
+      defaultValue: true,
+      group: 'projection',
+      icon: 'extension',
+      labelKey: 'config.fields.mdp.workspaceProjection.includePluginSkills.label',
+      descriptionKey: 'config.fields.mdp.workspaceProjection.includePluginSkills.desc'
+    },
+    {
+      path: ['workspaceProjection', 'includeSkillIds'],
+      type: 'string[]',
+      defaultValue: [],
+      group: 'projection',
+      icon: 'playlist_add',
+      labelKey: 'config.fields.mdp.workspaceProjection.includeSkillIds.label',
+      descriptionKey: 'config.fields.mdp.workspaceProjection.includeSkillIds.desc'
+    },
+    {
+      path: ['workspaceProjection', 'excludeSkillIds'],
+      type: 'string[]',
+      defaultValue: [],
+      group: 'projection',
+      icon: 'playlist_remove',
+      labelKey: 'config.fields.mdp.workspaceProjection.excludeSkillIds.label',
+      descriptionKey: 'config.fields.mdp.workspaceProjection.excludeSkillIds.desc'
+    },
+    {
+      path: ['connections'],
+      type: 'detailCollection',
+      defaultValue: {},
+      group: 'connections',
+      icon: 'dns',
+      labelKey: 'config.fields.mdp.connections.label',
+      descriptionKey: 'config.fields.mdp.connections.desc',
+      detailCollection: {
+        collectionKind: 'recordMap',
+        keyPlaceholderKey: 'config.editor.newMdpConnectionName',
+        createItem: () => ({
+          enabled: true,
+          title: '',
+          description: '',
+          hosts: ['ws://127.0.0.1:47372'],
+          auth: {}
+        }),
+        itemFields: mdpConnectionDetailFields,
+        summaryControls: [{ kind: 'boolean', path: ['enabled'], checkedValue: true }],
+        getItemTitle: (item, itemKey) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          return title !== '' ? title : itemKey
+        },
+        getItemSubtitle: (_item, itemKey) => itemKey,
+        getItemDescription: (item) => {
+          const description = typeof item.description === 'string' ? item.description.trim() : ''
+          return description !== '' ? description : undefined
+        },
+        getBreadcrumbLabel: (item, itemKey) => {
+          const title = typeof item.title === 'string' ? item.title.trim() : ''
+          return title !== '' ? title : itemKey
+        }
       }
     }
   ],

@@ -11,6 +11,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
+  loadAdapter: vi.fn(),
   generateAdapterQueryOptions: vi.fn(),
   loadConfigState: vi.fn(),
   updateConfigFile: vi.fn(),
@@ -33,6 +34,14 @@ vi.mock('@vibe-forge/app-runtime', () => ({
   generateAdapterQueryOptions: mocks.generateAdapterQueryOptions,
   run: mocks.run
 }))
+
+vi.mock('@vibe-forge/types', async () => {
+  const actual = await vi.importActual<typeof import('@vibe-forge/types')>('@vibe-forge/types')
+  return {
+    ...actual,
+    loadAdapter: mocks.loadAdapter
+  }
+})
 
 vi.mock('#~/channels/index.js', () => ({
   handleChannelSessionEvent: mocks.handleChannelSessionEvent,
@@ -152,6 +161,23 @@ describe('startAdapterSession', () => {
       workspaceFolder: process.cwd(),
       projectConfig: {},
       mergedConfig: {}
+    })
+    mocks.loadAdapter.mockResolvedValue({
+      getAccounts: vi.fn().mockResolvedValue({
+        defaultAccount: 'work',
+        accounts: [
+          {
+            key: 'work',
+            title: 'yijie4188@outlook.com · Personal',
+            status: 'ready'
+          },
+          {
+            key: 'personal',
+            title: 'Personal Backup',
+            status: 'ready'
+          }
+        ]
+      })
     })
     mocks.updateConfigFile.mockResolvedValue({ ok: true })
     mocks.handleChannelSessionEvent.mockResolvedValue(undefined)
@@ -561,6 +587,35 @@ describe('startAdapterSession', () => {
     expect(restartedRuntime).not.toBe(initialRuntime)
     expect(restartedRuntime.config?.account).toBe('personal')
     expect(currentSession.account).toBe('personal')
+  })
+
+  it('normalizes legacy account display titles before starting the adapter session', async () => {
+    currentSession = {
+      ...currentSession,
+      account: 'yijie4188@outlook.com · Personal'
+    }
+
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+
+    const runtime = await startAdapterSession('sess-1', {
+      model: 'gpt-5.4-2026-03-05',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    expect(runtime.config?.account).toBe('work')
+    expect(currentSession.account).toBe('work')
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        account: 'work'
+      })
+    )
   })
 
   it('restarts the runtime when the persisted session is updated but the cached permission mode is still stale', async () => {
