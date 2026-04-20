@@ -10,11 +10,10 @@
 
 - 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` tag 对应的产物
 - macOS：`.dmg`、`.zip`
-- Windows：NSIS Web Installer `.exe`、对应 payload
+- Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 
 当前桌面 release / CI artifact 默认不签名，首次运行时系统可能会提示安全确认。
-Windows 当前使用 `nsis-web`，首次安装时安装器会联网下载对应架构的包体，不需要手动区分 x64 / arm64 安装包。
 
 ## 本地试用
 
@@ -83,7 +82,7 @@ pnpm desktop:make
 `desktop:make` 会先执行 `desktop:package`，再用 `electron-builder` 基于 prepackaged app 生成当前平台的发行文件，产物位于 `apps/desktop/release/`：
 
 - macOS：`.dmg`、`.zip`
-- Windows：NSIS Web Installer `.exe`、对应 payload
+- Windows：安装包方案仍在收口，正式发布前先以 issue [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161) 跟踪
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 
 如果已经执行过 `desktop:package`，可以只从现有包生成安装产物：
