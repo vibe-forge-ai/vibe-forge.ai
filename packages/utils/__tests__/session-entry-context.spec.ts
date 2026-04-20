@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildSessionEntryContextSystemPrompt,
+  buildSessionEntryContextTurnPrompt,
   normalizeSessionEntryContext,
   prependSessionEntryContextToMessageContent
 } from '#~/session-entry-context.js'
@@ -65,6 +66,38 @@ describe('session entry context helpers', () => {
     expect(prompt).toContain('- route: /config')
     expect(prompt).toContain('- search: ?tab=mdpTopology&source=user')
     expect(prompt).toContain('default::browser-1')
+    expect(prompt).toContain('MDP usage rules:')
+    expect(prompt).toContain('always try MDP before ChromeDevtools')
+    expect(prompt).toContain('Use ChromeDevtools only as a fallback')
+    expect(prompt).toContain('identify the relevant client first with `MDP.listClients`')
+    expect(prompt).toContain('call `MDP.listPaths` with that exact `clientId`')
+    expect(prompt).toContain('Prefer reading the target client root `/skill.md`')
+  })
+
+  it('builds a turn prompt with compact progressive mdp guidance', () => {
+    const prompt = buildSessionEntryContextTurnPrompt({
+      kind: 'browser',
+      page: 'session',
+      route: '/session/demo',
+      activeSessionId: 'session-1',
+      mdp: {
+        refs: [
+          {
+            connectionKey: 'default',
+            clientId: 'default::browser-1',
+            rawClientId: 'browser-1'
+          }
+        ]
+      }
+    })
+
+    expect(prompt).toContain('Current preferred MDP client ids for this turn:')
+    expect(prompt).toContain('If you use MDP on this turn, use it progressively:')
+    expect(prompt).toContain('Start from the preferred MDP client ids above')
+    expect(prompt).toContain('always try MDP before ChromeDevtools')
+    expect(prompt).toContain('Use ChromeDevtools only as a fallback')
+    expect(prompt).toContain('identify the relevant client first with `MDP.listClients`')
+    expect(prompt).toContain('call `MDP.listPaths` with that exact `clientId`')
   })
 
   it('prepends runtime context to a user turn without mutating original content', () => {

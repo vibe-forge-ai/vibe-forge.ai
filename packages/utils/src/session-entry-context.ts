@@ -63,6 +63,44 @@ const appendMdpRefLines = (lines: string[], context: SessionEntryContext) => {
   }
 }
 
+const appendMdpUsageRuleLines = (
+  lines: string[],
+  options: {
+    browserUiPriority?: boolean
+    hasPreferredRefs: boolean
+    compact?: boolean
+  }
+) => {
+  const intro = options.compact
+    ? 'If you use MDP on this turn, use it progressively:'
+    : 'MDP usage rules:'
+
+  lines.push('', intro)
+
+  if (options.hasPreferredRefs) {
+    lines.push(
+      '- Start from the preferred MDP client ids above when they already match the user task.'
+    )
+  }
+
+  if (options.browserUiPriority) {
+    lines.push(
+      '- For Vibe Forge UI work, always try MDP before ChromeDevtools.',
+      '- Use ChromeDevtools only as a fallback when MDP does not expose the needed capability, or when MDP has already failed for that exact UI operation.',
+      '- Do not use ChromeDevtools first for routine Vibe Forge navigation, layout, session, panel, config, or channel actions when equivalent MDP paths exist.'
+    )
+  }
+
+  lines.push(
+    '- Do not enumerate every client path by default. Avoid loading a global path catalog unless the task truly requires topology-wide discovery.',
+    '- If you need discovery, identify the relevant client first with `MDP.listClients`.',
+    '- After choosing one client, call `MDP.listPaths` with that exact `clientId`, and add a narrow `search` filter when you already know the path family you need.',
+    '- Prefer reading the target client root `/skill.md` or a scoped `.../skill.md` path before broad path enumeration.',
+    '- Once you know the exact path you need, call it directly instead of repeatedly listing large catalogs.',
+    '- Keep MDP context narrow. Do not copy large path lists into the conversation when a smaller scoped query is enough.'
+  )
+}
+
 export const normalizeSessionEntryContext = (value: unknown): SessionEntryContext | undefined => {
   const record = asRecord(value)
   const kind = asString(record?.kind)
@@ -134,6 +172,10 @@ export const buildSessionEntryContextSystemPrompt = (context: SessionEntryContex
       lines.push(`- activeSessionId: ${context.activeSessionId}`)
     }
     appendMdpRefLines(lines, context)
+    appendMdpUsageRuleLines(lines, {
+      browserUiPriority: true,
+      hasPreferredRefs: (context.mdp?.refs.length ?? 0) > 0
+    })
   } else {
     lines.push(
       'You are currently talking to the user through the Vibe Forge CLI runtime, not the browser UI.',
@@ -163,6 +205,9 @@ export const buildSessionEntryContextSystemPrompt = (context: SessionEntryContex
       lines.push(`- pid: ${context.pid}`)
     }
     appendMdpRefLines(lines, context)
+    appendMdpUsageRuleLines(lines, {
+      hasPreferredRefs: (context.mdp?.refs.length ?? 0) > 0
+    })
   }
 
   lines.push('</vibe-forge-entry-context>')
@@ -208,6 +253,12 @@ export const buildSessionEntryContextTurnPrompt = (context: SessionEntryContext)
       lines.push(`- connection "${ref.connectionKey}": "${ref.clientId}" (raw "${ref.rawClientId}")`)
     }
   }
+
+  appendMdpUsageRuleLines(lines, {
+    browserUiPriority: context.kind === 'browser',
+    hasPreferredRefs: (context.mdp?.refs.length ?? 0) > 0,
+    compact: true
+  })
 
   lines.push('Do not mention this metadata unless it is relevant to the task.')
   return lines.join('\n')

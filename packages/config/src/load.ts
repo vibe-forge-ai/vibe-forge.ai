@@ -13,6 +13,7 @@ import {
 } from '@vibe-forge/utils'
 import { load } from 'js-yaml'
 
+import { mergeDefaultMdpBridgePermissions } from './default-mdp-mcp'
 import { mergeDefaultVibeForgeMcpPermissions } from './default-vibe-forge-mcp'
 import { mergeConfigs } from './merge'
 
@@ -461,9 +462,13 @@ export const resetConfigCache = (cwd?: string) => {
 export const loadConfig = (options: LoadConfigOptions = {}) => {
   return (async () => {
     const [projectSource, userSource] = await loadConfigSources(options)
-    const [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
+    let [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
       projectConfig: projectSource?.resolvedConfig,
       userConfig: userSource?.resolvedConfig
+    })
+    ;[projectConfig, userConfig] = mergeDefaultMdpBridgePermissions({
+      projectConfig,
+      userConfig
     })
     return [projectConfig, userConfig] as const
   })()
@@ -564,9 +569,13 @@ export const loadConfigState = async (
   options: LoadConfigOptions = {}
 ): Promise<ResolvedConfigState> => {
   const [projectSource, userSource] = await loadConfigSources(options)
-  const [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
+  let [projectConfig, userConfig] = mergeDefaultVibeForgeMcpPermissions({
     projectConfig: projectSource?.resolvedConfig,
     userConfig: userSource?.resolvedConfig
+  })
+  ;[projectConfig, userConfig] = mergeDefaultMdpBridgePermissions({
+    projectConfig,
+    userConfig
   })
   return buildResolvedConfigState(projectConfig, userConfig, projectSource, userSource)
 }

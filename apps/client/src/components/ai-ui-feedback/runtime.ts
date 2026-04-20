@@ -82,6 +82,8 @@ const dispatchFeedbackEvent = (detail: AiUiFeedbackEventDetail) => {
 
 const wait = (timeoutMs: number) => new Promise<void>(resolve => window.setTimeout(resolve, timeoutMs))
 
+const AI_UI_FEEDBACK_PRE_ACTION_DELAY_MS = 220
+
 export const runAiUiActionFeedback = async <T>({
   anchorId,
   execute
@@ -90,7 +92,7 @@ export const runAiUiActionFeedback = async <T>({
     ...resolveDetail(anchorId),
     status: 'running'
   })
-  await wait(140)
+  await wait(AI_UI_FEEDBACK_PRE_ACTION_DELAY_MS)
 
   try {
     const result = await execute()

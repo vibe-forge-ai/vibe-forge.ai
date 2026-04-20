@@ -397,7 +397,7 @@ shortcuts:
           API_KEY: 'secret-key'
         },
         permissions: {
-          allow: ['Read', 'Edit', 'VibeForge']
+          allow: ['Read', 'Edit', 'VibeForge', 'mcp-mdp-listpaths']
         },
         announcements: ['base', 'project'],
         defaultIncludeMcpServers: ['docs', 'browser'],
@@ -500,7 +500,7 @@ shortcuts:
         jsonVariables: {}
       })
 
-      expect(projectConfig?.permissions?.allow).toEqual(['Read'])
+      expect(projectConfig?.permissions?.allow).toEqual(['Read', 'mcp-mdp-listpaths'])
     } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })
@@ -607,7 +607,7 @@ defaultModel: package-model
         defaultModel: 'package-model',
         announcements: ['package-root'],
         permissions: {
-          allow: ['Browser', 'VibeForge']
+          allow: ['Browser', 'VibeForge', 'mcp-mdp-listpaths']
         },
         modelServices: {
           browser: {
@@ -734,7 +734,9 @@ defaultModel: package-model
     expect(ADAPTER_COMMON_CONFIG_KEYS).toEqual([
       'defaultModel',
       'includeModels',
-      'excludeModels'
+      'excludeModels',
+      'defaultAccount',
+      'accounts'
     ])
     expect(result.common).toEqual({
       defaultModel: 'gpt-5.4',

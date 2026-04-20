@@ -21,6 +21,8 @@ mdp:
   noDefaultBridge: true
 ```
 
+默认情况下，Vibe Forge 还会把 `MDP.listPaths` 对应的权限 key `mcp-mdp-listpaths` 自动加入 `permissions.allow`，避免每次做渐进式 path 发现都被权限确认打断。
+
 ## 基本配置
 
 最小示例：
@@ -45,6 +47,27 @@ mdp:
 ```
 
 当前实现会按顺序尝试连接这些 hosts。
+
+## 推荐发现顺序
+
+使用 MDP 时，优先走渐进式发现，不要默认一次性把所有 client 的 path catalog 都拉进上下文。
+
+推荐顺序：
+
+1. 如果当前入口已经注入了首选 MDP client id，先从这个 client 开始。
+2. 只有在需要确认 live clients 或需要跨 client 选择 owner 时，再调用 `MDP.listClients`。
+3. 选定单个 client 后，再调用 `MDP.listPaths`，并尽量传 `clientId`；如果已经知道大致 path family，再加 `search` 缩小范围。
+4. 优先读取目标 client 的 `/skill.md` 或 scoped `.../skill.md`，先理解能力分层，再进入具体 path。
+5. 找到精确 path 后，直接 `callPath` / `callPaths`，不要反复全量枚举 catalog。
+
+只有在做 MDP 拓扑排障或全局能力盘点时，才建议不带 `clientId` 做大范围 `listPaths`。
+
+对于 Vibe Forge 自身 UI：
+
+- 优先把 MDP 当成第一控制面。
+- 只要浏览器当前已经注入了首选 browser client，就先走这个 client。
+- `ChromeDevtools` 只作为兜底，适用于 MDP 没有对应 path，或者 MDP 已经对同一个 UI 动作明确失败。
+- 不要对 `打开设置页`、`收起侧边栏`、`切换会话视图`、`打开 workspace drawer` 这类已有 MDP path 的动作先走 `ChromeDevtools`。
 
 ## 过滤规则
 

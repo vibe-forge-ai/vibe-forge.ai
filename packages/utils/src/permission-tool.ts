@@ -1,4 +1,9 @@
-import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, isCanonicalVibeForgeMcpServerName } from './vibe-forge-mcp'
+import {
+  CANONICAL_VIBE_FORGE_MCP_SERVER_NAME,
+  isCanonicalVibeForgeMcpServerName,
+  resolveMcpPermissionServerKey,
+  sanitizeMcpPermissionKeySegment
+} from './vibe-forge-mcp'
 
 export const CANONICAL_PERMISSION_TOOL_KEYS = [
   'Bash',
@@ -105,6 +110,20 @@ export const normalizePermissionToolName = (
   const adapterToolName = trimmed.match(/^adapter:[^:]+:(.+)$/)?.[1]?.trim()
   if (adapterToolName != null && adapterToolName !== '') {
     return normalizePermissionToolName(adapterToolName)
+  }
+
+  const mcpSubjectMatch = trimmed.match(/^([^:]+):([^:]+)$/)
+  if (mcpSubjectMatch != null) {
+    const serverKey = resolveMcpPermissionServerKey(mcpSubjectMatch[1])
+    const toolKey = sanitizeMcpPermissionKeySegment(mcpSubjectMatch[2])
+    if (serverKey != null && toolKey != null) {
+      const key = `mcp-${serverKey}-${toolKey}`
+      return {
+        key,
+        label: trimmed,
+        scope: 'tool'
+      }
+    }
   }
 
   if (trimmed.startsWith('mcp__')) {

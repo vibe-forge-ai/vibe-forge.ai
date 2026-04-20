@@ -5,19 +5,24 @@ import { useEffect, useRef, useState } from 'react'
 import { subscribeAiUiFeedback, type AiUiFeedbackEventDetail } from './runtime'
 
 interface FeedbackState extends AiUiFeedbackEventDetail {
+  burstKey: number
   visible: boolean
 }
 
 const createHiddenState = (): FeedbackState => ({
+  burstKey: 0,
   point: { x: 0, y: 0 },
   rect: { width: 0, height: 0 },
   status: 'running',
   visible: false
 })
 
+const FEEDBACK_HIDE_DELAY_MS = 1100
+
 export function AiUiFeedbackLayer() {
   const [state, setState] = useState<FeedbackState>(createHiddenState)
   const hideTimerRef = useRef<number | null>(null)
+  const burstKeyRef = useRef(0)
 
   useEffect(() => {
     return () => {
@@ -36,6 +41,9 @@ export function AiUiFeedbackLayer() {
 
       setState({
         ...detail,
+        burstKey: detail.status === 'running'
+          ? burstKeyRef.current
+          : ++burstKeyRef.current,
         visible: true
       })
 
@@ -43,7 +51,7 @@ export function AiUiFeedbackLayer() {
         hideTimerRef.current = window.setTimeout(() => {
           setState(createHiddenState())
           hideTimerRef.current = null
-        }, 260)
+        }, FEEDBACK_HIDE_DELAY_MS)
       }
     })
   }, [])
@@ -67,12 +75,22 @@ export function AiUiFeedbackLayer() {
           width: `${ringWidth}px`
         }}
       />
-      <span
-        className={`ai-ui-feedback__pointer material-symbols-rounded ${state.status === 'running' ? '' : `is-${state.status}`}`}
+      <div
+        className={`ai-ui-feedback__pointer-shell ${state.status === 'running' ? '' : `is-${state.status}`}`}
         style={{ transform: pointerTransform }}
       >
-        arrow_selector_tool
-      </span>
+        <span className='ai-ui-feedback__pointer material-symbols-rounded'>
+          arrow_selector_tool
+        </span>
+        <span className='ai-ui-feedback__tag'>AI</span>
+      </div>
+      {state.status !== 'running' ? (
+        <span
+          key={state.burstKey}
+          className={`ai-ui-feedback__burst is-${state.status}`}
+          style={{ transform: pointerTransform }}
+        />
+      ) : null}
     </div>
   )
 }
