@@ -304,6 +304,9 @@ importers:
       '@vibe-forge/channel-lark':
         specifier: workspace:^
         version: link:../../packages/channels/lark
+      '@vibe-forge/cli-helper':
+        specifier: workspace:^
+        version: link:../../packages/cli-helper
       '@vibe-forge/config':
         specifier: workspace:^
         version: link:../../packages/config
@@ -328,6 +331,9 @@ importers:
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../packages/utils
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       cron-parser:
         specifier: ^4.9.0
         version: 4.9.0
@@ -383,6 +389,24 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
+
+  apps/web:
+    dependencies:
+      '@vibe-forge/cli-helper':
+        specifier: workspace:^
+        version: link:../../packages/cli-helper
+      '@vibe-forge/client':
+        specifier: workspace:^
+        version: link:../client
+      '@vibe-forge/register':
+        specifier: workspace:^
+        version: link:../../packages/register
+      '@vibe-forge/server':
+        specifier: workspace:^
+        version: link:../server
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
 
   packages/adapters/claude-code:
     dependencies:

@@ -79,6 +79,7 @@ const resolveClientDistPath = (distPath: string | undefined) => {
 
 const createRuntimeScript = (env: ReturnType<typeof loadEnv>, clientBase: string) => {
   const runtimeEnv = {
+    __VF_PROJECT_AI_SERVER_BASE_URL__: env.__VF_PROJECT_AI_PUBLIC_BASE_URL__,
     __VF_PROJECT_AI_SERVER_HOST__: env.__VF_PROJECT_AI_SERVER_HOST__,
     __VF_PROJECT_AI_SERVER_PORT__: String(env.__VF_PROJECT_AI_SERVER_PORT__),
     __VF_PROJECT_AI_SERVER_WS_PATH__: env.__VF_PROJECT_AI_SERVER_WS_PATH__,
@@ -88,7 +89,15 @@ const createRuntimeScript = (env: ReturnType<typeof loadEnv>, clientBase: string
   return `<script>window.__VF_PROJECT_AI_RUNTIME_ENV__=${JSON.stringify(runtimeEnv)}</script>`
 }
 
-export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => {
+export interface MountRoutesOptions {
+  logClientMount?: boolean
+}
+
+export const mountRoutes = async (
+  app: Koa,
+  env: ReturnType<typeof loadEnv>,
+  options: MountRoutesOptions = {}
+) => {
   // Routes
   const router = new Router()
   const clientBaseRedirects = new Map<string, string>()
@@ -111,7 +120,8 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
 
   const clientMode = env.__VF_PROJECT_AI_CLIENT_MODE__
   const clientBase = normalizeBase(env.__VF_PROJECT_AI_CLIENT_BASE__)
-  const clientDistPath = clientMode === 'dev'
+  const mountedClientBase = clientBase === '/' ? '' : clientBase
+  const clientDistPath = clientMode === 'dev' || clientMode === 'none'
     ? null
     : resolveClientDistPath(env.__VF_PROJECT_AI_CLIENT_DIST_PATH__)
   const runtimeScript = createRuntimeScript(env, clientBase)
@@ -135,7 +145,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
       })
 
     routers.push({
-      prefix: clientBase,
+      prefix: mountedClientBase,
       router: createStaticUiRouter()
     })
 
@@ -169,7 +179,7 @@ export const mountRoutes = async (app: Koa, env: ReturnType<typeof loadEnv>) => 
 
   return {
     onListen: (httpHost: string) => {
-      if (clientMode !== 'dev') {
+      if (clientMode !== 'dev' && options.logClientMount !== false) {
         if (clientDistPath) {
           logger.info(`[server]              ${httpHost}${clientBase} from ${clientDistPath}`)
         } else {

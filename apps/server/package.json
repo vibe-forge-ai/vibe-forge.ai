@@ -1,6 +1,19 @@
 {
   "name": "@vibe-forge/server",
   "version": "2.0.0",
+  "description": "Vibe Forge server",
+  "exports": {
+    "./cli-runtime": {
+      "__vibe-forge__": {
+        "default": "./src/cli-runtime.ts"
+      },
+      "default": {
+        "import": "./dist/cli-runtime.mjs",
+        "require": "./dist/cli-runtime.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -13,14 +26,14 @@
     }
   },
   "bin": {
-    "vibe-forge-ui-server": "./cli.js",
-    "vfui-server": "./cli.js"
+    "vibe-forge-server": "./cli.js"
   },
   "dependencies": {
     "@koa/cors": "^5.0.0",
     "@koa/router": "^12.0.0",
     "@vibe-forge/adapter-claude-code": "workspace:^",
     "@vibe-forge/app-runtime": "workspace:^",
+    "@vibe-forge/cli-helper": "workspace:^",
     "@vibe-forge/channel-lark": "workspace:^",
     "@vibe-forge/config": "workspace:^",
     "@vibe-forge/core": "workspace:^",
@@ -30,6 +43,7 @@
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
+    "commander": "^12.1.0",
     "cron-parser": "^4.9.0",
     "koa": "^2.15.0",
     "koa-bodyparser": "^4.3.0",
