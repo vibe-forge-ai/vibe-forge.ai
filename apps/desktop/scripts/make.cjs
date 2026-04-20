@@ -31,7 +31,7 @@ const builderTargetArgs = () => {
   }
 
   if (process.platform === 'win32') {
-    return ['--win', ...(requestedTargets.length > 0 ? requestedTargets : ['nsis', 'zip'])]
+    return ['--win', ...(requestedTargets.length > 0 ? requestedTargets : ['nsis'])]
   }
 
   return ['--linux', ...(requestedTargets.length > 0 ? requestedTargets : ['AppImage', 'deb', 'tar.gz'])]
