@@ -1,11 +1,18 @@
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
+
 import { Command } from 'commander'
 import { describe, expect, it, vi } from 'vitest'
+
+import { resolveConfiguredPluginInstances } from '@vibe-forge/utils/plugin-resolver'
 
 import {
   createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
   getCliDefaultSkillNames,
+  getCliDefaultSkillPluginConfig,
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
@@ -27,6 +34,37 @@ describe('run command print output', () => {
       'create-entity',
       'update-entity'
     ])
+  })
+
+  it('resolves default CLI skills without target workspace dependencies', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-cli-default-skills-'))
+
+    try {
+      const plugins = getCliDefaultSkillPluginConfig()
+      const pluginId = plugins[0]?.id
+
+      expect(typeof pluginId).toBe('string')
+      if (typeof pluginId !== 'string') {
+        throw new TypeError('Expected the default CLI skill plugin id to be a path.')
+      }
+      expect(isAbsolute(pluginId)).toBe(true)
+
+      const instances = await resolveConfiguredPluginInstances({
+        cwd: workspace,
+        plugins
+      })
+      const [instance] = instances
+
+      expect(instance?.sourceType).toBe('directory')
+      if (instance == null) {
+        throw new TypeError('Expected the default CLI skill plugin to resolve.')
+      }
+      expect(await readdir(join(instance.rootDir, 'skills'))).toEqual(
+        expect.arrayContaining(getCliDefaultSkillNames())
+      )
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
   })
 
   it('extracts printable assistant text from string content', () => {
