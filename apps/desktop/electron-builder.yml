@@ -33,9 +33,18 @@ win:
   compression: store
   icon: build/icon.ico
   target:
-    - target: nsis
+    - target: nsis-web
 
 nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Vibe Forge
+
+nsisWeb:
   oneClick: false
   perMachine: false
   allowElevation: true
