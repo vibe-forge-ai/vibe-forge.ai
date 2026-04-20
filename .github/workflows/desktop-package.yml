@@ -56,7 +56,7 @@ jobs:
   package:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -149,6 +149,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_KEY_PASSWORD: ${{ secrets.DESKTOP_CSC_KEY_PASSWORD }}
           CSC_LINK: ${{ secrets.DESKTOP_CSC_LINK }}
+          DEBUG: electron-builder
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VF_DESKTOP_PUBLISH: never
           VF_DESKTOP_VERSION: ${{ steps.desktop_release.outputs.version }}

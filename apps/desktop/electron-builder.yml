@@ -30,6 +30,7 @@ dmg:
   sign: false
 
 win:
+  compression: store
   icon: build/icon.ico
   target:
     - target: nsis
