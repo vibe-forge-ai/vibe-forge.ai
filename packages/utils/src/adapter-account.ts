@@ -3,11 +3,7 @@ import { dirname, isAbsolute, relative, resolve } from 'node:path'
 
 import type { AdapterAccountCredentialArtifact, AdapterCtx } from '@vibe-forge/types'
 
-import {
-  resolvePrimaryWorkspaceFolder,
-  resolveProjectAiBaseDirName,
-  resolveProjectAiPath
-} from './ai-path'
+import { resolvePrimaryWorkspaceFolder, resolveProjectAiBaseDirName, resolveProjectAiPath } from './ai-path'
 
 const assertRelativeArtifactPath = (value: string) => {
   const normalized = value.trim().replace(/\\/g, '/')

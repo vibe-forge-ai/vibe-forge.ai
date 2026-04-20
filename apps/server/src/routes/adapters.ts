@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adapter account routes share request normalization and response mapping. */
 import process from 'node:process'
 
 import Router from '@koa/router'
@@ -81,9 +82,9 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to load adapter accounts',
         {
-          adapter: adapterKey,
+          code: 'adapter_accounts_load_failed',
           cause: error,
-          code: 'adapter_accounts_load_failed'
+          details: { adapter: adapterKey }
         }
       )
     }
@@ -102,7 +103,11 @@ export function adaptersRouter(): Router {
     try {
       const { adapter, adapterCtx } = await createAdapterRouteContext(adapterKey)
       if (adapter.getAccountDetail == null) {
-        throw badRequest(`Adapter "${adapterKey}" does not support account detail.`, undefined, 'adapter_account_detail_unsupported')
+        throw badRequest(
+          `Adapter "${adapterKey}" does not support account detail.`,
+          undefined,
+          'adapter_account_detail_unsupported'
+        )
       }
 
       const model = typeof ctx.query.model === 'string' ? ctx.query.model : undefined
@@ -120,10 +125,12 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to load adapter account detail',
         {
-          adapter: adapterKey,
-          account: accountKey,
+          code: 'adapter_account_detail_load_failed',
           cause: error,
-          code: 'adapter_account_detail_load_failed'
+          details: {
+            adapter: adapterKey,
+            account: accountKey
+          }
         }
       )
     }
@@ -162,7 +169,11 @@ export function adaptersRouter(): Router {
     try {
       const { workspaceFolder, adapter, adapterCtx } = await createAdapterRouteContext(adapterKey)
       if (adapter.manageAccount == null) {
-        throw badRequest(`Adapter "${adapterKey}" does not support account management.`, undefined, 'adapter_account_manage_unsupported')
+        throw badRequest(
+          `Adapter "${adapterKey}" does not support account management.`,
+          undefined,
+          'adapter_account_manage_unsupported'
+        )
       }
 
       const result = await adapter.manageAccount(adapterCtx, {
@@ -187,7 +198,7 @@ export function adaptersRouter(): Router {
           env: adapterCtx.env,
           adapter: adapterKey,
           account: result.accountKey,
-          artifacts: result.artifacts
+          artifacts: result.artifacts ?? []
         })
       }
 
@@ -231,9 +242,9 @@ export function adaptersRouter(): Router {
       throw internalServerError(
         'Failed to run adapter account action',
         {
-          adapter: adapterKey,
+          code: 'adapter_account_action_failed',
           cause: error,
-          code: 'adapter_account_action_failed'
+          details: { adapter: adapterKey }
         }
       )
     } finally {

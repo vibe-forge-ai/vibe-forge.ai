@@ -1,7 +1,12 @@
 /* eslint-disable max-lines -- central config schema registry */
 import { z } from 'zod'
 
-import type { ConfigUiField, ConfigUiFieldType, ConfigUiObjectSchema, ConfigUiRecordFieldSchema } from '@vibe-forge/types'
+import type {
+  ConfigUiField,
+  ConfigUiFieldType,
+  ConfigUiObjectSchema,
+  ConfigUiRecordFieldSchema
+} from '@vibe-forge/types'
 
 import { channelBaseSchema } from './channel'
 

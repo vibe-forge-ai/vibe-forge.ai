@@ -297,9 +297,9 @@ html.dark .config-view__card {
   overflow: hidden;
   text-overflow: ellipsis;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    color .15s ease,
+    border-color .15s ease,
+    background-color .15s ease;
 }
 
 .config-view__detail-crumb:not(button) {

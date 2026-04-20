@@ -1,14 +1,11 @@
+/* eslint-disable max-lines -- account management keeps list, detail, and action flows in one surface. */
 import './AdapterAccountsManager.scss'
 
 import { App, Button, Empty, Input, Popconfirm, Spin, Tooltip } from 'antd'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
 
-import type {
-  AdapterAccountActionDescriptor,
-  AdapterAccountInfo,
-  ConfigUiObjectSchema
-} from '@vibe-forge/types'
+import type { AdapterAccountActionDescriptor, AdapterAccountInfo, ConfigUiObjectSchema } from '@vibe-forge/types'
 
 import { getAdapterAccountDetail, getAdapterAccounts, getApiErrorMessage, manageAdapterAccount } from '#~/api'
 
@@ -160,13 +157,13 @@ const IconTag = ({
 }) => {
   const colorStyle = color === 'success'
     ? {
-        color: 'var(--success-color, #52c41a)'
-      }
+      color: 'var(--success-color, #52c41a)'
+    }
     : color === 'error'
-      ? {
-          color: 'var(--error-color, #ff4d4f)'
-        }
-      : undefined
+    ? {
+      color: 'var(--error-color, #ff4d4f)'
+    }
+    : undefined
 
   return (
     <Tooltip title={renderTooltipContent(label, description)}>
@@ -481,7 +478,9 @@ const AccountDetailView = ({
                             className='adapter-account-manager__metric-ring'
                             aria-hidden='true'
                             style={{
-                              background: `conic-gradient(${getPercentRingColor(percent)} ${percent}%, color-mix(in srgb, var(--border-color) 72%, transparent) 0)`
+                              background: `conic-gradient(${
+                                getPercentRingColor(percent)
+                              } ${percent}%, color-mix(in srgb, var(--border-color) 72%, transparent) 0)`
                             }}
                           >
                             <span className='adapter-account-manager__metric-ring-inner' />

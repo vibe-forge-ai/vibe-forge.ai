@@ -53,17 +53,21 @@ export const SchemaObjectEditor = ({
   resolveFieldOptions?: (field: ConfigUiField) => ConfigUiFieldOption[] | undefined
 }) => {
   const renderField = (field: ConfigUiField) => {
-    if (visibleFieldPaths != null && !visibleFieldPaths.some(visiblePath => (
-      field.path.length === visiblePath.length &&
-      field.path.every((segment, index) => segment === visiblePath[index])
-    ))) {
+    if (
+      visibleFieldPaths != null && !visibleFieldPaths.some(visiblePath => (
+        field.path.length === visiblePath.length &&
+        field.path.every((segment, index) => segment === visiblePath[index])
+      ))
+    ) {
       return null
     }
 
-    if (hideFieldPaths?.some(hiddenPath => (
-      field.path.length === hiddenPath.length &&
-      field.path.every((segment, index) => segment === hiddenPath[index])
-    ))) {
+    if (
+      hideFieldPaths?.some(hiddenPath => (
+        field.path.length === hiddenPath.length &&
+        field.path.every((segment, index) => segment === hiddenPath[index])
+      ))
+    ) {
       return null
     }
 

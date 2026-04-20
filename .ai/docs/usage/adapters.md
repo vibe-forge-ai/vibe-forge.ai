@@ -65,7 +65,7 @@ adapter 可以实现统一的账号目录、账号详情和账号管理动作。
 - 可以删除当前 workspace 保存的账号快照
 - 点进单个账号后，可以查看来源、额度摘要和账号配置字段
 
-账号详情页里的可编辑字段来自 adapter 自己的 `accounts.<key>` schema。  
+账号详情页里的可编辑字段来自 adapter 自己的 `accounts.<key>` schema。\
 当前 `codex` 已经支持：
 
 - `title`

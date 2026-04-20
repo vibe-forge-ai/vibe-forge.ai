@@ -1,5 +1,7 @@
+export { getAdapterAccountDetail, getAdapterAccounts, manageAdapterAccount } from './api/adapters'
 // 自动化规则与执行记录 API
 export type { AutomationRule, AutomationRun, AutomationTask, AutomationTrigger } from './api/automation'
+
 export {
   createAutomationRule,
   deleteAutomationRule,
@@ -8,7 +10,6 @@ export {
   runAutomationRule,
   updateAutomationRule
 } from './api/automation'
-
 export { ApiError, getApiErrorMessage } from './api/base'
 export {
   getBenchmarkCase,
@@ -21,7 +22,6 @@ export {
 
 // 配置读取与更新 API
 export { getConfig, getConfigSchema, updateConfig } from './api/config'
-export { getAdapterAccountDetail, getAdapterAccounts, manageAdapterAccount } from './api/adapters'
 export {
   checkoutSessionGitBranch,
   commitSessionGitChanges,

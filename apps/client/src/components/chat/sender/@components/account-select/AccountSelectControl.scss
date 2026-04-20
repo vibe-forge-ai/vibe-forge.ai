@@ -85,7 +85,11 @@
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-soft-bg, #eff6ff) 80%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--primary-soft-bg, #eff6ff) 80%,
+    transparent
+  );
   color: var(--primary-color, #2563eb);
   display: inline-flex;
   align-items: center;

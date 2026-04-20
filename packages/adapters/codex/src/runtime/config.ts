@@ -131,14 +131,15 @@ const buildManagedCodexRootBlock = (params: {
 
 const buildManagedCodexProjectBlock = (params: {
   workspacePath: string
-}) => [
-  MANAGED_PROJECT_BLOCK_START,
-  '# This project block is managed by Vibe Forge.',
-  `[projects.${JSON.stringify(resolve(params.workspacePath))}]`,
-  'trust_level = "trusted"',
-  MANAGED_PROJECT_BLOCK_END,
-  ''
-].join('\n')
+}) =>
+  [
+    MANAGED_PROJECT_BLOCK_START,
+    '# This project block is managed by Vibe Forge.',
+    `[projects.${JSON.stringify(resolve(params.workspacePath))}]`,
+    'trust_level = "trusted"',
+    MANAGED_PROJECT_BLOCK_END,
+    ''
+  ].join('\n')
 
 const upsertManagedRootBlock = (params: {
   currentContent: string

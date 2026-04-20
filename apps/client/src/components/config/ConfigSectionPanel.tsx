@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- section panel keeps route sync and focus management together for now. */
 import '../ConfigView.scss'
 
 import { Button, Tooltip } from 'antd'
@@ -205,11 +206,12 @@ export function ConfigSectionPanel({
                             <span className='material-symbols-rounded'>chevron_right</span>
                           </span>
                         )}
-                        <span className={`config-view__detail-crumb ${
-                          item.isCurrent === true
-                            ? 'config-view__detail-crumb--current'
-                            : 'config-view__detail-crumb--static'
-                        }`}
+                        <span
+                          className={`config-view__detail-crumb ${
+                            item.isCurrent === true
+                              ? 'config-view__detail-crumb--current'
+                              : 'config-view__detail-crumb--static'
+                          }`}
                         >
                           {item.label}
                         </span>

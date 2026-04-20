@@ -62,8 +62,12 @@
   max-width: 100%;
 }
 
-.config-view__field-row--stacked .config-view__field-control .ant-input-textarea-affix-wrapper,
-.config-view__field-row--stacked .config-view__field-control .ant-input-textarea-show-count {
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea-affix-wrapper,
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea-show-count {
   display: block;
   height: auto !important;
   min-height: 0;
@@ -71,17 +75,29 @@
   max-width: 100%;
 }
 
-.config-view__field-row--stacked .config-view__field-control .ant-input-textarea,
-.config-view__field-row--stacked .config-view__field-control .ant-input-textarea textarea,
-.config-view__field-row--stacked .config-view__field-control > textarea.ant-input {
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea
+  textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  > textarea.ant-input {
   height: auto !important;
   min-height: 0;
   width: 100% !important;
   max-width: 100%;
 }
 
-.config-view__field-row--stacked .config-view__field-control .ant-input-textarea textarea,
-.config-view__field-row--stacked .config-view__field-control > textarea.ant-input {
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea
+  textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  > textarea.ant-input {
   display: block;
   width: 100% !important;
   min-height: 56px;
@@ -94,7 +110,8 @@
   min-width: 0;
 }
 
-.config-view__field-row:not(.config-view__field-row--stacked) .config-view__field-meta {
+.config-view__field-row:not(.config-view__field-row--stacked)
+  .config-view__field-meta {
   flex: 1 1 280px;
 }
 

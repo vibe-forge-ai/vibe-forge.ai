@@ -7,8 +7,8 @@ import { persistAdapterAccountArtifacts, removeStoredAdapterAccount } from '@vib
 import { createLogger } from '@vibe-forge/utils/create-logger'
 import type { Command } from 'commander'
 
-import { normalizeCliAdapterOptionValue } from './@core/adapter-option'
 import { resolveCliWorkspaceCwd } from '#~/workspace.js'
+import { normalizeCliAdapterOptionValue } from './@core/adapter-option'
 
 const createTransientCache = (): AdapterCtx['cache'] => {
   const store = new Map<string, unknown>()

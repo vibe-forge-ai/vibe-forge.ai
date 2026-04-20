@@ -148,11 +148,21 @@
 .model-select-menu .ant-menu-item-selected .model-select-menu-item-title,
 .model-select-menu .ant-menu-item-selected .model-select-menu-item-service,
 .model-select-menu .ant-menu-item-selected .model-select-menu-item-separator,
-.model-select-submenu-popup .ant-menu-item-selected .model-select-menu-item-main,
-.model-select-submenu-popup .ant-menu-item-selected .model-select-menu-item-text,
-.model-select-submenu-popup .ant-menu-item-selected .model-select-menu-item-title,
-.model-select-submenu-popup .ant-menu-item-selected .model-select-menu-item-service,
-.model-select-submenu-popup .ant-menu-item-selected .model-select-menu-item-separator {
+.model-select-submenu-popup
+  .ant-menu-item-selected
+  .model-select-menu-item-main,
+.model-select-submenu-popup
+  .ant-menu-item-selected
+  .model-select-menu-item-text,
+.model-select-submenu-popup
+  .ant-menu-item-selected
+  .model-select-menu-item-title,
+.model-select-submenu-popup
+  .ant-menu-item-selected
+  .model-select-menu-item-service,
+.model-select-submenu-popup
+  .ant-menu-item-selected
+  .model-select-menu-item-separator {
   color: var(--text-color) !important;
   -webkit-text-fill-color: var(--text-color) !important;
 }

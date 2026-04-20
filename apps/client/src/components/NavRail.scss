@@ -51,8 +51,7 @@
   width: 100%;
   height: auto;
   padding: 8px max(8px, env(safe-area-inset-right))
-    calc(8px + env(safe-area-inset-bottom))
-    max(8px, env(safe-area-inset-left));
+    calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   border-top: 1px solid var(--border-color);
   background: color-mix(
     in srgb,
