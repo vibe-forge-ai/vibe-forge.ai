@@ -16,6 +16,19 @@
 - Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 
+如果你希望由 launcher 自动处理下载和首次启动，也可以直接运行：
+
+```bash
+npx @vibe-forge/bootstrap app
+npx @vibe-forge/bootstrap app cache
+npx @vibe-forge/bootstrap app --no-cache
+```
+
+`bootstrap app` 会记住上次选择的桌面安装位置；如果之前没有记录，会先询问是安装到用户目录还是 bootstrap cache，再把当前目录作为 workspace 传给桌面应用。
+
+- `bootstrap app cache`：显式走 cache；如果 cache 里已经有对应 release，就直接从 cache 启动
+- `bootstrap app --no-cache`：显式回到用户目录安装模式
+
 当前桌面 release / CI artifact 默认不签名，首次运行时系统可能会提示安全确认。
 
 ## 本地试用

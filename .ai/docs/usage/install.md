@@ -23,6 +23,28 @@
 如果你只想快速跑起来，优先使用这两个入口：
 
 ```bash
+npx @vibe-forge/bootstrap run "summarize the repo"
+npx @vibe-forge/bootstrap web
+npx @vibe-forge/bootstrap server
+npx @vibe-forge/bootstrap app
+npx @vibe-forge/bootstrap app cache
+npx @vibe-forge/bootstrap app --no-cache
+```
+
+`@vibe-forge/bootstrap` 会按需懒安装对应运行时：
+
+- `web`：转发到 `@vibe-forge/web`
+- `server`：转发到 `@vibe-forge/server`
+- `app`：记住上次桌面安装模式；如果没有记录，会先询问是装到用户目录还是 bootstrap cache，再以当前目录作为 workspace 启动
+- `app cache`：显式走 cache；如果 cache 里已经有对应 release，就直接从 cache 启动
+- `app --no-cache`：显式回到用户目录安装模式
+- 其他命令：原样转发到 `@vibe-forge/cli`
+
+其中 `bootstrap app` 依赖对应平台已经公开发布桌面 release；当前 macOS、Linux 可用，Windows 仍以正式安装产物补齐为准。
+
+如果你不想经过 bootstrap，也可以直接使用具体入口：
+
+```bash
 npx @vibe-forge/web
 npx @vibe-forge/server
 ```
@@ -53,6 +75,23 @@ brew upgrade vibe-forge
 ```
 
 当前 Homebrew formula 安装 `@vibe-forge/cli`，会暴露 `vf`、`vforge` 和 `vibe-forge` 三个命令。
+
+### Homebrew 安装 Bootstrap
+
+如果你希望在本机长期保留一个按需下载 `web / server / app / cli` 的启动器，可以安装 bootstrap：
+
+```bash
+brew install vibe-forge-ai/tap/vibe-forge-bootstrap
+```
+
+更新：
+
+```bash
+brew update
+brew upgrade vibe-forge-bootstrap
+```
+
+当前 Homebrew formula 安装 `@vibe-forge/bootstrap`，会暴露 `vibe-forge-bootstrap` 和 `vfb` 两个命令。
 
 ### Windows 安装 CLI
 
@@ -139,6 +178,8 @@ pnpm add -D @vibe-forge/hooks
 不想写入依赖也可以直接用 `npx`：
 
 ```bash
+npx @vibe-forge/bootstrap web --help
+npx @vibe-forge/bootstrap run --help
 npx @vibe-forge/web --help
 npx @vibe-forge/server --help
 ```

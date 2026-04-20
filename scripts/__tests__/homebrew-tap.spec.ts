@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildVibeForgeCliTarballUrl, normalizeCliVersion } from '../cli-package-release'
+import {
+  buildVibeForgeBootstrapTarballUrl,
+  buildVibeForgeCliTarballUrl,
+  normalizeBootstrapVersion,
+  normalizeCliVersion
+} from '../cli-package-release'
 import { updateVibeForgeFormula } from '../homebrew-tap'
 
 describe('homebrew tap tooling', () => {
@@ -14,6 +19,16 @@ describe('homebrew tap tooling', () => {
     expect(normalizeCliVersion('v1.2.3')).toBe('1.2.3')
   })
 
+  it('builds the npm tarball url for the bootstrap package', () => {
+    expect(buildVibeForgeBootstrapTarballUrl('1.2.3')).toBe(
+      'https://registry.npmjs.org/@vibe-forge/bootstrap/-/bootstrap-1.2.3.tgz'
+    )
+  })
+
+  it('normalizes a tagged bootstrap version', () => {
+    expect(normalizeBootstrapVersion('v1.2.3')).toBe('1.2.3')
+  })
+
   it('updates the formula url and sha256', () => {
     const content = [
       'class VibeForge < Formula',
@@ -24,7 +39,7 @@ describe('homebrew tap tooling', () => {
     ].join('\n')
 
     expect(updateVibeForgeFormula(content, {
-      version: '1.2.3',
+      tarballUrl: 'https://registry.npmjs.org/@vibe-forge/cli/-/cli-1.2.3.tgz',
       sha256: 'a'.repeat(64)
     })).toContain('url "https://registry.npmjs.org/@vibe-forge/cli/-/cli-1.2.3.tgz"')
   })
@@ -39,7 +54,7 @@ describe('homebrew tap tooling', () => {
     ].join('\n')
 
     expect(updateVibeForgeFormula(content, {
-      version: '1.2.3',
+      tarballUrl: 'https://registry.npmjs.org/@vibe-forge/cli/-/cli-1.2.3.tgz',
       sha256: 'a'.repeat(64)
     })).toBe(content)
   })
