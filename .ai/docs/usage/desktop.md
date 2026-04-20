@@ -2,7 +2,10 @@
 
 返回入口：[index.md](../index.md)
 
-![桌面应用首页](../../../.docs/zh-hans/desktop-home.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../../../.docs/zh-hans/desktop-chat-dark.png">
+  <img alt="桌面应用会话页" src="../../../.docs/zh-hans/desktop-chat-light.png">
+</picture>
 
 ## 获取安装包
 

@@ -1,57 +1,62 @@
 # Vibe Forge AI
 
-Vibe Forge 是一个 AI 辅助开发框架，提供桌面应用、Web UI 与 CLI，支持插件化适配器、任务编排和多服务端接入。
+en-US | [zh-Hans](./README.zh-Hans.md)
 
-## 最新界面
+Vibe Forge is an AI-assisted development framework with a desktop app, PWA / Web UI, and CLI. It combines adapter-driven model access, task orchestration, and multi-service workflows in one workspace.
 
-![桌面应用首页](./.docs/zh-hans/desktop-home.png)
+## Product Preview
 
-## 关键能力
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./.docs/en/desktop-chat-dark.png">
+  <img alt="Vibe Forge desktop chat preview" src="./.docs/en/desktop-chat-light.png">
+</picture>
 
-- **对话式交互**：流式输出、会话管理、工具调用可视化。
-- **任务与自动化**：会话归档、规则触发、运行记录统一管理。
-- **可扩展架构**：适配器与插件分层，配置驱动、易于接入。
-- **多入口运行**：桌面应用内置本机服务，也支持切到远端执行服务。
+## Online Entry
 
-## 产品截图
+- PWA / Web UI: [https://vibe-forge-ai.github.io/pwa/](https://vibe-forge-ai.github.io/pwa/)
 
-![桌面端首页](./.docs/zh-hans/desktop-home.png)
-![对话流程](./.docs/zh-hans/chat-timeline.png)
-![会话历史](./.docs/zh-hans/chat-history.png)
-![自动化能力](./.docs/zh-hans/automation.png)
-![知识与规范](./.docs/zh-hans/knowledge-spec.png)
+## Key Capabilities
 
-## 安装方式
+- **Conversational workflow**: streaming responses, session management, and tool-call visualization.
+- **Tasks and automation**: session archive, rule triggers, and run history in one place.
+- **Extensible architecture**: adapters and plugins with config-driven integration.
+- **Multiple entry points**: desktop app, PWA / Web UI, and CLI for standalone use or project integration.
 
-### 桌面应用
+## Installation
 
-- 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` 发布产物。
-- macOS：Intel（`x64`）与 Apple Silicon（`arm64`）分别提供 `.dmg`、`.zip`
-- Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
-- Linux：`.AppImage`、`.deb`、`.tar.gz`
-- 当前桌面 release / CI artifact 默认不签名，首次启动时系统可能会提示安全确认。
+### Desktop App
+
+- Download `desktop-v*` assets from [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases).
+- macOS: Intel (`x64`) and Apple Silicon (`arm64`) builds ship as `.dmg` and `.zip`.
+- Windows: the installer is still tracked in [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161).
+- Linux: `.AppImage`, `.deb`, and `.tar.gz`.
+- Current desktop release / CI artifacts are unsigned, so your OS may show a security prompt on first launch.
 
 ### CLI
 
-- Homebrew 安装：`brew install vibe-forge-ai/tap/vibe-forge`
-- Windows PowerShell 安装：`irm https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 | iex`
-- Scoop 安装：`scoop bucket add vibe-forge https://github.com/vibe-forge-ai/scoop-bucket; scoop install vibe-forge`
+- Homebrew: `brew install vibe-forge-ai/tap/vibe-forge`
+- Windows PowerShell: `irm https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 | iex`
+- Scoop: `scoop bucket add vibe-forge https://github.com/vibe-forge-ai/scoop-bucket; scoop install vibe-forge`
 
-### 在项目里接入 Web UI / CLI
+### Add Web UI / CLI to Your Project
 
 ```bash
 pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
 
-## 使用方式
+## Usage
 
-### 直接用桌面应用
+### Desktop App
 
-- 桌面应用启动后会自动拉起本机 Vibe Forge 服务，不需要额外执行 `vfui-server`
-- 本机服务默认关闭 `webAuth`
-- 可以从账号菜单切换到其他远端 Vibe Forge 服务端，把桌面端当作统一控制台
+- Download and launch the desktop app to get started.
+- Desktop connection flow, backend switching, and local mode notes: [Desktop App](./.ai/docs/usage/desktop.md)
 
-### 从源码试用桌面端
+### PWA / Web UI
+
+- Hosted entry: [https://vibe-forge-ai.github.io/pwa/](https://vibe-forge-ai.github.io/pwa/)
+- Setup, self-hosting, and backend connection notes: [PWA and Standalone Deployment](./.ai/docs/usage/pwa.md)
+
+### Run the Desktop App from Source
 
 ```bash
 pnpm desktop:dev
@@ -59,23 +64,21 @@ pnpm desktop:package
 pnpm desktop:make
 ```
 
-### 在自己项目中跑 Web UI / CLI
+### Run Web UI / CLI in Your Project
 
-- 参考 [安装与准备](./.ai/docs/usage/install.md)
-- 参考 [启动服务](./.ai/docs/usage/runtime.md)
-- 参考 [桌面应用](./.ai/docs/usage/desktop.md)
+- [Installation and Setup](./.ai/docs/usage/install.md)
+- [Runtime Guide](./.ai/docs/usage/runtime.md)
+- [Desktop App](./.ai/docs/usage/desktop.md)
 
-## 文档入口
+## Docs
 
-- [在自己项目中使用](./.ai/docs/index.md)
-- [安装与准备](./.ai/docs/usage/install.md)
-- [桌面应用](./.ai/docs/usage/desktop.md)
-- [启动服务](./.ai/docs/usage/runtime.md)
-- [通用 Hooks 方案（含 `.ai/.mock` native 配置）](./.ai/rules/HOOKS.md)
-- [Hooks 开发与维护参考](./.ai/rules/HOOKS-REFERENCE.md)
-- [本仓库开发与贡献](./.ai/rules/DEVELOPMENT.md)
-- [架构说明](./.ai/rules/ARCHITECTURE.md)
+- [Use Vibe Forge in Your Project](./.ai/docs/index.md)
+- [Installation and Setup](./.ai/docs/usage/install.md)
+- [Desktop App](./.ai/docs/usage/desktop.md)
+- [PWA and Standalone Deployment](./.ai/docs/usage/pwa.md)
+- [Runtime Guide](./.ai/docs/usage/runtime.md)
+- [Repository Development Guide](./.ai/rules/DEVELOPMENT.md)
 
-## 许可证
+## License
 
 [LICENSE](./LICENSE)
