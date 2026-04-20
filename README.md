@@ -35,6 +35,7 @@ Vibe Forge is an AI-assisted development framework with a desktop app, PWA / Web
 ### CLI
 
 - Homebrew: `brew install vibe-forge-ai/tap/vibe-forge`
+- Homebrew bootstrap: `brew install vibe-forge-ai/tap/vibe-forge-bootstrap`
 - Windows PowerShell: `irm https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 | iex`
 - Scoop: `scoop bucket add vibe-forge https://github.com/vibe-forge-ai/scoop-bucket; scoop install vibe-forge`
 
@@ -69,6 +70,9 @@ pnpm desktop:make
 - [Installation and Setup](./.ai/docs/usage/install.md)
 - [Runtime Guide](./.ai/docs/usage/runtime.md)
 - [Desktop App](./.ai/docs/usage/desktop.md)
+- `npx @vibe-forge/bootstrap web`
+- `npx @vibe-forge/bootstrap server`
+- `npx @vibe-forge/bootstrap run "summarize the repo"`
 
 ## Docs
 

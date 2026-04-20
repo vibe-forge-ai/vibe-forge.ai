@@ -45,17 +45,13 @@ Service Worker 只在生产构建中注册；本地 dev 模式会主动避免缓
 如果后端只给本机 tunnel 或反向代理使用，可以绑定到本机：
 
 ```bash
-__VF_PROJECT_AI_SERVER_HOST__=127.0.0.1 \
-__VF_PROJECT_AI_SERVER_PORT__=8787 \
-npx vfui-server
+npx @vibe-forge/server --host 127.0.0.1 --port 8787
 ```
 
 如果需要同一个局域网内的其他设备直接访问，可以绑定到所有网卡：
 
 ```bash
-__VF_PROJECT_AI_SERVER_HOST__=0.0.0.0 \
-__VF_PROJECT_AI_SERVER_PORT__=8787 \
-npx vfui-server
+npx @vibe-forge/server --host 0.0.0.0 --port 8787 --allow-cors
 ```
 
 对外访问时建议显式配置登录账号：
@@ -63,7 +59,7 @@ npx vfui-server
 ```bash
 __VF_PROJECT_AI_WEB_AUTH_USERNAME=admin \
 __VF_PROJECT_AI_WEB_AUTH_PASSWORD=<strong-password> \
-npx vfui-server
+npx @vibe-forge/server --host 0.0.0.0 --port 8787 --allow-cors
 ```
 
 也可以把账号写入项目配置的 `webAuth.accounts`，避免在 shell 历史里留下密码。

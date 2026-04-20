@@ -33,6 +33,9 @@
 - `pnpm tools homebrew-tap sync-cli --version <version>`
   - 根据已发布的 `@vibe-forge/cli@<version>` npm tarball 更新 `infra/homebrew-tap/Formula/vibe-forge.rb` 的 `url` 和 `sha256`
   - CLI 发版后执行；随后在 `infra/homebrew-tap` 内提交并 push，再回到主仓库提交 submodule 指针
+- `pnpm tools homebrew-tap sync-bootstrap --version <version>`
+  - 根据已发布的 `@vibe-forge/bootstrap@<version>` npm tarball 更新 `infra/homebrew-tap/Formula/vibe-forge-bootstrap.rb` 的 `url` 和 `sha256`
+  - bootstrap 发版后执行；随后在 `infra/homebrew-tap` 内提交并 push，再回到主仓库提交 submodule 指针
 - `pnpm tools windows-install sync-cli --version <version>`
   - 根据已发布的 `@vibe-forge/cli@<version>` npm tarball 更新 `infra/windows/scoop-bucket/bucket/vibe-forge.json` 的 `version`、`url` 和 `hash`
   - 同步 `infra/windows/winget/` 下的 manifest 版本号；如果本次已经发布 Windows portable zip，需要同时传 `--winget-installer-url` 和 `--winget-installer-sha256`

@@ -2,7 +2,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-import { buildVibeForgeCliTarballUrl, computeUrlSha256, normalizeCliVersion } from './cli-package-release'
+import {
+  BOOTSTRAP_PACKAGE_NAME,
+  buildNpmPackageTarballUrl,
+  CLI_PACKAGE_NAME,
+  computeUrlSha256,
+  normalizeNpmPackageVersion
+} from './cli-package-release'
 
 const DEFAULT_TAP_DIR = 'infra/homebrew-tap'
 const DEFAULT_FORMULA_PATH = 'Formula/vibe-forge.rb'
@@ -10,28 +16,27 @@ const DEFAULT_FORMULA_PATH = 'Formula/vibe-forge.rb'
 export const updateVibeForgeFormula = (
   content: string,
   input: {
-    version: string
     sha256: string
+    tarballUrl: string
   }
 ) => {
-  const version = normalizeCliVersion(input.version)
-  const url = buildVibeForgeCliTarballUrl(version)
   let nextContent = content
-  const urlPattern = /url "https:\/\/registry\.npmjs\.org\/@vibe-forge\/cli\/-\/cli-[^"]+\.tgz"/
+  const urlPattern = /url "https:\/\/registry\.npmjs\.org\/@vibe-forge\/[^"]+\.tgz"/
   const sha256Pattern = /sha256 "[0-9a-f]{64}"/
 
   if (!urlPattern.test(content) || !sha256Pattern.test(content)) {
     throw new Error('Formula was not updated. Check url and sha256 patterns.')
   }
 
-  nextContent = nextContent.replace(urlPattern, `url "${url}"`)
+  nextContent = nextContent.replace(urlPattern, `url "${input.tarballUrl}"`)
   nextContent = nextContent.replace(sha256Pattern, `sha256 "${input.sha256}"`)
 
   return nextContent
 }
 
-export const runHomebrewTapSyncCli = async (input: {
+const runHomebrewTapSyncPackage = async (input: {
   version: string
+  packageName: string
   tapDir?: string
   formulaPath?: string
   dryRun?: boolean
@@ -39,17 +44,17 @@ export const runHomebrewTapSyncCli = async (input: {
   stdout?: Pick<NodeJS.WriteStream, 'write'>
 }) => {
   const cwd = input.cwd ?? process.cwd()
-  const version = normalizeCliVersion(input.version)
+  const version = normalizeNpmPackageVersion(input.packageName, input.version)
   const tapDir = input.tapDir ?? DEFAULT_TAP_DIR
   const formulaPath = input.formulaPath ?? DEFAULT_FORMULA_PATH
   const resolvedFormulaPath = path.resolve(cwd, tapDir, formulaPath)
-  const tarballUrl = buildVibeForgeCliTarballUrl(version)
+  const tarballUrl = buildNpmPackageTarballUrl(input.packageName, version)
   const stdout = input.stdout ?? process.stdout
 
   const sha256 = await computeUrlSha256(tarballUrl)
   const content = await readFile(resolvedFormulaPath, 'utf8')
   const nextContent = updateVibeForgeFormula(content, {
-    version,
+    tarballUrl,
     sha256
   })
 
@@ -80,3 +85,27 @@ export const runHomebrewTapSyncCli = async (input: {
     written: true
   }
 }
+
+export const runHomebrewTapSyncCli = async (input: {
+  version: string
+  tapDir?: string
+  formulaPath?: string
+  dryRun?: boolean
+  cwd?: string
+  stdout?: Pick<NodeJS.WriteStream, 'write'>
+}) => await runHomebrewTapSyncPackage({
+  ...input,
+  packageName: CLI_PACKAGE_NAME
+})
+
+export const runHomebrewTapSyncBootstrap = async (input: {
+  version: string
+  tapDir?: string
+  formulaPath?: string
+  dryRun?: boolean
+  cwd?: string
+  stdout?: Pick<NodeJS.WriteStream, 'write'>
+}) => await runHomebrewTapSyncPackage({
+  ...input,
+  packageName: BOOTSTRAP_PACKAGE_NAME
+})

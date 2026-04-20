@@ -44,6 +44,7 @@ describe('ui static routing', () => {
         __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
         __VF_PROJECT_AI_SERVER_PORT__: 0,
         __VF_PROJECT_AI_SERVER_WS_PATH__: '/ws',
+        __VF_PROJECT_AI_CLIENT_MODE__: 'static',
         __VF_PROJECT_AI_CLIENT_BASE__: '/ui',
         __VF_PROJECT_AI_CLIENT_DIST_PATH__: distDir
       } as Parameters<typeof mountRoutes>[1]
@@ -124,5 +125,47 @@ describe('ui static routing', () => {
     const indexBody = await indexResponse.text()
     expect(indexResponse.status).toBe(200)
     expect(indexBody).toContain('window.__VF_PROJECT_AI_RUNTIME_ENV__=')
+  })
+
+  it('does not mount ui routes when client mode is none', async () => {
+    const app = new Koa()
+    await mountRoutes(
+      app,
+      {
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: 0,
+        __VF_PROJECT_AI_SERVER_WS_PATH__: '/ws',
+        __VF_PROJECT_AI_CLIENT_MODE__: 'none',
+        __VF_PROJECT_AI_CLIENT_BASE__: '/ui',
+        __VF_PROJECT_AI_CLIENT_DIST_PATH__: distDir
+      } as Parameters<typeof mountRoutes>[1]
+    )
+
+    const headlessServer = http.createServer(app.callback())
+    await new Promise<void>((resolve) => {
+      headlessServer.listen(0, '127.0.0.1', () => resolve())
+    })
+
+    const address = headlessServer.address()
+    if (address == null || typeof address === 'string') {
+      throw new Error('Failed to start headless test server')
+    }
+
+    const headlessBaseUrl = `http://127.0.0.1:${address.port}`
+    try {
+      const response = await fetch(`${headlessBaseUrl}/ui/`)
+
+      expect(response.status).toBe(404)
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        headlessServer.close((error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve()
+        })
+      })
+    }
   })
 })
