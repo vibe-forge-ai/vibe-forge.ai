@@ -104,7 +104,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/cli-helper
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../../packages/config
       '@vibe-forge/core':
         specifier: workspace:^
@@ -305,7 +305,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/channels/lark
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../../packages/config
       '@vibe-forge/core':
         specifier: workspace:^
@@ -387,10 +387,10 @@ importers:
   packages/adapters/claude-code:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -408,10 +408,10 @@ importers:
   packages/adapters/codex:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -429,7 +429,7 @@ importers:
   packages/adapters/copilot:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/types':
         specifier: workspace:^
@@ -444,7 +444,7 @@ importers:
   packages/adapters/gemini:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -462,7 +462,7 @@ importers:
   packages/adapters/kimi:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -480,10 +480,10 @@ importers:
   packages/adapters/opencode:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../../core
       '@vibe-forge/definition-loader':
         specifier: workspace:^
@@ -567,7 +567,7 @@ importers:
   packages/config:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:^2.0.1
         version: link:../core
       '@vibe-forge/types':
         specifier: workspace:^
@@ -628,7 +628,7 @@ importers:
   packages/hooks:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/register':
         specifier: workspace:^
@@ -662,7 +662,7 @@ importers:
         specifier: workspace:^
         version: link:../cli-helper
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -729,7 +729,7 @@ importers:
   packages/task:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/hooks':
         specifier: workspace:^
@@ -773,7 +773,7 @@ importers:
   packages/workspace-assets:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^
+        specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/definition-core':
         specifier: workspace:^

@@ -22,7 +22,7 @@
     "@vibe-forge/adapter-claude-code": "workspace:^",
     "@vibe-forge/app-runtime": "workspace:^",
     "@vibe-forge/channel-lark": "workspace:^",
-    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/definition-core": "workspace:^",
     "@vibe-forge/definition-loader": "workspace:^",

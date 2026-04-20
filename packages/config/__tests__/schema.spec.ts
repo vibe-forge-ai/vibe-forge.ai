@@ -49,6 +49,54 @@ const writePackage = async (
 }
 
 describe('config schema bundle', () => {
+  it('pins config-schema consumers to a core package that exports the subpath', async () => {
+    const readPackageJson = async (relativePath: string) => (
+      JSON.parse(await readFile(path.resolve(process.cwd(), relativePath), 'utf8')) as {
+        dependencies?: Record<string, string>
+        exports?: Record<string, unknown>
+        version?: string
+      }
+    )
+    const corePackage = await readPackageJson('packages/core/package.json')
+    const configPackage = await readPackageJson('packages/config/package.json')
+
+    expect(corePackage.version).toBe('2.0.1')
+    expect(corePackage.exports).toHaveProperty('./config-schema')
+    expect(configPackage.version).toBe('2.0.2')
+    expect(configPackage.dependencies?.['@vibe-forge/core']).toBe('workspace:^2.0.1')
+
+    for (
+      const relativePath of [
+        'packages/adapters/claude-code/package.json',
+        'packages/adapters/codex/package.json',
+        'packages/adapters/copilot/package.json',
+        'packages/adapters/gemini/package.json',
+        'packages/adapters/kimi/package.json',
+        'packages/adapters/opencode/package.json'
+      ]
+    ) {
+      const packageJson = await readPackageJson(relativePath)
+      expect(packageJson.dependencies?.['@vibe-forge/core']).toBe('workspace:^2.0.1')
+    }
+
+    for (
+      const relativePath of [
+        'apps/cli/package.json',
+        'apps/server/package.json',
+        'packages/adapters/claude-code/package.json',
+        'packages/adapters/codex/package.json',
+        'packages/adapters/opencode/package.json',
+        'packages/hooks/package.json',
+        'packages/mcp/package.json',
+        'packages/task/package.json',
+        'packages/workspace-assets/package.json'
+      ]
+    ) {
+      const packageJson = await readPackageJson(relativePath)
+      expect(packageJson.dependencies?.['@vibe-forge/config']).toBe('workspace:^2.0.2')
+    }
+  })
+
   it('keeps the base schema adapter slot generic', () => {
     const bundle = composeBaseConfigSchemaBundle()
     const adapters = (bundle.jsonSchema.properties as Record<string, unknown>).adapters as Record<string, unknown>
