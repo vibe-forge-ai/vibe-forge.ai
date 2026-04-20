@@ -144,7 +144,7 @@ jobs:
         env:
           VF_DESKTOP_SMOKE_ARCH: ${{ runner.os == 'macOS' && 'arm64' || '' }}
 
-      - name: Build installers
+      - name: Build desktop artifacts
         run: pnpm -C apps/desktop make:from-package
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -155,16 +155,28 @@ jobs:
           DEBUG: electron-builder
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VF_DESKTOP_ARCHS: ${{ runner.os == 'macOS' && 'arm64,x64' || '' }}
+          VF_DESKTOP_MAKE_TARGETS: ${{ runner.os == 'Windows' && steps.desktop_release.outputs.enabled != 'true' && 'dir' || '' }}
           VF_DESKTOP_PUBLISH: never
           VF_DESKTOP_VERSION: ${{ steps.desktop_release.outputs.version }}
           VF_DESKTOP_SIGN: ${{ vars.DESKTOP_SIGN || 'false' }}
 
       - name: Upload installer artifacts
+        if: runner.os != 'Windows' || steps.desktop_release.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: |
             apps/desktop/release/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_days || 14 }}
+
+      - name: Upload Windows package artifact
+        if: runner.os == 'Windows' && steps.desktop_release.outputs.enabled != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            apps/desktop/out/*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_days || 14 }}
 
