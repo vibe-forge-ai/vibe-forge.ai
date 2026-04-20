@@ -6,6 +6,7 @@
     { "path": "./tsconfig.node.json" }
   ],
   "include": [
+    "../../apps/bootstrap/__tests__/**/*",
     "../../apps/cli/__tests__/**/*",
     "../../apps/server/__tests__/**/*",
     "../../scripts/__tests__/**/*"

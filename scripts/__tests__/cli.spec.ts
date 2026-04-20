@@ -288,6 +288,44 @@ describe('scripts cli', () => {
     })
   })
 
+  it('dispatches homebrew tap bootstrap formula sync', async () => {
+    const runHomebrewTapSyncBootstrap = vi.fn(async () => ({
+      formulaPath: '/repo/infra/homebrew-tap/Formula/vibe-forge-bootstrap.rb',
+      sha256: '0'.repeat(64),
+      tarballUrl: 'https://registry.npmjs.org/@vibe-forge/bootstrap/-/bootstrap-1.0.0.tgz',
+      written: true
+    }))
+    const cli = createScriptsCli({
+      runAdapterSuite: vi.fn(async () => []),
+      runAdapterVitest: vi.fn(async () => {}),
+      runChromeDebugTargets: vi.fn(async () => {}),
+      runChromeDebugMessengerConversations: vi.fn(async () => {}),
+      runChromeDebugMessengerSend: vi.fn(async () => {}),
+      runChromeDebugMessengerClickReply: vi.fn(async () => {}),
+      runChromeDebugMessengerClickText: vi.fn(async () => {}),
+      runMessageActionsVerify: vi.fn(async () => {}),
+      runHomebrewTapSyncBootstrap,
+      runPublishPlan: vi.fn(async () => ({}))
+    })
+
+    await cli.parseAsync([
+      'node',
+      'vf-dev',
+      'homebrew-tap',
+      'sync-bootstrap',
+      '--version',
+      '1.0.0',
+      '--dry-run'
+    ])
+
+    expect(runHomebrewTapSyncBootstrap).toHaveBeenCalledWith({
+      version: '1.0.0',
+      tapDir: 'infra/homebrew-tap',
+      formulaPath: 'Formula/vibe-forge-bootstrap.rb',
+      dryRun: true
+    })
+  })
+
   it('dispatches Windows install metadata sync', async () => {
     const runWindowsInstallSyncCli = vi.fn(async () => ({
       scoopManifestPath: '/repo/infra/windows/scoop-bucket/bucket/vibe-forge.json',

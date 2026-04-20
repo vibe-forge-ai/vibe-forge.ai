@@ -6,6 +6,15 @@
 
 通过 Homebrew、Scoop 或 Windows PowerShell 安装后可以直接使用 `vf`；不安装到项目依赖时，用 `npx -p <package> <bin>` 临时运行对应命令。
 
+如果你更想先拿到一个统一入口，再按命令懒安装对应 runtime，也可以使用 bootstrap：
+
+- `npx @vibe-forge/bootstrap run "读取 README 并总结"`
+- `npx @vibe-forge/bootstrap web`
+- `npx @vibe-forge/bootstrap server`
+- `npx @vibe-forge/bootstrap app`
+- `npx @vibe-forge/bootstrap app cache`
+- `npx @vibe-forge/bootstrap app --no-cache`
+
 - `vf run --help`
 - `npx -y -p @vibe-forge/cli vf run --help`
 - `npx -y -p @vibe-forge/mcp vf-mcp --help`

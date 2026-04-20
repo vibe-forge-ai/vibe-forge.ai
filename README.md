@@ -33,7 +33,8 @@ Vibe Forge 是一个 AI 辅助开发框架，提供桌面应用、Web UI 与 CLI
 
 ### CLI
 
-- Homebrew 安装：`brew install vibe-forge-ai/tap/vibe-forge`
+- Homebrew 安装 CLI：`brew install vibe-forge-ai/tap/vibe-forge`
+- Homebrew 安装 bootstrap：`brew install vibe-forge-ai/tap/vibe-forge-bootstrap`
 - Windows PowerShell 安装：`irm https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/scripts/install-windows.ps1 | iex`
 - Scoop 安装：`scoop bucket add vibe-forge https://github.com/vibe-forge-ai/scoop-bucket; scoop install vibe-forge`
 
@@ -64,6 +65,9 @@ pnpm desktop:make
 - 参考 [安装与准备](./.ai/docs/usage/install.md)
 - 参考 [启动服务](./.ai/docs/usage/runtime.md)
 - 参考 [桌面应用](./.ai/docs/usage/desktop.md)
+- `npx @vibe-forge/bootstrap web`
+- `npx @vibe-forge/bootstrap server`
+- `npx @vibe-forge/bootstrap run "summarize the repo"`
 
 ## 文档入口
 

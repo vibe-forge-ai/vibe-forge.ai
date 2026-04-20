@@ -13,7 +13,7 @@ import {
   runChromeDebugMessengerSend,
   runChromeDebugTargets
 } from './chrome-debug'
-import { runHomebrewTapSyncCli } from './homebrew-tap'
+import { runHomebrewTapSyncBootstrap, runHomebrewTapSyncCli } from './homebrew-tap'
 import { runMessageActionsVerify } from './message-actions'
 import { runWindowsInstallSyncCli } from './windows-install'
 
@@ -67,6 +67,7 @@ interface ScriptsCliDeps {
   runChromeDebugMessengerClickText: typeof runChromeDebugMessengerClickText
   runMessageActionsVerify: typeof runMessageActionsVerify
   runHomebrewTapSyncCli: typeof runHomebrewTapSyncCli
+  runHomebrewTapSyncBootstrap: typeof runHomebrewTapSyncBootstrap
   runWindowsInstallSyncCli: typeof runWindowsInstallSyncCli
   runPublishPlan: (args: string[]) => Promise<unknown>
 }
@@ -99,6 +100,7 @@ const defaultDeps: ScriptsCliDeps = {
   runChromeDebugMessengerClickText,
   runMessageActionsVerify,
   runHomebrewTapSyncCli,
+  runHomebrewTapSyncBootstrap,
   runWindowsInstallSyncCli,
   runPublishPlan: async (args) => {
     const { runPublishPlanCli } = await import('./publish-plan-core.mjs')
@@ -340,6 +342,27 @@ export const createScriptsCli = (inputDeps: Partial<ScriptsCliDeps> = {}) => {
       version: string
     }) => {
       await deps.runHomebrewTapSyncCli({
+        version: options.version,
+        tapDir: options.tapDir,
+        formulaPath: options.formula,
+        dryRun: options.dryRun ?? false
+      })
+    })
+
+  homebrewTapCommand
+    .command('sync-bootstrap')
+    .requiredOption('--version <version>', 'Published @vibe-forge/bootstrap version to sync')
+    .option('--tap-dir <path>', 'Homebrew tap submodule directory', 'infra/homebrew-tap')
+    .option('--formula <path>', 'Formula path inside the tap directory', 'Formula/vibe-forge-bootstrap.rb')
+    .option('--dry-run', 'Calculate the update without writing the formula', false)
+    .description('Update Formula/vibe-forge-bootstrap.rb to the published @vibe-forge/bootstrap tarball')
+    .action(async (options: {
+      dryRun?: boolean
+      formula: string
+      tapDir: string
+      version: string
+    }) => {
+      await deps.runHomebrewTapSyncBootstrap({
         version: options.version,
         tapDir: options.tapDir,
         formulaPath: options.formula,

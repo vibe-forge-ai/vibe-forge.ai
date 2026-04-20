@@ -3,18 +3,38 @@ import { createHash } from 'node:crypto'
 import https from 'node:https'
 
 export const CLI_PACKAGE_NAME = '@vibe-forge/cli'
+export const BOOTSTRAP_PACKAGE_NAME = '@vibe-forge/bootstrap'
 
-export const buildVibeForgeCliTarballUrl = (version: string) => (
-  `https://registry.npmjs.org/@vibe-forge/cli/-/cli-${version}.tgz`
+const resolvePackageTarballBasename = (packageName: string) => {
+  const segments = packageName.split('/')
+  const basename = segments.at(-1)?.trim()
+  if (!basename) {
+    throw new Error(`Invalid npm package name: ${packageName}`)
+  }
+  return basename
+}
+
+export const buildNpmPackageTarballUrl = (packageName: string, version: string) => (
+  `https://registry.npmjs.org/${packageName}/-/${resolvePackageTarballBasename(packageName)}-${version}.tgz`
 )
 
-export const normalizeCliVersion = (value: string) => {
+export const buildVibeForgeCliTarballUrl = (version: string) => buildNpmPackageTarballUrl(CLI_PACKAGE_NAME, version)
+
+export const buildVibeForgeBootstrapTarballUrl = (version: string) => (
+  buildNpmPackageTarballUrl(BOOTSTRAP_PACKAGE_NAME, version)
+)
+
+export const normalizeNpmPackageVersion = (packageName: string, value: string) => {
   const version = value.trim().replace(/^v/, '')
   if (!/^\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?$/i.test(version)) {
-    throw new Error(`Invalid ${CLI_PACKAGE_NAME} version: ${value}`)
+    throw new Error(`Invalid ${packageName} version: ${value}`)
   }
   return version
 }
+
+export const normalizeCliVersion = (value: string) => normalizeNpmPackageVersion(CLI_PACKAGE_NAME, value)
+
+export const normalizeBootstrapVersion = (value: string) => normalizeNpmPackageVersion(BOOTSTRAP_PACKAGE_NAME, value)
 
 const download = (url: string, redirectsLeft = 5): Promise<Buffer> => (
   new Promise((resolve, reject) => {
