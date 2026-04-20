@@ -1,7 +1,10 @@
+import { useAtomValue } from 'jotai'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Session } from '@vibe-forge/core'
+
+import { optimisticSessionCreationsAtom } from './optimistic-session-creation'
 import { useChatAdapterAccountSelection } from './use-chat-adapter-account-selection'
 import { useChatEffort } from './use-chat-effort'
 import { useChatInteraction } from './use-chat-interaction'
@@ -16,6 +19,10 @@ export function useChatSession({
   session?: Session
 }) {
   const { t } = useTranslation()
+  const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
+  const optimisticCreation = session?.id == null || session.id === ''
+    ? undefined
+    : optimisticCreations[session.id]
   const {
     adapterOptions,
     applySessionSelection,
@@ -67,6 +74,7 @@ export function useChatSession({
     permissionMode,
     adapter: selectedAdapter,
     account: selectedAccount,
+    optimisticCreation,
     setInteractionRequest
   })
   const handleInteractionResponse = useCallback((id: string, data: string | string[]) => {

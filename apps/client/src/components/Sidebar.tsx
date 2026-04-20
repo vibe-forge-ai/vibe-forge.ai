@@ -1,6 +1,6 @@
 import './Sidebar.scss'
 
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
@@ -12,6 +12,12 @@ import {
   SidebarListCollapsedActionButton,
   SidebarListCollapsedActions
 } from '#~/components/sidebar-list/SidebarListHeader'
+import {
+  markOptimisticSessionDiscarded,
+  mergeOptimisticSessions,
+  optimisticSessionCreationsAtom,
+  removeSessionFromList
+} from '#~/hooks/chat/optimistic-session-creation'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
@@ -72,11 +78,16 @@ export function Sidebar({
   const { t } = useTranslation()
   const { isTouchInteraction } = useResponsiveLayout()
   const isMac = navigator.platform.includes('Mac')
+  const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
+  const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
   )
-  const sessions: Session[] = sessionsRes?.sessions ?? []
+  const sessions: Session[] = useMemo(
+    () => mergeOptimisticSessions(sessionsRes?.sessions ?? [], optimisticCreations),
+    [optimisticCreations, sessionsRes?.sessions]
+  )
   const { data: configRes } = useSWR<{
     sources?: {
       merged?: {
@@ -141,6 +152,23 @@ export function Sidebar({
     onSelectSession({ id: '' } as Session, true)
   }
 
+  function discardOptimisticSession(id: string) {
+    markOptimisticSessionDiscarded(id)
+    setOptimisticCreations((prev) => {
+      if (prev[id] == null) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    void mutateSessions((prev) => {
+      if (prev?.sessions == null) return prev
+      return {
+        ...prev,
+        sessions: removeSessionFromList(prev.sessions, id)
+      }
+    }, false)
+  }
+
   async function handleArchiveSession(id: string) {
     // 先计算下一个要跳转的 ID
     let nextId: string | undefined
@@ -151,6 +179,12 @@ export function Sidebar({
       } else if (currentIndex - 1 >= 0) {
         nextId = sessions[currentIndex - 1].id
       }
+    }
+
+    if (optimisticCreations[id] != null) {
+      discardOptimisticSession(id)
+      if (activeId === id) onDeletedSession?.(id, nextId)
+      return
     }
 
     try {
@@ -175,6 +209,12 @@ export function Sidebar({
       }
     }
 
+    if (optimisticCreations[id] != null) {
+      discardOptimisticSession(id)
+      if (activeId === id) onDeletedSession?.(id, nextId)
+      return
+    }
+
     try {
       await deleteSession(id)
       await mutateSessions()
@@ -185,6 +225,24 @@ export function Sidebar({
   }
 
   async function handleStarSession(id: string, isStarred: boolean) {
+    if (optimisticCreations[id] != null) {
+      setOptimisticCreations((prev) => {
+        const current = prev[id]
+        if (current == null) return prev
+        return {
+          ...prev,
+          [id]: {
+            ...current,
+            session: {
+              ...current.session,
+              isStarred
+            }
+          }
+        }
+      })
+      return
+    }
+
     try {
       await updateSession(id, { isStarred })
       await mutateSessions()
@@ -194,6 +252,24 @@ export function Sidebar({
   }
 
   async function handleRenameSession(id: string, title: string) {
+    if (optimisticCreations[id] != null) {
+      setOptimisticCreations((prev) => {
+        const current = prev[id]
+        if (current == null) return prev
+        return {
+          ...prev,
+          [id]: {
+            ...current,
+            session: {
+              ...current.session,
+              title
+            }
+          }
+        }
+      })
+      return
+    }
+
     await updateSessionTitle(id, title)
     await mutateSessions()
   }

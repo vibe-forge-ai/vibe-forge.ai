@@ -16,6 +16,7 @@ import {
   getFatalSessionError,
   restoreInteractionStateFromHistory
 } from './interaction-state'
+import type { OptimisticSessionCreation } from './optimistic-session-creation'
 import {
   deleteChatSessionViewSnapshot,
   restoreChatSessionViewSnapshot,
@@ -61,6 +62,7 @@ export function useChatSessionMessages({
   permissionMode,
   adapter,
   account,
+  optimisticCreation,
   setInteractionRequest
 }: {
   session?: Session
@@ -69,6 +71,7 @@ export function useChatSessionMessages({
   permissionMode: PermissionMode
   adapter?: string
   account?: string
+  optimisticCreation?: OptimisticSessionCreation
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
   const { t } = useTranslation()
@@ -263,6 +266,38 @@ export function useChatSessionMessages({
       return
     }
 
+    if (optimisticCreation != null) {
+      clearScheduledReconciles()
+      historyRequestSeqRef.current += 1
+      const nextMessages = [optimisticCreation.message]
+      const nextErrorState = optimisticCreation.status === 'failed'
+        ? {
+          action: 'retry-session-creation',
+          code: 'session_create_failed',
+          kind: 'session',
+          message: optimisticCreation.errorMessage ?? t('chat.sessionCreateFailedMessage')
+        } satisfies ChatErrorState
+        : null
+
+      interactionRequestRef.current = null
+      setInteractionRequest(null)
+      setMessagesState(nextMessages)
+      setSessionInfo(null)
+      setQueuedMessages(EMPTY_QUEUED_MESSAGES)
+      setErrorState(nextErrorState)
+      setIsReady(true)
+      isInitialLoadRef.current = false
+      updateSessionViewCache(session.id, {
+        messages: nextMessages,
+        sessionInfo: null,
+        queuedMessages: EMPTY_QUEUED_MESSAGES,
+        errorState: nextErrorState,
+        interactionRequest: null,
+        isHydrated: true
+      })
+      return
+    }
+
     const restoredState = restoreChatSessionViewSnapshot(sessionViewCacheRef.current.get(session.id))
 
     setMessagesState(restoredState.messages)
@@ -280,11 +315,23 @@ export function useChatSessionMessages({
     return () => {
       clearScheduledReconciles()
     }
-  }, [clearScheduledReconciles, refreshHistory, session?.id, setInteractionRequest])
+  }, [
+    clearScheduledReconciles,
+    optimisticCreation,
+    refreshHistory,
+    session?.id,
+    setInteractionRequest,
+    t,
+    updateSessionViewCache
+  ])
 
   useEffect(() => {
     if (session?.id == null || session.id === '') {
       lastObservedSessionStatusRef.current = undefined
+      return
+    }
+    if (optimisticCreation != null) {
+      lastObservedSessionStatusRef.current = session.status
       return
     }
 
@@ -296,10 +343,15 @@ export function useChatSessionMessages({
     }
 
     void refreshHistory({ updateReadiness: false })
-  }, [refreshHistory, session?.id, session?.status])
+  }, [optimisticCreation, refreshHistory, session?.id, session?.status])
 
   useEffect(() => {
     if (session?.id == null || session.id === '') {
+      return
+    }
+    if (optimisticCreation != null) {
+      expectedCloseRef.current = true
+      connectionManager.close(session.id)
       return
     }
 
@@ -529,6 +581,7 @@ export function useChatSessionMessages({
     effort,
     modelForQuery,
     mutate,
+    optimisticCreation,
     permissionMode,
     reconcileAfterInteraction,
     retryCount,
