@@ -3,6 +3,7 @@ run-name: Desktop package (${{ github.ref_name }})
 
 env:
   DESKTOP_RELEASE_TAG_PREFIX: desktop-v
+  NODE_OPTIONS: --max-old-space-size=4096
 
 on:
   pull_request:

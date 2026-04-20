@@ -47,6 +47,7 @@ nsis:
 linux:
   category: Development
   icon: build/icon.png
+  maintainer: Vibe Forge contributors <opensource@vibe-forge.ai>
   target:
     - target: AppImage
     - target: deb

@@ -19,6 +19,35 @@ const executableName = process.platform === 'darwin' ? appName : 'vibe-forge'
 
 const isTruthy = value => /^(1|true|yes|on)$/i.test(value ?? '')
 
+const resolvePnpmInvocation = () => {
+  const npmExecPath = process.env.npm_execpath?.trim()
+  if (npmExecPath) {
+    if (/\.(c|m)?js$/i.test(npmExecPath)) {
+      return {
+        args: [npmExecPath],
+        command: process.execPath
+      }
+    }
+
+    return {
+      args: [],
+      command: npmExecPath,
+      shell: process.platform === 'win32' && /\.(cmd|bat)$/i.test(npmExecPath)
+    }
+  }
+
+  return process.platform === 'win32'
+    ? {
+      args: [],
+      command: 'pnpm.cmd',
+      shell: true
+    }
+    : {
+      args: [],
+      command: 'pnpm'
+    }
+}
+
 const resolveAppVersion = () => {
   const requestedVersion = process.env.VF_DESKTOP_VERSION?.trim()
   const version = requestedVersion || packageJson.version
@@ -29,9 +58,10 @@ const resolveAppVersion = () => {
 }
 
 const runPnpm = (args) => {
-  const pnpmBin = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const result = spawnSync(pnpmBin, args, {
+  const { args: baseArgs, command, shell } = resolvePnpmInvocation()
+  const result = spawnSync(command, [...baseArgs, ...args], {
     cwd: workspaceRoot,
+    shell,
     stdio: 'inherit'
   })
 
