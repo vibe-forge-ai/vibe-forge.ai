@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 
+import { callHook } from '@vibe-forge/hooks'
 import type {
   AdapterCtx,
   AdapterEvent,
@@ -137,6 +138,64 @@ const supportsEmptyMcpAcceptPayload = (requestedSchema: unknown) => {
     : []
 
   return schemaType === 'object' && Object.keys(schemaProperties).length === 0 && requiredFields.length === 0
+}
+
+const normalizePositiveTokenCount = (value: unknown) => (
+  typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : undefined
+)
+
+const readOptionalString = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== ''
+    ? value.trim()
+    : undefined
+)
+
+export const callCodexObservationalPreCompactHook = async (params: {
+  cwd: string
+  env: AdapterCtx['env']
+  logger: AdapterCtx['logger']
+  runtime: AdapterQueryOptions['runtime']
+  sessionId: string
+  tokenCount?: number
+  transcriptPath?: string | null
+  trigger?: string
+  turnId?: string
+}) => {
+  try {
+    const output = await callHook('PreCompact', {
+      adapter: 'codex',
+      canBlock: false,
+      cwd: params.cwd,
+      hookSource: 'bridge',
+      runtime: params.runtime,
+      sessionId: params.sessionId,
+      tokenCount: params.tokenCount,
+      transcriptPath: params.transcriptPath,
+      trigger: params.trigger,
+      turnId: params.turnId
+    }, params.env)
+
+    if (output?.continue === false) {
+      params.logger.warn(
+        '[codex stream hooks] ignoring blocking output from observational PreCompact hook',
+        output.stopReason
+      )
+    }
+
+    if (output?.hookSpecificOutput?.hookEventName === 'PreCompact') {
+      params.logger.warn(
+        '[codex stream hooks] ignoring hookSpecificOutput from observational PreCompact hook',
+        {
+          additionalContext: output.hookSpecificOutput.additionalContext != null,
+          replacementPrompt: output.hookSpecificOutput.replacementPrompt != null
+        }
+      )
+    }
+  } catch (error) {
+    params.logger.error('[codex stream hooks] PreCompact failed', error)
+  }
 }
 
 export const resolveCodexApprovalDecision = (params: {
@@ -313,6 +372,20 @@ export async function createStreamCodexSession(
         })
       }
       activeTurnId = undefined
+    } else if (method === 'item/started') {
+      const item = (params as { item?: { type?: string; tokenCount?: unknown; trigger?: unknown } }).item
+      if (item?.type === 'contextCompaction') {
+        void callCodexObservationalPreCompactHook({
+          cwd,
+          env: ctx.env,
+          logger,
+          runtime: options.runtime,
+          sessionId,
+          tokenCount: normalizePositiveTokenCount(item.tokenCount),
+          trigger: readOptionalString(item.trigger),
+          turnId: activeTurnId
+        })
+      }
     }
     handleIncomingNotification(method, params, rpc, emitEvent, msgAcc, cmdAcc, approvalPolicy)
   })

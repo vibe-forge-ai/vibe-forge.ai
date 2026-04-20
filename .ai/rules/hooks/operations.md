@@ -31,14 +31,15 @@ native hooks 可用时，Vibe Forge 会关闭对应的 bridge 事件，避免同
 
 补充说明：
 
-- `claude-code` 的 `PreCompact` 与 `gemini` 的 `PreCompress -> PreCompact` 走 native hook，但当前没有对应的 bridge 重复事件需要关闭。
-- `codex` / `kimi` / `opencode` 暂无可验证的 native `PreCompact` 入口，跟踪见 [Issue #109](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/109)。
+- `claude-code` 的 `PreCompact`、`gemini` 的 `PreCompress -> PreCompact` 与 `kimi` 的原生 `PreCompact` 都走 native hook，但当前没有对应的 bridge 重复事件需要关闭。
+- `opencode` 的 `experimental.session.compacting` 已映射到统一 `PreCompact`，但它只做 compaction prompt/context 定制，当前固定按 `canBlock: false` 处理，也没有对应的 bridge 重复事件需要关闭。
+- `codex` 当前通过 stream app-server `contextCompaction` 事件映射 bridge `PreCompact`；因为没有 native 返回值语义，这条链路固定按 `canBlock: false` 处理，也不会参与 native 去重。
 
 Codex 补充说明：
 
 - 上面的 `codex` native 去重只适用于官方原生 hooks 真正覆盖到的事件。
 - 如果后续为 Codex 增加 transcript JSONL watcher 来补非 Bash 工具统计，这条链路只能作为观测补充，不能参与 native hook 决策，也不要据此关闭真正可阻断的 native hooks。
-- 换句话说，JSONL watcher 可以补日志和埋点，不能承担 `PreToolUse` / `PostToolUse` 的控流职责。
+- 换句话说，Codex 的 bridge 旁路目前可以补日志和埋点，但不能承担 `PreToolUse` / `PostToolUse` / `PreCompact` 的控流职责。
 
 ## 调试入口
 

@@ -3,19 +3,30 @@ import { PassThrough } from 'node:stream'
 
 import { spawn } from 'node:child_process'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
-import type { AdapterOutputEvent } from '@vibe-forge/types'
-
 import { CODEX_PROXY_META_HEADER_NAME } from '#~/runtime/proxy.js'
 import { createCodexSession } from '#~/runtime/session.js'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV, callHook } from '@vibe-forge/hooks'
+import type { AdapterOutputEvent } from '@vibe-forge/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn()
-}))
+vi.mock('@vibe-forge/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@vibe-forge/hooks')>()
+  return {
+    ...actual,
+    callHook: vi.fn()
+  }
+})
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>()
+  return {
+    ...actual,
+    spawn: vi.fn()
+  }
+})
 
 const spawnMock = vi.mocked(spawn)
+const callHookMock = vi.mocked(callHook)
 
 function makeMockLogger() {
   return {
@@ -159,6 +170,8 @@ function decodeProxyMeta(overrides: string[], serviceKey: string) {
 describe('createCodexSession RPC approval policy mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    callHookMock.mockReset()
+    callHookMock.mockResolvedValue({ continue: true } as any)
   })
 
   afterEach(() => {
@@ -276,6 +289,100 @@ describe('createCodexSession RPC approval policy mapping', () => {
     const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
     expect(spawnArgs[0]).toBe('app-server')
     expect(spawnArgs).not.toContain('--yolo')
+
+    session.kill()
+  })
+
+  it('bridges contextCompaction items into observational PreCompact hooks', async () => {
+    process.env.HOME = '/tmp'
+    const ctx = makeCtx()
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-precompact',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    proc.stdout.push(`${JSON.stringify({ method: 'turn/started', params: { turn: { id: 'turn_compact' } } })}\n`)
+    proc.stdout.push(
+      `${
+        JSON.stringify({
+          method: 'item/started',
+          params: {
+            item: {
+              type: 'contextCompaction',
+              id: 'compact_1',
+              trigger: 'auto',
+              tokenCount: 3210
+            }
+          }
+        })
+      }\n`
+    )
+
+    await waitForWrites()
+
+    expect(callHookMock).toHaveBeenCalledWith(
+      'PreCompact',
+      expect.objectContaining({
+        adapter: 'codex',
+        canBlock: false,
+        cwd: '/tmp',
+        hookSource: 'bridge',
+        runtime: 'server',
+        sessionId: 'session-precompact',
+        tokenCount: 3210,
+        trigger: 'auto',
+        turnId: 'turn_compact'
+      }),
+      {}
+    )
+
+    session.kill()
+  })
+
+  it('ignores blocking PreCompact output from observational Codex hooks', async () => {
+    process.env.HOME = '/tmp'
+    const ctx = makeCtx()
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+    callHookMock.mockResolvedValue({
+      continue: false,
+      stopReason: 'blocked by plugin'
+    } as any)
+
+    const session = await createCodexSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-precompact-blocked',
+      description: 'Reply with pong.',
+      onEvent: () => {}
+    } as any)
+
+    proc.stdout.push(
+      `${
+        JSON.stringify({
+          method: 'item/started',
+          params: {
+            item: {
+              type: 'contextCompaction',
+              id: 'compact_blocked'
+            }
+          }
+        })
+      }\n`
+    )
+
+    await waitForWrites()
+
+    expect(ctx.logger.warn).toHaveBeenCalledWith(
+      '[codex stream hooks] ignoring blocking output from observational PreCompact hook',
+      'blocked by plugin'
+    )
 
     session.kill()
   })

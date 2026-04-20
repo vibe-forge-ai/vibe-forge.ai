@@ -44,7 +44,10 @@ export interface HookInputs {
     lastAssistantMessage?: string
   }
   SubagentStop: HookInputCore
-  PreCompact: HookInputCore
+  PreCompact: HookInputCore & {
+    trigger?: string
+    tokenCount?: number
+  }
   SessionStart: HookInputCore & {
     source?: 'startup' | 'resume'
     model?: string
@@ -143,7 +146,13 @@ export interface HookOutputs {
   }
   SessionEnd: HookOutputCore
   SubagentStop: HookOutputCore
-  PreCompact: HookOutputCore
+  PreCompact: HookOutputCore & {
+    hookSpecificOutput?: {
+      hookEventName: 'PreCompact'
+      additionalContext?: string
+      replacementPrompt?: string
+    }
+  }
   UserPromptSubmit: HookOutputCore & {
     hookSpecificOutput?: {
       hookEventName: 'UserPromptSubmit'

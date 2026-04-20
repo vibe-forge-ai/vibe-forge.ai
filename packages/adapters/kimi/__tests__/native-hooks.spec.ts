@@ -103,6 +103,7 @@ describe('kimi native hook bridge', () => {
       expect.objectContaining({ event: 'PreToolUse', command: 'user-protect.sh' }),
       expect.objectContaining({ event: 'PreToolUse', matcher: '.*', command }),
       expect.objectContaining({ event: 'PostToolUse', matcher: '.*', command }),
+      expect.objectContaining({ event: 'PreCompact', command }),
       expect.objectContaining({ event: 'SessionStart', command }),
       expect.objectContaining({ event: 'UserPromptSubmit', command }),
       expect.objectContaining({ event: 'Stop', command })
@@ -129,6 +130,7 @@ describe('kimi native hook bridge', () => {
     expect(second).toContain('default_model = "kimi-for-coding"')
     expect(second.match(/\[\[hooks\]\]/gu)).toHaveLength(buildKimiNativeHookEntries(command).length)
     expect(second).toContain('event = "PreToolUse"')
+    expect(second).toContain('event = "PreCompact"')
     expect(second).toContain('matcher = ".*"')
     expect(second).toContain(`command = ${JSON.stringify(command)}`)
   })
@@ -154,6 +156,10 @@ describe('kimi native hook bridge', () => {
       expect.objectContaining({
         event: 'PreToolUse',
         matcher: '.*',
+        command: expect.stringContaining('kimi-hook.js')
+      }),
+      expect.objectContaining({
+        event: 'PreCompact',
         command: expect.stringContaining('kimi-hook.js')
       })
     ]))
@@ -213,6 +219,59 @@ process.stdout.write(JSON.stringify({ continue: false, stopReason: 'blocked by t
         toolName: 'Shell',
         toolCallId: 'tc_1',
         toolInput: { command: 'rm -rf /' }
+      })
+    }
+  )
+
+  it.skipIf(process.platform === 'win32')(
+    'adapts Kimi PreCompact payloads into unified PreCompact hooks',
+    async () => {
+      const workspace = await createTempDir('vf-kimi-hook-precompact-')
+      const fakeCallHookPath = join(workspace, 'fake-call-hook.js')
+      const capturedInputPath = join(workspace, 'captured.json')
+      await mkdir(workspace, { recursive: true })
+      await writeFile(
+        fakeCallHookPath,
+        `const fs = require('node:fs')
+const input = JSON.parse(fs.readFileSync(0, 'utf8'))
+fs.writeFileSync(process.env.CAPTURED_INPUT, JSON.stringify(input, null, 2))
+process.stdout.write(JSON.stringify({ continue: false, stopReason: 'compact blocked by test' }))
+`
+      )
+
+      const result = spawnSync(
+        process.execPath,
+        [resolve(process.cwd(), 'packages/adapters/kimi/kimi-hook.js')],
+        {
+          input: JSON.stringify({
+            session_id: 'kimi-native-session',
+            cwd: workspace,
+            hook_event_name: 'PreCompact',
+            trigger: 'token_limit',
+            token_count: 4096
+          }),
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            __VF_KIMI_CALL_HOOK_PATH__: fakeCallHookPath,
+            __VF_KIMI_TASK_SESSION_ID__: 'vf-session',
+            __VF_KIMI_HOOK_RUNTIME__: 'cli',
+            CAPTURED_INPUT: capturedInputPath
+          }
+        }
+      )
+      const captured = JSON.parse(await readFile(capturedInputPath, 'utf8')) as Record<string, unknown>
+
+      expect(result.status).toBe(2)
+      expect(result.stderr).toContain('compact blocked by test')
+      expect(captured).toMatchObject({
+        adapter: 'kimi',
+        hookEventName: 'PreCompact',
+        hookSource: 'native',
+        canBlock: true,
+        sessionId: 'vf-session',
+        trigger: 'token_limit',
+        tokenCount: 4096
       })
     }
   )

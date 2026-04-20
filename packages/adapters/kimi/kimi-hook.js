@@ -37,7 +37,8 @@ const canBlockEvent = (eventName) => (
   eventName === 'SessionStart' ||
   eventName === 'UserPromptSubmit' ||
   eventName === 'PreToolUse' ||
-  eventName === 'PostToolUse'
+  eventName === 'PostToolUse' ||
+  eventName === 'PreCompact'
 )
 
 const normalizePayload = (raw) => {
@@ -69,6 +70,13 @@ const normalizePayload = (raw) => {
   }
   if (eventName === 'UserPromptSubmit') {
     payload.prompt = firstString(raw.prompt) || ''
+  }
+  if (eventName === 'PreCompact') {
+    payload.trigger = firstString(raw.trigger)
+    const tokenCount = raw.token_count ?? raw.tokenCount
+    if (typeof tokenCount === 'number' && Number.isFinite(tokenCount)) {
+      payload.tokenCount = tokenCount
+    }
   }
   if (eventName === 'Stop') {
     payload.stopHookActive = Boolean(raw.stop_hook_active ?? raw.stopHookActive)
