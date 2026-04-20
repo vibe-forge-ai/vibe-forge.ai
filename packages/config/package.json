@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/config",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Shared config IO for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -38,7 +38,7 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/config/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/core": "workspace:^2.0.1",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "js-yaml": "^4.1.1",

@@ -42,7 +42,7 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/hooks/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^"

@@ -33,7 +33,7 @@
   "dependencies": {
     "@vibe-forge/app-runtime": "workspace:^",
     "@vibe-forge/cli-helper": "workspace:^",
-    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/core": "workspace:^",
     "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/managed-plugins": "workspace:^",

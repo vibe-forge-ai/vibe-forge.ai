@@ -71,7 +71,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/core": "workspace:^",
+    "@vibe-forge/core": "workspace:^2.0.1",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "zod": "^3.24.1"
