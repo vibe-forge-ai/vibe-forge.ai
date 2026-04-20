@@ -78,6 +78,63 @@ const removeStagingDirs = () => {
   fs.rmSync(desktopStagingDir, { recursive: true, force: true })
 }
 
+const removeIfExists = (targetPath) => {
+  if (!fs.existsSync(targetPath)) return
+  fs.rmSync(targetPath, { recursive: true, force: true })
+}
+
+const resolveStagingPackageRoot = (packageName) => {
+  try {
+    const packageJsonPath = require.resolve(`${packageName}/package.json`, {
+      paths: [stagingDir]
+    })
+    return path.dirname(packageJsonPath)
+  } catch {
+    return undefined
+  }
+}
+
+const pruneNodePtyPrebuilds = () => {
+  const packageRoot = resolveStagingPackageRoot('node-pty')
+  if (packageRoot == null) return
+
+  const prebuildsDir = path.join(packageRoot, 'prebuilds')
+  const targetPrebuildName = `${process.platform}-${process.arch}`
+  if (fs.existsSync(prebuildsDir)) {
+    for (const entry of fs.readdirSync(prebuildsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name === targetPrebuildName) {
+        continue
+      }
+      removeIfExists(path.join(prebuildsDir, entry.name))
+    }
+  }
+
+  if (process.platform !== 'win32') {
+    removeIfExists(path.join(packageRoot, 'third_party'))
+  }
+}
+
+const pruneNodeNotifierVendors = () => {
+  const packageRoot = resolveStagingPackageRoot('node-notifier')
+  if (packageRoot == null) return
+
+  const vendorDir = path.join(packageRoot, 'vendor')
+  if (!fs.existsSync(vendorDir)) return
+
+  const removableVendors = process.platform === 'win32'
+    ? ['mac.noindex']
+    : ['notifu', 'snoreToast']
+
+  for (const vendorName of removableVendors) {
+    removeIfExists(path.join(vendorDir, vendorName))
+  }
+}
+
+const pruneUnusedPlatformBinaries = () => {
+  pruneNodePtyPrebuilds()
+  pruneNodeNotifierVendors()
+}
+
 const resolvePackagedAppRoot = (appPath) => {
   if (process.platform === 'darwin') {
     return path.join(appPath, `${appName}.app`, 'Contents', 'Resources', 'app')
@@ -149,6 +206,7 @@ async function main() {
       '--prod',
       stagingDir
     ])
+    pruneUnusedPlatformBinaries()
 
     const iconPath = resolvePackageIconPath()
     const appVersion = resolveAppVersion()

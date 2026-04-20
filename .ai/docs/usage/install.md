@@ -10,12 +10,13 @@
 
 - 从 [GitHub Releases](https://github.com/vibe-forge-ai/vibe-forge.ai/releases) 下载 `desktop-v*` tag 对应的安装包
 - macOS：`.dmg`、`.zip`
-- Windows：`.exe`、`.zip`
+- Windows：web installer `.exe`、对应 payload
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 
 注意：
 
 - 当前桌面 release / CI artifact 默认不签名
+- Windows 当前使用 web installer，首次安装时需要联网下载对应 payload
 - 第一次启动时，macOS / Windows 可能会弹出系统安全提示，需要手动确认
 
 ### Homebrew 安装 CLI
