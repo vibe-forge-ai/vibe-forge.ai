@@ -48,7 +48,7 @@
   - `electron-builder.yml` 的 `publish`
   - `VF_DESKTOP_ENABLE_AUTO_UPDATE`
   - `DESKTOP_AUTO_UPDATE`
-  目标是继续保证 PR / master artifact 不会误进稳定更新通道。
+    目标是继续保证 PR / master artifact 不会误进稳定更新通道。
 - 改签名逻辑时，不要破坏“默认关闭签名”的本地与 CI 行为；当前只有显式设置 `VF_DESKTOP_SIGN=true` 或 CI 打开 `DESKTOP_SIGN=true` 时才进入签名流程。
 - 改版本号传递或 artifact 命名时，保持 `desktop-v*` tag、`artifactName` 与 `latest*.yml` 中的 URL 一致，否则自动更新会直接失效。
 
@@ -57,7 +57,7 @@
 - 打包链路最好分两段理解：
   - `pnpm desktop:package` 负责产出“当前平台可运行的 app”
   - `pnpm desktop:make` 负责基于 prepackaged app 生成安装 / 分发产物
-  这两段混在一起排查时最容易看错问题发生层级。
+    这两段混在一起排查时最容易看错问题发生层级。
 - macOS 双架构打包依赖 `scripts/make.cjs` 在 release 目录里合并 `latest-mac.yml`；改动多架构逻辑后，要确认最终只留下一个对外使用的 `latest-mac.yml`。
 - 包内 server 是否真的可启动，不要只看 Electron 能不能打开窗口；优先跑 `pnpm -C apps/desktop smoke:package`，让 packaged server 真正响应 `/api/auth/status`。
 - `node-pty`、`node-notifier` 这类平台相关依赖会直接影响包体大小和运行稳定性；改 native 依赖或目标架构时，要连同 `scripts/package.cjs` 里的裁剪逻辑一起验证。

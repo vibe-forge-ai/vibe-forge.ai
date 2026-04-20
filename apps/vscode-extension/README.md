@@ -2,6 +2,10 @@
 
 This package is a thin VS Code shell for the existing Vibe Forge Web UI.
 
+## Preview
+
+![Vibe Forge running in the VS Code sidebar](https://raw.githubusercontent.com/vibe-forge-ai/vibe-forge.ai/master/.docs/zh-hans/vscode-extension-sidebar.png)
+
 ## Local Use
 
 From the repository root:

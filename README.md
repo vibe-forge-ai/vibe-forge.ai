@@ -2,7 +2,7 @@
 
 en-US | [zh-Hans](./README.zh-Hans.md)
 
-Vibe Forge is an AI-assisted development framework with a desktop app, PWA / Web UI, and CLI. It combines adapter-driven model access, task orchestration, and multi-service workflows in one workspace.
+Vibe Forge is an AI-assisted development framework with a desktop app, VS Code extension, PWA / Web UI, and CLI. It combines adapter-driven model access, task orchestration, and multi-service workflows in one workspace.
 
 ## Product Preview
 

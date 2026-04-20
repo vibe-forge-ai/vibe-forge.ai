@@ -13,6 +13,12 @@ VS Code 扩展位于 `apps/vscode-extension`，当前是一个薄壳：
 
 扩展不内置、不自动安装 Vibe Forge runtime 包。它只嗅探用户环境，并在找不到时提示安装或配置。
 
+## 效果预览
+
+<img alt="VS Code 侧边栏中的 Vibe Forge 扩展" src="../../../.docs/zh-hans/vscode-extension-sidebar.png">
+
+用户打开 Vibe Forge Activity Bar 后，左侧边栏会直接承载完整 client。当前选中的 workspace 会对应一个本机 UI server，侧边栏顶部命令可用于切换 workspace、刷新视图、重启当前项目 server 或在浏览器中打开同一界面。
+
 ## 本地试用
 
 在仓库根目录执行：
