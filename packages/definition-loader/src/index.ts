@@ -177,6 +177,7 @@ export class DefinitionLoader {
 
   async loadWorkspaces(): Promise<WorkspaceDefinitionPayload[]> {
     const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
-    return bundle.workspaces.map(workspace => workspace.payload)
+    const workspaces = Array.isArray(bundle.workspaces) ? bundle.workspaces : []
+    return workspaces.map(workspace => workspace.payload)
   }
 }
