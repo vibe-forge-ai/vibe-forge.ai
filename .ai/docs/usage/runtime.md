@@ -2,7 +2,44 @@
 
 返回入口：[index.md](../index.md)
 
-## 启动 UI server / client
+## 启动 Web UI
+
+推荐直接在项目根目录执行：
+
+```bash
+npx @vibe-forge/web
+```
+
+默认会：
+
+- 自动解析当前 workspace 根目录
+- 启动一个内置 server
+- 托管内置 Web UI
+- 输出一个前端访问地址，默认是 `http://127.0.0.1:8787/ui/`
+
+常用参数：
+
+```bash
+npx @vibe-forge/web --host 127.0.0.1 --port 8787
+npx @vibe-forge/web --workspace /path/to/project --config-dir /path/to/project/infra
+```
+
+## 启动 headless server
+
+如果你要让独立 PWA、静态站点或其他 app 连接当前项目，执行：
+
+```bash
+npx @vibe-forge/server
+```
+
+默认只暴露控制面服务，不挂载 Web UI。常用参数：
+
+```bash
+npx @vibe-forge/server --host 127.0.0.1 --port 8787
+npx @vibe-forge/server --host 0.0.0.0 --port 8787 --allow-cors
+```
+
+## 开发态启动 UI server / client
 
 在你的项目根目录执行：
 
@@ -12,7 +49,7 @@ export __VF_PROJECT_AI_BASE_DIR__="${__VF_PROJECT_AI_BASE_DIR__:-.ai}"
 export __VF_PROJECT_AI_CLIENT_MODE__="dev"
 export HOME="${HOME:-$PWD/${__VF_PROJECT_AI_BASE_DIR__}/.mock}"
 
-npx -y -p @vibe-forge/server vfui-server | tee .logs/server.log &
+npx -y -p @vibe-forge/server vibe-forge-server | tee .logs/server.log &
 npx -y -p @vibe-forge/client vfui-client | tee .logs/client.log &
 
 trap 'kill 0' EXIT
@@ -22,7 +59,7 @@ wait
 ## 说明
 
 - `__VF_PROJECT_WORKSPACE_FOLDER__` 指向你的项目根目录。
-- 如果没有显式设置 `__VF_PROJECT_WORKSPACE_FOLDER__`，`vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，并自动把项目根目录作为 workspace。
+- 如果没有显式设置 `__VF_PROJECT_WORKSPACE_FOLDER__`，`@vibe-forge/web`、`@vibe-forge/server`、`vibe-forge-server` 和 `vfui-client` 都会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，并自动把项目根目录作为 workspace。
 - 项目配置默认也会跟随这个解析后的 workspace 根目录读取；如果需要单独改配置目录，可以显式设置 `__VF_PROJECT_CONFIG_DIR__`。
 - `__VF_PROJECT_AI_BASE_DIR__` 可选；默认是 `.ai`，也可以设成 `.vf` 或 `.config/vibe/ai-data` 之类的嵌套目录。
 - `__VF_PROJECT_AI_CACHE_DIR__` 可选；用于覆盖项目级共享 cache 目录。没有显式设置时，Vibe Forge 会把 adapter CLI、skill dependency 等可复用资源放到 workspace 的 `.ai/caches`。

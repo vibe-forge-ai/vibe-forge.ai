@@ -18,6 +18,25 @@
 - 当前桌面 release / CI artifact 默认不签名
 - 第一次启动时，macOS 可能会弹出系统安全提示，需要手动确认
 
+### 最小入口
+
+如果你只想快速跑起来，优先使用这两个入口：
+
+```bash
+npx @vibe-forge/web
+npx @vibe-forge/server
+```
+
+- `@vibe-forge/web`：单进程启动内置 Web UI，默认访问地址是 `http://127.0.0.1:8787/ui/`
+- `@vibe-forge/server`：只启动控制面服务，供独立 PWA、静态 Web 或其他 app 连接
+
+常用参数：
+
+```bash
+npx @vibe-forge/web --host 127.0.0.1 --port 8787
+npx @vibe-forge/server --host 0.0.0.0 --port 8787 --allow-cors
+```
+
 ### Homebrew 安装 CLI
 
 如果只需要 `vf` CLI，可以通过 Homebrew 安装和更新：
@@ -81,6 +100,20 @@ winget install --id VibeForge.VibeForge -e
 
 ### 在项目中安装 npm 包
 
+如果你希望把集成 Web UI 作为项目依赖安装：
+
+```bash
+pnpm add -D @vibe-forge/web
+```
+
+如果你只需要 headless server：
+
+```bash
+pnpm add -D @vibe-forge/server
+```
+
+更细粒度的高级场景，仍然可以单独安装 CLI、client、adapter 和插件包：
+
 ```bash
 pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
@@ -106,8 +139,8 @@ pnpm add -D @vibe-forge/hooks
 不想写入依赖也可以直接用 `npx`：
 
 ```bash
-npx -y -p @vibe-forge/server vfui-server --help
-npx -y -p @vibe-forge/client vfui-client --help
+npx @vibe-forge/web --help
+npx @vibe-forge/server --help
 ```
 
 ## 配置文件
