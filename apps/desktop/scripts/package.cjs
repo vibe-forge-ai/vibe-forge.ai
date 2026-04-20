@@ -84,14 +84,23 @@ const removeIfExists = (targetPath) => {
 }
 
 const resolveStagingPackageRoot = (packageName) => {
-  try {
-    const packageJsonPath = require.resolve(`${packageName}/package.json`, {
-      paths: [stagingDir]
-    })
-    return path.dirname(packageJsonPath)
-  } catch {
+  const pnpmDir = path.join(stagingDir, 'node_modules', '.pnpm')
+  if (!fs.existsSync(pnpmDir)) {
     return undefined
   }
+
+  for (const entry of fs.readdirSync(pnpmDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) {
+      continue
+    }
+
+    const packageRoot = path.join(pnpmDir, entry.name, 'node_modules', packageName)
+    if (fs.existsSync(path.join(packageRoot, 'package.json'))) {
+      return packageRoot
+    }
+  }
+
+  return undefined
 }
 
 const pruneNodePtyPrebuilds = () => {
