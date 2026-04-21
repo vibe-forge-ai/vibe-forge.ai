@@ -1,6 +1,8 @@
 import { Command } from 'commander'
 import process from 'node:process'
 
+import { APP_HELP_TEXT, BOOTSTRAP_HELP_TEXT, extractBootstrapFlags } from './bootstrap-flags'
+import { BOOTSTRAP_DEBUG_ENV_NAME } from './debug'
 import { launchDesktopApp } from './desktop-app'
 import type { DesktopInstallMode, LaunchDesktopAppOptions } from './desktop-app'
 import { launchInstalledPackage } from './package-launcher'
@@ -122,28 +124,26 @@ export const createBootstrapCli = (inputDeps: Partial<BootstrapCliDeps> = {}) =>
     .showHelpAfterError()
     .addHelpText(
       'after',
-      `
-Top-level flags:
-  --help, -h     Show bootstrap help
-  --version, -V  Print bootstrap version
-
-Examples:
-  npx @vibe-forge/bootstrap run "summarize the repo"
-  npx @vibe-forge/bootstrap web --port 8787
-  npx @vibe-forge/bootstrap server --host 0.0.0.0 --allow-cors
-  npx @vibe-forge/bootstrap app
-  npx @vibe-forge/bootstrap app cache
-  npx @vibe-forge/bootstrap app --no-cache
-`
+      BOOTSTRAP_HELP_TEXT
     )
     .action(async (command: string | undefined, args: string[] = []) => {
-      const target = routeBootstrapCommand(command, args)
+      const { debug, forwardedArgs } = extractBootstrapFlags(args)
+      if (debug) {
+        process.env[BOOTSTRAP_DEBUG_ENV_NAME] = '1'
+      }
+
+      const target = routeBootstrapCommand(command, forwardedArgs)
       if (target == null) {
         program.outputHelp()
         return
       }
 
       if (target.kind === 'desktop') {
+        if (target.forwardedArgs.includes('--help') || target.forwardedArgs.includes('-h')) {
+          process.stdout.write(`${APP_HELP_TEXT}\n`)
+          return
+        }
+
         await deps.launchDesktopApp({
           forwardedArgs: target.forwardedArgs,
           installMode: target.installMode,
@@ -168,7 +168,12 @@ Examples:
 
 export const runBootstrapCli = async (argv = process.argv) => {
   const command = createBootstrapCli()
-  const userArgs = argv.slice(2)
+  const { debug, forwardedArgs } = extractBootstrapFlags(argv.slice(2))
+  const userArgs = forwardedArgs
+  if (debug) {
+    process.env[BOOTSTRAP_DEBUG_ENV_NAME] = '1'
+  }
+
   if (userArgs.length === 0 || (userArgs.length === 1 && ['-h', '--help'].includes(userArgs[0] ?? ''))) {
     command.outputHelp()
     return
@@ -179,5 +184,5 @@ export const runBootstrapCli = async (argv = process.argv) => {
     return
   }
 
-  await command.parseAsync(argv)
+  await command.parseAsync([argv[0] ?? 'node', argv[1] ?? 'vibe-forge-bootstrap', ...userArgs])
 }

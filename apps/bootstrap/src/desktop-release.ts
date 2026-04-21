@@ -7,6 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 
 interface GitHubReleaseAsset {
+  browser_download_url?: string
   digest?: string
   name: string
   url: string
@@ -14,6 +15,7 @@ interface GitHubReleaseAsset {
 
 interface GitHubReleaseResponse {
   assets?: GitHubReleaseAsset[]
+  tag_name?: string
   tagName?: string
 }
 
@@ -60,18 +62,24 @@ const requestJson = async <T>(url: string) => (
   })
 )
 
+export const toDesktopRelease = (release: GitHubReleaseResponse): DesktopRelease => {
+  const tagName = release.tagName ?? release.tag_name
+  if (!tagName || !Array.isArray(release.assets)) {
+    throw new Error('Invalid desktop release metadata returned by GitHub.')
+  }
+
+  return {
+    assets: release.assets,
+    tagName
+  }
+}
+
 export const fetchDesktopRelease = async (): Promise<DesktopRelease> => {
   const url = RELEASE_TAG_OVERRIDE
     ? `${GITHUB_RELEASES_API}/tags/${encodeURIComponent(RELEASE_TAG_OVERRIDE)}`
     : `${GITHUB_RELEASES_API}/latest`
   const release = await requestJson<GitHubReleaseResponse>(url)
-  if (!release.tagName || !Array.isArray(release.assets)) {
-    throw new Error('Invalid desktop release metadata returned by GitHub.')
-  }
-  return {
-    assets: release.assets,
-    tagName: release.tagName
-  }
+  return toDesktopRelease(release)
 }
 
 export const selectDesktopAsset = (release: DesktopRelease, runtime: {
@@ -96,13 +104,18 @@ export const selectDesktopAsset = (release: DesktopRelease, runtime: {
 
 export const downloadReleaseAsset = async (asset: GitHubReleaseAsset, destinationPath: string) => {
   await ensureDirectory(path.dirname(destinationPath))
+  const downloadUrl = asset.browser_download_url ?? asset.url
+  if (!downloadUrl) {
+    throw new Error(`Missing download URL for desktop asset ${asset.name}.`)
+  }
 
   return await new Promise<void>((resolve, reject) => {
     const hash = createHash('sha256')
     const file = createWriteStream(destinationPath)
 
-    const request = https.get(asset.url, {
+    const request = https.get(downloadUrl, {
       headers: {
+        Accept: 'application/octet-stream',
         'User-Agent': 'vibe-forge-bootstrap'
       }
     }, (response) => {
@@ -114,7 +127,8 @@ export const downloadReleaseAsset = async (asset: GitHubReleaseAsset, destinatio
         void unlink(destinationPath).catch(() => {})
         downloadReleaseAsset({
           ...asset,
-          url: new URL(redirectLocation, asset.url).toString()
+          browser_download_url: new URL(redirectLocation, downloadUrl).toString(),
+          url: new URL(redirectLocation, downloadUrl).toString()
         }, destinationPath).then(resolve, reject)
         return
       }
