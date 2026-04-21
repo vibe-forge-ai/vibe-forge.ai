@@ -17,6 +17,7 @@ import type {
   GitBranchKind,
   GitCommitPayload,
   GitPushPayload,
+  SessionEntryContext,
   SessionInfo,
   SessionInitInfo,
   SessionPromptType,
@@ -203,6 +204,32 @@ export const parseRequestBodyRecord = (value: unknown): JsonObject | undefined =
   } catch {
     return undefined
   }
+}
+
+export const resolveCreateSessionParentSessionId = (params: {
+  payload: JsonObject
+  entryContext?: SessionEntryContext
+}) => {
+  const explicitParentSessionId = asString(params.payload.parentSessionId)
+  if (explicitParentSessionId !== '') {
+    return explicitParentSessionId
+  }
+
+  const entryContext = params.entryContext
+  if (entryContext == null) {
+    return undefined
+  }
+
+  if (entryContext.kind === 'browser') {
+    const activeSessionId = entryContext.activeSessionId?.trim()
+    if (activeSessionId != null && activeSessionId !== '') {
+      return activeSessionId
+    }
+    return undefined
+  }
+
+  const sessionId = entryContext.sessionId?.trim()
+  return sessionId === '' ? undefined : sessionId
 }
 
 const asString = (value: unknown) => typeof value === 'string' ? value.trim() : ''
@@ -559,6 +586,7 @@ export const buildServerSessionsSkillContent = () => [
   '- create a new session -> `POST /sessions/create`',
   '- create a live Codex session and send the first user turn immediately -> `POST /sessions/create` with `{ "initialMessage": "hello", "adapter": "codex", "account": "<account-key>" }`',
   '- if the new session should inherit the current browser/CLI runtime context, also include `entryContext` in the same create payload',
+  '- when `entryContext` points at an active browser or CLI session and `parentSessionId` is omitted, the new session is linked under that current session automatically',
   '- branch from one assistant response -> `POST /sessions/:session_id/messages/:message_id/branch`',
   '- inspect queued follow-up work -> `GET /sessions/:session_id/queued-messages`'
 ].join('\n')
@@ -1132,6 +1160,7 @@ const createServerClientHandles = async (params: {
         const payload = parseRequestBodyRecord(body) ?? {}
         const workspace = asRecord(payload.workspace)
         const branch = asRecord(workspace?.branch)
+        const entryContext = normalizeSessionEntryContext(payload.entryContext)
         const session = await createSessionWithInitialMessage({
           id: asString(payload.id) || undefined,
           title: asString(payload.title) || undefined,
@@ -1139,7 +1168,10 @@ const createServerClientHandles = async (params: {
           initialContent: Array.isArray(payload.initialContent)
             ? payload.initialContent as ChatMessageContent[]
             : undefined,
-          parentSessionId: asString(payload.parentSessionId) || undefined,
+          parentSessionId: resolveCreateSessionParentSessionId({
+            payload,
+            entryContext
+          }),
           shouldStart: payload.start !== false,
           model: asString(payload.model) || undefined,
           effort: normalizeEffort(payload.effort) ?? undefined,
@@ -1148,7 +1180,7 @@ const createServerClientHandles = async (params: {
           permissionMode: normalizePermissionMode(payload.permissionMode) ?? undefined,
           adapter: asString(payload.adapter) || undefined,
           account: asString(payload.account) || undefined,
-          entryContext: normalizeSessionEntryContext(payload.entryContext),
+          entryContext,
           workspace: workspace == null
             ? undefined
             : {
