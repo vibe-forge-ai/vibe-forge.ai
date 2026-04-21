@@ -13,7 +13,7 @@ import type {
   SessionQueuedMessage,
   SessionQueuedMessageMode
 } from '@vibe-forge/core'
-import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
+import type { ConfigResponse, ConversationStarterConfig, SessionInfo } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
 import { ComposerLanding, ComposerStack } from '#~/components/composer-landing/ComposerLanding'
@@ -45,6 +45,12 @@ import type { ChatHistoryStatusNotice } from './messages/build-chat-history-stat
 import { getLastAssistantActionAnchorId } from './messages/message-action-utils'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
+import {
+  buildConversationStarterInitialContent,
+  buildConversationStarterTargetDraft,
+  buildConversationStarterWorkspacePatch,
+  getNewSessionGuideData
+} from './new-session-guide-config'
 import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
 import { Sender } from './sender/Sender'
 import { ChatStatusBar } from './status-bar/ChatStatusBar'
@@ -147,6 +153,7 @@ export function ChatHistoryView({
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
+  const [newSessionInitialContent, setNewSessionInitialContent] = useState<ChatMessageContent[] | undefined>(undefined)
   const historyRenderCount = messages.length + historyStatusNotices.length
   const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
     contentVersion: historyRenderCount
@@ -186,6 +193,10 @@ export function ChatHistoryView({
   const [queuedDraft, setQueuedDraft] = useState<{ content: ChatMessageContent[] } | null>(null)
   const [activeInteractionOptionIndex, setActiveInteractionOptionIndex] = useState(0)
   const interactionOptions = interactionRequest?.payload.options ?? []
+  const { announcements, startupPresets, builtinActions } = useMemo(
+    () => getNewSessionGuideData(configRes),
+    [configRes]
+  )
   const buildUserMessage = (content: string | ChatMessageContent[]): ChatMessage => {
     const id = globalThis.crypto?.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -285,6 +296,7 @@ export function ChatHistoryView({
     setExpandedTurnIds(new Set())
     setQueuedDraft(null)
     setQueueMode('steer')
+    setNewSessionInitialContent(undefined)
     setSessionTargetDraft(
       session?.id != null
         ? getChatSessionTargetDraftFromSession(session)
@@ -376,6 +388,56 @@ export function ChatHistoryView({
   }
   const isInlineEditing = editingMessageId != null
   const shouldShowNewSessionGuide = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
+  const handleApplyConversationStarter = useCallback((starter: ConversationStarterConfig) => {
+    if (session?.id != null) {
+      return
+    }
+
+    if (starter.mode != null) {
+      setSessionTargetDraft(buildConversationStarterTargetDraft(starter))
+    }
+
+    const workspacePatch = buildConversationStarterWorkspacePatch(starter)
+    if (workspacePatch != null) {
+      workspaceDraftDirtyRef.current = true
+      setWorkspaceDraft(current => ({
+        ...current,
+        ...workspacePatch
+      }))
+    }
+
+    const model = starter.model?.trim()
+    if (model != null && model !== '') {
+      onModelChange(model)
+    }
+
+    const adapter = starter.adapter?.trim()
+    if (adapter != null && adapter !== '') {
+      onAdapterChange(adapter)
+    }
+
+    const account = starter.account?.trim()
+    if (account != null && account !== '') {
+      onAccountChange(account)
+    }
+
+    if (starter.effort != null) {
+      onEffortChange(starter.effort)
+    }
+
+    if (starter.permissionMode != null) {
+      onPermissionModeChange(starter.permissionMode)
+    }
+
+    setNewSessionInitialContent(buildConversationStarterInitialContent(starter))
+  }, [
+    onAccountChange,
+    onAdapterChange,
+    onEffortChange,
+    onModelChange,
+    onPermissionModeChange,
+    session?.id
+  ])
   const renderItems = useMemo(() => processMessages(messages), [messages])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
   const targetAnchorId = useMemo(() => {
@@ -678,7 +740,7 @@ export function ChatHistoryView({
                 onSubmit: handleSubmitActiveInteractionOption
               }
               : undefined}
-            initialContent={queuedDraft?.content}
+            initialContent={queuedDraft?.content ?? newSessionInitialContent}
             placeholder={placeholder}
             submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
             modelMenuGroups={modelMenuGroups}
@@ -794,10 +856,16 @@ export function ChatHistoryView({
 
       {shouldShowNewSessionGuide
         ? (
-          <ComposerLanding compact={isCompactLayout} composer={composerContent}>
+          <ComposerLanding
+            compact={isCompactLayout}
+            composer={composerContent}
+            contentClassName='chat-history-view__new-session-content'
+          >
             <NewSessionGuide
-              selectedTarget={sessionTargetDraft}
-              onSelectTarget={setSessionTargetDraft}
+              announcements={announcements}
+              startupPresets={startupPresets}
+              builtinActions={builtinActions}
+              onApplyStarter={handleApplyConversationStarter}
             />
           </ComposerLanding>
         )

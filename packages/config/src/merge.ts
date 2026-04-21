@@ -91,6 +91,22 @@ const mergePermissions = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
+const mergeConversation = (
+  left?: Config['conversation'],
+  right?: Config['conversation']
+) => {
+  if (left == null && right == null) return undefined
+
+  const merged: NonNullable<Config['conversation']> = {
+    ...(left ?? {}),
+    ...(right ?? {}),
+    startupPresets: mergeList(left?.startupPresets, right?.startupPresets),
+    builtinActions: mergeList(left?.builtinActions, right?.builtinActions)
+  }
+
+  return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
+}
+
 export function mergeConfigs(left: undefined, right: undefined): undefined
 export function mergeConfigs<T extends Partial<Config>>(left: T, right: T): T
 export function mergeConfigs<T extends Partial<Config>>(left: T | undefined, right: T): T
@@ -121,10 +137,7 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
     env: mergeRecord(left?.env, right?.env),
     announcements: mergeList(left?.announcements, right?.announcements),
     shortcuts: mergeRecord(left?.shortcuts, right?.shortcuts),
-    conversation: mergeRecord(
-      left?.conversation as Record<string, unknown> | undefined,
-      right?.conversation as Record<string, unknown> | undefined
-    ) as Config['conversation'],
+    conversation: mergeConversation(left?.conversation, right?.conversation),
     webAuth: mergeRecord(
       left?.webAuth as Record<string, unknown> | undefined,
       right?.webAuth as Record<string, unknown> | undefined

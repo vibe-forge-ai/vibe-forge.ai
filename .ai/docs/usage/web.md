@@ -19,6 +19,48 @@
 - 如果当前 session 分支还没有对应的远端分支，`同步` 会优先尝试同名远端分支；如果远端还没有这条分支，则会回退到 worktree 记录的基线分支继续同步。
 - 如果你想给项目设默认值，可以在解析后的 workspace 根目录配置文件（默认是 `.ai.config.json` / `.ai.config.yaml`，也支持 `./infra/` 或显式 `__VF_PROJECT_CONFIG_DIR__`）里设置 `conversation.createSessionWorktree`；Web UI 新建会话时会按这个项目配置初始化。
 - worktree 环境脚本通过配置页的“环境”面板维护；项目环境写入 `.ai/env/<environment-id>/`，本地环境写入 `.ai/env.local/<environment-id>/`。脚本内容使用 Monaco 编辑器编辑，详情页里的名称与脚本修改会自动写回本地文件。项目默认环境由 `conversation.worktreeEnvironment` 指定，也可以在新建会话时通过 sender 下方的环境下拉临时覆盖；本地环境在配置值里使用 `<environment-id>.local` 引用。
+- 新会话页支持读取 `conversation.startupPresets` 和 `conversation.builtinActions`：前者适合配置“启动环境预设”，后者适合配置“发布 / 修复流水线 / 补回归测试”这类动作模板。点击列表项后，Web UI 会同步切换目标模式、模型、推理强度、worktree 设置，并把预置提示词和关联文件 / 规则 / 技能写入 sender。
+
+示例：
+
+```json
+{
+  "conversation": {
+    "createSessionWorktree": true,
+    "worktreeEnvironment": "default",
+    "startupPresets": [
+      {
+        "title": "标准开发 Agent",
+        "mode": "agent",
+        "target": "std/dev-planner",
+        "adapter": "codex",
+        "effort": "high",
+        "worktree": {
+          "create": true,
+          "environment": "default"
+        },
+        "prompt": "请先阅读仓库规则和当前上下文，拆解方案后开始推进实现。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md"
+        ],
+        "skills": [
+          "std/standard-dev-flow"
+        ]
+      }
+    ],
+    "builtinActions": [
+      {
+        "title": "发布",
+        "icon": "rocket_launch",
+        "prompt": "请梳理本次发布范围，执行发布前检查，并输出发布步骤与变更摘要。",
+        "rules": [
+          ".ai/rules/RELEASE.md"
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## 工作区抽屉与文件引用
 
@@ -34,6 +76,7 @@
 - 桌面端配置页左侧 section 导航支持搜索和折叠；收起左侧导航后，内容区标题左侧会出现一个展开按钮，方便在不离开当前配置页的情况下重新打开导航。
 - 复杂集合字段会拆成“一级摘要页 + 二级详情页”的模式：数组型字段在一级页负责新增、删除和排序；对象型字段会展示固定条目和快捷开关，进入二级页后再做细粒度配置。
 - 二级详情页会在 section 标题右侧展示字段路径面包屑，并提供返回入口；返回时会尽量恢复上一级列表的滚动位置。
+- “外观”页支持独立保存 Web UI 的本地偏好，例如 sender 输入区顶栏默认展开/折叠；这类设置写入当前浏览器本地存储，不会回写项目配置文件。
 - adapter 配置页现在会把字段拆到 `基础配置 / 模型配置 / 高阶配置 / 账号` 这些前端分组里；`defaultAccount` 位于基础配置，`账号` 作为独立入口展示。
 - `adapters.<adapter>.accounts` 现在额外提供一个账号管理子页：可以直接触发 adapter 的接入动作、查看账号来源和额度摘要，并进入账号三级详情页编辑 `title / description / authFile`。
 - 具体的 adapter 配置与多账号说明见 [Adapter 配置与多账号](./adapters.md)。

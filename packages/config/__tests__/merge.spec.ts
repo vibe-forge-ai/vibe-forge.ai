@@ -221,4 +221,66 @@ describe('mergeConfigs', () => {
       }
     ])
   })
+
+  it('appends startup presets and builtin actions from layered conversation config', () => {
+    const merged = mergeConfigs(
+      {
+        conversation: {
+          startupPresets: [
+            {
+              title: 'Base preset',
+              mode: 'agent',
+              target: 'std/dev-planner'
+            }
+          ],
+          builtinActions: [
+            {
+              title: 'Base action',
+              prompt: 'Summarize the release scope.'
+            }
+          ]
+        }
+      },
+      {
+        conversation: {
+          startupPresets: [
+            {
+              title: 'Child preset',
+              mode: 'spec',
+              target: 'std/standard-dev-flow'
+            }
+          ],
+          builtinActions: [
+            {
+              title: 'Child action',
+              prompt: 'Fix the failing pipeline.'
+            }
+          ]
+        }
+      }
+    )
+
+    expect(merged.conversation?.startupPresets).toEqual([
+      {
+        title: 'Base preset',
+        mode: 'agent',
+        target: 'std/dev-planner'
+      },
+      {
+        title: 'Child preset',
+        mode: 'spec',
+        target: 'std/standard-dev-flow'
+      }
+    ])
+    expect(merged.conversation?.builtinActions).toEqual([
+      {
+        title: 'Base action',
+        prompt: 'Summarize the release scope.'
+      },
+      {
+        title: 'Child action',
+        prompt: 'Fix the failing pipeline.'
+      }
+    ])
+  })
 })

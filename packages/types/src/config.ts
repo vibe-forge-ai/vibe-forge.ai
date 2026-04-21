@@ -1,5 +1,7 @@
 import type { EffortLevel } from './common'
+import type { GitBranchKind } from './git'
 import type { PluginConfig } from './plugin'
+import type { SessionPermissionMode } from './session'
 
 export interface AdapterMap {}
 
@@ -243,6 +245,39 @@ export interface WebAuthConfig {
   rememberDeviceTtlDays?: number
 }
 
+export type ConversationStarterMode = 'default' | 'workspace' | 'entity' | 'agent' | 'spec'
+
+export interface ConversationStarterWorktreeConfig {
+  create?: boolean
+  environment?: string
+  branch?: {
+    name: string
+    kind?: GitBranchKind
+    mode?: 'checkout' | 'create'
+  }
+}
+
+export interface ConversationStarterConfig {
+  id?: string
+  title: string
+  description?: string
+  icon?: string
+  mode?: ConversationStarterMode
+  target?: string
+  targetLabel?: string
+  targetDescription?: string
+  model?: string
+  adapter?: string
+  account?: string
+  effort?: EffortLevel | 'default'
+  permissionMode?: SessionPermissionMode
+  worktree?: ConversationStarterWorktreeConfig
+  prompt?: string
+  files?: string[]
+  rules?: string[]
+  skills?: string[]
+}
+
 export interface Config {
   extend?: string | string[]
   baseDir?: string
@@ -311,6 +346,8 @@ export interface Config {
     injectDefaultSystemPrompt?: boolean
     createSessionWorktree?: boolean
     worktreeEnvironment?: string
+    startupPresets?: ConversationStarterConfig[]
+    builtinActions?: ConversationStarterConfig[]
   }
   /**
    * 当前 workspace 默认启用的插件实例列表。
