@@ -105,7 +105,13 @@ vf list
 vf list --view default
 vf list --view full
 vf --resume <sessionId>
+vf --resume <sessionId> --permission-mode bypassPermissions
 ```
+
+说明：
+
+- `--resume` 会继续使用缓存里的 adapter、model、workspace 等启动参数。
+- 如果只想调整下一次恢复时的权限模式，可以单独传 `--permission-mode <mode>`；新的模式会用于本次恢复，并写回该会话的 CLI cache，后续继续 `resume` 时沿用。
 
 ### 读取配置
 
