@@ -25,7 +25,7 @@
 - `npx -y -p @vibe-forge/cli vf run --help`
 - `npx -y -p @vibe-forge/mcp vf-mcp --help`
 - `vf run`：执行一次任务
-- `vf --resume <sessionId>`：恢复已有 CLI 会话，固定参数和已解析 adapter 都从 `.ai/caches/` 对应会话读取
+- `vf --resume <sessionId>`：恢复已有 CLI 会话；已解析 adapter 和大部分启动参数仍从 `.ai/caches/` 对应会话读取，但可以额外覆盖 `--permission-mode`、`--model`、`--effort`、`--include-tool`、`--exclude-tool`
 - `vf-mcp`：启动独立 MCP stdio server
 - `vf-call-hook`：从标准输入读取 hook payload 并执行 hooks runtime
 - `vf list` / `vf ls`：以 compact 视图列出历史任务缓存
@@ -119,6 +119,7 @@ vf list --view default
 vf list --view full
 vf --resume <sessionId>
 vf --resume <sessionId> --permission-mode bypassPermissions
+vf --resume <sessionId> --effort high --include-tool read_file
 ```
 
 说明：

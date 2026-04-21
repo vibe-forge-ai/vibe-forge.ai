@@ -21,6 +21,7 @@ import {
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
+  resolveResumeAdapterOptions,
   resolvePrintableStopText,
   resolveRunMode,
   shouldPrintResumeHint
@@ -235,8 +236,41 @@ describe('run command print output', () => {
       print: false,
       adapter: 'codex',
       permissionMode: 'dontAsk',
-      sessionId: 'abc'
+      sessionId: 'abc',
+      model: 'gpt-5.4',
+      effort: 'high',
+      includeTool: ['read'],
+      excludeTool: ['edit']
     }, command)).toEqual(['--adapter', '--session-id'])
+  })
+
+  it('merges resume-time model, effort, and tool overrides into cached adapter options', () => {
+    expect(resolveResumeAdapterOptions({
+      runtime: 'cli',
+      sessionId: 'session-demo',
+      mode: 'direct',
+      model: 'gpt-5.4',
+      effort: 'medium',
+      tools: {
+        include: ['read'],
+        exclude: ['edit']
+      }
+    }, {
+      model: 'gpt-5.4-mini',
+      effort: 'high',
+      includeTool: ['grep'],
+      excludeTool: ['bash']
+    })).toEqual({
+      runtime: 'cli',
+      sessionId: 'session-demo',
+      mode: 'direct',
+      model: 'gpt-5.4-mini',
+      effort: 'high',
+      tools: {
+        include: ['read', 'grep'],
+        exclude: ['edit', 'bash']
+      }
+    })
   })
 
   it('parses structured stream-json input into a message control event', () => {

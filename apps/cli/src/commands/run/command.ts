@@ -38,6 +38,7 @@ import {
   mergeListConfig,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
+  resolveResumeAdapterOptions,
   resolveRunMode
 } from './options'
 import { getAdapterInteractionMessage, handlePrintEvent, shouldPrintResumeHint } from './output'
@@ -119,8 +120,9 @@ Examples:
 
 Notes:
   --adapter also supports -A and simplified ids like claude / adapter-codex.
-  When using --resume, startup-only flags like --adapter, --model, --spec and --workspace are loaded from cache and cannot be set again.
+  When using --resume, startup-only flags like --adapter, --system-prompt, --spec and --workspace are loaded from cache and cannot be set again.
   --permission-mode is the exception: it overrides the cached permission mode for the resumed run and is saved for later resumes.
+  Resume still allows overriding --model, --effort, --include-tool and --exclude-tool for the next turn.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
   In print mode, live permission/input replies require --input-format stream-json, then send {"type":"submit_input","data":"allow_once"}.
@@ -263,7 +265,7 @@ Notes:
 
         const adapterOptions = cachedSession?.resume != null
           ? {
-            ...cachedSession.resume.adapterOptions,
+            ...resolveResumeAdapterOptions(cachedSession.resume.adapterOptions, opts),
             type: 'resume' as const,
             description: activePermissionRecovery == null
               ? description
@@ -391,7 +393,7 @@ Notes:
             startTime: cachedSession?.detail?.startTime ?? Date.now(),
             description: description || cachedSession?.detail?.description || cachedSession?.resume?.description,
             adapter: cachedSession?.detail?.adapter ?? cachedAdapter,
-            model: cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
+            model: adapterOptions.model ?? cachedSession?.detail?.model ?? cachedSession?.resume?.adapterOptions.model
           }
         }
 
