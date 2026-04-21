@@ -20,6 +20,7 @@ import {
   updateQueuedMessage
 } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
+import { useSenderHeaderQueryState } from '#~/hooks/use-sender-header-query-state.js'
 
 import { getChatSessionTargetPrompt } from './chat-session-target'
 import type { ChatSessionTargetDraft } from './chat-session-target'
@@ -70,6 +71,7 @@ export function useChatSessionActions({
   const navigate = useNavigate()
   const location = useLocation()
   const { mutate } = useSWRConfig()
+  const { setHeaderCollapsed } = useSenderHeaderQueryState()
   const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
   const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
   const [isCreating, setIsCreating] = useState(false)
@@ -166,8 +168,14 @@ export function useChatSessionActions({
     await insertSessionIntoCache(newSession)
     removeOptimisticCreation(newSession.id)
     clearOptimisticSessionDiscarded(newSession.id)
+    setHeaderCollapsed(true)
     return true
-  }, [insertSessionIntoCache, removeOptimisticCreation, removeSessionFromCache])
+  }, [
+    insertSessionIntoCache,
+    removeOptimisticCreation,
+    removeSessionFromCache,
+    setHeaderCollapsed
+  ])
 
   const buildCreateSessionOptions = useCallback((id: string): OptimisticSessionCreationOptions => {
     const targetPrompt = getChatSessionTargetPrompt(sessionTargetDraft)

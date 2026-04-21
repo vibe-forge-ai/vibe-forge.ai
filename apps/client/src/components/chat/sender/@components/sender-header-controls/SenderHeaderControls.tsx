@@ -1,3 +1,4 @@
+import { Tooltip } from 'antd'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -10,6 +11,7 @@ import type {
   SenderToolbarRefs,
   SenderToolbarState
 } from '../../@types/sender-toolbar-types'
+import { permissionModeIconMap } from '../../@utils/sender-constants'
 import { PermissionModeControl } from '../permission-mode-control/PermissionModeControl'
 import { SenderSessionTargetBar } from '../session-target/SenderSessionTargetBar'
 
@@ -33,6 +35,9 @@ export function SenderHeaderControls({
   const showPermissionControl = !isInlineEdit && toolbarData.permissionModeOptions.length > 0
   const hasHeaderControls = !isInlineEdit && (sessionTarget != null || showPermissionControl)
   const headerStateClass = isHeaderCollapsed ? 'is-collapsed' : 'is-expanded'
+  const selectedPermissionOption = toolbarData.permissionModeOptions.find(
+    option => option.value === toolbarState.permissionMode
+  )
 
   useEffect(() => {
     if (isHeaderCollapsed && toolbarState.showPermissionActions) {
@@ -82,6 +87,31 @@ export function SenderHeaderControls({
 
   const headerToggle = (
     <div className={`chat-input-header-toggle-shell ${headerStateClass}`.trim()}>
+      {showPermissionControl && isHeaderCollapsed && (
+        <Tooltip
+          title={selectedPermissionOption?.label ?? t('chat.referencePermission')}
+          placement='top'
+          destroyOnHidden
+        >
+          <div
+            className={[
+              'chat-input-header-toggle-mode-indicator',
+              `chat-input-header-toggle-mode-indicator--${toolbarState.permissionMode}`
+            ].join(' ')}
+            aria-label={selectedPermissionOption?.label?.toString() ?? t('chat.referencePermission')}
+          >
+            <span
+              className={[
+                'material-symbols-rounded',
+                'chat-input-header-toggle-mode-icon',
+                `sender-permission-trigger__icon--${toolbarState.permissionMode}`
+              ].join(' ')}
+            >
+              {permissionModeIconMap[toolbarState.permissionMode]}
+            </span>
+          </div>
+        </Tooltip>
+      )}
       <button
         type='button'
         className='chat-input-header-toggle-tab'

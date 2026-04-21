@@ -128,10 +128,19 @@
 }
 
 .chat-input-header-toggle-shell {
+  --sender-permission-default-color: var(--primary-color);
+  --sender-permission-accept-edits-color: var(--success-color);
+  --sender-permission-plan-color: var(--warning-color);
+  --sender-permission-dont-ask-color: #ca8a04;
+  --sender-permission-bypass-color: var(--danger-color);
+
   position: absolute;
   top: 0;
   right: 9px;
   z-index: 2;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
   pointer-events: none;
 }
 
@@ -176,7 +185,44 @@
   }
 }
 
+.chat-input-header-toggle-mode-indicator {
+  min-width: var(--chat-input-header-tab-height);
+  height: var(--chat-input-header-tab-height);
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-bottom-color: transparent;
+  border-radius: 10px 10px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background: color-mix(
+    in srgb,
+    var(--sub-bg-color, #f3f4f6) 88%,
+    var(--input-bg, #f9fafb) 12%
+  );
+  color: var(--sub-text-color);
+  opacity: 0;
+  transform: translateY(calc(-100% + 1px)) translateX(6px);
+  transition:
+    opacity .18s ease,
+    transform var(--chat-input-header-transition),
+    border-color .2s ease,
+    background-color .2s ease;
+
+  .chat-input-header-toggle-mode-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
 .chat-input-header-toggle-shell.is-collapsed {
+  .chat-input-header-toggle-mode-indicator {
+    border-color: var(--border-color);
+    opacity: 1;
+    transform: translateY(calc(-100% + 1px)) translateX(0);
+  }
+
   .chat-input-header-toggle-tab {
     height: var(--chat-input-header-tab-height);
     border-color: var(--border-color);
@@ -215,6 +261,10 @@ html.dark {
     --input-bg: #1f1f1f;
     --input-focus-bg: #141414;
   }
+
+  .chat-input-header-toggle-shell {
+    --sender-permission-dont-ask-color: #facc15;
+  }
 }
 
 @media (max-width: 720px) {
@@ -229,5 +279,9 @@ html.dark {
 
   .chat-input-header-toggle-shell {
     right: 7px;
+  }
+
+  .chat-input-header-toggle-mode-indicator {
+    padding: 0 4px;
   }
 }

@@ -794,11 +794,12 @@ export function ChatHistoryView({
 
       {shouldShowNewSessionGuide
         ? (
-          <ComposerLanding compact={isCompactLayout} composer={composerContent}>
-            <NewSessionGuide
-              selectedTarget={sessionTargetDraft}
-              onSelectTarget={setSessionTargetDraft}
-            />
+          <ComposerLanding
+            compact={isCompactLayout}
+            composer={composerContent}
+            contentClassName='chat-history-view__new-session-content'
+          >
+            <NewSessionGuide />
           </ComposerLanding>
         )
         : (
