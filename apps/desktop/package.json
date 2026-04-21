@@ -15,7 +15,8 @@
     "make": "pnpm run package && node ./scripts/make.cjs",
     "make:from-package": "node ./scripts/make.cjs",
     "package": "pnpm run build:client && node ./scripts/package.cjs",
-    "smoke:package": "node ./scripts/smoke-packaged-server.cjs"
+    "smoke:package": "node ./scripts/smoke-packaged-server.cjs",
+    "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/desktop/__tests__"
   },
   "dependencies": {
     "@vibe-forge/cli-helper": "workspace:^",
