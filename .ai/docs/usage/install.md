@@ -35,12 +35,20 @@ npx @vibe-forge/bootstrap app --no-cache
 
 - `web`：转发到 `@vibe-forge/web`
 - `server`：转发到 `@vibe-forge/server`
-- `app`：记住上次桌面安装模式；如果没有记录，会先询问是装到用户目录还是 bootstrap cache，再以当前目录作为 workspace 启动
+- `app`：记住上次桌面安装模式；如果没有记录，会先询问是装到用户目录还是 bootstrap cache，再以当前目录作为 workspace 启动桌面应用
 - `app cache`：显式走 cache；如果 cache 里已经有对应 release，就直接从 cache 启动
 - `app --no-cache`：显式回到用户目录安装模式
 - 其他命令：原样转发到 `@vibe-forge/cli`
 
 其中 `bootstrap app` 依赖对应平台已经公开发布桌面 release；当前 macOS、Linux 可用，Windows 仍以正式安装产物补齐为准。
+
+`bootstrap app` 的项目行为：
+
+- 当前命令所在目录会传给桌面应用作为 workspace
+- 如果桌面应用已经在运行，同一目录会直接聚焦已有项目窗口，不会重复启动本机 service
+- 如果桌面应用已经在运行，但当前目录是另一个项目，会在同一个 desktop 进程里为新目录启动独立 service，并打开新的项目窗口
+
+如果你直接从安装包启动桌面应用，而不是从项目目录运行 `bootstrap app`，桌面端会先要求选择一个最近项目或手动打开目录，确保后续流程一定在某个 workspace 下继续。
 
 如果你不想经过 bootstrap，也可以直接使用具体入口：
 

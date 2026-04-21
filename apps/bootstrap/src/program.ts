@@ -3,8 +3,8 @@ import process from 'node:process'
 
 import { launchDesktopApp } from './desktop-app'
 import type { DesktopInstallMode, LaunchDesktopAppOptions } from './desktop-app'
-import { launchInstalledPackage } from './package-launcher'
 import { getBootstrapDescription, getBootstrapVersion } from './package-config'
+import { launchInstalledPackage } from './package-launcher'
 
 interface BootstrapCliDeps {
   launchDesktopApp: (options: LaunchDesktopAppOptions) => Promise<void>
@@ -134,6 +134,8 @@ Examples:
   npx @vibe-forge/bootstrap app
   npx @vibe-forge/bootstrap app cache
   npx @vibe-forge/bootstrap app --no-cache
+  cd ~/work/project-a && npx @vibe-forge/bootstrap app
+  cd ~/work/project-b && npx @vibe-forge/bootstrap app
 `
     )
     .action(async (command: string | undefined, args: string[] = []) => {

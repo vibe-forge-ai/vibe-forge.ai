@@ -50,6 +50,11 @@ pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/ad
 ### Desktop App
 
 - Download and launch the desktop app to get started.
+- The desktop app starts a local Vibe Forge service automatically, so you do not need to run `vfui-server` separately.
+- Local desktop mode disables `webAuth` by default.
+- Launching the installed app without a workspace opens a project picker first, so the desktop flow always continues with a selected workspace.
+- Running `npx @vibe-forge/bootstrap app` from a project folder passes that folder into the desktop app. Reopening the same folder reuses the existing local service and focuses the existing window.
+- Running `npx @vibe-forge/bootstrap app` from different project folders opens multiple project windows inside the same desktop process, with one local service per workspace.
 - Desktop connection flow, backend switching, and local mode notes: [Desktop App](./.ai/docs/usage/desktop.md)
 
 ### PWA / Web UI
@@ -63,6 +68,7 @@ pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/ad
 pnpm desktop:dev
 pnpm desktop:package
 pnpm desktop:make
+npx @vibe-forge/bootstrap app
 ```
 
 ### Run Web UI / CLI in Your Project
