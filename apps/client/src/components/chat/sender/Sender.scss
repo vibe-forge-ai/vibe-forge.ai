@@ -12,6 +12,7 @@
 }
 
 .chat-input-container {
+  --chat-input-container-padding: 12px;
   --chat-input-header-toggle-size: 24px;
   --chat-input-header-tab-height: 22px;
   --chat-input-header-transition: .24s cubic-bezier(.4, 0, .2, 1);
@@ -25,7 +26,7 @@
   background-color: var(--input-bg, #f9fafb);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 12px;
+  padding: var(--chat-input-container-padding);
   transition: all .2s;
 
   &:focus-within {

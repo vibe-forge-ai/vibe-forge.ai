@@ -1805,6 +1805,12 @@
       "about": "About"
     },
     "appSettings": {
+      "senderHeaderDisplay": {
+        "label": "Composer header default",
+        "desc": "Default expand or collapse behavior for the composer header when the URL does not override it",
+        "expanded": "Expanded by default",
+        "collapsed": "Collapsed by default"
+      },
       "announcements": {
         "label": "Show announcements",
         "desc": "Show announcements when creating a new session"
