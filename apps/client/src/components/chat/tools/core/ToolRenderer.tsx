@@ -4,8 +4,10 @@ import type { ChatMessageContent } from '@vibe-forge/core'
 
 import { DefaultTool } from '../DefaultTool'
 import { GenericClaudeTool, adapterClaudeToolRenders, isClaudeToolName } from '../adapter-claude'
+import { MdpTool, mdpToolRenders } from '../plugin-mdp'
 import { chromeDevtoolsToolRenders } from '../plugin-chrome-devtools'
 import { taskToolRenders } from '../task'
+import { isMdpToolName } from '../plugin-mdp/mdp-tool-utils'
 
 const TOOL_RENDERERS: Record<
   string,
@@ -16,6 +18,7 @@ const TOOL_RENDERERS: Record<
 > = {
   ...taskToolRenders,
   ...adapterClaudeToolRenders,
+  ...mdpToolRenders,
   ...chromeDevtoolsToolRenders
 }
 
@@ -28,7 +31,11 @@ export function ToolRenderer({
 }) {
   const toolName = item.name
   const foundRenderer = TOOL_RENDERERS[toolName] ?? ToolRenderer.findRendererByInput(item)
-  const Renderer = foundRenderer ?? (isClaudeToolName(toolName) ? GenericClaudeTool : DefaultTool)
+  const Renderer = foundRenderer ?? (isClaudeToolName(toolName)
+    ? GenericClaudeTool
+    : isMdpToolName(toolName)
+    ? MdpTool
+    : DefaultTool)
   return <Renderer item={item} resultItem={resultItem} />
 }
 

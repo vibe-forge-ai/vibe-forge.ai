@@ -124,6 +124,12 @@ const normalizeToolKey = (name: string) => (
   formatToolName(name).replace(/[^a-z0-9]+/gi, '').toLowerCase()
 )
 
+const isMdpToolName = (name: string) => (
+  name.startsWith('mcp__MDP__') ||
+  name.startsWith('MDP:') ||
+  name.includes(':MDP:')
+)
+
 const toFieldKey = (value: string) => (
   value
     .replace(/^[^a-z0-9]+/i, '')
@@ -252,6 +258,20 @@ const getGenericToolMeta = (name: string): ToolMeta => {
   }
   if (normalizedKey === 'write' || normalizedKey === 'writefile') {
     return { titleKey: 'chat.tools.write', fallbackTitle: 'Write File', icon: 'edit_note' }
+  }
+  if (isMdpToolName(name)) {
+    if (normalizedKey === 'listclients') {
+      return { titleKey: 'chat.tools.mdp.listClients', fallbackTitle: 'Clients', icon: 'device_hub' }
+    }
+    if (normalizedKey === 'listpaths') {
+      return { titleKey: 'chat.tools.mdp.listPaths', fallbackTitle: 'Paths', icon: 'device_hub' }
+    }
+    if (normalizedKey === 'callpath') {
+      return { titleKey: 'chat.tools.mdp.callPath', fallbackTitle: 'Call', icon: 'device_hub' }
+    }
+    if (normalizedKey === 'callpaths') {
+      return { titleKey: 'chat.tools.mdp.callPaths', fallbackTitle: 'Batch Call', icon: 'device_hub' }
+    }
   }
   if (name.startsWith('mcp__') || name.includes(':mcp:')) {
     return { fallbackTitle: formatToolName(name), icon: 'extension' }

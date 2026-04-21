@@ -77,10 +77,13 @@ export function renderToolBlockField(
   t: Translate,
   options: {
     sectionClassName?: string
+    hideHeader?: boolean
   } = {}
 ) {
   const label = t(field.labelKey, { defaultValue: field.fallbackLabel })
-  const sectionHeader = getSectionHeader(getToolFieldIcon(field.labelKey, field.format), label)
+  const sectionHeader = options.hideHeader
+    ? null
+    : getSectionHeader(getToolFieldIcon(field.labelKey, field.format), label)
   const sectionClassName = options.sectionClassName ?? 'tool-detail-section'
 
   if (field.format === 'text') {
