@@ -13,6 +13,7 @@ description: 快速说明 Vibe Forge CLI 的常用命令、配置命令、会话
 - `vf list --view default`：显示 adapter、model 等常用列。
 - `vf list --view full`：显示 context、PID 和辅助命令。
 - `vf --resume <sessionId>`：恢复已有会话。
+- `vf --resume <sessionId> --permission-mode bypassPermissions`：恢复已有会话，并覆盖下一次运行的权限模式。
 - `vf stop <sessionId>`：优雅停止运行中的会话。
 - `vf kill <sessionId>`：强制终止运行中的会话。
 - `vf clear`：清理本地缓存和日志。

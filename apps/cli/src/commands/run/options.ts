@@ -36,7 +36,6 @@ export const getDisallowedResumeFlags = (
   if (opts.model) disallowed.push('--model')
   if (opts.effort) disallowed.push('--effort')
   if (opts.systemPrompt) disallowed.push('--system-prompt')
-  if (opts.permissionMode) disallowed.push('--permission-mode')
   if (opts.sessionId) disallowed.push('--session-id')
   if (opts.spec) disallowed.push('--spec')
   if (opts.entity) disallowed.push('--entity')

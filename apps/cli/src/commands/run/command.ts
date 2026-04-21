@@ -120,6 +120,7 @@ Examples:
 Notes:
   --adapter also supports -A and simplified ids like claude / adapter-codex.
   When using --resume, startup-only flags like --adapter, --model, --spec and --workspace are loaded from cache and cannot be set again.
+  --permission-mode is the exception: it overrides the cached permission mode for the resumed run and is saved for later resumes.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
   In print mode, live permission/input replies require --input-format stream-json, then send {"type":"submit_input","data":"allow_once"}.
@@ -188,15 +189,26 @@ Notes:
         const shouldPrintOutput = resumeMode === 'stream'
         const supportsPrintInteractionInput = supportsPrintInteractionResponses(opts.inputFormat)
         const pendingPermissionRecovery = await readCliSessionPermissionRecovery(cwd, ctxId, sessionId)
+        const cachedResumePermissionMode = cachedSession?.resume?.adapterOptions.permissionMode
+        const resolvedResumePermissionMode = isResume
+          ? (opts.permissionMode ?? cachedResumePermissionMode)
+          : opts.permissionMode
+        const permissionRecoveryMode = pendingPermissionRecovery?.permissionMode ?? cachedResumePermissionMode
+        const resumePermissionModeChanged = isResume &&
+          opts.permissionMode != null &&
+          opts.permissionMode !== permissionRecoveryMode
+        const activePermissionRecovery = resumePermissionModeChanged ? undefined : pendingPermissionRecovery
 
-        if (isResume && pendingPermissionRecovery != null) {
+        if (resumePermissionModeChanged && pendingPermissionRecovery != null) {
+          await clearCliSessionPermissionRecovery(cwd, ctxId, sessionId)
+        } else if (isResume && activePermissionRecovery != null) {
           if (shouldPrintOutput) {
             handlePrintEvent({
               event: {
                 type: 'interaction_request',
                 data: {
                   id: `cli-recovery:${sessionId}`,
-                  payload: pendingPermissionRecovery.payload
+                  payload: activePermissionRecovery.payload
                 }
               },
               outputFormat,
@@ -208,7 +220,7 @@ Notes:
               requestExit: () => {}
             })
           } else {
-            console.error(getAdapterInteractionMessage(pendingPermissionRecovery.payload))
+            console.error(getAdapterInteractionMessage(activePermissionRecovery.payload))
           }
 
           if (opts.inputFormat == null) {
@@ -235,8 +247,8 @@ Notes:
             await applyCliPermissionDecision({
               cwd: resolvedTaskCwd,
               sessionId,
-              adapter: pendingPermissionRecovery.adapter,
-              subjectKeys: pendingPermissionRecovery.subjectKeys,
+              adapter: activePermissionRecovery.adapter,
+              subjectKeys: activePermissionRecovery.subjectKeys,
               action: decision
             })
           }
@@ -253,11 +265,12 @@ Notes:
           ? {
             ...cachedSession.resume.adapterOptions,
             type: 'resume' as const,
-            description: pendingPermissionRecovery == null
+            description: activePermissionRecovery == null
               ? description
               : (description.trim() === ''
                 ? PERMISSION_RECOVERY_CONTINUE_PROMPT
                 : `${PERMISSION_RECOVERY_CONTINUE_PROMPT}\n\n${description}`),
+            permissionMode: resolvedResumePermissionMode,
             mode: resumeMode,
             extraOptions
           }

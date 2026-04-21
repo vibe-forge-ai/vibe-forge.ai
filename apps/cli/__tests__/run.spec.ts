@@ -224,15 +224,17 @@ describe('run command print output', () => {
     const command = new Command()
     command
       .option('--adapter <adapter>')
+      .option('--permission-mode <mode>')
       .option('--session-id <id>')
       .option('--no-inject-default-system-prompt')
       .option('--no-default-vibe-forge-mcp-server')
 
-    command.parse(['--adapter', 'codex', '--session-id', 'abc'], { from: 'user' })
+    command.parse(['--adapter', 'codex', '--permission-mode', 'dontAsk', '--session-id', 'abc'], { from: 'user' })
 
     expect(getDisallowedResumeFlags({
       print: false,
       adapter: 'codex',
+      permissionMode: 'dontAsk',
       sessionId: 'abc'
     }, command)).toEqual(['--adapter', '--session-id'])
   })
