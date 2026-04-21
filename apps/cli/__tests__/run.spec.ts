@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- run command coverage intentionally stays in one spec file for CLI matrix assertions. */
 import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
@@ -21,8 +22,8 @@ import {
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
-  resolveResumeAdapterOptions,
   resolvePrintableStopText,
+  resolveResumeAdapterOptions,
   resolveRunMode,
   shouldPrintResumeHint
 } from '#~/commands/run.js'

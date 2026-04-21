@@ -194,13 +194,6 @@ npx @vibe-forge/server --help
 
 ## 配置与数据目录
 
-默认情况下，Vibe Forge 会把解析后的 workspace 根目录作为项目配置根目录。
+默认情况下，Vibe Forge 会把解析后的 workspace 根目录作为项目配置根目录，并从这里读取 `.ai.config.*` / `.ai.dev.config.*`。
 
-- 如果显式设置了 `__VF_PROJECT_WORKSPACE_FOLDER__`，直接使用该目录。
-- 如果没有设置，会从当前启动目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录。
-
-在这个配置根目录准备 `.ai.config.json` / `.ai.config.yaml` / `.ai.config.yml`；可选开发态配置使用 `.ai.dev.config.*`。同名配置也可放在 `./infra/` 下。
-
-如果你希望把配置文件放到别的目录，可以额外在启动环境里设置 `__VF_PROJECT_CONFIG_DIR__`，它支持相对启动目录（launch cwd）的路径与绝对路径。
-
-数据资产目录、`.ai/` 子目录和 `__VF_PROJECT_AI_BASE_DIR__` / `__VF_PROJECT_AI_ENTITIES_DIR__` 覆盖方式见 [数据资产目录配置](../asset-directories.md)。
+如果你需要调整配置目录、数据资产目录，或覆盖 `__VF_PROJECT_AI_BASE_DIR__` / `__VF_PROJECT_AI_ENTITIES_DIR__`，直接看 [数据资产目录配置](../asset-directories.md)。

@@ -7,6 +7,7 @@ import { parseScopedReference, resolveSkillIdentifier } from '@vibe-forge/defini
 import type { Config, Definition, Skill, WorkspaceAsset } from '@vibe-forge/types'
 import { resolveRelativePath } from '@vibe-forge/utils'
 
+import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { installRegistrySkillDependency } from './skill-registry'
 
 type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
@@ -58,22 +59,50 @@ const resolveUniqueSkillByName = (assets: SkillAsset[], name: string) => {
   return matches[0]
 }
 
+const filterSearchableSkillAssets = (
+  assets: SkillAsset[],
+  options?: {
+    includeHomeBridge?: boolean
+  }
+) => (
+  options?.includeHomeBridge === false
+    ? assets.filter(asset => asset.resolvedBy !== HOME_BRIDGE_RESOLVED_BY)
+    : assets
+)
+
+const removeHomeBridgeSkillDuplicates = (
+  assets: WorkspaceAsset[],
+  displayName: string
+) => {
+  for (let index = assets.length - 1; index >= 0; index--) {
+    const asset = assets[index]
+    if (asset.kind !== 'skill') continue
+    if (asset.resolvedBy !== HOME_BRIDGE_RESOLVED_BY) continue
+    if (asset.displayName !== displayName) continue
+    assets.splice(index, 1)
+  }
+}
+
 const findSkillAssetByRef = (
   assets: SkillAsset[],
   ref: string,
-  currentInstancePath?: string
+  currentInstancePath?: string,
+  options?: {
+    includeHomeBridge?: boolean
+  }
 ) => {
+  const searchableAssets = filterSearchableSkillAssets(assets, options)
   const scoped = parseScopedReference(ref, { pathSuffixes: ['.md', '.json', '.yaml', '.yml'] })
   if (scoped != null) {
-    return assets.find(asset => asset.scope === scoped.scope && asset.name === scoped.name)
+    return searchableAssets.find(asset => asset.scope === scoped.scope && asset.name === scoped.name)
   }
 
   if (currentInstancePath != null) {
-    const local = assets.find(asset => asset.instancePath === currentInstancePath && asset.name === ref)
+    const local = searchableAssets.find(asset => asset.instancePath === currentInstancePath && asset.name === ref)
     if (local != null) return local
   }
 
-  return resolveUniqueSkillByName(assets, ref)
+  return resolveUniqueSkillByName(searchableAssets, ref)
 }
 
 const resolveDisplayName = (name: string, scope?: string) => (
@@ -164,7 +193,10 @@ export const normalizeSkillDependencies = (value: Skill['dependencies'] | undefi
 export const findSkillDependencyAsset = (
   assets: SkillAsset[],
   dependency: NormalizedSkillDependency,
-  currentInstancePath?: string
+  currentInstancePath?: string,
+  options?: {
+    includeHomeBridge?: boolean
+  }
 ) => {
   const candidateRefs = Array.from(
     new Set([
@@ -174,7 +206,7 @@ export const findSkillDependencyAsset = (
   )
 
   for (const ref of candidateRefs) {
-    const asset = findSkillAssetByRef(assets, ref, currentInstancePath)
+    const asset = findSkillAssetByRef(assets, ref, currentInstancePath, options)
     if (asset != null) return asset
   }
 
@@ -217,6 +249,13 @@ export const expandSkillAssetDependenciesWithRegistry = async (
   const seen = new Set<string>()
   const fetchedDependencyRefs = new Set<string>()
 
+  const removeSupersededHomeBridgeSkill = (displayName: string) => {
+    removeHomeBridgeSkillDuplicates(params.allAssets, displayName)
+    removeHomeBridgeSkillDuplicates(params.skillAssets, displayName)
+    removeHomeBridgeSkillDuplicates(params.selectedAssets, displayName)
+    removeHomeBridgeSkillDuplicates(selected, displayName)
+  }
+
   const installDependencyAsset = async (
     dependency: NormalizedSkillDependency,
     currentInstancePath?: string
@@ -234,16 +273,35 @@ export const expandSkillAssetDependenciesWithRegistry = async (
         cwd: params.cwd,
         definition
       })
-      const existingAsset = findSkillDependencyAsset(params.skillAssets, dependency, currentInstancePath) ??
-        params.skillAssets.find(existing => existing.displayName === dependencyAsset.displayName)
-      if (existingAsset != null) return existingAsset
+      const existingAsset = findSkillDependencyAsset(
+        params.skillAssets,
+        dependency,
+        currentInstancePath,
+        { includeHomeBridge: false }
+      ) ??
+        params.skillAssets.find(existing => (
+          existing.resolvedBy !== HOME_BRIDGE_RESOLVED_BY &&
+          existing.displayName === dependencyAsset.displayName
+        ))
+      if (existingAsset != null) {
+        removeSupersededHomeBridgeSkill(existingAsset.displayName)
+        return existingAsset
+      }
 
+      removeSupersededHomeBridgeSkill(dependencyAsset.displayName)
       params.allAssets.push(dependencyAsset)
       params.skillAssets.push(dependencyAsset)
       return dependencyAsset
     }
 
-    return findSkillDependencyAsset(params.skillAssets, dependency, currentInstancePath)
+    // After the first fetch attempt, reuse whichever asset is now visible in the
+    // skill set: a newly installed registry skill, or a home-bridge fallback
+    // that was accepted by an earlier plain-name dependency resolution.
+    const resolvedAsset = findSkillDependencyAsset(params.skillAssets, dependency, currentInstancePath)
+    if (resolvedAsset != null && resolvedAsset.resolvedBy !== HOME_BRIDGE_RESOLVED_BY) {
+      removeSupersededHomeBridgeSkill(resolvedAsset.displayName)
+    }
+    return resolvedAsset
   }
 
   const addAsset = async (asset: SkillAsset): Promise<void> => {
@@ -253,8 +311,41 @@ export const expandSkillAssetDependenciesWithRegistry = async (
     selected.push(asset)
 
     for (const dependency of normalizeSkillDependencies(asset.payload.definition.attributes.dependencies)) {
-      const dependencyAsset = findSkillDependencyAsset(params.skillAssets, dependency, asset.instancePath) ??
-        await installDependencyAsset(dependency, asset.instancePath)
+      const localOrBridgedDependency = findSkillDependencyAsset(
+        params.skillAssets,
+        dependency,
+        asset.instancePath
+      )
+      const directDependency = findSkillDependencyAsset(
+        params.skillAssets,
+        dependency,
+        asset.instancePath,
+        { includeHomeBridge: false }
+      )
+
+      if (directDependency != null) {
+        await addAsset(directDependency)
+        continue
+      }
+
+      // Keep registry-backed dependencies ahead of home-bridge skills. We only
+      // fall back to a bridged home skill for plain-name dependencies when the
+      // registry path is unavailable.
+      const dependencyAsset = await installDependencyAsset(dependency, asset.instancePath).catch((error: unknown) => {
+        if (
+          localOrBridgedDependency != null &&
+          dependency.source == null &&
+          dependency.registry == null
+        ) {
+          return localOrBridgedDependency
+        }
+        throw error
+      }) ?? (
+        dependency.source == null && dependency.registry == null
+          ? localOrBridgedDependency
+          : undefined
+      )
+
       if (dependencyAsset == null) {
         throw new Error(`Failed to resolve skill dependency ${dependency.ref} declared by ${asset.displayName}`)
       }

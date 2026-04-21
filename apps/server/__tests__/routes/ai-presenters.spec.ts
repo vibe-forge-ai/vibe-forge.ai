@@ -2,12 +2,14 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import type { Definition, Entity, Rule, Spec } from '@vibe-forge/types'
+import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
 
 import {
   matchesDefinitionPath,
   presentEntity,
   presentRule,
+  presentSkill,
+  presentSkillDetail,
   presentSpec,
   presentSpecDetail
 } from '#~/routes/ai-presenters.js'
@@ -91,5 +93,52 @@ describe('ai presenters', () => {
     expect(matchesDefinitionPath(rule, '.ai/rules/base.md', cwd)).toBe(true)
     expect(matchesDefinitionPath(rule, rule.path, cwd)).toBe(true)
     expect(matchesDefinitionPath(rule, '.ai/rules/missing.md', cwd)).toBe(false)
+  })
+
+  it('presents skill sources for project, plugin, and home entries', () => {
+    const projectSkill: Definition<Skill> = {
+      path: join(cwd, '.ai/skills/research/SKILL.md'),
+      body: '阅读 README.md',
+      attributes: {}
+    }
+    const pluginSkill: Definition<Skill> = {
+      path: join(cwd, 'node_modules/@vibe-forge/plugin-demo/skills/review/SKILL.md'),
+      body: '检查风险',
+      attributes: {},
+      resolvedInstancePath: 'plugins.demo',
+      resolvedSource: 'plugin'
+    }
+    const homeSkill: Definition<Skill> = {
+      path: '/Users/demo/.agents/skills/home-bridge/SKILL.md',
+      body: '整理本地偏好',
+      attributes: {},
+      resolvedSource: 'home'
+    }
+
+    expect(presentSkill(projectSkill, cwd)).toEqual({
+      id: '.ai/skills/research/SKILL.md',
+      name: 'research',
+      description: '阅读 README.md',
+      always: false,
+      instancePath: undefined,
+      source: 'project'
+    })
+    expect(presentSkill(pluginSkill, cwd)).toEqual({
+      id: 'node_modules/@vibe-forge/plugin-demo/skills/review/SKILL.md',
+      name: 'review',
+      description: '检查风险',
+      always: false,
+      instancePath: 'plugins.demo',
+      source: 'plugin'
+    })
+    expect(presentSkillDetail(homeSkill, cwd)).toEqual({
+      id: '/Users/demo/.agents/skills/home-bridge/SKILL.md',
+      name: 'home-bridge',
+      description: '整理本地偏好',
+      always: false,
+      instancePath: undefined,
+      source: 'home',
+      body: '整理本地偏好'
+    })
   })
 })

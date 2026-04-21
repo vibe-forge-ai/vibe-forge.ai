@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import type { Definition, Skill } from '@vibe-forge/types'
+
 import { badRequest, conflict, internalServerError } from '#~/utils/http.js'
 
 interface CreateProjectSkillInput {
@@ -14,12 +16,15 @@ const toSkillSlug = (value: string) => {
   return slug === '' ? undefined : slug
 }
 
-const toSkillBody = (name: string, description: string, body: string) => {
+const toSkillBodyContent = (name: string, body: string) => (
+  body.trim() === '' ? `# ${name.trim()}` : body.trim()
+)
+
+const toSkillFileContent = (description: string, bodyContent: string) => {
   const frontmatter = description.trim() === ''
     ? ''
     : `---\ndescription: ${JSON.stringify(description.trim())}\n---\n\n`
-  const content = body.trim() === '' ? `# ${name.trim()}\n` : body.trim()
-  return `${frontmatter}${content}\n`
+  return `${frontmatter}${bodyContent}\n`
 }
 
 export const createProjectSkill = async (workspaceRoot: string, input: CreateProjectSkillInput) => {
@@ -32,7 +37,8 @@ export const createProjectSkill = async (workspaceRoot: string, input: CreatePro
     throw badRequest('Missing skill name', undefined, 'missing_skill_name')
   }
 
-  const content = toSkillBody(name, description, skillBody)
+  const bodyContent = toSkillBodyContent(name, skillBody)
+  const content = toSkillFileContent(description, bodyContent)
 
   try {
     const skillDir = join(workspaceRoot, '.ai', 'skills', slug)
@@ -40,13 +46,15 @@ export const createProjectSkill = async (workspaceRoot: string, input: CreatePro
     await mkdir(skillDir, { recursive: true })
     await writeFile(skillPath, content, { encoding: 'utf8', flag: 'wx' })
 
+    const attributes: Skill = description.trim() === ''
+      ? {}
+      : { description: description.trim() }
     return {
-      id: join('.ai', 'skills', slug, 'SKILL.md'),
-      name: slug,
-      description: description.trim(),
-      always: false,
-      body: content
-    }
+      path: skillPath,
+      body: bodyContent,
+      attributes,
+      resolvedSource: 'project'
+    } satisfies Definition<Skill>
   } catch (err) {
     if (err && typeof err === 'object' && (err as { code?: unknown }).code === 'EEXIST') {
       throw conflict('Skill already exists', { name: slug }, 'skill_exists')

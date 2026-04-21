@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, extname, resolve } from 'node:path'
+import { basename, dirname, extname, isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
 
 import {
@@ -28,11 +28,13 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
+import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { resolveConfiguredWorkspaceAssets } from './workspaces'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type OpenCodeOverlayKind = Extract<WorkspaceAssetKind, 'agent' | 'command' | 'mode' | 'nativePlugin'>
 type OpenCodeOverlayAsset<TKind extends OpenCodeOverlayKind> = Extract<WorkspaceAsset, { kind: TKind }>
+type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
 
 type DocumentAsset<TDefinition> = Extract<WorkspaceAsset, { kind: DocumentAssetKind }> & {
   payload: {
@@ -52,6 +54,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 )
 
 const ENTITY_DIRECTORY_ENTRY_FILES = new Set(['readme.md', 'index.json'])
+const DEFAULT_HOME_SKILL_ROOTS = [
+  '~/.agents/skills',
+  '~/.claude/skills',
+  '~/.config/opencode/skills',
+  '~/.gemini/skills'
+] as const
 
 const DEFAULT_ENTITY_PROMPT_FILE_SECTIONS = [
   {
@@ -118,6 +126,74 @@ const resolveDisplayName = (name: string, scope?: string) => (
   scope != null && scope.trim() !== '' ? `${scope}/${name}` : name
 )
 
+const toStringList = (value: string | string[] | undefined) => {
+  if (typeof value === 'string' && value.trim() !== '') {
+    return [value.trim()]
+  }
+
+  if (!Array.isArray(value)) return [] as string[]
+
+  return value
+    .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+    .map(item => item.trim())
+}
+
+const resolveRealHomeDir = (env: NodeJS.ProcessEnv) => {
+  const value = env.__VF_PROJECT_REAL_HOME__?.trim() || env.HOME?.trim()
+  if (value == null || value === '') return undefined
+  return resolve(value)
+}
+
+const warnInvalidHomeSkillRoot = (root: string) => {
+  console.warn(
+    `[vibe-forge] Ignoring invalid skills.homeBridge root "${root}". ` +
+      'Use an absolute path or a path starting with "~".'
+  )
+}
+
+const resolveHomeBridgeConfig = (configs: [Config?, Config?]) => {
+  const [config, userConfig] = configs
+  const projectHomeBridge = config?.skills?.homeBridge
+  const userHomeBridge = userConfig?.skills?.homeBridge
+
+  return {
+    enabled: userHomeBridge?.enabled ?? projectHomeBridge?.enabled ?? true,
+    roots: toStringList(userHomeBridge?.roots ?? projectHomeBridge?.roots)
+  }
+}
+
+const resolveHomeSkillRoots = (configs: [Config?, Config?], env: NodeJS.ProcessEnv = process.env) => {
+  const homeBridge = resolveHomeBridgeConfig(configs)
+  if (homeBridge.enabled === false) return [] as string[]
+
+  const realHome = resolveRealHomeDir(env)
+  if (realHome == null) return [] as string[]
+
+  const rawRoots = homeBridge.roots.length > 0 ? homeBridge.roots : Array.from(DEFAULT_HOME_SKILL_ROOTS)
+  const roots: string[] = []
+  const seen = new Set<string>()
+
+  for (const rawRoot of rawRoots) {
+    let resolvedRoot: string | undefined
+
+    if (rawRoot === '~') {
+      resolvedRoot = realHome
+    } else if (rawRoot.startsWith('~/')) {
+      resolvedRoot = resolve(realHome, rawRoot.slice(2))
+    } else if (isAbsolute(rawRoot)) {
+      resolvedRoot = resolve(rawRoot)
+    } else if (homeBridge.roots.length > 0) {
+      warnInvalidHomeSkillRoot(rawRoot)
+    }
+
+    if (resolvedRoot == null || seen.has(resolvedRoot)) continue
+    seen.add(resolvedRoot)
+    roots.push(resolvedRoot)
+  }
+
+  return roots
+}
+
 const loadWorkspaceConfig = async (cwd: string) => (
   loadConfig({
     cwd,
@@ -182,6 +258,7 @@ const createDocumentAsset = <
   origin: 'workspace' | 'plugin'
   scope?: string
   instance?: ResolvedPluginInstance
+  resolvedBy?: string
 }) => {
   const name = ({
     rule: resolveDocumentName,
@@ -203,7 +280,7 @@ const createDocumentAsset = <
     sourcePath: params.definition.path,
     instancePath: params.instance?.instancePath,
     packageId: params.instance?.packageId,
-    resolvedBy: params.instance?.resolvedBy,
+    resolvedBy: params.resolvedBy ?? params.instance?.resolvedBy,
     taskOverlaySource: params.instance?.overlaySource,
     payload: {
       definition: params.definition
@@ -311,6 +388,19 @@ const scanWorkspaceDocuments = async (cwd: string) => {
   }
 }
 
+const scanHomeSkillDocuments = async (configs: [Config?, Config?]) => {
+  const roots = resolveHomeSkillRoots(configs)
+  if (roots.length === 0) return [] as string[]
+
+  const scans = await Promise.all(
+    roots.map(async root => (
+      await glob(['*/SKILL.md'], { cwd: root, absolute: true }).catch(() => [] as string[])
+    ))
+  )
+
+  return scans.flatMap(paths => [...paths].sort((left, right) => left.localeCompare(right)))
+}
+
 const scanInstanceDocuments = async (instance: ResolvedPluginInstance) => {
   const assets = instance.manifest?.assets
   const resolveAssetRoot = (dir: string | undefined, fallback: string) => resolve(instance.rootDir, dir ?? fallback)
@@ -399,6 +489,24 @@ const assertNoDocumentConflicts = (
   }
 }
 
+const mergeSkillAssets = (assets: SkillAsset[]) => {
+  const directAssets = assets.filter(asset => asset.resolvedBy !== HOME_BRIDGE_RESOLVED_BY)
+  const bridgedAssets = assets.filter(asset => asset.resolvedBy === HOME_BRIDGE_RESOLVED_BY)
+
+  assertNoDocumentConflicts(directAssets)
+
+  const seen = new Set(directAssets.map(asset => asset.displayName))
+  const merged = [...directAssets]
+
+  for (const asset of bridgedAssets) {
+    if (seen.has(asset.displayName)) continue
+    seen.add(asset.displayName)
+    merged.push(asset)
+  }
+
+  return merged
+}
+
 const assertNoMcpConflicts = (
   assets: Array<Extract<WorkspaceAsset, { kind: 'mcpServer' }>>
 ) => {
@@ -449,7 +557,10 @@ export async function collectWorkspaceAssets(params: {
     overlaySource: params.overlaySource
   })
 
-  const localScan = await scanWorkspaceDocuments(params.cwd)
+  const [localScan, homeSkillPaths] = await Promise.all([
+    scanWorkspaceDocuments(params.cwd),
+    scanHomeSkillDocuments([config, userConfig])
+  ])
   const flattenedPluginInstances = flattenPluginInstances(pluginInstances)
   const pluginScans = await Promise.all(flattenedPluginInstances.map(instance => scanInstanceDocuments(instance)))
   const pluginOverlayScans = await Promise.all(
@@ -457,29 +568,37 @@ export async function collectWorkspaceAssets(params: {
   )
 
   const assets: WorkspaceAsset[] = []
+  const skillAssets: SkillAsset[] = []
 
   const pushDocumentAssets = async <TKind extends DocumentAssetKind>(
     kind: TKind,
     paths: string[],
     origin: 'workspace' | 'plugin',
     instance?: ResolvedPluginInstance,
-    parser?: (path: string) => Promise<any>
+    parser?: (path: string) => Promise<any>,
+    resolvedBy?: string
   ) => {
     const definitions = await Promise.all(paths.map(path => (
       parser != null ? parser(path) : parseFrontmatterDocument(path)
     )))
-    assets.push(
-      ...definitions.map(definition =>
-        createDocumentAsset({
-          cwd: params.cwd,
-          kind,
-          definition,
-          origin,
-          scope: instance?.scope,
-          instance
-        })
-      )
+    const createdAssets = definitions.map(definition =>
+      createDocumentAsset({
+        cwd: params.cwd,
+        kind,
+        definition,
+        origin,
+        scope: instance?.scope,
+        instance,
+        resolvedBy
+      })
     )
+
+    if (kind === 'skill') {
+      skillAssets.push(...createdAssets as SkillAsset[])
+      return
+    }
+
+    assets.push(...createdAssets)
   }
 
   await pushDocumentAssets('rule', localScan.rulePaths, 'workspace')
@@ -497,6 +616,10 @@ export async function collectWorkspaceAssets(params: {
     await pushDocumentAssets('entity', scan.entityDocPaths, 'plugin', instance, parseEntityMarkdownDocument)
     await pushDocumentAssets('entity', scan.entityJsonPaths, 'plugin', instance, parseEntityIndexJson)
   }
+  await pushDocumentAssets('skill', homeSkillPaths, 'workspace', undefined, undefined, HOME_BRIDGE_RESOLVED_BY)
+
+  const skills = mergeSkillAssets(skillAssets)
+  assets.push(...skills)
 
   const mcpAssets = new Map<string, Extract<WorkspaceAsset, { kind: 'mcpServer' }>>()
   const addMcpAsset = (
@@ -609,9 +732,8 @@ export async function collectWorkspaceAssets(params: {
   const entities = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'entity' }> =>
     asset.kind === 'entity'
   )
-  const skills = assets.filter((asset): asset is Extract<WorkspaceAsset, { kind: 'skill' }> => asset.kind === 'skill')
 
-  assertNoDocumentConflicts([...rules, ...specs, ...entities, ...skills])
+  assertNoDocumentConflicts([...rules, ...specs, ...entities])
   assertNoMcpConflicts(Array.from(mcpAssets.values()))
 
   return {

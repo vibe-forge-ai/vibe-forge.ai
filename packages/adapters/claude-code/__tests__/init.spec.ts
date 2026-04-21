@@ -1,9 +1,11 @@
+/* eslint-disable max-lines -- Claude init coverage keeps mock-home and asset sync scenarios together. */
 import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { resolveWorkspaceAssetBundle } from '../../../workspace-assets/src/index'
 import { initClaudeCodeAdapter } from '../src/claude/init'
 
 const tempDirs: string[] = []
@@ -164,6 +166,63 @@ describe('initClaudeCodeAdapter', () => {
     const targetPath = join(mockHome, '.claude', 'skills', 'vf-cli-quickstart')
     expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
+  })
+
+  it('bridges real-home Claude skills through workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const previousRealHome = process.env.__VF_PROJECT_REAL_HOME__
+
+    try {
+      process.env.__VF_PROJECT_REAL_HOME__ = realHome
+      await mkdir(join(realHome, '.claude', 'skills', 'foo'), { recursive: true })
+      await writeFile(
+        join(realHome, '.claude', 'skills', 'foo', 'SKILL.md'),
+        '---\ndescription: real home foo\n---\nUse the real home definition.\n'
+      )
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [undefined, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      expect(bundle.skills.find(asset => asset.displayName === 'foo')).toEqual(expect.objectContaining({
+        resolvedBy: 'home-bridge',
+        sourcePath: join(realHome, '.claude', 'skills', 'foo', 'SKILL.md')
+      }))
+
+      await initClaudeCodeAdapter({
+        cwd: workspace,
+        env: {
+          HOME: mockHome,
+          __VF_PROJECT_REAL_HOME__: realHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: [],
+          skills: bundle.skills
+        }
+      } as any)
+
+      const targetPath = join(mockHome, '.claude', 'skills', 'foo')
+      expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(
+        resolve(realHome, '.claude', 'skills', 'foo')
+      )
+    } finally {
+      if (previousRealHome == null) {
+        delete process.env.__VF_PROJECT_REAL_HOME__
+      } else {
+        process.env.__VF_PROJECT_REAL_HOME__ = previousRealHome
+      }
+    }
   })
 
   it('syncs resolved dependency skills from workspace assets into the isolated Claude home', async () => {
