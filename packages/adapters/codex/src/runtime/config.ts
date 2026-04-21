@@ -318,6 +318,14 @@ const isManagedProjectMarkerLine = (line: string) => {
     trimmedLine === MANAGED_PROJECT_BLOCK_END
 }
 
+const getSectionLineEntries = (section: TomlSection, lines: TomlLine[]) =>
+  lines.slice(section.startLine, section.endLine)
+
+const getManagedFilteredSectionLines = (section: TomlSection, lines: TomlLine[]) =>
+  getSectionLineEntries(section, lines)
+    .filter(line => !(line.stringStateBefore === 'none' && isManagedProjectMarkerLine(line.text)))
+    .map(line => line.text)
+
 const findManagedProjectPreambleStartLine = (lines: TomlLine[]) =>
   lines.findIndex((line, lineIndex) =>
     line.stringStateBefore === 'none' &&
@@ -525,7 +533,7 @@ const upsertManagedProjectBlock = (params: {
 
     const headerKey = getTomlHeaderKey(section.header)
     const workspaceProjectKey = `projects.${JSON.stringify(resolve(params.workspacePath))}`
-    const normalizedSectionLines = trimBlankLines(section.lines.filter(line => !isManagedProjectMarkerLine(line)))
+    const normalizedSectionLines = trimBlankLines(getManagedFilteredSectionLines(section, scan.lines))
 
     if (headerKey === workspaceProjectKey) {
       for (const lineIndex of findManagedProjectPreambleLineNumbers(scan.lines, section.startLine)) {

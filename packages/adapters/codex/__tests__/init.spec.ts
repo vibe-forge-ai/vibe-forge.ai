@@ -479,6 +479,57 @@ describe('initCodexAdapter', () => {
     expect(configContent.split(projectKey)).toHaveLength(2)
   })
 
+  it('does not strip managed marker-shaped lines when they appear inside a workspace multiline string', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const projectPromptBlock = [
+      'project_prompt = """',
+      '# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+      '# This project block is managed by Vibe Forge.',
+      '# END VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+      '"""'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        projectKey,
+        'trust_level = "manual"',
+        projectPromptBlock,
+        ''
+      ].join('\n')
+    )
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any
+
+    await initCodexAdapter(ctx)
+    await initCodexAdapter(ctx)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(projectPromptBlock)
+    expect(configContent).toContain('trust_level = "trusted"')
+  })
+
   it('does not insert the managed root block into a root multiline string that contains a table-like line', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
