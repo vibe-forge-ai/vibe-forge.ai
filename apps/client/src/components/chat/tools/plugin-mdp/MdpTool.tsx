@@ -3,6 +3,8 @@ import './MdpTool.scss'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { MdpPathSummary } from '@vibe-forge/types'
+
 import { CodeBlock } from '#~/components/CodeBlock'
 import { safeJsonStringify } from '#~/utils/safe-serialize'
 import { ToolCallBox } from '../core/ToolCallBox'
@@ -10,6 +12,7 @@ import { ToolResultContent } from '../core/ToolResultContent'
 import { ToolSummaryHeader } from '../core/ToolSummaryHeader'
 import { ToolInlineFields, renderToolBlockField } from '../core/tool-field-sections'
 import { defineToolRender } from '../defineToolRender'
+import { MdpPathBrowser } from './MdpPathBrowser'
 import {
   buildMdpRequestFields,
   extractMdpToolPayload,
@@ -20,7 +23,6 @@ import {
   type MdpToolKind
 } from './mdp-tool-utils'
 
-const MAX_VISIBLE_PATHS = 18
 const MAX_VISIBLE_BATCH_RESULTS = 8
 const CLIENTS_PAGE_SIZE = 8
 
@@ -29,6 +31,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 )
 
 const asString = (value: unknown) => typeof value === 'string' ? value.trim() : ''
+
+const isMdpPathSummary = (value: unknown): value is MdpPathSummary => (
+  isRecord(value) &&
+  typeof value.path === 'string' &&
+  typeof value.clientId === 'string' &&
+  typeof value.connectionKey === 'string' &&
+  typeof value.rawClientId === 'string'
+)
 
 const buildMdpTitle = (kind: MdpToolKind, t: (key: string, options?: Record<string, unknown>) => string) => {
   switch (kind) {
@@ -204,59 +214,17 @@ const MdpClientResults = (params: {
   )
 }
 
-const renderPathResults = (
-  payload: unknown,
-  t: (key: string, options?: Record<string, unknown>) => string
-) => {
+const renderPathResults = (payload: unknown, t: (key: string, options?: Record<string, unknown>) => string) => {
   if (!isRecord(payload) || !Array.isArray(payload.paths)) {
     return null
   }
 
-  const paths = payload.paths.filter(isRecord)
+  const paths = payload.paths.filter(isMdpPathSummary)
   if (paths.length === 0) {
     return renderEmptyState(t('chat.tools.mdp.emptyPaths', { defaultValue: 'No paths returned.' }))
   }
 
-  const visiblePaths = paths.slice(0, MAX_VISIBLE_PATHS)
-  const hiddenCount = paths.length - visiblePaths.length
-
-  return (
-    <div className='mdp-tool__path-list'>
-      {visiblePaths.map((pathRecord, index) => {
-        const path = asString(pathRecord.path) || '/'
-        const type = asString(pathRecord.type)
-        const description = asString(pathRecord.description)
-        const methods = Array.isArray(pathRecord.methods)
-          ? pathRecord.methods.map(asString).filter(value => value !== '')
-          : []
-
-        return (
-          <div className='mdp-tool__path-row' key={`${path}-${index}`}>
-            <div className='mdp-tool__path-main'>
-              <code className='mdp-tool__path-value'>{path}</code>
-              <div className='mdp-tool__path-badges'>
-                {type !== '' && <span className='mdp-tool__badge'>{type}</span>}
-                {methods.map(method => (
-                  <span className='mdp-tool__badge mdp-tool__badge--method' key={method}>{method}</span>
-                ))}
-              </div>
-            </div>
-            {description !== '' && (
-              <div className='mdp-tool__path-description'>{description}</div>
-            )}
-          </div>
-        )
-      })}
-      {hiddenCount > 0 && (
-        <div className='mdp-tool__overflow-note'>
-          {t('chat.tools.mdp.morePaths', {
-            count: hiddenCount,
-            defaultValue: `+${hiddenCount} more paths`
-          })}
-        </div>
-      )}
-    </div>
-  )
+  return <MdpPathBrowser paths={paths} />
 }
 
 const renderCallPathResult = (

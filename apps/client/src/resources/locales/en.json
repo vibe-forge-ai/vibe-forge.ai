@@ -1047,7 +1047,17 @@
       "moreResults": "{{count}} more results",
       "previousPage": "Previous",
       "nextPage": "Next",
-      "pageIndicator": "Page {{current}} / {{total}}"
+      "pageIndicator": "Page {{current}} / {{total}}",
+      "pathDetailEmpty": "Select a path node on the left to inspect its details.",
+      "directoryNode": "Directory",
+      "pathNode": "Path",
+      "childEntries": "Child entries",
+      "descendantPaths": "Nested paths",
+      "descendantDirectories": "Nested directories",
+      "directoryDetailHint": "This node groups the MDP paths under the selected prefix.",
+      "pathType": "Type",
+      "methods": "Methods",
+      "pathDetailUnavailable": "This path did not return extra description metadata."
     },
     "call": "call",
       "reading": "Reading file...",

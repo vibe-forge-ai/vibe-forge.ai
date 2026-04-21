@@ -1048,7 +1048,17 @@
       "moreResults": "还有 {{count}} 条结果",
       "previousPage": "上一页",
       "nextPage": "下一页",
-      "pageIndicator": "第 {{current}} / {{total}} 页"
+      "pageIndicator": "第 {{current}} / {{total}} 页",
+      "pathDetailEmpty": "请选择左侧路径节点查看介绍信息。",
+      "directoryNode": "目录",
+      "pathNode": "路径",
+      "childEntries": "直接子节点",
+      "descendantPaths": "包含路径",
+      "descendantDirectories": "包含目录",
+      "directoryDetailHint": "这个节点用于归纳当前前缀下的 MDP 路径范围。",
+      "pathType": "类型",
+      "methods": "方法",
+      "pathDetailUnavailable": "这个路径没有返回额外的介绍元数据。"
     },
     "call": "调用",
       "reading": "正在读取文件...",
