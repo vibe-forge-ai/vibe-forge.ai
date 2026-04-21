@@ -1141,6 +1141,13 @@
       "format": "Format",
       "copy": "Copy"
     },
+    "conflict": {
+      "title": "Configuration changed elsewhere",
+      "description": "{{source}} / {{target}} was updated outside this page while you still have unsaved edits.",
+      "instructions": "Choose which version to keep before continuing so the two copies do not overwrite each other.",
+      "keepLocal": "Keep my edits",
+      "useRemote": "Use external change"
+    },
     "editor": {
       "addField": "Add Field",
       "addItem": "Add Item",

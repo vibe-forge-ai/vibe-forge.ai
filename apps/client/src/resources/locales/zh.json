@@ -1142,6 +1142,13 @@
       "format": "格式化",
       "copy": "复制"
     },
+    "conflict": {
+      "title": "配置正在被其他地方修改",
+      "description": "{{source}} / {{target}} 在当前页面之外已经发生更新，而你这里还有未保存的编辑。",
+      "instructions": "请先选择保留哪一份，再继续编辑，避免两边互相覆盖。",
+      "keepLocal": "保留当前编辑",
+      "useRemote": "采用外部修改"
+    },
     "editor": {
       "addField": "添加字段",
       "addItem": "添加项",

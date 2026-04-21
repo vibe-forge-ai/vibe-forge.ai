@@ -21,7 +21,7 @@ const getEnvironmentSource = (environment: WorktreeEnvironmentSummary | undefine
 )
 
 export function WorktreeEnvironmentPanel({ t }: { t: TranslationFn }) {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [sourceKey, setSourceKey] = useState<ConfigSource>('project')
   const [selectedId, setSelectedId] = useState<string>()
   const [nameDraft, setNameDraft] = useState('')
@@ -55,6 +55,7 @@ export function WorktreeEnvironmentPanel({ t }: { t: TranslationFn }) {
     draftScripts,
     environments,
     message,
+    modal,
     nameDraft,
     selectedEnvironment,
     selectedId,

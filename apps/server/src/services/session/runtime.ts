@@ -50,6 +50,15 @@ export const externalSessionStore = new Map<string, SessionConnectionState>()
 export const sessionSubscriberSockets = new Set<WebSocket>()
 export const pendingSessionInteractionStore = new Map<string, PendingSessionInteraction>()
 
+const sendEventToSockets = (sockets: Iterable<WebSocket>, event: WSEvent) => {
+  const payload = safeJsonStringify(event)
+  for (const socket of sockets) {
+    if (socket.readyState === WebSocketImpl.OPEN) {
+      socket.send(payload)
+    }
+  }
+}
+
 export function createSessionConnectionState(): SessionConnectionState {
   return {
     sockets: new Set<WebSocket>(),
@@ -145,12 +154,7 @@ export function emitRuntimeEvent(
     runtime.messages.push(event)
   }
 
-  const payload = safeJsonStringify(event)
-  for (const socket of runtime.sockets) {
-    if (socket.readyState === WebSocketImpl.OPEN) {
-      socket.send(payload)
-    }
-  }
+  sendEventToSockets(runtime.sockets, event)
 }
 
 export function broadcastSessionEvent(sessionId: string, event: WSEvent) {
@@ -167,20 +171,18 @@ export function broadcastSessionEvent(sessionId: string, event: WSEvent) {
 
 export function notifySessionUpdated(sessionId: string, session: Session | { id: string; isDeleted: boolean }) {
   const event: WSEvent = { type: 'session_updated', session }
-  const payload = safeJsonStringify(event)
   const runtime = getSessionConnectionState(sessionId)
 
-  for (const socket of runtime?.sockets ?? []) {
-    if (socket.readyState === WebSocketImpl.OPEN) {
-      socket.send(payload)
-    }
-  }
+  sendEventToSockets(runtime?.sockets ?? [], event)
+  sendEventToSockets(sessionSubscriberSockets, event)
+}
 
-  for (const socket of sessionSubscriberSockets) {
-    if (socket.readyState === WebSocketImpl.OPEN) {
-      socket.send(payload)
-    }
-  }
+export function notifyConfigUpdated(workspaceFolder: string) {
+  sendEventToSockets(sessionSubscriberSockets, {
+    type: 'config_updated',
+    workspaceFolder,
+    updatedAt: Date.now()
+  })
 }
 
 export function addSessionSubscriberSocket(socket: WebSocket) {

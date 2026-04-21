@@ -246,6 +246,7 @@ notifications:
 
       expect(state.projectSource?.configPath).toBe(path.join(tempDir, '.ai.config.json'))
       expect(state.projectSource?.extendPaths).toEqual(['./base.yaml'])
+      expect(state.projectSource?.resolvedExtendPaths).toEqual([path.join(tempDir, 'base.yaml')])
       expect(state.projectSource?.rawConfig?.permissions?.allow).toEqual(['Edit'])
       expect(state.projectSource?.resolvedConfig?.permissions?.allow).toEqual(['Read', 'Edit'])
       expect(state.projectSource?.rawConfig?.notifications?.events?.completed).toEqual({

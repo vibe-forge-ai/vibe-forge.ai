@@ -4,6 +4,7 @@ import {
   adapterSessionStore,
   createSessionConnectionState,
   externalSessionStore,
+  notifyConfigUpdated,
   notifySessionUpdated,
   sessionSubscriberSockets,
   takeExternalSessionRuntime
@@ -46,6 +47,21 @@ describe('notifySessionUpdated', () => {
     expect(sessionSocket.send).toHaveBeenCalledOnce()
     expect(subscriberSocket.send).toHaveBeenCalledOnce()
     expect(String(sessionSocket.send.mock.calls[0]?.[0])).toContain('"type":"session_updated"')
+  })
+
+  it('broadcasts config updates to global subscribers', () => {
+    const subscriberSocket = {
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    sessionSubscriberSockets.add(subscriberSocket as any)
+
+    notifyConfigUpdated('/workspace/demo')
+
+    expect(subscriberSocket.send).toHaveBeenCalledOnce()
+    expect(String(subscriberSocket.send.mock.calls[0]?.[0])).toContain('"type":"config_updated"')
+    expect(String(subscriberSocket.send.mock.calls[0]?.[0])).toContain('"/workspace/demo"')
   })
 
   it('can promote a passive runtime into an adapter runtime', () => {
