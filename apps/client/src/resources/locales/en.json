@@ -623,6 +623,8 @@
     "referenceAttachmentsDescription": "Choose images or project files as references.",
     "referencePermission": "Permission mode",
     "referencePermissionDescription": "Control how tool actions are authorized.",
+    "collapseHeaderControls": "Collapse top bar",
+    "expandHeaderControls": "Expand top bar",
     "referenceImage": "Image",
     "referenceImageDescription": "Choose a local image and attach it to the message.",
     "referenceFile": "File",

@@ -624,6 +624,8 @@
     "referenceAttachmentsDescription": "选择图片或项目文件作为引用内容。",
     "referencePermission": "权限模式",
     "referencePermissionDescription": "控制工具执行前的授权策略。",
+    "collapseHeaderControls": "收起顶部栏",
+    "expandHeaderControls": "展开顶部栏",
     "referenceImage": "图片",
     "referenceImageDescription": "从本地选择图片并附在消息中。",
     "referenceFile": "文件",
