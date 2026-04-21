@@ -531,6 +531,139 @@ describe('initCodexAdapter', () => {
     expect(configContent).toContain('hide_full_access_warning = true')
   })
 
+  it('preserves other workspaces managed project markers while rewriting the current workspace block', async () => {
+    const workspace = await createWorkspace()
+    const otherWorkspace = resolve(workspace, '..', 'other-workspace')
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const currentProjectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const otherProjectKey = `[projects.${JSON.stringify(otherWorkspace)}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        '',
+        '# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+        '# This project block is managed by Vibe Forge.',
+        otherProjectKey,
+        'trust_level = "trusted"',
+        '# END VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+        '',
+        currentProjectKey,
+        'trust_level = "manual"',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(otherProjectKey)
+    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG/g)).toHaveLength(2)
+    expect(configContent.split(currentProjectKey)).toHaveLength(2)
+  })
+
+  it('recognizes root table headers that carry inline comments', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'developer_instructions = "hi"',
+        '',
+        '[notice] # keep this comment',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG')
+    expect(configContent).toContain('[notice] # keep this comment')
+  })
+
+  it('recognizes workspace project headers that carry inline comments', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        `${projectKey} # keep this comment`,
+        'trust_level = "manual"',
+        'workspace_write = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+    expect(configContent).toContain('workspace_write = true')
+  })
+
   it('keeps concurrent skill sync idempotent when multiple vf processes initialize the same mock home', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
