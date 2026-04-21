@@ -6,9 +6,7 @@ export type SenderInitialContent = string | ChatMessageContent[] | undefined
 
 export type SenderSubmitResult = boolean | void
 
-export type ReferenceMenuKey = 'image' | 'file' | 'permission'
-
-export type MenuFocusTarget = 'reference' | 'permission' | null
+export type ReferenceMenuKey = 'image' | 'file'
 
 export interface RovingFocusNavigation<T extends string> {
   activeKey: T | null

@@ -14,5 +14,5 @@ export const permissionModeIconMap: Record<PermissionMode, string> = {
   acceptEdits: 'edit_note',
   plan: 'checklist',
   dontAsk: 'verified_user',
-  bypassPermissions: 'shield_lock'
+  bypassPermissions: 'gpp_bad'
 }

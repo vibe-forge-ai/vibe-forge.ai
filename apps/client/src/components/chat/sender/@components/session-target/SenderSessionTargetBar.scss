@@ -17,6 +17,15 @@
   min-width: 0;
 }
 
+.sender-session-target__actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
 .sender-session-target__trigger {
   width: fit-content;
   min-width: 0;
@@ -186,6 +195,11 @@
   .sender-session-target__controls {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .sender-session-target__actions {
+    margin-left: 0;
+    align-self: flex-end;
   }
 
   .sender-session-target__trigger {

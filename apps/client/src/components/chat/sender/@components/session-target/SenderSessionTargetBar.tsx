@@ -2,6 +2,7 @@ import './SenderSessionTargetBar.scss'
 
 import { Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
+import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
@@ -37,12 +38,14 @@ export function SenderSessionTargetBar({
   draft,
   locked,
   disabled,
-  onChange
+  onChange,
+  actions
 }: {
   draft: ChatSessionTargetDraft
   locked: boolean
   disabled?: boolean
   onChange: (target: ChatSessionTargetDraft) => void
+  actions?: ReactNode
 }) {
   const { t } = useTranslation()
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
@@ -164,6 +167,11 @@ export function SenderSessionTargetBar({
             <span className='material-symbols-rounded sender-session-target__trigger-chevron'>expand_more</span>
           </button>
         </Dropdown>
+        {actions != null && (
+          <div className='sender-session-target__actions'>
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   )
