@@ -657,6 +657,7 @@
     "selectionWarningReasonNotIncluded": "该模型不在适配器允许列表中",
     "selectionWarningFallback": "适配器 {{adapter}} 已将模型从 {{requestedModel}} 切换到 {{resolvedModel}}，原因：{{reason}}。",
     "modelGroupBuiltin": "{{adapter}} 内置模型",
+    "modelGroupQuickPicks": "快速选择",
     "modelGroupServices": "模型服务",
     "imageTooLarge": "图片大小不能超过 5MB",
     "imageReadFailed": "图片读取失败",

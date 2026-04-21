@@ -656,6 +656,7 @@
     "selectionWarningReasonNotIncluded": "the model is not included by adapter rules",
     "selectionWarningFallback": "Adapter {{adapter}} switched from {{requestedModel}} to {{resolvedModel}} because {{reason}}.",
     "modelGroupBuiltin": "{{adapter}} built-in models",
+    "modelGroupQuickPicks": "Quick picks",
     "modelGroupServices": "Model Services",
     "imageTooLarge": "Image must be smaller than 5MB",
     "imageReadFailed": "Failed to read image",

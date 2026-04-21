@@ -239,6 +239,18 @@ describe('model selection utilities', () => {
     })
   })
 
+  it('does not let includeModels reject adapter builtin models', () => {
+    expect(evaluateAdapterModelRules({
+      model: 'builtin-fast',
+      adapterConfig: {
+        includeModels: ['serviceA']
+      },
+      builtinModels: ['builtin-fast']
+    })).toMatchObject({
+      allowed: true
+    })
+  })
+
   it('falls back to adapter defaultModel when the selected model is excluded', () => {
     const serviceModels = listServiceModels(modelServices)
 
@@ -260,6 +272,25 @@ describe('model selection utilities', () => {
         resolvedModel: 'serviceB,modelBOnly',
         reason: 'excluded'
       }
+    })
+  })
+
+  it('keeps builtin models selectable when includeModels only targets service models', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterModelCompatibility({
+      adapter: 'codex',
+      model: 'builtin-fast',
+      adapterConfig: {
+        defaultModel: 'serviceA,modelAOnly',
+        includeModels: ['serviceA']
+      },
+      builtinModels: ['builtin-fast'],
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknownDefaultModel: false
+    })).toMatchObject({
+      model: 'builtin-fast'
     })
   })
 

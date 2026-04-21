@@ -27,6 +27,8 @@ pnpm start
 - `npx vfui-client`（前端）
 
 日志输出到 `.logs/`。
+- 在交互式终端里，`pnpm start` 默认以前台监督模式运行；在非交互环境中会自动切到 detached 模式，并写入 `.logs/vfui-server.pid`、`.logs/vfui-client.pid`。
+- 可显式使用 `pnpm start:detached` 启动后台服务，用 `pnpm stop` 停掉这组本地前后端进程。
 
 ### Worktree 启动补充
 
@@ -46,6 +48,7 @@ pnpm start
 - 确认主 worktree 的 `.env` 里存在对应密钥，例如 `BYTE_DANCE_GPT_API_KEY`、`BYTE_DANCE_ARK_API_KEY`。
 - 如果刚修改了 `.env` 或 `.ai.dev.config.*`，要重启后端进程；只刷新前端页面不会让子进程重新加载配置。
 - `start.sh` 会在启动前检查 server 端口；如果默认端口已被其他 worktree 的 server 占用，TTY 环境下会提示是否切换到下一个可用端口，非交互环境则直接报错并给出建议端口。
+- `start.sh` 也会检查 client 端口；如果当前 `5173` 被别的 worktree 占用，会按同样规则提示切换或直接报错，避免前端串到错误的 dev server。
 
 ### Worktree 进程与配置串线排查
 

@@ -7,6 +7,8 @@
     "desktop:make": "pnpm -C apps/desktop make",
     "desktop:package": "pnpm -C apps/desktop package",
     "start": "./start.sh",
+    "start:detached": "./start.sh --detached",
+    "stop": "./start.sh --stop",
     "tools": "node ./scripts/run-tools.mjs",
     "test:e2e:adapters": "pnpm tools adapter-e2e test",
     "typecheck": "node ./scripts/typecheck.mjs",

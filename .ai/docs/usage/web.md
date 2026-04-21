@@ -5,6 +5,7 @@
 ## Web UI 入口
 
 - 启动 `vfui-server` 和 `vfui-client` 后，先访问 `/ui`。
+- 在仓库根目录运行 `pnpm start` 时，交互式终端默认保持前台监督；如果需要后台模式，使用 `pnpm start:detached`，停止时使用 `pnpm stop`。
 - Web UI 默认要求登录；账号配置见 [启动服务](./runtime.md) 中的 `webAuth` 示例。
 - 如果前端需要独立部署到静态站点或安装成 PWA，继续看 [PWA 与独立部署](./pwa.md)。
 - 会话详情页路径是 `/ui/session/<sessionId>`。

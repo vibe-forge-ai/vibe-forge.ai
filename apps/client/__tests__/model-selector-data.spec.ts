@@ -299,4 +299,75 @@ describe('buildModelSelectorData', () => {
     expect(result.servicePreviewOptions.map(option => option.title)).toEqual(['Zeta', 'Alpha'])
     expect(result.recommendedOptions.map(option => option.title)).toEqual(['Alpha', 'Zeta'])
   })
+
+  it('surfaces preferred adapter builtins before same-title service quick picks', () => {
+    const result = buildModelSelectorData({
+      activeBuiltinModels: {
+        codex: [
+          {
+            value: 'gpt-5.4',
+            title: 'GPT-5.4',
+            description: 'Codex built-in GPT-5.4'
+          },
+          {
+            value: 'gpt-5.3-codex',
+            title: 'GPT-5.3-Codex',
+            description: 'Codex built-in GPT-5.3-Codex'
+          }
+        ]
+      },
+      availableServiceModels: [
+        {
+          serviceKey: 'gpt-responses',
+          model: 'gpt-5.4-2026-03-05',
+          selectorValue: 'gpt-responses,gpt-5.4-2026-03-05'
+        },
+        {
+          serviceKey: 'anthropic',
+          model: 'claude-sonnet-4-6',
+          selectorValue: 'anthropic,claude-sonnet-4-6'
+        }
+      ],
+      defaultModelService: 'gpt-responses',
+      mergedModels: {
+        'gpt-responses,gpt-5.4-2026-03-05': {
+          title: 'GPT-5.4'
+        },
+        'anthropic,claude-sonnet-4-6': {
+          title: 'Claude Sonnet 4.6'
+        }
+      },
+      mergedModelServices: {
+        'gpt-responses': createModelServiceConfig({
+          title: 'gpt-responses',
+          models: ['gpt-5.4-2026-03-05']
+        }),
+        anthropic: createModelServiceConfig({
+          title: 'Anthropic',
+          models: ['claude-sonnet-4-6']
+        })
+      },
+      preferredAdapterKey: 'codex',
+      preferredPreviewGroupTitle: 'Quick picks',
+      recommendedModels: [],
+      recommendedGroupTitle: 'Recommended Models',
+      servicePreviewGroupTitle: 'Model Services',
+      builtinGroupTitle: (adapter) => `${adapter} built-in models`
+    })
+
+    expect(result.servicePreviewOptions.map(option => option.value)).toEqual([
+      'gpt-5.4',
+      'gpt-5.3-codex',
+      'anthropic,claude-sonnet-4-6'
+    ])
+    expect(result.flatGroups[0]).toMatchObject({
+      key: 'service-preview',
+      title: 'Quick picks'
+    })
+    expect(result.searchOptions.slice(0, 2).map(option => option.value)).toEqual([
+      'gpt-5.4',
+      'gpt-5.3-codex'
+    ])
+    expect(result.searchOptions.map(option => option.value)).toContain('gpt-responses,gpt-5.4-2026-03-05')
+  })
 })

@@ -477,6 +477,7 @@ export function useChatModelAdapterSelection({
       <ModelSelectOptionLabel
         option={decoratedOption}
         onToggleRecommendedModel={toggleRecommendedModel}
+        showServicePrefix={option.serviceKey != null}
         updatingRecommendedModelValue={updatingRecommendedModelValue}
       />
     )
@@ -491,6 +492,8 @@ export function useChatModelAdapterSelection({
       defaultModelService,
       mergedModels,
       mergedModelServices,
+      preferredAdapterKey: selectedAdapter,
+      preferredPreviewGroupTitle: t('chat.modelGroupQuickPicks', { defaultValue: '快速选择' }),
       recommendedModels,
       recommendedGroupTitle: t('chat.modelGroupRecommended', { defaultValue: '推荐模型' }),
       servicePreviewGroupTitle: t('chat.modelGroupServices', { defaultValue: '模型服务' }),
@@ -507,6 +510,7 @@ export function useChatModelAdapterSelection({
     mergedModels,
     mergedModelServices,
     recommendedModels,
+    selectedAdapter,
     t
   ])
 

@@ -448,6 +448,7 @@ export const doesModelMatchSelector = (params: {
 export const evaluateAdapterModelRules = (params: {
   model?: string
   adapterConfig?: unknown
+  builtinModels?: Iterable<string>
 }): AdapterModelRuleEvaluation => {
   const normalizedModel = normalizeNonEmptyString(params.model)
   if (!normalizedModel || normalizedModel === 'default') {
@@ -461,6 +462,12 @@ export const evaluateAdapterModelRules = (params: {
   const includeModels = getAdapterConfiguredIncludeModels(params.adapterConfig)
   const excludeModels = getAdapterConfiguredExcludeModels(params.adapterConfig)
   const isAdapterDefaultModel = normalizedModel === getAdapterConfiguredDefaultModel(params.adapterConfig)
+  const builtinModelSet = new Set(
+    Array.from(params.builtinModels ?? [])
+      .map(item => normalizeNonEmptyString(item))
+      .filter((item): item is string => Boolean(item))
+  )
+  const isBuiltinModel = builtinModelSet.has(normalizedModel)
 
   if (excludeModels.some(selector => doesModelMatchSelector({ model: normalizedModel, selector }))) {
     return {
@@ -472,6 +479,7 @@ export const evaluateAdapterModelRules = (params: {
   }
 
   if (
+    !isBuiltinModel &&
     !isAdapterDefaultModel &&
     includeModels.length > 0 &&
     !includeModels.some(selector => doesModelMatchSelector({ model: normalizedModel, selector }))
@@ -507,7 +515,8 @@ export const resolveAdapterModelCompatibility = (params: {
 
   const evaluation = evaluateAdapterModelRules({
     model: normalizedModel,
-    adapterConfig: params.adapterConfig
+    adapterConfig: params.adapterConfig,
+    builtinModels: params.builtinModels
   })
   if (evaluation.allowed) {
     return { model: normalizedModel }
@@ -537,7 +546,8 @@ export const resolveAdapterModelCompatibility = (params: {
 
   const fallbackEvaluation = evaluateAdapterModelRules({
     model: resolvedDefaultModel,
-    adapterConfig: params.adapterConfig
+    adapterConfig: params.adapterConfig,
+    builtinModels: params.builtinModels
   })
   if (!fallbackEvaluation.allowed) {
     return {

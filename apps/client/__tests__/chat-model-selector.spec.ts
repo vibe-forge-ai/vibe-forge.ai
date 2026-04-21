@@ -202,6 +202,25 @@ describe('chat model selector helpers', () => {
     })
   })
 
+  it('keeps builtin models when adapter includeModels only targets service models', () => {
+    const serviceModels = listServiceModels(modelServices)
+
+    expect(resolveAdapterModelCompatibility({
+      adapter: 'codex',
+      model: 'builtin-fast',
+      adapterConfig: {
+        defaultModel: 'serviceA,modelAOnly',
+        includeModels: ['serviceA']
+      },
+      builtinModels: ['builtin-fast'],
+      serviceModels,
+      preferredServiceKey: 'serviceA',
+      preserveUnknownDefaultModel: false
+    })).toMatchObject({
+      model: 'builtin-fast'
+    })
+  })
+
   it('validates adapter selections against the available adapter list', () => {
     expect(resolveChatAdapterSelection({
       value: 'missing',

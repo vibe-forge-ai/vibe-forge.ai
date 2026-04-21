@@ -23,6 +23,9 @@ export const buildModelSelectorData = (params: {
   defaultModelService?: string
   mergedModels: Record<string, ModelMetadataConfig>
   mergedModelServices: Record<string, ModelServiceConfig>
+  preferredAdapterKey?: string
+  preferredPreviewGroupTitle?: string
+  preferredBuiltinPreviewCount?: number
   recommendedModels: RecommendedModelConfig[]
   recommendedGroupTitle: string
   servicePreviewGroupTitle: string
@@ -58,18 +61,41 @@ export const buildModelSelectorData = (params: {
     modelToService
   })
 
+  const preferredBuiltinGroup = params.preferredAdapterKey == null
+    ? undefined
+    : builtinGroups.find(group => group.key === `builtin:${params.preferredAdapterKey}`)
+  const preferredBuiltinPreviewOptions = preferredBuiltinGroup?.options.slice(
+    0,
+    params.preferredBuiltinPreviewCount ?? 4
+  ) ?? []
+  const preferredBuiltinPreviewTitles = new Set(
+    preferredBuiltinPreviewOptions.map(option => option.title.trim().toLowerCase())
+  )
+
   const servicePreviewOptions = serviceGroups
     .map(group => group.options[0] ?? null)
     .filter((option): option is ModelSelectOptionData => option != null)
+    .filter((option) => {
+      if (preferredBuiltinPreviewTitles.size === 0) {
+        return true
+      }
+      return !preferredBuiltinPreviewTitles.has(option.title.trim().toLowerCase())
+    })
 
   const recommendedOptions = sortOptionsByDisplayLabel(configuredRecommendedOptions)
+  const previewOptions = [
+    ...preferredBuiltinPreviewOptions,
+    ...servicePreviewOptions
+  ]
 
   const flatGroups: ModelSelectGroupData[] = []
-  if (servicePreviewOptions.length > 0) {
+  if (previewOptions.length > 0) {
     flatGroups.push({
       key: 'service-preview',
-      title: params.servicePreviewGroupTitle,
-      options: servicePreviewOptions
+      title: preferredBuiltinPreviewOptions.length > 0
+        ? (params.preferredPreviewGroupTitle ?? params.servicePreviewGroupTitle)
+        : params.servicePreviewGroupTitle,
+      options: previewOptions
     })
   }
 
@@ -87,6 +113,7 @@ export const buildModelSelectorData = (params: {
   const searchOptionMap = new Map<string, ModelSelectOptionData>()
   for (
     const option of [
+      ...preferredBuiltinPreviewOptions,
       ...recommendedOptions,
       ...servicePreviewOptions,
       ...moreModelGroups.flatMap(group => group.options)
@@ -100,7 +127,7 @@ export const buildModelSelectorData = (params: {
   const searchOptions = Array.from(searchOptionMap.values())
 
   return {
-    servicePreviewOptions,
+    servicePreviewOptions: previewOptions,
     recommendedOptions,
     moreModelGroups,
     flatGroups,
