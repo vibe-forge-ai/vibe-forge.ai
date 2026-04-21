@@ -37,11 +37,81 @@ const LEGACY_MANAGED_CONFIG_BLOCK_PATTERN = new RegExp(
   'g'
 )
 
-const escapeRegExp = (value: string) => value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
 )
+
+const TOML_TABLE_HEADER_PATTERN = /^\s*(?:\[\[.+\]\]|\[.+\])\s*$/
+
+interface TomlSection {
+  header: string | undefined
+  lines: string[]
+}
+
+const normalizeTomlContent = (content: string) => content.replaceAll('\r\n', '\n')
+
+const splitTomlSections = (content: string): TomlSection[] => {
+  const normalizedContent = normalizeTomlContent(content)
+  const lines = normalizedContent.split('\n')
+  const sections: TomlSection[] = []
+  let currentSection: TomlSection = {
+    header: undefined,
+    lines: []
+  }
+
+  for (const line of lines) {
+    if (TOML_TABLE_HEADER_PATTERN.test(line)) {
+      if (currentSection.lines.length > 0) {
+        sections.push(currentSection)
+      }
+      currentSection = {
+        header: line.trim(),
+        lines: [line]
+      }
+      continue
+    }
+
+    currentSection.lines.push(line)
+  }
+
+  if (currentSection.lines.length > 0) {
+    sections.push(currentSection)
+  }
+
+  return sections
+}
+
+const trimBlankLines = (lines: string[]) => {
+  let start = 0
+  let end = lines.length
+
+  while (start < end && lines[start]?.trim() === '') {
+    start += 1
+  }
+  while (end > start && lines[end - 1]?.trim() === '') {
+    end -= 1
+  }
+
+  return lines.slice(start, end)
+}
+
+const getTomlHeaderKey = (header: string | undefined) => {
+  if (header == null) return undefined
+  if (header.startsWith('[[') && header.endsWith(']]')) {
+    return header.slice(2, -2).trim()
+  }
+  if (header.startsWith('[') && header.endsWith(']')) {
+    return header.slice(1, -1).trim()
+  }
+  return undefined
+}
+
+const isWorkspaceProjectNamespaceHeader = (header: string | undefined, workspacePath: string) => {
+  const headerKey = getTomlHeaderKey(header)
+  const workspaceProjectKey = `projects.${JSON.stringify(resolve(workspacePath))}`
+
+  return headerKey === workspaceProjectKey || headerKey?.startsWith(`${workspaceProjectKey}.`) === true
+}
 
 export const DEFAULT_CODEX_CONFIG_OVERRIDES: Record<string, unknown> = {
   check_for_update_on_startup: false
@@ -133,21 +203,40 @@ const buildManagedCodexRootBlock = (params: {
 
 const buildManagedCodexProjectBlock = (params: {
   workspacePath: string
-}) =>
-  [
+  preservedProjectBodyLines?: string[]
+  preservedNestedProjectSections?: string[]
+}) => {
+  const blockLines = [
     MANAGED_PROJECT_BLOCK_START,
     '# This project block is managed by Vibe Forge.',
     `[projects.${JSON.stringify(resolve(params.workspacePath))}]`,
     'trust_level = "trusted"',
+    ...trimBlankLines(params.preservedProjectBodyLines ?? [])
+  ]
+
+  if ((params.preservedNestedProjectSections?.length ?? 0) > 0) {
+    blockLines.push('')
+    for (const [index, section] of (params.preservedNestedProjectSections ?? []).entries()) {
+      if (index > 0) {
+        blockLines.push('')
+      }
+      blockLines.push(...section.split('\n'))
+    }
+  }
+
+  blockLines.push(
     MANAGED_PROJECT_BLOCK_END,
     ''
-  ].join('\n')
+  )
+
+  return blockLines.join('\n')
+}
 
 const upsertManagedRootBlock = (params: {
   currentContent: string
   checkForUpdateOnStartup: unknown
 }) => {
-  const strippedContent = params.currentContent
+  const strippedContent = normalizeTomlContent(params.currentContent)
     .replace(MANAGED_ROOT_BLOCK_PATTERN, '')
     .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
     .trim()
@@ -182,19 +271,37 @@ const upsertManagedProjectBlock = (params: {
   currentContent: string
   workspacePath: string
 }) => {
-  const workspaceTrustBlockPattern = new RegExp(
-    `(^|\\n)\\[projects\\.${
-      escapeRegExp(JSON.stringify(resolve(params.workspacePath)))
-    }\\]\\ntrust_level = "trusted"\\n?`,
-    'g'
-  )
-  const strippedContent = params.currentContent
+  const strippedManagedContent = normalizeTomlContent(params.currentContent)
     .replace(MANAGED_PROJECT_BLOCK_PATTERN, '')
     .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
-    .replace(workspaceTrustBlockPattern, '$1')
+  const sections = splitTomlSections(strippedManagedContent)
+  const preservedProjectBodyLines: string[] = []
+  const preservedNestedProjectSections: string[] = []
+  const strippedContent = sections
+    .filter((section) => {
+      if (!isWorkspaceProjectNamespaceHeader(section.header, params.workspacePath)) {
+        return true
+      }
+
+      const headerKey = getTomlHeaderKey(section.header)
+      const workspaceProjectKey = `projects.${JSON.stringify(resolve(params.workspacePath))}`
+      if (headerKey === workspaceProjectKey) {
+        preservedProjectBodyLines.push(
+          ...trimBlankLines(section.lines.slice(1)).filter(line => !/^\s*trust_level\s*=/.test(line))
+        )
+      } else {
+        preservedNestedProjectSections.push(trimBlankLines(section.lines).join('\n'))
+      }
+
+      return false
+    })
+    .map(section => section.lines.join('\n'))
+    .join('\n')
     .trim()
   const managedBlock = buildManagedCodexProjectBlock({
-    workspacePath: params.workspacePath
+    workspacePath: params.workspacePath,
+    preservedProjectBodyLines,
+    preservedNestedProjectSections
   })
 
   return strippedContent === ''
