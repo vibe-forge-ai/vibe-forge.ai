@@ -35,6 +35,13 @@
   width: 100%;
 }
 
+.chat-input-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
 html.dark {
   .chat-input-container {
     --input-bg: #1f1f1f;

@@ -89,7 +89,24 @@ export const createSenderToolbarHandlers = ({
     },
     onShowModelSelectChange: selectOverlays.setShowModelSelect,
     onShowEffortSelectChange: selectOverlays.setShowEffortSelect,
-    onShowPermissionActionsChange: referenceActions.setShowPermissionActions,
+    onPermissionOpenChange: (nextOpen) => {
+      if (nextOpen && !canOpenReferenceActions) {
+        if (!isInlineEdit && modelUnavailable) {
+          void message.warning(t('chat.modelConfigRequired'))
+        }
+        return
+      }
+
+      if (!nextOpen) {
+        referenceActions.closeReferenceActions({ restoreFocus: true })
+        return
+      }
+
+      selectOverlays.setShowModelSelect(false)
+      selectOverlays.setShowEffortSelect(false)
+      referenceActions.setShowReferenceActions(false)
+      referenceActions.setShowPermissionActions(true)
+    },
     onModelSearchValueChange: selectOverlays.setModelSearchValue,
     onOpenContextPicker: attachments.handleOpenContextPicker,
     onReferenceImageSelect: attachments.handleImageUpload,

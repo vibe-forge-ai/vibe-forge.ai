@@ -40,7 +40,6 @@ export function SenderToolbar({
         {!state.hideReferenceActions && (
           <ReferenceActionsControl
             state={state}
-            data={data}
             refs={refs}
             handlers={handlers}
           />
