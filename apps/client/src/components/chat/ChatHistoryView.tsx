@@ -154,10 +154,6 @@ export function ChatHistoryView({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
   const [newSessionInitialContent, setNewSessionInitialContent] = useState<ChatMessageContent[] | undefined>(undefined)
-  const historyRenderCount = messages.length + historyStatusNotices.length
-  const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
-    contentVersion: historyRenderCount
-  })
   const {
     isCreating,
     send,
@@ -183,6 +179,11 @@ export function ChatHistoryView({
     sessionTargetDraft,
     workspaceDraft,
     onClearMessages
+  })
+  const showThinkingIndicator = isCreating || session?.status === 'running'
+  const historyRenderCount = messages.length + historyStatusNotices.length + (showThinkingIndicator ? 1 : 0)
+  const { messagesEndRef, messagesContainerRef, messagesContentRef, showScrollBottom, scrollToBottom } = useChatScroll({
+    contentVersion: historyRenderCount
   })
   const initialScrollDoneRef = useRef(false)
   const handledHashAnchorIdRef = useRef('')
@@ -844,6 +845,11 @@ export function ChatHistoryView({
               }}
             />
           ))}
+          {showThinkingIndicator && (
+            <div className='chat-thinking-indicator' role='status' aria-live='polite'>
+              <span className='chat-thinking-indicator__text'>{t('chat.thinking')}</span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
