@@ -89,6 +89,19 @@ export default config(
       'max-lines': 'off'
     }
   },
+  {
+    files: [
+      'apps/desktop/**/*.cjs'
+    ],
+    rules: {
+      'no-console': 'off',
+      'no-use-before-define': 'off',
+      'node/prefer-global/process': 'off',
+      'regexp/no-unused-capturing-group': 'off',
+      'regexp/prefer-d': 'off',
+      'regexp/use-ignore-case': 'off'
+    }
+  },
   // test, script and config files
   {
     files: [

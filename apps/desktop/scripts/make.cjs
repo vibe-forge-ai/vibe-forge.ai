@@ -122,10 +122,13 @@ const mergeMacUpdateInfo = (targetArchs) => {
     mergedUpdateInfo.sha512 = primaryZipFile.sha512
   }
 
-  fs.writeFileSync(path.join(releaseDir, 'latest-mac.yml'), yaml.dump(mergedUpdateInfo, {
-    lineWidth: -1,
-    noRefs: true
-  }))
+  fs.writeFileSync(
+    path.join(releaseDir, 'latest-mac.yml'),
+    yaml.dump(mergedUpdateInfo, {
+      lineWidth: -1,
+      noRefs: true
+    })
+  )
 
   for (const filePath of macUpdateInfoPaths) {
     fs.rmSync(filePath, { force: true })

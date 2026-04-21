@@ -4,8 +4,8 @@ import process from 'node:process'
 
 import {
   BOOTSTRAP_PACKAGE_NAME,
-  buildNpmPackageTarballUrl,
   CLI_PACKAGE_NAME,
+  buildNpmPackageTarballUrl,
   computeUrlSha256,
   normalizeNpmPackageVersion
 } from './cli-package-release'
@@ -93,10 +93,11 @@ export const runHomebrewTapSyncCli = async (input: {
   dryRun?: boolean
   cwd?: string
   stdout?: Pick<NodeJS.WriteStream, 'write'>
-}) => await runHomebrewTapSyncPackage({
-  ...input,
-  packageName: CLI_PACKAGE_NAME
-})
+}) =>
+  await runHomebrewTapSyncPackage({
+    ...input,
+    packageName: CLI_PACKAGE_NAME
+  })
 
 export const runHomebrewTapSyncBootstrap = async (input: {
   version: string
@@ -105,7 +106,8 @@ export const runHomebrewTapSyncBootstrap = async (input: {
   dryRun?: boolean
   cwd?: string
   stdout?: Pick<NodeJS.WriteStream, 'write'>
-}) => await runHomebrewTapSyncPackage({
-  ...input,
-  packageName: BOOTSTRAP_PACKAGE_NAME
-})
+}) =>
+  await runHomebrewTapSyncPackage({
+    ...input,
+    packageName: BOOTSTRAP_PACKAGE_NAME
+  })

@@ -2,6 +2,9 @@
   "name": "@vibe-forge/web",
   "version": "2.0.0",
   "description": "Vibe Forge integrated web app",
+  "vibeForge": {
+    "runtimeTranspile": true
+  },
   "exports": {
     "./package.json": "./package.json"
   },

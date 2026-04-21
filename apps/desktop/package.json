@@ -2,13 +2,13 @@
   "name": "@vibe-forge/desktop",
   "version": "0.1.0",
   "private": true,
-  "author": "Vibe Forge contributors",
   "description": "Vibe Forge desktop shell",
-  "main": "./src/main.cjs",
+  "author": "Vibe Forge contributors",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vibe-forge-ai/vibe-forge.ai.git"
   },
+  "main": "./src/main.cjs",
   "scripts": {
     "build:client": "pnpm -C ../client exec vite build",
     "dev": "pnpm run build:client && electron .",

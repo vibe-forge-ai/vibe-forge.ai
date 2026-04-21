@@ -60,22 +60,19 @@ export const applyServerRuntimeEnv = (params: ApplyServerRuntimeEnvOptions) => {
   }
 
   if (params.defaults.serverHost != null) {
-    nextEnv.__VF_PROJECT_AI_SERVER_HOST__ =
-      params.options.host ??
+    nextEnv.__VF_PROJECT_AI_SERVER_HOST__ = params.options.host ??
       nextEnv.__VF_PROJECT_AI_SERVER_HOST__ ??
       params.defaults.serverHost
   }
 
   if (params.defaults.serverPort != null) {
-    nextEnv.__VF_PROJECT_AI_SERVER_PORT__ =
-      params.options.port ??
+    nextEnv.__VF_PROJECT_AI_SERVER_PORT__ = params.options.port ??
       nextEnv.__VF_PROJECT_AI_SERVER_PORT__ ??
       params.defaults.serverPort
   }
 
   if (params.defaults.serverWsPath != null) {
-    nextEnv.__VF_PROJECT_AI_SERVER_WS_PATH__ =
-      params.options.wsPath ??
+    nextEnv.__VF_PROJECT_AI_SERVER_WS_PATH__ = params.options.wsPath ??
       nextEnv.__VF_PROJECT_AI_SERVER_WS_PATH__ ??
       params.defaults.serverWsPath
   }
@@ -91,8 +88,7 @@ export const applyServerRuntimeEnv = (params: ApplyServerRuntimeEnvOptions) => {
   }
 
   if (params.defaults.clientBase != null) {
-    nextEnv.__VF_PROJECT_AI_CLIENT_BASE__ =
-      params.options.base ??
+    nextEnv.__VF_PROJECT_AI_CLIENT_BASE__ = params.options.base ??
       nextEnv.__VF_PROJECT_AI_CLIENT_BASE__ ??
       params.defaults.clientBase
   }
@@ -113,8 +109,7 @@ export const applyServerRuntimeEnv = (params: ApplyServerRuntimeEnvOptions) => {
     nextEnv.__VF_PROJECT_AI_SERVER_LOG_DIR__ = params.options.logDir
   }
 
-  const workspaceFolder =
-    resolveOptionPath(launchCwd, params.options.workspace) ??
+  const workspaceFolder = resolveOptionPath(launchCwd, params.options.workspace) ??
     resolveProjectWorkspaceFolder(launchCwd, nextEnv)
   nextEnv.__VF_PROJECT_WORKSPACE_FOLDER__ = workspaceFolder
 

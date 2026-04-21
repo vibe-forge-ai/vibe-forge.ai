@@ -1,10 +1,10 @@
-import { access, chmod, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
+import { access, chmod, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-import { downloadReleaseAsset, fetchDesktopRelease, selectDesktopAsset } from './desktop-release'
 import type { DesktopInstallMode } from './desktop-mode'
+import { downloadReleaseAsset, fetchDesktopRelease, selectDesktopAsset } from './desktop-release'
 import { resolveBootstrapDataDir, resolveRealHomeDir } from './paths'
 
 interface DesktopInstallMetadata {
@@ -62,9 +62,14 @@ const writeDesktopMetadata = async (installMode: DesktopInstallMode, metadata: D
 }
 
 const resolveDownloadsDir = () => path.join(resolveBootstrapDataDir(), 'desktop', 'downloads')
-const resolveCacheInstallRoot = (releaseTag: string) => path.join(resolveBootstrapDataDir(), 'desktop', 'apps', releaseTag)
+const resolveCacheInstallRoot = (releaseTag: string) =>
+  path.join(resolveBootstrapDataDir(), 'desktop', 'apps', releaseTag)
 
-const installDesktopForMac = async (releaseTag: string, asset: { digest?: string, name: string, url: string }, installMode: DesktopInstallMode) => {
+const installDesktopForMac = async (
+  releaseTag: string,
+  asset: { digest?: string; name: string; url: string },
+  installMode: DesktopInstallMode
+) => {
   const installDir = installMode === 'cache'
     ? resolveCacheInstallRoot(releaseTag)
     : path.join(resolveRealHomeDir(), 'Applications')
@@ -88,7 +93,11 @@ const installDesktopForMac = async (releaseTag: string, asset: { digest?: string
   } satisfies DesktopInstallMetadata
 }
 
-const installDesktopForLinux = async (releaseTag: string, asset: { digest?: string, name: string, url: string }, installMode: DesktopInstallMode) => {
+const installDesktopForLinux = async (
+  releaseTag: string,
+  asset: { digest?: string; name: string; url: string },
+  installMode: DesktopInstallMode
+) => {
   const installDir = installMode === 'cache'
     ? resolveCacheInstallRoot(releaseTag)
     : path.join(resolveRealHomeDir(), '.local', 'opt', 'vibe-forge')
@@ -107,7 +116,11 @@ const installDesktopForLinux = async (releaseTag: string, asset: { digest?: stri
   } satisfies DesktopInstallMetadata
 }
 
-const installDesktopForWindows = async (releaseTag: string, asset: { digest?: string, name: string, url: string }, installMode: DesktopInstallMode) => {
+const installDesktopForWindows = async (
+  releaseTag: string,
+  asset: { digest?: string; name: string; url: string },
+  installMode: DesktopInstallMode
+) => {
   const localAppData = process.env.LOCALAPPDATA?.trim()
   if (installMode === 'user' && !localAppData) {
     throw new Error('LOCALAPPDATA is required to install the Vibe Forge desktop app on Windows.')
@@ -138,7 +151,9 @@ export const ensureDesktopInstall = async (installMode: DesktopInstallMode) => {
     arch: process.arch
   })
   if (selectedAsset == null) {
-    throw new Error(`No supported desktop asset was found for ${process.platform}-${process.arch} in ${release.tagName}.`)
+    throw new Error(
+      `No supported desktop asset was found for ${process.platform}-${process.arch} in ${release.tagName}.`
+    )
   }
 
   const currentMetadata = await readDesktopMetadata(installMode)
@@ -149,10 +164,10 @@ export const ensureDesktopInstall = async (installMode: DesktopInstallMode) => {
   const metadata = process.platform === 'darwin'
     ? await installDesktopForMac(release.tagName, selectedAsset, installMode)
     : process.platform === 'linux'
-      ? await installDesktopForLinux(release.tagName, selectedAsset, installMode)
-      : process.platform === 'win32'
-        ? await installDesktopForWindows(release.tagName, selectedAsset, installMode)
-        : undefined
+    ? await installDesktopForLinux(release.tagName, selectedAsset, installMode)
+    : process.platform === 'win32'
+    ? await installDesktopForWindows(release.tagName, selectedAsset, installMode)
+    : undefined
   if (metadata == null) {
     throw new Error(`Desktop bootstrap is not supported on ${process.platform}.`)
   }
