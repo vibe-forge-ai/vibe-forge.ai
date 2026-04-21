@@ -397,7 +397,7 @@ shortcuts:
           API_KEY: 'secret-key'
         },
         permissions: {
-          allow: ['Read', 'Edit', 'VibeForge', 'mcp-mdp-listpaths']
+          allow: ['Read', 'Edit', 'VibeForge', 'mcp-mdp-listclients', 'mcp-mdp-listpaths', 'mcp-mdp-callpath-get-skill']
         },
         announcements: ['base', 'project'],
         defaultIncludeMcpServers: ['docs', 'browser'],
@@ -500,7 +500,7 @@ shortcuts:
         jsonVariables: {}
       })
 
-      expect(projectConfig?.permissions?.allow).toEqual(['Read', 'mcp-mdp-listpaths'])
+      expect(projectConfig?.permissions?.allow).toEqual(['Read', 'mcp-mdp-listclients', 'mcp-mdp-listpaths', 'mcp-mdp-callpath-get-skill'])
     } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })
@@ -607,7 +607,7 @@ defaultModel: package-model
         defaultModel: 'package-model',
         announcements: ['package-root'],
         permissions: {
-          allow: ['Browser', 'VibeForge', 'mcp-mdp-listpaths']
+          allow: ['Browser', 'VibeForge', 'mcp-mdp-listclients', 'mcp-mdp-listpaths', 'mcp-mdp-callpath-get-skill']
         },
         modelServices: {
           browser: {

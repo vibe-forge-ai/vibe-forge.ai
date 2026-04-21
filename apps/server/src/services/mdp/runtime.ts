@@ -11,6 +11,7 @@ import {
   resolveMdpConfig,
   type RuntimeClientHandle
 } from '@vibe-forge/mdp'
+import { normalizeSessionEntryContext } from '@vibe-forge/utils'
 import type {
   Config,
   GitBranchKind,
@@ -379,6 +380,12 @@ const normalizePermissionMode = (value: unknown): AutomationTask['permissionMode
     : null
 }
 
+const normalizePromptType = (value: unknown): SessionPromptType | null => {
+  return value === 'spec' || value === 'entity' || value === 'workspace'
+    ? value
+    : null
+}
+
 const normalizeBranchKind = (value: unknown): GitBranchKind | null => {
   return value === 'local' || value === 'remote' ? value : null
 }
@@ -528,6 +535,8 @@ export const buildServerSessionsSkillContent = () => [
   '',
   'Examples:',
   '- create a new session -> `POST /sessions/create`',
+  '- create a live Codex session and send the first user turn immediately -> `POST /sessions/create` with `{ "initialMessage": "hello", "adapter": "codex", "account": "<account-key>" }`',
+  '- if the new session should inherit the current browser/CLI runtime context, also include `entryContext` in the same create payload',
   '- branch from one assistant response -> `POST /sessions/:session_id/messages/:message_id/branch`',
   '- inspect queued follow-up work -> `GET /sessions/:session_id/queued-messages`'
 ].join('\n')
@@ -1112,10 +1121,12 @@ const createServerClientHandles = async (params: {
           shouldStart: payload.start !== false,
           model: asString(payload.model) || undefined,
           effort: normalizeEffort(payload.effort) ?? undefined,
-          promptType: asString(payload.promptType) as SessionPromptType,
+          promptType: normalizePromptType(payload.promptType) ?? undefined,
           promptName: asString(payload.promptName) || undefined,
           permissionMode: normalizePermissionMode(payload.permissionMode) ?? undefined,
           adapter: asString(payload.adapter) || undefined,
+          account: asString(payload.account) || undefined,
+          entryContext: normalizeSessionEntryContext(payload.entryContext),
           workspace: workspace == null
             ? undefined
             : {

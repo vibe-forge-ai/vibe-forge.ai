@@ -20,6 +20,7 @@ import {
   normalizePermissionToolName,
   normalizeSessionPermissionState,
   resolvePermissionMirrorPath,
+  resolvePermissionToolContext,
   splitManagedPermissionKeys
 } from '@vibe-forge/utils'
 import type { PermissionToolSubject, SessionPermissionState } from '@vibe-forge/utils'
@@ -367,3 +368,12 @@ export const resolvePermissionSubjectFromInput = (params: {
   toolName?: string
   mcpServer?: string
 }) => normalizePermissionToolName(params.toolName, { mcpServer: params.mcpServer })
+
+export const resolvePermissionContextFromInput = (params: {
+  toolName?: string
+  mcpServer?: string
+  toolInput?: unknown
+}) => resolvePermissionToolContext(params.toolName, {
+  mcpServer: params.mcpServer,
+  toolInput: params.toolInput
+})

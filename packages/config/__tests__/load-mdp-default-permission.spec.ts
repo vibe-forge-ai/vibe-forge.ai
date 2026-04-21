@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { loadConfig, resetConfigCache } from '#~/load.js'
 
 describe('loadConfig default MDP permissions', () => {
-  it('injects the built-in MDP listPaths permission when the default bridge is enabled', async () => {
+  it('injects the built-in MDP discovery permissions when the default bridge is enabled', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-default-mdp-permission-'))
 
     try {
@@ -30,14 +30,20 @@ describe('loadConfig default MDP permissions', () => {
         jsonVariables: {}
       })
 
-      expect(projectConfig?.permissions?.allow).toEqual(['Read', 'VibeForge', 'mcp-mdp-listpaths'])
+      expect(projectConfig?.permissions?.allow).toEqual([
+        'Read',
+        'VibeForge',
+        'mcp-mdp-listclients',
+        'mcp-mdp-listpaths',
+        'mcp-mdp-callpath-get-skill'
+      ])
     } finally {
       resetConfigCache()
       await rm(tempDir, { force: true, recursive: true })
     }
   })
 
-  it('does not inject the built-in MDP listPaths permission when the default bridge is disabled', async () => {
+  it('does not inject the built-in MDP discovery permissions when the default bridge is disabled', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'vf-config-disable-default-mdp-permission-'))
 
     try {

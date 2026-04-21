@@ -87,7 +87,10 @@ const appendMdpUsageRuleLines = (
     lines.push(
       '- For Vibe Forge UI work, always try MDP before ChromeDevtools.',
       '- Use ChromeDevtools only as a fallback when MDP does not expose the needed capability, or when MDP has already failed for that exact UI operation.',
-      '- Do not use ChromeDevtools first for routine Vibe Forge navigation, layout, session, panel, config, or channel actions when equivalent MDP paths exist.'
+      '- Do not use ChromeDevtools first for routine Vibe Forge navigation, layout, session, panel, config, or channel actions when equivalent MDP paths exist.',
+      '- The preferred browser MDP client is only for browser-owned UI actions such as route changes, layout state, active session view changes, and attached panels.',
+      '- If the user task is about creating sessions, sending messages, branching history, managing queued messages, editing workspace files, or other backend state, switch to the `Vibe Forge Server` MDP client and use its scoped paths instead of exploring the browser client.',
+      '- Do not fall back to Bash, curl, or ad-hoc HTTP probing for Vibe Forge backend operations until you have first checked the `Vibe Forge Server` MDP client for an existing path.'
     )
   }
 

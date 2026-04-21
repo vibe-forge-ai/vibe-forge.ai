@@ -1,9 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
 import {
-  normalizePermissionToolName,
   normalizeSessionPermissionState,
   resolvePermissionMirrorPath,
+  resolvePermissionToolContext,
   splitManagedPermissionKeys
 } from '@vibe-forge/utils'
 import type { PermissionToolSubject } from '@vibe-forge/utils'
@@ -23,6 +23,7 @@ const readMirrorDecision = async (params: {
   adapter: string
   sessionId: string
   subject: PermissionToolSubject
+  lookupKeys?: string[]
 }) => {
   try {
     const raw = await readFile(resolvePermissionMirrorPath(params.cwd, params.adapter, params.sessionId), 'utf8')
@@ -36,12 +37,13 @@ const readMirrorDecision = async (params: {
       deny: splitManagedPermissionKeys(parsed.projectPermissions?.deny).bare,
       ask: splitManagedPermissionKeys(parsed.projectPermissions?.ask).bare
     }
-    const key = params.subject.key
+    const keys = [...new Set([params.subject.key, ...(params.lookupKeys ?? [])])]
     const onceDeny = permissionState.onceDeny
-    if (onceDeny.includes(key)) {
+    const matchedOnceDeny = onceDeny.filter(key => keys.includes(key))
+    if (matchedOnceDeny.length > 0) {
       parsed.permissionState = {
         ...permissionState,
-        onceDeny: onceDeny.filter(item => item !== key)
+        onceDeny: onceDeny.filter(item => !matchedOnceDeny.includes(item))
       }
       await writeFile(
         resolvePermissionMirrorPath(params.cwd, params.adapter, params.sessionId),
@@ -51,10 +53,11 @@ const readMirrorDecision = async (params: {
       return 'deny' as const
     }
     const onceAllow = permissionState.onceAllow
-    if (onceAllow.includes(key)) {
+    const matchedOnceAllow = onceAllow.filter(key => keys.includes(key))
+    if (matchedOnceAllow.length > 0) {
       parsed.permissionState = {
         ...permissionState,
-        onceAllow: onceAllow.filter(item => item !== key)
+        onceAllow: onceAllow.filter(item => !matchedOnceAllow.includes(item))
       }
       await writeFile(
         resolvePermissionMirrorPath(params.cwd, params.adapter, params.sessionId),
@@ -63,10 +66,10 @@ const readMirrorDecision = async (params: {
       )
       return 'allow' as const
     }
-    if (permissionState.deny.includes(key) || projectPermissions.deny.includes(key)) {
+    if (keys.some(key => permissionState.deny.includes(key) || projectPermissions.deny.includes(key))) {
       return 'deny' as const
     }
-    if (permissionState.allow.includes(key) || projectPermissions.allow.includes(key)) {
+    if (keys.some(key => permissionState.allow.includes(key) || projectPermissions.allow.includes(key))) {
       return 'allow' as const
     }
   } catch {
@@ -81,6 +84,7 @@ const postPermissionCheck = async (params: {
   sessionId: string
   adapter: string
   toolName?: string
+  toolInput?: unknown
 }) => {
   const response = await fetch(`http://${params.host}:${params.port}/api/interact/permission-check`, {
     method: 'POST',
@@ -90,7 +94,8 @@ const postPermissionCheck = async (params: {
     body: JSON.stringify({
       sessionId: params.sessionId,
       adapter: params.adapter,
-      toolName: params.toolName
+      toolName: params.toolName,
+      toolInput: params.toolInput
     })
   })
 
@@ -152,7 +157,9 @@ export const createBuiltinPermissionPlugin = (
       const port = env.__VF_PROJECT_AI_SERVER_PORT__?.trim()
       const sessionId = input.sessionId.trim()
       const adapter = input.adapter
-      const subject = normalizePermissionToolName(input.toolName)
+      const { subject, lookupKeys } = resolvePermissionToolContext(input.toolName, {
+        toolInput: input.toolInput
+      })
 
       try {
         if (host != null && host !== '' && port != null && port !== '') {
@@ -161,7 +168,8 @@ export const createBuiltinPermissionPlugin = (
             port,
             sessionId,
             adapter,
-            toolName: input.toolName
+            toolName: input.toolName,
+            toolInput: input.toolInput
           })
           if (result.result === 'deny') {
             return buildDenyOutput(result.subject)
@@ -181,7 +189,8 @@ export const createBuiltinPermissionPlugin = (
         cwd: input.cwd,
         adapter,
         sessionId,
-        subject
+        subject,
+        lookupKeys
       })
       if (fallback === 'deny') {
         return buildDenyOutput(subject)

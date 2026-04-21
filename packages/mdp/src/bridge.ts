@@ -20,6 +20,8 @@ type BridgeRequest = Parameters<McpBridgeRequestHandler>[0]
 export type MdpBridgeRequest = BridgeRequest
 export type MdpBridgeResponse = Awaited<ReturnType<McpBridgeRequestHandler>>
 type HttpMethod = Extract<BridgeRequest, { method: 'callPath' }>['params']['method']
+type CallPathParams = Extract<BridgeRequest, { method: 'callPath' }>['params']
+type CallPathsParams = Extract<BridgeRequest, { method: 'callPaths' }>['params']
 
 interface RawClientRecord {
   id: string
@@ -95,7 +97,9 @@ const toRawPathRecord = (value: unknown): RawPathRecord | undefined => {
 }
 
 const LOCAL_MDP_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1'])
-const LOCAL_MDP_BRIDGE_TIMEOUT_MS = 10_000
+const LOCAL_MDP_BRIDGE_READ_TIMEOUT_MS = 10_000
+const LOCAL_MDP_BRIDGE_MUTATION_TIMEOUT_MS = 60_000
+const LOCAL_MDP_BRIDGE_SESSION_CREATE_TIMEOUT_MS = 120_000
 
 const isLocalMdpHost = (host: string) => {
   try {
@@ -137,13 +141,67 @@ const canUseLocalBridgeApi = (connection: ResolvedMdpConnection) => (
   isLocalMdpHost(connection.hosts[0])
 )
 
+const isRetryableBrowserUiMutationPath = (path: string) => (
+  path.startsWith('/navigation/') ||
+  path.startsWith('/layout/') ||
+  path.startsWith('/session/') ||
+  path.startsWith('/panels/') ||
+  path === '/config/open' ||
+  path === '/config/section/open' ||
+  path === '/knowledge/open' ||
+  path === '/archive/open' ||
+  path === '/automation/open' ||
+  path === '/benchmark/open'
+)
+
+const isReadOnlyBridgeRequest = (request: BridgeRequest) => {
+  switch (request.method) {
+    case 'listClients':
+    case 'listPaths':
+      return true
+    case 'callPath':
+      return request.params.method === 'GET'
+    case 'callPaths':
+      return request.params.method === 'GET'
+  }
+}
+
+const shouldRetryLocalBridgeRequest = (request: BridgeRequest) => {
+  if (isReadOnlyBridgeRequest(request)) {
+    return true
+  }
+
+  if (request.method === 'callPath' && request.params.method !== 'GET') {
+    return isRetryableBrowserUiMutationPath(request.params.path)
+  }
+
+  return false
+}
+
+const resolveLocalBridgeTimeoutMs = (request: BridgeRequest) => {
+  if (
+    request.method === 'callPath' &&
+    request.params.method !== 'GET' &&
+    request.params.path === '/sessions/create'
+  ) {
+    return LOCAL_MDP_BRIDGE_SESSION_CREATE_TIMEOUT_MS
+  }
+
+  return isReadOnlyBridgeRequest(request)
+    ? LOCAL_MDP_BRIDGE_READ_TIMEOUT_MS
+    : LOCAL_MDP_BRIDGE_MUTATION_TIMEOUT_MS
+}
+
 const callLocalBridgeApi = async <T>(params: {
   targetUrl: string
   request: BridgeRequest
 }) => {
   let lastError: unknown
+  const baseUrls = resolveLocalBridgeApiBaseUrls()
+  const timeoutMs = resolveLocalBridgeTimeoutMs(params.request)
+  const allowRetry = shouldRetryLocalBridgeRequest(params.request)
 
-  for (const baseUrl of resolveLocalBridgeApiBaseUrls()) {
+  for (const [index, baseUrl] of baseUrls.entries()) {
     try {
       const response = await fetch(`${baseUrl}/api/mdp/bridge`, {
         method: 'POST',
@@ -154,7 +212,7 @@ const callLocalBridgeApi = async <T>(params: {
           targetUrl: params.targetUrl,
           request: params.request
         }),
-        signal: AbortSignal.timeout(LOCAL_MDP_BRIDGE_TIMEOUT_MS)
+        signal: AbortSignal.timeout(timeoutMs)
       })
 
       const rawBody = await response.text()
@@ -206,6 +264,9 @@ const callLocalBridgeApi = async <T>(params: {
       return payload as T
     } catch (error) {
       lastError = error
+      if (!allowRetry || index === baseUrls.length - 1) {
+        break
+      }
     }
   }
 
@@ -348,6 +409,63 @@ const enrichSummaryFromLocalStateStore = async (params: {
     })
   }
 }
+
+const MDP_DISCOVERY_CLIENT_PRIORITY = new Map<string, number>([
+  ['Vibe Forge Browser', 0],
+  ['Vibe Forge Server', 1],
+  ['Vibe Forge Channels', 2],
+  ['Vibe Forge CLI', 3],
+  ['Vibe Forge Workspace', 10]
+])
+
+const sortMdpClientsForDiscovery = (clients: MdpClientSummary[]) => (
+  [...clients].sort((left, right) => {
+    const leftPriority = MDP_DISCOVERY_CLIENT_PRIORITY.get(left.name) ?? 5
+    const rightPriority = MDP_DISCOVERY_CLIENT_PRIORITY.get(right.name) ?? 5
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority
+    }
+
+    const leftLastSeen = left.lastSeenAt ?? left.connectedAt ?? ''
+    const rightLastSeen = right.lastSeenAt ?? right.connectedAt ?? ''
+    if (leftLastSeen !== rightLastSeen) {
+      return rightLastSeen.localeCompare(leftLastSeen)
+    }
+
+    if (left.name !== right.name) {
+      return left.name.localeCompare(right.name)
+    }
+
+    return left.clientId.localeCompare(right.clientId)
+  })
+)
+
+const getPathDiscoveryPriority = (path: string) => {
+  const normalizedPath = normalizePathForMatch(path)
+  if (normalizedPath === '/skill.md') return 0
+  if (normalizedPath.endsWith('/skill.md')) return 1
+  if (normalizedPath === '/state') return 2
+  if (normalizedPath.endsWith('/state')) return 3
+  return 4
+}
+
+const sortMdpPathsForDiscovery = (paths: MdpPathSummary[]) => (
+  [...paths].sort((left, right) => {
+    const leftPriority = getPathDiscoveryPriority(left.path)
+    const rightPriority = getPathDiscoveryPriority(right.path)
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority
+    }
+
+    const leftDepth = splitPathSegments(left.path).length
+    const rightDepth = splitPathSegments(right.path).length
+    if (leftDepth !== rightDepth) {
+      return leftDepth - rightDepth
+    }
+
+    return left.path.localeCompare(right.path)
+  })
+)
 
 const normalizeSummary = (params: {
   connection: ResolvedMdpConnection
@@ -559,6 +677,93 @@ const assertVisibleClient = (
   return client
 }
 
+const normalizePathForMatch = (path: string) => {
+  const trimmed = path.trim()
+  if (trimmed === '') {
+    return '/'
+  }
+
+  const withoutQuery = trimmed.split('?')[0]?.split('#')[0] ?? trimmed
+  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    return normalized.slice(0, -1)
+  }
+  return normalized
+}
+
+const splitPathSegments = (path: string) => (
+  normalizePathForMatch(path)
+    .split('/')
+    .filter(segment => segment !== '')
+)
+
+const pathMatchesDescriptor = (requestPath: string, descriptorPath: string) => {
+  const requestSegments = splitPathSegments(requestPath)
+  const descriptorSegments = splitPathSegments(descriptorPath)
+
+  if (requestSegments.length !== descriptorSegments.length) {
+    return false
+  }
+
+  return descriptorSegments.every((segment, index) => (
+    segment.startsWith(':')
+      ? requestSegments[index] != null && requestSegments[index] !== ''
+      : requestSegments[index] === segment
+  ))
+}
+
+const resolveRequestedClientIds = (params: {
+  clientId?: string
+  clientIds?: string[]
+}) => {
+  if (Array.isArray(params.clientIds) && params.clientIds.length > 0) {
+    return new Set(params.clientIds)
+  }
+
+  if (typeof params.clientId === 'string' && params.clientId.trim() !== '') {
+    return new Set([params.clientId])
+  }
+
+  return undefined
+}
+
+const getListPathsClientIds = (params: unknown) => {
+  if (!isRecord(params) || !Array.isArray(params.clientIds)) {
+    return undefined
+  }
+
+  const clientIds = params.clientIds.filter((clientId): clientId is string => (
+    typeof clientId === 'string' &&
+    clientId.trim() !== ''
+  ))
+
+  return clientIds.length > 0 ? clientIds : undefined
+}
+
+const buildListPathsHint = (
+  summary: MdpSummaryResponse,
+  clientId: string | undefined
+) => {
+  if (clientId == null) {
+    return undefined
+  }
+
+  const client = summary.clients.find(item => item.clientId === clientId)
+  if (client == null) {
+    return undefined
+  }
+
+  if (client.name === 'Vibe Forge Browser') {
+    return [
+      `No matching paths were found on browser client "${client.clientId}".`,
+      'This client only exposes browser-owned UI actions such as navigation, layout state, session view changes, and attached panels.',
+      'If the task is about creating sessions, sending messages, branching history, queued messages, or backend workspace state, switch to the `Vibe Forge Server` client and read `/sessions/skill.md` or `/workspace/skill.md` there.'
+    ].join(' ')
+  }
+
+  return undefined
+}
+
 const findVisibleTargetClientIds = (
   summary: MdpSummaryResponse,
   method: HttpMethod,
@@ -567,7 +772,7 @@ const findVisibleTargetClientIds = (
   const matchingClientIds = new Set(
     summary.paths
       .filter((item) => (
-        item.path === path &&
+        pathMatchesDescriptor(path, item.path) &&
         (item.methods == null || item.methods.length === 0 || item.methods.includes(method))
       ))
       .map(item => item.clientId)
@@ -583,9 +788,45 @@ const hasVisibleClientPath = (
   path: string
 ) => summary.paths.some(item => (
   item.clientId === clientId &&
-  item.path === path &&
+  pathMatchesDescriptor(path, item.path) &&
   (item.methods == null || item.methods.length === 0 || item.methods.includes(method))
 ))
+
+const hasJsonContentType = (headers: Record<string, string> | undefined) => {
+  if (headers == null) {
+    return false
+  }
+
+  return Object.entries(headers).some(([key, value]) => (
+    key.toLowerCase() === 'content-type' &&
+    value.toLowerCase().includes('application/json')
+  ))
+}
+
+const normalizeBridgeBody = <T extends { headers?: Record<string, string>; body?: unknown }>(
+  params: T
+): T => {
+  if (
+    typeof params.body !== 'string' ||
+    !hasJsonContentType(params.headers)
+  ) {
+    return params
+  }
+
+  const trimmed = params.body.trim()
+  if (trimmed === '') {
+    return params
+  }
+
+  try {
+    return {
+      ...params,
+      body: JSON.parse(trimmed) as unknown
+    }
+  } catch {
+    return params
+  }
+}
 
 const rewriteCallPathsResults = (
   connectionKey: string,
@@ -622,25 +863,49 @@ export const createBridgeRequestHandler = (params: {
     switch (request.method) {
       case 'listClients':
         return {
-          clients: request.params?.search == null || request.params.search.trim() === ''
-            ? summary.clients
-            : summary.clients.filter(client => (
+          clients: sortMdpClientsForDiscovery(
+            request.params?.search == null || request.params.search.trim() === ''
+              ? summary.clients
+              : summary.clients.filter(client => (
               client.clientId.includes(request.params!.search!) ||
               client.rawClientId.includes(request.params!.search!) ||
               client.name.includes(request.params!.search!)
-            ))
+              ))
+          )
         }
       case 'listPaths':
+        {
+          const requestedClientIdsFromArray = getListPathsClientIds(request.params)
+          const requestedClientIds = resolveRequestedClientIds({
+            clientId: request.params?.clientId,
+            clientIds: requestedClientIdsFromArray
+          })
+          const paths = sortMdpPathsForDiscovery(
+            summary.paths.filter((path) => (
+              (requestedClientIds == null || requestedClientIds.has(path.clientId)) &&
+              (request.params?.search == null || request.params.search.trim() === '' || path.path.includes(request.params.search))
+            ))
+          )
+          const hint = paths.length === 0
+            ? buildListPathsHint(
+                summary,
+                request.params?.clientId ??
+                  (requestedClientIdsFromArray != null && requestedClientIdsFromArray.length === 1
+                    ? requestedClientIdsFromArray[0]
+                    : undefined)
+              )
+            : undefined
+
         return {
-          paths: summary.paths.filter((path) => (
-            (request.params?.clientId == null || path.clientId === request.params.clientId) &&
-            (request.params?.search == null || request.params.search.trim() === '' || path.path.includes(request.params.search))
-          ))
+          paths,
+          ...(hint == null ? {} : { hint })
+        }
         }
       case 'callPath': {
-        const targetClient = assertVisibleClient(summary, request.params.clientId)
-        if (!hasVisibleClientPath(summary, targetClient.clientId, request.params.method, request.params.path)) {
-          throw new Error(`MDP path "${request.params.path}" is hidden or unavailable for client "${targetClient.clientId}"`)
+        const normalizedParams = normalizeBridgeBody<CallPathParams>(request.params)
+        const targetClient = assertVisibleClient(summary, normalizedParams.clientId)
+        if (!hasVisibleClientPath(summary, targetClient.clientId, normalizedParams.method, normalizedParams.path)) {
+          throw new Error(`MDP path "${normalizedParams.path}" is hidden or unavailable for client "${targetClient.clientId}"`)
         }
         const parsedClientId = parseSyntheticClientId(targetClient.clientId)
         if (parsedClientId == null) {
@@ -653,19 +918,19 @@ export const createBridgeRequestHandler = (params: {
 
         try {
           return canUseLocalBridgeApi(connection)
-            ? await callLocalBridgeApi<MdpBridgeResponse>({
+              ? await callLocalBridgeApi<MdpBridgeResponse>({
                 targetUrl: connection.hosts[0],
                 request: {
                   method: 'callPath',
                   params: {
-                    ...request.params,
+                    ...normalizedParams,
                     clientId: parsedClientId.rawClientId
                   }
                 }
               })
             : await withQueryWorker(params.cwd, connection, async (worker) =>
                 await worker.callTool('callPath', {
-                  ...request.params,
+                  ...normalizedParams,
                   clientId: parsedClientId.rawClientId
                 }))
         } catch (error) {
@@ -678,11 +943,12 @@ export const createBridgeRequestHandler = (params: {
         }
       }
       case 'callPaths': {
-        const targetClients = request.params.clientIds != null && request.params.clientIds.length > 0
-          ? request.params.clientIds
+        const normalizedParams = normalizeBridgeBody<CallPathsParams>(request.params)
+        const targetClients = normalizedParams.clientIds != null && normalizedParams.clientIds.length > 0
+          ? normalizedParams.clientIds
             .map(clientId => assertVisibleClient(summary, clientId))
-            .filter(client => hasVisibleClientPath(summary, client.clientId, request.params.method, request.params.path))
-          : findVisibleTargetClientIds(summary, request.params.method, request.params.path)
+            .filter(client => hasVisibleClientPath(summary, client.clientId, normalizedParams.method, normalizedParams.path))
+          : findVisibleTargetClientIds(summary, normalizedParams.method, normalizedParams.path)
 
         if (targetClients.length === 0) {
           throw new Error('No visible MDP clients matched the requested path')
@@ -710,14 +976,14 @@ export const createBridgeRequestHandler = (params: {
                   request: {
                     method: 'callPaths',
                     params: {
-                      ...request.params,
+                      ...normalizedParams,
                       clientIds: rawClientIds
                     }
                   }
                 })
               : await withQueryWorker(params.cwd, connection, async (worker) =>
                   await worker.callTool('callPaths', {
-                    ...request.params,
+                    ...normalizedParams,
                     clientIds: rawClientIds
                   }))
             return rewriteCallPathsResults(connectionKey, response)

@@ -1,9 +1,22 @@
 import { resolveProjectAiPath } from './ai-path'
 
-import { isBarePermissionKey, normalizePermissionToolName } from './permission-tool'
+import {
+  isBarePermissionKey,
+  normalizePermissionToolName,
+  resolvePermissionToolContext
+} from './permission-tool'
 
-export { CANONICAL_PERMISSION_TOOL_KEYS, isBarePermissionKey, normalizePermissionToolName } from './permission-tool'
-export type { CanonicalPermissionToolKey, PermissionToolSubject } from './permission-tool'
+export {
+  CANONICAL_PERMISSION_TOOL_KEYS,
+  isBarePermissionKey,
+  normalizePermissionToolName,
+  resolvePermissionToolContext
+} from './permission-tool'
+export type {
+  CanonicalPermissionToolKey,
+  PermissionToolContext,
+  PermissionToolSubject
+} from './permission-tool'
 
 export interface SessionPermissionState {
   allow: string[]

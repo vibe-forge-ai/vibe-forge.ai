@@ -2,6 +2,8 @@ import type { Config } from '@vibe-forge/types'
 import { mergeUniqueList } from './merge'
 
 export const DEFAULT_MDP_LIST_PATHS_PERMISSION_NAME = 'mcp-mdp-listpaths'
+export const DEFAULT_MDP_LIST_CLIENTS_PERMISSION_NAME = 'mcp-mdp-listclients'
+export const DEFAULT_MDP_READ_SKILL_PERMISSION_NAME = 'mcp-mdp-callpath-get-skill'
 
 export const resolveUseDefaultMdpBridge = (options: {
   projectConfig?: Config
@@ -25,7 +27,11 @@ const withDefaultMdpBridgePermissions = (config: Config | undefined) => {
       ...(config.permissions ?? {}),
       allow: mergeUniqueList(
         config.permissions?.allow,
-        [DEFAULT_MDP_LIST_PATHS_PERMISSION_NAME]
+        [
+          DEFAULT_MDP_LIST_CLIENTS_PERMISSION_NAME,
+          DEFAULT_MDP_LIST_PATHS_PERMISSION_NAME,
+          DEFAULT_MDP_READ_SKILL_PERMISSION_NAME
+        ]
       )
     }
   } satisfies Config

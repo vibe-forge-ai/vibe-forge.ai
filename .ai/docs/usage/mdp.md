@@ -21,7 +21,20 @@ mdp:
   noDefaultBridge: true
 ```
 
-默认情况下，Vibe Forge 还会把 `MDP.listPaths` 对应的权限 key `mcp-mdp-listpaths` 自动加入 `permissions.allow`，避免每次做渐进式 path 发现都被权限确认打断。
+默认情况下，Vibe Forge 还会把这些低风险 discovery 权限自动加入 `permissions.allow`：
+
+- `mcp-mdp-listclients`
+- `mcp-mdp-listpaths`
+- `mcp-mdp-callpath-get-skill`
+
+这意味着下面这些调用默认不会再打断当前任务：
+
+- `MDP.listClients`
+- `MDP.listPaths`
+- `MDP.callPath(GET /skill.md)`
+- `MDP.callPath(GET .../skill.md)`
+
+这一步只放开渐进式发现和 skill 文档读取，不会默认放开普通 `callPath` / `callPaths` 的执行权限。
 
 ## 基本配置
 
@@ -59,6 +72,11 @@ mdp:
 3. 选定单个 client 后，再调用 `MDP.listPaths`，并尽量传 `clientId`；如果已经知道大致 path family，再加 `search` 缩小范围。
 4. 优先读取目标 client 的 `/skill.md` 或 scoped `.../skill.md`，先理解能力分层，再进入具体 path。
 5. 找到精确 path 后，直接 `callPath` / `callPaths`，不要反复全量枚举 catalog。
+
+当前 bridge 也会主动把 discovery 结果做轻量排序：
+
+- `listClients` 会优先返回 Browser / Server / Channels / CLI，再把 Workspace projection 放后面。
+- `listPaths` 会优先返回 `/skill.md` 和 scoped `.../skill.md`，其次才是 `/state` 和更深层 endpoint。
 
 只有在做 MDP 拓扑排障或全局能力盘点时，才建议不带 `clientId` 做大范围 `listPaths`。
 

@@ -4,9 +4,12 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import {
+  MdpFilesystemStateStore,
+  MdpServerRuntime,
+  MdpTransportServer
+} from '@modeldriveprotocol/server'
+import {
   resolveMdpConfig,
-  startManagedLocalRootBridgeClient,
-  type ManagedLocalRootBridgeClient,
   type MdpBridgeRequest,
   type MdpBridgeResponse
 } from '@vibe-forge/mdp'
@@ -15,10 +18,9 @@ import type { Config } from '@vibe-forge/types'
 import { logger } from '#~/utils/logger.js'
 
 const LOCAL_MDP_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1'])
-const LOCAL_MDP_META_TIMEOUT_MS = 10_000
-const LOCAL_MDP_META_POLL_INTERVAL_MS = 200
 const LOCAL_MDP_META_PROBE_TIMEOUT_MS = 1_000
 const LOCAL_MDP_STOP_TIMEOUT_MS = 5_000
+const LOCAL_MDP_INVOCATION_TIMEOUT_MS = 120_000
 
 interface StateStoreSnapshot {
   server?: {
@@ -30,8 +32,9 @@ interface StateStoreSnapshot {
 
 interface ManagedMdpRootServer {
   targetUrl: string
-  managed: boolean
-  bridge?: ManagedLocalRootBridgeClient
+  runtime: MdpServerRuntime
+  transportServer: MdpTransportServer
+  stateStore: MdpFilesystemStateStore
 }
 
 let activeServers: ManagedMdpRootServer[] = []
@@ -72,29 +75,6 @@ const probeMetaEndpoint = async (rawUrl: string) => {
   } catch {
     return undefined
   }
-}
-
-const formatStartupError = (stderr: string) => {
-  const trimmed = stderr.trim()
-  return trimmed === '' ? 'MDP root server did not become ready in time' : trimmed
-}
-
-const waitForRootServerReady = async (params: {
-  targetUrl: string
-  stderrBuffer: string[]
-}) => {
-  const startedAt = Date.now()
-
-  while (Date.now() - startedAt < LOCAL_MDP_META_TIMEOUT_MS) {
-    const meta = await probeMetaEndpoint(params.targetUrl)
-    if (meta != null) {
-      return
-    }
-
-    await delay(LOCAL_MDP_META_POLL_INTERVAL_MS)
-  }
-
-  throw new Error(formatStartupError(params.stderrBuffer.join('\n')))
 }
 
 const createServerId = (targetUrl: string) => {
@@ -153,12 +133,97 @@ const stopStaleOwnedServer = async (params: {
   }
 }
 
-const stopManagedServer = async (server: ManagedMdpRootServer) => {
-  if (!server.managed || server.bridge == null) {
+const queueStateStoreUpdate = (operation: Promise<unknown> | undefined) => {
+  if (operation == null) {
     return
   }
 
-  await server.bridge.close()
+  void operation.catch((error) => {
+    logger.error({ error }, '[mdp] local root state store update failed')
+  })
+}
+
+const invokeRuntime = async (
+  runtime: MdpServerRuntime,
+  request: Extract<MdpBridgeRequest, { method: 'callPath' }>['params']
+) => (
+  await runtime.invoke({
+    clientId: request.clientId,
+    method: request.method,
+    path: request.path,
+    ...(request.query ? { query: request.query } : {}),
+    ...(request.body !== undefined ? { body: request.body } : {}),
+    ...(request.headers ? { headers: request.headers } : {}),
+    ...(request.auth ? { auth: request.auth } : {})
+  })
+)
+
+const executeRuntimeBridgeRequest = async (
+  runtime: MdpServerRuntime,
+  request: MdpBridgeRequest
+): Promise<MdpBridgeResponse> => {
+  switch (request.method) {
+    case 'listClients':
+      return {
+        clients: runtime.listClients(request.params)
+      }
+    case 'listPaths':
+      return {
+        paths: runtime.capabilityIndex.listPaths(request.params)
+      }
+    case 'callPath':
+      return await invokeRuntime(runtime, request.params)
+    case 'callPaths': {
+      const targetClientIds = request.params.clientIds != null && request.params.clientIds.length > 0
+        ? request.params.clientIds
+        : runtime.findMatchingClientIds({
+            method: request.params.method,
+            path: request.params.path
+          })
+
+      if (targetClientIds.length === 0) {
+        throw new Error('No matching MDP clients were found')
+      }
+
+      const results = await Promise.all(targetClientIds.map(async (clientId: string) => {
+        const result = await invokeRuntime(runtime, {
+          clientId,
+          method: request.params.method,
+          path: request.params.path,
+          ...(request.params.query ? { query: request.params.query } : {}),
+          ...(request.params.body !== undefined ? { body: request.params.body } : {}),
+          ...(request.params.headers ? { headers: request.params.headers } : {}),
+          ...(request.params.auth ? { auth: request.params.auth } : {})
+        })
+
+        if (result.ok) {
+          return {
+            clientId,
+            ok: true,
+            data: result.data
+          }
+        }
+
+        return {
+          clientId,
+          ok: false,
+          error: result.error ?? { message: 'Unknown client error' }
+        }
+      }))
+
+      return {
+        results
+      }
+    }
+  }
+}
+
+const stopManagedServer = async (server: ManagedMdpRootServer) => {
+  await Promise.allSettled([
+    server.transportServer.stop(),
+    server.runtime.close()
+  ])
+  await server.stateStore.markStopped()
 }
 
 export const executeLocalMdpBridgeRequest = async (
@@ -166,11 +231,11 @@ export const executeLocalMdpBridgeRequest = async (
   request: MdpBridgeRequest
 ): Promise<MdpBridgeResponse> => {
   const server = activeServers.find(item => item.targetUrl === targetUrl)
-  if (server?.bridge == null) {
+  if (server == null) {
     throw new Error(`No managed local MDP root server is available for "${targetUrl}"`)
   }
 
-  return await server.bridge.request(request)
+  return await executeRuntimeBridgeRequest(server.runtime, request)
 }
 
 export const stopLocalMdpRootServer = async () => {
@@ -216,24 +281,60 @@ export const startLocalMdpRootServer = async (params: {
       targetUrl
     })
 
+    let runtime: MdpServerRuntime | undefined
+    let stateStore: MdpFilesystemStateStore | undefined
+    let transportServer: MdpTransportServer | undefined
+
     try {
-      const bridge = await startManagedLocalRootBridgeClient({
-        cwd: params.workspaceFolder,
-        targetUrl,
-        stateStoreDir,
+      const target = new URL(targetUrl)
+      const runtimeInstance = new MdpServerRuntime({
+        invocationTimeoutMs: LOCAL_MDP_INVOCATION_TIMEOUT_MS,
+        onClientRegistered: () => {
+          queueStateStoreUpdate(stateStore?.syncRegistry())
+        },
+        onClientRemoved: () => {
+          queueStateStoreUpdate(stateStore?.syncRegistry())
+        },
+        onClientStateChanged: () => {
+          queueStateStoreUpdate(stateStore?.syncRegistry())
+        }
+      })
+      runtime = runtimeInstance
+      stateStore = new MdpFilesystemStateStore({
+        directory: stateStoreDir,
+        serverId,
+        clusterId: serverId,
+        clusterMode: 'standalone',
+        startupCwd: params.workspaceFolder,
+        getClients: () => runtimeInstance.listClients(),
+        getRoutes: () => runtimeInstance.capabilityIndex.listPaths({
+          depth: Number.MAX_SAFE_INTEGER
+        })
+      })
+      await stateStore.start()
+
+      transportServer = new MdpTransportServer(runtimeInstance, {
+        host: target.hostname,
+        port: Number(target.port || '47372'),
         serverId
       })
-      await waitForRootServerReady({
-        targetUrl,
-        stderrBuffer: []
-      })
+      await transportServer.start()
+      queueStateStoreUpdate(stateStore.setTransportListening(transportServer.endpoints))
+      queueStateStoreUpdate(stateStore.setMcpBridgeConnected())
+
       activeServers.push({
         targetUrl,
-        managed: true,
-        bridge
+        runtime,
+        transportServer,
+        stateStore
       })
       logger.info({ targetUrl }, '[mdp] local root server ready')
     } catch (error) {
+      await Promise.allSettled([
+        transportServer?.stop() ?? Promise.resolve(),
+        runtime?.close() ?? Promise.resolve()
+      ])
+      await stateStore?.markStopped()
       throw error
     }
   }

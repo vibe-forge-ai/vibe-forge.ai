@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyPermissionInteractionDecision,
   resolvePermissionDecision,
+  resolvePermissionContextFromInput,
   syncPermissionStateMirror
 } from '#~/services/session/permission.js'
 import { createEmptySessionPermissionState } from '@vibe-forge/utils'
@@ -30,6 +31,9 @@ vi.mock('#~/services/session/workspace.js', () => ({
 }))
 
 vi.mock('@vibe-forge/config', () => ({
+  buildConfigSections: (config: unknown) => ({
+    general: config
+  }),
   updateConfigFile: mocks.updateConfigFile
 }))
 
@@ -259,6 +263,33 @@ describe('session permission service', () => {
       lookupKeys: ['mcp-vibeforge-list-tasks', 'VibeForge']
     })
 
+    expect(result).toEqual(expect.objectContaining({
+      result: 'allow',
+      source: 'projectAllow'
+    }))
+  })
+
+  it('allows read-only MDP skill discovery through scoped lookup keys', async () => {
+    projectConfig.permissions.allow = ['mcp-mdp-callpath-get-skill']
+
+    const { subject, lookupKeys } = resolvePermissionContextFromInput({
+      toolName: 'MDP:callPath',
+      toolInput: {
+        method: 'GET',
+        path: '/sessions/skill.md'
+      }
+    })
+
+    const result = await resolvePermissionDecision({
+      sessionId: 'sess-1',
+      subject,
+      lookupKeys
+    })
+
+    expect(lookupKeys).toEqual([
+      'mcp-mdp-callpath-get',
+      'mcp-mdp-callpath-get-skill'
+    ])
     expect(result).toEqual(expect.objectContaining({
       result: 'allow',
       source: 'projectAllow'

@@ -32,6 +32,11 @@ export interface PermissionToolSubject {
   scope: 'tool'
 }
 
+export interface PermissionToolContext {
+  subject?: PermissionToolSubject
+  lookupKeys: string[]
+}
+
 const CANONICAL_KEY_SET = new Set<string>(CANONICAL_PERMISSION_TOOL_KEYS)
 
 const TOOL_NAME_ALIASES: Record<string, CanonicalPermissionToolKey> = {
@@ -67,6 +72,53 @@ const TOOL_NAME_ALIASES: Record<string, CanonicalPermissionToolKey> = {
 const normalizeAliasKey = (value: string) => value.replace(/[\s_-]+/g, '').toLowerCase()
 
 const sanitizeBareKey = (value: string) => value.replace(/[^a-z0-9-]+/gi, '').toLowerCase()
+
+const normalizeMdpLookupPath = (value: string) => {
+  const trimmed = value.trim()
+  if (trimmed === '') return ''
+
+  const withoutQuery = trimmed.split('?')[0]?.split('#')[0] ?? trimmed
+  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    return normalized.slice(0, -1)
+  }
+  return normalized
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value != null &&
+  typeof value === 'object' &&
+  !Array.isArray(value)
+)
+
+const buildMdpLookupKeys = (toolInput: unknown) => {
+  if (!isRecord(toolInput)) {
+    return []
+  }
+
+  const method = typeof toolInput.method === 'string'
+    ? toolInput.method.trim().toUpperCase()
+    : ''
+  const path = typeof toolInput.path === 'string'
+    ? normalizeMdpLookupPath(toolInput.path)
+    : ''
+
+  if (method !== 'GET' || path === '') {
+    return []
+  }
+
+  const keys = ['mcp-mdp-callpath-get']
+
+  if (path === '/skill.md' || path.endsWith('/skill.md')) {
+    keys.push('mcp-mdp-callpath-get-skill')
+  }
+
+  if (path === '/state' || path.endsWith('/state')) {
+    keys.push('mcp-mdp-callpath-get-state')
+  }
+
+  return [...new Set(keys)]
+}
 
 export const isBarePermissionKey = (value: string) => /^[a-z][a-z0-9-]*$/i.test(value)
 
@@ -167,4 +219,28 @@ export const normalizePermissionToolName = (
   }
 
   return undefined
+}
+
+export const resolvePermissionToolContext = (
+  value: string | undefined,
+  input: {
+    mcpServer?: string
+    toolInput?: unknown
+  } = {}
+): PermissionToolContext => {
+  const subject = normalizePermissionToolName(value, {
+    mcpServer: input.mcpServer
+  })
+
+  if (subject?.key === 'mcp-mdp-callpath') {
+    return {
+      subject,
+      lookupKeys: buildMdpLookupKeys(input.toolInput)
+    }
+  }
+
+  return {
+    subject,
+    lookupKeys: []
+  }
 }

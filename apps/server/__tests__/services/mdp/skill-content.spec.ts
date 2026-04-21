@@ -55,6 +55,9 @@ describe('server mdp skill content', () => {
   it('includes examples for important session, workspace, automation and config flows', () => {
     expect(buildServerSessionsSkillContent()).toContain('Examples:')
     expect(buildServerSessionsSkillContent()).toContain('branch from one assistant response')
+    expect(buildServerSessionsSkillContent()).toContain('create a live Codex session and send the first user turn immediately')
+    expect(buildServerSessionsSkillContent()).toContain('"adapter": "codex"')
+    expect(buildServerSessionsSkillContent()).toContain('include `entryContext`')
 
     expect(buildServerWorkspaceSkillContent()).toContain('Examples:')
     expect(buildServerWorkspaceSkillContent()).toContain('update one workspace file after editing content')
