@@ -1,3 +1,4 @@
+SERVER_HOST="${__VF_PROJECT_AI_SERVER_HOST__:-localhost}"
 SERVER_PORT="${__VF_PROJECT_AI_SERVER_PORT__:-8787}"
 CLIENT_MODE='dev'
 
@@ -19,7 +20,9 @@ done
 
 export __VF_PROJECT_AI_CLIENT_MODE__="${CLIENT_MODE}"
 export __VF_PROJECT_AI_CLIENT_BASE__='/ui'
+export __VF_PROJECT_AI_SERVER_HOST__="${SERVER_HOST}"
 export __VF_PROJECT_AI_SERVER_PORT__="${SERVER_PORT}"
+export __VF_PROJECT_AI_SERVER_ALLOW_CORS__="${__VF_PROJECT_AI_SERVER_ALLOW_CORS__:-true}"
 
 ensure_workspace_install() {
   node ./scripts/check-workspace-install.mjs || exit 1

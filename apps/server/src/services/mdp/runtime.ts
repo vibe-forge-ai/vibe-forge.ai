@@ -156,7 +156,7 @@ export const stopServerMdpRuntime = async () => {
   await runtime.stop()
 }
 
-interface ChannelPathEntry extends ChannelProcessEntry {
+export interface ChannelPathEntry extends ChannelProcessEntry {
   status: 'connected' | 'disabled' | 'error'
   error?: string
   capabilities: {
@@ -459,12 +459,31 @@ const normalizeAutomationTask = (task: Partial<AutomationTask>, index: number): 
   }
 }
 
-const buildServerSkillContent = () => [
+export const buildServerSkillContent = () => [
   '# Server Runtime',
   '',
-  'This client exposes Vibe Forge server domains without an extra product prefix.',
+  'Use this client when the task is about Vibe Forge server-owned state rather than browser-only UI state.',
   '',
-  'Open the focused group skill you need:',
+  'This client is for problems like:',
+  '- listing, creating, updating or branching sessions',
+  '- reading or mutating workspace and session workspace data',
+  '- managing automation, benchmark and config records',
+  '- querying catalog entities or issuing server-owned interaction requests',
+  '',
+  'Recommended order:',
+  '1. Pick the domain skill that matches the task instead of reading every server path.',
+  '2. Read the domain root path first when you need current state before mutation.',
+  '3. Only drill into session-scoped workspace or git child skills when the task is already narrowed to one session.',
+  '',
+  'Typical task routing:',
+  '- create, branch, inspect or update a session -> `/sessions/skill.md`',
+  '- read or edit workspace-owned files -> `/workspace/skill.md`',
+  '- recurring rule management -> `/automation/skill.md`',
+  '- benchmark inventory or runs -> `/benchmark/skill.md`',
+  '- config inspection or update -> `/config/skill.md`',
+  '- catalog lookups -> `/catalog/skill.md`',
+  '',
+  'Focused domain skills:',
   '- `/sessions/skill.md`',
   '- `/workspace/skill.md`',
   '- `/worktree-environments/skill.md`',
@@ -475,9 +494,24 @@ const buildServerSkillContent = () => [
   '- `/interactions/skill.md`'
 ].join('\n')
 
-const buildServerSessionsSkillContent = () => [
+export const buildServerSessionsSkillContent = () => [
   '# Sessions',
   '',
+  'Use this skill when the task is primarily about Vibe Forge sessions and their lifecycle.',
+  '',
+  'This covers problems like:',
+  '- listing active or archived sessions',
+  '- creating a new session or updating session metadata',
+  '- branching from a session or from one specific message',
+  '- publishing events or managing queued messages',
+  '- drilling into one session workspace or session git state',
+  '',
+  'Recommended order:',
+  '1. Start with `GET /sessions` or `GET /sessions/archived` to identify the target session.',
+  '2. Read `GET /sessions/:session_id` before mutating a specific session when you need current metadata.',
+  '3. Only open the session workspace or git child skill after you already know the target `session_id`.',
+  '',
+  'Primary entry points:',
   '- `GET /sessions`',
   '- `GET /sessions/archived`',
   '- `POST /sessions/create`',
@@ -490,44 +524,75 @@ const buildServerSessionsSkillContent = () => [
   '- `POST /sessions/:session_id/events/publish`',
   '- `GET /sessions/:session_id/queued-messages` and related mutation paths',
   '- `GET /sessions/:session_id/workspace` and `/sessions/:session_id/workspace/skill.md`',
-  '- `GET /sessions/:session_id/git/state` and `/sessions/:session_id/git/skill.md`'
+  '- `GET /sessions/:session_id/git/state` and `/sessions/:session_id/git/skill.md`',
+  '',
+  'Examples:',
+  '- create a new session -> `POST /sessions/create`',
+  '- branch from one assistant response -> `POST /sessions/:session_id/messages/:message_id/branch`',
+  '- inspect queued follow-up work -> `GET /sessions/:session_id/queued-messages`'
 ].join('\n')
 
-const buildServerWorkspaceSkillContent = () => [
+export const buildServerWorkspaceSkillContent = () => [
   '# Workspace',
   '',
+  'Use this skill for workspace-owned files, trees and git state that are not scoped to one specific session.',
+  '',
+  'This covers problems like browsing the project tree, reading or updating a workspace file, resolving file-backed resources, and inspecting workspace git branches or worktrees.',
+  '',
+  'Primary entry points:',
   '- `GET /workspace/tree`',
   '- `GET /workspace/file`',
   '- `POST /workspace/file/update`',
   '- `GET /workspace/resource`',
   '- `GET /workspace/git/state`',
   '- `GET /workspace/git/branches`',
-  '- `GET /workspace/git/worktrees`'
+  '- `GET /workspace/git/worktrees`',
+  '',
+  'Examples:',
+  '- read a file by path -> `GET /workspace/file`',
+  '- update one workspace file after editing content -> `POST /workspace/file/update`',
+  '- inspect git worktree inventory -> `GET /workspace/git/worktrees`'
 ].join('\n')
 
-const buildServerWorktreeEnvironmentsSkillContent = () => [
+export const buildServerWorktreeEnvironmentsSkillContent = () => [
   '# Worktree Environments',
   '',
+  'Use this skill when the task is about saved worktree environment definitions rather than live sessions.',
+  '',
+  'Primary entry points:',
   '- `GET /worktree-environments`',
   '- `GET /worktree-environments/:id`',
   '- `POST /worktree-environments/:id/save`',
   '- `POST /worktree-environments/:id/delete`'
 ].join('\n')
 
-const buildServerAutomationSkillContent = () => [
+export const buildServerAutomationSkillContent = () => [
   '# Automation',
   '',
+  'Use this skill when the task is about recurring automation rules and their execution history.',
+  '',
+  'This covers creating rules, editing them, deleting them, running one immediately, or checking recent runs.',
+  '',
+  'Primary entry points:',
   '- `GET /automation/rules`',
   '- `POST /automation/rules/create`',
   '- `POST /automation/rules/:id/update`',
   '- `POST /automation/rules/:id/delete`',
   '- `POST /automation/rules/:id/run`',
-  '- `GET /automation/rules/:id/runs`'
+  '- `GET /automation/rules/:id/runs`',
+  '',
+  'Examples:',
+  '- find all existing automation rules -> `GET /automation/rules`',
+  '- trigger one rule immediately -> `POST /automation/rules/:id/run`',
+  '- inspect recent executions before editing a rule -> `GET /automation/rules/:id/runs`'
 ].join('\n')
 
-const buildServerBenchmarkSkillContent = () => [
+export const buildServerBenchmarkSkillContent = () => [
   '# Benchmark',
   '',
+  'Use this skill when the task is about benchmark inventory, past benchmark outputs, or launching a new benchmark run.',
+  '',
+  'Primary entry points:',
   '- `GET /benchmark/categories`',
   '- `GET /benchmark/cases`',
   '- `GET /benchmark/cases/:category/:title`',
@@ -537,18 +602,29 @@ const buildServerBenchmarkSkillContent = () => [
   '- `POST /benchmark/run`'
 ].join('\n')
 
-const buildServerConfigSkillContent = () => [
+export const buildServerConfigSkillContent = () => [
   '# Config',
   '',
+  'Use this skill when the task is about reading effective config, generating schema, or applying config updates.',
+  '',
+  'Primary entry points:',
   '- `GET /config`',
   '- `GET /config/schema`',
   '- `POST /config/schema/generate`',
-  '- `POST /config/update`'
+  '- `POST /config/update`',
+  '',
+  'Examples:',
+  '- inspect merged config before changing anything -> `GET /config`',
+  '- generate a focused schema view for one section -> `POST /config/schema/generate`',
+  '- write a config patch and reload -> `POST /config/update`'
 ].join('\n')
 
-const buildServerCatalogSkillContent = () => [
+export const buildServerCatalogSkillContent = () => [
   '# Catalog',
   '',
+  'Use this skill when the task is to inspect structured catalog entities such as specs, entities, rules or known workspaces.',
+  '',
+  'Primary entry points:',
   '- `GET /catalog/specs`',
   '- `GET /catalog/specs/detail`',
   '- `GET /catalog/entities`',
@@ -558,14 +634,17 @@ const buildServerCatalogSkillContent = () => [
   '- `GET /catalog/workspaces`'
 ].join('\n')
 
-const buildServerInteractionsSkillContent = () => [
+export const buildServerInteractionsSkillContent = () => [
   '# Interactions',
   '',
+  'Use this skill when the server needs to ask a user question or run a permission check outside the normal browser interaction flow.',
+  '',
+  'Primary entry points:',
   '- `POST /interactions/ask`',
   '- `POST /interactions/permission-check`'
 ].join('\n')
 
-const buildChannelsSkillContent = (entries: ChannelPathEntry[]) => {
+export const buildChannelsSkillContent = (entries: ChannelPathEntry[]) => {
   if (entries.length === 0) {
     return [
       '# Channel Runtime',
@@ -577,7 +656,18 @@ const buildChannelsSkillContent = (entries: ChannelPathEntry[]) => {
   return [
     '# Channel Runtime',
     '',
-    'Open the type skill first, then drill into one concrete channel instance:',
+    'Use this client when the task is about channel-owned entry points such as Lark, rather than browser or server state.',
+    '',
+  'Recommended order:',
+  '1. Open the type skill first to understand what that channel family is good at.',
+  '2. Then drill into one concrete channel instance.',
+  '3. Inside an instance, read `/state` or `/contexts` before choosing a mutation path.',
+  '',
+  'Typical task routing:',
+  '- understand one channel family and its constraints -> `/<type>/skill.md`',
+  '- operate one concrete connected bot/account -> `/<type>/<instance>/skill.md`',
+  '',
+  'Available channel families:',
     '',
     ...Array.from(new Set(entries.map(entry => entry.type))).map((type) => `- \`/${type}/skill.md\``),
     '',
@@ -602,12 +692,16 @@ const buildChannelsSkillContent = (entries: ChannelPathEntry[]) => {
   ].join('\n')
 }
 
-const buildChannelTypeSkillContent = (type: string, entries: ChannelPathEntry[]) => {
+export const buildChannelTypeSkillContent = (type: string, entries: ChannelPathEntry[]) => {
   const mod = loadChannelModule(type)
   return [
     `# ${mod.definition.label}`,
     '',
     mod.definition.description,
+    '',
+    `Use this skill when the task belongs to the ${mod.definition.label} channel family.`,
+    '',
+    'Open one concrete instance next when you need live state, concrete targets, or mutation paths.',
     '',
     'Available instances:',
     '',
@@ -617,17 +711,29 @@ const buildChannelTypeSkillContent = (type: string, entries: ChannelPathEntry[])
   ].join('\n')
 }
 
-const buildChannelSkillContent = (entry: ChannelPathEntry) => {
+export const buildChannelSkillContent = (entry: ChannelPathEntry) => {
   const basePath = `/${entry.type}/${entry.instanceKey}`
   const mod = loadChannelModule(entry.type)
   const lines = [
     `# ${entry.title ?? entry.label}`,
     '',
-    'Use this order:',
+    `Use this skill when you need to operate the concrete ${entry.type} instance \`${entry.instanceKey}\`.`,
+    '',
+    'This usually covers problems like:',
+    '- seeing which channel contexts and bindings already exist',
+    '- binding or unbinding a Vibe Forge session to a channel target',
+    '- adjusting per-context adapter, permission mode or effort preferences',
+    ...(entry.capabilities.sendMessage ? ['- sending a structured outbound message'] : []),
+    ...(entry.capabilities.updateMessage ? ['- updating a previously sent channel message'] : []),
+    ...(entry.capabilities.sendFileMessage ? ['- sending a file payload into the channel'] : []),
+    ...(entry.capabilities.pushFollowUps ? ['- pushing follow-up suggestions onto a channel message'] : []),
+    '',
+    'Recommended order:',
     '1. Read `/state` and `/contexts` to discover the concrete runtime state and available targets.',
     '2. Prefer direct endpoints such as `/bind-session`, `/preferences`, `/send-message` and `/stop-session` when they exist.',
     '3. Use `/commands` and `/run-command` only as a fallback for operations that do not have a structured path yet.',
     '',
+    'Primary entry points:',
     `- State: \`GET ${basePath}/state\``,
     `- Bindings: \`GET ${basePath}/bindings\``,
     `- Contexts: \`GET ${basePath}/contexts\``,
@@ -661,6 +767,11 @@ const buildChannelSkillContent = (entry: ChannelPathEntry) => {
   }
 
   lines.push(
+    '',
+    'Examples:',
+    `- find the right target context before binding -> \`GET ${basePath}/contexts\``,
+    `- bind one existing Vibe Forge session -> \`POST ${basePath}/bind-session\``,
+    ...(entry.capabilities.sendMessage ? [`- send one outbound text message -> \`POST ${basePath}/send-message\``] : []),
     '',
     'For `search-sessions`, use query parameters like:',
     '```text',

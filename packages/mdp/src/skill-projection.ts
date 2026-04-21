@@ -48,7 +48,19 @@ const buildAggregateSkillBody = (entries: ProjectedSkillEntry[]) => (
   [
     '# Workspace Skills',
     '',
-    'Read this catalog first, then open a concrete child skill path from the list below. Do not guess child paths.',
+    'Use this catalog when you want reusable workspace-owned skills rather than live browser/server/channel runtimes.',
+    '',
+    'These skills usually describe repeatable workflows, domain knowledge, or project-specific operating guidance.',
+    '',
+    'Recommended order:',
+    '1. Read this catalog first.',
+    '2. Pick one concrete child skill path from the list below.',
+    '3. Do not guess child paths that are not listed here.',
+    '',
+    'Typical uses:',
+    '- project-specific workflows',
+    '- reusable operator guidance',
+    '- domain knowledge that should be read before acting',
     '',
     ...entries.flatMap((entry) => [
       `- \`${entry.path}\`${entry.description ? `: ${entry.description}` : ''}`

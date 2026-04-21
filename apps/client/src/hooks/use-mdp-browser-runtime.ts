@@ -165,58 +165,125 @@ const resolveNavigationAnchor = (pathname: string) => {
   }
 }
 
-const buildRootSkillContent = () => [
+export const buildRootSkillContent = () => [
   '# Browser UI Runtime',
   '',
-  'This client controls the active Vibe Forge browser tab through semantic UI actions.',
+  'Use this client when you need to operate the active Vibe Forge browser tab instead of inspecting it indirectly.',
   '',
-  'Read `/state` first, then open the focused skill you need:',
+  'This client is for browser-owned tasks such as:',
+  '- opening a page or returning to a previous page',
+  '- expanding or collapsing sidebar and shell layout state',
+  '- switching the active session view or opening settings',
+  '- opening terminal, workspace drawer, or a specific workspace file tab',
+  '',
+  'Recommended order:',
+  '1. Read `GET /state` to understand the current page, session and layout state.',
+  '2. Pick one focused child skill instead of scanning every page action.',
+  '3. Call the smallest path that completes the UI task.',
+  '',
+  'Typical task routing:',
+  '- page jump or session jump -> `/navigation/skill.md`',
+  '- sidebar or shell state -> `/layout/skill.md`',
+  '- chat view or session settings -> `/session/skill.md`',
+  '- terminal, workspace drawer, workspace file tabs -> `/panels/skill.md`',
+  '',
+  'Focused child skills:',
   '- `/navigation/skill.md`',
   '- `/layout/skill.md`',
   '- `/session/skill.md`',
   '- `/panels/skill.md`'
 ].join('\n')
 
-const buildNavigationSkillContent = () => [
+export const buildNavigationSkillContent = () => [
   '# Navigation',
   '',
-  'Use these routes for high-level page navigation. Do not send external URLs.',
+  'Use this skill when the task is mainly about moving the user to the right page or session.',
+  '',
+  'This covers problems like:',
+  '- opening config, knowledge, benchmark, archive or automation pages',
+  '- jumping to a specific session',
+  '- returning to the previous page in browser history',
+  '',
+  'Use `GET /state` first if you need to confirm where the browser already is. Do not send external URLs.',
+  '',
+  'Primary entry points:',
   '',
   '- `POST /navigation/open`: open an internal route. Accepts `{ "path": "/config" }` or `{ "page": "knowledge" }`.',
   '- `POST /navigation/session/open`: open a specific session. Accepts `{ "sessionId": "...", "view": "settings" }`.',
   '- `POST /navigation/back`: navigate back in browser history.',
+  '',
+  'Convenience aliases:',
   '- `POST /config/open`: convenience alias for the config page.',
   '- `POST /config/section/open`: open a config tab. Accepts `{ "tab": "mdp", "source": "project", "detail": "" }`.',
-  '- `POST /knowledge/open`, `POST /archive/open`, `POST /automation/open`, `POST /benchmark/open`: convenience page actions.'
+  '- `POST /knowledge/open`, `POST /archive/open`, `POST /automation/open`, `POST /benchmark/open`: convenience page actions.',
+  '',
+  'Examples:',
+  '- open the project config MDP tab -> `POST /config/section/open` with `{ "tab": "mdp", "source": "project" }`',
+  '- jump to one session in settings view -> `POST /navigation/session/open` with `{ "sessionId": "...", "view": "settings" }`'
 ].join('\n')
 
-const buildLayoutSkillContent = () => [
+export const buildLayoutSkillContent = () => [
   '# Layout',
   '',
-  'Use these routes for global shell layout state.',
+  'Use this skill when the task is about shell chrome rather than page content.',
+  '',
+  'This covers problems like:',
+  '- collapsing or expanding the desktop sidebar',
+  '- opening or closing the compact mobile sidebar sheet',
+  '- checking whether the current shell is already collapsed or open',
+  '',
+  'Read `GET /layout/sidebar/state` first when idempotence matters.',
+  '',
+  'Primary entry points:',
   '',
   '- `GET /layout/sidebar/state`: return desktop collapse state and mobile sheet state.',
   '- `POST /layout/sidebar/collapse`: collapse the desktop sidebar.',
   '- `POST /layout/sidebar/expand`: expand the desktop sidebar.',
   '- `POST /layout/sidebar/open-mobile`: open the compact mobile sidebar sheet.',
-  '- `POST /layout/sidebar/close-mobile`: close the compact mobile sidebar sheet.'
+  '- `POST /layout/sidebar/close-mobile`: close the compact mobile sidebar sheet.',
+  '',
+  'Examples:',
+  '- ensure the desktop sidebar is open -> read `/layout/sidebar/state`, then call `/layout/sidebar/expand` only if `isCollapsed` is true',
+  '- close the mobile sheet after finishing selection -> `POST /layout/sidebar/close-mobile`'
 ].join('\n')
 
-const buildSessionSkillContent = () => [
+export const buildSessionSkillContent = () => [
   '# Session View',
   '',
-  'Use these routes when the active tab is on chat or session UI.',
+  'Use this skill when the browser is already on a chat/session page and the task is about what the session view is showing.',
+  '',
+  'This covers problems like:',
+  '- checking whether the user is in history, timeline or settings',
+  '- switching the active session view',
+  '- opening or leaving session settings without changing the rest of the page',
+  '',
+  'Read `GET /session/state` first when the current view is uncertain.',
+  '',
+  'Primary entry points:',
   '',
   '- `GET /session/state`: return the active chat view, terminal state, workspace drawer state and file tabs.',
   '- `POST /session/view/set`: set `history`, `timeline` or `settings`.',
   '- `POST /session/settings/open`: switch the current session view to settings.',
-  '- `POST /session/settings/close`: leave settings and return to history.'
+  '- `POST /session/settings/close`: leave settings and return to history.',
+  '',
+  'Examples:',
+  '- switch a session to timeline -> `POST /session/view/set` with `{ "view": "timeline" }`',
+  '- leave settings after reading config -> `POST /session/settings/close`'
 ].join('\n')
 
-const buildPanelsSkillContent = () => [
+export const buildPanelsSkillContent = () => [
   '# Panels',
   '',
-  'Use these routes for terminal, workspace drawer and workspace file tabs.',
+  'Use this skill when the task is about supporting panels attached to the current session page.',
+  '',
+  'This covers problems like:',
+  '- opening or closing the terminal dock',
+  '- opening or closing the workspace drawer',
+  '- opening, selecting or closing a workspace file tab',
+  '',
+  'Read `GET /session/state` first if you need to know which panel or file tab is already open.',
+  '',
+  'Primary entry points:',
   '',
   '- `POST /panels/terminal/open`',
   '- `POST /panels/terminal/close`',
@@ -224,7 +291,11 @@ const buildPanelsSkillContent = () => [
   '- `POST /panels/workspace/close`',
   '- `POST /panels/workspace/file/open`: accepts `{ "path": "..." }`.',
   '- `POST /panels/workspace/file/select`: accepts `{ "path": "..." }`.',
-  '- `POST /panels/workspace/file/close`: optionally accepts `{ "path": "..." }`.'
+  '- `POST /panels/workspace/file/close`: optionally accepts `{ "path": "..." }`.',
+  '',
+  'Examples:',
+  '- inspect one source file in the current session -> `POST /panels/workspace/file/open` with `{ "path": "apps/client/src/App.tsx" }`',
+  '- bring the terminal back into view -> `POST /panels/terminal/open`'
 ].join('\n')
 
 const getChatRuntimeState = (activeSessionId?: string) => {

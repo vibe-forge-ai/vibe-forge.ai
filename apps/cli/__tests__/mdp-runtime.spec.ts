@@ -13,9 +13,17 @@ describe('CLI MDP runtime helpers', () => {
   it('builds the split rootless CLI runtime skill documents', () => {
     expect(buildCliSkillContent()).toContain('/state')
     expect(buildCliSkillContent()).toContain('/process/skill.md')
+    expect(buildCliSkillContent()).toContain('Use this client when you need to work through the currently running `vf run` process')
+    expect(buildCliSkillContent()).toContain('Recommended order:')
+    expect(buildCliSkillContent()).toContain('Typical task routing:')
     expect(buildCliInputSkillContent()).toContain('/input/send')
+    expect(buildCliInputSkillContent()).toContain('Use this skill when the task is to inject a new user turn')
+    expect(buildCliInputSkillContent()).toContain('continue from the last checkpoint')
     expect(buildCliInteractionSkillContent()).toContain('/interaction/respond')
+    expect(buildCliInteractionSkillContent()).toContain('pending interaction')
     expect(buildCliProcessSkillContent()).toContain('/process/kill')
+    expect(buildCliProcessSkillContent()).toContain('controlling the process itself')
+    expect(buildCliProcessSkillContent()).toContain('terminate a clearly stuck process')
   })
 
   it('normalizes string and structured message payloads', () => {
