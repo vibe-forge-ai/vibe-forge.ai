@@ -1,5 +1,12 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs, mergeMarketplaceConfigs, mergePluginConfigs } from '@vibe-forge/utils'
+import {
+  isLegacySkillsConfig,
+  mergeAdapterConfigs,
+  mergeMarketplaceConfigs,
+  mergePluginConfigs,
+  resolveConfiguredSkillInstalls,
+  resolveSkillsCliRuntimeConfig
+} from '@vibe-forge/utils'
 
 import { mergeWorkspaceConfigs } from './workspace-config'
 
@@ -107,6 +114,43 @@ const mergeConversation = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
+const mergeSkillHomeBridge = (
+  left?: Config['skills'],
+  right?: Config['skills']
+) => {
+  const leftHomeBridge = isLegacySkillsConfig(left) ? left.homeBridge : undefined
+  const rightHomeBridge = isLegacySkillsConfig(right) ? right.homeBridge : undefined
+
+  if (leftHomeBridge == null && rightHomeBridge == null) return undefined
+
+  const merged = {
+    ...(leftHomeBridge ?? {}),
+    ...(rightHomeBridge ?? {})
+  }
+
+  return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
+}
+
+const mergeSkills = (
+  left?: Config['skills'],
+  right?: Config['skills']
+) => {
+  const installs = mergeList(
+    resolveConfiguredSkillInstalls(left),
+    resolveConfiguredSkillInstalls(right)
+  )
+  const homeBridge = mergeSkillHomeBridge(left, right)
+
+  if (homeBridge == null) {
+    return installs
+  }
+
+  return {
+    ...(installs == null ? {} : { install: installs }),
+    homeBridge
+  }
+}
+
 export function mergeConfigs(left: undefined, right: undefined): undefined
 export function mergeConfigs<T extends Partial<Config>>(left: T, right: T): T
 export function mergeConfigs<T extends Partial<Config>>(left: T | undefined, right: T): T
@@ -143,10 +187,11 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
       right?.webAuth as Record<string, unknown> | undefined
     ) as Config['webAuth'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    skills: mergeRecord(
-      left?.skills as Record<string, unknown> | undefined,
-      right?.skills as Record<string, unknown> | undefined
-    ) as Config['skills'],
+    skills: mergeSkills(left?.skills, right?.skills),
+    skillsCli: mergeRecord(
+      resolveSkillsCliRuntimeConfig(left) as Record<string, unknown> | undefined,
+      resolveSkillsCliRuntimeConfig(right) as Record<string, unknown> | undefined
+    ) as Config['skillsCli'],
     plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
     marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }

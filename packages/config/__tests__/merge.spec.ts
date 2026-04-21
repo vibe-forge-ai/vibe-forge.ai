@@ -35,11 +35,12 @@ describe('mergeConfigs', () => {
             }
           }
         },
-        skills: {
-          registry: {
-            url: 'https://skills.example.com',
-            enabled: true
-          }
+        skills: [
+          'frontend-design'
+        ],
+        skillsCli: {
+          package: 'skills',
+          registry: 'https://registry.example.com'
         },
         marketplaces: {
           'team-tools': {
@@ -108,9 +109,19 @@ describe('mergeConfigs', () => {
           }
         },
         skills: {
-          registry: {
-            downloadUrl: 'https://download.skills.example.com'
+          install: [
+            {
+              name: 'design-review',
+              source: 'example-source/default/public',
+              rename: 'internal-review'
+            }
+          ],
+          cli: {
+            registry: 'https://legacy.example.com'
           }
+        },
+        skillsCli: {
+          version: 'latest'
         },
         marketplaces: {
           'team-tools': {
@@ -135,7 +146,7 @@ describe('mergeConfigs', () => {
           }
         ]
       }
-    )
+    )!
 
     expect(merged.defaultModel).toBe('base-model')
     expect(merged.adapters?.codex).toEqual({
@@ -170,10 +181,18 @@ describe('mergeConfigs', () => {
       title: 'Base Title',
       description: 'Child Description'
     })
-    expect(merged.skills).toEqual({
-      registry: {
-        downloadUrl: 'https://download.skills.example.com'
+    expect(merged.skills).toEqual([
+      'frontend-design',
+      {
+        name: 'design-review',
+        source: 'example-source/default/public',
+        rename: 'internal-review'
       }
+    ])
+    expect(merged.skillsCli).toEqual({
+      package: 'skills',
+      registry: 'https://legacy.example.com',
+      version: 'latest'
     })
     expect(merged.marketplaces).toEqual({
       'team-tools': {

@@ -5,11 +5,28 @@ import process from 'node:process'
 import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const skillsCliMocks = vi.hoisted(() => ({
+  findSkillsCli: vi.fn(),
+  installSkillsCliRefToTemp: vi.fn(),
+  installSkillsCliSkillToTemp: vi.fn()
+}))
+
+vi.mock('@vibe-forge/utils/skills-cli', async () => {
+  const actual = await vi.importActual<typeof import('@vibe-forge/utils/skills-cli')>('@vibe-forge/utils/skills-cli')
+  return {
+    ...actual,
+    findSkillsCli: skillsCliMocks.findSkillsCli,
+    installSkillsCliRefToTemp: skillsCliMocks.installSkillsCliRefToTemp,
+    installSkillsCliSkillToTemp: skillsCliMocks.installSkillsCliSkillToTemp
+  }
+})
+
 import { buildAdapterAssetPlan, resolveWorkspaceAssetBundle } from '#~/index.js'
 
 import { createWorkspace, installPluginPackage, writeDocument } from './test-helpers'
 
 afterEach(() => {
+  vi.clearAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -369,31 +386,23 @@ describe('resolveWorkspaceAssetBundle', () => {
     }))
   })
 
-  it('installs selected missing skill dependencies from an API-compatible registry cache', async () => {
+  it('installs selected missing skill dependencies from the skills CLI cache', async () => {
     const workspace = await createWorkspace()
     const realHome = process.env.__VF_PROJECT_REAL_HOME__
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === 'https://registry.example.test/api/search?q=frontend-design&limit=10') {
-        return new Response(JSON.stringify({
-          skills: [{
-            id: 'anthropics/skills/frontend-design',
-            skillId: 'frontend-design',
-            name: 'frontend-design',
-            source: 'anthropics/skills'
-          }]
-        }))
+    const tempInstallDir = join(workspace, '.tmp-install-skills-cli')
+    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'frontend-design')
+    await writeDocument(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse strong visual hierarchy.\n'
+    )
+    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir: tempInstallDir,
+      installedSkill: {
+        dirName: 'frontend-design',
+        name: 'frontend-design',
+        sourcePath: installedSkillDir
       }
-      if (url === 'https://registry.example.test/api/download/anthropics/skills/frontend-design') {
-        return new Response(JSON.stringify({
-          files: [{
-            path: 'SKILL.md',
-            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse strong visual hierarchy.\n'
-          }]
-        }))
-      }
-      return new Response('not found', { status: 404 })
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     await writeDocument(
       join(realHome!, '.agents/skills/frontend-design/SKILL.md'),
@@ -414,11 +423,7 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
-      configs: [{
-        skills: {
-          registry: 'https://registry.example.test'
-        }
-      }, undefined],
+      configs: [undefined, undefined],
       useDefaultVibeForgeMcpServer: false
     })
 
@@ -427,7 +432,6 @@ describe('resolveWorkspaceAssetBundle', () => {
       resolvedBy: 'home-bridge',
       sourcePath: join(realHome!, '.agents/skills/frontend-design/SKILL.md')
     }))
-    expect(fetchMock).not.toHaveBeenCalled()
 
     await buildAdapterAssetPlan({
       adapter: 'opencode',
@@ -441,13 +445,122 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
     expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
-    expect(dependency?.sourcePath).toContain('/.ai/caches/skill-dependencies/registry.example.test/')
+    expect(dependency?.sourcePath).toContain(
+      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/'
+    )
     expect(bundle.skills.find(asset => (
       asset.name === 'frontend-design' && asset.resolvedBy === 'home-bridge'
     ))).toBeUndefined()
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://registry.example.test/api/download/anthropics/skills/frontend-design',
-      expect.any(Object)
+    expect(skillsCliMocks.findSkillsCli).not.toHaveBeenCalled()
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
+      config: undefined,
+      skill: 'frontend-design',
+      source: 'anthropics/skills'
+    })
+  })
+
+  it('installs configured project skills before bundle resolution and rewrites renamed skill names', async () => {
+    const workspace = await createWorkspace()
+    const tempInstallDir = join(workspace, '.tmp-configured-install')
+    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'design-review')
+    await writeDocument(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: design-review\ndescription: Review design work\n---\nReview the UI implementation.\n'
+    )
+    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir: tempInstallDir,
+      installedSkill: {
+        dirName: 'design-review',
+        name: 'design-review',
+        sourcePath: installedSkillDir
+      }
+    })
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: [
+          {
+            name: 'design-review',
+            source: 'example-source/default/public',
+            rename: 'internal-review'
+          }
+        ]
+      }, undefined],
+      syncConfiguredSkills: true,
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(bundle.skills.map(asset => asset.name)).toContain('internal-review')
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
+      config: undefined,
+      skill: 'design-review',
+      source: 'example-source/default/public'
+    })
+    await expect(readFile(join(workspace, '.ai/skills/internal-review/SKILL.md'), 'utf8')).resolves.toContain(
+      'name: internal-review'
+    )
+  })
+
+  it('skips configured skill reinstalls unless updateConfiguredSkills is enabled', async () => {
+    const workspace = await createWorkspace()
+    await writeDocument(
+      join(workspace, '.ai/skills/internal-review/SKILL.md'),
+      '---\nname: internal-review\ndescription: Existing skill\n---\nExisting content.\n'
+    )
+
+    const skippedBundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: [
+          {
+            name: 'design-review',
+            source: 'example-source/default/public',
+            rename: 'internal-review'
+          }
+        ]
+      }, undefined],
+      syncConfiguredSkills: true,
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(skippedBundle.skills.map(asset => asset.name)).toContain('internal-review')
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
+
+    const tempInstallDir = join(workspace, '.tmp-configured-update')
+    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'design-review')
+    await writeDocument(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: design-review\ndescription: Updated skill\n---\nUpdated content.\n'
+    )
+    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValueOnce({
+      tempDir: tempInstallDir,
+      installedSkill: {
+        dirName: 'design-review',
+        name: 'design-review',
+        sourcePath: installedSkillDir
+      }
+    })
+
+    await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: [
+          {
+            name: 'design-review',
+            source: 'example-source/default/public',
+            rename: 'internal-review'
+          }
+        ]
+      }, undefined],
+      syncConfiguredSkills: true,
+      updateConfiguredSkills: true,
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).toHaveBeenCalledTimes(1)
+    await expect(readFile(join(workspace, '.ai/skills/internal-review/SKILL.md'), 'utf8')).resolves.toContain(
+      'Updated content.'
     )
   })
 
@@ -455,28 +568,20 @@ describe('resolveWorkspaceAssetBundle', () => {
     const primary = await createWorkspace()
     const worktree = await createWorkspace()
     const previousPrimaryWorkspace = process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === 'https://registry.example.test/api/search?q=frontend-design&limit=10') {
-        return new Response(JSON.stringify({
-          skills: [{
-            id: 'anthropics/skills/frontend-design',
-            skillId: 'frontend-design',
-            name: 'frontend-design',
-            source: 'anthropics/skills'
-          }]
-        }))
+    const tempInstallDir = join(worktree, '.tmp-install-skills-cli')
+    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'frontend-design')
+    await writeDocument(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse primary cache.\n'
+    )
+    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir: tempInstallDir,
+      installedSkill: {
+        dirName: 'frontend-design',
+        name: 'frontend-design',
+        sourcePath: installedSkillDir
       }
-      if (url === 'https://registry.example.test/api/download/anthropics/skills/frontend-design') {
-        return new Response(JSON.stringify({
-          files: [{
-            path: 'SKILL.md',
-            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse primary cache.\n'
-          }]
-        }))
-      }
-      return new Response('not found', { status: 404 })
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     try {
       process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__ = primary
@@ -487,7 +592,7 @@ describe('resolveWorkspaceAssetBundle', () => {
           'name: app-builder',
           'description: Build apps',
           'dependencies:',
-          '  - frontend-design',
+          '  - anthropics/skills@frontend-design',
           '---',
           'Build the app.'
         ].join('\n')
@@ -495,11 +600,7 @@ describe('resolveWorkspaceAssetBundle', () => {
 
       const bundle = await resolveWorkspaceAssetBundle({
         cwd: worktree,
-        configs: [{
-          skills: {
-            registry: 'https://registry.example.test'
-          }
-        }, undefined],
+        configs: [undefined, undefined],
         useDefaultVibeForgeMcpServer: false
       })
 
@@ -516,7 +617,7 @@ describe('resolveWorkspaceAssetBundle', () => {
       const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
       expect(dependency?.sourcePath).toContain(join(
         primary,
-        '.ai/caches/skill-dependencies/registry.example.test/'
+        '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/'
       ))
       expect(dependency?.sourcePath).not.toContain(join(worktree, '.ai/caches'))
     } finally {
@@ -530,12 +631,10 @@ describe('resolveWorkspaceAssetBundle', () => {
 
   it('reuses complete skill dependency caches without deleting or downloading them again', async () => {
     const workspace = await createWorkspace()
-    const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }))
-    vi.stubGlobal('fetch', fetchMock)
 
     const cachedSkillPath = join(
       workspace,
-      '.ai/caches/skill-dependencies/registry.example.test/anthropics/skills/frontend-design/SKILL.md'
+      '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/SKILL.md'
     )
     await writeDocument(
       cachedSkillPath,
@@ -556,9 +655,61 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
-      configs: [{
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
         skills: {
-          registry: 'https://registry.example.test'
+          include: ['app-builder']
+        }
+      }
+    })
+
+    expect(skillsCliMocks.findSkillsCli).not.toHaveBeenCalled()
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
+    expect(await readFile(cachedSkillPath, 'utf8')).toContain('Use the cached copy.')
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
+  })
+
+  it('parses multi-segment source dependencies and forwards skillsCli runtime config', async () => {
+    const workspace = await createWorkspace()
+    const tempInstallDir = join(workspace, '.tmp-install-skills-cli')
+    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'frontend-design')
+    await writeDocument(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse internal design tokens.\n'
+    )
+    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir: tempInstallDir,
+      installedSkill: {
+        dirName: 'frontend-design',
+        name: 'frontend-design',
+        sourcePath: installedSkillDir
+      }
+    })
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - example-source/default/public/frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skillsCli: {
+          registry: 'https://registry.example.com'
         }
       }, undefined],
       useDefaultVibeForgeMcpServer: false
@@ -574,89 +725,13 @@ describe('resolveWorkspaceAssetBundle', () => {
       }
     })
 
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(await readFile(cachedSkillPath, 'utf8')).toContain('Use the cached copy.')
-    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
-  })
-
-  it('keeps configured registry url search and download endpoints together when env overrides exist', async () => {
-    const workspace = await createWorkspace()
-    const previousDownloadUrl = process.env.SKILLS_DOWNLOAD_URL
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === 'https://private-registry.example.test/api/search?q=frontend-design&limit=10') {
-        return new Response(JSON.stringify({
-          skills: [{
-            id: 'anthropics/skills/frontend-design',
-            skillId: 'frontend-design',
-            name: 'frontend-design',
-            source: 'anthropics/skills'
-          }]
-        }))
-      }
-      if (url === 'https://private-registry.example.test/api/download/anthropics/skills/frontend-design') {
-        return new Response(JSON.stringify({
-          files: [{
-            path: 'SKILL.md',
-            contents: '---\nname: frontend-design\ndescription: UI design guidance\n---\nUse strong visual hierarchy.\n'
-          }]
-        }))
-      }
-      return new Response('not found', { status: 404 })
+    expect(skillsCliMocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
+      config: {
+        registry: 'https://registry.example.com'
+      },
+      skill: 'frontend-design',
+      source: 'example-source/default/public'
     })
-    vi.stubGlobal('fetch', fetchMock)
-
-    try {
-      process.env.SKILLS_DOWNLOAD_URL = 'https://env-download.example.test'
-      await writeDocument(
-        join(workspace, '.ai/skills/app-builder/SKILL.md'),
-        [
-          '---',
-          'name: app-builder',
-          'description: Build apps',
-          'dependencies:',
-          '  - frontend-design',
-          '---',
-          'Build the app.'
-        ].join('\n')
-      )
-
-      const bundle = await resolveWorkspaceAssetBundle({
-        cwd: workspace,
-        configs: [{
-          skills: {
-            registry: {
-              url: 'https://private-registry.example.test'
-            }
-          }
-        }, undefined],
-        useDefaultVibeForgeMcpServer: false
-      })
-
-      await buildAdapterAssetPlan({
-        adapter: 'opencode',
-        bundle,
-        options: {
-          skills: {
-            include: ['app-builder']
-          }
-        }
-      })
-
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://private-registry.example.test/api/download/anthropics/skills/frontend-design',
-        expect.any(Object)
-      )
-      expect(fetchMock).not.toHaveBeenCalledWith(
-        'https://env-download.example.test/api/download/anthropics/skills/frontend-design',
-        expect.any(Object)
-      )
-    } finally {
-      if (previousDownloadUrl == null) {
-        delete process.env.SKILLS_DOWNLOAD_URL
-      } else {
-        process.env.SKILLS_DOWNLOAD_URL = previousDownloadUrl
-      }
-    }
   })
 
   it('loads workspace entities from the env-configured entities dir', async () => {

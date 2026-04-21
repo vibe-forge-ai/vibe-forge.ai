@@ -212,11 +212,10 @@ export const webAuthConfigSchema = z.object({
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
 })
 
-export const skillRegistryConfigSchema = z.object({
-  enabled: z.boolean().optional().describe('Enable remote skill registry resolution'),
-  url: z.string().optional().describe('Base URL for remote skill registry search and download'),
-  searchUrl: z.string().optional().describe('Remote skill registry search endpoint'),
-  downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
+export const skillsCliConfigSchema = adapterNativeCliConfigSchema.extend({
+  registry: z.string().optional().describe('Package registry used to install the managed skills CLI'),
+  npmRegistry: z.string().optional().describe('Deprecated alias for skillsCli.registry'),
+  env: z.record(z.string(), z.string()).optional().describe('Environment variables passed to the skills CLI')
 })
 
 export const skillHomeBridgeConfigSchema = z.object({
@@ -225,10 +224,27 @@ export const skillHomeBridgeConfigSchema = z.object({
     .describe('Ordered home skill roots. Supports absolute paths or paths starting with ~')
 })
 
-export const skillsConfigSchema = z.object({
-  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings'),
+export const configuredSkillInstallConfigSchema = z.union([
+  z.string().min(1),
+  z.object({
+    name: z.string().min(1).describe('Remote skill name'),
+    source: z.string().optional().describe('Remote skills CLI source path'),
+    rename: z.string().optional().describe('Local skill name to expose after install')
+  })
+])
+
+export const legacySkillsConfigSchema = z.object({
+  install: z.array(configuredSkillInstallConfigSchema).optional()
+    .describe('Project skills that should be ensured before session startup'),
+  cli: skillsCliConfigSchema.optional().describe('Deprecated alias for top-level skillsCli runtime settings'),
   homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
+
+export const skillsConfigSchema = z.union([
+  z.array(configuredSkillInstallConfigSchema)
+    .describe('Project skills that should be ensured before session startup'),
+  legacySkillsConfigSchema
+])
 
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({
@@ -383,6 +399,7 @@ export const generalConfigSectionSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   notifications: notificationConfigSchema.optional(),
   skills: skillsConfigSchema.optional(),
+  skillsCli: skillsCliConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional()
 })
 
@@ -439,6 +456,7 @@ export const baseConfigFileSchema = z.object({
   shortcuts: shortcutsConfigSchema.optional(),
   notifications: notificationConfigSchema.optional(),
   skills: skillsConfigSchema.optional(),
+  skillsCli: skillsCliConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional(),
   conversation: conversationConfigSchema.optional(),
   plugins: pluginConfigSchema.optional(),

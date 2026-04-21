@@ -165,4 +165,16 @@ describe('createSessionWithInitialMessage', () => {
       adapter: undefined
     })
   })
+
+  it('forwards updateSkills into adapter startup', async () => {
+    await createSessionWithInitialMessage({
+      title: 'Demo',
+      initialMessage: 'hello',
+      updateSkills: true
+    })
+
+    expect(mocks.startAdapterSession).toHaveBeenCalledWith('sess-1', expect.objectContaining({
+      updateConfiguredSkills: true
+    }))
+  })
 })

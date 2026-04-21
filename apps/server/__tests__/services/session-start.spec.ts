@@ -297,6 +297,38 @@ describe('startAdapterSession', () => {
     )
   })
 
+  it('forwards updateConfiguredSkills into query resolution and runtime startup', async () => {
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      adapter: 'codex',
+      updateConfiguredSkills: true
+    })
+
+    expect(mocks.generateAdapterQueryOptions).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      process.cwd(),
+      expect.objectContaining({
+        adapter: 'codex',
+        updateConfiguredSkills: true
+      })
+    )
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updateConfiguredSkills: true
+      }),
+      expect.any(Object)
+    )
+  })
+
   it('sets workspace env to the selected child workspace when resolving workspace targets', async () => {
     const emit = vi.fn()
     const kill = vi.fn()

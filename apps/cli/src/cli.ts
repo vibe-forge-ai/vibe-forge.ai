@@ -17,6 +17,7 @@ import { registerListCommand } from './commands/list'
 import { registerPluginCommand } from './commands/plugin'
 import { registerReportCommand } from './commands/report'
 import { registerRunCommand } from './commands/run'
+import { registerSkillsCommand } from './commands/skills'
 import { registerStopCommand } from './commands/stop'
 
 program
@@ -48,6 +49,7 @@ registerConfigCommand(program)
 registerListCommand(program)
 registerPluginCommand(program)
 registerReportCommand(program)
+registerSkillsCommand(program)
 registerStopCommand(program)
 registerKillCommand(program)
 

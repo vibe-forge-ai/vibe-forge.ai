@@ -16,6 +16,7 @@ export async function generateAdapterQueryOptions(
     adapter?: string
     model?: string
     plugins?: PluginConfig
+    updateConfiguredSkills?: boolean
   }
 ) {
   const workspace = type === 'workspace'
@@ -42,7 +43,9 @@ export async function generateAdapterQueryOptions(
   const bundle = await resolveWorkspaceAssetBundle({
     cwd: effectiveCwd,
     configs: [config, userConfig],
-    plugins: mergedPlugins
+    plugins: mergedPlugins,
+    syncConfiguredSkills: true,
+    updateConfiguredSkills: input?.updateConfiguredSkills === true
   })
   const selection = resolveQuerySelection({
     mergedConfig,

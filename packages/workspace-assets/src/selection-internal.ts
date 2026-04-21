@@ -26,7 +26,7 @@ import {
   isRemoteRuleReference,
   parseScopedReference
 } from '@vibe-forge/definition-core'
-import { expandSkillAssetDependencies, expandSkillAssetDependenciesWithRegistry } from './skill-dependencies'
+import { expandSkillAssetDependencies, expandSkillAssetDependenciesWithRemoteResolution } from './skill-dependencies'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>
 type DocumentAsset<TDefinition> = Extract<WorkspaceAsset, { kind: DocumentAssetKind }> & {
@@ -538,7 +538,7 @@ export const resolveSelectedSkillAssetsWithDependencies = async (
   const excluded = new Set(
     resolveNamedAssets(bundle.skills, selection?.exclude).map(asset => asset.id)
   )
-  return await expandSkillAssetDependenciesWithRegistry({
+  return await expandSkillAssetDependenciesWithRemoteResolution({
     allAssets: bundle.assets,
     configs: bundle.configs ?? [undefined, undefined],
     cwd: bundle.cwd,
