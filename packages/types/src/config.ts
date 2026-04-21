@@ -81,8 +81,14 @@ export interface SkillRegistryConfig {
   downloadUrl?: string
 }
 
+export interface SkillHomeBridgeConfig {
+  enabled?: boolean
+  roots?: string | string[]
+}
+
 export interface SkillsConfig {
   registry?: string | SkillRegistryConfig
+  homeBridge?: SkillHomeBridgeConfig
 }
 
 export interface WorkspaceConfigEntry {

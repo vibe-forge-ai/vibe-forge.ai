@@ -1,5 +1,5 @@
 import type { Config } from './config'
-import type { Definition, Entity, Filter, Rule, Skill, Spec } from './definition'
+import type { Definition, DefinitionSource, Entity, Filter, Rule, Skill, Spec } from './definition'
 import type { PluginConfig, ResolvedPluginInstanceMetadata } from './plugin'
 
 export type WorkspaceAssetKind =
@@ -22,6 +22,7 @@ export interface AssetDiagnostic {
   adapter: WorkspaceAssetAdapter
   status: AssetDiagnosticStatus
   reason: string
+  source: DefinitionSource
   packageId?: string
   scope?: string
   instancePath?: string

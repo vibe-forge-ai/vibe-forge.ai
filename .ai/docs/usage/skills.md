@@ -25,6 +25,54 @@ description: Build the app
 
 如果你修改过数据资产根目录，例如把 `.ai` 改成 `.vf`，skill 目录也会跟着变化。目录配置说明见 [数据资产目录配置](../asset-directories.md)。
 
+## Home Skill Auto-Bridge
+
+从当前版本开始，Vibe Forge 默认也会桥接用户真实 home 里的常见 skill 目录，并把它们像项目 skill 一样加入统一 workspace assets：
+
+- `~/.agents/skills`
+- `~/.claude/skills`
+- `~/.config/opencode/skills`
+- `~/.gemini/skills`
+
+这里的 `~` 优先基于 `__VF_PROJECT_REAL_HOME__` 展开；没有这个环境变量时，再退回进程的真实 `HOME`。不存在的目录会直接跳过，不会报错。
+
+桥接后的 home skills 会：
+
+- 出现在 `/api/ai/skills` 和 Knowledge Base
+- 参与默认 skill 选择，不只是“原生目录可见”
+- 继续走统一的依赖解析、prompt selection 和 adapter 投影链路
+
+默认情况下，这些 skill 会被投影到 workspace 本地的 mock / session 目录，而不是直接复制回真实 home。仓库默认把 `./.ai/.mock`、`./.ai/.local`、`./.ai/caches` 加进 `.gitignore`；如果你把 AI 基目录改到别的位置，请确保对应的 mock / cache 目录也继续被 Git 忽略。
+
+这些投影默认是目录直链（symlink），不是物理拷贝。如果底层 CLI 或 adapter 在运行时直接编辑 `SKILL.md`、新增文件，改动会写回用户真实 home 下的 skill 目录。
+
+如果同名 skill 同时存在于多个来源，优先级是：
+
+1. 项目 skill
+2. 已启用插件 skill
+3. 运行时下载的 registry dependency
+4. home-bridge skill
+
+多个 home roots 出现同名 skill 时，按 roots 配置顺序保留第一份，后面的同名项会被跳过。
+
+关闭或覆盖默认 home roots：
+
+```yaml
+skills:
+  homeBridge:
+    enabled: false
+```
+
+```yaml
+skills:
+  homeBridge:
+    roots:
+      - ~/.agents/skills
+      - /opt/team-skills
+```
+
+`roots` 只支持绝对路径或以 `~` 开头的路径。
+
 ## CLI 内置 Skills
 
 `vf` CLI 默认会注入 `@vibe-forge/plugin-cli-skills`，提供一组不需要项目手动配置的通用说明型 skills。通常直接描述需求即可；只有需要强制指定某个 skill 时，才使用 `vf run --include-skill <name> "任务描述"`。
@@ -93,14 +141,16 @@ dependencies:
 
 ## 解析顺序
 
-Vibe Forge 会按这个顺序处理依赖：
+Vibe Forge 会按这个顺序处理依赖与候选 skill：
 
 1. 扫描当前 workspace 的 `.ai/skills`
 2. 扫描已启用插件提供的 skills
-3. 先用名称在本地和插件 skill 里解析依赖
-4. 本地找不到时，从 registry 下载
-5. 把下载结果作为普通 workspace skill 加入本次资产列表
-6. 对新加入的依赖继续递归解析
+3. 桥接支持的 home skill roots
+4. 依赖解析时优先在项目和插件 skill 里按名称匹配
+5. 本地未命中时，从 registry 下载依赖 skill
+6. 对纯名称依赖，如果 registry 不可用且只有 home-bridge skill 命中，才回退到 home skill
+7. 把下载结果作为普通 workspace skill 加入本次资产列表
+8. 对新加入的依赖继续递归解析
 
 如果本地存在多个同名或同 slug 的 skill，会报歧义错误。遇到这种情况，建议给插件实例配置 `scope`，再在引用处使用 `scope/name`。
 
@@ -194,4 +244,6 @@ Registry 协议、缓存目录与安全约束见 [Skills registry 细节](./skil
 
 如果下载结果没有 `SKILL.md`，会报错；registry 返回的每个 skill 必须是一个完整 skill 目录快照。
 
-如果同名 skill 同时存在于本地和插件中，本地无 scope 的唯一匹配优先；否则会提示歧义，需要改名或使用 scoped 引用。
+如果同名 skill 同时存在于项目、插件、registry dependency 和 home-bridge 中，会按前面的优先级保留更高优先级来源，home skill 不会覆盖项目或插件定义。
+
+如果同名 skill 同时存在于项目与插件等同优先级来源中，本地无 scope 的唯一匹配优先；否则会提示歧义，需要改名或使用 scoped 引用。

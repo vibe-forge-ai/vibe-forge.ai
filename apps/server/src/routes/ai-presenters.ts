@@ -1,7 +1,15 @@
 import { relative } from 'node:path'
 
 import { isAlwaysRule, resolveDefinitionName, resolveDocumentDescription } from '@vibe-forge/definition-core'
-import type { Definition, Entity, Rule, Skill, Spec, WorkspaceDefinitionPayload } from '@vibe-forge/types'
+import type {
+  Definition,
+  DefinitionSource,
+  Entity,
+  Rule,
+  Skill,
+  Spec,
+  WorkspaceDefinitionPayload
+} from '@vibe-forge/types'
 
 const toRelativePath = (absolutePath: string, cwd: string) => {
   const rel = relative(cwd, absolutePath)
@@ -87,6 +95,8 @@ const resolveSkillSummary = (skill: Definition<Skill>) => {
   }
 }
 
+const resolveSkillSource = (skill: Definition<Skill>): DefinitionSource => skill.resolvedSource ?? 'project'
+
 export const matchesDefinitionPath = (
   definition: Pick<Definition<object>, 'path'>,
   targetPath: string,
@@ -159,7 +169,8 @@ export const presentSkill = (skill: Definition<Skill>, cwd: string) => {
     name,
     description,
     always: skill.attributes.always ?? false,
-    instancePath: skill.resolvedInstancePath
+    instancePath: skill.resolvedInstancePath,
+    source: resolveSkillSource(skill)
   }
 }
 

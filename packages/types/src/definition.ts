@@ -102,10 +102,13 @@ export interface Skill {
   >
 }
 
+export type DefinitionSource = 'project' | 'plugin' | 'home'
+
 export interface Definition<T> {
   path: string
   body: string
   attributes: T
   resolvedName?: string
   resolvedInstancePath?: string
+  resolvedSource?: DefinitionSource
 }

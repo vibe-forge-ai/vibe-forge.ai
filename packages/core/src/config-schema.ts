@@ -173,8 +173,15 @@ export const skillRegistryConfigSchema = z.object({
   downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
 })
 
+export const skillHomeBridgeConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Bridge supported home skill roots into workspace asset discovery'),
+  roots: z.union([z.string(), z.array(z.string())]).optional()
+    .describe('Ordered home skill roots. Supports absolute paths or paths starting with ~')
+})
+
 export const skillsConfigSchema = z.object({
-  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings')
+  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings'),
+  homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
 
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>

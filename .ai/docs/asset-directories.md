@@ -38,6 +38,9 @@ dependencies:
 解析规则：
 
 - 先在当前 workspace 和已启用插件的 skills 中按名称解析。
+- 默认还会桥接用户真实 home 下的常见 skill roots：`~/.agents/skills`、`~/.claude/skills`、`~/.config/opencode/skills`、`~/.gemini/skills`。
+- bridge 进来的 home skill 会进入统一 workspace assets，并像项目 skill 一样参与默认选择。
+- 项目 skill、插件 skill 和运行时下载的 registry dependency 都优先于同名 home skill。
 - 本地找不到时，会按 registry 拉取并缓存到 `./.ai/caches/skill-dependencies/`。
 - 未配置 registry 时，默认使用 Vercel 的公开 Skills Hub：`https://skills.sh`。
 - 如果需要切到兼容的私有 registry，可以在 `.ai.config.*` 配置：
@@ -57,6 +60,26 @@ skills:
 ```
 
 依赖安装只会写入项目 AI 目录的 cache，不会修改用户真实 home。adapter 启动时会把最终解析出的 skill 列表投影到对应原生目录。
+
+默认 `.gitignore` 已经忽略 `./.ai/.mock`、`./.ai/.local` 和 `./.ai/caches`。如果你把 AI 基目录改到其他位置，建议同步忽略新的 mock / cache 目录，避免把桥接后的本地 skill 投影结果误纳入版本控制。
+
+如果要关闭 home bridge 或覆盖默认扫描根目录，可以配置：
+
+```yaml
+skills:
+  homeBridge:
+    enabled: false
+```
+
+```yaml
+skills:
+  homeBridge:
+    roots:
+      - ~/.agents/skills
+      - /opt/team-skills
+```
+
+`roots` 只支持绝对路径或以 `~` 开头的路径；不存在的目录会被跳过。
 
 ## 环境变量
 

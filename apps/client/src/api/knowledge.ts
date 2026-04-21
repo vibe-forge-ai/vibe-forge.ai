@@ -44,6 +44,7 @@ export interface SkillSummary {
   description: string
   always: boolean
   instancePath?: string
+  source: 'project' | 'plugin' | 'home'
 }
 
 export interface SpecDetail extends SpecSummary {

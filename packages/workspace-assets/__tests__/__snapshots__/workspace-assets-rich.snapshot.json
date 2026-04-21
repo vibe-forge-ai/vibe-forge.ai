@@ -510,12 +510,14 @@
           "assetId": "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "claude-code",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Claude Code native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
@@ -523,6 +525,7 @@
           "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "claude-code",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Claude Code native hooks bridge.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -531,6 +534,7 @@
           "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "claude-code",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Claude Code native hooks bridge.",
           "packageId": "@vibe-forge/plugin-telemetry"
         },
@@ -538,12 +542,14 @@
           "assetId": "mcpServer:workspace:workspace:docs:<workspace>/.ai.config.json",
           "adapter": "claude-code",
           "status": "native",
+          "source": "project",
           "reason": "Mapped into adapter MCP settings."
         },
         {
           "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -552,24 +558,28 @@
           "assetId": "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "claude-code",
           "status": "native",
+          "source": "project",
           "reason": "Synced into the Claude mock home as a native skill."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -578,6 +588,7 @@
           "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
           "adapter": "claude-code",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         }
       ]
@@ -598,6 +609,7 @@
           "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "adapter": "codex",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -606,6 +618,7 @@
           "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "adapter": "codex",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -614,12 +627,14 @@
           "assetId": "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "codex",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Codex native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
@@ -627,6 +642,7 @@
           "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "codex",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Codex native hooks bridge.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -635,6 +651,7 @@
           "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "codex",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Codex native hooks bridge.",
           "packageId": "@vibe-forge/plugin-telemetry"
         },
@@ -642,12 +659,14 @@
           "assetId": "mcpServer:workspace:workspace:docs:<workspace>/.ai.config.json",
           "adapter": "codex",
           "status": "translated",
+          "source": "project",
           "reason": "Translated into adapter-specific MCP configuration."
         },
         {
           "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "adapter": "codex",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -656,6 +675,7 @@
           "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "adapter": "codex",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Codex mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -664,6 +684,7 @@
           "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -672,18 +693,21 @@
           "assetId": "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -692,6 +716,7 @@
           "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
           "adapter": "codex",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         }
       ]
@@ -712,6 +737,7 @@
           "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "adapter": "gemini",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -720,6 +746,7 @@
           "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "adapter": "gemini",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -728,12 +755,14 @@
           "assetId": "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "gemini",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Gemini native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
@@ -741,6 +770,7 @@
           "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "gemini",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Gemini native hooks bridge.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -749,6 +779,7 @@
           "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "gemini",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the Gemini native hooks bridge.",
           "packageId": "@vibe-forge/plugin-telemetry"
         },
@@ -756,12 +787,14 @@
           "assetId": "mcpServer:workspace:workspace:docs:<workspace>/.ai.config.json",
           "adapter": "gemini",
           "status": "translated",
+          "source": "project",
           "reason": "Translated into adapter-specific MCP configuration."
         },
         {
           "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "adapter": "gemini",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -770,6 +803,7 @@
           "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "adapter": "gemini",
           "status": "skipped",
+          "source": "plugin",
           "reason": "No stable native Gemini mapping exists for this asset kind in V1.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -778,6 +812,7 @@
           "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -786,24 +821,28 @@
           "assetId": "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "gemini",
           "status": "native",
+          "source": "project",
           "reason": "Symlinked into GEMINI_CLI_HOME as a native Gemini skill."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -812,6 +851,7 @@
           "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
           "adapter": "gemini",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         }
       ]
@@ -863,6 +903,7 @@
           "assetId": "agent:plugin:1:demo/release-helper:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/agents/release-helper.md",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -871,6 +912,7 @@
           "assetId": "command:plugin:1:demo/review:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/commands/review.md",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -879,12 +921,14 @@
           "assetId": "entity:workspace:workspace:architect:<workspace>/.ai/entities/architect/README.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "hookPlugin:plugin:0:logger:<workspace>/node_modules/@vibe-forge/plugin-logger",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the OpenCode native hooks bridge.",
           "packageId": "@vibe-forge/plugin-logger"
         },
@@ -892,6 +936,7 @@
           "assetId": "hookPlugin:plugin:1:demo/demo:<workspace>/node_modules/@vibe-forge/plugin-demo",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the OpenCode native hooks bridge.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -900,6 +945,7 @@
           "assetId": "hookPlugin:plugin:2:telemetry:<workspace>/node_modules/@vibe-forge/plugin-telemetry",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mapped into the OpenCode native hooks bridge.",
           "packageId": "@vibe-forge/plugin-telemetry"
         },
@@ -907,12 +953,14 @@
           "assetId": "mcpServer:workspace:workspace:docs:<workspace>/.ai.config.json",
           "adapter": "opencode",
           "status": "translated",
+          "source": "project",
           "reason": "Translated into adapter-specific MCP configuration."
         },
         {
           "assetId": "mode:plugin:1:demo/strict:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/modes/strict.md",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -921,6 +969,7 @@
           "assetId": "nativePlugin:plugin:1:demo/demo-plugin:<workspace>/node_modules/@vibe-forge/plugin-demo/opencode/plugins/demo-plugin.js",
           "adapter": "opencode",
           "status": "native",
+          "source": "plugin",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native OpenCode asset.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -929,6 +978,7 @@
           "assetId": "rule:plugin:1:demo/security:<workspace>/node_modules/@vibe-forge/plugin-demo/rules/security.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -937,24 +987,28 @@
           "assetId": "rule:workspace:workspace:review:<workspace>/.ai/rules/review.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "opencode",
           "status": "native",
+          "source": "project",
           "reason": "Mirrored into OPENCODE_CONFIG_DIR as a native skill."
         },
         {
           "assetId": "skill:workspace:workspace:research:<workspace>/.ai/skills/research/SKILL.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         },
         {
           "assetId": "spec:plugin:1:demo/release:<workspace>/node_modules/@vibe-forge/plugin-demo/specs/release/index.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "plugin",
           "reason": "Mapped into the generated system prompt.",
           "scope": "demo",
           "packageId": "@vibe-forge/plugin-demo"
@@ -963,6 +1017,7 @@
           "assetId": "spec:workspace:workspace:release:<workspace>/.ai/specs/release/index.md",
           "adapter": "opencode",
           "status": "prompt",
+          "source": "project",
           "reason": "Mapped into the generated system prompt."
         }
       ]

@@ -50,9 +50,10 @@ export function aiRouter(): Router {
 
   router.post('/skills', async (ctx) => {
     try {
+      const skill = await createProjectSkill(workspaceRoot, (ctx.request.body ?? {}) as Record<string, unknown>)
       ctx.status = 201
       ctx.body = {
-        skill: await createProjectSkill(workspaceRoot, (ctx.request.body ?? {}) as Record<string, unknown>)
+        skill: presentSkillDetail(skill, workspaceRoot)
       }
     } catch (err) {
       if (isHttpError(err)) throw err
