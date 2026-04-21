@@ -949,6 +949,16 @@
     "hint": "Press Enter to send, Shift + Enter for new line, type / @ # for completion",
     "newSessionGuide": {
       "loading": "Loading...",
+      "searchPlaceholder": "Search actions, prompts, or targets",
+      "favoriteTitle": "Favorites",
+      "recentTitle": "Recent",
+      "emptySearch": "No matching actions",
+      "showMore": "Show {{count}} more",
+      "showLess": "Show less",
+      "favoriteAction": "Favorite action",
+      "unfavoriteAction": "Unfavorite action",
+      "fallbackPresetPrefix": "Preset",
+      "fallbackActionPrefix": "Action",
       "announcements": {
         "title": "Announcements"
       },
@@ -1204,6 +1214,7 @@
         "array": "Array"
       },
       "effort": {
+        "default": "Default",
         "low": "Low",
         "medium": "Medium",
         "high": "High",
@@ -1485,6 +1496,101 @@
         "customInstructions": {
           "label": "Custom Instructions",
           "desc": "Additional guidance for the assistant"
+        },
+        "startupPresets": {
+          "label": "Startup Presets",
+          "desc": "Show one-click startup environment presets on the new session page"
+        },
+        "builtinActions": {
+          "label": "Built-in Actions",
+          "desc": "Show reusable development action templates on the new session page"
+        },
+        "starterItem": {
+          "title": {
+            "label": "Title",
+            "desc": "Name shown in the list"
+          },
+          "description": {
+            "label": "Description",
+            "desc": "Supporting copy shown in the list"
+          },
+          "icon": {
+            "label": "Icon",
+            "desc": "Material Symbols icon name, for example `rocket_launch`"
+          },
+          "mode": {
+            "label": "Mode",
+            "desc": "Target mode selected for the new session"
+          },
+          "target": {
+            "label": "Target",
+            "desc": "Workspace uses the id; Agent / entity / spec use the resource name"
+          },
+          "targetLabel": {
+            "label": "Target Label",
+            "desc": "Optional display label shown in the list"
+          },
+          "targetDescription": {
+            "label": "Target Description",
+            "desc": "Optional supporting description for the selected target"
+          },
+          "model": {
+            "label": "Model",
+            "desc": "Model value, including optional `service,model` form"
+          },
+          "adapter": {
+            "label": "Adapter",
+            "desc": "Adapter selected when the preset is applied"
+          },
+          "account": {
+            "label": "Account",
+            "desc": "Account selected when the preset is applied"
+          },
+          "effort": {
+            "label": "Effort",
+            "desc": "Reasoning effort applied when the preset is used"
+          },
+          "permissionMode": {
+            "label": "Permission Mode",
+            "desc": "Permission mode applied when the preset is used"
+          },
+          "worktreeCreate": {
+            "label": "Use Worktree",
+            "desc": "Enable a managed worktree for this preset"
+          },
+          "worktreeEnvironment": {
+            "label": "Worktree Environment",
+            "desc": "Managed worktree environment id used by this preset"
+          },
+          "branchName": {
+            "label": "Branch Name",
+            "desc": "Branch name prefilled when the preset is applied"
+          },
+          "branchKind": {
+            "label": "Branch Kind",
+            "desc": "Whether the branch comes from a local or remote ref"
+          },
+          "branchMode": {
+            "label": "Branch Mode",
+            "desc": "Whether to checkout an existing branch or create a new one"
+          },
+          "prompt": {
+            "label": "Prompt",
+            "desc": "Prompt prefilled into the sender when clicked"
+          },
+          "files": {
+            "label": "Files",
+            "desc": "File paths attached to the sender when clicked"
+          },
+          "rules": {
+            "label": "Rules",
+            "desc": "Rule paths or rule identifiers that will be converted into starter context when possible"
+          },
+          "skills": {
+            "label": "Skills",
+            "desc": "Skill paths or skill identifiers that will be converted into starter context when possible"
+          },
+          "worktreeEnabledBadge": "Worktree"
         }
       },
       "models": {
@@ -1674,6 +1780,28 @@
       "conversation": {
         "friendly": "Friendly",
         "programmatic": "Programmatic"
+      },
+      "conversationStarterMode": {
+        "default": "Default",
+        "workspace": "Workspace",
+        "agent": "Agent",
+        "entity": "Entity",
+        "spec": "Spec"
+      },
+      "permissionMode": {
+        "default": "Default",
+        "acceptEdits": "Accept Edits",
+        "plan": "Plan",
+        "dontAsk": "Don't Ask",
+        "bypassPermissions": "Bypass Permissions"
+      },
+      "branchKind": {
+        "local": "Local Branch",
+        "remote": "Remote Branch"
+      },
+      "branchMode": {
+        "checkout": "Checkout",
+        "create": "Create"
       },
       "mcp": {
         "command": "Command",

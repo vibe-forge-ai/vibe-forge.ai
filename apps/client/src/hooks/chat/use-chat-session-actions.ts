@@ -80,12 +80,31 @@ export function useChatSessionActions({
     ? undefined
     : optimisticCreations[session.id]
 
-  const navigateWithCurrentSearch = useCallback((pathname: string) => {
+  const navigateWithSearchPatch = useCallback((
+    pathname: string,
+    patch?: Record<string, string>
+  ) => {
+    const nextParams = new URLSearchParams(location.search)
+
+    if (patch != null) {
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === '') {
+          nextParams.delete(key)
+        } else {
+          nextParams.set(key, value)
+        }
+      }
+    }
+
     void navigate({
       pathname,
-      search: location.search
+      search: nextParams.toString() === '' ? '' : `?${nextParams.toString()}`
     })
   }, [location.search, navigate])
+
+  const navigateWithCurrentSearch = useCallback((pathname: string) => {
+    navigateWithSearchPatch(pathname)
+  }, [navigateWithSearchPatch])
 
   const insertSessionIntoCache = useCallback(async (newSession: Session) => {
     await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -252,9 +271,11 @@ export function useChatSessionActions({
       [creation.session.id]: creation
     }))
     void insertSessionIntoCache(creation.session)
-    navigateWithCurrentSearch(`/session/${creation.session.id}`)
+    navigateWithSearchPatch(`/session/${creation.session.id}`, {
+      senderHeader: 'collapsed'
+    })
     void runSessionCreationRequest(request)
-  }, [insertSessionIntoCache, navigateWithCurrentSearch, runSessionCreationRequest, setOptimisticCreations])
+  }, [insertSessionIntoCache, navigateWithSearchPatch, runSessionCreationRequest, setOptimisticCreations])
 
   const retrySessionCreation = useCallback(async () => {
     if (optimisticCreation == null) {

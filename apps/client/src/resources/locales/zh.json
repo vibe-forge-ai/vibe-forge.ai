@@ -950,6 +950,16 @@
     "hint": "按 Enter 发送，Shift + Enter 换行，输入 / @ # 触发补全",
     "newSessionGuide": {
       "loading": "正在加载...",
+      "searchPlaceholder": "搜索动作、提示词或目标",
+      "favoriteTitle": "收藏",
+      "recentTitle": "最近使用",
+      "emptySearch": "没有匹配的动作",
+      "showMore": "展开剩余 {{count}} 项",
+      "showLess": "收起列表",
+      "favoriteAction": "收藏动作",
+      "unfavoriteAction": "取消收藏",
+      "fallbackPresetPrefix": "预设",
+      "fallbackActionPrefix": "动作",
       "announcements": {
         "title": "最新公告"
       },
@@ -1205,6 +1215,7 @@
         "array": "数组"
       },
       "effort": {
+        "default": "默认",
         "low": "低",
         "medium": "中",
         "high": "高",
@@ -1486,6 +1497,101 @@
         "customInstructions": {
           "label": "自定义指令",
           "desc": "为对话提供额外的提示与约束"
+        },
+        "startupPresets": {
+          "label": "启动预设",
+          "desc": "在新会话页展示一组可一键应用的启动环境预设"
+        },
+        "builtinActions": {
+          "label": "内置开发动作",
+          "desc": "在新会话页展示一组可直接套用的开发动作模板"
+        },
+        "starterItem": {
+          "title": {
+            "label": "标题",
+            "desc": "列表中展示的名称"
+          },
+          "description": {
+            "label": "说明",
+            "desc": "列表中展示的补充描述"
+          },
+          "icon": {
+            "label": "图标",
+            "desc": "Material Symbols 图标名称，例如 `rocket_launch`"
+          },
+          "mode": {
+            "label": "启动模式",
+            "desc": "新会话默认切换到的目标模式"
+          },
+          "target": {
+            "label": "目标资源",
+            "desc": "Workspace 使用 id，Agent / 实体 / 流程使用名称"
+          },
+          "targetLabel": {
+            "label": "目标展示名",
+            "desc": "可选的列表展示名称；留空时使用目标资源值"
+          },
+          "targetDescription": {
+            "label": "目标说明",
+            "desc": "可选的目标补充说明"
+          },
+          "model": {
+            "label": "模型",
+            "desc": "模型值，支持 `service,model` 形式"
+          },
+          "adapter": {
+            "label": "适配器",
+            "desc": "启动时切换到的 adapter"
+          },
+          "account": {
+            "label": "账号",
+            "desc": "启动时切换到的账号"
+          },
+          "effort": {
+            "label": "推理强度",
+            "desc": "启动时应用的推理强度"
+          },
+          "permissionMode": {
+            "label": "权限模式",
+            "desc": "启动时应用的权限模式"
+          },
+          "worktreeCreate": {
+            "label": "使用工作树",
+            "desc": "是否默认给这个预设启用托管 worktree"
+          },
+          "worktreeEnvironment": {
+            "label": "工作树环境",
+            "desc": "该预设使用的 worktree 环境 id"
+          },
+          "branchName": {
+            "label": "分支名",
+            "desc": "启动时预填的目标分支名"
+          },
+          "branchKind": {
+            "label": "分支来源",
+            "desc": "分支来自本地还是远端"
+          },
+          "branchMode": {
+            "label": "分支动作",
+            "desc": "切换已有分支还是创建新分支"
+          },
+          "prompt": {
+            "label": "预置提示词",
+            "desc": "点击后预填到 sender 的提示词"
+          },
+          "files": {
+            "label": "关联文件",
+            "desc": "点击后附带到 sender 的文件路径列表"
+          },
+          "rules": {
+            "label": "关联规则",
+            "desc": "规则文件路径或规则标识；会尽量转换为上下文附件"
+          },
+          "skills": {
+            "label": "关联技能",
+            "desc": "技能文件路径或技能标识；会尽量转换为上下文附件"
+          },
+          "worktreeEnabledBadge": "工作树"
         }
       },
       "models": {
@@ -1675,6 +1781,28 @@
       "conversation": {
         "friendly": "友好",
         "programmatic": "程序化"
+      },
+      "conversationStarterMode": {
+        "default": "默认",
+        "workspace": "Workspace",
+        "agent": "Agent",
+        "entity": "实体",
+        "spec": "流程"
+      },
+      "permissionMode": {
+        "default": "默认",
+        "acceptEdits": "接受编辑",
+        "plan": "计划",
+        "dontAsk": "不询问",
+        "bypassPermissions": "跳过权限"
+      },
+      "branchKind": {
+        "local": "本地分支",
+        "remote": "远端分支"
+      },
+      "branchMode": {
+        "checkout": "切换",
+        "create": "创建"
       },
       "mcp": {
         "command": "命令",

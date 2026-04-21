@@ -84,6 +84,255 @@
   },
   "conversation": {
     "createSessionWorktree": true,
-    "worktreeEnvironment": "default"
+    "worktreeEnvironment": "default",
+    "startupPresets": [
+      {
+        "title": "标准开发 Agent",
+        "description": "使用 std/dev-planner 起步，带默认工作树和较高推理强度。",
+        "icon": "group_work",
+        "mode": "agent",
+        "target": "std/dev-planner",
+        "adapter": "codex",
+        "effort": "high",
+        "worktree": {
+          "create": true,
+          "environment": "default"
+        },
+        "prompt": "请先阅读仓库规则和当前上下文，拆解方案后开始推进实现。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md",
+          ".ai/rules/CODING-STYLE.md"
+        ],
+        "skills": [
+          "std/standard-dev-flow"
+        ]
+      },
+      {
+        "title": "标准开发 Flow",
+        "description": "直接按标准开发流程推进当前需求，适合需求完整的实现型任务。",
+        "icon": "account_tree",
+        "mode": "spec",
+        "target": "std/standard-dev-flow",
+        "adapter": "codex",
+        "effort": "high",
+        "worktree": {
+          "create": true,
+          "environment": "default"
+        },
+        "prompt": "请按照标准开发流程推进当前需求，必要时同步给出计划、实现、验证和回顾。",
+        "skills": [
+          "std/standard-dev-flow"
+        ]
+      },
+      {
+        "title": "Bug 修复模式",
+        "description": "聚焦当前缺陷定位与修复，优先给出复现路径、根因分析和验证结果。",
+        "icon": "bug_report",
+        "adapter": "codex",
+        "effort": "high",
+        "worktree": {
+          "create": true,
+          "environment": "default"
+        },
+        "prompt": "请先定位当前问题的复现路径和根因，再给出最小修复方案、验证步骤与风险说明。",
+        "rules": [
+          ".ai/rules/CODING-STYLE.md",
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "代码评审模式",
+        "description": "按 review 心智优先找风险、回归和缺测点，适合审查当前改动。",
+        "icon": "fact_check",
+        "adapter": "codex",
+        "effort": "medium",
+        "prompt": "请先以代码评审方式检查当前改动，优先指出风险、行为回归、边界条件和缺失测试。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md",
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "文档梳理模式",
+        "description": "面向用户补齐说明文档、接入步骤和使用示例。",
+        "icon": "menu_book",
+        "adapter": "codex",
+        "effort": "medium",
+        "prompt": "请梳理当前功能的用户使用路径，补齐必要文档、示例和注意事项。",
+        "rules": [
+          ".ai/rules/USAGE.md"
+        ]
+      },
+      {
+        "title": "重构推进模式",
+        "description": "适合结构性改造，先拆边界和迁移路径，再推进实现与验证。",
+        "icon": "architecture",
+        "adapter": "codex",
+        "effort": "high",
+        "worktree": {
+          "create": true,
+          "environment": "default"
+        },
+        "prompt": "请先识别当前模块的结构问题与边界，再给出渐进式重构方案、实施步骤和验证计划。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md",
+          ".ai/rules/REFACTOR-TODO.md"
+        ]
+      },
+      {
+        "title": "探索调研模式",
+        "description": "适合不确定方案的任务，先对比选项、权衡约束，再形成建议。",
+        "icon": "explore",
+        "adapter": "codex",
+        "effort": "high",
+        "prompt": "请先梳理当前问题的目标、约束和候选方案，对比利弊后再给出建议与下一步实施路径。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md"
+        ]
+      }
+    ],
+    "builtinActions": [
+      {
+        "title": "发布",
+        "description": "梳理发布范围、执行发布前检查，并整理变更摘要。",
+        "icon": "rocket_launch",
+        "prompt": "请梳理本次发布范围，执行发布前检查，并输出发布步骤与变更摘要。",
+        "rules": [
+          ".ai/rules/RELEASE.md",
+          ".ai/rules/release/process.md",
+          ".ai/rules/release/scope.md"
+        ]
+      },
+      {
+        "title": "修复流水线",
+        "description": "排查当前仓库的 CI / workflow 问题，修复后补充验证结果。",
+        "icon": "lan",
+        "prompt": "请排查当前仓库流水线失败的原因，修复问题并说明验证结果。",
+        "rules": [
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "补回归测试",
+        "description": "为当前改动补充最小必要测试，并说明覆盖范围与剩余风险。",
+        "icon": "science",
+        "prompt": "请为当前改动补充必要的回归测试，并说明覆盖范围与剩余风险。",
+        "rules": [
+          ".ai/rules/CODING-STYLE.md",
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "代码评审",
+        "description": "审查当前改动，优先列出风险、行为回归和缺失测试。",
+        "icon": "rate_review",
+        "prompt": "请以代码评审方式检查当前改动，优先列出高风险问题、行为回归和缺失测试。",
+        "rules": [
+          ".ai/rules/CODING-STYLE.md",
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "排查线上问题",
+        "description": "快速收敛现象、影响范围、根因和止损方案。",
+        "icon": "emergency_home",
+        "prompt": "请按线上故障排查方式推进：先收敛现象和影响范围，再分析根因、止损方案和验证步骤。",
+        "rules": [
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "梳理需求",
+        "description": "把模糊需求拆成目标、边界、验收口径和实施任务。",
+        "icon": "assignment",
+        "prompt": "请先把当前需求拆成目标、边界、约束、验收标准和建议实施步骤。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md"
+        ]
+      },
+      {
+        "title": "设计技术方案",
+        "description": "给出候选方案、取舍依据、落地步骤和风险项。",
+        "icon": "design_services",
+        "prompt": "请先整理问题背景和约束，再给出可选技术方案、利弊分析、推荐方案和落地步骤。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md"
+        ]
+      },
+      {
+        "title": "模块重构",
+        "description": "识别结构债务并制定渐进式重构路径。",
+        "icon": "schema",
+        "prompt": "请先识别当前模块的结构问题，再给出渐进式重构计划、关键改动点和验证方式。",
+        "rules": [
+          ".ai/rules/REFACTOR-TODO.md",
+          ".ai/rules/ARCHITECTURE.md"
+        ]
+      },
+      {
+        "title": "补充文档",
+        "description": "完善接入说明、使用手册、FAQ 或迁移文档。",
+        "icon": "docs",
+        "prompt": "请补齐当前功能的用户文档，包含使用方式、配置入口、示例和注意事项。",
+        "rules": [
+          ".ai/rules/USAGE.md"
+        ]
+      },
+      {
+        "title": "升级依赖",
+        "description": "评估升级影响，完成兼容性修复和验证。",
+        "icon": "system_update_alt",
+        "prompt": "请评估当前依赖升级的影响范围，完成必要修复，并说明验证结果与剩余风险。",
+        "rules": [
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "分析性能",
+        "description": "定位性能瓶颈，给出优化优先级和验证方式。",
+        "icon": "speed",
+        "prompt": "请先识别当前性能瓶颈与观测点，再给出优化建议、优先级和验证方案。",
+        "rules": [
+          ".ai/rules/ARCHITECTURE.md",
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "安全排查",
+        "description": "检查常见安全风险、权限边界和敏感信息处理。",
+        "icon": "shield_locked",
+        "prompt": "请从输入校验、权限边界、敏感信息处理和依赖风险几个角度检查当前实现。",
+        "rules": [
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "清理类型错误",
+        "description": "集中处理 TypeScript / 类型系统错误并补齐约束。",
+        "icon": "data_object",
+        "prompt": "请先梳理当前类型错误和薄弱约束，再逐步修复并说明影响范围。",
+        "rules": [
+          ".ai/rules/CODING-STYLE.md"
+        ]
+      },
+      {
+        "title": "补监控与告警",
+        "description": "完善埋点、日志、监控指标和告警建议。",
+        "icon": "monitoring",
+        "prompt": "请为当前功能补齐必要的日志、监控指标、告警建议和排障入口。",
+        "rules": [
+          ".ai/rules/MAINTENANCE.md"
+        ]
+      },
+      {
+        "title": "整理发布回滚预案",
+        "description": "梳理发布窗口、回滚步骤和风险兜底方案。",
+        "icon": "restart_alt",
+        "prompt": "请为当前版本整理发布步骤、回滚条件、回滚方案和风险兜底说明。",
+        "rules": [
+          ".ai/rules/RELEASE.md"
+        ]
+      }
+    ]
   }
 }
