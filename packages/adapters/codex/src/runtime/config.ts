@@ -23,18 +23,20 @@ const MANAGED_ROOT_BLOCK_PATTERN = new RegExp(
   'g'
 )
 
-const MANAGED_PROJECT_BLOCK_PATTERN = new RegExp(
-  `${MANAGED_PROJECT_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
-    MANAGED_PROJECT_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  }\\n?`,
-  'g'
-)
-
 const LEGACY_MANAGED_CONFIG_BLOCK_PATTERN = new RegExp(
   `${LEGACY_MANAGED_CONFIG_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${
     LEGACY_MANAGED_CONFIG_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }\\n?`,
   'g'
+)
+
+const MANAGED_PROJECT_MARKER_LINES_PATTERN = new RegExp(
+  [
+    `^${MANAGED_PROJECT_BLOCK_START.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+    '^# This project block is managed by Vibe Forge\\.$',
+    `^${MANAGED_PROJECT_BLOCK_END.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`
+  ].join('|'),
+  'gm'
 )
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
@@ -48,7 +50,101 @@ interface TomlSection {
   lines: string[]
 }
 
+type TomlStringScanState = 'none' | 'multiline-basic' | 'multiline-literal'
+
 const normalizeTomlContent = (content: string) => content.replaceAll('\r\n', '\n')
+
+const countConsecutiveCharacters = (content: string, startIndex: number, character: '"' | "'") => {
+  let index = startIndex
+  while (content[index] === character) {
+    index += 1
+  }
+  return index - startIndex
+}
+
+const getTomlLineEndStringState = (line: string, initialState: TomlStringScanState): TomlStringScanState => {
+  let state: TomlStringScanState | 'basic' | 'literal' = initialState
+
+  for (let index = 0; index < line.length;) {
+    if (state === 'none') {
+      const character = line[index]
+      if (character === '#') break
+      if (character === '"') {
+        const quoteCount = countConsecutiveCharacters(line, index, '"')
+        if (quoteCount >= 3) {
+          state = 'multiline-basic'
+          index += 3
+          continue
+        }
+        state = 'basic'
+        index += 1
+        continue
+      }
+      if (character === "'") {
+        const quoteCount = countConsecutiveCharacters(line, index, "'")
+        if (quoteCount >= 3) {
+          state = 'multiline-literal'
+          index += 3
+          continue
+        }
+        state = 'literal'
+        index += 1
+        continue
+      }
+      index += 1
+      continue
+    }
+
+    if (state === 'basic') {
+      if (line[index] === '\\') {
+        index += 2
+        continue
+      }
+      if (line[index] === '"') {
+        state = 'none'
+        index += 1
+        continue
+      }
+      index += 1
+      continue
+    }
+
+    if (state === 'literal') {
+      if (line[index] === "'") {
+        state = 'none'
+        index += 1
+        continue
+      }
+      index += 1
+      continue
+    }
+
+    if (state === 'multiline-basic') {
+      const quoteCount = countConsecutiveCharacters(line, index, '"')
+      if (quoteCount >= 3) {
+        state = 'none'
+        index += Math.min(quoteCount, 5)
+        continue
+      }
+      if (line[index] === '\\') {
+        index += 2
+        continue
+      }
+      index += 1
+      continue
+    }
+
+    const quoteCount = countConsecutiveCharacters(line, index, "'")
+    if (quoteCount >= 3) {
+      state = 'none'
+      index += Math.min(quoteCount, 5)
+      continue
+    }
+    index += 1
+  }
+
+  return state === 'basic' || state === 'literal' ? 'none' : state
+}
 
 const splitTomlSections = (content: string): TomlSection[] => {
   const normalizedContent = normalizeTomlContent(content)
@@ -58,9 +154,10 @@ const splitTomlSections = (content: string): TomlSection[] => {
     header: undefined,
     lines: []
   }
+  let stringState: TomlStringScanState = 'none'
 
   for (const line of lines) {
-    if (TOML_TABLE_HEADER_PATTERN.test(line)) {
+    if (stringState === 'none' && TOML_TABLE_HEADER_PATTERN.test(line)) {
       if (currentSection.lines.length > 0) {
         sections.push(currentSection)
       }
@@ -68,10 +165,12 @@ const splitTomlSections = (content: string): TomlSection[] => {
         header: line.trim(),
         lines: [line]
       }
+      stringState = getTomlLineEndStringState(line, stringState)
       continue
     }
 
     currentSection.lines.push(line)
+    stringState = getTomlLineEndStringState(line, stringState)
   }
 
   if (currentSection.lines.length > 0) {
@@ -94,6 +193,8 @@ const trimBlankLines = (lines: string[]) => {
 
   return lines.slice(start, end)
 }
+
+const joinTomlSections = (sections: TomlSection[]) => sections.map(section => section.lines.join('\n')).join('\n')
 
 const getTomlHeaderKey = (header: string | undefined) => {
   if (header == null) return undefined
@@ -243,20 +344,26 @@ const upsertManagedRootBlock = (params: {
   const managedBlock = buildManagedCodexRootBlock({
     checkForUpdateOnStartup: params.checkForUpdateOnStartup
   })
-  const firstTableMatch = strippedContent.match(/^\s*\[/m)
+  const sections = splitTomlSections(strippedContent)
+  const firstTableSectionIndex = sections.findIndex(section => section.header != null)
   const managedProjectBlockIndex = strippedContent.indexOf(MANAGED_PROJECT_BLOCK_START)
 
   if (strippedContent === '') {
     return managedBlock
   }
 
-  if (firstTableMatch == null || firstTableMatch.index == null) {
+  if (firstTableSectionIndex < 0) {
     return `${strippedContent}\n\n${managedBlock}`
   }
 
-  const insertionIndex = managedProjectBlockIndex >= 0 && managedProjectBlockIndex < firstTableMatch.index
-    ? managedProjectBlockIndex
-    : firstTableMatch.index
+  const firstTableHeader = sections[firstTableSectionIndex]?.header
+  const firstTableIndex = firstTableHeader == null
+    ? -1
+    : strippedContent.indexOf(firstTableHeader)
+  const insertionIndex =
+    managedProjectBlockIndex >= 0 && (firstTableIndex < 0 || managedProjectBlockIndex < firstTableIndex)
+      ? managedProjectBlockIndex
+      : firstTableIndex
   const beforeTables = strippedContent.slice(0, insertionIndex).trimEnd()
   const fromFirstTable = strippedContent.slice(insertionIndex).trimStart()
 
@@ -272,7 +379,7 @@ const upsertManagedProjectBlock = (params: {
   workspacePath: string
 }) => {
   const strippedManagedContent = normalizeTomlContent(params.currentContent)
-    .replace(MANAGED_PROJECT_BLOCK_PATTERN, '')
+    .replace(MANAGED_PROJECT_MARKER_LINES_PATTERN, '')
     .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
   const sections = splitTomlSections(strippedManagedContent)
   const preservedProjectBodyLines: string[] = []
