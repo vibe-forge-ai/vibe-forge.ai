@@ -27,6 +27,7 @@ export interface ConfigSourceState {
   resolvedConfig?: Config
   configPath?: string
   extendPaths: string[]
+  resolvedExtendPaths: string[]
 }
 
 export interface ResolvedConfigState {
@@ -345,7 +346,9 @@ const loadResolvedConfigFileState = async (
   configPath: string,
   jsonVariables: Record<string, string | null | undefined>,
   loadingStack: Set<string>
-): Promise<Required<Pick<ConfigSourceState, 'rawConfig' | 'resolvedConfig' | 'extendPaths'>>> => {
+): Promise<
+  Required<Pick<ConfigSourceState, 'rawConfig' | 'resolvedConfig' | 'extendPaths' | 'resolvedExtendPaths'>>
+> => {
   if (loadingStack.has(configPath)) {
     throw new Error(`Circular config extend detected: ${
       [
@@ -368,6 +371,7 @@ const loadResolvedConfigFileState = async (
   nextLoadingStack.add(configPath)
 
   let mergedExtendedConfig: Config | undefined
+  const resolvedExtendPaths: string[] = []
   for (const extendPath of toExtendPaths(rawConfig.extend)) {
     const extendedConfigPath = resolveExistingExtendPath(configPath, extendPath)
     if (extendedConfigPath == null) {
@@ -380,6 +384,14 @@ const loadResolvedConfigFileState = async (
       nextLoadingStack
     )
     mergedExtendedConfig = mergeConfigs(mergedExtendedConfig, extendedConfig.resolvedConfig)
+    if (!resolvedExtendPaths.includes(extendedConfigPath)) {
+      resolvedExtendPaths.push(extendedConfigPath)
+    }
+    for (const nestedExtendPath of extendedConfig.resolvedExtendPaths) {
+      if (!resolvedExtendPaths.includes(nestedExtendPath)) {
+        resolvedExtendPaths.push(nestedExtendPath)
+      }
+    }
   }
 
   const rawEntryConfig = omitExtendField(rawConfig)
@@ -390,7 +402,8 @@ const loadResolvedConfigFileState = async (
       mergedExtendedConfig,
       rawEntryConfig
     ) ?? rawEntryConfig,
-    extendPaths: toExtendPaths(rawConfig.extend)
+    extendPaths: toExtendPaths(rawConfig.extend),
+    resolvedExtendPaths
   }
 }
 

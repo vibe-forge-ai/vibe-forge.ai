@@ -15,6 +15,7 @@ export type WSEvent<
   | { type: 'adapter_result'; result: any; usage?: any }
   | { type: 'adapter_event'; data: any }
   | { type: 'session_updated'; session: TSession }
+  | { type: 'config_updated'; workspaceFolder: string; updatedAt: number }
   | { type: 'session_queue_updated'; queue: SessionMessageQueueState }
   | { type: 'interaction_request'; id: string; payload: TInteractionPayload }
   | { type: 'interaction_response'; id: string; data: string | string[] }

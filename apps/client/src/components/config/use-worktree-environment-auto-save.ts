@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- auto-save and conflict resolution share one state machine here. */
 import { useEffect, useRef } from 'react'
 
 import type { ConfigSource } from '@vibe-forge/core'
@@ -9,6 +10,7 @@ import type {
 
 import { deleteWorktreeEnvironment, getApiErrorMessage, saveWorktreeEnvironment } from '#~/api'
 
+import { resolveRemoteConfigChangeAction, serializeComparableConfigValue } from './configConflict'
 import type { TranslationFn } from './configUtils'
 import {
   buildDraftScripts,
@@ -18,10 +20,33 @@ import {
 
 const AUTO_SAVE_DELAY_MS = 800
 
-const serializeDraftScripts = (scripts: Record<WorktreeEnvironmentScriptKey, string>) => JSON.stringify(scripts)
+const serializeDraftScripts = (scripts: Record<WorktreeEnvironmentScriptKey, string>) => (
+  serializeComparableConfigValue(scripts)
+)
+
+interface SyncedEnvironmentDraft {
+  id: string
+  name: string
+  scripts: string
+}
 
 interface MessageApi {
   error: (content: string) => unknown
+}
+
+interface ModalApi {
+  confirm: (options: {
+    title: string
+    content: string
+    okText: string
+    cancelText: string
+    cancelButtonProps?: { danger?: boolean }
+    closable?: boolean
+    keyboard?: boolean
+    maskClosable?: boolean
+    onOk?: () => unknown
+    onCancel?: () => unknown
+  }) => unknown
 }
 
 export function useWorktreeEnvironmentAutoSave({
@@ -29,6 +54,7 @@ export function useWorktreeEnvironmentAutoSave({
   draftScripts,
   environments,
   message,
+  modal,
   nameDraft,
   selectedEnvironment,
   selectedId,
@@ -45,6 +71,7 @@ export function useWorktreeEnvironmentAutoSave({
   draftScripts: Record<WorktreeEnvironmentScriptKey, string>
   environments: WorktreeEnvironmentSummary[]
   message: MessageApi
+  modal: ModalApi
   nameDraft: string
   selectedEnvironment?: WorktreeEnvironmentDetail
   selectedId?: string
@@ -58,37 +85,207 @@ export function useWorktreeEnvironmentAutoSave({
   t: TranslationFn
 }) {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>()
-  const syncedDraftRef = useRef<{ id: string; name: string; scripts: string }>()
+  const syncedDraftRef = useRef<SyncedEnvironmentDraft>()
+  const pendingConflictRef = useRef<{
+    remoteDraft: SyncedEnvironmentDraft
+    remoteScripts: Record<WorktreeEnvironmentScriptKey, string>
+  }>()
+  const draftStateRef = useRef<{
+    id?: string
+    name: string
+    scripts: Record<WorktreeEnvironmentScriptKey, string>
+    serializedScripts: string
+  }>({
+    id: draftEnvironmentId,
+    name: nameDraft,
+    scripts: draftScripts,
+    serializedScripts: serializeDraftScripts(draftScripts)
+  })
+  const blockedRef = useRef(false)
+  const conflictModalOpenRef = useRef(false)
+
+  const clearAutoSaveTimer = () => {
+    if (autoSaveTimerRef.current == null) return
+    clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = undefined
+  }
+
+  const applyRemoteDraft = ({
+    remoteDraft,
+    remoteScripts
+  }: {
+    remoteDraft: SyncedEnvironmentDraft
+    remoteScripts: Record<WorktreeEnvironmentScriptKey, string>
+  }) => {
+    setDraftEnvironmentId(remoteDraft.id)
+    setDraftScripts(remoteScripts)
+    setNameDraft(remoteDraft.name)
+    syncedDraftRef.current = remoteDraft
+  }
+
+  useEffect(() => {
+    draftStateRef.current = {
+      id: draftEnvironmentId,
+      name: nameDraft,
+      scripts: draftScripts,
+      serializedScripts: serializeDraftScripts(draftScripts)
+    }
+  }, [draftEnvironmentId, draftScripts, nameDraft])
 
   useEffect(() => {
     if (selectedEnvironment == null) {
+      clearAutoSaveTimer()
       setDraftEnvironmentId(undefined)
       setDraftScripts(buildDraftScripts())
       setNameDraft('')
       syncedDraftRef.current = undefined
+      pendingConflictRef.current = undefined
+      blockedRef.current = false
+      conflictModalOpenRef.current = false
       return
     }
 
-    const scripts = buildDraftScripts(selectedEnvironment)
-    const name = toDisplayEnvironmentName(selectedEnvironment.id)
-    setDraftEnvironmentId(selectedEnvironment.id)
-    setDraftScripts(scripts)
-    setNameDraft(name)
-    syncedDraftRef.current = {
+    const remoteScripts = buildDraftScripts(selectedEnvironment)
+    const remoteDraft: SyncedEnvironmentDraft = {
       id: selectedEnvironment.id,
-      name,
-      scripts: serializeDraftScripts(scripts)
+      name: toDisplayEnvironmentName(selectedEnvironment.id),
+      scripts: serializeDraftScripts(remoteScripts)
     }
-  }, [selectedEnvironment, setDraftEnvironmentId, setDraftScripts, setNameDraft])
+    const syncedDraft = syncedDraftRef.current
+
+    if (syncedDraft == null) {
+      applyRemoteDraft({ remoteDraft, remoteScripts })
+      return
+    }
+
+    if (
+      syncedDraft.id === remoteDraft.id &&
+      syncedDraft.name === remoteDraft.name &&
+      syncedDraft.scripts === remoteDraft.scripts
+    ) {
+      return
+    }
+
+    const currentDraft = draftStateRef.current
+    const currentSerialized = serializeComparableConfigValue({
+      id: currentDraft.id ?? '',
+      name: currentDraft.name,
+      scripts: currentDraft.serializedScripts
+    })
+    const syncedSerialized = serializeComparableConfigValue({
+      ...syncedDraft
+    })
+    const remoteSerialized = serializeComparableConfigValue({
+      ...remoteDraft
+    })
+    const action = resolveRemoteConfigChangeAction({
+      baseSerialized: syncedSerialized,
+      draftSerialized: currentSerialized,
+      serverSerialized: remoteSerialized
+    })
+
+    if (action === 'sync-remote') {
+      clearAutoSaveTimer()
+      blockedRef.current = false
+      pendingConflictRef.current = undefined
+      applyRemoteDraft({ remoteDraft, remoteScripts })
+      return
+    }
+
+    if (action === 'conflict') {
+      clearAutoSaveTimer()
+      blockedRef.current = true
+      pendingConflictRef.current = { remoteDraft, remoteScripts }
+
+      if (conflictModalOpenRef.current) {
+        return
+      }
+
+      conflictModalOpenRef.current = true
+      modal.confirm({
+        title: t('config.conflict.title'),
+        content: t('config.conflict.description', {
+          source: t(`config.environments.sources.${sourceKey}`),
+          target: remoteDraft.name
+        }),
+        okText: t('config.conflict.keepLocal'),
+        cancelText: t('config.conflict.useRemote'),
+        cancelButtonProps: { danger: true },
+        closable: false,
+        keyboard: false,
+        maskClosable: false,
+        onOk: async () => {
+          const currentDraftState = draftStateRef.current
+          const currentSelectedId = currentDraftState.id ?? selectedId
+          const nextId = toEnvironmentIdForSource(currentDraftState.name, sourceKey)
+
+          if (currentSelectedId == null || nextId === '') {
+            void message.error(t('config.environments.saveFailed'))
+            throw new Error('worktree environment draft is not ready to save')
+          }
+
+          const saved = await saveEnvironmentDraft({
+            draftScripts: currentDraftState.scripts,
+            message,
+            nextId,
+            refreshDetail,
+            refreshEnvironments,
+            selectedId: currentSelectedId,
+            serializedScripts: serializeDraftScripts(currentDraftState.scripts),
+            setSelectedId,
+            sourceKey,
+            t
+          })
+
+          if (!saved) {
+            throw new Error('failed to save worktree environment draft')
+          }
+
+          blockedRef.current = false
+          pendingConflictRef.current = undefined
+          conflictModalOpenRef.current = false
+        },
+        onCancel: () => {
+          const pendingConflict = pendingConflictRef.current
+          if (pendingConflict != null) {
+            applyRemoteDraft(pendingConflict)
+          }
+          blockedRef.current = false
+          pendingConflictRef.current = undefined
+          conflictModalOpenRef.current = false
+        }
+      })
+      return
+    }
+
+    syncedDraftRef.current = remoteDraft
+    blockedRef.current = false
+    pendingConflictRef.current = undefined
+  }, [
+    message,
+    modal,
+    refreshDetail,
+    refreshEnvironments,
+    selectedEnvironment,
+    selectedId,
+    setDraftEnvironmentId,
+    setDraftScripts,
+    setNameDraft,
+    setSelectedId,
+    sourceKey,
+    t
+  ])
 
   useEffect(() => () => {
-    if (autoSaveTimerRef.current != null) {
-      clearTimeout(autoSaveTimerRef.current)
-    }
+    clearAutoSaveTimer()
   }, [])
 
   useEffect(() => {
     if (selectedId == null || draftEnvironmentId !== selectedId) return
+    if (blockedRef.current) {
+      clearAutoSaveTimer()
+      return
+    }
     const nextId = toEnvironmentIdForSource(nameDraft, sourceKey)
     if (nextId === '') return
 
@@ -107,9 +304,10 @@ export function useWorktreeEnvironmentAutoSave({
     }
 
     if (autoSaveTimerRef.current != null) {
-      clearTimeout(autoSaveTimerRef.current)
+      clearAutoSaveTimer()
     }
     autoSaveTimerRef.current = setTimeout(() => {
+      if (blockedRef.current) return
       void saveEnvironmentDraft({
         draftScripts,
         message,
@@ -125,9 +323,7 @@ export function useWorktreeEnvironmentAutoSave({
     }, AUTO_SAVE_DELAY_MS)
 
     return () => {
-      if (autoSaveTimerRef.current != null) {
-        clearTimeout(autoSaveTimerRef.current)
-      }
+      clearAutoSaveTimer()
     }
   }, [
     draftEnvironmentId,
@@ -181,8 +377,10 @@ export function useWorktreeEnvironmentAutoSave({
       if (nextId === selectedId) {
         await refreshDetail()
       }
+      return true
     } catch (error) {
       void message.error(getApiErrorMessage(error, t('config.environments.saveFailed')))
+      return false
     }
   }
 }

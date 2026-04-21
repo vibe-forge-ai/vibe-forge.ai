@@ -6,6 +6,7 @@ import Koa from 'koa'
 import { loadEnv } from '@vibe-forge/core'
 
 import { loadConfigState } from '#~/services/config/index.js'
+import { acquireConfigWatchRuntime } from '#~/services/config/watch.js'
 
 import { initChannels } from './channels'
 import { initMiddlewares } from './middlewares'
@@ -87,40 +88,50 @@ export async function startServer(options: StartServerOptions = {}): Promise<Ser
   const runtime = await createServerRuntime()
   const { app, env, server, configs } = runtime
   const entryKind = resolveEntryKind(options)
+  const configWatch = await acquireConfigWatchRuntime()
 
-  await initMiddlewares(app, env)
-  const { onListen: mountRoutesOnListen } = await mountRoutes(app, env, {
-    logClientMount: entryKind !== 'web'
-  })
-  setupWebSocket(server, env)
-  await initChannels(configs)
-
-  const {
-    __VF_PROJECT_AI_SERVER_HOST__: serverHost,
-    __VF_PROJECT_AI_SERVER_PORT__: serverPort,
-    __VF_PROJECT_AI_SERVER_WS_PATH__: serverWSPath
-  } = env
-
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(serverPort, serverHost, () => {
-      server.off('error', reject)
-
-      const displayBaseUrl = resolveDisplayBaseUrl(env)
-      if (entryKind === 'web') {
-        logger.info(
-          `[web] ready at ${displayBaseUrl}${normalizeClientBase(env.__VF_PROJECT_AI_CLIENT_BASE__, '/')}`
-        )
-      } else {
-        const host = `${serverHost}:${serverPort}`
-        logger.info(`[server] listening on http://${host}`)
-        logger.info(`[server]              ws://${host}${serverWSPath}`)
-      }
-
-      mountRoutesOnListen(displayBaseUrl)
-      resolve()
+  try {
+    await initMiddlewares(app, env)
+    const { onListen: mountRoutesOnListen } = await mountRoutes(app, env, {
+      logClientMount: entryKind !== 'web'
     })
-  })
+    setupWebSocket(server, env)
+    await initChannels(configs)
 
-  return runtime
+    const {
+      __VF_PROJECT_AI_SERVER_HOST__: serverHost,
+      __VF_PROJECT_AI_SERVER_PORT__: serverPort,
+      __VF_PROJECT_AI_SERVER_WS_PATH__: serverWSPath
+    } = env
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(serverPort, serverHost, () => {
+        server.off('error', reject)
+
+        const displayBaseUrl = resolveDisplayBaseUrl(env)
+        if (entryKind === 'web') {
+          logger.info(
+            `[web] ready at ${displayBaseUrl}${normalizeClientBase(env.__VF_PROJECT_AI_CLIENT_BASE__, '/')}`
+          )
+        } else {
+          const host = `${serverHost}:${serverPort}`
+          logger.info(`[server] listening on http://${host}`)
+          logger.info(`[server]              ws://${host}${serverWSPath}`)
+        }
+
+        mountRoutesOnListen(displayBaseUrl)
+        resolve()
+      })
+    })
+
+    server.once('close', () => {
+      configWatch.release()
+    })
+
+    return runtime
+  } catch (error) {
+    configWatch.release()
+    throw error
+  }
 }
