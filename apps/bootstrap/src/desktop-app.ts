@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 
+import { logBootstrapDebug } from './debug'
 import { ensureDesktopInstall } from './desktop-install'
 import type { DesktopInstallMode } from './desktop-mode'
 import { readDesktopPreference, resolveInstallMode } from './desktop-mode'
@@ -21,7 +22,7 @@ export const launchDesktopApp = async (options: LaunchDesktopAppOptions) => {
   })
   const install = await ensureDesktopInstall(installMode)
   const workspaceFolder = process.cwd()
-  console.error(`[bootstrap] launching desktop app from ${install.installedPath} (${installMode})`)
+  logBootstrapDebug(`[bootstrap] launching desktop app from ${install.installedPath} (${installMode})`)
 
   const child = spawn(install.executablePath, options.forwardedArgs, {
     cwd: workspaceFolder,
