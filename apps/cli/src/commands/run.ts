@@ -37,8 +37,8 @@ export {
   registerRunCommand,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
-  resolveResumeAdapterOptions,
   resolvePrintableStopText,
+  resolveResumeAdapterOptions,
   resolveRunMode,
   shouldPrintResumeHint
 }

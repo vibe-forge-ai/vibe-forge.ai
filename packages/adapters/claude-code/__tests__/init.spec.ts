@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Claude init coverage keeps mock-home and asset sync scenarios together. */
 import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'

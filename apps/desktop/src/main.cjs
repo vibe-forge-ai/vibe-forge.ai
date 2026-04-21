@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- desktop main process keeps workspace service and window lifecycle orchestration together. */
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const http = require('node:http')

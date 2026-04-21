@@ -147,7 +147,7 @@ const resolveRealHomeDir = (env: NodeJS.ProcessEnv) => {
 const warnInvalidHomeSkillRoot = (root: string) => {
   console.warn(
     `[vibe-forge] Ignoring invalid skills.homeBridge root "${root}". ` +
-    'Use an absolute path or a path starting with "~".'
+      'Use an absolute path or a path starting with "~".'
   )
 }
 

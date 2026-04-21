@@ -10,8 +10,8 @@ import type {
   WorkspaceSkillSelection
 } from '@vibe-forge/types'
 
-import { resolveWorkspaceAssetSource } from './asset-source'
 import { resolveNativeSkillDiagnosticReason, supportsNativeProjectSkills } from './adapter-capabilities'
+import { resolveWorkspaceAssetSource } from './asset-source'
 import { resolveSelectedMcpNames, resolveSelectedSkillAssetsWithDependencies } from './selection-internal'
 
 export async function buildAdapterAssetPlan(params: {

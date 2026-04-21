@@ -35,7 +35,9 @@ interface WorkspaceDefinitionAsset<TDefinition extends { name?: string }> {
   resolvedBy?: string
 }
 
-const resolveDefinitionSource = (asset: Pick<WorkspaceDefinitionAsset<{ name?: string }>, 'origin' | 'resolvedBy'>): DefinitionSource => {
+const resolveDefinitionSource = (
+  asset: Pick<WorkspaceDefinitionAsset<{ name?: string }>, 'origin' | 'resolvedBy'>
+): DefinitionSource => {
   return resolveWorkspaceAssetSource(asset)
 }
 
