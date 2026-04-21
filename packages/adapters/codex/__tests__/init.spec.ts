@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -333,6 +334,385 @@ describe('initCodexAdapter', () => {
     expect(configContent).toContain('hide_full_access_warning = true')
     expect(configContent).toContain('check_for_update_on_startup = false')
     expect(configContent.split(projectKey)).toHaveLength(2)
+  })
+
+  it('dedupes an existing workspace project table even when the config uses CRLF line endings', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        'model_reasoning_effort = "xhigh"',
+        projectKey,
+        'trust_level = "trusted"',
+        ''
+      ].join('\r\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+  })
+
+  it('preserves existing workspace project settings and subtables without writing a duplicate project table', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const nestedProjectKey = `[projects.${JSON.stringify(resolve(workspace))}.mcp_servers.local]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        projectKey,
+        'trust_level = "manual"',
+        'workspace_write = true',
+        '',
+        nestedProjectKey,
+        'command = "node"',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+    expect(configContent).toContain('trust_level = "trusted"')
+    expect(configContent).toContain('workspace_write = true')
+    expect(configContent).toContain(nestedProjectKey)
+    expect(configContent).toContain('command = "node"')
+  })
+
+  it('does not treat table-like lines inside a workspace multiline string as TOML sections', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const projectPromptBlock = [
+      'project_prompt = """',
+      '[not.a.table]',
+      'keep me inside the string',
+      '"""'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        projectKey,
+        'trust_level = "manual"',
+        projectPromptBlock,
+        ''
+      ].join('\n')
+    )
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any
+
+    await initCodexAdapter(ctx)
+    await initCodexAdapter(ctx)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(projectPromptBlock)
+    expect(configContent).toContain('trust_level = "trusted"')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+  })
+
+  it('does not strip managed marker-shaped lines when they appear inside a workspace multiline string', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const projectPromptBlock = [
+      'project_prompt = """',
+      '# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+      '# This project block is managed by Vibe Forge.',
+      '# END VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+      '"""'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        projectKey,
+        'trust_level = "manual"',
+        projectPromptBlock,
+        ''
+      ].join('\n')
+    )
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any
+
+    await initCodexAdapter(ctx)
+    await initCodexAdapter(ctx)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(projectPromptBlock)
+    expect(configContent).toContain('trust_level = "trusted"')
+  })
+
+  it('does not insert the managed root block into a root multiline string that contains a table-like line', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const rootPromptBlock = [
+      'developer_instructions = """',
+      '[not.a.real.table]',
+      'keep this preamble intact',
+      '"""'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        rootPromptBlock,
+        '',
+        '[notice]',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    const ctx = {
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any
+
+    await initCodexAdapter(ctx)
+    await initCodexAdapter(ctx)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(rootPromptBlock)
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG')
+    expect(configContent).toContain('[notice]')
+    expect(configContent).toContain('hide_full_access_warning = true')
+  })
+
+  it('preserves other workspaces managed project markers while rewriting the current workspace block', async () => {
+    const workspace = await createWorkspace()
+    const otherWorkspace = resolve(workspace, '..', 'other-workspace')
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const currentProjectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+    const otherProjectKey = `[projects.${JSON.stringify(otherWorkspace)}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        '',
+        '# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+        '# This project block is managed by Vibe Forge.',
+        otherProjectKey,
+        'trust_level = "trusted"',
+        '# END VIBE FORGE MANAGED CODEX PROJECT CONFIG',
+        '',
+        currentProjectKey,
+        'trust_level = "manual"',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(otherProjectKey)
+    expect(configContent.match(/BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG/g)).toHaveLength(2)
+    expect(configContent.split(currentProjectKey)).toHaveLength(2)
+  })
+
+  it('recognizes root table headers that carry inline comments', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'developer_instructions = "hi"',
+        '',
+        '[notice] # keep this comment',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX ROOT CONFIG')
+    expect(configContent).toContain('[notice] # keep this comment')
+  })
+
+  it('recognizes workspace project headers that carry inline comments', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const projectKey = `[projects.${JSON.stringify(resolve(workspace))}]`
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        `${projectKey} # keep this comment`,
+        'trust_level = "manual"',
+        'workspace_write = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent.split(projectKey)).toHaveLength(2)
+    expect(configContent).toContain('workspace_write = true')
   })
 
   it('keeps concurrent skill sync idempotent when multiple vf processes initialize the same mock home', async () => {
