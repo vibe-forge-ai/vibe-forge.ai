@@ -77,7 +77,7 @@ export interface SenderToolbarHandlers {
   onReferenceOpenChange: (nextOpen: boolean) => void
   onShowModelSelectChange: (nextOpen: boolean) => void
   onShowEffortSelectChange: (nextOpen: boolean) => void
-  onShowPermissionActionsChange: (nextOpen: boolean) => void
+  onPermissionOpenChange: (nextOpen: boolean) => void
   onModelSearchValueChange: (value: string) => void
   onOpenContextPicker: () => void
   onReferenceImageSelect: () => void
