@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/config",
-  "version": "0.11.1",
+  "version": "2.0.2",
   "description": "Shared config IO for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -23,15 +23,26 @@
         "require": "./dist/index.js"
       }
     },
+    "./schema": {
+      "__vibe-forge__": {
+        "default": "./src/schema.ts"
+      },
+      "default": {
+        "import": "./dist/schema.mjs",
+        "require": "./dist/schema.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/config/__tests__"
   },
   "dependencies": {
+    "@vibe-forge/core": "workspace:^2.0.1",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9"

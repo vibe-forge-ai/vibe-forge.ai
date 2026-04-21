@@ -1,19 +1,31 @@
 import './Sidebar.scss'
 
-import { Button, Tooltip } from 'antd'
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import React, { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
+import type { Session } from '@vibe-forge/core'
+
+import { deleteSession, updateSession, updateSessionTitle } from '#~/api'
+import {
+  SidebarListCollapsedActionButton,
+  SidebarListCollapsedActions
+} from '#~/components/sidebar-list/SidebarListHeader'
+import {
+  markOptimisticSessionDiscarded,
+  mergeOptimisticSessions,
+  optimisticSessionCreationsAtom,
+  removeSessionFromList
+} from '#~/hooks/chat/optimistic-session-creation'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
+import { useGlobalShortcut } from '#~/hooks/useGlobalShortcut'
 import { getAdapterDisplay } from '#~/resources/adapters.js'
-import type { Session } from '@vibe-forge/core'
-import { deleteSession, updateSession, updateSessionTitle } from '../api'
-import { useGlobalShortcut } from '../hooks/useGlobalShortcut'
-import { isSidebarResizingAtom } from '../store/index'
-import { formatShortcutLabel } from '../utils/shortcutUtils'
+import { isSidebarResizingAtom } from '#~/store/index'
+import { formatShortcutLabel } from '#~/utils/shortcutUtils'
+
 import { SessionList } from './sidebar/SessionList'
 import { SidebarHeader } from './sidebar/SidebarHeader'
 import { matchesAnyFilterPattern } from './sidebar/filter-utils'
@@ -30,11 +42,17 @@ const sortSessionsByOrder = (sessions: Session[], sortOrder: SidebarSessionSortO
 
 export function Sidebar({
   activeId,
+  isCompactLayout = false,
+  isMobileOpen = false,
+  onRequestClose,
   onSelectSession,
   onDeletedSession,
   width
 }: {
   activeId?: string
+  isCompactLayout?: boolean
+  isMobileOpen?: boolean
+  onRequestClose?: () => void
   onSelectSession: (session: Session, isNew?: boolean) => void
   onDeletedSession?: (id: string, nextId?: string) => void
   width: number
@@ -58,12 +76,18 @@ export function Sidebar({
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const { t } = useTranslation()
+  const { isTouchInteraction } = useResponsiveLayout()
   const isMac = navigator.platform.includes('Mac')
+  const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
+  const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
   )
-  const sessions: Session[] = sessionsRes?.sessions ?? []
+  const sessions: Session[] = useMemo(
+    () => mergeOptimisticSessions(sessionsRes?.sessions ?? [], optimisticCreations),
+    [optimisticCreations, sessionsRes?.sessions]
+  )
   const { data: configRes } = useSWR<{
     sources?: {
       merged?: {
@@ -124,7 +148,25 @@ export function Sidebar({
   }, [adapterFilters, searchQuery, sessions, sortOrder, tagFilters])
 
   async function handleCreateSession() {
+    onRequestClose?.()
     onSelectSession({ id: '' } as Session, true)
+  }
+
+  function discardOptimisticSession(id: string) {
+    markOptimisticSessionDiscarded(id)
+    setOptimisticCreations((prev) => {
+      if (prev[id] == null) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    void mutateSessions((prev) => {
+      if (prev?.sessions == null) return prev
+      return {
+        ...prev,
+        sessions: removeSessionFromList(prev.sessions, id)
+      }
+    }, false)
   }
 
   async function handleArchiveSession(id: string) {
@@ -137,6 +179,12 @@ export function Sidebar({
       } else if (currentIndex - 1 >= 0) {
         nextId = sessions[currentIndex - 1].id
       }
+    }
+
+    if (optimisticCreations[id] != null) {
+      discardOptimisticSession(id)
+      if (activeId === id) onDeletedSession?.(id, nextId)
+      return
     }
 
     try {
@@ -161,6 +209,12 @@ export function Sidebar({
       }
     }
 
+    if (optimisticCreations[id] != null) {
+      discardOptimisticSession(id)
+      if (activeId === id) onDeletedSession?.(id, nextId)
+      return
+    }
+
     try {
       await deleteSession(id)
       await mutateSessions()
@@ -171,6 +225,24 @@ export function Sidebar({
   }
 
   async function handleStarSession(id: string, isStarred: boolean) {
+    if (optimisticCreations[id] != null) {
+      setOptimisticCreations((prev) => {
+        const current = prev[id]
+        if (current == null) return prev
+        return {
+          ...prev,
+          [id]: {
+            ...current,
+            session: {
+              ...current.session,
+              isStarred
+            }
+          }
+        }
+      })
+      return
+    }
+
     try {
       await updateSession(id, { isStarred })
       await mutateSessions()
@@ -180,6 +252,24 @@ export function Sidebar({
   }
 
   async function handleRenameSession(id: string, title: string) {
+    if (optimisticCreations[id] != null) {
+      setOptimisticCreations((prev) => {
+        const current = prev[id]
+        if (current == null) return prev
+        return {
+          ...prev,
+          [id]: {
+            ...current,
+            session: {
+              ...current.session,
+              title
+            }
+          }
+        }
+      })
+      return
+    }
+
     await updateSessionTitle(id, title)
     await mutateSessions()
   }
@@ -259,6 +349,8 @@ export function Sidebar({
   }
 
   const isCreatingSession = activeId === undefined || activeId === ''
+  const effectiveSidebarCollapsed = isCompactLayout ? false : isSidebarCollapsed
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
   const createBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -280,27 +372,37 @@ export function Sidebar({
 
   return (
     <div
-      className={`sidebar-container ${isSidebarCollapsed ? 'collapsed' : ''}`}
-      style={{
-        width: isSidebarCollapsed ? 0 : width,
-        minWidth: isSidebarCollapsed ? 0 : undefined,
-        transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        borderRight: isSidebarCollapsed ? 'none' : undefined
-      }}
+      className={[
+        'sidebar-container',
+        effectiveSidebarCollapsed ? 'collapsed' : '',
+        isCompactLayout ? 'sidebar-container--compact' : '',
+        isMobileOpen ? 'is-mobile-open' : ''
+      ].filter(Boolean).join(' ')}
+      style={isCompactLayout
+        ? undefined
+        : {
+          width: effectiveSidebarCollapsed ? 0 : width,
+          minWidth: effectiveSidebarCollapsed ? 0 : undefined,
+          transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRight: effectiveSidebarCollapsed ? 'none' : undefined
+        }}
     >
       <div
         className='sidebar-content'
-        style={{
-          width,
-          transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isSidebarCollapsed ? `translateX(-${width}px)` : 'translateX(0)'
-        }}
+        style={isCompactLayout
+          ? undefined
+          : {
+            width,
+            transition: isResizing ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: effectiveSidebarCollapsed ? `translateX(-${width}px)` : 'translateX(0)'
+          }}
       >
         <SidebarHeader
           adapterFilters={adapterFilters}
           availableAdapters={availableAdapters}
           hasActiveSearchControls={hasActiveSearchControls}
-          isSidebarCollapsed={isSidebarCollapsed}
+          isCompactLayout={isCompactLayout}
+          isSidebarCollapsed={effectiveSidebarCollapsed}
           searchQuery={searchQuery}
           sortOrder={sortOrder}
           sortSelection={sortSelection}
@@ -313,6 +415,7 @@ export function Sidebar({
           isBatchMode={isBatchMode}
           onToggleBatchMode={toggleBatchMode}
           onToggleSidebarCollapsed={() => setSidebarCollapsed(!isSidebarCollapsed)}
+          onCloseSidebar={onRequestClose}
           selectedCount={selectedIds.size}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
@@ -337,7 +440,9 @@ export function Sidebar({
           sessions={filteredSessions}
           activeId={activeId}
           isBatchMode={isBatchMode}
+          isCompactLayout={isCompactLayout}
           selectedIds={selectedIds}
+          isTouchInteraction={isTouchInteraction}
           searchQuery={searchQuery}
           onSelectSession={onSelectSession}
           onArchiveSession={handleArchiveSession}
@@ -347,33 +452,27 @@ export function Sidebar({
           onToggleSelect={handleToggleSelect}
         />
       </div>
-      {isSidebarCollapsed && (
-        <div className='sidebar-collapsed-header'>
-          <Tooltip title={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')} placement='bottom'>
-            <Button
-              ref={createBtnRef}
-              className={`sidebar-collapsed-control ${isCreatingSession ? 'active' : ''}`}
-              type='text'
-              disabled={!!isCreatingSession}
-              onClick={() => {
-                void handleCreateSession()
-              }}
-            >
-              <span className={`material-symbols-rounded ${isCreatingSession ? 'filled' : ''}`}>
-                {isCreatingSession ? 'chat_bubble' : 'send'}
-              </span>
-            </Button>
-          </Tooltip>
-          <Tooltip title={t('common.expand')} placement='bottom'>
-            <Button
-              className='sidebar-collapsed-control'
-              type='text'
-              onClick={() => setSidebarCollapsed(false)}
-            >
-              <span className='material-symbols-rounded'>dock_to_right</span>
-            </Button>
-          </Tooltip>
-        </div>
+      {!isCompactLayout && isSidebarCollapsed && (
+        <SidebarListCollapsedActions>
+          <SidebarListCollapsedActionButton
+            buttonRef={createBtnRef as React.Ref<HTMLAnchorElement | HTMLButtonElement>}
+            active={isCreatingSession}
+            disabled={!!isCreatingSession}
+            filled={isCreatingSession}
+            icon={isCreatingSession ? 'chat_bubble' : 'send'}
+            tooltip={resolveTooltipTitle(isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat'))}
+            ariaLabel={isCreatingSession ? t('common.alreadyInNewChat') : t('common.newChat')}
+            onClick={() => {
+              void handleCreateSession()
+            }}
+          />
+          <SidebarListCollapsedActionButton
+            icon='dock_to_right'
+            tooltip={resolveTooltipTitle(t('common.expand'))}
+            ariaLabel={t('common.expand')}
+            onClick={() => setSidebarCollapsed(false)}
+          />
+        </SidebarListCollapsedActions>
       )}
     </div>
   )

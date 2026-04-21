@@ -8,6 +8,22 @@ import { initClaudeCodeAdapter } from '../src/claude/init'
 
 const tempDirs: string[] = []
 
+const createBarrier = (size: number) => {
+  let pending = size
+  let release: (() => void) | undefined
+  const waitForAll = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  return async () => {
+    pending -= 1
+    if (pending === 0) {
+      release?.()
+    }
+    await waitForAll
+  }
+}
+
 const createWorkspace = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'claude-init-'))
   tempDirs.push(dir)
@@ -150,6 +166,77 @@ describe('initClaudeCodeAdapter', () => {
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
   })
 
+  it('syncs resolved dependency skills from workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const appSkillDir = join(workspace, '.ai', 'skills', 'app-builder')
+    const dependencySkillDir = join(workspace, '.ai', 'caches', 'skill-dependencies', 'skills.sh', 'frontend-design')
+
+    await mkdir(appSkillDir, { recursive: true })
+    await writeFile(join(appSkillDir, 'SKILL.md'), '# app-builder\n')
+    await mkdir(dependencySkillDir, { recursive: true })
+    await writeFile(join(dependencySkillDir, 'SKILL.md'), '# frontend-design\n')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:workspace:app-builder',
+            kind: 'skill',
+            name: 'app-builder',
+            displayName: 'app-builder',
+            origin: 'workspace',
+            sourcePath: join(appSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(appSkillDir, 'SKILL.md'),
+                body: '# app-builder\n',
+                attributes: {
+                  dependencies: ['frontend-design']
+                }
+              }
+            }
+          },
+          {
+            id: 'skill:workspace:frontend-design',
+            kind: 'skill',
+            name: 'frontend-design',
+            displayName: 'frontend-design',
+            origin: 'workspace',
+            sourcePath: join(dependencySkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(dependencySkillDir, 'SKILL.md'),
+                body: '# frontend-design\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const appSkillPath = join(mockHome, '.claude', 'skills', 'app-builder')
+    const dependencySkillPath = join(mockHome, '.claude', 'skills', 'frontend-design')
+    expect((await lstat(appSkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(appSkillPath), await readlink(appSkillPath))).toBe(resolve(appSkillDir))
+    expect((await lstat(dependencySkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(dependencySkillPath), await readlink(dependencySkillPath))).toBe(
+      resolve(dependencySkillDir)
+    )
+  })
+
   it('writes managed project trust state into the isolated Claude app-state file', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
@@ -179,6 +266,59 @@ describe('initClaudeCodeAdapter', () => {
       projectOnboardingSeenCount: 1,
       hasCompletedProjectOnboarding: true
     })
+  })
+
+  it('keeps concurrent mock-home skill sync idempotent when multiple vf processes initialize Claude together', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const barrier = createBarrier(2)
+
+    await mkdir(join(workspace, '.ai', 'skills', 'research'), { recursive: true })
+    await writeFile(join(workspace, '.ai', 'skills', 'research', 'SKILL.md'), '# Research\n')
+
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('node:fs/promises')>()
+      return {
+        ...actual,
+        symlink: vi.fn(async (...args: Parameters<typeof actual.symlink>) => {
+          const [, targetPath] = args
+          if (String(targetPath).endsWith(join('.claude', 'skills'))) {
+            await barrier()
+          }
+          return actual.symlink(...args)
+        })
+      }
+    })
+
+    try {
+      const { initClaudeCodeAdapter: initClaudeCodeAdapterWithMockedFs } = await import('../src/claude/init')
+      const ctx = {
+        cwd: workspace,
+        env: {
+          HOME: mockHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: []
+        }
+      } as any
+
+      await expect(
+        Promise.all([initClaudeCodeAdapterWithMockedFs(ctx), initClaudeCodeAdapterWithMockedFs(ctx)])
+      ).resolves.toHaveLength(2)
+      const targetPath = join(mockHome, '.claude', 'skills')
+      expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(workspace, '.ai', 'skills'))
+    } finally {
+      vi.doUnmock('node:fs/promises')
+      vi.resetModules()
+    }
   })
 
   it('preserves existing Claude app state while seeding trust from the real home config', async () => {

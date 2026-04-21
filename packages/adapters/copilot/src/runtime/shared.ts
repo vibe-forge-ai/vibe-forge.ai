@@ -1,5 +1,5 @@
-import { lstat, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 
 import type {
@@ -10,13 +10,15 @@ import type {
   Config,
   ModelServiceConfig
 } from '@vibe-forge/types'
-import { omitAdapterCommonConfig } from '@vibe-forge/utils'
+import { omitAdapterCommonConfig, syncSymlinkTarget } from '@vibe-forge/utils'
 import { createLogger } from '@vibe-forge/utils/create-logger'
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
 import { uuid } from '@vibe-forge/utils/uuid'
 
 import { registerCopilotProviderProxyRoute } from './provider-proxy'
 
 export interface CopilotAdapterConfig {
+  cli?: ManagedNpmCliConfig
   cliPath?: string
   configDir?: string
   disableWorkspaceTrust?: boolean
@@ -410,16 +412,21 @@ export const ensureCopilotSessionMarker = async (ctx: AdapterCtx, sessionId: str
 }
 
 const ensureSymlinkTarget = async (sourcePath: string, targetPath: string) => {
-  try {
-    const existing = await lstat(targetPath)
-    if (existing.isSymbolicLink() || existing.isDirectory() || existing.isFile()) {
-      await rm(targetPath, { recursive: true, force: true })
-    }
-  } catch {
-  }
+  await syncSymlinkTarget({
+    sourcePath,
+    targetPath
+  })
+}
 
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath)
+export const syncCopilotManagedSymlink = async (params: {
+  sourcePath: string
+  targetPath: string
+  type: 'dir' | 'file'
+}) => {
+  await syncSymlinkTarget({
+    ...params,
+    onMissingSource: 'remove'
+  })
 }
 
 const stripSkillTargetPrefix = (targetPath: string) => (

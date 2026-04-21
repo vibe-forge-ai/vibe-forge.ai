@@ -1,31 +1,118 @@
 .config-view__field-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 6px;
+}
+
+.config-view__detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-view__detail-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: var(--subpage-tertiary-border);
+  border-radius: var(--subpage-tertiary-radius);
+  background: var(--subpage-tertiary-bg);
+}
+
+.config-view__detail-notice-text {
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__field-readonly {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.config-view__field-readonly-value {
+  width: 100%;
 }
 
 .config-view__field-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .config-view__subsection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+}
+
+.config-view__subsection-collapse {
+  border: none;
+  background: transparent;
+}
+
+.config-view__subsection-collapse > .ant-collapse-item {
+  border-bottom: none;
+}
+
+.config-view__subsection-collapse > .ant-collapse-item > .ant-collapse-header {
+  padding: 0 !important;
+  align-items: center !important;
+}
+
+.config-view__subsection-collapse
+  > .ant-collapse-item-active
+  > .ant-collapse-header {
+  padding-bottom: 4px !important;
+}
+
+.config-view__subsection-collapse
+  > .ant-collapse-item
+  > .ant-collapse-header
+  .ant-collapse-expand-icon {
+  padding-inline-start: 8px;
+  padding-inline-end: 0;
+}
+
+.config-view__subsection-collapse > .ant-collapse-item > .ant-collapse-content {
+  border-top: none;
+  background: transparent;
+}
+
+.config-view__subsection-collapse
+  > .ant-collapse-item
+  > .ant-collapse-content
+  > .ant-collapse-content-box {
+  padding: 0 !important;
 }
 
 .config-view__subsection-title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--sub-text-color);
   text-transform: uppercase;
   letter-spacing: .04em;
 }
 
+.config-view__subsection-expand-icon {
+  font-size: 18px;
+  color: var(--sub-text-color);
+  transition: transform .16s ease, color .16s ease;
+}
+
+.config-view__subsection-expand-icon.is-active {
+  transform: rotate(90deg);
+  color: var(--text-color);
+}
+
 .config-view__subsection-body {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .config-view__slider {
@@ -35,11 +122,15 @@
 .config-view__collapse-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
 .config-view__collapse-group .ant-collapse-header {
-  padding: 0;
+  padding: 12px 14px !important;
+}
+
+.config-view__collapse-group .ant-collapse-content-box {
+  padding: 0 12px 12px !important;
 }
 
 .config-view__collapse-header {
@@ -74,7 +165,7 @@
 
 .config-view__multiline-input {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .config-view__option {

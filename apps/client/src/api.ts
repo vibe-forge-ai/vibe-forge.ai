@@ -1,5 +1,7 @@
+export { getAdapterAccountDetail, getAdapterAccounts, manageAdapterAccount } from './api/adapters'
 // 自动化规则与执行记录 API
 export type { AutomationRule, AutomationRun, AutomationTask, AutomationTrigger } from './api/automation'
+
 export {
   createAutomationRule,
   deleteAutomationRule,
@@ -8,7 +10,6 @@ export {
   runAutomationRule,
   updateAutomationRule
 } from './api/automation'
-
 export { ApiError, getApiErrorMessage } from './api/base'
 export {
   getBenchmarkCase,
@@ -20,7 +21,7 @@ export {
 } from './api/benchmark'
 
 // 配置读取与更新 API
-export { getConfig, updateConfig } from './api/config'
+export { getConfig, getConfigSchema, updateConfig } from './api/config'
 export {
   checkoutSessionGitBranch,
   commitSessionGitChanges,
@@ -36,8 +37,30 @@ export {
 } from './api/git'
 
 // 知识库与规则说明 API
-export type { EntityDetail, EntitySummary, RuleDetail, RuleSummary, SpecDetail, SpecSummary } from './api/knowledge'
-export { getEntityDetail, getRuleDetail, getSpecDetail, listEntities, listRules, listSpecs } from './api/knowledge'
+export type {
+  EntityDetail,
+  EntitySummary,
+  RuleDetail,
+  RuleSummary,
+  SkillDetail,
+  SkillSummary,
+  SpecDetail,
+  SpecSummary,
+  WorkspaceSummary
+} from './api/knowledge'
+export {
+  createSkill,
+  getEntityDetail,
+  getRuleDetail,
+  getSkillDetail,
+  getSpecDetail,
+  importSkillArchive,
+  listEntities,
+  listRules,
+  listSkills,
+  listSpecs,
+  listWorkspaces
+} from './api/knowledge'
 
 // 项目与工程 API
 export { createProject, listProjects } from './api/projects'
@@ -45,29 +68,47 @@ export { createProject, listProjects } from './api/projects'
 // 会话与消息 API
 export {
   branchSessionFromMessage,
-  createSessionManagedWorktree,
   createQueuedMessage,
   createSession,
+  createSessionManagedWorktree,
   deleteQueuedMessage,
   deleteSession,
   forkSession,
   getSessionMessages,
   getSessionWorkspace,
-  listSessions,
+  getSessionWorkspaceResourceUrl,
   listSessionWorkspaceTree,
+  listSessions,
+  moveQueuedMessage,
+  readSessionWorkspaceFile,
+  reorderQueuedMessages,
   respondSessionInteraction,
   transferSessionWorkspaceToLocal,
-  moveQueuedMessage,
-  reorderQueuedMessages,
   updateQueuedMessage,
   updateSession,
-  updateSessionTitle
+  updateSessionTitle,
+  updateSessionWorkspaceFile
 } from './api/sessions'
+export type {
+  SkillHubInstallResult,
+  SkillHubItem,
+  SkillHubRegistrySummary,
+  SkillHubSearchResult
+} from './api/skill-hub'
+export { installSkillHubItem, searchSkillHub } from './api/skill-hub'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'
-export type { WorkspaceTreeEntry } from './api/workspace'
-export { listWorkspaceTree } from './api/workspace'
+export type { WorkspaceFileContent, WorkspaceTreeEntry } from './api/workspace'
+export { getWorkspaceResourceUrl, listWorkspaceTree, readWorkspaceFile, updateWorkspaceFile } from './api/workspace'
+
+// Worktree 环境脚本 API
+export {
+  deleteWorktreeEnvironment,
+  getWorktreeEnvironment,
+  listWorktreeEnvironments,
+  saveWorktreeEnvironment
+} from './api/worktree-environments'
 
 export type {
   GitAvailabilityReason,
@@ -75,6 +116,7 @@ export type {
   GitBranchListResult,
   GitBranchSummary,
   GitChangeSummary,
+  GitChangedFile,
   GitCommitPayload,
   GitHeadCommitSummary,
   GitMutationResult,
@@ -85,3 +127,14 @@ export type {
 } from '@vibe-forge/types'
 export type { BenchmarkCase, BenchmarkCategory, BenchmarkResult, BenchmarkRunSummary } from '@vibe-forge/types'
 export type { SessionWorkspace } from '@vibe-forge/types'
+export type {
+  WorktreeEnvironmentDetail,
+  WorktreeEnvironmentListResult,
+  WorktreeEnvironmentMutationResult,
+  WorktreeEnvironmentOperation,
+  WorktreeEnvironmentPlatform,
+  WorktreeEnvironmentSavePayload,
+  WorktreeEnvironmentScript,
+  WorktreeEnvironmentScriptKey,
+  WorktreeEnvironmentSummary
+} from '@vibe-forge/types'

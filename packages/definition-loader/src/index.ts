@@ -9,7 +9,15 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
-import type { Definition, Entity, Rule, RuleReference, Skill, Spec } from '@vibe-forge/types'
+import type {
+  Definition,
+  Entity,
+  Rule,
+  RuleReference,
+  Skill,
+  Spec,
+  WorkspaceDefinitionPayload
+} from '@vibe-forge/types'
 import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
 import { glob } from 'fast-glob'
@@ -165,5 +173,11 @@ export class DefinitionLoader {
 
   async loadDefaultEntities(): Promise<Definition<Entity>[]> {
     return this.loadWorkspaceDefinitions(bundle => bundle.entities)
+  }
+
+  async loadWorkspaces(): Promise<WorkspaceDefinitionPayload[]> {
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    const workspaces = Array.isArray(bundle.workspaces) ? bundle.workspaces : []
+    return workspaces.map(workspace => workspace.payload)
   }
 }

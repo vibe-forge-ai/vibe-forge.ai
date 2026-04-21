@@ -15,6 +15,7 @@ import type { SessionContextMenuEntry } from './SessionContextMenuContent'
 interface SessionContextMenuProps {
   children: ReactElement
   session: Session
+  trigger?: ('click' | 'contextMenu')[]
   onArchive: (id: string) => void | Promise<void>
   onDelete: (id: string) => void | Promise<void>
   onRename: (id: string, title: string) => Promise<void>
@@ -26,6 +27,7 @@ type PendingSessionMenuAction = 'archive' | 'delete' | null
 export function SessionContextMenu({
   children,
   session,
+  trigger = ['contextMenu'],
   onArchive,
   onDelete,
   onRename,
@@ -174,7 +176,7 @@ export function SessionContextMenu({
 
   return (
     <Dropdown
-      trigger={['contextMenu']}
+      trigger={trigger}
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)

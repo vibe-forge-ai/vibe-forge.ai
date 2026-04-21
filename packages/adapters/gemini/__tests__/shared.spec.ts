@@ -1,8 +1,15 @@
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, Config } from '@vibe-forge/types'
+import { resolveManagedNpmCliPaths } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveGeminiBinaryPath } from '#~/paths.js'
+import { GEMINI_CLI_PACKAGE, GEMINI_CLI_VERSION, resolveGeminiBinaryPath } from '#~/paths.js'
+import { buildGeminiNativeHooksSettings } from '#~/runtime/native-hooks.js'
 import {
   buildGeminiDirectArgs,
   buildGeminiRunArgs,
@@ -17,29 +24,56 @@ import {
   validateGeminiSelection
 } from '#~/runtime/shared.js'
 
-const createCtx = (config?: Config, userConfig?: Config, env: Record<string, string | undefined> = {}) => ({
-  ctxId: 'ctx-1',
-  cwd: '/tmp/project',
-  env,
-  cache: {
-    get: async () => undefined,
-    set: async () => ({ cachePath: '/tmp/project/.ai/cache/test.json' })
-  },
-  logger: {
-    stream: undefined,
-    info: () => undefined,
-    warn: () => undefined,
-    error: () => undefined,
-    debug: () => undefined
-  },
-  configs: [config, userConfig]
-}) as unknown as AdapterCtx
+const createCtx = (config?: Config, userConfig?: Config, env: Record<string, string | undefined> = {}) =>
+  ({
+    ctxId: 'ctx-1',
+    cwd: '/tmp/project',
+    env,
+    cache: {
+      get: async () => undefined,
+      set: async () => ({ cachePath: '/tmp/project/.ai/cache/test.json' })
+    },
+    logger: {
+      stream: undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+      debug: () => undefined
+    },
+    configs: [config, userConfig]
+  }) as unknown as AdapterCtx
 
 describe('resolveGeminiBinaryPath', () => {
   it('returns the env-specified path when set', () => {
     expect(resolveGeminiBinaryPath({
       __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: '/usr/local/bin/gemini'
     })).toBe('/usr/local/bin/gemini')
+  })
+
+  it('uses a managed binary from the primary workspace shared cache', async () => {
+    const primary = await mkdtemp(join(tmpdir(), 'vf-gemini-primary-'))
+    const worktree = await mkdtemp(join(tmpdir(), 'vf-gemini-worktree-'))
+    try {
+      const env = {
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primary
+      }
+      const paths = resolveManagedNpmCliPaths({
+        adapterKey: 'gemini',
+        binaryName: 'gemini',
+        cwd: worktree,
+        env,
+        packageName: GEMINI_CLI_PACKAGE,
+        version: GEMINI_CLI_VERSION
+      })
+      await mkdir(paths.binDir, { recursive: true })
+      await writeFile(paths.binaryPath, '#!/bin/sh\n')
+      await chmod(paths.binaryPath, 0o755)
+
+      expect(resolveGeminiBinaryPath(env, worktree)).toBe(await realpath(paths.binaryPath))
+    } finally {
+      await rm(primary, { recursive: true, force: true })
+      await rm(worktree, { recursive: true, force: true })
+    }
   })
 })
 
@@ -179,11 +213,73 @@ describe('gemini prompt and settings helpers', () => {
   })
 
   it('injects the local Gemini gateway base URL for external services', () => {
-    expect(buildGeminiSpawnEnv({
+    expect(
+      buildGeminiSpawnEnv({
+        adapterConfig: {},
+        ctx: createCtx(),
+        proxyBaseUrl: 'http://127.0.0.1:3000/route'
+      }).GOOGLE_GEMINI_BASE_URL
+    ).toBe('http://127.0.0.1:3000/route')
+  })
+
+  it('writes native hooks into managed Gemini settings when enabled', () => {
+    const nativeHooks = buildGeminiNativeHooksSettings({
+      __VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__: '1',
+      __VF_PROJECT_AI_GEMINI_HOOK_COMMAND__: `"${process.execPath}" "/tmp/call-hook.js"`
+    })
+
+    expect(buildGeminiSettings({
       adapterConfig: {},
-      ctx: createCtx(),
-      proxyBaseUrl: 'http://127.0.0.1:3000/route'
-    }).GOOGLE_GEMINI_BASE_URL).toBe('http://127.0.0.1:3000/route')
+      approvalMode: 'default',
+      mcpServers: {},
+      model: 'gemini-2.5-pro',
+      nativeHooks
+    })).toMatchObject({
+      hooksConfig: {
+        enabled: true
+      },
+      hooks: {
+        BeforeTool: [
+          {
+            matcher: '.*',
+            hooks: [
+              {
+                command: `"${process.execPath}" "/tmp/call-hook.js"`,
+                type: 'command'
+              }
+            ]
+          }
+        ],
+        AfterAgent: [
+          {
+            hooks: [
+              {
+                command: `"${process.execPath}" "/tmp/call-hook.js"`,
+                type: 'command'
+              }
+            ]
+          }
+        ]
+      }
+    })
+  })
+
+  it('passes native hook bridge markers to Gemini child processes when enabled', () => {
+    const env = buildGeminiSpawnEnv({
+      adapterConfig: {},
+      ctx: createCtx(undefined, undefined, {
+        __VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__: '1'
+      }),
+      model: 'kimi-k2.5',
+      runtime: 'cli',
+      sessionId: 'session-gemini-native'
+    })
+
+    expect(env.__VF_VIBE_FORGE_GEMINI_HOOKS_ACTIVE__).toBe('1')
+    expect(env.__VF_GEMINI_HOOK_MODEL__).toBe('kimi-k2.5')
+    expect(env.__VF_GEMINI_HOOK_RUNTIME__).toBe('cli')
+    expect(env.__VF_GEMINI_TASK_SESSION_ID__).toBe('session-gemini-native')
+    expect(env[NATIVE_HOOK_BRIDGE_ADAPTER_ENV]).toBe('gemini')
   })
 })
 
@@ -202,10 +298,12 @@ describe('validateGeminiSelection', () => {
       }
     })
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      model: 'kimi,kimi-k2.5'
-    })).not.toThrow()
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        model: 'kimi,kimi-k2.5'
+      })
+    ).not.toThrow()
 
     expect(resolveGeminiModel({
       ctx,
@@ -221,32 +319,36 @@ describe('validateGeminiSelection', () => {
   })
 
   it('rejects service selectors that point to responses-style endpoints', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        },
-        modelServices: {
-          openai: {
-            apiBaseUrl: 'https://example.com/v1/responses',
-            apiKey: 'secret',
-            models: ['gpt-5.4']
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          },
+          modelServices: {
+            openai: {
+              apiBaseUrl: 'https://example.com/v1/responses',
+              apiKey: 'secret',
+              models: ['gpt-5.4']
+            }
           }
-        }
-      }),
-      model: 'openai,gpt-5.4'
-    })).toThrow(/chat\/completions/)
+        }),
+        model: 'openai,gpt-5.4'
+      })
+    ).toThrow(/chat\/completions/)
   })
 
   it('rejects service selectors that point to unknown services', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }),
-      model: 'missing,kimi-k2.5'
-    })).toThrow(/could not find model service/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          }
+        }),
+        model: 'missing,kimi-k2.5'
+      })
+    ).toThrow(/could not find model service/)
   })
 
   it('rejects forbidden native prompt commands by default', () => {
@@ -256,61 +358,77 @@ describe('validateGeminiSelection', () => {
       }
     })
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      prompt: '/resume latest'
-    })).toThrow(/slash commands/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        prompt: '/resume latest'
+      })
+    ).toThrow(/slash commands/)
 
-    expect(() => validateGeminiSelection({
-      ctx,
-      prompt: 'read @./README.md before continuing'
-    })).toThrow(/@path/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx,
+        prompt: 'read @./README.md before continuing'
+      })
+    ).toThrow(/@path/)
   })
 
   it('allows prompt commands when explicitly enabled', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {
-            nativePromptCommands: 'allow'
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {
+              nativePromptCommands: 'allow'
+            }
           }
-        }
-      }),
-      prompt: '/resume latest'
-    })).not.toThrow()
+        }),
+        prompt: '/resume latest'
+      })
+    ).not.toThrow()
   })
 
   it('rejects unsupported extra options and sandbox env', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }, undefined, {
-        GEMINI_SANDBOX: 'docker'
-      }),
-      extraOptions: ['--log-level', 'debug']
-    })).toThrow(/GEMINI_SANDBOX/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx(
+          {
+            adapters: {
+              gemini: {}
+            }
+          },
+          undefined,
+          {
+            GEMINI_SANDBOX: 'docker'
+          }
+        ),
+        extraOptions: ['--log-level', 'debug']
+      })
+    ).toThrow(/GEMINI_SANDBOX/)
 
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {}
-        }
-      }),
-      extraOptions: ['--sandbox']
-    })).toThrow(/extra option/)
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {}
+          }
+        }),
+        extraOptions: ['--sandbox']
+      })
+    ).toThrow(/extra option/)
   })
 
   it('rejects unsupported adapter host/provider keys', () => {
-    expect(() => validateGeminiSelection({
-      ctx: createCtx({
-        adapters: {
-          gemini: {
-            apiHost: 'https://example.com'
-          } as Record<string, unknown>
-        }
+    expect(() =>
+      validateGeminiSelection({
+        ctx: createCtx({
+          adapters: {
+            gemini: {
+              apiHost: 'https://example.com'
+            } as Record<string, unknown>
+          }
+        })
       })
-    })).toThrow(/apiHost/)
+    ).toThrow(/apiHost/)
   })
 })

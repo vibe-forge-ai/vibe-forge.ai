@@ -50,7 +50,9 @@ describe('session history branching', () => {
       model: 'gpt-4o',
       adapter: 'codex',
       permissionMode: 'default',
-      effort: 'medium'
+      effort: 'medium',
+      promptType: 'workspace',
+      promptName: 'client'
     })
 
     const events: WSEvent[] = [
@@ -105,6 +107,8 @@ describe('session history branching', () => {
     expect(branched.session.parentSessionId).toBe(original.id)
     expect(branched.session.model).toBe('gpt-4o')
     expect(branched.session.adapter).toBe('codex')
+    expect(branched.session.promptType).toBe('workspace')
+    expect(branched.session.promptName).toBe('client')
     expect(branched.replayContent).toBe('edited prompt')
     expect(db.getMessages(branched.session.id)).toEqual([
       events[0],

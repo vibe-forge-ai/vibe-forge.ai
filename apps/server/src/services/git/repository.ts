@@ -1,11 +1,6 @@
 import { access } from 'node:fs/promises'
 
-import type {
-  GitAvailabilityReason,
-  GitBranchSummary,
-  GitRepositoryState,
-  GitWorktreeSummary
-} from '@vibe-forge/types'
+import type { GitAvailabilityReason, GitBranchSummary, GitRepositoryState, GitWorktreeSummary } from '@vibe-forge/types'
 
 import { resolveSessionWorkspaceFolder } from '#~/services/session/workspace.js'
 import { conflict } from '#~/utils/http.js'
@@ -104,7 +99,10 @@ export const listRepositoryRemotes = async (repositoryRoot: string) => {
 }
 
 export const getRepositoryStatus = async (repositoryRoot: string): Promise<ParsedGitStatus> => {
-  const { stdout } = await runGit(['status', '--porcelain=v2', '--branch'], repositoryRoot)
+  const { stdout } = await runGit(
+    ['status', '--porcelain=v2', '--branch', '--untracked-files=all', '--ignore-submodules=none'],
+    repositoryRoot
+  )
   return parseGitStatus(stdout)
 }
 
@@ -164,6 +162,7 @@ export const getGitStateFromRepositoryContext = async (
     hasUnstagedChanges: status.hasUnstagedChanges,
     hasUntrackedChanges: status.hasUntrackedChanges,
     remotes,
+    changedFiles: status.changedFiles,
     stagedSummary: summaries.stagedSummary,
     workingTreeSummary: summaries.workingTreeSummary,
     headCommit

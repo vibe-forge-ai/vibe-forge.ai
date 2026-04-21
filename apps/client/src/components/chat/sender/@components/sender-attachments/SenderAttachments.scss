@@ -4,6 +4,7 @@
   gap: 6px;
   padding: 2px 0 8px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .pending-attachments__files,
@@ -12,6 +13,7 @@
   display: flex;
   gap: 6px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .pending-attachments__files {
@@ -77,10 +79,11 @@
 }
 
 .pending-context-file {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   width: 100%;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
   padding: 5px 8px;
   border: 1px solid rgba(148, 163, 184, .2);
@@ -142,12 +145,15 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  min-width: 0;
+  justify-self: end;
 }
 
 .pending-context-file__size {
   font-size: 9px;
   font-weight: 600;
   color: var(--sub-text-color, #6b7280);
+  white-space: nowrap;
 }
 
 .pending-context-file__remove {
@@ -218,7 +224,14 @@ html.dark {
 
 @media (max-width: 640px) {
   .pending-context-file {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .pending-context-file__actions {
     width: 100%;
+    justify-content: space-between;
+    justify-self: stretch;
   }
 
   .pending-attachments__images {

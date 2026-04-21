@@ -4,6 +4,7 @@ import {
   doesModelMatchSelector,
   evaluateAdapterModelRules,
   listServiceModels,
+  mergeAdapterConfigs,
   resolveAdapterConfiguredDefaultModel,
   resolveAdapterModelCompatibility,
   resolveDefaultModelSelection,
@@ -164,6 +165,48 @@ describe('model selection utilities', () => {
     })).toBe('serviceB,modelBOnly')
   })
 
+  it('merges adapter account maps by key instead of replacing the whole accounts object', () => {
+    expect(mergeAdapterConfigs(
+      {
+        codex: {
+          defaultAccount: 'work',
+          accounts: {
+            work: {
+              title: 'Work',
+              authFile: '.ai/.local/work/auth.json'
+            }
+          }
+        }
+      },
+      {
+        codex: {
+          accounts: {
+            personal: {
+              title: 'Personal'
+            },
+            work: {
+              description: 'workspace override'
+            }
+          }
+        }
+      }
+    )).toEqual({
+      codex: {
+        defaultAccount: 'work',
+        accounts: {
+          work: {
+            title: 'Work',
+            authFile: '.ai/.local/work/auth.json',
+            description: 'workspace override'
+          },
+          personal: {
+            title: 'Personal'
+          }
+        }
+      }
+    })
+  })
+
   it('treats service selectors as valid includeModels rules', () => {
     expect(evaluateAdapterModelRules({
       model: 'serviceA,modelX',
@@ -246,11 +289,8 @@ describe('model selection utilities', () => {
     expect(resolveEffectiveEffort({
       explicitEffort: 'max',
       model: 'serviceA,modelX',
-      adapter: 'codex',
+      adapterConfig: { effort: 'medium' },
       configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      },
       models: {
         'serviceA,modelX': { effort: 'high' }
       }
@@ -261,11 +301,8 @@ describe('model selection utilities', () => {
 
     expect(resolveEffectiveEffort({
       model: 'serviceA,modelX',
-      adapter: 'codex',
+      adapterConfig: { effort: 'medium' },
       configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      },
       models: {
         'serviceA,modelX': { effort: 'high' }
       }
@@ -276,18 +313,14 @@ describe('model selection utilities', () => {
 
     expect(resolveEffectiveEffort({
       model: 'serviceA,modelAOnly',
-      adapter: 'codex',
-      configEffort: 'low',
-      adapters: {
-        codex: { effort: 'medium' }
-      }
+      adapterConfig: { effort: 'medium' },
+      configEffort: 'low'
     })).toEqual({
       effort: 'medium',
       source: 'adapter'
     })
 
     expect(resolveEffectiveEffort({
-      adapter: 'codex',
       configEffort: 'low'
     })).toEqual({
       effort: 'low',

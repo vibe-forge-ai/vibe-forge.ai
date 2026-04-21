@@ -101,6 +101,7 @@ const filterGitWorktrees = (worktrees: GitWorktreeSummary[], query: string) => {
 }
 
 export function GitWorktreeDropdown({
+  compact = false,
   open,
   workspace,
   worktrees,
@@ -109,6 +110,7 @@ export function GitWorktreeDropdown({
   placement = 'bottomLeft',
   onOpenChange
 }: {
+  compact?: boolean
   open: boolean
   workspace?: SessionWorkspace
   worktrees: GitWorktreeSummary[]
@@ -203,7 +205,11 @@ export function GitWorktreeDropdown({
             </button>
 
             {mode.type === 'draft' && (
-              <div className={`chat-header-git__menu-row chat-header-git__menu-row--toggle ${mode.disabled ? 'is-disabled' : ''}`}>
+              <div
+                className={`chat-header-git__menu-row chat-header-git__menu-row--toggle ${
+                  mode.disabled ? 'is-disabled' : ''
+                }`}
+              >
                 <span className='chat-header-git__menu-row-main'>
                   <span className='chat-header-git__row-icon material-symbols-rounded'>
                     {getDraftStrategyIcon(true)}
@@ -275,15 +281,15 @@ export function GitWorktreeDropdown({
                               <span className='chat-header-git__row-title'>
                                 {formatGitWorktreePathLabel(worktree.path)}
                               </span>
-                          <span className='chat-header-git__row-subtitle'>
-                            {worktree.branchName?.trim() || t('chat.gitDetachedHead')}
-                          </span>
-                        </span>
-                      </div>
-                      {mode.type === 'session' && worktree.isCurrent && (
-                        <span className='chat-header-git__worktree-chip'>
-                          {t('chat.sessionWorkspaceCurrentSession')}
-                        </span>
+                              <span className='chat-header-git__row-subtitle'>
+                                {worktree.branchName?.trim() || t('chat.gitDetachedHead')}
+                              </span>
+                            </span>
+                          </div>
+                          {mode.type === 'session' && worktree.isCurrent && (
+                            <span className='chat-header-git__worktree-chip'>
+                              {t('chat.sessionWorkspaceCurrentSession')}
+                            </span>
                           )}
                         </div>
                       ))}
@@ -318,7 +324,9 @@ export function GitWorktreeDropdown({
     >
       <Button
         type='text'
-        className={`chat-header-git__trigger ${open ? 'is-open' : ''} ${mode.type === 'session' && mode.isBusy ? 'is-disabled' : ''}`}
+        className={`chat-header-git__trigger chat-header-git__trigger--worktree ${open ? 'is-open' : ''} ${
+          mode.type === 'session' && mode.isBusy ? 'is-disabled' : ''
+        } ${compact ? 'is-compact' : ''}`.trim()}
         title={triggerTitle}
         aria-label={t('chat.sessionWorkspace')}
       >

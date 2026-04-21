@@ -1,6 +1,7 @@
 import './FlowsTab.scss'
 
-import { Space } from 'antd'
+import { Space, Tooltip } from 'antd'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { SpecSummary } from '#~/api.js'
@@ -13,10 +14,13 @@ import { TabContent } from './TabContent'
 interface FlowsTabProps {
   specs: SpecSummary[]
   filteredSpecs: SpecSummary[]
+  hideContentSearch?: boolean
   isLoading: boolean
+  leading?: ReactNode
   query: string
   tagOptions: Array<{ label: string; value: string }>
   tagFilter: string[]
+  onRefresh: () => void
   onQueryChange: (value: string) => void
   onTagFilterChange: (value: string[]) => void
   onCreate: () => void
@@ -26,10 +30,13 @@ interface FlowsTabProps {
 export function FlowsTab({
   specs,
   filteredSpecs,
+  hideContentSearch = false,
   isLoading,
+  leading,
   query,
   tagOptions,
   tagFilter,
+  onRefresh,
   onQueryChange,
   onTagFilterChange,
   onCreate,
@@ -40,27 +47,26 @@ export function FlowsTab({
   return (
     <TabContent className='knowledge-base-view__flows-tab'>
       <SectionHeader
-        title={t('knowledge.flows.title')}
-        description={t('knowledge.flows.desc')}
         actions={
           <Space>
-            <ActionButton
-              icon={<span className='material-symbols-rounded'>download</span>}
-              onClick={onImport}
-            >
-              {t('knowledge.actions.import')}
-            </ActionButton>
-            <ActionButton
-              type='primary'
-              icon={<span className='material-symbols-rounded'>add_circle</span>}
-              onClick={onCreate}
-            >
-              {t('knowledge.flows.create')}
-            </ActionButton>
+            <Tooltip title={t('knowledge.actions.refresh')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>refresh</span>}
+                onClick={onRefresh}
+              />
+            </Tooltip>
+            <Tooltip title={t('knowledge.actions.import')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>download</span>}
+                onClick={onImport}
+              />
+            </Tooltip>
           </Space>
         }
+        leading={leading}
       />
       <FilterBar
+        hideSearch={hideContentSearch}
         query={query}
         tagOptions={tagOptions}
         tagFilter={tagFilter}

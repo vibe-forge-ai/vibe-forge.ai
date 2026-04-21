@@ -8,6 +8,7 @@ export interface InteractionRequestState {
 }
 
 export interface ChatErrorState {
+  action?: 'retry-session-creation'
   kind: 'connection' | 'session'
   message: string
   code?: string

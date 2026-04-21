@@ -19,12 +19,12 @@ export const createDirectOpenCodeSession = async (
 ): Promise<AdapterSession> => {
   const adapterConfig = resolveAdapterConfig(ctx)
   const agent = resolveOpenCodeAgent({
-    agent: adapterConfig.agent,
-    planAgent: adapterConfig.planAgent,
+    agent: adapterConfig.native.agent,
+    planAgent: adapterConfig.native.planAgent,
     permissionMode: options.permissionMode
   })
-  const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
-  const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.titlePrefix)
+  const binaryPath = resolveOpenCodeBinaryPath(ctx.env, ctx.cwd, adapterConfig.native.cli)
+  const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.native.titlePrefix)
   const cachedSession = options.type === 'resume' ? await ctx.cache.get('adapter.opencode.session') : undefined
   const systemPromptFile = await ensureSystemPromptFile(ctx, options)
   const childEnv = await buildChildEnv({ ctx, options, adapterConfig, systemPromptFile })
@@ -35,7 +35,7 @@ export const createDirectOpenCodeSession = async (
       cwd: ctx.cwd,
       env,
       title,
-      maxCount: adapterConfig.sessionListMaxCount ?? 50,
+      maxCount: adapterConfig.native.sessionListMaxCount ?? 50,
       logger: ctx.logger
     }) ?? cachedSession?.opencodeSessionId
     : undefined
@@ -64,7 +64,7 @@ export const createDirectOpenCodeSession = async (
       files: [],
       model: cliModel,
       agent,
-      share: adapterConfig.share,
+      share: adapterConfig.native.share,
       title,
       dir: ctx.cwd,
       opencodeSessionId,
@@ -103,7 +103,7 @@ export const createDirectOpenCodeSession = async (
           cwd: ctx.cwd,
           env,
           title,
-          maxCount: adapterConfig.sessionListMaxCount ?? 50,
+          maxCount: adapterConfig.native.sessionListMaxCount ?? 50,
           logger: ctx.logger
         })
         if (resolvedSessionId) {

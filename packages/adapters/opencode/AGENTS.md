@@ -30,6 +30,7 @@
 
 - `src/runtime/native-hooks.ts`
   - 负责 `.ai/.mock/.config/opencode/plugins/vibe-forge-hooks.js`
+  - 当前托管 plugin 接入 `session.created` / `session.idle` / `tool.execute.before` / `tool.execute.after`，并把 `experimental.session.compacting` 映射到统一 `PreCompact`（仅 compaction prompt/context 定制，`canBlock: false`）
   - 当没有用户 `opencode.json` 时，写托管默认 config（`$schema` + `autoupdate: false`）
 - `src/runtime/session/skill-config.ts`
   - base config、plugins、skills 镜像到 session config dir

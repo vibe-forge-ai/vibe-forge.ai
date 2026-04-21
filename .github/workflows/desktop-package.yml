@@ -1,0 +1,250 @@
+name: Desktop Package
+run-name: Desktop package (${{ github.ref_name }})
+
+env:
+  DESKTOP_RELEASE_TAG_PREFIX: desktop-v
+  NODE_OPTIONS: --max-old-space-size=4096
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/workflows/desktop-package.yml
+      - apps/client/**
+      - apps/desktop/**
+      - apps/server/**
+      - package.json
+      - packages/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/desktop-package.yml
+      - apps/client/**
+      - apps/desktop/**
+      - apps/server/**
+      - package.json
+      - packages/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+    tags:
+      - "desktop-v*"
+  workflow_dispatch:
+    inputs:
+      create_release:
+        default: false
+        description: Create or update a GitHub Release with the generated artifacts.
+        required: false
+        type: boolean
+      release_tag:
+        description: Release tag to use when create_release is enabled from workflow_dispatch. Must start with desktop-v.
+        required: false
+        type: string
+      retention_days:
+        default: "14"
+        description: Number of days to keep workflow artifacts.
+        required: false
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS installer
+            runner: macos-26
+            artifact: vibe-forge-desktop-macos
+          - name: Windows installer
+            runner: windows-latest
+            artifact: vibe-forge-desktop-windows
+          - name: Linux installer
+            runner: ubuntu-latest
+            artifact: vibe-forge-desktop-linux
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install Linux packaging dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools rpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve desktop release metadata
+        id: desktop_release
+        shell: bash
+        run: |
+          tag=""
+          if [[ "$GITHUB_REF" == refs/tags/${DESKTOP_RELEASE_TAG_PREFIX}* ]]; then
+            tag="$GITHUB_REF_NAME"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.create_release }}" == "true" ]]; then
+            tag="${{ inputs.release_tag }}"
+          fi
+
+          enabled=false
+          auto_update=false
+          version=""
+          if [[ -n "$tag" ]]; then
+            if [[ "$tag" != ${DESKTOP_RELEASE_TAG_PREFIX}* ]]; then
+              echo "Desktop release tags must start with ${DESKTOP_RELEASE_TAG_PREFIX}." >&2
+              exit 1
+            fi
+
+            version="${tag#${DESKTOP_RELEASE_TAG_PREFIX}}"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+              echo "Desktop release tag must look like ${DESKTOP_RELEASE_TAG_PREFIX}1.2.3 or ${DESKTOP_RELEASE_TAG_PREFIX}1.2.3-beta.1." >&2
+              exit 1
+            fi
+
+            enabled=true
+            if [[ "${{ vars.DESKTOP_AUTO_UPDATE || 'false' }}" == "true" ]]; then
+              auto_update=true
+            fi
+          fi
+
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          echo "auto_update=$auto_update" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Package desktop app
+        run: pnpm desktop:package
+        env:
+          VF_DESKTOP_ARCHS: ${{ runner.os == 'macOS' && 'arm64,x64' || '' }}
+          VF_DESKTOP_ENABLE_AUTO_UPDATE: ${{ steps.desktop_release.outputs.auto_update }}
+          VF_DESKTOP_VERSION: ${{ steps.desktop_release.outputs.version }}
+
+      - name: Smoke test packaged server
+        run: pnpm -C apps/desktop smoke:package
+        env:
+          VF_DESKTOP_SMOKE_ARCH: ${{ runner.os == 'macOS' && 'arm64' || '' }}
+
+      - name: Build desktop artifacts
+        run: pnpm -C apps/desktop make:from-package
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEY_PASSWORD: ${{ secrets.DESKTOP_CSC_KEY_PASSWORD }}
+          CSC_LINK: ${{ secrets.DESKTOP_CSC_LINK }}
+          DEBUG: electron-builder
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VF_DESKTOP_ARCHS: ${{ runner.os == 'macOS' && 'arm64,x64' || '' }}
+          VF_DESKTOP_MAKE_TARGETS: ${{ runner.os == 'Windows' && steps.desktop_release.outputs.enabled != 'true' && 'dir' || '' }}
+          VF_DESKTOP_PUBLISH: never
+          VF_DESKTOP_VERSION: ${{ steps.desktop_release.outputs.version }}
+          VF_DESKTOP_SIGN: ${{ vars.DESKTOP_SIGN || 'false' }}
+
+      - name: Upload installer artifacts
+        if: runner.os != 'Windows' || steps.desktop_release.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            apps/desktop/release/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_days || 14 }}
+
+      - name: Upload Windows package artifact
+        if: runner.os == 'Windows' && steps.desktop_release.outputs.enabled != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            apps/desktop/out/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_days || 14 }}
+
+  release:
+    name: GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: startsWith(github.ref, 'refs/tags/desktop-v') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+    permissions:
+      contents: write
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.release_tag }}"
+            if [ -z "$tag" ]; then
+              echo "release_tag is required when create_release is enabled manually." >&2
+              exit 1
+            fi
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+
+          case "$tag" in
+            desktop-v*) ;;
+            *)
+              echo "Desktop release tags must start with desktop-v." >&2
+              exit 1
+              ;;
+          esac
+
+          version="${tag#desktop-v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Desktop release tag must look like desktop-v1.2.3 or desktop-v1.2.3-beta.1." >&2
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          NOTES=$(cat <<EOF
+          Vibe Forge desktop release ${TAG}
+
+          - Unsigned desktop installers generated by CI
+          - macOS: Intel (x64) and Apple Silicon (arm64) .dmg, .zip
+          - Windows: web installer .exe and package payload
+          - Linux: .AppImage, .deb, .tar.gz
+          EOF
+          )
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+            gh release edit "$TAG" --latest --notes "$NOTES"
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES" --latest
+          fi
+
+          find release-artifacts -type f -print0 | xargs -0 gh release upload "$TAG" --clobber

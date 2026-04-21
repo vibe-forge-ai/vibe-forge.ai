@@ -4,7 +4,7 @@
 
 ## 已验证经验
 
-- 真实 CLI 和单元测试解决的是两类问题；hooks 改动合并前，三家都至少要有一轮真实 CLI smoke。
+- 真实 CLI 和单元测试解决的是两类问题；hooks 改动合并前，每个有 native hooks 的 adapter 都至少要有一轮真实 CLI smoke。
 - OpenCode 更适合以 JSON 事件流作为稳定执行基线。
 - OpenCode 配置不能只靠 `OPENCODE_CONFIG_CONTENT`，更稳妥的方式是先准备 session config dir，再落真实 `opencode.json`。
 - Claude Code 会叠加项目级和 mock home 两套 settings；排查重复 hook 时不能只看 `.ai/.mock/.claude/settings.json`。

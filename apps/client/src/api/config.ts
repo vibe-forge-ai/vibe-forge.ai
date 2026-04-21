@@ -1,11 +1,15 @@
 import type { ConfigSource } from '@vibe-forge/core'
-import type { ConfigResponse } from '@vibe-forge/types'
+import type { ConfigResponse, ConfigSchemaResponse } from '@vibe-forge/types'
 
 import { fetchApiJson, fetchApiJsonOrThrow, jsonHeaders } from './base'
 import type { ApiOkResponse } from './types'
 
 export async function getConfig(): Promise<ConfigResponse> {
   return fetchApiJson<ConfigResponse>('/api/config')
+}
+
+export async function getConfigSchema(): Promise<ConfigSchemaResponse> {
+  return fetchApiJson<ConfigSchemaResponse>('/api/config/schema')
 }
 
 export async function updateConfig(

@@ -1,17 +1,27 @@
 import { Buffer } from 'node:buffer'
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 import '../adapter-config.js'
 
 import type { ChatMessage } from '@vibe-forge/core'
-import { resolveMockHome } from '@vibe-forge/hooks'
-import type { AdapterCtx, AdapterMessageContent, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
-import { omitAdapterCommonConfig, parseServiceModelSelector } from '@vibe-forge/utils'
+import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV, resolveMockHome } from '@vibe-forge/hooks'
+import type { NativeHookMatcherGroup } from '@vibe-forge/hooks'
+import type {
+  AdapterCtx,
+  AdapterMessageContent,
+  AdapterQueryOptions,
+  Config,
+  ModelServiceConfig
+} from '@vibe-forge/types'
+import { omitAdapterCommonConfig, parseServiceModelSelector, syncSymlinkTarget } from '@vibe-forge/utils'
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
 
+import type { GeminiNativeHooksSettings } from './native-hooks'
 import { resolveGeminiModelServiceRoute } from './proxy'
 
 export interface GeminiAdapterConfig {
+  cli?: ManagedNpmCliConfig
   disableExtensions?: boolean
   disableSubagents?: boolean
   disableAutoUpdate?: boolean
@@ -35,6 +45,11 @@ export interface GeminiSettings {
     defaultApprovalMode?: 'default' | 'auto_edit' | 'plan'
     enableAutoUpdate?: boolean
     enableAutoUpdateNotification?: boolean
+  }
+  hooks?: Record<string, NativeHookMatcherGroup[]>
+  hooksConfig?: {
+    enabled?: boolean
+    disabled?: string[]
   }
   mcpServers?: Record<string, Record<string, unknown>>
   model?: {
@@ -150,7 +165,7 @@ const FORBIDDEN_EXTRA_OPTIONS = new Set([
 ])
 
 const FORBIDDEN_PROMPT_PREFIX = /^\/(?![/*])/
-const FORBIDDEN_AT_REFERENCE = /(^|[\s(])@(?:\/|\.{1,2}\/|~\/|[A-Za-z]:[\\/])/m
+const FORBIDDEN_AT_REFERENCE = /(?:^|[\s(])@(?:\/|\.{1,2}\/|~\/|[a-z]:[\\/])/im
 
 export const MAX_GEMINI_STDIN_BYTES = 8 * 1024 * 1024
 
@@ -233,9 +248,9 @@ export const createAssistantMessage = (id: string, content: string, model?: stri
 
 const normalizeToolToken = (value: string) => (
   value
-    .split(/[^a-zA-Z0-9]+/)
+    .split(/[^a-z0-9]+/i)
     .filter(Boolean)
-    .map(token => token[0]?.toUpperCase() + token.slice(1))
+    .map(token => `${token[0]?.toUpperCase() ?? ''}${token.slice(1)}`)
     .join('')
 )
 
@@ -380,19 +395,22 @@ export const validateGeminiSelection = (params: {
       throw new Error('Gemini slash commands are disabled in the adapter. Send plain text instead.')
     }
     if (FORBIDDEN_AT_REFERENCE.test(prompt)) {
-      throw new Error('Gemini @path prompt expansion is disabled in the adapter. Reference files with plain text instead.')
+      throw new Error(
+        'Gemini @path prompt expansion is disabled in the adapter. Reference files with plain text instead.'
+      )
     }
   }
 }
 
-const resolveGeneratedContextFilePath = (ctx: AdapterCtx, sessionId: string) => resolve(
-  ctx.cwd,
-  '.ai',
-  '.mock',
-  '.gemini-adapter',
-  sessionId,
-  'VIBE_FORGE.md'
-)
+const resolveGeneratedContextFilePath = (ctx: AdapterCtx, sessionId: string) =>
+  resolve(
+    ctx.cwd,
+    '.ai',
+    '.mock',
+    '.gemini-adapter',
+    sessionId,
+    'VIBE_FORGE.md'
+  )
 
 export const ensureGeminiPromptFiles = async (
   ctx: AdapterCtx,
@@ -408,7 +426,7 @@ export const ensureGeminiPromptFiles = async (
 
   return {
     generatedContextFilePath,
-    generatedContextFileName: '.ai/.mock/.gemini-adapter/' + options.sessionId + '/VIBE_FORGE.md'
+    generatedContextFileName: `.ai/.mock/.gemini-adapter/${options.sessionId}/VIBE_FORGE.md`
   }
 }
 
@@ -440,6 +458,7 @@ export const buildGeminiSettings = (params: {
   generatedContextFileName?: string
   mcpServers: Record<string, NonNullable<Config['mcpServers']>[string]>
   model?: string
+  nativeHooks?: GeminiNativeHooksSettings
 }): GeminiSettings => {
   const {
     adapterConfig,
@@ -447,7 +466,8 @@ export const buildGeminiSettings = (params: {
     externalAuth,
     generatedContextFileName,
     mcpServers,
-    model
+    model,
+    nativeHooks
   } = params
 
   const telemetryOff = adapterConfig.telemetry !== 'inherit'
@@ -468,39 +488,41 @@ export const buildGeminiSettings = (params: {
     },
     ...(externalAuth
       ? {
-          security: {
-            auth: {
-              selectedType: 'gateway',
-              useExternal: true
-            }
+        security: {
+          auth: {
+            selectedType: 'gateway',
+            useExternal: true
           }
         }
+      }
       : {}),
     ...(telemetryOff
       ? {
-          telemetry: {
-            enabled: false,
-            logPrompts: false
-          },
-          privacy: {
-            usageStatisticsEnabled: false
-          }
+        telemetry: {
+          enabled: false,
+          logPrompts: false
+        },
+        privacy: {
+          usageStatisticsEnabled: false
         }
+      }
       : {}),
     ...(generatedContextFileName == null
       ? {}
       : {
-          context: {
-            fileName: ['GEMINI.md', generatedContextFileName]
-          }
-        }),
+        context: {
+          fileName: ['GEMINI.md', generatedContextFileName]
+        }
+      }),
     ...(Object.keys(mcpServers).length === 0
       ? {}
       : {
-          mcpServers: Object.fromEntries(
-            Object.entries(mcpServers).map(([name, server]) => [name, translateMcpServerConfig(server)])
-          )
-        })
+        mcpServers: Object.fromEntries(
+          Object.entries(mcpServers).map(([name, server]) => [name, translateMcpServerConfig(server)])
+        )
+      }),
+    ...(nativeHooks?.hooksConfig == null ? {} : { hooksConfig: nativeHooks.hooksConfig }),
+    ...(nativeHooks?.hooks == null ? {} : { hooks: nativeHooks.hooks })
   }
 
   return settings
@@ -517,10 +539,14 @@ export const writeGeminiSettings = async (ctx: AdapterCtx, settings: GeminiSetti
 export const buildGeminiSpawnEnv = (params: {
   adapterConfig: GeminiAdapterConfig
   ctx: AdapterCtx
+  model?: string
   proxyBaseUrl?: string
+  runtime?: AdapterQueryOptions['runtime']
+  sessionId?: string
 }): Record<string, string | undefined> => {
-  const { adapterConfig, ctx, proxyBaseUrl } = params
+  const { adapterConfig, ctx, model, proxyBaseUrl, runtime, sessionId } = params
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const nativeHooksActive = ctx.env.__VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__ === '1'
 
   return {
     ...toProcessEnv({
@@ -536,9 +562,29 @@ export const buildGeminiSpawnEnv = (params: {
       GEMINI_SYSTEM_MD: undefined,
       GEMINI_WRITE_SYSTEM_MD: undefined,
       GOOGLE_GEMINI_BASE_URL: proxyBaseUrl,
-      GOOGLE_VERTEX_BASE_URL: undefined
+      GOOGLE_VERTEX_BASE_URL: undefined,
+      __VF_GEMINI_HOOK_MODEL__: nativeHooksActive ? model : undefined,
+      __VF_GEMINI_HOOK_RUNTIME__: nativeHooksActive ? runtime : undefined,
+      __VF_GEMINI_TASK_SESSION_ID__: nativeHooksActive ? sessionId : undefined,
+      __VF_VIBE_FORGE_GEMINI_HOOKS_ACTIVE__: nativeHooksActive ? '1' : undefined,
+      [NATIVE_HOOK_BRIDGE_ADAPTER_ENV]: nativeHooksActive ? 'gemini' : undefined
     })
   }
+}
+
+export const resolveGeminiMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
+  resolveMockHome(ctx.cwd, ctx.env)
+)
+
+export const syncGeminiMockHomeSymlink = async (params: {
+  sourcePath: string
+  targetPath: string
+}) => {
+  await syncSymlinkTarget({
+    ...params,
+    type: 'dir',
+    onMissingSource: 'remove'
+  })
 }
 
 export const buildGeminiRunArgs = (params: {
@@ -641,9 +687,9 @@ export const resolveLatestGeminiSessionId = async (params: {
       const parsed = JSON.parse(raw) as { sessionId?: unknown }
       return typeof parsed.sessionId === 'string' && parsed.sessionId.trim() !== ''
         ? {
-            mtimeMs: fileStats.mtimeMs,
-            sessionId: parsed.sessionId
-          }
+          mtimeMs: fileStats.mtimeMs,
+          sessionId: parsed.sessionId
+        }
         : undefined
     } catch (error) {
       params.ctx.logger.warn('Failed to inspect Gemini session transcript', { filePath, err: error })

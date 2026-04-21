@@ -1,36 +1,60 @@
 import './ConfigView.scss'
 
-import { App, Empty, Space, Spin, Tabs } from 'antd'
+import { App, Button, Empty, Input, Space, Spin, Tooltip } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type { ConfigSource } from '@vibe-forge/core'
-import type { AboutInfo, ConfigResponse } from '@vibe-forge/types'
+import type { AboutInfo, ConfigResponse, ConfigUiSection } from '@vibe-forge/types'
 
-import { getApiErrorMessage, getConfig, updateConfig } from '../api'
+import { useMobileSidebarModal } from '#~/components/layout/@hooks/use-mobile-sidebar-modal'
+import { PageShell } from '#~/components/layout/PageShell'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+
+import { getApiErrorMessage, getConfig, getConfigSchema, listWorktreeEnvironments, updateConfig } from '../api'
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
+import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
+import { toDisplayEnvironmentName, toEnvironmentReference } from './config/worktree-environment-panel-model'
 
 export function ConfigView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data, isLoading, error, mutate } = useSWR<ConfigResponse>('/api/config', getConfig)
-  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{ tab: string; source: string }>({
-    keys: ['tab', 'source'],
-    defaults: { tab: 'general', source: 'project' }
+  const { data: schemaData } = useSWR('/api/config/schema', getConfigSchema)
+  const { data: worktreeEnvironmentData } = useSWR('worktree-environments', listWorktreeEnvironments)
+  const { values: queryValues, update: updateQuery, searchParams } = useQueryParams<{
+    tab: string
+    source: string
+    detail: string
+  }>({
+    keys: ['tab', 'source', 'detail'],
+    defaults: { tab: 'general', source: 'project', detail: '' },
+    omit: {
+      detail: value => value.trim() === ''
+    }
   })
-  const sourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
-  const setSourceKey = (next: ConfigSource) => updateQuery({ source: next })
+  const querySourceKey: ConfigSource = queryValues.source === 'user' ? 'user' : 'project'
+  const [sourceKey, setSourceKeyState] = useState<ConfigSource>(querySourceKey)
+  const [detailQuery, setDetailQueryState] = useState(queryValues.detail)
+  const [navSearchQuery, setNavSearchQuery] = useState('')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, unknown>>({})
   const configPresent = data?.meta?.configPresent
   const currentSource = data?.sources?.[sourceKey]
+  const currentResolvedSource = data?.resolvedSources?.[sourceKey]
   const draftsRef = useRef<Record<string, unknown>>(drafts)
+  const compactContentRegionRef = useRef<HTMLDivElement | null>(null)
+  const compactSidebarSheetRef = useRef<HTMLDivElement | null>(null)
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const savingRef = useRef<Record<string, boolean>>({})
   const lastSavedRef = useRef<Record<string, string>>({})
+  const compactSidebarBackgroundRefs = useMemo(() => [compactContentRegionRef], [])
   const mergedModelServices = useMemo(() => data?.sources?.merged?.modelServices ?? {}, [
     data?.sources?.merged?.modelServices
   ])
@@ -70,6 +94,11 @@ export function ConfigView() {
       value: currentSource?.conversation
     },
     {
+      key: 'worktreeEnvironments',
+      icon: 'deployed_code',
+      label: t('config.sections.environments')
+    },
+    {
       key: 'models',
       icon: 'tune',
       label: t('config.sections.models'),
@@ -102,11 +131,94 @@ export function ConfigView() {
     { key: 'about', icon: 'info', label: t('config.sections.about'), value: data?.meta?.about }
   ], [currentSource, data?.meta?.about, data?.meta?.experiments, t])
   const tabKeys = useMemo(() => new Set(tabs.filter(tab => tab.type !== 'group').map(tab => tab.key)), [tabs])
+  const desktopNavGroups = useMemo(() => {
+    type NavTab = Exclude<(typeof tabs)[number], { type: 'group' }>
+    interface NavGroup {
+      key: string
+      label: string
+      tabs: NavTab[]
+    }
 
-  const activeTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
-  const setActiveTabKey = (key: string) => updateQuery({ tab: key })
+    const query = navSearchQuery.trim().toLowerCase()
+    const groups: NavGroup[] = []
+    let currentGroup: NavGroup | null = null
+
+    tabs.forEach((tab) => {
+      if (tab.type === 'group') {
+        if (currentGroup != null && currentGroup.tabs.length > 0) {
+          groups.push(currentGroup)
+        }
+        currentGroup = { key: tab.key, label: String(tab.label), tabs: [] }
+        return
+      }
+
+      if (currentGroup == null) {
+        currentGroup = { key: 'group-config', label: t('config.groups.config'), tabs: [] }
+      }
+      const targetGroup = currentGroup
+      const navTab = tab as NavTab
+
+      const label = String(tab.label)
+      const matches = query === '' ||
+        label.toLowerCase().includes(query) ||
+        tab.key.toLowerCase().includes(query)
+
+      if (matches) {
+        targetGroup.tabs.push(navTab)
+      }
+    })
+
+    if (currentGroup != null) {
+      groups.push(currentGroup)
+    }
+
+    return groups.filter(group => group.tabs.length > 0)
+  }, [navSearchQuery, t, tabs])
+
+  const queryTabKey = tabKeys.has(queryValues.tab) ? queryValues.tab : 'general'
+  const [activeTabKey, setActiveTabKeyState] = useState(queryTabKey)
+  const setSourceKey = (next: ConfigSource) => {
+    setSourceKeyState(next)
+    updateQuery({ source: next })
+  }
+  const setDetailQuery = (next: string) => {
+    setDetailQueryState(next)
+    updateQuery({ detail: next })
+  }
+  const setActiveTabKey = (key: string) => {
+    setActiveTabKeyState(key)
+    setDetailQueryState('')
+    updateQuery({ tab: key, detail: '' })
+  }
+  const isCompactView = isCompactLayout || isTouchInteraction
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
   const activeTab = useMemo(() => tabs.find(tab => tab.key === activeTabKey), [tabs, activeTabKey])
+  const uiSections = schemaData?.workspace.uiSchema?.sections ?? {}
+  const sourceOptions = useMemo(() => [
+    {
+      value: 'project' as const,
+      icon: 'folder',
+      label: configPresent?.project === true
+        ? t('config.sources.project')
+        : t('config.sources.projectMissing')
+    },
+    {
+      value: 'user' as const,
+      icon: 'person',
+      label: configPresent?.user === true
+        ? t('config.sources.user')
+        : t('config.sources.userMissing')
+    }
+  ], [configPresent?.project, configPresent?.user, t])
+
+  useMobileSidebarModal({
+    backgroundRefs: compactSidebarBackgroundRefs,
+    isCompactLayout: isCompactView,
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
+    sheetRef: compactSidebarSheetRef
+  })
 
   useEffect(() => {
     if (activeTab == null) return
@@ -124,6 +236,28 @@ export function ConfigView() {
       return { ...prev, [draftKey]: cloneValue(sourceValue) }
     })
   }, [activeTab, configTabKeys, sourceKey])
+
+  useEffect(() => {
+    setSourceKeyState(querySourceKey)
+  }, [querySourceKey])
+
+  useEffect(() => {
+    setActiveTabKeyState(queryTabKey)
+  }, [queryTabKey])
+
+  useEffect(() => {
+    setDetailQueryState(queryValues.detail)
+  }, [queryValues.detail])
+
+  useEffect(() => {
+    if (!isCompactView) return
+    setIsSidebarCollapsed(false)
+  }, [isCompactView])
+
+  useEffect(() => {
+    if (isCompactView) return
+    setIsMobileSidebarOpen(false)
+  }, [isCompactView])
 
   useEffect(() => {
     draftsRef.current = drafts
@@ -144,8 +278,20 @@ export function ConfigView() {
   }, [drafts, currentSource?.general, sourceKey])
   const selectedModelService = (() => {
     const value = getValueByPath(generalDraftValue, ['defaultModelService'])
-    return typeof value === 'string' ? value : undefined
+    if (typeof value === 'string' && value !== '') return value
+    const fallbackValue = getValueByPath(currentResolvedSource?.general, ['defaultModelService'])
+    return typeof fallbackValue === 'string' && fallbackValue !== '' ? fallbackValue : undefined
   })()
+  const worktreeEnvironmentOptions = useMemo(() => (
+    worktreeEnvironmentData?.environments.map(environment => ({
+      value: toEnvironmentReference(environment),
+      label: `${toDisplayEnvironmentName(environment.id)} (${
+        environment.isLocal
+          ? t('config.environments.sources.user')
+          : t('config.environments.sources.project')
+      })`
+    })) ?? []
+  ), [t, worktreeEnvironmentData?.environments])
 
   const scheduleSave = (sectionKey: string, source: ConfigSource, nextValue: unknown) => {
     const draftKey = getDraftKey(sectionKey, source)
@@ -180,8 +326,161 @@ export function ConfigView() {
     scheduleSave(sectionKey, sourceKey, nextValue)
   }
 
+  const renderSidebarExpandButton = () => (
+    <Tooltip title={resolveTooltipTitle(t('common.expand'))} placement='bottom'>
+      <Button
+        size='small'
+        type='text'
+        className='config-view__section-toggle'
+        aria-label={t('common.expand')}
+        icon={<span className='material-symbols-rounded'>left_panel_open</span>}
+        onClick={() => {
+          if (isCompactView) {
+            setIsMobileSidebarOpen(true)
+            return
+          }
+          setIsSidebarCollapsed(false)
+        }}
+      />
+    </Tooltip>
+  )
+
+  const renderStandaloneHeader = (showSidebarToggle: boolean) => {
+    if (!showSidebarToggle) return null
+    return (
+      <div className='config-view__standalone-header'>
+        {renderSidebarExpandButton()}
+      </div>
+    )
+  }
+
+  const renderSidebar = ({ compact = false }: { compact?: boolean } = {}) => (
+    <div className={`config-view__sidebar ${compact ? 'config-view__sidebar--compact' : ''}`}>
+      <div className='config-view__sidebar-header'>
+        <div className='config-view__sidebar-search-row'>
+          <Input
+            allowClear
+            value={navSearchQuery}
+            onChange={(event) => setNavSearchQuery(event.target.value)}
+            prefix={<span className='material-symbols-rounded config-view__sidebar-search-icon'>search</span>}
+            placeholder={t('config.navigation.search')}
+            className='config-view__sidebar-search-input'
+          />
+          <Tooltip
+            title={resolveTooltipTitle(compact ? t('common.close') : t('common.collapse'))}
+            placement='bottom'
+          >
+            <Button
+              type='text'
+              className='config-view__sidebar-toggle'
+              aria-label={compact ? t('common.close') : t('common.collapse')}
+              onClick={() => {
+                if (compact) {
+                  setIsMobileSidebarOpen(false)
+                  return
+                }
+                setIsSidebarCollapsed(true)
+              }}
+              icon={<span className='material-symbols-rounded'>{compact ? 'close' : 'left_panel_close'}</span>}
+            />
+          </Tooltip>
+        </div>
+      </div>
+      <div className='config-view__sidebar-body'>
+        {desktopNavGroups.length === 0
+          ? (
+            <div className='config-view__sidebar-empty'>{t('config.navigation.noResults')}</div>
+          )
+          : desktopNavGroups.map(group => (
+            <div key={group.key} className='config-view__nav-group'>
+              <div className='config-view__nav-group-label'>{group.label}</div>
+              <div className='config-view__nav-list'>
+                {group.tabs.map(tab => (
+                  <button
+                    key={tab.key}
+                    type='button'
+                    className={`config-view__nav-item ${activeTabKey === tab.key ? 'is-active' : ''}`}
+                    onClick={() => {
+                      setActiveTabKey(tab.key)
+                      if (compact) {
+                        setIsMobileSidebarOpen(false)
+                      }
+                    }}
+                  >
+                    <span className='config-view__tab-label'>
+                      <span className='material-symbols-rounded config-view__tab-icon'>{tab.icon}</span>
+                      <span className='config-view__tab-text'>{tab.label}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
+    </div>
+  )
+
+  const renderTabContent = (
+    tab: typeof tabs[number],
+    { showSidebarToggle = false }: { showSidebarToggle?: boolean } = {}
+  ) => (
+    <div key={`${sourceKey}:${tab.key}`} className='config-view__content'>
+      {renderStandaloneHeader(showSidebarToggle && !configTabKeys.has(tab.key))}
+      {tab.key === 'about' && (
+        <AboutSection value={tab.value as AboutInfo | undefined} />
+      )}
+      {tab.key === 'appearance' && (
+        <AppSettingsPanel t={t} />
+      )}
+      {tab.key === 'worktreeEnvironments' && (
+        <WorktreeEnvironmentPanel t={t} />
+      )}
+      {tab.key !== 'about' &&
+        tab.key !== 'appearance' &&
+        tab.key !== 'worktreeEnvironments' &&
+        !configTabKeys.has(tab.key) && (
+          <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
+        )}
+      {configTabKeys.has(tab.key) && (
+        <ConfigSectionPanel
+          sectionKey={tab.key}
+          title={tab.label}
+          icon={tab.icon}
+          uiSection={uiSections[tab.key] as ConfigUiSection | undefined}
+          value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
+          resolvedValue={cloneValue(
+            currentResolvedSource != null
+              ? (currentResolvedSource as Record<string, unknown>)[tab.key]
+              : undefined
+          ) ?? {}}
+          onChange={(next) => handleDraftChange(tab.key, next)}
+          mergedModelServices={mergedModelServices as Record<string, unknown>}
+          mergedAdapters={mergedAdapters as Record<string, unknown>}
+          selectedModelService={selectedModelService}
+          worktreeEnvironmentOptions={worktreeEnvironmentOptions}
+          detailQuery={activeTabKey === tab.key ? detailQuery : ''}
+          onDetailQueryChange={activeTabKey === tab.key ? setDetailQuery : undefined}
+          t={t}
+          headerLeading={showSidebarToggle ? renderSidebarExpandButton() : undefined}
+          headerExtra={
+            <Space size={12}>
+              <ConfigSourceSwitch
+                value={sourceKey}
+                onChange={setSourceKey}
+                options={sourceOptions}
+              />
+            </Space>
+          }
+        />
+      )}
+    </div>
+  )
+
   return (
-    <div className='config-view'>
+    <PageShell
+      className={`config-view ${isCompactView ? 'config-view--compact' : ''}`}
+      bodyClassName='config-view__body'
+    >
       {isLoading && (
         <div className='config-view__state'>
           <Spin />
@@ -193,90 +492,48 @@ export function ConfigView() {
         </div>
       )}
       {!isLoading && error == null && (
-        <div className='config-view__tabs-wrap'>
-          <Tabs
-            tabPosition='left'
-            tabBarGutter={4}
-            indicator={{ size: 0 }}
-            className='config-view__tabs'
-            activeKey={activeTabKey}
-            onChange={(key) => {
-              if (key !== 'group-config' && key !== 'group-app') {
-                setActiveTabKey(key)
-              }
-            }}
-            items={tabs.map((tab) => {
-              if (tab.type === 'group') {
-                return {
-                  key: tab.key,
-                  label: <span className='config-view__group-label'>{tab.label}</span>,
-                  disabled: true,
-                  children: <div />
-                }
-              }
-              return {
-                key: tab.key,
-                label: (
-                  <span className='config-view__tab-label'>
-                    <span className='material-symbols-rounded config-view__tab-icon'>{tab.icon}</span>
-                    <span className='config-view__tab-text'>{tab.label}</span>
-                  </span>
-                ),
-                children: (
-                  <div className='config-view__content'>
-                    {tab.key === 'about' && (
-                      <AboutSection value={tab.value as AboutInfo | undefined} />
-                    )}
-                    {tab.key === 'appearance' && (
-                      <AppSettingsPanel t={t} />
-                    )}
-                    {tab.key !== 'about' && tab.key !== 'appearance' && !configTabKeys.has(tab.key) && (
-                      <DisplayValue value={tab.value} sectionKey={tab.key} t={t} />
-                    )}
-                    {configTabKeys.has(tab.key) && (
-                      <ConfigSectionPanel
-                        sectionKey={tab.key}
-                        title={tab.label}
-                        icon={tab.icon}
-                        value={drafts[getDraftKey(tab.key)] ?? cloneValue(tab.value ?? {}) ?? {}}
-                        onChange={(next) => handleDraftChange(tab.key, next)}
-                        mergedModelServices={mergedModelServices as Record<string, unknown>}
-                        mergedAdapters={mergedAdapters as Record<string, unknown>}
-                        selectedModelService={selectedModelService}
-                        t={t}
-                        headerExtra={
-                          <Space size={12}>
-                            <ConfigSourceSwitch
-                              value={sourceKey}
-                              onChange={setSourceKey}
-                              options={[
-                                {
-                                  value: 'project',
-                                  icon: 'folder',
-                                  label: configPresent?.project === true
-                                    ? t('config.sources.project')
-                                    : t('config.sources.projectMissing')
-                                },
-                                {
-                                  value: 'user',
-                                  icon: 'person',
-                                  label: configPresent?.user === true
-                                    ? t('config.sources.user')
-                                    : t('config.sources.userMissing')
-                                }
-                              ]}
-                            />
-                          </Space>
-                        }
-                      />
-                    )}
-                  </div>
-                )
-              }
-            })}
-          />
-        </div>
+        isCompactView
+          ? (
+            <div className='config-view__compact-shell'>
+              <div
+                ref={compactContentRegionRef}
+                className='config-view__compact-region'
+                aria-hidden={isMobileSidebarOpen ? true : undefined}
+              >
+                <div className='config-view__compact-panel'>
+                  {activeTab != null ? renderTabContent(activeTab, { showSidebarToggle: true }) : null}
+                </div>
+              </div>
+              <button
+                type='button'
+                className={`config-view__compact-backdrop ${isMobileSidebarOpen ? 'is-open' : ''}`}
+                aria-label={t('common.close')}
+                aria-hidden={!isMobileSidebarOpen}
+                tabIndex={-1}
+                onClick={() => setIsMobileSidebarOpen(false)}
+              />
+              <div
+                ref={compactSidebarSheetRef}
+                className={`config-view__compact-sidebar-sheet ${isMobileSidebarOpen ? 'is-open' : ''}`}
+                role='dialog'
+                aria-modal={isMobileSidebarOpen ? 'true' : undefined}
+                aria-label={t('common.settings')}
+                aria-hidden={!isMobileSidebarOpen}
+                tabIndex={-1}
+              >
+                {renderSidebar({ compact: true })}
+              </div>
+            </div>
+          )
+          : (
+            <div className={`config-view__desktop-shell ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+              {renderSidebar()}
+              <div className='config-view__desktop-content'>
+                {activeTab != null ? renderTabContent(activeTab, { showSidebarToggle: isSidebarCollapsed }) : null}
+              </div>
+            </div>
+          )
       )}
-    </div>
+    </PageShell>
   )
 }

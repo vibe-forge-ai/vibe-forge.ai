@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { TerminalSessionCommand, TerminalSessionEvent } from '@vibe-forge/types'
+import type { TerminalSessionCommand, TerminalSessionEvent, TerminalShellKind } from '@vibe-forge/types'
 
 import { createSocket } from '#~/ws.js'
 
-const isSocketOpen = (socket: WebSocket | null): socket is WebSocket => {
-  return socket != null && socket.readyState === WebSocket.OPEN
-}
+const isSocketOpen = (socket: WebSocket | null): socket is WebSocket =>
+  socket != null && socket.readyState === WebSocket.OPEN
 
 export function useTerminalSession({
   sessionId,
+  shellKind,
+  terminalId,
   active,
   initialCols,
   initialRows,
@@ -19,6 +20,8 @@ export function useTerminalSession({
   onExit
 }: {
   sessionId: string
+  shellKind?: TerminalShellKind
+  terminalId?: string
   active: boolean
   initialCols: number
   initialRows: number
@@ -67,21 +70,12 @@ export function useTerminalSession({
     }, 800)
   }, [])
 
-  const sendInput = useCallback((data: string) => {
-    return sendCommand({
-      type: 'terminal_input',
-      data
-    })
-  }, [sendCommand])
-
-  const sendResizeCommand = useCallback((cols: number, rows: number) => {
-    return sendCommand({
-      type: 'terminal_resize',
-      cols,
-      rows
-    })
-  }, [sendCommand])
-
+  const sendInput = useCallback((data: string) => sendCommand({ type: 'terminal_input', data }), [sendCommand])
+  const sendResizeCommand = useCallback(
+    (cols: number, rows: number) => sendCommand({ type: 'terminal_resize', cols, rows }),
+    [sendCommand]
+  )
+  const terminateTerminal = useCallback(() => sendCommand({ type: 'terminal_terminate' }), [sendCommand])
   const flushPendingResize = useCallback(() => {
     const pendingResize = pendingResizeRef.current
     if (pendingResize == null) {
@@ -170,6 +164,8 @@ export function useTerminalSession({
     }, {
       channel: 'terminal',
       sessionId,
+      shellKind: shellKind ?? 'default',
+      terminalId: terminalId ?? '',
       cols: String(connectSize.cols),
       rows: String(connectSize.rows)
     })
@@ -185,12 +181,13 @@ export function useTerminalSession({
       socket.close()
       socketRef.current = null
     }
-  }, [active, connectVersion, flushPendingResize, scheduleReconnect, sessionId, t])
+  }, [active, connectVersion, flushPendingResize, scheduleReconnect, sessionId, shellKind, t, terminalId])
 
   return {
     errorMessage,
     lastExit,
     resizeTerminal,
-    sendInput
+    sendInput,
+    terminateTerminal
   }
 }

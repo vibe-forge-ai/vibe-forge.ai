@@ -3,93 +3,88 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    transition: transform .3s cubic-bezier(.4, 0, .2, 1);
   }
 
   &__sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 16px;
+    --sidebar-active-bg: #eff6ff;
+    --sidebar-active-text: #2563eb;
   }
 
-  &__sidebar-search {
-    padding-bottom: 12px;
-  }
-
-  &__search-icon {
-    font-size: 16px;
-    color: var(--sub-text-color);
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__title-icon {
-    font-size: 24px;
-    color: var(--sub-text-color);
-  }
-
-  &__title-text {
-    margin: 0;
-    font-size: 18px;
-    color: var(--text-color);
+  &__new-rule-button {
+    .sidebar-list-header__button-content {
+      width: 100%;
+    }
   }
 
   &__rule-list {
     flex: 1;
     overflow: auto;
+    padding: 8px 12px 12px;
   }
 
   &__rule-item {
     padding: 0 !important;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     cursor: pointer;
     display: flex;
-    position: relative;
     border-block-end: none !important;
 
-    &--active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      border: 2px solid var(--primary-color);
-      border-radius: 8px;
-      pointer-events: none;
+    &--active .automation-view__rule-card,
+    &--active .automation-view__rule-card:hover {
+      border-color: var(--primary-color);
+      background: var(--primary-soft-bg);
     }
   }
 
   &__rule-card {
+    position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     width: 100%;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px 12px 12px 16px;
+    border-radius: 8px;
+    padding: 8px;
     background: var(--bg-color);
+    transition:
+      border-color .2s ease,
+      background-color .2s ease,
+      color .2s ease;
+  }
+
+  &__rule-item:not(.automation-view__rule-item--active) &__rule-card:hover {
+    border-color: var(--sidebar-hover-bg, #e5e5e5);
+    background: var(--sidebar-hover-bg, #e5e5e5);
   }
 
   &__rule-content {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+    padding-right: 118px;
   }
 
   &__rule-name {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
+
+    .ant-tag {
+      margin-inline-end: 0;
+      padding-inline: 4px;
+      font-size: 9px;
+      line-height: 13px;
+      border-radius: 2px;
+    }
   }
 
   &__rule-icon {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--sub-text-color);
 
     &--interval,
@@ -100,7 +95,13 @@
   }
 
   &__rule-title {
-    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 500;
     color: var(--text-color);
   }
 
@@ -108,8 +109,9 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    width: 100%;
     color: var(--sub-text-color);
-    font-size: 12px;
+    font-size: 11px;
   }
 
   &__rule-trigger-list {
@@ -124,6 +126,7 @@
     align-items: center;
     gap: 4px;
     border-radius: 999px;
+    padding: 1px 8px;
     background: var(--tag-bg);
     color: var(--sub-text-color);
   }
@@ -144,14 +147,13 @@
   }
 
   &__rule-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-    padding-left: 12px;
+    display: contents;
     flex-shrink: 0;
 
     &-top {
+      position: absolute;
+      top: 8px;
+      right: 8px;
       display: inline-flex;
       align-items: center;
       justify-content: flex-end;
@@ -159,17 +161,58 @@
     }
 
     &-bottom {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
     }
   }
 
-  &__rule-last {
+  &__rule-created-at {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-end;
+    min-height: 20px;
     color: var(--sub-text-color);
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  &__rule-card:hover .automation-view__rule-actions-bottom,
+  &__rule-card:focus-within .automation-view__rule-actions-bottom {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &__rule-card:hover .automation-view__rule-created-at,
+  &__rule-card:focus-within .automation-view__rule-created-at {
+    opacity: 0;
+  }
+
+  &__rule-item--touch .automation-view__rule-actions-bottom {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &__rule-item--touch .automation-view__rule-created-at {
+    opacity: 0;
+  }
+
+  &__rule-item--touch .automation-view__icon-button--more {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
 
   &__meta-icon {
@@ -180,12 +223,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
     padding: 0;
+    border-radius: 4px;
 
-    &--run .automation-view__action-icon,
-    &--add .automation-view__action-icon {
+    &--run .automation-view__action-icon {
       color: var(--success-color);
     }
 
@@ -200,10 +244,24 @@
     &--favorite .automation-view__action-icon {
       color: var(--warning-color);
     }
+
+    &--more {
+      color: var(--sub-text-color);
+    }
   }
 
   &__action-icon {
-    font-size: 18px;
+    font-size: 16px;
+  }
+
+  &__dropdown-icon {
+    font-size: 16px;
+    line-height: 1;
+
+    &--active {
+      color: var(--warning-color);
+      font-variation-settings: 'FILL' 1;
+    }
   }
 
   &__action-icon--star {
@@ -215,5 +273,60 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 12px;
+  }
+}
+
+html.dark .automation-view__sidebar-header {
+  --sidebar-active-bg: #111b26;
+  --sidebar-active-text: #3b82f6;
+}
+
+html.dark .automation-view {
+  &__rule-item:not(.automation-view__rule-item--active)
+    .automation-view__rule-card:hover {
+    border-color: var(--border-color);
+    background: var(--tag-hover-bg);
+  }
+
+  &__rule-item--active .automation-view__rule-card,
+  &__rule-item--active .automation-view__rule-card:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-soft-bg);
+  }
+}
+
+@media (max-width: 960px) {
+  .automation-view--compact {
+    .automation-view__sidebar {
+      background: var(--sub-bg-color);
+    }
+
+    .automation-view__rule-list {
+      padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    }
+
+    .automation-view__rule-card {
+      min-height: 76px;
+      background: var(--bg-color);
+    }
+
+    .automation-view__rule-content {
+      gap: 5px;
+      padding-right: 52px;
+    }
+
+    .automation-view__rule-name {
+      padding-right: 44px;
+    }
+
+    .automation-view__rule-actions-bottom {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .automation-view__rule-created-at {
+      opacity: 0;
+    }
   }
 }

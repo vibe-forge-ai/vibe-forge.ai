@@ -1,46 +1,109 @@
 .automation-view {
-  &__list {
+  &__task-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-
-    &--horizontal {
-      gap: 10px;
-
-      .automation-view__list-item {
-        flex: 0 0 360px;
-        min-width: 360px;
-      }
-    }
-
-    &-scroll {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-
-      .automation-view__list-item {
-        min-width: 340px;
-        flex: 0 0 340px;
-      }
-    }
+    gap: 8px;
+    min-width: 0;
   }
 
-  &__list-item {
+  &__task-stack {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  &__task-card {
     position: relative;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px;
     display: flex;
     flex-direction: column;
-    background: var(--tag-bg);
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
-  &__list-header {
+  &__task-card + &__task-card {
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__task-composer {
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__task-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  &__task-collapse-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    color: var(--sub-text-color);
+  }
+
+  &__task-collapse-button:not(:disabled):hover,
+  &__task-collapse-button:not(:disabled):focus-visible {
+    background: var(--tag-hover-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  &__task-title-item,
+  &__task-prompt-item {
+    width: 100%;
+  }
+
+  &__task-title-item {
+    box-sizing: border-box;
+    padding-right: 42px;
+    min-width: 0;
+  }
+
+  &__task-title-input {
+    width: 100%;
+    font-weight: 600;
+  }
+
+  &__task-collapsible {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__task-collapsible[hidden] {
+    display: none;
+  }
+
+  &__task-sender {
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__task-status-bar {
+    min-width: 0;
+    width: 100%;
+    margin-top: -4px;
+
+    .chat-status-bar__content {
+      display: flex;
+      justify-content: flex-start;
+    }
   }
 
   &__section-header {
@@ -59,7 +122,7 @@
   &__section-actions {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__section-count {
@@ -81,46 +144,76 @@
   }
 
   &__form-desc {
+    margin-bottom: 0;
     font-size: 12px;
     color: var(--sub-text-color);
-    margin-bottom: 12px;
   }
 
   &__icon-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  &__task-remove-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 32px;
+    min-width: 32px;
     height: 32px;
     padding: 0;
+    border-radius: 6px;
+  }
+
+  &__task-card + &__task-card &__task-remove-button {
+    top: 16px;
   }
 
   &__action-icon {
     font-size: 18px;
   }
 
-  &__remove-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+  &__task-card .ant-form-item {
+    margin-bottom: 10px;
   }
 
-  &__task-index {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
+  &__task-composer .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  &__task-title-input.ant-input {
+    border-radius: 6px !important;
+    background: var(--sub-bg-color);
+  }
+
+  &__task-title-input.ant-input {
+    min-height: 32px;
+  }
+}
+
+.automation-view__sender-adapter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.automation-view__sender-adapter-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+
+  &--fallback {
+    font-size: 16px;
     color: var(--sub-text-color);
-  }
-
-  &__task-index-icon {
-    font-size: 14px;
   }
 }

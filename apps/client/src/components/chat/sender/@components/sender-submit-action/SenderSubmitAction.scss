@@ -149,3 +149,15 @@
     flex: 0 0 auto;
   }
 }
+
+@media (max-width: 960px) {
+  .chat-send-btn {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+
+    .material-symbols-rounded {
+      font-size: 14px;
+    }
+  }
+}

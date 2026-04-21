@@ -1,0 +1,138 @@
+name: VS Code Extension Release
+
+on:
+  push:
+    tags:
+      - "vscode-extension-v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vscode-extension-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      archive_file: vibe-forge-vscode-extension-v${{ steps.version.outputs.value }}.vsix
+      artifact_name: vibe-forge-vscode-extension-v${{ steps.version.outputs.value }}
+      publisher: ${{ steps.version.outputs.publisher }}
+      version: ${{ steps.version.outputs.value }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release version
+        id: version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          VSCODE_EXTENSION_PUBLISHER: ${{ vars.VSCODE_EXTENSION_PUBLISHER }}
+        run: |
+          PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/vscode-extension/package.json', 'utf8')).version")
+          TAG_VERSION="${TAG_NAME#vscode-extension-v}"
+          PUBLISHER="${VSCODE_EXTENSION_PUBLISHER:-localdev}"
+
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match VS Code extension version ($PACKAGE_VERSION)." >&2
+            exit 1
+          fi
+
+          echo "value=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "file=vibe-forge-vscode-extension-v$PACKAGE_VERSION.vsix" >> "$GITHUB_OUTPUT"
+          echo "archive=apps/vscode-extension/vibe-forge-vscode-extension-v$PACKAGE_VERSION.vsix" >> "$GITHUB_OUTPUT"
+          echo "publisher=$PUBLISHER" >> "$GITHUB_OUTPUT"
+
+      - name: Typecheck extension
+        run: pnpm --filter @vibe-forge/vscode-extension typecheck
+
+      - name: Build extension
+        run: pnpm --filter @vibe-forge/vscode-extension build
+
+      - name: Package VSIX
+        env:
+          ARCHIVE_FILE: ${{ steps.version.outputs.file }}
+          VSCODE_EXTENSION_PUBLISHER: ${{ steps.version.outputs.publisher }}
+        run: pnpm --filter @vibe-forge/vscode-extension package:vsix -- --out "$ARCHIVE_FILE"
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-forge-vscode-extension-v${{ steps.version.outputs.value }}
+          path: ${{ steps.version.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download packaged extension
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: dist
+
+      - name: Publish to VS Code Marketplace
+        env:
+          ARCHIVE_FILE: ${{ github.workspace }}/dist/${{ needs.build.outputs.archive_file }}
+          VSCODE_EXTENSION_PUBLISHER: ${{ vars.VSCODE_EXTENSION_PUBLISHER }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCODE_EXTENSION_PUBLISHER" ] || [ -z "$VSCE_PAT" ]; then
+            echo "Skipping VS Code Marketplace publish because VSCODE_EXTENSION_PUBLISHER or VSCE_PAT is not configured."
+            exit 0
+          fi
+
+          pnpm --filter @vibe-forge/vscode-extension publish:vsix -- --packagePath "$ARCHIVE_FILE"
+
+      - name: Create or update GitHub Release
+        env:
+          ARCHIVE_PATH: dist/${{ needs.build.outputs.archive_file }}
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$ARCHIVE_PATH" --clobber
+          else
+            gh release create "$TAG_NAME" "$ARCHIVE_PATH" \
+              --title "VS Code Extension v$VERSION" \
+              --notes "Packaged VS Code extension build for v$VERSION."
+          fi

@@ -1,157 +1,113 @@
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import process from 'node:process'
 
 import Router from '@koa/router'
 
-import { updateConfigFile } from '@vibe-forge/config'
-import type { AdapterBuiltinModel, Config } from '@vibe-forge/types'
+import {
+  composeBaseConfigSchemaBundle,
+  composeWorkspaceConfigSchemaBundle,
+  resolveWritableConfigPath,
+  updateConfigFile,
+  validateConfigSection,
+  writeWorkspaceConfigSchemaFile
+} from '@vibe-forge/config'
+import type { ConfigSchemaResponse } from '@vibe-forge/types'
 import { resolveProjectAiBaseDirName } from '@vibe-forge/utils'
 
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
-import { badRequest, internalServerError } from '#~/utils/http.js'
+import { badRequest, internalServerError, isHttpError } from '#~/utils/http.js'
 
-const sanitize = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map(item => sanitize(item))
-  }
-  if (value != null && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-    return entries.reduce<Record<string, unknown>>((acc, [key, val]) => {
-      acc[key] = sanitize(val)
-      return acc
-    }, {})
-  }
-  return value
-}
-
-interface AppInfo {
-  version?: string
-  lastReleaseAt?: string
-}
-
-const getAppInfo = async (workspaceFolder: string): Promise<AppInfo> => {
-  try {
-    const pkgPath = resolve(workspaceFolder, 'package.json')
-    const content = await readFile(pkgPath, 'utf-8')
-    const pkg = JSON.parse(content) as { version?: string; lastReleaseAt?: string; releaseDate?: string }
-    return {
-      version: pkg.version,
-      lastReleaseAt: pkg.lastReleaseAt ?? pkg.releaseDate
-    }
-  } catch {
-    return {}
-  }
-}
-
-const buildSections = (config: Config | undefined) => {
-  const {
-    baseDir,
-    effort,
-    defaultAdapter,
-    defaultModelService,
-    defaultModel,
-    recommendedModels,
-    interfaceLanguage,
-    modelLanguage,
-    announcements,
-    shortcuts,
-    conversation,
-    notifications
-  } = config ?? {}
-
-  return {
-    general: {
-      baseDir,
-      effort,
-      defaultAdapter,
-      defaultModelService,
-      defaultModel,
-      recommendedModels: sanitize(recommendedModels),
-      interfaceLanguage,
-      modelLanguage,
-      announcements,
-      permissions: sanitize(config?.permissions),
-      env: sanitize(config?.env),
-      notifications: sanitize(notifications)
-    },
-    conversation: sanitize(conversation),
-    models: sanitize(config?.models),
-    modelServices: sanitize(config?.modelServices),
-    channels: sanitize(config?.channels),
-    adapters: sanitize(config?.adapters),
-    adapterBuiltinModels: {} as Record<string, AdapterBuiltinModel[]>,
-    plugins: sanitize({
-      plugins: config?.plugins,
-      marketplaces: config?.marketplaces
-    }),
-    mcp: sanitize({
-      mcpServers: config?.mcpServers,
-      defaultIncludeMcpServers: config?.defaultIncludeMcpServers,
-      defaultExcludeMcpServers: config?.defaultExcludeMcpServers,
-      noDefaultVibeForgeMcpServer: config?.noDefaultVibeForgeMcpServer
-    }),
-    shortcuts: sanitize(shortcuts)
-  }
-}
-
-const loadAdapterBuiltinModels = (
-  adapters: Config['adapters']
-): Record<string, AdapterBuiltinModel[]> => {
-  const result: Record<string, AdapterBuiltinModel[]> = {}
-  if (!adapters) return result
-  for (const adapterKey of Object.keys(adapters)) {
-    try {
-      const packageName = adapterKey.startsWith('@') ? adapterKey : `@vibe-forge/adapter-${adapterKey}`
-      // eslint-disable-next-line ts/no-require-imports
-      const mod = require(`${packageName}/models`)
-      if (Array.isArray(mod?.builtinModels)) {
-        result[adapterKey] = mod.builtinModels
-      }
-    } catch {
-      // Adapter does not export builtin models — skip
-    }
-  }
-  return result
-}
+import { buildConfigAbout, buildSections, loadAdapterBuiltinModels } from './config-helpers.js'
 
 export function configRouter(): Router {
   const router = new Router()
 
+  router.get('/schema', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const [base, workspace] = await Promise.all([
+        Promise.resolve(composeBaseConfigSchemaBundle()),
+        composeWorkspaceConfigSchemaBundle({ cwd: workspaceFolder })
+      ])
+
+      const body: ConfigSchemaResponse = {
+        base: {
+          jsonSchema: base.jsonSchema,
+          extensions: base.extensions
+        },
+        workspace: {
+          jsonSchema: workspace.jsonSchema,
+          uiSchema: workspace.uiSchema,
+          extensions: workspace.extensions
+        }
+      }
+
+      ctx.body = body
+    } catch (err) {
+      throw internalServerError('Failed to load config schema', { cause: err, code: 'config_schema_load_failed' })
+    }
+  })
+
+  router.post('/schema/generate', async (ctx) => {
+    try {
+      const workspaceFolder = getWorkspaceFolder()
+      const { outputPath, bundle } = await writeWorkspaceConfigSchemaFile({ cwd: workspaceFolder })
+      ctx.body = {
+        ok: true,
+        outputPath,
+        extensions: bundle.extensions
+      }
+    } catch (err) {
+      throw internalServerError('Failed to generate config schema', {
+        cause: err,
+        code: 'config_schema_generate_failed'
+      })
+    }
+  })
+
   router.get('/', async (ctx) => {
     try {
-      const { workspaceFolder, projectConfig, userConfig, mergedConfig } = await loadConfigState()
-      const urls = {
-        repo: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        docs: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        contact: 'https://github.com/vibe-forge-ai/vibe-forge.ai',
-        issues: 'https://github.com/vibe-forge-ai/vibe-forge.ai/issues',
-        releases: 'https://github.com/vibe-forge-ai/vibe-forge.ai/releases'
-      }
-      const appInfo = await getAppInfo(workspaceFolder)
+      const {
+        workspaceFolder,
+        mergedConfig,
+        projectSource,
+        userSource
+      } = await loadConfigState()
       const mergedSections = buildSections(mergedConfig)
       mergedSections.general.baseDir = process.env.__VF_PROJECT_AI_BASE_DIR__ != null
         ? resolveProjectAiBaseDirName(process.env)
         : mergedConfig.baseDir ?? resolveProjectAiBaseDirName(process.env)
       mergedSections.adapterBuiltinModels = loadAdapterBuiltinModels(mergedConfig.adapters)
+      const about = await buildConfigAbout()
       ctx.body = {
         sources: {
-          project: buildSections(projectConfig),
-          user: buildSections(userConfig),
+          project: buildSections(projectSource?.rawConfig),
+          user: buildSections(userSource?.rawConfig),
           merged: mergedSections
+        },
+        resolvedSources: {
+          project: buildSections(projectSource?.resolvedConfig),
+          user: buildSections(userSource?.resolvedConfig)
         },
         meta: {
           workspaceFolder,
           configPresent: {
-            project: projectConfig != null,
-            user: userConfig != null
+            project: projectSource?.configPath != null,
+            user: userSource?.configPath != null
+          },
+          sourceFiles: {
+            project: {
+              configPath: projectSource?.configPath,
+              writableConfigPath: resolveWritableConfigPath(workspaceFolder, 'project'),
+              extendPaths: projectSource?.extendPaths ?? []
+            },
+            user: {
+              configPath: userSource?.configPath,
+              writableConfigPath: resolveWritableConfigPath(workspaceFolder, 'user'),
+              extendPaths: userSource?.extendPaths ?? []
+            }
           },
           experiments: {},
-          about: {
-            version: appInfo.version,
-            lastReleaseAt: appInfo.lastReleaseAt,
-            urls
-          }
+          about
         }
       }
     } catch (err) {
@@ -176,9 +132,26 @@ export function configRouter(): Router {
 
     try {
       const workspaceFolder = getWorkspaceFolder()
-      await updateConfigFile({ workspaceFolder, source, section, value })
+      const parsed = await validateConfigSection(section, value, { cwd: workspaceFolder })
+      if (!parsed.success) {
+        throw badRequest(
+          'Invalid config section value',
+          {
+            section,
+            issues: parsed.error.issues.map(issue => ({
+              path: issue.path,
+              message: issue.message
+            }))
+          },
+          'invalid_config_section_value'
+        )
+      }
+      await updateConfigFile({ workspaceFolder, source, section, value: parsed.data })
       ctx.body = { ok: true }
     } catch (err) {
+      if (isHttpError(err)) {
+        throw err
+      }
       throw internalServerError('Failed to update config', { cause: err, code: 'config_update_failed' })
     }
   })

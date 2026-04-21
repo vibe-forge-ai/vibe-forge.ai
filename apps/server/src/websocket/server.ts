@@ -6,8 +6,16 @@ import { v4 as uuidv4 } from 'uuid'
 import { WebSocketServer } from 'ws'
 
 import type { ServerEnv } from '@vibe-forge/core'
+import { WORKSPACE_TERMINAL_SESSION_ID } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
+import {
+  AUTH_COOKIE_NAME,
+  getBearerTokenFromHeader,
+  getCookieFromHeader,
+  resolveWebAuthConfig,
+  verifySessionToken
+} from '#~/services/auth/index.js'
 import { interruptSession, killSession, processUserMessage, startAdapterSession } from '#~/services/session/index.js'
 import { handleInteractionResponse } from '#~/services/session/interaction.js'
 import {
@@ -27,6 +35,18 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
   wss.on('connection', async (ws, req) => {
     const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`)
     const params = url.searchParams
+    const authConfig = await resolveWebAuthConfig(env)
+    if (authConfig.enabled) {
+      const token = params.get('authToken') ??
+        getBearerTokenFromHeader(req.headers.authorization) ??
+        getCookieFromHeader(req.headers.cookie, AUTH_COOKIE_NAME)
+      const authenticated = await verifySessionToken(env, token)
+      if (!authenticated) {
+        ws.close(1008, 'Login required')
+        return
+      }
+    }
+
     const subscribeMode = params.get('subscribe')
     const channel = params.get('channel')
 
@@ -41,8 +61,9 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const sessionId = params.get('sessionId') ?? uuidv4()
 
     if (channel === 'terminal') {
-      const session = getDb().getSession(sessionId)
-      if (session == null) {
+      const isWorkspaceTerminal = sessionId === WORKSPACE_TERMINAL_SESSION_ID
+      const session = isWorkspaceTerminal ? undefined : getDb().getSession(sessionId)
+      if (!isWorkspaceTerminal && session == null) {
         sendTerminalFatalError(ws, 'Session not found.', 1008)
         return
       }
@@ -57,11 +78,12 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
     const appendSystemPrompt = params.get('appendSystemPrompt') !== 'false'
     const permissionMode = params.get('permissionMode') ?? undefined
     const promptTypeRaw = params.get('type') ?? undefined
-    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity'
+    const promptType = promptTypeRaw === 'spec' || promptTypeRaw === 'entity' || promptTypeRaw === 'workspace'
       ? promptTypeRaw
       : undefined
     const promptName = params.get('name') ?? undefined
     const adapter = params.get('adapter') ?? undefined
+    const account = params.get('account') ?? undefined
 
     const serverLogger = getSessionLogger(sessionId, 'server')
     serverLogger.info({ sessionId }, '[server] Connection established')
@@ -95,7 +117,8 @@ export function setupWebSocket(server: Server, env: ServerEnv) {
             | undefined,
           promptType,
           promptName,
-          adapter
+          adapter,
+          account
         })
         attachSocketToSession(sessionId, ws, 'adapter')
         if (cached == null) {

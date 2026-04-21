@@ -72,6 +72,14 @@ description: 仓库通用维护与验证规则，包含启动、lint、格式化
 - 英文文本修改：编辑 `apps/client/src/resources/locales/en.json`。
 - 如果添加了新的 Key，请确保在两个文件中都进行添加，以保证多语言支持的完整性。
 
+### 5. PWA 独立部署维护
+
+- PWA 静态站点由 `vibe-forge-ai/pwa` 仓库维护，发布分支是该仓库的 `gh-pages`。
+- 本仓库的 `.github/workflows/deploy-pwa.yml` 只负责在 `master` 的 client 相关输入变化时触发 `vibe-forge-ai/pwa` 的 `deploy-pwa.yml` workflow，不再直接写本仓库的 `gh-pages`。
+- 本仓库需要配置 Actions secret `PWA_DEPLOY_TOKEN`，用于跨仓库触发 `vibe-forge-ai/pwa` workflow。推荐使用只授予 `vibe-forge-ai/pwa` Actions 写权限的 fine-grained token。
+- PWA 仓库部署时会 checkout 本仓库 `master` 的指定 commit，使用 `__VF_PROJECT_AI_CLIENT_MODE__=standalone` 和 `__VF_PROJECT_AI_CLIENT_BASE__=/pwa/` 构建 `apps/client`，然后把 `apps/client/dist/` 发布到 `vibe-forge-ai/pwa` 的 `gh-pages`。
+- 本仓库自己的 `gh-pages` 不再承载 PWA，后续主要用于项目文档站；文档站实现由单独分支维护时，不要把 PWA 发布逻辑重新写回本仓库。
+
 ## 注意事项
 
 - **持久化**: 数据库文件默认存储在 `~/.vf/db.sqlite`，可以使用标准的 SQLite 客户端进行查看和维护。

@@ -17,6 +17,46 @@
 - `./.ai/caches`
 - `./.ai/plugins`
 - `./.ai/.mock`
+- `./.ai/.local`
+
+## Skill 依赖
+
+完整使用说明见 [Skills 与依赖](./usage/skills.md)。
+
+`./.ai/skills/<name>/SKILL.md` 的 frontmatter 可以声明 `dependencies`：
+
+```yaml
+---
+name: app-builder
+description: Build the app
+dependencies:
+  - frontend-design
+  - anthropics/skills@frontend-design
+---
+```
+
+解析规则：
+
+- 先在当前 workspace 和已启用插件的 skills 中按名称解析。
+- 本地找不到时，会按 registry 拉取并缓存到 `./.ai/caches/skill-dependencies/`。
+- 未配置 registry 时，默认使用 Vercel 的公开 Skills Hub：`https://skills.sh`。
+- 如果需要切到兼容的私有 registry，可以在 `.ai.config.*` 配置：
+
+```yaml
+skills:
+  registry: https://skills.example.com
+```
+
+也可以拆开搜索和下载入口：
+
+```yaml
+skills:
+  registry:
+    searchUrl: https://skills.example.com
+    downloadUrl: https://skills.example.com
+```
+
+依赖安装只会写入项目 AI 目录的 cache，不会修改用户真实 home。adapter 启动时会把最终解析出的 skill 列表投影到对应原生目录。
 
 ## 环境变量
 
@@ -56,6 +96,7 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 
 - workspace assets：`rules`、`skills`、`specs`、`entities`、`mcp`
 - 运行时目录：`logs`、`caches`、`plugins`
+- 本地私有目录：`.local`
 - mock HOME 与 adapter 派生目录：Codex、Claude Code、OpenCode
 - CLI 维护命令：`vf clear`、`vf report`
 - 启动入口：CLI、server、client、hook loader
@@ -66,15 +107,43 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 - `__VF_PROJECT_AI_BASE_DIR__` 会影响整棵项目数据资产树
 - `__VF_PROJECT_AI_ENTITIES_DIR__` 只影响 `entities` 的扫描与加载位置
 
+`./.ai/.local` 用于当前 workspace 的私有本地数据，不应提交到 Git。
+
+当前主要用途包括：
+
+- adapter 多账号凭据快照
+- adapter 账号的来源、auth digest 与额度快照元数据
+- 只应保存在本机的认证状态或临时元数据
+
+例如 `codex` 当前会在：
+
+- `.ai/.local/adapters/codex/accounts/<accountKey>/auth.json`
+- `.ai/.local/adapters/codex/accounts/<accountKey>/meta.json`
+
+保存账号快照与账号元数据。`meta.json` 里可能包含：
+
+- 账号来源说明
+- auth 摘要
+- 最近一次 quota / rate-limit 快照
+- quota 快照更新时间
+
+如果当前目录是 Git worktree，adapter 账号目录会共享到主 worktree：
+
+- 写入和导入优先落到主 worktree 的 `.ai/.local`
+- 读取时先读主 worktree 的共享目录
+- 只有共享目录里没有对应账号时，才回退当前 worktree 的旧 `.ai/.local`
+
 ## 不受影响的内容
 
 当前不会跟随这些环境变量一起变化的内容：
 
 - `.ai.config.json` / `.ai.config.yaml` / `.ai.config.yml`
 - `.ai.dev.config.*`
-- 这些配置文件位于项目根或 `./infra/` 的规则
+- 这些配置文件默认位于解析后的 workspace 根目录或 `./infra/` 的规则
 
-也就是说，当前可配置的是“数据资产目录”，不是“配置文件文件名与位置”。
+也就是说，`__VF_PROJECT_AI_BASE_DIR__` / `__VF_PROJECT_AI_ENTITIES_DIR__` 只配置“数据资产目录”，不配置“配置文件文件名与位置”。
+
+如果你需要改配置文件目录，应单独使用 `__VF_PROJECT_CONFIG_DIR__`；否则配置读写会默认跟随解析后的 workspace 根目录。
 
 ## 使用建议
 

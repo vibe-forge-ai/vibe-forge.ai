@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 
+import { getTerminalKeyboardAction } from '../@utils/terminal-keyboard'
+
 const DEFAULT_COLS = 120
 const DEFAULT_ROWS = 32
 
@@ -43,6 +45,11 @@ const buildTerminalTheme = () => {
     brightCyan: isDark ? '#67e8f9' : '#14b8a6',
     brightWhite: foreground
   }
+}
+
+const getActiveLineText = (terminal: Terminal) => {
+  const buffer = terminal.buffer.active
+  return buffer.getLine(buffer.baseY + buffer.cursorY)?.translateToString(true) ?? ''
 }
 
 export function useTerminalInstance({
@@ -99,12 +106,41 @@ export function useTerminalInstance({
       cursorBlink: true,
       fontSize: 13,
       fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+      macOptionIsMeta: true,
       scrollback: 5000,
       theme: buildTerminalTheme()
     })
     const fitAddon = new FitAddon()
 
     terminal.loadAddon(fitAddon)
+    terminal.attachCustomKeyEventHandler((event) => {
+      const buffer = terminal.buffer.active
+      const keyboardAction = getTerminalKeyboardAction(event, {
+        cursorX: buffer.cursorX,
+        isAlternateBuffer: buffer.type === 'alternate',
+        lineText: getActiveLineText(terminal)
+      })
+      if (keyboardAction == null) {
+        return true
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      if (event.type !== 'keydown') {
+        return false
+      }
+
+      if (keyboardAction.type === 'clear') {
+        terminal.clear()
+        return false
+      }
+
+      if (keyboardAction.data !== '') {
+        terminal.input(keyboardAction.data)
+      }
+      return false
+    })
     terminal.open(container)
     terminal.focus()
 

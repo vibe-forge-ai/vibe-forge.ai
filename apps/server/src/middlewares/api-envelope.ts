@@ -95,6 +95,9 @@ const toLegacyErrorResponse = (body: unknown, status: number): ApiErrorResponse 
 
 const ok = <T>(data: T): ApiSuccessResponse<T> => ({ success: true, data })
 
+const shouldSkipApiEnvelope = (ctx: Koa.Context) =>
+  (ctx.state as { skipApiEnvelope?: boolean }).skipApiEnvelope === true
+
 const normalizeHttpError = (error: unknown): HttpError => {
   if (error instanceof HttpError) {
     return error
@@ -142,6 +145,10 @@ export const apiEnvelopeMiddleware = (): Koa.Middleware => {
     }
 
     if (!ctx.path.startsWith('/api')) {
+      return
+    }
+
+    if (shouldSkipApiEnvelope(ctx)) {
       return
     }
 

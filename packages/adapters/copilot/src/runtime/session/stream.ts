@@ -1,3 +1,4 @@
+import type { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 
@@ -75,11 +76,11 @@ const createToolUseMessage = (event: CopilotJsonEvent): ChatMessage | undefined 
   if (!isRecord(data)) return undefined
 
   const toolCallId = asString(data.toolCallId) ?? asString(data.id) ?? uuid()
-  const toolName = asString(data.toolName)
-    ?? asString(data.tool)
-    ?? asString(data.mcpToolName)
-    ?? asString(data.name)
-    ?? 'tool'
+  const toolName = asString(data.toolName) ??
+    asString(data.tool) ??
+    asString(data.mcpToolName) ??
+    asString(data.name) ??
+    'tool'
 
   return {
     id: toolCallId,
@@ -119,11 +120,11 @@ const createToolResultMessage = (event: CopilotJsonEvent): ChatMessage | undefin
 const formatSessionError = (event: CopilotJsonEvent) => {
   const data = event.data
   if (!isRecord(data)) return 'Copilot session failed'
-  return asString(data.message)
-    ?? asString(data.error)
-    ?? asString(isRecord(data.error) ? data.error.message : undefined)
-    ?? stringifyUnknown(data)
-    ?? 'Copilot session failed'
+  return asString(data.message) ??
+    asString(data.error) ??
+    asString(isRecord(data.error) ? data.error.message : undefined) ??
+    stringifyUnknown(data) ??
+    'Copilot session failed'
 }
 
 export const createStreamCopilotSession = async (
@@ -131,7 +132,7 @@ export const createStreamCopilotSession = async (
   options: AdapterQueryOptions
 ): Promise<AdapterSession> => {
   const adapterConfig = resolveAdapterConfig(ctx)
-  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath)
+  const binaryPath = resolveCopilotBinaryPath(ctx.env, adapterConfig.cliPath, ctx.cwd, adapterConfig.cli)
   const childEnv = await buildCopilotChildEnv(ctx, options, adapterConfig)
   const model = resolveCopilotModelConfig(ctx, options.model).cliModel ?? options.model ?? 'default'
 

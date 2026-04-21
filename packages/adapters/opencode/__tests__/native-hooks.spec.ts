@@ -1,6 +1,6 @@
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +12,22 @@ const createTempDir = async (prefix: string) => {
   const dir = await mkdtemp(join(tmpdir(), prefix))
   tempDirs.push(dir)
   return dir
+}
+
+const createBarrier = (size: number) => {
+  let pending = size
+  let release: (() => void) | undefined
+  const waitForAll = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  return async () => {
+    pending -= 1
+    if (pending === 0) {
+      release?.()
+    }
+    await waitForAll
+  }
 }
 
 const writeDocument = async (filePath: string, content: string) => {
@@ -68,7 +84,11 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
     expect(ctx.env.OPENCODE_CONFIG_DIR).toBe(managedConfigDir)
     expect((await lstat(managedConfigDir)).isDirectory()).toBe(true)
     expect((await lstat(join(managedConfigDir, 'commands'))).isSymbolicLink()).toBe(true)
-    expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    const pluginSource = await readFile(pluginPath, 'utf8')
+    expect(pluginSource).toContain('tool.execute.before')
+    expect(pluginSource).toContain('"experimental.session.compacting"')
+    expect(pluginSource).toContain('createBaseInput("PreCompact", directory, false)')
+    expect(pluginSource).toContain('replacementPrompt')
     expect(JSON.parse(await readFile(join(managedConfigDir, 'opencode.json'), 'utf8'))).toMatchObject({
       $schema: 'https://opencode.ai/config.json'
     })
@@ -98,7 +118,9 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
 
     expect(installed).toBe(true)
     expect(ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__).toBe('1')
-    expect(await readFile(pluginPath, 'utf8')).toContain('tool.execute.before')
+    const pluginSource = await readFile(pluginPath, 'utf8')
+    expect(pluginSource).toContain('tool.execute.before')
+    expect(pluginSource).toContain('"experimental.session.compacting"')
     expect(JSON.parse(await readFile(configPath, 'utf8'))).toMatchObject({
       $schema: 'https://opencode.ai/config.json',
       autoupdate: false
@@ -145,5 +167,66 @@ describe('ensureOpenCodeNativeHooksInstalled', () => {
       autoupdate: true,
       theme: 'existing'
     })
+  })
+
+  it('keeps concurrent mock-home config mirroring idempotent when multiple vf processes install native hooks together', async () => {
+    const workspace = await createTempDir('opencode-hooks-race-workspace-')
+    const realHome = await createTempDir('opencode-hooks-race-home-')
+    const mockHome = join(workspace, '.ai', '.mock')
+    const barrier = createBarrier(2)
+
+    await writeDocument(join(realHome, '.config', 'opencode', 'commands', 'review.md'), '# review')
+    process.env.__VF_PROJECT_REAL_HOME__ = realHome
+
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('node:fs/promises')>()
+      return {
+        ...actual,
+        symlink: vi.fn(async (...args: Parameters<typeof actual.symlink>) => {
+          const [, targetPath] = args
+          if (String(targetPath).endsWith(join('opencode', 'commands'))) {
+            await barrier()
+          }
+          return actual.symlink(...args)
+        })
+      }
+    })
+
+    try {
+      const { ensureOpenCodeNativeHooksInstalled: ensureOpenCodeNativeHooksInstalledWithMockedFs } = await import(
+        '../src/runtime/native-hooks'
+      )
+      const ctx = {
+        cwd: workspace,
+        env: {
+          HOME: mockHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: [{ id: 'hookPlugin:project:logger' }]
+        }
+      } as any
+
+      await expect(
+        Promise.all([
+          ensureOpenCodeNativeHooksInstalledWithMockedFs(ctx),
+          ensureOpenCodeNativeHooksInstalledWithMockedFs(ctx)
+        ])
+      ).resolves.toEqual([true, true])
+      const commandsPath = join(mockHome, '.config', 'opencode', 'commands')
+      expect((await lstat(commandsPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(commandsPath), await readlink(commandsPath))).toBe(
+        resolve(realHome, '.config', 'opencode', 'commands')
+      )
+    } finally {
+      vi.doUnmock('node:fs/promises')
+      vi.resetModules()
+    }
   })
 })

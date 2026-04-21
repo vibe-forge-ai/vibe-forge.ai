@@ -7,12 +7,20 @@ import type { ChatHistoryStatusNotice } from './build-chat-history-status-notice
 
 export function MessageStatusNotice({
   notice,
-  onRetryConnection
+  onRetryConnection,
+  onRetrySessionCreation
 }: {
   notice: ChatHistoryStatusNotice
   onRetryConnection: () => void
+  onRetrySessionCreation?: () => void
 }) {
   const { t } = useTranslation()
+  const actionLabel = notice.action === 'retry-session-creation'
+    ? t('chat.retrySessionCreation')
+    : t('chat.retryConnection')
+  const handleAction = notice.action === 'retry-session-creation'
+    ? onRetrySessionCreation
+    : onRetryConnection
 
   return (
     <div className={`message-status-notice message-status-notice--${notice.tone} ${notice.isMock ? 'is-mock' : ''}`}>
@@ -34,10 +42,10 @@ export function MessageStatusNotice({
           {notice.detail != null && notice.detail !== '' && (
             <div className='message-status-notice__detail'>{notice.detail}</div>
           )}
-          {notice.action === 'retry-connection' && (
+          {notice.action != null && handleAction != null && (
             <div className='message-status-notice__actions'>
-              <Button size='small' onClick={onRetryConnection}>
-                {t('chat.retryConnection')}
+              <Button size='small' onClick={handleAction}>
+                {actionLabel}
               </Button>
             </div>
           )}

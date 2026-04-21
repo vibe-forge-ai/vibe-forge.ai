@@ -12,6 +12,7 @@
 
 - adapter runtime / mock home / 原生资产自动适配：`.ai/rules/ADAPTERS.md`
 - 前端 / 后端约束：`.ai/rules/FRONTEND-STANDARD.md`、`.ai/rules/BACKEND-STANDARD.md`
+- 桌面端 / Electron 打包、发布与本地调试：`apps/desktop/AGENTS.md`、`.ai/docs/usage/desktop.md`、`.ai/docs/usage/desktop-signing.md`
 - 仓库开发与贡献：`.ai/rules/DEVELOPMENT.md`
 - 项目接入方式：`.ai/docs/index.md`
 - 使用文档边界约定：`.ai/rules/USAGE.md`
@@ -28,6 +29,7 @@
 维护约定：
 
 - 以 `.ai/rules/` 作为设计、维护与架构规则入口；以 `.ai/docs/` 作为面向用户的使用文档入口。
+- 仓库 README 的编写与展示约定统一收敛在 `.ai/rules/USAGE.md`；调整 README 时先按那里的信息取舍、双语组织和截图规则执行。
 - 顶层文件只做总览与导航；超过一屏的细节继续拆到同名子目录，保持渐进式披露。
 - 如果改动涉及面向用户的使用方式、配置入口、命令行为或接入路径变化，应及时更新 `.ai/docs/` 下对应使用文档。
 - 更新日志统一维护在仓库根目录 `changelog/`，按版本目录组织。

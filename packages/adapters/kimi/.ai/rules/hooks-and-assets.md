@@ -8,9 +8,11 @@ Kimi 官方 hooks 仍是 Beta。当前 adapter 只托管这些事件：
 - `UserPromptSubmit`
 - `PreToolUse`
 - `PostToolUse`
+- `PreCompact`
 - `Stop`
 
 `PreToolUse` 和 `PostToolUse` matcher 当前写 `.*`，由 Vibe Forge hook runtime 继续做权限、插件和内置 permission 逻辑。
+`PreCompact` 当前会继续透传 Kimi 原生 payload 里的 `trigger` / `token_count`，并保持可阻断语义。
 
 托管配置会写入 generated JSON config，或在复制到的 TOML config 中插入：
 

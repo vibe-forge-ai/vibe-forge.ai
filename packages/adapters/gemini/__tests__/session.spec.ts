@@ -1,10 +1,13 @@
+import '../src/adapter-config'
+
 import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PassThrough } from 'node:stream'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import type { AdapterCtx, AdapterOutputEvent } from '@vibe-forge/types'
+import type { AdapterCtx, AdapterOutputEvent, Cache } from '@vibe-forge/types'
 
 import { createGeminiSession } from '#~/runtime/session.js'
 
@@ -18,21 +21,21 @@ const waitFor = async (predicate: () => boolean, timeoutMs = 5_000) => {
   }
 }
 
-const createCtx = (cwd: string, env: Record<string, string> = {}) => {
-  const cacheStore = new Map<string, unknown>()
+const createCtx = (cwd: string, env: Record<string, string> = {}): AdapterCtx => {
+  const cacheStore = new Map<keyof Cache, Cache[keyof Cache]>()
   return {
     ctxId: 'ctx-gemini-session-test',
     cwd,
     env,
     cache: {
-      get: async (key: string) => cacheStore.get(key),
-      set: async (key: string, value: unknown) => {
+      get: async <K extends keyof Cache>(key: K) => cacheStore.get(key) as Cache[K] | undefined,
+      set: async <K extends keyof Cache>(key: K, value: Cache[K]) => {
         cacheStore.set(key, value)
         return { cachePath: join(cwd, '.ai', 'caches', `${key}.json`) }
       }
     },
     logger: {
-      stream: undefined,
+      stream: new PassThrough(),
       info: () => undefined,
       warn: () => undefined,
       error: () => undefined,
@@ -43,7 +46,7 @@ const createCtx = (cwd: string, env: Record<string, string> = {}) => {
         gemini: {}
       }
     }, undefined]
-  } satisfies AdapterCtx
+  }
 }
 
 describe('createGeminiSession', () => {
@@ -60,26 +63,32 @@ describe('createGeminiSession', () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'vf-gemini-session-'))
     const fakeGeminiPath = join(tmpDir, 'fake-gemini.mjs')
 
-    await writeFile(fakeGeminiPath, [
-      `#!${process.execPath}`,
-      `console.log(JSON.stringify({ type: 'init', session_id: 'native-session-1' }))`,
-      `console.log(JSON.stringify({ type: 'message', role: 'assistant', content: 'KIMI_DIRECT_OK' }))`
-    ].join('\n'))
+    await writeFile(
+      fakeGeminiPath,
+      [
+        `#!${process.execPath}`,
+        `console.log(JSON.stringify({ type: 'init', session_id: 'native-session-1' }))`,
+        `console.log(JSON.stringify({ type: 'message', role: 'assistant', content: 'KIMI_DIRECT_OK' }))`
+      ].join('\n')
+    )
     await chmod(fakeGeminiPath, 0o755)
 
     const events: AdapterOutputEvent[] = []
-    const session = await createGeminiSession(createCtx(tmpDir, {
-      __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: fakeGeminiPath
-    }), {
-      type: 'create',
-      runtime: 'cli',
-      mode: 'stream',
-      sessionId: 'session-success',
-      description: 'hi',
-      onEvent: (event) => {
-        events.push(event)
+    const session = await createGeminiSession(
+      createCtx(tmpDir, {
+        __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: fakeGeminiPath
+      }),
+      {
+        type: 'create',
+        runtime: 'cli',
+        mode: 'stream',
+        sessionId: 'session-success',
+        description: 'hi',
+        onEvent: (event) => {
+          events.push(event)
+        }
       }
-    })
+    )
 
     await waitFor(() => events.some((event) => event.type === 'exit'))
     session.kill()
@@ -112,16 +121,19 @@ describe('createGeminiSession', () => {
     const fakeGeminiPath = join(tmpDir, 'fake-gemini-direct.mjs')
     const nativeSessionId = 'abcd1234-1111-2222-3333-444455556666'
 
-    await writeFile(fakeGeminiPath, [
-      `#!${process.execPath}`,
-      `import { mkdir, writeFile } from 'node:fs/promises'`,
-      `import { join } from 'node:path'`,
-      `const args = process.argv.slice(2)`,
-      `if (!args.includes('--prompt-interactive')) process.exit(17)`,
-      `const chatDir = join(process.env.GEMINI_CLI_HOME, '.gemini', 'tmp', 'test-project', 'chats')`,
-      `await mkdir(chatDir, { recursive: true })`,
-      `await writeFile(join(chatDir, 'session-2026-04-16T00-00-abcd1234.json'), JSON.stringify({ sessionId: '${nativeSessionId}' }))`
-    ].join('\n'))
+    await writeFile(
+      fakeGeminiPath,
+      [
+        `#!${process.execPath}`,
+        `import { mkdir, writeFile } from 'node:fs/promises'`,
+        `import { join } from 'node:path'`,
+        `const args = process.argv.slice(2)`,
+        `if (!args.includes('--prompt-interactive')) process.exit(17)`,
+        `const chatDir = join(process.env.GEMINI_CLI_HOME, '.gemini', 'tmp', 'test-project', 'chats')`,
+        `await mkdir(chatDir, { recursive: true })`,
+        `await writeFile(join(chatDir, 'session-2026-04-16T00-00-abcd1234.json'), JSON.stringify({ sessionId: '${nativeSessionId}' }))`
+      ].join('\n')
+    )
     await chmod(fakeGeminiPath, 0o755)
 
     const ctx = createCtx(tmpDir, {

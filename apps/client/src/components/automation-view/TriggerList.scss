@@ -2,10 +2,10 @@
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 
     &--horizontal {
-      gap: 10px;
+      gap: 8px;
 
       .automation-view__list-item {
         flex: 0 0 360px;
@@ -15,7 +15,7 @@
 
     &-scroll {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       overflow-x: auto;
       padding-bottom: 4px;
 
@@ -29,11 +29,17 @@
   &__list-item {
     position: relative;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 12px;
     display: flex;
     flex-direction: column;
-    background: var(--tag-bg);
+    background: var(--bg-color);
+    transition: border-color .2s ease, background-color .2s ease;
+  }
+
+  &__list-item:hover {
+    border-color: rgba(37, 99, 235, .18);
+    background: var(--tag-hover-bg);
   }
 
   &__list-header {
@@ -59,7 +65,7 @@
   &__section-actions {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__section-count {
@@ -83,16 +89,18 @@
   &__form-desc {
     font-size: 12px;
     color: var(--sub-text-color);
-    margin-bottom: 12px;
+    margin-bottom: 0;
   }
 
   &__icon-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
     padding: 0;
+    border-radius: 6px;
   }
 
   &__action-icon {
@@ -101,25 +109,69 @@
 
   &__remove-button {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 32px;
-    height: 32px;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 6px;
   }
 
   &__input-number {
     width: 100%;
   }
 
-  &__cron-section {
+  &__trigger-list {
+    gap: 8px;
+  }
+
+  &__trigger-rows {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+  }
+
+  &__trigger-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 28px;
+    gap: 10px;
+    align-items: start;
+    padding: 0;
+  }
+
+  &__trigger-type,
+  &__trigger-config {
+    min-width: 0;
+  }
+
+  &__trigger-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__trigger-remove-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  &__trigger-row .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  &__cron-section {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   &__cron-hint {
@@ -130,7 +182,9 @@
   &__cron-weekly {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-column: 1 / -1;
+    gap: 8px;
+    min-width: 0;
   }
 
   &__webhook {
@@ -144,13 +198,70 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 8px 12px;
+    min-height: 32px;
+    padding: 2px 4px 2px 10px;
     border-radius: 8px;
-    background: var(--code-bg);
+    border: 1px solid var(--border-color);
+    background: var(--sub-bg-color);
     color: var(--sub-text-color);
   }
 
-  &__webhook-label {
+  &__webhook-url {
+    min-width: 0;
+    overflow: hidden;
     font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__list-item .ant-form-item {
+    margin-bottom: 10px;
+  }
+
+  &__list-item .ant-form-item:last-child {
+    margin-bottom: 0;
+  }
+
+  &__list-item .ant-input,
+  &__list-item .ant-input-affix-wrapper,
+  &__list-item .ant-input-number,
+  &__list-item .ant-select-selector,
+  &__trigger-row .ant-input,
+  &__trigger-row .ant-input-affix-wrapper,
+  &__trigger-row .ant-input-number,
+  &__trigger-row .ant-select-selector {
+    border-radius: 6px !important;
+    background: var(--sub-bg-color);
+  }
+
+  &__list-item .ant-input,
+  &__list-item .ant-input-affix-wrapper,
+  &__list-item .ant-select-selector,
+  &__trigger-row .ant-input,
+  &__trigger-row .ant-input-affix-wrapper,
+  &__trigger-row .ant-select-selector {
+    min-height: 30px;
+  }
+}
+
+@media (max-width: 900px) {
+  .automation-view {
+    &__trigger-row {
+      grid-template-columns: 1fr 28px;
+    }
+
+    &__trigger-type,
+    &__trigger-config {
+      grid-column: 1 / 2;
+    }
+
+    &__trigger-actions {
+      grid-column: 2 / 3;
+      grid-row: 1 / 2;
+    }
+
+    &__cron-section {
+      grid-template-columns: 1fr;
+    }
   }
 }

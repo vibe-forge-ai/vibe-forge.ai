@@ -60,6 +60,7 @@ pnpm start
 - 调整 tooltip / popover / theme / 全局 token 后，先 reload 页面再采样；隐藏浮层节点和旧 bundle warning 很容易误导判断。
 - 读取 console warning 时，最好在页面 load 完成后重新采样；否则可能读到上一版代码的残留告警。
 - 出现颜色或状态回归时，先对照 `git diff` 或最近可用提交，不要凭印象猜 token。
+- 如果改动涉及 adapter 配置页或账号管理 UI，除了真实 Chrome 回归，还要同时检查 CLI `vf accounts` 行为和 Web 配置页是否一致；注意当前 Web 账号详情可能使用 adapter 自己的 quota 缓存，而 CLI `vf accounts show` 可以是强制刷新。
 
 ## 代码质量
 
@@ -78,6 +79,7 @@ pnpm -C packages/mcp test
 pnpm test:e2e:adapters
 pnpm tools adapter-e2e run codex
 pnpm tools adapter-e2e test codex-read-once --update
+npx vf accounts show codex <account>
 npx vf-mcp --help
 pnpm tools publish-plan -- --help
 npx vitest run <path>

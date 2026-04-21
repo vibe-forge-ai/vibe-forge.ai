@@ -56,6 +56,7 @@ const createAssets = (): WorkspaceAssetBundle => ({
   specs: [],
   entities: [],
   skills: [],
+  workspaces: [],
   mcpServers: {},
   hookPlugins: [],
   opencodeOverlayAssets: [],
@@ -598,6 +599,34 @@ describe('task run adapter init', () => {
 
     expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
       adapter: 'kimi',
+      disabledEvents: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
+    }))
+  })
+
+  it('disables overlapping bridge events when gemini native hooks are active', async () => {
+    const ctx = createCtx()
+    ctx.env.__VF_PROJECT_AI_GEMINI_NATIVE_HOOKS_AVAILABLE__ = '1'
+    ctx.configs = [{
+      adapters: createAdapters({
+        gemini: {}
+      })
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'gemini',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-gemini-native',
+      description: 'hello',
+      onEvent: vi.fn()
+    })
+
+    expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
+      adapter: 'gemini',
       disabledEvents: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
     }))
   })

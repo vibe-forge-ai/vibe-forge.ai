@@ -1,33 +1,26 @@
-import { getServerHostEnv, getServerPortEnv } from '#~/runtime-config.js'
+import { createServerUrl, getServerBaseUrl } from '#~/runtime-config.js'
 
-const DEFAULT_SERVER_PORT = '8787'
-const SERVER_HOST_ENV = getServerHostEnv()
-const SERVER_PORT_ENV = getServerPortEnv()
+import { applyAuthHeader } from './auth-token'
 
 export const jsonHeaders = { 'Content-Type': 'application/json' } as const
 
 export const getServerHost = () => {
-  if (SERVER_HOST_ENV != null && SERVER_HOST_ENV !== '') {
-    return SERVER_HOST_ENV
-  }
-  return window.location.hostname
+  return new URL(getServerUrl()).hostname
 }
 
 export const getServerPort = () => {
-  if (SERVER_PORT_ENV != null && SERVER_PORT_ENV !== '') {
-    return SERVER_PORT_ENV
-  }
-  return DEFAULT_SERVER_PORT
+  const { port, protocol } = new URL(getServerUrl())
+  if (port !== '') return port
+  return protocol === 'https:' ? '443' : '80'
 }
 
-export const getServerUrl = () => `http://${getServerHost()}:${getServerPort()}`
+export const getServerUrl = () => getServerBaseUrl()
 
 export const buildApiUrl = (path: string) => {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path
   }
-  const normalized = path.startsWith('/') ? path : `/${path}`
-  return `${getServerUrl()}${normalized}`
+  return createServerUrl(path)
 }
 
 export const createApiUrl = (path: string) => new URL(buildApiUrl(path))
@@ -146,9 +139,19 @@ export const getApiErrorMessage = (error: unknown, fallback: string) => {
   return fallback
 }
 
+const createRequestInit = (init?: RequestInit): RequestInit => {
+  const headers = new Headers(init?.headers)
+  applyAuthHeader(headers)
+  return {
+    ...init,
+    credentials: init?.credentials ?? 'include',
+    headers
+  }
+}
+
 export async function fetchApiJson<T>(pathOrUrl: string | URL, init?: RequestInit): Promise<T> {
   const url = typeof pathOrUrl === 'string' ? buildApiUrl(pathOrUrl) : pathOrUrl.toString()
-  const res = await fetch(url, init)
+  const res = await fetch(url, createRequestInit(init))
   return unwrapApiResponse<T>(res)
 }
 
@@ -158,6 +161,6 @@ export async function fetchApiJsonOrThrow<T>(
   errorLabel: string
 ): Promise<T> {
   const url = typeof pathOrUrl === 'string' ? buildApiUrl(pathOrUrl) : pathOrUrl.toString()
-  const res = await fetch(url, init)
+  const res = await fetch(url, createRequestInit(init))
   return unwrapApiResponse<T>(res, errorLabel)
 }

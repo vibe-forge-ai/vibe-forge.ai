@@ -3,46 +3,104 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-  border-bottom: none;
-  background-color: var(--sub-bg-color);
+  padding: var(--subpage-tertiary-padding);
+  border-radius: var(--subpage-tertiary-radius);
+  border: var(--subpage-tertiary-border);
+  background-color: var(--subpage-tertiary-bg);
+  transition: border-color .2s ease, background-color .2s ease;
   &.config-view__collapse-group {
     padding: 0;
     gap: 0;
+    overflow: hidden;
     > .ant-collapse-item {
       width: 100%;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: none;
       .ant-collapse-header-text {
         flex-grow: 1;
       }
     }
   }
 }
-.config-view__field-row:first-child {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-}
-.config-view__field-row:last-child {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  border-bottom: 1px solid var(--border-color);
+
+.config-view__field-row:hover {
+  border-color: var(--subpage-tertiary-hover-border);
+  background-color: var(--subpage-tertiary-hover-bg);
 }
 
 .config-view__field-row--stacked {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
+  height: auto;
+  min-height: 0;
+}
+
+.config-view__field-row--stacked .config-view__field-meta {
+  display: flex;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
 }
 
 .config-view__field-row--stacked .config-view__field-control {
-  justify-content: flex-start;
+  display: block;
+  flex: 0 0 auto;
+  height: auto !important;
   min-width: 0;
+  min-height: 0;
   width: 100%;
+  max-width: 100%;
+  align-self: stretch;
 }
 
 .config-view__field-row--stacked .config-view__field-control > * {
-  flex: 1 1 auto;
+  display: block;
+  flex: 0 0 auto;
+  height: auto !important;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea-affix-wrapper,
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea-show-count {
+  display: block;
+  height: auto !important;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea
+  textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  > textarea.ant-input {
+  height: auto !important;
+  min-height: 0;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.config-view__field-row--stacked
+  .config-view__field-control
+  .ant-input-textarea
+  textarea,
+.config-view__field-row--stacked
+  .config-view__field-control
+  > textarea.ant-input {
+  display: block;
+  width: 100% !important;
+  min-height: 56px;
 }
 
 .config-view__field-meta {
@@ -50,6 +108,11 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.config-view__field-row:not(.config-view__field-row--stacked)
+  .config-view__field-meta {
+  flex: 1 1 280px;
 }
 
 .config-view__field-text {
@@ -60,8 +123,9 @@
 }
 
 .config-view__field-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
   color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
@@ -69,7 +133,7 @@
 }
 
 .config-view__field-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--sub-text-color);
   white-space: nowrap;
   overflow: hidden;
@@ -78,20 +142,80 @@
 
 .config-view__field-control {
   display: flex;
+  flex: 0 1 220px;
   justify-content: flex-end;
   gap: 8px;
-  min-width: 220px;
+  min-width: 0;
+  max-width: min(320px, 100%);
 }
 
-.config-view__field-control .ant-select {
+.config-view__field-control .ant-input,
+.config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-select,
+.config-view__field-control .ant-input-number {
   width: 100%;
+  max-width: 100%;
+}
+
+.config-view__field-control .ant-btn,
+.config-view__field-control .ant-input,
+.config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-input-number,
+.config-view__field-control .ant-select-selector {
+  border-radius: 6px !important;
+}
+
+.config-view__field-control .ant-input,
+.config-view__field-control .ant-input-affix-wrapper,
+.config-view__field-control .ant-input-number,
+.config-view__field-control .ant-select-selector {
+  min-height: 30px;
+}
+
+.config-view__field-control .ant-input-number-input {
+  min-height: 28px;
 }
 
 .config-view__field-control .ant-input-textarea {
   width: 100%;
 }
 
+.config-view__select-chevron {
+  font-size: 18px;
+  color: var(--sub-text-color);
+}
+
 .config-view__field-icon {
   font-size: 16px;
   color: var(--sub-text-color);
+}
+
+@media (max-width: 960px) {
+  .config-view__field-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .config-view__field-meta {
+    align-items: flex-start;
+  }
+
+  .config-view__field-title,
+  .config-view__field-desc {
+    white-space: normal;
+  }
+
+  .config-view__field-control {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .config-view__field-control > * {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adapter asset plan scenarios share setup helpers and assertions */
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -78,7 +79,7 @@ describe('buildAdapterAssetPlan', () => {
         }
       }
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'codex',
       bundle,
       options: {
@@ -150,7 +151,7 @@ describe('buildAdapterAssetPlan', () => {
       }, undefined],
       useDefaultVibeForgeMcpServer: false
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'opencode',
       bundle,
       options: {
@@ -178,6 +179,109 @@ describe('buildAdapterAssetPlan', () => {
         status: 'native'
       })
     ]))
+  })
+
+  it('includes transitive skill dependencies in selected native overlays', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend-design/SKILL.md'),
+      '---\nname: frontend-design\ndescription: UI design guidance\n---\nDesign the UI.'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const plan = await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })
+
+    expect(plan.overlays).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/app-builder'
+      }),
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/frontend-design'
+      })
+    ]))
+  })
+
+  it('prunes excluded skill dependency subtrees from selected native overlays', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/frontend-design/SKILL.md'),
+      [
+        '---',
+        'name: frontend-design',
+        'description: UI design guidance',
+        'dependencies:',
+        '  - color-system',
+        '---',
+        'Design the UI.'
+      ].join('\n')
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/color-system/SKILL.md'),
+      '---\nname: color-system\ndescription: Color guidance\n---\nPick accessible colors.'
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const plan = await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder'],
+          exclude: ['frontend-design']
+        }
+      }
+    })
+
+    expect(plan.overlays).toEqual([
+      expect.objectContaining({
+        kind: 'skill',
+        targetPath: 'skills/app-builder'
+      })
+    ])
   })
 
   it('builds copilot native skill overlays and translated runtime diagnostics', async () => {
@@ -246,7 +350,7 @@ describe('buildAdapterAssetPlan', () => {
         }
       }
     })
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'copilot',
       bundle,
       options: {
@@ -346,7 +450,7 @@ describe('buildAdapterAssetPlan', () => {
     const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
     const demoCommandId = bundle.opencodeOverlayAssets.find(asset => asset.kind === 'command')?.id
 
-    const plan = buildAdapterAssetPlan({
+    const plan = await buildAdapterAssetPlan({
       adapter: 'kimi',
       bundle,
       options: {
@@ -372,6 +476,46 @@ describe('buildAdapterAssetPlan', () => {
         adapter: 'kimi',
         assetId: demoCommandId,
         status: 'skipped'
+      })
+    ]))
+  })
+
+  it('marks Gemini hook plugins as native bridge assets', async () => {
+    const workspace = await createWorkspace()
+
+    await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
+      'package.json': JSON.stringify(
+        {
+          name: '@vibe-forge/plugin-logger',
+          version: '1.0.0'
+        },
+        null,
+        2
+      ),
+      'hooks.js': 'module.exports = {}\n'
+    })
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        plugins: [{ id: 'logger' }]
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+    const loggerHookPluginId = bundle.hookPlugins.find(asset => asset.packageId === '@vibe-forge/plugin-logger')?.id
+
+    const plan = await buildAdapterAssetPlan({
+      adapter: 'gemini',
+      bundle,
+      options: {}
+    })
+
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        adapter: 'gemini',
+        assetId: loggerHookPluginId,
+        status: 'native',
+        reason: 'Mapped into the Gemini native hooks bridge.'
       })
     ]))
   })

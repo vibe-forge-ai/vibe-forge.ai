@@ -6,8 +6,8 @@ import { createT, defineMessages } from '#~/channels/middleware/i18n.js'
 import { deleteBinding } from '#~/channels/state.js'
 import { getDb } from '#~/db/index.js'
 import { killSession, startAdapterSession } from '#~/services/session/index.js'
-import type { SessionWorkspace } from '@vibe-forge/core'
 import { updateConfigFile } from '@vibe-forge/config'
+import type { SessionWorkspace } from '@vibe-forge/core'
 
 vi.mock('@vibe-forge/config', () => ({
   updateConfigFile: vi.fn().mockResolvedValue(undefined)

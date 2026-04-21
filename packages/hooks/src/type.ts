@@ -44,7 +44,10 @@ export interface HookInputs {
     lastAssistantMessage?: string
   }
   SubagentStop: HookInputCore
-  PreCompact: HookInputCore
+  PreCompact: HookInputCore & {
+    trigger?: string
+    tokenCount?: number
+  }
   SessionStart: HookInputCore & {
     source?: 'startup' | 'resume'
     model?: string
@@ -60,7 +63,7 @@ export interface HookInputs {
     tasks: Array<{
       taskId: string
       description: string
-      type: 'default' | 'spec' | 'entity'
+      type: 'default' | 'spec' | 'entity' | 'workspace'
       name?: string
       adapter?: string
       permissionMode?: SessionPermissionMode
@@ -68,7 +71,7 @@ export interface HookInputs {
     }>
   }
   GenerateSystemPrompt: HookInputCore & {
-    type?: 'spec' | 'entity'
+    type?: 'spec' | 'entity' | 'workspace'
     name?: string
     data?: unknown
   }
@@ -143,7 +146,13 @@ export interface HookOutputs {
   }
   SessionEnd: HookOutputCore
   SubagentStop: HookOutputCore
-  PreCompact: HookOutputCore
+  PreCompact: HookOutputCore & {
+    hookSpecificOutput?: {
+      hookEventName: 'PreCompact'
+      additionalContext?: string
+      replacementPrompt?: string
+    }
+  }
   UserPromptSubmit: HookOutputCore & {
     hookSpecificOutput?: {
       hookEventName: 'UserPromptSubmit'

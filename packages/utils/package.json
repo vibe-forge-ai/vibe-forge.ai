@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/utils",
-  "version": "0.11.2",
+  "version": "2.0.0",
   "description": "Shared runtime utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -86,6 +86,15 @@
         "require": "./dist/model-selection.js"
       }
     },
+    "./managed-npm-cli": {
+      "__vibe-forge__": {
+        "default": "./src/managed-npm-cli.ts"
+      },
+      "default": {
+        "import": "./dist/managed-npm-cli.mjs",
+        "require": "./dist/managed-npm-cli.js"
+      }
+    },
     "./plugin-resolver": {
       "__vibe-forge__": {
         "default": "./src/plugin-resolver.ts"
@@ -93,6 +102,15 @@
       "default": {
         "import": "./dist/plugin-resolver.mjs",
         "require": "./dist/plugin-resolver.js"
+      }
+    },
+    "./project-cache-path": {
+      "__vibe-forge__": {
+        "default": "./src/project-cache-path.ts"
+      },
+      "default": {
+        "import": "./dist/project-cache-path.mjs",
+        "require": "./dist/project-cache-path.js"
       }
     },
     "./string-transform": {

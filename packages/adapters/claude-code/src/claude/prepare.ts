@@ -2,12 +2,15 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import process from 'node:process'
 
+import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
 import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { ensureClaudeCodeRouterReady } from '../ccr/daemon'
-import { resolveClaudeCliPath } from '../ccr/paths'
+import { CLAUDE_CODE_CLI_PACKAGE, CLAUDE_CODE_CLI_VERSION, resolveClaudeCliPath } from '../ccr/paths'
+import { resolveClaudeCodeAdapterConfig } from '../runtime-config'
 import { stageClaudePluginDirs } from './plugins'
 
 interface ClaudeExecutionSettings {
@@ -86,7 +89,12 @@ export const prepareClaudeExecution = async (
   ctx: AdapterCtx,
   options: AdapterQueryOptions
 ): Promise<PreparedClaudeExecution> => {
-  const { env, cwd, cache, configs: [config, userConfig] } = ctx
+  const { env, cwd, cache } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
+  const { common: commonConfig, native: nativeConfig } = resolveClaudeCodeAdapterConfig(ctx)
   const assetPlan = options.assetPlan
   const nativeHooksAvailable = env.__VF_PROJECT_AI_CLAUDE_NATIVE_HOOKS_AVAILABLE__ === '1'
   const {
@@ -107,23 +115,13 @@ export const prepareClaudeExecution = async (
       ? 'create'
       : 'resume'
     : 'create'
-  const mergedAdapterConfig = {
-    ...(config?.adapters?.['claude-code'] ?? {}),
-    ...(userConfig?.adapters?.['claude-code'] ?? {})
-  } as {
-    effort?: AdapterQueryOptions['effort']
-    settingsContent?: Record<string, unknown>
-    nativeEnv?: Record<string, string>
-  }
-  const requestedEffort = effort ?? mergedAdapterConfig.effort
-  const settingsContent = isPlainObject(mergedAdapterConfig.settingsContent)
-    ? mergedAdapterConfig.settingsContent
+  const requestedEffort = effort ?? commonConfig.effort
+  const settingsContent = isPlainObject(nativeConfig.settingsContent)
+    ? nativeConfig.settingsContent
     : {}
-  const nativeEnv = isPlainObject(mergedAdapterConfig.nativeEnv)
+  const nativeEnv = isPlainObject(nativeConfig.nativeEnv)
     ? Object.fromEntries(
-      Object.entries(mergedAdapterConfig.nativeEnv).filter((entry): entry is [string, string] =>
-        typeof entry[1] === 'string'
-      )
+      Object.entries(nativeConfig.nativeEnv).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
     )
     : {}
   const nativeEnvEffort = normalizeEffort(nativeEnv.CLAUDE_CODE_EFFORT_LEVEL)
@@ -131,38 +129,20 @@ export const prepareClaudeExecution = async (
 
   let settings: ClaudeExecutionSettings = {
     mcpServers: assetPlan?.mcpServers ?? {
-      ...config?.mcpServers,
-      ...userConfig?.mcpServers
+      ...(mergedConfig.mcpServers ?? {})
     },
     permissions: {
-      allow: [
-        ...(config?.permissions?.allow ?? []),
-        ...(userConfig?.permissions?.allow ?? [])
-      ],
-      deny: [
-        ...(config?.permissions?.deny ?? []),
-        ...(userConfig?.permissions?.deny ?? [])
-      ],
-      ask: [
-        ...(config?.permissions?.ask ?? []),
-        ...(userConfig?.permissions?.ask ?? [])
-      ],
+      allow: [...(mergedConfig.permissions?.allow ?? [])],
+      deny: [...(mergedConfig.permissions?.deny ?? [])],
+      ask: [...(mergedConfig.permissions?.ask ?? [])],
       defaultMode: permissionMode ??
-        userConfig?.permissions?.defaultMode ??
-        config?.permissions?.defaultMode
+        mergedConfig.permissions?.defaultMode
     },
-    defaultIncludeMcpServers: [
-      ...(config?.defaultIncludeMcpServers ?? []),
-      ...(userConfig?.defaultIncludeMcpServers ?? [])
-    ],
-    defaultExcludeMcpServers: [
-      ...(config?.defaultExcludeMcpServers ?? []),
-      ...(userConfig?.defaultExcludeMcpServers ?? [])
-    ],
+    defaultIncludeMcpServers: [...(mergedConfig.defaultIncludeMcpServers ?? [])],
+    defaultExcludeMcpServers: [...(mergedConfig.defaultExcludeMcpServers ?? [])],
     plansDirectory: resolveProjectAiPath(cwd, env, 'works'),
     env: {
-      ...(config?.env ?? {}),
-      ...(userConfig?.env ?? {}),
+      ...(mergedConfig.env ?? {}),
       ...(nativeHooksAvailable
         ? {
           __VF_VIBE_FORGE_CLAUDE_HOOKS_ACTIVE__: '1',
@@ -172,10 +152,7 @@ export const prepareClaudeExecution = async (
         }
         : {})
     } as Record<string, string | null | undefined>,
-    companyAnnouncements: [
-      ...(config?.announcements ?? []),
-      ...(userConfig?.announcements ?? [])
-    ]
+    companyAnnouncements: [...(mergedConfig.announcements ?? [])]
   }
   if (
     nativeEnvEffort == null &&
@@ -315,8 +292,21 @@ export const prepareClaudeExecution = async (
       : {})
   }
 
+  const cliPath = await ensureManagedNpmCli({
+    adapterKey: 'claude_code',
+    binaryName: 'claude',
+    bundledPath: resolveClaudeCliPath(cwd, executionEnv, nativeConfig.cli),
+    config: nativeConfig.cli,
+    cwd,
+    defaultPackageName: CLAUDE_CODE_CLI_PACKAGE,
+    defaultVersion: CLAUDE_CODE_CLI_VERSION,
+    env: executionEnv,
+    logger: ctx.logger
+  })
+  ctx.env.__VF_PROJECT_AI_ADAPTER_CLAUDE_CODE_CLI_PATH__ = cliPath
+
   return {
-    cliPath: resolveClaudeCliPath(),
+    cliPath,
     args,
     env: executionEnv,
     cwd,

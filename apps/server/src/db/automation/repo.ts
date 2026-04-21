@@ -1,7 +1,11 @@
 import { v4 as uuidv4 } from 'uuid'
 
+import type { EffortLevel, GitBranchKind, SessionPermissionMode } from '@vibe-forge/types'
+
 import { buildUpdateStatement } from '../repo.utils'
 import type { SqliteDatabase } from '../sqlite'
+
+export type AutomationBranchMode = 'checkout' | 'create'
 
 export interface AutomationRule {
   id: string
@@ -38,6 +42,14 @@ export interface AutomationTask {
   ruleId: string
   title: string
   prompt: string
+  model?: string | null
+  adapter?: string | null
+  effort?: EffortLevel | null
+  permissionMode?: SessionPermissionMode | null
+  createWorktree?: boolean | null
+  branchName?: string | null
+  branchKind?: GitBranchKind | null
+  branchMode?: AutomationBranchMode | null
   createdAt: number
 }
 
@@ -84,6 +96,14 @@ interface AutomationTaskRow {
   ruleId: string
   title: string
   prompt: string
+  model: string | null
+  adapter: string | null
+  effort: string | null
+  permissionMode: string | null
+  createWorktree: number | null
+  branchName: string | null
+  branchKind: string | null
+  branchMode: string | null
   createdAt: number
 }
 
@@ -144,6 +164,14 @@ function mapAutomationTaskRow(row: AutomationTaskRow): AutomationTask {
     ruleId: row.ruleId,
     title: row.title,
     prompt: row.prompt,
+    model: row.model ?? null,
+    adapter: row.adapter ?? null,
+    effort: (row.effort as EffortLevel | null) ?? null,
+    permissionMode: (row.permissionMode as SessionPermissionMode | null) ?? null,
+    createWorktree: row.createWorktree == null ? null : row.createWorktree === 1,
+    branchName: row.branchName ?? null,
+    branchKind: (row.branchKind as GitBranchKind | null) ?? null,
+    branchMode: (row.branchMode as AutomationBranchMode | null) ?? null,
     createdAt: row.createdAt
   }
 }
@@ -209,7 +237,20 @@ export function createAutomationRepo(db: SqliteDatabase) {
 
   const createRule = (rule: AutomationRule) => {
     const stmt = db.prepare(`
-      INSERT INTO automation_rules (id, name, description, type, intervalMs, webhookKey, cronExpression, prompt, enabled, createdAt, lastRunAt, lastSessionId)
+      INSERT INTO automation_rules (
+        id,
+        name,
+        description,
+        type,
+        intervalMs,
+        webhookKey,
+        cronExpression,
+        prompt,
+        enabled,
+        createdAt,
+        lastRunAt,
+        lastSessionId
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     stmt.run(
@@ -281,8 +322,22 @@ export function createAutomationRepo(db: SqliteDatabase) {
     const transaction = db.transaction(() => {
       db.prepare('DELETE FROM automation_tasks WHERE ruleId = ?').run(ruleId)
       const stmt = db.prepare(`
-        INSERT INTO automation_tasks (id, ruleId, title, prompt, createdAt)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO automation_tasks (
+          id,
+          ruleId,
+          title,
+          prompt,
+          model,
+          adapter,
+          effort,
+          permissionMode,
+          createWorktree,
+          branchName,
+          branchKind,
+          branchMode,
+          createdAt
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       for (const task of tasks) {
         stmt.run(
@@ -290,6 +345,14 @@ export function createAutomationRepo(db: SqliteDatabase) {
           ruleId,
           task.title,
           task.prompt,
+          task.model ?? null,
+          task.adapter ?? null,
+          task.effort ?? null,
+          task.permissionMode ?? null,
+          task.createWorktree == null ? null : task.createWorktree ? 1 : 0,
+          task.branchName ?? null,
+          task.branchKind ?? null,
+          task.branchMode ?? null,
           Date.now()
         )
       }

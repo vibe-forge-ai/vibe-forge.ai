@@ -22,9 +22,8 @@
   transition: all .2s;
 
   &:focus-within {
-    border-color: #3b82f6;
     background-color: var(--input-focus-bg, #f9fafb);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .1);
+    box-shadow: none;
   }
 
   .chat-input-monaco {
@@ -34,6 +33,13 @@
 
 .chat-input-container--inline-edit {
   width: 100%;
+}
+
+.chat-input-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  min-width: 0;
 }
 
 html.dark {

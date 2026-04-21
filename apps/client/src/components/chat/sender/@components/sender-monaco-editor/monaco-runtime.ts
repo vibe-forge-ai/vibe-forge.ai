@@ -1,31 +1,15 @@
-import { loader } from '@monaco-editor/react'
 import type { IRange, editor as MonacoEditorNamespace, languages } from 'monaco-editor'
-import * as monacoApi from 'monaco-editor'
-import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
 import type { SessionInfo } from '@vibe-forge/types'
 
 import type { SenderEditorSelection } from '#~/components/chat/sender/@types/sender-editor'
 import type { SenderCompletionMatch } from '#~/components/chat/sender/@utils/sender-completion'
+import { monacoApi } from '#~/components/monaco/monaco-runtime'
 
 export const FONT_SIZE = 13
 export const LINE_HEIGHT = 20
 export const MIN_EDITOR_HEIGHT = LINE_HEIGHT
 export const MAX_EDITOR_HEIGHT = LINE_HEIGHT * 10
-
-const monacoRuntime = globalThis as typeof globalThis & {
-  MonacoEnvironment?: {
-    getWorker: () => Worker
-  }
-}
-
-if (monacoRuntime.MonacoEnvironment == null) {
-  monacoRuntime.MonacoEnvironment = {
-    getWorker: () => new EditorWorker()
-  }
-}
-
-loader.config({ monaco: monacoApi })
 
 export const clampEditorHeight = (height: number) =>
   Math.min(MAX_EDITOR_HEIGHT, Math.max(MIN_EDITOR_HEIGHT, Math.ceil(height)))

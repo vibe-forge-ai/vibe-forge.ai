@@ -13,6 +13,11 @@ import type { AdapterBuiltinModel } from '@vibe-forge/types'
  *   gpt-5-codex, gpt-5-codex-mini, gpt-5
  */
 export const builtinModels: AdapterBuiltinModel[] = [
+  {
+    value: 'default',
+    title: 'Default',
+    description: 'Use the account default model and provider selection managed by Codex'
+  },
   // ── Recommended ───────────────────────────────────────────────
   {
     value: 'gpt-5.4',

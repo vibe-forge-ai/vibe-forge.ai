@@ -1,0 +1,199 @@
+.sender-permission-trigger,
+.sender-permission-menu {
+  --sender-permission-default-color: var(--primary-color);
+  --sender-permission-accept-edits-color: var(--success-color);
+  --sender-permission-plan-color: var(--warning-color);
+  --sender-permission-dont-ask-color: #ca8a04;
+  --sender-permission-bypass-color: var(--danger-color);
+}
+
+html.dark {
+  .sender-permission-trigger,
+  .sender-permission-menu {
+    --sender-permission-dont-ask-color: #facc15;
+  }
+}
+
+.sender-permission-trigger {
+  min-width: 0;
+  max-width: min(260px, 100%);
+  height: 24px;
+  padding: 0 6px 0 4px;
+  border: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color .2s ease, color .2s ease;
+
+  &:hover,
+  &:focus-visible,
+  &.is-open {
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid
+      color-mix(in srgb, var(--primary-color) 42%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+.sender-permission-trigger__icon,
+.sender-permission-trigger__chevron {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sender-permission-trigger__icon {
+  color: var(--primary-color);
+}
+
+.sender-permission-trigger__chevron {
+  color: var(--sub-text-color);
+}
+
+.sender-permission-trigger__copy {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+}
+
+.sender-permission-trigger__value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sender-permission-trigger__icon--default,
+.sender-permission-trigger__value--default,
+.sender-permission-menu__icon--default {
+  color: var(--sender-permission-default-color);
+}
+
+.sender-permission-trigger__icon--acceptEdits,
+.sender-permission-trigger__value--acceptEdits,
+.sender-permission-menu__icon--acceptEdits {
+  color: var(--sender-permission-accept-edits-color);
+}
+
+.sender-permission-trigger__icon--plan,
+.sender-permission-trigger__value--plan,
+.sender-permission-menu__icon--plan {
+  color: var(--sender-permission-plan-color);
+}
+
+.sender-permission-trigger__icon--dontAsk,
+.sender-permission-trigger__value--dontAsk,
+.sender-permission-menu__icon--dontAsk {
+  color: var(--sender-permission-dont-ask-color);
+}
+
+.sender-permission-trigger__icon--bypassPermissions,
+.sender-permission-trigger__value--bypassPermissions,
+.sender-permission-menu__icon--bypassPermissions {
+  color: var(--sender-permission-bypass-color);
+}
+
+.sender-permission-popover {
+  .ant-popover-inner {
+    padding: 6px !important;
+    background: var(--bg-color);
+    border-radius: 8px !important;
+  }
+
+  .ant-popover-inner-content {
+    padding: 0 !important;
+  }
+}
+
+.sender-permission-menu {
+  min-width: 196px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: 12px;
+  line-height: 1.3333;
+}
+
+.sender-permission-menu__item {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--primary-soft-bg, #eff6ff) 72%,
+      var(--bg-color) 28%
+    );
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &.is-selected {
+    background: color-mix(
+      in srgb,
+      var(--primary-color, #2563eb) 18%,
+      var(--bg-color) 82%
+    );
+  }
+}
+
+.sender-permission-menu__option {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sender-permission-menu__icon,
+.sender-permission-menu__check {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.sender-permission-menu__text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.3333;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sender-permission-menu__check {
+  color: var(--primary-color, #2563eb);
+}
+
+@media (max-width: 720px) {
+  .sender-permission-trigger {
+    max-width: 100%;
+  }
+}

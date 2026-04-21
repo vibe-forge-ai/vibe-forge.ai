@@ -11,6 +11,7 @@ export const sessionWorkspacesSchemaModule: SchemaModule = {
         repositoryRoot TEXT,
         worktreePath TEXT,
         baseRef TEXT,
+        worktreeEnvironment TEXT,
         cleanupPolicy TEXT NOT NULL DEFAULT 'delete_on_session_delete',
         state TEXT NOT NULL DEFAULT 'ready',
         lastError TEXT,
@@ -26,6 +27,7 @@ export const sessionWorkspacesSchemaModule: SchemaModule = {
     ensureColumn('session_workspaces', 'repositoryRoot', 'TEXT')
     ensureColumn('session_workspaces', 'worktreePath', 'TEXT')
     ensureColumn('session_workspaces', 'baseRef', 'TEXT')
+    ensureColumn('session_workspaces', 'worktreeEnvironment', 'TEXT')
     ensureColumn('session_workspaces', 'cleanupPolicy', "TEXT NOT NULL DEFAULT 'delete_on_session_delete'")
     ensureColumn('session_workspaces', 'state', "TEXT NOT NULL DEFAULT 'ready'")
     ensureColumn('session_workspaces', 'lastError', 'TEXT')

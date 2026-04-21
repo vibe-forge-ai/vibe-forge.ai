@@ -1,3 +1,8 @@
+import type { EffortLevel, GitBranchKind, SessionPermissionMode } from '@vibe-forge/types'
+
+export type AutomationCreateWorktreeMode = 'default' | 'managed' | 'local'
+export type AutomationBranchAction = 'default' | 'checkout' | 'create'
+
 export interface RuleFormValues {
   name: string
   description?: string
@@ -17,5 +22,13 @@ export interface RuleFormValues {
     id?: string
     title?: string
     prompt: string
+    model?: string
+    adapter?: string
+    effort?: EffortLevel | 'default'
+    permissionMode?: SessionPermissionMode | 'default'
+    createWorktreeMode?: AutomationCreateWorktreeMode
+    branchAction?: AutomationBranchAction
+    branchName?: string
+    branchKind?: GitBranchKind
   }>
 }

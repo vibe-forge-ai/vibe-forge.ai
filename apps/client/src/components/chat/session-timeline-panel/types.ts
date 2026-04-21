@@ -58,6 +58,10 @@ export interface TimelineInteraction {
   payload: TimelineInteractionPayload
 }
 
+export interface TimelineDiagramBuildOptions {
+  compact?: boolean
+}
+
 export interface TimelineDiagram {
   code: string
   interactions: TimelineInteraction[]

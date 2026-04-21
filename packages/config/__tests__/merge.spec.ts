@@ -22,11 +22,23 @@ describe('mergeConfigs', () => {
         },
         announcements: ['base'],
         defaultIncludeMcpServers: ['docs'],
+        workspaces: {
+          include: ['apps/*'],
+          entries: {
+            docs: 'docs'
+          }
+        },
         notifications: {
           events: {
             completed: {
               title: 'Base Title'
             }
+          }
+        },
+        skills: {
+          registry: {
+            url: 'https://skills.example.com',
+            enabled: true
           }
         },
         marketplaces: {
@@ -78,11 +90,26 @@ describe('mergeConfigs', () => {
         },
         announcements: ['override'],
         defaultIncludeMcpServers: ['browser', 'docs'],
+        workspaces: {
+          include: ['services/*'],
+          exclude: ['services/legacy'],
+          entries: {
+            web: {
+              path: 'apps/web',
+              description: 'Web app'
+            }
+          }
+        },
         notifications: {
           events: {
             completed: {
               description: 'Child Description'
             }
+          }
+        },
+        skills: {
+          registry: {
+            downloadUrl: 'https://download.skills.example.com'
           }
         },
         marketplaces: {
@@ -128,9 +155,25 @@ describe('mergeConfigs', () => {
     })
     expect(merged.announcements).toEqual(['base', 'override'])
     expect(merged.defaultIncludeMcpServers).toEqual(['docs', 'browser'])
+    expect(merged.workspaces).toEqual({
+      include: ['apps/*', 'services/*'],
+      exclude: ['services/legacy'],
+      entries: {
+        docs: 'docs',
+        web: {
+          path: 'apps/web',
+          description: 'Web app'
+        }
+      }
+    })
     expect(merged.notifications?.events?.completed).toEqual({
       title: 'Base Title',
       description: 'Child Description'
+    })
+    expect(merged.skills).toEqual({
+      registry: {
+        downloadUrl: 'https://download.skills.example.com'
+      }
     })
     expect(merged.marketplaces).toEqual({
       'team-tools': {

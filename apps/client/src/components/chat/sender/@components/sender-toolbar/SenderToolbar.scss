@@ -15,6 +15,7 @@
   align-items: center;
   gap: 12px;
   margin: 4px -6px -6px;
+  min-width: 0;
 
   .toolbar-left {
     display: flex;
@@ -29,6 +30,8 @@
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    min-width: 0;
+    justify-content: flex-end;
   }
 
   .toolbar-right--inline-edit {
@@ -92,8 +95,70 @@
 
 @media (max-width: 960px) {
   .chat-input-toolbar {
+    --sender-control-height: 24px;
+
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-top: 6px;
+    row-gap: 6px;
+
+    .toolbar-left {
+      gap: 6px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .toolbar-right {
+      gap: 6px;
+      margin-left: auto;
+      max-width: 100%;
+      justify-content: flex-end;
+    }
+
     .toolbar-btn__text {
       display: none;
     }
+
+    .toolbar-btn {
+      min-height: var(--sender-control-height);
+
+      .material-symbols-rounded {
+        font-size: 16px;
+      }
+    }
+
+    .toolbar-btn__icon-shell {
+      width: var(--sender-control-height);
+      height: var(--sender-control-height);
+    }
+
+    .toolbar-right--inline-edit {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+
+  .sender-select-shell,
+  .sender-control-tooltip-target,
+  .adapter-select-tooltip-target {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .model-select,
+  .effort-select {
+    max-width: min(100%, 196px);
+  }
+
+  .model-select .ant-select-selection-item,
+  .model-select .ant-select-selection-placeholder,
+  .effort-select .ant-select-selection-item,
+  .effort-select .ant-select-selection-placeholder {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

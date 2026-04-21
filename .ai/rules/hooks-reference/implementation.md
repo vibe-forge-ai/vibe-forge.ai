@@ -20,6 +20,8 @@
 
 - Codex：`packages/adapters/codex/src/hook-bridge.ts`
 - Claude Code：`packages/adapters/claude-code/src/hook-bridge.ts`
+- Gemini：`packages/adapters/gemini/src/hook-bridge.ts`
+- Kimi：`packages/adapters/kimi/src/runtime/native-hooks.ts` 与 `packages/adapters/kimi/kimi-hook.js`
 - OpenCode：`packages/adapters/opencode/src/hook-bridge.ts`
 
 ## E2E 与工具

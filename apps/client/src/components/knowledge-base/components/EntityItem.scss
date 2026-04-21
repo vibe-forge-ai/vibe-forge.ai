@@ -2,8 +2,8 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: var(--subpage-tertiary-padding);
 }
 
 .knowledge-base-view__item-row {
@@ -24,7 +24,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
 }
 
 .knowledge-base-view__item-icon {
@@ -56,6 +58,9 @@
   gap: 4px;
   padding: 0 8px;
   height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
 }
 
 .knowledge-base-view__meta-pill-icon {
@@ -74,6 +79,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  margin: 0;
+  border-radius: 4px;
 }
 
 .knowledge-base-view__tag-icon {

@@ -1,0 +1,79 @@
+.auth-gate {
+  min-height: var(--vf-visual-viewport-height, 100dvh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-color);
+  color: var(--text-color);
+  scroll-padding-bottom: 24px;
+}
+
+.auth-gate--loading {
+  background: var(--sub-bg-color);
+}
+
+.auth-gate__panel {
+  width: min(420px, 100%);
+  padding: 0;
+}
+
+.auth-gate__intro {
+  margin-bottom: 24px;
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    color: var(--sub-text-color);
+    line-height: 1.5;
+  }
+}
+
+.auth-gate__notice {
+  margin-bottom: 18px;
+}
+
+.auth-gate__secondary-action {
+  margin-top: 18px;
+}
+
+.auth-gate__remember {
+  margin-bottom: 8px;
+}
+
+.auth-gate__hint {
+  margin: 0 0 18px;
+  color: var(--sub-text-color);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .auth-gate {
+    align-items: center;
+    padding: max(16px, env(safe-area-inset-top)) 14px
+      max(16px, env(safe-area-inset-bottom));
+  }
+
+  html.has-mobile-keyboard .auth-gate {
+    align-items: flex-start;
+    justify-content: flex-start;
+    scroll-padding-bottom: calc(24px + var(--vf-keyboard-inset-bottom, 0px));
+  }
+
+  .auth-gate__panel {
+    width: 100%;
+
+    h1 {
+      font-size: 22px;
+    }
+  }
+}

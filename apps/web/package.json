@@ -1,0 +1,21 @@
+{
+  "name": "@vibe-forge/web",
+  "version": "2.0.0",
+  "description": "Vibe Forge integrated web app",
+  "vibeForge": {
+    "runtimeTranspile": true
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "vibe-forge-web": "./cli.js"
+  },
+  "dependencies": {
+    "@vibe-forge/cli-helper": "workspace:^",
+    "@vibe-forge/client": "workspace:^",
+    "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/server": "workspace:^",
+    "commander": "^12.1.0"
+  }
+}

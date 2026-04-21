@@ -1,5 +1,5 @@
-import { access, mkdir, readdir, rm, symlink, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 
 import {
@@ -9,6 +9,7 @@ import {
   writeJsonFile
 } from '@vibe-forge/hooks'
 import type { AdapterCtx } from '@vibe-forge/types'
+import { syncSymlinkTarget } from '@vibe-forge/utils'
 
 const MANAGED_PLUGIN_FILE_NAME = 'vibe-forge-hooks.js'
 const DEFAULT_OPENCODE_CONFIG = {
@@ -26,16 +27,18 @@ const pathExists = async (targetPath: string) => {
 }
 
 const ensureSymlinkTarget = async (sourcePath: string, targetPath: string) => {
-  await rm(targetPath, { recursive: true, force: true })
-  await mkdir(dirname(targetPath), { recursive: true })
-  await symlink(sourcePath, targetPath)
+  await syncSymlinkTarget({
+    sourcePath,
+    targetPath
+  })
 }
 
 const mirrorDirectory = async (sourceDir: string, targetDir: string) => {
   if (!await pathExists(sourceDir)) return
-  await rm(targetDir, { recursive: true, force: true })
-  await mkdir(dirname(targetDir), { recursive: true })
-  await symlink(sourceDir, targetDir)
+  await syncSymlinkTarget({
+    sourcePath: sourceDir,
+    targetPath: targetDir
+  })
 }
 
 const mirrorFile = async (sourcePath: string, targetPath: string) => {
@@ -146,6 +149,31 @@ const normalizeToolResponse = (input, output) => (
   output?.result ?? output?.response ?? output?.data ?? input?.result ?? output
 )
 
+const readPreCompactHookSpecificOutput = (result) => {
+  const hookSpecificOutput = result?.hookSpecificOutput
+  if (hookSpecificOutput?.hookEventName !== "PreCompact") {
+    return {}
+  }
+
+  const additionalContext = (
+    typeof hookSpecificOutput.additionalContext === "string" &&
+    hookSpecificOutput.additionalContext.trim() !== ""
+  )
+    ? hookSpecificOutput.additionalContext
+    : undefined
+  const replacementPrompt = (
+    typeof hookSpecificOutput.replacementPrompt === "string" &&
+    hookSpecificOutput.replacementPrompt.trim() !== ""
+  )
+    ? hookSpecificOutput.replacementPrompt
+    : undefined
+
+  return {
+    additionalContext,
+    replacementPrompt,
+  }
+}
+
 export const VibeForgeHooks = async ({ directory }) => ({
   event: async ({ event }) => {
     if (event?.type === "session.created") {
@@ -182,6 +210,19 @@ export const VibeForgeHooks = async ({ directory }) => ({
 
     if (result?.continue === false) {
       throw new Error(stopReason(result, "blocked by Vibe Forge PostToolUse hook"))
+    }
+  },
+  "experimental.session.compacting": async (_input, output) => {
+    const result = callVibeForgeHook(createBaseInput("PreCompact", directory, false))
+    const { additionalContext, replacementPrompt } = readPreCompactHookSpecificOutput(result)
+
+    if (replacementPrompt != null) {
+      output.prompt = replacementPrompt
+      return
+    }
+
+    if (additionalContext != null) {
+      output.context.push(additionalContext)
     }
   },
 })
