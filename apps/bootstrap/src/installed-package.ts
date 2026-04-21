@@ -23,12 +23,12 @@ export const resolveInstalledPackageBin = (
   const binPath = typeof bin === 'string'
     ? bin
     : (
-        typeof binName === 'string'
-          ? bin?.[binName]
-          : Object.values(bin ?? {}).find(
-              (value): value is string => typeof value === 'string'
-            )
-      )
+      typeof binName === 'string'
+        ? bin?.[binName]
+        : Object.values(bin ?? {}).find(
+          (value): value is string => typeof value === 'string'
+        )
+    )
 
   if (typeof binPath !== 'string') {
     throw new TypeError(

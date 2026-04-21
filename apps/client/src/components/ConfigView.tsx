@@ -16,12 +16,12 @@ import { getApiErrorMessage, getConfig, getConfigSchema, listWorktreeEnvironment
 import { useQueryParams } from '../hooks/useQueryParams'
 import { AboutSection, ConfigSectionPanel, ConfigSourceSwitch, DisplayValue } from './config'
 import { AppSettingsPanel } from './config/AppSettingsPanel'
+import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import {
   getConfigDraftKey,
   resolveRemoteConfigChangeAction,
   serializeComparableConfigValue
 } from './config/configConflict'
-import { WorktreeEnvironmentPanel } from './config/WorktreeEnvironmentPanel'
 import { cloneValue, getValueByPath, isEmptyValue } from './config/configUtils'
 import { toDisplayEnvironmentName, toEnvironmentReference } from './config/worktree-environment-panel-model'
 
@@ -411,7 +411,6 @@ export function ConfigView() {
       }
       return nextConflicts
     }
-
     ;(['project', 'user'] as const).forEach((source) => {
       const sourceData = data?.sources?.[source]
       if (sourceData == null) return
