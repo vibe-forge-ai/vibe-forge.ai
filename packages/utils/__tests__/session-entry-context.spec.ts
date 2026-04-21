@@ -73,6 +73,7 @@ describe('session entry context helpers', () => {
     expect(prompt).toContain('switch to the `Vibe Forge Server` MDP client')
     expect(prompt).toContain('Do not fall back to Bash, curl, or ad-hoc HTTP probing')
     expect(prompt).toContain('identify the relevant client first with `MDP.listClients`')
+    expect(prompt).toContain('call `MDP.listClients` with a narrow search keyword')
     expect(prompt).toContain('call `MDP.listPaths` with that exact `clientId`')
     expect(prompt).toContain('Prefer reading the target client root `/skill.md`')
   })
@@ -101,6 +102,7 @@ describe('session entry context helpers', () => {
     expect(prompt).toContain('Use ChromeDevtools only as a fallback')
     expect(prompt).toContain('switch to the `Vibe Forge Server` MDP client')
     expect(prompt).toContain('identify the relevant client first with `MDP.listClients`')
+    expect(prompt).toContain('call `MDP.listClients` with a narrow search keyword')
     expect(prompt).toContain('call `MDP.listPaths` with that exact `clientId`')
   })
 

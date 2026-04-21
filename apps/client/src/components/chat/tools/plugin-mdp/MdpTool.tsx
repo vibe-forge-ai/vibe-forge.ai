@@ -20,9 +20,9 @@ import {
   type MdpToolKind
 } from './mdp-tool-utils'
 
-const MAX_VISIBLE_CLIENTS = 8
 const MAX_VISIBLE_PATHS = 18
 const MAX_VISIBLE_BATCH_RESULTS = 8
+const CLIENTS_PAGE_SIZE = 8
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   value != null && typeof value === 'object' && !Array.isArray(value)
@@ -109,10 +109,14 @@ const renderRequestLineFields = (
   )
 }
 
-const renderClientResults = (
-  payload: unknown,
+const MdpClientResults = (params: {
+  payload: unknown
   t: (key: string, options?: Record<string, unknown>) => string
-) => {
+}) => {
+  const { payload, t } = params
+  const [page, setPage] = useState(0)
+  const [revealedClientIds, setRevealedClientIds] = useState<Record<string, boolean>>({})
+
   if (!isRecord(payload) || !Array.isArray(payload.clients)) {
     return null
   }
@@ -122,38 +126,78 @@ const renderClientResults = (
     return renderEmptyState(t('chat.tools.mdp.emptyClients', { defaultValue: 'No clients returned.' }))
   }
 
-  const visibleClients = clients.slice(0, MAX_VISIBLE_CLIENTS)
-  const hiddenCount = clients.length - visibleClients.length
+  const totalPages = Math.max(1, Math.ceil(clients.length / CLIENTS_PAGE_SIZE))
+  const safePage = Math.min(page, totalPages - 1)
+  const pageStart = safePage * CLIENTS_PAGE_SIZE
+  const visibleClients = clients.slice(pageStart, pageStart + CLIENTS_PAGE_SIZE)
 
   return (
-    <div className='mdp-tool__client-list'>
+    <div className='mdp-tool__client-list-shell'>
+      <div className='mdp-tool__client-list'>
       {visibleClients.map((client) => {
         const name = asString(client.name) || t('chat.tools.unknown', { defaultValue: 'Unknown tool' })
         const route = getMdpClientRoute(client.metadata)
         const description = asString(client.description)
         const clientId = asString(client.clientId)
+        const clientKey = clientId || `${name}-${route || description}`
+        const isClientIdVisible = revealedClientIds[clientKey] === true
 
         return (
-          <div className='mdp-tool__client-card' key={clientId || name}>
-            <div className='mdp-tool__client-card-header'>
-              <span className='mdp-tool__client-name'>{name}</span>
-              {route != null && route !== '' && (
-                <span className='mdp-tool__client-route'>{route}</span>
-              )}
-            </div>
-            <div className='mdp-tool__client-meta-row'>
-              {clientId !== '' && <code className='mdp-tool__client-id'>{clientId}</code>}
-              {description !== '' && <span className='mdp-tool__client-description'>{description}</span>}
-            </div>
+          <div className='mdp-tool__client-row' key={clientKey}>
+            <button
+              type='button'
+              className='mdp-tool__client-title'
+              onDoubleClick={() => {
+                if (clientId === '') return
+                setRevealedClientIds((current) => ({
+                  ...current,
+                  [clientKey]: !current[clientKey]
+                }))
+              }}
+              title={t('chat.tools.mdp.clientIdHint', {
+                defaultValue: 'Double-click to show client id'
+              })}
+            >
+              {name}
+            </button>
+            {route != null && route !== '' && (
+              <div className='mdp-tool__client-route'>{route}</div>
+            )}
+            {description !== '' && (
+              <div className='mdp-tool__client-description'>{description}</div>
+            )}
+            {isClientIdVisible && clientId !== '' && (
+              <code className='mdp-tool__client-id'>{clientId}</code>
+            )}
           </div>
         )
       })}
-      {hiddenCount > 0 && (
-        <div className='mdp-tool__overflow-note'>
-          {t('chat.tools.mdp.moreClients', {
-            count: hiddenCount,
-            defaultValue: `+${hiddenCount} more clients`
-          })}
+      </div>
+      {totalPages > 1 && (
+        <div className='mdp-tool__pagination'>
+          <button
+            type='button'
+            className='mdp-tool__pagination-button'
+            onClick={() => setPage(current => Math.max(0, current - 1))}
+            disabled={safePage === 0}
+          >
+            {t('chat.tools.mdp.previousPage', { defaultValue: 'Previous' })}
+          </button>
+          <span className='mdp-tool__pagination-label'>
+            {t('chat.tools.mdp.pageIndicator', {
+              current: safePage + 1,
+              total: totalPages,
+              defaultValue: `Page ${safePage + 1} / ${totalPages}`
+            })}
+          </span>
+          <button
+            type='button'
+            className='mdp-tool__pagination-button'
+            onClick={() => setPage(current => Math.min(totalPages - 1, current + 1))}
+            disabled={safePage >= totalPages - 1}
+          >
+            {t('chat.tools.mdp.nextPage', { defaultValue: 'Next' })}
+          </button>
         </div>
       )}
     </div>
@@ -357,7 +401,7 @@ export const MdpTool = defineToolRender(({ item, resultItem }) => {
   const resultSection = (() => {
     switch (kind) {
       case 'listClients':
-        return renderClientResults(payload, t)
+        return <MdpClientResults payload={payload} t={t} />
       case 'listPaths':
         return renderPathResults(payload, t)
       case 'callPath':

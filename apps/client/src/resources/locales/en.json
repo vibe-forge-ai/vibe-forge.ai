@@ -1041,9 +1041,13 @@
       "emptyClients": "No clients returned.",
       "emptyPaths": "No paths returned.",
       "emptyResults": "No results returned.",
+      "clientIdHint": "Double-click the title to show the client id",
       "moreClients": "{{count}} more clients",
       "morePaths": "{{count}} more paths",
-      "moreResults": "{{count}} more results"
+      "moreResults": "{{count}} more results",
+      "previousPage": "Previous",
+      "nextPage": "Next",
+      "pageIndicator": "Page {{current}} / {{total}}"
     },
     "call": "call",
       "reading": "Reading file...",

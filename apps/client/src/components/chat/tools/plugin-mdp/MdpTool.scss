@@ -166,7 +166,6 @@
     gap: 8px;
   }
 
-  .mdp-tool__client-card,
   .mdp-tool__path-row,
   .mdp-tool__batch-card,
   .mdp-tool__call-result {
@@ -176,7 +175,6 @@
     background: color-mix(in srgb, var(--tag-bg) 72%, transparent);
   }
 
-  .mdp-tool__client-card-header,
   .mdp-tool__path-main,
   .mdp-tool__batch-card-header {
     display: flex;
@@ -186,7 +184,6 @@
     flex-wrap: wrap;
   }
 
-  .mdp-tool__client-name,
   .mdp-tool__path-value {
     font-size: 12px;
     color: var(--text-color);
@@ -206,11 +203,67 @@
     color: var(--sub-text-color);
   }
 
-  .mdp-tool__client-meta-row {
+  .mdp-tool__client-list-shell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: 6px;
+    gap: 8px;
+  }
+
+  .mdp-tool__client-list {
+    gap: 0;
+    max-height: 248px;
+    overflow: auto;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mdp-tool__client-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 0;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    }
+  }
+
+  .mdp-tool__client-title {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .mdp-tool__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .mdp-tool__pagination-button {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    border-radius: 999px;
+    height: 24px;
+    padding: 0 10px;
+    font-size: 11px;
+
+    &:disabled {
+      opacity: .45;
+    }
+  }
+
+  .mdp-tool__pagination-label {
+    color: var(--sub-text-color);
+    font-size: 11px;
   }
 
   .mdp-tool__path-badges {

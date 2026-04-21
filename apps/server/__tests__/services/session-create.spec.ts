@@ -173,4 +173,33 @@ describe('createSessionWithInitialMessage', () => {
       adapter: undefined
     })
   })
+
+  it('waits for the initial message pipeline before resolving the created session', async () => {
+    let releaseProcessUserMessage: (() => void) | undefined
+    mocks.processUserMessage.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      releaseProcessUserMessage = resolve
+    }))
+
+    let resolved = false
+    const createPromise = createSessionWithInitialMessage({
+      title: 'Demo',
+      initialMessage: 'hello'
+    }).then(() => {
+      resolved = true
+    })
+
+    for (let attempt = 0; attempt < 10 && mocks.processUserMessage.mock.calls.length === 0; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+
+    expect(mocks.processUserMessage).toHaveBeenCalledWith('sess-1', 'hello', {
+      entryContext: undefined
+    })
+    expect(resolved).toBe(false)
+
+    releaseProcessUserMessage?.()
+    await createPromise
+
+    expect(resolved).toBe(true)
+  })
 })

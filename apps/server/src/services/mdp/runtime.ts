@@ -183,6 +183,28 @@ const asRecord = (value: unknown): JsonObject | undefined => (
     : undefined
 )
 
+export const parseRequestBodyRecord = (value: unknown): JsonObject | undefined => {
+  const direct = asRecord(value)
+  if (direct != null) {
+    return direct
+  }
+
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = value.trim()
+  if (normalized === '') {
+    return undefined
+  }
+
+  try {
+    return asRecord(JSON.parse(normalized))
+  } catch {
+    return undefined
+  }
+}
+
 const asString = (value: unknown) => typeof value === 'string' ? value.trim() : ''
 const asBoolean = (value: unknown) => value === true || value === 'true'
 const asStringArray = (value: unknown) => (
@@ -1107,7 +1129,7 @@ const createServerClientHandles = async (params: {
         method: 'POST',
         description: 'Create a new session with optional initial message and workspace settings.'
       }, async ({ body }) => {
-        const payload = asRecord(body) ?? {}
+        const payload = parseRequestBodyRecord(body) ?? {}
         const workspace = asRecord(payload.workspace)
         const branch = asRecord(workspace?.branch)
         const session = await createSessionWithInitialMessage({

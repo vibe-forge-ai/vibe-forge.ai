@@ -97,6 +97,7 @@ const appendMdpUsageRuleLines = (
   lines.push(
     '- Do not enumerate every client path by default. Avoid loading a global path catalog unless the task truly requires topology-wide discovery.',
     '- If you need discovery, identify the relevant client first with `MDP.listClients`.',
+    '- When you already know the task domain, call `MDP.listClients` with a narrow search keyword such as `server`, `browser`, `channel`, `workspace`, `session`, or the channel type name instead of listing every client.',
     '- After choosing one client, call `MDP.listPaths` with that exact `clientId`, and add a narrow `search` filter when you already know the path family you need.',
     '- Prefer reading the target client root `/skill.md` or a scoped `.../skill.md` path before broad path enumeration.',
     '- Once you know the exact path you need, call it directly instead of repeatedly listing large catalogs.',

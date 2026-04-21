@@ -153,9 +153,9 @@ export async function createSessionWithInitialMessage(options: {
         { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter, account, entryContext }
       )
       if (initialContent) {
-        processUserMessage(session.id, initialContent, { entryContext })
+        await processUserMessage(session.id, initialContent, { entryContext })
       } else if (initialMessage) {
-        processUserMessage(session.id, initialMessage, { entryContext })
+        await processUserMessage(session.id, initialMessage, { entryContext })
       }
 
       const updated = db.getSession(session.id)

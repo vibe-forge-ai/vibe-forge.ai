@@ -1042,9 +1042,13 @@
       "emptyClients": "没有返回客户端。",
       "emptyPaths": "没有返回路径。",
       "emptyResults": "没有返回结果。",
+      "clientIdHint": "双击标题显示客户端 ID",
       "moreClients": "还有 {{count}} 个客户端",
       "morePaths": "还有 {{count}} 条路径",
-      "moreResults": "还有 {{count}} 条结果"
+      "moreResults": "还有 {{count}} 条结果",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "pageIndicator": "第 {{current}} / {{total}} 页"
     },
     "call": "调用",
       "reading": "正在读取文件...",
