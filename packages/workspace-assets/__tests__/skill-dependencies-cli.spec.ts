@@ -1,5 +1,5 @@
 /* eslint-disable import/first -- hoisted vitest mocks must be declared before importing the bundle entrypoint */
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path, { join } from 'node:path'
 
@@ -27,6 +27,15 @@ import { createWorkspace, writeDocument } from './test-helpers'
 
 describe('skills CLI dependency resolution', () => {
   let installWorkspace: string
+
+  const pathExists = async (targetPath: string) => {
+    try {
+      await access(targetPath)
+      return true
+    } catch {
+      return false
+    }
+  }
 
   beforeEach(async () => {
     installWorkspace = await mkdtemp(path.join(os.tmpdir(), 'vf-skills-cli-dependency-'))
@@ -157,5 +166,69 @@ describe('skills CLI dependency resolution', () => {
       source: 'example-source/default/public',
       version: '1.0.3'
     })
+  })
+
+  it('clears stale dependency install locks before retrying a direct startup install', async () => {
+    const workspace = await createWorkspace()
+    const installedSkillDir = join(installWorkspace, '.agents', 'skills', 'lynx-cat')
+    await mkdir(installedSkillDir, { recursive: true })
+    await writeFile(
+      join(installedSkillDir, 'SKILL.md'),
+      '---\nname: lynx-cat\ndescription: Lynx helper\n---\nDebug Lynx apps.\n'
+    )
+
+    mocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir: installWorkspace,
+      installedSkill: {
+        dirName: 'lynx-cat',
+        name: 'lynx-cat',
+        sourcePath: installedSkillDir
+      }
+    })
+
+    await writeDocument(
+      join(workspace, '.ai/skills/lynx-miniapp/SKILL.md'),
+      [
+        '---',
+        'name: lynx-miniapp',
+        'description: lynx 调试使用',
+        'dependencies:',
+        '  - https://registry.example.com@example-source/lynx/skills@lynx-cat@latest',
+        '---',
+        '这是一个测试的 lynx 调试技能'
+      ].join('\n')
+    )
+
+    const lockDir = join(
+      workspace,
+      '.ai/caches/skill-dependencies/skills-cli/skills/latest/https-registry.example.com/example-source/lynx/skills/latest/lynx-cat.lock'
+    )
+    await mkdir(lockDir, { recursive: true })
+    await utimes(lockDir, new Date(Date.now() - 120_000), new Date(Date.now() - 120_000))
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [undefined, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['lynx-miniapp']
+        }
+      }
+    })
+
+    expect(mocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
+      registry: 'https://registry.example.com',
+      skill: 'lynx-cat',
+      source: 'example-source/lynx/skills',
+      version: 'latest'
+    })
+    await expect(pathExists(lockDir)).resolves.toBe(false)
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['lynx-cat', 'lynx-miniapp'])
   })
 })
