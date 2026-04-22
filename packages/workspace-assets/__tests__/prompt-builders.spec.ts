@@ -9,6 +9,7 @@ import {
   generateSkillsRoutePrompt,
   generateSpecRoutePrompt
 } from '#~/prompt-builders.js'
+import { generateWorkspaceRoutePrompt } from '#~/workspace-prompt.js'
 
 describe('workspace asset prompt builders', () => {
   it('builds skill prompts with stable names, descriptions, and relative paths', () => {
@@ -175,10 +176,44 @@ describe('workspace asset prompt builders', () => {
     expect(prompt).toContain('reviewer: 负责代码审查')
     expect(prompt).toContain('`VibeForge.StartTasks`')
     expect(prompt).toContain('`VibeForge.GetTaskInfo`')
+    expect(prompt).toContain('Task tool guide:')
+    expect(prompt).toContain('After starting a task')
+    expect(prompt).toContain('10 most recent log entries')
+    expect(prompt).toContain('`logLimit`')
+    expect(prompt).toContain('`logOrder`')
+    expect(prompt).toContain('`VibeForge.SendTaskMessage`')
+    expect(prompt).toContain('`{ taskId, message }`')
+    expect(prompt).toContain('`VibeForge.SubmitTaskInput`')
+    expect(prompt).toContain('Do not use it for ordinary follow-up instructions')
+    expect(prompt).toContain('If a task is `completed` or `failed`')
     expect(prompt).toContain('`wait`')
     expect(prompt).not.toContain('run-tasks')
     expect(prompt).not.toContain('需要关注变更风险')
     expect(prompt).not.toContain('hidden')
+  })
+
+  it('builds workspace routes with managed task guidance', () => {
+    const cwd = '/tmp/project'
+
+    const prompt = generateWorkspaceRoutePrompt(cwd, [
+      {
+        id: 'billing',
+        cwd: join(cwd, 'packages/billing'),
+        path: join(cwd, '.ai/workspaces/billing.md'),
+        description: 'Billing workspace'
+      }
+    ])
+
+    expect(prompt).toContain('The project includes the following registered workspaces')
+    expect(prompt).toContain('Identifier: billing')
+    expect(prompt).toContain('`VibeForge.StartTasks`')
+    expect(prompt).toContain('type: "workspace"')
+    expect(prompt).toContain('Task tool guide:')
+    expect(prompt).toContain('`VibeForge.GetTaskInfo`')
+    expect(prompt).toContain('`VibeForge.ListTasks`')
+    expect(prompt).toContain('`VibeForge.SendTaskMessage`')
+    expect(prompt).toContain('`VibeForge.SubmitTaskInput`')
+    expect(prompt).toContain('Do not directly edit files inside a registered workspace')
   })
 
   it('builds skill route prompts without preloading content', () => {

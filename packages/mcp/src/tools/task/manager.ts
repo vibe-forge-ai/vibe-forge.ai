@@ -581,6 +581,51 @@ export class TaskManager {
     return Array.from(this.tasks.values())
   }
 
+  public async sendTaskMessage(params: {
+    taskId: string
+    message: string
+  }): Promise<void> {
+    const task = this.tasks.get(params.taskId)
+    if (task == null) {
+      throw new Error(`Task ${params.taskId} not found.`)
+    }
+
+    const message = params.message.trim()
+    if (message === '') {
+      throw new Error('Task message cannot be empty.')
+    }
+
+    if (task.pendingInteraction != null || task.status === 'waiting_input') {
+      throw new Error(`Task ${params.taskId} is waiting for input. Use SubmitTaskInput instead.`)
+    }
+
+    if (task.status !== 'running' || task.session == null) {
+      throw new Error(`Task ${params.taskId} is not running. Start a new task instead.`)
+    }
+
+    if (task.serverSync != null) {
+      await postSessionEvent(task.serverSync.sessionId, {
+        type: 'message',
+        data: {
+          id: `task-user:${task.taskId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+          role: 'user',
+          content: message,
+          createdAt: Date.now()
+        }
+      })
+    } else {
+      task.session.emit({
+        type: 'message',
+        content: [{
+          type: 'text',
+          text: message
+        }]
+      })
+    }
+
+    appendTaskLog(task, `User message submitted: ${message}`)
+  }
+
   public async submitTaskInput(params: {
     taskId: string
     interactionId?: string
