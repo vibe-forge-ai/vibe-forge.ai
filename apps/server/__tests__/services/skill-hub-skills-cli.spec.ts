@@ -108,7 +108,7 @@ describe('skills CLI skill hub source flow', () => {
     const { searchSkillsCliSource } = await import('#~/services/skill-hub/skills-cli.js')
     await expect(searchSkillsCliSource({
       config: {
-        package: '@byted/skills',
+        package: '@example/skills',
         registry: 'https://registry.example.com',
         version: 'latest',
         env: {
@@ -137,7 +137,7 @@ describe('skills CLI skill hub source flow', () => {
     expect(mocks.ensureManagedNpmCli).toHaveBeenCalledWith(expect.objectContaining({
       config: expect.objectContaining({
         source: 'managed',
-        package: '@byted/skills',
+        package: '@example/skills',
         version: 'latest'
       }),
       cwd: expect.stringContaining('vf-skills-cli-list-'),

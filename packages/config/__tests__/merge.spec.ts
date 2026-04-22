@@ -40,7 +40,7 @@ describe('mergeConfigs', () => {
           {
             name: 'lynx-cat',
             registry: 'https://registry.example.com',
-            source: 'skills.byted.org/lynx/skills',
+            source: 'example-source/lynx/skills',
             version: 'latest'
           }
         ],
@@ -183,7 +183,7 @@ describe('mergeConfigs', () => {
       {
         name: 'lynx-cat',
         registry: 'https://registry.example.com',
-        source: 'skills.byted.org/lynx/skills',
+        source: 'example-source/lynx/skills',
         version: 'latest'
       },
       {
