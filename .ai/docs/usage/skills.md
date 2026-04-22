@@ -1,3 +1,5 @@
+<!-- eslint-disable max-lines -->
+
 # Skills 与依赖
 
 返回入口：[index.md](../index.md)

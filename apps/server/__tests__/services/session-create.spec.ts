@@ -173,8 +173,11 @@ describe('createSessionWithInitialMessage', () => {
       updateSkills: true
     })
 
-    expect(mocks.startAdapterSession).toHaveBeenCalledWith('sess-1', expect.objectContaining({
-      updateConfiguredSkills: true
-    }))
+    expect(mocks.startAdapterSession).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({
+        updateConfiguredSkills: true
+      })
+    )
   })
 })

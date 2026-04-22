@@ -1,3 +1,4 @@
+/* eslint-disable import/first -- hoisted vitest mocks must be declared before importing the bundle entrypoint */
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path, { join } from 'node:path'

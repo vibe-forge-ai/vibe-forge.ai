@@ -5,12 +5,7 @@ import process from 'node:process'
 import type { ConfiguredSkillInstallConfig, SkillsCliConfig } from '@vibe-forge/types'
 
 import { resolveProjectAiPath } from './ai-path'
-import {
-  findSkillsCli,
-  installSkillsCliRefToTemp,
-  installSkillsCliSkillToTemp,
-  toSkillSlug
-} from './skills-cli'
+import { findSkillsCli, installSkillsCliRefToTemp, installSkillsCliSkillToTemp, toSkillSlug } from './skills-cli'
 
 export interface ProjectSkillSummary {
   description?: string
@@ -198,7 +193,7 @@ const pickSearchResult = (results: Awaited<ReturnType<typeof findSkillsCli>>, na
 
 const rewriteInstalledSkillName = async (skillPath: string, targetName: string) => {
   const content = await readFile(skillPath, 'utf8')
-  const normalizedName = /^[A-Za-z0-9._/-]+$/.test(targetName)
+  const normalizedName = /^[\w./-]+$/.test(targetName)
     ? targetName
     : JSON.stringify(targetName)
   const lines = content.split(/\r?\n/)

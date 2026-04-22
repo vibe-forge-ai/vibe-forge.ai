@@ -110,16 +110,20 @@ describe('skills command', () => {
 
     await writeFile(
       path.join(cwd, '.ai.config.json'),
-      JSON.stringify({
-        skills: [
-          'frontend-design',
-          {
-            name: 'design-review',
-            source: 'example-source/default/public',
-            rename: 'internal-review'
-          }
-        ]
-      }, null, 2)
+      JSON.stringify(
+        {
+          skills: [
+            'frontend-design',
+            {
+              name: 'design-review',
+              source: 'example-source/default/public',
+              rename: 'internal-review'
+            }
+          ]
+        },
+        null,
+        2
+      )
     )
 
     mocks.installProjectSkill.mockResolvedValue({
@@ -135,45 +139,57 @@ describe('skills command', () => {
 
     await program.parseAsync(['skills', 'install'], { from: 'user' })
     expect(mocks.installProjectSkill).toHaveBeenCalledTimes(2)
-    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      force: false,
-      skill: expect.objectContaining({
-        name: 'frontend-design',
-        ref: 'frontend-design',
-        targetName: 'frontend-design'
+    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        force: false,
+        skill: expect.objectContaining({
+          name: 'frontend-design',
+          ref: 'frontend-design',
+          targetName: 'frontend-design'
+        })
       })
-    }))
-    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      force: false,
-      skill: expect.objectContaining({
-        name: 'design-review',
-        source: 'example-source/default/public',
-        rename: 'internal-review',
-        targetName: 'internal-review'
+    )
+    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        force: false,
+        skill: expect.objectContaining({
+          name: 'design-review',
+          source: 'example-source/default/public',
+          rename: 'internal-review',
+          targetName: 'internal-review'
+        })
       })
-    }))
+    )
 
     mocks.installProjectSkill.mockClear()
 
     await program.parseAsync(['skills', 'update'], { from: 'user' })
     expect(mocks.installProjectSkill).toHaveBeenCalledTimes(2)
-    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      force: true,
-      skill: expect.objectContaining({
-        name: 'frontend-design',
-        ref: 'frontend-design',
-        targetName: 'frontend-design'
+    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        force: true,
+        skill: expect.objectContaining({
+          name: 'frontend-design',
+          ref: 'frontend-design',
+          targetName: 'frontend-design'
+        })
       })
-    }))
-    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      force: true,
-      skill: expect.objectContaining({
-        name: 'design-review',
-        source: 'example-source/default/public',
-        rename: 'internal-review',
-        targetName: 'internal-review'
+    )
+    expect(mocks.installProjectSkill).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        force: true,
+        skill: expect.objectContaining({
+          name: 'design-review',
+          source: 'example-source/default/public',
+          rename: 'internal-review',
+          targetName: 'internal-review'
+        })
       })
-    }))
+    )
   })
 
   it('removes configured skills and deletes installed files', async () => {
@@ -183,15 +199,19 @@ describe('skills command', () => {
 
     await writeFile(
       path.join(cwd, '.ai.config.json'),
-      JSON.stringify({
-        skills: [
-          {
-            name: 'design-review',
-            source: 'example-source/default/public',
-            rename: 'internal-review'
-          }
-        ]
-      }, null, 2)
+      JSON.stringify(
+        {
+          skills: [
+            {
+              name: 'design-review',
+              source: 'example-source/default/public',
+              rename: 'internal-review'
+            }
+          ]
+        },
+        null,
+        2
+      )
     )
 
     mocks.readProjectSkills.mockResolvedValue([
@@ -226,11 +246,15 @@ describe('skills command', () => {
 
     await writeFile(
       path.join(cwd, '.ai.config.json'),
-      JSON.stringify({
-        skillsCli: {
-          registry: 'https://registry.example.com'
-        }
-      }, null, 2)
+      JSON.stringify(
+        {
+          skillsCli: {
+            registry: 'https://registry.example.com'
+          }
+        },
+        null,
+        2
+      )
     )
     await mkdir(path.join(cwd, '.ai/skills/internal-review'), { recursive: true })
     await writeFile(
@@ -272,7 +296,7 @@ describe('skills command', () => {
       config: {
         registry: 'https://registry.example.com'
       },
-      cwd: cwd,
+      cwd,
       group: 'default/public',
       region: 'cn',
       registry: undefined,

@@ -33,8 +33,8 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
-import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { ensureConfiguredProjectSkills } from './configured-skills'
+import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { resolveConfiguredWorkspaceAssets } from './workspaces'
 
 type DocumentAssetKind = Extract<WorkspaceAssetKind, 'rule' | 'spec' | 'entity' | 'skill'>

@@ -4,12 +4,12 @@ import process from 'node:process'
 import type { Config, ConfiguredSkillInstallConfig, SkillsCliConfig } from '@vibe-forge/types'
 import {
   installProjectSkill,
-  type NormalizedProjectSkillInstall,
   normalizeProjectSkillInstall,
   resolveConfiguredSkillInstalls as resolveDeclaredConfiguredSkillInstalls,
   resolveProjectAiPath,
   resolveSkillsCliRuntimeConfig
 } from '@vibe-forge/utils'
+import type { NormalizedProjectSkillInstall } from '@vibe-forge/utils'
 
 const resolveConfiguredSkillsCliConfig = (configs: [Config?, Config?]) => {
   const [projectConfig, userConfig] = configs
@@ -45,7 +45,9 @@ const ensureUniqueTargets = (skills: NormalizedProjectSkillInstall[]) => {
   for (const skill of skills) {
     const previous = seen.get(skill.targetDirName)
     if (previous != null) {
-      throw new Error(`Configured skills "${previous}" and "${skill.ref}" resolve to the same target "${skill.targetDirName}"`)
+      throw new Error(
+        `Configured skills "${previous}" and "${skill.ref}" resolve to the same target "${skill.targetDirName}"`
+      )
     }
     seen.set(skill.targetDirName, skill.ref)
   }
@@ -82,13 +84,15 @@ export const ensureConfiguredProjectSkills = async (params: {
       continue
     }
 
-    ensured.push(await installProjectSkill({
-      config: skillsCliConfig,
-      force: true,
-      registry: undefined,
-      skill,
-      workspaceFolder: params.workspaceFolder
-    }))
+    ensured.push(
+      await installProjectSkill({
+        config: skillsCliConfig,
+        force: true,
+        registry: undefined,
+        skill,
+        workspaceFolder: params.workspaceFolder
+      })
+    )
   }
 
   return ensured

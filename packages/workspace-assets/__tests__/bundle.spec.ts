@@ -1,4 +1,4 @@
-/* eslint-disable max-lines -- bundle coverage keeps related fixture scenarios in one file */
+/* eslint-disable import/first, max-lines -- bundle coverage keeps related fixture scenarios in one file */
 import { join } from 'node:path'
 import process from 'node:process'
 

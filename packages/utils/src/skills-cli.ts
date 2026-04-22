@@ -1,3 +1,4 @@
+/* eslint-disable no-control-regex, regexp/no-super-linear-backtracking, regexp/no-useless-lazy, regexp/no-useless-non-capturing-group, regexp/no-useless-quantifier -- CLI output parsing needs ANSI-stripping and permissive terminal patterns */
 import { execFile } from 'node:child_process'
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

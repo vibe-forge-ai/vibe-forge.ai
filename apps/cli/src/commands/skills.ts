@@ -4,12 +4,8 @@ import process from 'node:process'
 import { Option } from 'commander'
 import type { Command } from 'commander'
 
-import {
-  buildConfigJsonVariables,
-  loadConfigState,
-  updateConfigFile,
-  type ConfigSource
-} from '@vibe-forge/config'
+import { buildConfigJsonVariables, loadConfigState, updateConfigFile } from '@vibe-forge/config'
+import type { ConfigSource } from '@vibe-forge/config'
 import type { Config, ConfiguredSkillInstallConfig } from '@vibe-forge/types'
 import {
   installProjectSkill,
@@ -18,8 +14,8 @@ import {
   readProjectSkills,
   removeProjectSkill,
   resolveConfiguredSkillInstalls,
-  resolveProjectSkillPublishSpec,
   resolveProjectAiPath,
+  resolveProjectSkillPublishSpec,
   resolveSkillsCliRuntimeConfig,
   toSkillSlug
 } from '@vibe-forge/utils'
@@ -266,7 +262,11 @@ export function registerSkillsCommand(program: Command) {
   skillsCommand
     .command('add <skill>')
     .description('Declare a project skill in config and ensure it is installed locally')
-    .addOption(new Option('--config-source <source>', 'Config source to update').choices([...CONFIG_WRITE_SOURCES]).default('project'))
+    .addOption(
+      new Option('--config-source <source>', 'Config source to update').choices([...CONFIG_WRITE_SOURCES]).default(
+        'project'
+      )
+    )
     .option('--source <source>', 'Remote skills CLI source path')
     .option('--rename <name>', 'Local skill name after install')
     .option('--registry <registry>', 'Package registry used to install the managed skills CLI')
@@ -338,13 +338,15 @@ export function registerSkillsCommand(program: Command) {
           workspaceFolder
         })
         const installed = await Promise.all(
-          targets.map(skill => installDeclaredSkill({
-            config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
-            force: opts.force,
-            registry: opts.registry,
-            skill,
-            workspaceFolder
-          }))
+          targets.map(skill =>
+            installDeclaredSkill({
+              config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
+              force: opts.force,
+              registry: opts.registry,
+              skill,
+              workspaceFolder
+            })
+          )
         )
 
         printResult({
@@ -380,13 +382,15 @@ export function registerSkillsCommand(program: Command) {
           workspaceFolder
         })
         const installed = await Promise.all(
-          targets.map(skill => installDeclaredSkill({
-            config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
-            force: true,
-            registry: opts.registry,
-            skill,
-            workspaceFolder
-          }))
+          targets.map(skill =>
+            installDeclaredSkill({
+              config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
+              force: true,
+              registry: opts.registry,
+              skill,
+              workspaceFolder
+            })
+          )
         )
 
         printResult({
@@ -407,7 +411,11 @@ export function registerSkillsCommand(program: Command) {
   skillsCommand
     .command('remove <skill>')
     .description('Remove a configured project skill and delete the local installed directory')
-    .addOption(new Option('--config-source <source>', 'Config source(s) to update').choices([...CONFIG_REMOVE_SOURCES]).default('all'))
+    .addOption(
+      new Option('--config-source <source>', 'Config source(s) to update').choices([...CONFIG_REMOVE_SOURCES]).default(
+        'all'
+      )
+    )
     .option('--keep-files', 'Only update config and keep local installed files', false)
     .option('--json', 'Print JSON output', false)
     .action(async (skill: string, opts: SkillsRemoveOptions) => {
@@ -456,10 +464,12 @@ export function registerSkillsCommand(program: Command) {
         const removedDirs = opts.keepFiles === true
           ? []
           : await Promise.all(
-            Array.from(removedDirNames).map(dirName => removeProjectSkill({
-              dirName,
-              workspaceFolder
-            }))
+            Array.from(removedDirNames).map(dirName =>
+              removeProjectSkill({
+                dirName,
+                workspaceFolder
+              })
+            )
           )
 
         if (removedConfigSources.length === 0 && removedDirs.length === 0) {

@@ -13,7 +13,7 @@ import {
 } from '@vibe-forge/utils/skills-cli'
 
 import { readProjectSkillNames } from './project-skills'
-import type { SkillHubItem, SkillsCliInstallResult, SkillsCliSearchResult } from './types'
+import type { SkillsCliInstallResult, SkillsCliSearchResult } from './types'
 
 const DEFAULT_SEARCH_LIMIT = 100
 const MAX_SEARCH_LIMIT = 500

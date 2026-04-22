@@ -1,9 +1,4 @@
-import type {
-  Config,
-  ConfiguredSkillInstallConfig,
-  SkillHomeBridgeConfig,
-  SkillsCliConfig
-} from '@vibe-forge/types'
+import type { Config, ConfiguredSkillInstallConfig, SkillHomeBridgeConfig, SkillsCliConfig } from '@vibe-forge/types'
 
 export interface LegacySkillsConfig {
   install?: Array<string | ConfiguredSkillInstallConfig>
