@@ -1,3 +1,4 @@
+import { resolveAdapterCommonConfig, resolveConfigState } from '@vibe-forge/config'
 import { callHook, createAdapterHookBridge } from '@vibe-forge/hooks'
 import type { HookInputs } from '@vibe-forge/hooks'
 import type {
@@ -10,12 +11,7 @@ import type {
   WorkspaceAssetAdapter
 } from '@vibe-forge/types'
 import { loadAdapter } from '@vibe-forge/types'
-import {
-  listServiceModels,
-  mergeAdapterConfigs,
-  resolveAdapterModelCompatibility,
-  resolveEffectiveEffort
-} from '@vibe-forge/utils'
+import { listServiceModels, resolveAdapterModelCompatibility, resolveEffectiveEffort } from '@vibe-forge/utils'
 import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
 
 import { prepare } from '#~/prepare.js'
@@ -130,17 +126,17 @@ export const run = async (
   adapterOptions: AdapterQueryOptions
 ) => {
   const [ctx] = await prepare(options, adapterOptions)
-  const {
-    configs: [config, userConfig]
-  } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
 
   const { logger, cache, ...base } = ctx
 
   await cache.set('base', base)
 
   const resolvedSelection = resolveQuerySelection({
-    config,
-    userConfig,
+    mergedConfig,
     inputAdapter: options.adapter,
     inputModel: adapterOptions.model
   })
@@ -149,25 +145,28 @@ export const run = async (
     throw new Error('No adapter found in config, please set adapters in config file')
   }
 
-  const mergedAdapters = mergeAdapterConfigs(
-    config?.adapters as Record<string, unknown> | undefined,
-    userConfig?.adapters as Record<string, unknown> | undefined
-  )
-  const mergedModelServices = {
-    ...(config?.modelServices ?? {}),
-    ...(userConfig?.modelServices ?? {})
-  }
+  const mergedModelServices = mergedConfig.modelServices ?? {}
   const serviceModels = listServiceModels(mergedModelServices)
-  const mergedDefaultModelService = pickFirstNonEmptyString(
-    [
-      userConfig?.defaultModelService,
-      config?.defaultModelService
-    ]
-  )
+  const mergedDefaultModelService = pickFirstNonEmptyString([mergedConfig.defaultModelService])
+  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
+  const supportsEffort = supportedEffortAdapters.has(adapterType)
+  const adapterCommonConfig = supportsEffort
+    ? resolveAdapterCommonConfig<Record<string, unknown> & { effort?: AdapterQueryOptions['effort'] }, 'effort'>(
+      adapterType,
+      {
+        mergedConfig
+      },
+      {
+        extraCommonKeys: ['effort']
+      }
+    )
+    : resolveAdapterCommonConfig(adapterType, {
+      mergedConfig
+    })
   const compatibilityResult = resolveAdapterModelCompatibility({
     adapter: adapterType,
     model: resolvedSelection.model,
-    adapterConfig: mergedAdapters?.[adapterType],
+    adapterConfig: adapterCommonConfig,
     serviceModels,
     preferredServiceKey: mergedDefaultModelService,
     preserveUnknownDefaultModel: true
@@ -177,11 +176,8 @@ export const run = async (
   }
 
   const adapter = await loadAdapter(adapterType)
-  await adapter.init?.(ctx)
   const resolvedModel = compatibilityResult.model ?? resolvedSelection.model
   const selectionWarnings = compatibilityResult.warning != null ? [compatibilityResult.warning] : undefined
-  const supportedEffortAdapters = new Set(['claude-code', 'codex', 'copilot', 'kimi', 'opencode'])
-  const supportsEffort = supportedEffortAdapters.has(adapterType)
   if (!supportsEffort && adapterOptions.effort != null) {
     throw new Error(`Adapter "${adapterType}" does not support effort`)
   }
@@ -189,13 +185,9 @@ export const run = async (
     ? resolveEffectiveEffort({
       explicitEffort: adapterOptions.effort,
       model: resolvedModel,
-      adapter: adapterType,
-      configEffort: userConfig?.effort ?? config?.effort,
-      adapters: mergedAdapters,
-      models: {
-        ...(config?.models ?? {}),
-        ...(userConfig?.models ?? {})
-      }
+      adapterConfig: adapterCommonConfig,
+      configEffort: mergedConfig.effort,
+      models: mergedConfig.models
     })
     : { effort: undefined as undefined }
 
@@ -226,7 +218,7 @@ export const run = async (
   })
   const assetPlanBaseRaw = ctx.assets == null || !supportsAssetPlan(adapterType)
     ? undefined
-    : buildAdapterAssetPlan({
+    : await buildAdapterAssetPlan({
       adapter: adapterType,
       bundle: ctx.assets,
       options: {
@@ -275,6 +267,7 @@ export const run = async (
         ...effectiveRuntimeMcpServers
       }
     }
+  await adapter.init?.(ctx)
   const nativeBridgeDisabledEvents: Array<keyof HookInputs> =
     adapterType === 'codex' && ctx.env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS

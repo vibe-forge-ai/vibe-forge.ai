@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- adapter contracts and loader types stay colocated for shared exports. */
 import type { Cache } from './cache'
 import type { EffortLevel, TaskRuntime } from './common'
 import type { Config } from './config'
@@ -34,10 +35,17 @@ export type SessionInfo =
   | ({ type: 'init' } & SessionInitInfo)
   | ({ type: 'summary' } & SessionSummaryInfo)
 
+export interface AdapterConfigState {
+  projectConfig?: Config
+  userConfig?: Config
+  mergedConfig: Config
+}
+
 export interface SessionInitInfo {
   uuid: string
   model: string
   adapter?: string
+  account?: string
   effort?: EffortLevel
   version: string
   tools: string[]
@@ -71,7 +79,101 @@ export interface AdapterCtx {
   }
   logger: Logger
   configs: [Config?, Config?]
+  configState?: AdapterConfigState
   assets?: WorkspaceAssetBundle
+}
+
+export interface AdapterAccountQuotaMetric {
+  id: string
+  label: string
+  value?: string
+  description?: string
+  primary?: boolean
+}
+
+export interface AdapterAccountQuotaInfo {
+  summary?: string
+  metrics?: AdapterAccountQuotaMetric[]
+  updatedAt?: number
+}
+
+export interface AdapterAccountActionDescriptor {
+  key: 'add' | 'refresh' | 'remove'
+  label: string
+  description?: string
+  scope?: 'adapter' | 'account'
+}
+
+export interface AdapterAccountSourceInfo {
+  id: string
+  label: string
+  description?: string
+}
+
+export interface AdapterAccountInfo {
+  key: string
+  title: string
+  description?: string
+  status?: 'ready' | 'missing' | 'error'
+  isDefault?: boolean
+  quota?: AdapterAccountQuotaInfo
+}
+
+export interface AdapterAccountDetail extends AdapterAccountInfo {
+  email?: string
+  planType?: string
+  accountType?: string
+  source?: AdapterAccountSourceInfo
+  actions?: AdapterAccountActionDescriptor[]
+}
+
+export interface AdapterAccountsQueryOptions {
+  model?: string
+  account?: string
+  refresh?: boolean
+}
+
+export interface AdapterAccountsResult {
+  defaultAccount?: string
+  accounts: AdapterAccountInfo[]
+  actions?: AdapterAccountActionDescriptor[]
+}
+
+export interface AdapterAccountDetailQueryOptions {
+  model?: string
+  account: string
+  refresh?: boolean
+}
+
+export interface AdapterAccountDetailResult {
+  account: AdapterAccountDetail
+}
+
+export interface AdapterAccountCredentialArtifact {
+  path: string
+  content: string
+}
+
+export interface AdapterManageAccountProgressEvent {
+  stream: 'stdout' | 'stderr' | 'status'
+  message: string
+}
+
+export interface AdapterManageAccountOptions {
+  action: 'add' | 'refresh' | 'remove'
+  model?: string
+  account?: string
+  refresh?: boolean
+  onProgress?: (event: AdapterManageAccountProgressEvent) => void
+  signal?: AbortSignal
+}
+
+export interface AdapterManageAccountResult {
+  accountKey?: string
+  message?: string
+  account?: AdapterAccountDetail
+  artifacts?: AdapterAccountCredentialArtifact[]
+  removeStoredAccount?: boolean
 }
 
 export interface AdapterQueryOptions {
@@ -80,6 +182,7 @@ export interface AdapterQueryOptions {
   runtime: TaskRuntime
   sessionId: string
   model?: string
+  account?: string
   effort?: EffortLevel
   mode?: 'stream' | 'direct'
   systemPrompt?: string
@@ -118,6 +221,18 @@ export interface Adapter {
   init?: (
     ctx: AdapterCtx
   ) => Promise<void>
+  getAccounts?: (
+    ctx: AdapterCtx,
+    options: AdapterAccountsQueryOptions
+  ) => Promise<AdapterAccountsResult>
+  getAccountDetail?: (
+    ctx: AdapterCtx,
+    options: AdapterAccountDetailQueryOptions
+  ) => Promise<AdapterAccountDetailResult>
+  manageAccount?: (
+    ctx: AdapterCtx,
+    options: AdapterManageAccountOptions
+  ) => Promise<AdapterManageAccountResult>
   query: (
     ctx: AdapterCtx,
     options: AdapterQueryOptions

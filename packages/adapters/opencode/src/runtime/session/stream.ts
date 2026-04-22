@@ -33,12 +33,12 @@ export const createStreamOpenCodeSession = async (
 ): Promise<AdapterSession> => {
   const adapterConfig = resolveAdapterConfig(ctx)
   const agent = resolveOpenCodeAgent({
-    agent: adapterConfig.agent,
-    planAgent: adapterConfig.planAgent,
+    agent: adapterConfig.native.agent,
+    planAgent: adapterConfig.native.planAgent,
     permissionMode: options.permissionMode
   })
-  const binaryPath = resolveOpenCodeBinaryPath(ctx.env)
-  const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.titlePrefix)
+  const binaryPath = resolveOpenCodeBinaryPath(ctx.env, ctx.cwd, adapterConfig.native.cli)
+  const title = buildOpenCodeSessionTitle(options.sessionId, adapterConfig.native.titlePrefix)
   const systemPromptFile = await ensureSystemPromptFile(ctx, options)
   const childEnv = await buildChildEnv({ ctx, options, adapterConfig, systemPromptFile })
   const cachedSession = options.type === 'resume' ? await ctx.cache.get('adapter.opencode.session') : undefined
@@ -100,7 +100,7 @@ export const createStreamOpenCodeSession = async (
         cwd: ctx.cwd,
         env,
         title,
-        maxCount: adapterConfig.sessionListMaxCount ?? 50,
+        maxCount: adapterConfig.native.sessionListMaxCount ?? 50,
         logger: ctx.logger
       })
     }
@@ -112,7 +112,7 @@ export const createStreamOpenCodeSession = async (
         files: normalized.files,
         model: cliModel,
         agent,
-        share: adapterConfig.share,
+        share: adapterConfig.native.share,
         title,
         dir: ctx.cwd,
         opencodeSessionId,
@@ -169,7 +169,7 @@ export const createStreamOpenCodeSession = async (
       cwd: ctx.cwd,
       env,
       title,
-      maxCount: adapterConfig.sessionListMaxCount ?? 50,
+      maxCount: adapterConfig.native.sessionListMaxCount ?? 50,
       logger: ctx.logger
     })
     if (resolvedSessionId) {

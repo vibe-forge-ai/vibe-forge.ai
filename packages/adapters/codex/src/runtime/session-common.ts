@@ -3,6 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
+import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
 import { createLogger } from '@vibe-forge/utils/create-logger'
@@ -10,7 +11,8 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveCodexBinaryPath } from '#~/paths.js'
 import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
-import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides } from './config'
+import { prepareCodexSessionHome } from './accounts'
+import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides, resolveCodexAdapterConfig } from './config'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
@@ -363,6 +365,7 @@ export interface CodexSessionBase {
   cwd: string
   binaryPath: string
   spawnEnv: NodeJS.ProcessEnv
+  resolvedAccount: string | undefined
   useYolo: boolean
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
@@ -430,14 +433,14 @@ async function buildThreadCacheKey(params: {
   approvalPolicy: CodexApprovalPolicy
   sandboxPolicy: CodexSandboxPolicy
   resolvedModel: string | undefined
+  authPath: string | undefined
   configFingerprintArgs: string[]
   features: Record<string, boolean>
 }) {
-  const authPath = resolve(process.env.HOME!, '.codex', 'auth.json')
   let authDigest: string | undefined
 
   try {
-    const authContent = await readFile(authPath, 'utf8')
+    const authContent = await readFile(params.authPath ?? resolve(process.env.HOME!, '.codex', 'auth.json'), 'utf8')
     authDigest = createHash('sha256').update(authContent).digest('hex')
   } catch {
     authDigest = undefined
@@ -463,22 +466,19 @@ export async function resolveSessionBase(
   ctx: AdapterCtx,
   options: AdapterQueryOptions
 ): Promise<CodexSessionBase> {
-  const { logger, cwd, env, cache, configs: [config, userConfig] } = ctx
+  const { logger, cwd, env, cache } = ctx
+  const { mergedConfig } = resolveConfigState({
+    configState: ctx.configState,
+    configs: ctx.configs
+  })
+  const { common: commonConfig, native: nativeConfig } = resolveCodexAdapterConfig(ctx)
 
   const {
     sandboxPolicy: configSandboxPolicy,
-    effort: configuredEffort,
     features: configFeatures,
     configOverrides: configOverridesValue
-  } = {
-    ...(config?.adapters?.codex ?? {}),
-    ...(userConfig?.adapters?.codex ?? {})
-  } as {
-    sandboxPolicy?: CodexSandboxPolicy
-    effort?: AdapterQueryOptions['effort']
-    features?: Record<string, boolean>
-    configOverrides?: Record<string, unknown>
-  }
+  } = nativeConfig
+  const configuredEffort = commonConfig.effort as AdapterQueryOptions['effort'] | undefined
 
   const useYolo = shouldUseYolo(options.permissionMode)
   const approvalPolicy = resolveApprovalPolicy(options.permissionMode)
@@ -487,10 +487,7 @@ export async function resolveSessionBase(
     : (configSandboxPolicy ?? { type: 'workspaceWrite' })
   const features: Record<string, boolean> = { ...(configFeatures ?? {}) }
 
-  const mergedModelServices: Record<string, ModelServiceConfig> = {
-    ...(config?.modelServices ?? {}),
-    ...(userConfig?.modelServices ?? {})
-  }
+  const mergedModelServices: Record<string, ModelServiceConfig> = mergedConfig.modelServices ?? {}
 
   const configOverrides = mergeCodexConfigOverrides(
     isPlainObject(configOverridesValue) ? configOverridesValue : {}
@@ -567,18 +564,9 @@ export async function resolveSessionBase(
   }
 
   const filteredMcpServers: Record<string, unknown> = options.assetPlan?.mcpServers ?? (() => {
-    const mergedMcpServers = {
-      ...(config?.mcpServers ?? {}),
-      ...(userConfig?.mcpServers ?? {})
-    }
-    const defaultInclude = [
-      ...(config?.defaultIncludeMcpServers ?? []),
-      ...(userConfig?.defaultIncludeMcpServers ?? [])
-    ]
-    const defaultExclude = [
-      ...(config?.defaultExcludeMcpServers ?? []),
-      ...(userConfig?.defaultExcludeMcpServers ?? [])
-    ]
+    const mergedMcpServers = mergedConfig.mcpServers ?? {}
+    const defaultInclude = mergedConfig.defaultIncludeMcpServers ?? []
+    const defaultExclude = mergedConfig.defaultExcludeMcpServers ?? []
     const includeMcpServers = options.mcpServers?.include ?? (defaultInclude.length > 0 ? defaultInclude : undefined)
     const excludeMcpServers = options.mcpServers?.exclude ?? (defaultExclude.length > 0 ? defaultExclude : undefined)
 
@@ -597,8 +585,14 @@ export async function resolveSessionBase(
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
 
-  const binaryPath = resolveCodexBinaryPath(env)
+  const binaryPath = resolveCodexBinaryPath(env, cwd)
   const spawnEnv = buildSpawnEnv(env)
+  const runtimeHome = await prepareCodexSessionHome({
+    ctx,
+    sessionId: options.sessionId,
+    account: options.account
+  })
+  spawnEnv.HOME = runtimeHome.homeDir
   await mkdir(resolve(spawnEnv.HOME ?? process.env.HOME!, '.codex'), { recursive: true })
 
   if (env.__VF_PROJECT_AI_CODEX_NATIVE_HOOKS_AVAILABLE__ === '1') {
@@ -615,6 +609,7 @@ export async function resolveSessionBase(
     approvalPolicy,
     sandboxPolicy,
     resolvedModel,
+    authPath: runtimeHome.authFilePath ?? resolve(spawnEnv.HOME, '.codex', 'auth.json'),
     configFingerprintArgs,
     features
   })
@@ -629,6 +624,7 @@ export async function resolveSessionBase(
     cwd,
     binaryPath,
     spawnEnv,
+    resolvedAccount: runtimeHome.accountKey,
     useYolo,
     approvalPolicy,
     sandboxPolicy,

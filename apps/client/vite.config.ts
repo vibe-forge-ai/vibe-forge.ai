@@ -1,15 +1,27 @@
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-const isDev = process.env.__VF_PROJECT_AI_CLIENT_MODE__ === 'dev'
+const clientMode = process.env.__VF_PROJECT_AI_CLIENT_MODE__
+const clientDeployMode = process.env.__VF_PROJECT_AI_CLIENT_DEPLOY_MODE__
+const isDev = clientMode === 'dev'
+const isStandalone = clientMode === 'standalone' ||
+  clientMode === 'independent' ||
+  clientDeployMode === 'standalone' ||
+  clientDeployMode === 'independent'
 const clientBase = isDev
+  ? (process.env.__VF_PROJECT_AI_CLIENT_BASE__ ?? '/')
+  : isStandalone
   ? (process.env.__VF_PROJECT_AI_CLIENT_BASE__ ?? '/')
   : '/__VF_PROJECT_AI_CLIENT_BASE__/'
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+const clientPackageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version?: string
+}
 
 const readGit = (args: string[]) =>
   execFileSync('git', args, {
@@ -30,8 +42,18 @@ const resolveDevGitRef = () => {
   }
 }
 
+const resolveGitCommitHash = () => {
+  try {
+    return readGit(['rev-parse', 'HEAD'])
+  } catch {
+    return ''
+  }
+}
+
 const devGitRef = isDev ? resolveDevGitRef() : ''
 process.env.__VF_PROJECT_AI_DEV_GIT_REF__ = devGitRef
+process.env.__VF_PROJECT_AI_CLIENT_VERSION__ ??= clientPackageJson.version ?? ''
+process.env.__VF_PROJECT_AI_CLIENT_COMMIT_HASH__ ??= resolveGitCommitHash()
 const normalizeTitle = (title: string) => title.trim().replace(/\s+\[[^\]]+\]$/, '')
 
 export default defineConfig({

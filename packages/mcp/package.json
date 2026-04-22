@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/mcp",
-  "version": "0.11.1",
+  "version": "2.0.0",
   "description": "Vibe Forge MCP server",
   "imports": {
     "#~/*.js": {
@@ -35,7 +35,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@vibe-forge/cli-helper": "workspace:^",
-    "@vibe-forge/config": "workspace:^",
+    "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/hooks": "workspace:^",
     "@vibe-forge/register": "workspace:^",
     "@vibe-forge/task": "workspace:^",

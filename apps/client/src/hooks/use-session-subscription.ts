@@ -3,6 +3,7 @@ import { useSWRConfig } from 'swr'
 
 import type { Session, WSEvent } from '@vibe-forge/core'
 
+import { revalidateConfigRelatedCaches } from '#~/hooks/session-subscription-cache'
 import { createSocket } from '#~/ws.js'
 
 interface SessionListResponse {
@@ -101,16 +102,24 @@ export function useSessionSubscription() {
 
       socket = createSocket({
         onMessage: (data: WSEvent) => {
-          if (disposed || data.type !== 'session_updated') return
-          const updatedSession = data.session as SessionUpdate
+          if (disposed) return
 
-          void mutate('/api/sessions', (prev: SessionListResponse | undefined) => {
-            return mergeSessionList(prev, updatedSession, 'active')
-          }, false)
+          if (data.type === 'session_updated') {
+            const updatedSession = data.session as SessionUpdate
 
-          void mutate('/api/sessions/archived', (prev: SessionListResponse | undefined) => {
-            return mergeSessionList(prev, updatedSession, 'archived')
-          }, false)
+            void mutate('/api/sessions', (prev: SessionListResponse | undefined) => {
+              return mergeSessionList(prev, updatedSession, 'active')
+            }, false)
+
+            void mutate('/api/sessions/archived', (prev: SessionListResponse | undefined) => {
+              return mergeSessionList(prev, updatedSession, 'archived')
+            }, false)
+            return
+          }
+
+          if (data.type === 'config_updated') {
+            void revalidateConfigRelatedCaches(mutate)
+          }
         },
         onClose: () => {
           if (disposed) return

@@ -1,5 +1,5 @@
 import type { Config } from './config'
-import type { Definition, Entity, Filter, Rule, Skill, Spec } from './definition'
+import type { Definition, DefinitionSource, Entity, Filter, Rule, Skill, Spec } from './definition'
 import type { PluginConfig, ResolvedPluginInstanceMetadata } from './plugin'
 
 export type WorkspaceAssetKind =
@@ -7,6 +7,7 @@ export type WorkspaceAssetKind =
   | 'spec'
   | 'entity'
   | 'skill'
+  | 'workspace'
   | 'mcpServer'
   | 'hookPlugin'
   | 'agent'
@@ -21,6 +22,7 @@ export interface AssetDiagnostic {
   adapter: WorkspaceAssetAdapter
   status: AssetDiagnosticStatus
   reason: string
+  source: DefinitionSource
   packageId?: string
   scope?: string
   instancePath?: string
@@ -60,6 +62,15 @@ export interface WorkspaceMcpPayload {
   config: NonNullable<Config['mcpServers']>[string]
 }
 
+export interface WorkspaceDefinitionPayload {
+  id: string
+  name?: string
+  description?: string
+  path: string
+  cwd: string
+  pattern?: string
+}
+
 export interface WorkspaceHookPluginPayload {
   packageName?: string
   config: unknown
@@ -75,6 +86,7 @@ export type WorkspaceAsset =
   | WorkspaceAssetBase<'spec', WorkspaceDocumentPayload<Definition<Spec>>>
   | WorkspaceAssetBase<'entity', WorkspaceDocumentPayload<Definition<Entity>>>
   | WorkspaceAssetBase<'skill', WorkspaceDocumentPayload<Definition<Skill>>>
+  | WorkspaceAssetBase<'workspace', WorkspaceDefinitionPayload>
   | WorkspaceAssetBase<'mcpServer', WorkspaceMcpPayload>
   | WorkspaceAssetBase<'hookPlugin', WorkspaceHookPluginPayload>
   | WorkspaceAssetBase<'agent', WorkspaceOpenCodeOverlayPayload>
@@ -84,6 +96,7 @@ export type WorkspaceAsset =
 
 export interface WorkspaceAssetBundle {
   cwd: string
+  configs?: [Config?, Config?]
   pluginConfigs?: PluginConfig
   pluginInstances: ResolvedPluginInstanceMetadata[]
   assets: WorkspaceAsset[]
@@ -91,6 +104,7 @@ export interface WorkspaceAssetBundle {
   specs: Array<Extract<WorkspaceAsset, { kind: 'spec' }>>
   entities: Array<Extract<WorkspaceAsset, { kind: 'entity' }>>
   skills: Array<Extract<WorkspaceAsset, { kind: 'skill' }>>
+  workspaces: Array<Extract<WorkspaceAsset, { kind: 'workspace' }>>
   mcpServers: Record<string, Extract<WorkspaceAsset, { kind: 'mcpServer' }>>
   hookPlugins: Array<Extract<WorkspaceAsset, { kind: 'hookPlugin' }>>
   opencodeOverlayAssets: Array<Extract<WorkspaceAsset, { kind: 'agent' | 'command' | 'mode' | 'nativePlugin' }>>
@@ -104,6 +118,7 @@ export interface PromptAssetResolution {
   entities: Definition<Entity>[]
   skills: Definition<Skill>[]
   specs: Definition<Spec>[]
+  workspaces: WorkspaceDefinitionPayload[]
   targetBody: string
   promptAssetIds: string[]
 }

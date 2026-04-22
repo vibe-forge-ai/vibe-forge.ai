@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, fetchApiJson, fetchApiJsonOrThrow, getApiErrorMessage } from '#~/api/base'
 
 vi.mock('#~/runtime-config.js', () => ({
-  getServerHostEnv: () => 'api.example.com',
-  getServerPortEnv: () => '8787'
+  createServerUrl: (path: string) => {
+    const relativePath = path.replace(/^\/+/, '')
+    return new URL(relativePath, 'http://api.example.com:8787/').toString()
+  },
+  getServerBaseUrl: () => 'http://api.example.com:8787'
 }))
 
 const makeJsonResponse = (body: unknown, init?: ResponseInit) => {
@@ -40,7 +43,10 @@ describe('api base helpers', () => {
     await expect(fetchApiJson<{ sessions: Array<{ id: string }> }>('/api/sessions')).resolves.toEqual({
       sessions: [{ id: 'sess-1' }]
     })
-    expect(fetchMock).toHaveBeenCalledWith('http://api.example.com:8787/api/sessions', undefined)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://api.example.com:8787/api/sessions')
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      credentials: 'include'
+    })
   })
 
   it('keeps supporting legacy success payloads', async () => {

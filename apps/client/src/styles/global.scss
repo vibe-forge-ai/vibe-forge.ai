@@ -28,6 +28,9 @@ html, body, #root, .ant-app {
 }
 
 :root {
+  --vf-visual-viewport-height: 100dvh;
+  --vf-keyboard-inset-bottom: 0px;
+
   --bg-color: #ffffff; /* 页面/主容器背景 */
   --sub-bg-color: #f6f6f6; /* 次级容器背景 */
   --sub-sub-bg-color: #e1e1e1; /* 更内层/弱化容器背景 */

@@ -1,0 +1,8 @@
+[submodule "infra/homebrew-tap"]
+	path = infra/homebrew-tap
+	url = https://github.com/vibe-forge-ai/homebrew-tap.git
+	branch = main
+[submodule "infra/windows/scoop-bucket"]
+	path = infra/windows/scoop-bucket
+	url = https://github.com/vibe-forge-ai/scoop-bucket.git
+	branch = main

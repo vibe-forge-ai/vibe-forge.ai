@@ -1,22 +1,44 @@
 import { App } from 'antd'
+import { useAtomValue, useSetAtom } from 'jotai'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSWRConfig } from 'swr'
+
+import type { ChatMessageContent, Session, SessionQueuedMessageMode } from '@vibe-forge/core'
 
 import {
   branchSessionFromMessage,
   createQueuedMessage,
   createSession,
   deleteQueuedMessage,
+  deleteSession,
   getApiErrorMessage,
+  getSessionMessages,
   moveQueuedMessage,
   reorderQueuedMessages,
   updateQueuedMessage
 } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
-import type { ChatMessageContent, Session, SessionQueuedMessageMode } from '@vibe-forge/core'
+
+import { getChatSessionTargetPrompt } from './chat-session-target'
+import type { ChatSessionTargetDraft } from './chat-session-target'
 import type { ChatSessionWorkspaceDraft } from './chat-session-workspace-draft'
+import {
+  clearOptimisticSessionDiscarded,
+  createOptimisticSessionCreation,
+  createOptimisticSessionId,
+  isOptimisticSessionDiscarded,
+  markOptimisticSessionCreationCreating,
+  markOptimisticSessionCreationFailed,
+  optimisticSessionCreationsAtom,
+  removeSessionFromList
+} from './optimistic-session-creation'
+import type {
+  OptimisticSessionCreation,
+  OptimisticSessionCreationOptions,
+  OptimisticSessionCreationRequest
+} from './optimistic-session-creation'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
 
@@ -27,6 +49,8 @@ export function useChatSessionActions({
   effort,
   permissionMode,
   adapter,
+  account,
+  sessionTargetDraft,
   workspaceDraft,
   onClearMessages
 }: {
@@ -36,6 +60,8 @@ export function useChatSessionActions({
   effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
+  account?: string
+  sessionTargetDraft?: ChatSessionTargetDraft
   workspaceDraft?: ChatSessionWorkspaceDraft
   onClearMessages: () => void
 }) {
@@ -44,8 +70,13 @@ export function useChatSessionActions({
   const navigate = useNavigate()
   const location = useLocation()
   const { mutate } = useSWRConfig()
+  const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
+  const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
   const [isCreating, setIsCreating] = useState(false)
   const isThinking = isCreating || session?.status === 'running'
+  const optimisticCreation = session?.id == null || session.id === ''
+    ? undefined
+    : optimisticCreations[session.id]
 
   const navigateWithCurrentSearch = useCallback((pathname: string) => {
     void navigate({
@@ -68,43 +99,194 @@ export function useChatSessionActions({
     }, false)
   }, [mutate])
 
+  const removeSessionFromCache = useCallback(async (id: string) => {
+    await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
+      if (prev?.sessions == null) return prev
+      return {
+        ...prev,
+        sessions: removeSessionFromList(prev.sessions, id)
+      }
+    }, false)
+    await mutate('/api/sessions/archived', (prev: { sessions: Session[] } | undefined) => {
+      if (prev?.sessions == null) return prev
+      return {
+        ...prev,
+        sessions: removeSessionFromList(prev.sessions, id)
+      }
+    }, false)
+  }, [mutate])
+
+  const removeOptimisticCreation = useCallback((id: string) => {
+    setOptimisticCreations((prev) => {
+      if (prev[id] == null) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }, [setOptimisticCreations])
+
+  const updateOptimisticCreation = useCallback((
+    id: string,
+    updater: (creation: OptimisticSessionCreation) => OptimisticSessionCreation
+  ) => {
+    setOptimisticCreations((prev) => {
+      const current = prev[id]
+      if (current == null) return prev
+      return {
+        ...prev,
+        [id]: updater(current)
+      }
+    })
+  }, [setOptimisticCreations])
+
+  const resolveCreatedSession = useCallback(async (id: string) => {
+    try {
+      const res = await getSessionMessages(id)
+      return res.session
+    } catch (err) {
+      console.warn('Failed to verify optimistic session creation state:', err)
+      return undefined
+    }
+  }, [])
+
+  const handleResolvedSessionCreation = useCallback(async (newSession: Session) => {
+    if (isOptimisticSessionDiscarded(newSession.id)) {
+      removeOptimisticCreation(newSession.id)
+      await removeSessionFromCache(newSession.id)
+      try {
+        await deleteSession(newSession.id, { force: true })
+      } catch (err) {
+        console.warn('Failed to delete discarded optimistic session:', err)
+      } finally {
+        clearOptimisticSessionDiscarded(newSession.id)
+      }
+      return false
+    }
+
+    await insertSessionIntoCache(newSession)
+    removeOptimisticCreation(newSession.id)
+    clearOptimisticSessionDiscarded(newSession.id)
+    return true
+  }, [insertSessionIntoCache, removeOptimisticCreation, removeSessionFromCache])
+
+  const buildCreateSessionOptions = useCallback((id: string): OptimisticSessionCreationOptions => {
+    const targetPrompt = getChatSessionTargetPrompt(sessionTargetDraft)
+    return {
+      id,
+      ...targetPrompt,
+      effort: effort === 'default' ? undefined : effort,
+      permissionMode,
+      adapter,
+      account,
+      workspace: workspaceDraft == null
+        ? undefined
+        : {
+          createWorktree: workspaceDraft.createWorktree,
+          worktreeEnvironment: workspaceDraft.worktreeEnvironment,
+          branch: workspaceDraft.branch
+        }
+    }
+  }, [
+    account,
+    adapter,
+    effort,
+    permissionMode,
+    sessionTargetDraft,
+    workspaceDraft
+  ])
+
+  const runSessionCreationRequest = useCallback(async (
+    request: OptimisticSessionCreationRequest
+  ) => {
+    try {
+      const { session: newSession } = await createSession(
+        request.title,
+        request.initialMessage,
+        request.initialContent,
+        request.model,
+        request.options
+      )
+
+      return await handleResolvedSessionCreation(newSession)
+    } catch (err) {
+      console.error(err)
+      const recoveredSession = await resolveCreatedSession(request.id)
+      if (recoveredSession != null) {
+        return await handleResolvedSessionCreation(recoveredSession)
+      }
+      if (isOptimisticSessionDiscarded(request.id)) {
+        removeOptimisticCreation(request.id)
+        await removeSessionFromCache(request.id)
+        clearOptimisticSessionDiscarded(request.id)
+        return false
+      }
+      const errorMessage = getApiErrorMessage(err, t('chat.sessionCreateFailedMessage'))
+      updateOptimisticCreation(request.id, creation => markOptimisticSessionCreationFailed(creation, errorMessage))
+      return false
+    }
+  }, [
+    handleResolvedSessionCreation,
+    removeOptimisticCreation,
+    removeSessionFromCache,
+    resolveCreatedSession,
+    t,
+    updateOptimisticCreation
+  ])
+
+  const startOptimisticSessionCreation = useCallback((
+    request: OptimisticSessionCreationRequest
+  ) => {
+    const creation = createOptimisticSessionCreation(request)
+    clearOptimisticSessionDiscarded(creation.session.id)
+    setIsCreating(true)
+    setOptimisticCreations(prev => ({
+      ...prev,
+      [creation.session.id]: creation
+    }))
+    void insertSessionIntoCache(creation.session)
+    navigateWithCurrentSearch(`/session/${creation.session.id}`)
+    void runSessionCreationRequest(request)
+  }, [insertSessionIntoCache, navigateWithCurrentSearch, runSessionCreationRequest, setOptimisticCreations])
+
+  const retrySessionCreation = useCallback(async () => {
+    if (optimisticCreation == null) {
+      return false
+    }
+
+    updateOptimisticCreation(optimisticCreation.session.id, markOptimisticSessionCreationCreating)
+    void insertSessionIntoCache({
+      ...optimisticCreation.session,
+      status: 'running'
+    })
+
+    return await runSessionCreationRequest(optimisticCreation.request)
+  }, [insertSessionIntoCache, optimisticCreation, runSessionCreationRequest, updateOptimisticCreation])
+
   useEffect(() => {
     if (!isCreating || session?.id == null || session.id === '') return
     setIsCreating(false)
   }, [isCreating, session?.id])
 
-  const send = useCallback(async (text: string, _mode?: SessionQueuedMessageMode) => {
+  const send = useCallback((text: string, _mode?: SessionQueuedMessageMode) => {
     if (text.trim() === '' || isThinking) return false
     if (!hasAvailableModels) {
       void message.warning(t('chat.modelConfigRequired'))
       return false
     }
+    if (optimisticCreation != null) {
+      void message.warning(t('chat.retrySessionCreationRequired'))
+      return false
+    }
 
     if (!session?.id) {
-      setIsCreating(true)
-      try {
-        const { session: newSession } = await createSession(undefined, text.trim(), undefined, modelForQuery, {
-          effort: effort === 'default' ? undefined : effort,
-          permissionMode,
-          adapter,
-          workspace: workspaceDraft == null
-            ? undefined
-            : {
-                createWorktree: workspaceDraft.createWorktree,
-                branch: workspaceDraft.branch
-              }
-        })
-
-        await insertSessionIntoCache(newSession)
-
-        navigateWithCurrentSearch(`/session/${newSession.id}`)
-        return true
-      } catch (err) {
-        console.error(err)
-        setIsCreating(false)
-        void message.error(getApiErrorMessage(err, 'Failed to create session'))
-        return false
-      }
+      const id = createOptimisticSessionId()
+      startOptimisticSessionCreation({
+        id,
+        initialMessage: text.trim(),
+        model: modelForQuery,
+        options: buildCreateSessionOptions(id)
+      })
+      return true
     }
 
     connectionManager.send(session.id, {
@@ -113,52 +295,37 @@ export function useChatSessionActions({
     })
     return true
   }, [
-    adapter,
+    buildCreateSessionOptions,
     hasAvailableModels,
     isThinking,
-    insertSessionIntoCache,
     message,
-    navigateWithCurrentSearch,
-    effort,
-    permissionMode,
-    workspaceDraft,
     modelForQuery,
+    optimisticCreation,
     session?.id,
+    startOptimisticSessionCreation,
     t
   ])
 
-  const sendContent = useCallback(async (content: ChatMessageContent[], _mode?: SessionQueuedMessageMode) => {
+  const sendContent = useCallback((content: ChatMessageContent[], _mode?: SessionQueuedMessageMode) => {
     if (content.length === 0 || isThinking) return false
     if (!hasAvailableModels) {
       void message.warning(t('chat.modelConfigRequired'))
       return false
     }
+    if (optimisticCreation != null) {
+      void message.warning(t('chat.retrySessionCreationRequired'))
+      return false
+    }
 
     if (!session?.id) {
-      setIsCreating(true)
-      try {
-        const { session: newSession } = await createSession(undefined, undefined, content, modelForQuery, {
-          effort: effort === 'default' ? undefined : effort,
-          permissionMode,
-          adapter,
-          workspace: workspaceDraft == null
-            ? undefined
-            : {
-                createWorktree: workspaceDraft.createWorktree,
-                branch: workspaceDraft.branch
-              }
-        })
-
-        await insertSessionIntoCache(newSession)
-
-        navigateWithCurrentSearch(`/session/${newSession.id}`)
-        return true
-      } catch (err) {
-        console.error(err)
-        setIsCreating(false)
-        void message.error(getApiErrorMessage(err, 'Failed to create session'))
-        return false
-      }
+      const id = createOptimisticSessionId()
+      startOptimisticSessionCreation({
+        id,
+        initialContent: content,
+        model: modelForQuery,
+        options: buildCreateSessionOptions(id)
+      })
+      return true
     }
 
     connectionManager.send(session.id, {
@@ -167,17 +334,14 @@ export function useChatSessionActions({
     })
     return true
   }, [
-    adapter,
+    buildCreateSessionOptions,
     hasAvailableModels,
-    insertSessionIntoCache,
     isThinking,
-    navigateWithCurrentSearch,
     message,
-    effort,
-    permissionMode,
-    workspaceDraft,
     modelForQuery,
+    optimisticCreation,
     session?.id,
+    startOptimisticSessionCreation,
     t
   ])
 
@@ -312,6 +476,7 @@ export function useChatSessionActions({
     isThinking,
     send,
     sendContent,
+    retrySessionCreation,
     enqueueContent,
     updateQueuedContent,
     removeQueuedContent,

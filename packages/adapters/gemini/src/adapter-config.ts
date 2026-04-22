@@ -1,3 +1,5 @@
+import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
+
 export {}
 
 declare module '@vibe-forge/types' {
@@ -9,6 +11,7 @@ declare module '@vibe-forge/types' {
 
   interface AdapterMap {
     gemini: {
+      cli?: ManagedNpmCliConfig
       disableExtensions?: boolean
       disableSubagents?: boolean
       disableAutoUpdate?: boolean

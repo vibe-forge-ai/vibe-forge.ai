@@ -54,11 +54,25 @@ export interface SkillSelection {
   list: string[]
 }
 
+export type EntityInheritanceMode = 'append' | 'prepend' | 'merge' | 'replace' | 'none'
+
+export interface EntityInheritance {
+  default?: EntityInheritanceMode
+  prompt?: EntityInheritanceMode
+  tags?: EntityInheritanceMode
+  rules?: EntityInheritanceMode
+  skills?: EntityInheritanceMode
+  tools?: EntityInheritanceMode
+  mcpServers?: EntityInheritanceMode
+}
+
 export interface Entity {
   name?: string
   always?: boolean
   description?: string
   tags?: string[]
+  extends?: string | string[]
+  inherit?: EntityInheritanceMode | EntityInheritance
   prompt?: string
   promptPath?: string
   rules?: RuleReference[]
@@ -78,7 +92,17 @@ export interface Skill {
   name?: string
   description?: string
   always?: boolean
+  dependencies?: Array<
+    | string
+    | {
+      name: string
+      source?: string
+      registry?: string
+    }
+  >
 }
+
+export type DefinitionSource = 'project' | 'plugin' | 'home'
 
 export interface Definition<T> {
   path: string
@@ -86,4 +110,5 @@ export interface Definition<T> {
   attributes: T
   resolvedName?: string
   resolvedInstancePath?: string
+  resolvedSource?: DefinitionSource
 }

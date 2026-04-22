@@ -9,6 +9,7 @@ import { BranchSwitcherResults } from './BranchSwitcherResults'
 export function BranchSwitcherDropdown({
   availableLocalBranches,
   currentBranchLabel,
+  compact = false,
   isBusy,
   isLoading,
   open,
@@ -24,6 +25,7 @@ export function BranchSwitcherDropdown({
   onSwitchBranch
 }: {
   availableLocalBranches: GitBranchSummary[]
+  compact?: boolean
   currentBranchLabel: string
   isBusy: boolean
   isLoading: boolean
@@ -142,7 +144,9 @@ export function BranchSwitcherDropdown({
     >
       <Button
         type='text'
-        className={`chat-header-git__trigger ${open ? 'is-open' : ''} ${isBusy ? 'is-disabled' : ''}`}
+        className={`chat-header-git__trigger chat-header-git__trigger--branch ${open ? 'is-open' : ''} ${
+          isBusy ? 'is-disabled' : ''
+        } ${compact ? 'is-compact' : ''}`.trim()}
         title={t('chat.gitBranchSwitcher')}
         aria-label={t('chat.gitBranchSwitcher')}
       >

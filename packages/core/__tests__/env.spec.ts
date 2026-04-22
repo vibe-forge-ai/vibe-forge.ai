@@ -26,6 +26,7 @@ describe('env helpers', () => {
     vi.stubEnv('__VF_PROJECT_AI_SERVER_LOG_LEVEL__', 'warn')
     vi.stubEnv('__VF_PROJECT_AI_PUBLIC_BASE_URL__', 'https://lan.example')
     vi.stubEnv('__VF_PROJECT_AI_SERVER_ACTION_SECRET__', 'action-secret')
+    vi.stubEnv('__VF_PROJECT_AI_CLIENT_MODE__', 'none')
 
     const { loadEnv } = await import('../src/env')
 
@@ -33,7 +34,8 @@ describe('env helpers', () => {
       __VF_PROJECT_AI_SERVER_DEBUG__: true,
       __VF_PROJECT_AI_SERVER_LOG_LEVEL__: 'warn',
       __VF_PROJECT_AI_PUBLIC_BASE_URL__: 'https://lan.example',
-      __VF_PROJECT_AI_SERVER_ACTION_SECRET__: 'action-secret'
+      __VF_PROJECT_AI_SERVER_ACTION_SECRET__: 'action-secret',
+      __VF_PROJECT_AI_CLIENT_MODE__: 'none'
     }))
   })
 })

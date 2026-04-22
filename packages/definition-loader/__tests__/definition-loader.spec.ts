@@ -7,10 +7,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { DefinitionLoader } from '#~/index.js'
 
 const tempDirs: string[] = []
+const originalRealHome = process.env.__VF_PROJECT_REAL_HOME__
 
 const createWorkspace = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'definition-loader-'))
+  const realHome = await mkdtemp(join(tmpdir(), 'definition-loader-home-'))
   tempDirs.push(dir)
+  tempDirs.push(realHome)
+  process.env.__VF_PROJECT_REAL_HOME__ = realHome
   return dir
 }
 
@@ -30,6 +34,11 @@ const installPluginPackage = async (workspace: string, packageName: string, file
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
+  if (originalRealHome == null) {
+    delete process.env.__VF_PROJECT_REAL_HOME__
+  } else {
+    process.env.__VF_PROJECT_REAL_HOME__ = originalRealHome
+  }
 })
 
 describe('definitionLoader', () => {
@@ -67,6 +76,7 @@ describe('definitionLoader', () => {
   it('loads and filters workspace skills by logical name', async () => {
     const workspace = await createWorkspace()
     const loader = new DefinitionLoader(workspace)
+    const realHome = process.env.__VF_PROJECT_REAL_HOME__
 
     await writeDocument(
       join(workspace, '.ai/skills/research/SKILL.md'),
@@ -76,11 +86,16 @@ describe('definitionLoader', () => {
       join(workspace, '.ai/skills/review/SKILL.md'),
       '---\ndescription: 代码评审\n---\n检查风险'
     )
+    await writeDocument(
+      join(realHome!, '.agents/skills/home-bridge/SKILL.md'),
+      '---\ndescription: 来自 home\n---\n整理本地偏好'
+    )
 
     const allSkills = await loader.loadDefaultSkills()
     const selectedSkills = await loader.loadSkills(['review'])
 
-    expect(allSkills.map(skill => skill.resolvedName)).toEqual(['research', 'review'])
+    expect(allSkills.map(skill => skill.resolvedName)).toEqual(['research', 'review', 'home-bridge'])
+    expect(allSkills.map(skill => skill.resolvedSource)).toEqual(['project', 'project', 'home'])
     expect(selectedSkills.map(skill => skill.resolvedName)).toEqual(['review'])
   })
 

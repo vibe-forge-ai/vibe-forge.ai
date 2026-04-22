@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/register",
-  "version": "0.11.0",
+  "version": "2.0.0",
   "exports": {
     "./dotenv": {
       "types": "./dotenv.d.ts",
@@ -19,6 +19,7 @@
   "types": "./index.d.ts",
   "dependencies": {
     "dotenv": "^16.4.5",
+    "esbuild": "^0.27.2",
     "esbuild-register": "^3.6.0"
   }
 }

@@ -1,0 +1,133 @@
+{
+  "publisher": "vibe-forge",
+  "name": "@vibe-forge/vscode-extension",
+  "displayName": "Vibe Forge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vibe Forge VS Code shell",
+  "license": "MIT",
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "files": [
+    "README.md",
+    "dist",
+    "package.json",
+    "resources"
+  ],
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "vibeForge",
+          "title": "Vibe Forge",
+          "icon": "resources/vibe-forge.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibeForge": [
+        {
+          "id": "vibeForge.sidebar",
+          "name": "Vibe Forge",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "vibeForge.open",
+        "title": "Vibe Forge: Open Workspace",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "vibeForge.reloadView",
+        "title": "Vibe Forge: Reload View",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vibeForge.openExternal",
+        "title": "Vibe Forge: Open in Browser",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "vibeForge.restartServer",
+        "title": "Vibe Forge: Restart Project Server",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "vibeForge.stopServer",
+        "title": "Vibe Forge: Stop Project Server",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "vibeForge.stopAllServers",
+        "title": "Vibe Forge: Stop All Servers",
+        "icon": "$(circle-slash)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "vibeForge.open",
+          "when": "view == vibeForge.sidebar",
+          "group": "navigation@1"
+        },
+        {
+          "command": "vibeForge.reloadView",
+          "when": "view == vibeForge.sidebar",
+          "group": "navigation@2"
+        },
+        {
+          "command": "vibeForge.restartServer",
+          "when": "view == vibeForge.sidebar",
+          "group": "navigation@3"
+        },
+        {
+          "command": "vibeForge.openExternal",
+          "when": "view == vibeForge.sidebar",
+          "group": "navigation@4"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Vibe Forge",
+      "properties": {
+        "vibeForge.bootstrapCommand": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional `vibe-forge-bootstrap` executable, command name, or wrapper command. When empty, the extension searches the workspace `node_modules/.bin` and system `PATH` for `vibe-forge-bootstrap` / `vfb`, then runs the `web` subcommand."
+        }
+      }
+    }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": false
+  },
+  "scripts": {
+    "build": "node ./scripts/clean-dist.mjs && pnpm run compile",
+    "compile": "tsc -p ./tsconfig.json",
+    "package": "pnpm run build && pnpm run package:vsix",
+    "package:vsix": "node ./scripts/package.mjs",
+    "publish:vsix": "node ./scripts/publish.mjs",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json --pretty false",
+    "watch": "tsc -w -p ./tsconfig.json"
+  },
+  "vibeForgeRelease": {
+    "extensionName": "vibe-forge-vscode-extension"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.95.0",
+    "@vscode/vsce": "^3.9.1"
+  }
+}

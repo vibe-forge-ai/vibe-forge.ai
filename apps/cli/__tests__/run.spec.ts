@@ -1,10 +1,19 @@
+/* eslint-disable max-lines -- run command coverage intentionally stays in one spec file for CLI matrix assertions. */
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
+
 import { Command } from 'commander'
 import { describe, expect, it, vi } from 'vitest'
+
+import { resolveConfiguredPluginInstances } from '@vibe-forge/utils/plugin-resolver'
 
 import {
   createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
+  getCliDefaultSkillNames,
+  getCliDefaultSkillPluginConfig,
   getDisallowedResumeFlags,
   getPrintableAssistantText,
   handlePrintEvent,
@@ -14,11 +23,52 @@ import {
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
+  resolveResumeAdapterOptions,
   resolveRunMode,
   shouldPrintResumeHint
 } from '#~/commands/run.js'
 
 describe('run command print output', () => {
+  it('lists entity helpers as default CLI skills', () => {
+    expect(getCliDefaultSkillNames()).toEqual([
+      'vf-cli-quickstart',
+      'vf-cli-print-mode',
+      'create-entity',
+      'update-entity'
+    ])
+  })
+
+  it('resolves default CLI skills without target workspace dependencies', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-cli-default-skills-'))
+
+    try {
+      const plugins = getCliDefaultSkillPluginConfig()
+      const pluginId = plugins[0]?.id
+
+      expect(typeof pluginId).toBe('string')
+      if (typeof pluginId !== 'string') {
+        throw new TypeError('Expected the default CLI skill plugin id to be a path.')
+      }
+      expect(isAbsolute(pluginId)).toBe(true)
+
+      const instances = await resolveConfiguredPluginInstances({
+        cwd: workspace,
+        plugins
+      })
+      const [instance] = instances
+
+      expect(instance?.sourceType).toBe('directory')
+      if (instance == null) {
+        throw new TypeError('Expected the default CLI skill plugin to resolve.')
+      }
+      expect(await readdir(join(instance.rootDir, 'skills'))).toEqual(
+        expect.arrayContaining(getCliDefaultSkillNames())
+      )
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
+  })
+
   it('extracts printable assistant text from string content', () => {
     expect(getPrintableAssistantText({
       id: 'msg-1',
@@ -176,17 +226,52 @@ describe('run command print output', () => {
     const command = new Command()
     command
       .option('--adapter <adapter>')
+      .option('--permission-mode <mode>')
       .option('--session-id <id>')
       .option('--no-inject-default-system-prompt')
       .option('--no-default-vibe-forge-mcp-server')
 
-    command.parse(['--adapter', 'codex', '--session-id', 'abc'], { from: 'user' })
+    command.parse(['--adapter', 'codex', '--permission-mode', 'dontAsk', '--session-id', 'abc'], { from: 'user' })
 
     expect(getDisallowedResumeFlags({
       print: false,
       adapter: 'codex',
-      sessionId: 'abc'
+      permissionMode: 'dontAsk',
+      sessionId: 'abc',
+      model: 'gpt-5.4',
+      effort: 'high',
+      includeTool: ['read'],
+      excludeTool: ['edit']
     }, command)).toEqual(['--adapter', '--session-id'])
+  })
+
+  it('merges resume-time model, effort, and tool overrides into cached adapter options', () => {
+    expect(resolveResumeAdapterOptions({
+      runtime: 'cli',
+      sessionId: 'session-demo',
+      mode: 'direct',
+      model: 'gpt-5.4',
+      effort: 'medium',
+      tools: {
+        include: ['read'],
+        exclude: ['edit']
+      }
+    }, {
+      model: 'gpt-5.4-mini',
+      effort: 'high',
+      includeTool: ['grep'],
+      excludeTool: ['bash']
+    })).toEqual({
+      runtime: 'cli',
+      sessionId: 'session-demo',
+      mode: 'direct',
+      model: 'gpt-5.4-mini',
+      effort: 'high',
+      tools: {
+        include: ['read', 'grep'],
+        exclude: ['edit', 'bash']
+      }
+    })
   })
 
   it('parses structured stream-json input into a message control event', () => {

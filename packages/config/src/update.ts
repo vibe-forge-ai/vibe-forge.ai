@@ -1,10 +1,14 @@
-import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, resolve } from 'node:path'
 import process from 'node:process'
 
 import type { Config, ConfigSource } from '@vibe-forge/types'
+import {
+  resolvePrimaryWorkspaceFolder,
+  resolveProjectConfigDir,
+  resolveProjectWorkspaceFolder
+} from '@vibe-forge/utils'
 import { dump, load } from 'js-yaml'
 
 import { resetConfigCache } from './load'
@@ -38,55 +42,23 @@ const userConfigPaths = [
   './infra/.ai.dev.config.yml'
 ]
 
-const PRIMARY_WORKSPACE_ENV = '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__'
-
-const resolvePrimaryWorkspaceFolder = (
-  cwd: string,
+export const resolveWritableConfigPath = (
+  workspaceFolder: string,
+  source: ConfigSource,
   env: Record<string, string | null | undefined> = process.env
 ) => {
-  const normalizedWorkspaceFolder = resolve(cwd)
-  const explicitPrimaryWorkspaceFolder = env[PRIMARY_WORKSPACE_ENV]?.trim()
-  if (explicitPrimaryWorkspaceFolder) {
-    const resolvedPrimaryWorkspaceFolder = resolve(explicitPrimaryWorkspaceFolder)
-    return resolvedPrimaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : resolvedPrimaryWorkspaceFolder
-  }
-
-  try {
-    const result = spawnSync('git', ['rev-parse', '--git-common-dir'], {
-      cwd,
-      encoding: 'utf8'
-    })
-    if (result.status !== 0) {
-      return undefined
-    }
-
-    const gitCommonDir = result.stdout?.trim()
-    if (!gitCommonDir) {
-      return undefined
-    }
-
-    const primaryWorkspaceFolder = dirname(resolve(cwd, gitCommonDir))
-    return primaryWorkspaceFolder === normalizedWorkspaceFolder
-      ? undefined
-      : primaryWorkspaceFolder
-  } catch {
-    return undefined
-  }
-}
-
-const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource) => {
+  const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(workspaceFolder, env)
+  const configFolder = resolveProjectConfigDir(workspaceFolder, env) ?? resolvedWorkspaceFolder
   const paths = source === 'project' ? projectConfigPaths : userConfigPaths
   for (const path of paths) {
-    const resolvedPath = resolve(workspaceFolder, path)
+    const resolvedPath = resolve(configFolder, path)
     if (existsSync(resolvedPath)) {
       return resolvedPath
     }
   }
 
   if (source === 'user') {
-    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(workspaceFolder)
+    const primaryWorkspaceFolder = resolvePrimaryWorkspaceFolder(resolvedWorkspaceFolder, env)
     if (primaryWorkspaceFolder != null) {
       for (const path of paths) {
         const resolvedPath = resolve(primaryWorkspaceFolder, path)
@@ -98,7 +70,7 @@ const resolveWritableConfigPath = (workspaceFolder: string, source: ConfigSource
     }
   }
 
-  return resolve(workspaceFolder, paths[0])
+  return resolve(configFolder, paths[0])
 }
 
 const parseConfigContent = (format: string, content: string) => {
@@ -212,6 +184,16 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'notifications')
       )
       updateField(
+        'skills',
+        mergeMaskedValues(sectionValue.skills, config.skills) as Config['skills'],
+        hasOwn(sectionValue, 'skills')
+      )
+      updateField(
+        'webAuth',
+        mergeMaskedValues(sectionValue.webAuth, config.webAuth) as Config['webAuth'],
+        hasOwn(sectionValue, 'webAuth')
+      )
+      updateField(
         'shortcuts',
         mergeMaskedValues(sectionValue.shortcuts, config.shortcuts) as Config['shortcuts'],
         hasOwn(sectionValue, 'shortcuts')
@@ -220,6 +202,10 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
     }
     case 'conversation': {
       updateField('conversation', mergeMaskedValues(sectionValue, config.conversation) as Config['conversation'])
+      return nextConfig
+    }
+    case 'auth': {
+      updateField('webAuth', mergeMaskedValues(sectionValue, config.webAuth) as Config['webAuth'])
       return nextConfig
     }
     case 'models': {
@@ -233,6 +219,13 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
       updateField(
         'modelServices',
         mergeMaskedValues(sectionValue, config.modelServices) as Config['modelServices']
+      )
+      return nextConfig
+    }
+    case 'workspaces': {
+      updateField(
+        'workspaces',
+        mergeMaskedValues(sectionValue, config.workspaces) as Config['workspaces']
       )
       return nextConfig
     }

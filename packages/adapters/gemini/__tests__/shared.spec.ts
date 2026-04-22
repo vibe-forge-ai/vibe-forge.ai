@@ -1,9 +1,14 @@
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
 import type { AdapterCtx, Config } from '@vibe-forge/types'
+import { resolveManagedNpmCliPaths } from '@vibe-forge/utils/managed-npm-cli'
 
-import { resolveGeminiBinaryPath } from '#~/paths.js'
+import { GEMINI_CLI_PACKAGE, GEMINI_CLI_VERSION, resolveGeminiBinaryPath } from '#~/paths.js'
 import { buildGeminiNativeHooksSettings } from '#~/runtime/native-hooks.js'
 import {
   buildGeminiDirectArgs,
@@ -43,6 +48,32 @@ describe('resolveGeminiBinaryPath', () => {
     expect(resolveGeminiBinaryPath({
       __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: '/usr/local/bin/gemini'
     })).toBe('/usr/local/bin/gemini')
+  })
+
+  it('uses a managed binary from the primary workspace shared cache', async () => {
+    const primary = await mkdtemp(join(tmpdir(), 'vf-gemini-primary-'))
+    const worktree = await mkdtemp(join(tmpdir(), 'vf-gemini-worktree-'))
+    try {
+      const env = {
+        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primary
+      }
+      const paths = resolveManagedNpmCliPaths({
+        adapterKey: 'gemini',
+        binaryName: 'gemini',
+        cwd: worktree,
+        env,
+        packageName: GEMINI_CLI_PACKAGE,
+        version: GEMINI_CLI_VERSION
+      })
+      await mkdir(paths.binDir, { recursive: true })
+      await writeFile(paths.binaryPath, '#!/bin/sh\n')
+      await chmod(paths.binaryPath, 0o755)
+
+      expect(resolveGeminiBinaryPath(env, worktree)).toBe(await realpath(paths.binaryPath))
+    } finally {
+      await rm(primary, { recursive: true, force: true })
+      await rm(worktree, { recursive: true, force: true })
+    }
   })
 })
 

@@ -8,6 +8,7 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ShortcutTooltip } from '#~/components/ShortcutTooltip'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type {
   SenderToolbarData,
   SenderToolbarHandlers,
@@ -45,6 +46,7 @@ export function EffortSelectControl({
   >
 }) {
   const { t } = useTranslation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { isThinking, modelUnavailable, showEffortSelect, effort, isMac } = state
   const { effortOptions, composerControlShortcuts } = data
   const { effortSelectRef } = refs
@@ -56,6 +58,7 @@ export function EffortSelectControl({
     onCloseReferenceActions,
     onEffortChange
   } = handlers
+  const isCompactControl = isCompactLayout || isTouchInteraction
 
   const decoratedEffortOptions = useMemo(() => {
     return effortOptions.map(option => ({
@@ -79,7 +82,7 @@ export function EffortSelectControl({
       targetClassName='sender-control-tooltip-target'
       enabled={!showEffortSelect}
     >
-      <div className='sender-select-shell'>
+      <div className={`sender-select-shell ${isCompactControl ? 'sender-select-shell--compact' : ''}`.trim()}>
         {!showEffortSelect && !(modelUnavailable || isThinking) && (
           <button
             type='button'
@@ -94,7 +97,7 @@ export function EffortSelectControl({
         )}
         <Select
           ref={effortSelectRef}
-          className='effort-select'
+          className={`effort-select ${isCompactControl ? 'effort-select--compact' : ''}`.trim()}
           classNames={{ popup: { root: 'effort-select-popup' } }}
           open={showEffortSelect}
           value={effort}
@@ -120,16 +123,18 @@ export function EffortSelectControl({
           optionLabelProp='label'
           popupMatchSelectWidth={false}
           menuItemSelectedIcon={<span className='material-symbols-rounded effort-select-check-icon'>check</span>}
-          suffixIcon={renderSelectArrow((event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            if (showEffortSelect) {
-              onShowEffortSelectChange(false)
-              onQueueTextareaFocusRestore()
-              return
-            }
-            onOpenEffortSelector()
-          })}
+          suffixIcon={isCompactControl
+            ? null
+            : renderSelectArrow((event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              if (showEffortSelect) {
+                onShowEffortSelectChange(false)
+                onQueueTextareaFocusRestore()
+                return
+              }
+              onOpenEffortSelector()
+            })}
         />
       </div>
     </ShortcutTooltip>

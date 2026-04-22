@@ -1,7 +1,7 @@
 import type { GitChangeSummary, GitHeadCommitSummary } from '@vibe-forge/types'
 
-import { parseGitHeadCommit, parseGitNumstat, summarizeGitNumstat } from './parsers'
 import { resolveGitErrorMessage, runGit } from './runner'
+import { parseGitHeadCommit, parseGitNumstat, summarizeGitNumstat } from './summary-parsers'
 
 const EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
@@ -14,9 +14,29 @@ const isMissingHeadError = (error: unknown) => {
   return /does not have any commits yet/i.test(message) || /ambiguous argument 'HEAD'/i.test(message)
 }
 
+const isGitOutputOverflowError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  const message = resolveGitErrorMessage(error, '')
+  return (
+    (error as NodeJS.ErrnoException).code === 'ENOBUFS' ||
+    /maxbuffer/i.test(message) ||
+    /stdout maxbuffer length exceeded/i.test(message)
+  )
+}
+
 const listUntrackedFiles = async (repositoryRoot: string) => {
-  const { stdout } = await runGit(['ls-files', '--others', '--exclude-standard', '-z'], repositoryRoot)
-  return stdout.split('\0').map(item => item.trim()).filter(Boolean)
+  try {
+    const { stdout } = await runGit(['ls-files', '--others', '--exclude-standard', '-z'], repositoryRoot)
+    return stdout.split('\0').map(item => item.trim()).filter(Boolean)
+  } catch (error) {
+    if (isGitOutputOverflowError(error)) {
+      return []
+    }
+    throw error
+  }
 }
 
 const getUntrackedNumstatEntries = async (repositoryRoot: string) => {

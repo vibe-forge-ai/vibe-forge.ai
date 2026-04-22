@@ -1,26 +1,55 @@
 import './KnowledgeBaseView.scss'
 
-import { App, Tabs } from 'antd'
+import { App, Form } from 'antd'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { EntitySummary, RuleSummary, SpecSummary } from '#~/api.js'
+import { createSkill, getApiErrorMessage } from '#~/api.js'
+import type { EntitySummary, RuleSummary, SkillSummary, SpecSummary } from '#~/api.js'
+import { PageShell } from '#~/components/layout/PageShell.js'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useQueryParams } from '#~/hooks/useQueryParams.js'
+import { CreateSkillModal } from './components/CreateSkillModal.js'
+import type { CreateSkillFormValues } from './components/CreateSkillModal.js'
 import { EntitiesTab } from './components/EntitiesTab.js'
 import { FlowsTab } from './components/FlowsTab.js'
-import { KnowledgeBaseHeader } from './components/KnowledgeBaseHeader.js'
+import { KnowledgeContentControls } from './components/KnowledgeContentControls.js'
+import { KnowledgeMobilePanel } from './components/KnowledgeMobilePanel.js'
+import { KnowledgeSidebar } from './components/KnowledgeSidebar.js'
 import { RulesTab } from './components/RulesTab.js'
 import { SkillsTab } from './components/SkillsTab.js'
-import { TabLabel } from './components/TabLabel.js'
+import {
+  ALL_REGISTRIES,
+  ALL_SKILL_SOURCES,
+  isSkillHubInstallFilter,
+  isSkillHubSortKey
+} from './components/skill-hub-utils.js'
+import type { SkillHubInstallFilter, SkillHubSortKey } from './components/skill-hub-utils.js'
 
 interface KnowledgeQueryParams extends Record<string, string> {
   kbTab: string
+  skillInstall: string
+  skillMarketSearch: string
+  skillProjectSearch: string
+  skillRegistry: string
+  skillSort: string
+  skillSource: string
+  skillView: string
 }
+
+const toSkillViewMode = (value: string): 'project' | 'market' => value === 'market' ? 'market' : 'project'
+const toSkillHubInstallFilter = (value: string): SkillHubInstallFilter => (
+  isSkillHubInstallFilter(value) ? value : 'all'
+)
+const toSkillHubSortKey = (value: string): SkillHubSortKey => (
+  isSkillHubSortKey(value) ? value : 'default'
+)
 
 export function KnowledgeBaseView() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const {
     data: specsRes,
     isLoading: isSpecsLoading,
@@ -36,6 +65,10 @@ export function KnowledgeBaseView() {
     isLoading: isRulesLoading,
     mutate: mutateRules
   } = useSWR<{ rules: RuleSummary[] }>('/api/ai/rules')
+  const {
+    data: skillsRes,
+    mutate: mutateSkills
+  } = useSWR<{ skills: SkillSummary[] }>('/api/ai/skills')
 
   const specs = specsRes?.specs ?? []
   const entities = entitiesRes?.entities ?? []
@@ -46,13 +79,71 @@ export function KnowledgeBaseView() {
   const [entityQuery, setEntityQuery] = React.useState('')
   const [entityTagFilter, setEntityTagFilter] = React.useState<string[]>([])
   const [ruleQuery, setRuleQuery] = React.useState('')
+  const [isKnowledgeSidebarCollapsed, setKnowledgeSidebarCollapsed] = React.useState(false)
+  const [isMobileKnowledgePanelOpen, setMobileKnowledgePanelOpen] = React.useState(false)
+  const [createSkillOpen, setCreateSkillOpen] = React.useState(false)
+  const [savingSkill, setSavingSkill] = React.useState(false)
+  const [createSkillForm] = Form.useForm<CreateSkillFormValues>()
 
   const { values, update } = useQueryParams<KnowledgeQueryParams>({
-    keys: ['kbTab'],
+    keys: [
+      'kbTab',
+      'skillView',
+      'skillProjectSearch',
+      'skillMarketSearch',
+      'skillRegistry',
+      'skillSource',
+      'skillInstall',
+      'skillSort'
+    ],
     defaults: {
-      kbTab: 'skills'
+      kbTab: 'skills',
+      skillView: 'project',
+      skillProjectSearch: '',
+      skillMarketSearch: '',
+      skillRegistry: ALL_REGISTRIES,
+      skillSource: ALL_SKILL_SOURCES,
+      skillInstall: 'all',
+      skillSort: 'default'
+    },
+    omit: {
+      skillView: value => value === 'project',
+      skillProjectSearch: value => value === '',
+      skillMarketSearch: value => value === '',
+      skillRegistry: value => value === ALL_REGISTRIES,
+      skillSource: value => value === ALL_SKILL_SOURCES,
+      skillInstall: value => value === 'all',
+      skillSort: value => value === 'default'
     }
   })
+  const skillViewMode = toSkillViewMode(values.skillView)
+  const skillInstallFilter = toSkillHubInstallFilter(values.skillInstall)
+  const skillSortKey = toSkillHubSortKey(values.skillSort)
+  const skillProjectQuery = values.skillProjectSearch
+  const skillMarketQuery = values.skillMarketSearch
+  const skillRegistry = values.skillRegistry || ALL_REGISTRIES
+  const skillSourceFilter = values.skillSource || ALL_SKILL_SOURCES
+  const updateSkillProjectQuery = React.useCallback((value: string) => {
+    update({ skillProjectSearch: value })
+  }, [update])
+  const updateSkillViewMode = React.useCallback((value: 'project' | 'market') => {
+    update({ skillView: value })
+  }, [update])
+  const updateSkillMarketQuery = React.useCallback((value: string) => {
+    update({ skillMarketSearch: value })
+  }, [update])
+  const updateSkillRegistry = React.useCallback((value: string) => {
+    update({ skillRegistry: value })
+  }, [update])
+  const updateSkillSourceFilter = React.useCallback((value: string) => {
+    update({ skillSource: value })
+  }, [update])
+  const updateSkillInstallFilter = React.useCallback((value: SkillHubInstallFilter) => {
+    update({ skillInstall: value })
+  }, [update])
+  const updateSkillSortKey = React.useCallback((value: SkillHubSortKey) => {
+    update({ skillSort: value })
+  }, [update])
 
   const specTagOptions = React.useMemo(() => {
     const tags = new Set<string>()
@@ -111,7 +202,7 @@ export function KnowledgeBaseView() {
   }, [ruleQuery, rules])
 
   const handleRefresh = async () => {
-    await Promise.all([mutateSpecs(), mutateEntities(), mutateRules()])
+    await Promise.all([mutateSpecs(), mutateEntities(), mutateRules(), mutateSkills()])
     void message.success(t('knowledge.actions.refreshed'))
   }
 
@@ -132,11 +223,28 @@ export function KnowledgeBaseView() {
   }
 
   const handleCreateSkill = () => {
-    message.info(t('knowledge.skills.createHint'))
+    createSkillForm.resetFields()
+    setCreateSkillOpen(true)
   }
 
-  const handleImportSkill = () => {
-    message.info(t('knowledge.skills.importHint'))
+  const handleSaveSkill = async () => {
+    const values = await createSkillForm.validateFields()
+    setSavingSkill(true)
+    try {
+      await createSkill({
+        name: values.name,
+        description: values.description,
+        body: values.body
+      })
+      setCreateSkillOpen(false)
+      createSkillForm.resetFields()
+      await mutateSkills()
+      void message.success(t('knowledge.skills.createSuccess'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('knowledge.skills.createFailed')))
+    } finally {
+      setSavingSkill(false)
+    }
   }
 
   const handleCreateRule = () => {
@@ -147,28 +255,81 @@ export function KnowledgeBaseView() {
     message.info(t('knowledge.rules.importHint'))
   }
 
-  const tabs = [
+  const isCompactView = isCompactLayout || isTouchInteraction
+  const getContentControls = (onCreate: () => void) =>
+    isCompactView
+      ? (
+        <KnowledgeContentControls
+          onCreate={onCreate}
+          onExpandSidebar={() => setMobileKnowledgePanelOpen(true)}
+        />
+      )
+      : isKnowledgeSidebarCollapsed
+      ? (
+        <KnowledgeContentControls
+          onCreate={onCreate}
+          onExpandSidebar={() => setKnowledgeSidebarCollapsed(false)}
+        />
+      )
+      : undefined
+
+  const skillCount = React.useMemo(() => {
+    if (skillsRes?.skills != null) return skillsRes.skills.length
+    const names = new Set<string>()
+    specs.forEach(spec => {
+      spec.skills?.forEach(skill => names.add(skill))
+    })
+    entities.forEach(entity => {
+      entity.skills?.forEach(skill => names.add(skill))
+    })
+    return names.size
+  }, [entities, skillsRes?.skills, specs])
+
+  const sections = [
     {
       key: 'skills',
-      label: <TabLabel icon='psychology' label={t('knowledge.tabs.skills')} />,
-      children: (
+      icon: 'psychology',
+      label: t('knowledge.tabs.skills'),
+      description: t('knowledge.skills.desc'),
+      count: skillCount,
+      content: (
         <SkillsTab
+          installFilter={skillInstallFilter}
+          leading={getContentControls(handleCreateSkill)}
+          marketQuery={skillMarketQuery}
+          projectQuery={skillProjectQuery}
+          registry={skillRegistry}
+          sortKey={skillSortKey}
+          sourceFilter={skillSourceFilter}
+          viewMode={skillViewMode}
+          onRefresh={handleRefresh}
           onCreate={handleCreateSkill}
-          onImport={handleImportSkill}
+          onInstallFilterChange={updateSkillInstallFilter}
+          onMarketQueryChange={updateSkillMarketQuery}
+          onRegistryChange={updateSkillRegistry}
+          onSortChange={updateSkillSortKey}
+          onSourceFilterChange={updateSkillSourceFilter}
+          onViewModeChange={updateSkillViewMode}
         />
       )
     },
     {
       key: 'entities',
-      label: <TabLabel icon='group_work' label={t('knowledge.tabs.entities')} />,
-      children: (
+      icon: 'group_work',
+      label: t('knowledge.tabs.entities'),
+      description: t('knowledge.entities.desc'),
+      count: entities.length,
+      content: (
         <EntitiesTab
           entities={entities}
           filteredEntities={filteredEntities}
+          hideContentSearch={isCompactView}
           isLoading={isEntitiesLoading}
+          leading={getContentControls(handleCreateEntity)}
           query={entityQuery}
           tagOptions={entityTagOptions}
           tagFilter={entityTagFilter}
+          onRefresh={handleRefresh}
           onQueryChange={setEntityQuery}
           onTagFilterChange={setEntityTagFilter}
           onCreate={handleCreateEntity}
@@ -178,15 +339,21 @@ export function KnowledgeBaseView() {
     },
     {
       key: 'flows',
-      label: <TabLabel icon='account_tree' label={t('knowledge.tabs.flows')} />,
-      children: (
+      icon: 'account_tree',
+      label: t('knowledge.tabs.flows'),
+      description: t('knowledge.flows.desc'),
+      count: specs.length,
+      content: (
         <FlowsTab
           specs={specs}
           filteredSpecs={filteredSpecs}
+          hideContentSearch={isCompactView}
           isLoading={isSpecsLoading}
+          leading={getContentControls(handleCreateSpec)}
           query={specQuery}
           tagOptions={specTagOptions}
           tagFilter={specTagFilter}
+          onRefresh={handleRefresh}
           onQueryChange={setSpecQuery}
           onTagFilterChange={setSpecTagFilter}
           onCreate={handleCreateSpec}
@@ -196,13 +363,19 @@ export function KnowledgeBaseView() {
     },
     {
       key: 'rules',
-      label: <TabLabel icon='gavel' label={t('knowledge.tabs.rules')} />,
-      children: (
+      icon: 'gavel',
+      label: t('knowledge.tabs.rules'),
+      description: t('knowledge.rules.desc'),
+      count: rules.length,
+      content: (
         <RulesTab
           rules={rules}
           filteredRules={filteredRules}
+          hideContentSearch={isCompactView}
           isLoading={isRulesLoading}
+          leading={getContentControls(handleCreateRule)}
           query={ruleQuery}
+          onRefresh={handleRefresh}
           onQueryChange={setRuleQuery}
           onCreate={handleCreateRule}
           onImport={handleImportRule}
@@ -211,24 +384,129 @@ export function KnowledgeBaseView() {
     }
   ]
 
-  const tabKeys = React.useMemo(() => tabs.map(tab => tab.key), [tabs])
-  const activeTab = tabKeys.includes(values.kbTab) ? values.kbTab : tabKeys[0]
+  const sectionKeys = React.useMemo(() => sections.map(section => section.key), [sections])
+  const activeSectionKey = sectionKeys.includes(values.kbTab) ? values.kbTab : sectionKeys[0]
+  const activeSection = React.useMemo(
+    () => sections.find(section => section.key === activeSectionKey) ?? sections[0],
+    [activeSectionKey, sections]
+  )
+  const activeSearchValue = activeSectionKey === 'skills'
+    ? skillProjectQuery
+    : activeSectionKey === 'entities'
+    ? entityQuery
+    : activeSectionKey === 'flows'
+    ? specQuery
+    : activeSectionKey === 'rules'
+    ? ruleQuery
+    : ''
+  const activeSearchPlaceholder = activeSectionKey === 'skills'
+    ? t('knowledge.skills.searchProject')
+    : t('knowledge.filters.searchActive')
+  const showMobileSearch = !(activeSectionKey === 'skills' && skillViewMode === 'market')
 
   React.useEffect(() => {
-    if (values.kbTab !== activeTab) {
-      update({ kbTab: activeTab })
+    if (!isCompactView) {
+      setMobileKnowledgePanelOpen(false)
     }
-  }, [activeTab, update, values.kbTab])
+  }, [isCompactView])
+
+  const handleActiveSearchChange = (value: string) => {
+    if (activeSectionKey === 'skills') {
+      updateSkillProjectQuery(value)
+      return
+    }
+    if (activeSectionKey === 'entities') {
+      setEntityQuery(value)
+      return
+    }
+    if (activeSectionKey === 'flows') {
+      setSpecQuery(value)
+      return
+    }
+    if (activeSectionKey === 'rules') {
+      setRuleQuery(value)
+    }
+  }
+
+  const handleSidebarCreate = () => {
+    if (isCompactView) {
+      setMobileKnowledgePanelOpen(false)
+    }
+
+    if (activeSectionKey === 'skills') {
+      handleCreateSkill()
+      return
+    }
+    if (activeSectionKey === 'entities') {
+      handleCreateEntity()
+      return
+    }
+    if (activeSectionKey === 'flows') {
+      handleCreateSpec()
+      return
+    }
+    if (activeSectionKey === 'rules') {
+      handleCreateRule()
+    }
+  }
+
+  const handleSelectSection = (key: string) => {
+    update({ kbTab: key })
+    if (isCompactView) {
+      setMobileKnowledgePanelOpen(false)
+    }
+  }
+
+  React.useEffect(() => {
+    if (values.kbTab !== activeSectionKey) {
+      update({ kbTab: activeSectionKey })
+    }
+  }, [activeSectionKey, update, values.kbTab])
 
   return (
-    <div className='knowledge-base-view'>
-      <KnowledgeBaseHeader onRefresh={handleRefresh} />
-      <Tabs
-        className='knowledge-base-view__tabs'
-        items={tabs}
-        activeKey={activeTab}
-        onChange={(key) => update({ kbTab: key })}
+    <PageShell
+      className={`knowledge-base-view ${isCompactView ? 'knowledge-base-view--compact' : ''}`}
+      bodyClassName='knowledge-base-view__body'
+    >
+      {isCompactView
+        ? (
+          <KnowledgeMobilePanel
+            activeKey={activeSectionKey}
+            open={isMobileKnowledgePanelOpen}
+            searchPlaceholder={activeSearchPlaceholder}
+            searchValue={activeSearchValue}
+            sections={sections}
+            showSearch={showMobileSearch}
+            onClose={() => setMobileKnowledgePanelOpen(false)}
+            onCreate={handleSidebarCreate}
+            onSearchChange={handleActiveSearchChange}
+            onSelect={handleSelectSection}
+          />
+        )
+        : (
+          <KnowledgeSidebar
+            activeKey={activeSectionKey}
+            collapsed={isKnowledgeSidebarCollapsed}
+            isCompact={isCompactView}
+            searchPlaceholder={activeSearchPlaceholder}
+            searchValue={activeSearchValue}
+            sections={sections}
+            onCreate={handleSidebarCreate}
+            onSearchChange={handleActiveSearchChange}
+            onSelect={handleSelectSection}
+            onToggleCollapsed={() => setKnowledgeSidebarCollapsed(prev => !prev)}
+          />
+        )}
+      <div className='knowledge-base-view__right'>
+        <div className='knowledge-base-view__right-body'>{activeSection?.content}</div>
+      </div>
+      <CreateSkillModal
+        open={createSkillOpen}
+        saving={savingSkill}
+        form={createSkillForm}
+        onSave={() => void handleSaveSkill()}
+        onClose={() => setCreateSkillOpen(false)}
       />
-    </div>
+    </PageShell>
   )
 }

@@ -4,11 +4,7 @@ import useSWR from 'swr'
 
 import type { GitBranchSummary, GitRepositoryState } from '@vibe-forge/types'
 
-import {
-  getWorkspaceGitState,
-  listWorkspaceGitBranches,
-  listWorkspaceGitWorktrees
-} from '#~/api'
+import { getWorkspaceGitState, listWorkspaceGitBranches, listWorkspaceGitWorktrees } from '#~/api'
 import type { ChatSessionWorkspaceDraft } from '#~/hooks/chat/chat-session-workspace-draft'
 
 import {
@@ -68,12 +64,13 @@ export function useChatDraftGitControls({
     [allBranches, currentWorktreePath, filteredBranches]
   )
   const canCreateBranch = branchQuery.trim() !== '' && !hasExactGitBranchMatch(allBranches, branchQuery)
-  const worktreeViewState = useMemo(() => getGitWorktreeViewState({
-    currentBranch: repoState?.currentBranch,
-    enabled: repoState?.available === true,
-    repositoryRoot: repoState?.repositoryRoot,
-    worktrees: worktreeData?.worktrees
-  }), [repoState?.available, repoState?.currentBranch, repoState?.repositoryRoot, worktreeData?.worktrees])
+  const worktreeViewState = useMemo(() =>
+    getGitWorktreeViewState({
+      currentBranch: repoState?.currentBranch,
+      enabled: repoState?.available === true,
+      repositoryRoot: repoState?.repositoryRoot,
+      worktrees: worktreeData?.worktrees
+    }), [repoState?.available, repoState?.currentBranch, repoState?.repositoryRoot, worktreeData?.worktrees])
   const { currentBranchLabel: repoBranchLabel } = getGitControlState(repoState, false, {
     detachedHead: t('chat.gitDetachedHead'),
     pushNeedsSyncOrForce: t('chat.gitPushNeedsSyncOrForce'),
@@ -128,7 +125,8 @@ export function useChatDraftGitControls({
     }
 
     const selectedBranch = allBranches.find(branch =>
-      branch.kind === draft.branch?.kind && branch.name === draft.branch?.name)
+      branch.kind === draft.branch?.kind && branch.name === draft.branch?.name
+    )
     if (selectedBranch == null) {
       handleDraftChange({
         ...draft,

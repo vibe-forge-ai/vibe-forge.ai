@@ -1,5 +1,6 @@
 import { createAutomationRepo } from './automation/repo'
 import type {
+  AutomationBranchMode,
   AutomationRule,
   AutomationRuleDetail,
   AutomationRun,
@@ -14,15 +15,15 @@ import { channelSessionsSchemaModule } from './channelSessions/schema'
 import { createChannelSessionsRepo } from './channelSessions/repo'
 import { createConnection } from './connection'
 import { initSchema } from './schema'
+import { createSessionWorkspacesRepo } from './sessionWorkspaces/repo'
+import type { SessionWorkspaceRow } from './sessionWorkspaces/repo'
+import { sessionWorkspacesSchemaModule } from './sessionWorkspaces/schema'
 import { createMessagesRepo } from './sessions/messages.repo'
 import { createSessionQueueRepo } from './sessions/queue.repo'
 import { createSessionsRepo } from './sessions/repo'
 import type { SessionRuntimeState } from './sessions/repo'
 import { sessionsSchemaModule } from './sessions/schema'
 import { createTagsRepo } from './sessions/tags.repo'
-import { createSessionWorkspacesRepo } from './sessionWorkspaces/repo'
-import type { SessionWorkspaceRow } from './sessionWorkspaces/repo'
-import { sessionWorkspacesSchemaModule } from './sessionWorkspaces/schema'
 import type { SqliteDatabase } from './sqlite'
 
 const dbSchemaModules = [
@@ -313,5 +314,12 @@ export function getDb() {
   return dbInstance
 }
 
-export type { AutomationRule, AutomationRuleDetail, AutomationRun, AutomationTask, AutomationTrigger }
+export type {
+  AutomationBranchMode,
+  AutomationRule,
+  AutomationRuleDetail,
+  AutomationRun,
+  AutomationTask,
+  AutomationTrigger
+}
 export type { SessionWorkspaceRow }

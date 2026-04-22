@@ -1,6 +1,7 @@
 import './RulesTab.scss'
 
-import { Input, Space } from 'antd'
+import { Input, Space, Tooltip } from 'antd'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { RuleSummary } from '#~/api.js'
@@ -12,8 +13,11 @@ import { TabContent } from './TabContent'
 interface RulesTabProps {
   rules: RuleSummary[]
   filteredRules: RuleSummary[]
+  hideContentSearch?: boolean
   isLoading: boolean
+  leading?: ReactNode
   query: string
+  onRefresh: () => void
   onQueryChange: (value: string) => void
   onCreate: () => void
   onImport: () => void
@@ -22,8 +26,11 @@ interface RulesTabProps {
 export function RulesTab({
   rules,
   filteredRules,
+  hideContentSearch = false,
   isLoading,
+  leading,
   query,
+  onRefresh,
   onQueryChange,
   onCreate,
   onImport
@@ -33,36 +40,36 @@ export function RulesTab({
   return (
     <TabContent className='knowledge-base-view__rules-tab'>
       <SectionHeader
-        title={t('knowledge.rules.title')}
-        description={t('knowledge.rules.desc')}
         actions={
           <Space>
-            <ActionButton
-              icon={<span className='material-symbols-rounded'>download</span>}
-              onClick={onImport}
-            >
-              {t('knowledge.actions.import')}
-            </ActionButton>
-            <ActionButton
-              type='primary'
-              icon={<span className='material-symbols-rounded'>add_circle</span>}
-              onClick={onCreate}
-            >
-              {t('knowledge.rules.create')}
-            </ActionButton>
+            <Tooltip title={t('knowledge.actions.refresh')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>refresh</span>}
+                onClick={onRefresh}
+              />
+            </Tooltip>
+            <Tooltip title={t('knowledge.actions.import')}>
+              <ActionButton
+                icon={<span className='material-symbols-rounded'>download</span>}
+                onClick={onImport}
+              />
+            </Tooltip>
           </Space>
         }
+        leading={leading}
       />
-      <div className='knowledge-base-view__filters'>
-        <Input
-          className='knowledge-base-view__filter-input'
-          prefix={<span className='material-symbols-rounded knowledge-base-view__filter-icon'>search</span>}
-          placeholder={t('knowledge.filters.search')}
-          allowClear
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-        />
-      </div>
+      {!hideContentSearch && (
+        <div className='knowledge-base-view__filters'>
+          <Input
+            className='knowledge-base-view__filter-input'
+            prefix={<span className='material-symbols-rounded knowledge-base-view__filter-icon'>search</span>}
+            placeholder={t('knowledge.filters.search')}
+            allowClear
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+          />
+        </div>
+      )}
       <RuleList
         isLoading={isLoading}
         rules={rules}

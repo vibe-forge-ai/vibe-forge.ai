@@ -169,6 +169,7 @@ const summarizeDiagnostics = (
       assetId: assetIdMap.get(diagnostic.assetId) ?? diagnostic.assetId,
       adapter: diagnostic.adapter,
       status: diagnostic.status,
+      source: diagnostic.source,
       reason: diagnostic.reason,
       scope: diagnostic.scope,
       packageId: diagnostic.packageId

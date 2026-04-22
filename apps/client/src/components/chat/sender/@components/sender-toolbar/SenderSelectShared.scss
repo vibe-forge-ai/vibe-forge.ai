@@ -11,7 +11,8 @@
 
   &:hover {
     .model-select,
-    .effort-select {
+    .effort-select,
+    .account-select {
       background: var(--sender-control-hover-bg);
       color: var(--sender-control-hover-color);
     }
@@ -19,6 +20,9 @@
     .model-select .ant-select-selection-item,
     .model-select .ant-select-selection-placeholder,
     .model-select .sender-select-arrow,
+    .account-select .ant-select-selection-item,
+    .account-select .ant-select-selection-placeholder,
+    .account-select .sender-select-arrow,
     .effort-select .ant-select-selection-item,
     .effort-select .ant-select-selection-placeholder,
     .effort-select .effort-option__text,
@@ -38,6 +42,17 @@
     .adapter-select .adapter-option__icon {
       opacity: 1;
     }
+  }
+}
+
+.sender-select-shell--compact {
+  .sender-select-body-trigger {
+    inset: 0;
+  }
+
+  .ant-select-arrow,
+  .sender-select-arrow {
+    display: none !important;
   }
 }
 
@@ -69,6 +84,7 @@
 
 .model-select,
 .effort-select,
+.account-select,
 .adapter-select {
   height: var(--sender-control-height);
   display: inline-flex;
@@ -115,4 +131,26 @@
 
 .adapter-select-tooltip-target--locked {
   cursor: help;
+}
+
+@media (max-width: 960px) {
+  .sender-select-arrow {
+    font-size: 16px;
+  }
+
+  .model-select,
+  .effort-select,
+  .account-select,
+  .adapter-select {
+    font-size: 11px;
+
+    .ant-select-selector {
+      padding: 0 0 0 6px !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 11px !important;
+    }
+  }
 }

@@ -7,7 +7,7 @@
 Vibe Forge 现在有两套并行的插件使用方式：
 
 - 统一 Vibe Forge 插件：通过 `plugins` 配置加载 npm 包里的 `rules / skills / specs / entities / mcp / hooks`
-- adapter 原生插件：通过 `npx vf plugin --adapter <adapter> add ...` 安装 adapter 自己的原生插件格式，再转成项目可复用的 Vibe Forge 资产
+- adapter 原生插件：通过 `vf plugin --adapter <adapter> add ...` 安装 adapter 自己的原生插件格式，再转成项目可复用的 Vibe Forge 资产
 
 如果你要安装 Claude Code 插件、配置 marketplace，继续看 [Adapter 原生插件与 Marketplace](./native-plugins.md)。
 
@@ -25,7 +25,7 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 
 ## 基本配置
 
-在项目根目录的 `.ai.config.json` 或 `.ai.config.yaml` 中配置 `plugins`：
+默认情况下，在解析后的 workspace 根目录的 `.ai.config.json` 或 `.ai.config.yaml` 中配置 `plugins`：
 
 ```json
 {
@@ -101,6 +101,12 @@ pnpm add -D @vibe-forge/plugin-standard-dev @vibe-forge/plugin-logger
 
 其中 `spec` 和 `entity` 还支持在文档前置元数据里通过 `plugins: { mode, list }` 对当前任务的插件列表做 `extend` 或 `override`。
 
+## 资产细节
+
+- [实体目录默认文件](./plugins/entity-default-files.md)
+- [实体继承](./plugins/entity-inheritance.md)
+- [本地私有规则](./plugins/local-rules.md)
+
 ## 本地数据资产目录
 
 项目内置资产默认从 `./.ai/` 读取：
@@ -136,7 +142,8 @@ __VF_PROJECT_AI_ENTITIES_DIR__=knowledge/entities
 边界说明：
 
 - 这里修改的是项目数据资产目录，不是配置文件位置
-- `.ai.config.json` / `.ai.dev.config.*` 仍然放在项目根或 `./infra/`
+- `.ai.config.json` / `.ai.dev.config.*` 默认仍然放在解析后的 workspace 根目录或 `./infra/`
+- 如果显式设置了 `__VF_PROJECT_CONFIG_DIR__`，插件配置会改为从该目录读取
 - 修改 `.env` 后需要重启相关进程
 
 ## Adapter 兼容范围

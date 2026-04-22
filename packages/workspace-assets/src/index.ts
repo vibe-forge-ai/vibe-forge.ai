@@ -1,3 +1,6 @@
 export { buildAdapterAssetPlan } from './adapter-asset-plan'
+export { resolveWorkspaceAssetSource } from './asset-source'
 export { resolveWorkspaceAssetBundle } from './bundle'
+export { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 export { resolvePromptAssetSelection } from './prompt-selection'
+export { findWorkspaceAsset, resolveConfiguredWorkspaceAssets } from './workspaces'

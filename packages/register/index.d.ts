@@ -5,6 +5,11 @@ declare module '@vibe-forge/register/dotenv' {
   }
 
   export const loadDotenv: (options?: LoadDotenvOptions) => void
+  export const resolvePrimaryWorkspaceFolder: (workspaceFolder: string) => string | undefined
+  export const resolveProjectLaunchCwd: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+  export const resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+  export const resolveProjectConfigDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string | undefined
+  export const resolveProjectAiBaseDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string
 }
 
 declare module '@vibe-forge/register/esbuild' {}

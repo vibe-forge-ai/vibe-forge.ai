@@ -33,6 +33,9 @@ describe('ui static routing', () => {
       'body{background:url(/__VF_PROJECT_AI_CLIENT_BASE__/assets/font.woff2)}'
     )
     await writeFile(path.join(distDir, 'assets/font.woff2'), 'font-data')
+    await writeFile(path.join(distDir, 'favicon.svg'), '<svg></svg>')
+    await writeFile(path.join(distDir, 'manifest.webmanifest'), '{"name":"Vibe Forge Web"}')
+    await writeFile(path.join(distDir, 'sw.js'), 'self.addEventListener("fetch", () => {})')
 
     const app = new Koa()
     await mountRoutes(
@@ -41,6 +44,7 @@ describe('ui static routing', () => {
         __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
         __VF_PROJECT_AI_SERVER_PORT__: 0,
         __VF_PROJECT_AI_SERVER_WS_PATH__: '/ws',
+        __VF_PROJECT_AI_CLIENT_MODE__: 'static',
         __VF_PROJECT_AI_CLIENT_BASE__: '/ui',
         __VF_PROJECT_AI_CLIENT_DIST_PATH__: distDir
       } as Parameters<typeof mountRoutes>[1]
@@ -89,5 +93,79 @@ describe('ui static routing', () => {
     const assetBody = await assetResponse.text()
     expect(assetResponse.status).toBe(200)
     expect(assetBody).toBe('font-data')
+  })
+
+  it('redirects the client base without a trailing slash to the mounted ui alias', async () => {
+    const response = await fetch(`${baseUrl}/ui`, {
+      redirect: 'manual'
+    })
+
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe('/ui/')
+  })
+
+  it('serves root static files before falling back to the spa shell', async () => {
+    const manifestResponse = await fetch(`${baseUrl}/ui/manifest.webmanifest`)
+    const manifestBody = await manifestResponse.text()
+    expect(manifestResponse.status).toBe(200)
+    expect(manifestBody).toBe('{"name":"Vibe Forge Web"}')
+
+    const workerResponse = await fetch(`${baseUrl}/ui/sw.js`)
+    const workerBody = await workerResponse.text()
+    expect(workerResponse.status).toBe(200)
+    expect(workerResponse.headers.get('cache-control')).toContain('no-cache')
+    expect(workerBody).toBe('self.addEventListener("fetch", () => {})')
+
+    const routeResponse = await fetch(`${baseUrl}/ui/session/example`)
+    const routeBody = await routeResponse.text()
+    expect(routeResponse.status).toBe(200)
+    expect(routeBody).toContain('<body>ok</body>')
+
+    const indexResponse = await fetch(`${baseUrl}/ui/index.html`)
+    const indexBody = await indexResponse.text()
+    expect(indexResponse.status).toBe(200)
+    expect(indexBody).toContain('window.__VF_PROJECT_AI_RUNTIME_ENV__=')
+  })
+
+  it('does not mount ui routes when client mode is none', async () => {
+    const app = new Koa()
+    await mountRoutes(
+      app,
+      {
+        __VF_PROJECT_AI_SERVER_HOST__: '127.0.0.1',
+        __VF_PROJECT_AI_SERVER_PORT__: 0,
+        __VF_PROJECT_AI_SERVER_WS_PATH__: '/ws',
+        __VF_PROJECT_AI_CLIENT_MODE__: 'none',
+        __VF_PROJECT_AI_CLIENT_BASE__: '/ui',
+        __VF_PROJECT_AI_CLIENT_DIST_PATH__: distDir
+      } as Parameters<typeof mountRoutes>[1]
+    )
+
+    const headlessServer = http.createServer(app.callback())
+    await new Promise<void>((resolve) => {
+      headlessServer.listen(0, '127.0.0.1', () => resolve())
+    })
+
+    const address = headlessServer.address()
+    if (address == null || typeof address === 'string') {
+      throw new Error('Failed to start headless test server')
+    }
+
+    const headlessBaseUrl = `http://127.0.0.1:${address.port}`
+    try {
+      const response = await fetch(`${headlessBaseUrl}/ui/`)
+
+      expect(response.status).toBe(404)
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        headlessServer.close((error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve()
+        })
+      })
+    }
   })
 })

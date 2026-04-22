@@ -1,31 +1,66 @@
 import './RuleFormPanel.scss'
 
 import { Button, Form, Input, Switch, Tooltip } from 'antd'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AutomationRule } from '#~/api.js'
-import { getServerHost, getServerPort } from '#~/api/base.js'
+import { createApiUrl } from '#~/api/base.js'
 
+import { DEFAULT_SELECT_VALUE, DEFAULT_STARTUP_FORM_VALUES } from './@utils/startup-options'
+import { AutomationEmptyLanding } from './AutomationEmptyLanding'
+import { AutomationPanelTitleActions } from './PanelTitleActions'
 import { TaskList } from './TaskList'
 import { TriggerList } from './TriggerList'
 import type { RuleFormValues } from './types'
 
+type CreateMode = 'form' | 'chat'
+
 interface RuleFormPanelProps {
+  isRulePanelCollapsed?: boolean
   mode: 'create' | 'edit'
   rule: AutomationRule | null
   submitting: boolean
+  onCreateRule?: () => void
+  onExpandRulePanel?: () => void
   onSubmit: (payload: Partial<AutomationRule>, immediateRun: boolean) => Promise<void>
   onCancel: () => void
 }
 
-const serverHost = getServerHost()
-const serverPort = getServerPort()
-const serverUrl = `http://${serverHost}:${serverPort}`
+const normalizeSelectText = (value?: string) => {
+  const normalized = value?.trim()
+  return normalized == null || normalized === '' ? null : normalized
+}
 
-export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: RuleFormPanelProps) {
+const getCreateWorktreeMode = (
+  task: NonNullable<AutomationRule['tasks']>[number]
+): NonNullable<RuleFormValues['tasks'][number]['createWorktreeMode']> => {
+  if (task.createWorktree === true) return 'managed'
+  if (task.createWorktree === false) return 'local'
+  return 'default'
+}
+
+const getBranchAction = (
+  task: NonNullable<AutomationRule['tasks']>[number]
+): NonNullable<RuleFormValues['tasks'][number]['branchAction']> => {
+  if (task.branchName == null || task.branchName.trim() === '') return 'default'
+  return task.branchMode === 'create' ? 'create' : 'checkout'
+}
+
+export function RuleFormPanel({
+  isRulePanelCollapsed = false,
+  mode,
+  rule,
+  submitting,
+  onCreateRule,
+  onExpandRulePanel,
+  onSubmit,
+  onCancel
+}: RuleFormPanelProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<RuleFormValues>()
+  const [createMode, setCreateMode] = useState<CreateMode>('form')
+  const isChatCreateMode = mode === 'create' && createMode === 'chat'
 
   const updateWeeklyCron = useCallback((index: number, nextDay?: string, nextTime?: string) => {
     const triggers = form.getFieldValue('triggers') as RuleFormValues['triggers'] | undefined
@@ -49,10 +84,15 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
 
   const getWebhookUrl = useCallback((triggerId?: string, webhookKey?: string) => {
     if (!triggerId || !webhookKey) return ''
-    return `${serverUrl}/api/automation/webhook/${triggerId}?key=${webhookKey}`
+    const url = createApiUrl(`/api/automation/webhook/${triggerId}`)
+    url.searchParams.set('key', webhookKey)
+    return url.toString()
   }, [])
 
   useEffect(() => {
+    if (mode === 'edit') {
+      setCreateMode('form')
+    }
     if (mode === 'create') {
       form.setFieldsValue({
         name: '',
@@ -72,7 +112,8 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
         tasks: [
           {
             title: t('automation.taskDefaultTitle', { index: 1 }),
-            prompt: ''
+            prompt: '',
+            ...DEFAULT_STARTUP_FORM_VALUES
           }
         ]
       })
@@ -93,10 +134,18 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
           weeklyTime: weeklyMatch ? `${weeklyMatch[2].padStart(2, '0')}:${weeklyMatch[1].padStart(2, '0')}` : '09:00'
         }
       })
-      const tasks = (rule.tasks ?? []).map((task, index) => ({
+      const tasks: RuleFormValues['tasks'] = (rule.tasks ?? []).map((task, index) => ({
         id: task.id,
         title: task.title || t('automation.taskDefaultTitle', { index: index + 1 }),
-        prompt: task.prompt
+        prompt: task.prompt,
+        model: task.model ?? DEFAULT_SELECT_VALUE,
+        adapter: task.adapter ?? DEFAULT_SELECT_VALUE,
+        effort: task.effort ?? 'default',
+        permissionMode: task.permissionMode ?? 'default',
+        createWorktreeMode: getCreateWorktreeMode(task),
+        branchAction: getBranchAction(task),
+        branchName: task.branchName ?? '',
+        branchKind: task.branchKind ?? 'local'
       }))
       form.setFieldsValue({
         name: rule.name,
@@ -113,7 +162,8 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
         }],
         tasks: tasks.length > 0 ? tasks : [{
           title: t('automation.taskDefaultTitle', { index: 1 }),
-          prompt: ''
+          prompt: '',
+          ...DEFAULT_STARTUP_FORM_VALUES
         }]
       })
     }
@@ -146,100 +196,156 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
           webhookKey: trigger.webhookKey?.trim() ?? ''
         }
       }) as AutomationRule['triggers'],
-      tasks: values.tasks.map((task) => ({
-        id: task.id,
-        title: task.title?.trim() ?? '',
-        prompt: task.prompt.trim()
-      })) as AutomationRule['tasks']
+      tasks: values.tasks.map((task) => {
+        const createWorktreeMode = task.createWorktreeMode ?? 'default'
+        const branchAction = task.branchAction ?? 'default'
+        return {
+          id: task.id,
+          title: task.title?.trim() ?? '',
+          prompt: task.prompt.trim(),
+          model: normalizeSelectText(task.model),
+          adapter: normalizeSelectText(task.adapter),
+          effort: task.effort === 'default' ? null : task.effort ?? null,
+          permissionMode: task.permissionMode ?? 'default',
+          createWorktree: createWorktreeMode === 'managed'
+            ? true
+            : createWorktreeMode === 'local'
+            ? false
+            : null,
+          branchName: branchAction === 'default' ? null : normalizeSelectText(task.branchName),
+          branchKind: branchAction === 'checkout' ? task.branchKind ?? 'local' : null,
+          branchMode: branchAction === 'default' ? null : branchAction
+        }
+      }) as AutomationRule['tasks']
     }
     await onSubmit(payload, values.immediateRun)
   }, [form, onSubmit])
 
   return (
-    <div className='automation-view__form-panel'>
+    <div
+      className={[
+        'automation-view__form-panel',
+        isChatCreateMode ? 'automation-view__form-panel--chat-create' : ''
+      ].filter(Boolean).join(' ')}
+    >
       <div className='automation-view__form-header'>
         <div className='automation-view__form-title'>
-          <span className='material-symbols-rounded automation-view__form-icon'>edit_square</span>
-          {mode === 'create' ? t('automation.newRule') : t('automation.editRule')}
+          <AutomationPanelTitleActions
+            collapsed={isRulePanelCollapsed}
+            defaultIcon='edit_square'
+            defaultIconClassName='automation-view__form-icon'
+            isCreating={mode === 'create'}
+            onCreateRule={onCreateRule}
+            onExpandRulePanel={onExpandRulePanel}
+          />
+          <span className='automation-view__form-title-text'>
+            {mode === 'create' ? t('automation.newRule') : t('automation.editRule')}
+          </span>
         </div>
         <div className='automation-view__form-header-actions'>
           <Tooltip title={t('common.cancel')}>
             <Button
-              className='automation-view__square-button'
+              className='automation-view__square-button automation-view__square-button--cancel'
+              aria-label={t('common.cancel')}
+              icon={<span className='material-symbols-rounded automation-view__action-icon'>close</span>}
               onClick={onCancel}
-            >
-              <span className='material-symbols-rounded automation-view__action-icon'>close</span>
-            </Button>
+            />
           </Tooltip>
-          <Tooltip title={t('common.confirm')}>
-            <Button
-              className='automation-view__square-button automation-view__square-button--confirm'
-              type='primary'
-              loading={submitting}
-              onClick={() => void handleSubmit()}
-            >
-              <span className='material-symbols-rounded automation-view__action-icon'>check</span>
-            </Button>
-          </Tooltip>
+          {!isChatCreateMode && (
+            <Tooltip title={t('common.confirm')}>
+              <Button
+                className='automation-view__square-button automation-view__square-button--confirm'
+                type='primary'
+                aria-label={t('common.confirm')}
+                loading={submitting}
+                icon={<span className='material-symbols-rounded automation-view__action-icon'>check</span>}
+                onClick={() => void handleSubmit()}
+              />
+            </Tooltip>
+          )}
         </div>
       </div>
-      <Form form={form} layout='vertical' initialValues={{ enabled: true, immediateRun: false }}>
-        <div className='automation-view__form-grid'>
-          <div className='automation-view__form-left'>
-            <div className='automation-view__form-section'>
-              <div className='automation-view__form-title'>
-                <span className='material-symbols-rounded automation-view__form-icon'>info</span>
-                {t('automation.sectionBasic')}
-              </div>
-              <Form.Item
-                name='name'
-                label={
-                  <span className='automation-view__label'>
-                    <span className='material-symbols-rounded automation-view__label-icon'>badge</span>
-                    {t('automation.ruleName')}
-                  </span>
-                }
-                rules={[{ required: true, message: t('automation.ruleNameRequired') }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name='description'
-                label={
-                  <span className='automation-view__label'>
-                    <span className='material-symbols-rounded automation-view__label-icon'>description</span>
-                    {t('automation.ruleDescription')}
-                  </span>
-                }
-              >
-                <Input.TextArea rows={2} />
-              </Form.Item>
-              <div className='automation-view__toggle-group'>
-                <div className='automation-view__toggle-row'>
-                  <span className='automation-view__toggle-label'>
-                    <span className='material-symbols-rounded automation-view__label-icon'>toggle_on</span>
-                    {t('automation.enabled')}
-                  </span>
-                  <Form.Item name='enabled' valuePropName='checked' noStyle>
-                    <Switch />
-                  </Form.Item>
-                </div>
-                <div className='automation-view__toggle-row'>
-                  <span className='automation-view__toggle-label automation-view__toggle-label--run'>
-                    <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>
-                      play_circle
-                    </span>
-                    {t('automation.immediateRun')}
-                  </span>
-                  <Form.Item name='immediateRun' valuePropName='checked' noStyle>
-                    <Switch />
-                  </Form.Item>
-                </div>
-              </div>
-            </div>
+      {mode === 'create' && (
+        <div className='automation-view__create-mode-switch' role='tablist' aria-label={t('automation.createMode')}>
+          <Button
+            className={`automation-view__create-mode-button ${createMode === 'form' ? 'is-active' : ''}`.trim()}
+            type='text'
+            role='tab'
+            aria-selected={createMode === 'form'}
+            onClick={() => setCreateMode('form')}
+          >
+            <span className='material-symbols-rounded automation-view__create-mode-icon'>edit_note</span>
+            <span>{t('automation.createModeForm')}</span>
+          </Button>
+          <Button
+            className={`automation-view__create-mode-button ${createMode === 'chat' ? 'is-active' : ''}`.trim()}
+            type='text'
+            role='tab'
+            aria-selected={createMode === 'chat'}
+            onClick={() => setCreateMode('chat')}
+          >
+            <span className='material-symbols-rounded automation-view__create-mode-icon'>forum</span>
+            <span>{t('automation.createModeChat')}</span>
+          </Button>
+        </div>
+      )}
+      {isChatCreateMode
+        ? (
+          <div className='automation-view__create-chat-panel'>
+            <AutomationEmptyLanding />
           </div>
-          <div className='automation-view__form-right'>
-            <div className='automation-view__form-right-scroll'>
+        )
+        : (
+          <Form
+            form={form}
+            layout='vertical'
+            initialValues={{
+              enabled: true,
+              immediateRun: false,
+              tasks: [{
+                ...DEFAULT_STARTUP_FORM_VALUES
+              }]
+            }}
+          >
+            <div className='automation-view__form-stack'>
+              <div className='automation-view__form-section automation-view__form-section--basic'>
+                <Form.Item
+                  name='name'
+                  rules={[{ required: true, message: t('automation.ruleNameRequired') }]}
+                >
+                  <Input aria-label={t('automation.ruleName')} placeholder={t('automation.ruleNameRequired')} />
+                </Form.Item>
+                <Form.Item name='description'>
+                  <Input.TextArea
+                    aria-label={t('automation.ruleDescription')}
+                    placeholder={t('automation.ruleDescriptionPlaceholder')}
+                    rows={1}
+                  />
+                </Form.Item>
+                <div className='automation-view__toggle-group'>
+                  <div className='automation-view__toggle-row'>
+                    <span className='automation-view__toggle-label'>
+                      <span className='material-symbols-rounded automation-view__label-icon'>toggle_on</span>
+                      {t('automation.enabledStatus')}
+                    </span>
+                    <Form.Item name='enabled' valuePropName='checked' noStyle>
+                      <Switch />
+                    </Form.Item>
+                  </div>
+                  <div className='automation-view__toggle-row'>
+                    <span className='automation-view__toggle-label automation-view__toggle-label--run'>
+                      <span className='material-symbols-rounded automation-view__label-icon automation-view__label-icon--run'>
+                        play_circle
+                      </span>
+                      {t('automation.immediateRun')}
+                    </span>
+                    <Form.Item name='immediateRun' valuePropName='checked' noStyle>
+                      <Switch />
+                    </Form.Item>
+                  </div>
+                </div>
+              </div>
+
               <div className='automation-view__form-section'>
                 <TriggerList
                   form={form}
@@ -249,12 +355,11 @@ export function RuleFormPanel({ mode, rule, submitting, onSubmit, onCancel }: Ru
               </div>
 
               <div className='automation-view__form-section'>
-                <TaskList />
+                <TaskList form={form} />
               </div>
             </div>
-          </div>
-        </div>
-      </Form>
+          </Form>
+        )}
     </div>
   )
 }

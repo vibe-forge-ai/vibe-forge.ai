@@ -1,0 +1,71 @@
+.chat-terminal-pane {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--bg-color);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+
+  &.is-active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  &__body {
+    display: flex;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  &__error {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    max-width: min(360px, calc(100% - 16px));
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid
+      color-mix(in srgb, var(--danger-color) 24%, var(--border-color));
+    background-color: color-mix(
+      in srgb,
+      var(--bg-color) 86%,
+      var(--danger-color) 14%
+    );
+    color: var(--danger-color);
+    font-size: 12px;
+  }
+
+  &__terminal {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    cursor: text;
+
+    .xterm {
+      height: 100%;
+    }
+
+    .xterm-viewport {
+      background-color: var(--bg-color);
+    }
+  }
+
+  &__footer {
+    padding: 4px 8px;
+    border-top: 1px solid var(--border-color);
+    color: var(--sub-text-color);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}

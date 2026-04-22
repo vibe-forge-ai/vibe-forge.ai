@@ -4,6 +4,8 @@
 - `src/routes/`：页面级 route 入口，只处理 URL、路由参数、页面装配和少量 route 级数据获取。
 - `src/components/layout/`：全局布局组件，当前放置 `AppShell` 这类应用骨架。
 - `src/components/`：可复用视图组件和页面内部面板，不承担路由匹配职责。
+- `src/components/config/`：配置页编辑器、worktree environment 面板与配置冲突处理逻辑。
+  - 涉及配置页自动保存、热更新、外部配置变更或冲突提示时，先读 `src/components/config/AGENTS.md`。
 - `src/components/chat/`：聊天页子视图，包含 header、history、timeline、settings、sender 和工具渲染。
   - 消息级 `编辑 / 撤回 / 分叉 / 复制原文` 的更细维护说明见 `src/components/chat/AGENTS.md`。
 - `src/hooks/`：跨页面通用 hooks；`src/hooks/chat/` 专门承载聊天会话相关状态和交互逻辑。
@@ -38,6 +40,7 @@
 - 页面级列表或详情拉取优先放在 route 或对应页面 hook 中，不要散落在纯展示组件内。
 - API 请求统一走 `src/api/`，避免在组件里直接手写 `fetch`。
 - 能复用的状态逻辑优先抽到 hooks，不在 route 和 view 间复制业务逻辑。
+- 配置页收到 `config_updated` 后，订阅层只负责刷新缓存；本地草稿和远端配置的冲突判断必须留在配置编辑器内部完成，避免静默覆盖用户正在编辑的内容。
 
 组件与 hook 归档约定：
 
@@ -50,7 +53,7 @@
   - sender 私有编排逻辑在 `src/components/chat/sender/@hooks/`
   - sender 私有核心逻辑在 `src/components/chat/sender/@core/`
   - 聊天共用状态提示在 `src/components/chat/`
-  - 工作区文件选择器在 `src/components/workspace/`
+  - 工作区文件选择器和可复用项目目录树在 `src/components/workspace/`
 
 import 约定：
 

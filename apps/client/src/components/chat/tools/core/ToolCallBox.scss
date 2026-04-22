@@ -210,6 +210,7 @@
     padding: 0;
     overflow: hidden;
     background-color: var(--bg-color);
+    min-width: 0;
 
     .tool-call-box.result & {
       background-color: var(--bg-color);
@@ -218,6 +219,7 @@
 
     .tool-content {
       padding: 0;
+      min-width: 0;
     }
 
     .code-block-wrapper {
@@ -230,22 +232,26 @@
       flex-direction: column;
       gap: 8px;
       padding: 2px 0;
+      min-width: 0;
     }
 
     .tool-result-text {
       font-size: 13px;
       color: var(--text-color);
+      min-width: 0;
     }
 
     .tool-result-text-content {
       white-space: pre-wrap;
       line-height: 1.6;
+      overflow-wrap: anywhere;
     }
 
     .tool-result-image-wrapper {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .tool-result-image {
@@ -676,6 +682,19 @@
 
     &.tool-status--error {
       color: var(--danger-color);
+    }
+  }
+}
+
+@media (max-width: 960px) {
+  .tool-group {
+    .tool-call-header,
+    .tool-result-header {
+      min-width: 0;
+    }
+
+    .tool-call-box--inline .tool-call-body-shell.expanded {
+      padding-left: 12px;
     }
   }
 }

@@ -15,6 +15,9 @@ const interruptSession = vi.fn()
 const killSession = vi.fn()
 const getSession = vi.fn()
 const getSessionRuntimeState = vi.fn()
+const resolveWebAuthConfig = vi.fn()
+const verifySessionToken = vi.fn()
+const getBearerTokenFromHeader = vi.fn()
 
 let connectionHandler: ((ws: any, req: any) => Promise<void>) | undefined
 
@@ -39,6 +42,14 @@ vi.mock('#~/db/index.js', () => ({
     getSession,
     getSessionRuntimeState
   }))
+}))
+
+vi.mock('#~/services/auth/index.js', () => ({
+  AUTH_COOKIE_NAME: 'vf_web_auth',
+  getBearerTokenFromHeader,
+  getCookieFromHeader: vi.fn(() => 'token'),
+  resolveWebAuthConfig,
+  verifySessionToken
 }))
 
 vi.mock('#~/services/session/index.js', () => ({
@@ -72,6 +83,9 @@ describe('setupWebSocket', () => {
     vi.clearAllMocks()
     connectionHandler = undefined
     getAdapterSessionRuntime.mockReturnValue(undefined)
+    resolveWebAuthConfig.mockResolvedValue({ enabled: false })
+    verifySessionToken.mockResolvedValue(true)
+    getBearerTokenFromHeader.mockReturnValue(undefined)
     getSessionRuntimeState.mockReturnValue({
       runtimeKind: 'interactive',
       historySeedPending: false
@@ -81,6 +95,47 @@ describe('setupWebSocket', () => {
     setupWebSocket({} as Server, {
       __VF_PROJECT_AI_SERVER_WS_PATH__: '/ws'
     } as any)
+  })
+
+  it('closes websocket connections when auth is enabled and the cookie is invalid', async () => {
+    resolveWebAuthConfig.mockResolvedValueOnce({ enabled: true })
+    verifySessionToken.mockResolvedValueOnce(false)
+
+    const ws = {
+      close: vi.fn(),
+      on: vi.fn(),
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    await connectionHandler?.(ws, {
+      url: '/ws?sessionId=sess-1',
+      headers: { host: 'localhost', cookie: '' }
+    })
+
+    expect(ws.close).toHaveBeenCalledWith(1008, 'Login required')
+    expect(startAdapterSession).not.toHaveBeenCalled()
+  })
+
+  it('accepts auth tokens from websocket query params', async () => {
+    resolveWebAuthConfig.mockResolvedValueOnce({ enabled: true })
+    verifySessionToken.mockResolvedValueOnce(true)
+
+    const ws = {
+      close: vi.fn(),
+      on: vi.fn(),
+      readyState: 1,
+      send: vi.fn()
+    }
+
+    await connectionHandler?.(ws, {
+      url: '/ws?subscribe=sessions&authToken=query-token',
+      headers: { host: 'localhost', cookie: '' }
+    })
+
+    expect(verifySessionToken).toHaveBeenCalledWith(expect.anything(), 'query-token')
+    expect(ws.close).not.toHaveBeenCalled()
+    expect(addSessionSubscriberSocket).toHaveBeenCalledWith(ws)
   })
 
   it('registers session list subscribers only for subscribe=sessions connections', async () => {

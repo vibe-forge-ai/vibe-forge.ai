@@ -1,62 +1,334 @@
 .chat-terminal-view {
   position: relative;
-
-  &__error {
-    position: absolute;
-    top: 36px;
-    right: 16px;
-    z-index: 3;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid
-      color-mix(in srgb, var(--danger-color) 24%, var(--border-color));
-    background-color: color-mix(
-      in srgb,
-      var(--bg-color) 86%,
-      var(--danger-color) 14%
-    );
-    color: var(--danger-color);
-    font-size: 12px;
-  }
+  --terminal-action-hover-bg: var(--nav-hover-bg, #f3f4f6);
 
   &__surface {
     display: flex;
     position: relative;
     flex: 1;
     min-height: 0;
+    gap: 10px;
     overflow: hidden;
-    background:
-      radial-gradient(
-        circle at top,
-        color-mix(in srgb, var(--primary-color) 12%, transparent),
-        transparent 52%
-      ),
-      linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--sub-bg-color) 78%, var(--bg-color)),
-      var(--bg-color)
-    );
+    background-color: var(--bg-color);
   }
 
-  &__terminal {
+  &__terminal-stage {
+    display: flex;
+    position: relative;
     flex: 1;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    cursor: text;
+  }
 
-    .xterm {
-      height: 100%;
-    }
+  &__header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-    .xterm-viewport {
-      background-color: var(--bg-color);
+  &__create-actions {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    overflow: hidden;
+    border-radius: 6px;
+    background-color: transparent;
+    transition: background-color .2s ease;
+
+    &:hover,
+    &:focus-within {
+      background-color: var(--terminal-action-hover-bg);
     }
   }
 
-  &__footer {
+  &__create-btn.ant-btn.ant-btn-text {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
     padding: 0;
-    font-size: 12px;
+    border: none;
+    border-radius: 0;
     color: var(--sub-text-color);
+    transition: background-color .2s ease, color .2s ease;
+
+    .material-symbols-rounded {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    &:not(:disabled):not(.ant-btn-disabled):hover,
+    &:focus-visible {
+      background-color: transparent;
+      color: var(--text-color);
+    }
   }
+
+  &__create-btn--add.ant-btn.ant-btn-text {
+    width: 28px;
+  }
+
+  &__create-btn--menu.ant-btn.ant-btn-text {
+    width: 20px;
+
+    &::before {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      width: 1px;
+      background-color: var(--border-color);
+      content: '';
+      pointer-events: none;
+    }
+  }
+
+  &__manager-toggle-btn.ant-btn.ant-btn-text {
+    .material-symbols-rounded {
+      font-size: 15px;
+    }
+  }
+
+  &__manager-toggle-btn.ant-btn.ant-btn-text {
+    overflow: visible;
+    position: relative;
+  }
+
+  &__manager-toggle-badge {
+    display: inline-flex;
+    position: absolute;
+    right: -5px;
+    bottom: -4px;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 4px;
+    border: 1px solid var(--bg-color);
+    border-radius: 999px;
+    background-color: var(--primary-color);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  &__manager {
+    display: flex;
+    flex: 0 0 176px;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    padding-left: 8px;
+    border-left: 1px solid var(--border-color);
+    overflow: auto;
+  }
+
+  &__manager-item {
+    display: flex;
+    position: relative;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 30px;
+    padding: 2px 3px;
+    border-radius: 6px;
+    color: var(--sub-text-color);
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease, opacity .18s ease;
+
+    &::before,
+    &::after {
+      position: absolute;
+      right: 4px;
+      left: 4px;
+      height: 2px;
+      border-radius: 999px;
+      background-color: var(--primary-color);
+      content: '';
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .12s ease;
+    }
+
+    &::before {
+      top: -2px;
+    }
+
+    &::after {
+      bottom: -2px;
+    }
+
+    &.is-active {
+      background-color: var(--sub-bg-color);
+      color: var(--text-color);
+    }
+
+    &.is-dragging {
+      opacity: .56;
+    }
+
+    &.is-editing {
+      background-color: color-mix(
+        in srgb,
+        var(--primary-color) 9%,
+        var(--bg-color)
+      );
+      box-shadow:
+        inset 0 0 0 1px var(--primary-color),
+        0 0 0 2px color-mix(in srgb, var(--primary-color) 14%, transparent);
+      color: var(--text-color);
+      cursor: text;
+    }
+
+    &.is-drop-before::before,
+    &.is-drop-after::after {
+      opacity: 1;
+    }
+
+    &:hover,
+    &:focus-within {
+      background-color: var(--nav-hover-bg);
+      color: var(--text-color);
+    }
+  }
+
+  &__manager-drag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--sub-text-color);
+    cursor: grab;
+    font-size: 16px;
+    line-height: 1;
+    user-select: none;
+    flex: 0 0 auto;
+
+    &:hover {
+      background-color: color-mix(
+        in srgb,
+        var(--nav-hover-bg) 72%,
+        transparent
+      );
+      color: var(--text-color);
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__manager-title-wrap {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__manager-title-text {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    padding: 0 3px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__manager-edit-icon {
+    color: var(--primary-color);
+    font-size: 14px;
+    line-height: 1;
+    flex: 0 0 auto;
+  }
+
+  &__manager-title-input {
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+    background-color: var(--bg-color);
+    box-shadow: inset 0 0 0 1px var(--primary-color);
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &::placeholder {
+      color: inherit;
+      opacity: .74;
+    }
+
+    &:focus {
+      box-shadow:
+        inset 0 0 0 1px var(--primary-color),
+        0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent);
+    }
+  }
+
+  &__manager-close.ant-btn.ant-btn-text {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    color: var(--sub-text-color);
+    opacity: 0;
+    flex: 0 0 auto;
+    transform: translateX(2px);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      background-color .2s ease,
+      color .2s ease,
+      opacity .16s ease,
+      transform .16s ease,
+      visibility .16s ease;
+
+    .material-symbols-rounded {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    &:hover {
+      background-color: var(--nav-hover-bg);
+      color: var(--text-color);
+    }
+  }
+
+  &__manager-item:hover &__manager-close.ant-btn.ant-btn-text,
+  &__manager-item:focus-within &__manager-close.ant-btn.ant-btn-text {
+    opacity: 1;
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
+.dock-panel.chat-terminal-view {
+  gap: 0;
+}
+
+html.dark .chat-terminal-view {
+  --terminal-action-hover-bg: var(--nav-hover-bg, #1a1a1a);
 }

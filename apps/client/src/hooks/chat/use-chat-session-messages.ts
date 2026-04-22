@@ -16,6 +16,7 @@ import {
   getFatalSessionError,
   restoreInteractionStateFromHistory
 } from './interaction-state'
+import type { OptimisticSessionCreation } from './optimistic-session-creation'
 import {
   deleteChatSessionViewSnapshot,
   restoreChatSessionViewSnapshot,
@@ -61,6 +62,8 @@ export function useChatSessionMessages({
   effort,
   permissionMode,
   adapter,
+  account,
+  optimisticCreation,
   setInteractionRequest
 }: {
   session?: Session
@@ -68,6 +71,8 @@ export function useChatSessionMessages({
   effort: ChatEffort
   permissionMode: PermissionMode
   adapter?: string
+  account?: string
+  optimisticCreation?: OptimisticSessionCreation
   setInteractionRequest: (value: { id: string; payload: AskUserQuestionParams } | null) => void
 }) {
   const { t } = useTranslation()
@@ -84,6 +89,7 @@ export function useChatSessionMessages({
   const lastConnectedEffortRef = useRef<string | undefined>(undefined)
   const lastConnectedPermissionModeRef = useRef<string | undefined>(undefined)
   const lastConnectedAdapterRef = useRef<string | undefined>(undefined)
+  const lastConnectedAccountRef = useRef<string | undefined>(undefined)
   const lastObservedSessionStatusRef = useRef<Session['status'] | undefined>(session?.status)
   const expectedCloseRef = useRef(false)
   const interactionRequestRef = useRef<InteractionRequestState | null>(null)
@@ -262,7 +268,40 @@ export function useChatSessionMessages({
       lastConnectedEffortRef.current = undefined
       lastConnectedPermissionModeRef.current = undefined
       lastConnectedAdapterRef.current = undefined
+      lastConnectedAccountRef.current = undefined
       clearScheduledReconciles()
+      return
+    }
+
+    if (optimisticCreation != null) {
+      clearScheduledReconciles()
+      historyRequestSeqRef.current += 1
+      const nextMessages = [optimisticCreation.message]
+      const nextErrorState = optimisticCreation.status === 'failed'
+        ? {
+          action: 'retry-session-creation',
+          code: 'session_create_failed',
+          kind: 'session',
+          message: optimisticCreation.errorMessage ?? t('chat.sessionCreateFailedMessage')
+        } satisfies ChatErrorState
+        : null
+
+      interactionRequestRef.current = null
+      setInteractionRequest(null)
+      setMessagesState(nextMessages)
+      setSessionInfo(null)
+      setQueuedMessages(EMPTY_QUEUED_MESSAGES)
+      setErrorState(nextErrorState)
+      setIsReady(true)
+      isInitialLoadRef.current = false
+      updateSessionViewCache(session.id, {
+        messages: nextMessages,
+        sessionInfo: null,
+        queuedMessages: EMPTY_QUEUED_MESSAGES,
+        errorState: nextErrorState,
+        interactionRequest: null,
+        isHydrated: true
+      })
       return
     }
 
@@ -284,11 +323,23 @@ export function useChatSessionMessages({
     return () => {
       clearScheduledReconciles()
     }
-  }, [clearScheduledReconciles, refreshHistory, session?.id, setInteractionRequest])
+  }, [
+    clearScheduledReconciles,
+    optimisticCreation,
+    refreshHistory,
+    session?.id,
+    setInteractionRequest,
+    t,
+    updateSessionViewCache
+  ])
 
   useEffect(() => {
     if (session?.id == null || session.id === '') {
       lastObservedSessionStatusRef.current = undefined
+      return
+    }
+    if (optimisticCreation != null) {
+      lastObservedSessionStatusRef.current = session.status
       return
     }
 
@@ -300,10 +351,15 @@ export function useChatSessionMessages({
     }
 
     void refreshHistory({ updateReadiness: false })
-  }, [refreshHistory, session?.id, session?.status])
+  }, [optimisticCreation, refreshHistory, session?.id, session?.status])
 
   useEffect(() => {
     if (session?.id == null || session.id === '') {
+      return
+    }
+    if (optimisticCreation != null) {
+      expectedCloseRef.current = true
+      connectionManager.close(session.id)
       return
     }
 
@@ -328,7 +384,12 @@ export function useChatSessionMessages({
       lastConnectedAdapterRef.current != null &&
       normalizedAdapter !== lastConnectedAdapterRef.current &&
       session?.status !== 'running'
-    if (modelChanged || effortChanged || permissionModeChanged || adapterChanged) {
+    const normalizedAccount = account ?? ''
+    const accountChanged = account != null &&
+      lastConnectedAccountRef.current != null &&
+      normalizedAccount !== lastConnectedAccountRef.current &&
+      session?.status !== 'running'
+    if (modelChanged || effortChanged || permissionModeChanged || adapterChanged || accountChanged) {
       expectedCloseRef.current = true
       setErrorState(null)
       connectionManager.send(session.id, { type: 'terminate_session' })
@@ -338,6 +399,7 @@ export function useChatSessionMessages({
     lastConnectedEffortRef.current = normalizedEffort
     lastConnectedPermissionModeRef.current = normalizedPermissionMode
     lastConnectedAdapterRef.current = normalizedAdapter
+    lastConnectedAccountRef.current = normalizedAccount
 
     const timer = setTimeout(() => {
       if (isDisposed) return
@@ -354,6 +416,9 @@ export function useChatSessionMessages({
       }
       if (adapter) {
         connectionParams.adapter = adapter
+      }
+      if (account) {
+        connectionParams.account = account
       }
 
       cleanup = connectionManager.connect(session.id, {
@@ -521,7 +586,7 @@ export function useChatSessionMessages({
           })
         }
       }, Object.keys(connectionParams).length > 0 ? connectionParams : undefined)
-    }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged) ? 200 : 100)
+    }, (modelChanged || effortChanged || permissionModeChanged || adapterChanged || accountChanged) ? 200 : 100)
 
     return () => {
       isDisposed = true
@@ -530,10 +595,12 @@ export function useChatSessionMessages({
     }
   }, [
     adapter,
+    account,
     clearScheduledReconciles,
     effort,
     modelForQuery,
     mutate,
+    optimisticCreation,
     permissionMode,
     reconcileAfterInteraction,
     retryCount,

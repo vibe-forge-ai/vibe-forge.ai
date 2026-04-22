@@ -1,10 +1,13 @@
+/* eslint-disable max-lines -- prompt asset selection coordinates routing, overlays, and dependency expansion */
 import type {
   Definition,
+  Entity,
   Filter,
   PluginOverlayConfig,
   Rule,
   RuleReference,
   SkillSelection,
+  Spec,
   WorkspaceAsset,
   WorkspaceAssetBundle,
   WorkspaceMcpSelection,
@@ -23,14 +26,17 @@ import {
 import {
   definitionWithResolvedName,
   pickDocumentAsset,
+  resolveEntityInheritance,
   resolveExcludedSkillRefs,
   resolveIncludedSkillRefs,
   resolveNamedAssets,
   resolvePluginOverlay,
   resolveRuleSelection,
-  resolveSelectedSkillAssets,
+  resolveSelectedSkillAssetsWithDependencies,
   toDocumentDefinitions
 } from './selection-internal'
+import { expandSkillAssetDependenciesWithRegistry } from './skill-dependencies'
+import { generateWorkspaceRoutePrompt } from './workspace-prompt'
 
 export async function resolvePromptAssetSelection(params: {
   bundle: WorkspaceAssetBundle
@@ -57,6 +63,8 @@ export async function resolvePromptAssetSelection(params: {
   let targetToolsFilter: Filter | undefined
   let targetMcpServersFilter: Filter | undefined
   let targetInstancePath: string | undefined
+  let targetAssetIds: string[] = []
+  let targetDefinition: Definition<Entity | Spec> | undefined
 
   if (params.type && params.name) {
     const baseTarget = params.type === 'spec'
@@ -77,18 +85,30 @@ export async function resolvePromptAssetSelection(params: {
     }
 
     pinnedTargetAsset = baseTarget
-    targetBody = baseTarget.payload.definition.body
-    targetToolsFilter = baseTarget.payload.definition.attributes.tools
-    targetMcpServersFilter = baseTarget.payload.definition.attributes.mcpServers
+    if (params.type === 'entity') {
+      const resolvedEntity = resolveEntityInheritance(
+        effectiveBundle,
+        baseTarget as Extract<WorkspaceAsset, { kind: 'entity' }>
+      )
+      targetDefinition = resolvedEntity.definition
+      targetAssetIds = resolvedEntity.assetIds
+    } else {
+      targetDefinition = baseTarget.payload.definition
+      targetAssetIds = [baseTarget.id]
+    }
+    targetBody = targetDefinition.body
+    targetToolsFilter = targetDefinition.attributes.tools
+    targetMcpServersFilter = targetDefinition.attributes.mcpServers
     targetInstancePath = baseTarget.instancePath
     options.assetBundle = effectiveBundle
   }
 
-  const selectedSkillAssets = resolveSelectedSkillAssets(effectiveBundle.skills, params.input?.skills)
+  const selectedSkillAssets = await resolveSelectedSkillAssetsWithDependencies(effectiveBundle, params.input?.skills)
   const useNativeProjectSkills = supportsNativeProjectSkills(params.adapter)
   const promptAssetIds = new Set<string>([
     ...effectiveBundle.rules.map(asset => asset.id),
     ...effectiveBundle.specs.map(asset => asset.id),
+    ...effectiveBundle.workspaces.map(asset => asset.id),
     ...(useNativeProjectSkills ? [] : selectedSkillAssets.map(asset => asset.id)),
     ...(params.type !== 'entity' ? effectiveBundle.entities.map(asset => asset.id) : [])
   ])
@@ -101,8 +121,8 @@ export async function resolvePromptAssetSelection(params: {
   const targetSkillsAssets: Array<Extract<WorkspaceAsset, { kind: 'skill' }>> = []
 
   if (pinnedTargetAsset != null) {
-    promptAssetIds.add(pinnedTargetAsset.id)
-    const attributes = pinnedTargetAsset.payload.definition.attributes
+    targetAssetIds.forEach(assetId => promptAssetIds.add(assetId))
+    const attributes = targetDefinition?.attributes ?? pinnedTargetAsset.payload.definition.attributes
 
     if (attributes.rules != null) {
       const selection = await resolveRuleSelection(
@@ -144,12 +164,18 @@ export async function resolvePromptAssetSelection(params: {
       resolveNamedAssets(effectiveBundle.skills, excludedRefs, targetInstancePath).map(asset => asset.id)
     )
 
-    includedAssets
-      .filter(asset => !excludedIds.has(asset.id))
-      .forEach((asset) => {
-        targetSkillsAssets.push(asset)
-        promptAssetIds.add(asset.id)
-      })
+    const expandedTargetSkills = await expandSkillAssetDependenciesWithRegistry({
+      allAssets: effectiveBundle.assets,
+      configs: effectiveBundle.configs ?? [undefined, undefined],
+      cwd: effectiveBundle.cwd,
+      excludedIds,
+      selectedAssets: includedAssets,
+      skillAssets: effectiveBundle.skills
+    })
+    expandedTargetSkills.forEach((asset) => {
+      targetSkillsAssets.push(asset)
+      promptAssetIds.add(asset.id)
+    })
   }
 
   const rules = Array.from(ruleDefinitions.values())
@@ -162,11 +188,13 @@ export async function resolvePromptAssetSelection(params: {
     : []
   const skills = toDocumentDefinitions(selectedSkillAssets)
   const specs = toDocumentDefinitions(effectiveBundle.specs)
+  const workspaces = effectiveBundle.workspaces.map(asset => asset.payload)
 
   options.systemPrompt = [
     generateRulesPrompt(effectiveBundle.cwd, rules),
     generateSkillsPrompt(effectiveBundle.cwd, targetSkills),
     generateEntitiesRoutePrompt(entities),
+    generateWorkspaceRoutePrompt(effectiveBundle.cwd, workspaces),
     useNativeProjectSkills ? '' : generateSkillsRoutePrompt(effectiveBundle.cwd, routedSkills),
     generateSpecRoutePrompt(specs, { active: params.type === 'spec' }),
     targetBody
@@ -174,12 +202,8 @@ export async function resolvePromptAssetSelection(params: {
     .filter(section => section !== '')
     .join('\n\n')
 
-  if (targetToolsFilter != null) {
-    options.tools = targetToolsFilter
-  }
-  if (targetMcpServersFilter != null) {
-    options.mcpServers = targetMcpServersFilter
-  }
+  if (targetToolsFilter != null) options.tools = targetToolsFilter
+  if (targetMcpServersFilter != null) options.mcpServers = targetMcpServersFilter
   options.promptAssetIds = Array.from(promptAssetIds)
 
   return [
@@ -189,6 +213,7 @@ export async function resolvePromptAssetSelection(params: {
       entities,
       skills,
       specs,
+      workspaces,
       targetBody,
       promptAssetIds: Array.from(promptAssetIds)
     },

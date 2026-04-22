@@ -1,12 +1,20 @@
 .DS_Store
 .idea
 .logs
+.data
 .ai/.mock
+.ai/.local
 .ai/caches
+.ai/env.local/
 .ai/logs
 .ai/results
-.ai/worktress
+.ai/worktrees/
 .ai.dev.config.json
+apps/desktop/release/
+.ai/rules/*.local.md
+.ai/rules/*.dev.md
+.ai/rules/**/*.local.md
+.ai/rules/**/*.dev.md
 
 ### Node template
 # Logs
@@ -101,6 +109,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+*.vsix
 
 # Gatsby files
 .cache/

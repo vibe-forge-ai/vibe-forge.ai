@@ -1,0 +1,46 @@
+name: Trigger PWA Deploy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - apps/client/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .node-version
+      - .github/workflows/deploy-pwa.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trigger-pwa-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trigger:
+    name: trigger-pwa-repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pwa repository deployment
+        env:
+          GH_TOKEN: ${{ secrets.PWA_DEPLOY_TOKEN }}
+          SOURCE_REF: master
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::Missing PWA_DEPLOY_TOKEN secret."
+            exit 1
+          fi
+
+          gh workflow run deploy-pwa.yml \
+            --repo vibe-forge-ai/pwa \
+            --ref master \
+            -f source_ref="${SOURCE_REF}" \
+            -f source_sha="${SOURCE_SHA}"

@@ -8,9 +8,9 @@ import type {
   GitWorktreeListResult
 } from '@vibe-forge/types'
 
-import { conflict, notFound } from '#~/utils/http.js'
 import { getWorkspaceFolder } from '#~/services/config/index.js'
 import { resolveSessionWorkspace } from '#~/services/session/workspace.js'
+import { conflict, notFound } from '#~/utils/http.js'
 
 import { assertBranchName } from './commit'
 import {
@@ -40,10 +40,10 @@ const resolveFallbackSyncTarget = (
 ): GitSyncRemoteTarget | null => {
   const normalizedBaseRef = baseRef?.trim()
   if (
-    normalizedBaseRef == null
-    || normalizedBaseRef === ''
-    || normalizedBaseRef === 'HEAD'
-    || looksLikeGitCommitRef(normalizedBaseRef)
+    normalizedBaseRef == null ||
+    normalizedBaseRef === '' ||
+    normalizedBaseRef === 'HEAD' ||
+    looksLikeGitCommitRef(normalizedBaseRef)
   ) {
     return null
   }
@@ -111,9 +111,9 @@ const resolveSyncRemoteTarget = async (
   const workspace = await resolveSessionWorkspace(sessionId)
   const fallbackTarget = resolveFallbackSyncTarget(workspace.baseRef, remotes, remote)
   if (
-    fallbackTarget != null
-    && (fallbackTarget.remote !== remote || fallbackTarget.branch !== currentBranch)
-    && await doesRemoteBranchExist(repositoryRoot, fallbackTarget.remote, fallbackTarget.branch)
+    fallbackTarget != null &&
+    (fallbackTarget.remote !== remote || fallbackTarget.branch !== currentBranch) &&
+    await doesRemoteBranchExist(repositoryRoot, fallbackTarget.remote, fallbackTarget.branch)
   ) {
     return fallbackTarget
   }

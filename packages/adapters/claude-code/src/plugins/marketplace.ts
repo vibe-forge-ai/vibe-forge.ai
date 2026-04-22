@@ -1,4 +1,4 @@
-import { buildConfigJsonVariables, loadConfig, mergeConfigs } from '@vibe-forge/config'
+import { buildConfigJsonVariables, loadConfigState } from '@vibe-forge/config'
 import type { AdapterPluginResolveSourceContext, Config, ResolvedAdapterPluginSource } from '@vibe-forge/types'
 
 import { loadMarketplaceCatalogFromSource } from './marketplace-catalog'
@@ -56,11 +56,10 @@ export const resolveClaudeMarketplaceInstallSource = async (
   const reference = parseMarketplaceInstallReference(params.requestedSource)
   if (reference == null) return undefined
 
-  const [projectConfig, userConfig] = await loadConfig({
+  const { mergedConfig } = await loadConfigState({
     cwd: params.cwd,
     jsonVariables: buildConfigJsonVariables(params.cwd)
   })
-  const mergedConfig = mergeConfigs(projectConfig, userConfig)
   const configuredMarketplace = getConfiguredClaudeMarketplace(mergedConfig, reference.marketplace)
   if (configuredMarketplace == null) {
     throw new Error(

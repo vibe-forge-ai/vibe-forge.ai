@@ -11,15 +11,15 @@ export interface GitBranchTreeFolder {
 
 export type GitBranchTreeEntry =
   | {
-      type: 'branch'
-      branch: GitBranchSummary
-      label: string
-      subtitle?: string
-    }
+    type: 'branch'
+    branch: GitBranchSummary
+    label: string
+    subtitle?: string
+  }
   | {
-      type: 'folder'
-      folder: GitBranchTreeFolder
-    }
+    type: 'folder'
+    folder: GitBranchTreeFolder
+  }
 
 interface BranchTreeDraftFolder {
   branches: GitBranchSummary[]

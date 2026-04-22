@@ -1,12 +1,30 @@
+/* eslint-disable max-lines -- Claude init coverage keeps mock-home and asset sync scenarios together. */
 import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { resolveWorkspaceAssetBundle } from '../../../workspace-assets/src/index'
 import { initClaudeCodeAdapter } from '../src/claude/init'
 
 const tempDirs: string[] = []
+
+const createBarrier = (size: number) => {
+  let pending = size
+  let release: (() => void) | undefined
+  const waitForAll = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  return async () => {
+    pending -= 1
+    if (pending === 0) {
+      release?.()
+    }
+    await waitForAll
+  }
+}
 
 const createWorkspace = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'claude-init-'))
@@ -150,6 +168,134 @@ describe('initClaudeCodeAdapter', () => {
     expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(pluginSkillDir))
   })
 
+  it('bridges real-home Claude skills through workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const previousRealHome = process.env.__VF_PROJECT_REAL_HOME__
+
+    try {
+      process.env.__VF_PROJECT_REAL_HOME__ = realHome
+      await mkdir(join(realHome, '.claude', 'skills', 'foo'), { recursive: true })
+      await writeFile(
+        join(realHome, '.claude', 'skills', 'foo', 'SKILL.md'),
+        '---\ndescription: real home foo\n---\nUse the real home definition.\n'
+      )
+
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [undefined, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+
+      expect(bundle.skills.find(asset => asset.displayName === 'foo')).toEqual(expect.objectContaining({
+        resolvedBy: 'home-bridge',
+        sourcePath: join(realHome, '.claude', 'skills', 'foo', 'SKILL.md')
+      }))
+
+      await initClaudeCodeAdapter({
+        cwd: workspace,
+        env: {
+          HOME: mockHome,
+          __VF_PROJECT_REAL_HOME__: realHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: [],
+          skills: bundle.skills
+        }
+      } as any)
+
+      const targetPath = join(mockHome, '.claude', 'skills', 'foo')
+      expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(
+        resolve(realHome, '.claude', 'skills', 'foo')
+      )
+    } finally {
+      if (previousRealHome == null) {
+        delete process.env.__VF_PROJECT_REAL_HOME__
+      } else {
+        process.env.__VF_PROJECT_REAL_HOME__ = previousRealHome
+      }
+    }
+  })
+
+  it('syncs resolved dependency skills from workspace assets into the isolated Claude home', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const appSkillDir = join(workspace, '.ai', 'skills', 'app-builder')
+    const dependencySkillDir = join(workspace, '.ai', 'caches', 'skill-dependencies', 'skills.sh', 'frontend-design')
+
+    await mkdir(appSkillDir, { recursive: true })
+    await writeFile(join(appSkillDir, 'SKILL.md'), '# app-builder\n')
+    await mkdir(dependencySkillDir, { recursive: true })
+    await writeFile(join(dependencySkillDir, 'SKILL.md'), '# frontend-design\n')
+
+    await initClaudeCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: [],
+        skills: [
+          {
+            id: 'skill:workspace:app-builder',
+            kind: 'skill',
+            name: 'app-builder',
+            displayName: 'app-builder',
+            origin: 'workspace',
+            sourcePath: join(appSkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(appSkillDir, 'SKILL.md'),
+                body: '# app-builder\n',
+                attributes: {
+                  dependencies: ['frontend-design']
+                }
+              }
+            }
+          },
+          {
+            id: 'skill:workspace:frontend-design',
+            kind: 'skill',
+            name: 'frontend-design',
+            displayName: 'frontend-design',
+            origin: 'workspace',
+            sourcePath: join(dependencySkillDir, 'SKILL.md'),
+            payload: {
+              definition: {
+                path: join(dependencySkillDir, 'SKILL.md'),
+                body: '# frontend-design\n',
+                attributes: {}
+              }
+            }
+          }
+        ]
+      }
+    } as any)
+
+    const appSkillPath = join(mockHome, '.claude', 'skills', 'app-builder')
+    const dependencySkillPath = join(mockHome, '.claude', 'skills', 'frontend-design')
+    expect((await lstat(appSkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(appSkillPath), await readlink(appSkillPath))).toBe(resolve(appSkillDir))
+    expect((await lstat(dependencySkillPath)).isSymbolicLink()).toBe(true)
+    expect(resolve(dirname(dependencySkillPath), await readlink(dependencySkillPath))).toBe(
+      resolve(dependencySkillDir)
+    )
+  })
+
   it('writes managed project trust state into the isolated Claude app-state file', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
@@ -179,6 +325,59 @@ describe('initClaudeCodeAdapter', () => {
       projectOnboardingSeenCount: 1,
       hasCompletedProjectOnboarding: true
     })
+  })
+
+  it('keeps concurrent mock-home skill sync idempotent when multiple vf processes initialize Claude together', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const barrier = createBarrier(2)
+
+    await mkdir(join(workspace, '.ai', 'skills', 'research'), { recursive: true })
+    await writeFile(join(workspace, '.ai', 'skills', 'research', 'SKILL.md'), '# Research\n')
+
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('node:fs/promises')>()
+      return {
+        ...actual,
+        symlink: vi.fn(async (...args: Parameters<typeof actual.symlink>) => {
+          const [, targetPath] = args
+          if (String(targetPath).endsWith(join('.claude', 'skills'))) {
+            await barrier()
+          }
+          return actual.symlink(...args)
+        })
+      }
+    })
+
+    try {
+      const { initClaudeCodeAdapter: initClaudeCodeAdapterWithMockedFs } = await import('../src/claude/init')
+      const ctx = {
+        cwd: workspace,
+        env: {
+          HOME: mockHome
+        },
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          debug: vi.fn()
+        },
+        assets: {
+          hookPlugins: []
+        }
+      } as any
+
+      await expect(
+        Promise.all([initClaudeCodeAdapterWithMockedFs(ctx), initClaudeCodeAdapterWithMockedFs(ctx)])
+      ).resolves.toHaveLength(2)
+      const targetPath = join(mockHome, '.claude', 'skills')
+      expect((await lstat(targetPath)).isSymbolicLink()).toBe(true)
+      expect(resolve(dirname(targetPath), await readlink(targetPath))).toBe(resolve(workspace, '.ai', 'skills'))
+    } finally {
+      vi.doUnmock('node:fs/promises')
+      vi.resetModules()
+    }
   })
 
   it('preserves existing Claude app state while seeding trust from the real home config', async () => {

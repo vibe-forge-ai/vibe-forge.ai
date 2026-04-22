@@ -6,6 +6,7 @@ import {
   getDisallowedResumeFlags,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
+  resolveResumeAdapterOptions,
   resolveRunMode
 } from './run/options'
 import {
@@ -37,6 +38,7 @@ export {
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
+  resolveResumeAdapterOptions,
   resolveRunMode,
   shouldPrintResumeHint
 }

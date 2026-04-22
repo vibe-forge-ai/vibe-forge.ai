@@ -1,0 +1,20 @@
+{
+  "name": "@vibe-forge/bootstrap",
+  "version": "1.0.0",
+  "description": "Vibe Forge bootstrap launcher",
+  "vibeForge": {
+    "runtimeTranspile": true
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "vibe-forge-bootstrap": "./cli.js",
+    "vfb": "./cli.js"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@vibe-forge/cli-helper": "workspace:^",
+    "commander": "^12.1.0"
+  }
+}

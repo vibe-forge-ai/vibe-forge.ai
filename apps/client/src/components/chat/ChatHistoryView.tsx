@@ -16,15 +16,25 @@ import type {
 import type { ConfigResponse, SessionInfo, ToolViewEnvelope } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
-import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
-import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
-import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
+import { ComposerLanding, ComposerStack } from '#~/components/composer-landing/ComposerLanding'
+import type { ContextReferenceRequest } from '#~/components/workspace/context-file-types'
+import {
+  DEFAULT_CHAT_SESSION_TARGET_DRAFT,
+  getChatSessionTargetDraftFromSession,
+  isChatSessionTargetReady
+} from '#~/hooks/chat/chat-session-target'
+import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
 } from '#~/hooks/chat/chat-session-workspace-draft'
+import type { ChatAdapterAccountOption } from '#~/hooks/chat/use-chat-adapter-account-selection'
+import type { ChatEffort } from '#~/hooks/chat/use-chat-effort'
+import type { ModelSelectMenuGroup, ModelSelectOption } from '#~/hooks/chat/use-chat-model-adapter-selection'
+import type { PermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatScroll } from '#~/hooks/chat/use-chat-scroll'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
+import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { getLoopedIndex } from '#~/hooks/use-roving-focus-list'
 import { CurrentTodoList } from './CurrentTodoList'
 import { NewSessionGuide } from './NewSessionGuide'
@@ -32,6 +42,7 @@ import { QueuedMessagesCard } from './QueuedMessagesCard'
 import { MessageItem } from './messages/MessageItem'
 import { MessageStatusNotice } from './messages/MessageStatusNotice'
 import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
+import { getLastAssistantActionAnchorId } from './messages/message-action-utils'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
@@ -73,8 +84,13 @@ export function ChatHistoryView({
   selectedAdapter,
   adapterOptions,
   onAdapterChange,
+  selectedAccount,
+  accountOptions,
+  showAccountSelector,
+  onAccountChange,
   modelUnavailable,
-  hasAvailableModels
+  hasAvailableModels,
+  contextReferenceRequest
 }: {
   isReady: boolean
   messages: ChatMessage[]
@@ -109,18 +125,27 @@ export function ChatHistoryView({
   selectedAdapter?: string
   adapterOptions: Array<{ value: string; label: React.ReactNode }>
   onAdapterChange: (adapter: string) => void
+  selectedAccount?: string
+  accountOptions: ChatAdapterAccountOption[]
+  showAccountSelector: boolean
+  onAccountChange: (account: string) => void
   modelUnavailable: boolean
   hasAvailableModels: boolean
+  contextReferenceRequest?: ContextReferenceRequest | null
 }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const location = useLocation()
+  const { isCompactLayout, isTouchInteraction } = useResponsiveLayout()
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
   const configWorkspaceDraft = useMemo(
     () => getChatSessionWorkspaceDraftFromConfig(configRes),
     [configRes]
   )
   const workspaceDraftDirtyRef = useRef(false)
+  const [sessionTargetDraft, setSessionTargetDraft] = useState<ChatSessionTargetDraft>(() => ({
+    ...DEFAULT_CHAT_SESSION_TARGET_DRAFT
+  }))
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({
     ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT
   }))
@@ -132,6 +157,7 @@ export function ChatHistoryView({
     isCreating,
     send,
     sendContent,
+    retrySessionCreation,
     enqueueContent,
     removeQueuedContent,
     moveQueuedContent,
@@ -148,6 +174,8 @@ export function ChatHistoryView({
     effort,
     permissionMode,
     adapter: selectedAdapter,
+    account: selectedAccount,
+    sessionTargetDraft,
     workspaceDraft,
     onClearMessages
   })
@@ -171,8 +199,20 @@ export function ChatHistoryView({
       createdAt: Date.now()
     }
   }
+  const validateSessionTarget = () => {
+    if (session?.id != null || isChatSessionTargetReady(sessionTargetDraft)) {
+      return true
+    }
+
+    void message.warning(t('chat.sessionTarget.missingResourceWarning'))
+    return false
+  }
 
   const handleSendContent = async (content: ChatMessageContent[], mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -185,12 +225,7 @@ export function ChatHistoryView({
     }
 
     if (!session?.id) {
-      const optimisticMessage = buildUserMessage(content)
-      setMessages((prev) => [...prev, optimisticMessage])
       const didSend = await sendContent(content, mode)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
-      }
       if (didSend && queuedDraft != null) {
         setQueuedDraft(null)
         setQueueMode('steer')
@@ -210,6 +245,10 @@ export function ChatHistoryView({
   }
 
   const handleSend = async (text: string, mode?: SessionQueuedMessageMode) => {
+    if (!validateSessionTarget()) {
+      return false
+    }
+
     const resolvedMode = mode ?? queueMode
 
     if (session?.id && session.status === 'running') {
@@ -222,12 +261,7 @@ export function ChatHistoryView({
     }
 
     if (!session?.id) {
-      const optimisticMessage = buildUserMessage(text)
-      setMessages((prev) => [...prev, optimisticMessage])
       const didSend = await send(text, mode)
-      if (!didSend) {
-        setMessages((prev) => prev.filter((message) => message.id !== optimisticMessage.id))
-      }
       if (didSend && queuedDraft != null) {
         setQueuedDraft(null)
         setQueueMode('steer')
@@ -253,7 +287,12 @@ export function ChatHistoryView({
     setExpandedTurnIds(new Set())
     setQueuedDraft(null)
     setQueueMode('steer')
-  }, [session?.id])
+    setSessionTargetDraft(
+      session?.id != null
+        ? getChatSessionTargetDraftFromSession(session)
+        : { ...DEFAULT_CHAT_SESSION_TARGET_DRAFT }
+    )
+  }, [session?.id, session?.promptName, session?.promptType])
   useEffect(() => {
     if (session?.id != null) {
       return
@@ -338,6 +377,7 @@ export function ChatHistoryView({
     }
   }
   const isInlineEditing = editingMessageId != null
+  const shouldShowNewSessionGuide = !session?.id && messages.length === 0 && historyStatusNotices.length === 0
   const renderItems = useMemo(() => processMessages(messages), [messages])
   const hashAnchorId = useMemo(() => decodeURIComponent(location.hash.replace(/^#/, '')), [location.hash])
   const targetAnchorId = useMemo(() => {
@@ -364,16 +404,7 @@ export function ChatHistoryView({
       hashAnchorId: hashAnchorId !== '' ? hashAnchorId : targetAnchorId,
       keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
     }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status, targetAnchorId])
-  const lastAssistantActionAnchorId = useMemo(() => {
-    for (let index = renderItems.length - 1; index >= 0; index -= 1) {
-      const item = renderItems[index]
-      if (item == null) continue
-      if (item.type === 'tool-group') continue
-      if (item.message.role === 'user') continue
-      return item.anchorId
-    }
-    return null
-  }, [renderItems])
+  const lastAssistantActionAnchorId = useMemo(() => getLastAssistantActionAnchorId(renderItems), [renderItems])
   const handleEditQueuedMessage = async (item: SessionQueuedMessage) => {
     const removed = await removeQueuedContent(item.id)
     if (!removed) {
@@ -573,6 +604,8 @@ export function ChatHistoryView({
           originalMessage={item.originalMessage}
           sessionInfo={sessionInfo}
           isEditing={editingMessageId === item.originalMessage.id}
+          isCompactLayout={isCompactLayout}
+          isTouchInteraction={isTouchInteraction}
           isSessionBusy={isCreating || session?.status === 'running' ||
             session?.status === 'waiting_input'}
           showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
@@ -601,6 +634,111 @@ export function ChatHistoryView({
       />
     )
   }
+
+  const composerContent = (
+    <>
+      {isPermissionInteraction && interactionPanel}
+      <CurrentTodoList messages={messages} />
+      {!isInlineEditing && (
+        <QueuedMessagesCard
+          mode='next'
+          items={queuedMessages.next}
+          onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+          onDelete={(item) => void removeQueuedContent(item.id)}
+          onEdit={(item) => void handleEditQueuedMessage(item)}
+          onReorder={(ids) => reorderQueuedContent('next', ids)}
+        />
+      )}
+      {!isInlineEditing && (
+        <QueuedMessagesCard
+          mode='steer'
+          items={queuedMessages.steer}
+          onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
+          onDelete={(item) => void removeQueuedContent(item.id)}
+          onEdit={(item) => void handleEditQueuedMessage(item)}
+          onReorder={(ids) => reorderQueuedContent('steer', ids)}
+        />
+      )}
+      {!isPermissionInteraction && interactionPanel}
+      {!isInlineEditing && (
+        <div className='sender-container'>
+          <Sender
+            onSend={handleSend}
+            onSendContent={handleSendContent}
+            adapterLocked={session?.id != null}
+            sessionId={session?.id}
+            sessionStatus={isCreating ? 'running' : session?.status}
+            onInterrupt={interrupt}
+            onClear={clearMessages}
+            sessionInfo={sessionInfo}
+            interactionRequest={interactionRequest}
+            onInteractionResponse={onInteractionResponse}
+            interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
+              ? {
+                optionCount: interactionOptions.length,
+                activeIndex: activeInteractionOptionIndex,
+                onMove: handleMoveInteractionOption,
+                onSubmit: handleSubmitActiveInteractionOption
+              }
+              : undefined}
+            initialContent={queuedDraft?.content}
+            placeholder={placeholder}
+            submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
+            modelMenuGroups={modelMenuGroups}
+            modelSearchOptions={modelSearchOptions}
+            recommendedModelOptions={recommendedModelOptions}
+            servicePreviewModelOptions={servicePreviewModelOptions}
+            onToggleRecommendedModel={onToggleRecommendedModel}
+            updatingRecommendedModelValue={updatingRecommendedModelValue}
+            selectedModel={selectedModel}
+            onModelChange={onModelChange}
+            effort={effort}
+            effortOptions={effortOptions}
+            onEffortChange={onEffortChange}
+            permissionMode={permissionMode}
+            permissionModeOptions={permissionModeOptions}
+            onPermissionModeChange={onPermissionModeChange}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
+            modelUnavailable={modelUnavailable}
+            sessionTarget={{
+              draft: session?.id != null ? getChatSessionTargetDraftFromSession(session) : sessionTargetDraft,
+              locked: session?.id != null,
+              disabled: isCreating,
+              onChange: setSessionTargetDraft
+            }}
+            queueMode={queueMode}
+            onQueueModeChange={setQueueMode}
+            contextReferenceRequest={contextReferenceRequest}
+          />
+          <ChatStatusBar
+            draftWorkspace={workspaceDraft}
+            isCreating={isCreating}
+            sessionId={session?.id}
+            adapterLocked={session?.id != null}
+            isThinking={isCreating || session?.status === 'running'}
+            modelUnavailable={modelUnavailable}
+            selectedAdapter={selectedAdapter}
+            adapterOptions={adapterOptions}
+            onAdapterChange={onAdapterChange}
+            selectedAccount={selectedAccount}
+            accountOptions={accountOptions}
+            showAccountSelector={showAccountSelector}
+            onAccountChange={onAccountChange}
+            onDraftWorkspaceChange={(nextDraft) => {
+              workspaceDraftDirtyRef.current = true
+              setWorkspaceDraft(nextDraft)
+            }}
+          />
+        </div>
+      )}
+    </>
+  )
 
   return (
     <>
@@ -642,6 +780,9 @@ export function ChatHistoryView({
               key={notice.id}
               notice={notice}
               onRetryConnection={onRetryConnection}
+              onRetrySessionCreation={() => {
+                void retrySessionCreation()
+              }}
             />
           ))}
           <div ref={messagesEndRef} />
@@ -654,95 +795,20 @@ export function ChatHistoryView({
         )}
       </div>
 
-      {!session?.id && messages.length === 0 && historyStatusNotices.length === 0 && (
-        <div className='new-session-guide-wrapper'>
-          <NewSessionGuide />
-        </div>
-      )}
-
-      <div className='chat-composer-stack'>
-        <div className='chat-composer-stack__inner'>
-          {isPermissionInteraction && interactionPanel}
-          <CurrentTodoList messages={messages} />
-          {!isInlineEditing && (
-            <QueuedMessagesCard
-              mode='next'
-              items={queuedMessages.next}
-              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
-              onDelete={(item) => void removeQueuedContent(item.id)}
-              onEdit={(item) => void handleEditQueuedMessage(item)}
-              onReorder={(ids) => reorderQueuedContent('next', ids)}
+      {shouldShowNewSessionGuide
+        ? (
+          <ComposerLanding compact={isCompactLayout} composer={composerContent}>
+            <NewSessionGuide
+              selectedTarget={sessionTargetDraft}
+              onSelectTarget={setSessionTargetDraft}
             />
-          )}
-          {!isInlineEditing && (
-            <QueuedMessagesCard
-              mode='steer'
-              items={queuedMessages.steer}
-              onMove={(item, targetMode) => void handleMoveQueuedMessage(item, targetMode)}
-              onDelete={(item) => void removeQueuedContent(item.id)}
-              onEdit={(item) => void handleEditQueuedMessage(item)}
-              onReorder={(ids) => reorderQueuedContent('steer', ids)}
-            />
-          )}
-          {!isPermissionInteraction && interactionPanel}
-          {!isInlineEditing && (
-            <div className='sender-container'>
-              <Sender
-                onSend={handleSend}
-                onSendContent={handleSendContent}
-                adapterLocked={session?.id != null}
-                sessionId={session?.id}
-                sessionStatus={isCreating ? 'running' : session?.status}
-                onInterrupt={interrupt}
-                onClear={clearMessages}
-                sessionInfo={sessionInfo}
-                interactionRequest={interactionRequest}
-                onInteractionResponse={onInteractionResponse}
-                interactionOptionNavigation={interactionRequest != null && interactionOptions.length > 0
-                  ? {
-                    optionCount: interactionOptions.length,
-                    activeIndex: activeInteractionOptionIndex,
-                    onMove: handleMoveInteractionOption,
-                    onSubmit: handleSubmitActiveInteractionOption
-                  }
-                  : undefined}
-                initialContent={queuedDraft?.content}
-                placeholder={placeholder}
-                submitLabel={queuedDraft != null ? t('chat.queue.requeueMessage') : undefined}
-                modelMenuGroups={modelMenuGroups}
-                modelSearchOptions={modelSearchOptions}
-                recommendedModelOptions={recommendedModelOptions}
-                servicePreviewModelOptions={servicePreviewModelOptions}
-                onToggleRecommendedModel={onToggleRecommendedModel}
-                updatingRecommendedModelValue={updatingRecommendedModelValue}
-                selectedModel={selectedModel}
-                onModelChange={onModelChange}
-                effort={effort}
-                effortOptions={effortOptions}
-                onEffortChange={onEffortChange}
-                permissionMode={permissionMode}
-                permissionModeOptions={permissionModeOptions}
-                onPermissionModeChange={onPermissionModeChange}
-                selectedAdapter={selectedAdapter}
-                adapterOptions={adapterOptions}
-                onAdapterChange={onAdapterChange}
-                modelUnavailable={modelUnavailable}
-                queueMode={queueMode}
-                onQueueModeChange={setQueueMode}
-              />
-              <ChatStatusBar
-                draftWorkspace={workspaceDraft}
-                isCreating={isCreating}
-                sessionId={session?.id}
-                onDraftWorkspaceChange={(nextDraft) => {
-                  workspaceDraftDirtyRef.current = true
-                  setWorkspaceDraft(nextDraft)
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+          </ComposerLanding>
+        )
+        : (
+          <ComposerStack>
+            {composerContent}
+          </ComposerStack>
+        )}
     </>
   )
 }

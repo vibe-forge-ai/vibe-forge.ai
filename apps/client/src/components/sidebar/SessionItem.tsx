@@ -17,7 +17,9 @@ interface SessionItemProps {
   session: Session
   isActive: boolean
   isBatchMode: boolean
+  isCompactLayout: boolean
   isSelected: boolean
+  isTouchInteraction: boolean
   onSelect: (session: Session) => void
   onArchive: (id: string) => void | Promise<void>
   onDelete: (id: string) => void | Promise<void>
@@ -32,7 +34,9 @@ export function SessionItem({
   session,
   isActive,
   isBatchMode,
+  isCompactLayout,
   isSelected,
+  isTouchInteraction,
   onSelect,
   onArchive,
   onDelete,
@@ -45,6 +49,8 @@ export function SessionItem({
   const itemContentRef = useRef<HTMLDivElement | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingSessionAction>(null)
   const { getAdapterDisplay } = useAdapterCatalog()
+  const showCompactActionMenu = isCompactLayout || isTouchInteraction
+  const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 
   useEffect(() => {
     if (pendingAction == null) {
@@ -84,6 +90,9 @@ export function SessionItem({
 
   const archiveActionLabel = session.isArchived ? t('common.restore') : t('common.archive')
   const archiveConfirmLabel = t('common.confirmAction', { action: archiveActionLabel })
+  const sessionTags = session.tags ?? []
+  const visibleTags = isCompactLayout ? sessionTags.slice(0, 1) : sessionTags
+  const hiddenTagCount = Math.max(sessionTags.length - visibleTags.length, 0)
 
   const displayTitle = (session.title != null && session.title !== '')
     ? session.title
@@ -139,7 +148,7 @@ export function SessionItem({
         break
       case 'waiting_input':
         return (
-          <Tooltip title={title}>
+          <Tooltip title={resolveTooltipTitle(title)}>
             <div className='waiting-input-indicator' />
           </Tooltip>
         )
@@ -148,7 +157,7 @@ export function SessionItem({
     }
 
     return (
-      <Tooltip title={title}>
+      <Tooltip title={resolveTooltipTitle(title)}>
         <span
           className={`material-symbols-rounded status-icon ${status === 'running' ? 'spin' : ''}`}
           style={{
@@ -193,7 +202,7 @@ export function SessionItem({
         }}
         className={`session-item ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''} ${
           session.isStarred ? 'starred' : ''
-        }`}
+        } ${isCompactLayout ? 'session-item--compact' : ''} ${showCompactActionMenu ? 'session-item--touch' : ''}`}
       >
         <div ref={itemContentRef} className='session-item-content'>
           <div className={`session-leading ${adapterDisplay?.icon != null ? 'has-adapter' : ''}`}>
@@ -219,71 +228,102 @@ export function SessionItem({
               <div className='session-header-side'>
                 {!isBatchMode && (
                   <>
-                    <Tooltip title={timeDisplay.full}>
-                      <span className='time-display'>
-                        {timeDisplay.relative}
-                      </span>
-                    </Tooltip>
-                    <div className='session-item-actions'>
-                      <Tooltip title={session.isStarred ? t('common.unstar') : t('common.star')}>
-                        <Button
-                          type='text'
-                          size='small'
-                          className={`action-btn star-btn ${session.isStarred ? 'starred' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setPendingAction(null)
-                            void onStar(session.id, !session.isStarred)
-                          }}
-                          icon={
-                            <span
-                              className={`material-symbols-rounded ${session.isStarred ? 'filled' : ''}`}
-                            >
-                              star
-                            </span>
-                          }
-                        />
+                    {!isCompactLayout && (
+                      <Tooltip title={resolveTooltipTitle(timeDisplay.full)}>
+                        <span className='time-display'>
+                          {timeDisplay.relative}
+                        </span>
                       </Tooltip>
-                      <Tooltip
-                        title={pendingAction === 'archive' ? archiveConfirmLabel : archiveActionLabel}
-                      >
-                        <Button
-                          type='text'
-                          size='small'
-                          className={`action-btn archive-btn ${pendingAction === 'archive' ? 'is-confirming' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleConfirmableActionClick('archive')
-                          }}
+                    )}
+                    {showCompactActionMenu
+                      ? (
+                        <SessionContextMenu
+                          session={session}
+                          trigger={['click']}
+                          onArchive={onArchive}
+                          onDelete={onDelete}
+                          onRename={onRename}
+                          onStar={onStar}
                         >
-                          <span className='material-symbols-rounded'>
-                            {session.isArchived ? 'unarchive' : 'archive'}
-                          </span>
-                          {pendingAction === 'archive' && (
-                            <span className='action-btn__label'>{archiveConfirmLabel}</span>
-                          )}
-                        </Button>
-                      </Tooltip>
-                    </div>
+                          <Button
+                            type='text'
+                            size='small'
+                            className='action-btn action-btn--more'
+                            title={t('common.moreActions')}
+                            aria-label={t('common.moreActions')}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                            }}
+                            icon={<span className='material-symbols-rounded'>more_horiz</span>}
+                          />
+                        </SessionContextMenu>
+                      )
+                      : (
+                        <div className='session-item-actions'>
+                          <Tooltip
+                            title={resolveTooltipTitle(session.isStarred ? t('common.unstar') : t('common.star'))}
+                          >
+                            <Button
+                              type='text'
+                              size='small'
+                              className={`action-btn star-btn ${session.isStarred ? 'starred' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setPendingAction(null)
+                                void onStar(session.id, !session.isStarred)
+                              }}
+                              icon={
+                                <span
+                                  className={`material-symbols-rounded ${session.isStarred ? 'filled' : ''}`}
+                                >
+                                  star
+                                </span>
+                              }
+                            />
+                          </Tooltip>
+                          <Tooltip
+                            title={resolveTooltipTitle(
+                              pendingAction === 'archive' ? archiveConfirmLabel : archiveActionLabel
+                            )}
+                          >
+                            <Button
+                              type='text'
+                              size='small'
+                              className={`action-btn archive-btn ${pendingAction === 'archive' ? 'is-confirming' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleConfirmableActionClick('archive')
+                              }}
+                            >
+                              <span className='material-symbols-rounded'>
+                                {session.isArchived ? 'unarchive' : 'archive'}
+                              </span>
+                              {pendingAction === 'archive' && (
+                                <span className='action-btn__label'>{archiveConfirmLabel}</span>
+                              )}
+                            </Button>
+                          </Tooltip>
+                        </div>
+                      )}
                   </>
                 )}
               </div>
             </div>
-            {lastMessageSnippet != null && (
+            {!isCompactLayout && lastMessageSnippet != null && (
               <div className='last-message'>
                 {lastMessageSnippet}
               </div>
             )}
-            {session.tags != null && session.tags.length > 0 && (
+            {visibleTags.length > 0 && (
               <div className='tags-container'>
-                {session.tags.map((tag: string) => {
+                {visibleTags.map((tag: string) => {
                   const automationTag = parseAutomationTag(tag)
                   if (automationTag) {
                     const href = `/automation?rule=${encodeURIComponent(automationTag.ruleId)}`
                     return (
                       <Tooltip
                         key={tag}
-                        title={automationTag.ruleTitle}
+                        title={resolveTooltipTitle(automationTag.ruleTitle)}
                       >
                         <Tag
                           className='session-tag session-tag--automation'
@@ -303,7 +343,7 @@ export function SessionItem({
                   return (
                     <Tooltip
                       key={tag}
-                      title={tag}
+                      title={resolveTooltipTitle(tag)}
                     >
                       <Tag className='session-tag'>
                         <span className='session-tag__text'>
@@ -313,6 +353,11 @@ export function SessionItem({
                     </Tooltip>
                   )
                 })}
+                {hiddenTagCount > 0 && (
+                  <Tag className='session-tag session-tag--count'>
+                    +{hiddenTagCount}
+                  </Tag>
+                )}
               </div>
             )}
           </div>

@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+PackageIdentifier: VibeForge.VibeForge
+PackageVersion: 1.0.1
+PackageLocale: en-US
+Publisher: Vibe Forge AI
+PublisherUrl: https://github.com/vibe-forge-ai
+PackageName: Vibe Forge
+PackageUrl: https://github.com/vibe-forge-ai/vibe-forge.ai
+License: MIT
+LicenseUrl: https://github.com/vibe-forge-ai/vibe-forge.ai/blob/master/LICENSE
+ShortDescription: AI-assisted development framework CLI.
+Tags:
+  - ai
+  - cli
+  - developer-tools
+  - agent
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0

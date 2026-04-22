@@ -5,10 +5,14 @@ import { dirname, join } from 'node:path'
 import { afterEach } from 'vitest'
 
 const tempDirs: string[] = []
+const originalRealHome = process.env.__VF_PROJECT_REAL_HOME__
 
 export const createWorkspace = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'workspace-assets-'))
+  const realHome = await mkdtemp(join(tmpdir(), 'workspace-assets-home-'))
   tempDirs.push(dir)
+  tempDirs.push(realHome)
+  process.env.__VF_PROJECT_REAL_HOME__ = realHome
   return dir
 }
 
@@ -32,4 +36,9 @@ export const installPluginPackage = async (
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
+  if (originalRealHome == null) {
+    delete process.env.__VF_PROJECT_REAL_HOME__
+  } else {
+    process.env.__VF_PROJECT_REAL_HOME__ = originalRealHome
+  }
 })

@@ -50,6 +50,8 @@
     "deselectAll": "Deselect all",
     "collapse": "Collapse sidebar",
     "close": "Close",
+    "enterFullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
     "sort": "Sort order",
     "allTags": "All tags",
     "allAdapters": "All adapters",
@@ -84,22 +86,86 @@
       "waiting_input": "Waiting"
     }
   },
+  "auth": {
+    "title": "Sign in to Vibe Forge",
+    "subtitle": "Use a configured account to continue into this workspace.",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "usernameRequired": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "passwordRequired": "Enter password",
+    "rememberDevice": "Remember this device",
+    "login": "Sign in",
+    "loginFailed": "Sign in failed",
+    "statusFailed": "Could not load sign-in status",
+    "accountMenu": "Account and connection",
+    "changeServer": "Switch backend",
+    "logout": "Sign out of this server",
+    "logoutFailed": "Sign out failed",
+    "generatedPasswordTitle": "Using an auto-generated local password",
+    "generatedPasswordDescription": "Find the password in the local password file, or configure fixed accounts in webAuth.accounts.",
+    "generatedPasswordHint": "Default password file: {{path}}"
+  },
+  "serverConnection": {
+    "title": "Connect your backend",
+    "subtitle": "Start the backend on the computer running Vibe Forge, then paste the service address shown in the terminal.",
+    "desktopTitle": "Switch backend",
+    "desktopSubtitle": "The desktop app already started a local service on this device. You can also connect to other Vibe Forge backends and switch execution environments from the same Electron app.",
+    "setupTitle": "Run this on your computer",
+    "setupDescription": "Copy the http or https address shown in the terminal. For advanced network setups, see ",
+    "docsLink": "the PWA deployment guide",
+    "localServiceTitle": "Built-in local service",
+    "localServiceBannerDescription": "Electron started this local service automatically on the current device, so no extra sign-in is required.",
+    "localServiceAlias": "This device",
+    "localServiceProfileDescription": "Local service started automatically by Electron",
+    "serverUrl": "Backend service address",
+    "serverScheme": "Backend service protocol",
+    "serverUrlPlaceholder": "Paste the service address from the terminal",
+    "serverUrlRequired": "Enter the backend service address",
+    "invalidUrl": "Enter a valid http or https address",
+    "connectionFailed": "Could not connect to that backend service. Make sure it is running and allows cross-origin requests.",
+    "unsupportedServerVersion": "This backend version is not supported. The PWA version is {{clientVersion}}, and the backend version is {{serverVersion}}.",
+    "recentTitle": "Saved backend services",
+    "manageProfile": "Manage backend service",
+    "serverVersion": "Backend {{version}}",
+    "serverVersionUnknown": "unknown version",
+    "profileAlias": "Alias",
+    "profileAliasPlaceholder": "For example, Home computer",
+    "profileDescription": "Description",
+    "profileDescriptionPlaceholder": "For example, Tailscale private network or desktop at home",
+    "loginState": "Sign-in state",
+    "loginSaved": "Saved sign-in",
+    "loginMissing": "No saved sign-in",
+    "clearLoginState": "Clear sign-in state",
+    "clearLoginStateConfirm": "Only clears the sign-in state saved in this browser.",
+    "removeProfile": "Remove record",
+    "removeProfileConfirm": "Removes this record and its local sign-in state.",
+    "connect": "Connect"
+  },
   "automation": {
     "title": "Automation",
     "newRule": "New Rule",
     "creatingRule": "Creating",
     "editRule": "Edit Rule",
+    "createMode": "Creation mode",
+    "createModeForm": "Form",
+    "createModeChat": "Chat",
     "searchRule": "Search rules",
     "favorite": "Favorite",
     "unfavorite": "Unfavorite",
     "toggleEnabled": "Enable/Disable",
     "noDescription": "No description",
     "runSearch": "Search runs",
+    "runFilters": "Filter runs",
+    "runOptions": "Run options",
     "statusAll": "All statuses",
+    "timeRange": "Time range",
     "timeAll": "All time",
     "time24h": "Last 24 hours",
     "time7d": "Last 7 days",
     "time30d": "Last 30 days",
+    "sortOrder": "Sort order",
     "sortDesc": "Newest first",
     "sortAsc": "Oldest first",
     "triggerCount": "{{count}} triggers",
@@ -107,9 +173,49 @@
     "sectionBasic": "Basic Info",
     "sectionTriggers": "Triggers",
     "sectionTasks": "Tasks",
+    "sectionStartup": "Startup Parameters",
+    "startupSummaryDefault": "Use default startup parameters",
+    "startupDefault": "Default",
+    "startupAdapter": "Adapter",
+    "startupDefaultAdapter": "Use default adapter",
+    "startupModel": "Model",
+    "startupDefaultModel": "Use default model",
+    "defaultModelLabel": "Default model",
+    "startupNoModels": "No models available",
+    "startupEffort": "Reasoning Effort",
+    "startupPermissionMode": "Permission Mode",
+    "startupWorkspace": "Workspace",
+    "startupBranchAction": "Branch Action",
+    "startupBranchKind": "Branch Source",
+    "startupBranchName": "Branch Name",
+    "startupBranchNameRequired": "Enter a branch name",
+    "startupBranchNamePlaceholder": "Example: codex/automation-nightly",
+    "startupUseManagedWorktree": "Create managed worktree",
+    "startupUseCurrentWorkspace": "Use current workspace",
+    "startupBranchDefault": "Do not set branch",
+    "startupBranchCheckout": "Check out existing branch",
+    "startupBranchCreate": "Create new branch",
+    "startupBranchKindLocal": "Local branch",
+    "startupBranchKindRemote": "Remote branch",
+    "startupSummaryAdapter": "Adapter: {{value}}",
+    "startupSummaryModel": "Model: {{value}}",
+    "startupSummaryEffort": "Effort: {{value}}",
+    "startupSummaryPermission": "Permission: {{value}}",
+    "startupSummaryCheckoutBranch": "Checkout: {{value}}",
+    "startupSummaryCreateBranch": "New branch: {{value}}",
+    "startupSummaryBranchKind": "Branch source: {{value}}",
+    "effortLow": "Low",
+    "effortMedium": "Medium",
+    "effortHigh": "High",
+    "effortMax": "Max",
+    "permissionAcceptEdits": "Accept edits",
+    "permissionPlan": "Plan",
+    "permissionDontAsk": "Do not ask",
+    "permissionBypassPermissions": "Bypass permissions",
     "ruleName": "Rule Name",
     "ruleNameRequired": "Enter a rule name",
     "ruleDescription": "Description",
+    "ruleDescriptionPlaceholder": "Enter a description",
     "immediateRun": "Run Immediately",
     "ruleType": "Trigger Type",
     "ruleTypeRequired": "Select a trigger type",
@@ -149,6 +255,8 @@
     "taskDefaultTitle": "Task {{index}}",
     "taskTitle": "Task Title",
     "taskTitlePlaceholder": "Optional, for distinguishing tasks",
+    "collapseTask": "Collapse task content",
+    "expandTask": "Expand task content",
     "taskIndex": "Task {{index}}",
     "taskCount": "{{count}} tasks",
     "taskUnknown": "Untitled Task",
@@ -159,12 +267,18 @@
     "webhookTrigger": "Webhook",
     "intervalEvery": "Every {{minutes}} min",
     "enabled": "Enabled",
+    "enabledStatus": "Enabled Status",
     "ruleStatus": "Rule Status",
     "lastRunLabel": "Last Run",
     "lastRun": "Last Run",
     "lastRunAt": "Last run: {{time}}",
     "noRunYet": "No runs yet",
     "emptyRules": "No automation rules",
+    "createRuleLink": "Create automation",
+    "mobileRules": "Rules",
+    "mobileDetails": "Details",
+    "collapseRulePanel": "Collapse rule list",
+    "expandRulePanel": "Expand rule list",
     "selectRule": "Select an automation rule",
     "ruleId": "Rule ID",
     "createdAt": "Created At",
@@ -193,7 +307,25 @@
     "deleteFailed": "Delete failed",
     "toggleFailed": "Update failed",
     "runStarted": "Task started",
-    "runFailed": "Start failed"
+    "runFailed": "Start failed",
+    "emptyLandingEyebrow": "AI automation setup",
+    "emptyLandingTitle": "Let AI create the automation",
+    "emptyLandingDescription": "Choose a common task to fill the sender below, or describe the trigger and the work to run. Sending starts a chat where AI can call tools to create it.",
+    "emptyLandingPlaceholder": "Describe the automation you want to create",
+    "emptyLandingSendInstruction": "Create an automation from the request below. Prefer calling the available automation tools to create it; if required details are missing, ask for the missing configuration first.\n\nRequest:\n{{request}}",
+    "emptyLandingAttachmentInstruction": "Create an automation from the context I attached. Prefer calling the available automation tools to create it; if required details are missing, ask for the missing configuration first.",
+    "starterDailyTitle": "Daily project brief",
+    "starterDailyDescription": "Summarize progress, risks, and next steps on a schedule.",
+    "starterDailyPrompt": "Help me create an automation: every weekday at 9:00 AM, check the current project status and summarize yesterday's completed work, today's risks, and suggested next steps. Please use the available automation tools to create it.",
+    "starterHealthTitle": "Scheduled health check",
+    "starterHealthDescription": "Run periodic checks and report when something breaks.",
+    "starterHealthPrompt": "Help me create an automation: every 30 minutes, check whether the current project has failing tests, build errors, or service issues. If there is a problem, create a session explaining the cause and suggested fixes. Please use the available automation tools to create it.",
+    "starterWeeklyTitle": "Weekly review",
+    "starterWeeklyDescription": "Collect progress, open issues, and planning notes each week.",
+    "starterWeeklyPrompt": "Help me create an automation: every Friday at 5:30 PM, summarize this week's development progress, solved issues, unfinished work, and recommendations for next week. Please use the available automation tools to create it.",
+    "starterReminderTitle": "Important reminders",
+    "starterReminderDescription": "Remind me or check specific items at the right time.",
+    "starterReminderPrompt": "Help me create an automation: every weekday at 6:00 PM, check whether there are unresolved todos, waiting inputs, or failed tasks, then create a session reminding me to handle them. Please use the available automation tools to create it."
   },
   "benchmark": {
     "title": "Benchmark",
@@ -209,6 +341,8 @@
     "caseId": "Case:",
     "searchPlaceholder": "Search category, title, or summary",
     "emptyCases": "No benchmark cases",
+    "mobileCases": "Cases",
+    "mobileDetails": "Details",
     "noSummary": "No summary",
     "configTitle": "Case Config",
     "baseCommit": "Base Commit",
@@ -257,6 +391,7 @@
       "rules": "Rules"
     },
     "actions": {
+      "new": "New",
       "refresh": "Refresh",
       "refreshed": "Refreshed",
       "import": "Import",
@@ -265,6 +400,7 @@
     },
     "filters": {
       "search": "Search name, description, or params",
+      "searchActive": "Search current list",
       "tags": "Filter by tags",
       "noResults": "No matching results"
     },
@@ -280,9 +416,72 @@
       "title": "Skill Library",
       "desc": "Maintain reusable skill definitions and usage notes.",
       "empty": "No skills found.",
+      "project": "Project Skills",
+      "sourceProject": "Project",
+      "sourcePlugin": "Plugin",
+      "sourceHome": "Home",
+      "market": "Market",
       "create": "Create Skill",
+      "createSuccess": "Skill created",
+      "createFailed": "Failed to create skill",
       "createHint": "Create a skill file under .ai/skills, then refresh the page.",
-      "importHint": "Import skill files into .ai/skills, then refresh the page."
+      "importHint": "Import skill files into .ai/skills, then refresh the page.",
+      "importSuccess": "Imported {{count}} files",
+      "importFailed": "Failed to import skills",
+      "searchProject": "Search project skills",
+      "searchHub": "Search skills hub",
+      "marketActions": "Sources and filters",
+      "allRegistries": "All registries",
+      "registryFilter": "Filter registries",
+      "allSources": "All repos",
+      "sourceFilter": "Filter repositories",
+      "installFilter": "Filter install status",
+      "allStatuses": "All statuses",
+      "installedOnly": "Installed only",
+      "notInstalled": "Not installed",
+      "sort": "Sort",
+      "sortDefault": "Default",
+      "sortInstallsDesc": "Most installed",
+      "sortNameAsc": "Name A-Z",
+      "sortNameDesc": "Name Z-A",
+      "addRegistry": "Add registry",
+      "openConfig": "Open registry config",
+      "noRegistry": "No registry configured.",
+      "emptyHub": "Enter at least 2 characters to search skills.sh.",
+      "install": "Install",
+      "openOfficialSite": "Open official site",
+      "loadMore": "Load more",
+      "loadingMore": "Loading",
+      "reinstall": "Reinstall",
+      "installSuccess": "Installed",
+      "installFailed": "Install failed",
+      "installed": "Installed",
+      "installs": "{{value}} installs",
+      "scope": "Scope",
+      "hooks": "Hooks",
+      "registrySaved": "Registry saved",
+      "registryExists": "Registry already exists",
+      "registryName": "Name",
+      "registryNameRequired": "Enter a registry name",
+      "registryNamePlaceholder": "team-tools",
+      "registrySource": "Source",
+      "registryValue": "Registry",
+      "registryValueRequired": "Enter a registry source",
+      "registryUrl": "URL",
+      "registryDirectory": "Directory",
+      "registryGithub": "GitHub",
+      "registryGit": "Git",
+      "registryUrlPlaceholder": "https://example.com/marketplace.json",
+      "registryPathPlaceholder": "/path/to/marketplace",
+      "registryGithubPlaceholder": "owner/repo",
+      "registryGitPlaceholder": "https://example.com/repo.git",
+      "skillName": "Name",
+      "skillNameRequired": "Enter a skill name",
+      "skillNamePlaceholder": "review-checklist",
+      "skillDescription": "Description",
+      "skillDescriptionPlaceholder": "Checklist for code review",
+      "skillBody": "Body",
+      "skillBodyPlaceholder": "Describe how this skill should be used"
     },
     "entities": {
       "title": "Entity Library",
@@ -321,6 +520,7 @@
     "result": "Result",
     "sessionActive": "Session Active",
     "selectModel": "Select a model to start",
+    "adapterSelectPlaceholder": "Select adapter",
     "modelSelectPlaceholder": "Select model",
     "modelSearchPlaceholder": "Search models or services",
     "modelUnavailable": "No models available",
@@ -330,13 +530,18 @@
     "connectionErrorTitle": "Connection error",
     "connectionClosedTitle": "Connection closed",
     "sessionErrorTitle": "Task failed",
+    "sessionCreateFailedTitle": "Session creation failed",
     "connectionError": "WebSocket connection failed. Check the server and try again.",
     "connectionClosed": "WebSocket connection closed. Try reconnecting.",
     "connectionErrorHelp": "Streaming updates stopped before the session could recover. Retry to resubscribe to the running session.",
     "connectionClosedHelp": "The current stream has ended unexpectedly. Retry to reconnect and continue receiving new messages.",
     "sessionErrorHelp": "Check the latest tool output or terminal logs, then continue from the most recent user message if needed.",
+    "sessionCreateFailedHelp": "The first message is still here. After fixing the issue, retry with the same message to create the session.",
+    "sessionCreateFailedMessage": "Failed to create session",
     "sessionErrorCode": "Error code: {{code}}",
     "retryConnection": "Retry",
+    "retrySessionCreation": "Retry creating session",
+    "retrySessionCreationRequired": "Use the retry button in the error notice first.",
     "debugMockLabel": "Debug Preview",
     "debugMockConnectionErrorMessage": "Unable to reach the session stream. The websocket handshake timed out before any updates arrived.",
     "debugMockConnectionClosedMessage": "The connection dropped after the assistant started responding. No further tokens will arrive until you reconnect.",
@@ -389,6 +594,28 @@
       "stopShortcutConfirm": "Press Esc again to stop the current run"
     },
     "adapterLockedTooltip": "Adapters are locked after a session is created",
+    "sessionTarget": {
+      "title": "Session target",
+      "lockedHint": "Fixed after creation",
+      "creatingHint": "Creating session",
+      "missingResourceWarning": "Choose a resource for the current mode first",
+      "modes": {
+        "default": "Default",
+        "workspace": "Workspace",
+        "entity": "Agent",
+        "spec": "Spec"
+      },
+      "placeholders": {
+        "workspace": "Choose workspace",
+        "entity": "Choose agent",
+        "spec": "Choose spec"
+      },
+      "empty": {
+        "workspace": "No workspaces",
+        "entity": "No agents",
+        "spec": "No specs"
+      }
+    },
     "referenceActionsShort": "More",
     "referenceActionsTitle": "More",
     "referenceActionsDescription": "Add photos, files, and permission-related settings.",
@@ -400,6 +627,15 @@
     "referenceImageDescription": "Choose a local image and attach it to the message.",
     "referenceFile": "File",
     "referenceFileDescription": "Choose files from the current project tree.",
+    "accountSelectPlaceholder": "Select account",
+    "accountSelectCreateAccount": "Quick create {{adapter}} account",
+    "accountSelectCreateTitle": "Connect {{adapter}} account",
+    "accountSelectCreateWaiting": "Waiting for account connection",
+    "accountSelectCreateDescription": "Complete authentication in the browser flow opened by Codex. Keep this dialog open until the account is connected, or cancel if you want to stop.",
+    "accountSelectCreateCanceling": "Canceling…",
+    "accountSelectCreateCanceled": "Account connection canceled",
+    "accountSelectOpenAdapterConfig": "Open {{adapter}} config",
+    "accountSelectOpenAccountConfig": "Open {{account}} settings",
     "effortSelectPlaceholder": "Effort",
     "effortLabels": {
       "default": "Standard",
@@ -423,12 +659,66 @@
     "imageReadFailed": "Failed to read image",
     "imageNotSupportedInInteraction": "Images are not supported for this interaction",
     "fileNotSupportedInInteraction": "Files are not supported for this interaction",
-    "contextPickerTitle": "Reference files",
-    "contextPickerDescription": "Choose one or more files from the current project tree.",
-    "contextPickerConfirm": "Reference files",
+    "contextPickerTitle": "Reference files or folders",
+    "contextPickerDescription": "Choose one or more files or folders from the current project tree.",
+    "contextPickerConfirm": "Reference",
     "contextPickerLoading": "Loading workspace tree...",
-    "contextPickerEmpty": "No files available in this directory",
+    "contextPickerEmpty": "No items available in this directory",
     "contextPickerLoadFailed": "Failed to load workspace tree",
+    "workspaceDrawerToggle": "Workspace drawer",
+    "workspaceDrawerTitle": "Workspace",
+    "workspaceDrawerRefresh": "Refresh workspace",
+    "workspaceDrawerForceSync": "Force sync",
+    "workspaceDrawerDisplayMode": "Display mode",
+    "workspaceDrawerLocateFile": "Reveal file",
+    "workspaceDrawerExpandAll": "Expand",
+    "workspaceDrawerCollapseAll": "Collapse",
+    "workspaceDrawerToggleSection": "Expand or collapse section",
+    "workspaceFileOpen": "Open file",
+    "workspaceTreeReferenceToInput": "Reference in input",
+    "workspaceTreeTargetMissing": "Target missing",
+    "workspaceTreeTargetMissingState": " (target missing)",
+    "workspaceTreeExternalLinkState": " (external link)",
+    "workspaceTreeNodeLinkTitle": "{{path}} -> {{target}}{{state}}",
+    "workspaceTreeLinkTargetMissing": "Link target missing: {{target}}",
+    "workspaceTreeLinkTarget": "Link target: {{target}}",
+    "workspaceFileCopyPath": "Copy path",
+    "workspaceFilePathCopied": "Path copied",
+    "workspaceFileCloseOthers": "Close others",
+    "workspaceFileCloseRight": "Close to the right",
+    "workspaceFileCloseAll": "Close all",
+    "workspaceDrawerChangedFiles": "Changed files",
+    "workspaceDrawerChangedCount": "{{count}}",
+    "workspaceDrawerLoadingGit": "Loading Git status...",
+    "workspaceDrawerGitUnavailable": "Git is unavailable for this workspace.",
+    "workspaceDrawerNoChangedFiles": "No changed files",
+    "workspaceDrawerTree": "Directory tree",
+    "workspaceDrawerChangedFolders": "Group by folder",
+    "workspaceDrawerChangedFlat": "Flat view",
+    "workspaceDrawerChangedSection": {
+      "staged": "Staged",
+      "tracked": "Tracked",
+      "untracked": "Untracked"
+    },
+    "workspaceDrawerSubmodule": "Submodule",
+    "workspaceDrawerSubmoduleCommit": "commit changed",
+    "workspaceDrawerSubmoduleTracked": "tracked changes",
+    "workspaceDrawerSubmoduleUntracked": "untracked changes",
+    "workspaceFileEditorTitle": "File",
+    "workspaceFileEditorLoading": "Loading file...",
+    "workspaceFileEditorLoadFailed": "Failed to load file",
+    "workspaceImagePreviewLoadFailed": "Failed to load image",
+    "workspaceFileEditorSave": "Save",
+    "workspaceFileEditorSaved": "Saved",
+    "workspaceFileEditorRevert": "Revert",
+    "workspaceFileEditorResizePanel": "Drag to resize file editor height",
+    "workspaceDrawerFileStatus": {
+      "staged": "Staged",
+      "tracked": "Tracked changes",
+      "unstaged": "Unstaged",
+      "untracked": "Untracked",
+      "mixed": "Mixed"
+    },
     "modelGroupRecommended": "Recommended Models",
     "modelMoreModels": "More models",
     "availableTools": "Available Tools",
@@ -464,6 +754,7 @@
     "viewTimeline": "Timeline",
     "viewTerminal": "Terminal",
     "viewSettings": "Settings",
+    "newSessionTitle": "New session",
     "gitBranchSwitcher": "Switch branch",
     "gitOperations": "Git actions",
     "gitWorktree": "Worktree",
@@ -498,6 +789,11 @@
     "sessionWorkspaceBaseRef": "Base ref",
     "sessionWorkspaceCurrentSession": "Current session",
     "sessionWorkspaceRepositoryWorktrees": "Repository worktrees",
+    "sessionWorkspaceEnvironment": "Worktree environment",
+    "sessionWorkspaceEnvironmentDefault": "Default environment",
+    "sessionWorkspaceEnvironmentProject": "Project",
+    "sessionWorkspaceEnvironmentLocal": "Local",
+    "sessionWorkspaceNoEnvironments": "No environments",
     "sessionWorkspaceStateReady": "Ready",
     "sessionWorkspaceStateProvisioning": "Provisioning",
     "sessionWorkspaceStateDeleting": "Deleting",
@@ -654,6 +950,11 @@
       "announcements": {
         "title": "Announcements"
       },
+      "workspaces": {
+        "title": "Existing Workspaces",
+        "empty": "No workspaces found. Configure workspaces in .ai.config.json."
+      },
+      "moreCount": "{{count}} more",
       "specs": {
         "title": "Existing Flows",
         "params": "{{count}} params",
@@ -662,17 +963,10 @@
         "createToast": "Create a flow file under .ai/specs, then refresh the page."
       },
       "entities": {
-        "title": "Existing Entities",
-        "empty": "No entities found. Add entity definition files to show them here.",
-        "create": "Quick Create Entity",
+        "title": "Existing Agents",
+        "empty": "No agents found. Add entity definition files to show them here.",
+        "create": "Quick Create Agent",
         "createToast": "Create an entity definition file, then refresh the page."
-      },
-      "help": {
-        "title": "Help",
-        "item1": "Flow files can include name/description/params for better discovery",
-        "item2": "Entities can be described with index.json or README.md",
-        "item3": "After creation, refresh the page to see them here",
-        "footer": "Add usage guidance to flow descriptions when needed"
       }
     },
     "attachments": {
@@ -785,9 +1079,31 @@
       "unknown": "Unknown tool"
     },
     "terminal": {
+      "addSession": "New terminal",
+      "closeNamedSession": "Close {{title}}",
+      "closeSession": "Close terminal {{index}}",
       "connectionError": "Terminal connection failed. Check the server and try again.",
+      "dragSession": "Drag to reorder terminals",
+      "enterFullscreen": "Fullscreen",
+      "exited": "Exited",
+      "exitFullscreen": "Exit fullscreen",
       "exitSummary": "Terminal exited with exitCode={{code}}, signal={{signal}}",
-      "resizePanel": "Drag to resize terminal height"
+      "hideManager": "Hide terminal list",
+      "manageTerminals": "Manage terminals",
+      "paneTitle": "Terminal {{index}}",
+      "renameSession": "Rename {{title}}",
+      "selectShell": "Choose terminal type",
+      "sessionCount": "{{count}} terminals",
+      "resizePanel": "Drag to resize terminal height",
+      "shellTooltip": "Shell: {{shell}}",
+      "shellTooltipExited": "Shell: {{shell}}, exited",
+      "showManager": "Show terminal list",
+      "shell": {
+        "bash": "Bash",
+        "default": "Default shell",
+        "sh": "sh",
+        "zsh": "Zsh"
+      }
     },
     "sessionSettings": "Session Settings",
     "enterTitle": "Enter session title...",
@@ -814,6 +1130,10 @@
       "projectMissing": "Project (Not created)",
       "userMissing": "User (Not created)"
     },
+    "navigation": {
+      "search": "Search config sections",
+      "noResults": "No matching sections"
+    },
     "actions": {
       "edit": "Edit",
       "save": "Save",
@@ -821,21 +1141,31 @@
       "format": "Format",
       "copy": "Copy"
     },
+    "conflict": {
+      "title": "Configuration changed elsewhere",
+      "description": "{{source}} / {{target}} was updated outside this page while you still have unsaved edits.",
+      "instructions": "Choose which version to keep before continuing so the two copies do not overwrite each other.",
+      "keepLocal": "Keep my edits",
+      "useRemote": "Use external change"
+    },
     "editor": {
       "addField": "Add Field",
       "addItem": "Add Item",
       "remove": "Remove",
+      "removeItemConfirmTitle": "Delete this item?",
       "collapse": "Collapse",
       "expand": "Expand",
       "addAdapter": "Add Adapter",
       "addPlugin": "Add Plugin",
       "addMcpServer": "Add MCP Server",
       "addModelService": "Add Model Service",
-      "addMarketplace": "Add Marketplace",
+      "addMarketplace": "Add Registry",
       "addEnvVar": "Add Environment Variable",
       "addHeader": "Add Header",
       "addEntry": "Add Entry",
       "newModelSelectorName": "New model selector",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
       "shortcutPlaceholder": "Press shortcut",
       "clearShortcut": "Clear shortcut",
       "newModelServiceName": "New model service name",
@@ -843,7 +1173,7 @@
       "newAdapterName": "New adapter name",
       "newPluginName": "New plugin name",
       "newMcpServerName": "New MCP server name",
-      "newMarketplaceName": "New marketplace name",
+      "newMarketplaceName": "New registry name",
       "newEnvVarName": "New environment variable name",
       "newHeaderName": "New header name",
       "fieldKey": "Field Key",
@@ -857,6 +1187,7 @@
       "defaultAdapterPlaceholder": "Select adapter",
       "defaultModelServicePlaceholder": "Select model service",
       "defaultModelPlaceholder": "Select model",
+      "worktreeEnvironmentPlaceholder": "Select worktree environment",
       "titlePlaceholder": "Enter title",
       "descriptionPlaceholder": "Enter description",
       "channelType": "Channel Type",
@@ -876,6 +1207,74 @@
         "high": "High",
         "max": "Max"
       }
+    },
+    "detail": {
+      "back": "Back",
+      "override": "Override in current config",
+      "inheritedReadonly": "This value comes from an extended config. Override it here before editing.",
+      "inheritedAppendOnly": "This item comes from an extended config. This collection merges by append, so edit it in the source config or override the whole collection here.",
+      "partialOverride": "This entry overrides an inherited config. Fields not set locally still come from the inherited layer.",
+      "inheritedBadge": "Inherited",
+      "overrideBadge": "Override",
+      "localBadge": "Local"
+    },
+    "accounts": {
+      "title": "Accounts",
+      "back": "Back to accounts",
+      "backToAdapter": "Back to adapter",
+      "empty": "No accounts available yet.",
+      "detailMissing": "Account detail is currently unavailable.",
+      "default": "Default",
+      "count": "{{count}} accounts",
+      "readyCount": "{{count}} ready",
+      "defaultHint": "Default: {{account}}",
+      "quotaTitle": "Quota",
+      "settingsTitle": "Account settings",
+      "settingsDescription": "These fields edit the adapter config entry for this account. When supported, they override the stored workspace snapshot.",
+      "adapterKeyHint": "Adapter: {{adapter}}",
+      "searchPlaceholder": "Search accounts",
+      "searchEmpty": "No matching accounts",
+      "deleteConfirmTitle": "Delete the stored workspace snapshot for {{account}}?",
+      "rowActions": {
+        "setDefault": "Set as default account",
+        "clearDefault": "Clear default account",
+        "delete": "Delete account snapshot"
+      },
+      "facts": {
+        "email": "Email",
+        "type": "Type",
+        "plan": "Plan"
+      },
+      "status": {
+        "ready": "Ready",
+        "missing": "Missing",
+        "error": "Error"
+      },
+      "actions": {
+        "add": {
+          "label": "Connect account",
+          "description": "Run the adapter login action and save its credentials into this workspace."
+        },
+        "refresh": {
+          "label": "Refresh quota",
+          "description": "Fetch the latest plan and quota info for this account."
+        },
+        "remove": {
+          "label": "Remove snapshot",
+          "description": "Remove the stored workspace snapshot for this account."
+        }
+      },
+      "actionSuccess": {
+        "add": "Account connected",
+        "refresh": "Quota refreshed",
+        "remove": "Account snapshot removed"
+      },
+      "actionFailed": {
+        "add": "Failed to connect account",
+        "refresh": "Failed to refresh quota",
+        "remove": "Failed to remove account snapshot"
+      },
+      "authFileDefaultLookup": "Leave empty to use {{path}}."
     },
     "fields": {
       "general": {
@@ -901,7 +1300,29 @@
         },
         "recommendedModels": {
           "label": "Recommended Models",
-          "desc": "Models shown in the recommended section of the selector"
+          "desc": "Models shown in the recommended section of the selector",
+          "item": {
+            "service": {
+              "label": "Model Service",
+              "desc": "Optional service that owns this model"
+            },
+            "model": {
+              "label": "Model",
+              "desc": "Model identifier shown in recommendations"
+            },
+            "title": {
+              "label": "Title",
+              "desc": "Optional display title for this recommendation"
+            },
+            "description": {
+              "label": "Description",
+              "desc": "Optional display description for this recommendation"
+            },
+            "placement": {
+              "label": "Placement",
+              "desc": "UI placement where this recommendation appears"
+            }
+          }
         },
         "interfaceLanguage": {
           "label": "Interface Language",
@@ -944,6 +1365,25 @@
             "desc": "0-1 or 0-100, 0 means mute"
           },
           "events": {
+            "label": "Event Notifications",
+            "desc": "Configure each notification trigger separately",
+            "item": {
+              "enabled": {
+                "label": "Enable notification"
+              },
+              "title": {
+                "label": "Title",
+                "desc": "Leave empty to use the default title"
+              },
+              "description": {
+                "label": "Message",
+                "desc": "Leave empty to use the default message"
+              },
+              "sound": {
+                "label": "Sound",
+                "desc": "Audio file path, leave empty for default sound"
+              }
+            },
             "completed": {
               "label": "Completion Notification",
               "desc": "Triggered when a session completes",
@@ -1036,6 +1476,10 @@
           "label": "Create worktree for new sessions",
           "desc": "Use a managed worktree by default when creating a new session"
         },
+        "worktreeEnvironment": {
+          "label": "Default worktree environment",
+          "desc": "Environment scripts run when managed worktrees are created, started, and destroyed"
+        },
         "customInstructions": {
           "label": "Custom Instructions",
           "desc": "Additional guidance for the assistant"
@@ -1043,7 +1487,7 @@
       },
       "models": {
         "items": {
-          "label": "Model Selector Entries",
+          "label": "Model Metadata Entries",
           "desc": "Model metadata keyed by `service` or `service,model`. Display metadata like alias/title/description only applies to exact `model` or `service,model` matches"
         }
       },
@@ -1088,9 +1532,39 @@
         }
       },
       "adapters": {
+        "defaultModel": {
+          "label": "Default Model",
+          "desc": "Preferred model override for this adapter."
+        },
+        "includeModels": {
+          "label": "Allowed Models",
+          "desc": "Restrict this adapter to the listed models."
+        },
+        "excludeModels": {
+          "label": "Blocked Models",
+          "desc": "Models that this adapter must not use."
+        },
+        "defaultAccount": {
+          "label": "Default Account",
+          "desc": "Default account key selected for this adapter."
+        },
         "items": {
           "label": "Adapter Entries",
           "desc": "Flattened configuration by adapter name. Common fields include `defaultModel`, `includeModels`, and `excludeModels`."
+        }
+      },
+      "adapterAccount": {
+        "title": {
+          "label": "Display Name",
+          "desc": "Title shown for this account in the UI."
+        },
+        "description": {
+          "label": "Description",
+          "desc": "Optional notes about the account purpose or source."
+        },
+        "authFile": {
+          "label": "Auth File",
+          "desc": "Explicit path to the auth.json file for this account."
         }
       },
       "plugins": {
@@ -1103,8 +1577,8 @@
           "desc": "Enable or disable plugins"
         },
         "marketplaces": {
-          "label": "Extra Marketplaces",
-          "desc": "Additional plugin marketplace sources"
+          "label": "Skill Registries",
+          "desc": "Searchable skills hub sources"
         }
       },
       "mcp": {
@@ -1203,10 +1677,21 @@
         "command": "Command",
         "sse": "SSE",
         "http": "HTTP"
+      },
+      "recommendedModels": {
+        "modelSelector": "Model Metadata"
       }
     },
     "sectionGroups": {
       "base": "Base Configuration",
+      "models": "Model Configuration",
+      "advanced": "Advanced Configuration",
+      "advancedModels": "Advanced Model Rules",
+      "advancedRuntime": "Runtime Options",
+      "advancedSandbox": "Sandbox",
+      "advancedClient": "Client Identity",
+      "advancedOverrides": "Raw Overrides",
+      "advancedMisc": "Other Options",
       "permissions": "Tool Permissions",
       "env": "Environment Variables",
       "items": "Entry Configuration",
@@ -1216,9 +1701,85 @@
       "config": "Configuration",
       "app": "Application"
     },
+    "environments": {
+      "newPlaceholder": "Example: env-node-20",
+      "newLocalPlaceholder": "Example: env-node-20",
+      "create": "New",
+      "created": "Environment created",
+      "empty": "No worktree environments",
+      "searchEmpty": "No matching worktree environments",
+      "searchPlaceholder": "Search environments",
+      "exists": "Environment name already exists",
+      "createFailed": "Failed to create environment",
+      "saveFailed": "Failed to save environment",
+      "edit": "Edit",
+      "name": "Name",
+      "createTitle": "Create Environment",
+      "createDescription": "",
+      "projectListTitle": "Project Environments",
+      "projectListDescription": "",
+      "localListTitle": "Local Environments",
+      "localListDescription": "",
+      "detailTitle": "Environment Details",
+      "baseScript": "Script",
+      "availableEnvVars": "Available env vars",
+      "platformOverrides": "Platform Overrides",
+      "platformOverridesDescription": "Override the default script for a specific operating system.",
+      "platformScriptDescription": "Runs only on {{platform}}.",
+      "sources": {
+        "project": "Project",
+        "user": "Local"
+      },
+      "platforms": {
+        "macos": "macOS",
+        "linux": "Linux",
+        "windows": "Windows"
+      },
+      "operationSections": {
+        "create": {
+          "title": "Create Script",
+          "description": "This script runs after the worktree is created."
+        },
+        "start": {
+          "title": "Start Script",
+          "description": "This script runs before the adapter process starts."
+        },
+        "destroy": {
+          "title": "Cleanup Script",
+          "description": "This script runs before deleting a managed worktree."
+        }
+      },
+      "baseScriptDescriptions": {
+        "create": "Runs in the new worktree.",
+        "start": "Runs in the session workspace.",
+        "destroy": "Runs in the worktree being deleted."
+      },
+      "operations": {
+        "create": "Create",
+        "start": "Start",
+        "destroy": "Destroy"
+      },
+      "scripts": {
+        "create": "create.sh",
+        "create.macos": "create.macos.sh",
+        "create.linux": "create.linux.sh",
+        "create.windows": "create.windows.ps1",
+        "start": "start.sh",
+        "start.macos": "start.macos.sh",
+        "start.linux": "start.linux.sh",
+        "start.windows": "start.windows.ps1",
+        "destroy": "destroy.sh",
+        "destroy.macos": "destroy.macos.sh",
+        "destroy.linux": "destroy.linux.sh",
+        "destroy.windows": "destroy.windows.ps1"
+      }
+    },
     "about": {
       "software": "Software Info",
       "version": "Version",
+      "clientVersion": "Client Version",
+      "serverVersion": "Server Version",
+      "commitHash": "Build Commit",
       "lastRelease": "Last Release",
       "checkUpdate": "Check Updates",
       "docs": "Documentation",
@@ -1234,6 +1795,7 @@
       "channels": "Channels",
       "adapters": "Adapters",
       "plugins": "Plugins",
+      "environments": "Environments",
       "mcp": "MCP",
       "shortcuts": "Shortcuts",
       "appearance": "Appearance",

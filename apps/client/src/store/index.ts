@@ -11,6 +11,8 @@ export const isSidebarResizingAtom = atom<boolean>(false)
 // 侧边栏是否折叠
 export const isSidebarCollapsedAtom = atom(false)
 
+export const isMobileSidebarOpenAtom = atom(false)
+
 // 当前选中的会话 ID (全局 UI 状态，用于控制高亮等)
 export const activeSessionIdAtom = atom<string | undefined>(undefined)
 

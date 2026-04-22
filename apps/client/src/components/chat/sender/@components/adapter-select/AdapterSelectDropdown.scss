@@ -29,6 +29,8 @@
       var(--primary-color, #2563eb) 18%,
       var(--bg-color) 82%
     ) !important;
+    color: var(--text-color) !important;
+    -webkit-text-fill-color: var(--text-color) !important;
   }
 
   .ant-select-item-option-content,
@@ -38,5 +40,17 @@
     align-items: center;
     font-size: 12px;
     font-weight: 400 !important;
+  }
+
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled)
+    .adapter-option,
+  .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled)
+    .adapter-option,
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled)
+    .adapter-option__text,
+  .ant-select-item-option-selected.ant-select-item-option-active:not(.ant-select-item-option-disabled)
+    .adapter-option__text {
+    color: var(--text-color) !important;
+    -webkit-text-fill-color: var(--text-color) !important;
   }
 }

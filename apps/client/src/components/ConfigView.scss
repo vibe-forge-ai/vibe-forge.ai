@@ -1,9 +1,35 @@
 .config-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
   color: var(--text-color);
-  background: var(--bg-color);
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__compact-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__compact-region {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  &__compact-panel {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    margin: max(4px, env(safe-area-inset-top)) 4px 4px;
+    border-radius: var(--subpage-content-card-radius);
+    background: var(--subpage-content-card-bg);
+    overflow: hidden;
+  }
 
   &__state {
     display: grid;
@@ -14,13 +40,19 @@
   &__tabs-wrap {
     display: flex;
     min-height: 0;
+    min-width: 0;
     flex: 1;
+
     .ant-tabs-content-holder > .ant-tabs-content {
       height: 100%;
+      min-height: 0;
+
       & > .ant-tabs-tabpane {
-        padding: 16px 128px;
-        padding-bottom: 0;
+        display: flex;
+        min-height: 0;
+        padding: 0;
         height: 100%;
+        box-sizing: border-box;
       }
     }
   }
@@ -28,6 +60,7 @@
   &__tabs {
     width: 100%;
     height: 100%;
+    min-width: 0;
   }
 }
 
@@ -37,6 +70,7 @@
   flex: 1;
   gap: 12px;
   height: 100%;
+  min-height: 0;
 }
 
 .config-view__editor-wrap {
@@ -44,6 +78,9 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  padding-block-start: var(--subpage-content-card-gap);
+  padding-inline: var(--subpage-content-card-gap);
+  box-sizing: border-box;
 }
 
 .config-view__section-header {
@@ -51,18 +88,112 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 32px;
+  padding-inline: 0;
+  box-sizing: border-box;
   .ant-radio-group {
     display: flex;
     align-items: center;
   }
 }
 
+.config-view__section-header--actions-only {
+  justify-content: flex-end;
+}
+
+.config-view__section-header-extra {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
 .config-view__card {
   flex-grow: 1;
-  margin: 0 -20px;
-  padding: 0 20px;
-  padding-bottom: 20px;
-  overflow: scroll;
+  min-height: 0;
+  padding: 0;
+  padding-inline: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: auto;
+  box-sizing: border-box;
+  --config-surface-bg-1: #ffffff;
+  --config-surface-border-1: #d8e0ea;
+  --config-surface-hover-bg-1: #f6f9fc;
+  --config-surface-hover-border-1: #c8d5e4;
+  --config-surface-bg-2: #f7f9fc;
+  --config-surface-border-2: #d3dbe6;
+  --config-surface-hover-bg-2: #eef3f8;
+  --config-surface-hover-border-2: #c2cfde;
+  --config-surface-bg-3: #eef3f8;
+  --config-surface-border-3: #c9d5e2;
+  --config-surface-hover-bg-3: #e4ebf3;
+  --config-surface-hover-border-3: #b5c5d8;
+  --config-surface-bg-4: #e6edf5;
+  --config-surface-border-4: #bfccdc;
+  --config-surface-hover-bg-4: #dde6f0;
+  --config-surface-hover-border-4: #acbfd5;
+}
+
+html.dark .config-view__card {
+  --config-surface-bg-1: #171b22;
+  --config-surface-border-1: #2d3541;
+  --config-surface-hover-bg-1: #202834;
+  --config-surface-hover-border-1: #3d4a5b;
+  --config-surface-bg-2: #1d242d;
+  --config-surface-border-2: #343f4e;
+  --config-surface-hover-bg-2: #273140;
+  --config-surface-hover-border-2: #48586d;
+  --config-surface-bg-3: #232c37;
+  --config-surface-border-3: #3c495a;
+  --config-surface-hover-bg-3: #2e3948;
+  --config-surface-hover-border-3: #53667d;
+  --config-surface-bg-4: #29333f;
+  --config-surface-border-4: #455365;
+  --config-surface-hover-bg-4: #354253;
+  --config-surface-hover-border-4: #60758d;
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-1);
+  --subpage-tertiary-bg: var(--config-surface-bg-1);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-1);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-1);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-2);
+  --subpage-tertiary-bg: var(--config-surface-bg-2);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-2);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-2);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-3);
+  --subpage-tertiary-bg: var(--config-surface-bg-3);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-3);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-3);
+}
+
+.config-view__card
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty)
+  :is(.config-view__field-row, .config-view__record-card, .config-view__array-item, .config-view__complex-editor, .config-view__record-add-inputs, .config-view__detail-list-empty) {
+  --subpage-tertiary-border: 1px solid var(--config-surface-border-4);
+  --subpage-tertiary-bg: var(--config-surface-bg-4);
+  --subpage-tertiary-hover-bg: var(--config-surface-hover-bg-4);
+  --subpage-tertiary-hover-border: var(--config-surface-hover-border-4);
 }
 
 .config-view__card + .config-view__card {
@@ -73,8 +204,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  min-height: 32px;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 20px;
   color: var(--text-color);
 }
 
@@ -88,10 +221,186 @@
   color: var(--sub-text-color);
 }
 
+.config-view__detail-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 32px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.config-view__detail-back.ant-btn {
+  flex: 0 0 auto;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  margin-left: 0;
+  padding: 0 !important;
+  border-radius: 999px;
+  color: var(--sub-text-color);
+  line-height: 18px !important;
+}
+
+.config-view__detail-back .ant-btn-icon {
+  margin-inline-end: 0 !important;
+  line-height: 1;
+}
+
+.config-view__detail-back .material-symbols-rounded {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.config-view__detail-back.ant-btn-text:not(:disabled):hover,
+.config-view__detail-back.ant-btn-text:not(:disabled):focus-visible,
+.config-view__detail-back.ant-btn-text:not(:disabled):active {
+  color: var(--primary-color);
+  background: transparent;
+}
+
+.config-view__detail-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 32px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  line-height: 20px;
+}
+
+.config-view__detail-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.config-view__detail-crumb {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: 24px;
+  padding: 0;
+  color: var(--sub-text-color);
+  line-height: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    color .15s ease,
+    border-color .15s ease,
+    background-color .15s ease;
+}
+
+.config-view__detail-crumb:not(button) {
+  cursor: default;
+}
+
+.config-view__detail-crumb--static,
+.config-view__detail-crumb--link {
+  flex: 0 1 auto;
+}
+
+.config-view__detail-crumb--link:hover {
+  color: var(--text-color);
+}
+
+.config-view__detail-crumb--current {
+  flex: 0 1 auto;
+  color: var(--primary-color);
+  font-weight: 700;
+  cursor: default;
+}
+
+.config-view__detail-separator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 14px;
+  color: color-mix(in srgb, var(--sub-text-color) 72%, transparent);
+}
+
+.config-view__detail-separator .material-symbols-rounded {
+  font-size: 16px;
+}
+
 .config-view__source-option {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 0;
+}
+
+.config-view__source-option-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.config-view__source-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--sub-bg-color);
+}
+
+.config-view__source-switch-button.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sub-text-color);
+  box-shadow: none;
+}
+
+.config-view__source-switch-button.ant-btn:hover,
+.config-view__source-switch-button.ant-btn:focus-visible {
+  background: color-mix(in srgb, var(--tag-hover-bg) 82%, transparent);
+  color: var(--text-color);
+}
+
+.config-view__source-switch-button.ant-btn.is-active,
+.config-view__source-switch-button.ant-btn.is-active:hover,
+.config-view__source-switch-button.ant-btn.is-active:focus-visible {
+  background: var(--subpage-content-card-bg);
+  color: var(--sidebar-active-text, var(--primary-color));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+.config-view__source-switch-button.ant-btn .material-symbols-rounded {
+  display: block;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
 }
 
 .config-view .ant-empty-image {
@@ -101,43 +410,317 @@
 .config-view__tab-label {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   line-height: 1;
 }
 
+.config-view__compact-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .config-view__tab-icon {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--sub-text-color);
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
+.config-view__compact-backdrop {
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, .28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .24s ease, visibility 0s linear .24s;
+  z-index: 60;
+}
+
+.config-view__compact-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.config-view__compact-sidebar-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  padding: max(4px, env(safe-area-inset-top)) 0
+    max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform .24s cubic-bezier(.4, 0, .2, 1),
+    visibility 0s linear .24s;
+  z-index: 61;
+  pointer-events: none;
+  overscroll-behavior: contain;
+}
+
+.config-view__compact-sidebar-sheet.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.config-view__compact-sidebar-sheet > * {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, .22);
+  overscroll-behavior: contain;
+}
+
 .config-view__tab-text {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-color);
-  line-height: 18px;
+  line-height: 16px;
+}
+
+.config-view__desktop-shell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.config-view__sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--subpage-secondary-panel-width);
+  min-width: var(--subpage-secondary-panel-width);
+  max-width: var(--subpage-secondary-panel-width);
+  overflow: hidden;
+  background: var(--sub-bg-color);
+  transition:
+    width .24s cubic-bezier(.4, 0, .2, 1),
+    min-width .24s cubic-bezier(.4, 0, .2, 1),
+    max-width .24s cubic-bezier(.4, 0, .2, 1),
+    opacity .18s ease;
+}
+
+.config-view__sidebar--compact {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+}
+
+.config-view__desktop-shell.is-sidebar-collapsed .config-view__sidebar {
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+}
+
+.config-view__sidebar-header {
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.config-view__sidebar-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.config-view__sidebar-toggle.ant-btn {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--sub-text-color);
+}
+
+.config-view__sidebar-toggle.ant-btn .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.config-view__sidebar-search-input {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.config-view__sidebar-search-input.ant-input-affix-wrapper {
+  padding-inline: 8px;
+}
+
+.config-view__sidebar-search-input.ant-input-affix-wrapper-focused,
+.config-view__sidebar-search-input.ant-input-affix-wrapper:focus-within {
+  border-color: rgba(37, 99, 235, .32) !important;
+  box-shadow: none !important;
+}
+
+.config-view__sidebar-search-input .ant-input {
+  font-size: 12px;
+}
+
+.config-view__sidebar-search-input .ant-input-prefix {
+  margin-inline-end: 4px;
+}
+
+.config-view__sidebar-search-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--sub-text-color);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.config-view__sidebar-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+  overflow: auto;
+}
+
+.config-view__sidebar-empty {
+  padding: 8px 2px;
+  font-size: 12px;
+  color: var(--sub-text-color);
+}
+
+.config-view__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-view__nav-group-label {
+  padding: 2px;
+  color: var(--sub-text-color);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.config-view__nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-view__nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.config-view__nav-item:hover {
+  border-color: rgba(37, 99, 235, .18);
+  background-color: var(--tag-hover-bg);
+}
+
+.config-view__nav-item.is-active {
+  border-color: var(--primary-color);
+  background: var(--primary-soft-bg);
+  color: var(--sidebar-active-text, var(--primary-color));
+}
+
+.config-view__nav-item.is-active .config-view__tab-icon,
+.config-view__nav-item.is-active .config-view__tab-text {
+  color: var(--sidebar-active-text, var(--primary-color));
+}
+
+.config-view__nav-item.is-active .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1;
+}
+
+.config-view__desktop-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--subpage-content-card-gap);
+  margin-left: 0;
+  padding: 12px;
+  border-radius: var(--subpage-content-card-radius);
+  background: var(--subpage-content-card-bg);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: margin-left .24s cubic-bezier(.4, 0, .2, 1);
+}
+
+.config-view__desktop-shell.is-sidebar-collapsed .config-view__desktop-content {
+  margin-left: var(--subpage-content-card-gap);
+}
+
+.config-view__standalone-header {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.config-view__section-toggle.ant-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.config-view__section-toggle.ant-btn .material-symbols-rounded {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.config-view__section-toggle.ant-btn:hover,
+.config-view__section-toggle.ant-btn:focus-visible,
+.config-view__section-toggle.ant-btn:active {
+  background: transparent;
 }
 
 .config-view__tabs > .ant-tabs-nav {
-  min-width: 320px;
-  padding: 12px 16px;
+  width: var(--subpage-secondary-panel-width);
+  min-width: var(--subpage-secondary-panel-width);
+  max-width: var(--subpage-secondary-panel-width);
+  padding: 10px 12px;
   background-color: var(--sub-bg-color);
-  border-right: 1px solid var(--sub-border-color);
 
   .ant-tabs-tab {
     display: flex;
     align-items: center;
-    min-height: 28px;
-
+    min-height: 30px;
+    margin: 0 0 6px !important;
+    padding: 6px 10px !important;
+    border: 1px solid transparent;
     border-radius: 8px;
-    transition: .3s;
+    background: var(--bg-color);
+    transition: .2s ease;
     &:not(.ant-tabs-tab-disabled):hover {
-      background-color: var(--sub-sub-bg-color);
+      border-color: rgba(37, 99, 235, .18);
+      background-color: var(--tag-hover-bg);
     }
   }
 
@@ -150,20 +733,31 @@
 
   .ant-tabs-tab-disabled {
     cursor: default;
+    min-height: auto;
+    margin: 0 0 4px !important;
+    padding: 4px 2px !important;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .ant-tabs-tab-disabled:hover {
+    border-color: transparent;
+    background: transparent;
   }
 
   .ant-tabs-tab-disabled .ant-tabs-tab-btn {
     cursor: default;
     color: var(--sub-text-color);
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
+    font-weight: 600;
   }
 
   .ant-tabs-tab-active {
     font-weight: 600;
-    color: var(--sub-sub-text-color);
-    background: var(--sub-sub-bg-color);
+    color: var(--sidebar-active-text, var(--primary-color));
+    border-color: var(--primary-color);
+    background: var(--primary-soft-bg);
     .material-symbols-rounded {
       font-variation-settings: 'FILL' 1;
     }
@@ -175,11 +769,95 @@
 }
 
 .config-view__tabs > .ant-tabs-content-holder {
-  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  margin: var(--subpage-content-card-gap);
+  margin-left: 0;
+  border-left: none;
+  border-radius: var(--subpage-content-card-radius);
+  background: var(--subpage-content-card-bg);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .config-view__group-label {
   display: flex;
   width: 100%;
-  margin-left: -24px;
+  margin-left: 0;
+  padding: 0;
+}
+
+@media (max-width: 960px) {
+  .config-view__editor-wrap {
+    padding-inline: 0;
+  }
+
+  .config-view__section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .config-view__section-header-extra {
+    width: 100%;
+    justify-content: space-between;
+    padding-inline-end: 0;
+  }
+
+  .config-view__detail-trail {
+    width: 100%;
+  }
+
+  .config-view__detail-breadcrumb {
+    flex: 1;
+  }
+
+  .config-view--compact {
+    .config-view__section-header {
+      align-items: flex-start;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .config-view__section-header-extra {
+      width: auto;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .config-view__section-title,
+    .config-view__detail-trail {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .config-view__body {
+      padding: 0;
+    }
+
+    .config-view__content {
+      padding: 12px;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .config-view__card {
+      overflow: visible;
+    }
+
+    .config-view__compact-panel {
+      border-radius: 8px;
+    }
+  }
+}
+
+html.dark .config-view__compact-backdrop {
+  background: rgba(0, 0, 0, .48);
+}
+
+html.dark .config-view__compact-sidebar-sheet > * {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .42);
 }

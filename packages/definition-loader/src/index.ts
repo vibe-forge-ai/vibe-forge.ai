@@ -9,8 +9,17 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
-import type { Definition, Entity, Rule, RuleReference, Skill, Spec } from '@vibe-forge/types'
-import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
+import type {
+  Definition,
+  DefinitionSource,
+  Entity,
+  Rule,
+  RuleReference,
+  Skill,
+  Spec,
+  WorkspaceDefinitionPayload
+} from '@vibe-forge/types'
+import { resolveWorkspaceAssetBundle, resolveWorkspaceAssetSource } from '@vibe-forge/workspace-assets'
 
 import { glob } from 'fast-glob'
 
@@ -22,6 +31,14 @@ interface WorkspaceDefinitionAsset<TDefinition extends { name?: string }> {
   }
   displayName: string
   instancePath?: string
+  origin: 'workspace' | 'plugin'
+  resolvedBy?: string
+}
+
+const resolveDefinitionSource = (
+  asset: Pick<WorkspaceDefinitionAsset<{ name?: string }>, 'origin' | 'resolvedBy'>
+): DefinitionSource => {
+  return resolveWorkspaceAssetSource(asset)
 }
 
 const toResolvedDefinitions = <TDefinition extends { name?: string }>(
@@ -30,7 +47,8 @@ const toResolvedDefinitions = <TDefinition extends { name?: string }>(
   assets.map(asset => ({
     ...asset.payload.definition,
     resolvedName: asset.displayName,
-    resolvedInstancePath: asset.instancePath
+    resolvedInstancePath: asset.instancePath,
+    resolvedSource: resolveDefinitionSource(asset)
   }))
 )
 
@@ -165,5 +183,11 @@ export class DefinitionLoader {
 
   async loadDefaultEntities(): Promise<Definition<Entity>[]> {
     return this.loadWorkspaceDefinitions(bundle => bundle.entities)
+  }
+
+  async loadWorkspaces(): Promise<WorkspaceDefinitionPayload[]> {
+    const bundle = await resolveWorkspaceAssetBundle({ cwd: this.cwd })
+    const workspaces = Array.isArray(bundle.workspaces) ? bundle.workspaces : []
+    return workspaces.map(workspace => workspace.payload)
   }
 }

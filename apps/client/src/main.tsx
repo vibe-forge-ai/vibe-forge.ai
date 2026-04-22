@@ -12,7 +12,9 @@ import { BrowserRouter } from 'react-router-dom'
 import { SWRConfig } from 'swr'
 
 import { fetchApiJson } from '#~/api/base.js'
+import { setupPwa } from '#~/pwa.js'
 import { getClientBase, resolveDevDocumentTitle } from '#~/runtime-config.js'
+import { setupMobileViewport } from '#~/utils/mobile-viewport.js'
 
 import App from './App'
 
@@ -26,7 +28,13 @@ document.title = appTitle
 
 const root = createRoot(document.getElementById('root')!)
 
+setupMobileViewport()
+
 const clientBase = getClientBase()
+setupPwa({
+  clientBase,
+  isProd: import.meta.env.PROD
+})
 
 document.title = resolveDevDocumentTitle(document.title, {
   isDev: import.meta.env.DEV,

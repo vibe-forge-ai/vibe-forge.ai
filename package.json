@@ -1,14 +1,20 @@
 {
   "name": "vibe-forge-dev",
-  "version": "0.11.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
+    "desktop:dev": "pnpm -C apps/desktop dev",
+    "desktop:make": "pnpm -C apps/desktop make",
+    "desktop:package": "pnpm -C apps/desktop package",
     "start": "./start.sh",
     "tools": "node ./scripts/run-tools.mjs",
     "test:e2e:adapters": "pnpm tools adapter-e2e test",
     "typecheck": "node ./scripts/typecheck.mjs",
     "typebuild": "pnpm exec tsc -b --pretty false",
-    "typebuild:clean": "pnpm exec tsc -b --clean"
+    "typebuild:clean": "pnpm exec tsc -b --clean",
+    "vscode:compile": "pnpm -C apps/vscode-extension compile",
+    "vscode:package": "pnpm -C apps/vscode-extension package",
+    "vscode:publish": "pnpm -C apps/vscode-extension publish:vsix"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.0.0",
@@ -55,6 +61,8 @@
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "electron",
+      "electron-winstaller",
       "node-pty"
     ]
   }

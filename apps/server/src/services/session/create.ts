@@ -1,5 +1,5 @@
 import type { ChatMessageContent, Session } from '@vibe-forge/core'
-import type { GitBranchKind } from '@vibe-forge/types'
+import type { GitBranchKind, SessionPromptType } from '@vibe-forge/types'
 
 import { getDb } from '#~/db/index.js'
 import { getWorkspaceFolder, loadConfigState } from '#~/services/config/index.js'
@@ -20,6 +20,7 @@ interface CreateSessionWorkspaceBranchOptions {
 
 interface CreateSessionWorkspaceOptions {
   createWorktree?: boolean
+  worktreeEnvironment?: string
   branch?: CreateSessionWorkspaceBranchOptions
 }
 
@@ -58,11 +59,12 @@ export async function createSessionWithInitialMessage(options: {
   tags?: string[]
   model?: string
   effort?: 'low' | 'medium' | 'high' | 'max'
-  promptType?: 'spec' | 'entity'
+  promptType?: SessionPromptType
   promptName?: string
   permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
   systemPrompt?: string
   adapter?: string
+  account?: string
   workspace?: CreateSessionWorkspaceOptions
 }): Promise<Session> {
   const {
@@ -81,12 +83,21 @@ export async function createSessionWithInitialMessage(options: {
     permissionMode,
     systemPrompt,
     adapter,
+    account,
     workspace
   } = options
   const db = getDb()
   const session = db.createSession(title, id, undefined, parentSessionId)
-  if (model !== undefined || effort !== undefined || permissionMode !== undefined || adapter !== undefined) {
-    db.updateSession(session.id, { model, effort, permissionMode, adapter })
+  if (
+    model !== undefined ||
+    effort !== undefined ||
+    permissionMode !== undefined ||
+    adapter !== undefined ||
+    account !== undefined ||
+    promptType !== undefined ||
+    promptName !== undefined
+  ) {
+    db.updateSession(session.id, { model, effort, permissionMode, adapter, account, promptType, promptName })
     const updatedSession = db.getSession(session.id)
     if (updatedSession) {
       Object.assign(session, updatedSession)
@@ -105,7 +116,8 @@ export async function createSessionWithInitialMessage(options: {
     const createWorktree = await resolveCreateSessionWorktreeDefault(parentSessionId, workspace)
     await provisionSessionWorkspace(session.id, {
       sourceSessionId: parentSessionId,
-      createWorktree
+      createWorktree,
+      worktreeEnvironment: workspace?.worktreeEnvironment
     })
 
     if (workspace?.branch != null) {
@@ -134,7 +146,7 @@ export async function createSessionWithInitialMessage(options: {
       await beforeStart?.(session.id)
       await startAdapterSession(
         session.id,
-        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter }
+        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter, account }
       )
       if (initialContent) {
         processUserMessage(session.id, initialContent)
