@@ -1,11 +1,11 @@
 import './NewSessionGuide.scss'
 
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 
 import type { ConversationStarterConfig } from '@vibe-forge/types'
 
 import { MarkdownContent } from '#~/components/MarkdownContent'
-import { showAnnouncementsAtom } from '#~/store/index.js'
+import { showAnnouncementsAtom, showNewSessionStarterListAtom } from '#~/store/index.js'
 
 import { NewSessionGuideStarterList } from './NewSessionGuideStarterList'
 
@@ -21,8 +21,12 @@ export function NewSessionGuide({
   onApplyStarter: (starter: ConversationStarterConfig) => void
 }) {
   const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
+  const showNewSessionStarterList = useAtomValue(showNewSessionStarterListAtom)
   const visibleAnnouncements = showAnnouncements ? announcements : []
-  const hasGuideContent = visibleAnnouncements.length > 0 || startupPresets.length > 0 || builtinActions.length > 0
+  const visibleStartupPresets = showNewSessionStarterList ? startupPresets : []
+  const visibleBuiltinActions = showNewSessionStarterList ? builtinActions : []
+  const hasStarterList = visibleStartupPresets.length > 0 || visibleBuiltinActions.length > 0
+  const hasGuideContent = visibleAnnouncements.length > 0 || hasStarterList
 
   if (!hasGuideContent) {
     return null
@@ -51,13 +55,15 @@ export function NewSessionGuide({
           </button>
         </div>
       )}
-      <div className='new-session-guide__main'>
-        <NewSessionGuideStarterList
-          startupPresets={startupPresets}
-          builtinActions={builtinActions}
-          onApplyStarter={onApplyStarter}
-        />
-      </div>
+      {hasStarterList && (
+        <div className='new-session-guide__main'>
+          <NewSessionGuideStarterList
+            startupPresets={visibleStartupPresets}
+            builtinActions={visibleBuiltinActions}
+            onApplyStarter={onApplyStarter}
+          />
+        </div>
+      )}
     </div>
   )
 }

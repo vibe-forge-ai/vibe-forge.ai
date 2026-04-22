@@ -78,8 +78,7 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  padding-block-start: var(--subpage-content-card-gap);
-  padding-inline: var(--subpage-content-card-gap);
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -198,6 +197,12 @@ html.dark .config-view__card {
 
 .config-view__card + .config-view__card {
   margin-top: 14px;
+}
+
+.config-view__app-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .config-view__section-title {
@@ -790,10 +795,6 @@ html.dark .config-view__card {
 }
 
 @media (max-width: 960px) {
-  .config-view__editor-wrap {
-    padding-inline: 0;
-  }
-
   .config-view__section-header {
     align-items: flex-start;
     flex-direction: column;

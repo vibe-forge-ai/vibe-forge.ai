@@ -95,10 +95,14 @@
     min-width: 0;
   }
 
+  &__task-sender-stack {
+    width: 100%;
+    min-width: 0;
+  }
+
   &__task-status-bar {
     min-width: 0;
     width: 100%;
-    margin-top: -4px;
 
     .chat-status-bar__content {
       display: flex;

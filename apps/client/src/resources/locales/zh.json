@@ -1946,6 +1946,10 @@
       "about": "关于"
     },
     "appSettings": {
+      "themeMode": {
+        "label": "主题模式",
+        "desc": "切换浅色、深色或跟随系统的界面主题"
+      },
       "senderHeaderDisplay": {
         "label": "输入区顶栏默认展示",
         "desc": "链接未显式指定时，默认展开或折叠输入区顶栏",
@@ -1955,6 +1959,10 @@
       "announcements": {
         "label": "显示公告",
         "desc": "新建会话时展示公告信息"
+      },
+      "recommendedActions": {
+        "label": "显示推荐操作",
+        "desc": "新建会话时展示推荐操作列表"
       }
     }
   }
