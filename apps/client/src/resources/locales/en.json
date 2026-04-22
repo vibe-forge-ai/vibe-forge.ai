@@ -1945,6 +1945,10 @@
       "about": "About"
     },
     "appSettings": {
+      "themeMode": {
+        "label": "Theme mode",
+        "desc": "Switch between light, dark, or system theme for the interface"
+      },
       "senderHeaderDisplay": {
         "label": "Composer header default",
         "desc": "Default expand or collapse behavior for the composer header when the URL does not override it",
@@ -1954,6 +1958,10 @@
       "announcements": {
         "label": "Show announcements",
         "desc": "Show announcements when creating a new session"
+      },
+      "recommendedActions": {
+        "label": "Show recommended actions",
+        "desc": "Show the recommended action list when creating a new session"
       }
     }
   }
