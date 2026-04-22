@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/task",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Task runtime for Vibe Forge",
   "imports": {
     "#~/*.js": {
