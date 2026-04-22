@@ -538,6 +538,7 @@ export const buildServerSkillContent = () => [
   '- benchmark inventory or runs -> `/benchmark/skill.md`',
   '- config inspection or update -> `/config/skill.md`',
   '- catalog lookups -> `/catalog/skill.md`',
+  '- explicit question or permission gate owned by the server -> `/interactions/skill.md`',
   '',
   'Focused domain skills:',
   '- `/sessions/skill.md`',
@@ -625,6 +626,70 @@ export const buildServerWorktreeEnvironmentsSkillContent = () => [
   '- `POST /worktree-environments/:id/delete`'
 ].join('\n')
 
+export const buildServerSessionWorkspaceSkillContent = () => [
+  '# Session Workspace',
+  '',
+  'Use this skill when the task is already narrowed to one specific session and you need its isolated workspace state.',
+  '',
+  'This covers problems like:',
+  '- reading the session-owned workspace summary before mutating files',
+  '- browsing or reading files inside the session sandbox instead of the shared project workspace',
+  '- writing one file in the session workspace',
+  '- resolving a file-backed binary resource from that workspace',
+  '- promoting the session workspace into a managed worktree or transferring it back to local workspace state',
+  '',
+  'Recommended order:',
+  '1. Start with `GET /sessions/:session_id/workspace` when you need the current workspace root and metadata.',
+  '2. Read `GET /sessions/:session_id/workspace/tree` or `GET /sessions/:session_id/workspace/file` before mutating one path.',
+  '3. Only use `create-worktree` or `transfer-local` once you are sure the target session workspace is the right source of truth.',
+  '',
+  'Primary entry points:',
+  '- `GET /sessions/:session_id/workspace`',
+  '- `GET /sessions/:session_id/workspace/tree`',
+  '- `GET /sessions/:session_id/workspace/file`',
+  '- `POST /sessions/:session_id/workspace/file/update`',
+  '- `GET /sessions/:session_id/workspace/resource`',
+  '- `POST /sessions/:session_id/workspace/create-worktree`',
+  '- `POST /sessions/:session_id/workspace/transfer-local`',
+  '',
+  'Examples:',
+  '- inspect the sandbox tree before opening a file -> `GET /sessions/:session_id/workspace/tree`',
+  '- update one generated file inside the session sandbox -> `POST /sessions/:session_id/workspace/file/update`',
+  '- turn the current session sandbox into a managed worktree -> `POST /sessions/:session_id/workspace/create-worktree`'
+].join('\n')
+
+export const buildServerSessionGitSkillContent = () => [
+  '# Session Git',
+  '',
+  'Use this skill when the task is about git state for one specific session workspace instead of the shared repository root.',
+  '',
+  'This covers problems like:',
+  '- checking branch, status and upstream state for the session sandbox',
+  '- listing branches or worktrees that belong to that session workspace',
+  '- checking out a branch or creating a new branch in the session workspace',
+  '- committing, pushing or syncing that session workspace',
+  '',
+  'Recommended order:',
+  '1. Start with `GET /sessions/:session_id/git/state` when you need current branch and dirty state.',
+  '2. Read `GET /sessions/:session_id/git/branches` or `GET /sessions/:session_id/git/worktrees` before changing branches.',
+  '3. Use write paths like `checkout`, `branch/create`, `commit`, `push` and `sync` only after confirming the session workspace is the intended target.',
+  '',
+  'Primary entry points:',
+  '- `GET /sessions/:session_id/git/state`',
+  '- `GET /sessions/:session_id/git/branches`',
+  '- `GET /sessions/:session_id/git/worktrees`',
+  '- `POST /sessions/:session_id/git/checkout`',
+  '- `POST /sessions/:session_id/git/branch/create`',
+  '- `POST /sessions/:session_id/git/commit`',
+  '- `POST /sessions/:session_id/git/push`',
+  '- `POST /sessions/:session_id/git/sync`',
+  '',
+  'Examples:',
+  '- confirm the current branch before switching -> `GET /sessions/:session_id/git/state`',
+  '- create and switch to a new branch in the session sandbox -> `POST /sessions/:session_id/git/branch/create` then `POST /sessions/:session_id/git/checkout`',
+  '- push the current branch after a commit -> `POST /sessions/:session_id/git/push`'
+].join('\n')
+
 export const buildServerAutomationSkillContent = () => [
   '# Automation',
   '',
@@ -698,9 +763,15 @@ export const buildServerInteractionsSkillContent = () => [
   '',
   'Use this skill when the server needs to ask a user question or run a permission check outside the normal browser interaction flow.',
   '',
+  'This covers problems like prompting for a one-off answer, confirming a risky action, or explicitly running a permission gate before continuing with a task.',
+  '',
   'Primary entry points:',
   '- `POST /interactions/ask`',
-  '- `POST /interactions/permission-check`'
+  '- `POST /interactions/permission-check`',
+  '',
+  'Examples:',
+  '- ask the user to choose between a small set of options -> `POST /interactions/ask`',
+  '- verify whether one risky operation should proceed before executing it -> `POST /interactions/permission-check`'
 ].join('\n')
 
 export const buildChannelsSkillContent = (entries: ChannelPathEntry[]) => {
@@ -1103,30 +1174,6 @@ const createServerClientHandles = async (params: {
     configureClient: (client) => {
       const invalidPayload = () => badRequest('Invalid payload', undefined, 'invalid_payload')
       const loadDefinitionLoader = () => new DefinitionLoader(getWorkspaceFolder())
-      const sessionWorkspaceSkill = [
-        '# Session Workspace',
-        '',
-        '- `GET /sessions/:session_id/workspace`',
-        '- `GET /sessions/:session_id/workspace/tree`',
-        '- `GET /sessions/:session_id/workspace/file`',
-        '- `POST /sessions/:session_id/workspace/file/update`',
-        '- `GET /sessions/:session_id/workspace/resource`',
-        '- `POST /sessions/:session_id/workspace/create-worktree`',
-        '- `POST /sessions/:session_id/workspace/transfer-local`'
-      ].join('\n')
-      const sessionGitSkill = [
-        '# Session Git',
-        '',
-        '- `GET /sessions/:session_id/git/state`',
-        '- `GET /sessions/:session_id/git/branches`',
-        '- `GET /sessions/:session_id/git/worktrees`',
-        '- `POST /sessions/:session_id/git/checkout`',
-        '- `POST /sessions/:session_id/git/branch/create`',
-        '- `POST /sessions/:session_id/git/commit`',
-        '- `POST /sessions/:session_id/git/push`',
-        '- `POST /sessions/:session_id/git/sync`'
-      ].join('\n')
-
       client.expose('/skill.md', buildServerSkillContent())
       client.expose('/sessions/skill.md', buildServerSessionsSkillContent())
       client.expose('/workspace/skill.md', buildServerWorkspaceSkillContent())
@@ -1591,7 +1638,7 @@ const createServerClientHandles = async (params: {
         }
       })
 
-      client.expose('/sessions/:session_id/workspace/skill.md', sessionWorkspaceSkill)
+      client.expose('/sessions/:session_id/workspace/skill.md', buildServerSessionWorkspaceSkillContent())
       client.expose('/sessions/:session_id/workspace', {
         method: 'GET',
         description: 'Return one session workspace summary.'
@@ -1644,7 +1691,7 @@ const createServerClientHandles = async (params: {
         workspace: await transferSessionWorkspaceToLocal(asString(requestParams.session_id))
       }))
 
-      client.expose('/sessions/:session_id/git/skill.md', sessionGitSkill)
+      client.expose('/sessions/:session_id/git/skill.md', buildServerSessionGitSkillContent())
       client.expose('/sessions/:session_id/git/state', {
         method: 'GET',
         description: 'Read git state for one session workspace.'

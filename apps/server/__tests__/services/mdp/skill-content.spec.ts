@@ -21,6 +21,9 @@ import {
   buildChannelTypeSkillContent,
   buildServerAutomationSkillContent,
   buildServerConfigSkillContent,
+  buildServerInteractionsSkillContent,
+  buildServerSessionGitSkillContent,
+  buildServerSessionWorkspaceSkillContent,
   buildServerSessionsSkillContent,
   buildServerSkillContent,
   buildServerWorkspaceSkillContent,
@@ -63,11 +66,20 @@ describe('server mdp skill content', () => {
     expect(buildServerWorkspaceSkillContent()).toContain('Examples:')
     expect(buildServerWorkspaceSkillContent()).toContain('update one workspace file after editing content')
 
+    expect(buildServerSessionWorkspaceSkillContent()).toContain('Recommended order:')
+    expect(buildServerSessionWorkspaceSkillContent()).toContain('turn the current session sandbox into a managed worktree')
+
+    expect(buildServerSessionGitSkillContent()).toContain('Recommended order:')
+    expect(buildServerSessionGitSkillContent()).toContain('create and switch to a new branch in the session sandbox')
+
     expect(buildServerAutomationSkillContent()).toContain('Examples:')
     expect(buildServerAutomationSkillContent()).toContain('trigger one rule immediately')
 
     expect(buildServerConfigSkillContent()).toContain('Examples:')
     expect(buildServerConfigSkillContent()).toContain('write a config patch and reload')
+
+    expect(buildServerInteractionsSkillContent()).toContain('Examples:')
+    expect(buildServerInteractionsSkillContent()).toContain('permission-check')
   })
 
   it('describes channel routing progressively from family to instance', () => {

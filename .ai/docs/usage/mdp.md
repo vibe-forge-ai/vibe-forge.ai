@@ -219,6 +219,8 @@ mdp:
   - `/skill.md`
 - 分层 skill：
   - `/sessions/skill.md`
+  - `/sessions/:session_id/workspace/skill.md`
+  - `/sessions/:session_id/git/skill.md`
   - `/workspace/skill.md`
   - `/worktree-environments/skill.md`
   - `/automation/skill.md`
@@ -252,6 +254,13 @@ mdp:
   - `/interactions/*`
 
 这一层优先复用现有 server service / db 能力，不再维护一套完全独立的业务实现。
+
+建议的 server 发现顺序：
+- 先读 `/sessions/skill.md`，确认是不是会话生命周期问题。
+- 如果任务已经缩到某一个 `session_id`，并且要处理它的沙箱文件或 git 状态，再进入：
+  - `/sessions/:session_id/workspace/skill.md`
+  - `/sessions/:session_id/git/skill.md`
+- 如果是显式交互或权限门控，再读 `/interactions/skill.md`，不要先去扫其他 domain。
 
 ### Channel 运行时
 
