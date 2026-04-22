@@ -103,6 +103,54 @@ describe('skills command', () => {
     ])
   })
 
+  it('treats semantically identical configured skills as duplicates even when key order differs', async () => {
+    const cwd = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vf-skills-command-')))
+    tempDirs.push(cwd)
+    process.chdir(cwd)
+
+    await writeFile(
+      path.join(cwd, '.ai.config.json'),
+      JSON.stringify(
+        {
+          skills: [
+            {
+              source: 'example-source/default/public',
+              rename: 'internal-review',
+              name: 'design-review'
+            }
+          ]
+        },
+        null,
+        2
+      )
+    )
+
+    mocks.installProjectSkill.mockResolvedValue({
+      dirName: 'internal-review',
+      installDir: path.join(cwd, '.ai/skills/internal-review'),
+      name: 'internal-review',
+      ref: 'example-source/default/public@design-review',
+      skillPath: path.join(cwd, '.ai/skills/internal-review/SKILL.md')
+    })
+
+    const program = new Command()
+    registerSkillsCommand(program)
+
+    await program.parseAsync([
+      'skills',
+      'add',
+      'design-review',
+      '--source',
+      'example-source/default/public',
+      '--rename',
+      'internal-review'
+    ], { from: 'user' })
+
+    const config = JSON.parse(await readFile(path.join(cwd, '.ai.config.json'), 'utf8'))
+    expect(config.skills).toHaveLength(1)
+    expect(mocks.installProjectSkill).toHaveBeenCalledTimes(1)
+  })
+
   it('installs configured skills by default and forces updates for the update command', async () => {
     const cwd = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vf-skills-command-')))
     tempDirs.push(cwd)

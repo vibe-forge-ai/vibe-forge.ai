@@ -190,4 +190,39 @@ describe('skills CLI skill hub source flow', () => {
       readFile(path.join(workspace, '.ai', 'skills', 'internal-review', 'notes.md'), 'utf8')
     ).resolves.toContain('supporting file')
   })
+
+  it('reports the force flag name when the target skill is already installed', async () => {
+    await mkdir(path.join(workspace, '.ai', 'skills', 'internal-review'), { recursive: true })
+    await writeFile(
+      path.join(workspace, '.ai', 'skills', 'internal-review', 'SKILL.md'),
+      '---\nname: internal-review\n---\nReview skill body\n'
+    )
+
+    createExecImplementation(async (args, options) => {
+      if (!args.includes('--skill')) {
+        return new Error(`Unexpected skills CLI args: ${args.join(' ')}`)
+      }
+
+      const skillDir = path.join(String(options.cwd), '.agents', 'skills', 'internal-review')
+      await mkdir(skillDir, { recursive: true })
+      await writeFile(
+        path.join(skillDir, 'SKILL.md'),
+        '---\nname: internal-review\n---\nReview skill body\n'
+      )
+
+      return {
+        stdout: 'installed\n'
+      }
+    })
+
+    const { installSkillsCliSkill } = await import('#~/services/skill-hub/skills-cli.js')
+    await expect(installSkillsCliSkill({
+      config: {
+        registry: 'https://registry.example.com'
+      },
+      skill: 'internal-review',
+      source: 'example-source/default/public',
+      workspaceFolder: workspace
+    })).rejects.toThrow('Use --force to replace it.')
+  })
 })

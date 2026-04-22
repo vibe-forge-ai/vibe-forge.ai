@@ -1,6 +1,7 @@
-import { access, copyFile, lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { access, copyFile, lstat, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
+import { setTimeout as delay } from 'node:timers/promises'
 
 import type { ConfiguredSkillInstallConfig, SkillsCliConfig } from '@vibe-forge/types'
 
@@ -30,6 +31,9 @@ export interface ResolvedProjectSkillPublishSpec {
   name?: string
 }
 
+const INSTALL_LOCK_TIMEOUT_MS = 30_000
+const INSTALL_LOCK_RETRY_MS = 100
+
 const normalizeNonEmptyString = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 )
@@ -58,6 +62,30 @@ const pathExists = async (targetPath: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+const withInstallLock = async <T>(lockDir: string, callback: () => Promise<T>) => {
+  const start = Date.now()
+  await mkdir(dirname(lockDir), { recursive: true })
+
+  while (true) {
+    try {
+      await mkdir(lockDir)
+      break
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      if (Date.now() - start > INSTALL_LOCK_TIMEOUT_MS) {
+        throw new Error(`Timed out waiting for project skill install lock ${lockDir}`)
+      }
+      await delay(INSTALL_LOCK_RETRY_MS)
+    }
+  }
+
+  try {
+    return await callback()
+  } finally {
+    await rm(lockDir, { recursive: true, force: true })
   }
 }
 
@@ -191,6 +219,17 @@ const pickSearchResult = (results: Awaited<ReturnType<typeof findSkillsCli>>, na
   )) ?? results[0]
 }
 
+const buildInstalledSkillResult = (params: {
+  installDir: string
+  normalized: NormalizedProjectSkillInstall
+}) => ({
+  dirName: params.normalized.targetDirName,
+  installDir: params.installDir,
+  name: params.normalized.targetName,
+  ref: params.normalized.ref,
+  skillPath: join(params.installDir, 'SKILL.md')
+})
+
 const rewriteInstalledSkillName = async (skillPath: string, targetName: string) => {
   const content = await readFile(skillPath, 'utf8')
   const normalizedName = /^[\w./-]+$/.test(targetName)
@@ -285,55 +324,82 @@ export const installProjectSkill = async (params: {
   const projectSkillsDir = resolveProjectAiPath(params.workspaceFolder, process.env, 'skills')
   const installDir = join(projectSkillsDir, normalized.targetDirName)
   const skillPath = join(installDir, 'SKILL.md')
+  const tempInstallDir = resolveProjectAiPath(
+    params.workspaceFolder,
+    process.env,
+    'caches',
+    'project-skill-installs',
+    `${normalized.targetDirName}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
+  const lockDir = resolveProjectAiPath(
+    params.workspaceFolder,
+    process.env,
+    'caches',
+    'project-skill-installs',
+    'locks',
+    normalized.targetDirName
+  )
 
-  const installResult = normalized.source != null
-    ? await installSkillsCliSkillToTemp({
-      config: params.config,
-      registry: params.registry,
-      skill: normalized.name,
-      source: normalized.source
-    })
-    : await (async () => {
-      const searchResults = await findSkillsCli({
+  return await withInstallLock(lockDir, async () => {
+    if (params.force !== true && await pathExists(skillPath)) {
+      return buildInstalledSkillResult({
+        installDir,
+        normalized
+      })
+    }
+
+    const installResult = normalized.source != null
+      ? await installSkillsCliSkillToTemp({
         config: params.config,
         registry: params.registry,
-        query: normalized.name
+        skill: normalized.name,
+        source: normalized.source
       })
-      const selected = pickSearchResult(searchResults, normalized.name)
-      if (selected == null) {
-        throw new Error(`Skill ${normalized.name} was not found by the skills CLI search.`)
+      : await (async () => {
+        const searchResults = await findSkillsCli({
+          config: params.config,
+          registry: params.registry,
+          query: normalized.name
+        })
+        const selected = pickSearchResult(searchResults, normalized.name)
+        if (selected == null) {
+          throw new Error(`Skill ${normalized.name} was not found by the skills CLI search.`)
+        }
+
+        return await installSkillsCliRefToTemp({
+          config: params.config,
+          registry: params.registry,
+          installRef: selected.installRef
+        })
+      })()
+
+    try {
+      await rm(tempInstallDir, { recursive: true, force: true })
+      await mkdir(dirname(tempInstallDir), { recursive: true })
+      await mkdir(tempInstallDir, { recursive: true })
+      await copyRegularFiles(installResult.installedSkill.sourcePath, tempInstallDir)
+
+      const tempSkillPath = join(tempInstallDir, 'SKILL.md')
+      if (!await pathExists(tempSkillPath)) {
+        throw new Error(`Configured skill ${normalized.ref} did not include SKILL.md`)
       }
+      await rewriteInstalledSkillName(tempSkillPath, normalized.targetName)
 
-      return await installSkillsCliRefToTemp({
-        config: params.config,
-        registry: params.registry,
-        installRef: selected.installRef
-      })
-    })()
-
-  try {
-    if (params.force === true) {
       await rm(installDir, { recursive: true, force: true })
-    } else if (await pathExists(skillPath)) {
-      throw new Error(`Skill "${normalized.targetName}" is already installed. Use --force to replace it.`)
-    }
+      await mkdir(dirname(installDir), { recursive: true })
+      await rename(tempInstallDir, installDir)
 
-    await copyRegularFiles(installResult.installedSkill.sourcePath, installDir)
-    if (!await pathExists(skillPath)) {
-      throw new Error(`Configured skill ${normalized.ref} did not include SKILL.md`)
+      return buildInstalledSkillResult({
+        installDir,
+        normalized
+      })
+    } catch (error) {
+      await rm(tempInstallDir, { recursive: true, force: true })
+      throw error
+    } finally {
+      await rm(installResult.tempDir, { recursive: true, force: true })
     }
-    await rewriteInstalledSkillName(skillPath, normalized.targetName)
-  } finally {
-    await rm(installResult.tempDir, { recursive: true, force: true })
-  }
-
-  return {
-    dirName: normalized.targetDirName,
-    installDir,
-    name: normalized.targetName,
-    ref: normalized.ref,
-    skillPath
-  }
+  })
 }
 
 export const removeProjectSkill = async (params: {

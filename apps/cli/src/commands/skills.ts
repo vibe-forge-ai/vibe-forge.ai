@@ -159,7 +159,19 @@ const buildGeneralSkillsUpdateValue = (
 const isSameDeclaredSkill = (
   left: string | ConfiguredSkillInstallConfig,
   right: string | ConfiguredSkillInstallConfig
-) => JSON.stringify(left) === JSON.stringify(right)
+) => {
+  const normalizedLeft = normalizeProjectSkillInstall(left)
+  const normalizedRight = normalizeProjectSkillInstall(right)
+
+  if (normalizedLeft != null && normalizedRight != null) {
+    return normalizedLeft.ref === normalizedRight.ref &&
+      normalizedLeft.targetName === normalizedRight.targetName &&
+      normalizedLeft.rename === normalizedRight.rename &&
+      normalizedLeft.source === normalizedRight.source
+  }
+
+  return left === right
+}
 
 const matchesSkillSelector = (selector: string, value: string | ConfiguredSkillInstallConfig) => {
   const normalized = normalizeProjectSkillInstall(value)

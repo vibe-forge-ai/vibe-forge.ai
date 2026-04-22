@@ -30,6 +30,30 @@ const listCache = new Map<string, {
   results: SkillsCliListedSkill[]
 }>()
 
+const pruneExpiredCacheEntries = <T>(
+  cache: Map<string, {
+    expiresAt: number
+    results: T
+  }>,
+  now = Date.now()
+) => {
+  for (const [cacheKey, entry] of cache.entries()) {
+    if (entry.expiresAt <= now) {
+      cache.delete(cacheKey)
+    }
+  }
+}
+
+export const clearSkillsCliCachesForTest = () => {
+  findCache.clear()
+  listCache.clear()
+}
+
+export const getSkillsCliCacheSizesForTest = () => ({
+  find: findCache.size,
+  list: listCache.size
+})
+
 export interface SkillsCliListedSkill {
   description?: string
   name: string
@@ -337,6 +361,7 @@ export const listSkillsCliSource = async (params: {
     input: `list:${source}`,
     registry: params.registry
   })
+  pruneExpiredCacheEntries(listCache)
   const cached = listCache.get(cacheKey)
   if (cached != null && cached.expiresAt > Date.now()) {
     return cached.results
@@ -382,6 +407,7 @@ export const findSkillsCli = async (params: {
     input: `find:${query}`,
     registry: params.registry
   })
+  pruneExpiredCacheEntries(findCache)
   const cached = findCache.get(cacheKey)
   if (cached != null && cached.expiresAt > Date.now()) {
     return cached.results
