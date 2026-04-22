@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => {
     createChildSession: vi.fn(),
     getParentSessionId: vi.fn(),
     startTask: vi.fn(),
+    sendTaskMessage: vi.fn(),
     submitTaskInput: vi.fn(),
     respondToTaskInteraction: vi.fn(),
     getTask: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock('#~/sync.js', () => ({
 vi.mock('#~/tools/task/manager.js', () => ({
   TaskManager: class {
     startTask = mocks.startTask
+    sendTaskMessage = mocks.sendTaskMessage
     submitTaskInput = mocks.submitTaskInput
     respondToTaskInteraction = mocks.respondToTaskInteraction
     getTask = mocks.getTask
@@ -52,6 +54,7 @@ describe('task tool integration', () => {
     mocks.getParentSessionId.mockReturnValue(undefined)
     mocks.createChildSession.mockResolvedValue({})
     mocks.startTask.mockResolvedValue(undefined)
+    mocks.sendTaskMessage.mockResolvedValue(undefined)
     mocks.submitTaskInput.mockResolvedValue(undefined)
     mocks.respondToTaskInteraction.mockResolvedValue(undefined)
     mocks.getTask.mockImplementation((taskId: string) => ({
@@ -181,13 +184,93 @@ describe('task tool integration', () => {
     const tester = createToolTester()
     createTaskRegister()(tester.mockRegister)
 
+    expect(tester.getRegisteredTools()).toContain('SendTaskMessage')
     expect(tester.getRegisteredTools()).toContain('SubmitTaskInput')
     expect(tester.getRegisteredTools()).toContain('RespondTaskInteraction')
     expect(tester.getToolInfo('StartTasks')?.description).toContain('GetTaskInfo')
-    expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('SubmitTaskInput')
+    expect(tester.getToolInfo('StartTasks')?.description).toContain('SendTaskMessage')
+    expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('10 most recent logs')
+    expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('logOrder')
+    expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('SendTaskMessage')
+    expect(tester.getToolInfo('SendTaskMessage')?.description).toContain('still running')
+    expect(tester.getToolInfo('ListTasks')?.description).toContain('10 most recent logs')
+    expect(tester.getToolInfo('ListTasks')?.description).toContain('SendTaskMessage')
     expect(tester.getToolInfo('ListTasks')?.description).toContain('pendingInput')
+    expect(tester.getToolInfo('SubmitTaskInput')?.description).toContain('SendTaskMessage')
     expect(tester.getToolInfo('SubmitTaskInput')?.description).toContain('allow_once')
     expect(tester.getToolInfo('RespondTaskInteraction')?.description).toContain('Deprecated alias')
+  })
+
+  it('returns the 10 most recent logs in descending order by default', async () => {
+    mocks.getTask.mockReturnValue({
+      taskId: 'task-1',
+      status: 'running',
+      logs: Array.from({ length: 12 }, (_, index) => `log-${index + 1}`)
+    })
+
+    const { createTaskRegister } = await import('#~/tools/task/index.js')
+
+    const tester = createToolTester()
+    createTaskRegister()(tester.mockRegister)
+
+    const result = await tester.callTool('GetTaskInfo', {
+      taskId: 'task-1'
+    }) as { content: Array<{ text: string }> }
+    const [task] = JSON.parse(result.content[0].text) as Array<{ logs: string[] }>
+
+    expect(task.logs).toEqual([
+      'log-12',
+      'log-11',
+      'log-10',
+      'log-9',
+      'log-8',
+      'log-7',
+      'log-6',
+      'log-5',
+      'log-4',
+      'log-3'
+    ])
+  })
+
+  it('supports custom log windows and ascending order in ListTasks', async () => {
+    mocks.getAllTasks.mockReturnValue([
+      {
+        taskId: 'task-1',
+        status: 'running',
+        logs: ['a', 'b', 'c', 'd']
+      },
+      {
+        taskId: 'task-2',
+        status: 'completed',
+        logs: ['1', '2', '3']
+      }
+    ])
+
+    const { createTaskRegister } = await import('#~/tools/task/index.js')
+
+    const tester = createToolTester()
+    createTaskRegister()(tester.mockRegister)
+
+    const result = await tester.callTool('ListTasks', {
+      logLimit: 2,
+      logOrder: 'asc'
+    }) as { content: Array<{ text: string }> }
+    const tasks = JSON.parse(result.content[0].text) as Array<{ taskId: string; logs: string[] }>
+
+    expect(tasks).toEqual([
+      {
+        taskId: 'task-1',
+        status: 'running',
+        logs: ['c', 'd'],
+        guidance: []
+      },
+      {
+        taskId: 'task-2',
+        status: 'completed',
+        logs: ['2', '3'],
+        guidance: []
+      }
+    ])
   })
 
   it('forwards SubmitTaskInput to the task manager', async () => {
@@ -211,6 +294,29 @@ describe('task tool integration', () => {
       taskId: 'task-1',
       interactionId: undefined,
       data: 'allow_once'
+    })
+  })
+
+  it('forwards SendTaskMessage to the task manager', async () => {
+    mocks.getTask.mockReturnValue({
+      taskId: 'task-1',
+      status: 'running',
+      logs: ['User message submitted: keep checking logs']
+    })
+
+    const { createTaskRegister } = await import('#~/tools/task/index.js')
+
+    const tester = createToolTester()
+    createTaskRegister()(tester.mockRegister)
+
+    await tester.callTool('SendTaskMessage', {
+      taskId: 'task-1',
+      message: 'keep checking logs'
+    })
+
+    expect(mocks.sendTaskMessage).toHaveBeenCalledWith({
+      taskId: 'task-1',
+      message: 'keep checking logs'
     })
   })
 

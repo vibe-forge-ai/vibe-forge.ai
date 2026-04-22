@@ -7,6 +7,8 @@ import {
 import type { Definition, Entity, Rule, Skill, Spec } from '@vibe-forge/types'
 import { CANONICAL_VIBE_FORGE_MCP_SERVER_NAME, resolvePromptPath } from '@vibe-forge/utils'
 
+import { buildManagedTaskToolGuidance } from './task-tool-guidance'
+
 const toMarkdownBlockquote = (content: string) => (
   content
     .trim()
@@ -165,6 +167,7 @@ export const generateSpecRoutePrompt = (
 }
 
 export const generateEntitiesRoutePrompt = (entities: Definition<Entity>[]) => {
+  const taskToolGuidance = buildManagedTaskToolGuidance(CANONICAL_VIBE_FORGE_MCP_SERVER_NAME)
   return (
     '<system-prompt>\n' +
     'The project includes the following entities:\n' +
@@ -179,6 +182,7 @@ export const generateEntitiesRoutePrompt = (entities: Definition<Entity>[]) => {
         .join('')
     }\n` +
     `When solving user problems, you may specify entities through \`${CANONICAL_VIBE_FORGE_MCP_SERVER_NAME}.StartTasks\` as needed and have them coordinate multiple entity types to complete the work; use \`${CANONICAL_VIBE_FORGE_MCP_SERVER_NAME}.GetTaskInfo\` and \`wait\` to track progress.\n` +
+    `${taskToolGuidance}\n` +
     '</system-prompt>\n'
   )
 }

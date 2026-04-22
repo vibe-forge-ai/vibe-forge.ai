@@ -1,3 +1,5 @@
+export type TaskLogsOrder = 'asc' | 'desc'
+
 export interface StopTaskToolInput {
   task_id?: string
 }
@@ -15,13 +17,24 @@ export interface StartTasksToolInput {
 
 export interface GetTaskInfoToolInput {
   taskId: string
+  logLimit?: number
+  logOrder?: TaskLogsOrder
 }
 
-export interface ListTasksToolInput {}
+export interface SendTaskMessageToolInput {
+  taskId: string
+  message: string
+}
+
+export interface ListTasksToolInput {
+  logLimit?: number
+  logOrder?: TaskLogsOrder
+}
 
 export interface ToolInputs {
   StartTasks: StartTasksToolInput
   GetTaskInfo: GetTaskInfoToolInput
+  SendTaskMessage: SendTaskMessageToolInput
   ListTasks: ListTasksToolInput
   StopTask: StopTaskToolInput
 }

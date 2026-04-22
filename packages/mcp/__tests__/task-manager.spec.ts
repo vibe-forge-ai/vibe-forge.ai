@@ -208,6 +208,114 @@ describe('taskManager fatal error scenarios', () => {
     })
   })
 
+  it('sends a follow-up message directly to a running task without server sync', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    const emit = vi.fn()
+
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill: vi.fn()
+      }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-local',
+      description: 'trigger'
+    })
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-local',
+      message: 'keep going'
+    })
+
+    const task = managedTaskManager.getTask('task-send-local')
+    expect(emit).toHaveBeenNthCalledWith(2, {
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'keep going'
+      }]
+    })
+    expect(task?.logs).toContain('User message submitted: keep going')
+  })
+
+  it('syncs follow-up messages through the child session when server sync is enabled', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    const emit = vi.fn()
+
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill: vi.fn()
+      }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-synced',
+      description: 'trigger',
+      enableServerSync: true
+    })
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-synced',
+      message: 'keep going'
+    })
+
+    const task = managedTaskManager.getTask('task-send-synced')
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(mocks.postSessionEvent).toHaveBeenCalledWith('task-send-synced', {
+      type: 'message',
+      data: expect.objectContaining({
+        role: 'user',
+        content: 'keep going'
+      })
+    })
+    expect(task?.logs).toContain('User message submitted: keep going')
+  })
+
+  it('rejects follow-up messages when a task is waiting for input', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      const session = {
+        emit: vi.fn(() => {
+          adapterOptions.onEvent({
+            type: 'interaction_request',
+            data: {
+              id: 'interaction-send-blocked',
+              payload: {
+                sessionId: 'task-send-blocked',
+                kind: 'permission',
+                question: 'Allow editing files?',
+                options: [
+                  { label: 'Allow once', value: 'allow_once' }
+                ]
+              }
+            }
+          })
+        }),
+        kill: vi.fn(),
+        respondInteraction: vi.fn()
+      }
+      return { session }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-blocked',
+      description: 'trigger',
+      background: false
+    })
+
+    await expect(managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-blocked',
+      message: 'continue'
+    })).rejects.toThrow('Task task-send-blocked is waiting for input. Use SubmitTaskInput instead.')
+  })
+
   it('builds synthetic permission recovery for claude-code and resumes after SubmitTaskInput', async () => {
     const { TaskManager } = await import('#~/tools/task/manager.js')
     const resumedEmit = vi.fn()
