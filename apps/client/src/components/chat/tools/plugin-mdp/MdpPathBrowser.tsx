@@ -32,6 +32,23 @@ const isNonEmptyString = (value: unknown): value is string => (
   typeof value === 'string' && value.trim() !== ''
 )
 
+const normalizeMdpPath = (path: string) => {
+  const trimmedPath = path.trim()
+  if (trimmedPath === '') {
+    return ''
+  }
+
+  const normalizedPath = trimmedPath
+    .replaceAll(/\/+/g, '/')
+    .replace(/\/$/, '')
+
+  if (normalizedPath === '') {
+    return '/'
+  }
+
+  return normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
+}
+
 const getAncestorPaths = (path: string) => {
   const segments = path.split('/').filter(Boolean)
   return segments.slice(0, -1).map((_, index) => `/${segments.slice(0, index + 1).join('/')}`)
@@ -103,7 +120,7 @@ export const buildMdpPathTreeModel = (paths: MdpPathSummary[]): MdpPathTreeModel
   const filePathSet = new Set<string>()
 
   for (const pathRecord of paths) {
-    const normalizedPath = pathRecord.path.trim()
+    const normalizedPath = normalizeMdpPath(pathRecord.path)
     if (normalizedPath === '' || normalizedPath === '/') {
       continue
     }
@@ -127,6 +144,15 @@ export const buildMdpPathTreeModel = (paths: MdpPathSummary[]): MdpPathTreeModel
       if (isLeaf) {
         const existingDirectory = directoryLookup.get(currentPath)
         if (existingDirectory != null) {
+          const detail = detailsByPath.get(currentPath)
+          if (detail != null) {
+            mergePathMetadata(detail, pathRecord)
+          }
+          continue
+        }
+
+        const existingFile = fileLookup.get(currentPath)
+        if (existingFile != null) {
           const detail = detailsByPath.get(currentPath)
           if (detail != null) {
             mergePathMetadata(detail, pathRecord)
@@ -310,9 +336,7 @@ export function MdpPathBrowser({
           )
           : (
             <div className='mdp-tool__path-detail'>
-              <div className='mdp-tool__path-detail-header'>
-                <code className='mdp-tool__path-detail-path'>{selectedDetail.path}</code>
-              </div>
+              <code className='mdp-tool__path-detail-path'>{selectedDetail.path}</code>
 
               {selectedDetail.type === 'directory'
                 ? (

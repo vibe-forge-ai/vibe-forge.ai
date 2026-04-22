@@ -76,4 +76,48 @@ describe('mdp path browser', () => {
     })
     expect(model.nodes[0]?.children?.map(node => node.path)).toEqual(['/sessions/:session_id'])
   })
+
+  it('normalizes trailing slash variants and avoids duplicate leaf nodes', () => {
+    const model = buildMdpPathTreeModel([
+      {
+        connectionKey: 'default',
+        clientId: 'client-1',
+        rawClientId: 'raw-client-1',
+        path: '/sessions/',
+        description: 'List sessions.',
+        methods: ['GET'],
+        type: 'endpoint'
+      },
+      {
+        connectionKey: 'default',
+        clientId: 'client-1',
+        rawClientId: 'raw-client-1',
+        path: 'sessions',
+        description: 'List sessions again.',
+        methods: ['GET'],
+        type: 'endpoint'
+      },
+      {
+        connectionKey: 'default',
+        clientId: 'client-1',
+        rawClientId: 'raw-client-1',
+        path: '/sessions/:session_id/messages',
+        description: 'Read session messages.',
+        methods: ['GET'],
+        type: 'endpoint'
+      }
+    ])
+
+    expect(model.nodes).toHaveLength(1)
+    expect(model.nodes[0]).toMatchObject({
+      path: '/sessions',
+      type: 'directory'
+    })
+    expect(model.nodes[0]?.children?.map(node => node.path)).toEqual(['/sessions/:session_id'])
+    expect(model.detailsByPath.get('/sessions')).toMatchObject({
+      description: 'List sessions.',
+      methods: ['GET'],
+      type: 'directory'
+    })
+  })
 })

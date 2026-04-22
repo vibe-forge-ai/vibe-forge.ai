@@ -5,6 +5,7 @@
 .ai/.mock
 .ai/.local
 .ai/caches
+.ai/data.db
 .ai/env.local/
 .ai/logs
 .ai/results
@@ -148,6 +149,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+.playwright-cli/
+output/
 
 # lsmcp cache
 .lsmcp/cache
