@@ -8,7 +8,7 @@ import type { Config, Definition, Skill, WorkspaceAsset } from '@vibe-forge/type
 import { resolveRelativePath } from '@vibe-forge/utils'
 
 import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
-import { installRegistrySkillDependency } from './skill-registry'
+import { installSkillsCliDependency } from './skills-cli-dependency'
 
 type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
 
@@ -16,7 +16,6 @@ export interface NormalizedSkillDependency {
   ref: string
   name: string
   source?: string
-  registry?: string
 }
 
 interface DependencyExpansionParams {
@@ -119,7 +118,7 @@ const parseFrontmatterSkill = async (path: string): Promise<Definition<Skill>> =
   }
 }
 
-const createRegistrySkillAsset = (params: {
+const createResolvedSkillAsset = (params: {
   cwd: string
   definition: Definition<Skill>
 }) => {
@@ -149,12 +148,15 @@ const parseStringDependency = (value: string): NormalizedSkillDependency => {
     }
   }
 
-  const sourcePathMatch = ref.match(/^([^/\s]+\/[^/\s]+)\/([^/\s]+)$/)
-  if (sourcePathMatch != null) {
+  const sourcePathSegments = ref.split('/').filter(segment => segment.trim() !== '')
+  if (
+    sourcePathSegments.length >= 3 &&
+    sourcePathSegments.every(segment => !segment.includes(' '))
+  ) {
     return {
       ref,
-      source: sourcePathMatch[1],
-      name: sourcePathMatch[2]
+      source: sourcePathSegments.slice(0, -1).join('/'),
+      name: sourcePathSegments[sourcePathSegments.length - 1]
     }
   }
 
@@ -177,8 +179,7 @@ export const normalizeSkillDependency = (value: unknown): NormalizedSkillDepende
   return {
     ref: source == null ? name : `${source}@${name}`,
     name,
-    ...(source == null ? {} : { source }),
-    ...(asNonEmptyString(record.registry) == null ? {} : { registry: asNonEmptyString(record.registry) })
+    ...(source == null ? {} : { source })
   }
 }
 
@@ -242,7 +243,7 @@ export const expandSkillAssetDependencies = (
   return selected
 }
 
-export const expandSkillAssetDependenciesWithRegistry = async (
+export const expandSkillAssetDependenciesWithRemoteResolution = async (
   params: DependencyExpansionParams
 ) => {
   const selected: SkillAsset[] = []
@@ -260,16 +261,16 @@ export const expandSkillAssetDependenciesWithRegistry = async (
     dependency: NormalizedSkillDependency,
     currentInstancePath?: string
   ) => {
-    const fetchKey = `${dependency.registry ?? ''}:${dependency.ref}`
+    const fetchKey = dependency.ref
     if (!fetchedDependencyRefs.has(fetchKey)) {
       fetchedDependencyRefs.add(fetchKey)
-      const installed = await installRegistrySkillDependency({
+      const installed = await installSkillsCliDependency({
         cwd: params.cwd,
         configs: params.configs,
         dependency
       })
       const definition = await parseFrontmatterSkill(installed.skillPath)
-      const dependencyAsset = createRegistrySkillAsset({
+      const dependencyAsset = createResolvedSkillAsset({
         cwd: params.cwd,
         definition
       })
@@ -334,14 +335,13 @@ export const expandSkillAssetDependenciesWithRegistry = async (
       const dependencyAsset = await installDependencyAsset(dependency, asset.instancePath).catch((error: unknown) => {
         if (
           localOrBridgedDependency != null &&
-          dependency.source == null &&
-          dependency.registry == null
+          dependency.source == null
         ) {
           return localOrBridgedDependency
         }
         throw error
       }) ?? (
-        dependency.source == null && dependency.registry == null
+        dependency.source == null
           ? localOrBridgedDependency
           : undefined
       )

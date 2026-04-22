@@ -1,6 +1,10 @@
 import Router from '@koa/router'
 
+import { resolveSkillsCliRuntimeConfig } from '@vibe-forge/utils'
+
+import { loadConfigState } from '#~/services/config/index.js'
 import { installSkillHubPlugin, searchSkillHub } from '#~/services/skill-hub/index.js'
+import { installSkillsCliSkill, searchSkillsCliSource } from '#~/services/skill-hub/skills-cli.js'
 import { badRequest, internalServerError } from '#~/utils/http.js'
 
 const normalizeString = (value: unknown) => (
@@ -12,6 +16,10 @@ const normalizePositiveInteger = (value: unknown) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined
 }
+
+const resolveSkillsCliConfig = (mergedConfig: Awaited<ReturnType<typeof loadConfigState>>['mergedConfig']) => (
+  resolveSkillsCliRuntimeConfig(mergedConfig)
+)
 
 export function skillHubRouter(): Router {
   const router = new Router()
@@ -25,6 +33,34 @@ export function skillHubRouter(): Router {
       })
     } catch (err) {
       throw internalServerError('Failed to search skill hub', { cause: err, code: 'skill_hub_search_failed' })
+    }
+  })
+
+  router.get('/skills-cli/search', async (ctx) => {
+    const source = normalizeString(ctx.query.source)
+    if (source == null) {
+      throw badRequest('Missing source', { source: ctx.query.source }, 'missing_source')
+    }
+
+    try {
+      const { workspaceFolder, mergedConfig } = await loadConfigState()
+      ctx.body = await searchSkillsCliSource({
+        config: resolveSkillsCliConfig(mergedConfig),
+        limit: normalizePositiveInteger(ctx.query.limit),
+        registry: normalizeString(ctx.query.registry ?? ctx.query.npmRegistry),
+        query: typeof ctx.query.q === 'string' ? ctx.query.q : '',
+        source,
+        workspaceFolder
+      })
+    } catch (err) {
+      throw internalServerError('Failed to search skills CLI source', {
+        cause: err,
+        code: 'skill_hub_skills_cli_search_failed',
+        details: {
+          source,
+          message: err instanceof Error ? err.message : String(err)
+        }
+      })
     }
   })
 
@@ -56,6 +92,44 @@ export function skillHubRouter(): Router {
         details: {
           registry,
           plugin,
+          message: err instanceof Error ? err.message : String(err)
+        }
+      })
+    }
+  })
+
+  router.post('/skills-cli/install', async (ctx) => {
+    const body = ctx.request.body as {
+      source?: unknown
+      skill?: unknown
+      force?: unknown
+      registry?: unknown
+      npmRegistry?: unknown
+    }
+    const source = normalizeString(body.source)
+    const skill = normalizeString(body.skill)
+
+    if (source == null || skill == null) {
+      throw badRequest('Missing source or skill', { source: body.source, skill: body.skill }, 'missing_target')
+    }
+
+    try {
+      const { workspaceFolder, mergedConfig } = await loadConfigState()
+      ctx.body = await installSkillsCliSkill({
+        config: resolveSkillsCliConfig(mergedConfig),
+        force: body.force === true,
+        registry: normalizeString(body.registry ?? body.npmRegistry),
+        skill,
+        source,
+        workspaceFolder
+      })
+    } catch (err) {
+      throw internalServerError('Failed to install skills CLI skill', {
+        cause: err,
+        code: 'skill_hub_skills_cli_install_failed',
+        details: {
+          source,
+          skill,
           message: err instanceof Error ? err.message : String(err)
         }
       })

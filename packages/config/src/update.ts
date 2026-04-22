@@ -189,6 +189,11 @@ const updateConfigSection = (config: Config, section: string, value: unknown): C
         hasOwn(sectionValue, 'skills')
       )
       updateField(
+        'skillsCli',
+        mergeMaskedValues(sectionValue.skillsCli, config.skillsCli) as Config['skillsCli'],
+        hasOwn(sectionValue, 'skillsCli')
+      )
+      updateField(
         'webAuth',
         mergeMaskedValues(sectionValue.webAuth, config.webAuth) as Config['webAuth'],
         hasOwn(sectionValue, 'webAuth')

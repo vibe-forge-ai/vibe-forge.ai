@@ -104,6 +104,15 @@
         "require": "./dist/plugin-resolver.js"
       }
     },
+    "./skills-cli": {
+      "__vibe-forge__": {
+        "default": "./src/skills-cli.ts"
+      },
+      "default": {
+        "import": "./dist/skills-cli.mjs",
+        "require": "./dist/skills-cli.js"
+      }
+    },
     "./project-cache-path": {
       "__vibe-forge__": {
         "default": "./src/project-cache-path.ts"

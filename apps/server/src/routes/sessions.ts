@@ -187,6 +187,7 @@ export function sessionsRouter(): Router {
       permissionMode,
       adapter,
       account,
+      updateSkills,
       workspace
     } = ctx.request.body as {
       id?: string
@@ -202,6 +203,7 @@ export function sessionsRouter(): Router {
       permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
       adapter?: string
       account?: string
+      updateSkills?: boolean
       workspace?: {
         createWorktree?: boolean
         worktreeEnvironment?: string
@@ -226,6 +228,7 @@ export function sessionsRouter(): Router {
       permissionMode,
       adapter,
       account,
+      updateSkills: updateSkills === true,
       workspace: workspace == null
         ? undefined
         : {

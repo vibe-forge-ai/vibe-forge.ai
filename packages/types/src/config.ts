@@ -76,11 +76,20 @@ export interface NotificationConfig {
   events?: Partial<Record<NotificationTrigger, NotificationEventConfig>>
 }
 
-export interface SkillRegistryConfig {
-  enabled?: boolean
-  url?: string
-  searchUrl?: string
-  downloadUrl?: string
+export interface SkillsCliConfig {
+  source?: 'managed' | 'system' | 'path'
+  path?: string
+  package?: string
+  version?: string
+  autoInstall?: boolean
+  prepareOnInstall?: boolean
+  npmPath?: string
+  registry?: string
+  /**
+   * @deprecated Use `registry` instead.
+   */
+  npmRegistry?: string
+  env?: Record<string, string>
 }
 
 export interface SkillHomeBridgeConfig {
@@ -88,10 +97,19 @@ export interface SkillHomeBridgeConfig {
   roots?: string | string[]
 }
 
-export interface SkillsConfig {
-  registry?: string | SkillRegistryConfig
+export interface ConfiguredSkillInstallConfig {
+  name: string
+  source?: string
+  rename?: string
+}
+
+export interface LegacySkillsConfig {
+  install?: Array<string | ConfiguredSkillInstallConfig>
+  cli?: SkillsCliConfig
   homeBridge?: SkillHomeBridgeConfig
 }
+
+export type SkillsConfig = Array<string | ConfiguredSkillInstallConfig> | LegacySkillsConfig
 
 export interface WorkspaceConfigEntry {
   enabled?: boolean
@@ -339,6 +357,7 @@ export interface Config {
   }
   notifications?: NotificationConfig
   skills?: SkillsConfig
+  skillsCli?: SkillsCliConfig
   webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
@@ -393,6 +412,7 @@ export interface ConfigSection {
     env?: Config['env']
     notifications?: Config['notifications']
     skills?: Config['skills']
+    skillsCli?: Config['skillsCli']
     webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']
