@@ -108,7 +108,6 @@ export const mountRoutes = async (
     { prefix: '/api/sessions', router: sessionsRouter() },
     { prefix: '/api/adapter-catalog', router: adapterCatalogRouter() },
     { prefix: '/api/adapters', router: adaptersRouter() },
-    { prefix: '/api/adapter-catalog', router: adapterCatalogRouter() },
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/auth', router: authRouter(env) },
     { prefix: '/api/ai', router: aiRouter() },
