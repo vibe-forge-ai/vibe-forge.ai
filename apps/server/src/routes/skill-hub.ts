@@ -1,7 +1,5 @@
 import Router from '@koa/router'
 
-import { resolveSkillsCliRuntimeConfig } from '@vibe-forge/utils'
-
 import { loadConfigState } from '#~/services/config/index.js'
 import { installSkillHubPlugin, searchSkillHub } from '#~/services/skill-hub/index.js'
 import { installSkillsCliSkill, searchSkillsCliSource } from '#~/services/skill-hub/skills-cli.js'
@@ -16,10 +14,6 @@ const normalizePositiveInteger = (value: unknown) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined
 }
-
-const resolveSkillsCliConfig = (mergedConfig: Awaited<ReturnType<typeof loadConfigState>>['mergedConfig']) => (
-  resolveSkillsCliRuntimeConfig(mergedConfig)
-)
 
 export function skillHubRouter(): Router {
   const router = new Router()
@@ -43,9 +37,8 @@ export function skillHubRouter(): Router {
     }
 
     try {
-      const { workspaceFolder, mergedConfig } = await loadConfigState()
+      const { workspaceFolder } = await loadConfigState()
       ctx.body = await searchSkillsCliSource({
-        config: resolveSkillsCliConfig(mergedConfig),
         limit: normalizePositiveInteger(ctx.query.limit),
         registry: normalizeString(ctx.query.registry ?? ctx.query.npmRegistry),
         query: typeof ctx.query.q === 'string' ? ctx.query.q : '',
@@ -114,9 +107,8 @@ export function skillHubRouter(): Router {
     }
 
     try {
-      const { workspaceFolder, mergedConfig } = await loadConfigState()
+      const { workspaceFolder } = await loadConfigState()
       ctx.body = await installSkillsCliSkill({
-        config: resolveSkillsCliConfig(mergedConfig),
         force: body.force === true,
         registry: normalizeString(body.registry ?? body.npmRegistry),
         skill,

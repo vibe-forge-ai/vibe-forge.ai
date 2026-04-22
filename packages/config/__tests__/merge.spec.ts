@@ -36,12 +36,14 @@ describe('mergeConfigs', () => {
           }
         },
         skills: [
-          'frontend-design'
+          'frontend-design',
+          {
+            name: 'lynx-cat',
+            registry: 'https://registry.example.com',
+            source: 'example-source/lynx/skills',
+            version: 'latest'
+          }
         ],
-        skillsCli: {
-          package: 'skills',
-          registry: 'https://registry.example.com'
-        },
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
@@ -113,15 +115,10 @@ describe('mergeConfigs', () => {
             {
               name: 'design-review',
               source: 'example-source/default/public',
+              version: '1.0.3',
               rename: 'internal-review'
             }
-          ],
-          cli: {
-            registry: 'https://legacy.example.com'
-          }
-        },
-        skillsCli: {
-          version: 'latest'
+          ]
         },
         marketplaces: {
           'team-tools': {
@@ -184,16 +181,18 @@ describe('mergeConfigs', () => {
     expect(merged.skills).toEqual([
       'frontend-design',
       {
+        name: 'lynx-cat',
+        registry: 'https://registry.example.com',
+        source: 'example-source/lynx/skills',
+        version: 'latest'
+      },
+      {
         name: 'design-review',
         source: 'example-source/default/public',
+        version: '1.0.3',
         rename: 'internal-review'
       }
     ])
-    expect(merged.skillsCli).toEqual({
-      package: 'skills',
-      registry: 'https://legacy.example.com',
-      version: 'latest'
-    })
     expect(merged.marketplaces).toEqual({
       'team-tools': {
         type: 'claude-code',

@@ -47,12 +47,12 @@ describe('project skills publish resolution', () => {
     tempDirs.push(cwd)
 
     await expect(resolveProjectSkillPublishSpec({
-      selector: 'git@code.byted.org:my-org/my-skill.git',
+      selector: 'git@example.com:my-org/my-skill.git',
       workspaceFolder: cwd
     })).resolves.toEqual({
       kind: 'remote',
-      requested: 'git@code.byted.org:my-org/my-skill.git',
-      skillSpec: 'git@code.byted.org:my-org/my-skill.git'
+      requested: 'git@example.com:my-org/my-skill.git',
+      skillSpec: 'git@example.com:my-org/my-skill.git'
     })
   })
 })

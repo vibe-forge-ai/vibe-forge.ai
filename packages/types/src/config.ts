@@ -99,13 +99,14 @@ export interface SkillHomeBridgeConfig {
 
 export interface ConfiguredSkillInstallConfig {
   name: string
+  registry?: string
   source?: string
+  version?: string
   rename?: string
 }
 
 export interface LegacySkillsConfig {
   install?: Array<string | ConfiguredSkillInstallConfig>
-  cli?: SkillsCliConfig
   homeBridge?: SkillHomeBridgeConfig
 }
 
@@ -357,7 +358,6 @@ export interface Config {
   }
   notifications?: NotificationConfig
   skills?: SkillsConfig
-  skillsCli?: SkillsCliConfig
   webAuth?: WebAuthConfig
   conversation?: {
     style?: 'friendly' | 'programmatic'
@@ -412,7 +412,6 @@ export interface ConfigSection {
     env?: Config['env']
     notifications?: Config['notifications']
     skills?: Config['skills']
-    skillsCli?: Config['skillsCli']
     webAuth?: Config['webAuth']
   }
   conversation?: Config['conversation']

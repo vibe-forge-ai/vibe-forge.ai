@@ -14,9 +14,11 @@ export const installSkillsCliSkillToTemp = async (params: {
   registry?: string
   skill: string
   source: string
+  version?: string
 }) => {
   const source = normalizeNonEmptyString(params.source)
   const skill = normalizeNonEmptyString(params.skill)
+  const version = normalizeNonEmptyString(params.version)
   if (source == null || skill == null) {
     throw new Error('skills CLI source and skill are required.')
   }
@@ -27,7 +29,17 @@ export const installSkillsCliSkillToTemp = async (params: {
       cwd: tempDir,
       config: params.config,
       registry: params.registry,
-      args: ['add', source, '--skill', skill, '--agent', 'universal', '--copy', '-y']
+      args: [
+        'add',
+        source,
+        '--skill',
+        skill,
+        ...(version == null ? [] : ['--version', version]),
+        '--agent',
+        'universal',
+        '--copy',
+        '-y'
+      ]
     })
 
     const installedSkill = await selectInstalledSkillDir({
@@ -140,7 +152,7 @@ export const publishSkillsCli = async (params: {
     const normalized = toSkillsCliError(error)
     if (/Unknown command:\s*publish/i.test(normalized.message)) {
       throw new Error(
-        'The configured skills CLI does not support publish. Configure skillsCli.registry or skillsCli.path to use a publish-capable skills CLI.'
+        'The active skills CLI does not support publish. Use a publish-capable skills CLI runtime.'
       )
     }
     throw normalized

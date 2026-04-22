@@ -1,25 +1,14 @@
 import { access } from 'node:fs/promises'
 import process from 'node:process'
 
-import type { Config, ConfiguredSkillInstallConfig, SkillsCliConfig } from '@vibe-forge/types'
+import type { Config, ConfiguredSkillInstallConfig } from '@vibe-forge/types'
 import {
   installProjectSkill,
   normalizeProjectSkillInstall,
   resolveConfiguredSkillInstalls as resolveDeclaredConfiguredSkillInstalls,
-  resolveProjectAiPath,
-  resolveSkillsCliRuntimeConfig
+  resolveProjectAiPath
 } from '@vibe-forge/utils'
 import type { NormalizedProjectSkillInstall } from '@vibe-forge/utils'
-
-const resolveConfiguredSkillsCliConfig = (configs: [Config?, Config?]) => {
-  const [projectConfig, userConfig] = configs
-  const merged = {
-    ...(resolveSkillsCliRuntimeConfig(projectConfig) ?? {}),
-    ...(resolveSkillsCliRuntimeConfig(userConfig) ?? {})
-  } satisfies SkillsCliConfig
-
-  return Object.keys(merged).length === 0 ? undefined : merged
-}
 
 const resolveConfiguredSkillInstalls = (configs: [Config?, Config?]) => (
   [
@@ -65,7 +54,6 @@ export const ensureConfiguredProjectSkills = async (params: {
 
   ensureUniqueTargets(installs)
 
-  const skillsCliConfig = resolveConfiguredSkillsCliConfig(params.configs)
   const ensured: Array<{ dirName: string; skillPath: string }> = []
 
   for (const skill of installs) {
@@ -86,9 +74,7 @@ export const ensureConfiguredProjectSkills = async (params: {
 
     ensured.push(
       await installProjectSkill({
-        config: skillsCliConfig,
         force: true,
-        registry: undefined,
         skill,
         workspaceFolder: params.workspaceFolder
       })

@@ -212,12 +212,6 @@ export const webAuthConfigSchema = z.object({
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
 })
 
-export const skillsCliConfigSchema = adapterNativeCliConfigSchema.extend({
-  registry: z.string().optional().describe('Package registry used to install the managed skills CLI'),
-  npmRegistry: z.string().optional().describe('Deprecated alias for skillsCli.registry'),
-  env: z.record(z.string(), z.string()).optional().describe('Environment variables passed to the skills CLI')
-})
-
 export const skillHomeBridgeConfigSchema = z.object({
   enabled: z.boolean().optional().describe('Bridge supported home skill roots into workspace asset discovery'),
   roots: z.union([z.string(), z.array(z.string())]).optional()
@@ -228,7 +222,9 @@ export const configuredSkillInstallConfigSchema = z.union([
   z.string().min(1),
   z.object({
     name: z.string().min(1).describe('Remote skill name'),
+    registry: z.string().optional().describe('Package registry used to install the managed skills CLI'),
     source: z.string().optional().describe('Remote skills CLI source path'),
+    version: z.string().optional().describe('Remote skill version passed to the skills CLI'),
     rename: z.string().optional().describe('Local skill name to expose after install')
   })
 ])
@@ -236,7 +232,6 @@ export const configuredSkillInstallConfigSchema = z.union([
 export const legacySkillsConfigSchema = z.object({
   install: z.array(configuredSkillInstallConfigSchema).optional()
     .describe('Project skills that should be ensured before session startup'),
-  cli: skillsCliConfigSchema.optional().describe('Deprecated alias for top-level skillsCli runtime settings'),
   homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
 
@@ -399,7 +394,6 @@ export const generalConfigSectionSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   notifications: notificationConfigSchema.optional(),
   skills: skillsConfigSchema.optional(),
-  skillsCli: skillsCliConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional()
 })
 
@@ -456,7 +450,6 @@ export const baseConfigFileSchema = z.object({
   shortcuts: shortcutsConfigSchema.optional(),
   notifications: notificationConfigSchema.optional(),
   skills: skillsConfigSchema.optional(),
-  skillsCli: skillsCliConfigSchema.optional(),
   webAuth: webAuthConfigSchema.optional(),
   conversation: conversationConfigSchema.optional(),
   plugins: pluginConfigSchema.optional(),

@@ -11,7 +11,6 @@ import {
   copyRegularFiles,
   pathExists,
   pickSearchResult,
-  resolveConfiguredSkillsCliConfig,
   withInstallLock
 } from './skills-cli-dependency-helpers'
 
@@ -20,7 +19,6 @@ export const installSkillsCliDependency = async (params: {
   configs: [Config?, Config?]
   dependency: NormalizedSkillDependency
 }) => {
-  const config = resolveConfiguredSkillsCliConfig(params.configs)
   const resolvedTarget = params.dependency.source != null
     ? {
       skill: params.dependency.name,
@@ -28,7 +26,7 @@ export const installSkillsCliDependency = async (params: {
     }
     : await (async () => {
       const searchResults = await findSkillsCli({
-        config,
+        registry: params.dependency.registry,
         query: params.dependency.name
       })
       const selected = pickSearchResult(searchResults, params.dependency.name)
@@ -44,10 +42,11 @@ export const installSkillsCliDependency = async (params: {
     })()
 
   const installDir = buildInstallDir({
-    config,
     cwd: params.cwd,
+    registry: params.dependency.registry,
     skill: resolvedTarget.skill,
-    source: resolvedTarget.source
+    source: resolvedTarget.source,
+    version: params.dependency.version
   })
   const skillPath = resolve(installDir, 'SKILL.md')
 
@@ -64,14 +63,22 @@ export const installSkillsCliDependency = async (params: {
     await mkdir(tempInstallDir, { recursive: true })
 
     const installResult = 'installRef' in resolvedTarget
-      ? await installSkillsCliRefToTemp({
-        config,
-        installRef: resolvedTarget.installRef
-      })
+      ? params.dependency.version == null
+        ? await installSkillsCliRefToTemp({
+          installRef: resolvedTarget.installRef,
+          registry: params.dependency.registry
+        })
+        : await installSkillsCliSkillToTemp({
+          registry: params.dependency.registry,
+          skill: resolvedTarget.skill,
+          source: resolvedTarget.source,
+          version: params.dependency.version
+        })
       : await installSkillsCliSkillToTemp({
-        config,
+        registry: params.dependency.registry,
         skill: resolvedTarget.skill,
-        source: resolvedTarget.source
+        source: resolvedTarget.source,
+        version: params.dependency.version
       })
 
     try {

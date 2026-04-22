@@ -2,11 +2,7 @@ import { Option } from 'commander'
 import type { Command } from 'commander'
 
 import { updateConfigFile } from '@vibe-forge/config'
-import {
-  normalizeProjectSkillInstall,
-  resolveConfiguredSkillInstalls,
-  resolveSkillsCliRuntimeConfig
-} from '@vibe-forge/utils'
+import { normalizeProjectSkillInstall, resolveConfiguredSkillInstalls } from '@vibe-forge/utils'
 
 import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
@@ -33,6 +29,7 @@ export const registerAddSkillSubcommand = (skillsCommand: Command) => {
       )
     )
     .option('--source <source>', 'Remote skills CLI source path')
+    .option('--version <version>', 'Remote skill version passed to the skills CLI')
     .option('--rename <name>', 'Local skill name after install')
     .option('--registry <registry>', 'Package registry used to install the managed skills CLI')
     .option('--force', 'Replace the existing installed skill if it already exists', false)
@@ -57,7 +54,6 @@ export const registerAddSkillSubcommand = (skillsCommand: Command) => {
         }
 
         const installResult = await installDeclaredSkill({
-          config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
           force: opts.force,
           registry: opts.registry,
           skill: declared,

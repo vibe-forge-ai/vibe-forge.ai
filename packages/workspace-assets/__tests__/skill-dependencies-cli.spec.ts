@@ -94,19 +94,17 @@ describe('skills CLI dependency resolution', () => {
     const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
     expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
     expect(dependency?.sourcePath).toContain(
-      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/'
+      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/frontend-design/'
     )
     expect(mocks.findSkillsCli).toHaveBeenCalledWith({
-      config: undefined,
       query: 'frontend-design'
     })
     expect(mocks.installSkillsCliRefToTemp).toHaveBeenCalledWith({
-      config: undefined,
       installRef: 'anthropics/skills@frontend-design'
     })
   })
 
-  it('merges top-level skillsCli config ahead of legacy skills.cli aliases', async () => {
+  it('parses registry and version from dependency specs', async () => {
     const workspace = await createWorkspace()
     const installedSkillDir = join(installWorkspace, '.agents', 'skills', 'frontend-design')
     await mkdir(installedSkillDir, { recursive: true })
@@ -131,7 +129,7 @@ describe('skills CLI dependency resolution', () => {
         'name: app-builder',
         'description: Build apps',
         'dependencies:',
-        '  - example-source/default/public@frontend-design',
+        '  - https://registry.example.com@example-source/default/public@frontend-design@1.0.3',
         '---',
         'Build the app.'
       ].join('\n')
@@ -139,17 +137,7 @@ describe('skills CLI dependency resolution', () => {
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
-      configs: [{
-        skills: {
-          cli: {
-            package: 'legacy-skills'
-          }
-        },
-        skillsCli: {
-          package: '@byted/skills',
-          registry: 'https://registry.example.com'
-        }
-      }, undefined],
+      configs: [undefined, undefined],
       useDefaultVibeForgeMcpServer: false
     })
 
@@ -164,12 +152,10 @@ describe('skills CLI dependency resolution', () => {
     })
 
     expect(mocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
-      config: {
-        package: '@byted/skills',
-        registry: 'https://registry.example.com'
-      },
+      registry: 'https://registry.example.com',
       skill: 'frontend-design',
-      source: 'example-source/default/public'
+      source: 'example-source/default/public',
+      version: '1.0.3'
     })
   })
 })

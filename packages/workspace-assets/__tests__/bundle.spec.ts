@@ -446,7 +446,7 @@ describe('resolveWorkspaceAssetBundle', () => {
     const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
     expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
     expect(dependency?.sourcePath).toContain(
-      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/'
+      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/frontend-design/'
     )
     expect(bundle.skills.find(asset => (
       asset.name === 'frontend-design' && asset.resolvedBy === 'home-bridge'
@@ -617,7 +617,7 @@ describe('resolveWorkspaceAssetBundle', () => {
       const dependency = bundle.skills.find(asset => asset.name === 'frontend-design')
       expect(dependency?.sourcePath).toContain(join(
         primary,
-        '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/'
+        '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/frontend-design/'
       ))
       expect(dependency?.sourcePath).not.toContain(join(worktree, '.ai/caches'))
     } finally {
@@ -634,7 +634,7 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     const cachedSkillPath = join(
       workspace,
-      '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/frontend-design/SKILL.md'
+      '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/frontend-design/SKILL.md'
     )
     await writeDocument(
       cachedSkillPath,
@@ -675,7 +675,7 @@ describe('resolveWorkspaceAssetBundle', () => {
     expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
   })
 
-  it('parses multi-segment source dependencies and forwards skillsCli runtime config', async () => {
+  it('parses registry/source/version dependency specs and forwards them to the skills CLI installer', async () => {
     const workspace = await createWorkspace()
     const tempInstallDir = join(workspace, '.tmp-install-skills-cli')
     const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'frontend-design')
@@ -699,7 +699,7 @@ describe('resolveWorkspaceAssetBundle', () => {
         'name: app-builder',
         'description: Build apps',
         'dependencies:',
-        '  - example-source/default/public/frontend-design',
+        '  - https://registry.example.com@example-source/default/public@frontend-design@1.0.3',
         '---',
         'Build the app.'
       ].join('\n')
@@ -707,11 +707,7 @@ describe('resolveWorkspaceAssetBundle', () => {
 
     const bundle = await resolveWorkspaceAssetBundle({
       cwd: workspace,
-      configs: [{
-        skillsCli: {
-          registry: 'https://registry.example.com'
-        }
-      }, undefined],
+      configs: [undefined, undefined],
       useDefaultVibeForgeMcpServer: false
     })
 
@@ -726,11 +722,10 @@ describe('resolveWorkspaceAssetBundle', () => {
     })
 
     expect(skillsCliMocks.installSkillsCliSkillToTemp).toHaveBeenCalledWith({
-      config: {
-        registry: 'https://registry.example.com'
-      },
+      registry: 'https://registry.example.com',
       skill: 'frontend-design',
-      source: 'example-source/default/public'
+      source: 'example-source/default/public',
+      version: '1.0.3'
     })
   })
 

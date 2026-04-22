@@ -173,7 +173,7 @@ Vibe Forge 会按这个顺序处理依赖与候选 skill：
 
 本地缺失的 skill dependency 默认走 `skills` CLI，不再要求你额外配置 `skills.sh` 或私有 registry 地址。
 
-默认情况下也**不需要**声明 `skillsCli`。Vibe Forge 会按托管 CLI 的默认策略使用 `skills@latest`；只有你所在环境不能直接安装，或者需要切到内网 npm 源、指定系统 binary、补充 env 时，才需要再配 `skillsCli`。
+默认情况下也**不需要**额外声明 CLI 配置。Vibe Forge 会按托管 CLI 的默认策略使用 `skills@latest`；如果某个 skill 需要指定包源或版本，直接把这些信息写进 dependency spec 本身即可。
 
 解析时会按依赖写法选择命令：
 
@@ -182,11 +182,9 @@ skills find <name>
 skills add <source> --skill <name> --agent universal --copy -y
 ```
 
-如果依赖已经写成 `source@skill`，Vibe Forge 会直接按 source 安装；如果只写 skill 名称，则先 `find` 再挑选匹配项。
+如果依赖已经写成 `source@skill`，Vibe Forge 会直接按 source 安装；如果写成 `registry@source@skill@version`，则会把 `registry` 透传成托管 `skills` CLI 的安装源，并把 `version` 透传给 `skills add --version`；如果只写 skill 名称，则先 `find` 再挑选匹配项。
 
 安装结果会缓存到项目 `.ai/caches/skill-dependencies/`，不会写入用户真实 home，也不会修改 `.ai/skills` 下的手写 skill。
-
-## Skills CLI 运行时
 
 知识库里的「技能 -> 市场」页还提供了一个一次性的 “Install via Skills CLI” 入口，适合直接连接公司内网或私有 `skills` source。这个入口不会写入 `marketplaces`；它会在当前项目里临时执行：
 
@@ -195,34 +193,7 @@ skills add <source> --list
 skills add <source> --skill <name> --agent universal --copy -y
 ```
 
-安装结果会直接导入项目 `.ai/skills`。
-
-只有在特殊环境下，你才需要控制 `skills` command 自身的运行时，例如：
-
-- 机器默认 npm 源不能安装 `skills`
-- 需要强制走内网 `bnpm`
-- 需要传认证、region 等环境变量
-- 需要指定系统里已有的 `skills` binary
-
-这时才在 `.ai.config.yaml` 里配置：
-
-```yaml
-skillsCli:
-  source: managed
-  package: skills
-  version: latest
-  registry: https://registry.example.com
-  env:
-    SKILLS_REGION: cn
-```
-
-字段含义：
-
-- `source` / `path` / `package` / `version` / `npmPath` / `autoInstall` / `prepareOnInstall`：和其他 managed npm CLI 一样，用来控制 `skills` 命令本身从哪里来。
-- `registry`：只影响托管 `skills` CLI 包的安装来源，例如内网 npm 源；不会改变 `dependencies` 里写的 source。
-- `env`：传给 `skills` CLI 的环境变量，适合补充私有 source 需要的认证或 region 信息。
-
-`skillsCli` 同时也会用于配置型 project skills 的自动补装与更新；默认不配时，仍然按 `skills@latest` 的托管 CLI 策略执行。
+安装结果会直接导入项目 `.ai/skills`。如果需要切到特殊 npm 源，只在这次操作里填 `Registry` 即可。
 
 ## `vf skills` 命令
 
@@ -240,6 +211,8 @@ vf skills publish <skill-or-path>
 
 - `vf skills add design-review --source example-source/default/public --rename internal-review`
   - 把 skill 声明写进项目配置，并立即安装到 `.ai/skills/internal-review`
+- `vf skills add lynx-cat --source skills.byted.org/lynx/skills --registry https://bnpm.byted.org --version 1.0.3`
+  - 把 registry/source/version 一起写进项目配置；后续会话启动前会按这条 spec 自动补装或更新
 - `vf skills install`
   - 安装当前 `.ai.config.*` 里声明的全部 project skills
 - `vf skills update`
@@ -264,13 +237,12 @@ vf skills publish internal-review --group default/public --region cn --access re
 - `--group`：目标 group；具体语义由你的 `skills` 平台决定
 - `--region`：发布 region
 - `--access`：访问级别
-- `--registry`：仅控制托管 `skills` CLI 包从哪个 npm 源安装
+- `--registry`：仅控制这次运行里托管 `skills` CLI 包从哪个 npm 源安装
 
-注意：公开版 `skills@latest` 默认不支持 `publish`。如果你要使用 `vf skills publish`，通常需要把 `skillsCli` 指向带发布能力的内部 `skills` runtime，例如：
+注意：公开版 `skills@latest` 默认不支持 `publish`。如果你要使用 `vf skills publish`，通常需要让这次命令从支持 publish 的内部 npm 源安装 `skills` CLI，例如：
 
-```yaml
-skillsCli:
-  registry: https://registry.example.com
+```bash
+vf skills publish internal-review --registry https://registry.example.com
 ```
 
 ## 与选择规则的关系

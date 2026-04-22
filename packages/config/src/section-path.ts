@@ -24,7 +24,6 @@ const GENERAL_FIELD_KEYS = new Set([
   'env',
   'notifications',
   'skills',
-  'skillsCli',
   'shortcuts'
 ])
 

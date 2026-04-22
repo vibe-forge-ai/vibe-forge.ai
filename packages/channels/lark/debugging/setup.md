@@ -21,7 +21,7 @@
   --no-first-run \
   --no-default-browser-check \
   --new-window \
-  'https://bytedance.larkoffice.com/next/messenger'
+  'https://example.larkoffice.com/next/messenger'
 ```
 
 ## 最小验收
