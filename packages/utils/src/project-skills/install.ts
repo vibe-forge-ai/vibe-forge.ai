@@ -108,14 +108,15 @@ export const installProjectSkill = async (params: {
     const installResult = normalized.source != null
       ? await installSkillsCliSkillToTemp({
         config: params.config,
-        registry: params.registry,
+        registry: params.registry ?? normalized.registry,
         skill: normalized.name,
-        source: normalized.source
+        source: normalized.source,
+        version: normalized.version
       })
       : await (async () => {
         const searchResults = await findSkillsCli({
           config: params.config,
-          registry: params.registry,
+          registry: params.registry ?? normalized.registry,
           query: normalized.name
         })
         const selected = pickSearchResult(searchResults, normalized.name)
@@ -123,11 +124,19 @@ export const installProjectSkill = async (params: {
           throw new Error(`Skill ${normalized.name} was not found by the skills CLI search.`)
         }
 
-        return await installSkillsCliRefToTemp({
-          config: params.config,
-          registry: params.registry,
-          installRef: selected.installRef
-        })
+        return normalized.version == null
+          ? await installSkillsCliRefToTemp({
+            config: params.config,
+            registry: params.registry ?? normalized.registry,
+            installRef: selected.installRef
+          })
+          : await installSkillsCliSkillToTemp({
+            config: params.config,
+            registry: params.registry ?? normalized.registry,
+            skill: selected.skill,
+            source: selected.source,
+            version: normalized.version
+          })
       })()
 
     try {

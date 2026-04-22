@@ -7,8 +7,10 @@ export interface ProjectSkillSummary {
 export interface NormalizedProjectSkillInstall {
   ref: string
   name: string
+  registry?: string
   rename?: string
   source?: string
+  version?: string
   targetName: string
   targetDirName: string
 }

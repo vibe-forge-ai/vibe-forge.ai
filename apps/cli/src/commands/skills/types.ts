@@ -10,6 +10,7 @@ export interface SkillsInstallOptions {
   registry?: string
   rename?: string
   source?: string
+  version?: string
 }
 
 export interface SkillsAddOptions extends SkillsInstallOptions {

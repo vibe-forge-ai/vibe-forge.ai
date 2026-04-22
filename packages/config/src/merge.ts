@@ -4,8 +4,7 @@ import {
   mergeAdapterConfigs,
   mergeMarketplaceConfigs,
   mergePluginConfigs,
-  resolveConfiguredSkillInstalls,
-  resolveSkillsCliRuntimeConfig
+  resolveConfiguredSkillInstalls
 } from '@vibe-forge/utils'
 
 import { mergeWorkspaceConfigs } from './workspace-config'
@@ -188,10 +187,6 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
     ) as Config['webAuth'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
     skills: mergeSkills(left?.skills, right?.skills),
-    skillsCli: mergeRecord(
-      resolveSkillsCliRuntimeConfig(left) as Record<string, unknown> | undefined,
-      resolveSkillsCliRuntimeConfig(right) as Record<string, unknown> | undefined
-    ) as Config['skillsCli'],
     plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
     marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }

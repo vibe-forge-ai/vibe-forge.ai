@@ -287,23 +287,10 @@ describe('skills command', () => {
     expect(config).toEqual({})
   })
 
-  it('publishes a local project skill through the configured skills cli runtime', async () => {
+  it('publishes a local project skill through the active skills cli runtime', async () => {
     const cwd = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vf-skills-command-')))
     tempDirs.push(cwd)
     process.chdir(cwd)
-
-    await writeFile(
-      path.join(cwd, '.ai.config.json'),
-      JSON.stringify(
-        {
-          skillsCli: {
-            registry: 'https://registry.example.com'
-          }
-        },
-        null,
-        2
-      )
-    )
     await mkdir(path.join(cwd, '.ai/skills/internal-review'), { recursive: true })
     await writeFile(
       path.join(cwd, '.ai/skills/internal-review/SKILL.md'),
@@ -341,9 +328,6 @@ describe('skills command', () => {
 
     expect(mocks.publishSkillsCli).toHaveBeenCalledWith({
       access: 'restricted',
-      config: {
-        registry: 'https://registry.example.com'
-      },
       cwd,
       group: 'default/public',
       region: 'cn',

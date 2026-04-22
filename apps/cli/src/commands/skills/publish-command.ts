@@ -1,16 +1,16 @@
 import type { Command } from 'commander'
 
-import { publishSkillsCli, resolveProjectSkillPublishSpec, resolveSkillsCliRuntimeConfig } from '@vibe-forge/utils'
+import { publishSkillsCli, resolveProjectSkillPublishSpec } from '@vibe-forge/utils'
 
 import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
-import { exitWithError, loadSkillsConfigState, printResult } from './shared'
+import { exitWithError, printResult } from './shared'
 import type { SkillsPublishOptions } from './types'
 
 export const registerPublishSkillSubcommand = (skillsCommand: Command) => {
   skillsCommand
     .command('publish <skill>')
-    .description('Publish a local project skill, local path, or remote skill spec through the configured skills CLI')
+    .description('Publish a local project skill, local path, or remote skill spec through the active skills CLI')
     .option('--access <access>', 'Publish access level passed to the skills CLI')
     .option('--group [name]', 'Publish to a specific group; pass bare --group to select interactively')
     .option('--region <region>', 'Publish region passed to the skills CLI')
@@ -20,14 +20,12 @@ export const registerPublishSkillSubcommand = (skillsCommand: Command) => {
     .action(async (skill: string, opts: SkillsPublishOptions) => {
       try {
         const workspaceFolder = resolveCliWorkspaceCwd()
-        const state = await loadSkillsConfigState(workspaceFolder)
         const resolved = await resolveProjectSkillPublishSpec({
           selector: skill,
           workspaceFolder
         })
         const published = await publishSkillsCli({
           access: opts.access,
-          config: resolveSkillsCliRuntimeConfig(state.mergedConfig),
           cwd: workspaceFolder,
           group: opts.group,
           region: opts.region,

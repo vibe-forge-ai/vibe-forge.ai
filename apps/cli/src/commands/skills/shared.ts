@@ -4,12 +4,7 @@ import process from 'node:process'
 import type { ConfigSource } from '@vibe-forge/config'
 import { buildConfigJsonVariables, loadConfigState } from '@vibe-forge/config'
 import type { Config, ConfiguredSkillInstallConfig } from '@vibe-forge/types'
-import {
-  normalizeProjectSkillInstall,
-  readProjectSkills,
-  resolveSkillsCliRuntimeConfig,
-  toSkillSlug
-} from '@vibe-forge/utils'
+import { normalizeProjectSkillInstall, readProjectSkills, toSkillSlug } from '@vibe-forge/utils'
 
 const normalizeString = (value: unknown) => (
   typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
@@ -66,15 +61,11 @@ export const getSourceConfig = (state: Awaited<ReturnType<typeof loadSkillsConfi
 )
 
 export const buildGeneralSkillsUpdateValue = (
-  sourceConfig: Config | undefined,
+  _sourceConfig: Config | undefined,
   nextSkills: Array<string | ConfiguredSkillInstallConfig>
 ) => {
   const value: Record<string, unknown> = {
     skills: nextSkills.length === 0 ? undefined : nextSkills
-  }
-  const skillsCli = resolveSkillsCliRuntimeConfig(sourceConfig)
-  if (skillsCli != null) {
-    value.skillsCli = skillsCli
   }
   return value
 }
@@ -90,7 +81,9 @@ export const isSameDeclaredSkill = (
     return normalizedLeft.ref === normalizedRight.ref &&
       normalizedLeft.targetName === normalizedRight.targetName &&
       normalizedLeft.rename === normalizedRight.rename &&
-      normalizedLeft.source === normalizedRight.source
+      normalizedLeft.source === normalizedRight.source &&
+      normalizedLeft.registry === normalizedRight.registry &&
+      normalizedLeft.version === normalizedRight.version
   }
 
   return left === right

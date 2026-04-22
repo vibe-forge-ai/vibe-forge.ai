@@ -5,7 +5,7 @@ import fm from 'front-matter'
 
 import { parseScopedReference, resolveSkillIdentifier } from '@vibe-forge/definition-core'
 import type { Config, Definition, Skill, WorkspaceAsset } from '@vibe-forge/types'
-import { resolveRelativePath } from '@vibe-forge/utils'
+import { formatSkillsSpec, parseSkillsSpec, resolveRelativePath } from '@vibe-forge/utils'
 
 import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { installSkillsCliDependency } from './skills-cli-dependency'
@@ -15,7 +15,9 @@ type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
 export interface NormalizedSkillDependency {
   ref: string
   name: string
+  registry?: string
   source?: string
+  version?: string
 }
 
 interface DependencyExpansionParams {
@@ -137,49 +139,29 @@ const createResolvedSkillAsset = (params: {
   } satisfies SkillAsset
 }
 
-const parseStringDependency = (value: string): NormalizedSkillDependency => {
-  const ref = value.trim()
-  const atIndex = ref.lastIndexOf('@')
-  if (atIndex > 0 && atIndex < ref.length - 1) {
-    return {
-      ref,
-      source: ref.slice(0, atIndex),
-      name: ref.slice(atIndex + 1)
-    }
-  }
-
-  const sourcePathSegments = ref.split('/').filter(segment => segment.trim() !== '')
-  if (
-    sourcePathSegments.length >= 3 &&
-    sourcePathSegments.every(segment => !segment.includes(' '))
-  ) {
-    return {
-      ref,
-      source: sourcePathSegments.slice(0, -1).join('/'),
-      name: sourcePathSegments[sourcePathSegments.length - 1]
-    }
-  }
-
-  return {
-    ref,
-    name: ref
-  }
-}
-
 export const normalizeSkillDependency = (value: unknown): NormalizedSkillDependency | undefined => {
   const stringValue = asNonEmptyString(value)
-  if (stringValue != null) return parseStringDependency(stringValue)
+  if (stringValue != null) return parseSkillsSpec(stringValue)
 
   if (value == null || typeof value !== 'object' || Array.isArray(value)) return undefined
   const record = value as Record<string, unknown>
   const name = asNonEmptyString(record.name)
   if (name == null) return undefined
 
+  const registry = asNonEmptyString(record.registry)
   const source = asNonEmptyString(record.source)
+  const version = asNonEmptyString(record.version)
   return {
-    ref: source == null ? name : `${source}@${name}`,
+    ref: formatSkillsSpec({
+      name,
+      registry,
+      source,
+      version
+    }),
     name,
-    ...(source == null ? {} : { source })
+    ...(registry == null ? {} : { registry }),
+    ...(source == null ? {} : { source }),
+    ...(version == null ? {} : { version })
   }
 }
 

@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import type { Config, ConfiguredSkillInstallConfig } from '@vibe-forge/types'
+import type { ConfiguredSkillInstallConfig } from '@vibe-forge/types'
 import {
   installProjectSkill,
   normalizeProjectSkillInstall,
@@ -13,15 +13,21 @@ import type { SkillsInstallOptions } from './types'
 
 export const buildDeclaredSkillEntry = (
   skillArg: string,
-  options: Pick<SkillsInstallOptions, 'rename' | 'source'>
+  options: Pick<SkillsInstallOptions, 'registry' | 'rename' | 'source' | 'version'>
 ): string | ConfiguredSkillInstallConfig => {
   const skill = typeof skillArg === 'string' && skillArg.trim() !== '' ? skillArg.trim() : undefined
   if (skill == null) {
     throw new Error('Skill reference is required.')
   }
 
+  const explicitRegistry = typeof options.registry === 'string' && options.registry.trim() !== ''
+    ? options.registry.trim()
+    : undefined
   const explicitSource = typeof options.source === 'string' && options.source.trim() !== ''
     ? options.source.trim()
+    : undefined
+  const explicitVersion = typeof options.version === 'string' && options.version.trim() !== ''
+    ? options.version.trim()
     : undefined
   const rename = typeof options.rename === 'string' && options.rename.trim() !== ''
     ? options.rename.trim()
@@ -34,22 +40,33 @@ export const buildDeclaredSkillEntry = (
   if (explicitSource != null && parsed.source != null) {
     throw new Error('--source cannot be used when the skill reference already includes a source.')
   }
+  if (explicitRegistry != null && parsed.registry != null) {
+    throw new Error('--registry cannot be used when the skill reference already includes a registry.')
+  }
+  if (explicitVersion != null && parsed.version != null) {
+    throw new Error('--version cannot be used when the skill reference already includes a version.')
+  }
 
-  if (explicitSource == null && rename == null) {
+  if (explicitRegistry == null && explicitSource == null && explicitVersion == null && rename == null) {
     return skill
   }
 
   return {
     name: parsed.name,
+    ...(explicitRegistry != null
+      ? { registry: explicitRegistry }
+      : (parsed.registry != null ? { registry: parsed.registry } : {})),
     ...(explicitSource != null
       ? { source: explicitSource }
       : (parsed.source != null ? { source: parsed.source } : {})),
+    ...(explicitVersion != null
+      ? { version: explicitVersion }
+      : (parsed.version != null ? { version: parsed.version } : {})),
     ...(rename != null ? { rename } : {})
   }
 }
 
 export const installDeclaredSkill = async (params: {
-  config?: Config['skillsCli']
   force?: boolean
   registry?: string
   skill: string | ConfiguredSkillInstallConfig
@@ -70,7 +87,6 @@ export const installDeclaredSkill = async (params: {
   const hadExisting = await pathExists(existingSkillPath)
   const installed = params.force === true || !hadExisting
     ? await installProjectSkill({
-      config: params.config,
       force: params.force,
       registry: params.registry,
       skill: normalized,

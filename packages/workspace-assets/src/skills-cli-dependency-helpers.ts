@@ -3,10 +3,8 @@ import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 
-import type { Config, SkillsCliConfig } from '@vibe-forge/types'
-import { resolveSkillsCliRuntimeConfig } from '@vibe-forge/utils'
 import { resolveProjectSharedCachePath } from '@vibe-forge/utils/project-cache-path'
-import { resolveSkillsCliRegistry, toSkillSlug } from '@vibe-forge/utils/skills-cli'
+import { toSkillSlug } from '@vibe-forge/utils/skills-cli'
 
 const INSTALL_LOCK_TIMEOUT_MS = 30_000
 const INSTALL_LOCK_RETRY_MS = 100
@@ -89,34 +87,24 @@ export const pickSearchResult = <T extends { skill: string }>(
   )) ?? results[0]
 }
 
-export const resolveConfiguredSkillsCliConfig = (configs: [Config?, Config?]) => {
-  const [projectConfig, userConfig] = configs
-  const merged = {
-    ...(resolveSkillsCliRuntimeConfig(projectConfig) ?? {}),
-    ...(resolveSkillsCliRuntimeConfig(userConfig) ?? {})
-  } satisfies SkillsCliConfig
-
-  return Object.keys(merged).length === 0 ? undefined : merged
-}
-
 export const buildInstallDir = (params: {
-  config?: SkillsCliConfig
   cwd: string
+  registry?: string
   skill: string
   source: string
+  version?: string
 }) => {
-  const registry = resolveSkillsCliRegistry({
-    config: params.config
-  }) ?? 'default'
+  const registry = params.registry ?? 'default'
   return resolveProjectSharedCachePath(
     params.cwd,
     process.env,
     'skill-dependencies',
     'skills-cli',
-    toCacheSegment(params.config?.package ?? 'skills'),
-    toCacheSegment(params.config?.version ?? 'latest'),
+    toCacheSegment('skills'),
+    toCacheSegment('latest'),
     toCacheSegment(registry),
     ...params.source.split('/').map(toCacheSegment),
+    toCacheSegment(params.version ?? 'latest'),
     toCacheSegment(params.skill)
   )
 }

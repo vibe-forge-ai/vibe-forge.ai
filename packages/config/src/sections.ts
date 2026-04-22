@@ -31,7 +31,6 @@ export interface ConfigSections {
     env?: Config['env']
     notifications?: Config['notifications']
     skills?: Config['skills']
-    skillsCli?: Config['skillsCli']
     webAuth?: Config['webAuth']
     shortcuts?: Config['shortcuts']
   }
@@ -76,7 +75,6 @@ export const buildConfigSections = (config: Config | undefined): ConfigSections 
     env: config?.env,
     notifications: config?.notifications,
     skills: config?.skills,
-    skillsCli: config?.skillsCli,
     webAuth: config?.webAuth,
     shortcuts: config?.shortcuts
   },
