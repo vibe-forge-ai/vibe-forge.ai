@@ -59,6 +59,15 @@
         "require": "./dist/document-path.js"
       }
     },
+    "./install-lock": {
+      "__vibe-forge__": {
+        "default": "./src/install-lock.ts"
+      },
+      "default": {
+        "import": "./dist/install-lock.mjs",
+        "require": "./dist/install-lock.js"
+      }
+    },
     "./log-level": {
       "__vibe-forge__": {
         "default": "./src/log-level.ts"

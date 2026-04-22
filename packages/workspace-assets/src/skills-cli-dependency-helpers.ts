@@ -1,13 +1,10 @@
-import { access, copyFile, lstat, mkdir, readdir, rm } from 'node:fs/promises'
+import { access, copyFile, lstat, mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
-import { setTimeout as delay } from 'node:timers/promises'
 
+import { withDirectoryInstallLock } from '@vibe-forge/utils/install-lock'
 import { resolveProjectSharedCachePath } from '@vibe-forge/utils/project-cache-path'
 import { toSkillSlug } from '@vibe-forge/utils/skills-cli'
-
-const INSTALL_LOCK_TIMEOUT_MS = 30_000
-const INSTALL_LOCK_RETRY_MS = 100
 
 const toCacheSegment = (value: string) => (
   value
@@ -27,26 +24,11 @@ export const pathExists = async (targetPath: string) => {
 }
 
 export const withInstallLock = async <T>(lockDir: string, callback: () => Promise<T>) => {
-  const start = Date.now()
-  await mkdir(dirname(lockDir), { recursive: true })
-
-  while (true) {
-    try {
-      await mkdir(lockDir)
-      break
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      if (Date.now() - start > INSTALL_LOCK_TIMEOUT_MS) {
-        throw new Error(`Timed out waiting for skill dependency install lock ${lockDir}`)
-      }
-      await delay(INSTALL_LOCK_RETRY_MS)
-    }
-  }
-
   try {
-    return await callback()
-  } finally {
-    await rm(lockDir, { recursive: true, force: true })
+    return await withDirectoryInstallLock({ lockDir }, callback)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(message.replace('Timed out waiting for install lock', 'Timed out waiting for skill dependency install lock'))
   }
 }
 

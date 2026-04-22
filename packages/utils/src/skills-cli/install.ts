@@ -9,6 +9,11 @@ import { runSkillsCli } from './runtime'
 import { normalizeNonEmptyString, stripAnsi, toSkillsCliError } from './shared'
 import type { PublishSkillsCliResult } from './types'
 
+const normalizeRequestedVersion = (value: string | undefined) => {
+  const version = normalizeNonEmptyString(value)
+  return version?.toLowerCase() === 'latest' ? undefined : version
+}
+
 export const installSkillsCliSkillToTemp = async (params: {
   config?: SkillsCliConfig
   registry?: string
@@ -18,7 +23,7 @@ export const installSkillsCliSkillToTemp = async (params: {
 }) => {
   const source = normalizeNonEmptyString(params.source)
   const skill = normalizeNonEmptyString(params.skill)
-  const version = normalizeNonEmptyString(params.version)
+  const version = normalizeRequestedVersion(params.version)
   if (source == null || skill == null) {
     throw new Error('skills CLI source and skill are required.')
   }

@@ -1,16 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  ensureManagedNpmCli: vi.fn(),
   execFile: vi.fn()
 }))
 
 vi.mock('node:child_process', () => ({
   execFile: mocks.execFile
-}))
-
-vi.mock('#~/managed-npm-cli.js', () => ({
-  ensureManagedNpmCli: mocks.ensureManagedNpmCli
 }))
 
 const createExecImplementation = (
@@ -19,8 +14,10 @@ const createExecImplementation = (
   mocks.execFile.mockImplementation(
     ((...invokeArgs: any[]) => {
       const args = invokeArgs[1] as string[]
+      const dividerIndex = args.indexOf('--')
+      const cliArgs = dividerIndex >= 0 ? args.slice(dividerIndex + 1) : args
       const done = invokeArgs[3] as ((error: Error | null, stdout: string, stderr: string) => void)
-      const result = callback(args)
+      const result = callback(cliArgs)
       done(null, result.stdout ?? '', result.stderr ?? '')
       return {} as any
     }) as any
@@ -32,7 +29,6 @@ describe('skills CLI cache pruning', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-22T00:00:00Z'))
     vi.clearAllMocks()
-    mocks.ensureManagedNpmCli.mockResolvedValue('/mock/bin/skills')
     const { clearSkillsCliCachesForTest } = await import('#~/skills-cli.js')
     clearSkillsCliCachesForTest()
   })

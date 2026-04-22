@@ -1,18 +1,15 @@
 import { mkdir, rename, rm } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
-import { setTimeout as delay } from 'node:timers/promises'
 
 import type { ConfiguredSkillInstallConfig, SkillsCliConfig } from '@vibe-forge/types'
 
 import { resolveProjectAiPath } from '../ai-path'
+import { withDirectoryInstallLock } from '../install-lock'
 import { findSkillsCli, installSkillsCliRefToTemp, installSkillsCliSkillToTemp, toSkillSlug } from '../skills-cli'
 import { normalizeProjectSkillInstall } from './normalize'
 import { copyRegularFiles, pathExists, rewriteInstalledSkillName } from './shared'
 import type { NormalizedProjectSkillInstall } from './types'
-
-const INSTALL_LOCK_TIMEOUT_MS = 30_000
-const INSTALL_LOCK_RETRY_MS = 100
 
 const pickSearchResult = (results: Awaited<ReturnType<typeof findSkillsCli>>, name: string) => {
   const slug = toSkillSlug(name)
@@ -34,26 +31,11 @@ const buildInstalledSkillResult = (params: {
 })
 
 const withInstallLock = async <T>(lockDir: string, callback: () => Promise<T>) => {
-  const start = Date.now()
-  await mkdir(dirname(lockDir), { recursive: true })
-
-  while (true) {
-    try {
-      await mkdir(lockDir)
-      break
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      if (Date.now() - start > INSTALL_LOCK_TIMEOUT_MS) {
-        throw new Error(`Timed out waiting for project skill install lock ${lockDir}`)
-      }
-      await delay(INSTALL_LOCK_RETRY_MS)
-    }
-  }
-
   try {
-    return await callback()
-  } finally {
-    await rm(lockDir, { recursive: true, force: true })
+    return await withDirectoryInstallLock({ lockDir }, callback)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(message.replace('Timed out waiting for install lock', 'Timed out waiting for project skill install lock'))
   }
 }
 

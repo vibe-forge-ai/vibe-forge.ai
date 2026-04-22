@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, realpath, rm, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -119,5 +119,50 @@ describe('project skill installs', () => {
     expect(mocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
     expect(mocks.installSkillsCliRefToTemp).not.toHaveBeenCalled()
     expect(mocks.findSkillsCli).not.toHaveBeenCalled()
+  })
+
+  it('clears stale install locks before re-installing the configured skill', async () => {
+    ;({ installProjectSkill } = await import('#~/project-skills.js'))
+    const cwd = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vf-project-skills-install-')))
+    tempDirs.push(cwd)
+
+    const tempDir = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vf-project-skills-install-src-')))
+    tempDirs.push(tempDir)
+    const sourceDir = path.join(tempDir, 'design-review')
+    await mkdir(sourceDir, { recursive: true })
+    await writeFile(
+      path.join(sourceDir, 'SKILL.md'),
+      '---\nname: design-review\ndescription: Review code\n---\nReview skill body\n'
+    )
+
+    const lockDir = path.join(cwd, '.ai', 'caches', 'project-skill-installs', 'locks', 'internal-review')
+    await mkdir(lockDir, { recursive: true })
+    await utimes(lockDir, new Date(Date.now() - 120_000), new Date(Date.now() - 120_000))
+
+    mocks.installSkillsCliSkillToTemp.mockResolvedValue({
+      tempDir,
+      installedSkill: {
+        dirName: 'design-review',
+        name: 'design-review',
+        sourcePath: sourceDir
+      }
+    })
+
+    await expect(installProjectSkill({
+      force: true,
+      skill: {
+        name: 'design-review',
+        rename: 'internal-review',
+        source: 'example-source/default/public'
+      },
+      workspaceFolder: cwd
+    })).resolves.toEqual(expect.objectContaining({
+      dirName: 'internal-review',
+      name: 'internal-review'
+    }))
+
+    await expect(pathExists(lockDir)).resolves.toBe(false)
+    await expect(readFile(path.join(cwd, '.ai', 'skills', 'internal-review', 'SKILL.md'), 'utf8')).resolves
+      .toContain('name: internal-review')
   })
 })
