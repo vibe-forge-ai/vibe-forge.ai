@@ -65,6 +65,7 @@ export function buildThemeItems({
         : <span className='material-symbols-rounded nav-menu-icon'>light_mode</span>,
       onClick: () => {
         setThemeMode('light')
+        localStorage.setItem('theme', 'light')
       }
     },
     {
@@ -75,6 +76,7 @@ export function buildThemeItems({
         : <span className='material-symbols-rounded nav-menu-icon'>dark_mode</span>,
       onClick: () => {
         setThemeMode('dark')
+        localStorage.setItem('theme', 'dark')
       }
     },
     {
@@ -85,6 +87,7 @@ export function buildThemeItems({
         : <span className='material-symbols-rounded nav-menu-icon'>desktop_windows</span>,
       onClick: () => {
         setThemeMode('system')
+        localStorage.setItem('theme', 'system')
       }
     }
   ]

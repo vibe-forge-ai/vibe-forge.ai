@@ -9,12 +9,7 @@ import {
   resolveDefaultVibeForgeMcpServerConfig
 } from '@vibe-forge/config'
 import type { Config, Definition, Entity, PluginConfig, WorkspaceAsset, WorkspaceAssetKind } from '@vibe-forge/types'
-import {
-  isLegacySkillsConfig,
-  resolveProjectAiBaseDir,
-  resolveProjectAiEntitiesDir,
-  resolveRelativePath
-} from '@vibe-forge/utils'
+import { resolveProjectAiBaseDir, resolveProjectAiEntitiesDir, resolveRelativePath } from '@vibe-forge/utils'
 import { listManagedPluginInstalls, toManagedPluginConfig } from '@vibe-forge/utils/managed-plugin'
 import {
   flattenPluginInstances,
@@ -33,7 +28,6 @@ import {
   resolveSkillIdentifier,
   resolveSpecIdentifier
 } from '@vibe-forge/definition-core'
-import { ensureConfiguredProjectSkills } from './configured-skills'
 import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
 import { resolveConfiguredWorkspaceAssets } from './workspaces'
 
@@ -159,8 +153,8 @@ const warnInvalidHomeSkillRoot = (root: string) => {
 
 const resolveHomeBridgeConfig = (configs: [Config?, Config?]) => {
   const [config, userConfig] = configs
-  const projectHomeBridge = isLegacySkillsConfig(config?.skills) ? config.skills.homeBridge : undefined
-  const userHomeBridge = isLegacySkillsConfig(userConfig?.skills) ? userConfig.skills.homeBridge : undefined
+  const projectHomeBridge = config?.skills?.homeBridge
+  const userHomeBridge = userConfig?.skills?.homeBridge
 
   return {
     enabled: userHomeBridge?.enabled ?? projectHomeBridge?.enabled ?? true,
@@ -532,8 +526,6 @@ export async function collectWorkspaceAssets(params: {
   plugins?: PluginConfig
   overlaySource?: string
   includeManagedPlugins?: boolean
-  syncConfiguredSkills?: boolean
-  updateConfiguredSkills?: boolean
   useDefaultVibeForgeMcpServer?: boolean
 }): Promise<{
   assets: WorkspaceAsset[]
@@ -552,13 +544,6 @@ export async function collectWorkspaceAssets(params: {
   workspaces: Array<Extract<WorkspaceAsset, { kind: 'workspace' }>>
 }> {
   const [config, userConfig] = params.configs ?? await loadWorkspaceConfig(params.cwd)
-  if (params.syncConfiguredSkills === true) {
-    await ensureConfiguredProjectSkills({
-      configs: [config, userConfig],
-      updateInstalledSkills: params.updateConfiguredSkills,
-      workspaceFolder: params.cwd
-    })
-  }
   const managedPluginConfigs = params.includeManagedPlugins === false
     ? undefined
     : toManagedPluginConfig(await listManagedPluginInstalls(params.cwd))

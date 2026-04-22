@@ -137,9 +137,9 @@ describe('updateConfigFile', () => {
             shortcuts: {
               openConfig: 'mod+,'
             },
-            skills: [
-              'https://registry.example.com@example-source/default/public@design-review@1.0.3'
-            ],
+            skills: {
+              registry: 'https://skills.example.com'
+            },
             permissions: {
               allow: ['ChromeDevtools'],
               deny: [],
@@ -168,9 +168,9 @@ describe('updateConfigFile', () => {
       expect(result.updatedConfig.shortcuts).toEqual({
         openConfig: 'mod+,'
       })
-      expect(result.updatedConfig.skills).toEqual([
-        'https://registry.example.com@example-source/default/public@design-review@1.0.3'
-      ])
+      expect(result.updatedConfig.skills).toEqual({
+        registry: 'https://skills.example.com'
+      })
       expect(result.updatedConfig.permissions).toEqual({
         allow: ['Bash'],
         deny: [],
@@ -183,9 +183,9 @@ describe('updateConfigFile', () => {
         shortcuts: {
           openConfig: 'mod+,'
         },
-        skills: [
-          'https://registry.example.com@example-source/default/public@design-review@1.0.3'
-        ],
+        skills: {
+          registry: 'https://skills.example.com'
+        },
         permissions: {
           allow: ['Bash'],
           deny: [],

@@ -314,52 +314,6 @@
   padding-top: 8px;
 }
 
-.knowledge-base-view__skills-cli-form {
-  padding-top: 8px;
-}
-
-.knowledge-base-view__skills-cli-search-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.knowledge-base-view__skills-cli-search-field {
-  flex: 1;
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-.knowledge-base-view__skills-cli-search-field .ant-form-item-control {
-  min-width: 0;
-}
-
-.knowledge-base-view__skills-cli-search-button {
-  flex-shrink: 0;
-}
-
-.knowledge-base-view__skills-cli-placeholder,
-.knowledge-base-view__skills-cli-error {
-  padding: 12px 0 4px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.knowledge-base-view__skills-cli-placeholder {
-  color: var(--sub-text-color);
-}
-
-.knowledge-base-view__skills-cli-error {
-  color: var(--error-color, #dc2626);
-}
-
-.knowledge-base-view__skills-cli-modal-results {
-  height: 360px;
-  margin-top: 12px;
-  display: flex;
-  min-height: 0;
-}
-
 @media (max-width: 640px) {
   .knowledge-base-view--compact .knowledge-base-view__skill-view-switch {
     height: 44px;
@@ -402,15 +356,6 @@
 
   .knowledge-base-view__skill-result {
     gap: 10px;
-  }
-
-  .knowledge-base-view__skills-cli-search-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .knowledge-base-view__skills-cli-search-button {
-    width: 100%;
   }
 }
 

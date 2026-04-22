@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
 import { sessionsRouter } from '#~/routes/sessions.js'
-import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { notifySessionUpdated } from '#~/services/session/runtime.js'
 import { provisionSessionWorkspace } from '#~/services/session/workspace.js'
 
@@ -77,7 +76,6 @@ const findRouteHandler = (path: string, method: string) => {
 describe('sessionsRouter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createSessionWithInitialMessage).mockResolvedValue({ id: 'session-new' } as any)
     vi.mocked(provisionSessionWorkspace).mockResolvedValue(undefined as any)
   })
 
@@ -130,41 +128,5 @@ describe('sessionsRouter', () => {
     expect(db.copyMessages).toHaveBeenCalledWith(originalSession.id, newSession.id)
     expect(notifySessionUpdated).toHaveBeenCalledWith(newSession.id, updatedSession)
     expect(ctx.body).toEqual({ session: updatedSession })
-  })
-
-  it('forwards updateSkills when creating a session', async () => {
-    vi.mocked(getDb).mockReturnValue({
-      getSession: vi.fn(),
-      createSession: vi.fn(),
-      updateSession: vi.fn(),
-      copyMessages: vi.fn(),
-      deleteSession: vi.fn()
-    } as any)
-
-    const handleCreate = findRouteHandler('/', 'POST')
-    const ctx = {
-      params: {},
-      request: {
-        body: {
-          title: 'Demo',
-          initialMessage: 'hello',
-          updateSkills: true
-        }
-      },
-      body: undefined
-    }
-
-    await handleCreate(ctx)
-
-    expect(createSessionWithInitialMessage).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Demo',
-      initialMessage: 'hello',
-      updateSkills: true
-    }))
-    expect(ctx.body).toEqual({
-      session: {
-        id: 'session-new'
-      }
-    })
   })
 })

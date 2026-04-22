@@ -31,7 +31,6 @@ export interface RunOptions {
   excludeSkill?: string[]
   injectDefaultSystemPrompt?: boolean
   defaultVibeForgeMcpServer?: boolean
-  updateSkills?: boolean
 }
 
 export interface ActiveCliSessionRecord {

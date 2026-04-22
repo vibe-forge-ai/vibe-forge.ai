@@ -1,23 +1,7 @@
-/* eslint-disable import/first, max-lines -- adapter asset plan scenarios share setup helpers and assertions */
+/* eslint-disable max-lines -- adapter asset plan scenarios share setup helpers and assertions */
 import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
-
-const skillsCliMocks = vi.hoisted(() => ({
-  findSkillsCli: vi.fn(),
-  installSkillsCliRefToTemp: vi.fn(),
-  installSkillsCliSkillToTemp: vi.fn()
-}))
-
-vi.mock('@vibe-forge/utils/skills-cli', async () => {
-  const actual = await vi.importActual<typeof import('@vibe-forge/utils/skills-cli')>('@vibe-forge/utils/skills-cli')
-  return {
-    ...actual,
-    findSkillsCli: skillsCliMocks.findSkillsCli,
-    installSkillsCliRefToTemp: skillsCliMocks.installSkillsCliRefToTemp,
-    installSkillsCliSkillToTemp: skillsCliMocks.installSkillsCliSkillToTemp
-  }
-})
 
 import { buildAdapterAssetPlan, resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '#~/index.js'
 
@@ -280,62 +264,76 @@ describe('buildAdapterAssetPlan', () => {
     ]))
   })
 
-  it('keeps explicit skills CLI dependencies ahead of preselected home-bridged skills in overlays', async () => {
+  it('keeps explicit registry dependencies ahead of preselected home-bridged skills in overlays', async () => {
     const workspace = await createWorkspace()
     const realHome = process.env.__VF_PROJECT_REAL_HOME__
-    const tempInstallDir = join(workspace, '.tmp-install-skills-cli-foo')
-    const installedSkillDir = join(tempInstallDir, '.agents', 'skills', 'foo')
-    await writeDocument(
-      join(installedSkillDir, 'SKILL.md'),
-      '---\nname: foo\ndescription: Registry foo\n---\nUse the registry definition.\n'
-    )
-    skillsCliMocks.installSkillsCliSkillToTemp.mockResolvedValue({
-      tempDir: tempInstallDir,
-      installedSkill: {
-        dirName: 'foo',
-        name: 'foo',
-        sourcePath: installedSkillDir
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://registry.example.test/api/search?q=foo&limit=10') {
+        return new Response(JSON.stringify({
+          skills: [{
+            id: 'anthropics/skills/foo',
+            skillId: 'foo',
+            name: 'foo',
+            source: 'anthropics/skills'
+          }]
+        }))
       }
+      if (url === 'https://registry.example.test/api/download/anthropics/skills/foo') {
+        return new Response(JSON.stringify({
+          files: [{
+            path: 'SKILL.md',
+            contents: '---\nname: foo\ndescription: Registry foo\n---\nUse the registry definition.\n'
+          }]
+        }))
+      }
+      return new Response('not found', { status: 404 })
     })
+    vi.stubGlobal('fetch', fetchMock)
 
-    await writeDocument(
-      join(realHome!, '.agents/skills/foo/SKILL.md'),
-      '---\ndescription: Home foo\n---\nUse the home definition.\n'
-    )
-    await writeDocument(
-      join(workspace, '.ai/skills/app-builder/SKILL.md'),
-      [
-        '---',
-        'name: app-builder',
-        'description: Build apps',
-        'dependencies:',
-        '  - anthropics/skills@foo',
-        '---',
-        'Build the app.'
-      ].join('\n')
-    )
+    try {
+      await writeDocument(
+        join(realHome!, '.agents/skills/foo/SKILL.md'),
+        '---\ndescription: Home foo\n---\nUse the home definition.\n'
+      )
+      await writeDocument(
+        join(workspace, '.ai/skills/app-builder/SKILL.md'),
+        [
+          '---',
+          'name: app-builder',
+          'description: Build apps',
+          'dependencies:',
+          '  - anthropics/skills@foo',
+          '---',
+          'Build the app.'
+        ].join('\n')
+      )
 
-    const bundle = await resolveWorkspaceAssetBundle({
-      cwd: workspace,
-      configs: [undefined, undefined],
-      useDefaultVibeForgeMcpServer: false
-    })
-    const plan = await buildAdapterAssetPlan({
-      adapter: 'opencode',
-      bundle,
-      options: {
-        skills: {
-          include: ['foo', 'app-builder']
+      const bundle = await resolveWorkspaceAssetBundle({
+        cwd: workspace,
+        configs: [{
+          skills: {
+            registry: 'https://registry.example.test'
+          }
+        }, undefined],
+        useDefaultVibeForgeMcpServer: false
+      })
+      const plan = await buildAdapterAssetPlan({
+        adapter: 'opencode',
+        bundle,
+        options: {
+          skills: {
+            include: ['foo', 'app-builder']
+          }
         }
-      }
-    })
+      })
 
-    const fooOverlays = plan.overlays.filter(entry => entry.kind === 'skill' && entry.targetPath === 'skills/foo')
-    expect(fooOverlays).toHaveLength(1)
-    expect(fooOverlays[0]?.sourcePath).toContain(
-      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/foo'
-    )
-    expect(fooOverlays[0]?.sourcePath).not.toBe(join(realHome!, '.agents/skills/foo'))
+      const fooOverlays = plan.overlays.filter(entry => entry.kind === 'skill' && entry.targetPath === 'skills/foo')
+      expect(fooOverlays).toHaveLength(1)
+      expect(fooOverlays[0]?.sourcePath).toContain('/.ai/caches/skill-dependencies/registry.example.test/')
+      expect(fooOverlays[0]?.sourcePath).not.toBe(join(realHome!, '.agents/skills/foo'))
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('prunes excluded skill dependency subtrees from selected native overlays', async () => {

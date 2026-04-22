@@ -34,7 +34,7 @@
 
 ## 相关文档
 
-- [架构说明](/path/to/vibe-forge.ai/.ai/rules/ARCHITECTURE.md)
-- [使用文档入口](/path/to/vibe-forge.ai/.ai/docs/index.md)
-- [使用文档边界约定](/path/to/vibe-forge.ai/.ai/rules/USAGE.md)
-- [CLI 维护说明](/path/to/vibe-forge.ai/apps/cli/src/AGENTS.md)
+- [架构说明](/Users/bytedance/projects/vibe-forge.ai/.ai/rules/ARCHITECTURE.md)
+- [使用文档入口](/Users/bytedance/projects/vibe-forge.ai/.ai/docs/index.md)
+- [使用文档边界约定](/Users/bytedance/projects/vibe-forge.ai/.ai/rules/USAGE.md)
+- [CLI 维护说明](/Users/bytedance/projects/vibe-forge.ai/apps/cli/src/AGENTS.md)

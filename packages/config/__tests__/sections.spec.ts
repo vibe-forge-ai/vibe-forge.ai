@@ -23,13 +23,6 @@ describe('config sections helpers', () => {
       section: 'mcp',
       sectionPath: ['mcpServers', 'docs', 'args', 0]
     })
-
-    expect(resolveConfigSectionPath(parseConfigSectionPath('skills.0.rename'))).toEqual({
-      input: ['skills', 0, 'rename'],
-      normalizedPath: 'general.skills.0.rename',
-      section: 'general',
-      sectionPath: ['skills', 0, 'rename']
-    })
   })
 
   it('supports plugin list aliases and exact JSON-array paths', () => {

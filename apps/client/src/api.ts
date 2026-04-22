@@ -93,11 +93,9 @@ export type {
   SkillHubInstallResult,
   SkillHubItem,
   SkillHubRegistrySummary,
-  SkillHubSearchResult,
-  SkillsCliInstallResult,
-  SkillsCliSearchResult
+  SkillHubSearchResult
 } from './api/skill-hub'
-export { installSkillHubItem, installSkillsCliItem, searchSkillHub, searchSkillsCli } from './api/skill-hub'
+export { installSkillHubItem, searchSkillHub } from './api/skill-hub'
 
 // 基础响应类型与会话交互类型
 export type { ApiOkResponse, ApiRemoveResponse, SessionInteraction, SessionMessagesResponse } from './api/types'

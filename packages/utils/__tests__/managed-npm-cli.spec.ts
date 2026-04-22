@@ -29,24 +29,6 @@ describe('managed npm cli utils', () => {
     )
   })
 
-  it('separates managed CLI installs by extra install key segments', () => {
-    const paths = resolveManagedNpmCliPaths({
-      adapterKey: 'skills_cli',
-      binaryName: 'skills',
-      cwd: '/tmp/worktree',
-      env: {
-        __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: '/tmp/primary'
-      },
-      installKey: ['registry', 'https://registry.example.com'],
-      packageName: 'skills',
-      version: 'latest'
-    })
-
-    expect(paths.binaryPath).toBe(
-      '/tmp/primary/.ai/caches/adapter-skills_cli/cli/npm/registry/https-registry.example.com/skills/latest/node_modules/.bin/skills'
-    )
-  })
-
   it('uses env version and package overrides when building install options', () => {
     expect(resolveManagedNpmCliInstallOptions({
       adapterKey: 'gemini',

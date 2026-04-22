@@ -35,7 +35,7 @@ import {
   resolveSelectedSkillAssetsWithDependencies,
   toDocumentDefinitions
 } from './selection-internal'
-import { expandSkillAssetDependenciesWithRemoteResolution } from './skill-dependencies'
+import { expandSkillAssetDependenciesWithRegistry } from './skill-dependencies'
 import { generateWorkspaceRoutePrompt } from './workspace-prompt'
 
 export async function resolvePromptAssetSelection(params: {
@@ -164,7 +164,7 @@ export async function resolvePromptAssetSelection(params: {
       resolveNamedAssets(effectiveBundle.skills, excludedRefs, targetInstancePath).map(asset => asset.id)
     )
 
-    const expandedTargetSkills = await expandSkillAssetDependenciesWithRemoteResolution({
+    const expandedTargetSkills = await expandSkillAssetDependenciesWithRegistry({
       allAssets: effectiveBundle.assets,
       configs: effectiveBundle.configs ?? [undefined, undefined],
       cwd: effectiveBundle.cwd,

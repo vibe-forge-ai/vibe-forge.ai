@@ -146,56 +146,10 @@ export const shortcutsConfigSchema = z.object({
   switchPermissionMode: z.string().optional().describe('Shortcut for switching permission mode')
 })
 
-export const conversationStarterModeSchema = z.enum([
-  'default',
-  'workspace',
-  'entity',
-  'agent',
-  'spec'
-])
-
-export const conversationStarterWorktreeConfigSchema = z.object({
-  create: z.boolean().optional().describe('Override whether the session uses a managed worktree'),
-  environment: z.string().optional().describe('Managed worktree environment override'),
-  branch: z.object({
-    name: z.string().min(1).describe('Branch name'),
-    kind: z.enum(['local', 'remote']).optional().describe('Branch kind'),
-    mode: z.enum(['checkout', 'create']).optional().describe('Branch operation mode')
-  }).optional().describe('Branch selection override')
-})
-
-export const conversationStarterConfigSchema = z.object({
-  id: z.string().optional().describe('Stable starter identifier'),
-  title: z.string().min(1).describe('Starter title'),
-  description: z.string().optional().describe('Starter description'),
-  icon: z.string().optional().describe('Material Symbols icon name'),
-  mode: conversationStarterModeSchema.optional().describe('Target mode, `agent` is an alias for `entity`'),
-  target: z.string().optional().describe('Target resource name or workspace id'),
-  targetLabel: z.string().optional().describe('Optional target label shown in the UI'),
-  targetDescription: z.string().optional().describe('Optional target description shown in the UI'),
-  model: z.string().optional().describe('Model id or service-prefixed model value'),
-  adapter: z.string().optional().describe('Adapter override'),
-  account: z.string().optional().describe('Account override'),
-  effort: z.union([z.literal('default'), effortLevelSchema]).optional().describe('Effort override'),
-  permissionMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional()
-    .describe('Permission mode override'),
-  worktree: conversationStarterWorktreeConfigSchema.optional().describe('Managed worktree overrides'),
-  prompt: z.string().optional().describe('Prefilled prompt'),
-  files: z.array(z.string()).optional().describe('Referenced file paths'),
-  rules: z.array(z.string()).optional().describe('Referenced rule paths or rule identifiers'),
-  skills: z.array(z.string()).optional().describe('Referenced skill paths or skill identifiers')
-})
-
 export const conversationConfigSchema = z.object({
   style: z.enum(['friendly', 'programmatic']).optional().describe('Conversation style'),
   customInstructions: z.string().optional().describe('Extra system instructions'),
-  injectDefaultSystemPrompt: z.boolean().optional().describe('Inject the default system prompt'),
-  createSessionWorktree: z.boolean().optional().describe('Create a managed worktree for new sessions by default'),
-  worktreeEnvironment: z.string().optional().describe('Default managed worktree environment'),
-  startupPresets: z.array(conversationStarterConfigSchema).optional()
-    .describe('Quick-start presets shown on the new session page'),
-  builtinActions: z.array(conversationStarterConfigSchema).optional()
-    .describe('Built-in development actions shown on the new session page')
+  injectDefaultSystemPrompt: z.boolean().optional().describe('Inject the default system prompt')
 })
 
 export const webAuthAccountConfigSchema = z.object({
@@ -212,34 +166,23 @@ export const webAuthConfigSchema = z.object({
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
 })
 
+export const skillRegistryConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable remote skill registry resolution'),
+  url: z.string().optional().describe('Base URL for remote skill registry search and download'),
+  searchUrl: z.string().optional().describe('Remote skill registry search endpoint'),
+  downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
+})
+
 export const skillHomeBridgeConfigSchema = z.object({
   enabled: z.boolean().optional().describe('Bridge supported home skill roots into workspace asset discovery'),
   roots: z.union([z.string(), z.array(z.string())]).optional()
     .describe('Ordered home skill roots. Supports absolute paths or paths starting with ~')
 })
 
-export const configuredSkillInstallConfigSchema = z.union([
-  z.string().min(1),
-  z.object({
-    name: z.string().min(1).describe('Remote skill name'),
-    registry: z.string().optional().describe('Package registry used to install the managed skills CLI'),
-    source: z.string().optional().describe('Remote skills CLI source path'),
-    version: z.string().optional().describe('Remote skill version passed to the skills CLI'),
-    rename: z.string().optional().describe('Local skill name to expose after install')
-  })
-])
-
-export const legacySkillsConfigSchema = z.object({
-  install: z.array(configuredSkillInstallConfigSchema).optional()
-    .describe('Project skills that should be ensured before session startup'),
+export const skillsConfigSchema = z.object({
+  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings'),
   homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
-
-export const skillsConfigSchema = z.union([
-  z.array(configuredSkillInstallConfigSchema)
-    .describe('Project skills that should be ensured before session startup'),
-  legacySkillsConfigSchema
-])
 
 const pluginInstanceConfigSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({

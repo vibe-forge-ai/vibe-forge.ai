@@ -9,15 +9,12 @@ import useSWR from 'swr'
 
 import type { ConfigResponse } from '@vibe-forge/types'
 
-import type { SkillSummary } from '#~/api.js'
-import { getConfig, listSkills } from '#~/api.js'
-import { useSkillsCliModalController } from './@hooks/use-skills-cli-modal-controller'
-import { useSkillsTabActions } from './@hooks/use-skills-tab-actions'
+import type { SkillHubItem, SkillSummary } from '#~/api.js'
+import { getApiErrorMessage, getConfig, importSkillArchive, installSkillHubItem, listSkills } from '#~/api.js'
 import { ProjectSkillsList } from './ProjectSkillsList'
 import { SkillArchiveInput } from './SkillArchiveInput'
 import { SkillMarketView } from './SkillMarketView'
 import { SkillRegistryModal } from './SkillRegistryModal'
-import { SkillsCliModal } from './SkillsCliModal'
 import { SkillsTabActions } from './SkillsTabActions'
 import { TabContent } from './TabContent'
 import { ALL_REGISTRIES, filterProjectSkills } from './skill-hub-utils'
@@ -66,6 +63,9 @@ export function SkillsTab({
   const { t } = useTranslation()
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const importInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [installingId, setInstallingId] = React.useState<string | null>(null)
+  const [importing, setImporting] = React.useState(false)
   const {
     data: skillsRes,
     isLoading: isSkillsLoading,
@@ -78,19 +78,6 @@ export function SkillsTab({
     mutateConfig,
     mutateHub: marketSearch.mutate,
     setRegistry: onRegistryChange
-  })
-  const actions = useSkillsTabActions({
-    marketMutate: marketSearch.mutate,
-    message,
-    mutateConfig,
-    mutateSkills,
-    onRefresh,
-    t
-  })
-  const skillsCliModal = useSkillsCliModalController({
-    message,
-    mutateSkills,
-    t
   })
 
   const skills = skillsRes?.skills ?? []
@@ -107,20 +94,54 @@ export function SkillsTab({
     ...registries.map(item => ({ label: item.id, value: item.id }))
   ], [registries, t])
 
+  const handleRefresh = async () => {
+    await Promise.all([mutateSkills(), marketSearch.mutate(), mutateConfig(), onRefresh()])
+  }
+
+  const handleInstall = async (item: SkillHubItem) => {
+    setInstallingId(item.id)
+    try {
+      await installSkillHubItem({
+        registry: item.registry,
+        plugin: item.installRef ?? item.name,
+        force: item.installed
+      })
+      await Promise.all([marketSearch.mutate(), mutateSkills()])
+      void message.success(t('knowledge.skills.installSuccess'))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('knowledge.skills.installFailed')))
+    } finally {
+      setInstallingId(null)
+    }
+  }
+
+  const handleImportArchive = async (file: File) => {
+    setImporting(true)
+    try {
+      const result = await importSkillArchive(file)
+      await Promise.all([mutateSkills(), onRefresh()])
+      void message.success(t('knowledge.skills.importSuccess', { count: result.fileCount }))
+    } catch (error) {
+      void message.error(getApiErrorMessage(error, t('knowledge.skills.importFailed')))
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <TabContent className='knowledge-base-view__skills-tab'>
       <SkillsTabActions
-        importing={actions.importing}
+        importing={importing}
         leading={leading}
         viewMode={viewMode}
-        onRefresh={() => void actions.handleRefresh()}
-        onImport={() => actions.importInputRef.current?.click()}
+        onRefresh={() => void handleRefresh()}
+        onImport={() => importInputRef.current?.click()}
         onOpenConfig={() => navigate('/config?tab=plugins')}
         onViewModeChange={onViewModeChange}
       />
       <SkillArchiveInput
-        inputRef={actions.importInputRef}
-        onSelect={(file) => void actions.handleImportArchive(file)}
+        inputRef={importInputRef}
+        onSelect={(file) => void handleImportArchive(file)}
       />
       {viewMode === 'project' && (
         <ProjectSkillsList
@@ -133,7 +154,7 @@ export function SkillsTab({
       {viewMode === 'market' && (
         <SkillMarketView
           hubItems={marketFilters.filteredHubItems}
-          installingId={actions.installingId}
+          installingId={installingId}
           installFilter={installFilter}
           isLoading={marketSearch.isLoading && hubItems.length === 0}
           query={marketQuery}
@@ -146,8 +167,7 @@ export function SkillsTab({
           canLoadMore={marketSearch.canLoadMore}
           loadingMore={marketSearch.isValidating && hubItems.length > 0}
           onAddRegistry={() => registryModal.setOpen(true)}
-          onOpenSkillsCli={() => skillsCliModal.setOpen(true)}
-          onInstall={actions.handleInstall}
+          onInstall={handleInstall}
           onInstallFilterChange={onInstallFilterChange}
           onLoadMore={marketSearch.loadMore}
           onQueryChange={onMarketQueryChange}
@@ -163,22 +183,6 @@ export function SkillsTab({
         form={registryModal.form}
         onSave={() => void registryModal.save()}
         onClose={() => registryModal.setOpen(false)}
-      />
-      <SkillsCliModal
-        canLoadMore={skillsCliModal.hasMore}
-        form={skillsCliModal.form}
-        hasSearched={skillsCliModal.hasSearched}
-        installingId={skillsCliModal.installingId}
-        items={skillsCliModal.items}
-        loadingMore={skillsCliModal.loadingMore}
-        open={skillsCliModal.open}
-        resetKey={skillsCliModal.resetKey}
-        searchError={skillsCliModal.searchError}
-        searching={skillsCliModal.searching}
-        onClose={skillsCliModal.handleClose}
-        onInstall={skillsCliModal.handleInstall}
-        onLoadMore={() => void skillsCliModal.handleLoadMore()}
-        onSearch={() => void skillsCliModal.handleSearch()}
       />
     </TabContent>
   )

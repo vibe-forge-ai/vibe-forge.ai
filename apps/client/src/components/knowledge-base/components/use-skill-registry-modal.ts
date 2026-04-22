@@ -28,6 +28,7 @@ export function useSkillRegistryModal({
   const save = async () => {
     const values = await form.validateFields()
     const id = values.id.trim()
+    const source = buildRegistrySource(values)
     const projectPlugins = configRes?.sources?.project?.plugins ?? {}
     const existingMarketplaces = projectPlugins.marketplaces ?? {}
     if (id === 'skills' || Object.hasOwn(existingMarketplaces, id)) {
@@ -37,15 +38,7 @@ export function useSkillRegistryModal({
 
     setSaving(true)
     try {
-      await updateConfig(
-        'project',
-        'plugins',
-        buildPluginsWithRegistry(
-          projectPlugins,
-          id,
-          buildRegistrySource(values)
-        )
-      )
+      await updateConfig('project', 'plugins', buildPluginsWithRegistry(projectPlugins, id, source))
       setRegistry(id)
       setOpen(false)
       form.resetFields()

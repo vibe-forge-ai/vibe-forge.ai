@@ -238,7 +238,7 @@ describe('taskManager fatal error scenarios', () => {
         text: 'keep going'
       }]
     })
-    expect(task?.logs).toContain('User message submitted: keep going')
+    expect(task?.logs).toContain('User message submitted (direct): keep going')
   })
 
   it('syncs follow-up messages through the child session when server sync is enabled', async () => {
@@ -273,7 +273,60 @@ describe('taskManager fatal error scenarios', () => {
         content: 'keep going'
       })
     })
-    expect(task?.logs).toContain('User message submitted: keep going')
+    expect(task?.logs).toContain('User message submitted (direct): keep going')
+  })
+
+  it('queues steer follow-up messages and resumes the same task after natural completion', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    let onEvent: ((event: any) => void) | undefined
+    const resumedEmit = vi.fn()
+
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockResolvedValueOnce({
+        session: {
+          emit: resumedEmit,
+          kill: vi.fn()
+        }
+      })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-steer',
+      description: 'trigger'
+    })
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-steer',
+      message: 'after you finish, summarize blockers',
+      mode: 'steer'
+    })
+
+    onEvent?.({
+      type: 'stop',
+      data: undefined
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const task = managedTaskManager.getTask('task-send-steer')
+    expect(mocks.run).toHaveBeenCalledTimes(2)
+    expect(resumedEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'after you finish, summarize blockers'
+      }]
+    })
+    expect(task?.logs).toContain('Queued task message (steer): after you finish, summarize blockers')
+    expect(task?.logs).toContain('Resuming task from steer queue: after you finish, summarize blockers')
   })
 
   it('rejects follow-up messages when a task is waiting for input', async () => {
@@ -314,6 +367,79 @@ describe('taskManager fatal error scenarios', () => {
       taskId: 'task-send-blocked',
       message: 'continue'
     })).rejects.toThrow('Task task-send-blocked is waiting for input. Use SubmitTaskInput instead.')
+  })
+
+  it('rejects steer follow-up messages when a task is waiting for input', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      const session = {
+        emit: vi.fn(() => {
+          adapterOptions.onEvent({
+            type: 'interaction_request',
+            data: {
+              id: 'interaction-send-steer-blocked',
+              payload: {
+                sessionId: 'task-send-steer-blocked',
+                kind: 'permission',
+                question: 'Allow editing files?',
+                options: [
+                  { label: 'Allow once', value: 'allow_once' }
+                ]
+              }
+            }
+          })
+        }),
+        kill: vi.fn(),
+        respondInteraction: vi.fn()
+      }
+      return { session }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-steer-blocked',
+      description: 'trigger',
+      background: false
+    })
+
+    await expect(managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-steer-blocked',
+      message: 'summarize blockers after this',
+      mode: 'steer'
+    })).rejects.toThrow('Task task-send-steer-blocked is waiting for input. Use SubmitTaskInput instead.')
+  })
+
+  it('rejects steer follow-up messages after a task has already completed', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    let onEvent: ((event: any) => void) | undefined
+
+    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+      onEvent = adapterOptions.onEvent
+      return {
+        session: {
+          emit: vi.fn(),
+          kill: vi.fn()
+        }
+      }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-completed',
+      description: 'trigger'
+    })
+
+    onEvent?.({
+      type: 'stop',
+      data: undefined
+    })
+
+    await expect(managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-completed',
+      message: 'queue this for later',
+      mode: 'steer'
+    })).rejects.toThrow('Task task-send-completed is not active. Start a new task instead.')
   })
 
   it('builds synthetic permission recovery for claude-code and resumes after SubmitTaskInput', async () => {

@@ -204,16 +204,14 @@ export function AutomationTaskComposer({ fieldName, form }: AutomationTaskCompos
         </Form.Item>
       </div>
       <div className='automation-view__task-collapsible' hidden={collapsed}>
-        <div className='sender-container automation-view__task-sender-stack'>
-          <Form.Item
-            className='automation-view__task-prompt-item'
-            name={[fieldName, 'prompt']}
-            rules={[{ required: true, message: t('automation.promptRequired') }]}
-          >
-            <AutomationTaskSender fieldName={fieldName} form={form} />
-          </Form.Item>
-          <AutomationTaskStatusBar fieldName={fieldName} form={form} />
-        </div>
+        <Form.Item
+          className='automation-view__task-prompt-item'
+          name={[fieldName, 'prompt']}
+          rules={[{ required: true, message: t('automation.promptRequired') }]}
+        >
+          <AutomationTaskSender fieldName={fieldName} form={form} />
+        </Form.Item>
+        <AutomationTaskStatusBar fieldName={fieldName} form={form} />
       </div>
     </div>
   )

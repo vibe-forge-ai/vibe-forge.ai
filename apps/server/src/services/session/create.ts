@@ -65,7 +65,6 @@ export async function createSessionWithInitialMessage(options: {
   systemPrompt?: string
   adapter?: string
   account?: string
-  updateSkills?: boolean
   workspace?: CreateSessionWorkspaceOptions
 }): Promise<Session> {
   const {
@@ -85,7 +84,6 @@ export async function createSessionWithInitialMessage(options: {
     systemPrompt,
     adapter,
     account,
-    updateSkills,
     workspace
   } = options
   const db = getDb()
@@ -148,17 +146,7 @@ export async function createSessionWithInitialMessage(options: {
       await beforeStart?.(session.id)
       await startAdapterSession(
         session.id,
-        {
-          model,
-          effort,
-          promptType,
-          promptName,
-          permissionMode,
-          systemPrompt,
-          adapter,
-          account,
-          updateConfiguredSkills: updateSkills
-        }
+        { model, effort, promptType, promptName, permissionMode, systemPrompt, adapter, account }
       )
       if (initialContent) {
         processUserMessage(session.id, initialContent)

@@ -15,8 +15,6 @@ import {
   SidebarListCollapsedActionButton,
   SidebarListCollapsedActions
 } from '#~/components/sidebar-list/SidebarListHeader'
-import { DEFAULT_CHAT_SESSION_TARGET_DRAFT } from '#~/hooks/chat/chat-session-target'
-import type { ChatSessionTargetDraft } from '#~/hooks/chat/chat-session-target'
 import {
   DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT,
   getChatSessionWorkspaceDraftFromConfig
@@ -52,9 +50,6 @@ export function AutomationEmptyLanding({
   const defaultWorkspaceDraft = useMemo(() => (
     configRes == null ? DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT : getChatSessionWorkspaceDraftFromConfig(configRes)
   ), [configRes])
-  const [sessionTargetDraft, setSessionTargetDraft] = useState<ChatSessionTargetDraft>(() => ({
-    ...DEFAULT_CHAT_SESSION_TARGET_DRAFT
-  }))
   const [workspaceDraft, setWorkspaceDraft] = useState(() => ({ ...DEFAULT_CHAT_SESSION_WORKSPACE_DRAFT }))
   const [starterContent, setStarterContent] = useState('')
   const [starterContentKey, setStarterContentKey] = useState(0)
@@ -81,7 +76,6 @@ export function AutomationEmptyLanding({
     effort,
     permissionMode,
     adapter: selectedAdapter,
-    sessionTargetDraft,
     workspaceDraft,
     onClearMessages: noop
   })
@@ -151,12 +145,6 @@ export function AutomationEmptyLanding({
         adapterOptions={adapterOptions}
         onAdapterChange={setSelectedAdapter}
         modelUnavailable={!hasAvailableModels}
-        sessionTarget={{
-          draft: sessionTargetDraft,
-          locked: false,
-          disabled: isCreatingSession,
-          onChange: setSessionTargetDraft
-        }}
       />
       <ChatStatusBar
         draftWorkspace={workspaceDraft}

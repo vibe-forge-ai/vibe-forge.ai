@@ -1,8 +1,6 @@
 // Existing files already over the line-count limit. Keep this list shrinking.
 // New files should satisfy the global max-lines rule instead of extending it.
 export default [
-  '.ai.config.json',
-  '.ai/docs/usage/skills.md',
   '.ai/rules/adapter-error-debugging.md',
   '.ai/rfcs/0001-copilot-adapter.md',
   '.ai/rfcs/0001-gemini-cli-adapter.md',

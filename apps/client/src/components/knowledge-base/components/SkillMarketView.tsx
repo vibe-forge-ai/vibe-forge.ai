@@ -26,7 +26,6 @@ export function SkillMarketView({
   sourceFilter,
   sourceOptions,
   onAddRegistry,
-  onOpenSkillsCli,
   onInstall,
   onInstallFilterChange,
   onLoadMore,
@@ -149,14 +148,6 @@ export function SkillMarketView({
               type='text'
               onClick={onAddRegistry}
               icon={<span className='material-symbols-rounded'>add_link</span>}
-            />
-          </Tooltip>
-          <Tooltip title={t('knowledge.skills.installViaSkillsCli')}>
-            <Button
-              className='knowledge-base-view__icon-button'
-              type='text'
-              onClick={onOpenSkillsCli}
-              icon={<span className='material-symbols-rounded'>terminal</span>}
             />
           </Tooltip>
         </div>

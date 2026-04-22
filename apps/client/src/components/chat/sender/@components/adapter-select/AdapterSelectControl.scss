@@ -1,13 +1,7 @@
 .adapter-select,
 .adapter-select--locked {
-  width: calc(
-    var(--sender-control-height) + var(--chat-input-container-padding, 12px) +
-      3px
-  );
-  min-width: calc(
-    var(--sender-control-height) + var(--chat-input-container-padding, 12px) +
-      3px
-  );
+  width: 28px;
+  min-width: 28px;
 }
 
 .adapter-select {
@@ -84,23 +78,6 @@
   color: var(--sender-control-hover-color);
 }
 
-html.dark {
-  .sender-select-shell.sender-select-shell--adapter:not(.is-disabled):hover
-    .adapter-select,
-  .adapter-select:not(.ant-select-disabled):hover,
-  .adapter-select:not(.ant-select-disabled).ant-select-focused,
-  .adapter-select:not(.ant-select-disabled).ant-select-open {
-    background: color-mix(
-      in srgb,
-      var(--primary-color, #3b82f6) 10%,
-      var(--input-bg, #1f1f1f) 90%
-    );
-    color: var(--text-color, #ffffff);
-    box-shadow: inset 0 0 0 1px
-      color-mix(in srgb, var(--primary-color, #3b82f6) 18%, transparent);
-  }
-}
-
 .adapter-option {
   display: inline-flex;
   align-items: center;
@@ -110,8 +87,8 @@ html.dark {
 }
 
 .adapter-option__icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   display: block;
   object-fit: contain;
   flex-shrink: 0;
@@ -122,27 +99,21 @@ html.dark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
 }
 
 @media (max-width: 960px) {
   .adapter-select,
   .adapter-select--locked {
-    width: calc(
-      var(--sender-control-height) + var(--chat-input-container-padding, 12px) +
-        3px
-    );
-    min-width: calc(
-      var(--sender-control-height) + var(--chat-input-container-padding, 12px) +
-        3px
-    );
+    width: var(--sender-control-height);
+    min-width: var(--sender-control-height);
   }
 
   .adapter-option__icon,
   .adapter-option__icon--fallback {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     margin: 0 auto;
   }
 }

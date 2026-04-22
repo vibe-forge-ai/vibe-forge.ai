@@ -60,6 +60,7 @@ export function buildCompactThemeActions({
       label: t('common.themeLight'),
       onSelect: () => {
         setThemeMode('light')
+        localStorage.setItem('theme', 'light')
       }
     },
     {
@@ -69,6 +70,7 @@ export function buildCompactThemeActions({
       label: t('common.themeDark'),
       onSelect: () => {
         setThemeMode('dark')
+        localStorage.setItem('theme', 'dark')
       }
     },
     {
@@ -78,6 +80,7 @@ export function buildCompactThemeActions({
       label: t('common.themeSystem'),
       onSelect: () => {
         setThemeMode('system')
+        localStorage.setItem('theme', 'system')
       }
     }
   ]

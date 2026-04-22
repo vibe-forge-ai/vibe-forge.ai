@@ -6,5 +6,4 @@ export interface RunTaskOptions {
   env?: Record<string, string | undefined | null>
   cwd?: string
   plugins?: PluginConfig
-  updateConfiguredSkills?: boolean
 }

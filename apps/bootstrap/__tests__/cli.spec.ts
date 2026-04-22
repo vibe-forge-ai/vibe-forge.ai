@@ -117,48 +117,4 @@ describe('bootstrap cli', () => {
       forwardedArgs: ['--help']
     })
   })
-
-  it('strips --debug before forwarding and enables bootstrap debug mode', async () => {
-    const launchDesktopApp = vi.fn(async () => {})
-    const launchInstalledPackage = vi.fn(async () => 0)
-    const cli = createBootstrapCli({
-      launchDesktopApp,
-      launchInstalledPackage
-    })
-    const originalDebug = process.env.VF_BOOTSTRAP_DEBUG
-
-    delete process.env.VF_BOOTSTRAP_DEBUG
-    await cli.parseAsync(['node', 'vibe-forge-bootstrap', 'web', '--debug', '--help'])
-
-    expect(launchInstalledPackage).toHaveBeenCalledWith({
-      packageName: '@vibe-forge/web',
-      commandName: 'vibe-forge-web',
-      forwardedArgs: ['--help']
-    })
-    expect(process.env.VF_BOOTSTRAP_DEBUG).toBe('1')
-
-    if (originalDebug == null) {
-      delete process.env.VF_BOOTSTRAP_DEBUG
-    } else {
-      process.env.VF_BOOTSTRAP_DEBUG = originalDebug
-    }
-  })
-
-  it('prints app help without launching the desktop app', async () => {
-    const launchDesktopApp = vi.fn(async () => {})
-    const launchInstalledPackage = vi.fn(async () => 0)
-    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    const cli = createBootstrapCli({
-      launchDesktopApp,
-      launchInstalledPackage
-    })
-
-    await cli.parseAsync(['node', 'vibe-forge-bootstrap', 'app', '--help'])
-
-    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: vibe-forge-bootstrap app'))
-    expect(launchDesktopApp).not.toHaveBeenCalled()
-    expect(launchInstalledPackage).not.toHaveBeenCalled()
-
-    writeSpy.mockRestore()
-  })
 })

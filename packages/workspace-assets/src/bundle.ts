@@ -8,8 +8,6 @@ export async function resolveWorkspaceAssetBundle(params: {
   plugins?: PluginConfig
   overlaySource?: string
   includeManagedPlugins?: boolean
-  syncConfiguredSkills?: boolean
-  updateConfiguredSkills?: boolean
   useDefaultVibeForgeMcpServer?: boolean
 }): Promise<WorkspaceAssetBundle> {
   const collected = await collectWorkspaceAssets(params)

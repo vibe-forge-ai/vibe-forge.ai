@@ -5,19 +5,18 @@ import fm from 'front-matter'
 
 import { parseScopedReference, resolveSkillIdentifier } from '@vibe-forge/definition-core'
 import type { Config, Definition, Skill, WorkspaceAsset } from '@vibe-forge/types'
-import { formatSkillsSpec, parseSkillsSpec, resolveRelativePath } from '@vibe-forge/utils'
+import { resolveRelativePath } from '@vibe-forge/utils'
 
 import { HOME_BRIDGE_RESOLVED_BY } from './home-bridge'
-import { installSkillsCliDependency } from './skills-cli-dependency'
+import { installRegistrySkillDependency } from './skill-registry'
 
 type SkillAsset = Extract<WorkspaceAsset, { kind: 'skill' }>
 
 export interface NormalizedSkillDependency {
   ref: string
   name: string
-  registry?: string
   source?: string
-  version?: string
+  registry?: string
 }
 
 interface DependencyExpansionParams {
@@ -120,7 +119,7 @@ const parseFrontmatterSkill = async (path: string): Promise<Definition<Skill>> =
   }
 }
 
-const createResolvedSkillAsset = (params: {
+const createRegistrySkillAsset = (params: {
   cwd: string
   definition: Definition<Skill>
 }) => {
@@ -139,29 +138,47 @@ const createResolvedSkillAsset = (params: {
   } satisfies SkillAsset
 }
 
+const parseStringDependency = (value: string): NormalizedSkillDependency => {
+  const ref = value.trim()
+  const atIndex = ref.lastIndexOf('@')
+  if (atIndex > 0 && atIndex < ref.length - 1) {
+    return {
+      ref,
+      source: ref.slice(0, atIndex),
+      name: ref.slice(atIndex + 1)
+    }
+  }
+
+  const sourcePathMatch = ref.match(/^([^/\s]+\/[^/\s]+)\/([^/\s]+)$/)
+  if (sourcePathMatch != null) {
+    return {
+      ref,
+      source: sourcePathMatch[1],
+      name: sourcePathMatch[2]
+    }
+  }
+
+  return {
+    ref,
+    name: ref
+  }
+}
+
 export const normalizeSkillDependency = (value: unknown): NormalizedSkillDependency | undefined => {
   const stringValue = asNonEmptyString(value)
-  if (stringValue != null) return parseSkillsSpec(stringValue)
+  if (stringValue != null) return parseStringDependency(stringValue)
 
   if (value == null || typeof value !== 'object' || Array.isArray(value)) return undefined
   const record = value as Record<string, unknown>
   const name = asNonEmptyString(record.name)
   if (name == null) return undefined
 
-  const registry = asNonEmptyString(record.registry)
   const source = asNonEmptyString(record.source)
-  const version = asNonEmptyString(record.version)
   return {
-    ref: formatSkillsSpec({
-      name,
-      registry,
-      source,
-      version
-    }),
+    ref: source == null ? name : `${source}@${name}`,
     name,
-    ...(registry == null ? {} : { registry }),
     ...(source == null ? {} : { source }),
-    ...(version == null ? {} : { version })
+    ...(asNonEmptyString(record.registry) == null ? {} : { registry: asNonEmptyString(record.registry) })
   }
 }
 
@@ -225,7 +242,7 @@ export const expandSkillAssetDependencies = (
   return selected
 }
 
-export const expandSkillAssetDependenciesWithRemoteResolution = async (
+export const expandSkillAssetDependenciesWithRegistry = async (
   params: DependencyExpansionParams
 ) => {
   const selected: SkillAsset[] = []
@@ -243,16 +260,16 @@ export const expandSkillAssetDependenciesWithRemoteResolution = async (
     dependency: NormalizedSkillDependency,
     currentInstancePath?: string
   ) => {
-    const fetchKey = dependency.ref
+    const fetchKey = `${dependency.registry ?? ''}:${dependency.ref}`
     if (!fetchedDependencyRefs.has(fetchKey)) {
       fetchedDependencyRefs.add(fetchKey)
-      const installed = await installSkillsCliDependency({
+      const installed = await installRegistrySkillDependency({
         cwd: params.cwd,
         configs: params.configs,
         dependency
       })
       const definition = await parseFrontmatterSkill(installed.skillPath)
-      const dependencyAsset = createResolvedSkillAsset({
+      const dependencyAsset = createRegistrySkillAsset({
         cwd: params.cwd,
         definition
       })
@@ -317,13 +334,14 @@ export const expandSkillAssetDependenciesWithRemoteResolution = async (
       const dependencyAsset = await installDependencyAsset(dependency, asset.instancePath).catch((error: unknown) => {
         if (
           localOrBridgedDependency != null &&
-          dependency.source == null
+          dependency.source == null &&
+          dependency.registry == null
         ) {
           return localOrBridgedDependency
         }
         throw error
       }) ?? (
-        dependency.source == null
+        dependency.source == null && dependency.registry == null
           ? localOrBridgedDependency
           : undefined
       )

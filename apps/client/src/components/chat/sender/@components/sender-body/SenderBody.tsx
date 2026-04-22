@@ -16,10 +16,11 @@ import type { PendingContextFile } from '../../@types/sender-composer'
 import type { SenderEditorHandle } from '../../@types/sender-editor'
 import type { SenderProps } from '../../@types/sender-props'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '../../@utils/sender-completion'
+import { PermissionModeControl } from '../permission-mode-control/PermissionModeControl'
 import { SenderAttachments } from '../sender-attachments/SenderAttachments'
-import { SenderHeaderControls } from '../sender-header-controls/SenderHeaderControls'
 import { SenderMonacoEditor } from '../sender-monaco-editor/SenderMonacoEditor'
 import { SenderToolbar } from '../sender-toolbar/SenderToolbar'
+import { SenderSessionTargetBar } from '../session-target/SenderSessionTargetBar'
 
 export function SenderBody({
   isInlineEdit,
@@ -85,17 +86,62 @@ export function SenderBody({
   onConfirmContextPicker: (files: PendingContextFile[]) => void
 }) {
   const { t } = useTranslation()
+  const showPermissionControl = !isInlineEdit && toolbarData.permissionModeOptions.length > 0
 
   return (
     <div className={`chat-input-container ${isInlineEdit ? 'chat-input-container--inline-edit' : ''}`.trim()}>
-      <SenderHeaderControls
-        isInlineEdit={isInlineEdit}
-        sessionTarget={sessionTarget}
-        toolbarState={toolbarState}
-        toolbarData={toolbarData}
-        toolbarRefs={toolbarRefs}
-        toolbarHandlers={toolbarHandlers}
-      />
+      {!isInlineEdit && sessionTarget != null && (
+        <SenderSessionTargetBar
+          draft={sessionTarget.draft}
+          locked={sessionTarget.locked}
+          disabled={sessionTarget.disabled}
+          onChange={sessionTarget.onChange}
+          actions={showPermissionControl
+            ? (
+              <PermissionModeControl
+                state={{
+                  showPermissionActions: toolbarState.showPermissionActions,
+                  permissionMode: toolbarState.permissionMode,
+                  canOpenReferenceActions: toolbarState.canOpenReferenceActions,
+                  isMac: toolbarState.isMac
+                }}
+                data={{
+                  permissionModeOptions: toolbarData.permissionModeOptions,
+                  composerControlShortcuts: toolbarData.composerControlShortcuts
+                }}
+                refs={{ permissionMenuNavigation: toolbarRefs.permissionMenuNavigation }}
+                handlers={{
+                  onPermissionOpenChange: toolbarHandlers.onPermissionOpenChange,
+                  onPermissionMenuKeyDown: toolbarHandlers.onPermissionMenuKeyDown,
+                  onSelectPermissionMode: toolbarHandlers.onSelectPermissionMode
+                }}
+              />
+            )
+            : undefined}
+        />
+      )}
+      {showPermissionControl && sessionTarget == null && (
+        <div className='chat-input-top-actions'>
+          <PermissionModeControl
+            state={{
+              showPermissionActions: toolbarState.showPermissionActions,
+              permissionMode: toolbarState.permissionMode,
+              canOpenReferenceActions: toolbarState.canOpenReferenceActions,
+              isMac: toolbarState.isMac
+            }}
+            data={{
+              permissionModeOptions: toolbarData.permissionModeOptions,
+              composerControlShortcuts: toolbarData.composerControlShortcuts
+            }}
+            refs={{ permissionMenuNavigation: toolbarRefs.permissionMenuNavigation }}
+            handlers={{
+              onPermissionOpenChange: toolbarHandlers.onPermissionOpenChange,
+              onPermissionMenuKeyDown: toolbarHandlers.onPermissionMenuKeyDown,
+              onSelectPermissionMode: toolbarHandlers.onSelectPermissionMode
+            }}
+          />
+        </div>
+      )}
       <SenderAttachments
         pendingImages={pendingImages}
         pendingFiles={pendingFiles}

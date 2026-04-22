@@ -67,7 +67,7 @@ export const installVercelSkill = async (params: {
   if (params.force === true) {
     await rm(installDir, { recursive: true, force: true })
   } else if (await pathExists(installDir)) {
-    throw new Error(`Skill "${target.skill}" is already installed. Use --force to replace it.`)
+    throw new Error(`Skill "${target.skill}" is already installed. Use force to replace it.`)
   }
 
   for (const file of files) {

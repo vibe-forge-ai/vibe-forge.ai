@@ -35,15 +35,12 @@ describe('mergeConfigs', () => {
             }
           }
         },
-        skills: [
-          'frontend-design',
-          {
-            name: 'lynx-cat',
-            registry: 'https://registry.example.com',
-            source: 'example-source/lynx/skills',
-            version: 'latest'
+        skills: {
+          registry: {
+            url: 'https://skills.example.com',
+            enabled: true
           }
-        ],
+        },
         marketplaces: {
           'team-tools': {
             type: 'claude-code',
@@ -111,14 +108,9 @@ describe('mergeConfigs', () => {
           }
         },
         skills: {
-          install: [
-            {
-              name: 'design-review',
-              source: 'example-source/default/public',
-              version: '1.0.3',
-              rename: 'internal-review'
-            }
-          ]
+          registry: {
+            downloadUrl: 'https://download.skills.example.com'
+          }
         },
         marketplaces: {
           'team-tools': {
@@ -143,7 +135,7 @@ describe('mergeConfigs', () => {
           }
         ]
       }
-    )!
+    )
 
     expect(merged.defaultModel).toBe('base-model')
     expect(merged.adapters?.codex).toEqual({
@@ -178,21 +170,11 @@ describe('mergeConfigs', () => {
       title: 'Base Title',
       description: 'Child Description'
     })
-    expect(merged.skills).toEqual([
-      'frontend-design',
-      {
-        name: 'lynx-cat',
-        registry: 'https://registry.example.com',
-        source: 'example-source/lynx/skills',
-        version: 'latest'
-      },
-      {
-        name: 'design-review',
-        source: 'example-source/default/public',
-        version: '1.0.3',
-        rename: 'internal-review'
+    expect(merged.skills).toEqual({
+      registry: {
+        downloadUrl: 'https://download.skills.example.com'
       }
-    ])
+    })
     expect(merged.marketplaces).toEqual({
       'team-tools': {
         type: 'claude-code',
@@ -236,68 +218,6 @@ describe('mergeConfigs', () => {
         options: {
           headless: true
         }
-      }
-    ])
-  })
-
-  it('appends startup presets and builtin actions from layered conversation config', () => {
-    const merged = mergeConfigs(
-      {
-        conversation: {
-          startupPresets: [
-            {
-              title: 'Base preset',
-              mode: 'agent',
-              target: 'std/dev-planner'
-            }
-          ],
-          builtinActions: [
-            {
-              title: 'Base action',
-              prompt: 'Summarize the release scope.'
-            }
-          ]
-        }
-      },
-      {
-        conversation: {
-          startupPresets: [
-            {
-              title: 'Child preset',
-              mode: 'spec',
-              target: 'std/standard-dev-flow'
-            }
-          ],
-          builtinActions: [
-            {
-              title: 'Child action',
-              prompt: 'Fix the failing pipeline.'
-            }
-          ]
-        }
-      }
-    )
-
-    expect(merged.conversation?.startupPresets).toEqual([
-      {
-        title: 'Base preset',
-        mode: 'agent',
-        target: 'std/dev-planner'
-      },
-      {
-        title: 'Child preset',
-        mode: 'spec',
-        target: 'std/standard-dev-flow'
-      }
-    ])
-    expect(merged.conversation?.builtinActions).toEqual([
-      {
-        title: 'Base action',
-        prompt: 'Summarize the release scope.'
-      },
-      {
-        title: 'Child action',
-        prompt: 'Fix the failing pipeline.'
       }
     ])
   })
