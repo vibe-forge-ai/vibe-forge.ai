@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/managed-plugins",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Managed native plugin installation and sync for Vibe Forge",
   "imports": {
     "#~/*.js": {
