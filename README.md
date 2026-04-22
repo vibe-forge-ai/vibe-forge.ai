@@ -106,4 +106,4 @@ Open the Extension Development Host and use the Vibe Forge entry in the right Se
 
 ## License
 
-[LICENSE](./LICENSE)
+[MIT](./LICENSE)
