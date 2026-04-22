@@ -192,7 +192,8 @@ describe('task tool integration', () => {
     expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('10 most recent logs')
     expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('logOrder')
     expect(tester.getToolInfo('GetTaskInfo')?.description).toContain('SendTaskMessage')
-    expect(tester.getToolInfo('SendTaskMessage')?.description).toContain('still running')
+    expect(tester.getToolInfo('SendTaskMessage')?.description).toContain('mode "direct"')
+    expect(tester.getToolInfo('SendTaskMessage')?.description).toContain('mode "steer"')
     expect(tester.getToolInfo('ListTasks')?.description).toContain('10 most recent logs')
     expect(tester.getToolInfo('ListTasks')?.description).toContain('SendTaskMessage')
     expect(tester.getToolInfo('ListTasks')?.description).toContain('pendingInput')
@@ -301,7 +302,7 @@ describe('task tool integration', () => {
     mocks.getTask.mockReturnValue({
       taskId: 'task-1',
       status: 'running',
-      logs: ['User message submitted: keep checking logs']
+      logs: ['Queued task message (steer): keep checking logs']
     })
 
     const { createTaskRegister } = await import('#~/tools/task/index.js')
@@ -311,12 +312,14 @@ describe('task tool integration', () => {
 
     await tester.callTool('SendTaskMessage', {
       taskId: 'task-1',
-      message: 'keep checking logs'
+      message: 'keep checking logs',
+      mode: 'steer'
     })
 
     expect(mocks.sendTaskMessage).toHaveBeenCalledWith({
       taskId: 'task-1',
-      message: 'keep checking logs'
+      message: 'keep checking logs',
+      mode: 'steer'
     })
   })
 

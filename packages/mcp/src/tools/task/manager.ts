@@ -61,6 +61,7 @@ export interface TaskInfo {
   exitCode?: number
   logs: string[]
   permissionState: SessionPermissionState
+  queuedSteerMessages: string[]
   pendingInteraction?: PendingTaskInteraction
   lastError?: AdapterErrorData
   session?: ManagedTaskSession
@@ -252,6 +253,7 @@ export class TaskManager {
       status: 'running',
       logs: [],
       permissionState: createEmptySessionPermissionState(),
+      queuedSteerMessages: [],
       createdAt: Date.now()
     }
     if (enableServerSync) {
@@ -285,7 +287,7 @@ export class TaskManager {
     return { taskId }
   }
 
-  private async launchTask(task: TaskInfo, runType: 'create' | 'resume') {
+  private async launchTask(task: TaskInfo, runType: 'create' | 'resume', resumeMessage?: string) {
     try {
       const rootCwd = process.cwd()
       const promptType = task.type !== 'default' ? task.type : undefined
@@ -374,7 +376,7 @@ export class TaskManager {
         type: 'message',
         content: [{
           type: 'text',
-          text: runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description
+          text: resumeMessage ?? (runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description)
         }]
       })
     } catch (err) {
@@ -467,6 +469,17 @@ export class TaskManager {
         task.status = 'completed'
         task.pendingInteraction = undefined
         this.stopServerPolling(taskId)
+        if (task.queuedSteerMessages.length > 0) {
+          void this.dispatchQueuedSteerMessage(task).catch((error) => {
+            task.status = 'failed'
+            appendTaskLog(
+              task,
+              `Failed to resume steer-queued task: ${error instanceof Error ? error.message : String(error)}`
+            )
+            task.onStop?.()
+          })
+          break
+        }
         task.onStop?.()
         break
       }
@@ -489,6 +502,17 @@ export class TaskManager {
         task.pendingInteraction = undefined
         appendTaskLog(task, `Process exited with code ${event.data.exitCode}`)
         this.stopServerPolling(taskId)
+        if (task.status === 'completed' && task.queuedSteerMessages.length > 0) {
+          void this.dispatchQueuedSteerMessage(task).catch((error) => {
+            task.status = 'failed'
+            appendTaskLog(
+              task,
+              `Failed to resume steer-queued task: ${error instanceof Error ? error.message : String(error)}`
+            )
+            task.onStop?.()
+          })
+          break
+        }
         task.onStop?.()
         break
       default:
@@ -584,6 +608,7 @@ export class TaskManager {
   public async sendTaskMessage(params: {
     taskId: string
     message: string
+    mode?: 'direct' | 'steer'
   }): Promise<void> {
     const task = this.tasks.get(params.taskId)
     if (task == null) {
@@ -591,12 +616,22 @@ export class TaskManager {
     }
 
     const message = params.message.trim()
+    const mode = params.mode ?? 'direct'
     if (message === '') {
       throw new Error('Task message cannot be empty.')
     }
 
     if (task.pendingInteraction != null || task.status === 'waiting_input') {
       throw new Error(`Task ${params.taskId} is waiting for input. Use SubmitTaskInput instead.`)
+    }
+
+    if (mode === 'steer') {
+      if (task.status === 'completed' || task.status === 'failed') {
+        throw new Error(`Task ${params.taskId} is not active. Start a new task instead.`)
+      }
+      task.queuedSteerMessages.push(message)
+      appendTaskLog(task, `Queued task message (${mode}): ${message}`)
+      return
     }
 
     if (task.status !== 'running' || task.session == null) {
@@ -623,7 +658,19 @@ export class TaskManager {
       })
     }
 
-    appendTaskLog(task, `User message submitted: ${message}`)
+    appendTaskLog(task, `User message submitted (${mode}): ${message}`)
+  }
+
+  private async dispatchQueuedSteerMessage(task: TaskInfo) {
+    const nextMessage = task.queuedSteerMessages.shift()
+    if (nextMessage == null || nextMessage.trim() === '') {
+      return false
+    }
+
+    task.status = 'running'
+    appendTaskLog(task, `Resuming task from steer queue: ${nextMessage}`)
+    await this.launchTask(task, 'resume', nextMessage)
+    return true
   }
 
   public async submitTaskInput(params: {

@@ -67,13 +67,18 @@ export const registerTaskRuntimeTools = (
           .string()
           .trim()
           .min(1)
-          .describe('The follow-up instruction to send to the running task')
+          .describe('The follow-up instruction to send to the task'),
+        mode: z
+          .enum(['direct', 'steer'])
+          .describe('How to deliver the message: direct (default) or steer')
+          .default('direct')
       })
     },
-    async ({ taskId, message }) => {
+    async ({ taskId, message, mode }) => {
       await taskManager.sendTaskMessage({
         taskId,
-        message
+        message,
+        mode
       })
       const task = taskManager.getTask(taskId)
       return {
