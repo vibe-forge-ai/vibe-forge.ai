@@ -10,7 +10,7 @@ const adapterPackageDir = dirname(require.resolve('@vibe-forge/adapter-codex/pac
 const bundledPath = resolve(adapterPackageDir, 'node_modules/.bin/codex')
 
 export const CODEX_CLI_PACKAGE = '@openai/codex'
-export const CODEX_CLI_VERSION = '0.121.0'
+export const CODEX_CLI_VERSION = '0.124.0'
 
 /**
  * Returns the path to the codex binary.
