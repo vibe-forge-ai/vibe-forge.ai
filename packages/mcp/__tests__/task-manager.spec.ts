@@ -306,7 +306,13 @@ describe('taskManager fatal error scenarios', () => {
     })
 
     const task = managedTaskManager.getTask('task-send-synced')
-    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenNthCalledWith(2, {
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'keep going'
+      }]
+    })
     expect(mocks.postSessionEvent).toHaveBeenCalledWith('task-send-synced', {
       type: 'message',
       data: expect.objectContaining({
@@ -315,6 +321,84 @@ describe('taskManager fatal error scenarios', () => {
       })
     })
     expect(task?.logs).toContain('User message submitted (direct): keep going')
+  })
+
+  it('does not replay stale synced messages after a failed resume attempt', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    let onEvent: ((event: any) => void) | undefined
+    const resumedEmit = vi.fn()
+    const syncedEvents: Array<{ type: 'message'; message: Record<string, unknown> }> = []
+
+    mocks.postSessionEvent.mockImplementation(async (_sessionId: string, payload: any) => {
+      if (payload?.type === 'message' && payload.data != null) {
+        syncedEvents.push({
+          type: 'message',
+          message: payload.data
+        })
+      }
+    })
+    mocks.fetchSessionMessages.mockImplementation(async () => syncedEvents)
+
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockRejectedValueOnce(new Error('resume failed to start'))
+      .mockResolvedValueOnce({
+        session: {
+          emit: resumedEmit,
+          kill: vi.fn()
+        }
+      })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-synced-retry',
+      description: 'trigger',
+      enableServerSync: true
+    })
+
+    onEvent?.({
+      type: 'stop',
+      data: undefined
+    })
+
+    await expect(managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-synced-retry',
+      message: 'first retry'
+    })).rejects.toThrow('resume failed to start')
+
+    const firstMessage = syncedEvents.at(-1)?.message
+    const taskAfterFailure = managedTaskManager.getTask('task-send-synced-retry')
+    expect(firstMessage).toEqual(expect.objectContaining({
+      id: expect.any(String),
+      role: 'user',
+      content: 'first retry'
+    }))
+    expect(taskAfterFailure?.serverSync?.seenMessageIds.has(String(firstMessage?.id))).toBe(true)
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-synced-retry',
+      message: 'second retry'
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(resumedEmit).toHaveBeenCalledTimes(1)
+    expect(resumedEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'second retry'
+      }]
+    })
+
+    managedTaskManager.stopTask('task-send-synced-retry')
   })
 
   it('queues steer follow-up messages and resumes the same task after natural completion', async () => {

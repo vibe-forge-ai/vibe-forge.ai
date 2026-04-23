@@ -113,6 +113,12 @@ interface CodexThreadCacheAuthIdentity {
   email?: string
 }
 
+const hasStableThreadCacheAuthIdentity = (identity: CodexThreadCacheAuthIdentity) => (
+  identity.accountId != null ||
+  identity.organizationId != null ||
+  identity.email != null
+)
+
 const decodeJwtPayload = (token: string | undefined) => {
   const payload = token?.split('.')[1]
   if (payload == null || payload === '') {
@@ -156,7 +162,7 @@ const readThreadCacheAuthIdentityFromContent = (authContent: string): CodexThrea
       email: readOptionalString(idTokenPayload?.email)?.toLowerCase()
     }
 
-    return Object.values(identity).some(value => value != null && value !== '')
+    return hasStableThreadCacheAuthIdentity(identity)
       ? identity
       : undefined
   } catch {

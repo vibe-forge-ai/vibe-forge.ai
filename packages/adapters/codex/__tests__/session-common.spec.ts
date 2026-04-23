@@ -87,6 +87,32 @@ describe('buildThreadCacheKey', () => {
     expect(keyB).not.toBe(keyA)
   })
 
+  it('falls back to the auth digest when auth mode is the only identity signal', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'vf-codex-thread-key-'))
+    tempDirs.push(dir)
+    const authPath = join(dir, 'auth.json')
+
+    await writeFile(authPath, JSON.stringify({
+      auth_mode: 'api_key',
+      tokens: {
+        access_token: 'token-a'
+      }
+    }))
+
+    const keyA = await buildThreadCacheKey(makeBaseParams(authPath))
+
+    await writeFile(authPath, JSON.stringify({
+      auth_mode: 'api_key',
+      tokens: {
+        access_token: 'token-b'
+      }
+    }))
+
+    const keyB = await buildThreadCacheKey(makeBaseParams(authPath))
+
+    expect(keyB).not.toBe(keyA)
+  })
+
   it('still falls back to auth content digest when no stable identity is available', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'vf-codex-thread-key-'))
     tempDirs.push(dir)

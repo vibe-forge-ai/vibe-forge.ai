@@ -154,6 +154,15 @@ const createTaskUserMessageEvent = (taskId: string, message: string) => ({
   }
 })
 
+const createTaskSessionMessageEvent = (message: string, parentUuid?: string) => ({
+  type: 'message' as const,
+  content: [{
+    type: 'text' as const,
+    text: message
+  }],
+  ...(parentUuid != null ? { parentUuid } : {})
+})
+
 export class TaskManager {
   private tasks: Map<string, TaskInfo> = new Map()
   private permissionToolUseCache = new Map<string, Map<string, string>>()
@@ -313,10 +322,7 @@ export class TaskManager {
   private async launchTask(
     task: TaskInfo,
     runType: 'create' | 'resume',
-    resumeMessage?: string,
-    options?: {
-      skipInitialMessage?: boolean
-    }
+    resumeMessage?: string
   ) {
     try {
       const rootCwd = process.cwd()
@@ -404,15 +410,11 @@ export class TaskManager {
         )
       }
       this.startServerPolling(task.taskId)
-      if (options?.skipInitialMessage !== true) {
-        session.emit({
-          type: 'message',
-          content: [{
-            type: 'text',
-            text: resumeMessage ?? (runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description)
-          }]
-        })
-      }
+      this.emitTaskUserMessage(
+        current,
+        current.session,
+        resumeMessage ?? (runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description)
+      )
     } catch (err) {
       const current = this.tasks.get(task.taskId)
       if (current) {
@@ -639,19 +641,25 @@ export class TaskManager {
     return Array.from(this.tasks.values())
   }
 
-  private async resumeTaskWithMessage(task: TaskInfo, message: string, logMessage: string) {
-    if (task.serverSync != null) {
-      await postSessionEvent(task.serverSync.sessionId, createTaskUserMessageEvent(task.taskId, message))
+  private async syncTaskUserMessage(task: TaskInfo, message: string) {
+    if (task.serverSync == null) {
+      return
     }
 
+    const event = createTaskUserMessageEvent(task.taskId, message)
+    await postSessionEvent(task.serverSync.sessionId, event)
+    task.serverSync.seenMessageIds.add(event.data.id)
+  }
+
+  private emitTaskUserMessage(task: TaskInfo, session: ManagedTaskSession, message: string) {
+    session.emit(createTaskSessionMessageEvent(message, task.serverSync?.lastAssistantMessageId))
+  }
+
+  private async resumeTaskWithMessage(task: TaskInfo, message: string, logMessage: string) {
+    await this.syncTaskUserMessage(task, message)
     task.status = 'running'
     appendTaskLog(task, logMessage)
-    await this.launchTask(
-      task,
-      'resume',
-      task.serverSync != null ? undefined : message,
-      task.serverSync != null ? { skipInitialMessage: true } : undefined
-    )
+    await this.launchTask(task, 'resume', message)
   }
 
   public async sendTaskMessage(params: {
@@ -693,17 +701,8 @@ export class TaskManager {
       throw new Error(`Task ${params.taskId} is not running. Start a new task instead.`)
     }
 
-    if (task.serverSync != null) {
-      await postSessionEvent(task.serverSync.sessionId, createTaskUserMessageEvent(task.taskId, message))
-    } else {
-      task.session.emit({
-        type: 'message',
-        content: [{
-          type: 'text',
-          text: message
-        }]
-      })
-    }
+    await this.syncTaskUserMessage(task, message)
+    this.emitTaskUserMessage(task, task.session, message)
 
     appendTaskLog(task, `User message submitted (${mode}): ${message}`)
   }
