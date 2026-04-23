@@ -50,6 +50,7 @@ interface ResolveManagedNpmCliPathParams extends ResolveManagedNpmCliOptionsPara
   bundledPath?: string
   cwd?: string
   configuredPath?: string
+  installKey?: string[]
   versionArgs?: string[]
 }
 
@@ -150,11 +151,17 @@ export const resolveManagedNpmCliPaths = (params: {
   binaryName: string
   cwd: string
   env: Record<string, string | null | undefined>
+  installKey?: string[]
   packageName: string
   version: string
 }): ManagedNpmCliPaths => {
   const rootDir = resolveProjectSharedCachePath(params.cwd, params.env, `adapter-${params.adapterKey}`, 'cli', 'npm')
-  const installDir = resolve(rootDir, toCacheSegment(params.packageName), toCacheSegment(params.version))
+  const installDir = resolve(
+    rootDir,
+    ...(params.installKey ?? []).map(toCacheSegment),
+    toCacheSegment(params.packageName),
+    toCacheSegment(params.version)
+  )
   const binDir = resolve(installDir, 'node_modules', '.bin')
   return {
     rootDir,
@@ -181,6 +188,7 @@ export const resolveManagedNpmCliBinaryPath = (params: ResolveManagedNpmCliPathP
       binaryName: params.binaryName,
       cwd: params.cwd,
       env: params.env,
+      installKey: params.installKey,
       packageName: installOptions.packageName,
       version: installOptions.version
     })
@@ -235,6 +243,7 @@ export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => 
     binaryName: params.binaryName,
     cwd: params.cwd,
     env: params.env,
+    installKey: params.installKey,
     packageName: installOptions.packageName,
     version: installOptions.version
   })

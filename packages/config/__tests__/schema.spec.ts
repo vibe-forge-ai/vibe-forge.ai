@@ -60,9 +60,9 @@ describe('config schema bundle', () => {
     const corePackage = await readPackageJson('packages/core/package.json')
     const configPackage = await readPackageJson('packages/config/package.json')
 
-    expect(corePackage.version).toBe('2.0.3')
+    expect(corePackage.version).toBe('2.0.1')
     expect(corePackage.exports).toHaveProperty('./config-schema')
-    expect(configPackage.version).toBe('2.0.4')
+    expect(configPackage.version).toBe('2.0.2')
     expect(configPackage.dependencies?.['@vibe-forge/core']).toBe('workspace:^2.0.1')
 
     for (

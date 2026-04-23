@@ -1,5 +1,4 @@
 export type TaskLogsOrder = 'asc' | 'desc'
-export type TaskMessageMode = 'direct' | 'steer'
 
 export interface StopTaskToolInput {
   task_id?: string
@@ -25,7 +24,6 @@ export interface GetTaskInfoToolInput {
 export interface SendTaskMessageToolInput {
   taskId: string
   message: string
-  mode?: TaskMessageMode
 }
 
 export interface ListTasksToolInput {

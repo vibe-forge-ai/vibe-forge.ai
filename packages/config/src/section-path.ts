@@ -23,6 +23,7 @@ const GENERAL_FIELD_KEYS = new Set([
   'permissions',
   'env',
   'notifications',
+  'skills',
   'shortcuts'
 ])
 

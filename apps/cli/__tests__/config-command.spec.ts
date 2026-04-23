@@ -25,16 +25,6 @@ const runCli = (
 ) =>
   spawnSync(process.execPath, [cliPath, ...args], {
     cwd,
-    env: (() => {
-      const env = { ...process.env }
-      delete env.__VF_PROJECT_WORKSPACE_FOLDER__
-      delete env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
-      delete env.__VF_PROJECT_CONFIG_DIR__
-      delete env.__VF_PROJECT_AI_BASE_DIR__
-      env.__VF_PROJECT_DOTENV_FILES__ = '.vf-test-noop-env'
-      delete env.WORKSPACE_FOLDER
-      return env
-    })(),
     encoding: 'utf8',
     input: options.input
   })
@@ -80,12 +70,10 @@ describe('config command', () => {
         models: false,
         modelServices: false,
         channels: false,
-        auth: false,
         adapters: true,
         plugins: false,
         mcp: false,
-        shortcuts: false,
-        workspaces: false
+        shortcuts: false
       }
     })
   })
@@ -268,26 +256,16 @@ describe('config command', () => {
     ])
 
     expect(stringResult.status).toBe(0)
-    const stringPayload = JSON.parse(stringResult.stdout) as {
-      ok: boolean
-      workspaceFolder: string
-      source: string
-      path: string
-      section: string
-      configPath: string
-      value: string
-    }
-    expect(stringPayload).toEqual({
+    expect(JSON.parse(stringResult.stdout)).toEqual({
       ok: true,
       workspaceFolder: cwd,
       source: 'project',
       path: 'general.defaultModel',
       section: 'general',
-      configPath: stringPayload.configPath,
+      configPath: path.join(cwd, '.ai.config.json'),
       value: 'gpt-5.4'
     })
-    expect(stringPayload.configPath.endsWith('.ai.config.json')).toBe(true)
-    expect(JSON.parse(await fs.readFile(stringPayload.configPath, 'utf8'))).toMatchObject({
+    expect(JSON.parse(await fs.readFile(path.join(cwd, '.ai.config.json'), 'utf8'))).toEqual({
       defaultModel: 'gpt-5.4'
     })
 
@@ -303,27 +281,18 @@ describe('config command', () => {
     })
 
     expect(stdinResult.status).toBe(0)
-    const stdinPayload = JSON.parse(stdinResult.stdout) as {
-      ok: boolean
-      workspaceFolder: string
-      source: string
-      path: string
-      section: string
-      configPath: string
-      value: { allow: string[] }
-    }
-    expect(stdinPayload).toEqual({
+    expect(JSON.parse(stdinResult.stdout)).toEqual({
       ok: true,
       workspaceFolder: cwd,
       source: 'project',
       path: 'general.permissions',
       section: 'general',
-      configPath: stringPayload.configPath,
+      configPath: path.join(cwd, '.ai.config.json'),
       value: {
         allow: ['Read']
       }
     })
-    expect(JSON.parse(await fs.readFile(stdinPayload.configPath, 'utf8'))).toMatchObject({
+    expect(JSON.parse(await fs.readFile(path.join(cwd, '.ai.config.json'), 'utf8'))).toEqual({
       defaultModel: 'gpt-5.4',
       permissions: {
         allow: ['Read']

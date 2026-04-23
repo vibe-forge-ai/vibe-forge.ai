@@ -104,6 +104,7 @@ const configureRunCommand = (command: Command) => {
     .option('--exclude-tool <tool...>', 'Exclude tool')
     .option('--include-skill <skill...>', 'Include skill')
     .option('--exclude-skill <skill...>', 'Exclude skill')
+    .option('--update-skills', 'Update configured project skills before session startup', false)
     .addHelpText(
       'after',
       `
@@ -289,7 +290,8 @@ Notes:
                 skills,
                 adapter: cachedAdapter ?? opts.adapter,
                 model: opts.model,
-                plugins: getCliDefaultSkillPluginConfig()
+                plugins: getCliDefaultSkillPluginConfig(),
+                updateConfiguredSkills: opts.updateSkills === true
               }
             )
             resolvedTaskCwd = resolvedConfig.workspace?.cwd ?? cwd
@@ -494,6 +496,7 @@ Notes:
           adapter: record.resume.resolvedAdapter ?? record.resume.taskOptions.adapter,
           cwd: record.resume.taskOptions.cwd ?? record.resume.cwd,
           ctxId,
+          updateConfiguredSkills: opts.updateSkills === true,
           env: {
             ...process.env,
             __VF_PROJECT_WORKSPACE_FOLDER__: record.resume.taskOptions.cwd ?? record.resume.cwd,
