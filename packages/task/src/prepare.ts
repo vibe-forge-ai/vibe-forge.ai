@@ -14,7 +14,7 @@ import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 import { uuid } from '@vibe-forge/utils/uuid'
 import { resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
-import type { RunTaskOptions } from '#~/type.js'
+import type { RunTaskOptions } from './type'
 
 export const prepare = async (
   options: RunTaskOptions,

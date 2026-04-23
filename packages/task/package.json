@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/task",
-  "version": "2.0.0",
+  "version": "2.0.1-alpha.3",
   "description": "Task runtime for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -34,7 +34,7 @@
     "@vibe-forge/managed-plugins": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
-    "@vibe-forge/workspace-assets": "workspace:^",
+    "@vibe-forge/workspace-assets": "workspace:*",
     "zod": "^3.24.1"
   }
 }
