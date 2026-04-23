@@ -13,6 +13,7 @@ export interface McpManagedTaskInput {
   type?: McpTaskDefinitionType
   name?: string
   adapter?: string
+  model?: string
   permissionMode?: SessionPermissionMode
   background?: boolean
 }
@@ -55,6 +56,7 @@ export interface McpTaskQueryOptions {
   runtime: 'mcp'
   mode?: 'stream' | 'direct'
   sessionId: string
+  model?: string
   systemPrompt?: string
   permissionMode?: SessionPermissionMode
   tools?: McpSelectionFilter

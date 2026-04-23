@@ -51,6 +51,7 @@ type ManagedTaskSession = McpTaskSession & {
 export interface TaskInfo {
   taskId: string
   adapter?: string
+  model?: string
   description: string
   type?: 'default' | 'spec' | 'entity' | 'workspace'
   name?: string
@@ -142,6 +143,16 @@ const formatPermissionErrorLog = (error: AdapterErrorData) => {
 
   return parts.length > 0 ? parts.join(' | ') : undefined
 }
+
+const createTaskUserMessageEvent = (taskId: string, message: string) => ({
+  type: 'message' as const,
+  data: {
+    id: `task-user:${taskId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    role: 'user' as const,
+    content: message,
+    createdAt: Date.now()
+  }
+})
 
 export class TaskManager {
   private tasks: Map<string, TaskInfo> = new Map()
@@ -236,15 +247,27 @@ export class TaskManager {
     name?: string
     permissionMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions'
     adapter?: string
+    model?: string
     background?: boolean
     enableServerSync?: boolean
   }): Promise<{ taskId: string; logs?: string[] }> {
-    const { taskId, adapter, description, type, name, permissionMode, background = true, enableServerSync } = options
+    const {
+      taskId,
+      adapter,
+      model,
+      description,
+      type,
+      name,
+      permissionMode,
+      background = true,
+      enableServerSync
+    } = options
 
     // Initialize Task Info
     const taskInfo: TaskInfo = {
       taskId,
       adapter,
+      model,
       description,
       type,
       name,
@@ -287,7 +310,14 @@ export class TaskManager {
     return { taskId }
   }
 
-  private async launchTask(task: TaskInfo, runType: 'create' | 'resume', resumeMessage?: string) {
+  private async launchTask(
+    task: TaskInfo,
+    runType: 'create' | 'resume',
+    resumeMessage?: string,
+    options?: {
+      skipInitialMessage?: boolean
+    }
+  ) {
     try {
       const rootCwd = process.cwd()
       const promptType = task.type !== 'default' ? task.type : undefined
@@ -298,7 +328,8 @@ export class TaskManager {
         promptName,
         promptCWD,
         {
-          adapter: task.adapter
+          adapter: task.adapter,
+          model: task.model
         }
       )
       const taskCwd = resolvedConfig.workspace?.cwd ?? promptCWD
@@ -331,6 +362,7 @@ export class TaskManager {
         runtime: 'mcp',
         mode: 'stream',
         sessionId: task.taskId,
+        model: task.model,
         systemPrompt: mergeSystemPrompts({
           generatedSystemPrompt: resolvedConfig.systemPrompt,
           injectDefaultSystemPrompt
@@ -372,13 +404,15 @@ export class TaskManager {
         )
       }
       this.startServerPolling(task.taskId)
-      session.emit({
-        type: 'message',
-        content: [{
-          type: 'text',
-          text: resumeMessage ?? (runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description)
-        }]
-      })
+      if (options?.skipInitialMessage !== true) {
+        session.emit({
+          type: 'message',
+          content: [{
+            type: 'text',
+            text: resumeMessage ?? (runType === 'resume' ? TASK_PERMISSION_CONTINUE_PROMPT : current.description)
+          }]
+        })
+      }
     } catch (err) {
       const current = this.tasks.get(task.taskId)
       if (current) {
@@ -605,6 +639,21 @@ export class TaskManager {
     return Array.from(this.tasks.values())
   }
 
+  private async resumeTaskWithMessage(task: TaskInfo, message: string, logMessage: string) {
+    if (task.serverSync != null) {
+      await postSessionEvent(task.serverSync.sessionId, createTaskUserMessageEvent(task.taskId, message))
+    }
+
+    task.status = 'running'
+    appendTaskLog(task, logMessage)
+    await this.launchTask(
+      task,
+      'resume',
+      task.serverSync != null ? undefined : message,
+      task.serverSync != null ? { skipInitialMessage: true } : undefined
+    )
+  }
+
   public async sendTaskMessage(params: {
     taskId: string
     message: string
@@ -627,10 +676,16 @@ export class TaskManager {
 
     if (mode === 'steer') {
       if (task.status === 'completed' || task.status === 'failed') {
-        throw new Error(`Task ${params.taskId} is not active. Start a new task instead.`)
+        await this.resumeTaskWithMessage(task, message, `Resuming inactive task (${mode}): ${message}`)
+        return
       }
       task.queuedSteerMessages.push(message)
       appendTaskLog(task, `Queued task message (${mode}): ${message}`)
+      return
+    }
+
+    if (task.status === 'completed' || task.status === 'failed') {
+      await this.resumeTaskWithMessage(task, message, `Resuming inactive task (${mode}): ${message}`)
       return
     }
 
@@ -639,15 +694,7 @@ export class TaskManager {
     }
 
     if (task.serverSync != null) {
-      await postSessionEvent(task.serverSync.sessionId, {
-        type: 'message',
-        data: {
-          id: `task-user:${task.taskId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
-          role: 'user',
-          content: message,
-          createdAt: Date.now()
-        }
-      })
+      await postSessionEvent(task.serverSync.sessionId, createTaskUserMessageEvent(task.taskId, message))
     } else {
       task.session.emit({
         type: 'message',
@@ -667,9 +714,7 @@ export class TaskManager {
       return false
     }
 
-    task.status = 'running'
-    appendTaskLog(task, `Resuming task from steer queue: ${nextMessage}`)
-    await this.launchTask(task, 'resume', nextMessage)
+    await this.resumeTaskWithMessage(task, nextMessage, `Resuming task from steer queue: ${nextMessage}`)
     return true
   }
 

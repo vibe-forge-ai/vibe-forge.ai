@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -83,6 +84,85 @@ interface CodexModelProviderExtra {
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value != null && typeof value === 'object' && !Array.isArray(value)
+
+const readOptionalString = (value: unknown) => (
+  typeof value === 'string' && value.trim() !== ''
+    ? value.trim()
+    : undefined
+)
+
+interface CodexStoredAuthTokens {
+  account_id?: unknown
+  id_token?: unknown
+}
+
+interface CodexStoredAuthFile {
+  auth_mode?: unknown
+  tokens?: unknown
+}
+
+interface CodexJwtOrganizationClaim {
+  id?: unknown
+  is_default?: unknown
+}
+
+interface CodexThreadCacheAuthIdentity {
+  accountType?: string
+  accountId?: string
+  organizationId?: string
+  email?: string
+}
+
+const decodeJwtPayload = (token: string | undefined) => {
+  const payload = token?.split('.')[1]
+  if (payload == null || payload === '') {
+    return undefined
+  }
+
+  try {
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8')
+    const parsed = JSON.parse(decoded)
+    return isPlainObject(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const pickPrimaryOrganization = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  const organizations = value
+    .filter(isPlainObject)
+    .map(entry => entry as CodexJwtOrganizationClaim)
+
+  return organizations.find(entry => entry.is_default === true) ?? organizations[0]
+}
+
+const readThreadCacheAuthIdentityFromContent = (authContent: string): CodexThreadCacheAuthIdentity | undefined => {
+  try {
+    const parsed = JSON.parse(authContent) as CodexStoredAuthFile
+    const tokens = isPlainObject(parsed.tokens) ? parsed.tokens as CodexStoredAuthTokens : undefined
+    const idTokenPayload = decodeJwtPayload(readOptionalString(tokens?.id_token))
+    const authClaims = isPlainObject(idTokenPayload?.['https://api.openai.com/auth'])
+      ? idTokenPayload['https://api.openai.com/auth']
+      : undefined
+    const organization = pickPrimaryOrganization(authClaims?.organizations)
+    const identity: CodexThreadCacheAuthIdentity = {
+      accountType: readOptionalString(parsed.auth_mode),
+      accountId: readOptionalString(authClaims?.chatgpt_account_id) ?? readOptionalString(tokens?.account_id),
+      organizationId: readOptionalString(organization?.id),
+      email: readOptionalString(idTokenPayload?.email)?.toLowerCase()
+    }
+
+    return Object.values(identity).some(value => value != null && value !== '')
+      ? identity
+      : undefined
+  } catch {
+    return undefined
+  }
+}
 
 const normalizeStringRecord = (value: unknown): Record<string, string> => {
   if (!isPlainObject(value)) return {}
@@ -427,7 +507,12 @@ export const isInvalidEncryptedContentError = (err: unknown) => {
   return message.includes('invalid_encrypted_content') || message.includes('organization_id did not match')
 }
 
-async function buildThreadCacheKey(params: {
+// Keep this cache key stable across token refreshes for the same Codex account.
+// If you change any field here, rerun a real resume smoke instead of trusting unit tests alone:
+// `vf-mcp` -> `StartTasks` (adapter `codex`) -> wait for completion -> `SendTaskMessage`
+// on the same taskId, then confirm the child task log shows `resuming thread` rather than
+// starting a fresh thread and that the resumed turn still remembers prior context.
+export async function buildThreadCacheKey(params: {
   cwd: string
   useYolo: boolean
   approvalPolicy: CodexApprovalPolicy
@@ -437,12 +522,17 @@ async function buildThreadCacheKey(params: {
   configFingerprintArgs: string[]
   features: Record<string, boolean>
 }) {
+  let authIdentity: CodexThreadCacheAuthIdentity | undefined
   let authDigest: string | undefined
 
   try {
     const authContent = await readFile(params.authPath ?? resolve(process.env.HOME!, '.codex', 'auth.json'), 'utf8')
-    authDigest = createHash('sha256').update(authContent).digest('hex')
+    authIdentity = readThreadCacheAuthIdentityFromContent(authContent)
+    authDigest = authIdentity == null
+      ? createHash('sha256').update(authContent).digest('hex')
+      : undefined
   } catch {
+    authIdentity = undefined
     authDigest = undefined
   }
 
@@ -455,6 +545,7 @@ async function buildThreadCacheKey(params: {
       model: params.resolvedModel ?? null,
       configOverrideArgs: params.configFingerprintArgs,
       features: params.features,
+      authIdentity: authIdentity ?? null,
       authDigest: authDigest ?? null
     }))
     .digest('hex')
