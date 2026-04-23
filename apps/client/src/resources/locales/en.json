@@ -1955,6 +1955,10 @@
         "expanded": "Expanded by default",
         "collapsed": "Collapsed by default"
       },
+      "sessionListSearchThreshold": {
+        "label": "Session list search threshold",
+        "desc": "Only show the search and filter row when the session count exceeds this value; use 0 to always show it"
+      },
       "announcements": {
         "label": "Show announcements",
         "desc": "Show announcements when creating a new session"

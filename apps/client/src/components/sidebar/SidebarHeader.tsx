@@ -1,13 +1,17 @@
 import './SidebarHeader.scss'
 
 import { Button, Tooltip } from 'antd'
+import { useAtomValue } from 'jotai'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SidebarListHeader } from '#~/components/sidebar-list/SidebarListHeader'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
+import { sessionListSearchThresholdAtom } from '#~/store/index'
+
 import { SidebarHeaderSearchActions } from './SidebarHeaderSearchActions'
+import { shouldShowSidebarSearchRow } from './sidebar-search-visibility'
 
 interface SidebarHeaderProps {
   adapterFilters: string[]
@@ -21,6 +25,7 @@ interface SidebarHeaderProps {
   isSidebarCollapsed: boolean
   searchQuery: string
   selectedCount: number
+  sessionCount: number
   sortOrder: SidebarSessionSortOrder
   sortSelection?: SidebarSessionSortOrder
   shortcutLabel: string
@@ -52,6 +57,7 @@ export function SidebarHeader({
   isSidebarCollapsed,
   searchQuery,
   selectedCount,
+  sessionCount,
   sortOrder,
   sortSelection,
   shortcutLabel,
@@ -72,8 +78,16 @@ export function SidebarHeader({
 }: SidebarHeaderProps) {
   const { t } = useTranslation()
   const { isTouchInteraction } = useResponsiveLayout()
+  const sessionListSearchThreshold = useAtomValue(sessionListSearchThresholdAtom)
   const [isSearchActionsOpen, setIsSearchActionsOpen] = useState(false)
   const shouldShowSearchActions = !isSidebarCollapsed && (isSearchActionsOpen || isBatchMode)
+  const shouldShowSearchRow = !isSidebarCollapsed && shouldShowSidebarSearchRow({
+    hasActiveSearchControls,
+    isBatchMode,
+    isSearchActionsOpen,
+    sessionCount,
+    threshold: sessionListSearchThreshold
+  })
 
   const primaryAction = !isSidebarCollapsed
     ? (
@@ -141,6 +155,35 @@ export function SidebarHeader({
     </Tooltip>
   )
 
+  const headerContent = shouldShowSearchRow
+    ? (
+      <SidebarHeaderSearchActions
+        adapterFilters={adapterFilters}
+        availableAdapters={availableAdapters}
+        availableTags={availableTags}
+        hasActiveSearchControls={hasActiveSearchControls}
+        isBatchMode={isBatchMode}
+        searchQuery={searchQuery}
+        selectedCount={selectedCount}
+        shouldShowSearchActions={shouldShowSearchActions}
+        sortOrder={sortOrder}
+        sortSelection={sortSelection}
+        tagFilters={tagFilters}
+        totalCount={totalCount}
+        onBatchArchive={onBatchArchive}
+        onBatchDelete={onBatchDelete}
+        onBatchStar={onBatchStar}
+        onAdapterFilterChange={onAdapterFilterChange}
+        onSearchChange={onSearchChange}
+        onSortOrderChange={onSortOrderChange}
+        onSelectAll={onSelectAll}
+        onTagFilterChange={onTagFilterChange}
+        onToggleBatchMode={onToggleBatchMode}
+        onToggleSearchActions={() => setIsSearchActionsOpen((prev) => !prev)}
+      />
+    )
+    : null
+
   return (
     <SidebarListHeader
       className='sidebar-header'
@@ -149,32 +192,7 @@ export function SidebarHeader({
       primaryAction={primaryAction}
       sideAction={sideAction}
     >
-      {!isSidebarCollapsed && (
-        <SidebarHeaderSearchActions
-          adapterFilters={adapterFilters}
-          availableAdapters={availableAdapters}
-          availableTags={availableTags}
-          hasActiveSearchControls={hasActiveSearchControls}
-          isBatchMode={isBatchMode}
-          searchQuery={searchQuery}
-          selectedCount={selectedCount}
-          shouldShowSearchActions={shouldShowSearchActions}
-          sortOrder={sortOrder}
-          sortSelection={sortSelection}
-          tagFilters={tagFilters}
-          totalCount={totalCount}
-          onBatchArchive={onBatchArchive}
-          onBatchDelete={onBatchDelete}
-          onBatchStar={onBatchStar}
-          onAdapterFilterChange={onAdapterFilterChange}
-          onSearchChange={onSearchChange}
-          onSortOrderChange={onSortOrderChange}
-          onSelectAll={onSelectAll}
-          onTagFilterChange={onTagFilterChange}
-          onToggleBatchMode={onToggleBatchMode}
-          onToggleSearchActions={() => setIsSearchActionsOpen((prev) => !prev)}
-        />
-      )}
+      {headerContent}
     </SidebarListHeader>
   )
 }

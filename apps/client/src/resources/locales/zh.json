@@ -1956,6 +1956,10 @@
         "expanded": "默认展开",
         "collapsed": "默认折叠"
       },
+      "sessionListSearchThreshold": {
+        "label": "会话列表搜索展示阈值",
+        "desc": "只有会话数量超过该值时才展示搜索和筛选区域，0 表示始终展示"
+      },
       "announcements": {
         "label": "显示公告",
         "desc": "新建会话时展示公告信息"
