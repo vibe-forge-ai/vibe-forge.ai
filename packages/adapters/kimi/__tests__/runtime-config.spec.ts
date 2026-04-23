@@ -14,6 +14,7 @@ import {
   buildKimiCliInstallArgs,
   buildKimiCliInstallEnv,
   buildKimiCliInstallInstructions,
+  ensureKimiCli,
   initKimiAdapter,
   resolveKimiCliInstallOptions
 } from '../src/runtime/init'
@@ -277,6 +278,57 @@ describe('kimi runtime helpers', () => {
       await cleanup()
     }
   })
+
+  it.skipIf(process.platform === 'win32')(
+    'prefers an auto-installed managed Kimi CLI over PATH by default',
+    async () => {
+      const { ctx, cleanup } = await createCtx()
+      try {
+        const fakeBinDir = join(ctx.cwd, 'fake-bin')
+        const fakePathBinary = join(fakeBinDir, 'kimi')
+        const fakeUvPath = join(ctx.cwd, 'uv')
+
+        await mkdir(fakeBinDir, { recursive: true })
+        await writeFile(fakePathBinary, '#!/bin/sh\necho kimi system\n')
+        await writeFile(
+          fakeUvPath,
+          `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "uv 0.1.0"
+  exit 0
+fi
+
+if [ "$1" = "tool" ] && [ "$2" = "install" ]; then
+  mkdir -p "$UV_TOOL_BIN_DIR"
+  tool="$UV_TOOL_BIN_DIR/kimi"
+  {
+    printf '%s\\n' '#!/bin/sh'
+    printf '%s\\n' 'if [ "$1" = "--version" ]; then echo "kimi managed"; exit 0; fi'
+    printf '%s\\n' 'exit 42'
+  } > "$tool"
+  chmod +x "$tool"
+  exit 0
+fi
+
+exit 2
+`
+        )
+        await chmod(fakePathBinary, 0o755)
+        await chmod(fakeUvPath, 0o755)
+
+        ctx.env.PATH = `${fakeBinDir}${delimiter}${process.env.PATH ?? ''}`
+        ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_UV_PATH__ = fakeUvPath
+
+        const binaryPath = await ensureKimiCli(ctx)
+
+        expect(binaryPath).not.toBe('kimi')
+        expect(binaryPath).toContain('/.ai/caches/adapter-kimi/cli/bin/kimi')
+        expect(ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__).toBe(binaryPath)
+      } finally {
+        await cleanup()
+      }
+    }
+  )
 
   it('builds routed config for Kimi print sessions', async () => {
     const { ctx, cleanup } = await createCtx()

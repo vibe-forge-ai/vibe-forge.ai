@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -136,6 +136,118 @@ chmod +x "$tool"
       })
 
       expect(binaryPath.endsWith('/node_modules/.bin/tool')).toBe(true)
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('prefers the project managed install over a user PATH binary by default', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-managed-npm-cli-'))
+    const systemBinDir = join(workspace, 'system-bin')
+    const systemToolPath = join(systemBinDir, 'tool')
+    const npmPath = join(workspace, 'npm')
+    await writeFile(
+      npmPath,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "10.0.0"
+  exit 0
+fi
+
+prefix=""
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--prefix" ]; then
+    shift
+    prefix="$1"
+  fi
+  shift
+done
+
+if [ -z "$prefix" ]; then
+  exit 2
+fi
+
+mkdir -p "$prefix/node_modules/.bin"
+tool="$prefix/node_modules/.bin/tool"
+{
+  printf '%s\\n' '#!/bin/sh'
+  printf '%s\\n' 'if [ "$1" = "--version" ]; then echo "managed 1.0.0"; exit 0; fi'
+  printf '%s\\n' 'exit 42'
+} > "$tool"
+chmod +x "$tool"
+`
+    )
+    await mkdir(systemBinDir, { recursive: true })
+    await writeFile(
+      systemToolPath,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "system 0.1.0"
+  exit 0
+fi
+exit 42
+`
+    )
+    await chmod(npmPath, 0o755)
+    await chmod(systemToolPath, 0o755)
+
+    try {
+      const binaryPath = await ensureManagedNpmCli({
+        adapterKey: 'custom_tool',
+        binaryName: 'tool',
+        cwd: workspace,
+        defaultPackageName: '@example/tool',
+        defaultVersion: '1.0.0',
+        env: {
+          PATH: `${systemBinDir}:${process.env.PATH ?? ''}`,
+          __VF_PROJECT_AI_ADAPTER_CUSTOM_TOOL_NPM_PATH__: npmPath
+        },
+        logger: {
+          info: () => undefined
+        }
+      })
+
+      expect(binaryPath).not.toBe('tool')
+      expect(binaryPath).toContain('/.ai/caches/adapter-custom_tool/cli/npm/example-tool/1.0.0/')
+    } finally {
+      await rm(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it('uses the user PATH binary when source is explicitly system', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'vf-managed-npm-cli-'))
+    const systemBinDir = join(workspace, 'system-bin')
+    const systemToolPath = join(systemBinDir, 'tool')
+    await mkdir(systemBinDir, { recursive: true })
+    await writeFile(
+      systemToolPath,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "system 0.1.0"
+  exit 0
+fi
+exit 42
+`
+    )
+    await chmod(systemToolPath, 0o755)
+
+    try {
+      const binaryPath = await ensureManagedNpmCli({
+        adapterKey: 'custom_tool',
+        binaryName: 'tool',
+        cwd: workspace,
+        defaultPackageName: '@example/tool',
+        defaultVersion: '1.0.0',
+        env: {
+          PATH: `${systemBinDir}:${process.env.PATH ?? ''}`,
+          __VF_PROJECT_AI_ADAPTER_CUSTOM_TOOL_CLI_SOURCE__: 'system'
+        },
+        logger: {
+          info: () => undefined
+        }
+      })
+
+      expect(binaryPath).toBe('tool')
     } finally {
       await rm(workspace, { recursive: true, force: true })
     }

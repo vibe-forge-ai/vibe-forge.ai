@@ -156,6 +156,8 @@ export const ensureKimiCli = async (
     ...process.env,
     ...ctx.env
   })
+  const canUseManagedCli = installOptions.source !== 'system'
+  const canUseSystemCli = installOptions.source !== 'managed'
 
   if (installOptions.binaryPath != null) {
     if (await canRunKimiBinary(installOptions.binaryPath, probeEnv)) {
@@ -169,7 +171,7 @@ export const ensureKimiCli = async (
     throw new Error('Kimi CLI source is set to path, but no Kimi CLI path is configured.')
   }
 
-  if (installOptions.source !== 'system') {
+  if (canUseManagedCli) {
     const managedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
     if (managedBinaryPath != null && await canRunKimiBinary(managedBinaryPath, probeEnv)) {
       ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = managedBinaryPath
@@ -177,7 +179,42 @@ export const ensureKimiCli = async (
     }
   }
 
-  if (installOptions.source !== 'managed' && await canRunKimiBinary('kimi', probeEnv)) {
+  if (installOptions.source === 'system') {
+    if (await canRunKimiBinary('kimi', probeEnv)) {
+      ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = 'kimi'
+      return 'kimi'
+    }
+    throw new Error('Kimi CLI was not found on PATH.')
+  }
+
+  if (canUseManagedCli && installOptions.autoInstall && await canRunUvBinary(installOptions.uvPath, probeEnv)) {
+    await ensureManagedDirs(ctx)
+    const installEnv = buildKimiCliInstallEnv(ctx)
+    ctx.logger.info(`Installing Kimi CLI into ${resolveKimiManagedToolPaths(ctx.cwd, ctx.env).binDir}`)
+    await execFileAsync(
+      installOptions.uvPath,
+      buildKimiCliInstallArgs(installOptions),
+      {
+        cwd: ctx.cwd,
+        env: installEnv,
+        maxBuffer: 1024 * 1024 * 10
+      }
+    )
+
+    const installedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
+    if (installedBinaryPath == null || !await canRunKimiBinary(installedBinaryPath, installEnv)) {
+      throw new Error(
+        `Kimi CLI installation completed, but the managed kimi binary could not be executed.\n\n${
+          buildKimiCliInstallInstructions(ctx, installOptions)
+        }`
+      )
+    }
+
+    ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = installedBinaryPath
+    return installedBinaryPath
+  }
+
+  if (canUseSystemCli && await canRunKimiBinary('kimi', probeEnv)) {
     ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = 'kimi'
     return 'kimi'
   }
@@ -190,38 +227,11 @@ export const ensureKimiCli = async (
     )
   }
 
-  if (!await canRunUvBinary(installOptions.uvPath, probeEnv)) {
-    throw new Error(
-      `Kimi CLI was not found, and uv is required for automatic install.\n\n${
-        buildKimiCliInstallInstructions(ctx, installOptions)
-      }`
-    )
-  }
-
-  await ensureManagedDirs(ctx)
-  const installEnv = buildKimiCliInstallEnv(ctx)
-  ctx.logger.info(`Installing Kimi CLI into ${resolveKimiManagedToolPaths(ctx.cwd, ctx.env).binDir}`)
-  await execFileAsync(
-    installOptions.uvPath,
-    buildKimiCliInstallArgs(installOptions),
-    {
-      cwd: ctx.cwd,
-      env: installEnv,
-      maxBuffer: 1024 * 1024 * 10
-    }
+  throw new Error(
+    `Kimi CLI was not found, and uv is required for automatic install.\n\n${
+      buildKimiCliInstallInstructions(ctx, installOptions)
+    }`
   )
-
-  const installedBinaryPath = resolveKimiManagedBinaryPath(ctx.cwd, ctx.env)
-  if (installedBinaryPath == null || !await canRunKimiBinary(installedBinaryPath, installEnv)) {
-    throw new Error(
-      `Kimi CLI installation completed, but the managed kimi binary could not be executed.\n\n${
-        buildKimiCliInstallInstructions(ctx, installOptions)
-      }`
-    )
-  }
-
-  ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_CLI_PATH__ = installedBinaryPath
-  return installedBinaryPath
 }
 
 export const initKimiAdapter = async (ctx: AdapterCtx) => {

@@ -238,6 +238,8 @@ export const buildManagedNpmCliInstallInstructions = (params: {
 
 export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => {
   const installOptions = resolveManagedNpmCliInstallOptions(params)
+  const canUseProjectCli = installOptions.source !== 'system'
+  const canUseSystemCli = installOptions.source !== 'managed'
   const paths = resolveManagedNpmCliPaths({
     adapterKey: params.adapterKey,
     binaryName: params.binaryName,
@@ -265,19 +267,70 @@ export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => 
     return explicitPath
   }
 
+  if (installOptions.source === 'system' && await canRunBinary(params.binaryName, params.versionArgs, probeEnv)) {
+    return params.binaryName
+  }
+
   if (existsSync(paths.binaryPath) && await canRunBinary(paths.binaryPath, params.versionArgs, probeEnv)) {
     return toRealPath(paths.binaryPath)
   }
 
   if (
-    installOptions.source !== 'managed' && params.bundledPath != null &&
+    canUseProjectCli && params.bundledPath != null &&
     await canRunBinary(params.bundledPath, params.versionArgs, probeEnv)
   ) {
     return toRealPath(params.bundledPath)
   }
 
-  if (installOptions.source !== 'managed' && await canRunBinary(params.binaryName, params.versionArgs, probeEnv)) {
+  if (canUseProjectCli && installOptions.autoInstall && await canRunNpm(installOptions.npmPath, probeEnv)) {
+    await mkdir(paths.installDir, { recursive: true })
+    await mkdir(paths.cacheDir, { recursive: true })
+    const installEnv = buildManagedNpmCliInstallEnv({
+      cwd: params.cwd,
+      env: params.env,
+      paths
+    })
+    params.logger.info(`Installing ${params.binaryName} CLI into ${paths.installDir}`)
+    await execFileAsync(
+      installOptions.npmPath,
+      [
+        'install',
+        '--prefix',
+        paths.installDir,
+        '--no-save',
+        '--no-audit',
+        '--no-fund',
+        installOptions.packageSpec
+      ],
+      {
+        cwd: params.cwd,
+        env: installEnv,
+        maxBuffer: 1024 * 1024 * 10
+      }
+    )
+
+    if (!await canRunBinary(paths.binaryPath, params.versionArgs, installEnv)) {
+      throw new Error(
+        `${params.binaryName} CLI installation completed, but the managed binary could not be executed.\n\n${
+          buildManagedNpmCliInstallInstructions({
+            adapterKey: params.adapterKey,
+            binaryName: params.binaryName,
+            options: installOptions,
+            paths
+          })
+        }`
+      )
+    }
+
+    return toRealPath(paths.binaryPath)
+  }
+
+  if (canUseSystemCli && await canRunBinary(params.binaryName, params.versionArgs, probeEnv)) {
     return params.binaryName
+  }
+
+  if (installOptions.source === 'system') {
+    throw new Error(`${params.binaryName} CLI was not found on PATH.`)
   }
 
   if (!installOptions.autoInstall) {
@@ -293,57 +346,14 @@ export const ensureManagedNpmCli = async (params: EnsureManagedNpmCliParams) => 
     )
   }
 
-  if (!await canRunNpm(installOptions.npmPath, probeEnv)) {
-    throw new Error(
-      `${params.binaryName} CLI was not found, and npm is required for automatic install.\n\n${
-        buildManagedNpmCliInstallInstructions({
-          adapterKey: params.adapterKey,
-          binaryName: params.binaryName,
-          options: installOptions,
-          paths
-        })
-      }`
-    )
-  }
-
-  await mkdir(paths.installDir, { recursive: true })
-  await mkdir(paths.cacheDir, { recursive: true })
-  const installEnv = buildManagedNpmCliInstallEnv({
-    cwd: params.cwd,
-    env: params.env,
-    paths
-  })
-  params.logger.info(`Installing ${params.binaryName} CLI into ${paths.installDir}`)
-  await execFileAsync(
-    installOptions.npmPath,
-    [
-      'install',
-      '--prefix',
-      paths.installDir,
-      '--no-save',
-      '--no-audit',
-      '--no-fund',
-      installOptions.packageSpec
-    ],
-    {
-      cwd: params.cwd,
-      env: installEnv,
-      maxBuffer: 1024 * 1024 * 10
-    }
+  throw new Error(
+    `${params.binaryName} CLI was not found, and npm is required for automatic install.\n\n${
+      buildManagedNpmCliInstallInstructions({
+        adapterKey: params.adapterKey,
+        binaryName: params.binaryName,
+        options: installOptions,
+        paths
+      })
+    }`
   )
-
-  if (!await canRunBinary(paths.binaryPath, params.versionArgs, installEnv)) {
-    throw new Error(
-      `${params.binaryName} CLI installation completed, but the managed binary could not be executed.\n\n${
-        buildManagedNpmCliInstallInstructions({
-          adapterKey: params.adapterKey,
-          binaryName: params.binaryName,
-          options: installOptions,
-          paths
-        })
-      }`
-    )
-  }
-
-  return toRealPath(paths.binaryPath)
 }
