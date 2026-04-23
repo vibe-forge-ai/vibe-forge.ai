@@ -92,6 +92,13 @@ export interface SkillsCliConfig {
   env?: Record<string, string>
 }
 
+export interface SkillRegistryConfig {
+  enabled?: boolean
+  url?: string
+  searchUrl?: string
+  downloadUrl?: string
+}
+
 export interface SkillHomeBridgeConfig {
   enabled?: boolean
   roots?: string | string[]
@@ -107,10 +114,16 @@ export interface ConfiguredSkillInstallConfig {
 
 export interface LegacySkillsConfig {
   install?: Array<string | ConfiguredSkillInstallConfig>
+  registry?: string | SkillRegistryConfig
   homeBridge?: SkillHomeBridgeConfig
 }
 
-export type SkillsConfig = Array<string | ConfiguredSkillInstallConfig> | LegacySkillsConfig
+export interface ArraySkillsConfig extends Array<string | ConfiguredSkillInstallConfig> {
+  registry?: string | SkillRegistryConfig
+  homeBridge?: SkillHomeBridgeConfig
+}
+
+export type SkillsConfig = ArraySkillsConfig | LegacySkillsConfig
 
 export interface WorkspaceConfigEntry {
   enabled?: boolean

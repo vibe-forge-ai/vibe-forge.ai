@@ -212,6 +212,13 @@ export const webAuthConfigSchema = z.object({
   rememberDeviceTtlDays: z.number().positive().optional().describe('Remember-device token lifetime in days')
 })
 
+export const skillRegistryConfigSchema = z.object({
+  enabled: z.boolean().optional().describe('Enable remote skill registry resolution'),
+  url: z.string().optional().describe('Base URL for remote skill registry search and download'),
+  searchUrl: z.string().optional().describe('Remote skill registry search endpoint'),
+  downloadUrl: z.string().optional().describe('Remote skill registry download endpoint')
+})
+
 export const skillHomeBridgeConfigSchema = z.object({
   enabled: z.boolean().optional().describe('Bridge supported home skill roots into workspace asset discovery'),
   roots: z.union([z.string(), z.array(z.string())]).optional()
@@ -232,6 +239,7 @@ export const configuredSkillInstallConfigSchema = z.union([
 export const legacySkillsConfigSchema = z.object({
   install: z.array(configuredSkillInstallConfigSchema).optional()
     .describe('Project skills that should be ensured before session startup'),
+  registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings'),
   homeBridge: skillHomeBridgeConfigSchema.optional().describe('Home skill auto-bridge settings')
 })
 

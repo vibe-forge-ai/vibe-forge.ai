@@ -193,16 +193,23 @@
 
 @media (max-width: 720px) {
   .sender-session-target__controls {
-    align-items: flex-start;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
   }
 
   .sender-session-target__actions {
     margin-left: 0;
-    align-self: flex-end;
+    justify-self: end;
+    max-width: 100%;
   }
 
   .sender-session-target__trigger {
     max-width: 100%;
+  }
+
+  .sender-session-target__trigger-copy {
+    gap: 6px;
   }
 }

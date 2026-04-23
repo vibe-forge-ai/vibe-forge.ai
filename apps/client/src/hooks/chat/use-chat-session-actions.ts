@@ -20,6 +20,7 @@ import {
   updateQueuedMessage
 } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
+import { useSenderHeaderQueryState } from '#~/hooks/use-sender-header-query-state.js'
 
 import { getChatSessionTargetPrompt } from './chat-session-target'
 import type { ChatSessionTargetDraft } from './chat-session-target'
@@ -70,6 +71,7 @@ export function useChatSessionActions({
   const navigate = useNavigate()
   const location = useLocation()
   const { mutate } = useSWRConfig()
+  const { setHeaderCollapsed } = useSenderHeaderQueryState()
   const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
   const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
   const [isCreating, setIsCreating] = useState(false)
@@ -78,12 +80,31 @@ export function useChatSessionActions({
     ? undefined
     : optimisticCreations[session.id]
 
-  const navigateWithCurrentSearch = useCallback((pathname: string) => {
+  const navigateWithSearchPatch = useCallback((
+    pathname: string,
+    patch?: Record<string, string>
+  ) => {
+    const nextParams = new URLSearchParams(location.search)
+
+    if (patch != null) {
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === '') {
+          nextParams.delete(key)
+        } else {
+          nextParams.set(key, value)
+        }
+      }
+    }
+
     void navigate({
       pathname,
-      search: location.search
+      search: nextParams.toString() === '' ? '' : `?${nextParams.toString()}`
     })
   }, [location.search, navigate])
+
+  const navigateWithCurrentSearch = useCallback((pathname: string) => {
+    navigateWithSearchPatch(pathname)
+  }, [navigateWithSearchPatch])
 
   const insertSessionIntoCache = useCallback(async (newSession: Session) => {
     await mutate('/api/sessions', (prev: { sessions: Session[] } | undefined) => {
@@ -166,8 +187,14 @@ export function useChatSessionActions({
     await insertSessionIntoCache(newSession)
     removeOptimisticCreation(newSession.id)
     clearOptimisticSessionDiscarded(newSession.id)
+    setHeaderCollapsed(true)
     return true
-  }, [insertSessionIntoCache, removeOptimisticCreation, removeSessionFromCache])
+  }, [
+    insertSessionIntoCache,
+    removeOptimisticCreation,
+    removeSessionFromCache,
+    setHeaderCollapsed
+  ])
 
   const buildCreateSessionOptions = useCallback((id: string): OptimisticSessionCreationOptions => {
     const targetPrompt = getChatSessionTargetPrompt(sessionTargetDraft)
@@ -244,9 +271,11 @@ export function useChatSessionActions({
       [creation.session.id]: creation
     }))
     void insertSessionIntoCache(creation.session)
-    navigateWithCurrentSearch(`/session/${creation.session.id}`)
+    navigateWithSearchPatch(`/session/${creation.session.id}`, {
+      senderHeader: 'collapsed'
+    })
     void runSessionCreationRequest(request)
-  }, [insertSessionIntoCache, navigateWithCurrentSearch, runSessionCreationRequest, setOptimisticCreations])
+  }, [insertSessionIntoCache, navigateWithSearchPatch, runSessionCreationRequest, setOptimisticCreations])
 
   const retrySessionCreation = useCallback(async () => {
     if (optimisticCreation == null) {

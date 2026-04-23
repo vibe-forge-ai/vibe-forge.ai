@@ -39,13 +39,17 @@ export function SenderSessionTargetBar({
   locked,
   disabled,
   onChange,
-  actions
+  actions,
+  className,
+  ariaHidden
 }: {
   draft: ChatSessionTargetDraft
   locked: boolean
   disabled?: boolean
   onChange: (target: ChatSessionTargetDraft) => void
   actions?: ReactNode
+  className?: string
+  ariaHidden?: boolean
 }) {
   const { t } = useTranslation()
   const { data: specsRes } = useSWR<{ specs: SpecSummary[] }>('/api/ai/specs')
@@ -129,7 +133,10 @@ export function SenderSessionTargetBar({
   }
 
   return (
-    <div className={`sender-session-target ${locked ? 'is-locked' : ''}`}>
+    <div
+      className={['sender-session-target', locked ? 'is-locked' : '', className ?? ''].filter(Boolean).join(' ')}
+      aria-hidden={ariaHidden}
+    >
       <div className='sender-session-target__controls'>
         <Dropdown
           menu={{
