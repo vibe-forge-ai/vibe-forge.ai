@@ -62,6 +62,9 @@ describe('server mdp skill content', () => {
     expect(buildServerSessionsSkillContent()).toContain('"adapter": "codex"')
     expect(buildServerSessionsSkillContent()).toContain('include `entryContext`')
     expect(buildServerSessionsSkillContent()).toContain('linked under that current session automatically')
+    expect(buildServerSessionsSkillContent()).toContain('`POST /sessions/:session_id/model`')
+    expect(buildServerSessionsSkillContent()).toContain('switch one existing session to another model for the next turn')
+    expect(buildServerSessionsSkillContent()).toContain('use `POST /sessions/:session_id/update` only for metadata')
 
     expect(buildServerWorkspaceSkillContent()).toContain('Examples:')
     expect(buildServerWorkspaceSkillContent()).toContain('update one workspace file after editing content')

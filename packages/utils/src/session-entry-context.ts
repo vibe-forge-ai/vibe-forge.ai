@@ -90,6 +90,7 @@ const appendMdpUsageRuleLines = (
       '- Do not use ChromeDevtools first for routine Vibe Forge navigation, layout, session, panel, config, or channel actions when equivalent MDP paths exist.',
       '- The preferred browser MDP client is only for browser-owned UI actions such as route changes, layout state, active session view changes, and attached panels.',
       '- If the user task is about creating sessions, sending messages, branching history, managing queued messages, editing workspace files, or other backend state, switch to the `Vibe Forge Server` MDP client and use its scoped paths instead of exploring the browser client.',
+      '- If the task is to switch the model of an existing session, prefer `POST /sessions/:session_id/model` on the `Vibe Forge Server` client. That path updates the persisted model for the next turn; do not expect the current running turn to switch in place. Do not use `POST /sessions/:session_id/update` for model changes, and do not fall back to channel `/set model` unless the server path is unavailable.',
       '- Do not fall back to Bash, curl, or ad-hoc HTTP probing for Vibe Forge backend operations until you have first checked the `Vibe Forge Server` MDP client for an existing path.'
     )
   }

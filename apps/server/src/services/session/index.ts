@@ -92,6 +92,23 @@ const isNonEmptyString = (value: unknown): value is string => typeof value === '
 const uniqueStrings = (values: string[]) => [...new Set(values)]
 const normalizeString = (value: unknown) => typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 
+const sessionRuntimeConfigMatchesPersistedSession = (
+  session: Session | undefined,
+  runtime: AdapterSessionRuntime | undefined
+) => {
+  if (session == null || runtime?.config == null) {
+    return true
+  }
+
+  return runtime.config.model === session.model &&
+    runtime.config.adapter === session.adapter &&
+    runtime.config.account === session.account &&
+    runtime.config.effort === session.effort &&
+    runtime.config.permissionMode === session.permissionMode &&
+    runtime.config.promptType === session.promptType &&
+    runtime.config.promptName === session.promptName
+}
+
 const createTransientAdapterCache = (): AdapterCtx['cache'] => {
   const store = new Map<string, unknown>()
 
@@ -407,7 +424,7 @@ export async function startAdapterSession(
     return inFlight
   }
 
-  const startPromise = (async () => {
+	    const startPromise = (async () => {
     const db = getDb()
     const historyMessages = db.getMessages(sessionId) as WSEvent[]
     const hasHistory = historyMessages.length > 0
@@ -526,7 +543,7 @@ export async function startAdapterSession(
     if (options.entryContext != null) {
       connectionState.entryContext = options.entryContext
     }
-    const entryContext = options.entryContext ?? connectionState.entryContext
+	      const entryContext = options.entryContext ?? connectionState.entryContext
     const runId = uuidv4()
     activeAdapterRunStore.set(sessionId, runId)
 
@@ -582,7 +599,7 @@ export async function startAdapterSession(
         languagePrompt
       ].filter(Boolean).join('\n\n')
       let sawFatalError = false
-      let runtimeMcpServers: AdapterQueryOptions['runtimeMcpServers']
+	      let runtimeMcpServers: AdapterQueryOptions['runtimeMcpServers']
 
       try {
         const resolvedChannelMcpServers = await resolveChannelSessionMcpServers(sessionId)
@@ -945,46 +962,45 @@ export async function startAdapterSession(
                 message: event.data.message
               })
               break
-            case 'exit': {
-              const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
-              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
-                parkAdapterSessionRuntime(sessionId)
-                if (activeAdapterRunStore.get(sessionId) === runId) {
-                  activeAdapterRunStore.delete(sessionId)
+	            case 'exit': {
+	              const { exitCode, stderr } = event.data as { exitCode: number; stderr: string }
+	              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+	                parkAdapterSessionRuntime(sessionId)
+	                if (activeAdapterRunStore.get(sessionId) === runId) {
+	                  activeAdapterRunStore.delete(sessionId)
                 }
                 break
               }
 
-              recentPermissionToolUseStore.delete(sessionId)
+	              recentPermissionToolUseStore.delete(sessionId)
+	              updateAndNotifySession(sessionId, {
+	                status: exitCode === 0 ? 'completed' : 'failed'
+	              })
+	              if (exitCode === 0) {
+	                maybeDispatchQueuedTurn(sessionId, async (content) => {
+	                  await processUserMessage(sessionId, content)
+	                })
+	              }
+	              if (exitCode !== 0 && !sawFatalError) {
+	                emitRuntimeEvent(connectionState, {
+	                  type: 'error',
+	                  data: {
+	                    message: stderr !== ''
+	                      ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+	                      : `Process exited with code ${exitCode}`,
+	                    details: stderr !== '' ? { stderr } : undefined,
+	                    fatal: true
+	                  },
+	                  message: stderr !== ''
+	                    ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
+	                    : `Process exited with code ${exitCode}`
+	                }, { recordMessage: false })
+	              }
 
-              updateAndNotifySession(sessionId, {
-                status: exitCode === 0 ? 'completed' : 'failed'
-              })
-              if (exitCode === 0) {
-                maybeDispatchQueuedTurn(sessionId, async (content) => {
-                  await processUserMessage(sessionId, content)
-                })
-              }
-              if (exitCode !== 0 && !sawFatalError) {
-                emitRuntimeEvent(connectionState, {
-                  type: 'error',
-                  data: {
-                    message: stderr !== ''
-                      ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
-                      : `Process exited with code ${exitCode}`,
-                    details: stderr !== '' ? { stderr } : undefined,
-                    fatal: true
-                  },
-                  message: stderr !== ''
-                    ? `Process exited with code ${exitCode}, stderr:\n${stderr}`
-                    : `Process exited with code ${exitCode}`
-                }, { recordMessage: false })
-              }
-
-              deleteAdapterSessionRuntime(sessionId)
-              if (activeAdapterRunStore.get(sessionId) === runId) {
-                activeAdapterRunStore.delete(sessionId)
-              }
+	              deleteAdapterSessionRuntime(sessionId)
+	              if (activeAdapterRunStore.get(sessionId) === runId) {
+	                activeAdapterRunStore.delete(sessionId)
+	              }
               break
             }
             case 'summary': {
@@ -999,19 +1015,20 @@ export async function startAdapterSession(
               })
               break
             }
-            case 'stop': {
-              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
-                break
-              }
-              const latestSession = getDb().getSession(sessionId)
-              if (latestSession?.status !== 'failed') {
+	            case 'stop': {
+	              if (pendingPermissionRecoveryStore.get(sessionId)?.runId === runId) {
+	                break
+	              }
+	              const latestSession = getDb().getSession(sessionId)
+	              if (latestSession?.status !== 'failed') {
                 updateAndNotifySession(sessionId, { status: 'completed' })
                 maybeDispatchQueuedTurn(sessionId, async (content) => {
-                  await processUserMessage(sessionId, content)
-                })
-              }
-              break
-            }
+	                  await processUserMessage(sessionId, content)
+	                })
+	              }
+
+	              break
+	            }
           }
         }
       })
@@ -1141,7 +1158,20 @@ export async function processUserMessage(
   }
 
   let runtime = getAdapterSessionRuntime(sessionId)
-  if (runtime == null) {
+  if (runtime != null && !sessionRuntimeConfigMatchesPersistedSession(currentSessionData ?? undefined, runtime)) {
+    serverLogger.info({
+      sessionId,
+      persistedModel: currentSessionData?.model,
+      runtimeModel: runtime.config?.model,
+      persistedAdapter: currentSessionData?.adapter,
+      runtimeAdapter: runtime.config?.adapter,
+      persistedAccount: currentSessionData?.account,
+      runtimeAccount: runtime.config?.account
+    }, '[server] Restarting adapter before next user turn because persisted session config changed')
+    runtime = await startAdapterSession(sessionId, {
+      entryContext: options.entryContext
+    })
+  } else if (runtime == null) {
     serverLogger.info({ sessionId }, '[server] Adapter runtime missing for user message, starting a new process')
     runtime = await startAdapterSession(sessionId, {
       entryContext: options.entryContext

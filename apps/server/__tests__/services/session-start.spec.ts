@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDb } from '#~/db/index.js'
-import { processUserMessage, resetSessionServiceState, startAdapterSession } from '#~/services/session/index.js'
+import {
+  processUserMessage,
+  resetSessionServiceState,
+  startAdapterSession
+} from '#~/services/session/index.js'
 import {
   adapterSessionStore,
   createSessionConnectionState,
@@ -498,6 +502,70 @@ describe('startAdapterSession', () => {
         adapter: 'claude-code'
       })
     )
+    expect(newKill).not.toHaveBeenCalled()
+  })
+
+  it('restarts the runtime on the next user turn after the persisted model changes', async () => {
+    const oldKill = vi.fn()
+    const oldEmit = vi.fn()
+    const newKill = vi.fn()
+    const newEmit = vi.fn()
+
+    getMessages.mockReturnValue([
+      {
+        type: 'message',
+        message: {
+          id: 'assistant-1',
+          role: 'assistant',
+          content: 'previous answer',
+          createdAt: Date.now()
+        }
+      }
+    ])
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: oldKill,
+          emit: oldEmit
+        }
+      }
+    })
+
+    await startAdapterSession('sess-1', {
+      model: 'gpt-4o',
+      adapter: 'codex',
+      permissionMode: 'default'
+    })
+
+    currentSession = {
+      ...currentSession,
+      model: 'gpt-5.3'
+    }
+
+    mocks.run.mockImplementationOnce(async () => {
+      return {
+        session: {
+          kill: newKill,
+          emit: newEmit
+        }
+      }
+    })
+
+    await processUserMessage('sess-1', 'hello after switch')
+
+    expect(oldKill).toHaveBeenCalledOnce()
+    expect(newEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{ type: 'text', text: 'hello after switch' }],
+      parentUuid: 'assistant-1'
+    })
+    expect(oldEmit).not.toHaveBeenCalledWith({
+      type: 'message',
+      content: [{ type: 'text', text: 'hello after switch' }],
+      parentUuid: 'assistant-1'
+    })
+    expect(currentSession.model).toBe('gpt-5.3')
     expect(newKill).not.toHaveBeenCalled()
   })
 

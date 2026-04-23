@@ -28,6 +28,7 @@ import type {
   EffortLevel,
   ChatMessage,
   ChatMessageContent,
+  Session,
   SessionQueuedMessageMode,
   SessionWorkspaceFileState,
   WSEvent
@@ -83,7 +84,12 @@ import { resolvePermissionDecision, resolvePermissionSubjectFromInput } from '#~
 import { createSessionWithInitialMessage } from '#~/services/session/create.js'
 import { applySessionEvent } from '#~/services/session/events.js'
 import { branchSessionFromMessage } from '#~/services/session/history.js'
-import { killSession, processUserMessage, updateAndNotifySession } from '#~/services/session/index.js'
+import {
+  killSession,
+  processUserMessage,
+  startAdapterSession,
+  updateAndNotifySession
+} from '#~/services/session/index.js'
 import {
   bindChannelSessionTarget,
   executeChannelCommand,
@@ -107,7 +113,10 @@ import {
   reorderSessionQueuedMessages,
   updateSessionQueuedMessage
 } from '#~/services/session/queue.js'
-import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
+import {
+  broadcastSessionEvent,
+  notifySessionUpdated
+} from '#~/services/session/runtime.js'
 import {
   createSessionManagedWorktree,
   deleteSessionWorkspace,
@@ -248,6 +257,95 @@ const asOptionalNumber = (value: unknown) => {
   }
   return undefined
 }
+
+const SESSION_UPDATE_DISALLOWED_RUNTIME_FIELDS = [
+  'model',
+  'adapter',
+  'account',
+  'permissionMode',
+  'effort'
+] as const
+
+export const getSessionUpdateDisallowedRuntimeFields = (payload: JsonObject) => (
+  SESSION_UPDATE_DISALLOWED_RUNTIME_FIELDS.filter((field) => field in payload)
+)
+
+export const parseSessionModelUpdatePayload = (value: unknown) => {
+  const payload = parseRequestBodyRecord(value)
+  const model = asString(payload?.model)
+  return model === '' ? undefined : { model }
+}
+
+type DeferredSessionRuntimeUpdateEffect = {
+  appliesToCurrentTurn: false
+  effectiveAt: 'next_turn' | 'already_persisted'
+  message: string
+}
+
+export const buildDeferredSessionRuntimeUpdateEffect = (params: {
+  noun: string
+  changed: boolean
+  hasActiveTurn?: boolean
+}): DeferredSessionRuntimeUpdateEffect => {
+  const noun = params.noun
+  const hasActiveTurn = params.hasActiveTurn === true
+  if (!params.changed) {
+    return {
+      appliesToCurrentTurn: false,
+      effectiveAt: 'already_persisted',
+      message: hasActiveTurn
+        ? `The requested ${noun} is already persisted for this session. The current running turn keeps using the existing runtime until it finishes.`
+        : `The requested ${noun} is already persisted for this session. It will be used when the next turn starts.`
+    }
+  }
+
+  return {
+    appliesToCurrentTurn: false,
+    effectiveAt: 'next_turn',
+    message: hasActiveTurn
+      ? `The persisted ${noun} was updated. This does not affect the current running turn. It takes effect after the current turn finishes, starting with the next turn.`
+      : `The persisted ${noun} was updated. It will be used when the next turn starts.`
+  }
+}
+
+export const buildSessionModelUpdateResult = (params: {
+  session: Session
+  previousModel: string | undefined
+  changed: boolean
+}) => {
+  const effect = buildDeferredSessionRuntimeUpdateEffect({
+    noun: 'model',
+    changed: params.changed,
+    hasActiveTurn: params.session.status === 'running'
+  })
+
+  return {
+    ok: true,
+    changed: params.changed,
+    previousModel: params.previousModel,
+    session: params.session,
+    appliesToCurrentTurn: effect.appliesToCurrentTurn,
+    effectiveAt: effect.effectiveAt,
+    message: effect.message,
+    runtimeUpdate: {
+      kind: 'model',
+      ...effect
+    }
+  }
+}
+
+export const buildSessionRuntimeUpdateRejectionDetails = (params: {
+  sessionId: string
+  disallowedFields: string[]
+  recommendedPath?: string
+}) => ({
+  sessionId: params.sessionId,
+  disallowedFields: params.disallowedFields,
+  recommendedPath: params.recommendedPath,
+  appliesToCurrentTurn: false,
+  effectiveAt: 'next_turn' as const,
+  message: 'Runtime-affecting session changes do not affect the current running turn. Persisted changes take effect after the current turn finishes, starting with the next turn.'
+})
 
 const ensureAutomationScheduler = () => {
   if (automationSchedulerReady) {
@@ -574,6 +672,7 @@ export const buildServerSessionsSkillContent = () => [
   '- `POST /sessions/create`',
   '- `GET /sessions/:session_id`',
   '- `GET /sessions/:session_id/messages`',
+  '- `POST /sessions/:session_id/model`',
   '- `POST /sessions/:session_id/update`',
   '- `POST /sessions/:session_id/delete`',
   '- `POST /sessions/:session_id/fork`',
@@ -588,6 +687,8 @@ export const buildServerSessionsSkillContent = () => [
   '- create a live Codex session and send the first user turn immediately -> `POST /sessions/create` with `{ "initialMessage": "hello", "adapter": "codex", "account": "<account-key>" }`',
   '- if the new session should inherit the current browser/CLI runtime context, also include `entryContext` in the same create payload',
   '- when `entryContext` points at an active browser or CLI session and `parentSessionId` is omitted, the new session is linked under that current session automatically',
+  '- switch one existing session to another model for the next turn -> `POST /sessions/:session_id/model` with `{ "model": "gpt-5.3" }`',
+  '- use `POST /sessions/:session_id/update` only for metadata such as title, star state, archive state, tags or workspace file state',
   '- branch from one assistant response -> `POST /sessions/:session_id/messages/:message_id/branch`',
   '- inspect queued follow-up work -> `GET /sessions/:session_id/queued-messages`'
 ].join('\n')
@@ -1268,6 +1369,22 @@ const createServerClientHandles = async (params: {
       }, ({ params: requestParams, body }) => {
         const sessionId = asString(requestParams.session_id)
         const payload = asRecord(body) ?? {}
+        const disallowedFields = getSessionUpdateDisallowedRuntimeFields(payload)
+
+        if (disallowedFields.length > 0) {
+          throw badRequest(
+            `Unsupported runtime fields for /sessions/:session_id/update: ${disallowedFields.join(', ')}. Use the dedicated session runtime paths instead.`,
+            buildSessionRuntimeUpdateRejectionDetails({
+              sessionId,
+              disallowedFields,
+              recommendedPath: disallowedFields.includes('model')
+                ? `/sessions/${sessionId}/model`
+                : undefined
+            }),
+            'mdp_session_update_runtime_field_not_supported'
+          )
+        }
+
         const title = typeof payload.title === 'string' ? payload.title : undefined
         const isStarred = typeof payload.isStarred === 'boolean' ? payload.isStarred : undefined
         const isArchived = typeof payload.isArchived === 'boolean' ? payload.isArchived : undefined
@@ -1299,6 +1416,44 @@ const createServerClientHandles = async (params: {
           ok: true,
           session: db.getSession(sessionId)
         }
+      })
+      client.expose('/sessions/:session_id/model', {
+        method: 'POST',
+        description: 'Update the persisted model for this session. The new model is applied on the next turn, not immediately.'
+      }, ({ params: requestParams, body }) => {
+        const sessionId = asString(requestParams.session_id)
+        const db = getDb()
+        const session = db.getSession(sessionId)
+        if (session == null) {
+          throw notFound('Session not found', { sessionId }, 'session_not_found')
+        }
+
+        const parsedPayload = parseSessionModelUpdatePayload(body)
+        if (parsedPayload == null) {
+          throw badRequest(
+            'model is required',
+            { sessionId },
+            'mdp_session_model_required'
+          )
+        }
+
+        const previousModel = session.model
+        if (previousModel === parsedPayload.model) {
+          return buildSessionModelUpdateResult({
+            session,
+            previousModel,
+            changed: false
+          })
+        }
+
+        updateAndNotifySession(sessionId, { model: parsedPayload.model })
+        const updatedSession = db.getSession(sessionId)
+
+        return buildSessionModelUpdateResult({
+          session: updatedSession ?? session,
+          previousModel,
+          changed: true
+        })
       })
       client.expose('/sessions/:session_id/delete', {
         method: 'POST',
