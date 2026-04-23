@@ -6,7 +6,7 @@ import process from 'node:process'
 
 import { resolveConfigState } from '@vibe-forge/config'
 import { NATIVE_HOOK_BRIDGE_ADAPTER_ENV } from '@vibe-forge/hooks'
-import type { AdapterCtx, AdapterQueryOptions, ModelServiceConfig } from '@vibe-forge/types'
+import type { AdapterCtx, AdapterQueryOptions, Config, ModelServiceConfig } from '@vibe-forge/types'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 
 import { resolveCodexBinaryPath } from '#~/paths.js'
@@ -14,6 +14,7 @@ import { CodexRpcError } from '#~/protocol/rpc.js'
 import type { CodexInputItem, CodexSandboxPolicy } from '#~/types.js'
 import { prepareCodexSessionHome } from './accounts'
 import { buildNativeConfigOverrideArgs, mergeCodexConfigOverrides, resolveCodexAdapterConfig } from './config'
+import { buildMcpServerPermissionSubjectKeys, resolveManagedPermissionDecision } from './permissions'
 import { CODEX_PROXY_META_HEADER_NAME, encodeCodexProxyMeta, ensureCodexProxyServer } from './proxy'
 
 export type CodexApprovalPolicy = 'never' | 'unlessTrusted' | 'onRequest'
@@ -392,16 +393,23 @@ function buildMcpConfigArgs(
       args: cmdArgs,
       env,
       url,
-      headers
+      headers,
+      enabled,
+      default_tools_approval_mode
     } = server as {
       command?: string
       args?: unknown[]
       env?: Record<string, string>
       url?: string
       headers?: Record<string, string>
+      enabled?: boolean
+      default_tools_approval_mode?: string
     }
     const prefix = `mcp_servers.${toTomlKey(name)}`
 
+    if (enabled === false) {
+      args.push('-c', `${prefix}.enabled=false`)
+    }
     if (typeof command === 'string') {
       args.push('-c', `${prefix}.command=${toToml(command)}`)
       if (Array.isArray(cmdArgs) && cmdArgs.length > 0) {
@@ -420,9 +428,45 @@ function buildMcpConfigArgs(
         args.push('-c', `${prefix}.http_headers=${toTomlInlineTable(headers)}`)
       }
     }
+    if (
+      default_tools_approval_mode === 'auto' ||
+      default_tools_approval_mode === 'prompt' ||
+      default_tools_approval_mode === 'approve'
+    ) {
+      args.push('-c', `${prefix}.default_tools_approval_mode=${toToml(default_tools_approval_mode)}`)
+    }
   }
   return args
 }
+
+const withManagedMcpServerApprovalModes = (
+  servers: Record<string, unknown>,
+  permissions: Config['permissions'] | undefined
+) =>
+  Object.fromEntries(
+    Object.entries(servers).map(([name, server]) => {
+      const decision = resolveManagedPermissionDecision({
+        permissions,
+        subjectKeys: buildMcpServerPermissionSubjectKeys(name)
+      })
+      if (decision === 'inherit') return [name, server]
+
+      const serverConfig = {
+        ...(server != null && typeof server === 'object' && !Array.isArray(server)
+          ? server as Record<string, unknown>
+          : {})
+      }
+      if (decision === 'allow') {
+        serverConfig.default_tools_approval_mode ??= 'approve'
+      } else if (decision === 'ask') {
+        serverConfig.default_tools_approval_mode ??= 'prompt'
+      } else if (decision === 'deny') {
+        serverConfig.enabled = false
+      }
+
+      return [name, serverConfig]
+    })
+  )
 
 /**
  * Build `--enable <name>` / `--disable <name>` args from a features map.
@@ -678,7 +722,10 @@ export async function resolveSessionBase(
     return nextServers
   })()
 
-  const mcpConfigArgs = buildMcpConfigArgs(filteredMcpServers, env)
+  const mcpConfigArgs = buildMcpConfigArgs(
+    withManagedMcpServerApprovalModes(filteredMcpServers, mergedConfig.permissions),
+    env
+  )
   configOverrideArgs.push(...mcpConfigArgs)
   configFingerprintArgs.push(...mcpConfigArgs)
 

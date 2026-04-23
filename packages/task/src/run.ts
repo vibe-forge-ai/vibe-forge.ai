@@ -14,9 +14,9 @@ import { loadAdapter } from '@vibe-forge/types'
 import { listServiceModels, resolveAdapterModelCompatibility, resolveEffectiveEffort } from '@vibe-forge/utils'
 import { buildAdapterAssetPlan } from '@vibe-forge/workspace-assets'
 
-import { prepare } from '#~/prepare.js'
-import { resolveQuerySelection } from '#~/query-selection.js'
-import type { RunTaskOptions } from '#~/type.js'
+import { prepare } from './prepare'
+import { resolveQuerySelection } from './query-selection'
+import type { RunTaskOptions } from './type'
 
 const pickFirstNonEmptyString = (values: unknown[]) => (
   values.find((value): value is string => typeof value === 'string' && value.trim() !== '')?.trim()

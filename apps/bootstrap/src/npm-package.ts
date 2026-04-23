@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { access, mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -29,13 +30,30 @@ const resolvePackageInstallDir = (cacheDir: string, packageName: string) => (
   path.join(cacheDir, 'node_modules', ...splitPackageName(packageName))
 )
 
-const resolvePackageManagerEnv = () => ({
-  ...process.env,
-  HOME: resolveRealHomeDir(),
-  USERPROFILE: resolveRealHomeDir(),
-  npm_config_cache: path.join(resolveBootstrapDataDir(), 'npm-cache'),
-  npm_config_update_notifier: 'false'
-})
+const resolveProjectNpmrc = () => {
+  const projectNpmrc = path.resolve(process.cwd(), '.npmrc')
+  return existsSync(projectNpmrc) ? projectNpmrc : undefined
+}
+
+export const resolvePackageManagerEnv = () => {
+  const userConfig = process.env.npm_config_userconfig ?? process.env.NPM_CONFIG_USERCONFIG ?? resolveProjectNpmrc()
+
+  return {
+    ...process.env,
+    HOME: resolveRealHomeDir(),
+    USERPROFILE: resolveRealHomeDir(),
+    npm_config_cache: path.join(resolveBootstrapDataDir(), 'npm-cache'),
+    npm_config_replace_registry_host: 'never',
+    npm_config_update_notifier: 'false',
+    NPM_CONFIG_REPLACE_REGISTRY_HOST: 'never',
+    ...(userConfig != null
+      ? {
+        NPM_CONFIG_USERCONFIG: userConfig,
+        npm_config_userconfig: userConfig
+      }
+      : {})
+  }
+}
 
 const isExistingPath = async (targetPath: string) => {
   try {

@@ -34,6 +34,7 @@ import type {
 } from '#~/types.js'
 
 import { resolveCodexAdapterConfig } from './config'
+import { resolveManagedPermissionDecisionForCtx } from './permissions'
 import {
   buildFeatureArgs,
   getErrorMessage,
@@ -470,6 +471,25 @@ export async function createStreamCodexSession(
       }
 
       if (isPermissionPrompt && supportsEmptyAcceptPayload) {
+        const managedDecision = resolveManagedPermissionDecisionForCtx({
+          ctx,
+          subjectKeys: subjectLookupKeys
+        })
+        if (managedDecision === 'allow') {
+          rpc.respond(
+            id,
+            {
+              action: 'accept',
+              content: {}
+            } satisfies McpServerElicitationResponse
+          )
+          return
+        }
+        if (managedDecision === 'deny') {
+          rpc.respond(id, { action: 'decline' } satisfies McpServerElicitationResponse)
+          return
+        }
+
         pendingApprovals.set(interactionId, {
           rpcId: id,
           kind: 'mcp-elicitation'

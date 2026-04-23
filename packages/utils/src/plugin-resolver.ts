@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
+import process from 'node:process'
 
 import type {
   PluginChildConfig,
@@ -20,6 +21,20 @@ const normalizeOptions = (value: unknown): Record<string, unknown> => (
 )
 
 const createWorkspaceRequire = (cwd: string) => createRequire(resolve(cwd, '__vibe_forge_plugin_loader__.cjs'))
+
+const normalizeRuntimePackageDir = (value: string | undefined) => {
+  const trimmed = value?.trim()
+  return trimmed != null && trimmed !== '' ? trimmed : undefined
+}
+
+const unique = <T>(values: T[]) => [...new Set(values)]
+
+const createPluginRequires = (cwd: string) =>
+  unique([
+    cwd,
+    normalizeRuntimePackageDir(process.env.__VF_PROJECT_PACKAGE_DIR__),
+    normalizeRuntimePackageDir(process.env.__VF_PROJECT_CLI_PACKAGE_DIR__)
+  ].filter((value): value is string => value != null)).map(createWorkspaceRequire)
 
 const isMissingPackageEntryError = (error: unknown) => {
   if (!isRecord(error)) return false
@@ -187,8 +202,9 @@ export const normalizePluginConfig = (
 }
 
 const resolveInstalledPackageRoot = (cwd: string, packageId: string) => {
-  const workspaceRequire = createWorkspaceRequire(cwd)
-  const lookupPaths = workspaceRequire.resolve.paths(packageId) ?? []
+  const lookupPaths = unique(
+    createPluginRequires(cwd).flatMap(pluginRequire => pluginRequire.resolve.paths(packageId) ?? [])
+  )
   const packageSegments = packageId.split('/')
 
   for (const lookupPath of lookupPaths) {
@@ -205,13 +221,15 @@ const resolveOptionalPackageEntryPath = (
   cwd: string,
   specifier: string
 ) => {
-  const workspaceRequire = createWorkspaceRequire(cwd)
-  try {
-    return workspaceRequire.resolve(specifier)
-  } catch (error) {
-    if (isMissingPackageEntryError(error)) return undefined
-    throw error
+  for (const pluginRequire of createPluginRequires(cwd)) {
+    try {
+      return pluginRequire.resolve(specifier)
+    } catch (error) {
+      if (isMissingPackageEntryError(error)) continue
+      throw error
+    }
   }
+  return undefined
 }
 
 const resolvePackageReference = (cwd: string, id: string): ResolvedPluginReference => {

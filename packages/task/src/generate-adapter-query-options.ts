@@ -4,8 +4,8 @@ import { buildConfigJsonVariables, loadConfigState, mergeConfigs } from '@vibe-f
 import type { AdapterQueryOptions, PluginConfig } from '@vibe-forge/types'
 import { resolvePromptAssetSelection, resolveWorkspaceAssetBundle } from '@vibe-forge/workspace-assets'
 
-import { resolveQuerySelection } from '#~/query-selection.js'
-import { resolveWorkspaceTaskTarget } from '#~/workspace-target.js'
+import { resolveQuerySelection } from './query-selection'
+import { resolveWorkspaceTaskTarget } from './workspace-target'
 
 export async function generateAdapterQueryOptions(
   type: 'spec' | 'entity' | 'workspace' | undefined,
