@@ -109,9 +109,15 @@ importers:
 
   apps/cli:
     dependencies:
+      '@vibe-forge/adapter-opencode':
+        specifier: 2.0.3-alpha.0
+        version: 2.0.3-alpha.0
       '@vibe-forge/app-runtime':
         specifier: workspace:*
         version: link:../../packages/app-runtime
+      '@vibe-forge/bootstrap':
+        specifier: 1.0.5-alpha.2
+        version: 1.0.5-alpha.2
       '@vibe-forge/cli-helper':
         specifier: workspace:^
         version: link:../../packages/cli-helper
@@ -122,7 +128,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/hooks
       '@vibe-forge/managed-plugins':
         specifier: workspace:^
@@ -133,12 +139,18 @@ importers:
       '@vibe-forge/register':
         specifier: workspace:^
         version: link:../../packages/register
+      '@vibe-forge/server':
+        specifier: 2.0.3-alpha.0
+        version: 2.0.3-alpha.0
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../../packages/types
       '@vibe-forge/utils':
         specifier: workspace:^
         version: link:../../packages/utils
+      '@vibe-forge/web':
+        specifier: 2.0.3-alpha.0
+        version: 2.0.3-alpha.0(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/node@24.12.2)(@types/react@18.3.27)(terser@5.46.1)(typescript@5.9.3)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -583,7 +595,7 @@ importers:
     dependencies:
       '@larksuiteoapi/node-sdk':
         specifier: latest
-        version: 1.60.0
+        version: 1.61.1
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.3
         version: 1.25.3(hono@4.11.4)(zod@3.25.76)
@@ -682,7 +694,7 @@ importers:
         specifier: workspace:^
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
     devDependencies:
       fast-glob:
@@ -710,7 +722,7 @@ importers:
         specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../hooks
       '@vibe-forge/register':
         specifier: workspace:^
@@ -777,7 +789,7 @@ importers:
         specifier: workspace:^2.0.2
         version: link:../config
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../hooks
       '@vibe-forge/managed-plugins':
         specifier: workspace:^
@@ -789,7 +801,7 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@vibe-forge/workspace-assets':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../workspace-assets
       zod:
         specifier: ^3.24.1
@@ -1669,8 +1681,8 @@ packages:
     engines: {node: '>= 12'}
     deprecated: Please upgrade to v15 or higher. All reported bugs in this version are fixed in newer releases, dependencies have been updated, and security has been improved.
 
-  '@larksuiteoapi/node-sdk@1.60.0':
-    resolution: {integrity: sha512-MS1eXx7K6HHIyIcCBkJLb21okoa8ZatUGQWZaCCUePm6a37RWFmT6ZKlKvHxAanSX26wNuNlwP0RhgscsE+T6g==, tarball: https://registry.npmjs.org/@larksuiteoapi/node-sdk/-/node-sdk-1.60.0.tgz}
+  '@larksuiteoapi/node-sdk@1.61.1':
+    resolution: {integrity: sha512-BxLBCXk/652I0nWduQbiIrTH2TPe/i4ZD6UhW3VCTVFzrOq5Y9SKvAwanBE6z1ZyEPL6iLnXg/TfGvGSzG6MLw==, tarball: https://registry.npmjs.org/@larksuiteoapi/node-sdk/-/node-sdk-1.61.1.tgz}
 
   '@malept/cross-spawn-promise@2.0.0':
     resolution: {integrity: sha512-1DpKU0Z5ThltBwjNySMC14g0CkbyhCaz9FkhxqNsZI6uAPJXFS8cMXlBKo26FJ8ZuW6S9GCMcR9IO5k2X5/9Fg==, tarball: https://registry.npmjs.org/@malept/cross-spawn-promise/-/cross-spawn-promise-2.0.0.tgz}
@@ -2415,6 +2427,112 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==, tarball: https://registry.npmjs.org/@ungap/structured-clone/-/structured-clone-1.3.0.tgz}
+
+  '@vibe-forge/adapter-claude-code@2.0.1':
+    resolution: {integrity: sha512-FZm1gl+Wm/oeGprvtx0lsTFPAfkA/RiBkegJdwS5rTM/qcsiZtYkTc1SiGpVpNhRGOaa7qarIWr5Q9m9EvJzGQ==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-claude-code/-/adapter-claude-code-2.0.1.tgz}
+
+  '@vibe-forge/adapter-codex@2.0.1':
+    resolution: {integrity: sha512-aD2RsLriU9YWhsmsk6P7VF8jXb9oxuGgPxqMXdGJ9HntCm+pZt/66+kw9G5bvpTjzbzsky4EXsZXgHc35I6gyQ==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-codex/-/adapter-codex-2.0.1.tgz}
+
+  '@vibe-forge/adapter-copilot@2.0.1':
+    resolution: {integrity: sha512-TfvQN7oSeYKYtLUnFtLw0lW5U8nwKP3deKe6xj2X1hYJSWYxFO6VmMIl/B2hLkuDopjVUaU/6g5UDnJ47KGICA==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-copilot/-/adapter-copilot-2.0.1.tgz}
+
+  '@vibe-forge/adapter-gemini@2.0.1':
+    resolution: {integrity: sha512-R5UpORVgvFcpRIPv6elaGaM/lIRmVgLyI+U9hndgur/AHHUrO18b7eRMj0w1XoDwfM1H0XR1oN6kq6Zfd8Aa7g==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-gemini/-/adapter-gemini-2.0.1.tgz}
+
+  '@vibe-forge/adapter-kimi@2.0.1':
+    resolution: {integrity: sha512-p58EABolwmmzPrkdt6OctjAg8lGi3y16YHRjhAg9WzCJXrfkkbReEFktOSnqyw2Cw/lUW2I9p3+dQlFmEyoHkw==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-kimi/-/adapter-kimi-2.0.1.tgz}
+
+  '@vibe-forge/adapter-opencode@2.0.2':
+    resolution: {integrity: sha512-5EE9sAxFlnIeW2Yvj81+Uq3vNgcANvAtgkl6vAAAx2mxkOM87JbjkHlAHFFcW4tQlD6FfRrejf+cbQCyM8GOuw==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-opencode/-/adapter-opencode-2.0.2.tgz}
+
+  '@vibe-forge/adapter-opencode@2.0.3-alpha.0':
+    resolution: {integrity: sha512-Vna6G5S02JMlO8jCuSk6mn35HdWcNFHDkGV4r52nUoj/HYdt6/orWmNs6d29kUUCxHK6wmrQNKy1jV6GJaxtew==, tarball: https://registry.npmjs.org/@vibe-forge/adapter-opencode/-/adapter-opencode-2.0.3-alpha.0.tgz}
+
+  '@vibe-forge/app-runtime@2.0.1':
+    resolution: {integrity: sha512-VfYb9OW44CS7ShPPOC/FGtCndpHLJCxupw1FCWTxUEEu/yT7vMt2aGuv1vvYQwJrLeFksL+UyM1TB0ZVPCtZBg==, tarball: https://registry.npmjs.org/@vibe-forge/app-runtime/-/app-runtime-2.0.1.tgz}
+
+  '@vibe-forge/benchmark@2.0.1':
+    resolution: {integrity: sha512-a4OS/l6UT8eUFAMQT21zm8GMI6iZ3S+aClBIla4yEQNI77/xJlIMQnPIAOU71T3VneOVV4ckyEjqeVTepK8JpQ==, tarball: https://registry.npmjs.org/@vibe-forge/benchmark/-/benchmark-2.0.1.tgz}
+
+  '@vibe-forge/bootstrap@1.0.5-alpha.2':
+    resolution: {integrity: sha512-RTsBhLK6xOm3LvmIHsYEogGunw/bmFtd1gSIVXYBjgpXKpi14KCW6QjmFL/dgoCDlCz/9YGQJQfsWKD6eOEpjw==, tarball: https://registry.npmjs.org/@vibe-forge/bootstrap/-/bootstrap-1.0.5-alpha.2.tgz}
+    hasBin: true
+
+  '@vibe-forge/channel-lark@2.0.1':
+    resolution: {integrity: sha512-VDuH8xjHSLyqhC6RxvHAtHYZqr2f+frviaYyFMnEvt+SrODwxZM0QlngmdvzTqVxhpI1pHJnvAAlw4qartSgog==, tarball: https://registry.npmjs.org/@vibe-forge/channel-lark/-/channel-lark-2.0.1.tgz}
+    hasBin: true
+
+  '@vibe-forge/cli-helper@2.0.1':
+    resolution: {integrity: sha512-+4O1mYBMlqt3V+tTRdIJw3mErDrPysy83X16TdHVW2joxIwxaiynE5VnM++drjECFFRQrbbE/J3keIthBFJnKA==, tarball: https://registry.npmjs.org/@vibe-forge/cli-helper/-/cli-helper-2.0.1.tgz}
+
+  '@vibe-forge/client@2.0.1':
+    resolution: {integrity: sha512-BE/CLKuv2l52NMXgkc/nLMlScBwmt+lOoJNb9zAPBfrK3jnGEkCeRHnGqnsg++Zr/8st/RuX1pUwP1ACOZDmrQ==, tarball: https://registry.npmjs.org/@vibe-forge/client/-/client-2.0.1.tgz}
+    hasBin: true
+
+  '@vibe-forge/config@2.0.4':
+    resolution: {integrity: sha512-i6hQqqABjkvTWeN1RieNLsuL3Jx8MO4TNe4OkMwCVdtW3Jw53gQqxgg4CPuIdDWGzvLXDc+sLSSwVE5SomzK3w==, tarball: https://registry.npmjs.org/@vibe-forge/config/-/config-2.0.4.tgz}
+
+  '@vibe-forge/core@2.0.2':
+    resolution: {integrity: sha512-OVFMLrg0rfkoH7BqeGyGvoAVnhD6xaJPzNSKWcPbnKJ5NSVdbKCGJ0xnUSPIbwD+pIAJuBFTOOH/3GvajBQjMg==, tarball: https://registry.npmjs.org/@vibe-forge/core/-/core-2.0.2.tgz}
+
+  '@vibe-forge/core@2.0.3':
+    resolution: {integrity: sha512-kIL4/2OgPy2qBhToycVExXnlBnYdcOmyvs9/5B0Xm/Rfou4ZubKjqPy1WA/F0F/e8jNYQ0cYlVONHqwFzf4k9w==, tarball: https://registry.npmjs.org/@vibe-forge/core/-/core-2.0.3.tgz}
+
+  '@vibe-forge/definition-core@2.0.1':
+    resolution: {integrity: sha512-vWOjMgJGzMBDGk4crlRq9OFs9RRFkuJ+KHz9sZ2F/ueBcd75gtm8KxJB0287hlx01P9msfxDvB/dW8ItQ1IeGA==, tarball: https://registry.npmjs.org/@vibe-forge/definition-core/-/definition-core-2.0.1.tgz}
+
+  '@vibe-forge/definition-loader@2.0.2':
+    resolution: {integrity: sha512-pQHeALiJ+YMQcfrqjEhdXzVzw1SrLf8PqAlzGz1CemSlPYcOV6lDhFpk2MJ00EDBdwyrLQd5ik2hp4B46eyUwA==, tarball: https://registry.npmjs.org/@vibe-forge/definition-loader/-/definition-loader-2.0.2.tgz}
+
+  '@vibe-forge/definition-loader@2.0.3-alpha.0':
+    resolution: {integrity: sha512-oyGKpZ5IClLCL1MZnYrdml7Pd4j03wc7BUMkicR7QL+3VFTVBbftgH4VzsOWVLnrCbJdPOauEwUdUeUQ1fhjcQ==, tarball: https://registry.npmjs.org/@vibe-forge/definition-loader/-/definition-loader-2.0.3-alpha.0.tgz}
+
+  '@vibe-forge/hooks@2.0.1':
+    resolution: {integrity: sha512-2hsivh8XZ0dtJPXHwoEQc6foollDXYH6jcO0k5wPJsev2DuPmM4LbgBbXDBMHk2mGsJY5mrDjVRwbyG/kqVabA==, tarball: https://registry.npmjs.org/@vibe-forge/hooks/-/hooks-2.0.1.tgz}
+    hasBin: true
+
+  '@vibe-forge/managed-plugins@2.0.1':
+    resolution: {integrity: sha512-tPcGeItOAsjtdNCGsO3vkfnPj8/h85u9iZdotSXB3gdA4caQw1LQXnZYxS8aoRlcJTn7FznaVNn5/40MEQtTkQ==, tarball: https://registry.npmjs.org/@vibe-forge/managed-plugins/-/managed-plugins-2.0.1.tgz}
+
+  '@vibe-forge/mcp@2.0.1':
+    resolution: {integrity: sha512-aNwGuthIvJPC3ONwxJVSMRuAm/sTHrStjLcjUss36yQ4FM9IiW0Q0yd3uXhR/09w/DXFCc3q5I2u/gjLHGmV3A==, tarball: https://registry.npmjs.org/@vibe-forge/mcp/-/mcp-2.0.1.tgz}
+    hasBin: true
+
+  '@vibe-forge/plugin-chrome-devtools@2.0.1':
+    resolution: {integrity: sha512-5nUO7EChIfuAk0G0ZFZZ0fPjNDsaVJ074ESJt23Tw+HSPb4eSUwnCvLZSNKgL/X/yZjOrAcyDkRs34ARfygwBw==, tarball: https://registry.npmjs.org/@vibe-forge/plugin-chrome-devtools/-/plugin-chrome-devtools-2.0.1.tgz}
+
+  '@vibe-forge/register@2.0.1':
+    resolution: {integrity: sha512-uD0HHYa5nuMP2cUauZPGHYPfnDkUdylim6A5H9auBKxzhQJ9Vemn0SSEZdZYsbFfoh7+rldUDr72unOUi9+cCA==, tarball: https://registry.npmjs.org/@vibe-forge/register/-/register-2.0.1.tgz}
+
+  '@vibe-forge/server@2.0.3-alpha.0':
+    resolution: {integrity: sha512-8V3aJn1N+vwhRhD7C6NgOPjPwzLl5WJt2c1x6VvvW4gMF9obbCX/ujBk+fagrrullhtse5Slsux5PkdFyLkFxQ==, tarball: https://registry.npmjs.org/@vibe-forge/server/-/server-2.0.3-alpha.0.tgz}
+    hasBin: true
+
+  '@vibe-forge/task@2.0.1':
+    resolution: {integrity: sha512-xDjT9cTxgTTsEbHfRIDp4Nk34pzLklzvWjfmLO7U/FY0lYUFWoq5zSxWJt97bRXJ58mbwXo6tCyeYZ+rZNOXBg==, tarball: https://registry.npmjs.org/@vibe-forge/task/-/task-2.0.1.tgz}
+
+  '@vibe-forge/types@2.0.1':
+    resolution: {integrity: sha512-G2ZmBwag9cRfArqfRoOAgFUEu+FHVkXxaet8pzvGSQ2kL/CHqjRi7wVXzdzK9HJ39/6MNEB3/FuL8b5qpBOazA==, tarball: https://registry.npmjs.org/@vibe-forge/types/-/types-2.0.1.tgz}
+
+  '@vibe-forge/types@2.0.2':
+    resolution: {integrity: sha512-VpgZBLxDtfxdTS1kkJqNS88JjF0RYDNHhwWrL1VZjO+Pn06j4gu8+/0mYAmTJn59IaoRq+QCHYW8b2vJwrfVOw==, tarball: https://registry.npmjs.org/@vibe-forge/types/-/types-2.0.2.tgz}
+
+  '@vibe-forge/utils@2.0.3':
+    resolution: {integrity: sha512-GfMK9aH2LV/zU8isM1lMDD0UV4n3afr12bi3sUUd4H80lStDcd1X/Rz8BpoUTd/jpulbVfEIVuEkHUcZi9OIAg==, tarball: https://registry.npmjs.org/@vibe-forge/utils/-/utils-2.0.3.tgz}
+
+  '@vibe-forge/utils@2.0.4-alpha.1':
+    resolution: {integrity: sha512-+HX7kuelWK+/XwEmkY21p3PWmhAhbS1XAwp5Uu7F4w2FpWFH80ZrSJukmRCy77y4O/xuSYXIgpL4fENmf5R43Q==, tarball: https://registry.npmjs.org/@vibe-forge/utils/-/utils-2.0.4-alpha.1.tgz}
+
+  '@vibe-forge/web@2.0.3-alpha.0':
+    resolution: {integrity: sha512-bHXq3DPoDgQOOLM/vme9q9AudbPFXNUXYucX+QOCgKop8aR3y6DqIhO/xal7+vpYX/ow4lmmJ2voREahpT7ppg==, tarball: https://registry.npmjs.org/@vibe-forge/web/-/web-2.0.3-alpha.0.tgz}
+    hasBin: true
+
+  '@vibe-forge/workspace-assets@2.0.3':
+    resolution: {integrity: sha512-xcY8Rzw9m6zFlQ4ppX24oOLSB0TokwKAUczfdF5lYQZZ9ceYma0BhX1AFFOsUcMXYjWaIVipJx+650s4KroZjw==, tarball: https://registry.npmjs.org/@vibe-forge/workspace-assets/-/workspace-assets-2.0.3.tgz}
+
+  '@vibe-forge/workspace-assets@2.0.4-alpha.1':
+    resolution: {integrity: sha512-0T28Pd5rq5WnBr0R7ZMZvCpecxk+cE7VJnMe6QnAhZB9JpSWzw5cUVBaK1Qm8qp5jwPxFGmUHONSXYkO/+D74Q==, tarball: https://registry.npmjs.org/@vibe-forge/workspace-assets/-/workspace-assets-2.0.4-alpha.1.tgz}
 
   '@vitejs/plugin-react@5.1.2':
     resolution: {integrity: sha512-EcA07pHJouywpzsoTUqNh5NwGayl2PPVEJKUSinGGSxFGYn+shYbqMGBg6FXDqgXum9Ou/ecb+411ssw8HImJQ==, tarball: https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-5.1.2.tgz}
@@ -7723,7 +7841,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@larksuiteoapi/node-sdk@1.60.0':
+  '@larksuiteoapi/node-sdk@1.61.1':
     dependencies:
       axios: 1.13.6
       lodash.identity: 3.0.0
@@ -8566,6 +8684,394 @@ snapshots:
       - supports-color
 
   '@ungap/structured-clone@1.3.0': {}
+
+  '@vibe-forge/adapter-claude-code@2.0.1':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/adapter-codex@2.0.1':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/adapter-copilot@2.0.1':
+    dependencies:
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+
+  '@vibe-forge/adapter-gemini@2.0.1':
+    dependencies:
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/adapter-kimi@2.0.1':
+    dependencies:
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/adapter-opencode@2.0.2':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/definition-loader': 2.0.2
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/adapter-opencode@2.0.3-alpha.0':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/definition-loader': 2.0.3-alpha.0
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.4-alpha.1
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/app-runtime@2.0.1':
+    dependencies:
+      '@vibe-forge/benchmark': 2.0.1
+      '@vibe-forge/mcp': 2.0.1
+      '@vibe-forge/task': 2.0.1
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - hono
+      - supports-color
+
+  '@vibe-forge/benchmark@2.0.1':
+    dependencies:
+      '@vibe-forge/task': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      fast-glob: 3.3.3
+      front-matter: 4.0.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/bootstrap@1.0.5-alpha.2':
+    dependencies:
+      '@clack/prompts': 0.11.0
+      '@vibe-forge/cli-helper': 2.0.1
+      commander: 12.1.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/channel-lark@2.0.1':
+    dependencies:
+      '@larksuiteoapi/node-sdk': 1.61.1
+      '@modelcontextprotocol/sdk': 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@vibe-forge/cli-helper': 2.0.1
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/types': 2.0.2
+      commander: 12.1.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - bufferutil
+      - debug
+      - hono
+      - supports-color
+      - utf-8-validate
+
+  '@vibe-forge/cli-helper@2.0.1':
+    dependencies:
+      '@vibe-forge/register': 2.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/client@2.0.1(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/node@24.12.2)(@types/react@18.3.27)(terser@5.46.1)(typescript@5.9.3)':
+    dependencies:
+      '@ant-design/icons': 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@monaco-editor/react': 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@vibe-forge/adapter-claude-code': 2.0.1
+      '@vibe-forge/adapter-codex': 2.0.1
+      '@vibe-forge/adapter-copilot': 2.0.1
+      '@vibe-forge/adapter-gemini': 2.0.1
+      '@vibe-forge/adapter-kimi': 2.0.1
+      '@vibe-forge/adapter-opencode': 2.0.2
+      '@vibe-forge/channel-lark': 2.0.1
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/plugin-chrome-devtools': 2.0.1
+      '@vibe-forge/register': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      '@vitejs/plugin-react': 5.1.2(vite@5.4.21(@types/node@24.12.2)(sass@1.97.2)(terser@5.46.1))
+      '@xterm/addon-fit': 0.11.0
+      '@xterm/xterm': 6.0.0
+      antd: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      dayjs: 1.11.19
+      devicon: 2.17.0
+      i18next: 25.7.4(typescript@5.9.3)
+      i18next-browser-languagedetector: 8.2.0
+      jotai: 2.16.2(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/react@18.3.27)(react@18.3.1)
+      mermaid: 10.9.5
+      monaco-editor: 0.55.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-i18next: 16.5.3(i18next@25.7.4(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      react-markdown: 10.1.0(@types/react@18.3.27)(react@18.3.1)
+      react-router-dom: 7.12.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      remark-gfm: 4.0.1
+      sass: 1.97.2
+      shiki: 3.21.0
+      swr: 2.3.8(react@18.3.1)
+      vite: 5.4.21(@types/node@24.12.2)(sass@1.97.2)(terser@5.46.1)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@babel/template'
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - date-fns
+      - debug
+      - hono
+      - less
+      - lightningcss
+      - luxon
+      - moment
+      - react-native
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+
+  '@vibe-forge/config@2.0.4':
+    dependencies:
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      js-yaml: 4.1.1
+      zod: 3.25.76
+
+  '@vibe-forge/core@2.0.2':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+
+  '@vibe-forge/core@2.0.3':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      zod: 3.25.76
+
+  '@vibe-forge/definition-core@2.0.1':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+
+  '@vibe-forge/definition-loader@2.0.2':
+    dependencies:
+      '@vibe-forge/definition-core': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      '@vibe-forge/workspace-assets': 2.0.3
+      fast-glob: 3.3.3
+      front-matter: 4.0.2
+
+  '@vibe-forge/definition-loader@2.0.3-alpha.0':
+    dependencies:
+      '@vibe-forge/definition-core': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.4-alpha.1
+      '@vibe-forge/workspace-assets': 2.0.4-alpha.1
+      fast-glob: 3.3.3
+      front-matter: 4.0.2
+
+  '@vibe-forge/hooks@2.0.1':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/register': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/managed-plugins@2.0.1':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+
+  '@vibe-forge/mcp@2.0.1':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.25.3(hono@4.11.4)(zod@3.25.76)
+      '@vibe-forge/cli-helper': 2.0.1
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/register': 2.0.1
+      '@vibe-forge/task': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      commander: 12.1.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - hono
+      - supports-color
+
+  '@vibe-forge/plugin-chrome-devtools@2.0.1':
+    dependencies:
+      '@vibe-forge/core': 2.0.2
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/types': 2.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/register@2.0.1':
+    dependencies:
+      dotenv: 16.6.1
+      esbuild: 0.27.2
+      esbuild-register: 3.6.0(esbuild@0.27.2)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/server@2.0.3-alpha.0':
+    dependencies:
+      '@koa/cors': 5.0.0
+      '@koa/router': 12.0.2
+      '@vibe-forge/adapter-claude-code': 2.0.1
+      '@vibe-forge/app-runtime': 2.0.1
+      '@vibe-forge/channel-lark': 2.0.1
+      '@vibe-forge/cli-helper': 2.0.1
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/core': 2.0.3
+      '@vibe-forge/definition-core': 2.0.1
+      '@vibe-forge/definition-loader': 2.0.3-alpha.0
+      '@vibe-forge/managed-plugins': 2.0.1
+      '@vibe-forge/register': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.4-alpha.1
+      commander: 12.1.0
+      cron-parser: 4.9.0
+      koa: 2.16.3
+      koa-bodyparser: 4.4.1
+      koa-send: 5.0.1
+      node-pty: 1.1.0
+      pino: 10.2.0
+      pino-pretty: 13.1.3
+      uuid: 9.0.1
+      ws: 8.19.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - bufferutil
+      - debug
+      - hono
+      - supports-color
+      - utf-8-validate
+
+  '@vibe-forge/task@2.0.1':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/hooks': 2.0.1
+      '@vibe-forge/managed-plugins': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      '@vibe-forge/workspace-assets': 2.0.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vibe-forge/types@2.0.1': {}
+
+  '@vibe-forge/types@2.0.2': {}
+
+  '@vibe-forge/utils@2.0.3':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+      node-notifier: 10.0.1
+      zod: 3.25.76
+
+  '@vibe-forge/utils@2.0.4-alpha.1':
+    dependencies:
+      '@vibe-forge/types': 2.0.2
+      node-notifier: 10.0.1
+      zod: 3.25.76
+
+  '@vibe-forge/web@2.0.3-alpha.0(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/node@24.12.2)(@types/react@18.3.27)(terser@5.46.1)(typescript@5.9.3)':
+    dependencies:
+      '@vibe-forge/cli-helper': 2.0.1
+      '@vibe-forge/client': 2.0.1(@babel/core@7.28.6)(@babel/template@7.28.6)(@types/node@24.12.2)(@types/react@18.3.27)(terser@5.46.1)(typescript@5.9.3)
+      '@vibe-forge/register': 2.0.1
+      '@vibe-forge/server': 2.0.3-alpha.0
+      commander: 12.1.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@babel/template'
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - date-fns
+      - debug
+      - hono
+      - less
+      - lightningcss
+      - luxon
+      - moment
+      - react-native
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+
+  '@vibe-forge/workspace-assets@2.0.3':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/definition-core': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.3
+      fast-glob: 3.3.3
+      front-matter: 4.0.2
+      js-yaml: 4.1.1
+
+  '@vibe-forge/workspace-assets@2.0.4-alpha.1':
+    dependencies:
+      '@vibe-forge/config': 2.0.4
+      '@vibe-forge/definition-core': 2.0.1
+      '@vibe-forge/types': 2.0.2
+      '@vibe-forge/utils': 2.0.4-alpha.1
+      fast-glob: 3.3.3
+      front-matter: 4.0.2
+      js-yaml: 4.1.1
 
   '@vitejs/plugin-react@5.1.2(vite@5.4.21(@types/node@24.12.2)(sass@1.97.2)(terser@5.46.1))':
     dependencies:
@@ -9815,7 +10321,7 @@ snapshots:
       '@electron/asar': 3.4.1
       debug: 4.4.3
       fs-extra: 7.0.1
-      lodash: 4.17.21
+      lodash: 4.18.1
       temp: 0.9.4
     optionalDependencies:
       '@electron/windows-sign': 1.2.2

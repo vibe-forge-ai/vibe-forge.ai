@@ -31,6 +31,8 @@ describe('bootstrap npm package env', () => {
 
     expect(env.NPM_CONFIG_USERCONFIG).toBe(projectNpmrc)
     expect(env.npm_config_userconfig).toBe(projectNpmrc)
+    expect(env.NPM_CONFIG_REPLACE_REGISTRY_HOST).toBe('never')
+    expect(env.npm_config_replace_registry_host).toBe('never')
   })
 
   it('keeps an explicit npm userconfig override', async () => {

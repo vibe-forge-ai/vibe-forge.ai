@@ -577,7 +577,7 @@ Notes:
                 exitOnInteractionRequest: event.type === 'interaction_request' && (
                   !supportsPrintInteractionInput || inputClosed
                 ),
-                stopExitsStreamJson: outputFormat === 'stream-json' && opts.inputFormat != null && inputClosed,
+                stopExitsStreamJson: outputFormat === 'stream-json' && (opts.inputFormat == null || inputClosed),
                 log: (message) => console.log(message),
                 errorLog: (message) => console.error(message),
                 requestExit: (code) => exitController.requestExit(code)

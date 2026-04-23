@@ -43,7 +43,9 @@ export const resolvePackageManagerEnv = () => {
     HOME: resolveRealHomeDir(),
     USERPROFILE: resolveRealHomeDir(),
     npm_config_cache: path.join(resolveBootstrapDataDir(), 'npm-cache'),
+    npm_config_replace_registry_host: 'never',
     npm_config_update_notifier: 'false',
+    NPM_CONFIG_REPLACE_REGISTRY_HOST: 'never',
     ...(userConfig != null
       ? {
           NPM_CONFIG_USERCONFIG: userConfig,
