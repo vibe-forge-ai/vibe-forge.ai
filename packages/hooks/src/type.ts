@@ -66,6 +66,7 @@ export interface HookInputs {
       type: 'default' | 'spec' | 'entity' | 'workspace'
       name?: string
       adapter?: string
+      model?: string
       permissionMode?: SessionPermissionMode
       background?: boolean
     }>

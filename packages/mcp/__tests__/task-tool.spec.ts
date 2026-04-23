@@ -119,6 +119,35 @@ describe('task tool integration', () => {
     }))
   })
 
+  it('passes explicit task model overrides to the hook and task manager', async () => {
+    const { createTaskRegister } = await import('#~/tools/task/index.js')
+
+    const tester = createToolTester()
+    createTaskRegister()(tester.mockRegister)
+
+    await tester.callTool('StartTasks', {
+      tasks: [{
+        description: 'investigate flaky tests',
+        type: 'default',
+        model: 'gpt-5.4-mini'
+      }]
+    })
+
+    expect(mocks.callHook).toHaveBeenCalledWith(
+      'StartTasks',
+      expect.objectContaining({
+        tasks: [expect.objectContaining({
+          taskId: 'task-1',
+          model: 'gpt-5.4-mini'
+        })]
+      })
+    )
+    expect(mocks.startTask).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task-1',
+      model: 'gpt-5.4-mini'
+    }))
+  })
+
   it('inherits the parent permission mode when the task does not specify one', async () => {
     process.env.__VF_PROJECT_AI_PERMISSION_MODE__ = 'dontAsk'
     mocks.getParentSessionId.mockReturnValue('parent-session')

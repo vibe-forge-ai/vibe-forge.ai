@@ -156,6 +156,47 @@ describe('taskManager fatal error scenarios', () => {
     )
   })
 
+  it('forwards task model overrides into query resolution and runtime startup', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-model-override',
+      description: 'trigger',
+      adapter: 'codex',
+      model: 'openai,gpt-5.4-mini'
+    })
+
+    expect(mocks.generateAdapterQueryOptions).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      expect.any(String),
+      expect.objectContaining({
+        adapter: 'codex',
+        model: 'openai,gpt-5.4-mini'
+      })
+    )
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adapter: 'codex'
+      }),
+      expect.objectContaining({
+        sessionId: 'task-model-override',
+        model: 'openai,gpt-5.4-mini'
+      })
+    )
+    expect(managedTaskManager.getTask('task-model-override')).toEqual(expect.objectContaining({
+      model: 'openai,gpt-5.4-mini'
+    }))
+  })
+
   it('responds to pending interactions and syncs the response', async () => {
     const { TaskManager } = await import('#~/tools/task/manager.js')
     const respondInteraction = vi.fn()
@@ -265,7 +306,13 @@ describe('taskManager fatal error scenarios', () => {
     })
 
     const task = managedTaskManager.getTask('task-send-synced')
-    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenNthCalledWith(2, {
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'keep going'
+      }]
+    })
     expect(mocks.postSessionEvent).toHaveBeenCalledWith('task-send-synced', {
       type: 'message',
       data: expect.objectContaining({
@@ -274,6 +321,84 @@ describe('taskManager fatal error scenarios', () => {
       })
     })
     expect(task?.logs).toContain('User message submitted (direct): keep going')
+  })
+
+  it('does not replay stale synced messages after a failed resume attempt', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    let onEvent: ((event: any) => void) | undefined
+    const resumedEmit = vi.fn()
+    const syncedEvents: Array<{ type: 'message'; message: Record<string, unknown> }> = []
+
+    mocks.postSessionEvent.mockImplementation(async (_sessionId: string, payload: any) => {
+      if (payload?.type === 'message' && payload.data != null) {
+        syncedEvents.push({
+          type: 'message',
+          message: payload.data
+        })
+      }
+    })
+    mocks.fetchSessionMessages.mockImplementation(async () => syncedEvents)
+
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockRejectedValueOnce(new Error('resume failed to start'))
+      .mockResolvedValueOnce({
+        session: {
+          emit: resumedEmit,
+          kill: vi.fn()
+        }
+      })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-synced-retry',
+      description: 'trigger',
+      enableServerSync: true
+    })
+
+    onEvent?.({
+      type: 'stop',
+      data: undefined
+    })
+
+    await expect(managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-synced-retry',
+      message: 'first retry'
+    })).rejects.toThrow('resume failed to start')
+
+    const firstMessage = syncedEvents.at(-1)?.message
+    const taskAfterFailure = managedTaskManager.getTask('task-send-synced-retry')
+    expect(firstMessage).toEqual(expect.objectContaining({
+      id: expect.any(String),
+      role: 'user',
+      content: 'first retry'
+    }))
+    expect(taskAfterFailure?.serverSync?.seenMessageIds.has(String(firstMessage?.id))).toBe(true)
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-synced-retry',
+      message: 'second retry'
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(resumedEmit).toHaveBeenCalledTimes(1)
+    expect(resumedEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'second retry'
+      }]
+    })
+
+    managedTaskManager.stopTask('task-send-synced-retry')
   })
 
   it('queues steer follow-up messages and resumes the same task after natural completion', async () => {
@@ -410,23 +535,31 @@ describe('taskManager fatal error scenarios', () => {
     })).rejects.toThrow('Task task-send-steer-blocked is waiting for input. Use SubmitTaskInput instead.')
   })
 
-  it('rejects steer follow-up messages after a task has already completed', async () => {
+  it('resumes completed tasks when sending a direct follow-up message', async () => {
     const { TaskManager } = await import('#~/tools/task/manager.js')
     let onEvent: ((event: any) => void) | undefined
+    const resumedEmit = vi.fn()
 
-    mocks.run.mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
-      onEvent = adapterOptions.onEvent
-      return {
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockResolvedValueOnce({
         session: {
-          emit: vi.fn(),
+          emit: resumedEmit,
           kill: vi.fn()
         }
-      }
-    })
+      })
 
     const managedTaskManager = new TaskManager()
     await managedTaskManager.startTask({
-      taskId: 'task-send-completed',
+      taskId: 'task-send-completed-direct',
       description: 'trigger'
     })
 
@@ -435,11 +568,72 @@ describe('taskManager fatal error scenarios', () => {
       data: undefined
     })
 
-    await expect(managedTaskManager.sendTaskMessage({
-      taskId: 'task-send-completed',
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-completed-direct',
+      message: 'continue from the final summary'
+    })
+
+    const task = managedTaskManager.getTask('task-send-completed-direct')
+    expect(mocks.run).toHaveBeenCalledTimes(2)
+    expect(resumedEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'continue from the final summary'
+      }]
+    })
+    expect(task?.logs).toContain('Resuming inactive task (direct): continue from the final summary')
+  })
+
+  it('resumes completed tasks when sending a steer follow-up message', async () => {
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+    let onEvent: ((event: any) => void) | undefined
+    const resumedEmit = vi.fn()
+
+    mocks.run
+      .mockImplementationOnce(async (_options: unknown, adapterOptions: any) => {
+        onEvent = adapterOptions.onEvent
+        return {
+          session: {
+            emit: vi.fn(),
+            kill: vi.fn()
+          }
+        }
+      })
+      .mockResolvedValueOnce({
+        session: {
+          emit: resumedEmit,
+          kill: vi.fn()
+        }
+      })
+
+    const managedTaskManager = new TaskManager()
+    await managedTaskManager.startTask({
+      taskId: 'task-send-completed-steer',
+      description: 'trigger'
+    })
+
+    onEvent?.({
+      type: 'stop',
+      data: undefined
+    })
+
+    await managedTaskManager.sendTaskMessage({
+      taskId: 'task-send-completed-steer',
       message: 'queue this for later',
       mode: 'steer'
-    })).rejects.toThrow('Task task-send-completed is not active. Start a new task instead.')
+    })
+
+    const task = managedTaskManager.getTask('task-send-completed-steer')
+    expect(mocks.run).toHaveBeenCalledTimes(2)
+    expect(resumedEmit).toHaveBeenCalledWith({
+      type: 'message',
+      content: [{
+        type: 'text',
+        text: 'queue this for later'
+      }]
+    })
+    expect(task?.logs).toContain('Resuming inactive task (steer): queue this for later')
   })
 
   it('builds synthetic permission recovery for claude-code and resumes after SubmitTaskInput', async () => {

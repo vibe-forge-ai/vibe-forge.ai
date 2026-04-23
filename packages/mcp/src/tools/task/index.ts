@@ -12,6 +12,7 @@ import {
   SESSION_PERMISSION_MODES,
   START_TASKS_DESCRIPTION,
   TASK_BACKGROUND_DESCRIPTION,
+  TASK_MODEL_DESCRIPTION,
   TASK_PERMISSION_MODE_DESCRIPTION,
   resolveInheritedPermissionMode,
   serializeTaskInfo
@@ -49,6 +50,10 @@ export const createTaskRegister = () => {
                 adapter: z
                   .string()
                   .describe('The adapter to use for the task (e.g. claude-code)')
+                  .optional(),
+                model: z
+                  .string()
+                  .describe(TASK_MODEL_DESCRIPTION)
                   .optional(),
                 permissionMode: z
                   .enum(SESSION_PERMISSION_MODES)
