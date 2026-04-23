@@ -7,7 +7,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { getAdapterDisplay } from '#~/resources/adapters.js'
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import { SessionContextMenu } from './SessionContextMenu'
 import 'dayjs/locale/zh-cn'
 
@@ -48,6 +48,7 @@ export function SessionItem({
   const automationPrefix = 'automation:'
   const itemContentRef = useRef<HTMLDivElement | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingSessionAction>(null)
+  const { getAdapterDisplay } = useAdapterCatalog()
   const showCompactActionMenu = isCompactLayout || isTouchInteraction
   const resolveTooltipTitle = (title: string) => isTouchInteraction ? undefined : title
 

@@ -1,5 +1,3 @@
-import type {} from '@vibe-forge/adapter-claude-code/schema'
-
 import { defineToolRenders } from '../defineToolRender'
 import { GenericClaudeTool } from './GenericClaudeTool'
 export { buildClaudeToolPresentation, getClaudeToolBaseName, isClaudeToolName } from './claude-tool-presentation'

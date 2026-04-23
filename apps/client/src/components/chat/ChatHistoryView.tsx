@@ -13,7 +13,7 @@ import type {
   SessionQueuedMessage,
   SessionQueuedMessageMode
 } from '@vibe-forge/core'
-import type { ConfigResponse, SessionInfo } from '@vibe-forge/types'
+import type { ConfigResponse, SessionInfo, ToolViewEnvelope } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api'
 import { ComposerLanding, ComposerStack } from '#~/components/composer-landing/ComposerLanding'
@@ -59,6 +59,7 @@ export function ChatHistoryView({
   sessionInfo,
   historyStatusNotices,
   queuedMessages,
+  toolViews,
   onRetryConnection,
   interactionRequest,
   onInteractionResponse,
@@ -99,6 +100,7 @@ export function ChatHistoryView({
   sessionInfo: SessionInfo | null
   historyStatusNotices: ChatHistoryStatusNotice[]
   queuedMessages: SessionMessageQueueState
+  toolViews: Record<string, ToolViewEnvelope>
   onRetryConnection: () => void
   interactionRequest: { id: string; payload: AskUserQuestionParams } | null
   onInteractionResponse: (id: string, data: string | string[]) => void
@@ -629,6 +631,7 @@ export function ChatHistoryView({
         originalMessage={item.originalMessage}
         sessionId={session?.id}
         targetToolUseId={targetToolUseId}
+        toolViews={toolViews}
         footer={item.footer}
       />
     )

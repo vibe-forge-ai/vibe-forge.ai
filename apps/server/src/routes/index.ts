@@ -10,6 +10,7 @@ import type { loadEnv } from '@vibe-forge/core'
 
 import { logger } from '#~/utils/logger.js'
 
+import { adapterCatalogRouter } from './adapter-catalog'
 import { adaptersRouter } from './adapters'
 import { aiRouter } from './ai'
 import { authRouter } from './auth'
@@ -105,6 +106,7 @@ export const mountRoutes = async (
   const routers = [
     { prefix: '/api/sessions/:sessionId/git', router: gitRouter() },
     { prefix: '/api/sessions', router: sessionsRouter() },
+    { prefix: '/api/adapter-catalog', router: adapterCatalogRouter() },
     { prefix: '/api/adapters', router: adaptersRouter() },
     { prefix: '/api/interact', router: interactRouter() },
     { prefix: '/api/auth', router: authRouter(env) },

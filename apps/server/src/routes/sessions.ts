@@ -30,6 +30,7 @@ import {
   updateSessionQueuedMessage
 } from '#~/services/session/queue.js'
 import { broadcastSessionEvent, notifySessionUpdated } from '#~/services/session/runtime.js'
+import { buildSessionToolViews } from '#~/services/session/tool-view.js'
 import {
   createSessionManagedWorktree,
   deleteSessionWorkspace,
@@ -67,7 +68,7 @@ export function sessionsRouter(): Router {
   router.get('/:id/messages', (ctx) => {
     const { id } = ctx.params as { id: string }
     const { limit } = ctx.query as { limit?: string }
-    const messages = db.getMessages(id)
+    const messages = db.getMessages<WSEvent>(id)
     const session = db.getSession(id)
     const interaction = getSessionInteraction(id)
 
@@ -77,7 +78,8 @@ export function sessionsRouter(): Router {
       messages: responseMessages,
       session,
       interaction,
-      queuedMessages: listSessionQueuedMessages(id)
+      queuedMessages: listSessionQueuedMessages(id),
+      toolViews: buildSessionToolViews(responseMessages, { adapterInstanceId: session?.adapter })
     }
   })
 

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 
 import type { AskUserQuestionParams, ChatMessage, Session, SessionMessageQueueState, WSEvent } from '@vibe-forge/core'
-import type { SessionInfo } from '@vibe-forge/types'
+import type { SessionInfo, ToolViewEnvelope } from '@vibe-forge/types'
 
 import { getSessionMessages } from '#~/api.js'
 import { connectionManager } from '#~/connectionManager.js'
@@ -22,6 +22,7 @@ import {
   restoreChatSessionViewSnapshot,
   setChatSessionViewSnapshot
 } from './session-view-cache'
+import { applyToolViewEvent } from './tool-view-cache'
 import type { ChatSessionViewSnapshot } from './session-view-cache'
 import type { ChatEffort } from './use-chat-effort'
 import type { PermissionMode } from './use-chat-permission-mode'
@@ -79,6 +80,7 @@ export function useChatSessionMessages({
   const [messagesState, setMessagesState] = useState<ChatMessage[]>([])
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [queuedMessages, setQueuedMessages] = useState<SessionMessageQueueState>({ steer: [], next: [] })
+  const [toolViewsState, setToolViewsState] = useState<Record<string, ToolViewEnvelope>>({})
   const [isReady, setIsReady] = useState(false)
   const [errorState, setErrorState] = useState<ChatErrorState | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -104,6 +106,7 @@ export function useChatSessionMessages({
       messages: ChatMessage[]
       sessionInfo: SessionInfo | null
       queuedMessages: SessionMessageQueueState
+      toolViews: Record<string, ToolViewEnvelope>
       errorState: ChatErrorState | null
       interactionRequest: InteractionRequestState | null
       isHydrated: boolean
@@ -185,10 +188,12 @@ export function useChatSessionMessages({
         }
         : null
       const nextQueuedMessages = res.queuedMessages ?? EMPTY_QUEUED_MESSAGES
+      const nextToolViews = res.toolViews ?? {}
 
       interactionRequestRef.current = restoredInteraction
       setInteractionRequest(restoredInteraction)
       setQueuedMessages(nextQueuedMessages)
+      setToolViewsState(nextToolViews)
       setErrorState(nextErrorState)
 
       for (const data of events) {
@@ -205,6 +210,7 @@ export function useChatSessionMessages({
         messages: currentMessages,
         sessionInfo: currentSessionInfo,
         queuedMessages: nextQueuedMessages,
+        toolViews: nextToolViews,
         errorState: nextErrorState,
         interactionRequest: restoredInteraction,
         isHydrated: true
@@ -252,6 +258,7 @@ export function useChatSessionMessages({
       setMessagesState([])
       setSessionInfo(null)
       setQueuedMessages(EMPTY_QUEUED_MESSAGES)
+      setToolViewsState({})
       setIsReady(true)
       setErrorState(null)
       setInteractionRequest(null)
@@ -303,6 +310,7 @@ export function useChatSessionMessages({
     setMessagesState(restoredState.messages)
     setSessionInfo(restoredState.sessionInfo)
     setQueuedMessages(restoredState.queuedMessages)
+    setToolViewsState(restoredState.toolViews)
     setErrorState(restoredState.errorState)
     setInteractionRequest(restoredState.interactionRequest)
     interactionRequestRef.current = restoredState.interactionRequest
@@ -497,6 +505,17 @@ export function useChatSessionMessages({
             return
           }
 
+          if (data.type === 'tool_view') {
+            setToolViewsState((current) => {
+              const next = applyToolViewEvent(current, data)
+              updateSessionViewCache(session.id, {
+                toolViews: next
+              })
+              return next
+            })
+            return
+          }
+
           if (data.type === 'message') {
             setMessages((current) => applyMessageEvent(current, data))
             return
@@ -599,6 +618,7 @@ export function useChatSessionMessages({
     setMessages,
     sessionInfo,
     queuedMessages,
+    toolViews: toolViewsState,
     isReady,
     errorState,
     retryConnection,

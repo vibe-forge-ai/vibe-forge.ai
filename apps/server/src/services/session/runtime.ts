@@ -150,7 +150,7 @@ export function emitRuntimeEvent(
   event: WSEvent,
   options: { recordMessage?: boolean } = {}
 ) {
-  if (options.recordMessage !== false) {
+  if (options.recordMessage !== false && event.type !== 'tool_view') {
     runtime.messages.push(event)
   }
 

@@ -7,9 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCodexSession } from '#~/runtime/session.js'
 import { createCodexTranscriptHookWatcher } from '#~/runtime/transcript-hooks.js'
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn()
-}))
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>()
+  return {
+    ...actual,
+    spawn: vi.fn()
+  }
+})
 
 vi.mock('#~/runtime/transcript-hooks.js', () => ({
   createCodexTranscriptHookWatcher: vi.fn()
@@ -115,7 +119,10 @@ describe('createCodexSession transcript hook integration', () => {
     )
 
     expect(createCodexTranscriptHookWatcherMock).toHaveBeenCalledWith(expect.objectContaining({
+      callHooks: false,
       cwd: '/tmp/project',
+      emitEvents: true,
+      onEvent: expect.any(Function),
       runtime: 'server',
       sessionId: 'session-native-hooks'
     }))

@@ -1,7 +1,9 @@
+// 配置读取与更新 API
+export { getAdapterCatalog } from './api/adapter-catalog'
 export { getAdapterAccountDetail, getAdapterAccounts, manageAdapterAccount } from './api/adapters'
+
 // 自动化规则与执行记录 API
 export type { AutomationRule, AutomationRun, AutomationTask, AutomationTrigger } from './api/automation'
-
 export {
   createAutomationRule,
   deleteAutomationRule,
@@ -11,6 +13,7 @@ export {
   updateAutomationRule
 } from './api/automation'
 export { ApiError, getApiErrorMessage } from './api/base'
+
 export {
   getBenchmarkCase,
   getBenchmarkResult,
@@ -19,8 +22,6 @@ export {
   listBenchmarkCategories,
   startBenchmarkRun
 } from './api/benchmark'
-
-// 配置读取与更新 API
 export { getConfig, getConfigSchema, updateConfig } from './api/config'
 export {
   checkoutSessionGitBranch,

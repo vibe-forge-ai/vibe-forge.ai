@@ -41,6 +41,7 @@
     "@vibe-forge/definition-loader": "workspace:^",
     "@vibe-forge/managed-plugins": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/tool-view": "workspace:^",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
     "commander": "^12.1.0",

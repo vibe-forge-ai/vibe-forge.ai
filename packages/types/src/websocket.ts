@@ -1,6 +1,7 @@
 import type { AskUserQuestionParams } from './interaction'
 import type { ChatMessage } from './message'
 import type { SessionMessageQueueState } from './session'
+import type { ToolViewEnvelope } from './tool-view'
 
 export type WSEvent<
   TAdapterErrorData = unknown,
@@ -12,6 +13,7 @@ export type WSEvent<
   | { type: 'message'; message: ChatMessage }
   | { type: 'session_info'; info: TSessionInfo }
   | { type: 'tool_result'; toolCallId: string; output: any; isError: boolean }
+  | { type: 'tool_view'; view: ToolViewEnvelope }
   | { type: 'adapter_result'; result: any; usage?: any }
   | { type: 'adapter_event'; data: any }
   | { type: 'session_updated'; session: TSession }

@@ -11,6 +11,7 @@ export interface AdapterAccountConfigCommon {
 }
 
 export interface AdapterConfigCommon {
+  packageId?: string
   defaultModel?: string
   includeModels?: string[]
   excludeModels?: string[]
@@ -18,13 +19,17 @@ export interface AdapterConfigCommon {
   accounts?: Record<string, AdapterAccountConfigCommon>
 }
 
-export type AdapterConfigEntry<T> = T & AdapterConfigCommon
+export type AdapterConfigEntry<T = Record<string, unknown>> = T & AdapterConfigCommon
 
-export type AdapterConfigMap = Partial<
-  {
-    [K in keyof AdapterMap]: AdapterConfigEntry<AdapterMap[K]>
-  }
->
+export type AdapterInstanceConfig = AdapterConfigEntry<Record<string, unknown>>
+
+export type AdapterConfigMap =
+  & Record<string, AdapterInstanceConfig>
+  & Partial<
+    {
+      [K in keyof AdapterMap]: AdapterConfigEntry<AdapterMap[K]>
+    }
+  >
 
 export interface AdapterBuiltinModel {
   value: string
@@ -303,7 +308,7 @@ export interface Config {
   effort?: EffortLevel
   adapters?: AdapterConfigMap
   models?: Record<string, ModelMetadataConfig>
-  defaultAdapter?: keyof AdapterMap
+  defaultAdapter?: string
   modelServices?: Record<string, ModelServiceConfig>
   workspaces?: WorkspaceConfig
   channels?: Record<string, unknown>

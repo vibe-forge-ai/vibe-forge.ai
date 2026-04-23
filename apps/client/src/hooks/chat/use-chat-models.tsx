@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
 import type {
-  AdapterBuiltinModel,
   ConfigResponse,
   ModelMetadataConfig,
   ModelServiceConfig,
@@ -11,6 +10,7 @@ import type {
 } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api.js'
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import {
   buildServiceModelSelector,
   listServiceModels,
@@ -48,6 +48,7 @@ export function useChatModels({
     }
   })
   const { data: configRes } = useSWR<ConfigResponse>('/api/config', getConfig)
+  const { adapterBuiltinModels } = useAdapterCatalog()
 
   const mergedModelServices = useMemo(() => {
     const services = configRes?.sources?.merged?.modelServices
@@ -66,11 +67,6 @@ export function useChatModels({
       item != null && typeof item === 'object' && typeof item.model === 'string' && item.model.trim() !== ''
     ))
   }, [configRes?.sources?.merged?.general?.recommendedModels])
-
-  const adapterBuiltinModels = useMemo(() => {
-    const raw = configRes?.sources?.merged?.adapterBuiltinModels
-    return (raw ?? {}) as Record<string, AdapterBuiltinModel[]>
-  }, [configRes?.sources?.merged?.adapterBuiltinModels])
 
   const activeBuiltinModels = useMemo(() => {
     if (selectedAdapter && adapterBuiltinModels[selectedAdapter]) {

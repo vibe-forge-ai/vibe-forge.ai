@@ -1,15 +1,15 @@
 import './BashTool.scss'
 import { CodeBlock } from '#~/components/CodeBlock'
 import { safeJsonStringify } from '#~/utils/safe-serialize'
-import type { ToolInputs } from '@vibe-forge/core'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ToolCallBox } from '../core/ToolCallBox'
 import { defineToolRender } from '../defineToolRender'
+import type { ClaudeBashToolInput } from './claude-tool-inputs'
 
 export const BashTool = defineToolRender(({ item, resultItem }) => {
   const { t } = useTranslation()
-  const input = (item.input != null ? item.input : {}) as Partial<ToolInputs['adapter:claude-code:Bash']>
+  const input = (item.input != null ? item.input : {}) as ClaudeBashToolInput
   const command = input.command ?? ''
   const reason = (input.description != null && input.description !== '')
     ? input.description
@@ -30,7 +30,7 @@ export const BashTool = defineToolRender(({ item, resultItem }) => {
   return (
     <div className='tool-group bash-tool'>
       <ToolCallBox
-        defaultExpanded={true}
+        defaultExpanded={false}
         type={resultItem != null ? 'result' : 'call'}
         isError={resultItem?.is_error ?? false}
         header={

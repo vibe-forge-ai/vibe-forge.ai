@@ -18,11 +18,11 @@ import {
   optimisticSessionCreationsAtom,
   removeSessionFromList
 } from '#~/hooks/chat/optimistic-session-creation'
+import { useAdapterCatalog } from '#~/hooks/use-adapter-catalog'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
 import { useSidebarQueryState } from '#~/hooks/use-sidebar-query-state'
 import type { SidebarSessionSortOrder } from '#~/hooks/use-sidebar-query-state'
 import { useGlobalShortcut } from '#~/hooks/useGlobalShortcut'
-import { getAdapterDisplay } from '#~/resources/adapters.js'
 import { isSidebarResizingAtom } from '#~/store/index'
 import { formatShortcutLabel } from '#~/utils/shortcutUtils'
 
@@ -80,6 +80,7 @@ export function Sidebar({
   const isMac = navigator.platform.includes('Mac')
   const optimisticCreations = useAtomValue(optimisticSessionCreationsAtom)
   const setOptimisticCreations = useSetAtom(optimisticSessionCreationsAtom)
+  const { getAdapterDisplay } = useAdapterCatalog()
 
   const { data: sessionsRes, mutate: mutateSessions } = useSWR<{ sessions: Session[] }>(
     `/api/sessions`
@@ -145,7 +146,7 @@ export function Sidebar({
       )
     })
     return sortSessionsByOrder(visibleSessions, sortOrder)
-  }, [adapterFilters, searchQuery, sessions, sortOrder, tagFilters])
+  }, [adapterFilters, getAdapterDisplay, searchQuery, sessions, sortOrder, tagFilters])
 
   async function handleCreateSession() {
     onRequestClose?.()

@@ -11,14 +11,14 @@ import type {
 } from '../@types/sender-toolbar-types'
 import type { SenderCompletionMatch, SenderTokenDecoration } from '../@utils/sender-completion'
 
-interface SenderControllerAttachments {
+export interface SenderControllerAttachments {
   handlePaste: (event: ClipboardEvent) => void | Promise<void>
   showContextPicker: boolean
   setShowContextPicker: (nextOpen: boolean) => void
   handleContextPickerConfirm: (files: PendingContextFile[]) => void
 }
 
-interface SenderControllerCompletion {
+export interface SenderControllerCompletion {
   showCompletion: boolean
   handleInputChange: (value: string, cursorPosition: number | null) => void
   handleCursorChange: (cursorPosition: number | null) => void
@@ -30,7 +30,7 @@ interface SenderControllerCompletion {
   resolveTokenDecorations: (value: string) => SenderTokenDecoration[]
 }
 
-interface SenderControllerComposer {
+export interface SenderControllerComposer {
   input: string
   pendingImages: PendingImage[]
   pendingFiles: PendingContextFile[]
@@ -38,7 +38,7 @@ interface SenderControllerComposer {
   setPendingFiles: Dispatch<SetStateAction<PendingContextFile[]>>
 }
 
-interface SenderControllerToolbar {
+export interface SenderControllerToolbar {
   toolbarState: SenderToolbarState
   toolbarData: SenderToolbarData
   toolbarRefs: SenderToolbarRefs

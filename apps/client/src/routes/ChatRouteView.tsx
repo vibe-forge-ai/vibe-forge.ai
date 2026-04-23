@@ -36,6 +36,7 @@ export function ChatRouteView({ session }: { session?: Session }) {
     messages,
     sessionInfo,
     queuedMessages,
+    toolViews,
     interactionRequest,
     isReady,
     errorState,
@@ -140,6 +141,7 @@ export function ChatRouteView({ session }: { session?: Session }) {
               sessionInfo={sessionInfo}
               historyStatusNotices={historyStatusNotices}
               queuedMessages={queuedMessages}
+              toolViews={toolViews}
               onRetryConnection={retryConnection}
               interactionRequest={interactionRequest}
               onInteractionResponse={handleInteractionResponse}
@@ -173,7 +175,6 @@ export function ChatRouteView({ session }: { session?: Session }) {
               contextReferenceRequest={contextReferenceRequest}
             />
           )}
-
           {resolvedActiveView === 'timeline' && <ChatTimelineView messages={messages} />}
           {resolvedActiveView === 'settings' && session?.id &&
             <ChatSettingsView session={session} sessionInfo={sessionInfo} onClose={() => setActiveView('history')} />}
