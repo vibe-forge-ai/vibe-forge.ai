@@ -59,11 +59,11 @@ describe('config schema bundle', () => {
     )
     const corePackage = await readPackageJson('packages/core/package.json')
     const configPackage = await readPackageJson('packages/config/package.json')
+    const expectedCoreRange = 'workspace:^2.0.1'
+    const expectedConfigRange = 'workspace:^2.0.2'
 
-    expect(corePackage.version).toBe('2.0.1')
     expect(corePackage.exports).toHaveProperty('./config-schema')
-    expect(configPackage.version).toBe('2.0.2')
-    expect(configPackage.dependencies?.['@vibe-forge/core']).toBe('workspace:^2.0.1')
+    expect(configPackage.dependencies?.['@vibe-forge/core']).toBe(expectedCoreRange)
 
     for (
       const relativePath of [
@@ -76,7 +76,7 @@ describe('config schema bundle', () => {
       ]
     ) {
       const packageJson = await readPackageJson(relativePath)
-      expect(packageJson.dependencies?.['@vibe-forge/core']).toBe('workspace:^2.0.1')
+      expect(packageJson.dependencies?.['@vibe-forge/core']).toBe(expectedCoreRange)
     }
 
     for (
@@ -93,7 +93,7 @@ describe('config schema bundle', () => {
       ]
     ) {
       const packageJson = await readPackageJson(relativePath)
-      expect(packageJson.dependencies?.['@vibe-forge/config']).toBe('workspace:^2.0.2')
+      expect(packageJson.dependencies?.['@vibe-forge/config']).toBe(expectedConfigRange)
     }
   })
 

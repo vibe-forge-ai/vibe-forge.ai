@@ -5,6 +5,8 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  ensureManagedNpmCli: vi.fn(),
+  resolveManagedNpmCliInstallOptions: vi.fn(),
   execFile: vi.fn()
 }))
 
@@ -12,6 +14,14 @@ vi.mock('node:child_process', () => ({
   execFile: mocks.execFile
 }))
 
+vi.mock('@vibe-forge/utils/managed-npm-cli', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@vibe-forge/utils/managed-npm-cli')>()
+  return {
+    ...actual,
+    ensureManagedNpmCli: mocks.ensureManagedNpmCli,
+    resolveManagedNpmCliInstallOptions: mocks.resolveManagedNpmCliInstallOptions
+  }
+})
 const createExecImplementation = (
   callback: (
     args: string[],
@@ -52,6 +62,25 @@ describe('skills CLI skill hub source flow', () => {
   beforeEach(async () => {
     workspace = await mkdtemp(path.join(os.tmpdir(), 'vf-skill-hub-skills-cli-'))
     vi.clearAllMocks()
+    mocks.ensureManagedNpmCli.mockResolvedValue('/mock/bin/skills')
+    mocks.resolveManagedNpmCliInstallOptions.mockImplementation((params: {
+      config?: {
+        package?: string
+        source?: 'managed' | 'path' | 'system'
+        version?: string
+      }
+    }) => {
+      const packageName = params.config?.package ?? 'skills'
+      const version = params.config?.version ?? 'latest'
+      return {
+        autoInstall: true,
+        npmPath: 'npm',
+        packageName,
+        packageSpec: `${packageName}@${version}`,
+        source: params.config?.source ?? 'managed',
+        version
+      }
+    })
   })
 
   afterEach(async () => {
@@ -127,6 +156,17 @@ describe('skills CLI skill hub source flow', () => {
       ]
     })
 
+    expect(mocks.resolveManagedNpmCliInstallOptions).toHaveBeenCalledWith(expect.objectContaining({
+      config: expect.objectContaining({
+        source: 'managed',
+        package: '@example/skills',
+        version: 'latest'
+      }),
+      env: expect.objectContaining({
+        npm_config_registry: 'https://registry.example.com',
+        SKILLS_REGION: 'cn'
+      })
+    }))
     expect(mocks.execFile).toHaveBeenCalledWith(
       'npm',
       [
@@ -158,6 +198,14 @@ describe('skills CLI skill hub source flow', () => {
         return new Error(`Unexpected skills CLI args: ${args.join(' ')}`)
       }
 
+      expect(args.slice(0, 6)).toEqual([
+        'exec',
+        '--yes',
+        '--package',
+        'skills@latest',
+        '--',
+        'skills'
+      ])
       const skillDir = path.join(String(options.cwd), '.agents', 'skills', 'internal-review')
       await mkdir(skillDir, { recursive: true })
       await writeFile(
