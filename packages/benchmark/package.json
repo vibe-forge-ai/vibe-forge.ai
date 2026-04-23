@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/benchmark",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.5",
   "description": "Benchmark discovery and execution for Vibe Forge",
   "imports": {
     "#~/*.js": {
