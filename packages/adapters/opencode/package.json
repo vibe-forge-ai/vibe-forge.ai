@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/adapter-opencode",
-  "version": "2.0.0",
+  "version": "2.0.3-alpha.0",
   "description": "OpenCode Adapter for Vibe Forge",
   "imports": {
     "#~/*.js": {

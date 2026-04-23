@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/bootstrap",
-  "version": "1.0.0",
+  "version": "1.0.5-alpha.0",
   "description": "Vibe Forge bootstrap launcher",
   "vibeForge": {
     "runtimeTranspile": true

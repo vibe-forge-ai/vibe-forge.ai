@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli",
-  "version": "2.0.3",
+  "version": "2.0.4-alpha.0",
   "description": "Vibe Forge CLI",
   "imports": {
     "#~/*.js": {
@@ -31,7 +31,9 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/cli/__tests__"
   },
   "dependencies": {
+    "@vibe-forge/adapter-opencode": "2.0.3-alpha.0",
     "@vibe-forge/app-runtime": "workspace:^",
+    "@vibe-forge/bootstrap": "1.0.5-alpha.0",
     "@vibe-forge/cli-helper": "workspace:^",
     "@vibe-forge/config": "workspace:^2.0.2",
     "@vibe-forge/core": "workspace:^",
@@ -39,8 +41,10 @@
     "@vibe-forge/managed-plugins": "workspace:^",
     "@vibe-forge/plugin-cli-skills": "workspace:^",
     "@vibe-forge/register": "workspace:^",
+    "@vibe-forge/server": "2.0.3-alpha.0",
     "@vibe-forge/types": "workspace:^",
     "@vibe-forge/utils": "workspace:^",
+    "@vibe-forge/web": "2.0.3-alpha.0",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.3",
     "node-notifier": "^10.0.1"
