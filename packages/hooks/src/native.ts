@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 
-import { resolveProjectAiPath } from '@vibe-forge/utils'
+import { resolveProjectMockHome } from '@vibe-forge/utils'
 
 export interface NativeHookHandlerConfig {
   type: 'command'
@@ -37,20 +37,7 @@ export const hasManagedHookPlugins = (
 export const resolveMockHome = (
   cwd: string,
   env: Record<string, string | null | undefined>
-) => {
-  const fallbackMockHome = resolveProjectAiPath(cwd, env, '.mock')
-  const explicitHome = env.HOME?.trim() || process.env.HOME?.trim()
-  const realHome = env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
-  const resolvedExplicitHome = explicitHome ? resolve(explicitHome) : undefined
-  const resolvedRealHome = realHome ? resolve(realHome) : undefined
-
-  if (resolvedExplicitHome == null) return fallbackMockHome
-  if (resolvedRealHome != null && resolvedExplicitHome === resolvedRealHome) {
-    return fallbackMockHome
-  }
-
-  return resolvedExplicitHome
-}
+) => resolveProjectMockHome(cwd, env)
 
 export const resolveManagedHookPackageDir = () => {
   try {

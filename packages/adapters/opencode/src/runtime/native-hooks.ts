@@ -233,7 +233,7 @@ const resolveSourceConfigDir = (ctx: Pick<AdapterCtx, 'env'>) => {
   const explicit = ctx.env.OPENCODE_CONFIG_DIR?.trim() || process.env.OPENCODE_CONFIG_DIR?.trim()
   if (explicit) return resolve(explicit)
 
-  const realHome = process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const realHome = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
   return realHome ? resolve(realHome, '.config', 'opencode') : undefined
 }
 

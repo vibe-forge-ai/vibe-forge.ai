@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { isAbsolute, resolve } from 'node:path'
+import { isAbsolute, relative, resolve } from 'node:path'
 import process from 'node:process'
 
 export const PROJECT_LAUNCH_CWD_ENV = '__VF_PROJECT_LAUNCH_CWD__'
@@ -34,6 +34,11 @@ const resolvePathFromBase = (
 }
 
 const toPathSegments = (value: string) => value.split(/[\\/]+/).filter(Boolean)
+
+const isPathInside = (parentPath: string, targetPath: string) => {
+  const relativePath = relative(parentPath, targetPath)
+  return relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath))
+}
 
 export const resolveProjectLaunchCwd = (
   cwd: string,
@@ -129,6 +134,28 @@ export const resolveProjectAiPath = (
   env: Record<string, string | null | undefined> = process.env,
   ...segments: string[]
 ) => resolve(resolveProjectAiBaseDir(cwd, env), ...segments)
+
+export const resolveProjectMockHome = (
+  cwd: string,
+  env: Record<string, string | null | undefined> = process.env
+) => {
+  const fallbackMockHome = resolveProjectAiPath(cwd, env, '.mock')
+  const explicitHome = normalizeDirPath(env.HOME ?? process.env.HOME)
+  const realHome = normalizeDirPath(env.__VF_PROJECT_REAL_HOME__ ?? process.env.__VF_PROJECT_REAL_HOME__)
+  const resolvedExplicitHome = explicitHome == null ? undefined : resolve(explicitHome)
+  const resolvedRealHome = realHome == null ? undefined : resolve(realHome)
+  const workspaceFolder = resolveProjectWorkspaceFolder(cwd, env)
+
+  if (resolvedExplicitHome == null) return fallbackMockHome
+  if (resolvedRealHome != null && resolvedExplicitHome === resolvedRealHome) {
+    return fallbackMockHome
+  }
+  if (isPathInside(workspaceFolder, resolvedExplicitHome) && resolvedExplicitHome !== fallbackMockHome) {
+    return fallbackMockHome
+  }
+
+  return resolvedExplicitHome
+}
 
 export const resolveProjectAiEntitiesDir = (
   cwd: string,

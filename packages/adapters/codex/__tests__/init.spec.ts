@@ -228,6 +228,31 @@ describe('initCodexAdapter', () => {
     expect(configContent).toContain('# BEGIN VIBE FORGE MANAGED CODEX PROJECT CONFIG')
   })
 
+  it('still writes the managed config into the workspace mock home when HOME points at the workspace root', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: workspace
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(join(mockHome, '.codex', 'config.toml'), 'utf8')
+    expect(configContent).toContain('check_for_update_on_startup = false')
+    await expect(readFile(join(workspace, '.codex', 'config.toml'), 'utf8')).rejects.toThrow()
+  })
+
   it('preserves unmanaged config content and replaces the managed block with user overrides', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')
