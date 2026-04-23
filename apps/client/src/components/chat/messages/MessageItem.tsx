@@ -29,6 +29,7 @@ interface MessageItemProps {
   sessionId?: string
   sessionInfo?: SessionInfo | null
   isSessionBusy: boolean
+  hideActionButtons: boolean
   isEditing: boolean
   isCompactLayout: boolean
   isTouchInteraction: boolean
@@ -54,6 +55,7 @@ function MessageItemComponent({
   sessionId,
   sessionInfo,
   isSessionBusy,
+  hideActionButtons,
   isEditing,
   isCompactLayout,
   isTouchInteraction,
@@ -83,9 +85,11 @@ function MessageItemComponent({
   const canRecall = isPersistedMessage && !isSessionBusy && isUser
   const canFork = isPersistedMessage && !isSessionBusy && isUser
   const canCopy = copyableText != null
-  const shouldShowAssistantActions = !isUser && showAssistantActions
+  const shouldShowAssistantActions = !hideActionButtons && !isUser && showAssistantActions
   const showCompactActionMenu = isCompactLayout || isTouchInteraction
-  const shouldShowCompactActionMenu = showCompactActionMenu && (isUser || shouldShowAssistantActions)
+  const shouldShowCompactActionMenu = !hideActionButtons &&
+    showCompactActionMenu &&
+    (isUser || shouldShowAssistantActions)
 
   useEffect(() => {
     setIsSubmitting(false)
@@ -114,6 +118,15 @@ function MessageItemComponent({
       setPendingConfirmAction(null)
     }
   }, [isActionsVisible])
+
+  useEffect(() => {
+    if (!hideActionButtons) {
+      return
+    }
+
+    setIsActionsVisible(false)
+    setPendingConfirmAction(null)
+  }, [hideActionButtons])
 
   useEffect(() => {
     if (pendingConfirmAction == null) {
@@ -277,7 +290,7 @@ function MessageItemComponent({
   }
 
   const handleActionsPointerEnter = () => {
-    if (!isUser || isEditing) {
+    if (!isUser || isEditing || hideActionButtons) {
       return
     }
 
@@ -297,7 +310,7 @@ function MessageItemComponent({
   }
 
   const handleActionsPointerLeave = () => {
-    if (!isUser) {
+    if (!isUser || hideActionButtons) {
       return
     }
 
@@ -448,7 +461,7 @@ function MessageItemComponent({
         onPointerLeave={handleActionsPointerLeave}
       >
         <div className={`message-body-container ${isEditing ? 'is-editing' : ''}`}>
-          {isUser && !isEditing && !showCompactActionMenu && (
+          {isUser && !isEditing && !showCompactActionMenu && !hideActionButtons && (
             <div className='message-side-actions'>
               {actionButtons}
             </div>
@@ -496,6 +509,7 @@ const areMessageItemPropsEqual = (prev: MessageItemProps, next: MessageItemProps
     prev.isFirstInGroup === next.isFirstInGroup &&
     prev.isTargeted === next.isTargeted &&
     prev.isSessionBusy === next.isSessionBusy &&
+    prev.hideActionButtons === next.hideActionButtons &&
     prev.isEditing === next.isEditing &&
     prev.isCompactLayout === next.isCompactLayout &&
     prev.isTouchInteraction === next.isTouchInteraction &&

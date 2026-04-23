@@ -42,7 +42,7 @@ import { QueuedMessagesCard } from './QueuedMessagesCard'
 import { MessageItem } from './messages/MessageItem'
 import { MessageStatusNotice } from './messages/MessageStatusNotice'
 import type { ChatHistoryStatusNotice } from './messages/build-chat-history-status-notices'
-import { getLastAssistantActionAnchorId } from './messages/message-action-utils'
+import { getLastAssistantActionAnchorId, getLastMessageAnchorId } from './messages/message-action-utils'
 import { buildMessageTurns } from './messages/message-turns'
 import { processMessages } from './messages/message-utils'
 import { SenderInteractionPanel } from './sender/@components/sender-interaction-panel/SenderInteractionPanel'
@@ -402,7 +402,9 @@ export function ChatHistoryView({
       hashAnchorId: hashAnchorId !== '' ? hashAnchorId : targetAnchorId,
       keepLastTurnExpanded: isCreating || session?.status === 'running' || session?.status === 'waiting_input'
     }), [expandedTurnIds, hashAnchorId, isCreating, renderItems, session?.status, targetAnchorId])
+  const isSessionBusy = isCreating || session?.status === 'running' || session?.status === 'waiting_input'
   const lastAssistantActionAnchorId = useMemo(() => getLastAssistantActionAnchorId(renderItems), [renderItems])
+  const lastMessageAnchorId = useMemo(() => getLastMessageAnchorId(renderItems), [renderItems])
   const handleEditQueuedMessage = async (item: SessionQueuedMessage) => {
     const removed = await removeQueuedContent(item.id)
     if (!removed) {
@@ -604,8 +606,8 @@ export function ChatHistoryView({
           isEditing={editingMessageId === item.originalMessage.id}
           isCompactLayout={isCompactLayout}
           isTouchInteraction={isTouchInteraction}
-          isSessionBusy={isCreating || session?.status === 'running' ||
-            session?.status === 'waiting_input'}
+          isSessionBusy={isSessionBusy}
+          hideActionButtons={isSessionBusy && item.anchorId === lastMessageAnchorId}
           showAssistantActions={item.anchorId === lastAssistantActionAnchorId}
           onEditMessage={editMessage}
           onForkMessage={forkMessage}
