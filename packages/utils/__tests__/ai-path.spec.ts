@@ -8,7 +8,8 @@ import {
   resolveProjectAiBaseDirName,
   resolveProjectAiEntitiesDir,
   resolveProjectAiEntitiesDirName,
-  resolveProjectConfigDir
+  resolveProjectConfigDir,
+  resolveProjectMockHome
 } from '#~/ai-path.js'
 
 describe('ai path utils', () => {
@@ -52,5 +53,24 @@ describe('ai path utils', () => {
     expect(resolvePrimaryWorkspaceFolder('/tmp/project', {
       [PROJECT_PRIMARY_WORKSPACE_FOLDER_ENV]: '/tmp/project'
     })).toBeUndefined()
+  })
+
+  it('falls back to the managed mock home when HOME points inside the workspace', () => {
+    expect(resolveProjectMockHome('/tmp/project', {
+      HOME: '/tmp/project',
+      __VF_PROJECT_REAL_HOME__: '/tmp/home'
+    })).toBe('/tmp/project/.ai/.mock')
+
+    expect(resolveProjectMockHome('/tmp/project', {
+      HOME: '/tmp/project/.codex',
+      __VF_PROJECT_REAL_HOME__: '/tmp/home'
+    })).toBe('/tmp/project/.ai/.mock')
+  })
+
+  it('keeps an explicit external HOME when it does not target the real home or workspace', () => {
+    expect(resolveProjectMockHome('/tmp/project', {
+      HOME: '/tmp/custom-home',
+      __VF_PROJECT_REAL_HOME__: '/tmp/home'
+    })).toBe('/tmp/custom-home')
   })
 })

@@ -47,8 +47,10 @@ describe('initGeminiAdapter', () => {
     await initGeminiAdapter({
       cwd: workspace,
       env: {
-        HOME: mockHome
+        HOME: mockHome,
+        __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: '/bin/gemini'
       },
+      configs: [undefined, undefined],
       logger: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -79,8 +81,10 @@ describe('initGeminiAdapter', () => {
     await initGeminiAdapter({
       cwd: workspace,
       env: {
-        HOME: mockHome
+        HOME: mockHome,
+        __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: '/bin/gemini'
       },
+      configs: [undefined, undefined],
       logger: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -158,8 +162,10 @@ describe('initGeminiAdapter', () => {
       const ctx = {
         cwd: workspace,
         env: {
-          HOME: mockHome
+          HOME: mockHome,
+          __VF_PROJECT_AI_ADAPTER_GEMINI_CLI_PATH__: '/bin/gemini'
         },
+        configs: [undefined, undefined],
         logger: {
           info: vi.fn(),
           warn: vi.fn(),

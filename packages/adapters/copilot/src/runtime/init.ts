@@ -3,15 +3,15 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterCtx } from '@vibe-forge/types'
+import { resolveProjectMockHome } from '@vibe-forge/utils'
 import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { COPILOT_CLI_PACKAGE, COPILOT_CLI_VERSION, resolveCopilotBinaryPath } from '#~/paths.js'
 import { resolveAdapterConfig, syncCopilotManagedSymlink } from './shared'
 
-const resolveCopilotMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => {
-  const explicitHome = ctx.env.HOME?.trim() || process.env.HOME?.trim()
-  return explicitHome ? resolve(explicitHome) : resolve(ctx.cwd, '.ai', '.mock')
-}
+const resolveCopilotMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
+  resolveProjectMockHome(ctx.cwd, ctx.env)
+)
 
 const syncCopilotMockHomeSymlink = async (params: {
   sourcePath: string

@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 
 import type { AdapterCtx } from '@vibe-forge/types'
-import { syncSymlinkTarget } from '@vibe-forge/utils'
+import { resolveProjectMockHome, syncSymlinkTarget } from '@vibe-forge/utils'
 import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { OPENCODE_CLI_PACKAGE, OPENCODE_CLI_VERSION, resolveOpenCodeBinaryPath } from '#~/paths.js'
@@ -30,8 +30,8 @@ export const initOpenCodeAdapter = async (ctx: AdapterCtx) => {
     logger: ctx.logger
   })
 
-  const realHome = process.env.__VF_PROJECT_REAL_HOME__
-  const aiHome = process.env.HOME
+  const realHome = ctx.env.__VF_PROJECT_REAL_HOME__?.trim() || process.env.__VF_PROJECT_REAL_HOME__?.trim()
+  const aiHome = resolveProjectMockHome(ctx.cwd, ctx.env)
 
   if (realHome && aiHome) {
     await ensureSymlink(

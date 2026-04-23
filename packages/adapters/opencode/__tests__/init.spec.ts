@@ -126,4 +126,37 @@ describe('initOpenCodeAdapter', () => {
       vi.resetModules()
     }
   })
+
+  it('still stages auth links in the workspace mock home when HOME points at the workspace root', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+
+    await mkdir(join(realHome, '.local', 'share', 'opencode'), { recursive: true })
+    await writeFile(join(realHome, '.local', 'share', 'opencode', 'auth.json'), '{}\n')
+    await writeFile(join(realHome, '.local', 'share', 'opencode', 'mcp-auth.json'), '{}\n')
+
+    await initOpenCodeAdapter({
+      cwd: workspace,
+      env: {
+        HOME: workspace,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const authPath = join(mockHome, '.local', 'share', 'opencode', 'auth.json')
+    expect((await lstat(authPath)).isSymbolicLink()).toBe(true)
+    await expect(lstat(join(workspace, '.local', 'share', 'opencode', 'auth.json'))).rejects.toMatchObject({
+      code: 'ENOENT'
+    })
+  })
 })

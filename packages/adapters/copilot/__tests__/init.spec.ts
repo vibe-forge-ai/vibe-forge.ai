@@ -96,6 +96,35 @@ describe('initCopilotAdapter', () => {
     await expect(lstat(keychainsPath)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it('still writes keychain links into the workspace mock home when HOME points at the workspace root', async () => {
+    const workspace = await createWorkspace()
+    const realHome = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const keychainsPath = join(mockHome, 'Library', 'Keychains')
+
+    await mkdir(join(realHome, 'Library', 'Keychains'), { recursive: true })
+    await writeFile(join(realHome, 'Library', 'Keychains', 'login.keychain-db'), '')
+
+    await initCopilotAdapter({
+      cwd: workspace,
+      env: {
+        HOME: workspace,
+        __VF_PROJECT_REAL_HOME__: realHome,
+        __VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__: '/bin/copilot'
+      },
+      configs: [undefined, undefined],
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      }
+    } as any)
+
+    expect((await lstat(keychainsPath)).isSymbolicLink()).toBe(true)
+    await expect(lstat(join(workspace, 'Library', 'Keychains'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('keeps concurrent keychain sync idempotent when multiple vf processes initialize Copilot together', async () => {
     const workspace = await createWorkspace()
     const realHome = await createWorkspace()
