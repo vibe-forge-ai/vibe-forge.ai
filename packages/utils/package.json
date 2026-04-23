@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/utils",
-  "version": "2.0.3",
+  "version": "3.0.0-alpha.0",
   "description": "Shared runtime utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -164,7 +164,7 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/utils/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/types": "workspace:*",
     "node-notifier": "^10.0.1",
     "zod": "^3.24.1"
   },

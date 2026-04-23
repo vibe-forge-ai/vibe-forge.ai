@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/app-runtime",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "description": "App-facing runtime facade for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -26,8 +26,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/benchmark": "workspace:^",
-    "@vibe-forge/mcp": "workspace:^",
-    "@vibe-forge/task": "workspace:^"
+    "@vibe-forge/benchmark": "workspace:*",
+    "@vibe-forge/mcp": "workspace:*",
+    "@vibe-forge/task": "workspace:*"
   }
 }

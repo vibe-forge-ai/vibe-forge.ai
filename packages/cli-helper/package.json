@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli-helper",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "exports": {
     ".": "./loader.js",
     "./entry": "./entry.js",
@@ -8,6 +8,6 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/register": "workspace:^"
+    "@vibe-forge/register": "workspace:*"
   }
 }

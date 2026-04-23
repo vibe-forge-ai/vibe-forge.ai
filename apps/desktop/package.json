@@ -19,8 +19,8 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project node apps/desktop/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/cli-helper": "workspace:^",
-    "@vibe-forge/server": "workspace:^",
+    "@vibe-forge/cli-helper": "workspace:*",
+    "@vibe-forge/server": "workspace:*",
     "electron-updater": "^6.8.3"
   },
   "devDependencies": {

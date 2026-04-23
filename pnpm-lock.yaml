@@ -101,7 +101,7 @@ importers:
         specifier: ^0.11.0
         version: 0.11.0
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/cli-helper
       commander:
         specifier: ^12.1.0
@@ -110,34 +110,34 @@ importers:
   apps/cli:
     dependencies:
       '@vibe-forge/app-runtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/app-runtime
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/cli-helper
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../../packages/config
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/hooks
       '@vibe-forge/managed-plugins':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/managed-plugins
       '@vibe-forge/plugin-cli-skills':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/plugins/cli-skills
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/register
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils
       commander:
         specifier: ^12.1.0
@@ -162,40 +162,40 @@ importers:
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vibe-forge/adapter-claude-code':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/claude-code
       '@vibe-forge/adapter-codex':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/codex
       '@vibe-forge/adapter-copilot':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/copilot
       '@vibe-forge/adapter-gemini':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/gemini
       '@vibe-forge/adapter-kimi':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/kimi
       '@vibe-forge/adapter-opencode':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/opencode
       '@vibe-forge/channel-lark':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/channels/lark
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/core
       '@vibe-forge/plugin-chrome-devtools':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/plugins/chrome-devtools
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/register
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils
       '@vitejs/plugin-react':
         specifier: ^5.1.2
@@ -277,10 +277,10 @@ importers:
   apps/desktop:
     dependencies:
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/cli-helper
       '@vibe-forge/server':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../server
       electron-updater:
         specifier: ^6.8.3
@@ -308,40 +308,40 @@ importers:
         specifier: ^12.0.0
         version: 12.0.2
       '@vibe-forge/adapter-claude-code':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/adapters/claude-code
       '@vibe-forge/app-runtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/app-runtime
       '@vibe-forge/channel-lark':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/channels/lark
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/cli-helper
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../../packages/config
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/core
       '@vibe-forge/definition-core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/definition-core
       '@vibe-forge/definition-loader':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/definition-loader
       '@vibe-forge/managed-plugins':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/managed-plugins
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/register
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils
       commander:
         specifier: ^12.1.0
@@ -414,16 +414,16 @@ importers:
   apps/web:
     dependencies:
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/cli-helper
       '@vibe-forge/client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../client
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/register
       '@vibe-forge/server':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../server
       commander:
         specifier: ^12.1.0
@@ -432,19 +432,19 @@ importers:
   packages/adapters/claude-code:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../hooks
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -453,19 +453,19 @@ importers:
   packages/adapters/codex:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../hooks
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -474,13 +474,13 @@ importers:
   packages/adapters/copilot:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -489,16 +489,16 @@ importers:
   packages/adapters/gemini:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../hooks
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -507,16 +507,16 @@ importers:
   packages/adapters/kimi:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../hooks
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -525,22 +525,22 @@ importers:
   packages/adapters/opencode:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../../config
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/definition-loader':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../definition-loader
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../hooks
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../utils
       zod:
         specifier: ^3.24.1
@@ -549,25 +549,25 @@ importers:
   packages/app-runtime:
     dependencies:
       '@vibe-forge/benchmark':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../benchmark
       '@vibe-forge/mcp':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../mcp
       '@vibe-forge/task':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../task
 
   packages/benchmark:
     dependencies:
       '@vibe-forge/task':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../task
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       fast-glob:
         specifier: ^3.3.3
@@ -583,18 +583,18 @@ importers:
     dependencies:
       '@larksuiteoapi/node-sdk':
         specifier: latest
-        version: 1.60.0
+        version: 1.61.1
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.3
         version: 1.25.3(hono@4.11.4)(zod@3.25.76)
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../cli-helper
       '@vibe-forge/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../core
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../types
       commander:
         specifier: ^12.1.0
@@ -606,19 +606,19 @@ importers:
   packages/cli-helper:
     dependencies:
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../register
 
   packages/config:
     dependencies:
       '@vibe-forge/core':
-        specifier: workspace:^2.0.1
+        specifier: workspace:*
         version: link:../core
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       js-yaml:
         specifier: ^4.1.1
@@ -634,10 +634,10 @@ importers:
   packages/core:
     dependencies:
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       zod:
         specifier: ^3.24.1
@@ -646,22 +646,22 @@ importers:
   packages/definition-core:
     dependencies:
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
 
   packages/definition-loader:
     dependencies:
       '@vibe-forge/definition-core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../definition-core
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       '@vibe-forge/workspace-assets':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../workspace-assets
       fast-glob:
         specifier: ^3.3.3
@@ -673,16 +673,16 @@ importers:
   packages/hooks:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../config
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../register
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
     devDependencies:
       fast-glob:
@@ -692,10 +692,10 @@ importers:
   packages/managed-plugins:
     dependencies:
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
 
   packages/mcp:
@@ -704,25 +704,25 @@ importers:
         specifier: ^1.25.3
         version: 1.25.3(hono@4.11.4)(zod@3.25.76)
       '@vibe-forge/cli-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../cli-helper
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../config
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../hooks
       '@vibe-forge/register':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../register
       '@vibe-forge/task':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../task
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       commander:
         specifier: ^12.1.0
@@ -774,22 +774,22 @@ importers:
   packages/task:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../config
       '@vibe-forge/hooks':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../hooks
       '@vibe-forge/managed-plugins':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../managed-plugins
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       '@vibe-forge/workspace-assets':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../workspace-assets
       zod:
         specifier: ^3.24.1
@@ -802,7 +802,7 @@ importers:
   packages/utils:
     dependencies:
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       node-notifier:
         specifier: ^10.0.1
@@ -818,16 +818,16 @@ importers:
   packages/workspace-assets:
     dependencies:
       '@vibe-forge/config':
-        specifier: workspace:^2.0.2
+        specifier: workspace:*
         version: link:../config
       '@vibe-forge/definition-core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../definition-core
       '@vibe-forge/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       fast-glob:
         specifier: ^3.3.3
@@ -1669,8 +1669,8 @@ packages:
     engines: {node: '>= 12'}
     deprecated: Please upgrade to v15 or higher. All reported bugs in this version are fixed in newer releases, dependencies have been updated, and security has been improved.
 
-  '@larksuiteoapi/node-sdk@1.60.0':
-    resolution: {integrity: sha512-MS1eXx7K6HHIyIcCBkJLb21okoa8ZatUGQWZaCCUePm6a37RWFmT6ZKlKvHxAanSX26wNuNlwP0RhgscsE+T6g==, tarball: https://registry.npmjs.org/@larksuiteoapi/node-sdk/-/node-sdk-1.60.0.tgz}
+  '@larksuiteoapi/node-sdk@1.61.1':
+    resolution: {integrity: sha512-BxLBCXk/652I0nWduQbiIrTH2TPe/i4ZD6UhW3VCTVFzrOq5Y9SKvAwanBE6z1ZyEPL6iLnXg/TfGvGSzG6MLw==, tarball: https://registry.npmjs.org/@larksuiteoapi/node-sdk/-/node-sdk-1.61.1.tgz}
 
   '@malept/cross-spawn-promise@2.0.0':
     resolution: {integrity: sha512-1DpKU0Z5ThltBwjNySMC14g0CkbyhCaz9FkhxqNsZI6uAPJXFS8cMXlBKo26FJ8ZuW6S9GCMcR9IO5k2X5/9Fg==, tarball: https://registry.npmjs.org/@malept/cross-spawn-promise/-/cross-spawn-promise-2.0.0.tgz}
@@ -7723,7 +7723,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@larksuiteoapi/node-sdk@1.60.0':
+  '@larksuiteoapi/node-sdk@1.61.1':
     dependencies:
       axios: 1.13.6
       lodash.identity: 3.0.0
@@ -9815,7 +9815,7 @@ snapshots:
       '@electron/asar': 3.4.1
       debug: 4.4.3
       fs-extra: 7.0.1
-      lodash: 4.17.21
+      lodash: 4.18.1
       temp: 0.9.4
     optionalDependencies:
       '@electron/windows-sign': 1.2.2

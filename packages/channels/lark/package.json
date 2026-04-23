@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/channel-lark",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {
@@ -48,9 +48,9 @@
   "dependencies": {
     "@larksuiteoapi/node-sdk": "latest",
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "@vibe-forge/cli-helper": "workspace:^",
-    "@vibe-forge/core": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
+    "@vibe-forge/cli-helper": "workspace:*",
+    "@vibe-forge/core": "workspace:*",
+    "@vibe-forge/types": "workspace:*",
     "commander": "^12.1.0",
     "zod": "^3.24.1"
   }

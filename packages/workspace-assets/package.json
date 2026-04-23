@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/workspace-assets",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "description": "Workspace asset resolution and adapter asset planning for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -29,10 +29,10 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/workspace-assets/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/config": "workspace:^2.0.2",
-    "@vibe-forge/definition-core": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^",
+    "@vibe-forge/config": "workspace:*",
+    "@vibe-forge/definition-core": "workspace:*",
+    "@vibe-forge/types": "workspace:*",
+    "@vibe-forge/utils": "workspace:*",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2",
     "js-yaml": "^4.1.1"

@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/definition-loader",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "description": "Shared definition loading utilities for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -29,10 +29,10 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/definition-loader/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/definition-core": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^",
-    "@vibe-forge/workspace-assets": "workspace:^",
+    "@vibe-forge/definition-core": "workspace:*",
+    "@vibe-forge/types": "workspace:*",
+    "@vibe-forge/utils": "workspace:*",
+    "@vibe-forge/workspace-assets": "workspace:*",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2"
   }

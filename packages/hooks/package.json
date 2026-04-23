@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/hooks",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "description": "Vibe Forge hooks runtime and bridge helpers",
   "imports": {
     "#~/*.js": {
@@ -42,10 +42,10 @@
     "test": "pnpm -C ../.. exec vitest run --workspace vitest.workspace.ts --project bundler packages/hooks/__tests__"
   },
   "dependencies": {
-    "@vibe-forge/config": "workspace:^2.0.2",
-    "@vibe-forge/register": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^"
+    "@vibe-forge/config": "workspace:*",
+    "@vibe-forge/register": "workspace:*",
+    "@vibe-forge/types": "workspace:*",
+    "@vibe-forge/utils": "workspace:*"
   },
   "devDependencies": {
     "fast-glob": "^3.3.3"

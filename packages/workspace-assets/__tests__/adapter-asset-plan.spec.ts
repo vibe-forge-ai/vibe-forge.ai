@@ -333,7 +333,7 @@ describe('buildAdapterAssetPlan', () => {
     const fooOverlays = plan.overlays.filter(entry => entry.kind === 'skill' && entry.targetPath === 'skills/foo')
     expect(fooOverlays).toHaveLength(1)
     expect(fooOverlays[0]?.sourcePath).toContain(
-      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/foo'
+      '/.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/foo'
     )
     expect(fooOverlays[0]?.sourcePath).not.toBe(join(realHome!, '.agents/skills/foo'))
   })

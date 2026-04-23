@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/benchmark",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha.0",
   "description": "Benchmark discovery and execution for Vibe Forge",
   "imports": {
     "#~/*.js": {
@@ -26,9 +26,9 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@vibe-forge/task": "workspace:^",
-    "@vibe-forge/types": "workspace:^",
-    "@vibe-forge/utils": "workspace:^",
+    "@vibe-forge/task": "workspace:*",
+    "@vibe-forge/types": "workspace:*",
+    "@vibe-forge/utils": "workspace:*",
     "fast-glob": "^3.3.3",
     "front-matter": "^4.0.2",
     "zod": "^3.24.1"
