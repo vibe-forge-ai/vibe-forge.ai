@@ -79,6 +79,39 @@ const createStoredBooleanAtom = (storageKey: string, defaultValue: boolean) => {
   )
 }
 
+const getStoredNonNegativeInteger = (key: string, defaultValue: number) => {
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw == null || raw.trim() === '') return defaultValue
+
+    const parsed = Number(raw)
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      return parsed
+    }
+  } catch {}
+
+  return defaultValue
+}
+
+const createStoredNonNegativeIntegerAtom = (storageKey: string, defaultValue: number) => {
+  const baseAtom = atom<number>(getStoredNonNegativeInteger(storageKey, defaultValue))
+
+  return atom(
+    get => get(baseAtom),
+    (_get, set, value: number) => {
+      const nextValue = Number.isInteger(value) && value >= 0
+        ? value
+        : defaultValue
+
+      set(baseAtom, nextValue)
+
+      try {
+        localStorage.setItem(storageKey, String(nextValue))
+      } catch {}
+    }
+  )
+}
+
 export type SenderHeaderDisplayMode = 'expanded' | 'collapsed'
 
 const SENDER_HEADER_DISPLAY_STORAGE_KEY = 'vf_sender_header_default_display'
@@ -121,6 +154,8 @@ export const senderHeaderDisplayAtom = atom(
 
 const SHOW_ANNOUNCEMENTS_STORAGE_KEY = 'vf_show_announcements'
 const SHOW_NEW_SESSION_STARTER_LIST_STORAGE_KEY = 'vf_show_new_session_starter_list'
+const SESSION_LIST_SEARCH_THRESHOLD_STORAGE_KEY = 'vf_session_list_search_threshold'
+const DEFAULT_SESSION_LIST_SEARCH_THRESHOLD = 5
 
 export const showAnnouncementsAtom = createStoredBooleanAtom(
   SHOW_ANNOUNCEMENTS_STORAGE_KEY,
@@ -130,4 +165,9 @@ export const showAnnouncementsAtom = createStoredBooleanAtom(
 export const showNewSessionStarterListAtom = createStoredBooleanAtom(
   SHOW_NEW_SESSION_STARTER_LIST_STORAGE_KEY,
   true
+)
+
+export const sessionListSearchThresholdAtom = createStoredNonNegativeIntegerAtom(
+  SESSION_LIST_SEARCH_THRESHOLD_STORAGE_KEY,
+  DEFAULT_SESSION_LIST_SEARCH_THRESHOLD
 )

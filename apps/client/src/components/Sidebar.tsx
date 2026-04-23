@@ -417,6 +417,7 @@ export function Sidebar({
           onToggleSidebarCollapsed={() => setSidebarCollapsed(!isSidebarCollapsed)}
           onCloseSidebar={onRequestClose}
           selectedCount={selectedIds.size}
+          sessionCount={sessions.length}
           totalCount={filteredSessions.length}
           onSelectAll={handleSelectAll}
           onBatchArchive={() => {

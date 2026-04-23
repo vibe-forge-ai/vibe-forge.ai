@@ -1,10 +1,11 @@
 import '../ConfigView.scss'
 
-import { Select, Switch } from 'antd'
+import { InputNumber, Select, Switch } from 'antd'
 import { useAtom } from 'jotai'
 
 import {
   senderHeaderDisplayAtom,
+  sessionListSearchThresholdAtom,
   showAnnouncementsAtom,
   showNewSessionStarterListAtom,
   themeAtom
@@ -19,6 +20,7 @@ export function AppSettingsPanel({ t }: { t: TranslationFn }) {
   const [showAnnouncements, setShowAnnouncements] = useAtom(showAnnouncementsAtom)
   const [showNewSessionStarterList, setShowNewSessionStarterList] = useAtom(showNewSessionStarterListAtom)
   const [senderHeaderDisplay, setSenderHeaderDisplay] = useAtom(senderHeaderDisplayAtom)
+  const [sessionListSearchThreshold, setSessionListSearchThreshold] = useAtom(sessionListSearchThresholdAtom)
 
   return (
     <div className='config-view__editor-wrap'>
@@ -72,6 +74,18 @@ export function AppSettingsPanel({ t }: { t: TranslationFn }) {
                   label: t('config.appSettings.senderHeaderDisplay.collapsed')
                 }
               ]}
+            />
+          </FieldRow>
+          <FieldRow
+            title={t('config.appSettings.sessionListSearchThreshold.label')}
+            description={t('config.appSettings.sessionListSearchThreshold.desc')}
+            icon='search'
+          >
+            <InputNumber
+              min={0}
+              precision={0}
+              value={sessionListSearchThreshold}
+              onChange={(value) => setSessionListSearchThreshold(value ?? 0)}
             />
           </FieldRow>
           <FieldRow
