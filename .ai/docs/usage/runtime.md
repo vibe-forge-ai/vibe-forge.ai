@@ -39,9 +39,15 @@ npx @vibe-forge/server --host 127.0.0.1 --port 8787
 npx @vibe-forge/server --host 0.0.0.0 --port 8787 --allow-cors
 ```
 
-## 开发态启动 UI server / client
+## 从源码开发态启动 UI server / client
 
-在你的项目根目录执行：
+这一节只用于 Vibe Forge 仓库自身的前端开发，不推荐作为项目接入方式。项目侧优先使用：
+
+```bash
+npx @vibe-forge/web
+```
+
+如果你正在 Vibe Forge 源码仓根目录开发 UI，并且已经完成 `pnpm install`，可以执行：
 
 ```bash
 export __VF_PROJECT_WORKSPACE_FOLDER__="$PWD"
@@ -55,6 +61,11 @@ npx -y -p @vibe-forge/client vfui-client | tee .logs/client.log &
 trap 'kill 0' EXIT
 wait
 ```
+
+说明：
+
+- `vfui-client` 的 `dev` 模式依赖本地源码和 workspace 安装，不再作为 npm 发布包的通用运行方式。
+- 非 `dev` 模式下，`@vibe-forge/client` 会直接托管已构建的 `dist`，不再依赖 `vite preview`。
 
 ## 说明
 

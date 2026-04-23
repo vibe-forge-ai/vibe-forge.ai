@@ -41,8 +41,10 @@ Vibe Forge 是一个 AI 辅助开发框架，提供桌面应用、VS Code 扩展
 ### 在项目里接入 Web UI / CLI
 
 ```bash
-pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
+pnpm add -D @vibe-forge/web @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
+
+只有在高级拆分部署场景，或者本仓源码开发场景下，才需要单独安装 `@vibe-forge/server` / `@vibe-forge/client`。
 
 ## 使用方式
 

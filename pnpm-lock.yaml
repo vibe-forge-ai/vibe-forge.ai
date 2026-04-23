@@ -155,12 +155,22 @@ importers:
 
   apps/client:
     dependencies:
+      '@vibe-forge/register':
+        specifier: workspace:*
+        version: link:../../packages/register
+    devDependencies:
       '@ant-design/icons':
         specifier: ^5.3.7
         version: 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.3.2
+        version: 18.3.7(@types/react@18.3.27)
       '@vibe-forge/adapter-claude-code':
         specifier: workspace:*
         version: link:../../packages/adapters/claude-code
@@ -188,9 +198,6 @@ importers:
       '@vibe-forge/plugin-chrome-devtools':
         specifier: workspace:*
         version: link:../../packages/plugins/chrome-devtools
-      '@vibe-forge/register':
-        specifier: workspace:*
-        version: link:../../packages/register
       '@vibe-forge/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -260,19 +267,12 @@ importers:
       vite:
         specifier: ^5.4.8
         version: 5.4.21(@types/node@24.12.2)(sass@1.97.2)(terser@5.46.1)
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.27
-      '@types/react-dom':
-        specifier: ^18.3.2
-        version: 18.3.7(@types/react@18.3.27)
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.2)(sass@1.97.2)(terser@5.46.1)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   apps/desktop:
     dependencies:

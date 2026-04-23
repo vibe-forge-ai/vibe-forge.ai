@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/channel-lark",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-alpha.7",
   "imports": {
     "#~/*.js": {
       "__vibe-forge__": {

@@ -42,8 +42,10 @@ Vibe Forge is an AI-assisted development framework with a desktop app, VS Code e
 ### Add Web UI / CLI to Your Project
 
 ```bash
-pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
+pnpm add -D @vibe-forge/web @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
+
+Install `@vibe-forge/server` or `@vibe-forge/client` separately only for advanced split-runtime scenarios or local source development.
 
 ## Usage
 

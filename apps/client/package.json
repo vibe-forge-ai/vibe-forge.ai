@@ -1,7 +1,7 @@
 {
   "name": "@vibe-forge/client",
   "type": "module",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-alpha.7",
   "imports": {
     "#~/*": [
       "./src/*",
@@ -15,10 +15,19 @@
     "vibe-forge-ui-client": "./cli.cjs",
     "vfui-client": "./cli.cjs"
   },
+  "files": [
+    "cli.cjs",
+    "dist",
+    "preview-runtime.cjs",
+    "preview-server.cjs"
+  ],
   "scripts": {
     "prepublish": "vite build"
   },
   "dependencies": {
+    "@vibe-forge/register": "workspace:*"
+  },
+  "devDependencies": {
     "@ant-design/icons": "^5.3.7",
     "@monaco-editor/react": "^4.7.0",
     "@vibe-forge/adapter-claude-code": "workspace:*",
@@ -30,7 +39,6 @@
     "@vibe-forge/channel-lark": "workspace:*",
     "@vibe-forge/core": "workspace:*",
     "@vibe-forge/plugin-chrome-devtools": "workspace:*",
-    "@vibe-forge/register": "workspace:*",
     "@vibe-forge/types": "workspace:*",
     "@vibe-forge/utils": "workspace:*",
     "@vitejs/plugin-react": "^5.1.2",
@@ -54,9 +62,7 @@
     "shiki": "^3.21.0",
     "swr": "^2.2.5",
     "vite": "^5.4.8",
-    "zod": "^3.24.1"
-  },
-  "devDependencies": {
+    "zod": "^3.24.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.2",
     "vitest": "^3.2.4"

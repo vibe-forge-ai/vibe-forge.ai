@@ -165,6 +165,8 @@ pnpm add -D @vibe-forge/server
 pnpm add -D @vibe-forge/server @vibe-forge/client @vibe-forge/cli @vibe-forge/adapter-claude-code
 ```
 
+其中 `@vibe-forge/client` 更适合高级拆分部署或本仓源码开发；普通项目接入优先使用 `@vibe-forge/web`。
+
 如果需要在项目里启用插件，还需要把对应插件包一起安装到当前 workspace：
 
 ```bash
