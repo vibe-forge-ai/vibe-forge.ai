@@ -40,23 +40,14 @@ dependencies:
 - 先在当前 workspace 和已启用插件的 skills 中按名称解析。
 - 默认还会桥接用户真实 home 下的常见 skill roots：`~/.agents/skills`、`~/.claude/skills`、`~/.config/opencode/skills`、`~/.gemini/skills`。
 - bridge 进来的 home skill 会进入统一 workspace assets，并像项目 skill 一样参与默认选择。
-- 项目 skill、插件 skill 和运行时下载的 registry dependency 都优先于同名 home skill。
-- 本地找不到时，会按 registry 拉取并缓存到 `./.ai/caches/skill-dependencies/`。
-- 未配置 registry 时，默认使用 Vercel 的公开 Skills Hub：`https://skills.sh`。
-- 如果需要切到兼容的私有 registry，可以在 `.ai.config.*` 配置：
+- 项目 skill、插件 skill 和运行时通过 `skills` CLI 下载的 dependency 都优先于同名 home skill。
+- 本地找不到时，默认会调用 `skills` CLI 搜索并安装，再缓存到 `./.ai/caches/skill-dependencies/`。
+- 默认不需要额外配置。
+- 如果某个 dependency 需要切换 `skills` CLI 包的安装来源，例如强制走内网 npm 源，直接把 registry 写进 skill spec：
 
 ```yaml
 skills:
-  registry: https://skills.example.com
-```
-
-也可以拆开搜索和下载入口：
-
-```yaml
-skills:
-  registry:
-    searchUrl: https://skills.example.com
-    downloadUrl: https://skills.example.com
+  - https://registry.example.com@example-source/default/public@design-review@1.0.3
 ```
 
 依赖安装只会写入项目 AI 目录的 cache，不会修改用户真实 home。adapter 启动时会把最终解析出的 skill 列表投影到对应原生目录。
@@ -80,6 +71,23 @@ skills:
 ```
 
 `roots` 只支持绝对路径或以 `~` 开头的路径；不存在的目录会被跳过。
+
+如果你想声明一组“项目启动前必须存在”的 skills，可以在 `.ai.config.*` 里配置：
+
+```yaml
+skills:
+  - frontend-design
+  - name: design-review
+    source: example-source/default/public
+    rename: internal-review
+```
+
+这组 skills 会直接安装到项目 `./.ai/skills/`：
+
+- 缺失时，在会话启动前自动补装
+- 已安装时，默认跳过
+- 启动时传 `vf run --update-skills` 或 API `updateSkills: true` 时，强制刷新已安装项
+- `rename` 会决定本地目录名和本地 `SKILL.md` 里的 `name`
 
 ## 环境变量
 

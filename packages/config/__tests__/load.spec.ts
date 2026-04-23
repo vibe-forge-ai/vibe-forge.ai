@@ -734,9 +734,7 @@ defaultModel: package-model
     expect(ADAPTER_COMMON_CONFIG_KEYS).toEqual([
       'defaultModel',
       'includeModels',
-      'excludeModels',
-      'defaultAccount',
-      'accounts'
+      'excludeModels'
     ])
     expect(result.common).toEqual({
       defaultModel: 'gpt-5.4',

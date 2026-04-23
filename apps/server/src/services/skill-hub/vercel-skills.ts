@@ -1,9 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises'
-import path from 'node:path'
-import process from 'node:process'
-
-import { resolveProjectAiPath } from '@vibe-forge/utils'
-
+import { readProjectSkillNames } from './project-skills'
 import type { SkillHubItem, SkillHubRegistrySummary } from './types'
 import { SKILLS_API_BASE, VERCEL_SKILLS_REGISTRY_ID, fetchSkillsJson } from './vercel-skills-common'
 export { VERCEL_SKILLS_REGISTRY_ID } from './vercel-skills-common'
@@ -41,45 +36,6 @@ const toErrorMessage = (error: unknown) => error instanceof Error ? error.messag
 const normalizeSearchLimit = (limit: number | undefined) => {
   if (limit == null || !Number.isFinite(limit)) return DEFAULT_SEARCH_LIMIT
   return Math.min(Math.max(Math.trunc(limit), 1), MAX_SEARCH_LIMIT)
-}
-
-const resolveSkillNameFromBody = (body: string, fallbackName: string) => {
-  const lines = body.split('\n')
-  if (lines[0]?.trim() !== '---') return fallbackName
-
-  for (const line of lines.slice(1)) {
-    if (line.trim() === '---') break
-    const separatorIndex = line.indexOf(':')
-    if (separatorIndex <= 0) continue
-    if (line.slice(0, separatorIndex).trim() !== 'name') continue
-    return line.slice(separatorIndex + 1).trim().replace(/^["']|["']$/g, '') || fallbackName
-  }
-
-  return fallbackName
-}
-
-const readProjectSkillNames = async (workspaceFolder: string) => {
-  const skillsDir = resolveProjectAiPath(workspaceFolder, process.env, 'skills')
-  try {
-    const entries = await readdir(skillsDir, { withFileTypes: true })
-    return new Set(
-      await Promise.all(
-        entries
-          .filter(entry => entry.isDirectory())
-          .map(async (entry) => {
-            const fallbackName = entry.name
-            try {
-              const body = await readFile(path.join(skillsDir, entry.name, 'SKILL.md'), 'utf8')
-              return resolveSkillNameFromBody(body, fallbackName)
-            } catch {
-              return fallbackName
-            }
-          })
-      )
-    )
-  } catch {
-    return new Set<string>()
-  }
 }
 
 export const searchVercelSkills = async (params: {

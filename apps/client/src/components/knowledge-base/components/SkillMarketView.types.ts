@@ -17,6 +17,7 @@ export interface SkillMarketViewProps {
   sourceFilter: string
   sourceOptions: Array<{ label: string; value: string }>
   onAddRegistry: () => void
+  onOpenSkillsCli: () => void
   onInstall: (item: SkillHubItem) => void
   onInstallFilterChange: (value: SkillHubInstallFilter) => void
   onLoadMore: () => void

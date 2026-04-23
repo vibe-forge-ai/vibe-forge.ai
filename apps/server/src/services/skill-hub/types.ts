@@ -42,3 +42,19 @@ export interface SkillHubInstallResult {
   installedAt: string
   installDir: string
 }
+
+export interface SkillsCliSearchResult {
+  source: string
+  items: SkillHubItem[]
+  hasMore?: boolean
+  total?: number
+  error?: string
+}
+
+export interface SkillsCliInstallResult {
+  source: string
+  skill: string
+  name: string
+  installedAt: string
+  installDir: string
+}

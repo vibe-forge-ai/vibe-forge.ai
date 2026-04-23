@@ -31,14 +31,11 @@ Vibe Forge 默认会桥接用户真实 home 下的常见 skill roots，并把它
 
 详细的默认 roots、优先级、symlink 投影行为和 `skills.homeBridge` 配置见 [Home Skill Auto-Bridge](./skills/home-bridge.md)。
 
-## CLI 内置 Skills
+## 项目安装与 CLI
 
-`vf` CLI 默认会注入 `@vibe-forge/plugin-cli-skills`，提供一组不需要项目手动配置的通用说明型 skills。通常直接描述需求即可；只有需要强制指定某个 skill 时，才使用 `vf run --include-skill <name> "任务描述"`。
+项目预装 skills、启动前自动补装、`vf run --update-skills`、CLI 内置 skills，以及 `vf skills add/install/update/remove/publish` 的完整说明已经拆到单独文档：
 
-- `vf-cli-quickstart`：说明 CLI 常用命令、配置命令和会话恢复方式。
-- `vf-cli-print-mode`：说明 print 模式、stdin 控制和权限确认。
-- `create-entity`：按用户需求创建新的 Vibe Forge entity。
-- `update-entity`：按用户需求更新已有 Vibe Forge entity，强调最小改动和维护引用关系。
+- [项目安装与 CLI 管理](./skills/project-management.md)
 
 ## 声明依赖
 
@@ -66,7 +63,7 @@ dependencies:
   - frontend-design
 ```
 
-这种写法会先查当前 workspace 和已启用插件里的 skill。本地找不到时，再去 registry 搜索同名 skill。
+这种写法会先查当前 workspace 和已启用插件里的 skill。本地找不到时，再用 `skills find <name>` 搜索同名 skill。
 
 指定 Vercel Skills Hub source：
 
@@ -82,55 +79,39 @@ dependencies:
   - anthropics/skills/frontend-design
 ```
 
-对象形式适合给单个依赖指定 source 或 registry：
+多段 source 也建议优先写成 `source@skill`，例如：
+
+```yaml
+dependencies:
+  - example-source/default/public@frontend-design
+```
+
+这里的 `example-source/default/public` 会被当作完整 source path 原样传给 `skills` CLI：
+
+```bash
+skills add example-source/default/public --skill frontend-design
+```
+
+Vibe Forge 不会继续拆解 `/default/public` 的业务含义；它通常只是内部 `skills` 服务里的 namespace、group、channel 或可见性路径，具体语义由 source 自己决定。
+
+对象形式适合给单个依赖指定 source：
 
 ```yaml
 dependencies:
   - name: frontend-design
     source: anthropics/skills
-    registry: https://skills.example.com
 ```
 
 字段含义：
 
 - `name`：依赖 skill 名称
 - `source`：远程 source，格式是 `owner/repo`
-- `registry`：只对当前依赖生效的 registry 地址
 
-## 解析顺序
+## 解析与运行时行为
 
-Vibe Forge 会按这个顺序处理依赖与候选 skill：
+依赖解析顺序、默认 `skills` CLI 行为、dependency cache、知识库里的 “Install via Skills CLI” 入口，以及父 skill 被选择后如何自动带出依赖，见：
 
-1. 扫描当前 workspace 的 `.ai/skills`
-2. 扫描已启用插件提供的 skills
-3. 桥接支持的 home skill roots
-4. 依赖解析时优先在项目和插件 skill 里按名称匹配
-5. 本地未命中时，从 registry 下载依赖 skill
-6. 对纯名称依赖，如果 registry 不可用且只有 home-bridge skill 命中，才回退到 home skill
-7. 把下载结果作为普通 workspace skill 加入本次资产列表
-8. 对新加入的依赖继续递归解析
-
-如果本地存在多个同名或同 slug 的 skill，会报歧义错误。遇到这种情况，建议给插件实例配置 `scope`，再在引用处使用 `scope/name`。
-
-## Registry 配置
-
-不配置 registry 时，默认使用 Vercel 公开 Skills Hub：`https://skills.sh`。
-
-私有 registry 配置、搜索/下载入口拆分、缓存目录和安全约束见 [Skills registry 细节](./skills/registry.md)。
-
-## 与选择规则的关系
-
-如果任务只显式选择父 skill：
-
-```json
-{
-  "skills": {
-    "include": ["app-builder"]
-  }
-}
-```
-
-`app-builder` 声明的依赖会自动加入同一次运行。
+- [依赖解析与运行时行为](./skills/resolution.md)
 
 如果显式排除了某个依赖：
 
@@ -158,6 +139,10 @@ Vibe Forge 会按这个顺序处理依赖与候选 skill：
 
 ## 常见问题
 
-- 本地和 registry 都找不到依赖时，会报错并停止本次资产解析。
-- registry 下载结果必须包含 `SKILL.md`，否则会报错。
+如果依赖本地找不到、`skills` CLI 也搜不到，会报错并停止本次资产解析。
+
+如果安装结果没有 `SKILL.md`，会报错；CLI 下载到的 skill 目录必须是一个完整 skill 快照。
+
+如果同名 skill 同时存在于本地和插件中，本地无 scope 的唯一匹配优先；否则会提示歧义，需要改名或使用 scoped 引用。
+
 - 同名 skill 的优先级与重复处理规则见 [Home Skill Auto-Bridge](./skills/home-bridge.md)。

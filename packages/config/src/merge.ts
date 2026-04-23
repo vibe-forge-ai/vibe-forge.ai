@@ -1,5 +1,11 @@
 import type { Config, NotificationConfig, NotificationEventConfig } from '@vibe-forge/types'
-import { mergeAdapterConfigs, mergeMarketplaceConfigs, mergePluginConfigs } from '@vibe-forge/utils'
+import {
+  isLegacySkillsConfig,
+  mergeAdapterConfigs,
+  mergeMarketplaceConfigs,
+  mergePluginConfigs,
+  resolveConfiguredSkillInstalls
+} from '@vibe-forge/utils'
 
 import { mergeWorkspaceConfigs } from './workspace-config'
 
@@ -91,6 +97,59 @@ const mergePermissions = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
+const mergeConversation = (
+  left?: Config['conversation'],
+  right?: Config['conversation']
+) => {
+  if (left == null && right == null) return undefined
+
+  const merged: NonNullable<Config['conversation']> = {
+    ...(left ?? {}),
+    ...(right ?? {}),
+    startupPresets: mergeList(left?.startupPresets, right?.startupPresets),
+    builtinActions: mergeList(left?.builtinActions, right?.builtinActions)
+  }
+
+  return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
+}
+
+const mergeSkillHomeBridge = (
+  left?: Config['skills'],
+  right?: Config['skills']
+) => {
+  const leftHomeBridge = isLegacySkillsConfig(left) ? left.homeBridge : undefined
+  const rightHomeBridge = isLegacySkillsConfig(right) ? right.homeBridge : undefined
+
+  if (leftHomeBridge == null && rightHomeBridge == null) return undefined
+
+  const merged = {
+    ...(leftHomeBridge ?? {}),
+    ...(rightHomeBridge ?? {})
+  }
+
+  return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
+}
+
+const mergeSkills = (
+  left?: Config['skills'],
+  right?: Config['skills']
+) => {
+  const installs = mergeList(
+    resolveConfiguredSkillInstalls(left),
+    resolveConfiguredSkillInstalls(right)
+  )
+  const homeBridge = mergeSkillHomeBridge(left, right)
+
+  if (homeBridge == null) {
+    return installs
+  }
+
+  return {
+    ...(installs == null ? {} : { install: installs }),
+    homeBridge
+  }
+}
+
 export function mergeConfigs(left: undefined, right: undefined): undefined
 export function mergeConfigs<T extends Partial<Config>>(left: T, right: T): T
 export function mergeConfigs<T extends Partial<Config>>(left: T | undefined, right: T): T
@@ -121,19 +180,13 @@ export function mergeConfigs<T extends Partial<Config>>(left?: T, right?: T) {
     env: mergeRecord(left?.env, right?.env),
     announcements: mergeList(left?.announcements, right?.announcements),
     shortcuts: mergeRecord(left?.shortcuts, right?.shortcuts),
-    conversation: mergeRecord(
-      left?.conversation as Record<string, unknown> | undefined,
-      right?.conversation as Record<string, unknown> | undefined
-    ) as Config['conversation'],
+    conversation: mergeConversation(left?.conversation, right?.conversation),
     webAuth: mergeRecord(
       left?.webAuth as Record<string, unknown> | undefined,
       right?.webAuth as Record<string, unknown> | undefined
     ) as Config['webAuth'],
     notifications: mergeNotifications(left?.notifications, right?.notifications),
-    skills: mergeRecord(
-      left?.skills as Record<string, unknown> | undefined,
-      right?.skills as Record<string, unknown> | undefined
-    ) as Config['skills'],
+    skills: mergeSkills(left?.skills, right?.skills),
     plugins: mergePluginConfigs(left?.plugins, right?.plugins) as Config['plugins'],
     marketplaces: mergeMarketplaceConfigs(left?.marketplaces, right?.marketplaces)
   }

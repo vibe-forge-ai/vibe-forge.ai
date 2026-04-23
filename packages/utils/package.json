@@ -59,6 +59,15 @@
         "require": "./dist/document-path.js"
       }
     },
+    "./install-lock": {
+      "__vibe-forge__": {
+        "default": "./src/install-lock.ts"
+      },
+      "default": {
+        "import": "./dist/install-lock.mjs",
+        "require": "./dist/install-lock.js"
+      }
+    },
     "./log-level": {
       "__vibe-forge__": {
         "default": "./src/log-level.ts"
@@ -102,6 +111,15 @@
       "default": {
         "import": "./dist/plugin-resolver.mjs",
         "require": "./dist/plugin-resolver.js"
+      }
+    },
+    "./skills-cli": {
+      "__vibe-forge__": {
+        "default": "./src/skills-cli.ts"
+      },
+      "default": {
+        "import": "./dist/skills-cli.mjs",
+        "require": "./dist/skills-cli.js"
       }
     },
     "./project-cache-path": {

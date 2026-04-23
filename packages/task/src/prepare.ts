@@ -87,6 +87,8 @@ export const prepare = async (
       cwd,
       configs: [config, userConfig],
       plugins: mergedPlugins,
+      syncConfiguredSkills: true,
+      updateConfiguredSkills: options.updateConfiguredSkills === true,
       useDefaultVibeForgeMcpServer: resolveUseDefaultVibeForgeMcpServer({
         runtimeValue: adapterOptions.useDefaultVibeForgeMcpServer,
         projectConfig: config,

@@ -293,6 +293,7 @@ export async function startAdapterSession(
     promptType?: SessionPromptType
     promptName?: string
     adapter?: string
+    updateConfiguredSkills?: boolean
   } = {}
 ) {
   const inFlight = adapterSessionStartStore.get(sessionId)
@@ -435,7 +436,8 @@ export async function startAdapterSession(
         promptCwd,
         {
           adapter: resolvedAdapter,
-          model: resolvedModel
+          model: resolvedModel,
+          updateConfiguredSkills: options.updateConfiguredSkills
         }
       )
       const adapterCwd = resolvedConfig.workspace?.cwd ?? promptCwd
@@ -486,7 +488,8 @@ export async function startAdapterSession(
       const { session } = await run({
         env,
         cwd: adapterCwd,
-        adapter: resolvedAdapter
+        adapter: resolvedAdapter,
+        updateConfiguredSkills: options.updateConfiguredSkills
       }, {
         type,
         runtime: 'server',
