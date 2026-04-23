@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli",
-  "version": "2.0.4-alpha.4",
+  "version": "2.0.4-alpha.5",
   "description": "Vibe Forge CLI",
   "imports": {
     "#~/*.js": {

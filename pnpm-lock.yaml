@@ -110,7 +110,7 @@ importers:
   apps/cli:
     dependencies:
       '@vibe-forge/app-runtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/app-runtime
       '@vibe-forge/cli-helper':
         specifier: workspace:^
@@ -552,10 +552,10 @@ importers:
         specifier: workspace:^
         version: link:../benchmark
       '@vibe-forge/mcp':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../mcp
       '@vibe-forge/task':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../task
 
   packages/benchmark:
@@ -716,13 +716,13 @@ importers:
         specifier: workspace:^
         version: link:../register
       '@vibe-forge/task':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../task
       '@vibe-forge/types':
         specifier: workspace:^
         version: link:../types
       '@vibe-forge/utils':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../utils
       commander:
         specifier: ^12.1.0
