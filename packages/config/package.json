@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/config",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-alpha.6",
   "description": "Shared config IO for Vibe Forge",
   "imports": {
     "#~/*.js": {

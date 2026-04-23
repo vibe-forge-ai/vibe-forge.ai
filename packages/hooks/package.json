@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/hooks",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-alpha.6",
   "description": "Vibe Forge hooks runtime and bridge helpers",
   "imports": {
     "#~/*.js": {
