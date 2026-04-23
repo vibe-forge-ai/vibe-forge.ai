@@ -507,6 +507,109 @@ describe('createCodexSession RPC approval policy mapping', () => {
     session.kill()
   })
 
+  it('auto-accepts VibeForge MCP approval requests when managed permissions allow it', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx({
+      configs: [{ permissions: { allow: ['VibeForge'] } }]
+    }), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-managed-allow',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 10,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'VibeForge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_description: 'Start managed tasks'
+          },
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    expect(events.filter(event => event.type === 'interaction_request')).toHaveLength(0)
+    expect(receivedLines).toContainEqual({
+      id: 10,
+      result: {
+        action: 'accept',
+        content: {}
+      }
+    })
+
+    session.kill()
+  })
+
+  it('auto-declines VibeForge MCP approval requests when managed permissions deny it', async () => {
+    process.env.HOME = '/tmp'
+    const { proc, receivedLines } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const events: AdapterOutputEvent[] = []
+    const session = await createCodexSession(makeCtx({
+      configs: [{ permissions: { allow: ['VibeForge'], deny: ['VibeForge'] } }]
+    }), {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-mcp-managed-deny',
+      description: 'Reply with pong.',
+      onEvent: (event: AdapterOutputEvent) => events.push(event)
+    } as any)
+
+    proc.stdout.push(`${
+      JSON.stringify({
+        id: 11,
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thr_1',
+          turnId: 'turn_1',
+          serverName: 'VibeForge',
+          mode: 'form',
+          _meta: {
+            codex_approval_kind: 'mcp_tool_call',
+            tool_description: 'Start managed tasks'
+          },
+          message: 'Allow the VibeForge MCP server to run tool "StartTasks"?',
+          requestedSchema: {
+            type: 'object',
+            properties: {}
+          }
+        }
+      })
+    }\n`)
+
+    await waitForWrites()
+
+    expect(events.filter(event => event.type === 'interaction_request')).toHaveLength(0)
+    expect(receivedLines).toContainEqual({
+      id: 11,
+      result: {
+        action: 'decline'
+      }
+    })
+
+    session.kill()
+  })
+
   it('maps denied MCP elicitation approvals to decline responses', async () => {
     process.env.HOME = '/tmp'
     const { proc, receivedLines } = makeProc()
@@ -1199,6 +1302,41 @@ describe('createCodexSession RPC approval policy mapping', () => {
     expect(spawnArgs).toContain('--last')
     expect(spawnArgs).not.toContain('--ask-for-approval')
     expect(spawnArgs).not.toContain('--sandbox')
+
+    session.kill()
+  })
+
+  it('maps managed VibeForge permissions to Codex MCP approval config in direct mode', async () => {
+    process.env.HOME = '/tmp'
+    const { proc } = makeProc()
+    spawnMock.mockReturnValue(proc)
+
+    const session = await createCodexSession(makeCtx({
+      configs: [{
+        permissions: {
+          allow: ['VibeForge']
+        },
+        mcpServers: {
+          VibeForge: {
+            command: 'node',
+            args: ['mcp.js']
+          }
+        }
+      }, undefined]
+    }), {
+      type: 'create',
+      mode: 'direct',
+      runtime: 'server',
+      sessionId: 'session-direct-mcp-approval',
+      description: 'direct prompt',
+      onEvent: () => {}
+    } as any)
+
+    const spawnArgs = spawnMock.mock.calls[0]?.[1] as string[]
+    const overrides = getConfigOverrides(spawnArgs)
+
+    expect(overrides).toContain('mcp_servers.VibeForge.default_tools_approval_mode="approve"')
+    expect(spawnArgs).toEqual(expect.arrayContaining(['--ask-for-approval', 'untrusted']))
 
     session.kill()
   })
