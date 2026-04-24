@@ -1,4 +1,6 @@
-import { dirname, join } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join, resolve } from 'node:path'
+import process from 'node:process'
 
 import type { Adapter } from './adapter'
 import type { AdapterCliPreparer } from './adapter-cli-prepare'
@@ -9,15 +11,88 @@ const ADAPTER_PREFIX = 'adapter-'
 const ADAPTER_CLI_PREPARE_EXPORT = '/cli-prepare'
 const ADAPTER_PLUGIN_EXPORT = '/plugins'
 
+const createWorkspaceRequire = (cwd: string) => createRequire(resolve(cwd, '__vibe_forge_adapter_loader__.cjs'))
+
+const normalizeRuntimePackageDir = (value: string | undefined) => {
+  const trimmed = value?.trim()
+  return trimmed != null && trimmed !== '' ? trimmed : undefined
+}
+
+const unique = <T>(values: T[]) => [...new Set(values)]
+
+const createAdapterRequires = () =>
+  unique([
+    process.cwd(),
+    normalizeRuntimePackageDir(process.env.__VF_PROJECT_CLI_PACKAGE_DIR__),
+    normalizeRuntimePackageDir(process.env.__VF_PROJECT_PACKAGE_DIR__)
+  ].filter((value): value is string => value != null)).map(createWorkspaceRequire)
+
+const isMissingRequestedModuleError = (error: unknown, request: string) => {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code
+  const message = error instanceof Error ? error.message : String(error)
+  return code === 'MODULE_NOT_FOUND' && message.includes(`Cannot find module '${request}'`)
+}
+
+const isWorkspaceDistMissingError = (error: unknown) => {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code
+  const message = error instanceof Error ? error.message : String(error)
+  return code === 'MODULE_NOT_FOUND' && message.includes('/dist/')
+}
+
 const loadWorkspacePackageExport = (params: {
+  packageRequire?: NodeJS.Require
   packageName: string
   sourcePath: string
 }) => {
-  const packageJsonPath = require.resolve(`${params.packageName}/package.json`)
+  const packageRequire = params.packageRequire ?? require
+  const packageJsonPath = packageRequire.resolve(`${params.packageName}/package.json`)
   return (
     // eslint-disable-next-line ts/no-require-imports
-    require(join(dirname(packageJsonPath), params.sourcePath))
+    packageRequire(join(dirname(packageJsonPath), params.sourcePath))
   )
+}
+
+const loadAdapterPackageExport = (params: {
+  packageName: string
+  request: string
+  workspaceSourcePath: string
+}) => {
+  let missingError: unknown
+
+  for (const packageRequire of createAdapterRequires()) {
+    try {
+      return packageRequire(params.request)
+    } catch (error) {
+      if (isWorkspaceDistMissingError(error)) {
+        return loadWorkspacePackageExport({
+          packageRequire,
+          packageName: params.packageName,
+          sourcePath: params.workspaceSourcePath
+        })
+      }
+      if (isMissingRequestedModuleError(error, params.request)) {
+        missingError ??= error
+        continue
+      }
+      throw error
+    }
+  }
+
+  try {
+    // eslint-disable-next-line ts/no-require-imports
+    return require(params.request)
+  } catch (error) {
+    if (isWorkspaceDistMissingError(error)) {
+      return loadWorkspacePackageExport({
+        packageName: params.packageName,
+        sourcePath: params.workspaceSourcePath
+      })
+    }
+    if (missingError != null && isMissingRequestedModuleError(error, params.request)) {
+      throw missingError
+    }
+    throw error
+  }
 }
 
 export const normalizeAdapterPackageId = (type: string) => {
@@ -43,19 +118,12 @@ export const loadAdapter = async (type: string) => {
   const packageName = resolveAdapterPackageName(type)
 
   try {
-    return (
-      // eslint-disable-next-line ts/no-require-imports
-      require(packageName)
-    ).default as Adapter
+    return loadAdapterPackageExport({
+      packageName,
+      request: packageName,
+      workspaceSourcePath: 'src/index.ts'
+    }).default as Adapter
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException | undefined)?.code
-    const message = error instanceof Error ? error.message : String(error)
-    if (code === 'MODULE_NOT_FOUND' && message.includes('/dist/')) {
-      return loadWorkspacePackageExport({
-        packageName,
-        sourcePath: 'src/index.ts'
-      }).default as Adapter
-    }
     throw error
   }
 }
@@ -65,10 +133,11 @@ export const loadAdapterPluginInstaller = async (type: string) => {
   const exportName = `${packageName}${ADAPTER_PLUGIN_EXPORT}`
 
   try {
-    return (
-      // eslint-disable-next-line ts/no-require-imports
-      require(exportName)
-    ).default as AdapterPluginInstaller
+    return loadAdapterPackageExport({
+      packageName,
+      request: exportName,
+      workspaceSourcePath: 'src/plugins/index.ts'
+    }).default as AdapterPluginInstaller
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | undefined)?.code
     const message = error instanceof Error ? error.message : String(error)
@@ -77,12 +146,6 @@ export const loadAdapterPluginInstaller = async (type: string) => {
       (code === 'MODULE_NOT_FOUND' && message.includes(exportName))
     ) {
       throw new Error(`Adapter ${type} does not support native plugin management.`)
-    }
-    if (code === 'MODULE_NOT_FOUND' && message.includes('/dist/')) {
-      return loadWorkspacePackageExport({
-        packageName,
-        sourcePath: 'src/plugins/index.ts'
-      }).default as AdapterPluginInstaller
     }
     throw error
   }
@@ -93,10 +156,11 @@ export const loadAdapterCliPreparer = async (type: string) => {
   const exportName = `${packageName}${ADAPTER_CLI_PREPARE_EXPORT}`
 
   try {
-    return (
-      // eslint-disable-next-line ts/no-require-imports
-      require(exportName)
-    ).default as AdapterCliPreparer
+    return loadAdapterPackageExport({
+      packageName,
+      request: exportName,
+      workspaceSourcePath: 'src/cli-prepare.ts'
+    }).default as AdapterCliPreparer
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | undefined)?.code
     const message = error instanceof Error ? error.message : String(error)
@@ -105,12 +169,6 @@ export const loadAdapterCliPreparer = async (type: string) => {
       (code === 'MODULE_NOT_FOUND' && message.includes(exportName))
     ) {
       throw new Error(`Adapter ${type} does not support CLI preparation.`)
-    }
-    if (code === 'MODULE_NOT_FOUND' && message.includes('/dist/')) {
-      return loadWorkspacePackageExport({
-        packageName,
-        sourcePath: 'src/cli-prepare.ts'
-      }).default as AdapterCliPreparer
     }
     throw error
   }
