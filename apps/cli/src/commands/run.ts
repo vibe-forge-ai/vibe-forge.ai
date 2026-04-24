@@ -3,6 +3,10 @@ import { createAdapterOption, normalizeCliAdapterOptionValue } from './@core/ada
 import { registerRunCommand } from './run/command'
 import { parseCliInputControlEvent } from './run/input-control'
 import {
+  CLI_DEFAULT_PERMISSION_MODE,
+  resolveCliPermissionModeFromSources
+} from './run/permission-mode'
+import {
   getDisallowedResumeFlags,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
@@ -23,6 +27,7 @@ import { RUN_INPUT_FORMATS, RUN_OUTPUT_FORMATS } from './run/types'
 export {
   RUN_INPUT_FORMATS,
   RUN_OUTPUT_FORMATS,
+  CLI_DEFAULT_PERMISSION_MODE,
   createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
@@ -35,6 +40,7 @@ export {
   normalizeCliAdapterOptionValue,
   parseCliInputControlEvent,
   registerRunCommand,
+  resolveCliPermissionModeFromSources,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,

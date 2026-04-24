@@ -14,6 +14,14 @@ import { listCliSessions, writeCliSessionRecord } from '#~/session-cache.js'
 import { readCliSessionPermissionRecovery, writeCliSessionPermissionRecovery } from '#~/session-permission-cache.js'
 import { resolveCliWorkspaceCwd } from '#~/workspace.js'
 
+const configMocks = vi.hoisted(() => ({
+  loadConfigState: vi.fn(async () => ({ mergedConfig: {} })),
+  loadInjectDefaultSystemPromptValue: vi.fn(async () => undefined),
+  mergeSystemPrompts: vi.fn(({ generatedSystemPrompt, userSystemPrompt }) => (
+    userSystemPrompt ?? generatedSystemPrompt
+  ))
+}))
+
 vi.mock('@vibe-forge/app-runtime', () => ({
   generateAdapterQueryOptions: vi.fn(async () => [
     {},
@@ -36,10 +44,9 @@ vi.mock('@vibe-forge/app-runtime', () => ({
 }))
 
 vi.mock('@vibe-forge/config', () => ({
-  loadInjectDefaultSystemPromptValue: vi.fn(async () => undefined),
-  mergeSystemPrompts: vi.fn(({ generatedSystemPrompt, userSystemPrompt }) => (
-    userSystemPrompt ?? generatedSystemPrompt
-  ))
+  loadConfigState: configMocks.loadConfigState,
+  loadInjectDefaultSystemPromptValue: configMocks.loadInjectDefaultSystemPromptValue,
+  mergeSystemPrompts: configMocks.mergeSystemPrompts
 }))
 
 vi.mock('@vibe-forge/hooks', () => ({
@@ -74,6 +81,7 @@ const runGit = (cwd: string, args: string[]) => {
 afterEach(async () => {
   vi.restoreAllMocks()
   vi.clearAllMocks()
+  configMocks.loadConfigState.mockResolvedValue({ mergedConfig: {} })
   process.chdir(originalCwd)
   delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
   delete process.env.__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__
@@ -109,6 +117,97 @@ describe('cli workspace resolution', () => {
         cwd: workspaceDir
       }),
       expect.any(Object)
+    )
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it('defaults create runs to bypassPermissions when no CLI flag or config default is set', async () => {
+    const { workspaceDir } = await createWorkspaceFixture()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    process.chdir(workspaceDir)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync(['run', '--print', 'smoke'], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: workspaceDir
+      }),
+      expect.objectContaining({
+        type: 'create',
+        permissionMode: 'bypassPermissions'
+      })
+    )
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it('lets config defaultMode override the CLI built-in permission default for create runs', async () => {
+    const { workspaceDir } = await createWorkspaceFixture()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    configMocks.loadConfigState.mockResolvedValue({
+      mergedConfig: {
+        permissions: {
+          defaultMode: 'plan'
+        }
+      }
+    })
+
+    process.chdir(workspaceDir)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync(['run', '--print', 'smoke'], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: workspaceDir
+      }),
+      expect.objectContaining({
+        type: 'create',
+        permissionMode: 'plan'
+      })
+    )
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it('preserves a config defaultMode of default instead of falling back to bypassPermissions', async () => {
+    const { workspaceDir } = await createWorkspaceFixture()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    configMocks.loadConfigState.mockResolvedValue({
+      mergedConfig: {
+        permissions: {
+          defaultMode: 'default'
+        }
+      }
+    })
+
+    process.chdir(workspaceDir)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync(['run', '--print', 'smoke'], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: workspaceDir
+      }),
+      expect.objectContaining({
+        type: 'create',
+        permissionMode: 'default'
+      })
     )
 
     logSpy.mockRestore()
@@ -262,6 +361,125 @@ describe('cli workspace resolution', () => {
     const resumed = records.find(record => record.resume?.sessionId === 'session-demo')
     expect(resumed?.resume?.adapterOptions.permissionMode).toBe('bypassPermissions')
     await expect(readCliSessionPermissionRecovery(workspaceDir, 'ctx-demo', 'session-demo')).resolves.toBeUndefined()
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it('defaults resumed runs to bypassPermissions when cache and config do not provide a mode', async () => {
+    const { workspaceDir } = await createWorkspaceFixture()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await writeCliSessionRecord(workspaceDir, 'ctx-demo', 'session-demo', {
+      resume: {
+        version: 1,
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        cwd: workspaceDir,
+        description: 'Resume with built-in default permission mode',
+        createdAt: 1,
+        updatedAt: 2,
+        resolvedAdapter: 'codex',
+        taskOptions: {
+          adapter: 'codex',
+          cwd: workspaceDir,
+          ctxId: 'ctx-demo'
+        },
+        adapterOptions: {
+          runtime: 'cli',
+          sessionId: 'session-demo',
+          mode: 'direct'
+        },
+        outputFormat: 'text'
+      }
+    })
+
+    process.chdir(workspaceDir)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync([
+      'run',
+      '--resume',
+      'session-demo'
+    ], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: workspaceDir
+      }),
+      expect.objectContaining({
+        type: 'resume',
+        permissionMode: 'bypassPermissions'
+      })
+    )
+
+    const records = await listCliSessions(workspaceDir)
+    const resumed = records.find(record => record.resume?.sessionId === 'session-demo')
+    expect(resumed?.resume?.adapterOptions.permissionMode).toBe('bypassPermissions')
+
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
+
+  it('keeps the cached resume permission mode ahead of the config default', async () => {
+    const { workspaceDir } = await createWorkspaceFixture()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    configMocks.loadConfigState.mockResolvedValue({
+      mergedConfig: {
+        permissions: {
+          defaultMode: 'bypassPermissions'
+        }
+      }
+    })
+
+    await writeCliSessionRecord(workspaceDir, 'ctx-demo', 'session-demo', {
+      resume: {
+        version: 1,
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        cwd: workspaceDir,
+        description: 'Resume with cached permission mode',
+        createdAt: 1,
+        updatedAt: 2,
+        resolvedAdapter: 'codex',
+        taskOptions: {
+          adapter: 'codex',
+          cwd: workspaceDir,
+          ctxId: 'ctx-demo'
+        },
+        adapterOptions: {
+          runtime: 'cli',
+          sessionId: 'session-demo',
+          mode: 'direct',
+          permissionMode: 'plan'
+        },
+        outputFormat: 'text'
+      }
+    })
+
+    process.chdir(workspaceDir)
+
+    const program = new Command()
+    registerRunCommand(program)
+    await program.parseAsync([
+      'run',
+      '--resume',
+      'session-demo'
+    ], { from: 'user' })
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: workspaceDir
+      }),
+      expect.objectContaining({
+        type: 'resume',
+        permissionMode: 'plan'
+      })
+    )
 
     logSpy.mockRestore()
     errorSpy.mockRestore()

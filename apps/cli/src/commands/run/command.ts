@@ -47,6 +47,7 @@ import {
   shouldApplyPermissionDecision,
   shouldClearPermissionRecoveryCache
 } from './permission-decision'
+import { resolveCliPermissionModeForWorkspace } from './permission-mode'
 import {
   PERMISSION_DECISION_CANCEL,
   PERMISSION_RECOVERY_CONTINUE_PROMPT,
@@ -123,6 +124,7 @@ Notes:
   --adapter also supports -A and simplified ids like claude / adapter-codex.
   When using --resume, startup-only flags like --adapter, --system-prompt, --spec and --workspace are loaded from cache and cannot be set again.
   --permission-mode is the exception: it overrides the cached permission mode for the resumed run and is saved for later resumes.
+  When omitted, CLI defaults to bypassPermissions. Set general.permissions.defaultMode to override, or use default to restore adapter defaults.
   Resume still allows overriding --model, --effort, --include-tool and --exclude-tool for the next turn.
   The resolved adapter is pinned in cache, so later default adapter changes do not affect resume.
   Default CLI skills shipped via @vibe-forge/plugin-cli-skills: ${getCliDefaultSkillNames().join(', ')}.
@@ -194,9 +196,15 @@ Notes:
         const pendingPermissionRecovery = await readCliSessionPermissionRecovery(cwd, ctxId, sessionId)
         const cachedResumePermissionMode = cachedSession?.resume?.adapterOptions.permissionMode
         const resolvedResumePermissionMode = isResume
-          ? (opts.permissionMode ?? cachedResumePermissionMode)
-          : opts.permissionMode
-        const permissionRecoveryMode = pendingPermissionRecovery?.permissionMode ?? cachedResumePermissionMode
+          ? await resolveCliPermissionModeForWorkspace({
+            cwd: resolvedTaskCwd,
+            cliPermissionMode: opts.permissionMode,
+            cachedPermissionMode: cachedResumePermissionMode
+          })
+          : undefined
+        const permissionRecoveryMode = pendingPermissionRecovery?.permissionMode ??
+          cachedResumePermissionMode ??
+          resolvedResumePermissionMode
         const resumePermissionModeChanged = isResume &&
           opts.permissionMode != null &&
           opts.permissionMode !== permissionRecoveryMode
@@ -316,6 +324,10 @@ Notes:
                 currentCommand.getOptionValueSource('injectDefaultSystemPrompt')
               )
             )
+            const resolvedCreatePermissionMode = await resolveCliPermissionModeForWorkspace({
+              cwd: resolvedTaskCwd,
+              cliPermissionMode: opts.permissionMode
+            })
 
             return {
               type: 'create' as const,
@@ -329,7 +341,7 @@ Notes:
                 userSystemPrompt: opts.systemPrompt,
                 injectDefaultSystemPrompt
               }),
-              permissionMode: opts.permissionMode,
+              permissionMode: resolvedCreatePermissionMode,
               mode: resolveRunMode(
                 opts.print,
                 printSource,

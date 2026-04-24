@@ -49,6 +49,38 @@
 - 如果没有设置，`vf` / `vf-mcp` / `vf-call-hook` / `vfui-server` / `vfui-client` 会从当前目录向上探测 `.ai`、`.ai.config.*`、`pnpm-workspace.yaml` 或 Git 根目录，因此可以在项目任意子目录下启动。
 - 配置文件默认会跟随这个解析后的 workspace 根目录读取；如果需要把 `.ai.config.*` 放到别的目录，可以显式设置 `__VF_PROJECT_CONFIG_DIR__`。
 
+## 默认权限模式
+
+`vf` / `vf run` 在没有显式传 `--permission-mode` 时，会默认以 `bypassPermissions` 启动。
+
+优先级从高到低：
+
+- CLI 显式 `--permission-mode`
+- 已缓存的 resume 权限模式
+- 配置 `permissions.defaultMode`
+- CLI 内建默认 `bypassPermissions`
+
+如果你想覆盖 CLI 内建默认，可以在配置里写：
+
+```yaml
+permissions:
+  defaultMode: plan
+```
+
+如果你想恢复 adapter 自身默认行为，而不是继续落到 `bypassPermissions`，显式配置：
+
+```yaml
+permissions:
+  defaultMode: default
+```
+
+也可以直接通过 CLI 写入：
+
+```bash
+vf config set general.permissions.defaultMode bypassPermissions --type string
+vf config set general.permissions.defaultMode default --type string
+```
+
 ## 内建 Skills
 
 `@vibe-forge/cli` 会默认注入 companion 插件 `@vibe-forge/plugin-cli-skills`，可直接通过 `--include-skill` 使用：
@@ -131,6 +163,7 @@ vf --resume <sessionId> --effort high --include-tool read_file
 说明：
 
 - `--resume` 会继续使用缓存里的 adapter、model、workspace 等启动参数。
+- 如果没有显式传 `--permission-mode`，CLI 会优先沿用缓存里的权限模式；缓存没有时再读取 `permissions.defaultMode`，最后回退到 `bypassPermissions`。
 - 如果只想调整下一次恢复时的权限模式，可以单独传 `--permission-mode <mode>`；新的模式会用于本次恢复，并写回该会话的 CLI cache，后续继续 `resume` 时沿用。
 
 ### 读取配置

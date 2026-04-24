@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { resolveConfiguredPluginInstances } from '@vibe-forge/utils/plugin-resolver'
 
 import {
+  CLI_DEFAULT_PERMISSION_MODE,
   createAdapterOption,
   createSessionExitController,
   getAdapterErrorMessage,
@@ -20,6 +21,7 @@ import {
   normalizeCliAdapterOptionValue,
   parseCliInputControlEvent,
   registerRunCommand,
+  resolveCliPermissionModeFromSources,
   resolveDefaultVibeForgeMcpServerOption,
   resolveInjectDefaultSystemPromptOption,
   resolvePrintableStopText,
@@ -220,6 +222,31 @@ describe('run command print output', () => {
   it('keeps direct mode for shorthand runs when print behavior is inferred separately', () => {
     expect(resolveRunMode(false, 'default', 'direct')).toBe('direct')
     expect(resolveRunMode(false, 'default', 'stream')).toBe('stream')
+  })
+
+  it('falls back to the CLI built-in bypassPermissions default when no source provides a mode', () => {
+    expect(resolveCliPermissionModeFromSources({})).toBe(CLI_DEFAULT_PERMISSION_MODE)
+  })
+
+  it('resolves permission mode priority as cli > cache > config > built-in default', () => {
+    expect(resolveCliPermissionModeFromSources({
+      cliPermissionMode: 'dontAsk',
+      cachedPermissionMode: 'plan',
+      configuredPermissionMode: 'acceptEdits'
+    })).toBe('dontAsk')
+    expect(resolveCliPermissionModeFromSources({
+      cachedPermissionMode: 'plan',
+      configuredPermissionMode: 'acceptEdits'
+    })).toBe('plan')
+    expect(resolveCliPermissionModeFromSources({
+      configuredPermissionMode: 'acceptEdits'
+    })).toBe('acceptEdits')
+  })
+
+  it('preserves an explicit default mode from config instead of falling through to bypassPermissions', () => {
+    expect(resolveCliPermissionModeFromSources({
+      configuredPermissionMode: 'default'
+    })).toBe('default')
   })
 
   it('rejects startup-only flags when resuming a cached session', () => {
