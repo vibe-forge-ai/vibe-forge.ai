@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/cli-helper",
-  "version": "3.0.0-alpha.7",
+  "version": "3.0.0",
   "exports": {
     ".": "./loader.js",
     "./entry": "./entry.js",
