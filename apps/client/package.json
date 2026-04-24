@@ -30,6 +30,8 @@
   "devDependencies": {
     "@ant-design/icons": "^5.3.7",
     "@monaco-editor/react": "^4.7.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.2",
     "@vibe-forge/adapter-claude-code": "workspace:*",
     "@vibe-forge/adapter-codex": "workspace:*",
     "@vibe-forge/adapter-copilot": "workspace:*",
@@ -62,9 +64,7 @@
     "shiki": "^3.21.0",
     "swr": "^2.2.5",
     "vite": "^5.4.8",
-    "zod": "^3.24.1",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "zod": "^3.24.1"
   }
 }

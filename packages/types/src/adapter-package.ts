@@ -46,10 +46,7 @@ const loadWorkspacePackageExport = (params: {
 }) => {
   const packageRequire = params.packageRequire ?? require
   const packageJsonPath = packageRequire.resolve(`${params.packageName}/package.json`)
-  return (
-    // eslint-disable-next-line ts/no-require-imports
-    packageRequire(join(dirname(packageJsonPath), params.sourcePath))
-  )
+  return packageRequire(join(dirname(packageJsonPath), params.sourcePath))
 }
 
 const loadAdapterPackageExport = (params: {
@@ -117,15 +114,11 @@ export const resolveAdapterPackageName = (type: string) => {
 export const loadAdapter = async (type: string) => {
   const packageName = resolveAdapterPackageName(type)
 
-  try {
-    return loadAdapterPackageExport({
-      packageName,
-      request: packageName,
-      workspaceSourcePath: 'src/index.ts'
-    }).default as Adapter
-  } catch (error) {
-    throw error
-  }
+  return loadAdapterPackageExport({
+    packageName,
+    request: packageName,
+    workspaceSourcePath: 'src/index.ts'
+  }).default as Adapter
 }
 
 export const loadAdapterPluginInstaller = async (type: string) => {
