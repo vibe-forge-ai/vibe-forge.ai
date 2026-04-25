@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
-import type { ChatMessageContent } from '@vibe-forge/core'
 import type { ConfigResponse } from '@vibe-forge/types'
 
 import { getConfig } from '#~/api.js'
@@ -26,6 +25,7 @@ import { useChatModelAdapterSelection } from '#~/hooks/chat/use-chat-model-adapt
 import { useChatPermissionMode } from '#~/hooks/chat/use-chat-permission-mode'
 import { useChatSessionActions } from '#~/hooks/chat/use-chat-session-actions'
 import { useResponsiveLayout } from '#~/hooks/use-responsive-layout'
+import { buildAutomationCreationContent, buildAutomationCreationText } from './@utils/automation-empty-message'
 import { AutomationEmptyGuide } from './AutomationEmptyGuide'
 
 const noop = () => {}
@@ -91,37 +91,6 @@ export function AutomationEmptyLanding({
     setStarterContentKey((current) => current + 1)
   }
 
-  const buildAutomationCreationText = (text: string) => {
-    const request = text.trim()
-    const lowerRequest = request.toLowerCase()
-    if (request.includes('自动化任务工具') || lowerRequest.includes('automation tools')) {
-      return request
-    }
-    return t('automation.emptyLandingSendInstruction', { request })
-  }
-
-  const buildAutomationCreationContent = (content: ChatMessageContent[]) => {
-    let didWrapText = false
-    const nextContent = content.map((item): ChatMessageContent => {
-      if (item.type !== 'text' || didWrapText) {
-        return item
-      }
-
-      didWrapText = true
-      return {
-        ...item,
-        text: buildAutomationCreationText(item.text)
-      }
-    })
-
-    if (didWrapText) return nextContent
-
-    return [
-      { type: 'text' as const, text: t('automation.emptyLandingAttachmentInstruction') },
-      ...nextContent
-    ]
-  }
-
   const composer = (
     <div className='sender-container automation-empty-guide__composer'>
       <Sender
@@ -131,8 +100,8 @@ export function AutomationEmptyLanding({
         autoFocus
         sessionStatus={isCreatingSession ? 'running' : undefined}
         onInterrupt={interrupt}
-        onSend={(text) => send(buildAutomationCreationText(text))}
-        onSendContent={(content: ChatMessageContent[]) => sendContent(buildAutomationCreationContent(content))}
+        onSend={(text) => send(buildAutomationCreationText(text, t))}
+        onSendContent={(content) => sendContent(buildAutomationCreationContent(content, t))}
         modelMenuGroups={modelMenuGroups}
         modelSearchOptions={modelSearchOptions}
         recommendedModelOptions={recommendedModelOptions}

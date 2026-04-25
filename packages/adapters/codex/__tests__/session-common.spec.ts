@@ -34,25 +34,31 @@ describe('buildThreadCacheKey', () => {
     tempDirs.push(dir)
     const authPath = join(dir, 'auth.json')
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'chatgpt',
-      tokens: {
-        account_id: 'acct-stable',
-        access_token: 'token-a',
-        refresh_token: 'refresh-a'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'chatgpt',
+        tokens: {
+          account_id: 'acct-stable',
+          access_token: 'token-a',
+          refresh_token: 'refresh-a'
+        }
+      })
+    )
 
     const keyA = await buildThreadCacheKey(makeBaseParams(authPath))
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'chatgpt',
-      tokens: {
-        account_id: 'acct-stable',
-        access_token: 'token-b',
-        refresh_token: 'refresh-b'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'chatgpt',
+        tokens: {
+          account_id: 'acct-stable',
+          access_token: 'token-b',
+          refresh_token: 'refresh-b'
+        }
+      })
+    )
 
     const keyB = await buildThreadCacheKey(makeBaseParams(authPath))
 
@@ -64,23 +70,29 @@ describe('buildThreadCacheKey', () => {
     tempDirs.push(dir)
     const authPath = join(dir, 'auth.json')
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'chatgpt',
-      tokens: {
-        account_id: 'acct-a',
-        access_token: 'token-a'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'chatgpt',
+        tokens: {
+          account_id: 'acct-a',
+          access_token: 'token-a'
+        }
+      })
+    )
 
     const keyA = await buildThreadCacheKey(makeBaseParams(authPath))
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'chatgpt',
-      tokens: {
-        account_id: 'acct-b',
-        access_token: 'token-b'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'chatgpt',
+        tokens: {
+          account_id: 'acct-b',
+          access_token: 'token-b'
+        }
+      })
+    )
 
     const keyB = await buildThreadCacheKey(makeBaseParams(authPath))
 
@@ -92,21 +104,27 @@ describe('buildThreadCacheKey', () => {
     tempDirs.push(dir)
     const authPath = join(dir, 'auth.json')
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'api_key',
-      tokens: {
-        access_token: 'token-a'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'api_key',
+        tokens: {
+          access_token: 'token-a'
+        }
+      })
+    )
 
     const keyA = await buildThreadCacheKey(makeBaseParams(authPath))
 
-    await writeFile(authPath, JSON.stringify({
-      auth_mode: 'api_key',
-      tokens: {
-        access_token: 'token-b'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        auth_mode: 'api_key',
+        tokens: {
+          access_token: 'token-b'
+        }
+      })
+    )
 
     const keyB = await buildThreadCacheKey(makeBaseParams(authPath))
 
@@ -118,19 +136,25 @@ describe('buildThreadCacheKey', () => {
     tempDirs.push(dir)
     const authPath = join(dir, 'auth.json')
 
-    await writeFile(authPath, JSON.stringify({
-      tokens: {
-        access_token: 'token-a'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        tokens: {
+          access_token: 'token-a'
+        }
+      })
+    )
 
     const keyA = await buildThreadCacheKey(makeBaseParams(authPath))
 
-    await writeFile(authPath, JSON.stringify({
-      tokens: {
-        access_token: 'token-b'
-      }
-    }))
+    await writeFile(
+      authPath,
+      JSON.stringify({
+        tokens: {
+          access_token: 'token-b'
+        }
+      })
+    )
 
     const keyB = await buildThreadCacheKey(makeBaseParams(authPath))
 

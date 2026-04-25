@@ -13,10 +13,7 @@
 - Windows：正式安装包暂未提供，后续补发见 [#161](https://github.com/vibe-forge-ai/vibe-forge.ai/issues/161)
 - Linux：`.AppImage`、`.deb`、`.tar.gz`
 
-注意：
-
-- 当前桌面 release / CI artifact 默认不签名
-- 第一次启动时，macOS 可能会弹出系统安全提示，需要手动确认
+注意：当前桌面 release / CI artifact 默认不签名；第一次启动时，macOS 可能会弹出系统安全提示，需要手动确认。
 
 ### 最小入口
 

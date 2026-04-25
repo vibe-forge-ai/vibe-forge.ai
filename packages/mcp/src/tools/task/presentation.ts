@@ -78,7 +78,9 @@ const buildTaskGuidance = (task: {
   }
 
   if (task.status === 'failed' && hints.length === 0) {
-    hints.push('Task failed. Inspect logs and lastError, then use SendTaskMessage to resume it or StartTasks to replace it if needed.')
+    hints.push(
+      'Task failed. Inspect logs and lastError, then use SendTaskMessage to resume it or StartTasks to replace it if needed.'
+    )
   }
 
   return hints

@@ -9,6 +9,7 @@
 - [安装与准备](./usage/install.md)
 - [数据资产目录配置](./asset-directories.md)
 - [启动服务](./usage/runtime.md)
+- [Adapter CLI 安装与版本](./usage/adapter-cli.md)
 - [桌面应用](./usage/desktop.md)
 - [VS Code 扩展](./usage/vscode-extension.md)
 - [桌面签名与发布](./usage/desktop-signing.md)

@@ -11,10 +11,14 @@ import {
   STOP_TASK_DESCRIPTION,
   SUBMIT_TASK_INPUT_DESCRIPTION,
   TASK_LOG_LIMIT_DESCRIPTION,
-  TASK_LOG_ORDER_DESCRIPTION,
   TASK_LOG_ORDERS,
-  serializeTaskInfo
+  TASK_LOG_ORDER_DESCRIPTION
 } from './presentation'
+import {
+  createSerializedTaskInfoContent,
+  createSerializedTaskListContent,
+  createTextContent
+} from './task-tool-responses'
 
 export const registerTaskRuntimeTools = (
   server: Parameters<Register>[0],
@@ -43,15 +47,12 @@ export const registerTaskRuntimeTools = (
       const task = taskManager.getTask(taskId)
       if (!task) {
         return {
-          content: [{ type: 'text', text: `Task ${taskId} not found.` }],
+          content: createTextContent(`Task ${taskId} not found.`),
           isError: true
         }
       }
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify([serializeTaskInfo({ taskId, info: task, logLimit, logOrder })])
-        }]
+        content: createSerializedTaskInfoContent({ taskId, info: task, logLimit, logOrder })
       }
     }
   )
@@ -82,15 +83,7 @@ export const registerTaskRuntimeTools = (
       })
       const task = taskManager.getTask(taskId)
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify([serializeTaskInfo({
-            taskId,
-            info: task,
-            logLimit: DEFAULT_TASK_LOG_LIMIT,
-            logOrder: 'desc'
-          })])
-        }]
+        content: createSerializedTaskInfoContent({ taskId, info: task })
       }
     }
   )
@@ -119,15 +112,7 @@ export const registerTaskRuntimeTools = (
       })
       const task = taskManager.getTask(taskId)
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify([serializeTaskInfo({
-            taskId,
-            info: task,
-            logLimit: DEFAULT_TASK_LOG_LIMIT,
-            logOrder: 'desc'
-          })])
-        }]
+        content: createSerializedTaskInfoContent({ taskId, info: task })
       }
     }
   )
@@ -156,15 +141,7 @@ export const registerTaskRuntimeTools = (
       })
       const task = taskManager.getTask(taskId)
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify([serializeTaskInfo({
-            taskId,
-            info: task,
-            logLimit: DEFAULT_TASK_LOG_LIMIT,
-            logOrder: 'desc'
-          })])
-        }]
+        content: createSerializedTaskInfoContent({ taskId, info: task })
       }
     }
   )
@@ -181,10 +158,9 @@ export const registerTaskRuntimeTools = (
     async ({ taskId }) => {
       const success = taskManager.stopTask(taskId)
       return {
-        content: [{
-          type: 'text',
-          text: success ? `Task ${taskId} stopped.` : `Failed to stop task ${taskId} (not found or already stopped).`
-        }]
+        content: createTextContent(
+          success ? `Task ${taskId} stopped.` : `Failed to stop task ${taskId} (not found or already stopped).`
+        )
       }
     }
   )
@@ -210,15 +186,7 @@ export const registerTaskRuntimeTools = (
     async ({ logLimit, logOrder }) => {
       const tasks = taskManager.getAllTasks()
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(tasks.map(task => serializeTaskInfo({
-            taskId: task.taskId,
-            info: task,
-            logLimit,
-            logOrder
-          })))
-        }]
+        content: createSerializedTaskListContent(tasks, logLimit, logOrder)
       }
     }
   )
