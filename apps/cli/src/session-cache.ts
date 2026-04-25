@@ -59,7 +59,13 @@ const getRecordUpdatedAt = (record: CliSessionRecord) =>
 
 const isSessionDirNameMatch = (value: string, target: string) => value === target || value.startsWith(target)
 
-export const formatResumeCommand = (sessionId: string) => `vf --resume ${sessionId}`
+const normalizeResumeCommandPrefix = (prefix: string | undefined) => {
+  const normalizedPrefix = prefix?.trim()
+  return normalizedPrefix == null || normalizedPrefix === '' ? 'vf' : normalizedPrefix
+}
+
+export const formatResumeCommand = (sessionId: string, prefix = process.env.__VF_CLI_RESUME_COMMAND_PREFIX__) =>
+  `${normalizeResumeCommandPrefix(prefix)} --resume ${sessionId}`
 export const formatStopCommand = (sessionId: string) => `vf stop ${sessionId}`
 export const formatKillCommand = (sessionId: string) => `vf kill ${sessionId}`
 export const formatListCommand = (params?: {
