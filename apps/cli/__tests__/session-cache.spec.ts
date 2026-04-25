@@ -17,6 +17,7 @@ import {
 
 const tempDirs: string[] = []
 const originalCwd = process.cwd()
+const originalResumeCommandPrefix = process.env.__VF_CLI_RESUME_COMMAND_PREFIX__
 
 const createTempDir = async () => {
   const cwd = await fs.mkdtemp(path.join(tmpdir(), 'vf-session-cache-'))
@@ -28,6 +29,11 @@ afterEach(async () => {
   vi.restoreAllMocks()
   process.chdir(originalCwd)
   delete process.env.__VF_PROJECT_WORKSPACE_FOLDER__
+  if (originalResumeCommandPrefix == null) {
+    delete process.env.__VF_CLI_RESUME_COMMAND_PREFIX__
+  } else {
+    process.env.__VF_CLI_RESUME_COMMAND_PREFIX__ = originalResumeCommandPrefix
+  }
   await Promise.all(tempDirs.splice(0).map(dir => fs.rm(dir, { force: true, recursive: true })))
 })
 
@@ -78,6 +84,13 @@ describe('session cache utilities', () => {
     expect(resolved.resume?.ctxId).toBe('ctx-alpha')
     expect(resolveCliSessionAdapter(resolved)).toBe('codex')
     expect(formatResumeCommand('session-alpha')).toBe('vf --resume session-alpha')
+  })
+
+  it('uses the forwarded cli resume command prefix when present', () => {
+    process.env.__VF_CLI_RESUME_COMMAND_PREFIX__ = 'npx ai run'
+
+    expect(formatResumeCommand('session-alpha')).toBe('npx ai run --resume session-alpha')
+    expect(formatResumeCommand('session-alpha', 'dyai')).toBe('dyai --resume session-alpha')
   })
 
   it('reports ambiguous prefix matches clearly', async () => {
@@ -236,6 +249,63 @@ describe('list command', () => {
         Kill: 'vf kill session-demo'
       })
     ])
+  })
+
+  it('prints forwarded resume commands in list rows and hints', async () => {
+    const cwd = await createTempDir()
+    const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    process.env.__VF_CLI_RESUME_COMMAND_PREFIX__ = 'ai'
+
+    await writeCliSessionRecord(cwd, 'ctx-demo', 'session-demo', {
+      resume: {
+        version: 1,
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        cwd,
+        description: 'Review CLI resume flow',
+        createdAt: 10,
+        updatedAt: 20,
+        resolvedAdapter: 'codex',
+        taskOptions: {
+          adapter: 'codex',
+          cwd,
+          ctxId: 'ctx-demo'
+        },
+        adapterOptions: {
+          runtime: 'cli',
+          sessionId: 'session-demo',
+          mode: 'direct',
+          model: 'gpt-5.4'
+        },
+        outputFormat: 'text'
+      },
+      detail: {
+        ctxId: 'ctx-demo',
+        sessionId: 'session-demo',
+        status: 'completed',
+        startTime: 10,
+        endTime: 20,
+        description: 'Review CLI resume flow',
+        adapter: 'codex',
+        model: 'gpt-5.4'
+      }
+    })
+
+    process.chdir(cwd)
+    const program = new Command()
+    registerListCommand(program)
+    await program.parseAsync(['list', '--view', 'full'], { from: 'user' })
+
+    expect(tableSpy.mock.calls[0]?.[0]).toEqual([
+      expect.objectContaining({
+        Resume: 'ai --resume session-demo'
+      })
+    ])
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Resume latest: ai --resume session-demo')
+    )
   })
 
   it('supports filtering to running sessions only', async () => {
