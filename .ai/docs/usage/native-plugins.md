@@ -8,11 +8,13 @@
 
 ## 适用场景
 
-当前完整支持的只有 Claude：
+当前完整 installer 支持的只有 Claude：
 
 - 安装 Claude Code 原生插件到项目级 `.ai/plugins`
 - 从配置里的 marketplace 解析 `plugin@marketplace`
 - 把 Claude 插件里可复用的能力接入到当前项目
+
+Copilot 不提供 Vibe Forge installer；但可以通过 `adapters.copilot.pluginDirs` 把本地 Copilot CLI plugin 目录传给官方 `--plugin-dir`。
 
 如果你要配置统一 Vibe Forge 插件，继续看 [插件与数据资产](./plugins.md)。
 
@@ -143,6 +145,7 @@ vf plugin --adapter claude add superpowers-chrome@superpowers-marketplace
 ## 当前限制
 
 - 当前只有 `--adapter claude` 实现了 native plugin installer
+- Copilot 只支持运行时 `pluginDirs` 加载本地插件目录，不做 marketplace 安装、同步或转换
 - marketplace 里的插件源最终需要能解析成标准 Claude plugin root；只暴露裸 `skills/` 目录的 catalog 目前还不能直接安装
 - Claude 插件如果声明 `userConfig`，安装会被拒绝；Vibe Forge 还没有把 marketplace 选项映射到这类插件配置
 - marketplace 名称必须先在 `marketplaces` 里配置好；否则 `foo@bar` 会报歧义错误，而不是自动猜成 npm spec

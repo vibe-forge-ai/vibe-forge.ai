@@ -9,6 +9,10 @@ import { resolveManagedNpmCliPaths } from '@vibe-forge/utils/managed-npm-cli'
 import { COPILOT_CLI_PACKAGE, COPILOT_CLI_VERSION, resolveCopilotBinaryPath } from '#~/paths.js'
 
 describe('resolveCopilotBinaryPath', () => {
+  it('pins the managed Copilot CLI to the latest stable version', () => {
+    expect(COPILOT_CLI_VERSION).toBe('1.0.36')
+  })
+
   it('returns the env-specified path when set', () => {
     expect(resolveCopilotBinaryPath({
       __VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__: '/usr/local/bin/copilot'

@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
@@ -15,29 +15,11 @@ import { createLogger } from '@vibe-forge/utils/create-logger'
 import type { ManagedNpmCliConfig } from '@vibe-forge/utils/managed-npm-cli'
 import { uuid } from '@vibe-forge/utils/uuid'
 
+import type { CopilotAdapterConfigSchema } from '../config-schema'
+import { mergeCopilotNativeHooksIntoSettings } from './native-hooks'
 import { registerCopilotProviderProxyRoute } from './provider-proxy'
 
-export interface CopilotAdapterConfig {
-  cli?: ManagedNpmCliConfig
-  cliPath?: string
-  configDir?: string
-  disableWorkspaceTrust?: boolean
-  logDir?: string
-  logLevel?: 'none' | 'error' | 'warning' | 'info' | 'debug' | 'all'
-  agent?: string
-  stream?: boolean
-  allowAll?: boolean
-  allowAllTools?: boolean
-  allowAllPaths?: boolean
-  allowAllUrls?: boolean
-  disableBuiltinMcps?: boolean
-  disabledMcpServers?: string[]
-  enableAllGithubMcpTools?: boolean
-  additionalGithubMcpToolsets?: string[]
-  additionalGithubMcpTools?: string[]
-  noCustomInstructions?: boolean
-  noAskUser?: boolean
-}
+export type CopilotAdapterConfig = CopilotAdapterConfigSchema
 
 type McpServerConfig = NonNullable<Config['mcpServers']>[string]
 
@@ -79,9 +61,22 @@ export const DEFAULT_COPILOT_TOOLS = [
 
 export const resolveAdapterConfig = (ctx: AdapterCtx): CopilotAdapterConfig => {
   const [config, userConfig] = ctx.configs
+  const projectConfig = (config?.adapters?.copilot ?? {}) as CopilotAdapterConfig
+  const userAdapterConfig = (userConfig?.adapters?.copilot ?? {}) as CopilotAdapterConfig
   return omitAdapterCommonConfig({
-    ...(config?.adapters?.copilot ?? {}),
-    ...(userConfig?.adapters?.copilot ?? {})
+    ...projectConfig,
+    ...userAdapterConfig,
+    ...(projectConfig.cli != null || userAdapterConfig.cli != null
+      ? {
+        cli: deepMerge(
+          (projectConfig.cli ?? {}) as Record<string, unknown>,
+          (userAdapterConfig.cli ?? {}) as Record<string, unknown>
+        ) as ManagedNpmCliConfig
+      }
+      : {}),
+    ...(projectConfig.configContent != null || userAdapterConfig.configContent != null
+      ? { configContent: deepMerge(projectConfig.configContent ?? {}, userAdapterConfig.configContent ?? {}) }
+      : {})
   }) as CopilotAdapterConfig
 }
 
@@ -105,6 +100,18 @@ const asPlainObject = (value: unknown): Record<string, unknown> | undefined => (
     ? value as Record<string, unknown>
     : undefined
 )
+
+const deepMerge = (base: Record<string, unknown>, override: Record<string, unknown>): Record<string, unknown> => {
+  const result: Record<string, unknown> = { ...base }
+  for (const [key, value] of Object.entries(override)) {
+    const baseRecord = asPlainObject(result[key])
+    const valueRecord = asPlainObject(value)
+    result[key] = baseRecord != null && valueRecord != null
+      ? deepMerge(baseRecord, valueRecord)
+      : value
+  }
+  return result
+}
 
 const asString = (value: unknown) => typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 
@@ -317,7 +324,9 @@ const mapEffortToCopilot = (effort: AdapterQueryOptions['effort']) => (
 const pushStringListArg = (args: string[], flag: string, values: string[] | undefined) => {
   const normalized = values?.map(value => value.trim()).filter(Boolean)
   if (normalized == null || normalized.length === 0) return
-  args.push(flag, ...normalized)
+  for (const value of normalized) {
+    args.push(flag, value)
+  }
 }
 
 const mapMcpServerForCopilot = (server: McpServerConfig) => {
@@ -361,47 +370,96 @@ export const ensureCopilotConfigDir = async (ctx: AdapterCtx, adapterConfig: Cop
   return configDir
 }
 
-const ensureCopilotWorkspaceTrust = async (
+const readCopilotSettings = async (
   ctx: AdapterCtx,
-  adapterConfig: CopilotAdapterConfig,
   configDir: string
 ) => {
-  if (adapterConfig.disableWorkspaceTrust === true) return
-
-  const configPath = resolve(configDir, 'config.json')
+  const settingsPath = resolve(configDir, 'settings.json')
+  const legacyConfigPath = resolve(configDir, 'config.json')
   let rawContent = ''
   let rawConfig: Record<string, unknown> = {}
+  let loadedLegacyConfig = false
 
   try {
-    rawContent = await readFile(configPath, 'utf8')
+    rawContent = await readFile(settingsPath, 'utf8')
     rawConfig = asPlainObject(JSON.parse(rawContent)) ?? {}
   } catch (error) {
     const code = typeof error === 'object' && error != null && 'code' in error
       ? String((error as { code?: unknown }).code)
       : undefined
     if (code !== 'ENOENT') {
-      ctx.logger.warn('Failed to read existing Copilot managed config; rewriting workspace trust config', {
+      ctx.logger.warn('Failed to read existing Copilot settings; rewriting managed settings', {
         err: error
       })
     }
+    if (code === 'ENOENT') {
+      try {
+        rawContent = ''
+        rawConfig = asPlainObject(JSON.parse(await readFile(legacyConfigPath, 'utf8'))) ?? {}
+        loadedLegacyConfig = true
+      } catch (legacyError) {
+        const legacyCode = typeof legacyError === 'object' && legacyError != null && 'code' in legacyError
+          ? String((legacyError as { code?: unknown }).code)
+          : undefined
+        if (legacyCode !== 'ENOENT') {
+          ctx.logger.warn('Failed to read legacy Copilot config; rewriting managed settings', {
+            err: legacyError
+          })
+        }
+      }
+    }
   }
 
-  const trustedFolders = Array.from(
-    new Set([
-      ...asStringList(rawConfig.trusted_folders),
-      ...asStringList(rawConfig.trustedFolders),
-      ctx.cwd
-    ])
+  return {
+    legacyConfigPath,
+    loadedLegacyConfig,
+    rawContent,
+    rawConfig,
+    settingsPath
+  }
+}
+
+export const ensureCopilotRuntimeSettings = async (
+  ctx: AdapterCtx,
+  options: AdapterQueryOptions,
+  adapterConfig: CopilotAdapterConfig,
+  configDir: string
+) => {
+  const { legacyConfigPath, loadedLegacyConfig, rawContent, rawConfig, settingsPath } = await readCopilotSettings(
+    ctx,
+    configDir
   )
-  const nextConfig: Record<string, unknown> = {
-    ...rawConfig,
-    trusted_folders: trustedFolders
-  }
-  delete nextConfig.trustedFolders
+  const explicitConfig = asPlainObject(adapterConfig.configContent)
+  let nextConfig = explicitConfig != null ? deepMerge(rawConfig, explicitConfig) : { ...rawConfig }
 
+  if (adapterConfig.disableWorkspaceTrust !== true) {
+    const trustedFolders = Array.from(
+      new Set([
+        ...asStringList(nextConfig.trusted_folders),
+        ...asStringList(nextConfig.trustedFolders),
+        ctx.cwd
+      ])
+    )
+    nextConfig = {
+      ...nextConfig,
+      trusted_folders: trustedFolders
+    }
+    delete nextConfig.trustedFolders
+  }
+
+  nextConfig = mergeCopilotNativeHooksIntoSettings({
+    settings: nextConfig,
+    ctx,
+    options
+  })
+
+  if (Object.keys(nextConfig).length === 0 && rawContent === '') return
   const nextContent = `${JSON.stringify(nextConfig, null, 2)}\n`
   if (rawContent === nextContent) return
-  await writeFile(configPath, nextContent, 'utf8')
+  await writeFile(settingsPath, nextContent, 'utf8')
+  if (loadedLegacyConfig) {
+    await unlink(legacyConfigPath).catch(() => undefined)
+  }
 }
 
 export const ensureCopilotSessionMarker = async (ctx: AdapterCtx, sessionId: string) => {
@@ -481,7 +539,7 @@ export const buildCopilotChildEnv = async (
   adapterConfig: CopilotAdapterConfig
 ) => {
   const configDir = await ensureCopilotConfigDir(ctx, adapterConfig)
-  await ensureCopilotWorkspaceTrust(ctx, adapterConfig, configDir)
+  await ensureCopilotRuntimeSettings(ctx, options, adapterConfig, configDir)
   const skillsDir = await ensureCopilotSkillDir(ctx, options)
   const instructionsDir = await ensureCopilotInstructionsDir(ctx, options, adapterConfig)
   const modelConfig = resolveCopilotModelConfig(ctx, options.model)
@@ -492,6 +550,19 @@ export const buildCopilotChildEnv = async (
   const existingInstructionDirs = typeof ctx.env.COPILOT_CUSTOM_INSTRUCTIONS_DIRS === 'string'
     ? ctx.env.COPILOT_CUSTOM_INSTRUCTIONS_DIRS
     : process.env.COPILOT_CUSTOM_INSTRUCTIONS_DIRS
+  const existingAgentDirs = typeof ctx.env.COPILOT_AGENT_DIRS === 'string'
+    ? ctx.env.COPILOT_AGENT_DIRS
+    : process.env.COPILOT_AGENT_DIRS
+  const configuredAgentDirs = adapterConfig.agentDirs?.map(value => value.trim()).filter(Boolean).join(',')
+  const configuredAdditionalInstructions = adapterConfig.additionalInstructions?.trim()
+  const existingAdditionalInstructions = typeof ctx.env.COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS === 'string'
+    ? ctx.env.COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS
+    : process.env.COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS
+  const additionalInstructions = [
+    existingAdditionalInstructions,
+    configuredAdditionalInstructions
+  ].filter((value): value is string => value != null && value.trim() !== '').join('\n\n')
+  const nativeHooksActive = ctx.env.__VF_PROJECT_AI_COPILOT_NATIVE_HOOKS_AVAILABLE__ === '1'
 
   return toProcessEnv({
     ...ctx.env,
@@ -507,13 +578,23 @@ export const buildCopilotChildEnv = async (
       : {}),
     ...(instructionsDir != null
       ? { COPILOT_CUSTOM_INSTRUCTIONS_DIRS: joinEnvList(existingInstructionDirs, instructionsDir) }
+      : {}),
+    ...(configuredAgentDirs != null && configuredAgentDirs !== ''
+      ? { COPILOT_AGENT_DIRS: joinEnvList(existingAgentDirs, configuredAgentDirs) }
+      : {}),
+    ...(additionalInstructions !== ''
+      ? { COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS: additionalInstructions }
+      : {}),
+    ...(nativeHooksActive
+      ? { __VF_VIBE_FORGE_COPILOT_HOOKS_ACTIVE__: '1' }
       : {})
   })
 }
 
 const buildPermissionArgs = (
   options: AdapterQueryOptions,
-  adapterConfig: CopilotAdapterConfig
+  adapterConfig: CopilotAdapterConfig,
+  hasModeFlag: boolean
 ) => {
   const args: string[] = []
   const allowAll = adapterConfig.allowAll === true || options.permissionMode === 'bypassPermissions'
@@ -525,8 +606,12 @@ const buildPermissionArgs = (
   if (adapterConfig.allowAllTools === true) args.push('--allow-all-tools')
   if (adapterConfig.allowAllPaths === true || options.permissionMode === 'acceptEdits') args.push('--allow-all-paths')
   if (adapterConfig.allowAllUrls === true) args.push('--allow-all-urls')
+  pushStringListArg(args, '--allow-tool', adapterConfig.allowTools)
+  pushStringListArg(args, '--deny-tool', adapterConfig.denyTools)
+  pushStringListArg(args, '--allow-url', adapterConfig.allowUrls)
+  pushStringListArg(args, '--deny-url', adapterConfig.denyUrls)
   if (adapterConfig.noAskUser === true || options.permissionMode === 'dontAsk') args.push('--no-ask-user')
-  if (options.permissionMode === 'plan') args.push('--plan')
+  if (options.permissionMode === 'plan' && !hasModeFlag) args.push('--plan')
 
   return args
 }
@@ -544,7 +629,7 @@ export const buildCopilotBaseArgs = async (params: {
     '--resume',
     options.sessionId,
     '--no-auto-update',
-    '--no-remote',
+    adapterConfig.remote === true ? '--remote' : '--no-remote',
     '--config-dir',
     await ensureCopilotConfigDir(ctx, adapterConfig)
   ]
@@ -565,6 +650,19 @@ export const buildCopilotBaseArgs = async (params: {
   const agent = adapterConfig.agent?.trim()
   if (agent) args.push('--agent', agent)
 
+  pushStringListArg(args, '--plugin-dir', adapterConfig.pluginDirs)
+  pushStringListArg(args, '--add-dir', adapterConfig.additionalDirs)
+  const mode = adapterConfig.mode?.trim()
+  if (mode) args.push('--mode', mode)
+  if (adapterConfig.autopilot === true && !mode && options.permissionMode !== 'plan') args.push('--autopilot')
+  const maxAutopilotContinues = asPositiveIntegerString(adapterConfig.maxAutopilotContinues)
+  if (maxAutopilotContinues != null) args.push('--max-autopilot-continues', maxAutopilotContinues)
+  if (adapterConfig.noColor === true) args.push('--no-color')
+  if (adapterConfig.noBanner === true) args.push('--no-banner')
+  if (adapterConfig.debug === true) args.push('--debug')
+  if (adapterConfig.experimental === true) args.push('--experimental')
+  if (adapterConfig.enableReasoningSummaries === true) args.push('--enable-reasoning-summaries')
+
   if (adapterConfig.noCustomInstructions === true) args.push('--no-custom-instructions')
   if (adapterConfig.disableBuiltinMcps === true) args.push('--disable-builtin-mcps')
   pushStringListArg(args, '--disable-mcp-server', adapterConfig.disabledMcpServers)
@@ -579,7 +677,7 @@ export const buildCopilotBaseArgs = async (params: {
     args.push('--additional-mcp-config', mcpConfig)
   }
 
-  args.push(...buildPermissionArgs(options, adapterConfig))
+  args.push(...buildPermissionArgs(options, adapterConfig, Boolean(mode)))
 
   if (interactive) {
     if (prompt != null && prompt.trim() !== '') args.push('--interactive', prompt.trim())

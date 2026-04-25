@@ -49,6 +49,25 @@ const stringifyUnknown = (value: unknown) => {
   }
 }
 
+const stringifyTextContent = (value: unknown): string => {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item
+        if (isRecord(item)) {
+          return asString(item.text) ?? asString(item.content) ?? ''
+        }
+        return ''
+      })
+      .join('')
+  }
+  if (isRecord(value)) {
+    return asString(value.text) ?? asString(value.content) ?? stringifyUnknown(value)
+  }
+  return stringifyUnknown(value)
+}
+
 const createLineConsumer = (onLine: (line: string) => void) => {
   let buffer = ''
 
@@ -93,6 +112,48 @@ const createToolUseMessage = (event: CopilotJsonEvent): ChatMessage | undefined 
     }],
     createdAt: Date.now()
   }
+}
+
+const createAgentMessage = (
+  event: CopilotJsonEvent,
+  options: AdapterQueryOptions
+): ChatMessage | undefined => {
+  const data = event.data
+  if (!isRecord(data)) return undefined
+  const content = stringifyTextContent(data.message ?? data.content ?? data.text ?? data.delta)
+  if (content.trim() === '') return undefined
+
+  return {
+    id: asString(data.messageId) ?? asString(data.id) ?? uuid(),
+    role: 'assistant',
+    content,
+    createdAt: Date.now(),
+    ...(options.model != null ? { model: options.model } : {})
+  }
+}
+
+const mergePendingAgentMessage = (
+  pending: ChatMessage | undefined,
+  next: ChatMessage
+): ChatMessage => {
+  if (pending == null) return next
+  return {
+    ...next,
+    id: pending.id,
+    content: `${stringifyTextContent(pending.content)}${stringifyTextContent(next.content)}`,
+    createdAt: pending.createdAt
+  }
+}
+
+const applyPendingMessageId = (
+  event: CopilotJsonEvent,
+  message: ChatMessage,
+  pending: ChatMessage | undefined
+): ChatMessage => {
+  if (pending == null) return message
+  const data = event.data
+  const hasExplicitId = isRecord(data) && (asString(data.messageId) != null || asString(data.id) != null)
+  return hasExplicitId ? message : { ...message, id: pending.id }
 }
 
 const createToolResultMessage = (event: CopilotJsonEvent): ChatMessage | undefined => {
@@ -185,6 +246,7 @@ export const createStreamCopilotSession = async (
 
   const handleJsonEvent = (event: CopilotJsonEvent, state: {
     lastAssistantMessage?: ChatMessage
+    pendingAgentMessage?: ChatMessage
     sawAssistantMessage: boolean
     rawTextParts: string[]
   }) => {
@@ -196,6 +258,13 @@ export const createStreamCopilotSession = async (
       if (delta != null && delta !== '') {
         messageDeltas.set(messageId, `${messageDeltas.get(messageId) ?? ''}${delta}`)
       }
+      return
+    }
+
+    if (event.type === 'agent.message') {
+      const message = createAgentMessage(event, options)
+      if (message == null) return
+      state.pendingAgentMessage = mergePendingAgentMessage(state.pendingAgentMessage, message)
       return
     }
 
@@ -226,9 +295,40 @@ export const createStreamCopilotSession = async (
       return
     }
 
+    if (event.type === 'tool.call') {
+      const message = createToolUseMessage(event)
+      if (message != null) emitEvent({ type: 'message', data: message })
+      return
+    }
+
     if (event.type === 'tool.execution_complete') {
       const message = createToolResultMessage(event)
       if (message != null) emitEvent({ type: 'message', data: message })
+      return
+    }
+
+    if (event.type === 'tool.result') {
+      const message = createToolResultMessage(event)
+      if (message != null) emitEvent({ type: 'message', data: message })
+      return
+    }
+
+    if (event.type === 'agent.completed') {
+      const parsedMessage = createAgentMessage(event, options)
+      if (parsedMessage == null) {
+        if (state.pendingAgentMessage != null) {
+          state.lastAssistantMessage = state.pendingAgentMessage
+          state.pendingAgentMessage = undefined
+          state.sawAssistantMessage = true
+          emitEvent({ type: 'message', data: state.lastAssistantMessage })
+        }
+        return
+      }
+      const message = applyPendingMessageId(event, parsedMessage, state.pendingAgentMessage)
+      state.pendingAgentMessage = undefined
+      state.sawAssistantMessage = true
+      state.lastAssistantMessage = message
+      emitEvent({ type: 'message', data: message })
       return
     }
 
@@ -239,7 +339,27 @@ export const createStreamCopilotSession = async (
           details: event.data
         })
       })
+      return
     }
+
+    if (event.type === 'agent.error') {
+      emitEvent({
+        type: 'error',
+        data: toAdapterErrorData(formatSessionError(event), {
+          details: event.data
+        })
+      })
+      return
+    }
+
+    if (event.type === 'session.created' || event.type === 'result') {
+      return
+    }
+
+    ctx.logger.debug('Ignoring unknown Copilot JSON event', {
+      type: event.type,
+      data: event.data
+    })
   }
 
   const runTurn = async (content: Extract<AdapterEvent, { type: 'message' }>): Promise<void> => {
@@ -257,6 +377,7 @@ export const createStreamCopilotSession = async (
 
     const state: {
       lastAssistantMessage?: ChatMessage
+      pendingAgentMessage?: ChatMessage
       sawAssistantMessage: boolean
       rawTextParts: string[]
     } = {
@@ -322,6 +443,13 @@ export const createStreamCopilotSession = async (
       }
       emitExit({ exitCode, stderr: stderr.trim() || undefined })
       return
+    }
+
+    if (!state.sawAssistantMessage && state.pendingAgentMessage != null) {
+      state.lastAssistantMessage = state.pendingAgentMessage
+      state.pendingAgentMessage = undefined
+      state.sawAssistantMessage = true
+      emitEvent({ type: 'message', data: state.lastAssistantMessage })
     }
 
     if (!state.sawAssistantMessage) {

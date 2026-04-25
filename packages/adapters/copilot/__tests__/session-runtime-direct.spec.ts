@@ -11,6 +11,7 @@ import { createCopilotSession } from '#~/runtime/session.js'
 import { flushAsyncWork, makeCtx, makeProc, makeTempDir, registerRuntimeTestHooks } from './runtime-test-helpers'
 
 vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
   spawn: vi.fn()
 }))
 
@@ -74,7 +75,7 @@ describe('createCopilotSession direct runtime', () => {
 
     await flushAsyncWork()
 
-    expect(JSON.parse(await readFile(join(cwd, '.ai/.mock/copilot/config.json'), 'utf8'))).toMatchObject({
+    expect(JSON.parse(await readFile(join(cwd, '.ai/.mock/copilot/settings.json'), 'utf8'))).toMatchObject({
       trusted_folders: [cwd]
     })
   })
@@ -105,7 +106,7 @@ describe('createCopilotSession direct runtime', () => {
 
     await flushAsyncWork()
 
-    await expect(readFile(join(cwd, '.ai/.mock/copilot/config.json'), 'utf8')).rejects.toMatchObject({
+    await expect(readFile(join(cwd, '.ai/.mock/copilot/settings.json'), 'utf8')).rejects.toMatchObject({
       code: 'ENOENT'
     })
   })

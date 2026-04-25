@@ -121,6 +121,10 @@ const OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS: Array<
   'SessionStart' | 'PreToolUse' | 'PostToolUse' | 'Stop'
 > = ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
 
+const COPILOT_NATIVE_BRIDGE_DISABLED_EVENTS: Array<
+  'PreToolUse' | 'PostToolUse' | 'Stop'
+> = ['PreToolUse', 'PostToolUse', 'Stop']
+
 export const run = async (
   options: RunTaskOptions,
   adapterOptions: AdapterQueryOptions
@@ -277,6 +281,8 @@ export const run = async (
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'kimi' && ctx.env.__VF_PROJECT_AI_KIMI_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? BASE_NATIVE_BRIDGE_DISABLED_EVENTS
+      : adapterType === 'copilot' && ctx.env.__VF_PROJECT_AI_COPILOT_NATIVE_HOOKS_AVAILABLE__ === '1'
+      ? COPILOT_NATIVE_BRIDGE_DISABLED_EVENTS
       : adapterType === 'opencode' && ctx.env.__VF_PROJECT_AI_OPENCODE_NATIVE_HOOKS_AVAILABLE__ === '1'
       ? OPENCODE_NATIVE_BRIDGE_DISABLED_EVENTS
       : []

@@ -122,6 +122,48 @@ adapters:
 - Web 配置页默认展示缓存后的额度快照；当前 Codex quota 快照默认缓存 5 分钟
 - CLI `vf accounts show codex <account>` 会主动刷新一次最新额度信息
 
+## Copilot 示例
+
+`copilot` 使用官方 GitHub Copilot CLI。Vibe Forge 会把运行时配置写入当前 workspace 的 `.ai/.mock/copilot/settings.json`，并把 CLI auth/keychain 交给官方 CLI 自己处理。
+
+```yaml
+adapters:
+  copilot:
+    cli:
+      source: managed
+      version: 1.0.36
+    remote: false
+    stream: true
+    agent: reviewer
+    agentDirs:
+      - /absolute/path/to/copilot-agents
+    pluginDirs:
+      - /absolute/path/to/copilot-plugin
+    mode: autopilot
+    allowTools:
+      - shell(git:*)
+    denyTools:
+      - shell(git push)
+    allowUrls:
+      - https://docs.github.com/copilot/*
+    additionalDirs:
+      - /absolute/path/to/shared-context
+    configContent:
+      askUser: false
+```
+
+行为说明：
+
+- selected skills 会 stage 到 session 目录，并通过 `COPILOT_SKILLS_DIRS` 注入 Copilot CLI
+- 任务 system prompt 会写成 session 级 custom instructions，并通过 `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 注入
+- selected MCP servers 会翻译成 `--additional-mcp-config`
+- `modelServices.extra.copilot` 可以配置 BYOK/provider 细节，adapter 会映射为 `COPILOT_PROVIDER_*`
+- hook plugins 会接入 Copilot native `PreToolUse` / `PostToolUse` / `Stop`，对应通用 bridge 事件会自动去重
+- project/user 两层 Copilot adapter 配置会对 `cli` 与 `configContent` 做深合并，避免 user config 覆盖整块 native settings
+- `mode` 会直接映射 `--mode`，并优先于 `autopilot` / plan permission；需要 autopilot 时推荐配置 `mode: autopilot` 或 `autopilot: true` 二选一
+
+当前不实现 Copilot 多账号 API；需要登录、切换或排查账号时，使用官方 CLI 的 `/login`、`/logout`、`/user` 流程。
+
 ## 什么时候更新文档
 
 如果你修改了下面这些行为，记得同步更新本文以及 CLI / Web 使用文档：

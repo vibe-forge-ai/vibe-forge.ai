@@ -36,6 +36,12 @@ npx vf run --adapter opencode --print 你好
 npx vf run --adapter gemini --print 你好
 ```
 
+### Copilot
+
+```bash
+npx vf run --adapter copilot --print 你好
+```
+
 ## Native skills smoke
 
 ### Claude Code
@@ -90,6 +96,20 @@ npx vf run --adapter gemini --print --no-inject-default-system-prompt 'vf gemini
 - 输出命中 probe skill 的固定文本
 - 说明 `.ai/skills -> .ai/.mock/.agents/skills` 这条链路生效
 
+### Copilot
+
+1. 在 `.ai/skills/<probe>/SKILL.md` 放一个只会命中特定触发词的 probe skill
+2. 运行：
+
+```bash
+npx vf run --adapter copilot --print --no-inject-default-system-prompt --include-skill <probe> 'vf copilot native skill probe'
+```
+
+预期：
+
+- 输出命中 probe skill 的固定文本
+- 说明 selected skill 已经 stage 到 `.ai/.mock/copilot/sessions/<session>/skills`，并通过 `COPILOT_SKILLS_DIRS` 被 Copilot CLI 原生发现
+
 ## Routed model service smoke
 
 Gemini 的 routed model service 验证不要套用 CCR 视角。它走的是 adapter 自己的本地 compatibility proxy。
@@ -106,6 +126,18 @@ npx vf run --adapter gemini --model kimi,kimi-k2.5 --print hi
 - Gemini 正常返回回答，而不是报 provider / auth 初始化错误
 - 服务 endpoint 会被归一到 `.../chat/completions`
 - `Responses API` 或 legacy `/completions` 配置会在启动前被拒绝，而不是拖到运行中才报错
+
+Copilot 的 routed model service 验证走 `COPILOT_PROVIDER_*` 与本地 provider proxy：
+
+```bash
+npx vf run --adapter copilot --model local,gpt-5 --print hi
+```
+
+预期：
+
+- CLI 参数里使用 `--model gpt-5`
+- 子进程 env 里有 `COPILOT_PROVIDER_BASE_URL`、`COPILOT_PROVIDER_MODEL_ID`、`COPILOT_PROVIDER_WIRE_MODEL`
+- adapter 日志能看到 `adapter-copilot/provider-proxy` route 注册
 
 ## Worktree fallback smoke
 

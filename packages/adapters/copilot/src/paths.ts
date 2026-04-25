@@ -11,7 +11,7 @@ const adapterPackageDir = dirname(require.resolve('@vibe-forge/adapter-copilot/p
 const bundledPath = resolve(adapterPackageDir, 'node_modules/.bin/copilot')
 
 export const COPILOT_CLI_PACKAGE = '@github/copilot'
-export const COPILOT_CLI_VERSION = '1.0.32'
+export const COPILOT_CLI_VERSION = '1.0.36'
 
 const toRealPath = (targetPath: string) => {
   try {

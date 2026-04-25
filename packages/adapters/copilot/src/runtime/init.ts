@@ -7,6 +7,7 @@ import { resolveProjectMockHome } from '@vibe-forge/utils'
 import { ensureManagedNpmCli } from '@vibe-forge/utils/managed-npm-cli'
 
 import { COPILOT_CLI_PACKAGE, COPILOT_CLI_VERSION, resolveCopilotBinaryPath } from '#~/paths.js'
+import { prepareCopilotNativeHooks } from './native-hooks'
 import { resolveAdapterConfig, syncCopilotManagedSymlink } from './shared'
 
 const resolveCopilotMockHome = (ctx: Pick<AdapterCtx, 'cwd' | 'env'>) => (
@@ -38,6 +39,8 @@ const syncCopilotMockHomeKeychains = async (ctx: Pick<AdapterCtx, 'cwd' | 'env'>
 }
 
 export const initCopilotAdapter = async (ctx: AdapterCtx) => {
+  prepareCopilotNativeHooks(ctx)
+
   const adapterConfig = resolveAdapterConfig(ctx)
   ctx.env.__VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__ = await ensureManagedNpmCli({
     adapterKey: 'copilot',

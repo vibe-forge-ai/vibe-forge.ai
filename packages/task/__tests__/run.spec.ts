@@ -271,6 +271,33 @@ describe('task run adapter init', () => {
     })
   })
 
+  it('accepts adapter-level effort for copilot and forwards it to the adapter query', async () => {
+    const ctx = createCtx()
+    ctx.configs = [{
+      adapters: createAdapters({
+        copilot: {
+          effort: 'medium'
+        }
+      })
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'copilot',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-copilot-effort',
+      onEvent: vi.fn()
+    })
+
+    expect(queryMock.mock.calls.at(-1)?.[1]).toMatchObject({
+      effort: 'medium'
+    })
+  })
+
   it('attaches the adapter asset plan to query options', async () => {
     const ctx = createCtx()
     const skillAsset = {
@@ -572,6 +599,34 @@ describe('task run adapter init', () => {
     expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
       adapter: 'opencode',
       disabledEvents: ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']
+    }))
+  })
+
+  it('disables only Copilot native hook events when the managed settings bridge is active', async () => {
+    const ctx = createCtx()
+    ctx.env.__VF_PROJECT_AI_COPILOT_NATIVE_HOOKS_AVAILABLE__ = '1'
+    ctx.configs = [{
+      adapters: createAdapters({
+        copilot: {}
+      })
+    }, undefined] as AdapterCtx['configs']
+    prepareMock.mockResolvedValue([ctx])
+
+    await run({
+      adapter: 'copilot',
+      cwd: ctx.cwd,
+      env: {}
+    }, {
+      type: 'create',
+      runtime: 'cli',
+      sessionId: 'session-copilot-native',
+      description: 'hello',
+      onEvent: vi.fn()
+    })
+
+    expect(createAdapterHookBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
+      adapter: 'copilot',
+      disabledEvents: ['PreToolUse', 'PostToolUse', 'Stop']
     }))
   })
 
