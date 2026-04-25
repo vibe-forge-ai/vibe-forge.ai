@@ -45,9 +45,14 @@ describe('cli-helper loader wrapper', () => {
 
     const nestedCwd = resolve(workspaceDir, 'packages/demo/src')
     const packageDir = resolve(workspaceDir, 'packages/fake-cli')
+    const realHome = await mkdtemp(resolve(tmpdir(), 'vf-cli-helper-real-home-'))
+    tempDirs.push(realHome)
     await mkdir(nestedCwd, { recursive: true })
     await mkdir(packageDir, { recursive: true })
+    await mkdir(resolve(realHome, '.config/git'), { recursive: true })
     await writeFile(resolve(workspaceDir, '.ai.config.json'), '{}\n')
+    await writeFile(resolve(realHome, '.gitconfig'), '[user]\\n\\tname = real\\n')
+    await writeFile(resolve(realHome, '.config/git/config'), '[alias]\\n\\tco = checkout\\n')
     const realWorkspaceDir = await realpath(workspaceDir)
     const entryPath = resolve(process.cwd(), 'packages/cli-helper/entry.js')
     const result = spawnSync(
@@ -68,11 +73,15 @@ Module._load = function(request, parent, isMain) {
   }
 
   if (request === './loader' && parent?.filename === entryPath) {
+    const fs = require('node:fs')
+    const path = require('node:path')
     process.stdout.write(JSON.stringify({
       workspaceFolder: process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
       packageDir: process.env.__VF_PROJECT_PACKAGE_DIR__,
       realHome: process.env.__VF_PROJECT_REAL_HOME__,
       home: process.env.HOME,
+      gitConfigLink: fs.readlinkSync(path.join(process.env.HOME, '.gitconfig')),
+      gitConfigDirLink: fs.readlinkSync(path.join(process.env.HOME, '.config/git')),
       sourceEntry: process.env.__VF_PROJECT_CLI_BIN_SOURCE_ENTRY__,
       distEntry: process.env.__VF_PROJECT_CLI_BIN_DIST_ENTRY__
     }))
@@ -93,7 +102,7 @@ require(entryPath).runCliPackageEntrypoint({
         cwd: nestedCwd,
         env: {
           ...process.env,
-          HOME: '/tmp/original-home'
+          HOME: realHome
         },
         encoding: 'utf8'
       }
@@ -105,8 +114,10 @@ require(entryPath).runCliPackageEntrypoint({
     expect(JSON.parse(result.stdout)).toEqual({
       workspaceFolder: realWorkspaceDir,
       packageDir,
-      realHome: '/tmp/original-home',
+      realHome,
       home: resolve(realWorkspaceDir, '.ai/.mock'),
+      gitConfigLink: resolve(realHome, '.gitconfig'),
+      gitConfigDirLink: resolve(realHome, '.config/git'),
       sourceEntry: './src/custom-cli',
       distEntry: './dist/custom-cli.js'
     })
