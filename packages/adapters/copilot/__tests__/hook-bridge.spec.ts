@@ -157,6 +157,15 @@ describe('copilot native hook bridge helpers', () => {
     })
   })
 
+  it('uses a blocking fallback reason when Stop blocks without a stopReason', () => {
+    expect(mapVibeForgeHookOutputToCopilot('Stop', {
+      continue: false
+    })).toEqual({
+      decision: 'block',
+      reason: 'blocked by Vibe Forge Stop hook'
+    })
+  })
+
   it('limits native hook loader support to events Copilot handles natively here', () => {
     expect(supportsHookEvent('PreToolUse')).toBe(true)
     expect(supportsHookEvent('PostToolUse')).toBe(true)
