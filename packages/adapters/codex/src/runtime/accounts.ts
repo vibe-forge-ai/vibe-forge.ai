@@ -7,6 +7,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 
 import { resolveMockHome } from '@vibe-forge/hooks'
+import { linkRealHomeGitConfig } from '@vibe-forge/register/mock-home-git'
 import type {
   AdapterAccountActionDescriptor,
   AdapterAccountCredentialArtifact,
@@ -1679,6 +1680,10 @@ export const prepareCodexSessionHome = async (params: {
 
   const homeDir = resolveCodexSessionHomeDir(ctx, sessionId)
   await mkdir(join(homeDir, '.codex'), { recursive: true })
+  linkRealHomeGitConfig({
+    realHome: ctx.env.__VF_PROJECT_REAL_HOME__ ?? undefined,
+    mockHome: homeDir
+  })
   await syncSharedCodexSessionHomeFiles(ctx, homeDir)
   await syncSymlinkTarget({
     sourcePath: selectedAccount?.authFilePath ?? join(homeDir, MISSING_AUTH_SENTINEL_FILE),

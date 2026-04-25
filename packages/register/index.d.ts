@@ -12,6 +12,15 @@ declare module '@vibe-forge/register/dotenv' {
   export const resolveProjectAiBaseDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string
 }
 
+declare module '@vibe-forge/register/mock-home-git' {
+  export interface LinkRealHomeGitConfigOptions {
+    realHome?: string
+    mockHome?: string
+  }
+
+  export const linkRealHomeGitConfig: (options?: LinkRealHomeGitConfigOptions) => void
+}
+
 declare module '@vibe-forge/register/esbuild' {}
 
 declare module '@vibe-forge/register/preload' {}

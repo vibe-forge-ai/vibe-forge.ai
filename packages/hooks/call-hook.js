@@ -47,10 +47,13 @@ const {
   resolveProjectAiBaseDir,
   resolveProjectWorkspaceFolder
 } = require('@vibe-forge/register/dotenv')
+const { linkRealHomeGitConfig } = require('@vibe-forge/register/mock-home-git')
 
 process.env.__VF_PROJECT_WORKSPACE_FOLDER__ = resolveProjectWorkspaceFolder(process.cwd(), process.env)
 process.env.__VF_PROJECT_PACKAGE_DIR__ = process.env.__VF_PROJECT_PACKAGE_DIR__ ?? __dirname
+process.env.__VF_PROJECT_REAL_HOME__ = process.env.__VF_PROJECT_REAL_HOME__ ?? process.env.HOME ?? ''
 process.env.HOME = path.resolve(resolveProjectAiBaseDir(process.cwd(), process.env), '.mock')
+linkRealHomeGitConfig()
 
 const sourceEntrypoint = path.resolve(__dirname, './src/entry.ts')
 const distEntrypoint = path.resolve(__dirname, './dist/entry.js')

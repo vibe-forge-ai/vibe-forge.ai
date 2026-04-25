@@ -6,6 +6,10 @@
       "types": "./dotenv.d.ts",
       "default": "./dotenv.js"
     },
+    "./mock-home-git": {
+      "types": "./mock-home-git.d.ts",
+      "default": "./mock-home-git.js"
+    },
     "./esbuild": {
       "types": "./esbuild.d.ts",
       "default": "./esbuild.js"
