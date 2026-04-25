@@ -187,7 +187,7 @@ export const mapVibeForgeHookOutputToCopilot = (
       if (output.continue === false) {
         return {
           decision: 'block',
-          reason: blockReason(output.stopReason, 'continue after Vibe Forge Stop hook')
+          reason: blockReason(output.stopReason, 'blocked by Vibe Forge Stop hook')
         }
       }
       return {}
