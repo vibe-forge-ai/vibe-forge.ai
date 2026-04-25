@@ -23,6 +23,7 @@ Skill frontmatter 支持 `dependencies`。依赖先按本地 workspace / 插件 
 | ------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `claude-code` | `.ai/.mock/.claude/settings.json`                                           | `.ai/.mock/.claude/skills -> .ai/skills`                                                                       | 选中 MCP 写进 cache 文件，再用 `--mcp-config` 注入     | keychains 软链到 mock home；managed `.claude.json` 写 workspace trust state；managed Claude plugins stage 到 `.ai/caches/<ctx>/<session>/.claude-plugins`                                                                                              |
 | `codex`       | `.ai/.mock/.codex/hooks.json`                                               | `.ai/.mock/.agents/skills -> .ai/skills`，并把每个 workspace skill 目录软链到 `.ai/.mock/.codex/skills/<name>` | 翻译成 `-c mcp_servers.<name>.*`                       | managed `config.toml` 写 workspace trust 与 update-check 默认值；账号 auth 快照落到 `.ai/.local/adapters/codex/accounts/<key>/auth.json`，账号元数据与 quota 快照落到 `meta.json`，session HOME 隔离到 `.ai/caches/<ctx>/<session>/adapter-codex-home` |
+| `copilot`     | `.ai/.mock/copilot/settings.json` 里的 `hooks`                              | session 级 `.ai/.mock/copilot/sessions/<session>/skills`，通过 `COPILOT_SKILLS_DIRS` 注入                      | 翻译成 `--additional-mcp-config`                       | `settings.json` 写 workspace trust / `configContent`；custom instructions 通过 `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`；custom agents 通过 `COPILOT_AGENT_DIRS`；local plugins 通过 `--plugin-dir`                                                          |
 | `gemini`      | `.ai/.mock/.gemini/settings.json` 里的 `hooks` / `hooksConfig`              | `.ai/.mock/.agents/skills -> .ai/skills`                                                                       | 写进 `.ai/.mock/.gemini/settings.json` 的 `mcpServers` | `.ai/.mock/.gemini/settings.json`、本地 Gemini compatibility proxy、`GEMINI_CLI_HOME`                                                                                                                                                                  |
 | `opencode`    | `.ai/.mock/.config/opencode/opencode.json` 与 `plugins/vibe-forge-hooks.js` | session 级 `OPENCODE_CONFIG_DIR/skills`                                                                        | 写进最终 `opencode.json`                               | fallback `opencode.json` 默认写 `$schema` 与 `autoupdate: false`；`agents/commands/modes/plugins` 与 overlay 一起进入 session config dir                                                                                                               |
 
@@ -61,6 +62,24 @@ Skill frontmatter 支持 `dependencies`。依赖先按本地 workspace / 插件 
 - [Codex Skills](https://developers.openai.com/codex/skills)
 - [Codex AGENTS.md](https://developers.openai.com/codex/agents-md)
 - [Codex Hooks](https://developers.openai.com/codex/hooks)
+
+## Copilot
+
+- init 阶段在 [`packages/adapters/copilot/src/runtime/init.ts`](../../../packages/adapters/copilot/src/runtime/init.ts) 准备 managed CLI、mock-home keychain bridge 和 native hook runtime
+- query 阶段在 [`packages/adapters/copilot/src/runtime/shared.ts`](../../../packages/adapters/copilot/src/runtime/shared.ts) 生成 mock `settings.json`、session skills / instructions 目录、MCP JSON 和官方 CLI 参数
+- native hooks 在 [`packages/adapters/copilot/src/runtime/native-hooks.ts`](../../../packages/adapters/copilot/src/runtime/native-hooks.ts) 写入 `PreToolUse`、`PostToolUse`、`Stop`，由 [`packages/adapters/copilot/src/hook-bridge.ts`](../../../packages/adapters/copilot/src/hook-bridge.ts) 转换成统一 hook 输入输出
+
+设计考量：
+
+- Copilot CLI 以 `~/.copilot/settings.json`、`skills/`、`agents/`、`hooks/` 为用户级原生边界；Vibe Forge 使用 `.ai/.mock/copilot` 作为隔离 config dir
+- skills 和 custom instructions 是 session 级能力，分别通过 `COPILOT_SKILLS_DIRS` 与 `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 注入，避免全量污染用户级目录
+- hook plugins 现在标记为 native；只有 Copilot 原生已经接管的 `PreToolUse` / `PostToolUse` / `Stop` 会从通用 hook bridge 去重
+
+官方文档：
+
+- [Copilot CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)
+- [Copilot CLI configuration directory](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference)
+- [Copilot hooks configuration](https://docs.github.com/en/copilot/reference/hooks-configuration)
 
 ## OpenCode
 

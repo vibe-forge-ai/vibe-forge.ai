@@ -18,6 +18,7 @@ import {
 } from './runtime-test-helpers'
 
 vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
   spawn: vi.fn()
 }))
 
@@ -138,6 +139,119 @@ describe('createCopilotSession stream runtime', () => {
     expect(spawnMock.mock.calls[0]?.[1]).toContain('--allow-all')
   })
 
+  it('maps stable Copilot CLI options into args, env, and managed settings', async () => {
+    spawnMock.mockImplementation(() =>
+      makeProc({
+        stdout: JSON.stringify({
+          type: 'assistant.message',
+          data: { messageId: 'msg_options', content: 'done' }
+        })
+      })
+    )
+
+    const cwd = await makeTempDir()
+    const { ctx } = makeCtx({
+      cwd,
+      env: {
+        __VF_PROJECT_AI_ADAPTER_COPILOT_CLI_PATH__: '/bin/copilot',
+        COPILOT_AGENT_DIRS: '/existing/agents'
+      },
+      configs: [{
+        adapters: {
+          copilot: {
+            remote: true,
+            agent: 'reviewer',
+            agentDirs: ['/tmp/agents-a', '/tmp/agents-b'],
+            pluginDirs: ['/tmp/plugin-a', '/tmp/plugin-b'],
+            additionalInstructions: 'Prefer small patches.',
+            allowTools: ['shell(git:*)'],
+            denyTools: ['shell(git push)'],
+            allowUrls: ['https://docs.github.com/copilot/*'],
+            denyUrls: ['https://example.invalid'],
+            additionalDirs: ['/tmp/shared'],
+            mode: 'autopilot',
+            autopilot: true,
+            maxAutopilotContinues: 2,
+            noColor: true,
+            noBanner: true,
+            debug: true,
+            experimental: true,
+            enableReasoningSummaries: true,
+            configContent: {
+              askUser: false,
+              nested: {
+                project: true
+              }
+            }
+          }
+        }
+      }, {
+        adapters: {
+          copilot: {
+            configContent: {
+              nested: {
+                user: true
+              }
+            }
+          }
+        }
+      }]
+    })
+
+    await createCopilotSession(ctx, {
+      type: 'create',
+      runtime: 'server',
+      sessionId: 'session-options',
+      description: 'hello',
+      onEvent: () => {}
+    } as any)
+
+    await flushAsyncWork()
+
+    const args = spawnMock.mock.calls[0]?.[1] as string[]
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as { env?: Record<string, string> }
+    expect(args).toEqual(expect.arrayContaining([
+      '--remote',
+      '--agent',
+      'reviewer',
+      '--plugin-dir',
+      '/tmp/plugin-a',
+      '--plugin-dir',
+      '/tmp/plugin-b',
+      '--allow-tool',
+      'shell(git:*)',
+      '--deny-tool',
+      'shell(git push)',
+      '--allow-url',
+      'https://docs.github.com/copilot/*',
+      '--deny-url',
+      'https://example.invalid',
+      '--add-dir',
+      '/tmp/shared',
+      '--mode',
+      'autopilot',
+      '--max-autopilot-continues',
+      '2',
+      '--no-color',
+      '--no-banner',
+      '--debug',
+      '--experimental',
+      '--enable-reasoning-summaries'
+    ]))
+    expect(args).not.toContain('--no-remote')
+    expect(args).not.toContain('--autopilot')
+    expect(spawnOptions.env?.COPILOT_AGENT_DIRS).toBe('/existing/agents,/tmp/agents-a,/tmp/agents-b')
+    expect(spawnOptions.env?.COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS).toBe('Prefer small patches.')
+    expect(JSON.parse(await readFile(`${cwd}/.ai/.mock/copilot/settings.json`, 'utf8'))).toEqual({
+      askUser: false,
+      nested: {
+        project: true,
+        user: true
+      },
+      trusted_folders: [cwd]
+    })
+  })
+
   it('stages system prompt and selected skills for Copilot native discovery', async () => {
     spawnMock.mockImplementation(() =>
       makeProc({
@@ -189,50 +303,6 @@ describe('createCopilotSession stream runtime', () => {
         'utf8'
       )
     ).toBe('Use the Vibe Forge workspace context.\n')
-  })
-
-  it('merges workspace trust into the managed Copilot config by default', async () => {
-    spawnMock.mockImplementation(() =>
-      makeProc({
-        stdout: JSON.stringify({
-          type: 'assistant.message',
-          data: { messageId: 'msg_trust', content: 'done' }
-        })
-      })
-    )
-
-    const cwd = await makeTempDir()
-    const configDir = join(cwd, '.ai/.mock/copilot')
-    await mkdir(configDir, { recursive: true })
-    await writeFile(
-      join(configDir, 'config.json'),
-      JSON.stringify(
-        {
-          trustedFolders: ['/existing/workspace'],
-          allowed_urls: ['https://example.com']
-        },
-        null,
-        2
-      ),
-      'utf8'
-    )
-
-    const { ctx } = makeCtx({ cwd })
-
-    await createCopilotSession(ctx, {
-      type: 'create',
-      runtime: 'server',
-      sessionId: 'session-trust',
-      description: 'hello',
-      onEvent: () => {}
-    } as any)
-
-    await flushAsyncWork()
-
-    expect(JSON.parse(await readFile(join(configDir, 'config.json'), 'utf8'))).toEqual({
-      trusted_folders: ['/existing/workspace', cwd],
-      allowed_urls: ['https://example.com']
-    })
   })
 
   it('maps routed model services to Copilot provider env and resolved model flag', async () => {

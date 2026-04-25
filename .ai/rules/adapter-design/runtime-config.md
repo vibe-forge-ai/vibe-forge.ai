@@ -100,6 +100,30 @@ worktree 场景下，共享 CLI cache 必须通过 [`packages/utils/src/project-
 - Codex 更偏向 `config.toml` / `-c key=value` 覆盖
 - 所以 init 阶段会先在 mock home 写最基础的原生配置（workspace trust、`check_for_update_on_startup`），query 阶段再把会话级共享配置编译成多组 `-c` 参数
 
+## Copilot
+
+- 实现入口：
+  - [`packages/adapters/copilot/src/runtime/init.ts`](../../../packages/adapters/copilot/src/runtime/init.ts)
+  - [`packages/adapters/copilot/src/runtime/shared.ts`](../../../packages/adapters/copilot/src/runtime/shared.ts)
+  - [`packages/adapters/copilot/src/runtime/native-hooks.ts`](../../../packages/adapters/copilot/src/runtime/native-hooks.ts)
+  - [`packages/adapters/copilot/src/runtime/session/stream.ts`](../../../packages/adapters/copilot/src/runtime/session/stream.ts)
+- 自动生效内容：
+  - 托管 `@github/copilot` CLI，默认版本 `1.0.36`
+  - `.ai/.mock/copilot/settings.json` 里的 workspace trust、`configContent` 和 managed native hooks
+  - session 级 `COPILOT_SKILLS_DIRS`、`COPILOT_CUSTOM_INSTRUCTIONS_DIRS`
+  - `COPILOT_AGENT_DIRS`、`COPILOT_ADDITIONAL_CUSTOM_INSTRUCTIONS`
+  - selected MCP servers 翻译成 `--additional-mcp-config`
+  - `modelServices.extra.copilot` 映射到 `COPILOT_PROVIDER_*`，并通过本地 provider proxy 路由
+  - `--plugin-dir`、`--allow-tool`、`--deny-tool`、`--allow-url`、`--deny-url`、`--add-dir`、`--mode`、`--remote` 等官方 CLI 参数
+
+设计考量：
+
+- Copilot CLI 当前主配置文件是 `settings.json`，旧 `config.json` 只作为读取兼容；adapter 写入 mock config dir，不写真实 `~/.copilot`
+- `cli` 与 `configContent` 在 project/user 两层配置之间做深合并；这是 Copilot adapter 内部读取 `ctx.configs[0/1]` 时的显式语义，和 extends 链的 `deepMergeKeys` 互补
+- `mode` 直接映射官方 `--mode`，并且官方禁止与 `--autopilot` / `--plan` 同时使用；所以 `mode` 存在时不再附加 `--autopilot` 或 `--plan`
+- Copilot auth 仍由官方 CLI 自己维护，Vibe Forge 只桥接 mock home/keychain 并清晰暴露 auth 错误，不实现虚假的多账号列表
+- native hooks 写入 mock `settings.json` 的 `hooks`，只禁用通用 bridge 中与 Copilot 原生重叠的 `PreToolUse` / `PostToolUse` / `Stop`
+
 ## OpenCode
 
 - 实现入口：

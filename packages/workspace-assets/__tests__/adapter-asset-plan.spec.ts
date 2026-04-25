@@ -394,7 +394,7 @@ describe('buildAdapterAssetPlan', () => {
     ])
   })
 
-  it('builds copilot native skill overlays and translated runtime diagnostics', async () => {
+  it('builds copilot native skill overlays and native hook diagnostics', async () => {
     const workspace = await createWorkspace()
 
     await installPluginPackage(workspace, '@vibe-forge/plugin-logger', {
@@ -489,7 +489,7 @@ describe('buildAdapterAssetPlan', () => {
       expect.objectContaining({
         assetId: loggerHookPluginId,
         adapter: 'copilot',
-        status: 'translated'
+        status: 'native'
       }),
       expect.objectContaining({
         assetId: docsMcpId,

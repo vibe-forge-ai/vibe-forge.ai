@@ -78,7 +78,7 @@ export async function buildAdapterAssetPlan(params: {
   params.bundle.hookPlugins.forEach((asset) => {
     pushDiagnostic(asset, {
       adapter: params.adapter,
-      status: params.adapter === 'copilot' ? 'translated' : 'native',
+      status: 'native',
       reason: params.adapter === 'claude-code'
         ? 'Mapped into the Claude Code native hooks bridge.'
         : params.adapter === 'codex'
@@ -86,7 +86,7 @@ export async function buildAdapterAssetPlan(params: {
         : params.adapter === 'gemini'
         ? 'Mapped into the Gemini native hooks bridge.'
         : params.adapter === 'copilot'
-        ? 'Handled by the Vibe Forge task hook bridge.'
+        ? 'Mapped into the Copilot CLI native hooks bridge.'
         : params.adapter === 'kimi'
         ? 'Mapped into the Kimi native hooks bridge.'
         : 'Mapped into the OpenCode native hooks bridge.'
