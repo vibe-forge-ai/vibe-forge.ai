@@ -8,6 +8,7 @@ interface RunBufferedCommandOptions {
   cwd?: string
   env?: NodeJS.ProcessEnv
   stdio?: 'ignore' | 'inherit' | 'pipe'
+  timeoutMs?: number
 }
 
 export const runBufferedCommand = async (input: RunBufferedCommandOptions) => {
@@ -19,6 +20,20 @@ export const runBufferedCommand = async (input: RunBufferedCommandOptions) => {
 
   let stdout = ''
   let stderr = ''
+  let timedOut = false
+  let killTimeout: NodeJS.Timeout | undefined
+  const timeout = input.timeoutMs != null && input.timeoutMs > 0
+    ? setTimeout(() => {
+      timedOut = true
+      child.kill('SIGTERM')
+      killTimeout = setTimeout(() => {
+        if (child.exitCode == null && child.signalCode == null) {
+          child.kill('SIGKILL')
+        }
+      }, 1_000)
+      killTimeout.unref()
+    }, input.timeoutMs)
+    : undefined
 
   if (input.stdio !== 'inherit') {
     child.stdout?.on('data', (chunk: Buffer | string) => {
@@ -32,13 +47,29 @@ export const runBufferedCommand = async (input: RunBufferedCommandOptions) => {
   return await new Promise<{
     code: number
     stderr: string
+    timedOut?: boolean
     stdout: string
   }>((resolve, reject) => {
-    child.once('error', reject)
+    child.once('error', (error) => {
+      if (timeout != null) {
+        clearTimeout(timeout)
+      }
+      if (killTimeout != null) {
+        clearTimeout(killTimeout)
+      }
+      reject(error)
+    })
     child.once('exit', (code) => {
+      if (timeout != null) {
+        clearTimeout(timeout)
+      }
+      if (killTimeout != null) {
+        clearTimeout(killTimeout)
+      }
       resolve({
         code: code ?? 0,
         stderr,
+        timedOut,
         stdout
       })
     })
