@@ -119,6 +119,25 @@ describe('prepare', () => {
     expect(ctx.env.__VF_PROJECT_AI_ENABLE_BUILTIN_PERMISSION_HOOKS__).toBe('1')
   })
 
+  it('reads adapter resume cache through same-key legacy fallback only', async () => {
+    const { prepare } = await import('#~/prepare.js')
+
+    const [ctx] = await prepare({
+      cwd: '/tmp/project',
+      ctxId: 'session-1',
+      env: {}
+    }, {
+      type: 'resume',
+      runtime: 'server',
+      sessionId: 'session-1',
+      onEvent: vi.fn()
+    } as any)
+
+    await ctx.cache.set('adapter.gemini.session', { geminiSessionId: 'gemini-native' })
+
+    await expect(ctx.cache.get('adapter.codex.threads')).resolves.toBeUndefined()
+  })
+
   it('syncs declared marketplace plugins before resolving workspace assets on create', async () => {
     const { prepare } = await import('#~/prepare.js')
     const marketplaces = {

@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 
 import { accessSync, constants } from 'node:fs'
-import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
@@ -58,6 +58,25 @@ const pathExists = (targetPath: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+const readDirSafe = async (targetPath: string) => {
+  try {
+    return await readdir(targetPath, { withFileTypes: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
+  }
+}
+
+const getOwnedDirectoryMtimeMs = async (targetPath: string) => {
+  try {
+    const stats = await lstat(targetPath)
+    return stats.isDirectory() && !stats.isSymbolicLink() ? stats.mtimeMs : undefined
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
   }
 }
 
@@ -386,6 +405,47 @@ const stageSkillOverlays = async (sessionRoot: string, options: AdapterQueryOpti
   return skillsDir
 }
 
+const restoreLegacyKimiSessionState = async (params: {
+  ctx: AdapterCtx
+  sessionId: string
+  shareDir: string
+}) => {
+  const currentSessionsDir = resolve(params.shareDir, 'sessions')
+  if (pathExists(currentSessionsDir)) return
+
+  const cacheRoot = resolve(params.ctx.cwd, '.ai', 'caches')
+  const entries = await readDirSafe(cacheRoot)
+  const candidates: Array<{ mtimeMs: number; sourceDir: string }> = []
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name === params.ctx.ctxId) continue
+
+    const sourceDir = resolve(
+      cacheRoot,
+      entry.name,
+      params.sessionId,
+      'adapter-kimi',
+      'share',
+      'sessions'
+    )
+    const mtimeMs = await getOwnedDirectoryMtimeMs(sourceDir)
+    if (mtimeMs != null) {
+      candidates.push({ mtimeMs, sourceDir })
+    }
+  }
+
+  const sourceDir = candidates.sort((left, right) =>
+    right.mtimeMs - left.mtimeMs || left.sourceDir.localeCompare(right.sourceDir)
+  )[0]?.sourceDir
+  if (sourceDir == null) return
+
+  await cp(sourceDir, currentSessionsDir, {
+    errorOnExist: false,
+    force: false,
+    recursive: true
+  })
+}
+
 export const hasStoredKimiSessionState = (shareDir: string) => pathExists(resolve(shareDir, 'sessions'))
 
 export const resolveKimiSessionBase = async (
@@ -399,6 +459,7 @@ export const resolveKimiSessionBase = async (
 
   await mkdir(shareDir, { recursive: true })
   await ensureCredentialsLink(shareDir, realShareDir)
+  await restoreLegacyKimiSessionState({ ctx, sessionId: options.sessionId, shareDir })
 
   const copiedConfigPath = await resolveCopiedConfigPath(shareDir, realShareDir)
   const nativeHookState = resolveKimiNativeHookState(ctx)

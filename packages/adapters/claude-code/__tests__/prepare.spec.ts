@@ -7,7 +7,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prepareClaudeExecution } from '../src/claude/prepare'
 
 vi.mock('../src/ccr/paths', () => ({
+  CLAUDE_CODE_CLI_PACKAGE: '@anthropic-ai/claude-code',
+  CLAUDE_CODE_CLI_VERSION: '0.0.0-test',
   resolveClaudeCliPath: vi.fn(() => '/mock/claude')
+}))
+
+vi.mock('@vibe-forge/utils/managed-npm-cli', () => ({
+  ensureManagedNpmCli: vi.fn(async ({ bundledPath }: { bundledPath?: string }) => bundledPath ?? '/mock/claude')
 }))
 
 vi.mock('../src/ccr/daemon', () => ({

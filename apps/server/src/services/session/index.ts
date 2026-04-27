@@ -446,7 +446,7 @@ export async function startAdapterSession(
         promptCwd
       const env = {
         ...processEnv,
-        __VF_PROJECT_AI_CTX_ID__: processEnv.__VF_PROJECT_AI_CTX_ID__ ?? sessionId,
+        __VF_PROJECT_AI_CTX_ID__: sessionId,
         __VF_PROJECT_WORKSPACE_FOLDER__: adapterCwd,
         __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: primaryWorkspaceFolder
       }

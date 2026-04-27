@@ -197,6 +197,40 @@ describe('taskManager fatal error scenarios', () => {
     }))
   })
 
+  it('uses the task id as the adapter cache context instead of an inherited parent context', async () => {
+    process.env.__VF_PROJECT_AI_CTX_ID__ = 'parent-ctx'
+    const { TaskManager } = await import('#~/tools/task/manager.js')
+
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit: vi.fn(),
+        kill: vi.fn()
+      }
+    })
+
+    try {
+      const managedTaskManager = new TaskManager()
+      await managedTaskManager.startTask({
+        taskId: 'task-stable-context',
+        description: 'trigger',
+        adapter: 'codex'
+      })
+    } finally {
+      delete process.env.__VF_PROJECT_AI_CTX_ID__
+    }
+
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: expect.objectContaining({
+          __VF_PROJECT_AI_CTX_ID__: 'task-stable-context'
+        })
+      }),
+      expect.objectContaining({
+        sessionId: 'task-stable-context'
+      })
+    )
+  })
+
   it('responds to pending interactions and syncs the response', async () => {
     const { TaskManager } = await import('#~/tools/task/manager.js')
     const respondInteraction = vi.fn()

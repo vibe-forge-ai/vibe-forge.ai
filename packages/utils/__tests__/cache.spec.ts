@@ -4,8 +4,45 @@ import { dirname, join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import '../../adapters/claude-code/src/adapter-config.js'
 import '../../adapters/codex/src/adapter-config.js'
-import { getCache, getCachePath, setCache } from '#~/cache.js'
+import '../../adapters/copilot/src/adapter-config.js'
+import '../../adapters/gemini/src/adapter-config.js'
+import '../../adapters/opencode/src/adapter-config.js'
+import { getCache, getCachePath, getCacheWithLegacyFallback, setCache } from '#~/cache.js'
+
+const adapterResumeFixtures = [
+  {
+    key: 'adapter.codex.threads',
+    value: { 'context:codex': 'thr_legacy' },
+    otherKey: 'adapter.gemini.session',
+    otherValue: { geminiSessionId: 'gemini-native' }
+  },
+  {
+    key: 'adapter.claude-code.resume-state',
+    value: { canResume: true },
+    otherKey: 'adapter.codex.threads',
+    otherValue: { 'context:codex': 'thr_other_adapter' }
+  },
+  {
+    key: 'adapter.copilot.session',
+    value: { copilotSessionId: 'copilot-native' },
+    otherKey: 'adapter.claude-code.resume-state',
+    otherValue: { canResume: true }
+  },
+  {
+    key: 'adapter.gemini.session',
+    value: { geminiSessionId: 'gemini-native' },
+    otherKey: 'adapter.copilot.session',
+    otherValue: { copilotSessionId: 'copilot-native' }
+  },
+  {
+    key: 'adapter.opencode.session',
+    value: { opencodeSessionId: 'opencode-native', title: 'Vibe Forge:session-1' },
+    otherKey: 'adapter.gemini.session',
+    otherValue: { geminiSessionId: 'gemini-other' }
+  }
+] as const
 
 describe('cache utils', () => {
   const tempDirs: string[] = []
@@ -73,4 +110,35 @@ describe('cache utils', () => {
       })
     )
   })
+
+  it.each(adapterResumeFixtures)(
+    'restores $key from a legacy context for the same session and key',
+    async ({ key, value }) => {
+      const cwd = await mkdtemp(join(tmpdir(), 'vf-cache-'))
+      tempDirs.push(cwd)
+
+      await setCache(cwd, 'legacy-ctx', 'session-1', key, value)
+
+      const result = await getCacheWithLegacyFallback(cwd, 'session-1', 'session-1', key)
+
+      expect(result).toEqual(value)
+      await expect(getCache(cwd, 'session-1', 'session-1', key)).resolves.toEqual(value)
+    }
+  )
+
+  it.each(adapterResumeFixtures)(
+    'does not restore $key from another adapter key or another session',
+    async ({ key, otherKey, otherValue }) => {
+      const cwd = await mkdtemp(join(tmpdir(), 'vf-cache-'))
+      tempDirs.push(cwd)
+
+      await setCache(cwd, 'legacy-ctx', 'session-1', otherKey, otherValue)
+      await setCache(cwd, 'legacy-ctx', 'session-2', key, otherValue as never)
+
+      const result = await getCacheWithLegacyFallback(cwd, 'session-1', 'session-1', key)
+
+      expect(result).toBeUndefined()
+      await expect(getCache(cwd, 'session-1', 'session-1', key)).resolves.toBeUndefined()
+    }
+  )
 })
