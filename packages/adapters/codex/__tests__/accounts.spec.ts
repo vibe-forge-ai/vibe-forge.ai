@@ -4,6 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import type { AdapterCtx } from '@vibe-forge/types'
+
 import { prepareCodexSessionHome } from '#~/runtime/accounts.js'
 
 const tempDirs: string[] = []
@@ -45,14 +47,14 @@ describe('prepareCodexSessionHome', () => {
     const mockHome = join(workspace, '.ai', '.mock')
     tempDirs.push(workspace)
 
-    const ctxBase = {
+    const ctxBase: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId' | 'configs'> = {
       cwd: workspace,
       env: {
         HOME: mockHome
       },
       ctxId: 'ctx',
       configs: []
-    } as const
+    }
 
     const first = await prepareCodexSessionHome({ ctx: ctxBase, sessionId: 'session-a' })
     const second = await prepareCodexSessionHome({ ctx: ctxBase, sessionId: 'session-b' })
