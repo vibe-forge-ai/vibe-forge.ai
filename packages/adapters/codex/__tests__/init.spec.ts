@@ -313,6 +313,143 @@ describe('initCodexAdapter', () => {
     expect(configContent).not.toContain('/tmp/old-workspace')
   })
 
+  it('removes a stale unmanaged update-check key before writing the managed root block', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        'check_for_update_on_startup = true',
+        '',
+        '[notice]',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('model = "gpt-5.4"')
+    expect(configContent).toContain('[notice]')
+    expect(configContent).toContain('hide_full_access_warning = true')
+    expect(configContent).toContain('check_for_update_on_startup = false')
+    expect(configContent.match(/^check_for_update_on_startup\s*=/gm)).toHaveLength(1)
+  })
+
+  it('does not remove managed-root-key-shaped text inside a root multiline string', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const rootPromptBlock = [
+      'developer_instructions = """',
+      'check_for_update_on_startup = true',
+      'keep this as prompt text',
+      '"""'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        rootPromptBlock,
+        '',
+        '[notice]',
+        'hide_full_access_warning = true',
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain(rootPromptBlock)
+    expect(configContent).toContain('check_for_update_on_startup = false')
+  })
+
+  it('does not remove managed root keys from TOML tables', async () => {
+    const workspace = await createWorkspace()
+    const mockHome = join(workspace, '.ai', '.mock')
+    const realHome = join(workspace, 'real-home')
+    const configPath = join(mockHome, '.codex', 'config.toml')
+    const noticeBlock = [
+      '[notice]',
+      'check_for_update_on_startup = true',
+      'hide_full_access_warning = true'
+    ].join('\n')
+
+    await mkdir(join(realHome, '.codex'), { recursive: true })
+    await mkdir(dirname(configPath), { recursive: true })
+    await writeFile(
+      configPath,
+      [
+        'model = "gpt-5.4"',
+        '',
+        noticeBlock,
+        ''
+      ].join('\n')
+    )
+
+    await initCodexAdapter({
+      cwd: workspace,
+      env: {
+        HOME: mockHome,
+        __VF_PROJECT_REAL_HOME__: realHome
+      },
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+      },
+      assets: {
+        hookPlugins: []
+      }
+    } as any)
+
+    const configContent = await readFile(configPath, 'utf8')
+    expect(configContent).toContain('check_for_update_on_startup = false')
+    expect(configContent).toContain(noticeBlock)
+  })
+
   it('removes stale unmanaged workspace trust blocks before writing the managed block', async () => {
     const workspace = await createWorkspace()
     const mockHome = join(workspace, '.ai', '.mock')

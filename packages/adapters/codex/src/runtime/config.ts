@@ -318,6 +318,56 @@ const isManagedProjectMarkerLine = (line: string) => {
     trimmedLine === MANAGED_PROJECT_BLOCK_END
 }
 
+const getTomlRootAssignmentKey = (line: string) => {
+  const key = /^\s*([\w-]+(?:\s*\.\s*[\w-]+)*)\s*=/.exec(line)?.[1]
+  return key?.replaceAll(/\s*\.\s*/g, '.')
+}
+
+const getTomlRootAssignmentKeys = (content: string) => {
+  const scan = scanTomlSections(content)
+  const rootSection = scan.sections.find(section => section.header == null)
+  const keys = new Set<string>()
+  if (rootSection == null) return keys
+
+  for (let lineIndex = rootSection.startLine; lineIndex < rootSection.endLine; lineIndex += 1) {
+    const line = scan.lines[lineIndex]
+    const key = line?.stringStateBefore === 'none'
+      ? getTomlRootAssignmentKey(line.text)
+      : undefined
+    if (key != null) {
+      keys.add(key)
+    }
+  }
+
+  return keys
+}
+
+const removeUnmanagedRootConfigKeyLines = (content: string, managedRootConfigKeys: ReadonlySet<string>) => {
+  if (managedRootConfigKeys.size === 0) return content
+
+  const scan = scanTomlSections(content)
+  const rootSection = scan.sections.find(section => section.header == null)
+  if (rootSection == null) return content
+
+  const skippedLineNumbers = new Set<number>()
+  for (let lineIndex = rootSection.startLine; lineIndex < rootSection.endLine; lineIndex += 1) {
+    const line = scan.lines[lineIndex]
+    const key = line?.stringStateBefore === 'none'
+      ? getTomlRootAssignmentKey(line.text)
+      : undefined
+    if (key != null && managedRootConfigKeys.has(key)) {
+      skippedLineNumbers.add(lineIndex)
+    }
+  }
+
+  if (skippedLineNumbers.size === 0) return content
+
+  return scan.lines
+    .filter((_, lineIndex) => !skippedLineNumbers.has(lineIndex))
+    .map(line => line.text)
+    .join('\n')
+}
+
 const getSectionLineEntries = (section: TomlSection, lines: TomlLine[]) =>
   lines.slice(section.startLine, section.endLine)
 
@@ -476,13 +526,17 @@ const upsertManagedRootBlock = (params: {
   currentContent: string
   checkForUpdateOnStartup: unknown
 }) => {
-  const strippedContent = normalizeTomlContent(params.currentContent)
-    .replace(MANAGED_ROOT_BLOCK_PATTERN, '')
-    .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
-    .trim()
   const managedBlock = buildManagedCodexRootBlock({
     checkForUpdateOnStartup: params.checkForUpdateOnStartup
   })
+  const strippedManagedContent = normalizeTomlContent(params.currentContent)
+    .replace(MANAGED_ROOT_BLOCK_PATTERN, '')
+    .replace(LEGACY_MANAGED_CONFIG_BLOCK_PATTERN, '')
+    .trim()
+  const strippedContent = removeUnmanagedRootConfigKeyLines(
+    strippedManagedContent,
+    getTomlRootAssignmentKeys(managedBlock)
+  ).trim()
   const scan = scanTomlSections(strippedContent)
   const firstTableSection = scan.sections.find(section => section.header != null)
   const managedProjectPreambleLineIndex = findManagedProjectPreambleStartLine(scan.lines)
