@@ -34,6 +34,15 @@ skills add <source> --skill <name> --agent universal --copy -y
 
 安装结果会缓存到项目 `.ai/caches/skill-dependencies/`，不会写入用户真实 home，也不会修改 `.ai/skills` 下的手写 skill。
 
+如果要禁止本地缺失依赖自动触发 `skills` CLI 搜索或安装，可以配置：
+
+```yaml
+skills:
+  autoDownloadDependencies: false
+```
+
+禁用后，项目 / 插件中已有的本地依赖仍会正常解析；已声明 `source` 且 cache 中已有完整 `SKILL.md` 的依赖也会继续复用 cache。cache 缺失时会直接报错，dependency 自带 `registry` 也不会绕过这个开关。
+
 知识库里的「技能 -> 市场」页还提供了一个一次性的 “Install via Skills CLI” 入口，适合直接连接公司内网或私有 `skills` source。这个入口不会写入 `marketplaces`；它会在当前项目里临时执行：
 
 ```bash

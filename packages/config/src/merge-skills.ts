@@ -60,6 +60,15 @@ const mergeSkillHomeBridge = (
   return hasOwnKeys(merged as Record<string, unknown>) ? merged : undefined
 }
 
+const mergeAutoDownloadDependencies = (
+  left?: Config['skills'],
+  right?: Config['skills']
+) => {
+  const leftValue = isLegacySkillsConfig(left) ? left.autoDownloadDependencies : undefined
+  const rightValue = isLegacySkillsConfig(right) ? right.autoDownloadDependencies : undefined
+  return rightValue ?? leftValue
+}
+
 export const mergeSkills = (
   left?: Config['skills'],
   right?: Config['skills']
@@ -68,14 +77,16 @@ export const mergeSkills = (
     resolveConfiguredSkillInstalls(left),
     resolveConfiguredSkillInstalls(right)
   )
+  const autoDownloadDependencies = mergeAutoDownloadDependencies(left, right)
   const registry = mergeSkillRegistry(left, right)
   const homeBridge = mergeSkillHomeBridge(left, right)
 
-  if (registry == null && homeBridge == null) {
+  if (autoDownloadDependencies == null && registry == null && homeBridge == null) {
     return installs
   }
 
   return {
+    ...(autoDownloadDependencies == null ? {} : { autoDownloadDependencies }),
     ...(installs == null ? {} : { install: installs }),
     ...(registry == null ? {} : { registry }),
     ...(homeBridge == null ? {} : { homeBridge })

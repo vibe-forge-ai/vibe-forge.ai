@@ -237,6 +237,9 @@ export const configuredSkillInstallConfigSchema = z.union([
 ])
 
 export const legacySkillsConfigSchema = z.object({
+  autoDownloadDependencies: z.boolean().optional().describe(
+    'Automatically download missing skill dependencies through the skills CLI'
+  ),
   install: z.array(configuredSkillInstallConfigSchema).optional()
     .describe('Project skills that should be ensured before session startup'),
   registry: z.union([z.string(), skillRegistryConfigSchema]).optional().describe('Remote skill registry settings'),
