@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const { spawn } = require('node:child_process')
 const { existsSync } = require('node:fs')
 const Module = require('node:module')
