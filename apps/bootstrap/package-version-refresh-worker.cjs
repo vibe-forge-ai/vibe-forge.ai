@@ -187,13 +187,19 @@ const writePublishedPackageVersionMetadata = async (packageName, version) => {
   const tempPath = `${metadataPath}.${process.pid}.${Date.now()}.tmp`
   await writeFile(
     tempPath,
-    `${JSON.stringify({
-      lookupKey,
-      packageName,
-      packageTag: resolvePackageTag(),
-      resolvedAt: new Date().toISOString(),
-      version
-    }, null, 2)}\n`,
+    `${
+      JSON.stringify(
+        {
+          lookupKey,
+          packageName,
+          packageTag: resolvePackageTag(),
+          resolvedAt: new Date().toISOString(),
+          version
+        },
+        null,
+        2
+      )
+    }\n`,
     'utf8'
   )
   await rename(tempPath, metadataPath)
