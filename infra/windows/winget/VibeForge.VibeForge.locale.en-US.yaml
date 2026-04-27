@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 PackageIdentifier: VibeForge.VibeForge
-PackageVersion: 3.1.0
+PackageVersion: 3.1.1
 PackageLocale: en-US
 Publisher: Vibe Forge AI
 PublisherUrl: https://github.com/vibe-forge-ai
