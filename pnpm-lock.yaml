@@ -440,9 +440,6 @@ importers:
       '@vibe-forge/hooks':
         specifier: workspace:*
         version: link:../../hooks
-      '@vibe-forge/register':
-        specifier: workspace:*
-        version: link:../../register
       '@vibe-forge/types':
         specifier: workspace:*
         version: link:../../types
@@ -464,6 +461,9 @@ importers:
       '@vibe-forge/hooks':
         specifier: workspace:*
         version: link:../../hooks
+      '@vibe-forge/register':
+        specifier: workspace:*
+        version: link:../../register
       '@vibe-forge/types':
         specifier: workspace:*
         version: link:../../types
