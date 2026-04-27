@@ -1,6 +1,6 @@
 {
   "name": "@vibe-forge/workspace-assets",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Workspace asset resolution and adapter asset planning for Vibe Forge",
   "imports": {
     "#~/*.js": {
