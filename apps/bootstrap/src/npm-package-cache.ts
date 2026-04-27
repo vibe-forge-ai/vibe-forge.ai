@@ -120,11 +120,11 @@ export const readPublishedPackageVersionMetadata = async (packageName: string) =
     const content = await readFile(metadataPath, 'utf8')
     const parsed = JSON.parse(content) as Partial<PublishedPackageVersionMetadata>
     if (
-      parsed.lookupKey === lookupKey
-      && parsed.packageName === packageName
-      && parsed.packageTag === resolvePackageTag()
-      && typeof parsed.version === 'string'
-      && parsed.version.trim()
+      parsed.lookupKey === lookupKey &&
+      parsed.packageName === packageName &&
+      parsed.packageTag === resolvePackageTag() &&
+      typeof parsed.version === 'string' &&
+      parsed.version.trim()
     ) {
       return {
         metadataPath,

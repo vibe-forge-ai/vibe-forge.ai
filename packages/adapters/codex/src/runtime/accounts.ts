@@ -2,7 +2,7 @@
 import { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { access, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { access, cp, lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 
@@ -131,6 +131,29 @@ const pathExists = async (targetPath: string) => {
     return true
   } catch {
     return false
+  }
+}
+
+const readDirSafe = async (targetPath: string) => {
+  try {
+    return await readdir(targetPath, { withFileTypes: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
+const getDirectoryMtimeMs = async (targetPath: string) => {
+  try {
+    const stats = await lstat(targetPath)
+    return stats.isDirectory() && !stats.isSymbolicLink() ? stats.mtimeMs : undefined
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined
+    }
+    throw error
   }
 }
 
@@ -1623,11 +1646,95 @@ const runCodexLogin = async (params: {
   }
 }
 
-const syncSharedCodexSessionHomeFiles = async (
-  ctx: Pick<AdapterCtx, 'cwd' | 'env'>,
+const copyDirectoryContentsWithoutOverwrite = async (params: {
+  sourceDir: string
+  targetDir: string
+}) => {
+  const sourceDir = resolve(params.sourceDir)
+  const targetDir = resolve(params.targetDir)
+  if (sourceDir === targetDir) return
+
+  const stats = await getDirectoryMtimeMs(sourceDir)
+  if (stats == null) return
+
+  await mkdir(targetDir, { recursive: true })
+  const entries = await readDirSafe(sourceDir)
+  await Promise.all(entries.map(entry =>
+    cp(join(sourceDir, entry.name), join(targetDir, entry.name), {
+      errorOnExist: false,
+      force: false,
+      recursive: true
+    })
+  ))
+}
+
+const resolveLegacyCodexSessionStorageDirs = async (
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>,
+  sessionId: string
+) => {
+  const cacheRoot = resolveProjectAiPath(ctx.cwd, ctx.env, 'caches')
+  const entries = await readDirSafe(cacheRoot)
+  const candidates: Array<{ mtimeMs: number; sourceDir: string }> = []
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name === ctx.ctxId) continue
+
+    const sourceDir = resolveProjectAiPath(
+      ctx.cwd,
+      ctx.env,
+      'caches',
+      entry.name,
+      sessionId,
+      'adapter-codex-home',
+      '.codex',
+      'sessions'
+    )
+    const mtimeMs = await getDirectoryMtimeMs(sourceDir)
+    if (mtimeMs != null) {
+      candidates.push({ mtimeMs, sourceDir })
+    }
+  }
+
+  return candidates
+    .sort((left, right) => right.mtimeMs - left.mtimeMs || left.sourceDir.localeCompare(right.sourceDir))
+    .map(candidate => candidate.sourceDir)
+}
+
+const migrateCodexSessionStorageToMockHome = async (params: {
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>
   homeDir: string
+  sessionId: string
+  targetDir: string
+}) => {
+  await copyDirectoryContentsWithoutOverwrite({
+    sourceDir: join(params.homeDir, '.codex', 'sessions'),
+    targetDir: params.targetDir
+  })
+
+  const legacyDirs = await resolveLegacyCodexSessionStorageDirs(params.ctx, params.sessionId)
+  for (const sourceDir of legacyDirs) {
+    await copyDirectoryContentsWithoutOverwrite({
+      sourceDir,
+      targetDir: params.targetDir
+    })
+  }
+}
+
+const syncSharedCodexSessionHomeFiles = async (
+  ctx: Pick<AdapterCtx, 'cwd' | 'env' | 'ctxId'>,
+  homeDir: string,
+  sessionId: string
 ) => {
   const mockHome = resolveMockHome(ctx.cwd, ctx.env)
+  const sharedSessionsDir = join(mockHome, '.codex', 'sessions')
+  await mkdir(sharedSessionsDir, { recursive: true })
+  await migrateCodexSessionStorageToMockHome({
+    ctx,
+    homeDir,
+    sessionId,
+    targetDir: sharedSessionsDir
+  })
+
   const sharedMappings: Array<{ sourcePath: string; targetPath: string; type: 'dir' | 'file' }> = [
     {
       sourcePath: join(mockHome, '.agents', 'skills'),
@@ -1637,6 +1744,11 @@ const syncSharedCodexSessionHomeFiles = async (
     {
       sourcePath: join(mockHome, '.codex', 'skills'),
       targetPath: join(homeDir, '.codex', 'skills'),
+      type: 'dir'
+    },
+    {
+      sourcePath: sharedSessionsDir,
+      targetPath: join(homeDir, '.codex', 'sessions'),
       type: 'dir'
     },
     {
@@ -1684,7 +1796,7 @@ export const prepareCodexSessionHome = async (params: {
     realHome: ctx.env.__VF_PROJECT_REAL_HOME__ ?? undefined,
     mockHome: homeDir
   })
-  await syncSharedCodexSessionHomeFiles(ctx, homeDir)
+  await syncSharedCodexSessionHomeFiles(ctx, homeDir, sessionId)
   await syncSymlinkTarget({
     sourcePath: selectedAccount?.authFilePath ?? join(homeDir, MISSING_AUTH_SENTINEL_FILE),
     targetPath: join(homeDir, '.codex', 'auth.json'),

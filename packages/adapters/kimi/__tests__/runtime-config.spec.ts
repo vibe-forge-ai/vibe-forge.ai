@@ -270,6 +270,7 @@ describe('kimi runtime helpers', () => {
       await chmod(fakePathBinary, 0o755)
 
       ctx.env.PATH = `${fakeBinDir}${delimiter}${process.env.PATH ?? ''}`
+      ctx.env.__VF_PROJECT_AI_ADAPTER_KIMI_AUTO_INSTALL__ = 'false'
 
       await initKimiAdapter(ctx)
 
@@ -373,6 +374,51 @@ exit 2
         model: 'gpt-5',
         max_context_size: 123456
       })
+    } finally {
+      await cleanup()
+    }
+  })
+
+  it('migrates legacy Kimi share sessions only from the adapter-kimi path', async () => {
+    const { ctx, cleanup } = await createCtx()
+    try {
+      const sessionId = 'session-kimi-resume'
+      const legacySessionsDir = join(
+        ctx.cwd,
+        '.ai',
+        'caches',
+        'legacy-ctx',
+        sessionId,
+        'adapter-kimi',
+        'share',
+        'sessions'
+      )
+      const otherAdapterSessionsDir = join(
+        ctx.cwd,
+        '.ai',
+        'caches',
+        'legacy-ctx',
+        sessionId,
+        'adapter-gemini',
+        'share',
+        'sessions'
+      )
+      await mkdir(legacySessionsDir, { recursive: true })
+      await mkdir(otherAdapterSessionsDir, { recursive: true })
+      await writeFile(join(legacySessionsDir, 'kimi-session.json'), '{"id":"kimi-native"}\n', 'utf8')
+      await writeFile(join(otherAdapterSessionsDir, 'gemini-session.json'), '{"id":"gemini-native"}\n', 'utf8')
+
+      const base = await resolveKimiSessionBase(ctx, {
+        type: 'resume',
+        runtime: 'server',
+        sessionId,
+        onEvent: () => {}
+      })
+
+      await expect(readFile(join(base.shareDir, 'sessions', 'kimi-session.json'), 'utf8')).resolves.toContain(
+        'kimi-native'
+      )
+      await expect(readFile(join(base.shareDir, 'sessions', 'gemini-session.json'), 'utf8')).rejects.toThrow()
     } finally {
       await cleanup()
     }

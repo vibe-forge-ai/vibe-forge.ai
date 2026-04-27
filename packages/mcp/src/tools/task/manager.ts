@@ -342,7 +342,7 @@ export class TaskManager {
       task.workspaceCwd = resolvedConfig.workspace?.cwd
       const env = {
         ...process.env,
-        __VF_PROJECT_AI_CTX_ID__: process.env.__VF_PROJECT_AI_CTX_ID__ ?? task.taskId,
+        __VF_PROJECT_AI_CTX_ID__: task.taskId,
         __VF_PROJECT_WORKSPACE_FOLDER__: taskCwd,
         __VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__: rootCwd
       }
@@ -355,7 +355,7 @@ export class TaskManager {
       }, env)
 
       const injectDefaultSystemPrompt = await loadInjectDefaultSystemPromptValue(taskCwd)
-      const ctxId = process.env.__VF_PROJECT_AI_CTX_ID__ ?? task.taskId
+      const ctxId = task.taskId
       const { session, resolvedAdapter } = await run({
         adapter: task.adapter,
         cwd: taskCwd,

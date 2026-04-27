@@ -8,7 +8,7 @@ import {
 } from '@vibe-forge/config'
 import { syncConfiguredMarketplacePlugins } from '@vibe-forge/managed-plugins'
 import type { AdapterCtx, AdapterQueryOptions } from '@vibe-forge/types'
-import { getCache, setCache } from '@vibe-forge/utils/cache'
+import { getCacheWithLegacyFallback, setCache } from '@vibe-forge/utils/cache'
 import { createLogger } from '@vibe-forge/utils/create-logger'
 import { resolveServerLogLevel } from '@vibe-forge/utils/log-level'
 import { uuid } from '@vibe-forge/utils/uuid'
@@ -103,7 +103,7 @@ export const prepare = async (
       env,
       cache: {
         set: (key, value) => setCache(cwd, ctxId, sessionId, key, value),
-        get: (key) => getCache(cwd, ctxId, sessionId, key)
+        get: (key) => getCacheWithLegacyFallback(cwd, ctxId, sessionId, key)
       },
       logger,
       configs: [config, userConfig],

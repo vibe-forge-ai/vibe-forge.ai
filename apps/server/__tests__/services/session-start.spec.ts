@@ -260,6 +260,38 @@ describe('startAdapterSession', () => {
     expect(mocks.run).toHaveBeenCalledTimes(1)
   })
 
+  it('uses the session id as the adapter cache context when resuming from a parent runtime', async () => {
+    process.env.__VF_PROJECT_AI_CTX_ID__ = 'parent-ctx'
+    const emit = vi.fn()
+    const kill = vi.fn()
+    mocks.run.mockResolvedValueOnce({
+      session: {
+        emit,
+        kill
+      }
+    })
+
+    try {
+      await startAdapterSession('sess-1', {
+        adapter: 'codex',
+        permissionMode: 'default'
+      })
+    } finally {
+      delete process.env.__VF_PROJECT_AI_CTX_ID__
+    }
+
+    expect(mocks.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: expect.objectContaining({
+          __VF_PROJECT_AI_CTX_ID__: 'sess-1'
+        })
+      }),
+      expect.objectContaining({
+        sessionId: 'sess-1'
+      })
+    )
+  })
+
   it('resolves the adapter cwd from the session workspace service', async () => {
     const emit = vi.fn()
     const kill = vi.fn()
