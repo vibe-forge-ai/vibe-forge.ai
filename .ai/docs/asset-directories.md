@@ -43,6 +43,7 @@ dependencies:
 - 项目 skill、插件 skill 和运行时通过 `skills` CLI 下载的 dependency 都优先于同名 home skill。
 - 本地找不到时，默认会调用 `skills` CLI 搜索并安装，再缓存到 `./.ai/caches/skill-dependencies/`。
 - 默认不需要额外配置。
+- 如果要禁止自动下载缺失依赖，可以配置 `skills.autoDownloadDependencies: false`。
 - 如果某个 dependency 需要切换 `skills` CLI 包的安装来源，例如强制走内网 npm 源，直接把 registry 写进 skill spec：
 
 ```yaml

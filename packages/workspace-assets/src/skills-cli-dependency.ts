@@ -14,17 +14,33 @@ import {
   withInstallLock
 } from './skills-cli-dependency-helpers'
 
+const resolveAutoDownloadDependenciesEnabled = (
+  projectConfig: Config | undefined,
+  userConfig: Config | undefined
+) => userConfig?.skills?.autoDownloadDependencies ?? projectConfig?.skills?.autoDownloadDependencies ?? true
+
 export const installSkillsCliDependency = async (params: {
   cwd: string
   configs: [Config?, Config?]
   dependency: NormalizedSkillDependency
 }) => {
-  const resolvedTarget = params.dependency.source != null
-    ? {
-      skill: params.dependency.name,
-      source: params.dependency.source
+  const [projectConfig, userConfig] = params.configs
+  const autoDownloadDependenciesEnabled = resolveAutoDownloadDependenciesEnabled(projectConfig, userConfig)
+  const resolvedTarget = await (async () => {
+    if (params.dependency.source != null) {
+      return {
+        skill: params.dependency.name,
+        source: params.dependency.source
+      }
     }
-    : await (async () => {
+
+    if (!autoDownloadDependenciesEnabled) {
+      throw new Error(
+        `Skill dependency automatic downloads are disabled; cannot resolve ${params.dependency.ref} without a source`
+      )
+    }
+
+    return await (async () => {
       const searchResults = await findSkillsCli({
         registry: params.dependency.registry,
         query: params.dependency.name
@@ -40,6 +56,7 @@ export const installSkillsCliDependency = async (params: {
         source: selected.source
       }
     })()
+  })()
 
   const installDir = buildInstallDir({
     cwd: params.cwd,
@@ -56,6 +73,10 @@ export const installSkillsCliDependency = async (params: {
         installDir,
         skillPath
       }
+    }
+
+    if (!autoDownloadDependenciesEnabled) {
+      throw new Error(`Skill dependency automatic downloads are disabled; cache not found for ${params.dependency.ref}`)
     }
 
     const tempInstallDir = `${installDir}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`

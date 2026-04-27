@@ -113,6 +113,141 @@ describe('skills CLI dependency resolution', () => {
     })
   })
 
+  it('blocks missing dependency installs when auto downloads are disabled', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - name: frontend-design',
+        '    source: anthropics/skills',
+        '    registry: https://dependency-registry.example.test',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: {
+          autoDownloadDependencies: false
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await expect(buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })).rejects.toThrow('Skill dependency automatic downloads are disabled; cache not found')
+
+    expect(mocks.findSkillsCli).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliRefToTemp).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
+    expect(bundle.skills.map(asset => asset.name)).toEqual(['app-builder'])
+  })
+
+  it('blocks bare-name dependency searches when auto downloads are disabled', async () => {
+    const workspace = await createWorkspace()
+
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: {
+          autoDownloadDependencies: false
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await expect(buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })).rejects.toThrow(
+      'Skill dependency automatic downloads are disabled; cannot resolve frontend-design without a source'
+    )
+
+    expect(mocks.findSkillsCli).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliRefToTemp).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
+  })
+
+  it('reuses source-qualified dependency caches when auto downloads are disabled', async () => {
+    const workspace = await createWorkspace()
+    await writeDocument(
+      join(
+        workspace,
+        '.ai/caches/skill-dependencies/skills-cli/skills/latest/default/anthropics/skills/latest/frontend-design/SKILL.md'
+      ),
+      '---\nname: frontend-design\ndescription: Cached UI guidance\n---\nUse the cached dependency.\n'
+    )
+    await writeDocument(
+      join(workspace, '.ai/skills/app-builder/SKILL.md'),
+      [
+        '---',
+        'name: app-builder',
+        'description: Build apps',
+        'dependencies:',
+        '  - anthropics/skills@frontend-design',
+        '---',
+        'Build the app.'
+      ].join('\n')
+    )
+
+    const bundle = await resolveWorkspaceAssetBundle({
+      cwd: workspace,
+      configs: [{
+        skills: {
+          autoDownloadDependencies: false
+        }
+      }, undefined],
+      useDefaultVibeForgeMcpServer: false
+    })
+
+    await buildAdapterAssetPlan({
+      adapter: 'opencode',
+      bundle,
+      options: {
+        skills: {
+          include: ['app-builder']
+        }
+      }
+    })
+
+    expect(mocks.findSkillsCli).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliRefToTemp).not.toHaveBeenCalled()
+    expect(mocks.installSkillsCliSkillToTemp).not.toHaveBeenCalled()
+    expect(bundle.skills.map(asset => asset.name).sort()).toEqual(['app-builder', 'frontend-design'])
+  })
+
   it('parses registry and version from dependency specs', async () => {
     const workspace = await createWorkspace()
     const installedSkillDir = join(installWorkspace, '.agents', 'skills', 'frontend-design')

@@ -113,12 +113,14 @@ export interface ConfiguredSkillInstallConfig {
 }
 
 export interface LegacySkillsConfig {
+  autoDownloadDependencies?: boolean
   install?: Array<string | ConfiguredSkillInstallConfig>
   registry?: string | SkillRegistryConfig
   homeBridge?: SkillHomeBridgeConfig
 }
 
 export interface ArraySkillsConfig extends Array<string | ConfiguredSkillInstallConfig> {
+  autoDownloadDependencies?: boolean
   registry?: string | SkillRegistryConfig
   homeBridge?: SkillHomeBridgeConfig
 }

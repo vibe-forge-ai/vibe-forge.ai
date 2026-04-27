@@ -111,6 +111,7 @@ describe('mergeConfigs', () => {
           }
         },
         skills: {
+          autoDownloadDependencies: false,
           install: [
             {
               name: 'design-review',
@@ -178,21 +179,24 @@ describe('mergeConfigs', () => {
       title: 'Base Title',
       description: 'Child Description'
     })
-    expect(merged.skills).toEqual([
-      'frontend-design',
-      {
-        name: 'lynx-cat',
-        registry: 'https://registry.example.com',
-        source: 'example-source/lynx/skills',
-        version: 'latest'
-      },
-      {
-        name: 'design-review',
-        source: 'example-source/default/public',
-        version: '1.0.3',
-        rename: 'internal-review'
-      }
-    ])
+    expect(merged.skills).toEqual({
+      autoDownloadDependencies: false,
+      install: [
+        'frontend-design',
+        {
+          name: 'lynx-cat',
+          registry: 'https://registry.example.com',
+          source: 'example-source/lynx/skills',
+          version: 'latest'
+        },
+        {
+          name: 'design-review',
+          source: 'example-source/default/public',
+          version: '1.0.3',
+          rename: 'internal-review'
+        }
+      ]
+    })
     expect(merged.marketplaces).toEqual({
       'team-tools': {
         type: 'claude-code',
