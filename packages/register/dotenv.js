@@ -10,6 +10,9 @@ const PROJECT_LAUNCH_CWD_ENV = '__VF_PROJECT_LAUNCH_CWD__'
 const PROJECT_WORKSPACE_FOLDER_ENV = '__VF_PROJECT_WORKSPACE_FOLDER__'
 const PROJECT_CONFIG_DIR_ENV = '__VF_PROJECT_CONFIG_DIR__'
 const PROJECT_AI_BASE_DIR_ENV = '__VF_PROJECT_AI_BASE_DIR__'
+const PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD_ENV = '__VF_PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD__'
+const PROJECT_CONFIG_DIR_RESOLVE_CWD_ENV = '__VF_PROJECT_CONFIG_DIR_RESOLVE_CWD__'
+const PROJECT_AI_BASE_DIR_RESOLVE_CWD_ENV = '__VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__'
 const DEFAULT_PROJECT_AI_BASE_DIR = '.ai'
 
 const normalizeDirPath = (value) => {
@@ -36,17 +39,24 @@ const resolveProjectLaunchCwd = (cwd = process.cwd(), env = process.env) => (
   resolvePathFromBase(resolve(cwd), env[PROJECT_LAUNCH_CWD_ENV]) ?? resolve(cwd)
 )
 
-const resolvePathFromLaunchCwd = (cwd, value, env = process.env) => (
-  resolvePathFromBase(resolveProjectLaunchCwd(cwd, env), value)
+const resolvePathSourceCwd = (cwd, env, sourceEnvName) => (
+  resolvePathFromBase(resolve(cwd), env[sourceEnvName])
+)
+
+const resolvePathFromLaunchCwd = (cwd, value, env = process.env, sourceEnvName) => (
+  resolvePathFromBase(
+    resolvePathSourceCwd(cwd, env, sourceEnvName) ?? resolveProjectLaunchCwd(cwd, env),
+    value
+  )
 )
 
 const resolveProjectWorkspaceFolder = (cwd = process.cwd(), env = process.env) => (
-  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env) ??
+  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env, PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD_ENV) ??
     findWorkspaceRoot(resolveProjectLaunchCwd(cwd, env))
 )
 
 const resolveProjectConfigDir = (cwd = process.cwd(), env = process.env) => (
-  resolvePathFromLaunchCwd(cwd, env[PROJECT_CONFIG_DIR_ENV], env)
+  resolvePathFromLaunchCwd(cwd, env[PROJECT_CONFIG_DIR_ENV], env, PROJECT_CONFIG_DIR_RESOLVE_CWD_ENV)
 )
 
 const resolveProjectAiBaseDir = (cwd = process.cwd(), env = process.env) => {
@@ -55,7 +65,29 @@ const resolveProjectAiBaseDir = (cwd = process.cwd(), env = process.env) => {
     return resolve(resolveProjectWorkspaceFolder(cwd, env), DEFAULT_PROJECT_AI_BASE_DIR)
   }
 
-  return resolvePathFromLaunchCwd(cwd, configuredBaseDir, env)
+  const sourceCwd = resolvePathSourceCwd(cwd, env, PROJECT_AI_BASE_DIR_RESOLVE_CWD_ENV)
+  return resolvePathFromBase(sourceCwd ?? resolveProjectLaunchCwd(cwd, env), configuredBaseDir)
+}
+
+const PROJECT_PATH_SOURCE_CWD_ENV_BY_KEY = {
+  [PROJECT_WORKSPACE_FOLDER_ENV]: PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD_ENV,
+  [PROJECT_CONFIG_DIR_ENV]: PROJECT_CONFIG_DIR_RESOLVE_CWD_ENV,
+  [PROJECT_AI_BASE_DIR_ENV]: PROJECT_AI_BASE_DIR_RESOLVE_CWD_ENV
+}
+
+const rememberProjectPathSources = (filePath, parsed) => {
+  if (parsed == null) {
+    return
+  }
+
+  for (const [key, sourceEnvName] of Object.entries(PROJECT_PATH_SOURCE_CWD_ENV_BY_KEY)) {
+    const configuredValue = parsed[key]
+    if (configuredValue == null || process.env[key] !== configuredValue) {
+      continue
+    }
+
+    process.env[sourceEnvName] = dirname(filePath)
+  }
 }
 
 const resolvePrimaryWorkspaceFolder = (workspaceFolder) => {
@@ -149,10 +181,11 @@ const loadDotenv = (options = {}) => {
 
     for (const filePath of pendingFiles) {
       seenFiles.add(filePath)
-      dotenv.config({
+      const result = dotenv.config({
         quiet: true,
         path: filePath
       })
+      rememberProjectPathSources(filePath, result.parsed)
     }
 
     const resolvedWorkspaceFolder = resolveProjectWorkspaceFolder(launchCwd, process.env)
@@ -171,6 +204,9 @@ module.exports = {
   loadDotenv,
   resolvePrimaryWorkspaceFolder,
   resolveProjectAiBaseDir,
+  resolveProjectMockHome: (cwd = process.cwd(), env = process.env) => (
+    resolve(resolveProjectAiBaseDir(cwd, env), '.mock')
+  ),
   resolveProjectConfigDir,
   resolveProjectLaunchCwd,
   resolveProjectWorkspaceFolder

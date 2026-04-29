@@ -9,3 +9,4 @@ export declare const resolveProjectLaunchCwd: (cwd?: string, env?: NodeJS.Proces
 export declare const resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
 export declare const resolveProjectConfigDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string | undefined
 export declare const resolveProjectAiBaseDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+export declare const resolveProjectMockHome: (cwd?: string, env?: NodeJS.ProcessEnv) => string

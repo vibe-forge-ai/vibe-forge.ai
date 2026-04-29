@@ -6,6 +6,9 @@ export const PROJECT_LAUNCH_CWD_ENV = '__VF_PROJECT_LAUNCH_CWD__'
 export const PROJECT_WORKSPACE_FOLDER_ENV = '__VF_PROJECT_WORKSPACE_FOLDER__'
 export const PROJECT_CONFIG_DIR_ENV = '__VF_PROJECT_CONFIG_DIR__'
 export const PROJECT_AI_BASE_DIR_ENV = '__VF_PROJECT_AI_BASE_DIR__'
+export const PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD_ENV = '__VF_PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD__'
+export const PROJECT_CONFIG_DIR_RESOLVE_CWD_ENV = '__VF_PROJECT_CONFIG_DIR_RESOLVE_CWD__'
+export const PROJECT_AI_BASE_DIR_RESOLVE_CWD_ENV = '__VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__'
 export const DEFAULT_PROJECT_AI_BASE_DIR = '.ai'
 export const PROJECT_AI_ENTITIES_DIR_ENV = '__VF_PROJECT_AI_ENTITIES_DIR__'
 export const DEFAULT_PROJECT_AI_ENTITIES_DIR = 'entities'
@@ -47,17 +50,31 @@ export const resolveProjectLaunchCwd = (
   resolvePathFromBase(resolve(cwd), env[PROJECT_LAUNCH_CWD_ENV]) ?? resolve(cwd)
 )
 
+const resolvePathSourceCwd = (
+  cwd: string,
+  env: Record<string, string | null | undefined>,
+  sourceEnvName: string
+) => resolvePathFromBase(cwd, env[sourceEnvName])
+
 const resolvePathFromLaunchCwd = (
   cwd: string,
   value: string | null | undefined,
-  env: Record<string, string | null | undefined> = process.env
-) => resolvePathFromBase(resolveProjectLaunchCwd(cwd, env), value)
+  env: Record<string, string | null | undefined> = process.env,
+  sourceEnvName?: string
+) => {
+  const baseDir = sourceEnvName == null
+    ? resolveProjectLaunchCwd(cwd, env)
+    : resolvePathSourceCwd(cwd, env, sourceEnvName) ?? resolveProjectLaunchCwd(cwd, env)
+
+  return resolvePathFromBase(baseDir, value)
+}
 
 export const resolveProjectWorkspaceFolder = (
   cwd: string,
   env: Record<string, string | null | undefined> = process.env
 ) => (
-  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env) ?? resolve(cwd)
+  resolvePathFromLaunchCwd(cwd, env[PROJECT_WORKSPACE_FOLDER_ENV], env, PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD_ENV) ??
+    resolve(cwd)
 )
 
 export const resolvePrimaryWorkspaceFolder = (
@@ -99,7 +116,7 @@ export const resolvePrimaryWorkspaceFolder = (
 export const resolveProjectConfigDir = (
   cwd: string,
   env: Record<string, string | null | undefined> = process.env
-) => resolvePathFromLaunchCwd(cwd, env[PROJECT_CONFIG_DIR_ENV], env)
+) => resolvePathFromLaunchCwd(cwd, env[PROJECT_CONFIG_DIR_ENV], env, PROJECT_CONFIG_DIR_RESOLVE_CWD_ENV)
 
 export const resolveProjectAiBaseDirName = (
   env: Record<string, string | null | undefined> = process.env
@@ -123,7 +140,10 @@ export const resolveProjectAiBaseDir = (
   }
 
   if (normalizeDirPath(env[PROJECT_AI_BASE_DIR_ENV]) != null) {
-    return resolve(resolveProjectLaunchCwd(cwd, env), baseDir)
+    return resolve(
+      resolvePathSourceCwd(cwd, env, PROJECT_AI_BASE_DIR_RESOLVE_CWD_ENV) ?? resolveProjectLaunchCwd(cwd, env),
+      baseDir
+    )
   }
 
   return resolve(resolveProjectWorkspaceFolder(cwd, env), baseDir)

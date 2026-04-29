@@ -10,6 +10,7 @@ declare module '@vibe-forge/register/dotenv' {
   export const resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
   export const resolveProjectConfigDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string | undefined
   export const resolveProjectAiBaseDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+  export const resolveProjectMockHome: (cwd?: string, env?: NodeJS.ProcessEnv) => string
 }
 
 declare module '@vibe-forge/register/mock-home-git' {

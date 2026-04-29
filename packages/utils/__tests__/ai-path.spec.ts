@@ -9,7 +9,8 @@ import {
   resolveProjectAiEntitiesDir,
   resolveProjectAiEntitiesDirName,
   resolveProjectConfigDir,
-  resolveProjectMockHome
+  resolveProjectMockHome,
+  resolveProjectWorkspaceFolder
 } from '#~/ai-path.js'
 
 describe('ai path utils', () => {
@@ -43,6 +44,23 @@ describe('ai path utils', () => {
       __VF_PROJECT_LAUNCH_CWD__: '/tmp/project/c/d/e',
       __VF_PROJECT_CONFIG_DIR__: '.'
     })).toBe('/tmp/project/c/d/e')
+  })
+
+  it('resolves the configured AI base dir from the env file source cwd when present', () => {
+    const env = {
+      __VF_PROJECT_WORKSPACE_FOLDER__: '../..',
+      __VF_PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD__: '/tmp/project/business_modules/Miniapp',
+      __VF_PROJECT_CONFIG_DIR__: '.',
+      __VF_PROJECT_CONFIG_DIR_RESOLVE_CWD__: '/tmp/project/business_modules/Miniapp',
+      __VF_PROJECT_AI_BASE_DIR__: '.iac/ai',
+      __VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__: '/tmp/project/business_modules/Miniapp',
+      __VF_PROJECT_REAL_HOME__: '/tmp/home',
+      HOME: '/tmp/project'
+    }
+
+    expect(resolveProjectWorkspaceFolder('/tmp/project', env)).toBe('/tmp/project')
+    expect(resolveProjectConfigDir('/tmp/project', env)).toBe('/tmp/project/business_modules/Miniapp')
+    expect(resolveProjectMockHome('/tmp/project', env)).toBe('/tmp/project/business_modules/Miniapp/.iac/ai/.mock')
   })
 
   it('resolves the primary workspace from the explicit worktree override env', () => {

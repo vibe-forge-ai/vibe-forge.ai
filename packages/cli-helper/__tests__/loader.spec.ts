@@ -68,7 +68,8 @@ Module._load = function(request, parent, isMain) {
   if (request === '@vibe-forge/register/dotenv') {
     return {
       resolveProjectWorkspaceFolder: () => ${JSON.stringify(realWorkspaceDir)},
-      resolveProjectAiBaseDir: () => ${JSON.stringify(resolve(realWorkspaceDir, '.ai'))}
+      resolveProjectAiBaseDir: () => ${JSON.stringify(resolve(realWorkspaceDir, '.ai'))},
+      resolveProjectMockHome: () => ${JSON.stringify(resolve(realWorkspaceDir, '.ai/.mock'))}
     }
   }
 
@@ -120,6 +121,85 @@ require(entryPath).runCliPackageEntrypoint({
       gitConfigDirLink: resolve(realHome, '.config/git'),
       sourceEntry: './src/custom-cli',
       distEntry: './dist/custom-cli.js'
+    })
+  })
+
+  it('uses the ai base dir relative to the env file when linking mock-home git config', async () => {
+    const workspaceDir = await mkdtemp(resolve(tmpdir(), 'vf-cli-helper-ai-base-'))
+    const targetDir = resolve(workspaceDir, 'business_modules/Miniapp')
+    const packageDir = resolve(workspaceDir, 'packages/fake-cli')
+    const realHome = await mkdtemp(resolve(tmpdir(), 'vf-cli-helper-real-home-'))
+    tempDirs.push(workspaceDir, realHome)
+
+    await mkdir(targetDir, { recursive: true })
+    await mkdir(packageDir, { recursive: true })
+    await writeFile(resolve(workspaceDir, '.ai.config.json'), '{}\n')
+    await writeFile(resolve(realHome, '.gitconfig'), '[user]\\n\\tname = real\\n')
+    await writeFile(
+      resolve(targetDir, '.env'),
+      [
+        '__VF_PROJECT_WORKSPACE_FOLDER__=../..',
+        '__VF_PROJECT_CONFIG_DIR__=.',
+        '__VF_PROJECT_AI_BASE_DIR__=.iac/ai'
+      ].join('\n')
+    )
+    const realWorkspaceDir = await realpath(workspaceDir)
+    const realTargetDir = await realpath(targetDir)
+
+    const entryPath = resolve(process.cwd(), 'packages/cli-helper/entry.js')
+    const result = spawnSync(
+      process.execPath,
+      [
+        '-e',
+        `
+const Module = require('node:module')
+const entryPath = ${JSON.stringify(entryPath)}
+const originalLoad = Module._load
+
+Module._load = function(request, parent, isMain) {
+  if (request === './loader' && parent?.filename === entryPath) {
+    const fs = require('node:fs')
+    const path = require('node:path')
+    process.stdout.write(JSON.stringify({
+      workspaceFolder: process.env.__VF_PROJECT_WORKSPACE_FOLDER__,
+      configDir: process.env.__VF_PROJECT_CONFIG_DIR__,
+      aiBaseDir: process.env.__VF_PROJECT_AI_BASE_DIR__,
+      aiBaseDirSourceCwd: process.env.__VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__,
+      home: process.env.HOME,
+      gitConfigLink: fs.readlinkSync(path.join(process.env.HOME, '.gitconfig'))
+    }))
+    return {}
+  }
+
+  return originalLoad.call(this, request, parent, isMain)
+}
+
+require(entryPath).runCliPackageEntrypoint({
+  packageDir: ${JSON.stringify(packageDir)}
+})
+      `
+      ],
+      {
+        cwd: workspaceDir,
+        env: {
+          ...process.env,
+          HOME: realHome,
+          __VF_PROJECT_CONFIG_DIR__: 'business_modules/Miniapp'
+        },
+        encoding: 'utf8'
+      }
+    )
+
+    expect(result.status).toBe(0)
+    expect(result.signal).toBeNull()
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout)).toEqual({
+      workspaceFolder: realWorkspaceDir,
+      configDir: realTargetDir,
+      aiBaseDir: '.iac/ai',
+      aiBaseDirSourceCwd: realTargetDir,
+      home: resolve(realTargetDir, '.iac/ai/.mock'),
+      gitConfigLink: resolve(realHome, '.gitconfig')
     })
   })
 

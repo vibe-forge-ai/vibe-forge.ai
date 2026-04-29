@@ -15,6 +15,10 @@ describe('loadDotenv', () => {
     '__VF_PROJECT_LAUNCH_CWD__',
     '__VF_PROJECT_WORKSPACE_FOLDER__',
     '__VF_PROJECT_CONFIG_DIR__',
+    '__VF_PROJECT_AI_BASE_DIR__',
+    '__VF_PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD__',
+    '__VF_PROJECT_CONFIG_DIR_RESOLVE_CWD__',
+    '__VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__',
     '__VF_PROJECT_PRIMARY_WORKSPACE_FOLDER__',
     '__VF_PROJECT_DOTENV_FILES__',
     '__VF_PROJECT_PACKAGE_DIR__'
@@ -179,6 +183,57 @@ describe('loadDotenv', () => {
       expect(process.env.TEST_SHARED_VALUE).toBe('root')
       expect(resolveProjectWorkspaceFolder(nestedDir, process.env)).toBe(await realpath(workspaceDir))
     } finally {
+      await rm(workspaceDir, { force: true, recursive: true })
+    }
+  })
+
+  it('resolves ai base dir relative to the env file that defines it', async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'vf-dotenv-ai-base-'))
+    const targetDir = path.join(workspaceDir, 'business_modules', 'Miniapp')
+    const previousCwd = process.cwd()
+
+    for (const key of restoreScopedEnv) {
+      restoreScopedValues.set(key, process.env[key])
+      delete process.env[key]
+    }
+
+    try {
+      await mkdir(targetDir, { recursive: true })
+      await writeFile(path.join(workspaceDir, '.ai.config.json'), '{}\n')
+      await writeFile(
+        path.join(targetDir, '.env'),
+        [
+          '__VF_PROJECT_WORKSPACE_FOLDER__=../..',
+          '__VF_PROJECT_CONFIG_DIR__=.',
+          '__VF_PROJECT_AI_BASE_DIR__=.iac/ai'
+        ].join('\n')
+      )
+      const realWorkspaceDir = await realpath(workspaceDir)
+      const realTargetDir = await realpath(targetDir)
+
+      process.env.__VF_PROJECT_CONFIG_DIR__ = 'business_modules/Miniapp'
+      process.chdir(workspaceDir)
+
+      const modulePath = require.resolve('../dotenv.js')
+      delete require.cache[modulePath]
+      const {
+        loadDotenv,
+        resolveProjectAiBaseDir,
+        resolveProjectWorkspaceFolder
+      } = require(modulePath) as {
+        loadDotenv: (options?: { workspaceFolder?: string; files?: string[] }) => void
+        resolveProjectAiBaseDir: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+        resolveProjectWorkspaceFolder: (cwd?: string, env?: NodeJS.ProcessEnv) => string
+      }
+
+      loadDotenv()
+
+      expect(resolveProjectWorkspaceFolder(workspaceDir, process.env)).toBe(realWorkspaceDir)
+      expect(resolveProjectAiBaseDir(workspaceDir, process.env)).toBe(path.join(realTargetDir, '.iac', 'ai'))
+      expect(process.env.__VF_PROJECT_WORKSPACE_FOLDER_RESOLVE_CWD__).toBe(realTargetDir)
+      expect(process.env.__VF_PROJECT_AI_BASE_DIR_RESOLVE_CWD__).toBe(realTargetDir)
+    } finally {
+      process.chdir(previousCwd)
       await rm(workspaceDir, { force: true, recursive: true })
     }
   })

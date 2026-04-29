@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-import { resolveProjectAiBaseDir, resolveProjectWorkspaceFolder } from '@vibe-forge/register/dotenv'
+import { resolveProjectMockHome, resolveProjectWorkspaceFolder } from '@vibe-forge/register/dotenv'
 import { linkRealHomeGitConfig } from '@vibe-forge/register/mock-home-git'
 
 const nodeRequire = createRequire(__filename)
@@ -121,7 +121,7 @@ export const applyServerRuntimeEnv = (params: ApplyServerRuntimeEnvOptions) => {
 
   nextEnv.__VF_PROJECT_PACKAGE_DIR__ = params.packageDir
   nextEnv.__VF_PROJECT_REAL_HOME__ = nextEnv.__VF_PROJECT_REAL_HOME__ ?? nextEnv.HOME ?? ''
-  nextEnv.HOME = resolve(resolveProjectAiBaseDir(workspaceFolder, nextEnv), '.mock')
+  nextEnv.HOME = resolveProjectMockHome(workspaceFolder, nextEnv)
   linkRealHomeGitConfig({
     realHome: nextEnv.__VF_PROJECT_REAL_HOME__,
     mockHome: nextEnv.HOME
